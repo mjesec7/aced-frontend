@@ -1,0 +1,193 @@
+/* src/assets/css/UserSection.css */
+
+.auth-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.auth-button {
+    background-color: purple; /* Adjust to match website */
+    color: white;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 16px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.auth-button:hover {
+    background-color: purple;
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    z-index: 1000; /* High enough to be on top */
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    width: 400px; /* Adjust width as needed */
+    max-width: 90%; /* Responsive */
+}
+
+/* Ensure the background overlay covers the whole screen */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* When `isModalOpen` is true, show the modal */
+.modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    position: relative;
+    max-width: 400px;
+    width: 100%;
+    z-index: 1100; /* Ensure modal content is above overlay */
+}
+
+  
+  .modal-overlay.show .modal-content {
+    transform: translateY(0);
+  }
+  
+  /* Close Button */
+  .close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #333;
+    transition: 0.3s;
+    z-index: 10;
+  }
+  
+  .close-btn:hover {
+    color: red;
+  }
+  
+  /* Input Fields */
+  .modal-content input {
+    width: 90%; /* Adjusted width to avoid full stretching */
+    max-width: 350px; /* Prevents the input from getting too wide */
+    padding: 10px;
+    margin: 8px auto; /* Centers input fields */
+    display: block; /* Ensures proper spacing */
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+}
+
+  
+  /* Authentication Buttons */
+  .auth-submit,
+  .google-auth {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: 0.3s;
+  }
+  
+  .auth-submit {
+    background: purple;
+    color: white;
+    border: none;
+  }
+  
+  .auth-submit:hover {
+    background: darkpurple;
+  }
+  
+  .google-auth {
+    background: white;
+    border: 2px solid #ccc;
+    color: black;
+  }
+  
+  .google-auth:hover {
+    background: #f5f5f5;
+  }
+  
+  /* Switch Between Register & Login */
+  .switch-text {
+    margin-top: 15px;
+    font-size: 14px;
+  }
+  
+  .switch-text span {
+    color: purple;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+  }
+  
+  .switch-text span:hover {
+    text-decoration: underline;
+  }
+  
+  /* ==== USER MENU ==== */
+  .user-menu {
+    position: relative;
+  }
+  
+  .user-button {
+    font-family: 'Unbounded';
+    background: transparent;
+    border: 2px solid purple;
+    color: black;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  
+  .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    padding: 10px;
+  }
+  
+  .dropdown-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .dropdown-menu li {
+    padding: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  
+  .dropdown-menu li:hover {
+    background: lightgray;
+  }
