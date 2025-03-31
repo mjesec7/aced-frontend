@@ -5,34 +5,24 @@
     <AcedSection />
     <AnalyticsSection />
     <StickyNavbar />
-    <ChatBot/>
+    <ChatBot />
   </div>
 </template>
 
-<script>
+<script setup>
 import HeroSection from '@/components/HeroSection.vue';
 import AcedSection from '@/components/AcedSection.vue';
+import AnalyticsSection from '@/components/AnalyticsSection.vue';
 import StickyNavbar from '@/components/StickyNavbar.vue';
-import AnalyticsSection from '@/components/AnalyticsSection.vue'; 
 import ChatBot from '@/components/ChatBot.vue';
-
-export default {
-  name: 'HomePage',
-  components: {
-    HeroSection,
-    AcedSection,
-    AnalyticsSection, // Register it here
-    StickyNavbar,
-    ChatBot,
-  },
-};
 </script>
 
 <style scoped>
 .home-page {
   position: relative;
   width: 100%;
-  height: 100vh;
-
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 </style>

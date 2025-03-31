@@ -1,4 +1,5 @@
 <template>
+   
     <div class="chatbot-container" :class="{ open: isOpen }">
       <div class="chat-header" @click="toggleChat">
         <span>🤖 AI Chat</span>
