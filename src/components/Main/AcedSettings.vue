@@ -25,7 +25,7 @@
           <input type="password" v-model="confirmPassword" placeholder="Повторите новый пароль" />
         </div>
   
-        <p class="forgot-password" @click="resetPassword">Забыли пароль?</p>
+        <p class="forgot-password" @click="sendPasswordReset">Забыли пароль?</p>
   
         <!-- Create Password Button (Styled like "Forgot Password") -->
         <p v-if="isGoogleUser" class="forgot-password" @click="sendPasswordReset">

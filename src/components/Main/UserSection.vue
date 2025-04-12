@@ -13,7 +13,7 @@
       </button>
       <div v-if="dropdownOpen" class="dropdown-menu">
         <ul>
-          <li>Профиль</li>
+          <li @click="$router.push('/profile')">Профиль</li>
           <li @click="$router.push('/settings')">Настройки</li>
           <li>Прогресс</li>
           <li @click="logout">Выйти</li>
@@ -21,8 +21,8 @@
       </div>
     </div>
 
-    <!-- Authentication Modal -->
-    <div :class="{'modal-overlay': true, 'show': isModalOpen}" @click="closeModal">
+    <!-- Authentication Modal (Centered on Screen) -->
+    <div v-if="isModalOpen" class="global-auth-modal" @click="closeModal">
       <div class="modal-content" @click.stop>
         <span class="close-btn" @click="closeModal">&times;</span>
 
@@ -53,7 +53,6 @@
   </div>
 </template>
 
-
 <script>
 import { auth } from "@/firebase";
 import {
@@ -63,7 +62,7 @@ import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
 } from "firebase/auth";
-import AcedSettings from "@/components/AcedSettings.vue";
+import AcedSettings from "@/components/Main/AcedSettings.vue";
 
 export default {
   components: { AcedSettings },
@@ -82,10 +81,14 @@ export default {
     onAuthStateChanged(auth, (user) => {
       this.currentUser = user ? { name: user.displayName || user.email } : null;
     });
+
+    window.addEventListener("open-login-modal", () => {
+      this.openModal("login");
+    });
   },
   methods: {
     openModal(mode) {
-      this.isModalOpen = false; // Ensure modal resets before opening
+      this.isModalOpen = false;
       this.$nextTick(() => {
         this.authMode = mode;
         this.isModalOpen = true;
@@ -93,18 +96,18 @@ export default {
     },
     closeModal() {
       this.isModalOpen = false;
-      this.resetForms(); // Clear input fields when closing
+      this.resetForms();
     },
     switchAuth(mode) {
       this.authMode = mode;
-      this.resetForms(); // Reset form when switching modes
+      this.resetForms();
     },
     toggleDropdown() {
       this.dropdownOpen = !this.dropdownOpen;
     },
     openSettings() {
       this.showSettings = true;
-      this.dropdownOpen = false; // Close dropdown if settings are opened
+      this.dropdownOpen = false;
     },
     async loginWithGoogle() {
       const provider = new GoogleAuthProvider();
@@ -154,6 +157,5 @@ export default {
 </script>
 
 <style scoped>
-/* ==== MODAL STYLES ==== */
-@import "../assets/css/UserSection.css";
+@import "../../assets/css/UserSection.css";
 </style>

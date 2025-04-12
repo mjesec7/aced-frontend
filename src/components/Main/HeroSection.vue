@@ -25,7 +25,7 @@
 </template>
 
 <script>
-import UserSection from "@/components/UserSection.vue";
+import UserSection from "@/components/Main/UserSection.vue";
 
 export default {
   components: { UserSection },
