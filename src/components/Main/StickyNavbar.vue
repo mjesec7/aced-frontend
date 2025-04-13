@@ -1,5 +1,6 @@
 <template>
   <div>
+    <!-- Sticky nav links -->
     <nav
       class="nav-container"
       :class="{ 'fade-out': isOverlappingFooter }"
@@ -12,7 +13,7 @@
       <span class="nav-link" @click="showModal = true">Контакты</span>
     </nav>
 
-    <!-- ⬇️ Move modal OUTSIDE of nav for proper z-index layering -->
+    <!-- Contacts Modal appears ABOVE everything -->
     <ContactsModal v-if="showModal" @close="showModal = false" />
   </div>
 </template>
@@ -41,7 +42,6 @@ export default {
   }
 };
 </script>
-
 
 <style scoped>
 .nav-container {
