@@ -57,18 +57,14 @@ export default {
 </script>
 
 <style scoped>
-/* 🔥 GLOBAL RESET — No more white gaps */
+@import url('https://fonts.googleapis.com/css2?family=Unbounded&display=swap');
+
 html, body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
   font-family: 'Unbounded', sans-serif;
 }
-
-* {
-  box-sizing: border-box;
-}
-
 /* 🎯 Hero Container */
 .hero-container {
   position: relative;
@@ -120,14 +116,7 @@ html, body {
 }
 
 /* 🌌 Spline 3D Background */
-.video-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-}
+
 
 .spline-bg {
   position: absolute;
