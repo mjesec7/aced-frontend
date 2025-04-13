@@ -7,12 +7,18 @@
     </div>
 
     <!-- Video Background -->
-    <div class="video-container">
-      <video autoplay loop muted playsinline>
-        <source src="@/assets/videos/untitled.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
-    </div>
+    <!-- Inside .video-container -->
+<div class="video-container">
+  <!-- You can leave this video OR remove it -->
+  <video autoplay loop muted playsinline>
+    <source src="@/assets/videos/untitled.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+
+  <!-- Add Spline Viewer -->
+  <spline-viewer class="spline-bg" url="https://prod.spline.design/zoavmG9WcCYRE1gQ/scene.splinecode"></spline-viewer>
+</div>
+
 
     <!-- Hero Text -->
     <div class="hero-text">
@@ -111,21 +117,15 @@ export default {
 }
 
 /* Video Background */
-.video-container {
+.spline-bg {
   position: absolute;
+  width: 100%;
+  height: 100%;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-  overflow: hidden;
+  z-index: 0;
 }
 
-.video-container video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
 
 /* Hero Text */
 .hero-text {
