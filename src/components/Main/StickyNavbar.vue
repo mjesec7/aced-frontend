@@ -1,40 +1,47 @@
 <template>
-  <nav
-    class="nav-container"
-    :class="{ 'fade-out': isOverlappingFooter }"
-    ref="navRef"
-  >
-    <router-link class="nav-link" :to="{ path: '/', hash: '#about-us' }">О Нас</router-link>
-    <router-link class="nav-link" :to="{ path: '/', hash: '#cards' }">Возможности</router-link>
-    <router-link class="nav-link" :to="{ path: '/', hash: '#passion-test' }">Тест</router-link>
-    <router-link class="nav-link" :to="{ path: '/', hash: '#ai' }">AI Помощник</router-link>
-    <router-link class="nav-link" :to="{ path: '/', hash: '#contacts' }">Контакты</router-link>
-  </nav>
+  <div>
+    <nav
+      class="nav-container"
+      :class="{ 'fade-out': isOverlappingFooter }"
+      ref="navRef"
+    >
+      <router-link class="nav-link" :to="{ path: '/', hash: '#features' }">Тест</router-link>
+      <router-link class="nav-link" :to="{ path: '/', hash: '#greatpeople' }">Учёные</router-link>
+      <router-link class="nav-link" :to="{ path: '/', hash: '#aced' }">Направления</router-link>
+      <router-link class="nav-link" :to="{ path: '/', hash: '#about-us' }">О нас</router-link>
+      <span class="nav-link" @click="showModal = true">Контакты</span>
+    </nav>
+
+    <!-- ⬇️ Move modal OUTSIDE of nav for proper z-index layering -->
+    <ContactsModal v-if="showModal" @close="showModal = false" />
+  </div>
 </template>
 
 <script>
+import ContactsModal from '@/components/Modals/ContactsModal.vue';
+
 export default {
   name: 'StickyNavbar',
+  components: { ContactsModal },
   data() {
     return {
-      isOverlappingFooter: false
+      isOverlappingFooter: false,
+      showModal: false
     };
   },
   mounted() {
-    const footer = document.querySelector('footer'); // Adjust if your footer has an ID/class
+    const footer = document.querySelector('footer');
     const observer = new IntersectionObserver(
       ([entry]) => {
         this.isOverlappingFooter = entry.isIntersecting;
       },
-      {
-        root: null,
-        threshold: 0.1
-      }
+      { root: null, threshold: 0.1 }
     );
     if (footer) observer.observe(footer);
   }
 };
 </script>
+
 
 <style scoped>
 .nav-container {
@@ -68,6 +75,7 @@ export default {
   color: white;
   padding: 10px 15px;
   transition: color 0.3s ease;
+  cursor: pointer;
 }
 
 .nav-link:hover {

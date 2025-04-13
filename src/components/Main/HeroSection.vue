@@ -2,27 +2,30 @@
   <div class="hero-container" :style="{ opacity: heroOpacity }">
     <!-- Top Navigation with Logo and Authentication Buttons -->
     <div class="top-nav">
-      <img src="@/assets/logo.png" alt="ACED Logo" class="aced-logo" />
-      <UserSection />
+      <div class="nav-inner">
+        <img src="@/assets/logo.png" alt="ACED Logo" class="aced-logo" />
+        <UserSection />
+      </div>
     </div>
 
-    <!-- Video Background -->
-    <!-- Inside .video-container -->
-<div class="video-container">
-  <!-- You can leave this video OR remove it -->
-  <video autoplay loop muted playsinline>
-    <source src="@/assets/videos/untitled.mp4" type="video/mp4" />
-    Your browser does not support the video tag.
-  </video>
+    <!-- Background -->
+    <div class="video-container">
+      <video autoplay loop muted playsinline>
+        <source src="@/assets/videos/untitled.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
 
-  <!-- Add Spline Viewer -->
-  <spline-viewer class="spline-bg" url="https://prod.spline.design/zoavmG9WcCYRE1gQ/scene.splinecode"></spline-viewer>
-</div>
-
+      <spline-viewer
+        class="spline-bg"
+        url="https://prod.spline.design/zoavmG9WcCYRE1gQ/scene.splinecode"
+      ></spline-viewer>
+    </div>
 
     <!-- Hero Text -->
     <div class="hero-text">
-      <h1 class="hero-title">Разблокируйте будущее образования вместе с ACED</h1>
+      <h1 class="hero-title">
+        Разблокируйте будущее образования вместе с ACED
+      </h1>
       <div class="hero-buttons">
         <button class="hero-btn">Узнать больше</button>
       </div>
@@ -59,12 +62,14 @@ export default {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Unbounded&display=swap');
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
   font-family: 'Unbounded', sans-serif;
 }
+
 /* 🎯 Hero Container */
 .hero-container {
   position: relative;
@@ -84,10 +89,20 @@ html, body {
   width: 100%;
   height: 100px;
   display: flex;
-  justify-content: space-between;
-  padding: 20px 40px;
+  justify-content: center; /* center content horizontally */
+  padding: 0;
   z-index: 3;
   align-items: center;
+}
+
+.nav-inner {
+  max-width: 1400px;
+  width: 100%;
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .aced-logo {
@@ -103,7 +118,6 @@ html, body {
   border: 2px solid purple;
   background: transparent;
   color: black;
-  padding: 10px 20px;
   border-radius: 8px;
   cursor: pointer;
   transition: 0.3s;
@@ -116,7 +130,14 @@ html, body {
 }
 
 /* 🌌 Spline 3D Background */
-
+.video-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
 
 .spline-bg {
   position: absolute;
@@ -136,6 +157,9 @@ html, body {
   z-index: 2;
   color: black;
   padding: 0 20px;
+  width: 100%;
+  max-width: 1200px;
+  box-sizing: border-box;
 }
 
 .hero-title {
@@ -155,6 +179,7 @@ html, body {
   color: black;
   padding: 12px 25px;
   font-size: 16px;
+  font-family: 'Unbounded', sans-serif;
   cursor: pointer;
   transition: 0.3s;
   border-radius: 10px;
