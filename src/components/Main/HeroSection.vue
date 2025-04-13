@@ -57,17 +57,19 @@ export default {
 </script>
 
 <style scoped>
-/* Global Reset */
-* {
+/* 🔥 GLOBAL RESET — No more white gaps */
+html, body {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
+  overflow-x: hidden;
   font-family: 'Unbounded', sans-serif;
 }
 
+* {
+  box-sizing: border-box;
+}
 
-
-/* Hero Section */
+/* 🎯 Hero Container */
 .hero-container {
   position: relative;
   width: 100%;
@@ -76,9 +78,10 @@ export default {
   border-bottom-left-radius: 50px;
   border-bottom-right-radius: 50px;
   z-index: 0;
+  overflow: hidden;
 }
 
-/* Top Navigation */
+/* 🧭 Navigation Bar */
 .top-nav {
   position: absolute;
   top: 0;
@@ -116,18 +119,25 @@ export default {
   background: purple;
 }
 
-/* Video Background */
+/* 🌌 Spline 3D Background */
+.video-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
 .spline-bg {
   position: absolute;
   width: 100%;
   height: 100%;
   top: 0;
   left: 0;
-  z-index: 0;
 }
 
-
-/* Hero Text */
+/* 📝 Hero Text */
 .hero-text {
   position: absolute;
   top: 50%;
@@ -135,6 +145,8 @@ export default {
   transform: translate(-50%, -50%);
   text-align: center;
   z-index: 2;
+  color: black;
+  padding: 0 20px;
 }
 
 .hero-title {
