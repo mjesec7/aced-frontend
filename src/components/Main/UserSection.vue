@@ -1,54 +1,56 @@
 <template>
   <div>
-    <!-- Authentication Buttons -->
+    <!-- 🔐 Auth buttons -->
     <div v-if="!currentUser" class="auth-buttons">
       <button class="auth-button" @click="openModal('register')">Регистрация</button>
       <button class="auth-button" @click="openModal('login')">Вход</button>
     </div>
 
-    <!-- User Dropdown if Logged In -->
+    <!-- 👤 User Info -->
     <div v-else class="user-menu">
       <button class="user-button" @click="toggleDropdown">
-        Привет, {{ currentUser?.name || 'Пользователь' }}
+        Привет, {{ currentUser.name }}
+        <span v-if="currentUser.subscriptionPlan" class="badge">
+          {{ currentUser.subscriptionPlan === 'pro' ? 'PRO' : 'START' }}
+        </span>
       </button>
       <div v-if="dropdownOpen" class="dropdown-menu">
         <ul>
           <li @click="$router.push('/profile')">Профиль</li>
           <li @click="$router.push('/settings')">Настройки</li>
-          <li>Прогресс</li>
           <li @click="logout">Выйти</li>
         </ul>
       </div>
     </div>
 
-    <!-- Authentication Modal (Centered on Screen) -->
+    <!-- 🪪 Modal -->
     <div v-if="isModalOpen" class="global-auth-modal" @click="closeModal">
       <div class="modal-content" @click.stop>
         <span class="close-btn" @click="closeModal">&times;</span>
 
         <div v-if="authMode === 'register'">
           <h2>Регистрация</h2>
-          <input id="name" name="name" type="text" v-model="user.name" placeholder="Имя" required />
-          <input id="surname" name="surname" type="text" v-model="user.surname" placeholder="Фамилия" required />
-          <input id="email" name="email" type="email" v-model="user.email" placeholder="Email" required />
-          <input id="password" name="password" type="password" v-model="user.password" placeholder="Пароль" required />
-          <input id="confirmPassword" name="confirmPassword" type="password" v-model="user.confirmPassword" placeholder="Повторите пароль" required />
-          <button class="auth-submit" @click="register">Зарегистрироваться</button>
+          <input v-model="user.name" placeholder="Имя" />
+          <input v-model="user.surname" placeholder="Фамилия" />
+          <input v-model="user.email" type="email" placeholder="Email" />
+          <input v-model="user.password" type="password" placeholder="Пароль" />
+          <input v-model="user.confirmPassword" type="password" placeholder="Повторите пароль" />
+          <button @click="register">Зарегистрироваться</button>
           <p class="switch-text">Уже есть аккаунт? <span @click="switchAuth('login')">Войти</span></p>
         </div>
 
         <div v-else>
           <h2>Вход</h2>
-          <input id="loginEmail" name="loginEmail" type="email" v-model="login.email" placeholder="Email" required />
-          <input id="loginPassword" name="loginPassword" type="password" v-model="login.password" placeholder="Пароль" required />
-          <button class="auth-submit" @click="loginUser">Войти</button>
-          <button class="google-auth" @click="loginWithGoogle">Войти через Google</button>
+          <input v-model="login.email" type="email" placeholder="Email" />
+          <input v-model="login.password" type="password" placeholder="Пароль" />
+          <button @click="loginUser">Войти</button>
+          <button @click="loginWithGoogle">Войти через Google</button>
           <p class="switch-text">Нет аккаунта? <span @click="switchAuth('register')">Зарегистрироваться</span></p>
         </div>
       </div>
     </div>
 
-    <!-- Settings Component -->
+    <!-- ⚙️ Settings -->
     <AcedSettings v-if="showSettings" @close-settings="showSettings = false" />
   </div>
 </template>
@@ -60,8 +62,9 @@ import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  onAuthStateChanged,
+  onAuthStateChanged
 } from "firebase/auth";
+import axios from "axios";
 import AcedSettings from "@/components/Main/AcedSettings.vue";
 
 export default {
@@ -70,16 +73,29 @@ export default {
     return {
       isModalOpen: false,
       authMode: "register",
-      user: { name: "", surname: "", email: "", password: "", confirmPassword: "" },
-      login: { email: "", password: "" },
       currentUser: null,
       dropdownOpen: false,
       showSettings: false,
+      user: { name: "", surname: "", email: "", password: "", confirmPassword: "" },
+      login: { email: "", password: "" }
     };
   },
   mounted() {
-    onAuthStateChanged(auth, (user) => {
-      this.currentUser = user ? { name: user.displayName || user.email } : null;
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const res = await axios.get(`/api/users/${user.uid}`);
+          this.currentUser = {
+            name: res.data.name || user.displayName || user.email,
+            email: user.email,
+            subscriptionPlan: res.data.subscriptionPlan
+          };
+        } catch (err) {
+          console.error("❌ Failed to fetch user data:", err.message);
+        }
+      } else {
+        this.currentUser = null;
+      }
     });
 
     window.addEventListener("open-login-modal", () => {
@@ -88,11 +104,8 @@ export default {
   },
   methods: {
     openModal(mode) {
-      this.isModalOpen = false;
-      this.$nextTick(() => {
-        this.authMode = mode;
-        this.isModalOpen = true;
-      });
+      this.authMode = mode;
+      this.isModalOpen = true;
     },
     closeModal() {
       this.isModalOpen = false;
@@ -105,15 +118,10 @@ export default {
     toggleDropdown() {
       this.dropdownOpen = !this.dropdownOpen;
     },
-    openSettings() {
-      this.showSettings = true;
-      this.dropdownOpen = false;
-    },
     async loginWithGoogle() {
       const provider = new GoogleAuthProvider();
       try {
         const result = await signInWithPopup(auth, provider);
-        this.currentUser = { name: result.user.displayName };
         this.closeModal();
       } catch (error) {
         alert("Ошибка входа через Google: " + error.message);
@@ -122,7 +130,6 @@ export default {
     async loginUser() {
       try {
         await signInWithEmailAndPassword(auth, this.login.email, this.login.password);
-        this.currentUser = { name: this.login.email };
         this.closeModal();
       } catch (error) {
         alert("Ошибка входа: " + error.message);
@@ -135,7 +142,6 @@ export default {
       }
       try {
         await createUserWithEmailAndPassword(auth, this.user.email, this.user.password);
-        this.currentUser = { name: this.user.name };
         alert("Вы успешно зарегистрированы!");
         this.closeModal();
       } catch (error) {
@@ -151,11 +157,20 @@ export default {
     resetForms() {
       this.user = { name: "", surname: "", email: "", password: "", confirmPassword: "" };
       this.login = { email: "", password: "" };
-    },
-  },
+    }
+  }
 };
 </script>
 
 <style scoped>
-@import "../../assets/css/UserSection.css";
+@import "@/assets/css/UserSection.css";
+
+.badge {
+  margin-left: 8px;
+  background-color: #9333ea;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+}
 </style>

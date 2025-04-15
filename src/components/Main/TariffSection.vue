@@ -1,51 +1,67 @@
 <template>
-    <section class="pricing-section">
-      <div class="container">
-        <h2 class="title">Выбери подходящий тариф</h2>
-        <p class="subtitle">
-          Платформа, которая растёт вместе с тобой. Доступ к искусственному интеллекту,
-          персонализации и результатам.
-        </p>
-  
-        <div class="pricing-cards">
-          <!-- Starter Plan -->
-          <div class="card">
-            <h3 class="plan-name">Starter</h3>
-            <p class="price">$20 / месяц</p>
-            <ul class="features">
-              <li>🔹 Доступ ко всем предметам</li>
-              <li>🔹 Помощь ИИ с домашкой</li>
-              <li>🔹 Прогресс и статистика</li>
-              <li>🔹 Безлимитный доступ к урокам</li>
-              <li>🔹 Интеллектуальные подсказки в обучении</li>
-            </ul>
-            <button class="btn">Начать</button>
-          </div>
-  
-          <!-- Pro Plan -->
-          <div class="card pro">
-            <h3 class="plan-name">Pro</h3>
-            <p class="price">$35 / месяц</p>
-            <ul class="features">
-              <li>✨ Всё из STARTER +</li>
-              <li>🔓 Персональный ИИ-наставник</li>
-              <li>📊 Продвинутая аналитика</li>
-              <li>📚 Индивидуальная карта обучения</li>
-              <li>🧠 Расширенный режим чата</li>
-              <li>🎯 Целевые рекомендации и план обучения</li>
-            </ul>
-            <button class="btn">Начать</button>
-          </div>
+  <section class="pricing-section">
+    <div class="container">
+      <h2 class="title">Выбери подходящий тариф</h2>
+      <p class="subtitle">
+        Платформа, которая растёт вместе с тобой. Доступ к искусственному интеллекту,
+        персонализации и результатам.
+      </p>
+
+      <div class="pricing-cards">
+        <!-- Starter Plan -->
+        <div class="card">
+          <h3 class="plan-name">Starter</h3>
+          <p class="price">$20 / месяц</p>
+          <ul class="features">
+            <li>🔹 Доступ ко всем предметам</li>
+            <li>🔹 Помощь ИИ с домашкой</li>
+            <li>🔹 Прогресс и статистика</li>
+            <li>🔹 Безлимитный доступ к урокам</li>
+            <li>🔹 Интеллектуальные подсказки в обучении</li>
+          </ul>
+          <button class="btn" @click="handleClick('start')">Начать</button>
+        </div>
+
+        <!-- Pro Plan -->
+        <div class="card pro">
+          <h3 class="plan-name">Pro</h3>
+          <p class="price">$35 / месяц</p>
+          <ul class="features">
+            <li>✨ Всё из STARTER +</li>
+            <li>🔓 Персональный ИИ-наставник</li>
+            <li>📊 Продвинутая аналитика</li>
+            <li>📚 Индивидуальная карта обучения</li>
+            <li>🧠 Расширенный режим чата</li>
+            <li>🎯 Целевые рекомендации и план обучения</li>
+          </ul>
+          <button class="btn" @click="handleClick('pro')">Начать</button>
         </div>
       </div>
-    </section>
-  </template>
-  
-  <script>
-  export default {
-    name: 'TariffSection'
-  };
-  </script>
+    </div>
+  </section>
+</template>
+
+<script>
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+
+export default {
+  name: 'TariffSection',
+  methods: {
+    handleClick(plan) {
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (!user) {
+        window.dispatchEvent(new Event("open-login-modal"));
+      } else {
+        this.$router.push(`/pay/${plan}`);
+      }
+    }
+  }
+};
+
+</script>
+
   
   <style scoped>
   .pricing-section {

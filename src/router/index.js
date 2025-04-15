@@ -13,6 +13,8 @@ import SubjectProgress from '@/components/Profile/SubjectProgress.vue'
 import StudyGoal from '@/components/Profile/StudyGoal.vue'
 import StudyPlan from '@/components/Profile/StudyPlan.vue'
 import HomeworkHelp from '@/components/Profile/HomeworkHelp.vue'
+import PaymePayment from '@/components/Payments/PaymePayment.vue';
+
 
 // Shared LessonView
 const LessonView = () => import('@/components/Lessons/LessonView.vue')
@@ -70,6 +72,12 @@ const routes = [
         path: 'homework',
         name: 'HomeworkHelp',
         component: HomeworkHelp
+      },
+      {
+        path: '/pay/:plan',
+        name: 'PaymePayment',
+        component: PaymePayment,
+        props: true
       }
     ]
   },
