@@ -1,32 +1,30 @@
 <template>
   <div class="payme-payment">
     <div class="payment-box">
-      <!-- ✅ Show success screen -->
-      <template v-if="success">
-        <img src="@/assets/icons/success.png" alt="Успешно" class="success-icon" />
-        <h2>Платёж успешно завершен!</h2>
-        <p>Спасибо за покупку тарифа <strong>{{ planLabel }}</strong>.</p>
-      </template>
+      <h2>Оплата тарифа: <span>{{ planLabel }}</span></h2>
+      <p class="amount">Сумма к оплате: <strong>{{ formattedAmount }} сум</strong></p>
 
-      <!-- 💳 Show payment form -->
-      <template v-else>
-        <h2>Оплата тарифа: <span>{{ planLabel }}</span></h2>
-        <p class="amount">Сумма к оплате: <strong>{{ formattedAmount }} сум</strong></p>
+      <form @submit.prevent="initiatePayment">
+        <input
+          type="text"
+          v-model="form.phone"
+          placeholder="Номер телефона (например, +998901234567)"
+          required
+        />
 
-        <form @submit.prevent="initiatePayment">
-          <input
-            type="text"
-            v-model="form.phone"
-            placeholder="Номер телефона (например, +998901234567)"
-            required
-          />
-          <button type="submit" class="pay-button" :disabled="loading">
-            {{ loading ? 'Обработка...' : 'Оплатить через Payme' }}
-          </button>
-        </form>
+        <input
+          type="text"
+          v-model="form.promocode"
+          placeholder="Промокод (если есть)"
+        />
 
-        <p v-if="error" class="error-text">❌ {{ error }}</p>
-      </template>
+        <button type="submit" class="pay-button" :disabled="loading">
+          {{ loading ? 'Обработка...' : 'Оплатить через Payme' }}
+        </button>
+      </form>
+
+      <p v-if="error" class="error-text">❌ {{ error }}</p>
+      <p v-if="success" class="success-text">🎉 Промокод активирован! Вам открыт доступ к PRO-курсам.</p>
     </div>
   </div>
 </template>
@@ -38,7 +36,10 @@ export default {
   props: ["plan"],
   data() {
     return {
-      form: { phone: "" },
+      form: {
+        phone: "",
+        promocode: "",
+      },
       loading: false,
       error: "",
       success: false,
@@ -55,20 +56,33 @@ export default {
       return this.amount.toLocaleString("ru-RU");
     },
   },
-  mounted() {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("success") === "true") {
-      this.success = true;
-    }
-  },
   methods: {
     async initiatePayment() {
       this.loading = true;
       this.error = "";
+      this.success = false;
 
       try {
+        // ✅ 1. Check Promo First
+        if (this.form.promocode.trim()) {
+          const promoRes = await axios.post(
+            `${process.env.VUE_APP_API_URL}/payments/promo`,
+            {
+              code: this.form.promocode.trim(),
+              phone: this.form.phone,
+              plan: this.plan,
+            }
+          );
+
+          if (promoRes.data?.unlocked) {
+            this.success = true;
+            return;
+          }
+        }
+
+        // ✅ 2. Fallback to Payme flow
         const response = await axios.post(
-          `${import.meta.env.VITE_API_URL || process.env.VUE_APP_API_URL}/payments/payme`,
+          `${process.env.VUE_APP_API_URL}/payments/payme`,
           {
             amount: this.amount,
             phone: this.form.phone,
@@ -83,7 +97,7 @@ export default {
         }
       } catch (err) {
         console.error("❌ Payment Error:", err.response?.data || err.message);
-        this.error = "Не удалось инициализировать оплату.";
+        this.error = err.response?.data?.error || "Не удалось инициализировать оплату.";
       } finally {
         this.loading = false;
       }
@@ -91,6 +105,9 @@ export default {
   },
 };
 </script>
+
+
+
 
 <style scoped>
 .payme-payment {
@@ -105,12 +122,11 @@ export default {
   background: white;
   padding: 40px;
   border-radius: 16px;
-  max-width: 420px;
+  max-width: 400px;
   width: 90%;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   font-family: 'Unbounded', sans-serif;
   text-align: center;
-  animation: fadeIn 0.5s ease;
 }
 
 .payment-box h2 {
@@ -155,25 +171,15 @@ input {
   background-color: #6b21a8;
 }
 
-.success-icon {
-  width: 100px;
-  margin-bottom: 20px;
-}
-
 .error-text {
   margin-top: 16px;
   color: #dc2626;
   font-weight: 600;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+.success-text {
+  margin-top: 16px;
+  color: #16a34a;
+  font-weight: 600;
 }
 </style>

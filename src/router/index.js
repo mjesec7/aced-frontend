@@ -73,15 +73,15 @@ const routes = [
         name: 'HomeworkHelp',
         component: HomeworkHelp
       },
-      {
+      
+    ]
+  },
+{
         path: '/pay/:plan',
         name: 'PaymePayment',
         component: PaymePayment,
         props: true
-      }
-    ]
-  },
-
+      },
   // ✅ Dynamic lesson view page
   {
     path: '/lesson/:id',

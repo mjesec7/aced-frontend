@@ -29,24 +29,27 @@
         <span class="close-btn" @click="closeModal">&times;</span>
 
         <div v-if="authMode === 'register'">
-          <h2>Регистрация</h2>
-          <input v-model="user.name" placeholder="Имя" />
-          <input v-model="user.surname" placeholder="Фамилия" />
-          <input v-model="user.email" type="email" placeholder="Email" />
-          <input v-model="user.password" type="password" placeholder="Пароль" />
-          <input v-model="user.confirmPassword" type="password" placeholder="Повторите пароль" />
-          <button @click="register">Зарегистрироваться</button>
-          <p class="switch-text">Уже есть аккаунт? <span @click="switchAuth('login')">Войти</span></p>
-        </div>
+  <h2>Регистрация</h2>
+  <input v-model="user.name" placeholder="Имя" />
+  <input v-model="user.surname" placeholder="Фамилия" />
+  <input v-model="user.email" type="email" placeholder="Email" />
+  <input v-model="user.password" type="password" placeholder="Пароль" />
+  <input v-model="user.confirmPassword" type="password" placeholder="Повторите пароль" />
+  <button class="auth-submit" @click="register">Зарегистрироваться</button>
+  <p class="switch-text">Уже есть аккаунт? <span @click="switchAuth('login')">Войти</span></p>
+</div>
 
-        <div v-else>
-          <h2>Вход</h2>
-          <input v-model="login.email" type="email" placeholder="Email" />
-          <input v-model="login.password" type="password" placeholder="Пароль" />
-          <button @click="loginUser">Войти</button>
-          <button @click="loginWithGoogle">Войти через Google</button>
-          <p class="switch-text">Нет аккаунта? <span @click="switchAuth('register')">Зарегистрироваться</span></p>
-        </div>
+
+       <!-- Вход -->
+<div v-else>
+  <h2>Вход</h2>
+  <input v-model="login.email" type="email" placeholder="Email" />
+  <input v-model="login.password" type="password" placeholder="Пароль" />
+  <button class="auth-submit" @click="loginUser">Войти</button>
+  <button class="google-auth" @click="loginWithGoogle">Войти через Google</button>
+  <p class="switch-text">Нет аккаунта? <span @click="switchAuth('register')">Зарегистрироваться</span></p>
+</div>
+
       </div>
     </div>
 
@@ -119,9 +122,8 @@ export default {
       this.dropdownOpen = !this.dropdownOpen;
     },
     async loginWithGoogle() {
-      const provider = new GoogleAuthProvider();
       try {
-        const result = await signInWithPopup(auth, provider);
+        await signInWithPopup(auth, new GoogleAuthProvider());
         this.closeModal();
       } catch (error) {
         alert("Ошибка входа через Google: " + error.message);

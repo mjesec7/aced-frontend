@@ -42,7 +42,7 @@
 </template>
 
 <script>
-import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getAuth } from "firebase/auth";
 
 export default {
   name: 'TariffSection',
@@ -52,111 +52,110 @@ export default {
       const user = auth.currentUser;
 
       if (!user) {
+        console.log("🛑 Not logged in. Triggering modal...");
         window.dispatchEvent(new Event("open-login-modal"));
       } else {
+        console.log(`✅ User is logged in. Redirecting to /pay/${plan}`);
         this.$router.push(`/pay/${plan}`);
       }
     }
   }
 };
-
 </script>
 
-  
-  <style scoped>
-  .pricing-section {
-    background: linear-gradient(to bottom, #1e1b4b, #111827);
-    padding: 100px 20px;
-    color: #e0e7ff;
-    text-align: center;
-  }
-  
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  
-  .title {
-    font-size: 2.5rem;
-    font-weight: bold;
-    text-shadow: 0 0 10px rgba(147, 51, 234, 0.6);
-    font-family: 'Unbounded', sans-serif;
-  }
-  
-  .subtitle {
-    margin-top: 10px;
-    margin-bottom: 60px;
-    font-size: 1.1rem;
-    color: #cbd5e1;
-    max-width: 700px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  
-  .pricing-cards {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 40px;
-    justify-content: center;
-  }
-  
-  .card {
-    background: #0f172a;
-    border-radius: 20px;
-    padding: 30px;
-    width: 320px;
-    box-shadow: 0 0 30px rgba(147, 51, 234, 0.2);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-  
-  .card:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 40px rgba(147, 51, 234, 0.5);
-  }
-  
-  .card.pro {
-    border: 1px solid rgba(167, 139, 250, 0.4);
-    background: #1e1b4b;
-  }
-  
-  .plan-name {
-    font-size: 1.5rem;
-    margin-bottom: 10px;
-    color: #a78bfa;
-  }
-  
-  .price {
-    font-size: 1.2rem;
-    margin-bottom: 20px;
-  }
-  
-  .features {
-    text-align: left;
-    padding: 0;
-    margin: 0 0 30px;
-    list-style: none;
-    font-size: 0.95rem;
-    color: #d1d5db;
-    line-height: 1.6;
-  }
-  
-  .btn {
-    background-color: #9333ea;
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 12px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .btn:hover {
-    background-color: #7e22ce;
-  }
-  </style>
-  
+<style scoped>
+.pricing-section {
+  background: linear-gradient(to bottom, #1e1b4b, #111827);
+  padding: 100px 20px;
+  color: #e0e7ff;
+  text-align: center;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(147, 51, 234, 0.6);
+  font-family: 'Unbounded', sans-serif;
+}
+
+.subtitle {
+  margin-top: 10px;
+  margin-bottom: 60px;
+  font-size: 1.1rem;
+  color: #cbd5e1;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pricing-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  justify-content: center;
+}
+
+.card {
+  background: #0f172a;
+  border-radius: 20px;
+  padding: 30px;
+  width: 320px;
+  box-shadow: 0 0 30px rgba(147, 51, 234, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 40px rgba(147, 51, 234, 0.5);
+}
+
+.card.pro {
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  background: #1e1b4b;
+}
+
+.plan-name {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  color: #a78bfa;
+}
+
+.price {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+}
+
+.features {
+  text-align: left;
+  padding: 0;
+  margin: 0 0 30px;
+  list-style: none;
+  font-size: 0.95rem;
+  color: #d1d5db;
+  line-height: 1.6;
+}
+
+.btn {
+  background-color: #9333ea;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+  background-color: #7e22ce;
+}
+</style>
