@@ -22,7 +22,18 @@
         </div>
 
         <div class="bottom-logout">
-          <button class="logout-button" @click="logout">Выйти</button>
+          <button class="logout-button" @click="showLogoutModal = true">Выйти</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div class="logout-modal" v-if="showLogoutModal">
+      <div class="logout-modal-content">
+        <p>Вы уверены, что хотите выйти?</p>
+        <div class="logout-actions">
+          <button class="confirm-btn" @click="logout">Да</button>
+          <button class="cancel-btn" @click="showLogoutModal = false">Нет</button>
         </div>
       </div>
     </div>
@@ -30,14 +41,15 @@
 </template>
 
 <script>
-import { onAuthStateChanged } from 'firebase/auth'
-import { auth } from '@/firebase'
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from '@/firebase';
 
 export default {
   name: 'SideBar',
   data() {
     return {
       isOpen: true,
+      showLogoutModal: false,
       userName: '',
       links: [
         { name: 'free', label: 'Бесплатные Уроки' },
@@ -48,24 +60,31 @@ export default {
         { name: 'plan', label: 'План обучения' },
         { name: 'homework', label: 'Помощь с ДЗ' }
       ]
-    }
+    };
   },
   mounted() {
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        this.userName = user.displayName || user.email
+        this.userName = user.displayName || user.email;
       }
-    })
+    });
   },
   methods: {
     toggleSidebar() {
-      this.isOpen = !this.isOpen
+      this.isOpen = !this.isOpen;
     },
     logout() {
-      this.$emit('logout')
+      signOut(auth)
+        .then(() => {
+          this.userName = '';
+          window.location.href = 'https://aced.live';
+        })
+        .catch((err) => {
+          console.error('Ошибка выхода:', err.message);
+        });
     }
   }
-}
+};
 </script>
 
 <style scoped>
@@ -152,5 +171,52 @@ export default {
   border-radius: 8px;
   cursor: pointer;
   font-family: 'Unbounded', sans-serif;
+}
+
+.logout-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.logout-modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.logout-actions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.confirm-btn,
+.cancel-btn {
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.confirm-btn {
+  background: red;
+  color: white;
+}
+
+.cancel-btn {
+  background: #ccc;
+  color: #222;
 }
 </style>

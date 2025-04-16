@@ -29,27 +29,24 @@
         <span class="close-btn" @click="closeModal">&times;</span>
 
         <div v-if="authMode === 'register'">
-  <h2>Регистрация</h2>
-  <input v-model="user.name" placeholder="Имя" />
-  <input v-model="user.surname" placeholder="Фамилия" />
-  <input v-model="user.email" type="email" placeholder="Email" />
-  <input v-model="user.password" type="password" placeholder="Пароль" />
-  <input v-model="user.confirmPassword" type="password" placeholder="Повторите пароль" />
-  <button class="auth-submit" @click="register">Зарегистрироваться</button>
-  <p class="switch-text">Уже есть аккаунт? <span @click="switchAuth('login')">Войти</span></p>
-</div>
+          <h2>Регистрация</h2>
+          <input v-model="user.name" placeholder="Имя" />
+          <input v-model="user.surname" placeholder="Фамилия" />
+          <input v-model="user.email" type="email" placeholder="Email" />
+          <input v-model="user.password" type="password" placeholder="Пароль" />
+          <input v-model="user.confirmPassword" type="password" placeholder="Повторите пароль" />
+          <button class="auth-submit" @click="register">Зарегистрироваться</button>
+          <p class="switch-text">Уже есть аккаунт? <span @click="switchAuth('login')">Войти</span></p>
+        </div>
 
-
-       <!-- Вход -->
-<div v-else>
-  <h2>Вход</h2>
-  <input v-model="login.email" type="email" placeholder="Email" />
-  <input v-model="login.password" type="password" placeholder="Пароль" />
-  <button class="auth-submit" @click="loginUser">Войти</button>
-  <button class="google-auth" @click="loginWithGoogle">Войти через Google</button>
-  <p class="switch-text">Нет аккаунта? <span @click="switchAuth('register')">Зарегистрироваться</span></p>
-</div>
-
+        <div v-else>
+          <h2>Вход</h2>
+          <input v-model="login.email" type="email" placeholder="Email" />
+          <input v-model="login.password" type="password" placeholder="Пароль" />
+          <button class="auth-submit" @click="loginUser">Войти</button>
+          <button class="google-auth" @click="loginWithGoogle">Войти через Google</button>
+          <p class="switch-text">Нет аккаунта? <span @click="switchAuth('register')">Зарегистрироваться</span></p>
+        </div>
       </div>
     </div>
 
@@ -65,9 +62,8 @@ import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  onAuthStateChanged
+  onAuthStateChanged,
 } from "firebase/auth";
-import axios from "axios";
 import AcedSettings from "@/components/Main/AcedSettings.vue";
 
 export default {
@@ -80,22 +76,17 @@ export default {
       dropdownOpen: false,
       showSettings: false,
       user: { name: "", surname: "", email: "", password: "", confirmPassword: "" },
-      login: { email: "", password: "" }
+      login: { email: "", password: "" },
     };
   },
   mounted() {
-    onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(auth, (user) => {
       if (user) {
-        try {
-          const res = await axios.get(`/api/users/${user.uid}`);
-          this.currentUser = {
-            name: res.data.name || user.displayName || user.email,
-            email: user.email,
-            subscriptionPlan: res.data.subscriptionPlan
-          };
-        } catch (err) {
-          console.error("❌ Failed to fetch user data:", err.message);
-        }
+        this.currentUser = {
+          name: user.displayName || user.email,
+          email: user.email,
+          subscriptionPlan: localStorage.getItem("plan") || "start",
+        };
       } else {
         this.currentUser = null;
       }
@@ -123,7 +114,13 @@ export default {
     },
     async loginWithGoogle() {
       try {
-        await signInWithPopup(auth, new GoogleAuthProvider());
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        this.currentUser = {
+          name: result.user.displayName || result.user.email,
+          email: result.user.email,
+          subscriptionPlan: localStorage.getItem("plan") || "start",
+        };
         this.closeModal();
       } catch (error) {
         alert("Ошибка входа через Google: " + error.message);
@@ -132,6 +129,11 @@ export default {
     async loginUser() {
       try {
         await signInWithEmailAndPassword(auth, this.login.email, this.login.password);
+        this.currentUser = {
+          name: this.login.email,
+          email: this.login.email,
+          subscriptionPlan: localStorage.getItem("plan") || "start",
+        };
         this.closeModal();
       } catch (error) {
         alert("Ошибка входа: " + error.message);
@@ -144,6 +146,11 @@ export default {
       }
       try {
         await createUserWithEmailAndPassword(auth, this.user.email, this.user.password);
+        this.currentUser = {
+          name: this.user.name,
+          email: this.user.email,
+          subscriptionPlan: localStorage.getItem("plan") || "start",
+        };
         alert("Вы успешно зарегистрированы!");
         this.closeModal();
       } catch (error) {
@@ -159,8 +166,8 @@ export default {
     resetForms() {
       this.user = { name: "", surname: "", email: "", password: "", confirmPassword: "" };
       this.login = { email: "", password: "" };
-    }
-  }
+    },
+  },
 };
 </script>
 
