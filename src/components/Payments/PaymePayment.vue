@@ -55,6 +55,9 @@ export default {
     formattedAmount() {
       return this.amount.toLocaleString("ru-RU");
     },
+    apiUrl() {
+      return process.env.VUE_APP_API_URL; // ✅ Vue CLI
+    },
   },
   methods: {
     async initiatePayment() {
@@ -63,10 +66,9 @@ export default {
       this.success = false;
 
       try {
-        // ✅ 1. Check Promo First
         if (this.form.promocode.trim()) {
           const promoRes = await axios.post(
-            `${process.env.VUE_APP_API_URL}/payments/promo`,
+            `${this.apiUrl}/payments/promo`,
             {
               code: this.form.promocode.trim(),
               phone: this.form.phone,
@@ -80,15 +82,11 @@ export default {
           }
         }
 
-        // ✅ 2. Fallback to Payme flow
-        const response = await axios.post(
-          `${process.env.VUE_APP_API_URL}/payments/payme`,
-          {
-            amount: this.amount,
-            phone: this.form.phone,
-            plan: this.plan,
-          }
-        );
+        const response = await axios.post(`${this.apiUrl}/payments/payme`, {
+          amount: this.amount,
+          phone: this.form.phone,
+          plan: this.plan,
+        });
 
         if (response.data?.redirectUrl) {
           window.location.href = response.data.redirectUrl;
@@ -97,7 +95,8 @@ export default {
         }
       } catch (err) {
         console.error("❌ Payment Error:", err.response?.data || err.message);
-        this.error = err.response?.data?.error || "Не удалось инициализировать оплату.";
+        this.error =
+          err.response?.data?.error || "Не удалось инициализировать оплату.";
       } finally {
         this.loading = false;
       }
@@ -105,7 +104,6 @@ export default {
   },
 };
 </script>
-
 
 
 
