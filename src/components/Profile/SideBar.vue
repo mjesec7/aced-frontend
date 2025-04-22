@@ -1,12 +1,12 @@
 <template>
   <div class="sidebar-wrapper">
-    <!-- Right-side Toggle Button -->
-    <button class="toggle-btn" @click="toggleSidebar">
-      {{ isOpen ? '×' : '☰' }}
-    </button>
-
     <!-- Sidebar -->
     <div class="sidebar" :class="{ open: isOpen }">
+      <!-- Right-side Toggle Button Inside Sidebar -->
+      <button class="toggle-btn-inside" @click="toggleSidebar">
+        {{ isOpen ? '×' : '☰' }}
+      </button>
+
       <div class="sidebar-content">
         <div class="user-name" v-if="userName">
           👤 {{ userName }}
@@ -122,8 +122,8 @@ export default {
   justify-content: space-between;
 }
 
-.toggle-btn {
-  position: fixed;
+.toggle-btn-inside {
+  position: absolute;
   top: 20px;
   right: 20px;
   background: #ffffff;
@@ -170,7 +170,8 @@ export default {
 }
 
 .bottom-logout {
-  margin-top: 40px;
+  margin-top: 20px;
+  padding-left: 20px;
 }
 
 .logout-button {
@@ -182,7 +183,6 @@ export default {
   border-radius: 8px;
   cursor: pointer;
   font-family: 'Unbounded', sans-serif;
-  margin-left: 20px;
 }
 
 .logout-modal {
