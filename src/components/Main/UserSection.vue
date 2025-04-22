@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- 🔐 Auth buttons -->
-    <div v-if="!currentUser" class="auth-buttons">
+    <div v-if="!$store.state.user" class="auth-buttons">
       <button class="auth-button" @click="openModal('register')">Регистрация</button>
       <button class="auth-button" @click="openModal('login')">Вход</button>
     </div>
@@ -9,9 +9,9 @@
     <!-- 👤 User Info -->
     <div v-else class="user-menu">
       <button class="user-button" @click="toggleDropdown">
-        Привет, {{ currentUser.name }}
-        <span v-if="currentUser.subscriptionPlan" class="badge">
-          {{ currentUser.subscriptionPlan === 'pro' ? 'PRO' : 'START' }}
+        Привет, {{ $store.state.user.name }}
+        <span v-if="$store.state.user.subscriptionPlan" class="badge">
+          {{ $store.state.user.subscriptionPlan === 'pro' ? 'PRO' : 'START' }}
         </span>
       </button>
       <div v-if="dropdownOpen" class="dropdown-menu">
@@ -64,6 +64,7 @@ import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
 } from "firebase/auth";
+import { mapMutations } from 'vuex';
 import AcedSettings from "@/components/Main/AcedSettings.vue";
 
 export default {
@@ -72,7 +73,6 @@ export default {
     return {
       isModalOpen: false,
       authMode: "register",
-      currentUser: null,
       dropdownOpen: false,
       showSettings: false,
       user: { name: "", surname: "", email: "", password: "", confirmPassword: "" },
@@ -82,13 +82,13 @@ export default {
   mounted() {
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        this.currentUser = {
+        this.setUser({
           name: user.displayName || user.email,
           email: user.email,
           subscriptionPlan: localStorage.getItem("plan") || "start",
-        };
+        });
       } else {
-        this.currentUser = null;
+        this.clearUser();
       }
     });
 
@@ -97,6 +97,8 @@ export default {
     });
   },
   methods: {
+    ...mapMutations(["setUser", "clearUser"]),
+
     openModal(mode) {
       this.authMode = mode;
       this.isModalOpen = true;
@@ -116,11 +118,11 @@ export default {
       try {
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
-        this.currentUser = {
+        this.setUser({
           name: result.user.displayName || result.user.email,
           email: result.user.email,
           subscriptionPlan: localStorage.getItem("plan") || "start",
-        };
+        });
         this.closeModal();
       } catch (error) {
         alert("Ошибка входа через Google: " + error.message);
@@ -129,11 +131,11 @@ export default {
     async loginUser() {
       try {
         await signInWithEmailAndPassword(auth, this.login.email, this.login.password);
-        this.currentUser = {
+        this.setUser({
           name: this.login.email,
           email: this.login.email,
           subscriptionPlan: localStorage.getItem("plan") || "start",
-        };
+        });
         this.closeModal();
       } catch (error) {
         alert("Ошибка входа: " + error.message);
@@ -146,11 +148,11 @@ export default {
       }
       try {
         await createUserWithEmailAndPassword(auth, this.user.email, this.user.password);
-        this.currentUser = {
+        this.setUser({
           name: this.user.name,
           email: this.user.email,
           subscriptionPlan: localStorage.getItem("plan") || "start",
-        };
+        });
         alert("Вы успешно зарегистрированы!");
         this.closeModal();
       } catch (error) {
@@ -159,7 +161,7 @@ export default {
     },
     logout() {
       auth.signOut().then(() => {
-        this.currentUser = null;
+        this.clearUser();
         this.dropdownOpen = false;
       });
     },

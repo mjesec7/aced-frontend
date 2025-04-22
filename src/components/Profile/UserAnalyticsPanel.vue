@@ -3,42 +3,44 @@
     <!-- Header with button -->
     <div class="header-row">
       <h1 class="panel-heading">Твоя аналитика обучения</h1>
-      <button @click="showModal = true" class="download-btn">Скачать как PDF</button>
+      <button @click="openModal" class="download-btn">Скачать как PDF</button>
     </div>
 
     <!-- 📦 Modal -->
-    <div v-if="showModal" class="modal-overlay">
-      <div class="modal-content">
-        <h3>Настрой экспорт PDF</h3>
+    <transition name="fade">
+      <div v-if="showModal" class="modal-overlay">
+        <div class="modal-content">
+          <h3>Настрой экспорт PDF</h3>
 
-        <div class="modal-section">
-          <label>Выбери период:</label>
-          <select v-model="period">
-            <option value="7">Последняя неделя</option>
-            <option value="14">2 недели</option>
-            <option value="21">3 недели</option>
-            <option value="30">1 месяц</option>
-            <option value="90">3 месяца</option>
-          </select>
-        </div>
+          <div class="modal-section">
+            <label>Выбери период:</label>
+            <select v-model="period">
+              <option value="7">Последняя неделя</option>
+              <option value="14">2 недели</option>
+              <option value="21">3 недели</option>
+              <option value="30">1 месяц</option>
+              <option value="90">3 месяца</option>
+            </select>
+          </div>
 
-        <div class="modal-section">
-          <label><input type="checkbox" v-model="selectedStats" value="studyDays" /> Дней в обучении</label>
-          <label><input type="checkbox" v-model="selectedStats" value="completedSubjects" /> Завершено предметов</label>
-          <label><input type="checkbox" v-model="selectedStats" value="weeklyLessons" /> Уроков за неделю</label>
-          <label><input type="checkbox" v-model="selectedStats" value="monthlyLessons" /> Уроков за месяц</label>
-          <label><input type="checkbox" v-model="selectedStats" value="streakDays" /> Учебный стрик</label>
-          <label><input type="checkbox" v-model="selectedStats" value="mostActiveDay" /> Активный день</label>
-          <label><input type="checkbox" v-model="selectedStats" value="totalLessonsDone" /> Всего уроков</label>
-        </div>
+          <div class="modal-section">
+            <label><input type="checkbox" v-model="selectedStats" value="studyDays" /> Дней в обучении</label>
+            <label><input type="checkbox" v-model="selectedStats" value="completedSubjects" /> Завершено предметов</label>
+            <label><input type="checkbox" v-model="selectedStats" value="weeklyLessons" /> Уроков за неделю</label>
+            <label><input type="checkbox" v-model="selectedStats" value="monthlyLessons" /> Уроков за месяц</label>
+            <label><input type="checkbox" v-model="selectedStats" value="streakDays" /> Учебный стрик</label>
+            <label><input type="checkbox" v-model="selectedStats" value="mostActiveDay" /> Активный день</label>
+            <label><input type="checkbox" v-model="selectedStats" value="totalLessonsDone" /> Всего уроков</label>
+          </div>
 
-        <div class="modal-buttons">
-          <button @click="downloadPDF">📥 Скачать</button>
-          <button class="cancel" @click="emailPDF">📧 Отправить на email</button>
-          <button @click="showModal = false" class="cancel">Отмена</button>
+          <div class="modal-buttons">
+            <button @click="downloadPDF">📥 Скачать</button>
+            <button class="cancel" @click="emailPDF">📧 Отправить на email</button>
+            <button @click="showModal = false" class="cancel">Отмена</button>
+          </div>
         </div>
       </div>
-    </div>
+    </transition>
 
     <!-- Cards -->
     <div class="card-grid">
@@ -77,6 +79,7 @@ import LineChart from '@/components/Charts/LineChart.vue'
 import Card from '@/components/Profile/AnalyticsCard.vue'
 import html2pdf from 'html2pdf.js'
 import '@/assets/css/UserAnalyticsPanel.css'
+import { mapState } from 'vuex'
 
 export default {
   components: { LineChart, Card },
@@ -96,7 +99,6 @@ export default {
         mostActiveDay: null,
         totalLessonsDone: 123
       },
-      userId: localStorage.getItem('userId') || 'default-id',
       showModal: false,
       selectedStats: [
         'studyDays',
@@ -110,8 +112,8 @@ export default {
       period: 30
     }
   },
-
   computed: {
+    ...mapState(['user']),
     remainingSubjects() {
       return Math.max(this.analytics.totalSubjects - this.analytics.completedSubjects, 0)
     },
@@ -133,8 +135,11 @@ export default {
       }
     }
   },
-
   methods: {
+    openModal() {
+      console.log('🟣 Modal opened')
+      this.showModal = true
+    },
     formatDaysToHuman(days) {
       const years = Math.floor(days / 365)
       const months = Math.floor((days % 365) / 30)
@@ -145,8 +150,8 @@ export default {
       if (remainingDays > 0 || parts.length === 0) parts.push(`${remainingDays} дн.`)
       return `≈ ${parts.join(' ')}`
     },
-
     downloadPDF() {
+      console.log('📥 Генерация PDF...')
       const labelMap = {
         studyDays: 'Дней в обучении',
         completedSubjects: 'Завершено предметов',
@@ -156,23 +161,15 @@ export default {
         mostActiveDay: 'Наиболее активный день',
         totalLessonsDone: 'Всего уроков'
       }
-
       const wrapper = document.createElement('div')
       wrapper.innerHTML = `<h2 style="text-align:center;font-family:'Segoe UI';margin-bottom:16px;">📊 ACEED Аналитика</h2>`
-
       this.selectedStats.forEach(key => {
         const label = labelMap[key]
         const value = this.analytics[key] ?? '—'
-        wrapper.innerHTML += `
-          <div style="margin: 10px 0; font-size: 14px;">
-            <strong>${label}:</strong> ${value}
-          </div>`
+        wrapper.innerHTML += `<div style="margin: 10px 0; font-size: 14px;"><strong>${label}:</strong> ${value}</div>`
       })
-
       wrapper.innerHTML += `<div style="margin-top:12px;"><strong>Период:</strong> Последние ${this.period} дней</div>`
-
       this.showModal = false
-
       html2pdf().set({
         margin: 0.5,
         filename: 'aced-analytics-custom.pdf',
@@ -181,18 +178,17 @@ export default {
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
       }).from(wrapper).save()
     },
-
     async emailPDF() {
       alert('📧 Скоро: отправка PDF на email. Эта функция в разработке.')
     }
   },
-
   async mounted() {
     try {
-      const res = await fetch(`${process.env.VUE_APP_API_URL}/user-analytics/${this.userId}`)
+      const res = await fetch(`${process.env.VUE_APP_API_URL}/user-analytics/${this.user?.uid || 'default-id'}`)
       if (!res.ok) throw new Error('Failed to fetch analytics')
       const data = await res.json()
       this.analytics = data
+      console.log('📦 Analytics loaded:', data)
     } catch (err) {
       console.error('❌ Ошибка при получении аналитики:', err)
     }

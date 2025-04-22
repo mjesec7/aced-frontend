@@ -1,6 +1,12 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
+import store from './store'; // ✅ Vuex store
 import './assets/css/responsive.css'; 
 
-createApp(App).use(router).mount('#app');
+const app = createApp(App);
+
+app.use(router);   // ✅ Apply router
+app.use(store);    // ✅ Apply Vuex store
+
+app.mount('#app'); // ✅ Mount app
