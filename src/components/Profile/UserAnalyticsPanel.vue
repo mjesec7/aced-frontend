@@ -188,9 +188,14 @@ export default {
   },
 
   async mounted() {
-    const res = await fetch(`/api/user-analytics/${this.userId}`)
-    const data = await res.json()
-    this.analytics = data
+    try {
+      const res = await fetch(`${process.env.VUE_APP_API_URL}/user-analytics/${this.userId}`)
+      if (!res.ok) throw new Error('Failed to fetch analytics')
+      const data = await res.json()
+      this.analytics = data
+    } catch (err) {
+      console.error('❌ Ошибка при получении аналитики:', err)
+    }
   }
 }
 </script>
