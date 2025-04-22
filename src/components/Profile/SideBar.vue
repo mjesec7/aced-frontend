@@ -1,13 +1,11 @@
 <template>
   <div class="sidebar-wrapper">
-    <button class="toggle-btn" @click="toggleSidebar">
-      {{ isOpen ? '×' : '☰' }}
-    </button>
-
-    <div class="sidebar" :class="{ open: isOpen }">
+    <!-- Sidebar -->
+    <div class="sidebar open">
       <div class="sidebar-content">
-        <div class="user-name" v-if="userName">
-          👤 {{ userName }}
+        <div class="user-info" v-if="userName">
+          <img src="@/assets/icons/user.png" alt="User Icon" class="user-icon" />
+          <span class="user-name">{{ userName }}</span>
         </div>
 
         <div class="nav-links">
@@ -17,6 +15,7 @@
             :to="`/profile/${link.name}`"
             class="nav-item"
           >
+            <span class="highlight"></span>
             {{ link.label }}
           </router-link>
         </div>
@@ -46,9 +45,9 @@ import { auth } from '@/firebase';
 
 export default {
   name: 'SideBar',
+  props: ['sidebarOpen'],
   data() {
     return {
-      isOpen: true,
       showLogoutModal: false,
       userName: '',
       links: [
@@ -70,9 +69,6 @@ export default {
     });
   },
   methods: {
-    toggleSidebar() {
-      this.isOpen = !this.isOpen;
-    },
     logout() {
       signOut(auth)
         .then(() => {
@@ -88,8 +84,6 @@ export default {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&display=swap');
-
 .sidebar-wrapper {
   position: relative;
 }
@@ -100,16 +94,12 @@ export default {
   position: fixed;
   left: 0;
   top: 0;
-  background-color: #ffffff;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.06);
   padding: 20px;
   z-index: 1000;
-  transform: translateX(0);
   transition: transform 0.3s ease-in-out;
-}
-
-.sidebar:not(.open) {
-  transform: translateX(-100%);
+  color: #111827;
 }
 
 .sidebar-content {
@@ -120,67 +110,83 @@ export default {
   justify-content: space-between;
 }
 
-.toggle-btn {
-  position: fixed;
-  top: 20px;
-  left: 260px;
-  background: #ffffff;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  z-index: 1100;
+.user-info {
+  padding: 50px 20px 30px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  border-bottom: 1px solid #eee;
+}
+
+.user-icon {
+  width: 30px;
+  height: 30px;
 }
 
 .user-name {
-  padding: 80px 20px 20px;
+  font-weight: 700;
   font-size: 1rem;
-  color: #333;
-  font-weight: 600;
 }
 
 .nav-links {
   display: flex;
   flex-direction: column;
-  padding: 10px 10px 0;
+  padding: 20px 10px 0;
   align-items: flex-start;
-  gap: 10px;
+  gap: 20px;
 }
 
 .nav-item {
-  font-size: 0.88rem;
-  padding: 8px 0;
-  border-bottom: 1px solid #ddd;
-  cursor: pointer;
+  font-size: 0.96rem;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 600;
   transition: 0.3s;
-  color: #222;
+  color: #111827;
   text-decoration: none;
+  background-color: #f9f9f9;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
 }
 
 .nav-item:hover {
-  background: none;
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  background-image: linear-gradient(90deg, #5b21b6, #7e22ce);
+  background: linear-gradient(to right, #ede9fe, #f0f5ff);
+  color: #4f46e5;
+  transform: translateX(6px);
+}
+
+.nav-item .highlight {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  background: linear-gradient(to bottom, #6366f1, #8b5cf6);
+  border-radius: 2px;
 }
 
 .bottom-logout {
-  margin-top: 20px;
+  padding: 80px 10px 20px;
 }
 
 .logout-button {
-  padding: 10px 15px;
-  background: red;
+  padding: 12px 18px;
+  background: #ef4444;
   color: white;
   border: none;
-  font-size: 0.85rem;
-  border-radius: 8px;
+  font-size: 0.9rem;
+  border-radius: 10px;
   cursor: pointer;
   font-family: 'Unbounded', sans-serif;
-  margin-left: 0;
+  transition: 0.3s;
+}
+
+.logout-button:hover {
+  background: #dc2626;
 }
 
 .logout-modal {
@@ -202,6 +208,7 @@ export default {
   border-radius: 12px;
   text-align: center;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  font-family: 'Unbounded', sans-serif;
 }
 
 .logout-actions {
