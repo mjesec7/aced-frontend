@@ -1,40 +1,35 @@
 <template>
   <div class="sidebar-wrapper">
+    <!-- Right-side Toggle Button -->
     <button class="toggle-btn" @click="toggleSidebar">
-      <span v-if="!isOpen">☰</span>
-      <span v-else>✕</span>
+      {{ isOpen ? '×' : '☰' }}
     </button>
 
-    <transition name="fade">
-      <aside class="sidebar" :class="{ open: isOpen }">
-        <div class="sidebar-content">
-          <div class="user-info" v-if="userName">
-            <span class="avatar">👤</span>
-            <span class="user-name">{{ userName }}</span>
-          </div>
-
-          <nav class="nav-links">
-            <router-link
-              v-for="link in links"
-              :key="link.name"
-              :to="`/profile/${link.name}`"
-              class="nav-item"
-              active-class="active"
-            >
-              {{ link.label }}
-            </router-link>
-          </nav>
-
-          <div class="logout-wrapper">
-            <button class="logout-button" @click="showLogoutModal = true">
-              Выйти
-            </button>
-          </div>
+    <!-- Sidebar -->
+    <div class="sidebar" :class="{ open: isOpen }">
+      <div class="sidebar-content">
+        <div class="user-name" v-if="userName">
+          👤 {{ userName }}
         </div>
-      </aside>
-    </transition>
 
-    <!-- Logout Modal -->
+        <div class="nav-links">
+          <router-link
+            v-for="link in links"
+            :key="link.name"
+            :to="`/profile/${link.name}`"
+            class="nav-item"
+          >
+            {{ link.label }}
+          </router-link>
+        </div>
+
+        <div class="bottom-logout">
+          <button class="logout-button" @click="showLogoutModal = true">Выйти</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logout Confirmation Modal -->
     <div class="logout-modal" v-if="showLogoutModal">
       <div class="logout-modal-content">
         <p>Вы уверены, что хотите выйти?</p>
@@ -55,7 +50,7 @@ export default {
   name: 'SideBar',
   data() {
     return {
-      isOpen: true,
+      isOpen: false,
       showLogoutModal: false,
       userName: '',
       links: [
@@ -95,92 +90,99 @@ export default {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&display=swap');
+
 .sidebar-wrapper {
   position: relative;
+}
+
+.sidebar {
+  width: 250px;
+  min-height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  background-color: #ffffff;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
+  padding: 20px;
+  z-index: 1000;
+  transition: transform 0.3s ease-in-out;
+  transform: translateX(-100%);
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .toggle-btn {
   position: fixed;
   top: 20px;
-  left: 20px;
-  background: #7c3aed;
-  color: white;
+  right: 20px;
+  background: #ffffff;
   border: none;
-  padding: 10px 14px;
-  font-size: 20px;
-  border-radius: 10px;
-  cursor: pointer;
-  z-index: 2000;
-  transition: all 0.3s;
-}
-
-.sidebar {
-  width: 260px;
-  height: 100vh;
-  background: white;
-  position: fixed;
-  top: 0;
-  left: 0;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.08);
-  z-index: 1500;
-  transition: all 0.3s;
-}
-
-.sidebar-content {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
-  padding: 30px 20px;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 600;
-  color: #333;
-}
-
-.avatar {
   font-size: 24px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 1100;
+}
+
+.user-name {
+  padding: 80px 20px 20px;
+  font-size: 1rem;
+  color: #333;
+  font-weight: 600;
 }
 
 .nav-links {
-  margin-top: 30px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  padding: 10px 10px 0;
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .nav-item {
+  font-size: 0.88rem;
+  padding: 8px 0;
+  border-bottom: 1px solid #ddd;
+  cursor: pointer;
+  transition: 0.3s;
+  color: #222;
   text-decoration: none;
-  color: #444;
-  font-weight: 500;
-  padding: 10px;
-  border-radius: 8px;
-  transition: all 0.2s;
 }
 
-.nav-item:hover,
-.nav-item.active {
-  background: linear-gradient(to right, #7c3aed, #a855f7);
-  color: white;
+.nav-item:hover {
+  background: none;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  background-image: linear-gradient(90deg, #5b21b6, #7e22ce);
 }
 
-.logout-wrapper {
-  margin-top: auto;
-  padding-top: 40px;
+.bottom-logout {
+  margin-top: 40px;
 }
 
 .logout-button {
-  background: #ef4444;
-  border: none;
+  padding: 10px 15px;
+  background: red;
   color: white;
-  padding: 10px;
+  border: none;
+  font-size: 0.85rem;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: bold;
+  font-family: 'Unbounded', sans-serif;
+  margin-left: 20px;
 }
 
 .logout-modal {
@@ -189,11 +191,11 @@ export default {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 3000;
+  z-index: 9999;
 }
 
 .logout-modal-content {
@@ -214,19 +216,19 @@ export default {
 .confirm-btn,
 .cancel-btn {
   padding: 10px 20px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   border: none;
   border-radius: 8px;
   cursor: pointer;
 }
 
 .confirm-btn {
-  background: #ef4444;
+  background: red;
   color: white;
 }
 
 .cancel-btn {
-  background: #ddd;
-  color: #333;
+  background: #ccc;
+  color: #222;
 }
 </style>
