@@ -45,7 +45,6 @@ import { auth } from '@/firebase';
 
 export default {
   name: 'SideBar',
-  props: ['sidebarOpen'],
   data() {
     return {
       showLogoutModal: false,
@@ -64,7 +63,7 @@ export default {
   mounted() {
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        this.userName = user.displayName || user.email;
+        this.userName = user.displayName || user.email?.split('@')[0];
       }
     });
   },
@@ -96,22 +95,20 @@ export default {
   top: 0;
   background: #ffffff;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.06);
-  padding: 20px;
+  padding: 20px 0;
   z-index: 1000;
   transition: transform 0.3s ease-in-out;
   color: #111827;
 }
 
 .sidebar-content {
-  width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  height: 100%;
 }
 
 .user-info {
-  padding: 50px 20px 30px;
+  padding: 40px 20px 30px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -122,8 +119,8 @@ export default {
 }
 
 .user-icon {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
 }
 
 .user-name {
@@ -132,24 +129,23 @@ export default {
 }
 
 .nav-links {
+  flex-grow: 1;
+  padding: 30px 20px 0;
   display: flex;
   flex-direction: column;
-  padding: 20px 10px 0;
-  align-items: flex-start;
-  gap: 20px;
+  gap: 18px;
 }
 
 .nav-item {
-  font-size: 0.96rem;
-  padding: 10px 16px;
-  border-radius: 12px;
+  font-size: 0.95rem;
+  padding: 10px 14px;
+  border-radius: 10px;
   font-weight: 600;
   transition: 0.3s;
   color: #111827;
   text-decoration: none;
-  background-color: #f9f9f9;
+  background-color: #f9fafb;
   position: relative;
-  overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
 }
 
@@ -170,11 +166,11 @@ export default {
 }
 
 .bottom-logout {
-  padding: 80px 10px 20px;
+  padding: 30px 20px;
 }
 
 .logout-button {
-  padding: 12px 18px;
+  padding: 10px 16px;
   background: #ef4444;
   color: white;
   border: none;
