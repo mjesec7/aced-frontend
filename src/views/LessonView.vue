@@ -1,8 +1,6 @@
 <template>
     <div class="lesson-view">
-      <h1 class="lesson-title">{{ lesson.lessonName }}</h1>
-      <p class="lesson-topic">Тема: {{ lesson.topic }}</p>
-      <p class="lesson-subject">Предмет: {{ lesson.subject }}</p>
+      <LessonHeader :lessonId="lessonId" />
   
       <div class="tabs">
         <button :class="{ active: activeTab === 'explanation' }" @click="activeTab = 'explanation'">📘 Объяснение</button>
@@ -10,70 +8,56 @@
       </div>
   
       <div class="tab-content">
-        <div v-if="activeTab === 'explanation'">
-          <div class="lesson-text" v-html="lesson.explanation || 'Пока нет объяснения...'" />
-        </div>
+        <ExplanationTab v-if="activeTab === 'explanation'" :lessonId="lessonId" />
   
         <div v-if="activeTab === 'task'">
-          <div class="lesson-text" v-html="lesson.examples || 'Пока нет заданий...'" />
-          <textarea v-model="answer" placeholder="Введи свой ответ..." />
-          <button class="submit-btn" @click="submitAnswer">Отправить</button>
+          <PuzzleBlock :lessonId="lessonId" />
+          <WritingBoard />
+          <LessonNavigation @prev="goToPrev" @next="goToNext" />
         </div>
       </div>
     </div>
   </template>
   
   <script>
-  import axios from 'axios';
+  import LessonHeader from '@/components/Lessons/LessonHeader.vue';
+  import ExplanationTab from '@/components/Lessons/ExplanationTab.vue';
+  import PuzzleBlock from '@/components/Lessons/PuzzleBlock.vue';
+  import WritingBoard from '@/components/Lessons/WritingBoard.vue';
+  import LessonNavigation from '@/components/Lessons/LessonNavigation.vue';
   
   export default {
     name: 'LessonView',
+    components: {
+      LessonHeader,
+      ExplanationTab,
+      PuzzleBlock,
+      WritingBoard,
+      LessonNavigation
+    },
     data() {
       return {
-        lesson: {},
-        activeTab: 'explanation',
-        answer: ''
-      }
-    },
-    mounted() {
-      const lessonId = this.$route.params.id;
-      axios.get(`${process.env.VUE_APP_API_URL}/lessons/${lessonId}`)
-        .then(res => {
-          this.lesson = res.data;
-        })
-        .catch(err => {
-          console.error('❌ Ошибка загрузки урока:', err);
-        });
+        lessonId: this.$route.params.id,
+        activeTab: 'explanation'
+      };
     },
     methods: {
-      submitAnswer() {
-        alert('✅ Ответ отправлен (пока фейк, но скоро будет сохранение!)');
-        this.answer = '';
+      goToPrev() {
+        alert('⏮ Переход к предыдущему уроку (логика будет добавлена позже)');
+      },
+      goToNext() {
+        alert('⏭ Переход к следующему уроку (логика будет добавлена позже)');
       }
     }
-  }
+  };
   </script>
   
   <style scoped>
   .lesson-view {
     padding: 40px 20px;
-    max-width: 800px;
+    max-width: 900px;
     margin: auto;
     font-family: 'Inter', sans-serif;
-  }
-  
-  .lesson-title {
-    font-size: 2rem;
-    font-weight: 800;
-    color: #111827;
-    margin-bottom: 10px;
-  }
-  
-  .lesson-topic,
-  .lesson-subject {
-    font-size: 1rem;
-    color: #6b7280;
-    margin-bottom: 6px;
   }
   
   .tabs {
@@ -101,31 +85,6 @@
     border: 1px solid #e5e7eb;
     padding: 20px;
     border-radius: 14px;
-  }
-  
-  .lesson-text {
-    margin-bottom: 20px;
-  }
-  
-  textarea {
-    width: 100%;
-    height: 100px;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid #d1d5db;
-    font-size: 1rem;
-    margin-top: 10px;
-    resize: vertical;
-  }
-  
-  .submit-btn {
-    margin-top: 12px;
-    padding: 10px 16px;
-    border: none;
-    border-radius: 10px;
-    background: linear-gradient(to right, #9333ea, #ec4899);
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
+    margin-top: 16px;
   }
   </style>
