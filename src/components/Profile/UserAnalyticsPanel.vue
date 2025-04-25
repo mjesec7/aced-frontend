@@ -45,8 +45,7 @@
 
           <div class="modal-buttons">
             <button @click="downloadPDF">📥 Скачать</button>
-            <button class="cancel" @click="sendEmail">📧 Отправить на email</button>
-            <button @click="showModal = false" class="cancel">Отмена</button>
+            <button class="cancel" @click="showModal = false">Отмена</button>
           </div>
         </div>
       </div>
@@ -183,24 +182,6 @@ export default {
         html2canvas: { scale: 2 },
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
       }).from(wrapper).save()
-    },
-    async sendEmail() {
-      try {
-        const res = await fetch(`${process.env.VUE_APP_API_URL}/email/send`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: this.user?.uid,
-            email: this.user?.email,
-            period: this.period,
-            selectedStats: this.selectedStats
-          })
-        })
-        if (!res.ok) throw new Error('Ошибка отправки')
-        alert('📧 PDF отправлен на ваш email!')
-      } catch (err) {
-        alert('❌ Не удалось отправить PDF: ' + err.message)
-      }
     }
   },
   async mounted() {
