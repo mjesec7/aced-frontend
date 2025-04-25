@@ -1,15 +1,15 @@
 <template>
-  <transition name="fade">
-    <div class="explanation" v-if="content">
-      <h3>🔍 {{ $t('lesson.explanationTitle') }}</h3>
-      <p v-html="content"></p>
-    </div>
-  </transition>
-  <div v-else class="loading">Загрузка...</div>
+  <div>
+    <transition name="fade">
+      <div v-if="loaded" class="explanation" v-html="content"></div>
+    </transition>
+    <div v-if="!loaded" class="loading">Загрузка...</div>
+  </div>
 </template>
 
 <script>
 import axios from 'axios';
+
 export default {
   name: 'ExplanationTab',
   props: {
@@ -20,51 +20,44 @@ export default {
   },
   data() {
     return {
-      content: ''
+      content: '',
+      loaded: false
     }
   },
-  mounted() {
-    axios.get(`${process.env.VUE_APP_API_URL}/lessons/${this.lessonId}`)
-      .then(res => {
-        // Attempt to retrieve explanation from the response
-        this.content = res.data.explanation || res.data.content || '';
-      })
-      .catch(err => {
-        console.error('Ошибка загрузки объяснения:', err);
-      });
+  async mounted() {
+    try {
+      const res = await axios.get(`${process.env.VUE_APP_API_URL}/lessons/${this.lessonId}`);
+      this.content = res.data.explanation || 'Объяснение не найдено';
+      this.loaded = true;
+    } catch (err) {
+      console.error('❌ Ошибка загрузки объяснения:', err);
+      this.loaded = false;
+    }
   }
 }
 </script>
 
 <style scoped>
-/* Fade transition */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.5s;
-}
-.fade-enter, .fade-leave-to {
-  opacity: 0;
+.loading {
+  font-size: 1rem;
+  color: #6b7280;
+  padding: 12px;
 }
 
 .explanation {
-  padding: 20px;
-  border-radius: 12px;
-  background: white;
-  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.06);
-  font-family: 'Inter', sans-serif;
-}
-h3 {
-  font-size: 1.2rem;
-  margin-bottom: 10px;
-  color: #9333ea;
-  font-weight: 600;
-}
-p {
-  color: #333;
+  font-size: 1.05rem;
   line-height: 1.6;
-}
-.loading {
+  color: #1f2937;
   padding: 20px;
-  font-style: italic;
-  color: #666;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 </style>

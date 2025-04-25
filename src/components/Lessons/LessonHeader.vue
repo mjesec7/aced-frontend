@@ -1,14 +1,16 @@
 <template>
   <transition name="slide-down">
-    <div class="lesson-header" v-if="lessonData">
-      <h2>{{ lessonData.lessonName }}</h2>
-      <p>
-        {{ lessonData.subject }} • Level {{ lessonData.level }} • Topic: {{ lessonData.topic }}
-      </p>
-      <div class="badge" v-if="lessonData.isPremium">🌟 Premium</div>
+    <div v-if="lessonData">
+      <div class="lesson-header">
+        <h2>{{ lessonData.lessonName }}</h2>
+        <p>
+          {{ lessonData.subject }} • Level {{ lessonData.level }} • Topic: {{ lessonData.topic }}
+        </p>
+        <div class="badge" v-if="lessonData.isPremium">🌟 Premium</div>
+      </div>
     </div>
   </transition>
-  <div v-else class="loading">Загрузка информации об уроке...</div>
+  <div v-if="!lessonData" class="loading">Загрузка информации об уроке...</div>
 </template>
 
 <script>
