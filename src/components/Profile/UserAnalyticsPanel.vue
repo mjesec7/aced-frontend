@@ -21,14 +21,26 @@
             </select>
           </div>
 
-          <div class="modal-section modal-options-table">
-            <label><input type="checkbox" v-model="selectedStats" value="studyDays" /> Дней в обучении</label>
-            <label><input type="checkbox" v-model="selectedStats" value="completedSubjects" /> Завершено предметов</label>
-            <label><input type="checkbox" v-model="selectedStats" value="weeklyLessons" /> Уроков за неделю</label>
-            <label><input type="checkbox" v-model="selectedStats" value="monthlyLessons" /> Уроков за месяц</label>
-            <label><input type="checkbox" v-model="selectedStats" value="streakDays" /> Учебный стрик</label>
-            <label><input type="checkbox" v-model="selectedStats" value="mostActiveDay" /> Активный день</label>
-            <label><input type="checkbox" v-model="selectedStats" value="totalLessonsDone" /> Всего уроков</label>
+          <div class="modal-section table-options">
+            <table class="options-table">
+              <tbody>
+                <tr>
+                  <td><label><input type="checkbox" v-model="selectedStats" value="studyDays" /> Дней в обучении</label></td>
+                  <td><label><input type="checkbox" v-model="selectedStats" value="completedSubjects" /> Завершено предметов</label></td>
+                </tr>
+                <tr>
+                  <td><label><input type="checkbox" v-model="selectedStats" value="weeklyLessons" /> Уроков за неделю</label></td>
+                  <td><label><input type="checkbox" v-model="selectedStats" value="monthlyLessons" /> Уроков за месяц</label></td>
+                </tr>
+                <tr>
+                  <td><label><input type="checkbox" v-model="selectedStats" value="streakDays" /> Учебный стрик</label></td>
+                  <td><label><input type="checkbox" v-model="selectedStats" value="mostActiveDay" /> Активный день</label></td>
+                </tr>
+                <tr>
+                  <td colspan="2"><label><input type="checkbox" v-model="selectedStats" value="totalLessonsDone" /> Всего уроков</label></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
           <div class="modal-buttons">
@@ -173,8 +185,21 @@ export default {
       }).from(wrapper).save()
     },
     async sendEmail() {
-      this.showModal = false;
-      alert('📧 Отправка на email в процессе... (Эта функция скоро будет доступна)');
+      try {
+        const res = await fetch(`${process.env.VUE_APP_API_URL}/email/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: this.user?.uid,
+            period: this.period,
+            selectedStats: this.selectedStats
+          })
+        })
+        if (!res.ok) throw new Error('Ошибка отправки')
+        alert('📧 PDF отправлен на ваш email!')
+      } catch (err) {
+        alert('❌ Не удалось отправить PDF: ' + err.message)
+      }
     }
   },
   async mounted() {
