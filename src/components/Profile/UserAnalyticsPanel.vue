@@ -1,12 +1,10 @@
 <template>
   <div class="analytics-panel" ref="pdfContent">
-    <!-- Header with button -->
     <div class="header-row">
       <h1 class="panel-heading">Твоя аналитика обучения</h1>
       <button @click="openModal" class="download-btn">Скачать как PDF</button>
     </div>
 
-    <!-- 📦 Modal -->
     <transition name="fade">
       <div v-if="showModal" class="modal-overlay">
         <div class="modal-content">
@@ -23,7 +21,7 @@
             </select>
           </div>
 
-          <div class="modal-section">
+          <div class="modal-section modal-options-table">
             <label><input type="checkbox" v-model="selectedStats" value="studyDays" /> Дней в обучении</label>
             <label><input type="checkbox" v-model="selectedStats" value="completedSubjects" /> Завершено предметов</label>
             <label><input type="checkbox" v-model="selectedStats" value="weeklyLessons" /> Уроков за неделю</label>
@@ -35,14 +33,13 @@
 
           <div class="modal-buttons">
             <button @click="downloadPDF">📥 Скачать</button>
-            <button class="cancel" @click="emailPDF">📧 Отправить на email</button>
+            <button class="cancel" @click="sendEmail">📧 Отправить на email</button>
             <button @click="showModal = false" class="cancel">Отмена</button>
           </div>
         </div>
       </div>
     </transition>
 
-    <!-- Cards -->
     <div class="card-grid">
       <Card label="Дней в обучении" :value="`${analytics.studyDays}`" :subtext="formatDaysToHuman(analytics.studyDays)" />
       <Card label="Завершено предметов" :value="analytics.completedSubjects.toString()" :subtext="`${remainingSubjects} осталось из ${analytics.totalSubjects}`" />
@@ -53,7 +50,6 @@
       <Card label="Пройдено уроков всего" :value="analytics.totalLessonsDone.toString()" subtext="Общий прогресс 📚" />
     </div>
 
-    <!-- Charts -->
     <div class="chart-box">
       <h2 class="chart-heading">Рост знаний по месяцам</h2>
       <LineChart :chart-data="chartData" />
@@ -160,7 +156,7 @@ export default {
         totalLessonsDone: 'Всего уроков'
       }
       const wrapper = document.createElement('div')
-      wrapper.innerHTML = `<h2 style="text-align:center;font-family:'Segoe UI';margin-bottom:16px;">📊 ACEED Аналитика</h2>`
+      wrapper.innerHTML = `<h2 style="text-align:center;font-family:'Segoe UI';margin-bottom:16px;">📊 Your Results in Aced</h2>`
       this.selectedStats.forEach(key => {
         const label = labelMap[key]
         const value = this.analytics[key] ?? '—'
@@ -176,8 +172,9 @@ export default {
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
       }).from(wrapper).save()
     },
-    async emailPDF() {
-      alert('📧 Скоро: отправка PDF на email. Эта функция в разработке.')
+    async sendEmail() {
+      this.showModal = false;
+      alert('📧 Отправка на email в процессе... (Эта функция скоро будет доступна)');
     }
   },
   async mounted() {
