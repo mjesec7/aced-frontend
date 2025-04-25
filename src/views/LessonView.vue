@@ -1,91 +1,78 @@
+<!-- src/views/LessonView.vue -->
 <template>
     <div class="lesson-view">
       <LessonHeader :lessonId="lessonId" />
   
+      <!-- Tab Buttons -->
       <div class="tabs">
-        <button :class="{ active: activeTab === 'explanation' }" @click="activeTab = 'explanation'">📘 Объяснение</button>
-        <button :class="{ active: activeTab === 'task' }" @click="activeTab = 'task'">🧠 Задание</button>
+        <button :class="{ active: activeTab==='explanation' }" @click="activeTab='explanation'">
+          📘 Explanation
+        </button>
+        <button :class="{ active: activeTab==='examples' }" @click="activeTab='examples'">
+          📗 Examples
+        </button>
+        <button :class="{ active: activeTab==='exercises' }" @click="activeTab='exercises'">
+          🧩 Exercises
+        </button>
       </div>
   
+      <!-- Tab Contents -->
       <div class="tab-content">
-        <ExplanationTab v-if="activeTab === 'explanation'" :lessonId="lessonId" />
-  
-        <div v-if="activeTab === 'task'">
-          <PuzzleBlock :lessonId="lessonId" />
-          <WritingBoard />
-          <LessonNavigation @prev="goToPrev" @next="goToNext" />
-        </div>
+        <ExplanationTab v-if="activeTab==='explanation'" :lessonId="lessonId" />
+        <ExamplesTab    v-if="activeTab==='examples'"   :lessonId="lessonId" />
+        <ExercisesTab   v-if="activeTab==='exercises'"  :lessonId="lessonId" />
       </div>
     </div>
   </template>
   
   <script>
-  import LessonHeader from '@/components/Lessons/LessonHeader.vue';
-  import ExplanationTab from '@/components/Lessons/ExplanationTab.vue';
-  import PuzzleBlock from '@/components/Lessons/PuzzleBlock.vue';
-  import WritingBoard from '@/components/Lessons/WritingBoard.vue';
-  import LessonNavigation from '@/components/Lessons/LessonNavigation.vue';
+  import LessonHeader from '@/components/Lessons/LessonHeader.vue'
+  import ExplanationTab from '@/components/Lessons/ExplanationTab.vue'
+  import ExamplesTab from '@/components/Lessons/ExamplesTab.vue'
+  import ExercisesTab from '@/components/Lessons/ExercisesTab.vue'
   
   export default {
-    name: 'LessonView',
-    components: {
-      LessonHeader,
-      ExplanationTab,
-      PuzzleBlock,
-      WritingBoard,
-      LessonNavigation
-    },
+    name: "LessonView",
+    components: { LessonHeader, ExplanationTab, ExamplesTab, ExercisesTab },
+    props: ['lessonId'],
     data() {
-      return {
-        lessonId: this.$route.params.id,
-        activeTab: 'explanation'
-      };
-    },
-    methods: {
-      goToPrev() {
-        alert('⏮ Переход к предыдущему уроку (логика будет добавлена позже)');
-      },
-      goToNext() {
-        alert('⏭ Переход к следующему уроку (логика будет добавлена позже)');
-      }
+      return { activeTab: 'explanation' }
     }
-  };
+  }
   </script>
   
   <style scoped>
   .lesson-view {
-    padding: 40px 20px;
-    max-width: 900px;
-    margin: auto;
-    font-family: 'Inter', sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
   }
-  
   .tabs {
     display: flex;
-    gap: 10px;
-    margin: 20px 0;
+    gap: 12px;
+    margin-top: 24px;
   }
-  
   .tabs button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 10px;
-    background: #f3f4f6;
-    font-weight: 600;
+    flex: 1;
+    padding: 12px 16px;
+    background: transparent;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    font-weight: bold;
     cursor: pointer;
+    transition: background 0.3s, border-color 0.3s;
   }
-  
   .tabs button.active {
     background: linear-gradient(to right, #9333ea, #ec4899);
-    color: white;
+    border-color: transparent;
+    color: #fff;
   }
-  
   .tab-content {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    padding: 20px;
-    border-radius: 14px;
     margin-top: 16px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   }
   </style>
   

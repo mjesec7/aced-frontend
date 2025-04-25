@@ -1,63 +1,54 @@
+<!-- src/components/Lessons/ExplanationTab.vue -->
 <template>
-  <div>
-    <transition name="fade">
-      <div v-if="loaded" class="explanation" v-html="content"></div>
-    </transition>
-    <div v-if="!loaded" class="loading">Загрузка...</div>
+  <div class="tab-section">
+    <div v-html="explanation"></div>
+    <button class="complete-btn" @click="markComplete">✔️ Mark Explanation Complete</button>
   </div>
 </template>
 
 <script>
-import axios from 'axios';
-
+import axios from 'axios'
 export default {
   name: 'ExplanationTab',
-  props: {
-    lessonId: {
-      type: String,
-      required: true
-    }
-  },
+  props: ['lessonId'],
   data() {
-    return {
-      content: '',
-      loaded: false
-    }
+    return { explanation: '' }
   },
   async mounted() {
-    try {
-      const res = await axios.get(`${process.env.VUE_APP_API_URL}/lessons/${this.lessonId}`);
-      this.content = res.data.explanation || 'Объяснение не найдено';
-      this.loaded = true;
-    } catch (err) {
-      console.error('❌ Ошибка загрузки объяснения:', err);
-      this.loaded = false;
+    const res = await axios.get(`${process.env.VUE_APP_API_URL}/lessons/${this.lessonId}`)
+    this.explanation = res.data.explanation || "No explanation available."
+  },
+  methods: {
+    async markComplete() {
+      try {
+        await axios.post(
+          `${process.env.VUE_APP_API_URL}/users/${this.$root.firebaseUserId}/progress`,
+          { lessonId: this.lessonId, section: 'explanation' }
+        );
+        alert("Explanation section marked complete!");
+      } catch (err) {
+        console.error(err);
+      }
     }
   }
 }
 </script>
 
 <style scoped>
-.loading {
-  font-size: 1rem;
-  color: #6b7280;
-  padding: 12px;
+.tab-section {
+  position: relative;
 }
-
-.explanation {
-  font-size: 1.05rem;
-  line-height: 1.6;
-  color: #1f2937;
-  padding: 20px;
-  background: #f9fafb;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
+.complete-btn {
+  margin-top: 20px;
+  background: #22c55e;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
 }
-
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
+.complete-btn:hover {
+  background: #16a34a;
 }
 </style>
