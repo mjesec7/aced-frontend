@@ -69,9 +69,9 @@
   background: #ffffff;
   border-radius: 16px;
   padding: 28px 24px;
-  width: 480px;
+  width: 460px;
   max-width: 90%;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
   font-family: 'Inter', sans-serif;
   animation: fadeInUp 0.25s ease-out;
   z-index: 100000;
@@ -93,19 +93,51 @@
 
 .modal-content h3 {
   font-family: 'Unbounded', sans-serif;
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: #111827;
   margin-bottom: 16px;
+  text-align: center;
 }
 
 .modal-section {
   margin-bottom: 18px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   font-size: 0.95rem;
   color: #374151;
+}
+
+.modal-section select {
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #f9fafb;
+  font-size: 0.95rem;
+  font-family: 'Inter', sans-serif;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  transition: 0.3s;
+}
+
+.modal-section select:focus {
+  outline: none;
+  border-color: #9333ea;
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.2);
+}
+
+.modal-section label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+  cursor: pointer;
+}
+
+.modal-section label:hover {
+  background-color: #f3f4f6;
 }
 
 .modal-buttons {
@@ -116,7 +148,7 @@
 }
 
 .modal-buttons button {
-  padding: 8px 16px;
+  padding: 9px 18px;
   font-weight: 600;
   border-radius: 8px;
   border: none;
@@ -203,4 +235,3 @@
 .fade-leave-to {
   opacity: 0;
 }
- 
