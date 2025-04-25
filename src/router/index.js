@@ -1,11 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-// Main views
+// ✅ Main views
 import HomePage from '@/views/HomePage.vue'
 import AcedSettings from '@/components/Main/AcedSettings.vue'
 import ProfilePage from '@/views/ProfilePage.vue'
 
-// Profile sub-pages
+// ✅ Profile sub-pages
 import FreeLessons from '@/components/Profile/FreeLessons.vue'
 import ProLessons from '@/components/Profile/ProLessons.vue'
 import UserAnalyticsPanel from '@/components/Profile/UserAnalyticsPanel.vue'
@@ -13,10 +13,11 @@ import SubjectProgress from '@/components/Profile/SubjectProgress.vue'
 import StudyGoal from '@/components/Profile/StudyGoal.vue'
 import StudyPlan from '@/components/Profile/StudyPlan.vue'
 import HomeworkHelp from '@/components/Profile/HomeworkHelp.vue'
-import PaymePayment from '@/components/Payments/PaymePayment.vue';
 
+// ✅ Payments
+import PaymePayment from '@/components/Payments/PaymePayment.vue'
 
-// Shared LessonView
+// ✅ Lazy-loaded lesson view
 const LessonView = () => import('@/components/Lessons/LessonView.vue')
 
 const routes = [
@@ -72,17 +73,15 @@ const routes = [
         path: 'homework',
         name: 'HomeworkHelp',
         component: HomeworkHelp
-      },
-      
+      }
     ]
   },
-{
-        path: '/pay/:plan',
-        name: 'PaymePayment',
-        component: PaymePayment,
-        props: true
-      },
-  // ✅ Dynamic lesson view page
+  {
+    path: '/pay/:plan',
+    name: 'PaymePayment',
+    component: PaymePayment,
+    props: true
+  },
   {
     path: '/lesson/:id',
     name: 'LessonView',

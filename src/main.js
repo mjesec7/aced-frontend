@@ -6,7 +6,10 @@ import './assets/css/responsive.css';
 
 const app = createApp(App);
 
-app.use(router);   // ✅ Apply router
-app.use(store);    // ✅ Apply Vuex store
+app.use(router);   // ✅ Use router
+app.use(store);    // ✅ Use Vuex store
 
-app.mount('#app'); // ✅ Mount app
+// ✅ Load user from localStorage into Vuex before app mounts
+store.dispatch('loadUserFromLocalStorage');
+
+app.mount('#app'); // ✅ Mount the app

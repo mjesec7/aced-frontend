@@ -2,14 +2,16 @@ import { createStore } from 'vuex';
 
 export default createStore({
   state: {
-    user: null
+    user: JSON.parse(localStorage.getItem('user')) || null
   },
   mutations: {
     setUser(state, userData) {
       state.user = userData;
+      localStorage.setItem('user', JSON.stringify(userData)); // 🟢 Save to localStorage
     },
     logout(state) {
       state.user = null;
+      localStorage.removeItem('user'); // 🧹 Clear from localStorage
     }
   },
   actions: {
@@ -18,6 +20,12 @@ export default createStore({
     },
     logoutUser({ commit }) {
       commit('logout');
+    },
+    loadUserFromLocalStorage({ commit }) {
+      const saved = localStorage.getItem('user');
+      if (saved) {
+        commit('setUser', JSON.parse(saved));
+      }
     }
   },
   getters: {

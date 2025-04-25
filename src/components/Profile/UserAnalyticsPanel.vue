@@ -97,7 +97,7 @@ export default {
         knowledgeChart: [],
         subjects: [],
         mostActiveDay: null,
-        totalLessonsDone: 123
+        totalLessonsDone: 0
       },
       showModal: false,
       selectedStats: [
@@ -137,7 +137,6 @@ export default {
   },
   methods: {
     openModal() {
-      console.log('🟣 Modal opened')
       this.showModal = true
     },
     formatDaysToHuman(days) {
@@ -151,7 +150,6 @@ export default {
       return `≈ ${parts.join(' ')}`
     },
     downloadPDF() {
-      console.log('📥 Генерация PDF...')
       const labelMap = {
         studyDays: 'Дней в обучении',
         completedSubjects: 'Завершено предметов',
@@ -188,7 +186,6 @@ export default {
       if (!res.ok) throw new Error('Failed to fetch analytics')
       const data = await res.json()
       this.analytics = data
-      console.log('📦 Analytics loaded:', data)
     } catch (err) {
       console.error('❌ Ошибка при получении аналитики:', err)
     }
