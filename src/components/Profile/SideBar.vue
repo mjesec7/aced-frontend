@@ -1,13 +1,14 @@
 <template>
   <div class="sidebar-wrapper">
-    <!-- Sidebar -->
     <div class="sidebar open">
       <div class="sidebar-content">
-        <div class="user-info" v-if="userName">
+        <!-- 👤 User Info from Vuex -->
+        <div class="user-info" v-if="user">
           <img src="@/assets/icons/user.png" alt="User Icon" class="user-icon" />
-          <span class="user-name">{{ userName }}</span>
+          <span class="user-name">{{ user.name || user.email }}</span>
         </div>
 
+        <!-- 📚 Sidebar links -->
         <div class="nav-links">
           <router-link
             v-for="link in links"
@@ -20,13 +21,14 @@
           </router-link>
         </div>
 
+        <!-- 🚪 Logout Button -->
         <div class="bottom-logout">
           <button class="logout-button" @click="showLogoutModal = true">Выйти</button>
         </div>
       </div>
     </div>
 
-    <!-- Logout Confirmation Modal -->
+    <!-- 🔐 Confirm Logout Modal -->
     <div class="logout-modal" v-if="showLogoutModal">
       <div class="logout-modal-content">
         <p>Вы уверены, что хотите выйти?</p>
@@ -40,15 +42,15 @@
 </template>
 
 <script>
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase';
+import { mapState, mapMutations } from 'vuex';
 
 export default {
   name: 'SideBar',
   data() {
     return {
       showLogoutModal: false,
-      userName: '',
       links: [
         { name: 'free', label: 'Бесплатные Уроки' },
         { name: 'premium', label: 'Премиум Уроки' },
@@ -60,18 +62,28 @@ export default {
       ]
     };
   },
+  computed: {
+    ...mapState(['user'])
+  },
   mounted() {
+    // In case Vuex is empty on reload, rehydrate it from Firebase
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        this.userName = user.displayName || user.email?.split('@')[0];
+        this.setUser({
+          name: user.displayName || user.email?.split('@')[0],
+          email: user.email,
+          uid: user.uid,
+          subscriptionPlan: localStorage.getItem('plan') || 'start'
+        });
       }
     });
   },
   methods: {
+    ...mapMutations(['setUser', 'clearUser']),
     logout() {
       signOut(auth)
         .then(() => {
-          this.userName = '';
+          this.clearUser();
           window.location.href = 'https://aced.live';
         })
         .catch((err) => {
