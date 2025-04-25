@@ -11,7 +11,6 @@
   z-index: 1;
 }
 
-/* Header */
 .header-row {
   display: flex;
   justify-content: space-between;
@@ -45,7 +44,6 @@
   box-shadow: 0 0 14px rgba(147, 51, 234, 0.3);
 }
 
-/* Modal */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -83,14 +81,8 @@
 }
 
 @keyframes fadeInUp {
-  from {
-    transform: translateY(24px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 .modal-content h3 {
@@ -111,10 +103,36 @@
   color: #374151;
 }
 
-.modal-options-table {
+.options-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px 20px;
+  gap: 12px 16px;
+}
+
+.option-box {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  font-family: 'Inter', sans-serif;
+  transition: 0.3s;
+  cursor: pointer;
+}
+
+.option-box:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.option-box input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #9333ea;
+  cursor: pointer;
 }
 
 .modal-section select {
@@ -132,20 +150,6 @@
   outline: none;
   border-color: #9333ea;
   box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.2);
-}
-
-.modal-section label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-  border-radius: 6px;
-  transition: background 0.2s ease;
-  cursor: pointer;
-}
-
-.modal-section label:hover {
-  background-color: #f3f4f6;
 }
 
 .modal-buttons {
@@ -175,7 +179,6 @@
   color: white;
 }
 
-/* Cards */
 .card-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -183,7 +186,6 @@
   margin-bottom: 40px;
 }
 
-/* Charts */
 .chart-box {
   background: #ffffff;
   border: 1px solid #e5e7eb;
@@ -193,6 +195,7 @@
   box-shadow: 0 6px 20px rgba(168, 85, 247, 0.08);
   transition: 0.3s;
 }
+
 .chart-box:hover {
   box-shadow: 0 8px 28px rgba(147, 51, 234, 0.1);
 }
@@ -206,7 +209,6 @@
   letter-spacing: 0.04em;
 }
 
-/* Subject Progress */
 .subject-progress {
   margin-bottom: 22px;
 }
@@ -234,7 +236,6 @@
   border-radius: 6px;
 }
 
-/* Transition Fade */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.25s ease;

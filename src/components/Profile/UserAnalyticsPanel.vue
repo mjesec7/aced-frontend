@@ -21,27 +21,37 @@
             </select>
           </div>
 
-          <div class="modal-section table-options">
-            <table class="options-table">
-              <tbody>
-                <tr>
-                  <td><label><input type="checkbox" v-model="selectedStats" value="studyDays" /> Дней в обучении</label></td>
-                  <td><label><input type="checkbox" v-model="selectedStats" value="completedSubjects" /> Завершено предметов</label></td>
-                </tr>
-                <tr>
-                  <td><label><input type="checkbox" v-model="selectedStats" value="weeklyLessons" /> Уроков за неделю</label></td>
-                  <td><label><input type="checkbox" v-model="selectedStats" value="monthlyLessons" /> Уроков за месяц</label></td>
-                </tr>
-                <tr>
-                  <td><label><input type="checkbox" v-model="selectedStats" value="streakDays" /> Учебный стрик</label></td>
-                  <td><label><input type="checkbox" v-model="selectedStats" value="mostActiveDay" /> Активный день</label></td>
-                </tr>
-                <tr>
-                  <td colspan="2"><label><input type="checkbox" v-model="selectedStats" value="totalLessonsDone" /> Всего уроков</label></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <div class="modal-section options-grid">
+  <label class="option-box">
+    <input type="checkbox" v-model="selectedStats" value="studyDays" />
+    Дней в обучении
+  </label>
+  <label class="option-box">
+    <input type="checkbox" v-model="selectedStats" value="completedSubjects" />
+    Завершено предметов
+  </label>
+  <label class="option-box">
+    <input type="checkbox" v-model="selectedStats" value="weeklyLessons" />
+    Уроков за неделю
+  </label>
+  <label class="option-box">
+    <input type="checkbox" v-model="selectedStats" value="monthlyLessons" />
+    Уроков за месяц
+  </label>
+  <label class="option-box">
+    <input type="checkbox" v-model="selectedStats" value="streakDays" />
+    Учебный стрик
+  </label>
+  <label class="option-box">
+    <input type="checkbox" v-model="selectedStats" value="mostActiveDay" />
+    Активный день
+  </label>
+  <label class="option-box">
+    <input type="checkbox" v-model="selectedStats" value="totalLessonsDone" />
+    Всего уроков
+  </label>
+</div>
+
 
           <div class="modal-buttons">
             <button @click="downloadPDF">📥 Скачать</button>
