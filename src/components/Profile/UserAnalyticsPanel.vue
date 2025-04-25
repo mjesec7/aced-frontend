@@ -191,6 +191,7 @@ export default {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: this.user?.uid,
+            email: this.user?.email,
             period: this.period,
             selectedStats: this.selectedStats
           })
