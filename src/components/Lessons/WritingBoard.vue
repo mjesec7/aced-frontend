@@ -1,12 +1,15 @@
 <template>
   <div class="writing-board">
-    <label>✏️ {{ $t('writingBoard.prompt') }}</label>
+    <label>✏️ Напиши свой ответ ниже:</label>
     <textarea 
       v-model="userInput" 
       rows="6" 
-      :placeholder="$t('writingBoard.placeholder')">
+      placeholder="Напиши объяснение, размышления или решение задания...">
     </textarea>
-    <button @click="submitAnswer">{{ $t('writingBoard.submit') }}</button>
+    <button @click="submitAnswer" :disabled="loading">
+      {{ loading ? "⏳ Отправка..." : "Отправить" }}
+    </button>
+    
     <transition name="fade">
       <p v-if="confirmation" class="confirmation">{{ confirmation }}</p>
     </transition>
@@ -19,17 +22,29 @@ export default {
   data() {
     return {
       userInput: '',
-      confirmation: ''
+      confirmation: '',
+      loading: false
     }
   },
   methods: {
-    submitAnswer() {
+    async submitAnswer() {
       if (!this.userInput.trim()) {
+        this.confirmation = '❌ Пожалуйста, напиши ответ перед отправкой.';
         return;
       }
-      // In a real app, the answer would be sent to the backend here
-      this.confirmation = this.$t('writingBoard.thanks');
+
+      this.loading = true;
+
+      // TODO: Send userInput to backend here
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // fake delay
+
+      this.confirmation = '✅ Спасибо! Твой ответ сохранён.';
       this.userInput = '';
+      this.loading = false;
+
+      setTimeout(() => {
+        this.confirmation = '';
+      }, 3000);
     }
   }
 }
@@ -55,11 +70,13 @@ export default {
 label {
   font-weight: 600;
   font-size: 1rem;
+  margin-bottom: 8px;
+  display: block;
 }
 textarea {
   width: 100%;
   padding: 12px;
-  margin-top: 8px;
+  margin-top: 6px;
   border-radius: 8px;
   border: 1px solid #ddd;
   font-size: 1rem;
@@ -79,8 +96,13 @@ button {
 button:hover {
   background: #7c3aed;
 }
+button:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
 .confirmation {
   margin-top: 8px;
   color: #4ade80;
+  font-weight: 500;
 }
 </style>
