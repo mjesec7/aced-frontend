@@ -18,7 +18,7 @@ import HomeworkHelp from '@/components/Profile/HomeworkHelp.vue'
 import PaymePayment from '@/components/Payments/PaymePayment.vue'
 
 // ✅ Lazy-loaded lesson view
-const LessonView = () => import('@/components/Lessons/LessonView.vue')
+const LessonView = () => import('@/views/LessonView.vue')
 
 const routes = [
   {
