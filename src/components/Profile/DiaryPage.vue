@@ -106,130 +106,110 @@ export default {
       lessonsTomorrow: [],
       gradesThisWeek: [],
       completedToday: [],
-      topicsLeft: [],
       studyMinutes: 0,
       diarySaved: false,
       diaryLogs: [],
-      timer: null,
       loading: true,
-      saving: false
-    }
+      saving: false,
+      timer: null,
+    };
   },
   computed: {
     ...mapState(['firebaseUserId']),
     progressPercent() {
-      const total = this.completedToday.length + this.topicsLeft.length;
+      const total = this.completedToday.length + this.lessonsToday.length;
       return total > 0 ? Math.round((this.completedToday.length / total) * 100) : 0;
     },
     recentDiaryLogs() {
-      return [...this.diaryLogs].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 7);
+      return [...this.diaryLogs]
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 7);
     }
   },
   mounted() {
     this.today = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-    this.startStudyTimer();
+    this.startTimer();
     this.fetchData();
   },
   beforeUnmount() {
     clearInterval(this.timer);
   },
   methods: {
-    startStudyTimer() {
+    startTimer() {
       this.timer = setInterval(() => {
         this.studyMinutes++;
-      }, 60000);
+      }, 60000); // +1 min every minute
     },
     async fetchData() {
       try {
-        const firebaseId = this.firebaseUserId;
         const [lessonsRes, userRes] = await Promise.all([
           axios.get(`${process.env.VUE_APP_API_URL}/lessons`),
-          axios.get(`${process.env.VUE_APP_API_URL}/users/${firebaseId}`)
+          axios.get(`${process.env.VUE_APP_API_URL}/users/${this.firebaseUserId}`)
         ]);
 
         this.lessons = lessonsRes.data;
         this.userProgress = userRes.data.progress || {};
         this.diaryLogs = userRes.data.diaryLogs || [];
 
-        this.calculateDiary();
+        this.calculateToday();
       } catch (error) {
-        console.error('❌ Ошибка загрузки дневника:', error);
+        console.error('❌ Ошибка загрузки данных дневника:', error);
       } finally {
         this.loading = false;
       }
     },
-    calculateDiary() {
-      const todayCompleted = [];
-      const todayLeft = [];
+    calculateToday() {
+      const sections = ['explanation', 'examples', 'exercises', 'quiz'];
       const todayLessons = [];
       const tomorrowLessons = [];
+      const completed = [];
       const grades = [];
-
-      const sections = ['explanation', 'examples', 'exercises', 'quiz'];
 
       this.lessons.forEach(lesson => {
         const progress = this.userProgress[lesson._id] || {};
-        const completedSections = sections.filter(sec => progress[sec]);
-        const completionRate = (completedSections.length / sections.length) * 100;
+        const done = sections.filter(sec => progress[sec]).length;
+        const score = Math.round((done / sections.length) * 100);
 
-        const isCompleted = completionRate === 100;
-        const isPartial = completionRate > 0 && completionRate < 100;
-
-        if (isCompleted) {
-          todayCompleted.push(`${lesson.topic} (${lesson.subject})`);
-          grades.push({
-            lessonId: lesson._id,
-            subject: lesson.subject,
-            topic: lesson.topic,
-            score: 100
-          });
-        } else if (isPartial) {
-          grades.push({
-            lessonId: lesson._id,
-            subject: lesson.subject,
-            topic: lesson.topic,
-            score: Math.round(completionRate)
-          });
-        }
-
-        if (!isCompleted && todayLessons.length < 3) {
-          todayLessons.push(lesson);
+        if (done === sections.length) {
+          completed.push(`${lesson.topic} (${lesson.subject})`);
+          grades.push({ lessonId: lesson._id, subject: lesson.subject, topic: lesson.topic, score: 100 });
+        } else if (done > 0) {
+          grades.push({ lessonId: lesson._id, subject: lesson.subject, topic: lesson.topic, score });
         }
 
         if (!progress.explanation && !progress.examples && !progress.exercises && !progress.quiz) {
           tomorrowLessons.push(lesson);
+        } else if (todayLessons.length < 3 && done < sections.length) {
+          todayLessons.push(lesson);
         }
       });
 
+      this.completedToday = completed;
       this.lessonsToday = todayLessons;
       this.lessonsTomorrow = tomorrowLessons.slice(0, 3);
-      this.completedToday = todayCompleted;
-      this.topicsLeft = todayLessons.map(l => `${l.topic} (${l.subject})`);
       this.gradesThisWeek = grades;
-    },
-    formatDate(dateStr) {
-      return new Date(dateStr).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
     },
     async saveDiary() {
       try {
         this.saving = true;
-        const firebaseId = this.firebaseUserId;
-        await axios.post(`${process.env.VUE_APP_API_URL}/users/${firebaseId}/diary`, {
+        await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.firebaseUserId}/diary`, {
           date: new Date().toISOString().split('T')[0],
           studyMinutes: this.studyMinutes,
           completedTopics: this.completedToday,
-          gradesToday: this.gradesThisWeek
+          gradesToday: this.gradesThisWeek,
         });
-
         this.diarySaved = true;
       } catch (error) {
         console.error('❌ Ошибка сохранения дневника:', error);
       } finally {
         this.saving = false;
       }
-    }
+    },
+    formatDate(dateStr) {
+      return new Date(dateStr).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    },
   }
-}
+};
 </script>
 
 <style scoped>
