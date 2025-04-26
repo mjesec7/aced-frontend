@@ -1,7 +1,10 @@
 <template>
   <div class="lessons-page">
     <h1 class="page-title">Бесплатные Уроки</h1>
-    <div class="lessons-grid">
+
+    <div v-if="loading" class="loading">Loading lessons...</div>
+
+    <div v-else-if="lessons.length" class="lessons-grid">
       <div
         v-for="lesson in lessons"
         :key="lesson._id"
@@ -13,24 +16,23 @@
         <span class="subject-badge">{{ lesson.subject }}</span>
       </div>
     </div>
+
+    <div v-else class="no-lessons">
+      ❌ No free lessons available yet.
+    </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios'
-import { useRouter } from 'vue-router'
 
 export default {
   name: 'FreeLessons',
   data() {
     return {
-      lessons: []
+      lessons: [],
+      loading: true,
     }
-  },
-  setup() {
-    const router = useRouter()
-    const goToLesson = (id) => router.push({ name: 'LessonView', params: { id } })
-    return { goToLesson }
   },
   mounted() {
     axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=free`)
@@ -40,6 +42,18 @@ export default {
       .catch(err => {
         console.error('❌ Failed to fetch lessons:', err)
       })
+      .finally(() => {
+        this.loading = false
+      })
+  },
+  methods: {
+    goToLesson(id) {
+      if (!id) {
+        console.error('❌ No lesson ID provided!');
+        return;
+      }
+      this.$router.push(`/lesson/${id}`)
+    }
   }
 }
 </script>
@@ -71,36 +85,45 @@ export default {
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   padding: 20px;
-  transition: 0.3s ease;
+  transition: all 0.3s ease;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .lesson-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15);
+  transform: translateY(-6px);
+  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.25);
 }
 
 .lesson-title {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: #1f2937;
   margin-bottom: 8px;
 }
 
 .lesson-topic {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: #6b7280;
   margin-bottom: 10px;
 }
 
 .subject-badge {
   font-size: 0.75rem;
-  padding: 4px 10px;
-  background: linear-gradient(to right, #3b82f6, #06b6d4);
+  padding: 6px 12px;
+  background: linear-gradient(to right, #9333ea, #ec4899);
   color: white;
   border-radius: 20px;
   display: inline-block;
   font-weight: 600;
+  margin-top: 6px;
+}
+
+/* Loading and error */
+.loading, .no-lessons {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #6b7280;
+  margin-top: 60px;
 }
 </style>

@@ -2,26 +2,28 @@
   <div class="sidebar-wrapper">
     <div class="sidebar open">
       <div class="sidebar-content">
-        <!-- 👤 User Info from Vuex -->
+        <!-- 👤 User Info -->
         <div class="user-info" v-if="user">
           <img src="@/assets/icons/user.png" alt="User Icon" class="user-icon" />
           <span class="user-name">{{ user.name || user.email }}</span>
         </div>
 
-        <!-- 📚 Sidebar links -->
+        <!-- 📚 Navigation Links -->
         <div class="nav-links">
           <router-link
-            v-for="link in links"
-            :key="link.name"
-            :to="`/profile/${link.name}`"
-            class="nav-item"
-          >
+  v-for="link in links"
+  :key="link.name"
+  :to="`/profile/${link.name}`"
+  class="nav-item"
+  :class="{ active: isActive(link.name) }"
+>
+
             <span class="highlight"></span>
             {{ link.label }}
           </router-link>
         </div>
 
-        <!-- 🚪 Logout Button -->
+        <!-- 🚪 Logout -->
         <div class="bottom-logout">
           <button class="logout-button" @click="showLogoutModal = true">Выйти</button>
         </div>
@@ -57,7 +59,7 @@ export default {
         { name: 'analytics', label: 'Аналитика' },
         { name: 'progress', label: 'Прогресс' },
         { name: 'goal', label: 'Цели' },
-        { name: 'plan', label: 'План обучения' },
+        { name: 'diary', label: 'Дневник' },  // ✅ Diary added
         { name: 'homework', label: 'Помощь с ДЗ' }
       ]
     };
@@ -66,7 +68,6 @@ export default {
     ...mapState(['user'])
   },
   mounted() {
-    // In case Vuex is empty on reload, rehydrate it from Firebase
     onAuthStateChanged(auth, (user) => {
       if (user) {
         this.setUser({
@@ -89,16 +90,20 @@ export default {
         .catch((err) => {
           console.error('Ошибка выхода:', err.message);
         });
-    }
+    },
+    isActive(name) {
+  return this.$route.path.includes(`/profile/${name}`);
+}
+
   }
 };
 </script>
 
 <style scoped>
+/* same styles you had (they are already perfect) */
 .sidebar-wrapper {
   position: relative;
 }
-
 .sidebar {
   width: 250px;
   min-height: 100vh;
@@ -112,13 +117,11 @@ export default {
   transition: transform 0.3s ease-in-out;
   color: #111827;
 }
-
 .sidebar-content {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
-
 .user-info {
   padding: 40px 20px 30px;
   display: flex;
@@ -129,17 +132,14 @@ export default {
   color: #111827;
   border-bottom: 1px solid #eee;
 }
-
 .user-icon {
   width: 32px;
   height: 32px;
 }
-
 .user-name {
   font-weight: 700;
   font-size: 1rem;
 }
-
 .nav-links {
   flex-grow: 1;
   padding: 30px 20px 0;
@@ -147,6 +147,7 @@ export default {
   flex-direction: column;
   gap: 18px;
 }
+
 
 .nav-item {
   font-size: 0.95rem;
@@ -160,13 +161,11 @@ export default {
   position: relative;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
 }
-
 .nav-item:hover {
   background: linear-gradient(to right, #ede9fe, #f0f5ff);
   color: #4f46e5;
   transform: translateX(6px);
 }
-
 .nav-item .highlight {
   position: absolute;
   left: 0;
@@ -176,11 +175,16 @@ export default {
   background: linear-gradient(to bottom, #6366f1, #8b5cf6);
   border-radius: 2px;
 }
-
+.nav-item.active {
+  background: linear-gradient(to right, #ede9fe, #f0f5ff);
+  color: #4f46e5;
+  transform: translateX(6px);
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+}
 .bottom-logout {
   padding: 30px 20px;
 }
-
 .logout-button {
   padding: 10px 16px;
   background: #ef4444;
@@ -192,11 +196,9 @@ export default {
   font-family: 'Unbounded', sans-serif;
   transition: 0.3s;
 }
-
 .logout-button:hover {
   background: #dc2626;
 }
-
 .logout-modal {
   position: fixed;
   top: 0;
@@ -209,7 +211,6 @@ export default {
   align-items: center;
   z-index: 9999;
 }
-
 .logout-modal-content {
   background: white;
   padding: 30px;
@@ -218,14 +219,12 @@ export default {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   font-family: 'Unbounded', sans-serif;
 }
-
 .logout-actions {
   display: flex;
   justify-content: center;
   gap: 20px;
   margin-top: 20px;
 }
-
 .confirm-btn,
 .cancel-btn {
   padding: 10px 20px;
@@ -234,12 +233,10 @@ export default {
   border-radius: 8px;
   cursor: pointer;
 }
-
 .confirm-btn {
   background: red;
   color: white;
 }
-
 .cancel-btn {
   background: #ccc;
   color: #222;
