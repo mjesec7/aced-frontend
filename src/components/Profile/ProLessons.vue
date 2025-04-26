@@ -2,18 +2,22 @@
   <div class="lessons-page">
     <h1 class="page-title">Премиум Уроки</h1>
 
-    <div v-if="loading" class="loading">Loading premium lessons...</div>
+    <div v-if="loading" class="loading">Загрузка премиум уроков...</div>
 
     <div v-else-if="lessons.length > 0" class="lessons-grid">
       <div
         v-for="lesson in lessons"
         :key="lesson._id"
         class="lesson-card"
-        @click="goToLesson(lesson._id)"
       >
-        <h2 class="lesson-title">{{ lesson.lessonName }}</h2>
+        <div class="card-header">
+          <h2 class="lesson-title">{{ lesson.lessonName }}</h2>
+          <button class="add-btn" @click="addToStudyPlan(lesson)">＋</button>
+        </div>
         <p class="lesson-topic">{{ lesson.topic }}</p>
         <span class="badge">{{ lesson.subject }}</span>
+
+        <button class="start-btn" @click="goToLesson(lesson._id)">Начать</button>
       </div>
     </div>
 
@@ -22,7 +26,8 @@
 </template>
 
 <script>
-import axios from 'axios'
+import axios from 'axios';
+import { mapState } from 'vuex';
 
 export default {
   name: 'ProLessons',
@@ -30,30 +35,48 @@ export default {
     return {
       lessons: [],
       loading: true,
-    }
+    };
+  },
+  computed: {
+    ...mapState(['firebaseUserId'])
   },
   mounted() {
-    axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=premium`)
-      .then(res => {
-        this.lessons = res.data
-      })
-      .catch(err => {
-        console.error('❌ Ошибка загрузки уроков:', err)
-      })
-      .finally(() => {
-        this.loading = false
-      })
+    this.fetchLessons();
   },
   methods: {
+    async fetchLessons() {
+      try {
+        const res = await axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=premium`);
+        this.lessons = res.data;
+      } catch (err) {
+        console.error('❌ Ошибка загрузки уроков:', err);
+      } finally {
+        this.loading = false;
+      }
+    },
     goToLesson(id) {
       if (!id) {
-        console.error('❌ No lesson ID provided!');
+        console.error('❌ Нет ID урока!');
         return;
       }
       this.$router.push(`/lesson/${id}`);
+    },
+    async addToStudyPlan(lesson) {
+      try {
+        if (!this.firebaseUserId) {
+          alert('⚠️ Сначала войдите в аккаунт!');
+          return;
+        }
+        await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.firebaseUserId}/study-list`, {
+          topicId: lesson.topicId
+        });
+        alert(`✅ Урок "${lesson.lessonName}" добавлен в ваш план!`);
+      } catch (err) {
+        console.error('❌ Ошибка добавления в план:', err);
+      }
     }
   }
-}
+};
 </script>
 
 <style scoped>
@@ -74,7 +97,7 @@ export default {
 
 .lessons-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 24px;
 }
 
@@ -84,8 +107,12 @@ export default {
   border-radius: 16px;
   padding: 22px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: default;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .lesson-card:hover {
@@ -93,17 +120,22 @@ export default {
   box-shadow: 0 10px 28px rgba(147, 51, 234, 0.25);
 }
 
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .lesson-title {
   font-size: 1.3rem;
   font-weight: 700;
   color: #111827;
-  margin-bottom: 8px;
 }
 
 .lesson-topic {
   font-size: 1rem;
   color: #6b7280;
-  margin-bottom: 10px;
+  margin-top: 10px;
 }
 
 .badge {
@@ -114,6 +146,37 @@ export default {
   border-radius: 20px;
   display: inline-block;
   font-weight: 600;
+  margin-top: 10px;
+}
+
+.add-btn {
+  background: #10b981;
+  color: white;
+  font-size: 1.2rem;
+  border: none;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.add-btn:hover {
+  background: #059669;
+}
+
+.start-btn {
+  margin-top: 16px;
+  background: linear-gradient(to right, #60a5fa, #818cf8);
+  color: white;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.start-btn:hover {
+  background: linear-gradient(to right, #3b82f6, #6366f1);
 }
 
 .loading, .no-lessons {

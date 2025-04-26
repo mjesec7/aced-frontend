@@ -11,13 +11,21 @@
         <!-- 📚 Navigation Links -->
         <div class="nav-links">
           <router-link
-  v-for="link in links"
-  :key="link.name"
-  :to="`/profile/${link.name}`"
-  class="nav-item"
-  :class="{ active: isActive(link.name) }"
->
+            :to="`/profile`"
+            class="nav-item"
+            :class="{ active: isActive('dashboard') }"
+          >
+            <span class="highlight"></span>
+            Главная
+          </router-link>
 
+          <router-link
+            v-for="link in links"
+            :key="link.name"
+            :to="`/profile/${link.name}`"
+            class="nav-item"
+            :class="{ active: isActive(link.name) }"
+          >
             <span class="highlight"></span>
             {{ link.label }}
           </router-link>
@@ -59,7 +67,7 @@ export default {
         { name: 'analytics', label: 'Аналитика' },
         { name: 'progress', label: 'Прогресс' },
         { name: 'goal', label: 'Цели' },
-        { name: 'diary', label: 'Дневник' },  // ✅ Diary added
+        { name: 'diary', label: 'Дневник' },
         { name: 'homework', label: 'Помощь с ДЗ' }
       ]
     };
@@ -92,15 +100,17 @@ export default {
         });
     },
     isActive(name) {
-  return this.$route.path.includes(`/profile/${name}`);
-}
-
+      if (name === 'dashboard') {
+        return this.$route.path === '/profile' || this.$route.path === '/profile/';
+      }
+      return this.$route.path.includes(`/profile/${name}`);
+    }
   }
 };
 </script>
 
 <style scoped>
-/* same styles you had (they are already perfect) */
+/* (your styles — no changes needed, they are already beautiful) */
 .sidebar-wrapper {
   position: relative;
 }
@@ -147,8 +157,6 @@ export default {
   flex-direction: column;
   gap: 18px;
 }
-
-
 .nav-item {
   font-size: 0.95rem;
   padding: 10px 14px;
