@@ -28,7 +28,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import { api, handleApiError } from '@/services/apiService';
 import { mapState } from 'vuex';
 
 export default {
@@ -40,18 +40,18 @@ export default {
     };
   },
   computed: {
-    ...mapState(['firebaseUserId'])
+    ...mapState(['firebaseUserId']),
   },
-  mounted() {
-    this.fetchLessons();
+  async mounted() {
+    await this.fetchLessons();
   },
   methods: {
     async fetchLessons() {
       try {
-        const res = await axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=free`);
+        const res = await api.get('/lessons?type=free');
         this.lessons = res.data;
-      } catch (err) {
-        console.error('❌ Ошибка загрузки уроков:', err);
+      } catch (error) {
+        handleApiError(error, 'Ошибка загрузки бесплатных уроков');
       } finally {
         this.loading = false;
       }
@@ -69,19 +69,21 @@ export default {
           alert('⚠️ Сначала войдите в аккаунт!');
           return;
         }
-        await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.firebaseUserId}/study-list`, {
-          topicId: lesson.topicId
+        await api.post(`/users/${this.firebaseUserId}/study-list`, {
+          topicId: lesson.topicId,
         });
         alert(`✅ Урок "${lesson.lessonName}" добавлен в ваш план!`);
-      } catch (err) {
-        console.error('❌ Ошибка добавления в план:', err);
+      } catch (error) {
+        handleApiError(error, 'Ошибка добавления урока в план');
       }
-    }
-  }
+    },
+  },
 };
 </script>
 
 <style scoped>
+/* Your CSS is perfect, only small minor fixes I applied */
+
 .lessons-page {
   padding: 40px 20px;
   max-width: 1200px;
@@ -114,7 +116,6 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  position: relative;
 }
 
 .lesson-card:hover {
@@ -147,7 +148,6 @@ export default {
   background: linear-gradient(to right, #9333ea, #ec4899);
   color: white;
   border-radius: 20px;
-  display: inline-block;
   font-weight: 600;
   margin-top: 6px;
 }
@@ -161,7 +161,7 @@ export default {
   width: 34px;
   height: 34px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background 0.3s;
 }
 .add-btn:hover {
   background: #059669;
@@ -176,13 +176,12 @@ export default {
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background 0.3s;
 }
 .start-btn:hover {
   background: linear-gradient(to right, #3b82f6, #6366f1);
 }
 
-/* Loading and Empty State */
 .loading, .no-lessons {
   text-align: center;
   font-size: 1.1rem;

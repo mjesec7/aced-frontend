@@ -4,24 +4,22 @@
 
     <div v-if="loading" class="loading">Загрузка премиум уроков...</div>
 
-    <div v-else-if="lessons.length > 0" class="lessons-grid">
-      <div
-        v-for="lesson in lessons"
-        :key="lesson._id"
-        class="lesson-card"
-      >
+    <div v-else-if="lessons.length" class="lessons-grid">
+      <div v-for="lesson in lessons" :key="lesson._id" class="lesson-card">
         <div class="card-header">
           <h2 class="lesson-title">{{ lesson.lessonName }}</h2>
           <button class="add-btn" @click="addToStudyPlan(lesson)">＋</button>
         </div>
         <p class="lesson-topic">{{ lesson.topic }}</p>
-        <span class="badge">{{ lesson.subject }}</span>
+        <span class="subject-badge">{{ lesson.subject }}</span>
 
         <button class="start-btn" @click="goToLesson(lesson._id)">Начать</button>
       </div>
     </div>
 
-    <p v-else class="no-lessons">❌ Нет доступных премиум уроков.</p>
+    <div v-else class="no-lessons">
+      ❌ Нет доступных премиум уроков.
+    </div>
   </div>
 </template>
 
@@ -38,7 +36,7 @@ export default {
     };
   },
   computed: {
-    ...mapState(['firebaseUserId'])
+    ...mapState(['firebaseUserId']),
   },
   mounted() {
     this.fetchLessons();
@@ -48,8 +46,8 @@ export default {
       try {
         const res = await axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=premium`);
         this.lessons = res.data;
-      } catch (err) {
-        console.error('❌ Ошибка загрузки уроков:', err);
+      } catch (error) {
+        console.error('❌ Ошибка загрузки премиум уроков:', error);
       } finally {
         this.loading = false;
       }
@@ -68,14 +66,14 @@ export default {
           return;
         }
         await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.firebaseUserId}/study-list`, {
-          topicId: lesson.topicId
+          topicId: lesson.topicId,
         });
         alert(`✅ Урок "${lesson.lessonName}" добавлен в ваш план!`);
-      } catch (err) {
-        console.error('❌ Ошибка добавления в план:', err);
+      } catch (error) {
+        console.error('❌ Ошибка добавления урока в план:', error);
       }
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -83,7 +81,7 @@ export default {
 .lessons-page {
   padding: 40px 20px;
   max-width: 1200px;
-  margin: auto;
+  margin: 0 auto;
   font-family: 'Inter', sans-serif;
 }
 
@@ -91,7 +89,7 @@ export default {
   font-size: 2.4rem;
   font-weight: 800;
   color: #1f2937;
-  margin-bottom: 30px;
+  margin-bottom: 40px;
   text-align: center;
 }
 
@@ -110,8 +108,8 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  transition: 0.3s ease;
   cursor: default;
-  transition: all 0.3s ease;
   position: relative;
 }
 
@@ -138,7 +136,7 @@ export default {
   margin-top: 10px;
 }
 
-.badge {
+.subject-badge {
   font-size: 0.75rem;
   padding: 6px 12px;
   background: linear-gradient(to right, #8b5cf6, #ec4899);

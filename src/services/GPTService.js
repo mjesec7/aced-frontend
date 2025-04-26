@@ -1,36 +1,31 @@
-import axios from "axios";
+import axios from 'axios';
 
-// ✅ Reads from .env.development (Vue CLI style)
+// ✅ Use correct baseURL from Vue CLI .env
 const baseURL = process.env.VUE_APP_API_URL;
 
-export async function getAIResponse(userInput, imageUrl = null, lessonId = null) {
-  console.log("🟣 GPTService called with:");
-  console.log("→ baseURL:", baseURL);
-  console.log("→ userInput:", userInput);
-  console.log("→ imageUrl:", imageUrl);
-  console.log("→ lessonId:", lessonId);
+// ✅ Create a reusable axios instance
+const gptApi = axios.create({
+  baseURL: baseURL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-  const url = `${baseURL}/chat`;
-  console.log("🟣 Full POST URL:", url);
+// ✅ Main function to send question (with optional image and lesson context)
+export async function getAIResponse(userInput, imageUrl = null, lessonId = null) {
+  console.log('🟣 [GPTService] Request:', { userInput, imageUrl, lessonId });
 
   try {
-    const response = await axios.post(url, {
+    const response = await gptApi.post('/chat', {
       userInput,
       imageUrl,
-      lessonId
+      lessonId,
     });
 
-    console.log("✅ AI Response received:", response.data);
+    console.log('✅ [GPTService] AI Response:', response.data);
     return response.data.reply;
   } catch (error) {
-    if (error.response) {
-      console.error("❌ Backend responded with error:", error.response.status, error.response.data);
-    } else if (error.request) {
-      console.error("❌ No response received from backend:", error.request);
-    } else {
-      console.error("❌ Unexpected error:", error.message);
-    }
-
-    return "Произошла ошибка при получении ответа от AI.";
+    console.error('❌ [GPTService] Error:', error?.response?.data || error.message);
+    return 'Произошла ошибка при получении ответа от AI.';
   }
 }
