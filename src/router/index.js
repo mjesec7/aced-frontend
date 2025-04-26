@@ -18,7 +18,7 @@ import DiaryPage from '@/components/Profile/DiaryPage.vue'; // ✅ NEW Diary
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
 
 // ✅ Lesson and Completion
-const LessonView = () => import('@/views/LessonView.vue');
+const LessonView = () => import('@/views/LessonPage.vue');
 const TopicFinished = () => import('@/views/TopicFinished.vue');
 
 const routes = [
