@@ -9,32 +9,33 @@
 
         <div v-if="currentStep === 0" class="section">
           <h3>📚 Объяснение</h3>
-          <div v-html="lesson.explanation"></div>
+          <div v-html="lesson.explanation || 'Нет объяснения'"></div>
         </div>
 
         <div v-else-if="currentStep === 1" class="section">
-          <h3>🧩 Примеры</h3>
-          <div v-html="lesson.examples"></div>
+          <h3>📗 Примеры</h3>
+          <div v-html="lesson.examples || 'Нет примеров'"></div>
         </div>
 
         <div v-else-if="currentStep >= 2 && currentStep < exerciseSteps" class="section">
           <h3>✏️ Упражнение {{ currentStep - 1 }}</h3>
-          <p>{{ currentExercise.question }}</p>
+          <p>{{ currentExercise.question || 'Вопрос отсутствует' }}</p>
           <button class="hint-btn" @click="showHint = !showHint">💡 Подсказка</button>
-          <div v-if="showHint" class="hint-box">{{ currentExercise.hint || 'Подсказка недоступна.' }}</div>
+          <div v-if="showHint" class="hint-box">{{ currentExercise.hint || 'Подсказка недоступна' }}</div>
         </div>
 
         <div v-else-if="currentStep === exerciseSteps" class="section">
           <h3>🧠 Квиз</h3>
-          <p>{{ currentQuiz.question }}</p>
+          <p>{{ currentQuiz.question || 'Вопрос отсутствует' }}</p>
           <ul>
-            <li v-for="option in currentQuiz.options" :key="option">{{ option }}</li>
+            <li v-for="option in currentQuiz.options || []" :key="option">{{ option }}</li>
           </ul>
         </div>
 
         <div v-else class="section">
           <h3>🏆 Урок завершён!</h3>
-          <p>Вы завершили все этапы!</p>
+          <p>Вы прошли все этапы!</p>
+          <button class="return-btn" @click="$router.push('/profile')">Вернуться в профиль</button>
         </div>
       </div>
 
@@ -53,24 +54,25 @@
       <button class="nav-btn" @click="goNext">➡️ Далее</button>
     </div>
 
-    <!-- Иконка AI Чата -->
-    <div class="ai-chat-button" @click="chatOpen = !chatOpen">
+    <!-- AI Чат -->
+    <div class="chatbot-button" @click="chatOpen = !chatOpen">
       🤖
     </div>
 
-    <!-- Модалка чата -->
-    <div v-if="chatOpen" class="ai-chat-modal">
-      <h3>Чат с AI</h3>
-      <textarea v-model="chatInput" placeholder="Ваш вопрос..." />
-      <button class="ask-btn" @click="askAI">Отправить</button>
-      <div v-if="aiResponse" class="ai-response">{{ aiResponse }}</div>
-    </div>
+    <transition name="fade">
+      <div v-if="chatOpen" class="chat-window">
+        <h3>Чат с AI</h3>
+        <textarea v-model="chatInput" placeholder="Ваш вопрос..."></textarea>
+        <button class="chat-send" @click="askAI">Отправить</button>
+        <div v-if="aiResponse" class="ai-response">{{ aiResponse }}</div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
-import { getAIResponse } from '../services/GPTService';
+import { getAIResponse } from '@/services/GPTService';
 
 export default {
   name: 'LessonPage',
@@ -87,23 +89,17 @@ export default {
       chatOpen: false,
       chatInput: '',
       aiResponse: '',
-    }
+    };
   },
   computed: {
     exerciseSteps() {
       return 2 + (this.lesson.exercises?.length || 0);
     },
     currentExercise() {
-      if (this.lesson.exercises && this.currentStep >= 2 && this.currentStep < this.exerciseSteps) {
-        return this.lesson.exercises[this.currentStep - 2];
-      }
-      return {};
+      return this.lesson.exercises?.[this.currentStep - 2] || {};
     },
     currentQuiz() {
-      if (this.lesson.quiz && this.lesson.quiz.length > 0) {
-        return this.lesson.quiz[0];
-      }
-      return {};
+      return this.lesson.quiz?.[0] || {};
     },
     showInput() {
       return this.currentStep >= 2 && this.currentStep <= this.exerciseSteps;
@@ -182,147 +178,120 @@ export default {
       }
     }
   }
-}
+};
 </script>
-  
-  <style scoped>
-  /* Все стили: футуризм + плавные переходы */
-  .lesson-page {
-    padding: 20px;
-    font-family: 'Inter', sans-serif;
-    background: #f9fafb;
-    min-height: 100vh;
-    position: relative;
-  }
-  
-  .lesson-content {
-    display: flex;
-    gap: 24px;
-    margin-bottom: 30px;
-  }
-  
-  .left-panel, .right-panel {
-    flex: 1;
-    min-width: 300px;
-    background: white;
-    padding: 24px;
-    border-radius: 16px;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
-    position: relative;
-  }
-  
-  .hint-button {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: #facc15;
-    padding: 8px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 1.4rem;
-  }
-  
-  .hints-box {
-    margin-top: 20px;
-    padding: 16px;
-    background: #fef9c3;
-    border-radius: 12px;
-  }
-  
-  .lesson-title {
-    font-size: 2rem;
-    font-weight: 800;
-    color: #7c3aed;
-  }
-  
-  .section h3 {
-    margin-bottom: 8px;
-    font-size: 1.3rem;
-    color: #6d28d9;
-  }
-  
-  textarea {
-    width: 100%;
-    min-height: 120px;
-    border-radius: 10px;
-    padding: 12px;
-    border: 1px solid #d1d5db;
-    background: #f9fafb;
-  }
-  
-  .submit-btn {
-    margin-top: 16px;
-    padding: 10px 20px;
-    background: linear-gradient(to right, #60a5fa, #c084fc);
-    color: white;
-    font-weight: 700;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-  }
-  
-  .lesson-navigation {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 30px;
-  }
-  
-  .nav-btn {
-    padding: 10px 24px;
-    background: linear-gradient(to right, #f472b6, #ec4899);
-    color: white;
-    font-weight: 700;
-    border-radius: 12px;
-  }
-  
-  .chatbot-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: #6366f1;
-    color: white;
-    padding: 14px;
-    font-size: 1.6rem;
-    border-radius: 50%;
-    cursor: pointer;
-  }
-  
-  .chat-window {
-    position: fixed;
-    bottom: 80px;
-    right: 20px;
-    width: 300px;
-    background: white;
-    padding: 20px;
-    border-radius: 14px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  }
-  
-  .chat-send, .chat-close {
-    margin-top: 10px;
-    width: 100%;
-    padding: 10px;
-    background: #8b5cf6;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-  }
-  
-  .return-btn {
-    margin-top: 20px;
-    background: #34d399;
-    padding: 12px 24px;
-    border: none;
-    color: white;
-    font-weight: 700;
-    border-radius: 12px;
-  }
-  
-  .fade-enter-active, .fade-leave-active {
-    transition: opacity 0.5s;
-  }
-  .fade-enter, .fade-leave-to {
-    opacity: 0;
-  }
-  </style>
+
+<style scoped>
+.lesson-page {
+  padding: 20px;
+  font-family: 'Inter', sans-serif;
+  background: #ffffff;
+  min-height: 100vh;
+  position: relative;
+}
+
+.lesson-content {
+  display: flex;
+  gap: 20px;
+}
+
+.left-panel {
+  flex: 2;
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+.right-panel {
+  flex: 1;
+  background: #f1f5f9;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+.lesson-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: black;
+}
+
+textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  border-radius: 10px;
+  background: white;
+  border: 1px solid #d1d5db;
+}
+
+.submit-btn {
+  margin-top: 16px;
+  background: linear-gradient(to right, #7c3aed, #8b5cf6);
+  color: white;
+  font-weight: 700;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 12px;
+}
+
+.lesson-navigation {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+}
+
+.nav-btn {
+  padding: 10px 24px;
+  background: linear-gradient(to right, #7c3aed, #8b5cf6);
+  color: white;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+}
+
+.chatbot-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #7c3aed;
+  color: white;
+  padding: 14px;
+  border-radius: 50%;
+  font-size: 1.8rem;
+  cursor: pointer;
+}
+
+.chat-window {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 300px;
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.2);
+}
+
+.chat-send {
+  margin-top: 10px;
+  width: 100%;
+  background: linear-gradient(to right, #8b5cf6, #7c3aed);
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+}
+.ai-response {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #374151;
+}
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.4s;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}
+</style>
