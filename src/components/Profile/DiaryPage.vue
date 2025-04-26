@@ -92,7 +92,6 @@
 </template>
 
 <script>
-import { mapState } from 'vuex';
 import axios from 'axios';
 
 export default {
@@ -115,7 +114,6 @@ export default {
     };
   },
   computed: {
-    ...mapState(['firebaseUserId']),
     progressPercent() {
       const total = this.completedToday.length + this.lessonsToday.length;
       return total > 0 ? Math.round((this.completedToday.length / total) * 100) : 0;
@@ -141,13 +139,20 @@ export default {
       }, 60000); // +1 min every minute
     },
     async fetchData() {
+      const userId = localStorage.getItem('userId');
+      if (!userId) {
+        console.error('❌ Нет userId в localStorage. Невозможно загрузить дневник.');
+        this.loading = false;
+        return;
+      }
+
       try {
         const [lessonsRes, userRes] = await Promise.all([
-          axios.get(`${process.env.VUE_APP_API_URL}/lessons`),
-          axios.get(`${process.env.VUE_APP_API_URL}/users/${this.firebaseUserId}`)
+          axios.get(`${process.env.VUE_APP_API_URL}/lessons?userId=${userId}`),
+          axios.get(`${process.env.VUE_APP_API_URL}/users/${userId}`)
         ]);
 
-        this.lessons = lessonsRes.data;
+        this.lessons = lessonsRes.data || [];
         this.userProgress = userRes.data.progress || {};
         this.diaryLogs = userRes.data.diaryLogs || [];
 
@@ -190,9 +195,15 @@ export default {
       this.gradesThisWeek = grades;
     },
     async saveDiary() {
+      const userId = localStorage.getItem('userId');
+      if (!userId) {
+        console.error('❌ Нет userId в localStorage. Невозможно сохранить дневник.');
+        return;
+      }
+
       try {
         this.saving = true;
-        await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.firebaseUserId}/diary`, {
+        await axios.post(`${process.env.VUE_APP_API_URL}/users/${userId}/diary`, {
           date: new Date().toISOString().split('T')[0],
           studyMinutes: this.studyMinutes,
           completedTopics: this.completedToday,
@@ -211,6 +222,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 /* 📋 Same beautiful styles you wrote — no changes needed */

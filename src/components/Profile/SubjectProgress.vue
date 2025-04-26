@@ -48,16 +48,25 @@
       this.fetchProgress();
     },
     methods: {
-      async fetchProgress() {
-        try {
-          const res = await axios.get(`${process.env.VUE_APP_API_URL}/user-analytics/topic-progress/${this.firebaseUserId}`);
-          this.progressData = res.data || [];
-        } catch (error) {
-          console.error('❌ Ошибка загрузки прогресса по темам:', error);
-        } finally {
-          this.loading = false;
-        }
-      },
+        async fetchProgress() {
+  const userId = localStorage.getItem('userId');
+  if (!userId) {
+    console.error('❌ Нет userId. Невозможно загрузить прогресс по темам.');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${process.env.VUE_APP_API_URL}/user-analytics/topic-progress/${userId}`);
+    if (!response.ok) {
+      throw new Error('❌ Сервер вернул ошибку при получении прогресса по темам');
+    }
+    const data = await response.json();
+    this.topicProgress = data;
+  } catch (error) {
+    console.error('❌ Ошибка загрузки прогресса по темам:', error);
+  }
+},
+
       getMedalImage(medal) {
         if (medal === 'gold') return require('@/assets/medals/gold.png');
         if (medal === 'silver') return require('@/assets/medals/silver.png');

@@ -47,15 +47,24 @@ export default {
   },
   methods: {
     async fetchLessons() {
-      try {
-        const res = await axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=free`);
-        this.lessons = res.data;
-      } catch (err) {
-        console.error('❌ Ошибка загрузки уроков:', err);
-      } finally {
-        this.loading = false;
-      }
-    },
+  const userId = localStorage.getItem('userId');
+  if (!userId) {
+    console.error('❌ Нет userId. Невозможно загрузить бесплатные уроки.');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${process.env.VUE_APP_API_URL}/lessons?type=free&userId=${userId}`);
+    if (!response.ok) {
+      throw new Error('❌ Сервер вернул ошибку при загрузке бесплатных уроков');
+    }
+    const data = await response.json();
+    this.lessons = data;
+  } catch (error) {
+    console.error('❌ Ошибка загрузки бесплатных уроков:', error);
+  }
+},
+
     goToLesson(id) {
       if (!id) {
         console.error('❌ Нет ID урока!');

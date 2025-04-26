@@ -43,15 +43,24 @@ export default {
   },
   methods: {
     async fetchLessons() {
-      try {
-        const res = await axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=premium`);
-        this.lessons = res.data;
-      } catch (error) {
-        console.error('❌ Ошибка загрузки премиум уроков:', error);
-      } finally {
-        this.loading = false;
-      }
-    },
+  const userId = localStorage.getItem('userId');
+  if (!userId) {
+    console.error('❌ Нет userId. Невозможно загрузить премиум уроки.');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${process.env.VUE_APP_API_URL}/lessons?type=premium&userId=${userId}`);
+    if (!response.ok) {
+      throw new Error('❌ Сервер вернул ошибку при загрузке премиум уроков');
+    }
+    const data = await response.json();
+    this.lessons = data;
+  } catch (error) {
+    console.error('❌ Ошибка загрузки премиум уроков:', error);
+  }
+},
+
     goToLesson(id) {
       if (!id) {
         console.error('❌ Нет ID урока!');

@@ -96,7 +96,6 @@ import LineChart from '@/components/Charts/LineChart.vue'
 import Card from '@/components/Profile/AnalyticsCard.vue'
 import html2pdf from 'html2pdf.js'
 import '@/assets/css/UserAnalyticsPanel.css'
-import { mapState } from 'vuex'
 
 export default {
   components: { LineChart, Card },
@@ -130,7 +129,6 @@ export default {
     }
   },
   computed: {
-    ...mapState(['user']),
     remainingSubjects() {
       return Math.max(this.analytics.totalSubjects - this.analytics.completedSubjects, 0)
     },
@@ -195,9 +193,15 @@ export default {
     }
   },
   async mounted() {
+    const userId = localStorage.getItem('userId')
+    if (!userId) {
+      console.error('❌ Нет userId в localStorage. Перенаправляем...')
+      this.$router.push('/login') // or open login modal if you have
+      return
+    }
     try {
-      const res = await fetch(`${process.env.VUE_APP_API_URL}/user-analytics/${this.user?.uid || 'default-id'}`)
-      if (!res.ok) throw new Error('Failed to fetch analytics')
+      const res = await fetch(`${process.env.VUE_APP_API_URL}/user-analytics/${userId}`)
+      if (!res.ok) throw new Error('❌ Ошибка ответа сервера при получении аналитики')
       const data = await res.json()
       this.analytics = data
     } catch (err) {
