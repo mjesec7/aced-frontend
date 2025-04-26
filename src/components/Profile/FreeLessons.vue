@@ -28,7 +28,7 @@
 </template>
 
 <script>
-import { api, handleApiError } from '@/services/apiService';
+import { api, handleApiError } from '@/services/GPTService';
 import { mapState } from 'vuex';
 
 export default {
