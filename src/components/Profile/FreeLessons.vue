@@ -1,15 +1,11 @@
 <template>
   <div class="lessons-page">
-    <h1 class="page-title">Бесплатные Уроки</h1>
+    <h1 class="page-title">📚 Бесплатные Уроки</h1>
 
-    <div v-if="loading" class="loading">Загрузка уроков...</div>
+    <div v-if="loading" class="loading">Загрузка бесплатных уроков...</div>
 
     <div v-else-if="lessons.length" class="lessons-grid">
-      <div
-        v-for="lesson in lessons"
-        :key="lesson._id"
-        class="lesson-card"
-      >
+      <div v-for="lesson in lessons" :key="lesson._id" class="lesson-card">
         <div class="card-header">
           <h2 class="lesson-title">{{ lesson.lessonName }}</h2>
           <button class="add-btn" @click="addToStudyPlan(lesson)">＋</button>
@@ -17,12 +13,12 @@
         <p class="lesson-topic">{{ lesson.topic }}</p>
         <span class="subject-badge">{{ lesson.subject }}</span>
 
-        <button class="start-btn" @click="goToLesson(lesson._id)">Начать</button>
+        <button class="start-btn" @click="startLesson(lesson._id)">Начать</button>
       </div>
     </div>
 
     <div v-else class="no-lessons">
-      ❌ Нет бесплатных уроков.
+      ❌ Бесплатные уроки пока недоступны.
     </div>
   </div>
 </template>
@@ -40,50 +36,45 @@ export default {
     };
   },
   computed: {
-    ...mapState(['firebaseUserId'])
+    ...mapState(['firebaseUserId']),
   },
   mounted() {
-    this.fetchLessons();
+    this.loadFreeLessons();
   },
   methods: {
-    async fetchLessons() {
-  const userId = localStorage.getItem('userId');
-  if (!userId) {
-    console.error('❌ Нет userId. Невозможно загрузить бесплатные уроки.');
-    return;
-  }
+    async loadFreeLessons() {
+      try {
+        const response = await axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=free`);
+        this.lessons = response.data;
+      } catch (error) {
+        console.error('❌ Ошибка загрузки бесплатных уроков:', error);
+      } finally {
+        this.loading = false;
+      }
+    },
 
-  try {
-    const response = await fetch(`${process.env.VUE_APP_API_URL}/lessons?type=free&userId=${userId}`);
-    if (!response.ok) {
-      throw new Error('❌ Сервер вернул ошибку при загрузке бесплатных уроков');
-    }
-    const data = await response.json();
-    this.lessons = data;
-  } catch (error) {
-    console.error('❌ Ошибка загрузки бесплатных уроков:', error);
-  }
-},
-
-    goToLesson(id) {
-      if (!id) {
-        console.error('❌ Нет ID урока!');
+    startLesson(lessonId) {
+      if (!lessonId) {
+        console.error('❌ Нет ID урока для старта.');
         return;
       }
-      this.$router.push(`/lesson/${id}`);
+      this.$router.push(`/lesson/${lessonId}`);
     },
+
     async addToStudyPlan(lesson) {
+      if (!this.firebaseUserId) {
+        alert('⚠️ Чтобы добавить урок в план, войдите в аккаунт.');
+        return;
+      }
+
       try {
-        if (!this.firebaseUserId) {
-          alert('⚠️ Сначала войдите в аккаунт!');
-          return;
-        }
         await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.firebaseUserId}/study-list`, {
-          topicId: lesson.topicId
+          subject: lesson.subject,
+          topic: lesson.topic,
         });
-        alert(`✅ Урок "${lesson.lessonName}" добавлен в ваш план!`);
-      } catch (err) {
-        console.error('❌ Ошибка добавления в план:', err);
+        alert(`✅ Урок "${lesson.lessonName}" добавлен в ваш учебный план!`);
+      } catch (error) {
+        console.error('❌ Ошибка добавления урока в учебный план:', error);
       }
     }
   }
@@ -106,6 +97,13 @@ export default {
   text-align: center;
 }
 
+.loading, .no-lessons {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #6b7280;
+  margin-top: 60px;
+}
+
 .lessons-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -117,18 +115,16 @@ export default {
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   padding: 20px;
-  transition: all 0.3s ease;
-  cursor: default;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  position: relative;
+  transition: transform 0.3s ease;
 }
 
 .lesson-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.2);
 }
 
 .card-header {
@@ -141,61 +137,54 @@ export default {
   font-size: 1.3rem;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 8px;
 }
 
 .lesson-topic {
   font-size: 1rem;
   color: #6b7280;
-  margin-bottom: 10px;
+  margin-top: 8px;
 }
 
 .subject-badge {
-  font-size: 0.75rem;
-  padding: 6px 12px;
-  background: linear-gradient(to right, #9333ea, #ec4899);
-  color: white;
-  border-radius: 20px;
   display: inline-block;
+  background: linear-gradient(to right, #7c3aed, #ec4899);
+  color: white;
+  font-size: 0.8rem;
   font-weight: 600;
-  margin-top: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  margin-top: 10px;
 }
 
 .add-btn {
   background: #10b981;
   color: white;
-  font-size: 1.2rem;
   border: none;
   border-radius: 50%;
   width: 34px;
   height: 34px;
+  font-size: 1.4rem;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background 0.3s;
 }
+
 .add-btn:hover {
   background: #059669;
 }
 
 .start-btn {
-  margin-top: 16px;
+  margin-top: 20px;
   background: linear-gradient(to right, #60a5fa, #818cf8);
   color: white;
-  padding: 10px 16px;
-  font-size: 0.9rem;
   border: none;
   border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.3s ease;
-}
-.start-btn:hover {
-  background: linear-gradient(to right, #3b82f6, #6366f1);
+  transition: background 0.3s;
 }
 
-/* Loading and Empty State */
-.loading, .no-lessons {
-  text-align: center;
-  font-size: 1.1rem;
-  color: #6b7280;
-  margin-top: 60px;
+.start-btn:hover {
+  background: linear-gradient(to right, #3b82f6, #6366f1);
 }
 </style>

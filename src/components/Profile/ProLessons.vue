@@ -1,6 +1,6 @@
 <template>
   <div class="lessons-page">
-    <h1 class="page-title">Премиум Уроки</h1>
+    <h1 class="page-title">🎓 Премиум Уроки</h1>
 
     <div v-if="loading" class="loading">Загрузка премиум уроков...</div>
 
@@ -13,12 +13,12 @@
         <p class="lesson-topic">{{ lesson.topic }}</p>
         <span class="subject-badge">{{ lesson.subject }}</span>
 
-        <button class="start-btn" @click="goToLesson(lesson._id)">Начать</button>
+        <button class="start-btn" @click="startLesson(lesson._id)">Начать</button>
       </div>
     </div>
 
     <div v-else class="no-lessons">
-      ❌ Нет доступных премиум уроков.
+      ❌ Премиум уроки пока недоступны.
     </div>
   </div>
 </template>
@@ -39,50 +39,45 @@ export default {
     ...mapState(['firebaseUserId']),
   },
   mounted() {
-    this.fetchLessons();
+    this.loadProLessons();
   },
   methods: {
-    async fetchLessons() {
-  const userId = localStorage.getItem('userId');
-  if (!userId) {
-    console.error('❌ Нет userId. Невозможно загрузить премиум уроки.');
-    return;
-  }
+    async loadProLessons() {
+      try {
+        const response = await axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=premium`);
+        this.lessons = response.data;
+      } catch (error) {
+        console.error('❌ Ошибка загрузки премиум уроков:', error);
+      } finally {
+        this.loading = false;
+      }
+    },
 
-  try {
-    const response = await fetch(`${process.env.VUE_APP_API_URL}/lessons?type=premium&userId=${userId}`);
-    if (!response.ok) {
-      throw new Error('❌ Сервер вернул ошибку при загрузке премиум уроков');
-    }
-    const data = await response.json();
-    this.lessons = data;
-  } catch (error) {
-    console.error('❌ Ошибка загрузки премиум уроков:', error);
-  }
-},
-
-    goToLesson(id) {
-      if (!id) {
-        console.error('❌ Нет ID урока!');
+    startLesson(lessonId) {
+      if (!lessonId) {
+        console.error('❌ Нет ID урока для старта.');
         return;
       }
-      this.$router.push(`/lesson/${id}`);
+      this.$router.push(`/lesson/${lessonId}`);
     },
+
     async addToStudyPlan(lesson) {
+      if (!this.firebaseUserId) {
+        alert('⚠️ Чтобы добавить урок в план, войдите в аккаунт.');
+        return;
+      }
+
       try {
-        if (!this.firebaseUserId) {
-          alert('⚠️ Сначала войдите в аккаунт!');
-          return;
-        }
         await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.firebaseUserId}/study-list`, {
-          topicId: lesson.topicId,
+          subject: lesson.subject,
+          topic: lesson.topic,
         });
-        alert(`✅ Урок "${lesson.lessonName}" добавлен в ваш план!`);
+        alert(`✅ Урок "${lesson.lessonName}" добавлен в ваш учебный план!`);
       } catch (error) {
         console.error('❌ Ошибка добавления урока в план:', error);
       }
-    },
-  },
+    }
+  }
 };
 </script>
 
@@ -102,6 +97,13 @@ export default {
   text-align: center;
 }
 
+.loading, .no-lessons {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #9ca3af;
+  margin-top: 60px;
+}
+
 .lessons-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -117,7 +119,7 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: 0.3s ease;
+  transition: transform 0.3s ease;
   cursor: default;
   position: relative;
 }
@@ -167,6 +169,7 @@ export default {
   cursor: pointer;
   transition: background 0.3s ease;
 }
+
 .add-btn:hover {
   background: #059669;
 }
@@ -182,14 +185,8 @@ export default {
   cursor: pointer;
   transition: background 0.3s ease;
 }
+
 .start-btn:hover {
   background: linear-gradient(to right, #3b82f6, #6366f1);
-}
-
-.loading, .no-lessons {
-  text-align: center;
-  font-size: 1.1rem;
-  color: #9ca3af;
-  margin-top: 60px;
 }
 </style>
