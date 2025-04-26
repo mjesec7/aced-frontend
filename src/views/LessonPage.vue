@@ -70,7 +70,7 @@
 
 <script>
 import axios from 'axios';
-import { getAIResponse } from '@/components/services/gptService';
+import { getAIResponse } from '../services/GPTService';
 
 export default {
   name: 'LessonPage',
