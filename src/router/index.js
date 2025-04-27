@@ -12,12 +12,12 @@ import UserAnalyticsPanel from '@/components/Profile/UserAnalyticsPanel.vue';
 import SubjectProgress from '@/components/Profile/SubjectProgress.vue';
 import StudyGoal from '@/components/Profile/StudyGoal.vue';
 import HomeworkHelp from '@/components/Profile/HomeworkHelp.vue';
-import DiaryPage from '@/components/Profile/DiaryPage.vue'; // ✅ NEW Diary
+import DiaryPage from '@/components/Profile/DiaryPage.vue';
 
 // ✅ Payments
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
 
-// ✅ Lesson and Completion
+// ✅ Lessons
 const LessonView = () => import('@/views/LessonPage.vue');
 const TopicFinished = () => import('@/views/TopicFinished.vue');
 
@@ -43,7 +43,7 @@ const routes = [
       { path: 'progress', name: 'SubjectProgress', component: SubjectProgress },
       { path: 'goal', name: 'StudyGoal', component: StudyGoal },
       { path: 'homework', name: 'HomeworkHelp', component: HomeworkHelp },
-      { path: 'diary', name: 'DiaryPage', component: DiaryPage }, // ✅ Diary inside Profile
+      { path: 'diary', name: 'DiaryPage', component: DiaryPage },
     ],
   },
   {
@@ -62,6 +62,11 @@ const routes = [
     path: '/finished',
     name: 'TopicFinished',
     component: TopicFinished,
+  },
+  // ✅ Catch-All route for 404 fallback
+  {
+    path: '/:catchAll(.*)',
+    redirect: '/',
   }
 ];
 
@@ -78,6 +83,11 @@ const router = createRouter({
     }
     return savedPosition || { top: 0 };
   }
+});
+
+// ✅ Optional: Global error handler for navigation errors
+router.onError((error) => {
+  console.error('❌ Router error caught:', error);
 });
 
 export default router;
