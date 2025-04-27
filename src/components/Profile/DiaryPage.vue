@@ -93,6 +93,7 @@
 
 <script>
 import axios from 'axios';
+import { mapState } from 'vuex';
 
 export default {
   name: 'DiaryPage',
@@ -114,6 +115,7 @@ export default {
     };
   },
   computed: {
+    ...mapState(['firebaseUserId']),
     progressPercent() {
       const total = this.completedToday.length + this.lessonsToday.length;
       return total > 0 ? Math.round((this.completedToday.length / total) * 100) : 0;
@@ -136,19 +138,19 @@ export default {
     startTimer() {
       this.timer = setInterval(() => {
         this.studyMinutes++;
-      }, 60000); // +1 min every minute
+      }, 60000);
     },
     async fetchData() {
-      const userId = localStorage.getItem('userId');
+      const userId = this.firebaseUserId;
       if (!userId) {
-        console.error('❌ Нет userId в localStorage. Невозможно загрузить дневник.');
+        console.error('❌ Нет userId в Vuex. Невозможно загрузить дневник.');
         this.loading = false;
         return;
       }
 
       try {
         const [lessonsRes, userRes] = await Promise.all([
-          axios.get(`${process.env.VUE_APP_API_URL}/lessons?userId=${userId}`),
+          axios.get(`${process.env.VUE_APP_API_URL}/lessons`),
           axios.get(`${process.env.VUE_APP_API_URL}/users/${userId}`)
         ]);
 
@@ -195,9 +197,9 @@ export default {
       this.gradesThisWeek = grades;
     },
     async saveDiary() {
-      const userId = localStorage.getItem('userId');
+      const userId = this.firebaseUserId;
       if (!userId) {
-        console.error('❌ Нет userId в localStorage. Невозможно сохранить дневник.');
+        console.error('❌ Нет userId в Vuex. Невозможно сохранить дневник.');
         return;
       }
 
@@ -218,7 +220,7 @@ export default {
     },
     formatDate(dateStr) {
       return new Date(dateStr).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-    },
+    }
   }
 };
 </script>

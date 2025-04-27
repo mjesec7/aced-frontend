@@ -30,6 +30,8 @@
   </template>
   
   <script>
+  import { mapState } from 'vuex';
+  
   export default {
     name: 'SubjectProgress',
     data() {
@@ -38,14 +40,17 @@
         progressData: [],
       };
     },
+    computed: {
+      ...mapState(['firebaseUserId']),
+    },
     mounted() {
       this.fetchProgress();
     },
     methods: {
       async fetchProgress() {
-        const userId = localStorage.getItem('userId');
+        const userId = this.firebaseUserId;
         if (!userId) {
-          console.error('❌ Нет userId. Невозможно загрузить прогресс по темам.');
+          console.error('❌ Нет userId в Vuex. Невозможно загрузить прогресс по темам.');
           this.loading = false;
           return;
         }
@@ -56,7 +61,7 @@
             throw new Error('❌ Сервер вернул ошибку при получении прогресса по темам');
           }
           const data = await response.json();
-          this.progressData = data; // ✅ Corrected this line
+          this.progressData = data;
         } catch (error) {
           console.error('❌ Ошибка загрузки прогресса по темам:', error);
         } finally {
@@ -105,7 +110,7 @@
     background: white;
     padding: 20px;
     border-radius: 14px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
   }
   
   .top-section {
