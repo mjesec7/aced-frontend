@@ -44,8 +44,13 @@ export default {
   methods: {
     async loadFreeLessons() {
       try {
-        const response = await axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=free`);
-        this.lessons = response.data;
+        const response = await axios.get(`${process.env.VUE_APP_API_URL}/lessons`);
+        if (Array.isArray(response.data)) {
+          this.lessons = response.data.filter(lesson => lesson.type === 'free');
+        } else {
+          console.error('❌ Неверный формат данных уроков');
+          this.lessons = [];
+        }
       } catch (error) {
         console.error('❌ Ошибка загрузки бесплатных уроков:', error);
       } finally {
@@ -113,18 +118,20 @@ export default {
 .lesson-card {
   background: white;
   border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 20px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.03);
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   transition: transform 0.3s ease;
+  cursor: default;
+  position: relative;
 }
 
 .lesson-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.2);
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 10px 28px rgba(147, 51, 234, 0.25);
 }
 
 .card-header {
@@ -136,54 +143,52 @@ export default {
 .lesson-title {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #1f2937;
+  color: #111827;
 }
 
 .lesson-topic {
   font-size: 1rem;
   color: #6b7280;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .subject-badge {
-  display: inline-block;
-  background: linear-gradient(to right, #7c3aed, #ec4899);
-  color: white;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.75rem;
   padding: 6px 12px;
+  background: linear-gradient(to right, #8b5cf6, #ec4899);
+  color: white;
   border-radius: 20px;
+  display: inline-block;
+  font-weight: 600;
   margin-top: 10px;
 }
 
 .add-btn {
   background: #10b981;
   color: white;
+  font-size: 1.2rem;
   border: none;
   border-radius: 50%;
   width: 34px;
   height: 34px;
-  font-size: 1.4rem;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: background 0.3s ease;
 }
-
 .add-btn:hover {
   background: #059669;
 }
 
 .start-btn {
-  margin-top: 20px;
+  margin-top: 16px;
   background: linear-gradient(to right, #60a5fa, #818cf8);
   color: white;
-  border: none;
-  border-radius: 12px;
   padding: 10px 16px;
   font-size: 0.9rem;
+  border: none;
+  border-radius: 12px;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: background 0.3s ease;
 }
-
 .start-btn:hover {
   background: linear-gradient(to right, #3b82f6, #6366f1);
 }

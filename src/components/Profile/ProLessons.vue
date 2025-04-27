@@ -44,8 +44,14 @@ export default {
   methods: {
     async loadProLessons() {
       try {
-        const response = await axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=premium`);
-        this.lessons = response.data;
+        const response = await axios.get(`${process.env.VUE_APP_API_URL}/lessons`);
+        if (Array.isArray(response.data)) {
+          // Filter manually if backend doesn't auto-filter
+          this.lessons = response.data.filter(lesson => lesson.type === 'premium');
+        } else {
+          console.error('❌ Неверный формат данных уроков');
+          this.lessons = [];
+        }
       } catch (error) {
         console.error('❌ Ошибка загрузки премиум уроков:', error);
       } finally {
@@ -169,7 +175,6 @@ export default {
   cursor: pointer;
   transition: background 0.3s ease;
 }
-
 .add-btn:hover {
   background: #059669;
 }
@@ -185,7 +190,6 @@ export default {
   cursor: pointer;
   transition: background 0.3s ease;
 }
-
 .start-btn:hover {
   background: linear-gradient(to right, #3b82f6, #6366f1);
 }
