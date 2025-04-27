@@ -3,7 +3,7 @@
     <div v-if="loading" class="loading">Загрузка урока...</div>
 
     <div v-else class="lesson-content">
-      <!-- Левая панель -->
+      <!-- Left Panel -->
       <div class="left-panel">
         <h2 class="lesson-title">{{ lesson.lessonName }}</h2>
 
@@ -20,7 +20,7 @@
         <div v-else-if="currentStep >= 2 && currentStep < exerciseSteps" class="section">
           <h3>✏️ Упражнение {{ currentStep - 1 }}</h3>
           <p>{{ currentExercise.question || 'Вопрос отсутствует' }}</p>
-          <button class="hint-btn" @click="showHint = !showHint">💡 Подсказка</button>
+          <button class="hint-btn" @click="toggleHint">💡 Подсказка</button>
           <div v-if="showHint" class="hint-box">{{ currentExercise.hint || 'Подсказка недоступна' }}</div>
         </div>
 
@@ -39,7 +39,7 @@
         </div>
       </div>
 
-      <!-- Правая панель -->
+      <!-- Right Panel -->
       <div class="right-panel" v-if="showInput">
         <h3>✏️ Практическая зона</h3>
         <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
@@ -48,13 +48,13 @@
       </div>
     </div>
 
-    <!-- Навигация -->
+    <!-- Navigation -->
     <div class="lesson-navigation">
       <button class="nav-btn" @click="goPrevious" :disabled="currentStep === 0">⬅️ Назад</button>
       <button class="nav-btn" @click="goNext">➡️ Далее</button>
     </div>
 
-    <!-- AI Чат -->
+    <!-- AI Chat -->
     <div class="chatbot-button" @click="chatOpen = !chatOpen">
       🤖
     </div>
@@ -112,17 +112,16 @@ export default {
     async loadLesson() {
       try {
         const lessonId = this.$route.params.id;
-        const res = await axios.get(`${process.env.VUE_APP_API_URL}/lessons/${lessonId}`);
-        this.lesson = res.data;
+        const { data: lessonData } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons/${lessonId}`);
+        this.lesson = lessonData;
 
         if (this.lesson.topicId) {
-          const topicRes = await axios.get(`${process.env.VUE_APP_API_URL}/lessons/topic/${this.lesson.topicId}`);
-          this.allLessons = topicRes.data;
+          const { data: topicLessons } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons/topic/${this.lesson.topicId}`);
+          this.allLessons = Array.isArray(topicLessons) ? topicLessons : [];
         }
-
-        this.loading = false;
-      } catch (err) {
-        console.error('❌ Ошибка загрузки урока:', err);
+      } catch (error) {
+        console.error('❌ Ошибка загрузки урока:', error);
+      } finally {
         this.loading = false;
       }
     },
@@ -137,28 +136,30 @@ export default {
     goPrevious() {
       if (this.currentStep > 0) {
         this.currentStep--;
-        this.userAnswer = '';
-        this.confirmation = '';
+        this.resetAnswer();
       }
     },
-    async goNext() {
+    goNext() {
       if (this.currentStep < this.exerciseSteps) {
         this.currentStep++;
-        this.userAnswer = '';
-        this.confirmation = '';
+        this.resetAnswer();
       } else {
-        await this.goToNextLesson();
+        this.goToNextLesson();
       }
     },
+    resetAnswer() {
+      this.userAnswer = '';
+      this.confirmation = '';
+      this.showHint = false;
+    },
     async goToNextLesson() {
-      const currentLessonId = this.lesson._id;
-      const currentIndex = this.allLessons.findIndex(l => l._id === currentLessonId);
+      const currentIndex = this.allLessons.findIndex(l => l._id === this.lesson._id);
 
-      if (!this.completedLessons.has(currentLessonId)) {
-        this.completedLessons.add(currentLessonId);
+      if (!this.completedLessons.has(this.lesson._id)) {
+        this.completedLessons.add(this.lesson._id);
       }
 
-      if (currentIndex >= 0 && currentIndex + 1 < this.allLessons.length) {
+      if (currentIndex !== -1 && currentIndex + 1 < this.allLessons.length) {
         const nextLessonId = this.allLessons[currentIndex + 1]._id;
         this.$router.push({ name: 'LessonView', params: { id: nextLessonId } });
       } else {
@@ -166,15 +167,18 @@ export default {
         this.$router.push({ name: 'TopicFinished', query: { performance } });
       }
     },
+    toggleHint() {
+      this.showHint = !this.showHint;
+    },
     async askAI() {
       if (!this.chatInput.trim()) return;
       try {
         this.aiResponse = '⌛ Пишем ответ...';
-        const res = await getAIResponse(this.chatInput);
-        this.aiResponse = res;
+        const answer = await getAIResponse(this.chatInput);
+        this.aiResponse = answer || '❌ Ошибка получения ответа.';
       } catch (error) {
-        console.error('Ошибка чата с AI:', error);
-        this.aiResponse = '❌ Ошибка получения ответа.';
+        console.error('❌ Ошибка общения с AI:', error);
+        this.aiResponse = '❌ Ошибка общения с AI.';
       }
     }
   }
