@@ -5,11 +5,11 @@
     <div v-else class="lesson-content">
       <!-- Left Panel -->
       <div class="left-panel">
-        <h2 class="lesson-title">{{ lesson.lessonName }}</h2>
+        <h2 class="lesson-title">{{ lesson.lessonName || 'Без названия' }}</h2>
 
         <div v-if="currentStep === 0" class="section">
           <h3>📚 Объяснение</h3>
-          <div v-html="lesson.explanation || 'Нет объяснения'"></div>
+          <div v-html="lesson.explanation || lesson.content || 'Нет объяснения'"></div>
         </div>
 
         <div v-else-if="currentStep === 1" class="section">
@@ -21,14 +21,16 @@
           <h3>✏️ Упражнение {{ currentStep - 1 }}</h3>
           <p>{{ currentExercise.question || 'Вопрос отсутствует' }}</p>
           <button class="hint-btn" @click="toggleHint">💡 Подсказка</button>
-          <div v-if="showHint" class="hint-box">{{ currentExercise.hint || 'Подсказка недоступна' }}</div>
+          <div v-if="showHint" class="hint-box">{{ currentExercise.hint || lesson.hint || 'Подсказка недоступна' }}</div>
         </div>
 
         <div v-else-if="currentStep === exerciseSteps" class="section">
           <h3>🧠 Квиз</h3>
           <p>{{ currentQuiz.question || 'Вопрос отсутствует' }}</p>
           <ul>
-            <li v-for="option in currentQuiz.options || []" :key="option">{{ option }}</li>
+            <li v-for="(option, index) in currentQuiz.options || []" :key="index">
+              {{ option.option || option }}
+            </li>
           </ul>
         </div>
 
@@ -184,6 +186,9 @@ export default {
   }
 };
 </script>
+
+
+
 
 <style scoped>
 .lesson-page {
