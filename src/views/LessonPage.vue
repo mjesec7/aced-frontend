@@ -114,38 +114,58 @@ export default {
     async loadLesson() {
       try {
         const lessonId = this.$route.params.id;
+        console.log('📥 [Загрузка урока] lessonId:', lessonId);
+
+        if (!lessonId) {
+          console.error('❌ [Ошибка] lessonId отсутствует в маршруте.');
+          this.loading = false;
+          return;
+        }
+
         const { data: lessonData } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons/${lessonId}`);
+        console.log('✅ [Загрузка урока] Урок получен:', lessonData);
+
         this.lesson = lessonData;
 
         if (this.lesson.topicId) {
+          console.log('📚 [Загрузка уроков темы] topicId:', this.lesson.topicId);
           const { data: topicLessons } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons/topic/${this.lesson.topicId}`);
           this.allLessons = Array.isArray(topicLessons) ? topicLessons : [];
+          console.log('✅ [Загрузка уроков темы] Количество уроков в теме:', this.allLessons.length);
+        } else {
+          console.warn('⚠️ [Предупреждение] У урока отсутствует topicId.');
         }
       } catch (error) {
-        console.error('❌ Ошибка загрузки урока:', error);
+        console.error('❌ [Ошибка] Ошибка загрузки урока:', error);
       } finally {
         this.loading = false;
+        console.log('ℹ️ [Info] loading установлен в false');
       }
     },
     submitAnswer() {
       if (!this.userAnswer.trim()) {
         this.confirmation = '⚠️ Пожалуйста, введите ответ.';
+        console.warn('⚠️ [Предупреждение] Пустой ответ отправлен.');
         return;
       }
       this.confirmation = '✅ Ответ отправлен!';
+      console.log('✅ [Ответ] Ответ успешно отправлен:', this.userAnswer);
       this.userAnswer = '';
     },
     goPrevious() {
       if (this.currentStep > 0) {
         this.currentStep--;
         this.resetAnswer();
+        console.log('⬅️ [Навигация] Переход к предыдущему этапу, currentStep:', this.currentStep);
       }
     },
     goNext() {
       if (this.currentStep < this.exerciseSteps) {
         this.currentStep++;
         this.resetAnswer();
+        console.log('➡️ [Навигация] Переход к следующему этапу, currentStep:', this.currentStep);
       } else {
+        console.log('🏁 [Навигация] Последний этап пройден. Переход к следующему уроку.');
         this.goToNextLesson();
       }
     },
@@ -153,33 +173,44 @@ export default {
       this.userAnswer = '';
       this.confirmation = '';
       this.showHint = false;
+      console.log('🔄 [Сброс] Ответ, подтверждение и подсказка сброшены.');
     },
     async goToNextLesson() {
       const currentIndex = this.allLessons.findIndex(l => l._id === this.lesson._id);
+      console.log('🔎 [Поиск следующего урока] Текущий индекс:', currentIndex);
 
       if (!this.completedLessons.has(this.lesson._id)) {
         this.completedLessons.add(this.lesson._id);
+        console.log('🏆 [Прогресс] Урок добавлен в завершенные:', this.lesson._id);
       }
 
       if (currentIndex !== -1 && currentIndex + 1 < this.allLessons.length) {
         const nextLessonId = this.allLessons[currentIndex + 1]._id;
+        console.log('➡️ [Переход] Следующий урок ID:', nextLessonId);
         this.$router.push({ name: 'LessonView', params: { id: nextLessonId } });
       } else {
         const performance = Math.round((this.completedLessons.size / this.allLessons.length) * 100);
+        console.log('✅ [Завершение темы] Процент выполненных уроков:', performance);
         this.$router.push({ name: 'TopicFinished', query: { performance } });
       }
     },
     toggleHint() {
       this.showHint = !this.showHint;
+      console.log(this.showHint ? '💡 [Подсказка] Подсказка отображена.' : '💡 [Подсказка] Подсказка скрыта.');
     },
     async askAI() {
-      if (!this.chatInput.trim()) return;
+      if (!this.chatInput.trim()) {
+        console.warn('⚠️ [AI Чат] Пустой запрос не отправлен.');
+        return;
+      }
       try {
+        console.log('🤖 [AI Чат] Отправка запроса в AI:', this.chatInput);
         this.aiResponse = '⌛ Пишем ответ...';
         const answer = await getAIResponse(this.chatInput);
         this.aiResponse = answer || '❌ Ошибка получения ответа.';
+        console.log('✅ [AI Чат] Ответ от AI получен:', this.aiResponse);
       } catch (error) {
-        console.error('❌ Ошибка общения с AI:', error);
+        console.error('❌ [AI Чат] Ошибка общения с AI:', error);
         this.aiResponse = '❌ Ошибка общения с AI.';
       }
     }
