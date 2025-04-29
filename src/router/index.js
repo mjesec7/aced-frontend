@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import store from '@/store'; // ✅ подключаем store для проверки логина
+import store from '@/store'; // ✅ Store for auth check
 
 // ✅ Main Views
 import HomePage from '@/views/HomePage.vue';
@@ -7,7 +7,7 @@ import AcedSettings from '@/components/Main/AcedSettings.vue';
 import ProfilePage from '@/views/ProfilePage.vue';
 
 // ✅ Profile Sub-Pages
-import Dashboard from '@/components/Profile/Dashboard.vue';
+import MainPage from '@/components/Profile/MainPage.vue'; // ✅ Main profile dashboard
 import FreeLessons from '@/components/Profile/FreeLessons.vue';
 import ProLessons from '@/components/Profile/ProLessons.vue';
 import UserAnalyticsPanel from '@/components/Profile/UserAnalyticsPanel.vue';
@@ -19,7 +19,7 @@ import DiaryPage from '@/components/Profile/DiaryPage.vue';
 // ✅ Payments
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
 
-// ✅ Lessons
+// ✅ Lazy-loaded lessons
 const LessonView = () => import('@/views/LessonPage.vue');
 const TopicFinished = () => import('@/views/TopicFinished.vue');
 
@@ -39,7 +39,7 @@ const routes = [
     component: ProfilePage,
     children: [
       { path: '', redirect: '/profile/main' },
-      { path: 'main', name: 'Dashboard', component: Dashboard },
+      { path: 'main', name: 'MainPage', component: MainPage },
       { path: 'free', name: 'FreeLessons', component: FreeLessons },
       { path: 'premium', name: 'ProLessons', component: ProLessons },
       { path: 'analytics', name: 'AnalyticsPanel', component: UserAnalyticsPanel },
@@ -66,7 +66,6 @@ const routes = [
     name: 'TopicFinished',
     component: TopicFinished,
   },
-  // ✅ Catch-All 404 -> Home
   {
     path: '/:catchAll(.*)',
     redirect: '/',
@@ -78,17 +77,13 @@ const router = createRouter({
   routes,
   scrollBehavior(to, from, savedPosition) {
     if (to.hash) {
-      return {
-        el: to.hash,
-        behavior: 'smooth',
-        top: 80,
-      };
+      return { el: to.hash, behavior: 'smooth', top: 80 };
     }
     return savedPosition || { top: 0 };
-  }
+  },
 });
 
-// ✅ PROTECT ROUTES (только HomePage доступна без логина)
+// ✅ Route Guard: Only allow access if logged in
 router.beforeEach((to, from, next) => {
   const publicPages = ['HomePage'];
   const authRequired = !publicPages.includes(to.name);
@@ -102,7 +97,7 @@ router.beforeEach((to, from, next) => {
   next();
 });
 
-// ✅ Global error handler
+// ✅ Error handling
 router.onError((error) => {
   console.error('❌ Router error caught:', error);
 });

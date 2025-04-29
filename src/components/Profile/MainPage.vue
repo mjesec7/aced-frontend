@@ -50,10 +50,10 @@
   import { mapState } from 'vuex';
   import axios from 'axios';
   import TopicCard from '@/components/Topics/TopicCard.vue';
-  import StudyCard from '@/components/Topics/StudyCard.vue';
+  import StudyCard from '@/components/Profile/StudyCard.vue';
   
   export default {
-    name: 'Dashboard',
+    name: 'MainPage',
     components: { TopicCard, StudyCard },
     data() {
       return {

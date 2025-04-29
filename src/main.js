@@ -13,9 +13,8 @@ const app = createApp(App);
 
 app.use(router);   // ✅ Use router
 app.use(store);    // ✅ Use Vuex store
-app.use(VueToast)
+app.use(VueToast);
 // ✅ Load user from localStorage into Vuex before app mounts
 store.dispatch('loadUserFromLocalStorage');
 
 app.mount('#app'); // ✅ Mount the app
-;
