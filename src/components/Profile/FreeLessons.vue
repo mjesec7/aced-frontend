@@ -33,12 +33,20 @@ export default {
     return {
       lessons: [],
       loading: true,
+      userId: null
     };
   },
   computed: {
-    ...mapState(['firebaseUserId']),
+    ...mapState(['firebaseUserId'])
   },
   mounted() {
+    const storedId = this.firebaseUserId || localStorage.getItem('userId');
+    if (!storedId) {
+      console.warn('❌ Нет ID пользователя для загрузки уроков.');
+      this.loading = false;
+      return;
+    }
+    this.userId = storedId;
     this.loadFreeLessons();
   },
   methods: {
@@ -69,19 +77,19 @@ export default {
     },
 
     async addToStudyPlan(lesson) {
-      if (!this.firebaseUserId) {
+      if (!this.userId) {
         alert('⚠️ Чтобы добавить урок в план, войдите в аккаунт.');
         console.warn('⚠️ Попытка добавить урок без авторизации.');
         return;
       }
 
       try {
-        await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.firebaseUserId}/study-list`, {
+        await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`, {
           subject: lesson.subject,
           topic: lesson.topic,
         });
         alert(`✅ Урок "${lesson.lessonName}" успешно добавлен в ваш учебный план!`);
-        console.log(`✅ Урок "${lesson.lessonName}" добавлен в план пользователя ID: ${this.firebaseUserId}`);
+        console.log(`✅ Урок "${lesson.lessonName}" добавлен в план пользователя ID: ${this.userId}`);
       } catch (error) {
         console.error('❌ Ошибка при добавлении урока в план:', error.response?.data || error.message);
       }
@@ -89,7 +97,6 @@ export default {
   }
 };
 </script>
-
 
 <style scoped>
 .lessons-page {

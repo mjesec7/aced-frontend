@@ -22,36 +22,35 @@
           </div>
 
           <div class="modal-section options-grid">
-  <label class="option-box">
-    <input type="checkbox" v-model="selectedStats" value="studyDays" />
-    Дней в обучении
-  </label>
-  <label class="option-box">
-    <input type="checkbox" v-model="selectedStats" value="completedSubjects" />
-    Завершено предметов
-  </label>
-  <label class="option-box">
-    <input type="checkbox" v-model="selectedStats" value="weeklyLessons" />
-    Уроков за неделю
-  </label>
-  <label class="option-box">
-    <input type="checkbox" v-model="selectedStats" value="monthlyLessons" />
-    Уроков за месяц
-  </label>
-  <label class="option-box">
-    <input type="checkbox" v-model="selectedStats" value="streakDays" />
-    Учебный стрик
-  </label>
-  <label class="option-box">
-    <input type="checkbox" v-model="selectedStats" value="mostActiveDay" />
-    Активный день
-  </label>
-  <label class="option-box">
-    <input type="checkbox" v-model="selectedStats" value="totalLessonsDone" />
-    Всего уроков
-  </label>
-</div>
-
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="studyDays" />
+              Дней в обучении
+            </label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="completedSubjects" />
+              Завершено предметов
+            </label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="weeklyLessons" />
+              Уроков за неделю
+            </label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="monthlyLessons" />
+              Уроков за месяц
+            </label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="streakDays" />
+              Учебный стрик
+            </label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="mostActiveDay" />
+              Активный день
+            </label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="totalLessonsDone" />
+              Всего уроков
+            </label>
+          </div>
 
           <div class="modal-buttons">
             <button @click="downloadPDF">📥 Скачать</button>
@@ -92,10 +91,11 @@
 </template>
 
 <script>
-import LineChart from '@/components/Charts/LineChart.vue'
-import Card from '@/components/Profile/AnalyticsCard.vue'
-import html2pdf from 'html2pdf.js'
-import '@/assets/css/UserAnalyticsPanel.css'
+import { mapState } from 'vuex';
+import LineChart from '@/components/Charts/LineChart.vue';
+import Card from '@/components/Profile/AnalyticsCard.vue';
+import html2pdf from 'html2pdf.js';
+import '@/assets/css/UserAnalyticsPanel.css';
 
 export default {
   components: { LineChart, Card },
@@ -126,11 +126,12 @@ export default {
         'totalLessonsDone'
       ],
       period: 30
-    }
+    };
   },
   computed: {
+    ...mapState(['user']),
     remainingSubjects() {
-      return Math.max(this.analytics.totalSubjects - this.analytics.completedSubjects, 0)
+      return Math.max(this.analytics.totalSubjects - this.analytics.completedSubjects, 0);
     },
     chartData() {
       return {
@@ -147,22 +148,22 @@ export default {
             fill: true
           }
         ]
-      }
+      };
     }
   },
   methods: {
     openModal() {
-      this.showModal = true
+      this.showModal = true;
     },
     formatDaysToHuman(days) {
-      const years = Math.floor(days / 365)
-      const months = Math.floor((days % 365) / 30)
-      const remainingDays = days % 30
-      const parts = []
-      if (years > 0) parts.push(`${years} г.`)
-      if (months > 0) parts.push(`${months} мес.`)
-      if (remainingDays > 0 || parts.length === 0) parts.push(`${remainingDays} дн.`)
-      return `≈ ${parts.join(' ')}`
+      const years = Math.floor(days / 365);
+      const months = Math.floor((days % 365) / 30);
+      const remainingDays = days % 30;
+      const parts = [];
+      if (years > 0) parts.push(`${years} г.`);
+      if (months > 0) parts.push(`${months} мес.`);
+      if (remainingDays > 0 || parts.length === 0) parts.push(`${remainingDays} дн.`);
+      return `≈ ${parts.join(' ')}`;
     },
     downloadPDF() {
       const labelMap = {
@@ -173,40 +174,39 @@ export default {
         streakDays: 'Учебный стрик',
         mostActiveDay: 'Наиболее активный день',
         totalLessonsDone: 'Всего уроков'
-      }
-      const wrapper = document.createElement('div')
-      wrapper.innerHTML = `<h2 style="text-align:center;font-family:'Segoe UI';margin-bottom:16px;">📊 Your Results in Aced</h2>`
+      };
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = `<h2 style="text-align:center;font-family:'Segoe UI';margin-bottom:16px;">📊 Your Results in Aced</h2>`;
       this.selectedStats.forEach(key => {
-        const label = labelMap[key]
-        const value = this.analytics[key] ?? '—'
-        wrapper.innerHTML += `<div style="margin: 10px 0; font-size: 14px;"><strong>${label}:</strong> ${value}</div>`
-      })
-      wrapper.innerHTML += `<div style="margin-top:12px;"><strong>Период:</strong> Последние ${this.period} дней</div>`
-      this.showModal = false
+        const label = labelMap[key];
+        const value = this.analytics[key] ?? '—';
+        wrapper.innerHTML += `<div style="margin: 10px 0; font-size: 14px;"><strong>${label}:</strong> ${value}</div>`;
+      });
+      wrapper.innerHTML += `<div style="margin-top:12px;"><strong>Период:</strong> Последние ${this.period} дней</div>`;
+      this.showModal = false;
       html2pdf().set({
         margin: 0.5,
         filename: 'aced-analytics-custom.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2 },
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-      }).from(wrapper).save()
+      }).from(wrapper).save();
     }
   },
   async mounted() {
-    const userId = localStorage.getItem('userId')
+    const userId = this.user?.uid;
     if (!userId) {
-      console.error('❌ Нет userId в localStorage. Перенаправляем...')
-      this.$router.push('/login') // or open login modal if you have
-      return
+      console.error('❌ Нет userId в store. Перенаправляем...');
+      return this.$router.push('/');
     }
     try {
-      const res = await fetch(`${process.env.VUE_APP_API_URL}/user-analytics/${userId}`)
-      if (!res.ok) throw new Error('❌ Ошибка ответа сервера при получении аналитики')
-      const data = await res.json()
-      this.analytics = data
+      const res = await fetch(`${process.env.VUE_APP_API_URL}/user-analytics/${userId}`);
+      if (!res.ok) throw new Error('❌ Ошибка ответа сервера при получении аналитики');
+      const data = await res.json();
+      this.analytics = data;
     } catch (err) {
-      console.error('❌ Ошибка при получении аналитики:', err)
+      console.error('❌ Ошибка при получении аналитики:', err);
     }
   }
-}
+};
 </script>
