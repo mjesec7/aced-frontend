@@ -44,16 +44,16 @@ export default {
   methods: {
     async loadProLessons() {
       try {
-        const response = await axios.get(`${process.env.VUE_APP_API_URL}/lessons`);
-        if (Array.isArray(response.data)) {
-          // Filter manually if backend doesn't auto-filter
-          this.lessons = response.data.filter(lesson => lesson.type === 'premium');
+        const { data } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons`);
+        if (Array.isArray(data)) {
+          this.lessons = data.filter(lesson => lesson.type === 'premium');
+          console.log(`✅ Загрузено ${this.lessons.length} премиум уроков`);
         } else {
-          console.error('❌ Неверный формат данных уроков');
+          console.error('❌ Неверный формат данных при загрузке уроков.');
           this.lessons = [];
         }
       } catch (error) {
-        console.error('❌ Ошибка загрузки премиум уроков:', error);
+        console.error('❌ Ошибка при загрузке премиум уроков:', error.response?.data || error.message);
       } finally {
         this.loading = false;
       }
@@ -61,15 +61,17 @@ export default {
 
     startLesson(lessonId) {
       if (!lessonId) {
-        console.error('❌ Нет ID урока для старта.');
+        console.error('❌ [Ошибка старта урока] ID урока отсутствует.');
         return;
       }
-      this.$router.push(`/lesson/${lessonId}`);
+      console.log(`🚀 Переход к премиум уроку ID: ${lessonId}`);
+      this.$router.push({ name: 'LessonView', params: { id: lessonId } });
     },
 
     async addToStudyPlan(lesson) {
       if (!this.firebaseUserId) {
         alert('⚠️ Чтобы добавить урок в план, войдите в аккаунт.');
+        console.warn('⚠️ Попытка добавить премиум урок без авторизации.');
         return;
       }
 
@@ -78,9 +80,10 @@ export default {
           subject: lesson.subject,
           topic: lesson.topic,
         });
-        alert(`✅ Урок "${lesson.lessonName}" добавлен в ваш учебный план!`);
+        alert(`✅ Урок "${lesson.lessonName}" успешно добавлен в ваш учебный план!`);
+        console.log(`✅ Премиум урок "${lesson.lessonName}" добавлен в план пользователя ID: ${this.firebaseUserId}`);
       } catch (error) {
-        console.error('❌ Ошибка добавления урока в план:', error);
+        console.error('❌ Ошибка добавления премиум урока в план:', error.response?.data || error.message);
       }
     }
   }

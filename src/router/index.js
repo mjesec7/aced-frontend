@@ -6,6 +6,7 @@ import AcedSettings from '@/components/Main/AcedSettings.vue';
 import ProfilePage from '@/views/ProfilePage.vue';
 
 // ✅ Profile Sub-Pages
+import Dashboard from '@/components/Profile/Dashboard.vue'; // ✅ Главная
 import FreeLessons from '@/components/Profile/FreeLessons.vue';
 import ProLessons from '@/components/Profile/ProLessons.vue';
 import UserAnalyticsPanel from '@/components/Profile/UserAnalyticsPanel.vue';
@@ -36,7 +37,8 @@ const routes = [
     path: '/profile',
     component: ProfilePage,
     children: [
-      { path: '', redirect: '/profile/free' },
+      { path: '', redirect: '/profile/main' }, // ✅ redirect to "Главная" by default
+      { path: 'main', name: 'Dashboard', component: Dashboard }, // ✅ Главная
       { path: 'free', name: 'FreeLessons', component: FreeLessons },
       { path: 'premium', name: 'ProLessons', component: ProLessons },
       { path: 'analytics', name: 'AnalyticsPanel', component: UserAnalyticsPanel },
@@ -85,7 +87,7 @@ const router = createRouter({
   }
 });
 
-// ✅ Optional: Global error handler for navigation errors
+// ✅ Optional: Global error handler
 router.onError((error) => {
   console.error('❌ Router error caught:', error);
 });

@@ -3,6 +3,11 @@ import App from './App.vue';
 import router from './router';
 import store from './store'; // ✅ Vuex store
 import './assets/css/responsive.css'; 
+import 'vue-toast-notification/dist/theme-sugar.css';
+import VueToast from 'vue-toast-notification';
+
+app.use(VueToast);
+
 
 const app = createApp(App);
 

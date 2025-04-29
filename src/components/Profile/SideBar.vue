@@ -10,15 +10,17 @@
 
         <!-- 📚 Navigation Links -->
         <div class="nav-links">
+          <!-- Главная (Dashboard) -->
           <router-link
-            :to="`/profile`"
+            to="/profile/main"
             class="nav-item"
-            :class="{ active: isActive('dashboard') }"
+            :class="{ active: isActive('main') }"
           >
             <span class="highlight"></span>
             Главная
           </router-link>
 
+          <!-- Other Pages -->
           <router-link
             v-for="link in links"
             :key="link.name"
@@ -90,24 +92,37 @@ export default {
   methods: {
     ...mapMutations(['setUser', 'clearUser']),
     logout() {
-      signOut(auth)
-        .then(() => {
-          this.clearUser();
-          window.location.href = 'https://aced.live';
-        })
-        .catch((err) => {
-          console.error('Ошибка выхода:', err.message);
-        });
-    },
+  signOut(auth)
+    .then(() => {
+      this.clearUser();
+
+      // Показать уведомление
+      this.$toast.success('Вы успешно вышли из аккаунта.', {
+        duration: 3000,
+        position: 'top-center'
+      });
+
+      // Красиво перенаправить на главную через 1.5 секунды
+      setTimeout(() => {
+        this.$router.push('/');
+      }, 1500);
+    })
+    .catch((err) => {
+      console.error('❌ Ошибка выхода:', err.message);
+      this.$toast.error('Ошибка при выходе: попробуйте ещё раз.');
+    });
+},
+
     isActive(name) {
-      if (name === 'dashboard') {
-        return this.$route.path === '/profile' || this.$route.path === '/profile/';
+      if (name === 'main') {
+        return this.$route.path === '/profile/main';
       }
       return this.$route.path.includes(`/profile/${name}`);
     }
   }
 };
 </script>
+
 
 <style scoped>
 /* (your styles — no changes needed, they are already beautiful) */

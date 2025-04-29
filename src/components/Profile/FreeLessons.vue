@@ -44,15 +44,16 @@ export default {
   methods: {
     async loadFreeLessons() {
       try {
-        const response = await axios.get(`${process.env.VUE_APP_API_URL}/lessons`);
-        if (Array.isArray(response.data)) {
-          this.lessons = response.data.filter(lesson => lesson.type === 'free');
+        const { data } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons`);
+        if (Array.isArray(data)) {
+          this.lessons = data.filter(lesson => lesson.type === 'free');
+          console.log(`✅ Загрузено ${this.lessons.length} бесплатных уроков`);
         } else {
-          console.error('❌ Неверный формат данных уроков');
+          console.error('❌ Получен неправильный формат данных для уроков.');
           this.lessons = [];
         }
       } catch (error) {
-        console.error('❌ Ошибка загрузки бесплатных уроков:', error);
+        console.error('❌ Ошибка при загрузке бесплатных уроков:', error.response?.data || error.message);
       } finally {
         this.loading = false;
       }
@@ -60,15 +61,17 @@ export default {
 
     startLesson(lessonId) {
       if (!lessonId) {
-        console.error('❌ Нет ID урока для старта.');
+        console.error('❌ [Ошибка старта урока] ID урока отсутствует.');
         return;
       }
-      this.$router.push(`/lesson/${lessonId}`);
+      console.log(`🚀 Переход к уроку ID: ${lessonId}`);
+      this.$router.push({ name: 'LessonView', params: { id: lessonId } });
     },
 
     async addToStudyPlan(lesson) {
       if (!this.firebaseUserId) {
         alert('⚠️ Чтобы добавить урок в план, войдите в аккаунт.');
+        console.warn('⚠️ Попытка добавить урок без авторизации.');
         return;
       }
 
@@ -77,14 +80,16 @@ export default {
           subject: lesson.subject,
           topic: lesson.topic,
         });
-        alert(`✅ Урок "${lesson.lessonName}" добавлен в ваш учебный план!`);
+        alert(`✅ Урок "${lesson.lessonName}" успешно добавлен в ваш учебный план!`);
+        console.log(`✅ Урок "${lesson.lessonName}" добавлен в план пользователя ID: ${this.firebaseUserId}`);
       } catch (error) {
-        console.error('❌ Ошибка добавления урока в учебный план:', error);
+        console.error('❌ Ошибка при добавлении урока в план:', error.response?.data || error.message);
       }
     }
   }
 };
 </script>
+
 
 <style scoped>
 .lessons-page {
