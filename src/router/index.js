@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import store from '@/store'; // ✅ Store for auth check
+import store from '@/store';
 
 // ✅ Main Views
 import HomePage from '@/views/HomePage.vue';
@@ -7,7 +7,7 @@ import AcedSettings from '@/components/Main/AcedSettings.vue';
 import ProfilePage from '@/views/ProfilePage.vue';
 
 // ✅ Profile Sub-Pages
-import MainPage from '@/components/Profile/MainPage.vue'; // ✅ Main profile dashboard
+import MainPage from '@/components/Profile/MainPage.vue';
 import FreeLessons from '@/components/Profile/FreeLessons.vue';
 import ProLessons from '@/components/Profile/ProLessons.vue';
 import UserAnalyticsPanel from '@/components/Profile/UserAnalyticsPanel.vue';
@@ -42,7 +42,7 @@ const routes = [
       { path: 'main', name: 'MainPage', component: MainPage },
       { path: 'free', name: 'FreeLessons', component: FreeLessons },
       { path: 'premium', name: 'ProLessons', component: ProLessons },
-      { path: 'analytics', name: 'AnalyticsPanel', component: UserAnalyticsPanel },
+      { path: 'analytics', name: 'UserAnalyticsPanel', component: UserAnalyticsPanel },
       { path: 'progress', name: 'SubjectProgress', component: SubjectProgress },
       { path: 'goal', name: 'StudyGoal', component: StudyGoal },
       { path: 'homework', name: 'HomeworkHelp', component: HomeworkHelp },
@@ -77,27 +77,31 @@ const router = createRouter({
   routes,
   scrollBehavior(to, from, savedPosition) {
     if (to.hash) {
-      return { el: to.hash, behavior: 'smooth', top: 80 };
+      return {
+        el: to.hash,
+        behavior: 'smooth',
+        top: 80,
+      };
     }
     return savedPosition || { top: 0 };
   },
 });
 
-// ✅ Route Guard: Only allow access if logged in
+// ✅ Route Guard: Only allow access to homepage for guests
 router.beforeEach((to, from, next) => {
   const publicPages = ['HomePage'];
   const authRequired = !publicPages.includes(to.name);
   const userLoggedIn = !!store.state.user;
 
   if (authRequired && !userLoggedIn) {
-    console.warn('⚠️ Доступ запрещен без авторизации. Перенаправляем на главную.');
+    console.warn('⚠️ Access denied. Redirecting to HomePage.');
     return next({ name: 'HomePage' });
   }
 
   next();
 });
 
-// ✅ Error handling
+// ✅ Error Logger
 router.onError((error) => {
   console.error('❌ Router error caught:', error);
 });
