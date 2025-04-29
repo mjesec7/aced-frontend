@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import store from '@/store'; // ✅ подключаем store для проверки логина
 
 // ✅ Main Views
 import HomePage from '@/views/HomePage.vue';
@@ -6,7 +7,7 @@ import AcedSettings from '@/components/Main/AcedSettings.vue';
 import ProfilePage from '@/views/ProfilePage.vue';
 
 // ✅ Profile Sub-Pages
-import Dashboard from '@/components/Profile/Dashboard.vue'; // ✅ Главная
+import Dashboard from '@/components/Profile/Dashboard.vue';
 import FreeLessons from '@/components/Profile/FreeLessons.vue';
 import ProLessons from '@/components/Profile/ProLessons.vue';
 import UserAnalyticsPanel from '@/components/Profile/UserAnalyticsPanel.vue';
@@ -37,8 +38,8 @@ const routes = [
     path: '/profile',
     component: ProfilePage,
     children: [
-      { path: '', redirect: '/profile/main' }, // ✅ redirect to "Главная" by default
-      { path: 'main', name: 'Dashboard', component: Dashboard }, // ✅ Главная
+      { path: '', redirect: '/profile/main' },
+      { path: 'main', name: 'Dashboard', component: Dashboard },
       { path: 'free', name: 'FreeLessons', component: FreeLessons },
       { path: 'premium', name: 'ProLessons', component: ProLessons },
       { path: 'analytics', name: 'AnalyticsPanel', component: UserAnalyticsPanel },
@@ -65,11 +66,11 @@ const routes = [
     name: 'TopicFinished',
     component: TopicFinished,
   },
-  // ✅ Catch-All route for 404 fallback
+  // ✅ Catch-All 404 -> Home
   {
     path: '/:catchAll(.*)',
     redirect: '/',
-  }
+  },
 ];
 
 const router = createRouter({
@@ -87,7 +88,21 @@ const router = createRouter({
   }
 });
 
-// ✅ Optional: Global error handler
+// ✅ PROTECT ROUTES (только HomePage доступна без логина)
+router.beforeEach((to, from, next) => {
+  const publicPages = ['HomePage'];
+  const authRequired = !publicPages.includes(to.name);
+  const userLoggedIn = !!store.state.user;
+
+  if (authRequired && !userLoggedIn) {
+    console.warn('⚠️ Доступ запрещен без авторизации. Перенаправляем на главную.');
+    return next({ name: 'HomePage' });
+  }
+
+  next();
+});
+
+// ✅ Global error handler
 router.onError((error) => {
   console.error('❌ Router error caught:', error);
 });
