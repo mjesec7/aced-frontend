@@ -40,9 +40,9 @@ export default {
     ...mapState(['firebaseUserId'])
   },
   mounted() {
-    const storedId = this.firebaseUserId || localStorage.getItem('userId');
+    const storedId = this.firebaseUserId || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
     if (!storedId) {
-      console.warn('❌ Нет ID пользователя для загрузки уроков.');
+      console.warn('❌ Нет ID пользователя для загрузки бесплатных уроков.');
       this.loading = false;
       return;
     }
@@ -72,14 +72,14 @@ export default {
         console.error('❌ [Ошибка старта урока] ID урока отсутствует.');
         return;
       }
-      console.log(`🚀 Переход к уроку ID: ${lessonId}`);
+      console.log(`🚀 Переход к бесплатному уроку ID: ${lessonId}`);
       this.$router.push({ name: 'LessonView', params: { id: lessonId } });
     },
 
     async addToStudyPlan(lesson) {
       if (!this.userId) {
         alert('⚠️ Чтобы добавить урок в план, войдите в аккаунт.');
-        console.warn('⚠️ Попытка добавить урок без авторизации.');
+        console.warn('⚠️ Попытка добавить бесплатный урок без авторизации.');
         return;
       }
 
@@ -89,7 +89,7 @@ export default {
           topic: lesson.topic,
         });
         alert(`✅ Урок "${lesson.lessonName}" успешно добавлен в ваш учебный план!`);
-        console.log(`✅ Урок "${lesson.lessonName}" добавлен в план пользователя ID: ${this.userId}`);
+        console.log(`✅ Бесплатный урок "${lesson.lessonName}" добавлен в план пользователя ID: ${this.userId}`);
       } catch (error) {
         console.error('❌ Ошибка при добавлении урока в план:', error.response?.data || error.message);
       }

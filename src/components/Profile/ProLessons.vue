@@ -40,7 +40,7 @@ export default {
     ...mapState(['firebaseUserId'])
   },
   mounted() {
-    const storedId = this.firebaseUserId || localStorage.getItem('userId');
+    const storedId = this.firebaseUserId || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
     if (!storedId) {
       console.warn('❌ Нет ID пользователя для загрузки премиум уроков.');
       this.loading = false;

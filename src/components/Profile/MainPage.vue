@@ -57,6 +57,7 @@ export default {
   components: { TopicCard, StudyCard },
   data() {
     return {
+      userId: null,
       recommendations: [],
       studyList: [],
       loadingRecommendations: true,
@@ -64,26 +65,32 @@ export default {
     };
   },
   computed: {
-    ...mapState(['firebaseUserId'])
+    ...mapState(['firebaseUserId']),
   },
-  watch: {
-    firebaseUserId: {
-      immediate: true,
-      handler(newId) {
-        if (newId) {
-          this.fetchRecommendations();
-          this.fetchStudyList();
-        } else {
-          console.warn('❌ Нет ID пользователя');
-        }
-      }
+  async mounted() {
+    // Try both Vuex and localStorage for userId
+    const storedId =
+      this.firebaseUserId ||
+      localStorage.getItem('firebaseUserId') ||
+      localStorage.getItem('userId');
+
+    if (!storedId) {
+      console.warn('❌ Нет ID пользователя. Перенаправляем на главную страницу.');
+      return this.$router.push('/');
     }
+
+    this.userId = storedId;
+
+    // Fetch all data
+    await Promise.all([this.fetchRecommendations(), this.fetchStudyList()]);
   },
   methods: {
     async fetchRecommendations() {
       try {
         this.loadingRecommendations = true;
-        const { data } = await axios.get(`${process.env.VUE_APP_API_URL}/users/${this.firebaseUserId}/recommendations`);
+        const { data } = await axios.get(
+          `${process.env.VUE_APP_API_URL}/users/${this.userId}/recommendations`
+        );
         this.recommendations = data || [];
       } catch (err) {
         console.error('❌ Ошибка загрузки рекомендаций:', err);
@@ -94,7 +101,9 @@ export default {
     async fetchStudyList() {
       try {
         this.loadingStudyList = true;
-        const { data } = await axios.get(`${process.env.VUE_APP_API_URL}/users/${this.firebaseUserId}/study-list`);
+        const { data } = await axios.get(
+          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`
+        );
         this.studyList = data || [];
       } catch (err) {
         console.error('❌ Ошибка загрузки списка обучения:', err);
@@ -107,14 +116,19 @@ export default {
     },
     async handleAddTopic(topic) {
       try {
-        await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.firebaseUserId}/study-list`, {
-          subject: topic.subject,
-          level: topic.level,
-          topic: topic.name
-        });
+        await axios.post(
+          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
+          {
+            subject: topic.subject,
+            level: topic.level,
+            topic: topic.name,
+          }
+        );
 
         this.studyList.push(topic);
-        this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
+        this.recommendations = this.recommendations.filter(
+          (t) => t._id !== topic._id
+        );
 
         alert('✅ Тема добавлена в ваш список изучения!');
       } catch (err) {
@@ -123,10 +137,11 @@ export default {
     },
     handleStartTopic(topic) {
       this.$router.push(`/topic/${topic._id}/overview`);
-    }
-  }
+    },
+  },
 };
 </script>
+
 
 <style scoped>
 .dashboard {

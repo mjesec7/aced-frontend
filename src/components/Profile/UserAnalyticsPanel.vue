@@ -125,7 +125,8 @@ export default {
         'mostActiveDay',
         'totalLessonsDone'
       ],
-      period: 30
+      period: 30,
+      userId: null
     };
   },
   computed: {
@@ -194,13 +195,15 @@ export default {
     }
   },
   async mounted() {
-    const userId = this.user?.uid;
-    if (!userId) {
-      console.error('❌ Нет userId в store. Перенаправляем...');
+    const storedId = this.user?.uid || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
+    if (!storedId) {
+      console.error('❌ Нет userId. Перенаправляем на главную...');
       return this.$router.push('/');
     }
+    this.userId = storedId;
+
     try {
-      const res = await fetch(`${process.env.VUE_APP_API_URL}/user-analytics/${userId}`);
+      const res = await fetch(`${process.env.VUE_APP_API_URL}/user-analytics/${this.userId}`);
       if (!res.ok) throw new Error('❌ Ошибка ответа сервера при получении аналитики');
       const data = await res.json();
       this.analytics = data;
@@ -210,3 +213,4 @@ export default {
   }
 };
 </script>
+
