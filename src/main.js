@@ -1,20 +1,20 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
-import store from './store'; // ✅ Vuex store
-import './assets/css/responsive.css'; 
+import store from './store';
+
+import './assets/css/responsive.css';
 import 'vue-toast-notification/dist/theme-sugar.css';
 import VueToast from 'vue-toast-notification';
 
-
-
-
 const app = createApp(App);
 
-app.use(router);   // ✅ Use router
-app.use(store);    // ✅ Use Vuex store
+// ✅ Register global plugins
+app.use(store);
+app.use(router);
 app.use(VueToast);
-// ✅ Load user from localStorage into Vuex before app mounts
-store.dispatch('loadUserFromLocalStorage');
 
-app.mount('#app'); // ✅ Mount the app
+// ✅ Ensure user session is restored from localStorage before mounting
+store.dispatch('loadUserFromLocalStorage').then(() => {
+  app.mount('#app');
+});

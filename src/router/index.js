@@ -19,7 +19,7 @@ import DiaryPage from '@/components/Profile/DiaryPage.vue';
 // ✅ Payments
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
 
-// ✅ Lazy-loaded lessons
+// ✅ Lazy lessons
 const LessonView = () => import('@/views/LessonPage.vue');
 const TopicFinished = () => import('@/views/TopicFinished.vue');
 
@@ -87,23 +87,22 @@ const router = createRouter({
   },
 });
 
-// ✅ Route Guard: Only allow access to homepage for guests
+// ✅ Navigation guard (protect all except homepage)
 router.beforeEach((to, from, next) => {
-  const publicPages = ['HomePage'];
-  const authRequired = !publicPages.includes(to.name);
-  const userLoggedIn = !!store.state.user;
+  const isPublic = to.name === 'HomePage';
+  const isLoggedIn = !!store.getters.getFirebaseUserId;
 
-  if (authRequired && !userLoggedIn) {
-    console.warn('⚠️ Access denied. Redirecting to HomePage.');
+  if (!isPublic && !isLoggedIn) {
+    console.warn('❌ Нет доступа: пользователь не вошел. Перенаправление на главную.');
     return next({ name: 'HomePage' });
   }
 
   next();
 });
 
-// ✅ Error Logger
-router.onError((error) => {
-  console.error('❌ Router error caught:', error);
+// ✅ Log routing errors
+router.onError((err) => {
+  console.error('❌ Ошибка маршрута:', err);
 });
 
 export default router;
