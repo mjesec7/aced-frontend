@@ -108,27 +108,33 @@ export default {
     },
 
     async fetchStudyList() {
-      try {
-        this.loadingStudyList = true;
-        const token = await auth.currentUser.getIdToken();
+  try {
+    this.loadingStudyList = true;
 
-        const { data } = await axios.get(
-          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+    if (!auth.currentUser) {
+      console.warn('⛔ Пользователь не вошёл в систему.');
+      return;
+    }
 
-        this.studyList = data || [];
-        console.log(`✅ Загружено тем из плана: ${this.studyList.length}`);
-      } catch (err) {
-        console.error('❌ Ошибка загрузки списка обучения:', err.response?.data || err.message);
-      } finally {
-        this.loadingStudyList = false;
+    const token = await auth.currentUser.getIdToken();
+
+    const { data } = await axios.get(
+      `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    },
+    );
+
+    this.studyList = data || [];
+  } catch (err) {
+    console.error('❌ Ошибка загрузки списка обучения:', err.response?.data || err.message);
+  } finally {
+    this.loadingStudyList = false;
+  }
+},
+
 
     async refreshRecommendations() {
       await this.fetchRecommendations();

@@ -83,35 +83,34 @@ export default {
     },
 
     async addToStudyPlan(lesson) {
-      if (!this.userId) {
-        alert('⚠️ Чтобы добавить урок в план, войдите в аккаунт.');
-        console.warn('⚠️ Попытка добавить премиум урок без авторизации.');
-        return;
+  if (!auth.currentUser) {
+    console.warn('⚠️ Пользователь не вошёл в систему.');
+    alert('Пожалуйста, войдите в аккаунт.');
+    return;
+  }
+
+  const token = await auth.currentUser.getIdToken();
+
+  try {
+    await axios.post(
+      `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
+      {
+        subject: lesson.subject,
+        topic: lesson.topic,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
+    );
 
-      try {
-        const token = await auth.currentUser.getIdToken();
+    alert(`✅ Урок "${lesson.lessonName}" добавлен в ваш учебный план!`);
+  } catch (error) {
+    console.error('❌ Ошибка при добавлении урока в план:', error.response?.data || error.message);
+  }
+}
 
-        await axios.post(
-          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
-          {
-            subject: lesson.subject,
-            level: lesson.level || null,
-            topic: lesson.topic
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
-
-        alert(`✅ Урок "${lesson.lessonName}" успешно добавлен в ваш учебный план!`);
-        console.log(`✅ Премиум урок "${lesson.lessonName}" добавлен в план пользователя ID: ${this.userId}`);
-      } catch (error) {
-        console.error('❌ Ошибка добавления премиум урока в план:', error.response?.data || error.message);
-      }
-    }
   }
 };
 </script>
