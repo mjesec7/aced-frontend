@@ -89,7 +89,7 @@ export default {
         this.loadingRecommendations = true;
         const token = await auth.currentUser.getIdToken();
         const { data } = await axios.get(
-          `${process.env.VUE_APP_API_URL}/${this.userId}/recommendations`,
+          `${process.env.VUE_APP_API_URL}/users/${this.userId}/recommendations`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -109,7 +109,7 @@ export default {
         this.loadingStudyList = true;
         const token = await auth.currentUser.getIdToken();
         const { data } = await axios.get(
-          `${process.env.VUE_APP_API_URL}/${this.userId}/study-list`,
+          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -132,7 +132,7 @@ export default {
       try {
         const token = await auth.currentUser.getIdToken();
         await axios.post(
-          `${process.env.VUE_APP_API_URL}/${this.userId}/study-list`,
+          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
           {
             subject: topic.subject,
             level: topic.level,

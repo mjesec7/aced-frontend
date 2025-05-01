@@ -93,7 +93,7 @@ export default {
         const token = await auth.currentUser.getIdToken();
 
         await axios.post(
-          `${process.env.VUE_APP_API_URL}/${this.userId}/study-list`,
+          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
           {
             subject: lesson.subject,
             topic: lesson.topic,
