@@ -88,6 +88,7 @@ export default {
       try {
         this.loadingRecommendations = true;
         const token = await auth.currentUser.getIdToken();
+
         const { data } = await axios.get(
           `${process.env.VUE_APP_API_URL}/users/${this.userId}/recommendations`,
           {
@@ -96,9 +97,11 @@ export default {
             },
           }
         );
+
         this.recommendations = data || [];
+        console.log(`✅ Загружено рекомендаций: ${this.recommendations.length}`);
       } catch (err) {
-        console.error('❌ Ошибка загрузки рекомендаций:', err);
+        console.error('❌ Ошибка загрузки рекомендаций:', err.response?.data || err.message);
       } finally {
         this.loadingRecommendations = false;
       }
@@ -108,6 +111,7 @@ export default {
       try {
         this.loadingStudyList = true;
         const token = await auth.currentUser.getIdToken();
+
         const { data } = await axios.get(
           `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
           {
@@ -116,9 +120,11 @@ export default {
             },
           }
         );
+
         this.studyList = data || [];
+        console.log(`✅ Загружено тем из плана: ${this.studyList.length}`);
       } catch (err) {
-        console.error('❌ Ошибка загрузки списка обучения:', err);
+        console.error('❌ Ошибка загрузки списка обучения:', err.response?.data || err.message);
       } finally {
         this.loadingStudyList = false;
       }
@@ -131,6 +137,7 @@ export default {
     async handleAddTopic(topic) {
       try {
         const token = await auth.currentUser.getIdToken();
+
         await axios.post(
           `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
           {
@@ -152,7 +159,7 @@ export default {
 
         alert('✅ Тема добавлена в ваш список изучения!');
       } catch (err) {
-        console.error('❌ Ошибка добавления темы в план:', err);
+        console.error('❌ Ошибка добавления темы в план:', err.response?.data || err.message);
       }
     },
 

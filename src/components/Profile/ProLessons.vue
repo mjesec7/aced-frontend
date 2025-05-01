@@ -96,6 +96,7 @@ export default {
           `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
           {
             subject: lesson.subject,
+            level: lesson.level || null,
             topic: lesson.topic
           },
           {
@@ -114,6 +115,7 @@ export default {
   }
 };
 </script>
+
 
 
 <style scoped>
