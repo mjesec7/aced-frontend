@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- 🔐 Auth buttons -->
-    <div v-if="!$store.state.user" class="auth-buttons">
+    <div v-if="!currentUser" class="auth-buttons">
       <button class="auth-button" @click="openModal('register')">Регистрация</button>
       <button class="auth-button" @click="openModal('login')">Вход</button>
     </div>
@@ -9,9 +9,9 @@
     <!-- 👤 User Info -->
     <div v-else class="user-menu">
       <button class="user-button" @click="toggleDropdown">
-        Привет, {{ $store.state.user.name }}
-        <span v-if="$store.state.user.subscriptionPlan" class="badge">
-          {{ $store.state.user.subscriptionPlan === 'pro' ? 'PRO' : 'START' }}
+        Привет, {{ currentUser.name }}
+        <span v-if="currentUser.subscriptionPlan" class="badge">
+          {{ currentUser.subscriptionPlan === 'pro' ? 'PRO' : 'START' }}
         </span>
       </button>
       <div v-if="dropdownOpen" class="dropdown-menu">
@@ -64,11 +64,12 @@ import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
 } from "firebase/auth";
-import { mapMutations } from 'vuex';
+import { mapMutations, mapActions, mapGetters } from "vuex";
 import AcedSettings from "@/components/Main/AcedSettings.vue";
 
 export default {
   components: { AcedSettings },
+
   data() {
     return {
       isModalOpen: false,
@@ -79,6 +80,14 @@ export default {
       login: { email: "", password: "" },
     };
   },
+
+  computed: {
+    ...mapGetters(["getUser"]),
+    currentUser() {
+      return this.getUser;
+    },
+  },
+
   mounted() {
     onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -86,9 +95,10 @@ export default {
           name: user.displayName || user.email,
           email: user.email,
           subscriptionPlan: localStorage.getItem("plan") || "start",
+          uid: user.uid,
         });
       } else {
-        this.clearUser();
+        this.logoutUser(); // Full Vuex logout
       }
     });
 
@@ -96,8 +106,10 @@ export default {
       this.openModal("login");
     });
   },
+
   methods: {
-    ...mapMutations(["setUser", "clearUser"]),
+    ...mapMutations(["setUser"]),
+    ...mapActions(["loginUser", "logoutUser"]),
 
     openModal(mode) {
       this.authMode = mode;
@@ -114,57 +126,68 @@ export default {
     toggleDropdown() {
       this.dropdownOpen = !this.dropdownOpen;
     },
+
     async loginWithGoogle() {
       try {
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
-        this.setUser({
+        const userData = {
           name: result.user.displayName || result.user.email,
           email: result.user.email,
+          uid: result.user.uid,
           subscriptionPlan: localStorage.getItem("plan") || "start",
-        });
+        };
+        this.loginUser({ userData, token: "token-placeholder" }); // Add token if needed
         this.closeModal();
       } catch (error) {
         alert("Ошибка входа через Google: " + error.message);
       }
     },
+
     async loginUser() {
       try {
-        await signInWithEmailAndPassword(auth, this.login.email, this.login.password);
-        this.setUser({
-          name: this.login.email,
-          email: this.login.email,
+        const result = await signInWithEmailAndPassword(auth, this.login.email, this.login.password);
+        const userData = {
+          name: result.user.displayName || result.user.email,
+          email: result.user.email,
+          uid: result.user.uid,
           subscriptionPlan: localStorage.getItem("plan") || "start",
-        });
+        };
+        this.loginUser({ userData, token: "token-placeholder" }); // Replace with actual token logic if used
         this.closeModal();
       } catch (error) {
         alert("Ошибка входа: " + error.message);
       }
     },
+
     async register() {
       if (this.user.password !== this.user.confirmPassword) {
         alert("Пароли не совпадают!");
         return;
       }
       try {
-        await createUserWithEmailAndPassword(auth, this.user.email, this.user.password);
-        this.setUser({
+        const result = await createUserWithEmailAndPassword(auth, this.user.email, this.user.password);
+        const userData = {
           name: this.user.name,
           email: this.user.email,
+          uid: result.user.uid,
           subscriptionPlan: localStorage.getItem("plan") || "start",
-        });
+        };
+        this.loginUser({ userData, token: "token-placeholder" });
         alert("Вы успешно зарегистрированы!");
         this.closeModal();
       } catch (error) {
         alert("Ошибка регистрации: " + error.message);
       }
     },
+
     logout() {
       auth.signOut().then(() => {
-        this.clearUser();
+        this.logoutUser(); // Vuex + UI reset
         this.dropdownOpen = false;
       });
     },
+
     resetForms() {
       this.user = { name: "", surname: "", email: "", password: "", confirmPassword: "" };
       this.login = { email: "", password: "" };

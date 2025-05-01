@@ -14,7 +14,7 @@ app.use(store);
 app.use(router);
 app.use(VueToast);
 
-// ✅ Ensure user session is restored from localStorage before mounting
+// ✅ Restore user session before mounting the app
 store.dispatch('loadUserFromLocalStorage').then(() => {
   app.mount('#app');
 });

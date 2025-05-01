@@ -4,10 +4,11 @@ export default createStore({
   state: {
     user: null,
     firebaseUserId: null,
+    token: null,
     progress: {},
     diaryLogs: [],
-    token: null,
   },
+
   mutations: {
     setUser(state, user) {
       state.user = user;
@@ -15,25 +16,25 @@ export default createStore({
     setFirebaseUserId(state, id) {
       state.firebaseUserId = id;
     },
+    setToken(state, token) {
+      state.token = token;
+    },
     setProgress(state, progress) {
       state.progress = progress;
     },
     setDiaryLogs(state, logs) {
       state.diaryLogs = logs;
     },
-    setToken(state, token) {
-      state.token = token;
-    },
     logout(state) {
       state.user = null;
       state.firebaseUserId = null;
+      state.token = null;
       state.progress = {};
       state.diaryLogs = [];
-      state.token = null;
-
       localStorage.clear();
     },
   },
+
   actions: {
     loginUser({ commit }, { userData, token }) {
       commit('setUser', userData);
@@ -44,9 +45,11 @@ export default createStore({
       localStorage.setItem('firebaseUserId', userData.uid);
       localStorage.setItem('token', token);
     },
+
     logoutUser({ commit }) {
       commit('logout');
     },
+
     loadUserFromLocalStorage({ commit }) {
       try {
         const user = JSON.parse(localStorage.getItem('user'));
@@ -60,19 +63,22 @@ export default createStore({
         if (token) commit('setToken', token);
         commit('setProgress', progress);
         commit('setDiaryLogs', diaryLogs);
-      } catch (err) {
-        console.error('❌ Ошибка чтения из localStorage:', err);
+      } catch (error) {
+        console.error('❌ Ошибка при загрузке данных из localStorage:', error);
       }
     },
-    updateProgress({ commit }, progressData) {
-      commit('setProgress', progressData);
-      localStorage.setItem('progress', JSON.stringify(progressData));
+
+    updateProgress({ commit }, progress) {
+      commit('setProgress', progress);
+      localStorage.setItem('progress', JSON.stringify(progress));
     },
+
     updateDiaryLogs({ commit }, logs) {
       commit('setDiaryLogs', logs);
       localStorage.setItem('diaryLogs', JSON.stringify(logs));
     },
   },
+
   getters: {
     isLoggedIn: (state) =>
       !!state.user && !!state.firebaseUserId && !!state.token,
