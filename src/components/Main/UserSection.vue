@@ -59,6 +59,8 @@
 
 
 <script>
+import axios from 'axios';
+
 import { auth } from "@/firebase";
 import {
   signInWithPopup,
