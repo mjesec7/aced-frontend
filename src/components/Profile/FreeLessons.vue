@@ -84,32 +84,33 @@ export default {
 
     async addToStudyPlan(lesson) {
   if (!auth.currentUser) {
-    console.warn('⚠️ Пользователь не вошёл в систему.');
+    console.warn('⚠️ [FreeLessons.vue] No user logged in');
     alert('Пожалуйста, войдите в аккаунт.');
     return;
   }
 
   const token = await auth.currentUser.getIdToken();
+  console.log('🟣 [FreeLessons.vue] Firebase token:', token);
 
   try {
-    await axios.post(
-      `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
-      {
-        subject: lesson.subject,
-        topic: lesson.topic,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const url = `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`;
+    console.log(`📡 [FreeLessons.vue] POST to: ${url} with`, lesson);
 
-    alert(`✅ Урок "${lesson.lessonName}" добавлен в ваш учебный план!`);
+    await axios.post(url, {
+      subject: lesson.subject,
+      topic: lesson.topic,
+    }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    alert(`✅ Урок "${lesson.lessonName}" добавлен!`);
   } catch (error) {
-    console.error('❌ Ошибка при добавлении урока в план:', error.response?.data || error.message);
+    console.error('❌ [FreeLessons.vue] addToStudyPlan Error:', error.response?.data || error.message);
   }
 }
+
 
   }
 };

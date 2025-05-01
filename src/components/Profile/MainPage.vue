@@ -112,11 +112,12 @@ export default {
     this.loadingStudyList = true;
 
     if (!auth.currentUser) {
-      console.warn('⛔ Пользователь не вошёл в систему.');
+      console.warn('⚠️ [MainPage.vue] auth.currentUser is null');
       return;
     }
 
     const token = await auth.currentUser.getIdToken();
+    console.log('🟣 [MainPage.vue] Firebase token:', token);
 
     const { data } = await axios.get(
       `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
@@ -127,13 +128,15 @@ export default {
       }
     );
 
+    console.log('✅ [MainPage.vue] Study list data:', data);
     this.studyList = data || [];
   } catch (err) {
-    console.error('❌ Ошибка загрузки списка обучения:', err.response?.data || err.message);
+    console.error('❌ [MainPage.vue] fetchStudyList Error:', err.response?.data || err.message);
   } finally {
     this.loadingStudyList = false;
   }
 },
+
 
 
     async refreshRecommendations() {
