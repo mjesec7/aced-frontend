@@ -28,6 +28,7 @@
       <div class="modal-content" @click.stop>
         <span class="close-btn" @click="closeModal">&times;</span>
 
+        <!-- 👤 Register Form -->
         <div v-if="authMode === 'register'">
           <h2>Регистрация</h2>
           <input v-model="user.name" placeholder="Имя" />
@@ -39,11 +40,12 @@
           <p class="switch-text">Уже есть аккаунт? <span @click="switchAuth('login')">Войти</span></p>
         </div>
 
+        <!-- 🔐 Login Form -->
         <div v-else>
           <h2>Вход</h2>
           <input v-model="login.email" type="email" placeholder="Email" />
           <input v-model="login.password" type="password" placeholder="Пароль" />
-          <button class="auth-submit" @click="loginUser">Войти</button>
+          <button class="auth-submit" @click="handleEmailLogin">Войти</button>
           <button class="google-auth" @click="loginWithGoogle">Войти через Google</button>
           <p class="switch-text">Нет аккаунта? <span @click="switchAuth('register')">Зарегистрироваться</span></p>
         </div>
@@ -54,6 +56,7 @@
     <AcedSettings v-if="showSettings" @close-settings="showSettings = false" />
   </div>
 </template>
+
 
 <script>
 import { auth } from "@/firebase";
@@ -144,7 +147,7 @@ export default {
           subscriptionPlan: localStorage.getItem("plan") || "start",
         };
         console.log("✅ Google login success:", userData);
-        this.loginUser({ userData, token: "token-placeholder" });
+        await this.loginUser({ userData, token: "token-placeholder" }); // now calls Vuex action ✅
         this.closeModal();
       } catch (error) {
         console.error("❌ Google login error:", error);
@@ -152,8 +155,12 @@ export default {
       }
     },
 
-    async loginUser() {
+    async handleEmailLogin() {
       console.log("🔐 Email login started with:", this.login.email);
+      if (!this.login.email || !this.login.password) {
+        alert("❗ Введите email и пароль");
+        return;
+      }
       try {
         const result = await signInWithEmailAndPassword(auth, this.login.email, this.login.password);
         const userData = {
@@ -163,7 +170,7 @@ export default {
           subscriptionPlan: localStorage.getItem("plan") || "start",
         };
         console.log("✅ Email login success:", userData);
-        this.loginUser({ userData, token: "token-placeholder" });
+        await this.loginUser({ userData, token: "token-placeholder" }); // now works as Vuex action ✅
         this.closeModal();
       } catch (error) {
         console.error("❌ Email login failed:", error);
@@ -187,7 +194,7 @@ export default {
           subscriptionPlan: localStorage.getItem("plan") || "start",
         };
         console.log("✅ Registration successful:", userData);
-        this.loginUser({ userData, token: "token-placeholder" });
+        await this.loginUser({ userData, token: "token-placeholder" }); // call Vuex action ✅
         alert("Вы успешно зарегистрированы!");
         this.closeModal();
       } catch (error) {
@@ -213,6 +220,7 @@ export default {
   },
 };
 </script>
+
 
 <style scoped>
 @import "@/assets/css/UserSection.css";
