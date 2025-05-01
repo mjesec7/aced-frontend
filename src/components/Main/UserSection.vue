@@ -91,6 +91,7 @@ export default {
   mounted() {
     onAuthStateChanged(auth, (user) => {
       if (user) {
+        console.log("✅ Firebase auth state detected user:", user);
         this.setUser({
           name: user.displayName || user.email,
           email: user.email,
@@ -98,7 +99,8 @@ export default {
           uid: user.uid,
         });
       } else {
-        this.logoutUser(); // Full Vuex logout
+        console.warn("🚫 No Firebase user detected. Logging out...");
+        this.logoutUser();
       }
     });
 
@@ -112,14 +114,17 @@ export default {
     ...mapActions(["loginUser", "logoutUser"]),
 
     openModal(mode) {
+      console.log("🔓 Opening modal in mode:", mode);
       this.authMode = mode;
       this.isModalOpen = true;
     },
     closeModal() {
+      console.log("❌ Closing modal");
       this.isModalOpen = false;
       this.resetForms();
     },
     switchAuth(mode) {
+      console.log("🔄 Switching auth mode to:", mode);
       this.authMode = mode;
       this.resetForms();
     },
@@ -128,6 +133,7 @@ export default {
     },
 
     async loginWithGoogle() {
+      console.log("🔐 Logging in with Google...");
       try {
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
@@ -137,14 +143,17 @@ export default {
           uid: result.user.uid,
           subscriptionPlan: localStorage.getItem("plan") || "start",
         };
-        this.loginUser({ userData, token: "token-placeholder" }); // Add token if needed
+        console.log("✅ Google login success:", userData);
+        this.loginUser({ userData, token: "token-placeholder" });
         this.closeModal();
       } catch (error) {
+        console.error("❌ Google login error:", error);
         alert("Ошибка входа через Google: " + error.message);
       }
     },
 
     async loginUser() {
+      console.log("🔐 Email login started with:", this.login.email);
       try {
         const result = await signInWithEmailAndPassword(auth, this.login.email, this.login.password);
         const userData = {
@@ -153,15 +162,19 @@ export default {
           uid: result.user.uid,
           subscriptionPlan: localStorage.getItem("plan") || "start",
         };
-        this.loginUser({ userData, token: "token-placeholder" }); // Replace with actual token logic if used
+        console.log("✅ Email login success:", userData);
+        this.loginUser({ userData, token: "token-placeholder" });
         this.closeModal();
       } catch (error) {
+        console.error("❌ Email login failed:", error);
         alert("Ошибка входа: " + error.message);
       }
     },
 
     async register() {
+      console.log("📝 Attempting registration for:", this.user.email);
       if (this.user.password !== this.user.confirmPassword) {
+        console.warn("⚠️ Passwords do not match!");
         alert("Пароли не совпадают!");
         return;
       }
@@ -173,22 +186,27 @@ export default {
           uid: result.user.uid,
           subscriptionPlan: localStorage.getItem("plan") || "start",
         };
+        console.log("✅ Registration successful:", userData);
         this.loginUser({ userData, token: "token-placeholder" });
         alert("Вы успешно зарегистрированы!");
         this.closeModal();
       } catch (error) {
+        console.error("❌ Registration error:", error);
         alert("Ошибка регистрации: " + error.message);
       }
     },
 
     logout() {
+      console.log("🚪 Logging out...");
       auth.signOut().then(() => {
-        this.logoutUser(); // Vuex + UI reset
+        this.logoutUser();
         this.dropdownOpen = false;
+        console.log("✅ Successfully logged out");
       });
     },
 
     resetForms() {
+      console.log("🔄 Resetting auth forms");
       this.user = { name: "", surname: "", email: "", password: "", confirmPassword: "" };
       this.login = { email: "", password: "" };
     },
