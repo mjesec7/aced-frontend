@@ -31,6 +31,7 @@
   
   <script>
   import { mapState } from 'vuex';
+  import { auth } from '@/firebase'; // ✅ Import Firebase auth
   
   export default {
     name: 'SubjectProgress',
@@ -56,10 +57,20 @@
         }
   
         try {
-          const response = await fetch(`${process.env.VUE_APP_API_URL}/user-analytics/topic-progress/${userId}`);
+          const token = await auth.currentUser.getIdToken(); // ✅ Get token
+          const response = await fetch(
+            `${process.env.VUE_APP_API_URL}/user-analytics/topic-progress/${userId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`, // ✅ Attach token
+              },
+            }
+          );
+  
           if (!response.ok) {
             throw new Error('❌ Сервер вернул ошибку при получении прогресса по темам');
           }
+  
           const data = await response.json();
           this.progressData = data;
         } catch (error) {
@@ -78,6 +89,7 @@
     }
   };
   </script>
+  
   
   <style scoped>
   .subject-progress-page {

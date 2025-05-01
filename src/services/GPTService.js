@@ -1,9 +1,8 @@
 import axios from 'axios';
+import { auth } from '@/firebase'; // ✅ Import Firebase auth
 
-// ✅ Use correct baseURL from Vue CLI .env
 const baseURL = process.env.VUE_APP_API_URL;
 
-// ✅ Create a reusable axios instance
 const gptApi = axios.create({
   baseURL: baseURL,
   headers: {
@@ -11,16 +10,31 @@ const gptApi = axios.create({
   },
 });
 
-// ✅ Main function to send question (with optional image and lesson context)
 export async function getAIResponse(userInput, imageUrl = null, lessonId = null) {
   console.log('🟣 [GPTService] Request:', { userInput, imageUrl, lessonId });
 
   try {
-    const response = await gptApi.post('/chat', {
-      userInput,
-      imageUrl,
-      lessonId,
-    });
+    const user = auth.currentUser;
+
+    if (!user) {
+      throw new Error('❌ Пользователь не авторизован.');
+    }
+
+    const token = await user.getIdToken(); // ✅ Get token dynamically
+
+    const response = await gptApi.post(
+      '/chat',
+      {
+        userInput,
+        imageUrl,
+        lessonId,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`, // ✅ Attach token to headers
+        },
+      }
+    );
 
     console.log('✅ [GPTService] AI Response:', response.data);
     return response.data.reply;

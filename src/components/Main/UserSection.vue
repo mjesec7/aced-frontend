@@ -136,24 +136,45 @@ export default {
     },
 
     async loginWithGoogle() {
-      console.log("🔐 Logging in with Google...");
-      try {
-        const provider = new GoogleAuthProvider();
-        const result = await signInWithPopup(auth, provider);
-        const userData = {
-          name: result.user.displayName || result.user.email,
-          email: result.user.email,
-          uid: result.user.uid,
-          subscriptionPlan: localStorage.getItem("plan") || "start",
-        };
-        console.log("✅ Google login success:", userData);
-        await this.loginUser({ userData, token: "token-placeholder" }); // now calls Vuex action ✅
-        this.closeModal();
-      } catch (error) {
-        console.error("❌ Google login error:", error);
-        alert("Ошибка входа через Google: " + error.message);
+  console.log("🔐 Logging in with Google...");
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+
+    const user = result.user;
+    const token = await user.getIdToken(); // 🔐 Real Firebase token
+
+    const userData = {
+      name: user.displayName || user.email,
+      email: user.email,
+      uid: user.uid,
+      subscriptionPlan: localStorage.getItem("plan") || "start",
+    };
+
+    console.log("✅ Google login success:", userData);
+
+    // ✅ Save user in backend DB
+    await axios.post(`${process.env.VUE_APP_API_URL}/users/save`, {
+      firebaseId: userData.uid,
+      name: userData.name,
+      email: userData.email,
+      subscriptionPlan: userData.subscriptionPlan,
+    }, {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
-    },
+    });
+
+    // ✅ Call Vuex action to update frontend state
+    await this.loginUser({ userData, token });
+
+    this.closeModal();
+  } catch (error) {
+    console.error("❌ Google login error:", error);
+    alert("Ошибка входа через Google: " + (error.message || "Произошла ошибка"));
+  }
+},
+
 
     async handleEmailLogin() {
       console.log("🔐 Email login started with:", this.login.email);

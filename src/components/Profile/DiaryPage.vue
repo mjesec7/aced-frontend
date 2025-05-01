@@ -94,6 +94,7 @@
 <script>
 import axios from 'axios';
 import { mapState } from 'vuex';
+import { auth } from '@/firebase'; // ✅ Firebase auth for token
 
 export default {
   name: 'DiaryPage',
@@ -127,7 +128,11 @@ export default {
     }
   },
   mounted() {
-    this.today = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    this.today = new Date().toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
     this.startTimer();
     this.fetchData();
   },
@@ -140,6 +145,7 @@ export default {
         this.studyMinutes++;
       }, 60000);
     },
+
     async fetchData() {
       const userId = this.firebaseUserId;
       if (!userId) {
@@ -149,9 +155,15 @@ export default {
       }
 
       try {
+        const token = await auth.currentUser.getIdToken(); // ✅ Get Firebase token
+
         const [lessonsRes, userRes] = await Promise.all([
           axios.get(`${process.env.VUE_APP_API_URL}/lessons`),
-          axios.get(`${process.env.VUE_APP_API_URL}/users/${userId}`)
+          axios.get(`${process.env.VUE_APP_API_URL}/users/${userId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          })
         ]);
 
         this.lessons = lessonsRes.data || [];
@@ -165,6 +177,7 @@ export default {
         this.loading = false;
       }
     },
+
     calculateToday() {
       const sections = ['explanation', 'examples', 'exercises', 'quiz'];
       const todayLessons = [];
@@ -196,6 +209,7 @@ export default {
       this.lessonsTomorrow = tomorrowLessons.slice(0, 3);
       this.gradesThisWeek = grades;
     },
+
     async saveDiary() {
       const userId = this.firebaseUserId;
       if (!userId) {
@@ -205,12 +219,19 @@ export default {
 
       try {
         this.saving = true;
+        const token = await auth.currentUser.getIdToken(); // ✅ Get token
+
         await axios.post(`${process.env.VUE_APP_API_URL}/users/${userId}/diary`, {
           date: new Date().toISOString().split('T')[0],
           studyMinutes: this.studyMinutes,
           completedTopics: this.completedToday,
           gradesToday: this.gradesThisWeek,
+        }, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         });
+
         this.diarySaved = true;
       } catch (error) {
         console.error('❌ Ошибка сохранения дневника:', error);
@@ -218,12 +239,18 @@ export default {
         this.saving = false;
       }
     },
+
     formatDate(dateStr) {
-      return new Date(dateStr).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+      return new Date(dateStr).toLocaleDateString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
     }
   }
 };
 </script>
+
 
 
 <style scoped>

@@ -26,6 +26,7 @@
 <script>
 import axios from 'axios';
 import { mapState } from 'vuex';
+import { auth } from '@/firebase'; // ✅ Import Firebase auth
 
 export default {
   name: 'ProLessons',
@@ -84,10 +85,21 @@ export default {
       }
 
       try {
-        await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`, {
-          subject: lesson.subject,
-          topic: lesson.topic,
-        });
+        const token = await auth.currentUser.getIdToken(); // ✅ Get Firebase token
+
+        await axios.post(
+          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
+          {
+            subject: lesson.subject,
+            topic: lesson.topic,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}` // ✅ Attach token
+            }
+          }
+        );
+
         alert(`✅ Урок "${lesson.lessonName}" успешно добавлен в ваш учебный план!`);
         console.log(`✅ Премиум урок "${lesson.lessonName}" добавлен в план пользователя ID: ${this.userId}`);
       } catch (error) {
@@ -97,6 +109,7 @@ export default {
   }
 };
 </script>
+
 <style scoped>
 .lessons-page {
   padding: 40px 20px;

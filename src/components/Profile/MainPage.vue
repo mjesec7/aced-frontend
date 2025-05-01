@@ -49,6 +49,7 @@
 <script>
 import { mapState } from 'vuex';
 import axios from 'axios';
+import { auth } from '@/firebase'; // ✅ import Firebase auth
 import TopicCard from '@/components/Topics/TopicCard.vue';
 import StudyCard from '@/components/Profile/StudyCard.vue';
 
@@ -68,7 +69,6 @@ export default {
     ...mapState(['firebaseUserId']),
   },
   async mounted() {
-    // Try both Vuex and localStorage for userId
     const storedId =
       this.firebaseUserId ||
       localStorage.getItem('firebaseUserId') ||
@@ -81,7 +81,6 @@ export default {
 
     this.userId = storedId;
 
-    // Fetch all data
     await Promise.all([this.fetchRecommendations(), this.fetchStudyList()]);
   },
   methods: {
@@ -98,11 +97,18 @@ export default {
         this.loadingRecommendations = false;
       }
     },
+
     async fetchStudyList() {
       try {
         this.loadingStudyList = true;
+        const token = await auth.currentUser.getIdToken(); // ✅ Add token
         const { data } = await axios.get(
-          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`
+          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         this.studyList = data || [];
       } catch (err) {
@@ -111,17 +117,25 @@ export default {
         this.loadingStudyList = false;
       }
     },
+
     async refreshRecommendations() {
       await this.fetchRecommendations();
     },
+
     async handleAddTopic(topic) {
       try {
+        const token = await auth.currentUser.getIdToken(); // ✅ Add token
         await axios.post(
           `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
           {
             subject: topic.subject,
             level: topic.level,
             topic: topic.name,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
         );
 
@@ -135,12 +149,14 @@ export default {
         console.error('❌ Ошибка добавления темы в план:', err);
       }
     },
+
     handleStartTopic(topic) {
       this.$router.push(`/topic/${topic._id}/overview`);
     },
   },
 };
 </script>
+
 
 
 <style scoped>
