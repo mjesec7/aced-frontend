@@ -26,7 +26,7 @@
 <script>
 import axios from 'axios';
 import { mapState } from 'vuex';
-import { auth } from '@/firebase'; // ✅ Import Firebase auth
+import { auth } from '@/firebase';
 
 export default {
   name: 'FreeLessons',
@@ -41,12 +41,17 @@ export default {
     ...mapState(['firebaseUserId'])
   },
   mounted() {
-    const storedId = this.firebaseUserId || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
+    const storedId =
+      this.firebaseUserId ||
+      localStorage.getItem('firebaseUserId') ||
+      localStorage.getItem('userId');
+
     if (!storedId) {
       console.warn('❌ Нет ID пользователя для загрузки бесплатных уроков.');
       this.loading = false;
       return;
     }
+
     this.userId = storedId;
     this.loadFreeLessons();
   },
@@ -85,17 +90,17 @@ export default {
       }
 
       try {
-        const token = await auth.currentUser.getIdToken(); // ✅ Get token
+        const token = await auth.currentUser.getIdToken();
 
         await axios.post(
-          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
+          `${process.env.VUE_APP_API_URL}/${this.userId}/study-list`,
           {
             subject: lesson.subject,
             topic: lesson.topic,
           },
           {
             headers: {
-              Authorization: `Bearer ${token}` // ✅ Add token header
+              Authorization: `Bearer ${token}`
             }
           }
         );
@@ -109,6 +114,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .lessons-page {

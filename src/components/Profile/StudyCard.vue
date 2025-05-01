@@ -1,40 +1,52 @@
 <template>
-    <div class="study-card">
-      <div class="card-header">
-        <h3 class="topic-name">{{ topic.name }}</h3>
-        <MedalBadge v-if="progress.medal" :type="progress.medal" />
-      </div>
-  
-      <ProgressBar :percent="progress.percent" />
-  
-      <div class="progress-text">
-        Прогресс: {{ Math.round(progress.percent) }}%
-      </div>
+  <div class="study-card">
+    <div class="card-header">
+      <h3 class="topic-name">{{ topic.name || 'Без названия' }}</h3>
+      <MedalBadge v-if="isValidMedal(progress.medal)" :type="progress.medal" />
     </div>
-  </template>
-  
-  <script>
-  import MedalBadge from '@/components/Profile/MedalBadge.vue';
-  import ProgressBar from '@/components/Profile/ProgressBar.vue';
-  
-  export default {
-    name: 'StudyCard',
-    components: {
-      MedalBadge,
-      ProgressBar,
+
+    <ProgressBar :percent="safePercent" />
+
+    <div class="progress-text">
+      Прогресс: {{ safePercent }}%
+    </div>
+  </div>
+</template>
+
+<script>
+import MedalBadge from '@/components/Profile/MedalBadge.vue';
+import ProgressBar from '@/components/Profile/ProgressBar.vue';
+
+export default {
+  name: 'StudyCard',
+  components: {
+    MedalBadge,
+    ProgressBar,
+  },
+  props: {
+    topic: {
+      type: Object,
+      required: true,
     },
-    props: {
-      topic: {
-        type: Object,
-        required: true,
-      },
-      progress: {
-        type: Object,
-        required: true,
-      },
+    progress: {
+      type: Object,
+      required: true,
     },
-  };
-  </script>
+  },
+  computed: {
+    safePercent() {
+      const value = parseFloat(this.progress.percent);
+      return isNaN(value) ? 0 : Math.round(value);
+    }
+  },
+  methods: {
+    isValidMedal(type) {
+      return ['gold', 'silver', 'bronze'].includes(type);
+    }
+  }
+};
+</script>
+
   
   <style scoped>
   .study-card {

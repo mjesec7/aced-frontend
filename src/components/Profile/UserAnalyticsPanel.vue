@@ -92,7 +92,7 @@
 
 <script>
 import { mapState } from 'vuex';
-import { auth } from '@/firebase'; // ✅ import Firebase auth
+import { auth } from '@/firebase';
 import LineChart from '@/components/Charts/LineChart.vue';
 import Card from '@/components/Profile/AnalyticsCard.vue';
 import html2pdf from 'html2pdf.js';
@@ -204,8 +204,8 @@ export default {
     this.userId = storedId;
 
     try {
-      const token = await auth.currentUser.getIdToken(); // ✅ secure token
-      const res = await fetch(`${process.env.VUE_APP_API_URL}/user-analytics/${this.userId}`, {
+      const token = await auth.currentUser.getIdToken();
+      const res = await fetch(`${process.env.VUE_APP_API_URL}/${this.userId}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -221,3 +221,6 @@ export default {
 </script>
 
 
+<style scoped>
+@import '@/assets/css/UserAnalyticsPanel.css';
+</style>

@@ -49,7 +49,7 @@
 <script>
 import { mapState } from 'vuex';
 import axios from 'axios';
-import { auth } from '@/firebase'; // ✅ import Firebase auth
+import { auth } from '@/firebase';
 import TopicCard from '@/components/Topics/TopicCard.vue';
 import StudyCard from '@/components/Profile/StudyCard.vue';
 
@@ -87,8 +87,14 @@ export default {
     async fetchRecommendations() {
       try {
         this.loadingRecommendations = true;
+        const token = await auth.currentUser.getIdToken();
         const { data } = await axios.get(
-          `${process.env.VUE_APP_API_URL}/users/${this.userId}/recommendations`
+          `${process.env.VUE_APP_API_URL}/${this.userId}/recommendations`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         this.recommendations = data || [];
       } catch (err) {
@@ -101,9 +107,9 @@ export default {
     async fetchStudyList() {
       try {
         this.loadingStudyList = true;
-        const token = await auth.currentUser.getIdToken(); // ✅ Add token
+        const token = await auth.currentUser.getIdToken();
         const { data } = await axios.get(
-          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
+          `${process.env.VUE_APP_API_URL}/${this.userId}/study-list`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -124,9 +130,9 @@ export default {
 
     async handleAddTopic(topic) {
       try {
-        const token = await auth.currentUser.getIdToken(); // ✅ Add token
+        const token = await auth.currentUser.getIdToken();
         await axios.post(
-          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
+          `${process.env.VUE_APP_API_URL}/${this.userId}/study-list`,
           {
             subject: topic.subject,
             level: topic.level,
@@ -156,6 +162,7 @@ export default {
   },
 };
 </script>
+
 
 
 

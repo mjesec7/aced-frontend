@@ -20,7 +20,11 @@ export async function getAIResponse(userInput, imageUrl = null, lessonId = null)
       throw new Error('❌ Пользователь не авторизован.');
     }
 
-    const token = await user.getIdToken(); // ✅ Get token dynamically
+    if (!userInput && !imageUrl) {
+      return '⚠️ Введите вопрос или прикрепите изображение.';
+    }
+
+    const token = await user.getIdToken();
 
     const response = await gptApi.post(
       '/chat',
@@ -31,15 +35,25 @@ export async function getAIResponse(userInput, imageUrl = null, lessonId = null)
       },
       {
         headers: {
-          Authorization: `Bearer ${token}`, // ✅ Attach token to headers
+          Authorization: `Bearer ${token}`,
         },
       }
     );
 
-    console.log('✅ [GPTService] AI Response:', response.data);
-    return response.data.reply;
+    const reply =
+      response.data?.reply ||
+      response.data?.choices?.[0]?.message?.content ||
+      '⚠️ AI не дал ответа.';
+
+    console.log('✅ [GPTService] AI Response:', reply);
+    return reply;
   } catch (error) {
-    console.error('❌ [GPTService] Error:', error?.response?.data || error.message);
-    return 'Произошла ошибка при получении ответа от AI.';
+    const fallbackMessage = '❌ Произошла ошибка при получении ответа от AI.';
+    const devMessage =
+      error?.response?.data?.error || error.message || fallbackMessage;
+
+    console.error('❌ [GPTService] Error:', devMessage);
+
+    return process.env.NODE_ENV === 'development' ? devMessage : fallbackMessage;
   }
 }

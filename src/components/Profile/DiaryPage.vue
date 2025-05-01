@@ -94,7 +94,7 @@
 <script>
 import axios from 'axios';
 import { mapState } from 'vuex';
-import { auth } from '@/firebase'; // ✅ Firebase auth for token
+import { auth } from '@/firebase';
 
 export default {
   name: 'DiaryPage',
@@ -155,11 +155,11 @@ export default {
       }
 
       try {
-        const token = await auth.currentUser.getIdToken(); // ✅ Get Firebase token
+        const token = await auth.currentUser.getIdToken();
 
         const [lessonsRes, userRes] = await Promise.all([
           axios.get(`${process.env.VUE_APP_API_URL}/lessons`),
-          axios.get(`${process.env.VUE_APP_API_URL}/users/${userId}`, {
+          axios.get(`${process.env.VUE_APP_API_URL}/${userId}`, {
             headers: {
               Authorization: `Bearer ${token}`
             }
@@ -168,7 +168,7 @@ export default {
 
         this.lessons = lessonsRes.data || [];
         this.userProgress = userRes.data.progress || {};
-        this.diaryLogs = userRes.data.diaryLogs || [];
+        this.diaryLogs = userRes.data.diary || [];
 
         this.calculateToday();
       } catch (error) {
@@ -219,18 +219,25 @@ export default {
 
       try {
         this.saving = true;
-        const token = await auth.currentUser.getIdToken(); // ✅ Get token
+        const token = await auth.currentUser.getIdToken();
 
-        await axios.post(`${process.env.VUE_APP_API_URL}/users/${userId}/diary`, {
-          date: new Date().toISOString().split('T')[0],
-          studyMinutes: this.studyMinutes,
-          completedTopics: this.completedToday,
-          gradesToday: this.gradesThisWeek,
-        }, {
-          headers: {
-            Authorization: `Bearer ${token}`
+        await axios.post(
+          `${process.env.VUE_APP_API_URL}/${userId}/diary`,
+          {
+            date: new Date().toISOString().split('T')[0],
+            studyMinutes: this.studyMinutes,
+            completedTopics: this.completedToday,
+            averageGrade:
+              this.gradesThisWeek.length > 0
+                ? Math.round(this.gradesThisWeek.reduce((sum, g) => sum + g.score, 0) / this.gradesThisWeek.length)
+                : 0,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
-        });
+        );
 
         this.diarySaved = true;
       } catch (error) {

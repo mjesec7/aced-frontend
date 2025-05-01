@@ -1,17 +1,15 @@
 <template>
   <div
     class="stat-card"
-    :class="{ 'no-data': value === 'Нет данных' }"
+    :class="{ 'no-data': value === 'Нет данных' || !value }"
     @mouseover="hovered = true"
     @mouseleave="hovered = false"
   >
-    <div class="spark-bar" :class="{ inactive: value === 'Нет данных' }" />
+    <div class="spark-bar" :class="{ inactive: value === 'Нет данных' || !value }" />
     <div class="stat-content">
       <div class="stat-top">
-        <p class="stat-label">{{ label }}</p>
-        <h2 class="stat-value">
-          {{ value }}
-        </h2>
+        <p class="stat-label">{{ label || 'Без названия' }}</p>
+        <h2 class="stat-value">{{ value || 'Нет данных' }}</h2>
       </div>
       <p class="stat-subtext" v-if="subtext">{{ subtext }}</p>
     </div>
@@ -21,8 +19,14 @@
 <script>
 export default {
   props: {
-    label: String,
-    value: String,
+    label: {
+      type: String,
+      default: ''
+    },
+    value: {
+      type: String,
+      default: ''
+    },
     subtext: {
       type: String,
       default: ''
@@ -35,6 +39,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .stat-card {
