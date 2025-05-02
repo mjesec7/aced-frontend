@@ -53,37 +53,39 @@ export default {
     },
 
     async goToLesson() {
-  const subject = this.topic.subject;
-  const topicName = this.topic.name || this.topic.topic;
+      const subject = this.topic.subject;
+      const topicName = this.topic.name || this.topic.topic;
 
-  if (!subject || !topicName) {
-    console.warn('❌ [StudyCard] Missing subject or topic:', this.topic);
-    alert('❌ Урок не может быть открыт — нет темы или предмета.');
-    return;
-  }
+      if (!subject || !topicName) {
+        console.warn('❌ [StudyCard] Missing subject or topic:', this.topic);
+        alert('❌ Урок не может быть открыт — нет темы или предмета.');
+        return;
+      }
 
-  try {
-    const url = `${process.env.VUE_APP_API_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
-    console.log('📡 [StudyCard] Fetching lesson from:', url);
-    const { data } = await axios.get(url);
+      try {
+        const url = `${process.env.VUE_APP_API_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
+        console.log('📡 [StudyCard] Fetching lesson from:', url);
 
-    if (!data || !data._id) {
-      throw new Error('No lesson found');
-    }
+        const { data } = await axios.get(url);
+        const lessonId = data?._id;
 
-    console.log('✅ [StudyCard] Lesson found:', data._id);
-    this.$router.push({ name: 'LessonView', params: { id: data._id } });
+        if (!lessonId || typeof lessonId !== 'string') {
+          console.warn('❌ [StudyCard] Invalid lesson ID received:', lessonId);
+          throw new Error('Lesson not found');
+        }
 
-  } catch (err) {
-    console.error('❌ [StudyCard] Failed to go to lesson:', err);
-    alert('❌ Урок не найден. Проверьте консоль.');
-  }
-}
+        console.log('✅ [StudyCard] Lesson found:', lessonId);
+        this.$router.push({ name: 'LessonPage', params: { id: lessonId } });
 
-
+      } catch (err) {
+        console.error('❌ [StudyCard] Failed to go to lesson:', err);
+        alert('❌ Урок не найден. Проверьте консоль.');
+      }
+    },
   },
 };
 </script>
+
 
 <style scoped>
 .study-card {
