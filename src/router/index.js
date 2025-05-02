@@ -19,8 +19,8 @@ import DiaryPage from '@/components/Profile/DiaryPage.vue';
 // ✅ Payments
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
 
-// ✅ Lazy lessons
-const LessonView = () => import('@/views/LessonPage.vue');
+// ✅ Lazy-loaded Views
+const LessonPage = () => import('@/views/LessonPage.vue');
 const TopicFinished = () => import('@/views/TopicFinished.vue');
 
 const routes = [
@@ -57,8 +57,8 @@ const routes = [
   },
   {
     path: '/lesson/:id',
-    name: 'LessonView',
-    component: LessonView,
+    name: 'LessonPage', // 🔁 renamed to match what you're using in router.push
+    component: LessonPage,
     props: true,
   },
   {
@@ -87,7 +87,7 @@ const router = createRouter({
   },
 });
 
-// ✅ Navigation guard (protect all except homepage)
+// ✅ Route Guard
 router.beforeEach((to, from, next) => {
   const isPublic = to.name === 'HomePage';
   const isLoggedIn = !!store.getters.getFirebaseUserId;
@@ -100,7 +100,7 @@ router.beforeEach((to, from, next) => {
   next();
 });
 
-// ✅ Log routing errors
+// ✅ Route Errors
 router.onError((err) => {
   console.error('❌ Ошибка маршрута:', err);
 });
