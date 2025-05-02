@@ -37,6 +37,8 @@ export default createStore({
 
   actions: {
     loginUser({ commit }, { userData, token }) {
+      console.log('✅ [Vuex] Logging in user:', userData?.email);
+
       commit('setUser', userData);
       commit('setFirebaseUserId', userData.uid);
       commit('setToken', token);
@@ -47,35 +49,42 @@ export default createStore({
     },
 
     logoutUser({ commit }) {
+      console.log('👋 [Vuex] Logging out user');
       commit('logout');
     },
 
     loadUserFromLocalStorage({ commit }) {
       try {
+        console.log('📦 [Vuex] Loading session from localStorage...');
         const user = JSON.parse(localStorage.getItem('user'));
         const firebaseUserId = localStorage.getItem('firebaseUserId');
         const token = localStorage.getItem('token');
         const progress = JSON.parse(localStorage.getItem('progress') || '{}');
         const diaryLogs = JSON.parse(localStorage.getItem('diaryLogs') || '[]');
 
-        if (user) commit('setUser', user);
+        if (user) {
+          commit('setUser', user);
+          console.log('✅ [Vuex] Loaded user:', user.email);
+        }
         if (firebaseUserId) commit('setFirebaseUserId', firebaseUserId);
         if (token) commit('setToken', token);
         commit('setProgress', progress);
         commit('setDiaryLogs', diaryLogs);
       } catch (error) {
-        console.error('❌ Ошибка при загрузке данных из localStorage:', error);
+        console.error('❌ [Vuex] Error loading from localStorage:', error);
       }
     },
 
     updateProgress({ commit }, progress) {
       commit('setProgress', progress);
       localStorage.setItem('progress', JSON.stringify(progress));
+      console.log('📈 [Vuex] Progress updated');
     },
 
     updateDiaryLogs({ commit }, logs) {
       commit('setDiaryLogs', logs);
       localStorage.setItem('diaryLogs', JSON.stringify(logs));
+      console.log('📘 [Vuex] Diary logs updated');
     },
   },
 
