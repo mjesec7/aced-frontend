@@ -88,6 +88,7 @@ export default {
       try {
         this.loadingRecommendations = true;
         const token = await auth.currentUser.getIdToken();
+        console.log('🟣 [fetchRecommendations] Firebase token:', token);
 
         const { data } = await axios.get(
           `${process.env.VUE_APP_API_URL}/users/${this.userId}/recommendations`,
@@ -108,36 +109,34 @@ export default {
     },
 
     async fetchStudyList() {
-  try {
-    this.loadingStudyList = true;
+      try {
+        this.loadingStudyList = true;
 
-    if (!auth.currentUser) {
-      console.warn('⚠️ [MainPage.vue] auth.currentUser is null');
-      return;
-    }
+        if (!auth.currentUser) {
+          console.warn('⚠️ [MainPage.vue] auth.currentUser is null');
+          return;
+        }
 
-    const token = await auth.currentUser.getIdToken();
-    console.log('🟣 [MainPage.vue] Firebase token:', token);
+        const token = await auth.currentUser.getIdToken();
+        console.log('🟣 [MainPage.vue] Firebase token:', token);
 
-    const { data } = await axios.get(
-      `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        const { data } = await axios.get(
+          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        console.log('✅ [MainPage.vue] Study list data:', data);
+        this.studyList = data || [];
+      } catch (err) {
+        console.error('❌ [MainPage.vue] fetchStudyList Error:', err.response?.data || err.message);
+      } finally {
+        this.loadingStudyList = false;
       }
-    );
-
-    console.log('✅ [MainPage.vue] Study list data:', data);
-    this.studyList = data || [];
-  } catch (err) {
-    console.error('❌ [MainPage.vue] fetchStudyList Error:', err.response?.data || err.message);
-  } finally {
-    this.loadingStudyList = false;
-  }
-},
-
-
+    },
 
     async refreshRecommendations() {
       await this.fetchRecommendations();
@@ -146,6 +145,7 @@ export default {
     async handleAddTopic(topic) {
       try {
         const token = await auth.currentUser.getIdToken();
+        console.log('📡 [handleAddTopic] Token:', token);
 
         await axios.post(
           `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
@@ -160,6 +160,8 @@ export default {
             },
           }
         );
+
+        console.log('✅ [handleAddTopic] Topic added to study list:', topic);
 
         this.studyList.push(topic);
         this.recommendations = this.recommendations.filter(
@@ -178,7 +180,6 @@ export default {
   },
 };
 </script>
-
 
 
 
