@@ -58,14 +58,9 @@ export default {
   methods: {
     async loadFreeLessons() {
       try {
-        await axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=free`);
-        if (Array.isArray(data)) {
-          this.lessons = data.filter(lesson => lesson.type === 'free');
-          console.log(`✅ Загрузено ${this.lessons.length} бесплатных уроков`);
-        } else {
-          console.error('❌ Получен неправильный формат данных для уроков.');
-          this.lessons = [];
-        }
+        const { data } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=free`);
+        this.lessons = Array.isArray(data) ? data : [];
+        console.log(`✅ Загрузено ${this.lessons.length} бесплатных уроков`);
       } catch (error) {
         console.error('❌ Ошибка при загрузке бесплатных уроков:', error.response?.data || error.message);
       } finally {
@@ -83,35 +78,37 @@ export default {
     },
 
     async addToStudyPlan(lesson) {
-  if (!auth.currentUser) {
-    console.warn('⚠️ [FreeLessons.vue] No user logged in');
-    alert('Пожалуйста, войдите в аккаунт.');
-    return;
-  }
+      if (!auth.currentUser) {
+        console.warn('⚠️ [FreeLessons.vue] No user logged in');
+        alert('Пожалуйста, войдите в аккаунт.');
+        return;
+      }
 
-  const token = await auth.currentUser.getIdToken();
-  console.log('🟣 [FreeLessons.vue] Firebase token:', token);
+      const token = await auth.currentUser.getIdToken();
+      console.log('🟣 [FreeLessons.vue] Firebase token:', token);
 
-  try {
-    const url = `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`;
-    console.log(`📡 [FreeLessons.vue] POST to: ${url} with`, lesson);
+      try {
+        const url = `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`;
+        console.log(`📡 [FreeLessons.vue] POST to: ${url} with`, lesson);
 
-    await axios.post(url, {
-      subject: lesson.subject,
-      topic: lesson.topic,
-    }, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+        await axios.post(
+          url,
+          {
+            subject: lesson.subject,
+            topic: lesson.topic,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-    alert(`✅ Урок "${lesson.lessonName}" добавлен!`);
-  } catch (error) {
-    console.error('❌ [FreeLessons.vue] addToStudyPlan Error:', error.response?.data || error.message);
-  }
-}
-
-
+        alert(`✅ Урок "${lesson.lessonName}" добавлен!`);
+      } catch (error) {
+        console.error('❌ [FreeLessons.vue] addToStudyPlan Error:', error.response?.data || error.message);
+      }
+    }
   }
 };
 </script>

@@ -59,13 +59,8 @@ export default {
     async loadProLessons() {
       try {
         const { data } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=premium`);
-        if (Array.isArray(data)) {
-          this.lessons = data.filter(lesson => lesson.type === 'premium');
-          console.log(`✅ Загрузено ${this.lessons.length} премиум уроков`);
-        } else {
-          console.error('❌ Неверный формат данных при загрузке уроков.');
-          this.lessons = [];
-        }
+        this.lessons = Array.isArray(data) ? data : [];
+        console.log(`✅ Загрузено ${this.lessons.length} премиум уроков`);
       } catch (error) {
         console.error('❌ Ошибка при загрузке премиум уроков:', error.response?.data || error.message);
       } finally {
@@ -83,37 +78,37 @@ export default {
     },
 
     async addToStudyPlan(lesson) {
-  if (!auth.currentUser) {
-    console.warn('⚠️ Пользователь не вошёл в систему.');
-    alert('Пожалуйста, войдите в аккаунт.');
-    return;
-  }
-
-  const token = await auth.currentUser.getIdToken();
-
-  try {
-    await axios.post(
-      `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
-      {
-        subject: lesson.subject,
-        topic: lesson.topic,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      if (!auth.currentUser) {
+        console.warn('⚠️ Пользователь не вошёл в систему.');
+        alert('Пожалуйста, войдите в аккаунт.');
+        return;
       }
-    );
 
-    alert(`✅ Урок "${lesson.lessonName}" добавлен в ваш учебный план!`);
-  } catch (error) {
-    console.error('❌ Ошибка при добавлении урока в план:', error.response?.data || error.message);
-  }
-}
+      const token = await auth.currentUser.getIdToken();
 
+      try {
+        await axios.post(
+          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
+          {
+            subject: lesson.subject,
+            topic: lesson.topic,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        alert(`✅ Урок "${lesson.lessonName}" добавлен в ваш учебный план!`);
+      } catch (error) {
+        console.error('❌ Ошибка при добавлении урока в план:', error.response?.data || error.message);
+      }
+    }
   }
 };
 </script>
+
 
 
 
