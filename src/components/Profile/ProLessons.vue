@@ -78,33 +78,42 @@ export default {
     },
 
     async addToStudyPlan(lesson) {
-      if (!auth.currentUser) {
-        console.warn('⚠️ Пользователь не вошёл в систему.');
-        alert('Пожалуйста, войдите в аккаунт.');
-        return;
+  if (!auth.currentUser) {
+    console.warn('⚠️ No user logged in (addToStudyPlan)');
+    alert('Пожалуйста, войдите в аккаунт.');
+    return;
+  }
+
+  console.log('🔍 User ID:', this.userId);
+  console.log('📦 Lesson to add:', lesson);
+
+  try {
+    const token = await auth.currentUser.getIdToken();
+    console.log('🪪 Firebase token retrieved:', token);
+
+    const url = `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`;
+    const body = {
+      subject: lesson.subject,
+      topic: lesson.topic
+    };
+
+    console.log(`📡 Sending POST to: ${url}`);
+    console.log('📨 Payload:', body);
+
+    const response = await axios.post(url, body, {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
+    });
 
-      const token = await auth.currentUser.getIdToken();
+    console.log('✅ Study list updated response:', response.data);
+    alert(`✅ Урок "${lesson.lessonName}" добавлен!`);
+  } catch (error) {
+    console.error('❌ Error in addToStudyPlan:', error.response?.data || error.message);
+    alert('❌ Ошибка при добавлении урока в учебный план');
+  }
+}
 
-      try {
-        await axios.post(
-          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
-          {
-            subject: lesson.subject,
-            topic: lesson.topic,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        alert(`✅ Урок "${lesson.lessonName}" добавлен в ваш учебный план!`);
-      } catch (error) {
-        console.error('❌ Ошибка при добавлении урока в план:', error.response?.data || error.message);
-      }
-    }
   }
 };
 </script>

@@ -143,36 +143,54 @@ export default {
     },
 
     async handleAddTopic(topic) {
-      try {
-        const token = await auth.currentUser.getIdToken();
-        console.log('📡 [handleAddTopic] Token:', token);
+  console.log('🟡 [handleAddTopic] Attempting to add topic:', topic);
 
-        await axios.post(
-          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
-          {
-            subject: topic.subject,
-            level: topic.level,
-            topic: topic.name,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+  // Safety check on topic structure
+  if (!topic.subject || !topic.level || !topic.name) {
+    console.warn('⚠️ [handleAddTopic] Incomplete topic data:', {
+      subject: topic.subject,
+      level: topic.level,
+      name: topic.name,
+    });
+    alert('❌ У этой темы нет всех нужных данных для добавления.');
+    return;
+  }
 
-        console.log('✅ [handleAddTopic] Topic added to study list:', topic);
+  try {
+    const token = await auth.currentUser.getIdToken();
+    console.log('📡 [handleAddTopic] Token:', token);
 
-        this.studyList.push(topic);
-        this.recommendations = this.recommendations.filter(
-          (t) => t._id !== topic._id
-        );
+    const url = `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`;
+    const payload = {
+      subject: topic.subject,
+      level: topic.level,
+      topic: topic.name,
+    };
 
-        alert('✅ Тема добавлена в ваш список изучения!');
-      } catch (err) {
-        console.error('❌ Ошибка добавления темы в план:', err.response?.data || err.message);
-      }
-    },
+    console.log('🚀 [handleAddTopic] Sending POST:', url);
+    console.log('📦 Payload:', payload);
+
+    const response = await axios.post(url, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    console.log('✅ [handleAddTopic] Server response:', response.data);
+
+    // UI updates
+    this.studyList.push(topic);
+    this.recommendations = this.recommendations.filter(
+      (t) => t._id !== topic._id
+    );
+
+    alert('✅ Тема добавлена в ваш список изучения!');
+  } catch (err) {
+    console.error('❌ [handleAddTopic] Error adding topic:', err.response?.data || err.message);
+    alert('❌ Не удалось добавить тему. Проверьте консоль.');
+  }
+},
+
 
     handleStartTopic(topic) {
       this.$router.push(`/topic/${topic._id}/overview`);
