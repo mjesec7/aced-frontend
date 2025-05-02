@@ -50,22 +50,34 @@ export default {
     isValidMedal(type) {
       return ['gold', 'silver', 'bronze'].includes(type);
     },
-    goToLesson() {
-  const id = this.topic._id || this.topic.id;
+    async goToLesson() {
+  const { subject, name } = this.topic;
 
-  if (!id) {
-    console.warn('❌ [StudyCard] Missing topic ID:', this.topic);
-    alert('❌ У этой темы нет ID.');
-    return;
+  if (!subject || !name) {
+    console.warn('❌ [StudyCard] Missing subject or name:', this.topic);
+    return alert('❌ Недостаточно данных для перехода.');
   }
 
-  console.log('📦 Navigating to lesson ID:', id);
+  try {
+    const { data } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons/by-name`, {
+      params: {
+        subject,
+        name
+      }
+    });
 
-  this.$router.push({
-    name: 'LessonPage',
-    params: { id },
-  });
+    const lessonId = data?._id;
+    if (!lessonId) {
+      throw new Error('Lesson not found in DB');
+    }
+
+    this.$router.push({ name: 'LessonPage', params: { id: lessonId } });
+  } catch (err) {
+    console.error('❌ [StudyCard] Failed to fetch lesson by name:', err);
+    alert('❌ Урок не найден. Попробуйте позже.');
+  }
 }
+
 
 
   }
