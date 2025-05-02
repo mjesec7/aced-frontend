@@ -51,39 +51,36 @@ export default {
     isValidMedal(type) {
       return ['gold', 'silver', 'bronze'].includes(type);
     },
+
     async goToLesson() {
-  const { subject, name } = this.topic;
+      const subject = this.topic.subject;
+      const topicName = this.topic.name || this.topic.topic;
 
-  if (!subject || !name) {
-    console.warn('❌ [StudyCard] Missing subject or name:', this.topic);
-    alert('❌ Невозможно открыть урок — нет темы или предмета.');
-    return;
-  }
-
-  try {
-    const { data } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons/by-name`, {
-      params: {
-        subject,
-        name
+      if (!subject || !topicName) {
+        console.warn('❌ [StudyCard] Missing subject or topic:', this.topic);
+        alert('❌ Урок не может быть открыт — нет темы или предмета.');
+        return;
       }
-    });
 
-    const lessonId = data?._id;
-    if (!lessonId) {
-      throw new Error('Lesson not found');
-    }
+      try {
+        const url = `${process.env.VUE_APP_API_URL}/lessons/topic/${encodeURIComponent(topicName)}`;
+        console.log('📡 [StudyCard] Fetching lesson from:', url);
+        const { data } = await axios.get(url);
 
-    this.$router.push({ name: 'LessonPage', params: { id: lessonId } });
-  } catch (err) {
-    console.error('❌ [StudyCard] Failed to fetch lesson by name:', err);
-    alert('❌ Урок не найден. Проверьте консоль.');
-  }
-}
+        if (!data.length) {
+          throw new Error('No lessons found for this topic');
+        }
 
+        const lessonId = data[0]._id;
+        console.log('✅ [StudyCard] Lesson found:', lessonId);
 
-
-
-  }
+        this.$router.push({ name: 'LessonView', params: { id: lessonId } });
+      } catch (err) {
+        console.error('❌ [StudyCard] Failed to go to lesson:', err);
+        alert('❌ Урок не найден. Проверьте консоль.');
+      }
+    },
+  },
 };
 </script>
 
