@@ -58,7 +58,7 @@ export default {
   methods: {
     async loadFreeLessons() {
       try {
-        const { data } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons`);
+        await axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=free`);
         if (Array.isArray(data)) {
           this.lessons = data.filter(lesson => lesson.type === 'free');
           console.log(`✅ Загрузено ${this.lessons.length} бесплатных уроков`);

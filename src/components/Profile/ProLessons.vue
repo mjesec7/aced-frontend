@@ -58,7 +58,7 @@ export default {
   methods: {
     async loadProLessons() {
       try {
-        const { data } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons`);
+        const { data } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=premium`);
         if (Array.isArray(data)) {
           this.lessons = data.filter(lesson => lesson.type === 'premium');
           console.log(`✅ Загрузено ${this.lessons.length} премиум уроков`);
