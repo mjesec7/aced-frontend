@@ -18,8 +18,8 @@
           v-for="topic in recommendations"
           :key="topic._id"
           :topic="topic"
-          @add="() => handleAddTopic(topic)"
-          @start="() => handleStartTopic(topic)"
+          @add="handleAddTopic"
+          @start="handleStartTopic"
         />
       </div>
 
@@ -143,63 +143,64 @@ export default {
     },
 
     async handleAddTopic(topic) {
-  console.log('🟡 [handleAddTopic] Attempting to add topic:', topic);
+      console.log('🟡 [handleAddTopic] Attempting to add topic:', topic);
 
-  // Safety check on topic structure
-  if (!topic.subject || !topic.level || !topic.name) {
-    console.warn('⚠️ [handleAddTopic] Incomplete topic data:', {
-      subject: topic.subject,
-      level: topic.level,
-      name: topic.name,
-    });
-    alert('❌ У этой темы нет всех нужных данных для добавления.');
-    return;
-  }
+      if (!topic.subject || !topic.level || !topic.name) {
+        console.warn('⚠️ [handleAddTopic] Incomplete topic data:', {
+          subject: topic.subject,
+          level: topic.level,
+          name: topic.name,
+        });
+        alert('❌ У этой темы нет всех нужных данных для добавления.');
+        return;
+      }
 
-  try {
-    const token = await auth.currentUser.getIdToken();
-    console.log('📡 [handleAddTopic] Token:', token);
+      try {
+        const token = await auth.currentUser.getIdToken();
+        console.log('📡 [handleAddTopic] Token:', token);
 
-    const url = `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`;
-    const payload = {
-      subject: topic.subject,
-      level: topic.level,
-      topic: topic.name,
-    };
+        const url = `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`;
+        const payload = {
+          subject: topic.subject,
+          level: topic.level,
+          topic: topic.name,
+        };
 
-    console.log('🚀 [handleAddTopic] Sending POST:', url);
-    console.log('📦 Payload:', payload);
+        console.log('🚀 [handleAddTopic] Sending POST:', url);
+        console.log('📦 Payload:', payload);
 
-    const response = await axios.post(url, payload, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+        const response = await axios.post(url, payload, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-    console.log('✅ [handleAddTopic] Server response:', response.data);
+        console.log('✅ [handleAddTopic] Server response:', response.data);
 
-    // UI updates
-    this.studyList.push(topic);
-    this.recommendations = this.recommendations.filter(
-      (t) => t._id !== topic._id
-    );
+        // Better: reload study list to avoid UI inconsistency
+        await this.fetchStudyList();
 
-    alert('✅ Тема добавлена в ваш список изучения!');
-  } catch (err) {
-    console.error('❌ [handleAddTopic] Error adding topic:', err.response?.data || err.message);
-    alert('❌ Не удалось добавить тему. Проверьте консоль.');
-  }
-},
+        // Remove from recommendations
+        this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
 
+        alert('✅ Тема добавлена в ваш список изучения!');
+      } catch (err) {
+        console.error('❌ [handleAddTopic] Error adding topic:', err.response?.data || err.message);
+        alert('❌ Не удалось добавить тему. Проверьте консоль.');
+      }
+    },
 
     handleStartTopic(topic) {
-      this.$router.push(`/topic/${topic._id}/overview`);
+      if (!topic._id) {
+        console.warn('❌ [handleStartTopic] Missing topic ID:', topic);
+        return alert('❌ У этой темы нет ID.');
+      }
+
+      this.$router.push({ path: `/topic/${topic._id}/overview` });
     },
   },
 };
 </script>
-
-
 
 <style scoped>
 .dashboard {
