@@ -75,6 +75,7 @@ export default {
         console.log('✅ [StudyCard] Lesson found:', lessonId);
 
         this.$router.push({ name: 'LessonView', params: { id: lessonId } });
+
       } catch (err) {
         console.error('❌ [StudyCard] Failed to go to lesson:', err);
         alert('❌ Урок не найден. Проверьте консоль.');
