@@ -78,7 +78,8 @@ export default {
     console.error('❌ [StudyCard] Failed to go to lesson:', err);
     alert('❌ Урок не найден. Проверьте консоль.');
   }
-},
+}
+
 
   },
 };
