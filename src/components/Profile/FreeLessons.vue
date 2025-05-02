@@ -114,6 +114,7 @@ export default {
 </script>
 
 
+
 <style scoped>
 .lessons-page {
   padding: 40px 20px;
