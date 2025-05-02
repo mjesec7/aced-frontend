@@ -109,34 +109,52 @@ export default {
     },
 
     async fetchStudyList() {
-      try {
-        this.loadingStudyList = true;
+  try {
+    this.loadingStudyList = true;
 
-        if (!auth.currentUser) {
-          console.warn('⚠️ [MainPage.vue] auth.currentUser is null');
-          return;
-        }
+    if (!auth.currentUser) {
+      console.warn('⚠️ [MainPage.vue] auth.currentUser is null');
+      return;
+    }
 
-        const token = await auth.currentUser.getIdToken();
-        console.log('🟣 [MainPage.vue] Firebase token:', token);
+    const token = await auth.currentUser.getIdToken();
+    console.log('🟣 [MainPage.vue] Firebase token:', token);
 
-        const { data } = await axios.get(
-          `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        console.log('✅ [MainPage.vue] Study list data:', data);
-        this.studyList = data || [];
-      } catch (err) {
-        console.error('❌ [MainPage.vue] fetchStudyList Error:', err.response?.data || err.message);
-      } finally {
-        this.loadingStudyList = false;
+    const { data } = await axios.get(
+      `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    },
+    );
+
+    console.log('✅ [MainPage.vue] Raw study list response:', data);
+
+    // 🔁 Flatten the study list into topic cards
+    const flatList = [];
+
+    (data || []).forEach(subject => {
+      (subject.topics || []).forEach(topicName => {
+        flatList.push({
+          name: topicName,
+          subject: subject.subject,
+          level: subject.levels?.[0] || 1,
+          progress: { percent: 0, medal: 'none' },
+        });
+      });
+    });
+
+    this.studyList = flatList;
+    console.log('✅ [MainPage.vue] Flattened topic list:', this.studyList);
+
+  } catch (err) {
+    console.error('❌ [MainPage.vue] fetchStudyList Error:', err.response?.data || err.message);
+  } finally {
+    this.loadingStudyList = false;
+  }
+},
+
 
     async refreshRecommendations() {
       await this.fetchRecommendations();
