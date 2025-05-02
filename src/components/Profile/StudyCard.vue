@@ -51,16 +51,21 @@ export default {
       return ['gold', 'silver', 'bronze'].includes(type);
     },
     goToLesson() {
-      const subject = this.topic.subject?.toLowerCase?.().replace(/\s+/g, '-');
-      if (!subject) {
-        console.warn('⚠️ [StudyCard] subject missing in topic:', this.topic);
-        alert('❌ Предмет не указан для перехода.');
-        return;
-      }
+  const subject = this.topic.subject?.toLowerCase?.().replace(/\s+/g, '-');
 
-      console.log('🚀 Navigating to LessonPage for subject:', subject);
-      this.$router.push({ name: 'LessonPage', params: { subject } });
-    }
+  if (!subject) {
+    console.warn('⚠️ [StudyCard] Missing subject:', this.topic);
+    alert('❌ Предмет не указан.');
+    return;
+  }
+
+  try {
+    this.$router.push({ name: 'LessonPage', params: { subject } });
+  } catch (err) {
+    console.error('❌ [StudyCard] Router push failed:', err);
+  }
+}
+
   }
 };
 </script>
