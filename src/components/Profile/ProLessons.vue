@@ -74,50 +74,40 @@ export default {
         return;
       }
       console.log(`🚀 Переход к премиум уроку ID: ${lessonId}`);
-      this.$router.push({ name: 'LessonView', params: { id: lessonId } });
+      this.$router.push({ name: 'LessonPage', params: { id: lessonId } });
     },
 
     async addToStudyPlan(lesson) {
-  if (!auth.currentUser) {
-    console.warn('⚠️ No user logged in (addToStudyPlan)');
-    alert('Пожалуйста, войдите в аккаунт.');
-    return;
-  }
-
-  console.log('🔍 User ID:', this.userId);
-  console.log('📦 Lesson to add:', lesson);
-
-  try {
-    const token = await auth.currentUser.getIdToken();
-    console.log('🪪 Firebase token retrieved:', token);
-
-    const url = `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`;
-    const body = {
-      subject: lesson.subject,
-      topic: lesson.topic
-    };
-
-    console.log(`📡 Sending POST to: ${url}`);
-    console.log('📨 Payload:', body);
-
-    const response = await axios.post(url, body, {
-      headers: {
-        Authorization: `Bearer ${token}`
+      if (!auth.currentUser) {
+        console.warn('⚠️ No user logged in (addToStudyPlan)');
+        alert('Пожалуйста, войдите в аккаунт.');
+        return;
       }
-    });
 
-    console.log('✅ Study list updated response:', response.data);
-    alert(`✅ Урок "${lesson.lessonName}" добавлен!`);
-  } catch (error) {
-    console.error('❌ Error in addToStudyPlan:', error.response?.data || error.message);
-    alert('❌ Ошибка при добавлении урока в учебный план');
-  }
-}
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const url = `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`;
+        const body = {
+          subject: lesson.subject,
+          topic: lesson.topic
+        };
 
+        const response = await axios.post(url, body, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        console.log('✅ Study list updated response:', response.data);
+        alert(`✅ Урок "${lesson.lessonName}" добавлен!`);
+      } catch (error) {
+        console.error('❌ Error in addToStudyPlan:', error.response?.data || error.message);
+        alert('❌ Ошибка при добавлении урока в учебный план');
+      }
+    }
   }
 };
 </script>
-
 
 
 
