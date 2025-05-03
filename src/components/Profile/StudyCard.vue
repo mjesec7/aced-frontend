@@ -2,13 +2,16 @@
   <div class="study-card">
     <div class="card-header">
       <h3 class="topic-name">{{ displayName }}</h3>
-      <MedalBadge v-if="isValidMedal(progress.medal)" :type="progress.medal" />
+      <img v-if="medal" :src="`/images/medals/${medal}.png`" :alt="medal" class="medal-icon" />
     </div>
 
-    <ProgressBar :percent="safePercent" />
+    <div class="progress-bar">
+      <div class="progress-fill" :style="{ width: lessonProgress + '%' }"></div>
+    </div>
 
-    <div class="progress-text">
-      Прогресс: {{ safePercent }}%
+    <div class="progress-info">
+      <span>{{ lessonProgress }}% завершено</span>
+      <p class="estimated-time">⏱ ~{{ estimatedDuration }} мин</p>
     </div>
 
     <button class="continue-btn" @click="goToLesson">
@@ -19,72 +22,64 @@
 
 <script>
 import axios from 'axios';
-import MedalBadge from '@/components/Profile/MedalBadge.vue';
-import ProgressBar from '@/components/Profile/ProgressBar.vue';
 
 export default {
   name: 'StudyCard',
-  components: {
-    MedalBadge,
-    ProgressBar,
-  },
   props: {
-    topic: {
-      type: Object,
-      required: true,
-    },
-    progress: {
-      type: Object,
-      default: () => ({ percent: 0, medal: 'none' }),
-    },
+    topic: { type: Object, required: true },
+    progress: { type: Object, default: () => ({ percent: 0, medal: 'none' }) },
   },
   computed: {
     displayName() {
       return this.topic.name || this.topic.topic || 'Без названия';
     },
-    safePercent() {
-      const value = parseFloat(this.progress.percent);
-      return isNaN(value) ? 0 : Math.round(value);
+    lessonProgress() {
+      const val = parseFloat(this.progress.percent);
+      return isNaN(val) ? 0 : Math.round(val);
     },
+    medal() {
+      return this.progress.medal || '';
+    },
+    estimatedDuration() {
+      const explanation = this.topic.explanation || '';
+      const content = this.topic.content || '';
+      const examples = this.topic.examples || '';
+      const exercisesCount = this.topic.exercises?.length || 0;
+
+      const wordCount = (explanation + content + examples).split(/\s+/).length;
+      const readTime = Math.ceil(wordCount / 50); // 50 words/min
+      const exerciseTime = Math.ceil(exercisesCount * 1.5);
+
+      return readTime + exerciseTime;
+    }
   },
   methods: {
-    isValidMedal(type) {
-      return ['gold', 'silver', 'bronze'].includes(type);
-    },
-
     async goToLesson() {
       const subject = this.topic.subject;
       const topicName = this.topic.name || this.topic.topic;
 
       if (!subject || !topicName) {
-        console.warn('❌ [StudyCard] Missing subject or topic:', this.topic);
         alert('❌ Урок не может быть открыт — нет темы или предмета.');
         return;
       }
 
       try {
         const url = `${process.env.VUE_APP_API_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
-        console.log('📡 [StudyCard] Fetching lesson from:', url);
-
         const { data } = await axios.get(url);
         const lessonId = data?._id;
 
-        if (!lessonId || typeof lessonId !== 'string') {
-          console.warn('❌ [StudyCard] Invalid lesson ID received:', lessonId);
-          throw new Error('Lesson not found');
-        }
-
-        console.log('✅ [StudyCard] Lesson found:', lessonId);
+        if (!lessonId) throw new Error('Lesson not found');
         this.$router.push({ name: 'LessonPage', params: { id: lessonId } });
 
       } catch (err) {
-        console.error('❌ [StudyCard] Failed to go to lesson:', err);
-        alert('❌ Урок не найден. Проверьте консоль.');
+        console.error('❌ Ошибка загрузки урока:', err);
+        alert('❌ Урок не найден.');
       }
     },
   },
 };
 </script>
+
 
 
 <style scoped>
@@ -95,9 +90,9 @@ export default {
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  height: 260px;
-  justify-content: center;
+  gap: 14px;
+  height: 280px;
+  justify-content: space-between;
   transition: transform 0.3s, box-shadow 0.3s;
   cursor: default;
 }
@@ -119,16 +114,44 @@ export default {
   color: #7c3aed;
 }
 
-.progress-text {
-  font-size: 1rem;
-  color: #6b7280;
-  text-align: center;
+.medal-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.progress-bar {
+  background: #e5e7eb;
+  height: 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(to right, #7c3aed, #8b5cf6);
+  transition: width 0.3s ease;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
   font-weight: 600;
+  color: #4b5563;
+  margin-top: 4px;
+}
+
+.estimated-time {
+  font-style: italic;
+  font-weight: 500;
+  color: #6b7280;
 }
 
 .continue-btn {
   align-self: center;
-  padding: 8px 20px;
+  padding: 10px 24px;
   font-size: 0.9rem;
   font-weight: 600;
   color: white;
@@ -138,6 +161,7 @@ export default {
   cursor: pointer;
   transition: background 0.3s ease;
 }
+
 .continue-btn:hover {
   background: linear-gradient(to right, #4338ca, #7c3aed);
 }
