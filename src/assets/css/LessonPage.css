@@ -1,0 +1,226 @@
+.lesson-page {
+    background: white;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    color: black;
+    position: relative;
+  }
+  
+  .intro-screen {
+    padding: 40px;
+    max-width: 800px;
+    margin: auto;
+    text-align: center;
+  }
+  
+  .intro-screen .lesson-title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    margin-bottom: 20px;
+  }
+  
+  .intro-screen p {
+    font-size: 1.2rem;
+    margin: 10px 0;
+  }
+  
+  .start-btn {
+    margin-top: 20px;
+    padding: 12px 30px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(to right, #7c3aed, #8b5cf6);
+    color: white;
+    cursor: pointer;
+  }
+  
+  .exit-btn {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 1.5rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #7c3aed;
+  }
+  
+  .lesson-split {
+    display: flex;
+    height: calc(100vh - 20px);
+  }
+  
+  .lesson-left {
+    width: 40%;
+    padding: 24px;
+    overflow-y: auto;
+    background: white;
+    border-right: 2px solid transparent;
+    border-image: linear-gradient(to bottom, #7c3aed, #8b5cf6);
+    border-image-slice: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .lesson-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .timer-display {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #6b21a8;
+  }
+  
+  .lesson-right {
+    width: 60%;
+    padding: 24px;
+    background: #0f172a;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    position: relative;
+  }
+  
+  .lesson-right textarea {
+    background: #1e293b;
+    color: white;
+    border: 1px solid #475569;
+    font-size: 1rem;
+    padding: 12px;
+    border-radius: 10px;
+    width: 100%;
+    height: 150px;
+    resize: none;
+    margin-bottom: 16px;
+  }
+  
+  .exercise-question {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  
+  .locked-overlay {
+    padding: 40px;
+    background: rgba(15, 23, 42, 0.8);
+    color: #cbd5e1;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 1.1rem;
+    border: 1px dashed #7c3aed;
+  }
+  
+  .submit-btn, .nav-btn, .confirm-btn {
+    background: linear-gradient(to right, #7c3aed, #8b5cf6);
+    color: white;
+    font-weight: 700;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 12px;
+    cursor: pointer;
+    margin-right: 12px;
+    margin-top: 16px;
+  }
+  
+  .confirmation {
+    margin-top: 10px;
+    font-weight: bold;
+    color: #34d399;
+  }
+  
+  .explanation-block {
+    margin-top: 24px;
+  }
+  
+  .explanation-text {
+    font-weight: 700;
+    color: black;
+    font-size: 1.05rem;
+    margin-bottom: 20px;
+  }
+  
+  .example-block {
+    margin-top: 16px;
+  }
+  
+  .example-text {
+    font-family: 'Courier New', monospace;
+    color: #5b21b6;
+    font-size: 1rem;
+    background: #f9f5ff;
+    padding: 10px;
+    border-left: 4px solid #8b5cf6;
+    margin-bottom: 20px;
+  }
+  
+  .navigation-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 30px;
+  }
+  
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(30, 41, 59, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+  
+  .modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  }
+  
+  .modal-content button {
+    margin: 10px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .modal-content button:first-child {
+    background: #e2e8f0;
+    color: #1e293b;
+  }
+  
+  .modal-content button:last-child {
+    background: linear-gradient(to right, #7c3aed, #8b5cf6);
+    color: white;
+  }
+  
+  .medal-image {
+    width: 80px;
+    margin: 20px auto;
+    display: block;
+  }
+  
+  .confetti-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+  }

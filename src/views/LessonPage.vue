@@ -1,61 +1,79 @@
 <template>
   <div class="lesson-page">
-    <div class="lesson-split">
-      <!-- LEFT PANEL: Scrollable Lesson Content -->
+    <div v-if="!started" class="intro-screen">
+      <button class="exit-btn" @click="confirmExit">❌</button>
+      <h2 class="lesson-title">{{ lesson.lessonName || 'Без названия' }}</h2>
+      <p>⏱️ Время прохождения: ~10 минут</p>
+      <p>📌 Что вы узнаете: {{ lesson.description || 'описание недоступно' }}</p>
+      <button class="start-btn" @click="startLesson">Начать урок</button>
+    </div>
+
+    <div v-else class="lesson-split">
+      <!-- LEFT PANEL -->
       <div class="lesson-left">
-        <h2 class="lesson-title">{{ lesson.lessonName || 'Без названия' }}</h2>
-
-        <div class="section" v-if="currentStep === 0">
-          <h3>📚 Объяснение</h3>
-          <div v-html="lesson.explanation || 'Нет объяснения'" class="lesson-text"></div>
+        <div class="lesson-header">
+          <h2 class="lesson-title">{{ lesson.lessonName }}</h2>
+          <div class="timer-display">⏱ {{ formattedTime }}</div>
         </div>
 
-        <div class="section" v-else-if="currentStep === 1">
-          <h3>📗 Примеры</h3>
-          <div v-html="lesson.examples || 'Нет примеров'" class="lesson-text"></div>
+        <div v-if="!lessonCompleted">
+          <div class="section explanation-block">
+            <h3>📚 Объяснение</h3>
+            <div v-html="lesson.explanation || 'Нет объяснения'" class="explanation-text"></div>
+          </div>
+
+          <div class="section example-block">
+            <h3>📗 Примеры</h3>
+            <div v-html="lesson.examples || 'Нет примеров'" class="example-text"></div>
+          </div>
+
+          <div class="navigation-area">
+            <button class="confirm-btn" @click="confirmUnderstanding" :disabled="understood">Понял</button>
+            <button class="nav-btn" @click="goNext" :disabled="!canProceed">Далее</button>
+          </div>
         </div>
 
-        <div class="section" v-else-if="currentStep >= 2 && currentStep < exerciseSteps">
-          <h3>✏️ Упражнение {{ currentStep - 1 }}</h3>
-          <p class="lesson-text">{{ currentExercise.question || 'Вопрос отсутствует' }}</p>
-          <button class="hint-btn" @click="toggleHint">💡 Подсказка</button>
-          <div v-if="showHint" class="hint-box">{{ currentExercise.hint || lesson.hint || 'Подсказка недоступна' }}</div>
-        </div>
-
-        <div class="section" v-else-if="currentStep === exerciseSteps">
-          <h3>🧠 Квиз</h3>
-          <p class="lesson-text">{{ currentQuiz.question || 'Вопрос отсутствует' }}</p>
-          <ul>
-            <li v-for="(option, index) in currentQuiz.options || []" :key="index">
-              {{ option.option || option }}
-            </li>
-          </ul>
-        </div>
-
-        <div class="section" v-else>
+        <div v-else class="congrats-section">
           <h3>🏆 Урок завершён!</h3>
           <p>Вы прошли все этапы!</p>
-        </div>
-
-        <div class="navigation-area">
-          <button class="nav-btn" @click="goPrevious" :disabled="currentStep === 0">⬅️ Назад</button>
-          <button class="nav-btn" @click="goNext">➡️ Далее</button>
+          <img :src="medalImage" alt="Медаль" class="medal-image" />
         </div>
       </div>
 
-      <!-- RIGHT PANEL: Writing Board -->
+      <!-- RIGHT PANEL -->
       <div class="lesson-right">
         <h3>✏️ Практическая зона</h3>
-        <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
-        <button class="submit-btn" @click="submitAnswer">Отправить</button>
-        <div v-if="confirmation" class="confirmation">{{ confirmation }}</div>
+        <div v-if="understood && !lessonCompleted">
+          <p class="exercise-question">{{ currentExercise.question || 'Вопрос отсутствует' }}</p>
+          <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
+          <button class="submit-btn" @click="submitAnswer">Готово</button>
+          <div v-if="confirmation" class="confirmation">{{ confirmation }}</div>
+        </div>
+        <div v-else-if="!understood">
+          <div class="locked-overlay">⛔ Заблокировано до нажатия "Понял"</div>
+        </div>
       </div>
     </div>
+
+    <!-- Exit Modal -->
+    <div v-if="showExitModal" class="modal">
+      <div class="modal-content">
+        <p>Вы уверены, что хотите выйти? Прогресс будет потерян.</p>
+        <button @click="cancelExit">Отмена</button>
+        <button @click="exitLesson">Выйти</button>
+      </div>
+    </div>
+
+    <!-- Confetti -->
+    <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import confetti from 'canvas-confetti';
+import { auth } from '@/firebase';
+import '@/assets/css/LessonPage.css';
 
 export default {
   name: 'LessonPage',
@@ -67,8 +85,17 @@ export default {
       userAnswer: '',
       confirmation: '',
       currentStep: 0,
+      started: false,
+      startTime: null,
+      timerInterval: null,
+      understood: false,
+      showExitModal: false,
       completedLessons: new Set(),
-      showHint: false,
+      mistakeCount: 0,
+      lessonCompleted: false,
+      showConfetti: false,
+      medalImage: '',
+      userId: null,
     };
   },
   computed: {
@@ -78,12 +105,24 @@ export default {
     currentExercise() {
       return this.lesson.exercises?.[this.currentStep - 2] || {};
     },
-    currentQuiz() {
-      return this.lesson.quiz?.[0] || {};
+    formattedTime() {
+      if (!this.startTime) return '0:00';
+      const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = elapsed % 60;
+      return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     },
+    canProceed() {
+      return this.understood && this.confirmation.includes('✅');
+    }
   },
   async mounted() {
     await this.loadLesson();
+    const storedId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
+    this.userId = storedId;
+  },
+  beforeUnmount() {
+    clearInterval(this.timerInterval);
   },
   methods: {
     async loadLesson() {
@@ -101,124 +140,88 @@ export default {
         this.loading = false;
       }
     },
+    startLesson() {
+      this.started = true;
+      this.startTime = Date.now();
+      this.timerInterval = setInterval(() => this.$forceUpdate(), 1000);
+    },
+    confirmUnderstanding() {
+      this.understood = true;
+    },
     submitAnswer() {
       if (!this.userAnswer.trim()) {
         this.confirmation = '⚠️ Пожалуйста, введите ответ.';
         return;
       }
-      this.confirmation = '✅ Ответ отправлен!';
-      this.userAnswer = '';
-    },
-    goPrevious() {
-      if (this.currentStep > 0) {
-        this.currentStep--;
-        this.resetAnswer();
+      if (this.userAnswer.trim().toLowerCase() === 'правильный') {
+        this.confirmation = '✅ Верно!';
+      } else {
+        this.confirmation = '❌ Неверно. Попробуйте снова.';
+        this.mistakeCount++;
       }
     },
     goNext() {
+      this.confirmation = '';
+      this.understood = false;
+      this.userAnswer = '';
       if (this.currentStep < this.exerciseSteps) {
         this.currentStep++;
-        this.resetAnswer();
       } else {
-        this.goToNextLesson();
+        this.completeLesson();
       }
     },
-    resetAnswer() {
-      this.userAnswer = '';
-      this.confirmation = '';
-      this.showHint = false;
-    },
-    goToNextLesson() {
-      const currentIndex = this.allLessons.findIndex(l => l._id === this.lesson._id);
-      if (!this.completedLessons.has(this.lesson._id)) {
-        this.completedLessons.add(this.lesson._id);
-      }
-      if (currentIndex !== -1 && currentIndex + 1 < this.allLessons.length) {
-        const nextLessonId = this.allLessons[currentIndex + 1]._id;
-        this.$router.push({ name: 'LessonView', params: { id: nextLessonId } });
+    async completeLesson() {
+      this.lessonCompleted = true;
+      this.showConfetti = true;
+      setTimeout(() => this.launchConfetti(), 200);
+      const duration = Math.floor((Date.now() - this.startTime) / 1000);
+      const token = await auth.currentUser?.getIdToken();
+
+      if (this.mistakeCount === 0) {
+        this.medalImage = '/images/medals/gold.png';
+      } else if (this.mistakeCount <= 2) {
+        this.medalImage = '/images/medals/silver.png';
       } else {
-        const performance = Math.round((this.completedLessons.size / this.allLessons.length) * 100);
-        this.$router.push({ name: 'TopicFinished', query: { performance } });
+        this.medalImage = '/images/medals/bronze.png';
       }
+
+      // Send to DiaryPage.vue
+      await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.userId}/diary`, {
+        lessonName: this.lesson.lessonName,
+        duration,
+        date: new Date().toISOString(),
+        mistakes: this.mistakeCount
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Send to UserAnalytics.vue
+      await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.userId}/analytics`, {
+        subject: this.lesson.subject,
+        topic: this.lesson.topic,
+        timeSpent: duration,
+        mistakes: this.mistakeCount,
+        completed: true
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
     },
-    toggleHint() {
-      this.showHint = !this.showHint;
+    launchConfetti() {
+      const canvas = this.$refs.confettiCanvas;
+      const myConfetti = confetti.create(canvas, { resize: true, useWorker: true });
+      myConfetti({ particleCount: 150, spread: 160, origin: { y: 0.6 } });
+      setTimeout(() => (this.showConfetti = false), 5000);
+    },
+    confirmExit() {
+      this.showExitModal = true;
+    },
+    cancelExit() {
+      this.showExitModal = false;
+    },
+    exitLesson() {
+      this.showExitModal = false;
+      this.$router.push('/profile');
     }
   }
 };
 </script>
-
-<style scoped>
-.lesson-page {
-  background: white;
-  min-height: 100vh;
-  font-family: 'Inter', sans-serif;
-  color: black;
-}
-
-.lesson-split {
-  display: flex;
-  height: calc(100vh - 40px);
-}
-
-.lesson-left {
-  width: 60%;
-  padding: 24px;
-  overflow-y: auto;
-  border-right: 2px solid transparent;
-  border-image: linear-gradient(to bottom, #7c3aed, #8b5cf6);
-  border-image-slice: 1;
-}
-
-.lesson-right {
-  width: 40%;
-  padding: 24px;
-  background: #f8fafc;
-  box-shadow: inset 0 0 20px rgba(124, 58, 237, 0.1);
-}
-
-.lesson-title {
-  font-size: 2rem;
-  font-weight: 800;
-  margin-bottom: 20px;
-}
-
-.lesson-text {
-  font-size: 1rem;
-  line-height: 1.6;
-}
-
-textarea {
-  width: 100%;
-  height: 150px;
-  padding: 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  background: white;
-  color: black;
-  font-size: 1rem;
-}
-
-.submit-btn, .nav-btn, .hint-btn {
-  margin-top: 16px;
-  background: linear-gradient(to right, #7c3aed, #8b5cf6);
-  color: white;
-  font-weight: 700;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-.navigation-area {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 30px;
-}
-
-.confirmation {
-  margin-top: 10px;
-  color: #065f46;
-  font-weight: 600;
-}
-</style>
