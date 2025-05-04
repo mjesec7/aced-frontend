@@ -2,7 +2,7 @@
   <div class="study-card">
     <div class="card-header">
       <h3 class="topic-name">{{ displayName }}</h3>
-      <img v-if="medal" :src="`/images/medals/${medal}.png`" :alt="medal" class="medal-icon" />
+      <img v-if="medal" :src="`/assets/medals/${medal}.png`" :alt="medal" class="medal-icon" />
     </div>
 
     <div class="progress-bar">
