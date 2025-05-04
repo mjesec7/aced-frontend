@@ -57,10 +57,8 @@
   </div>
 </template>
 
-
 <script>
 import axios from 'axios';
-
 import { auth } from "@/firebase";
 import {
   signInWithPopup,
@@ -96,7 +94,6 @@ export default {
   mounted() {
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        console.log("✅ Firebase auth state detected user:", user);
         this.setUser({
           name: user.displayName || user.email,
           email: user.email,
@@ -104,7 +101,6 @@ export default {
           uid: user.uid,
         });
       } else {
-        console.warn("🚫 No Firebase user detected. Logging out...");
         this.logoutUser();
       }
     });
@@ -119,17 +115,14 @@ export default {
     ...mapActions(["loginUser", "logoutUser"]),
 
     openModal(mode) {
-      console.log("🔓 Opening modal in mode:", mode);
       this.authMode = mode;
       this.isModalOpen = true;
     },
     closeModal() {
-      console.log("❌ Closing modal");
       this.isModalOpen = false;
       this.resetForms();
     },
     switchAuth(mode) {
-      console.log("🔄 Switching auth mode to:", mode);
       this.authMode = mode;
       this.resetForms();
     },
@@ -138,62 +131,48 @@ export default {
     },
 
     async loginWithGoogle() {
-  console.log("🔐 Logging in with Google...");
-  try {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
+      try {
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        const token = await user.getIdToken();
 
-    const user = result.user;
-    const token = await user.getIdToken(); // 🔐 Real Firebase token
+        const userData = {
+          name: user.displayName || user.email,
+          email: user.email,
+          uid: user.uid,
+          subscriptionPlan: localStorage.getItem("plan") || "start",
+        };
 
-    const userData = {
-      name: user.displayName || user.email,
-      email: user.email,
-      uid: user.uid,
-      subscriptionPlan: localStorage.getItem("plan") || "start",
-    };
+        await axios.post(`${process.env.VUE_APP_API_URL}/users/save`, {
+          token,
+          name: userData.name,
+          subscriptionPlan: userData.subscriptionPlan,
+        });
 
-    console.log("✅ Google login success:", userData);
-
-    // ✅ Save user in backend DB
-    await axios.post(`${process.env.VUE_APP_API_URL}/users/save`, {
-      firebaseId: userData.uid,
-      name: userData.name,
-      email: userData.email,
-      subscriptionPlan: userData.subscriptionPlan,
-    }, {
-      headers: {
-        Authorization: `Bearer ${token}`
+        await this.loginUser({ userData, token });
+        this.closeModal();
+      } catch (error) {
+        console.error("❌ Google login error:", error);
+        alert("Ошибка входа через Google: " + (error.message || "Произошла ошибка"));
       }
-    });
-
-    // ✅ Call Vuex action to update frontend state
-    await this.loginUser({ userData, token });
-
-    this.closeModal();
-  } catch (error) {
-    console.error("❌ Google login error:", error);
-    alert("Ошибка входа через Google: " + (error.message || "Произошла ошибка"));
-  }
-},
-
+    },
 
     async handleEmailLogin() {
-      console.log("🔐 Email login started with:", this.login.email);
       if (!this.login.email || !this.login.password) {
         alert("❗ Введите email и пароль");
         return;
       }
       try {
         const result = await signInWithEmailAndPassword(auth, this.login.email, this.login.password);
+        const token = await result.user.getIdToken();
         const userData = {
           name: result.user.displayName || result.user.email,
           email: result.user.email,
           uid: result.user.uid,
           subscriptionPlan: localStorage.getItem("plan") || "start",
         };
-        console.log("✅ Email login success:", userData);
-        await this.loginUser({ userData, token: "token-placeholder" }); // now works as Vuex action ✅
+        await this.loginUser({ userData, token });
         this.closeModal();
       } catch (error) {
         console.error("❌ Email login failed:", error);
@@ -202,22 +181,25 @@ export default {
     },
 
     async register() {
-      console.log("📝 Attempting registration for:", this.user.email);
       if (this.user.password !== this.user.confirmPassword) {
-        console.warn("⚠️ Passwords do not match!");
         alert("Пароли не совпадают!");
         return;
       }
       try {
         const result = await createUserWithEmailAndPassword(auth, this.user.email, this.user.password);
+        const token = await result.user.getIdToken();
         const userData = {
           name: this.user.name,
           email: this.user.email,
           uid: result.user.uid,
           subscriptionPlan: localStorage.getItem("plan") || "start",
         };
-        console.log("✅ Registration successful:", userData);
-        await this.loginUser({ userData, token: "token-placeholder" }); // call Vuex action ✅
+        await axios.post(`${process.env.VUE_APP_API_URL}/users/save`, {
+          token,
+          name: userData.name,
+          subscriptionPlan: userData.subscriptionPlan,
+        });
+        await this.loginUser({ userData, token });
         alert("Вы успешно зарегистрированы!");
         this.closeModal();
       } catch (error) {
@@ -227,23 +209,19 @@ export default {
     },
 
     logout() {
-      console.log("🚪 Logging out...");
       auth.signOut().then(() => {
         this.logoutUser();
         this.dropdownOpen = false;
-        console.log("✅ Successfully logged out");
       });
     },
 
     resetForms() {
-      console.log("🔄 Resetting auth forms");
       this.user = { name: "", surname: "", email: "", password: "", confirmPassword: "" };
       this.login = { email: "", password: "" };
     },
   },
 };
 </script>
-
 
 <style scoped>
 @import "@/assets/css/UserSection.css";
