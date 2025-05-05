@@ -156,6 +156,9 @@ export default {
         console.error("❌ Google login error:", error);
         alert("Ошибка входа через Google: " + (error.message || "Произошла ошибка"));
       }
+      console.log("✅ Logging in with Google:", userData);
+console.log("✅ Firebase token:", token);
+
     },
 
     async handleEmailLogin() {
