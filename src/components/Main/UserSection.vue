@@ -131,35 +131,37 @@ export default {
     },
 
     async loginWithGoogle() {
-      try {
-        const provider = new GoogleAuthProvider();
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        const token = await user.getIdToken();
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    const token = await user.getIdToken();
 
-        const userData = {
-          name: user.displayName || user.email,
-          email: user.email,
-          uid: user.uid,
-          subscriptionPlan: localStorage.getItem("plan") || "start",
-        };
+    const userData = {
+      name: user.displayName || user.email,
+      email: user.email,
+      uid: user.uid,
+      subscriptionPlan: localStorage.getItem("plan") || "start",
+    };
 
-        await axios.post(`${process.env.VUE_APP_API_URL}/users/save`, {
-          token,
-          name: userData.name,
-          subscriptionPlan: userData.subscriptionPlan,
-        });
+    console.log("✅ Logging in with Google:", userData);
+    console.log("✅ Firebase token:", token);
 
-        await this.loginUser({ userData, token });
-        this.closeModal();
-      } catch (error) {
-        console.error("❌ Google login error:", error);
-        alert("Ошибка входа через Google: " + (error.message || "Произошла ошибка"));
-      }
-      console.log("✅ Logging in with Google:", userData);
-console.log("✅ Firebase token:", token);
+    await axios.post(`${process.env.VUE_APP_API_URL}/users/save`, {
+      token,
+      name: userData.name,
+      subscriptionPlan: userData.subscriptionPlan,
+    });
 
-    },
+    await this.loginUser({ userData, token });
+    this.closeModal();
+
+  } catch (error) {
+    console.error("❌ Google login error:", error);
+    alert("Ошибка входа через Google: " + (error.message || "Произошла ошибка"));
+  }
+},
+
 
     async handleEmailLogin() {
       if (!this.login.email || !this.login.password) {
