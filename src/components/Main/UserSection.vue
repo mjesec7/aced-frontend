@@ -160,7 +160,7 @@ export default {
     console.error("❌ Google login error:", error);
     alert("Ошибка входа через Google: " + (error.message || "Произошла ошибка"));
   }
-},
+},  
 
 
     async handleEmailLogin() {
