@@ -81,11 +81,18 @@
       },
   
       getMedalImage(medal) {
-        if (medal === 'gold') return require('@/assets/medals/gold.png');
-        if (medal === 'silver') return require('@/assets/medals/silver.png');
-        if (medal === 'bronze') return require('@/assets/medals/bronze.png');
-        return '';
-      }
+  if (medal === 'gold') {
+    return new URL('@/assets/medals/gold.png', import.meta.url).href;
+  }
+  if (medal === 'silver') {
+    return new URL('@/assets/medals/silver.png', import.meta.url).href;
+  }
+  if (medal === 'bronze') {
+    return new URL('@/assets/medals/bronze.png', import.meta.url).href;
+  }
+  return '';
+}
+
     }
   };
   </script>

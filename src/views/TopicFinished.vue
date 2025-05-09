@@ -29,11 +29,18 @@
     },
     computed: {
       medalImage() {
-        if (this.performance >= 90) return require('@/assets/medals/gold.png');
-        if (this.performance >= 70) return require('@/assets/medals/silver.png');
-        if (this.performance >= 50) return require('@/assets/medals/bronze.png');
-        return null;
-      },
+  if (this.performance >= 90) {
+    return new URL('@/assets/medals/gold.png', import.meta.url).href;
+  }
+  if (this.performance >= 70) {
+    return new URL('@/assets/medals/silver.png', import.meta.url).href;
+  }
+  if (this.performance >= 50) {
+    return new URL('@/assets/medals/bronze.png', import.meta.url).href;
+  }
+  return null;
+},
+
       medalText() {
         if (this.performance >= 90) return '🥇 Золотая медаль! Великолепно!';
         if (this.performance >= 70) return '🥈 Серебряная медаль! Отличная работа!';

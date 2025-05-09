@@ -16,11 +16,18 @@
     },
     computed: {
       medalIcon() {
-        if (this.type === 'gold') return require('@/assets/medals/gold.png');
-        if (this.type === 'silver') return require('@/assets/medals/silver.png');
-        if (this.type === 'bronze') return require('@/assets/medals/bronze.png');
-        return '';
-      },
+  if (this.type === 'gold') {
+    return new URL('@/assets/medals/gold.png', import.meta.url).href;
+  }
+  if (this.type === 'silver') {
+    return new URL('@/assets/medals/silver.png', import.meta.url).href;
+  }
+  if (this.type === 'bronze') {
+    return new URL('@/assets/medals/bronze.png', import.meta.url).href;
+  }
+  return '';
+}
+
       badgeClass() {
         return `badge-${this.type}`;
       }

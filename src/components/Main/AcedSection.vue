@@ -47,33 +47,34 @@ export default {
       selectedSubject: null,
       modalInfo: {
         history: {
-          label: "История",
-          image: require('@/assets/icons/history2.svg'),
-          description: "Изучи развитие человечества, цивилизаций и ключевых событий.",
-          funFact: "История помогает предсказывать будущее, изучая прошлое.",
-          audience: "Тем, кто интересуется обществом, культурой и прошлым."
-        },
-        biology: {
-          label: "Биология",
-          image: require('@/assets/icons/biology2.svg'),
-          description: "Пойми, как устроена жизнь: от клетки до экосистемы.",
-          funFact: "В твоем теле больше бактерий, чем собственных клеток.",
-          audience: "Любителям природы, здоровья и науки о жизни."
-        },
-        coding: {
-          label: "Кодинг",
-          image: require('@/assets/icons/coding2.svg'),
-          description: "Создавай сайты, игры и приложения с помощью программирования.",
-          funFact: "Первая программистка была женщина — Ада Лавлейс.",
-          audience: "Тем, кто хочет строить цифровое будущее."
-        },
-        math: {
-          label: "Математика",
-          image: require('@/assets/icons/math2.svg'),
-          description: "Развивай логическое мышление и понимание мира через числа и формулы.",
-          funFact: "Математика — универсальный язык Вселенной.",
-          audience: "Тем, кто любит точность, закономерности и логику."
-        }
+  label: "История",
+  image: new URL('@/assets/icons/history2.svg', import.meta.url).href,
+  description: "Изучи развитие человечества, цивилизаций и ключевых событий.",
+  funFact: "История помогает предсказывать будущее, изучая прошлое.",
+  audience: "Тем, кто интересуется обществом, культурой и прошлым."
+},
+biology: {
+  label: "Биология",
+  image: new URL('@/assets/icons/biology2.svg', import.meta.url).href,
+  description: "Пойми, как устроена жизнь: от клетки до экосистемы.",
+  funFact: "В твоем теле больше бактерий, чем собственных клеток.",
+  audience: "Любителям природы, здоровья и науки о жизни."
+},
+coding: {
+  label: "Кодинг",
+  image: new URL('@/assets/icons/coding2.svg', import.meta.url).href,
+  description: "Создавай сайты, игры и приложения с помощью программирования.",
+  funFact: "Первая программистка была женщина — Ада Лавлейс.",
+  audience: "Тем, кто хочет строить цифровое будущее."
+},
+math: {
+  label: "Математика",
+  image: new URL('@/assets/icons/math2.svg', import.meta.url).href,
+  description: "Развивай логическое мышление и понимание мира через числа и формулы.",
+  funFact: "Математика — универсальный язык Вселенной.",
+  audience: "Тем, кто любит точность, закономерности и логику."
+}
+
       }
     };
   },
