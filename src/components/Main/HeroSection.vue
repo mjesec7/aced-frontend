@@ -10,10 +10,7 @@
 
     <!-- Background -->
     <div class="video-container">
-      <video autoplay loop muted playsinline>
-        <source src="@/assets/videos/untitled.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
+     
 
       <spline-viewer
         class="spline-bg"
