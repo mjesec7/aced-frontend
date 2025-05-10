@@ -135,7 +135,7 @@ export default {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
-    const token = await user.getIdToken();
+    const token = await user.getIdToken(true); // force refresh
 
     const userData = {
       name: user.displayName || user.email,
@@ -147,21 +147,28 @@ export default {
     console.log("✅ Logging in with Google:", userData);
     console.log("✅ Firebase token:", token);
 
+    // 🟡 Step 1: Save or update user in DB
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/save`, {
-  token,
-  name: userData.name,
-  subscriptionPlan: userData.subscriptionPlan,
-});
+      token,
+      name: userData.name,
+      subscriptionPlan: userData.subscriptionPlan,
+    });
 
+    // 🟢 Step 2: Fetch user from DB to ensure synced data
+    const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/${user.uid}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-    await this.loginUser({ userData, token });
-    this.closeModal();
+    console.log("🎯 User loaded from backend:", data);
 
+    // Store Firebase UID in localStorage or Vuex
+    localStorage.setItem("firebaseUserId", user.uid);
+    localStorage.setItem("userId", user.uid); // optional fallback
   } catch (error) {
     console.error("❌ Google login error:", error);
-    alert("Ошибка входа через Google: " + (error.message || "Произошла ошибка"));
   }
-},  
+},
+
 
 
     async handleEmailLogin() {
