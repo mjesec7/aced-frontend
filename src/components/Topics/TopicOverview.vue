@@ -33,7 +33,7 @@
     async mounted() {
       const topicId = this.$route.params.id;
       try {
-        const res = await axios.get(`${process.env.VUE_APP_API_URL}/topics/${topicId}`);
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/topics/${topicId}`);
         this.topic = res.data;
       } catch (err) {
         console.error('❌ Ошибка загрузки темы:', err);

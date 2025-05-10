@@ -64,7 +64,7 @@ export default {
       }
 
       try {
-        const url = `${process.env.VUE_APP_API_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
+        const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
         const { data } = await axios.get(url);
         const lessonId = data?._id;
 

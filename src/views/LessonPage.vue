@@ -75,6 +75,8 @@ import confetti from 'canvas-confetti';
 import { auth } from '@/firebase';
 import '@/assets/css/LessonPage.css';
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export default {
   name: 'LessonPage',
   data() {
@@ -128,10 +130,11 @@ export default {
     async loadLesson() {
       try {
         const lessonId = this.$route.params.id;
-        const { data: lessonData } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons/${lessonId}`);
+        const { data: lessonData } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
         this.lesson = lessonData;
+
         if (this.lesson.topicId) {
-          const { data: topicLessons } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons/topic/${this.lesson.topicId}`);
+          const { data: topicLessons } = await axios.get(`${BASE_URL}/lessons/topic/${this.lesson.topicId}`);
           this.allLessons = Array.isArray(topicLessons) ? topicLessons : [];
         }
       } catch (error) {
@@ -185,8 +188,7 @@ export default {
         this.medalImage = '/images/medals/bronze.png';
       }
 
-      // Send to DiaryPage.vue
-      await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.userId}/diary`, {
+      await axios.post(`${BASE_URL}/users/${this.userId}/diary`, {
         lessonName: this.lesson.lessonName,
         duration,
         date: new Date().toISOString(),
@@ -195,8 +197,7 @@ export default {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // Send to UserAnalytics.vue
-      await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.userId}/analytics`, {
+      await axios.post(`${BASE_URL}/users/${this.userId}/analytics`, {
         subject: this.lesson.subject,
         topic: this.lesson.topic,
         timeSpent: duration,

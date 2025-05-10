@@ -147,11 +147,12 @@ export default {
     console.log("✅ Logging in with Google:", userData);
     console.log("✅ Firebase token:", token);
 
-    await axios.post(`${process.env.VUE_APP_API_URL}/users/save`, {
-      token,
-      name: userData.name,
-      subscriptionPlan: userData.subscriptionPlan,
-    });
+    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/save`, {
+  token,
+  name: userData.name,
+  subscriptionPlan: userData.subscriptionPlan,
+});
+
 
     await this.loginUser({ userData, token });
     this.closeModal();
@@ -199,11 +200,12 @@ export default {
           uid: result.user.uid,
           subscriptionPlan: localStorage.getItem("plan") || "start",
         };
-        await axios.post(`${process.env.VUE_APP_API_URL}/users/save`, {
-          token,
-          name: userData.name,
-          subscriptionPlan: userData.subscriptionPlan,
-        });
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/save`, {
+  token,
+  name: userData.name,
+  subscriptionPlan: userData.subscriptionPlan,
+});
+
         await this.loginUser({ userData, token });
         alert("Вы успешно зарегистрированы!");
         this.closeModal();

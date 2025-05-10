@@ -96,6 +96,8 @@ import axios from 'axios';
 import { mapState } from 'vuex';
 import { auth } from '@/firebase';
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export default {
   name: 'DiaryPage',
   data() {
@@ -156,14 +158,11 @@ export default {
 
       try {
         const token = await auth.currentUser.getIdToken();
+        const headers = { Authorization: `Bearer ${token}` };
 
         const [lessonsRes, userRes] = await Promise.all([
-          axios.get(`${process.env.VUE_APP_API_URL}/lessons`),
-          axios.get(`${process.env.VUE_APP_API_URL}/${userId}`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          })
+          axios.get(`${BASE_URL}/lessons`, { headers }),
+          axios.get(`${BASE_URL}/users/${userId}`, { headers })
         ]);
 
         this.lessons = lessonsRes.data || [];
@@ -222,7 +221,7 @@ export default {
         const token = await auth.currentUser.getIdToken();
 
         await axios.post(
-          `${process.env.VUE_APP_API_URL}/${userId}/diary`,
+          `${BASE_URL}/users/${userId}/diary`,
           {
             date: new Date().toISOString().split('T')[0],
             studyMinutes: this.studyMinutes,
@@ -257,6 +256,7 @@ export default {
   }
 };
 </script>
+
 
 
 

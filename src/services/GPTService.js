@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { auth } from '@/firebase'; // ✅ Import Firebase auth
 
-const baseURL = process.env.VUE_APP_API_URL;
+const baseURL = import.meta.env.VITE_API_BASE_URL;
 
 const gptApi = axios.create({
   baseURL: baseURL,

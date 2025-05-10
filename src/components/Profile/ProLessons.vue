@@ -57,16 +57,17 @@ export default {
   },
   methods: {
     async loadProLessons() {
-      try {
-        const { data } = await axios.get(`${process.env.VUE_APP_API_URL}/lessons?type=premium`);
-        this.lessons = Array.isArray(data) ? data : [];
-        console.log(`✅ Загрузено ${this.lessons.length} премиум уроков`);
-      } catch (error) {
-        console.error('❌ Ошибка при загрузке премиум уроков:', error.response?.data || error.message);
-      } finally {
-        this.loading = false;
-      }
-    },
+  try {
+    const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/lessons?type=premium`);
+    this.lessons = Array.isArray(data) ? data : [];
+    console.log(`✅ Загрузено ${this.lessons.length} премиум уроков`);
+  } catch (error) {
+    console.error('❌ Ошибка при загрузке премиум уроков:', error.response?.data || error.message);
+  } finally {
+    this.loading = false;
+  }
+},
+
 
     startLesson(lessonId) {
       if (!lessonId) {
@@ -86,7 +87,7 @@ export default {
 
       try {
         const token = await auth.currentUser.getIdToken();
-        const url = `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`;
+        const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`;
         const body = {
           subject: lesson.subject,
           topic: lesson.topic

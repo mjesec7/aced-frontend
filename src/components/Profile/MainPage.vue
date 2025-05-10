@@ -53,6 +53,8 @@ import { auth } from '@/firebase';
 import TopicCard from '@/components/Topics/TopicCard.vue';
 import StudyCard from '@/components/Profile/StudyCard.vue';
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export default {
   name: 'MainPage',
   components: { TopicCard, StudyCard },
@@ -88,15 +90,11 @@ export default {
       try {
         this.loadingRecommendations = true;
         const token = await auth.currentUser.getIdToken();
-        console.log('🟣 [fetchRecommendations] Firebase token:', token);
+        const headers = { Authorization: `Bearer ${token}` };
 
         const { data } = await axios.get(
-          `${process.env.VUE_APP_API_URL}/users/${this.userId}/recommendations`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
+          `${BASE_URL}/users/${this.userId}/recommendations`,
+          { headers }
         );
 
         this.recommendations = data || [];
@@ -109,52 +107,47 @@ export default {
     },
 
     async fetchStudyList() {
-  try {
-    this.loadingStudyList = true;
+      try {
+        this.loadingStudyList = true;
 
-    if (!auth.currentUser) {
-      console.warn('⚠️ [MainPage.vue] auth.currentUser is null');
-      return;
-    }
+        if (!auth.currentUser) {
+          console.warn('⚠️ [MainPage.vue] auth.currentUser is null');
+          return;
+        }
 
-    const token = await auth.currentUser.getIdToken();
-    console.log('🟣 [MainPage.vue] Firebase token:', token);
+        const token = await auth.currentUser.getIdToken();
+        const headers = { Authorization: `Bearer ${token}` };
 
-    const { data } = await axios.get(
-      `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+        const { data } = await axios.get(
+          `${BASE_URL}/users/${this.userId}/study-list`,
+          { headers }
+        );
 
-    console.log('✅ [MainPage.vue] Raw study list response:', data);
+        console.log('✅ [MainPage.vue] Raw study list response:', data);
 
-    // 🔁 Flatten the study list into topic cards
-    const flatList = [];
+        // 🔁 Flatten the study list into topic cards
+        const flatList = [];
 
-    (data || []).forEach(subject => {
-      (subject.topics || []).forEach(topicName => {
-        flatList.push({
-          name: topicName,
-          subject: subject.subject,
-          level: subject.levels?.[0] || 1,
-          progress: { percent: 0, medal: 'none' },
+        (data || []).forEach(subject => {
+          (subject.topics || []).forEach(topicName => {
+            flatList.push({
+              name: topicName,
+              subject: subject.subject,
+              level: subject.levels?.[0] || 1,
+              progress: { percent: 0, medal: 'none' },
+            });
+          });
         });
-      });
-    });
 
-    this.studyList = flatList;
-    console.log('✅ [MainPage.vue] Flattened topic list:', this.studyList);
+        this.studyList = flatList;
+        console.log('✅ [MainPage.vue] Flattened topic list:', this.studyList);
 
-  } catch (err) {
-    console.error('❌ [MainPage.vue] fetchStudyList Error:', err.response?.data || err.message);
-  } finally {
-    this.loadingStudyList = false;
-  }
-},
-
+      } catch (err) {
+        console.error('❌ [MainPage.vue] fetchStudyList Error:', err.response?.data || err.message);
+      } finally {
+        this.loadingStudyList = false;
+      }
+    },
 
     async refreshRecommendations() {
       await this.fetchRecommendations();
@@ -164,41 +157,26 @@ export default {
       console.log('🟡 [handleAddTopic] Attempting to add topic:', topic);
 
       if (!topic.subject || !topic.level || !topic.name) {
-        console.warn('⚠️ [handleAddTopic] Incomplete topic data:', {
-          subject: topic.subject,
-          level: topic.level,
-          name: topic.name,
-        });
+        console.warn('⚠️ [handleAddTopic] Incomplete topic data:', topic);
         alert('❌ У этой темы нет всех нужных данных для добавления.');
         return;
       }
 
       try {
         const token = await auth.currentUser.getIdToken();
-        console.log('📡 [handleAddTopic] Token:', token);
+        const headers = { Authorization: `Bearer ${token}` };
+        const url = `${BASE_URL}/users/${this.userId}/study-list`;
 
-        const url = `${process.env.VUE_APP_API_URL}/users/${this.userId}/study-list`;
         const payload = {
           subject: topic.subject,
           level: topic.level,
           topic: topic.name,
         };
 
-        console.log('🚀 [handleAddTopic] Sending POST:', url);
-        console.log('📦 Payload:', payload);
-
-        const response = await axios.post(url, payload, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+        const response = await axios.post(url, payload, { headers });
         console.log('✅ [handleAddTopic] Server response:', response.data);
 
-        // Better: reload study list to avoid UI inconsistency
         await this.fetchStudyList();
-
-        // Remove from recommendations
         this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
 
         alert('✅ Тема добавлена в ваш список изучения!');
@@ -219,6 +197,7 @@ export default {
   },
 };
 </script>
+
 
 <style scoped>
 .dashboard {

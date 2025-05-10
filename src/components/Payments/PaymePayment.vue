@@ -62,19 +62,20 @@ export default {
     };
   },
   computed: {
-    amount() {
-      return this.plan === "pro" ? 455000 : 260000;
-    },
-    planLabel() {
-      return this.plan === "pro" ? "PRO" : "STARTER";
-    },
-    formattedAmount() {
-      return this.amount.toLocaleString("ru-RU");
-    },
-    apiUrl() {
-      return process.env.VUE_APP_API_URL;
-    },
+  amount() {
+    return this.plan === "pro" ? 455000 : 260000;
   },
+  planLabel() {
+    return this.plan === "pro" ? "PRO" : "STARTER";
+  },
+  formattedAmount() {
+    return this.amount.toLocaleString("ru-RU");
+  },
+  apiUrl() {
+    return import.meta.env.VITE_API_BASE_URL;
+  },
+},
+
   methods: {
     async initiatePayment() {
       this.loading = true;

@@ -30,7 +30,7 @@
     },
     async mounted() {
       try {
-        const res = await axios.get(`${process.env.VUE_APP_API_URL}/topics`);
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/topics`);
         this.topics = res.data;
       } catch (err) {
         console.error('❌ Ошибка загрузки тем:', err);
@@ -41,7 +41,7 @@
     methods: {
       async handleAddTopic(topicId) {
         try {
-          await axios.post(`${process.env.VUE_APP_API_URL}/users/${this.$root.firebaseUserId}/study-list`, {
+          await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/${this.$root.firebaseUserId}/study-list`, {
             topicId
           });
           alert('✅ Тема добавлена в список!');

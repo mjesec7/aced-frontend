@@ -204,11 +204,11 @@ export default {
     this.userId = storedId;
 
     try {
-      const token = await auth.currentUser.getIdToken();
-      const res = await fetch(`${process.env.VUE_APP_API_URL}/${this.userId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+  const token = await auth.currentUser.getIdToken();
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
       });
       if (!res.ok) throw new Error('❌ Ошибка ответа сервера при получении аналитики');
       const data = await res.json();
