@@ -115,8 +115,14 @@ export default {
       return 2 + (this.lesson.exercises?.length || 0);
     },
     currentExercise() {
-      return this.lesson.exercises?.[this.currentStep - 2] || {};
-    },
+  const index = this.currentStep - 2;
+  const exercise = this.lesson.exercises?.[index];
+  console.log('📊 Current Step:', this.currentStep);
+  console.log('🧩 Current Exercise Index:', index);
+  console.log('📝 Current Exercise:', exercise);
+  return exercise || {};
+},
+
     formattedTime() {
       if (!this.startTime) return '0:00';
       const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
