@@ -116,12 +116,10 @@ export default {
     },
     currentExercise() {
   const index = this.currentStep - 2;
-  const exercise = this.lesson.exercises?.[index];
-  console.log('📊 Current Step:', this.currentStep);
-  console.log('🧩 Current Exercise Index:', index);
-  console.log('📝 Current Exercise:', exercise);
-  return exercise || {};
+  if (index < 0 || !Array.isArray(this.lesson.exercises)) return {};
+  return this.lesson.exercises[index] || {};
 },
+
 
     formattedTime() {
       if (!this.startTime) return '0:00';
@@ -144,21 +142,24 @@ export default {
   },
   methods: {
     async loadLesson() {
-      try {
-        const lessonId = this.$route.params.id;
-        const { data: lessonData } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
-        this.lesson = lessonData;
+  try {
+    const lessonId = this.$route.params.id;
+    const { data: lessonData } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
+    this.lesson = lessonData;
 
-        if (this.lesson.topicId) {
-          const { data: topicLessons } = await axios.get(`${BASE_URL}/lessons/topic/${this.lesson.topicId}`);
-          this.allLessons = Array.isArray(topicLessons) ? topicLessons : [];
-        }
-      } catch (error) {
-        console.error('Ошибка загрузки урока:', error);
-      } finally {
-        this.loading = false;
-      }
-    },
+    console.log('📥 Loaded full lesson object:', this.lesson); // ← ✅ Add here
+
+    if (this.lesson.topicId) {
+      const { data: topicLessons } = await axios.get(`${BASE_URL}/lessons/topic/${this.lesson.topicId}`);
+      this.allLessons = Array.isArray(topicLessons) ? topicLessons : [];
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки урока:', error);
+  } finally {
+    this.loading = false;
+  }
+},
+
     startLesson() {
       this.started = true;
       this.startTime = Date.now();
