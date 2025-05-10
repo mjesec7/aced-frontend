@@ -59,7 +59,7 @@
         try {
           const token = await auth.currentUser.getIdToken(); // ✅ Get token
           const response = await fetch(
-            `${import.meta.env.VITE_API_BASE_URL}/user-analytics/topic-progress/${userId}`
+            `${import.meta.env.VITE_API_BASE_URL}/user-analytics/topic-progress/${userId}`,
             {
               headers: {
                 Authorization: `Bearer ${token}`, // ✅ Attach token
