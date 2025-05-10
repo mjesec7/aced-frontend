@@ -131,59 +131,61 @@ export default {
     },
 
     async loginWithGoogle() {
-    if (this.loggingIn) return;
-    this.loggingIn = true;
+  if (this.loggingIn) return;
+  this.loggingIn = true;
 
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      const token = await user.getIdToken(true); // 🔐 force refresh
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    const token = await user.getIdToken(true); // 🔐 Force refresh
 
-      const userData = {
-        name: user.displayName || user.email,
-        email: user.email,
-        uid: user.uid,
-        subscriptionPlan: localStorage.getItem("plan") || "start",
-      };
+    const userData = {
+      name: user.displayName || user.email,
+      email: user.email,
+      uid: user.uid,
+      subscriptionPlan: localStorage.getItem("plan") || "start",
+    };
 
-      console.log("✅ Logging in with Google:", userData);
-      console.log("🔑 Firebase token (preview):", token.slice(0, 30), "...");
+    const apiBase = import.meta.env.VITE_API_BASE_URL;
+    console.log("🌐 VITE_API_BASE_URL:", apiBase);
+    console.log("✅ Logging in with Google:", userData);
+    console.log("🔑 Firebase token (preview):", token.slice(0, 40), "...");
 
-      // ✅ Step 1: Save or update user in DB
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/save`, {
-        token,
-        name: userData.name,
-        subscriptionPlan: userData.subscriptionPlan,
-      });
+    // ✅ Step 1 — Save or update user in DB
+    await axios.post(`${apiBase}/users/save`, {
+      token,
+      name: userData.name,
+      subscriptionPlan: userData.subscriptionPlan,
+    });
 
-      // ✅ Step 2: Fetch user from DB to confirm
-      const { data } = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/users/${user.uid}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+    // ✅ Step 2 — Fetch user to verify sync
+    const { data } = await axios.get(`${apiBase}/users/${user.uid}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-      console.log("🎯 Synced user from DB:", data);
+    console.log("🎯 Synced user from DB:", data);
 
-      // 💾 Save UID locally
-      localStorage.setItem("firebaseUserId", user.uid);
-      localStorage.setItem("userId", user.uid);
+    // 💾 Save UID locally
+    localStorage.setItem("firebaseUserId", user.uid);
+    localStorage.setItem("userId", user.uid);
 
-      // 🔄 Optionally commit to Vuex:
-      // this.$store.commit('setFirebaseUserId', user.uid);
-
-      // 🚀 Navigate to profile or dashboard
-      this.$router.push("/profile");
-
-    } catch (error) {
-      console.error("❌ Google login error:", error.message || error);
-      alert("❌ Ошибка входа через Google. Попробуйте снова.");
-    } finally {
-      this.loggingIn = false;
+    // 🔄 Vuex (optional)
+    if (this.$store && this.$store.commit) {
+      this.$store.commit("setFirebaseUserId", user.uid);
     }
-  },
+
+    // 🚀 Navigate to dashboard
+    this.$router.push("/profile");
+
+  } catch (error) {
+    console.error("❌ Google login error:", error?.response?.data || error.message || error);
+    alert("❌ Ошибка входа через Google. Попробуйте снова.");
+  } finally {
+    this.loggingIn = false;
+  }
+},
+
 
 
 
