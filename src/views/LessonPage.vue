@@ -9,7 +9,6 @@
     </div>
 
     <div v-else class="lesson-split">
-      <!-- LEFT PANEL -->
       <div class="lesson-left">
         <div class="lesson-header">
           <h2 class="lesson-title">{{ lesson.lessonName }}</h2>
@@ -40,7 +39,6 @@
         </div>
       </div>
 
-      <!-- RIGHT PANEL -->
       <div class="lesson-right">
         <h3>✏️ Практическая зона</h3>
         <div v-if="understood && !lessonCompleted">
@@ -48,7 +46,7 @@
             <p class="exercise-question">{{ currentExercise.question || 'Вопрос отсутствует' }}</p>
             <div class="exercise-options">
               <label v-for="(opt, i) in currentExercise.options" :key="i">
-                <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
+                <input type="radio" :value="opt.option || opt" v-model="userAnswer" /> {{ opt.option || opt }}
               </label>
             </div>
           </template>
@@ -65,7 +63,6 @@
       </div>
     </div>
 
-    <!-- Exit Modal -->
     <div v-if="showExitModal" class="modal">
       <div class="modal-content">
         <p>Вы уверены, что хотите выйти? Прогресс будет потерян.</p>
@@ -74,7 +71,6 @@
       </div>
     </div>
 
-    <!-- Confetti -->
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
@@ -83,7 +79,6 @@
 import axios from 'axios';
 import confetti from 'canvas-confetti';
 import { auth } from '@/firebase';
-import '@/assets/css/LessonPage.css';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -115,12 +110,10 @@ export default {
       return 2 + (this.lesson.exercises?.length || 0);
     },
     currentExercise() {
-  const index = this.currentStep - 2;
-  if (index < 0 || !Array.isArray(this.lesson.exercises)) return {};
-  return this.lesson.exercises[index] || {};
-},
-
-
+      const index = this.currentStep - 2;
+      if (index < 0 || !Array.isArray(this.lesson.exercises)) return {};
+      return this.lesson.exercises[index] || {};
+    },
     formattedTime() {
       if (!this.startTime) return '0:00';
       const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
@@ -142,24 +135,21 @@ export default {
   },
   methods: {
     async loadLesson() {
-  try {
-    const lessonId = this.$route.params.id;
-    const { data: lessonData } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
-    this.lesson = lessonData;
-
-    console.log('📥 Loaded full lesson object:', this.lesson); // ← ✅ Add here
-
-    if (this.lesson.topicId) {
-      const { data: topicLessons } = await axios.get(`${BASE_URL}/lessons/topic/${this.lesson.topicId}`);
-      this.allLessons = Array.isArray(topicLessons) ? topicLessons : [];
-    }
-  } catch (error) {
-    console.error('Ошибка загрузки урока:', error);
-  } finally {
-    this.loading = false;
-  }
-},
-
+      try {
+        const lessonId = this.$route.params.id;
+        const { data: lessonData } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
+        this.lesson = lessonData;
+        console.log('📥 Loaded full lesson object:', this.lesson);
+        if (this.lesson.topicId) {
+          const { data: topicLessons } = await axios.get(`${BASE_URL}/lessons/topic/${this.lesson.topicId}`);
+          this.allLessons = Array.isArray(topicLessons) ? topicLessons : [];
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки урока:', error);
+      } finally {
+        this.loading = false;
+      }
+    },
     startLesson() {
       this.started = true;
       this.startTime = Date.now();
@@ -169,7 +159,7 @@ export default {
       this.understood = true;
     },
     submitAnswer() {
-      const correct = this.currentExercise.answer?.toLowerCase();
+      const correct = this.currentExercise.correctAnswer?.toLowerCase();
       const answer = this.userAnswer.trim().toLowerCase();
       if (!answer) {
         this.confirmation = '⚠️ Пожалуйста, введите ответ.';
@@ -198,7 +188,6 @@ export default {
       setTimeout(() => this.launchConfetti(), 200);
       const duration = Math.floor((Date.now() - this.startTime) / 1000);
       const token = await auth.currentUser?.getIdToken();
-
       this.medalImage = this.mistakeCount === 0
         ? '/images/medals/gold.png'
         : this.mistakeCount <= 2
