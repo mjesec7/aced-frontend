@@ -44,8 +44,18 @@
       <div class="lesson-right">
         <h3>✏️ Практическая зона</h3>
         <div v-if="understood && !lessonCompleted">
-          <p class="exercise-question">{{ currentExercise.question || 'Вопрос отсутствует' }}</p>
-          <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
+          <template v-if="currentExercise.options">
+            <p class="exercise-question">{{ currentExercise.question || 'Вопрос отсутствует' }}</p>
+            <div class="exercise-options">
+              <label v-for="(opt, i) in currentExercise.options" :key="i">
+                <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
+              </label>
+            </div>
+          </template>
+          <template v-else>
+            <p class="exercise-question">{{ currentExercise.question || 'Вопрос отсутствует' }}</p>
+            <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
+          </template>
           <button class="submit-btn" @click="submitAnswer">Готово</button>
           <div v-if="confirmation" class="confirmation">{{ confirmation }}</div>
         </div>
@@ -152,11 +162,13 @@ export default {
       this.understood = true;
     },
     submitAnswer() {
-      if (!this.userAnswer.trim()) {
+      const correct = this.currentExercise.answer?.toLowerCase();
+      const answer = this.userAnswer.trim().toLowerCase();
+      if (!answer) {
         this.confirmation = '⚠️ Пожалуйста, введите ответ.';
         return;
       }
-      if (this.userAnswer.trim().toLowerCase() === 'правильный') {
+      if (answer === correct) {
         this.confirmation = '✅ Верно!';
       } else {
         this.confirmation = '❌ Неверно. Попробуйте снова.';
@@ -180,13 +192,11 @@ export default {
       const duration = Math.floor((Date.now() - this.startTime) / 1000);
       const token = await auth.currentUser?.getIdToken();
 
-      if (this.mistakeCount === 0) {
-        this.medalImage = '/images/medals/gold.png';
-      } else if (this.mistakeCount <= 2) {
-        this.medalImage = '/images/medals/silver.png';
-      } else {
-        this.medalImage = '/images/medals/bronze.png';
-      }
+      this.medalImage = this.mistakeCount === 0
+        ? '/images/medals/gold.png'
+        : this.mistakeCount <= 2
+        ? '/images/medals/silver.png'
+        : '/images/medals/bronze.png';
 
       await axios.post(`${BASE_URL}/users/${this.userId}/diary`, {
         lessonName: this.lesson.lessonName,
