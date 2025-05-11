@@ -20,6 +20,16 @@
             Главная
           </router-link>
 
+          <!-- Unified Catalogue Page -->
+          <router-link
+            to="/catalogue"
+            class="nav-item"
+            :class="{ active: isRoute('/catalogue') }"
+          >
+            <span class="highlight"></span>
+            Каталог
+          </router-link>
+
           <!-- Other Pages -->
           <router-link
             v-for="link in links"
@@ -53,6 +63,7 @@
   </div>
 </template>
 
+
 <script>
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase';
@@ -64,8 +75,8 @@ export default {
     return {
       showLogoutModal: false,
       links: [
-        { name: 'free', label: 'Бесплатные Уроки' },
-        { name: 'premium', label: 'Премиум Уроки' },
+        // Removed: { name: 'free', label: 'Бесплатные Уроки' },
+        // Removed: { name: 'premium', label: 'Премиум Уроки' },
         { name: 'analytics', label: 'Аналитика' },
         { name: 'progress', label: 'Прогресс' },
         { name: 'goal', label: 'Цели' },
@@ -92,36 +103,35 @@ export default {
   methods: {
     ...mapMutations(['setUser', 'clearUser']),
     logout() {
-  signOut(auth)
-    .then(() => {
-      this.clearUser();
-
-      // Показать уведомление
-      this.$toast.success('Вы успешно вышли из аккаунта.', {
-        duration: 3000,
-        position: 'top-center'
-      });
-
-      // Красиво перенаправить на главную через 1.5 секунды
-      setTimeout(() => {
-        this.$router.push('/');
-      }, 1500);
-    })
-    .catch((err) => {
-      console.error('❌ Ошибка выхода:', err.message);
-      this.$toast.error('Ошибка при выходе: попробуйте ещё раз.');
-    });
-},
-
+      signOut(auth)
+        .then(() => {
+          this.clearUser();
+          this.$toast.success('Вы успешно вышли из аккаунта.', {
+            duration: 3000,
+            position: 'top-center'
+          });
+          setTimeout(() => {
+            this.$router.push('/');
+          }, 1500);
+        })
+        .catch((err) => {
+          console.error('❌ Ошибка выхода:', err.message);
+          this.$toast.error('Ошибка при выходе: попробуйте ещё раз.');
+        });
+    },
     isActive(name) {
       if (name === 'main') {
         return this.$route.path === '/profile/main';
       }
       return this.$route.path.includes(`/profile/${name}`);
+    },
+    isRoute(path) {
+      return this.$route.path === path;
     }
   }
 };
 </script>
+
 
 
 <style scoped>

@@ -1,47 +1,63 @@
 <template>
   <div class="dashboard">
-    <h1 class="title">Добро пожаловать!</h1>
+    <h1 class="title">👋 Добро пожаловать обратно!</h1>
 
-    <!-- 🎯 Recommendations Block -->
+    <!-- 🔍 Search and Filter -->
+    <div class="controls">
+      <input v-model="searchQuery" class="search-input" placeholder="🔍 Поиск тем или курсов..." />
+      <select v-model="filterSubject" class="filter-select">
+        <option value="">Все предметы</option>
+        <option v-for="subject in allSubjects" :key="subject" :value="subject">{{ subject }}</option>
+      </select>
+    </div>
+
+    <!-- 🎯 Smart Recommendations Block -->
     <div class="section">
       <div class="section-header">
-        <h2>🎯 Рекомендуемые темы</h2>
+        <h2>🎯 Рекомендовано для вас</h2>
         <button class="refresh-btn" @click="refreshRecommendations" :disabled="loadingRecommendations">
           🔄 Обновить
         </button>
       </div>
 
-      <div v-if="loadingRecommendations" class="loading-spinner">Загрузка рекомендаций...</div>
+      <div v-if="loadingRecommendations" class="grid">
+        <div class="recommendation-placeholder" v-for="n in 4" :key="n">⏳</div>
+      </div>
 
-      <div v-else-if="recommendations.length" class="grid">
+      <div v-else-if="filteredRecommendations.length" class="grid">
         <TopicCard
-          v-for="topic in recommendations"
+          v-for="topic in filteredRecommendations"
           :key="topic._id"
           :topic="topic"
+          :lessons="topic.lessons"
+          :description="topic.description"
           @add="handleAddTopic"
           @start="handleStartTopic"
         />
       </div>
 
-      <div v-else class="empty-message">Нет доступных рекомендаций.</div>
+      <div v-else class="empty-message">Нет подходящих рекомендаций.</div>
     </div>
 
     <!-- 📚 Study List Block -->
     <div class="section">
-      <h2>📚 Мои темы</h2>
+      <h2>📘 Мои курсы</h2>
 
-      <div v-if="loadingStudyList" class="loading-spinner">Загрузка ваших тем...</div>
+      <div v-if="loadingStudyList" class="grid">
+        <div class="study-placeholder" v-for="n in 3" :key="n">⏳</div>
+      </div>
 
-      <div v-else-if="studyList.length" class="grid">
+      <div v-else-if="filteredStudyList.length" class="grid">
         <StudyCard
-          v-for="topic in studyList"
+          v-for="topic in filteredStudyList"
           :key="topic._id"
           :topic="topic"
           :progress="topic.progress || { percent: 0, medal: 'none' }"
+          :lessons="topic.lessons"
         />
       </div>
 
-      <div v-else class="empty-message">У вас пока нет выбранных тем.</div>
+      <div v-else class="empty-message">У вас пока нет активных курсов.</div>
     </div>
   </div>
 </template>
@@ -63,12 +79,33 @@ export default {
       userId: null,
       recommendations: [],
       studyList: [],
+      allSubjects: [],
       loadingRecommendations: true,
       loadingStudyList: true,
+      searchQuery: '',
+      filterSubject: '',
     };
   },
   computed: {
     ...mapState(['firebaseUserId']),
+    filteredRecommendations() {
+      return this.recommendations.filter(t => {
+        return (
+          (!this.filterSubject || t.subject === this.filterSubject) &&
+          (t.name?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+            t.description?.toLowerCase().includes(this.searchQuery.toLowerCase()))
+        );
+      });
+    },
+    filteredStudyList() {
+      return this.studyList.filter(t => {
+        return (
+          (!this.filterSubject || t.subject === this.filterSubject) &&
+          (t.name?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+            t.description?.toLowerCase().includes(this.searchQuery.toLowerCase()))
+        );
+      });
+    },
   },
   async mounted() {
     const storedId =
@@ -76,13 +113,9 @@ export default {
       localStorage.getItem('firebaseUserId') ||
       localStorage.getItem('userId');
 
-    if (!storedId) {
-      console.warn('❌ Нет ID пользователя. Перенаправляем на главную страницу.');
-      return this.$router.push('/');
-    }
+    if (!storedId) return this.$router.push('/');
 
     this.userId = storedId;
-
     await Promise.all([this.fetchRecommendations(), this.fetchStudyList()]);
   },
   methods: {
@@ -91,107 +124,55 @@ export default {
         this.loadingRecommendations = true;
         const token = await auth.currentUser.getIdToken();
         const headers = { Authorization: `Bearer ${token}` };
-
-        const { data } = await axios.get(
-          `${BASE_URL}/users/${this.userId}/recommendations`,
-          { headers }
-        );
+        const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/recommendations`, { headers });
 
         this.recommendations = data || [];
-        console.log(`✅ Загружено рекомендаций: ${this.recommendations.length}`);
+        this.extractSubjects(this.recommendations);
       } catch (err) {
-        console.error('❌ Ошибка загрузки рекомендаций:', err.response?.data || err.message);
+        console.error('❌ Ошибка загрузки рекомендаций:', err);
       } finally {
         this.loadingRecommendations = false;
       }
     },
-
     async fetchStudyList() {
       try {
         this.loadingStudyList = true;
-
-        if (!auth.currentUser) {
-          console.warn('⚠️ [MainPage.vue] auth.currentUser is null');
-          return;
-        }
-
         const token = await auth.currentUser.getIdToken();
         const headers = { Authorization: `Bearer ${token}` };
+        const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
 
-        const { data } = await axios.get(
-          `${BASE_URL}/users/${this.userId}/study-list`,
-          { headers }
-        );
-
-        console.log('✅ [MainPage.vue] Raw study list response:', data);
-
-        // 🔁 Flatten the study list into topic cards
-        const flatList = [];
-
-        (data || []).forEach(subject => {
-          (subject.topics || []).forEach(topicName => {
-            flatList.push({
-              name: topicName,
-              subject: subject.subject,
-              level: subject.levels?.[0] || 1,
-              progress: { percent: 0, medal: 'none' },
-            });
-          });
-        });
-
-        this.studyList = flatList;
-        console.log('✅ [MainPage.vue] Flattened topic list:', this.studyList);
-
+        this.studyList = data || [];
+        this.extractSubjects(this.studyList);
       } catch (err) {
-        console.error('❌ [MainPage.vue] fetchStudyList Error:', err.response?.data || err.message);
+        console.error('❌ Ошибка загрузки курсов:', err);
       } finally {
         this.loadingStudyList = false;
       }
     },
-
+    extractSubjects(items) {
+      const subjects = new Set(items.map(item => item.subject).filter(Boolean));
+      this.allSubjects = Array.from(subjects);
+    },
     async refreshRecommendations() {
       await this.fetchRecommendations();
     },
-
     async handleAddTopic(topic) {
-      console.log('🟡 [handleAddTopic] Attempting to add topic:', topic);
+      const token = await auth.currentUser.getIdToken();
+      const headers = { Authorization: `Bearer ${token}` };
+      const url = `${BASE_URL}/users/${this.userId}/study-list`;
 
-      if (!topic.subject || !topic.level || !topic.name) {
-        console.warn('⚠️ [handleAddTopic] Incomplete topic data:', topic);
-        alert('❌ У этой темы нет всех нужных данных для добавления.');
-        return;
-      }
+      const payload = {
+        subject: topic.subject,
+        level: topic.level,
+        topic: topic.name,
+      };
 
-      try {
-        const token = await auth.currentUser.getIdToken();
-        const headers = { Authorization: `Bearer ${token}` };
-        const url = `${BASE_URL}/users/${this.userId}/study-list`;
-
-        const payload = {
-          subject: topic.subject,
-          level: topic.level,
-          topic: topic.name,
-        };
-
-        const response = await axios.post(url, payload, { headers });
-        console.log('✅ [handleAddTopic] Server response:', response.data);
-
-        await this.fetchStudyList();
-        this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
-
-        alert('✅ Тема добавлена в ваш список изучения!');
-      } catch (err) {
-        console.error('❌ [handleAddTopic] Error adding topic:', err.response?.data || err.message);
-        alert('❌ Не удалось добавить тему. Проверьте консоль.');
-      }
+      await axios.post(url, payload, { headers });
+      await this.fetchStudyList();
+      this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
     },
-
     handleStartTopic(topic) {
-      if (!topic._id) {
-        console.warn('❌ [handleStartTopic] Missing topic ID:', topic);
-        return alert('❌ У этой темы нет ID.');
-      }
-
+      if (!topic._id) return;
       this.$router.push({ path: `/topic/${topic._id}/overview` });
     },
   },
@@ -202,17 +183,34 @@ export default {
 <style scoped>
 .dashboard {
   padding: 40px 20px;
-  max-width: 1300px;
+  max-width: 1400px;
   margin: auto;
   font-family: 'Inter', sans-serif;
 }
 
 .title {
-  font-size: 2.8rem;
+  font-size: 2.5rem;
   font-weight: 800;
   text-align: center;
   color: #7c3aed;
-  margin-bottom: 50px;
+  margin-bottom: 30px;
+}
+
+.controls {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 40px;
+  justify-content: center;
+}
+
+.search-input,
+.filter-select {
+  padding: 12px 16px;
+  font-size: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  min-width: 220px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .section {
@@ -228,31 +226,44 @@ export default {
 .refresh-btn {
   background: linear-gradient(to right, #8b5cf6, #60a5fa);
   color: white;
-  padding: 10px 18px;
-  font-size: 0.9rem;
+  padding: 10px 16px;
   border: none;
   border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.3s;
 }
-
 .refresh-btn:hover {
   background: linear-gradient(to right, #7c3aed, #4f46e5);
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 28px;
   margin-top: 20px;
 }
 
-.loading-spinner {
-  text-align: center;
-  margin-top: 30px;
-  font-size: 1.1rem;
-  color: #6b7280;
+.recommendation-placeholder,
+.study-placeholder {
+  background: #f3f4f6;
+  border-radius: 16px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #cbd5e1;
+  font-weight: bold;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease-in-out;
+}
+
+.recommendation-placeholder:hover,
+.study-placeholder:hover {
+  transform: scale(1.02);
+  background: linear-gradient(to right, #e0e7ff, #ede9fe);
+  color: #7c3aed;
 }
 
 .empty-message {

@@ -5,11 +5,10 @@ import store from '@/store';
 import HomePage from '@/views/HomePage.vue';
 import AcedSettings from '@/components/Main/AcedSettings.vue';
 import ProfilePage from '@/views/ProfilePage.vue';
+import CataloguePage from '@/views/CataloguePage.vue'; // ✅ Unified course catalogue
 
 // ✅ Profile Sub-Pages
 import MainPage from '@/components/Profile/MainPage.vue';
-import FreeLessons from '@/components/Profile/FreeLessons.vue';
-import ProLessons from '@/components/Profile/ProLessons.vue';
 import UserAnalyticsPanel from '@/components/Profile/UserAnalyticsPanel.vue';
 import SubjectProgress from '@/components/Profile/SubjectProgress.vue';
 import StudyGoal from '@/components/Profile/StudyGoal.vue';
@@ -22,6 +21,7 @@ import PaymePayment from '@/components/Payments/PaymePayment.vue';
 // ✅ Lazy-loaded Views
 const LessonPage = () => import('@/views/LessonPage.vue');
 const TopicFinished = () => import('@/views/TopicFinished.vue');
+const TopicOverview = () => import('@/views/TopicOverview.vue');
 
 const routes = [
   {
@@ -35,13 +35,16 @@ const routes = [
     component: AcedSettings,
   },
   {
+    path: '/catalogue',
+    name: 'CataloguePage',
+    component: CataloguePage,
+  },
+  {
     path: '/profile',
     component: ProfilePage,
     children: [
       { path: '', redirect: '/profile/main' },
       { path: 'main', name: 'MainPage', component: MainPage },
-      { path: 'free', name: 'FreeLessons', component: FreeLessons },
-      { path: 'premium', name: 'ProLessons', component: ProLessons },
       { path: 'analytics', name: 'UserAnalyticsPanel', component: UserAnalyticsPanel },
       { path: 'progress', name: 'SubjectProgress', component: SubjectProgress },
       { path: 'goal', name: 'StudyGoal', component: StudyGoal },
@@ -57,8 +60,14 @@ const routes = [
   },
   {
     path: '/lesson/:id',
-    name: 'LessonPage', // 🔁 renamed to match what you're using in router.push
+    name: 'LessonPage',
     component: LessonPage,
+    props: true,
+  },
+  {
+    path: '/topic/:id/overview',
+    name: 'TopicOverview',
+    component: TopicOverview,
     props: true,
   },
   {
@@ -89,7 +98,7 @@ const router = createRouter({
 
 // ✅ Route Guard
 router.beforeEach((to, from, next) => {
-  const isPublic = to.name === 'HomePage';
+  const isPublic = to.name === 'HomePage' || to.name === 'CataloguePage';
   const isLoggedIn = !!store.getters.getFirebaseUserId;
 
   if (!isPublic && !isLoggedIn) {
@@ -106,3 +115,4 @@ router.onError((err) => {
 });
 
 export default router;
+  
