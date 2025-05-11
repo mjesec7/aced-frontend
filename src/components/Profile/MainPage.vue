@@ -9,6 +9,7 @@
         <option value="">Все предметы</option>
         <option v-for="subject in allSubjects" :key="subject" :value="subject">{{ subject }}</option>
       </select>
+      <span class="user-status-badge" :class="userStatus">{{ userStatusLabel }}</span>
     </div>
 
     <!-- 🎯 Smart Recommendations Block -->
@@ -77,6 +78,7 @@ export default {
   data() {
     return {
       userId: null,
+      userStatus: 'free',
       recommendations: [],
       studyList: [],
       allSubjects: [],
@@ -106,6 +108,11 @@ export default {
         );
       });
     },
+    userStatusLabel() {
+      if (this.userStatus === 'pro') return 'Pro';
+      if (this.userStatus === 'start') return 'Start';
+      return 'Free';
+    }
   },
   async mounted() {
     const storedId =
@@ -116,9 +123,20 @@ export default {
     if (!storedId) return this.$router.push('/');
 
     this.userId = storedId;
+    await this.fetchUserStatus();
     await Promise.all([this.fetchRecommendations(), this.fetchStudyList()]);
   },
   methods: {
+    async fetchUserStatus() {
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const headers = { Authorization: `Bearer ${token}` };
+        const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/status`, { headers });
+        this.userStatus = data.status || 'free';
+      } catch (err) {
+        console.warn('⚠️ Не удалось загрузить статус пользователя. По умолчанию: free');
+      }
+    },
     async fetchRecommendations() {
       try {
         this.loadingRecommendations = true;
@@ -179,7 +197,6 @@ export default {
 };
 </script>
 
-
 <style scoped>
 .dashboard {
   padding: 40px 20px;
@@ -201,6 +218,7 @@ export default {
   gap: 16px;
   margin-bottom: 40px;
   justify-content: center;
+  align-items: center;
 }
 
 .search-input,
@@ -211,6 +229,24 @@ export default {
   border-radius: 12px;
   min-width: 220px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.user-status-badge {
+  font-size: 0.9rem;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-weight: bold;
+  color: white;
+  text-transform: uppercase;
+}
+.user-status-badge.free {
+  background: #6b7280;
+}
+.user-status-badge.start {
+  background: #f59e0b;
+}
+.user-status-badge.pro {
+  background: #10b981;
 }
 
 .section {

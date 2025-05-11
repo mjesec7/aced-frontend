@@ -9,9 +9,16 @@
         <div class="lesson-list">
           <h2>📚 Уроки</h2>
           <ul>
-            <li v-for="lesson in topic.lessons" :key="lesson._id" class="lesson-item">
+            <li
+              v-for="lesson in topic.lessons"
+              :key="lesson._id"
+              class="lesson-item"
+              :class="{ locked: lesson.type === 'premium' && userPlan === 'free' }"
+            >
               <span>{{ lesson.lessonName }}</span>
-              <button @click="startLesson(lesson._id)">Начать</button>
+              <button @click="startLesson(lesson)" :disabled="lesson.type === 'premium' && userPlan === 'free'">
+                {{ lesson.type === 'premium' ? '🔒 Премиум' : 'Начать' }}
+              </button>
             </li>
           </ul>
         </div>
@@ -35,6 +42,7 @@
       return {
         topic: null,
         loading: true,
+        userPlan: 'free'
       };
     },
     async mounted() {
@@ -43,6 +51,10 @@
         const token = await auth.currentUser.getIdToken();
         const headers = { Authorization: `Bearer ${token}` };
         const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  
+        const userStatusRes = await axios.get(`${BASE_URL}/users/${auth.currentUser.uid}/status`, { headers });
+        this.userPlan = userStatusRes.data?.status || 'free';
+  
         const { data } = await axios.get(`${BASE_URL}/topics/${topicId}`, { headers });
         this.topic = data;
       } catch (err) {
@@ -52,14 +64,21 @@
       }
     },
     methods: {
-      startLesson(lessonId) {
-        if (!lessonId) return;
-        this.$router.push({ name: 'LessonPage', params: { id: lessonId } });
+      startLesson(lesson) {
+        if (lesson.type === 'premium' && this.userPlan === 'free') {
+          alert('❌ Этот урок доступен только подписчикам.');
+          return;
+        }
+        this.$router.push({ name: 'LessonPage', params: { id: lesson._id } });
       },
       startFirstLesson() {
         if (this.topic && this.topic.lessons?.length > 0) {
-          const firstLessonId = this.topic.lessons[0]._id;
-          this.startLesson(firstLessonId);
+          const first = this.topic.lessons.find(l => l.type !== 'premium' || this.userPlan !== 'free');
+          if (first) {
+            this.startLesson(first);
+          } else {
+            alert('❌ Все уроки этой темы доступны только подписчикам.');
+          }
         } else {
           alert('❌ У этой темы пока нет уроков.');
         }
@@ -84,10 +103,10 @@
   }
   
   .title {
-    font-size: 2.2rem;
-    font-weight: 800;
+    font-size: 2.4rem;
+    font-weight: 900;
     margin-bottom: 20px;
-    color: #4f46e5;
+    color: #4c1d95;
   }
   
   .description {
@@ -99,6 +118,7 @@
   .lesson-list h2 {
     font-size: 1.4rem;
     margin-bottom: 12px;
+    color: #4c1d95;
   }
   
   .lesson-item {
@@ -112,17 +132,23 @@
     border-radius: 10px;
   }
   
+  .lesson-item.locked {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  
   .lesson-item button {
     padding: 6px 14px;
-    background: #6366f1;
+    background: linear-gradient(to right, #7c3aed, #6d28d9);
     color: white;
     border: none;
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
   }
+  
   .lesson-item button:hover {
-    background: #4f46e5;
+    background: linear-gradient(to right, #5b21b6, #6d28d9);
   }
   
   .start-button-wrapper {
@@ -133,7 +159,7 @@
   .start-course-btn {
     padding: 14px 28px;
     font-size: 1.1rem;
-    background: linear-gradient(to right, #6366f1, #8b5cf6);
+    background: linear-gradient(to right, #6d28d9, #7c3aed);
     color: white;
     border: none;
     border-radius: 12px;
@@ -142,7 +168,7 @@
   }
   
   .start-course-btn:hover {
-    background: linear-gradient(to right, #4f46e5, #7c3aed);
+    background: linear-gradient(to right, #5b21b6, #6b21a8);
   }
   </style>
   

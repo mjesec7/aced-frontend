@@ -10,8 +10,8 @@
     <div v-else class="user-menu">
       <button class="user-button" @click="toggleDropdown">
         Привет, {{ currentUser.name }}
-        <span v-if="currentUser.subscriptionPlan" class="badge">
-          {{ currentUser.subscriptionPlan === 'pro' ? 'PRO' : 'START' }}
+        <span class="badge">
+          {{ displayPlan }}
         </span>
       </button>
       <div v-if="dropdownOpen" class="dropdown-menu">
@@ -81,6 +81,7 @@ export default {
       showSettings: false,
       user: { name: "", surname: "", email: "", password: "", confirmPassword: "" },
       login: { email: "", password: "" },
+      loggingIn: false,
     };
   },
 
@@ -89,17 +90,31 @@ export default {
     currentUser() {
       return this.getUser;
     },
+    displayPlan() {
+      const plan = this.currentUser?.subscriptionPlan || localStorage.getItem("plan") || 'free';
+      return plan.toUpperCase();
+    }
   },
 
   mounted() {
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
       if (user) {
-        this.setUser({
-          name: user.displayName || user.email,
-          email: user.email,
-          subscriptionPlan: localStorage.getItem("plan") || "start",
-          uid: user.uid,
-        });
+        const token = await user.getIdToken();
+        try {
+          const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/${user.uid}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const { name, subscriptionPlan } = res.data;
+          this.setUser({
+            name: name || user.email,
+            email: user.email,
+            uid: user.uid,
+            subscriptionPlan: subscriptionPlan || 'free',
+          });
+          localStorage.setItem('plan', subscriptionPlan || 'free');
+        } catch (err) {
+          console.warn('⚠️ Не удалось получить данные пользователя:', err);
+        }
       } else {
         this.logoutUser();
       }
@@ -129,65 +144,47 @@ export default {
     toggleDropdown() {
       this.dropdownOpen = !this.dropdownOpen;
     },
-
     async loginWithGoogle() {
-  if (this.loggingIn) return;
-  this.loggingIn = true;
+      if (this.loggingIn) return;
+      this.loggingIn = true;
 
-  try {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    const token = await user.getIdToken(true); // 🔐 Force refresh
+      try {
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        const token = await user.getIdToken(true);
 
-    const userData = {
-      name: user.displayName || user.email,
-      email: user.email,
-      uid: user.uid,
-      subscriptionPlan: localStorage.getItem("plan") || "start",
-    };
+        const apiBase = import.meta.env.VITE_API_BASE_URL;
+        const res = await axios.get(`${apiBase}/users/${user.uid}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
-    const apiBase = import.meta.env.VITE_API_BASE_URL;
-    console.log("🌐 VITE_API_BASE_URL:", apiBase);
-    console.log("✅ Logging in with Google:", userData);
-    console.log("🔑 Firebase token (preview):", token.slice(0, 40), "...");
+        const subscriptionPlan = res.data.subscriptionPlan || 'free';
+        const name = res.data.name || user.displayName || user.email;
 
-    // ✅ Step 1 — Save or update user in DB
-    await axios.post(`${apiBase}/users/save`, {
-      token,
-      name: userData.name,
-      subscriptionPlan: userData.subscriptionPlan,
-    });
+        await axios.post(`${apiBase}/users/save`, {
+          token,
+          name,
+          subscriptionPlan,
+        });
 
-    // ✅ Step 2 — Fetch user to verify sync
-    const { data } = await axios.get(`${apiBase}/users/${user.uid}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+        localStorage.setItem("firebaseUserId", user.uid);
+        localStorage.setItem("userId", user.uid);
+        localStorage.setItem("plan", subscriptionPlan);
+        this.setUser({ name, email: user.email, subscriptionPlan, uid: user.uid });
 
-    console.log("🎯 Synced user from DB:", data);
+        if (this.$store && this.$store.commit) {
+          this.$store.commit("setFirebaseUserId", user.uid);
+        }
 
-    // 💾 Save UID locally
-    localStorage.setItem("firebaseUserId", user.uid);
-    localStorage.setItem("userId", user.uid);
-
-    // 🔄 Vuex (optional)
-    if (this.$store && this.$store.commit) {
-      this.$store.commit("setFirebaseUserId", user.uid);
-    }
-
-    // 🚀 Navigate to dashboard
-    this.$router.push("/profile");
-
-  } catch (error) {
-    console.error("❌ Google login error:", error?.response?.data || error.message || error);
-    alert("❌ Ошибка входа через Google. Попробуйте снова.");
-  } finally {
-    this.loggingIn = false;
-  }
-},
-
-
-
+        this.$router.push("/profile");
+      } catch (error) {
+        console.error("❌ Google login error:", error);
+        alert("❌ Ошибка входа через Google. Попробуйте снова.");
+      } finally {
+        this.loggingIn = false;
+      }
+    },
 
     async handleEmailLogin() {
       if (!this.login.email || !this.login.password) {
@@ -197,12 +194,21 @@ export default {
       try {
         const result = await signInWithEmailAndPassword(auth, this.login.email, this.login.password);
         const token = await result.user.getIdToken();
+        const apiBase = import.meta.env.VITE_API_BASE_URL;
+
+        const res = await axios.get(`${apiBase}/users/${result.user.uid}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const { name, subscriptionPlan } = res.data;
+
         const userData = {
-          name: result.user.displayName || result.user.email,
+          name: name || result.user.email,
           email: result.user.email,
           uid: result.user.uid,
-          subscriptionPlan: localStorage.getItem("plan") || "start",
+          subscriptionPlan: subscriptionPlan || 'free',
         };
+
+        localStorage.setItem("plan", userData.subscriptionPlan);
         await this.loginUser({ userData, token });
         this.closeModal();
       } catch (error) {
@@ -219,18 +225,21 @@ export default {
       try {
         const result = await createUserWithEmailAndPassword(auth, this.user.email, this.user.password);
         const token = await result.user.getIdToken();
+
         const userData = {
           name: this.user.name,
           email: this.user.email,
           uid: result.user.uid,
-          subscriptionPlan: localStorage.getItem("plan") || "start",
+          subscriptionPlan: 'free'
         };
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/save`, {
-  token,
-  name: userData.name,
-  subscriptionPlan: userData.subscriptionPlan,
-});
 
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/save`, {
+          token,
+          name: userData.name,
+          subscriptionPlan: 'free',
+        });
+
+        localStorage.setItem("plan", 'free');
         await this.loginUser({ userData, token });
         alert("Вы успешно зарегистрированы!");
         this.closeModal();
@@ -244,6 +253,7 @@ export default {
       auth.signOut().then(() => {
         this.logoutUser();
         this.dropdownOpen = false;
+        localStorage.removeItem("plan");
       });
     },
 

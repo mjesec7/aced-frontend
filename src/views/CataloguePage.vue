@@ -1,6 +1,11 @@
 <template>
     <div class="lessons-page">
-      <h1 class="page-title">📚 Каталог Уроков</h1>
+      <div class="page-header">
+        <h1 class="page-title">📚 Каталог Уроков</h1>
+        <span class="subscription-badge" :class="subscriptionClass">
+          {{ subscriptionText }}
+        </span>
+      </div>
   
       <!-- 🔍 Search and Filter Controls -->
       <div class="controls">
@@ -61,7 +66,8 @@
         filterType: 'all',
         searchQuery: '',
         showPaywall: false,
-        requestedTopicId: null
+        requestedTopicId: null,
+        plan: 'free'
       };
     },
     computed: {
@@ -75,9 +81,15 @@
             lesson.subject.toLowerCase().includes(this.searchQuery.toLowerCase());
           return matchesFilter && matchesSearch;
         });
+      },
+      subscriptionClass() {
+        return this.plan === 'pro' ? 'badge-pro' : this.plan === 'start' ? 'badge-start' : 'badge-free';
+      },
+      subscriptionText() {
+        return this.plan === 'pro' ? 'Pro подписка' : this.plan === 'start' ? 'Start подписка' : 'Бесплатный доступ';
       }
     },
-    mounted() {
+    async mounted() {
       const storedId =
         this.firebaseUserId ||
         localStorage.getItem('firebaseUserId') ||
@@ -90,6 +102,17 @@
       }
   
       this.userId = storedId;
+  
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        this.plan = res.data.status || 'free';
+      } catch (err) {
+        console.warn('⚠️ Не удалось получить статус подписки.');
+      }
+  
       this.loadLessons();
     },
     methods: {
@@ -105,8 +128,7 @@
         }
       },
       handleAccess(lesson) {
-        const plan = this.user?.subscriptionPlan || localStorage.getItem('plan');
-        if (lesson.type === 'premium' && (!plan || plan === 'free')) {
+        if (lesson.type === 'premium' && (!this.plan || this.plan === 'free')) {
           this.requestedTopicId = lesson.topicId;
           this.showPaywall = true;
         } else {
@@ -149,6 +171,30 @@
   <style scoped>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
   
+  .page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+.subscription-badge {
+  padding: 8px 16px;
+  font-weight: 700;
+  border-radius: 16px;
+  font-size: 0.85rem;
+}
+.badge-free {
+  background-color: #f87171;
+  color: white;
+}
+.badge-start {
+  background-color: #facc15;
+  color: black;
+}
+.badge-pro {
+  background-color: #10b981;
+  color: white;
+}
   .lessons-page {
     padding: 40px 20px;
     max-width: 1300px;
