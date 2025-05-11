@@ -160,7 +160,7 @@ export default {
       this.understood = true;
     },
     submitAnswer() {
-      const correct = this.currentExercise.correctAnswer?.toLowerCase();
+      const correct = this.currentExercise.answer?.toLowerCase(); // ✅ FIXED
       const answer = this.userAnswer.trim().toLowerCase();
       if (!answer) {
         this.confirmation = '⚠️ Пожалуйста, введите ответ.';
