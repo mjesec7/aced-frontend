@@ -79,7 +79,6 @@
 import axios from 'axios';
 import confetti from 'canvas-confetti';
 import { auth } from '@/firebase';
-import '@/assets/css/LessonPage.css';
 
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -234,3 +233,7 @@ export default {
   }
 };
 </script>
+
+<style>
+@import '@/assets/css/LessonPage.css';
+</style>
