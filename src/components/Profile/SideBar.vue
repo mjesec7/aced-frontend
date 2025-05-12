@@ -20,7 +20,7 @@
             Главная
           </router-link>
 
-          <!-- Unified Catalogue Page -->
+          <!-- Каталог -->
           <router-link
             to="/profile/catalogue"
             class="nav-item"
@@ -30,11 +30,11 @@
             Каталог
           </router-link>
 
-          <!-- Other Pages -->
+          <!-- Dynamic Links -->
           <router-link
             v-for="link in links"
             :key="link.name"
-            :to="`/profile/${link.name}`"
+            :to="link.name === 'settings' ? `/${link.name}` : `/profile/${link.name}`"
             class="nav-item"
             :class="{ active: isActive(link.name) }"
           >
@@ -77,7 +77,8 @@ export default {
         { name: 'analytics', label: 'Аналитика' },
         { name: 'goal', label: 'Цели' },
         { name: 'diary', label: 'Дневник' },
-        { name: 'homework', label: 'Помощь с ДЗ' }
+        { name: 'homework', label: 'Помощь с ДЗ' },
+        { name: 'settings', label: 'Настройки' } // ✅ Added
       ]
     };
   },
@@ -116,23 +117,18 @@ export default {
         });
     },
     isActive(name) {
-      if (name === 'main') {
-        return this.$route.path === '/profile/main';
-      }
-      return this.$route.path.includes(`/profile/${name}`);
-    },
-    isRoute(path) {
-      return this.$route.path === path;
+      const path = this.$route.path;
+      if (name === 'main') return path === '/profile/main';
+      if (name === 'catalogue') return path === '/profile/catalogue';
+      if (name === 'settings') return path === '/settings';
+      return path.includes(`/profile/${name}`);
     }
   }
 };
 </script>
 
-
-
-
 <style scoped>
-/* (your styles — no changes needed, they are already beautiful) */
+/* same beautiful styles unchanged */
 .sidebar-wrapper {
   position: relative;
 }
