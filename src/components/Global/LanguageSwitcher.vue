@@ -1,51 +1,49 @@
 <template>
     <div class="language-switcher">
-      <button 
-        v-for="lang in languages" 
-        :key="lang.code" 
-        @click="changeLanguage(lang.code)"
-        :class="{ active: currentLang === lang.code }"
-      >
-        {{ lang.label }}
-      </button>
+      <button @click="showDropdown = !showDropdown">{{ languageLabel }}</button>
+      <div v-if="showDropdown" class="dropdown">
+        <div
+          v-for="lang in otherLanguages"
+          :key="lang.code"
+          @click="changeLanguage(lang.code)"
+          class="dropdown-item"
+        >
+          {{ lang.label }}
+        </div>
+      </div>
     </div>
   </template>
   
   <script>
-  import { translateText } from '@/services/translationService';
-  
   export default {
     name: 'LanguageSwitcher',
     data() {
       return {
+        showDropdown: false,
         languages: [
           { code: 'en', label: 'EN' },
           { code: 'ru', label: 'RU' },
           { code: 'uz', label: 'UZ' }
-        ],
-        currentLang: localStorage.getItem('lang') || 'en'
+        ]
       };
     },
-    methods: {
-      async changeLanguage(langCode) {
-        this.currentLang = langCode;
-        localStorage.setItem('lang', langCode);
-  
-        // Optional: Notify other components
-        this.$emit('languageChanged', langCode);
-  
-        // Translate dynamic visible text
-        const translatableElements = document.querySelectorAll('[data-translate]');
-        for (const el of translatableElements) {
-          const original = el.dataset.originalText || el.innerText;
-          el.dataset.originalText = original;
-          el.innerText = await translateText(original, langCode);
-        }
+    computed: {
+      currentLang() {
+        return this.$i18n.locale;
+      },
+      languageLabel() {
+        return this.languages.find(lang => lang.code === this.currentLang)?.label || '🌐';
+      },
+      otherLanguages() {
+        return this.languages.filter(lang => lang.code !== this.currentLang);
       }
     },
-    mounted() {
-      // Auto-apply language on mount
-      this.changeLanguage(this.currentLang);
+    methods: {
+      changeLanguage(lang) {
+        this.$i18n.locale = lang;
+        localStorage.setItem('lang', lang);
+        this.showDropdown = false;
+      }
     }
   };
   </script>
@@ -56,23 +54,38 @@
     top: 20px;
     right: 20px;
     z-index: 10000;
-    display: flex;
-    gap: 10px;
   }
-  .language-switcher button {
-    background: #f3f4f6;
+  .toggle-button {
+    background: linear-gradient(to right, #7c3aed, #6d28d9);
+    color: white;
+    padding: 8px 14px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .dropdown {
+    margin-top: 6px;
+    background: white;
     border: 1px solid #d1d5db;
     border-radius: 6px;
-    padding: 6px 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: absolute;
+    right: 0;
+  }
+  .dropdown-item {
+    display: block;
+    padding: 8px 14px;
+    width: 100%;
+    background: white;
+    border: none;
+    text-align: left;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
   }
-  .language-switcher button.active,
-  .language-switcher button:hover {
-    background: linear-gradient(to right, #7c3aed, #6d28d9);
-    color: white;
-    border: none;
+  .dropdown-item:hover {
+    background: #f3f4f6;
   }
   </style>
   
