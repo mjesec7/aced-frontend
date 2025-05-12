@@ -7,7 +7,6 @@
       </span>
     </div>
 
-    <!-- 🔍 Search and Filter Controls -->
     <div class="controls">
       <input
         v-model="searchQuery"
@@ -27,7 +26,7 @@
     <div v-else-if="filteredLessons.length" class="lessons-grid">
       <div v-for="lesson in filteredLessons" :key="lesson._id" class="lesson-card">
         <div class="card-header">
-          <h2 class="lesson-title">{{ lesson.lessonName }}</h2>
+          <h2 class="lesson-title">{{ lesson.lessonName.en }}</h2>
           <button class="add-btn" @click="addToStudyPlan(lesson)">＋</button>
         </div>
         <p class="lesson-topic">
@@ -79,7 +78,7 @@ export default {
       return this.lessons.filter((lesson) => {
         const matchesFilter = this.filterType === 'all' || lesson.type === this.filterType;
 
-        const name = lesson.lessonName?.toLowerCase() || '';
+        const name = lesson.lessonName?.en?.toLowerCase() || '';
         const topic = this.getTopicName(lesson)?.toLowerCase() || '';
         const subject = lesson.subject?.toLowerCase() || '';
 
@@ -168,7 +167,7 @@ export default {
           headers: { Authorization: `Bearer ${token}` }
         });
 
-        alert(`✅ Урок "${lesson.lessonName}" добавлен!`);
+        alert(`✅ Урок "${lesson.lessonName?.en || 'Без названия'}" добавлен!`);
       } catch (error) {
         console.error('❌ Ошибка при добавлении в учебный план:', error.response?.data || error.message);
         alert('❌ Не удалось добавить урок в учебный план');
@@ -181,6 +180,7 @@ export default {
   }
 };
 </script>
+
 
   
   
