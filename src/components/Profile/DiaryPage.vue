@@ -271,7 +271,7 @@ export default {
 .page-title {
   font-size: 2.5rem;
   font-weight: 800;
-  color: #111827; /* Changed to black */
+  color: #111827;
   text-align: center;
   margin-bottom: 40px;
 }
@@ -305,7 +305,7 @@ export default {
 .card h2 {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #111827; /* Changed to black */
+  color: #111827;
   margin-bottom: 14px;
 }
 
@@ -349,7 +349,7 @@ li {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(to right, #6366f1, #8b5cf6); /* Indigo gradient */
+  background: linear-gradient(to right, #6366f1, #8b5cf6);
   transition: width 0.5s ease-in-out;
 }
 
@@ -359,7 +359,7 @@ li {
 }
 
 .save-btn {
-  background: linear-gradient(to right, #6366f1, #8b5cf6); /* Indigo gradient */
+  background: linear-gradient(to right, #6366f1, #8b5cf6);
   color: white;
   padding: 14px 28px;
   font-size: 1.1rem;
@@ -371,7 +371,7 @@ li {
 }
 
 .save-btn:hover {
-  background: linear-gradient(to right, #4f46e5, #7c3aed); /* Deeper gradient */
+  background: linear-gradient(to right, #4f46e5, #7c3aed);
 }
 
 .save-success {
@@ -390,7 +390,7 @@ li {
   text-align: center;
   font-weight: 700;
   margin-bottom: 30px;
-  background: linear-gradient(to right, #6366f1, #8b5cf6); /* Gradient */
+  background: linear-gradient(to right, #6366f1, #8b5cf6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -407,7 +407,7 @@ li {
 .history-card h3 {
   font-size: 1.2rem;
   font-weight: 700;
-  color: #111827; /* Changed to black */
+  color: #111827;
   margin-bottom: 10px;
 }
 
@@ -415,7 +415,7 @@ li {
   font-size: 1.1rem;
   margin-top: 16px;
   font-weight: 600;
-  background: linear-gradient(to right, #7c3aed, #a78bfa); /* Gradient */
+  background: linear-gradient(to right, #7c3aed, #a78bfa);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
