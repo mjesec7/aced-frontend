@@ -73,15 +73,22 @@
     computed: {
       ...mapState(['firebaseUserId', 'user']),
       filteredLessons() {
-        return this.lessons.filter((lesson) => {
-          const matchesFilter = this.filterType === 'all' || lesson.type === this.filterType;
-          const matchesSearch =
-            lesson.lessonName.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-            lesson.topic.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-            lesson.subject.toLowerCase().includes(this.searchQuery.toLowerCase());
-          return matchesFilter && matchesSearch;
-        });
-      },
+  return this.lessons.filter((lesson) => {
+    const matchesFilter = this.filterType === 'all' || lesson.type === this.filterType;
+    
+    const name = lesson.lessonName ? lesson.lessonName.toLowerCase() : '';
+    const topic = lesson.topic ? lesson.topic.toLowerCase() : '';
+    const subject = lesson.subject ? lesson.subject.toLowerCase() : '';
+
+    const matchesSearch =
+      name.includes(this.searchQuery.toLowerCase()) ||
+      topic.includes(this.searchQuery.toLowerCase()) ||
+      subject.includes(this.searchQuery.toLowerCase());
+
+    return matchesFilter && matchesSearch;
+  });
+},
+
       subscriptionClass() {
         return this.plan === 'pro' ? 'badge-pro' : this.plan === 'start' ? 'badge-start' : 'badge-free';
       },
