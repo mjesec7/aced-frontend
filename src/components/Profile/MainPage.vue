@@ -92,19 +92,23 @@ export default {
     ...mapState(['firebaseUserId']),
     filteredRecommendations() {
       return this.recommendations.filter(t => {
+        const name = typeof t.name === 'string' ? t.name : '';
+        const description = typeof t.description === 'string' ? t.description : '';
         return (
           (!this.filterSubject || t.subject === this.filterSubject) &&
-          (t.name?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-            t.description?.toLowerCase().includes(this.searchQuery.toLowerCase()))
+          (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+            description.toLowerCase().includes(this.searchQuery.toLowerCase()))
         );
       });
     },
     filteredStudyList() {
       return this.studyList.filter(t => {
+        const name = typeof t.name === 'string' ? t.name : '';
+        const description = typeof t.description === 'string' ? t.description : '';
         return (
           (!this.filterSubject || t.subject === this.filterSubject) &&
-          (t.name?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-            t.description?.toLowerCase().includes(this.searchQuery.toLowerCase()))
+          (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+            description.toLowerCase().includes(this.searchQuery.toLowerCase()))
         );
       });
     },
@@ -196,6 +200,7 @@ export default {
   },
 };
 </script>
+
 
 <style scoped>
 .dashboard {
