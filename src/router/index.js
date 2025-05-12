@@ -5,7 +5,6 @@ import store from '@/store';
 import HomePage from '@/views/HomePage.vue';
 import AcedSettings from '@/components/Main/AcedSettings.vue';
 import ProfilePage from '@/views/ProfilePage.vue';
-import CataloguePage from '@/views/CataloguePage.vue'; // ✅ Unified course catalogue
 
 // ✅ Profile Sub-Pages
 import MainPage from '@/components/Profile/MainPage.vue';
@@ -14,6 +13,7 @@ import SubjectProgress from '@/components/Profile/SubjectProgress.vue';
 import StudyGoal from '@/components/Profile/StudyGoal.vue';
 import HomeworkHelp from '@/components/Profile/HomeworkHelp.vue';
 import DiaryPage from '@/components/Profile/DiaryPage.vue';
+import CataloguePage from '@/views/CataloguePage.vue'; // ✅ Now under profile
 
 // ✅ Payments
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
@@ -35,16 +35,12 @@ const routes = [
     component: AcedSettings,
   },
   {
-    path: '/catalogue',
-    name: 'CataloguePage',
-    component: CataloguePage,
-  },
-  {
     path: '/profile',
     component: ProfilePage,
     children: [
       { path: '', redirect: '/profile/main' },
       { path: 'main', name: 'MainPage', component: MainPage },
+      { path: 'catalogue', name: 'CataloguePage', component: CataloguePage }, // ✅ Moved here
       { path: 'analytics', name: 'UserAnalyticsPanel', component: UserAnalyticsPanel },
       { path: 'progress', name: 'SubjectProgress', component: SubjectProgress },
       { path: 'goal', name: 'StudyGoal', component: StudyGoal },
@@ -98,7 +94,7 @@ const router = createRouter({
 
 // ✅ Route Guard
 router.beforeEach((to, from, next) => {
-  const isPublic = to.name === 'HomePage' || to.name === 'CataloguePage';
+  const isPublic = to.name === 'HomePage';
   const isLoggedIn = !!store.getters.getFirebaseUserId;
 
   if (!isPublic && !isLoggedIn) {
@@ -115,4 +111,3 @@ router.onError((err) => {
 });
 
 export default router;
-  

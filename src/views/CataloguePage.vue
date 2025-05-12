@@ -1,178 +1,187 @@
 <template>
-    <div class="lessons-page">
-      <div class="page-header">
-        <h1 class="page-title">📚 Каталог Уроков</h1>
-        <span class="subscription-badge" :class="subscriptionClass">
-          {{ subscriptionText }}
+  <div class="lessons-page">
+    <div class="page-header">
+      <h1 class="page-title">📚 Каталог Уроков</h1>
+      <span class="subscription-badge" :class="subscriptionClass">
+        {{ subscriptionText }}
+      </span>
+    </div>
+
+    <!-- 🔍 Search and Filter Controls -->
+    <div class="controls">
+      <input
+        v-model="searchQuery"
+        type="text"
+        class="search-input"
+        placeholder="🔍 Поиск уроков или тем..."
+      />
+      <select v-model="filterType" class="filter-select">
+        <option value="all">Все</option>
+        <option value="free">Бесплатные</option>
+        <option value="premium">Премиум</option>
+      </select>
+    </div>
+
+    <div v-if="loading" class="loading">Загрузка уроков...</div>
+
+    <div v-else-if="filteredLessons.length" class="lessons-grid">
+      <div v-for="lesson in filteredLessons" :key="lesson._id" class="lesson-card">
+        <div class="card-header">
+          <h2 class="lesson-title">{{ lesson.lessonName }}</h2>
+          <button class="add-btn" @click="addToStudyPlan(lesson)">＋</button>
+        </div>
+        <p class="lesson-topic">
+          {{ getTopicName(lesson) }}
+        </p>
+        <span class="subject-badge">{{ lesson.subject }}</span>
+        <span class="access-label" :class="lesson.type === 'premium' ? 'paid' : 'free'">
+          {{ lesson.type === 'premium' ? 'Платный' : 'Бесплатный' }}
         </span>
-      </div>
-  
-      <!-- 🔍 Search and Filter Controls -->
-      <div class="controls">
-        <input
-          v-model="searchQuery"
-          type="text"
-          class="search-input"
-          placeholder="🔍 Поиск уроков или тем..."
-        />
-        <select v-model="filterType" class="filter-select">
-          <option value="all">Все</option>
-          <option value="free">Бесплатные</option>
-          <option value="premium">Премиум</option>
-        </select>
-      </div>
-  
-      <div v-if="loading" class="loading">Загрузка уроков...</div>
-  
-      <div v-else-if="filteredLessons.length" class="lessons-grid">
-        <div v-for="lesson in filteredLessons" :key="lesson._id" class="lesson-card">
-          <div class="card-header">
-            <h2 class="lesson-title">{{ lesson.lessonName }}</h2>
-            <button class="add-btn" @click="addToStudyPlan(lesson)">＋</button>
-          </div>
-          <p class="lesson-topic">{{ lesson.topic }}</p>
-          <span class="subject-badge">{{ lesson.subject }}</span>
-          <span class="access-label" :class="lesson.type === 'premium' ? 'paid' : 'free'">
-            {{ lesson.type === 'premium' ? 'Платный' : 'Бесплатный' }}
-          </span>
-          <button class="start-btn" @click="handleAccess(lesson)">Начать курс</button>
-        </div>
-      </div>
-  
-      <div v-else class="no-lessons">❌ Уроки не найдены.</div>
-  
-      <div v-if="showPaywall" class="modal">
-        <div class="modal-content">
-          <p>🚫 Этот курс доступен только по подписке.</p>
-          <button @click="goToPayment">Перейти к тарифам</button>
-          <button @click="showPaywall = false">Отмена</button>
-        </div>
+        <button class="start-btn" @click="handleAccess(lesson)">Начать курс</button>
       </div>
     </div>
-  </template>
-  
-  <script>
-  import axios from 'axios';
-  import { mapState } from 'vuex';
-  import { auth } from '@/firebase';
-  
-  export default {
-    name: 'CataloguePage',
-    data() {
-      return {
-        lessons: [],
-        loading: true,
-        userId: null,
-        filterType: 'all',
-        searchQuery: '',
-        showPaywall: false,
-        requestedTopicId: null,
-        plan: 'free'
-      };
+
+    <div v-else class="no-lessons">❌ Уроки не найдены.</div>
+
+    <div v-if="showPaywall" class="modal">
+      <div class="modal-content">
+        <p>🚫 Этот курс доступен только по подписке.</p>
+        <button @click="goToPayment">Перейти к тарифам</button>
+        <button @click="showPaywall = false">Отмена</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import axios from 'axios';
+import { mapState } from 'vuex';
+import { auth } from '@/firebase';
+
+export default {
+  name: 'CataloguePage',
+  data() {
+    return {
+      lessons: [],
+      loading: true,
+      userId: null,
+      filterType: 'all',
+      searchQuery: '',
+      showPaywall: false,
+      requestedTopicId: null,
+      plan: 'free',
+      lang: localStorage.getItem('lang') || 'en'
+    };
+  },
+  computed: {
+    ...mapState(['firebaseUserId', 'user']),
+    filteredLessons() {
+      return this.lessons.filter((lesson) => {
+        const matchesFilter = this.filterType === 'all' || lesson.type === this.filterType;
+
+        const name = lesson.lessonName?.toLowerCase() || '';
+        const topic = this.getTopicName(lesson)?.toLowerCase() || '';
+        const subject = lesson.subject?.toLowerCase() || '';
+
+        const matchesSearch =
+          name.includes(this.searchQuery.toLowerCase()) ||
+          topic.includes(this.searchQuery.toLowerCase()) ||
+          subject.includes(this.searchQuery.toLowerCase());
+
+        return matchesFilter && matchesSearch;
+      });
     },
-    computed: {
-      ...mapState(['firebaseUserId', 'user']),
-      filteredLessons() {
-  return this.lessons.filter((lesson) => {
-    const matchesFilter = this.filterType === 'all' || lesson.type === this.filterType;
-    
-    const name = lesson.lessonName ? lesson.lessonName.toLowerCase() : '';
-    const topic = lesson.topic ? lesson.topic.toLowerCase() : '';
-    const subject = lesson.subject ? lesson.subject.toLowerCase() : '';
+    subscriptionClass() {
+      return this.plan === 'pro' ? 'badge-pro' : this.plan === 'start' ? 'badge-start' : 'badge-free';
+    },
+    subscriptionText() {
+      return this.plan === 'pro' ? 'Pro подписка' : this.plan === 'start' ? 'Start подписка' : 'Бесплатный доступ';
+    }
+  },
+  async mounted() {
+    const storedId =
+      this.firebaseUserId ||
+      localStorage.getItem('firebaseUserId') ||
+      localStorage.getItem('userId');
 
-    const matchesSearch =
-      name.includes(this.searchQuery.toLowerCase()) ||
-      topic.includes(this.searchQuery.toLowerCase()) ||
-      subject.includes(this.searchQuery.toLowerCase());
+    if (!storedId) {
+      console.warn('❌ Нет ID пользователя.');
+      this.loading = false;
+      return;
+    }
 
-    return matchesFilter && matchesSearch;
-  });
-},
+    this.userId = storedId;
 
-      subscriptionClass() {
-        return this.plan === 'pro' ? 'badge-pro' : this.plan === 'start' ? 'badge-start' : 'badge-free';
-      },
-      subscriptionText() {
-        return this.plan === 'pro' ? 'Pro подписка' : this.plan === 'start' ? 'Start подписка' : 'Бесплатный доступ';
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      this.plan = res.data.status || 'free';
+    } catch (err) {
+      console.warn('⚠️ Не удалось получить статус подписки.');
+    }
+
+    this.loadLessons();
+  },
+  methods: {
+    getTopicName(lesson) {
+      if (typeof lesson.topic === 'string') return lesson.topic;
+      if (lesson.translations?.[this.lang]?.topic) return lesson.translations[this.lang].topic;
+      if (lesson.topic?.[this.lang]) return lesson.topic[this.lang];
+      return lesson.topic?.en || 'Без темы';
+    },
+    async loadLessons() {
+      try {
+        const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/lessons`);
+        this.lessons = Array.isArray(data) ? data : [];
+        console.log(`✅ Загрузено ${this.lessons.length} уроков`);
+      } catch (error) {
+        console.error('❌ Ошибка при загрузке уроков:', error.response?.data || error.message);
+      } finally {
+        this.loading = false;
       }
     },
-    async mounted() {
-      const storedId =
-        this.firebaseUserId ||
-        localStorage.getItem('firebaseUserId') ||
-        localStorage.getItem('userId');
-  
-      if (!storedId) {
-        console.warn('❌ Нет ID пользователя.');
-        this.loading = false;
+    handleAccess(lesson) {
+      if (lesson.type === 'premium' && (!this.plan || this.plan === 'free')) {
+        this.requestedTopicId = lesson.topicId;
+        this.showPaywall = true;
+      } else {
+        this.$router.push({ name: 'TopicOverview', params: { id: lesson.topicId } });
+      }
+    },
+    async addToStudyPlan(lesson) {
+      if (!auth.currentUser) {
+        alert('Пожалуйста, войдите в аккаунт.');
         return;
       }
-  
-      this.userId = storedId;
-  
+
       try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/status`, {
+        const token = await auth.currentUser.getIdToken();
+        const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`;
+        const body = {
+          subject: lesson.subject,
+          topic: this.getTopicName(lesson)
+        };
+
+        await axios.post(url, body, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        this.plan = res.data.status || 'free';
-      } catch (err) {
-        console.warn('⚠️ Не удалось получить статус подписки.');
+
+        alert(`✅ Урок "${lesson.lessonName}" добавлен!`);
+      } catch (error) {
+        console.error('❌ Ошибка при добавлении в учебный план:', error.response?.data || error.message);
+        alert('❌ Не удалось добавить урок в учебный план');
       }
-  
-      this.loadLessons();
     },
-    methods: {
-      async loadLessons() {
-        try {
-          const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/lessons`);
-          this.lessons = Array.isArray(data) ? data : [];
-          console.log(`✅ Загрузено ${this.lessons.length} уроков`);
-        } catch (error) {
-          console.error('❌ Ошибка при загрузке уроков:', error.response?.data || error.message);
-        } finally {
-          this.loading = false;
-        }
-      },
-      handleAccess(lesson) {
-        if (lesson.type === 'premium' && (!this.plan || this.plan === 'free')) {
-          this.requestedTopicId = lesson.topicId;
-          this.showPaywall = true;
-        } else {
-          this.$router.push({ name: 'TopicOverview', params: { id: lesson.topicId } });
-        }
-      },
-      async addToStudyPlan(lesson) {
-        if (!auth.currentUser) {
-          alert('Пожалуйста, войдите в аккаунт.');
-          return;
-        }
-  
-        try {
-          const token = await auth.currentUser.getIdToken();
-          const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`;
-          const body = {
-            subject: lesson.subject,
-            topic: lesson.topic
-          };
-  
-          await axios.post(url, body, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-  
-          alert(`✅ Урок "${lesson.lessonName}" добавлен!`);
-        } catch (error) {
-          console.error('❌ Ошибка при добавлении в учебный план:', error.response?.data || error.message);
-          alert('❌ Не удалось добавить урок в учебный план');
-        }
-      },
-      goToPayment() {
-        this.showPaywall = false;
-        this.$router.push({ name: 'PaymePayment', params: { plan: 'start' } });
-      }
+    goToPayment() {
+      this.showPaywall = false;
+      this.$router.push({ name: 'PaymePayment', params: { plan: 'start' } });
     }
-  };
-  </script>
+  }
+};
+</script>
+
   
   
   <style scoped>
