@@ -45,24 +45,26 @@ export default {
 .stat-card {
   display: flex;
   align-items: center;
-  padding: 16px 20px;
-  border-radius: 16px;
-  background: #ffffff;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
-  border: 1px solid #e5e7eb;
+  padding: 20px 24px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 20px rgba(147, 51, 234, 0.05);
+  border: 1px solid rgba(228, 228, 231, 0.7);
   position: relative;
   overflow: hidden;
-  min-height: 100px;
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  min-height: 110px;
+  transition: all 0.35s ease;
+  cursor: default;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(147, 51, 234, 0.08);
+  transform: translateY(-4px) scale(1.015);
+  box-shadow: 0 10px 30px rgba(147, 51, 234, 0.15);
 }
 
 .stat-card.no-data {
-  background: #f9fafb;
+  background: #f3f4f6;
   border-color: #e5e7eb;
 }
 
@@ -70,13 +72,13 @@ export default {
   width: 6px;
   height: 100%;
   background: linear-gradient(to bottom, #9333ea, #ec4899);
-  border-radius: 6px;
-  margin-right: 16px;
+  border-radius: 8px;
+  margin-right: 20px;
   transition: background 0.3s ease;
 }
 
 .spark-bar.inactive {
-  background: #d1d5db;
+  background: #cbd5e1;
 }
 
 .stat-content {
@@ -89,20 +91,24 @@ export default {
 .stat-top {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
 .stat-label {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: #374151;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .stat-value {
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 800;
-  color: #111827;
+  color: #1f2937;
+  font-family: 'Unbounded', sans-serif;
   transition: color 0.3s ease;
 }
 
@@ -111,8 +117,10 @@ export default {
 }
 
 .stat-subtext {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: #6b7280;
   margin-top: 6px;
+  font-weight: 500;
 }
+
 </style>

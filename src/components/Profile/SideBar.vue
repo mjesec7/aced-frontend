@@ -22,13 +22,13 @@
 
           <!-- Unified Catalogue Page -->
           <router-link
-  to="/profile/catalogue"
-  class="nav-item"
-  :class="{ active: isActive('catalogue') }"
->
-  <span class="highlight"></span>
-  Каталог
-</router-link>
+            to="/profile/catalogue"
+            class="nav-item"
+            :class="{ active: isActive('catalogue') }"
+          >
+            <span class="highlight"></span>
+            Каталог
+          </router-link>
 
           <!-- Other Pages -->
           <router-link
@@ -63,7 +63,6 @@
   </div>
 </template>
 
-
 <script>
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase';
@@ -75,10 +74,7 @@ export default {
     return {
       showLogoutModal: false,
       links: [
-        // Removed: { name: 'free', label: 'Бесплатные Уроки' },
-        // Removed: { name: 'premium', label: 'Премиум Уроки' },
         { name: 'analytics', label: 'Аналитика' },
-        { name: 'progress', label: 'Прогресс' },
         { name: 'goal', label: 'Цели' },
         { name: 'diary', label: 'Дневник' },
         { name: 'homework', label: 'Помощь с ДЗ' }
@@ -131,6 +127,7 @@ export default {
   }
 };
 </script>
+
 
 
 

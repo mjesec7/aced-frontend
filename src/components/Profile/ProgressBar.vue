@@ -1,9 +1,11 @@
 <template>
   <div class="progress-container">
-    <div class="progress-track">
-      <div class="progress-fill" :style="{ width: percent + '%' }"></div>
+    <div class="progress-wrapper">
+      <div class="progress-bar">
+        <div class="progress-fill" :style="{ width: percent + '%' }"></div>
+      </div>
+      <span class="progress-text">{{ Math.round(percent) }}%</span>
     </div>
-    <div class="progress-text">{{ Math.round(percent) }}%</div>
   </div>
 </template>
 
@@ -20,34 +22,49 @@ export default {
 };
 </script>
 
+
 <style scoped>
 .progress-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.progress-track {
+.progress-wrapper {
   width: 100%;
-  height: 10px;
-  background: #e5e7eb;
-  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 14px;
+  background: linear-gradient(to right, #f3f4f6, #e5e7eb);
+  border-radius: 999px;
   overflow: hidden;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.06);
+  position: relative;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(to right, #7c3aed, #8b5cf6);
-  transition: width 0.4s ease;
-  border-radius: 12px 0 0 12px;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #9333ea, #ec4899);
+  transition: width 0.4s ease-in-out;
+  position: relative;
+  box-shadow: 0 0 6px rgba(236, 72, 153, 0.35);
 }
 
 .progress-text {
   font-size: 0.85rem;
-  color: #4b5563;
   font-weight: 600;
+  color: #6b7280;
+  margin-top: 4px;
+  padding-left: 4px;
 }
+
 </style>

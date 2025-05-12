@@ -1,138 +1,128 @@
 @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;800&display=swap');
 
 .analytics-panel {
-  padding: 40px 20px;
-  max-width: 1200px;
+  padding: 48px 24px;
+  max-width: 1300px;
   margin: auto;
-  background: #fff;
+  background: linear-gradient(to bottom right, #fdfbff, #f3f4f6);
   color: #111827;
   font-family: 'Inter', sans-serif;
   position: relative;
   z-index: 1;
+  border-radius: 24px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.06);
 }
 
 .header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 36px;
 }
 
 .panel-heading {
   font-family: 'Unbounded', sans-serif;
-  font-size: 2rem;
+  font-size: 2.4rem;
   font-weight: 800;
-  color: #111827;
+  color: #1e293b;
   letter-spacing: -0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .download-btn {
-  padding: 10px 18px;
-  background: linear-gradient(to right, #9333ea, #ec4899);
+  padding: 12px 20px;
+  background: linear-gradient(120deg, #9333ea, #ec4899);
   color: white;
   font-weight: 600;
   font-family: 'Unbounded', sans-serif;
   border: none;
-  border-radius: 12px;
+  border-radius: 14px;
   cursor: pointer;
-  transition: 0.3s ease;
-  box-shadow: 0 0 0 transparent;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 18px rgba(147, 51, 234, 0.25);
 }
 .download-btn:hover {
-  transform: translateY(-1px);
-  opacity: 0.95;
-  box-shadow: 0 0 14px rgba(147, 51, 234, 0.3);
+  transform: translateY(-2px) scale(1.02);
+  opacity: 0.98;
+  box-shadow: 0 8px 28px rgba(236, 72, 153, 0.25);
 }
 
+/* MODAL */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(6px);
+  inset: 0;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 99999 !important;
-  pointer-events: auto;
-  opacity: 1;
-  visibility: visible;
+  z-index: 1000;
 }
 
 .modal-content {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 24px;
-  width: 500px;
-  max-width: 90%;
-  max-height: 80vh;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 32px;
+  width: 540px;
+  max-width: 95%;
+  max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
   font-family: 'Inter', sans-serif;
   animation: fadeInUp 0.25s ease-out;
-  z-index: 100000;
   position: relative;
   color: #1f2937;
-  text-align: left;
 }
 
 @keyframes fadeInUp {
-  from { transform: translateY(24px); opacity: 0; }
+  from { transform: translateY(32px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
 .modal-content h3 {
   font-family: 'Unbounded', sans-serif;
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: #111827;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
   text-align: center;
 }
 
 .modal-section {
-  margin-bottom: 18px;
+  margin-bottom: 20px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  font-size: 0.95rem;
+  gap: 12px;
+  font-size: 1rem;
   color: #374151;
 }
 
 .options-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px 16px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px 18px;
 }
 
 .option-box {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 12px;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 0.95rem;
-  font-family: 'Inter', sans-serif;
-  transition: 0.3s;
   cursor: pointer;
+  transition: 0.25s ease;
 }
-
 .option-box:hover {
   background: #f3f4f6;
   border-color: #d1d5db;
 }
-
 .option-box input[type="checkbox"] {
   width: 18px;
   height: 18px;
   accent-color: #9333ea;
-  cursor: pointer;
 }
 
 .modal-section select {
@@ -140,95 +130,87 @@
   border: 1px solid #d1d5db;
   border-radius: 10px;
   background: #f9fafb;
-  font-size: 0.95rem;
-  font-family: 'Inter', sans-serif;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  font-size: 1rem;
   transition: 0.3s;
 }
-
 .modal-section select:focus {
-  outline: none;
   border-color: #9333ea;
   box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.2);
+  outline: none;
 }
 
 .modal-buttons {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
+  gap: 14px;
+  margin-top: 28px;
 }
-
 .modal-buttons button {
-  padding: 9px 18px;
+  padding: 10px 20px;
   font-weight: 600;
-  border-radius: 8px;
+  border-radius: 10px;
   border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-family: 'Unbounded', sans-serif;
+  cursor: pointer;
 }
-
 .modal-buttons .cancel {
   background: #e5e7eb;
   color: #1f2937;
 }
-
 .modal-buttons button:first-child {
   background: linear-gradient(to right, #9333ea, #ec4899);
   color: white;
 }
 
+/* Cards */
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-bottom: 40px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 28px;
+  margin-bottom: 48px;
 }
 
+/* Charts */
 .chart-box {
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 20px;
-  padding: 28px;
-  margin-bottom: 40px;
+  border-radius: 22px;
+  padding: 32px;
+  margin-bottom: 48px;
   box-shadow: 0 6px 20px rgba(168, 85, 247, 0.08);
-  transition: 0.3s;
+  transition: all 0.3s ease;
 }
-
 .chart-box:hover {
-  box-shadow: 0 8px 28px rgba(147, 51, 234, 0.1);
+  box-shadow: 0 12px 32px rgba(147, 51, 234, 0.15);
 }
-
 .chart-heading {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #1f2937;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
+/* Subject Progress */
 .subject-progress {
-  margin-bottom: 22px;
+  margin-bottom: 24px;
 }
-
 .progress-header {
   display: flex;
   justify-content: space-between;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #1f2937;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
-
 .progress-bar {
-  height: 10px;
+  height: 12px;
   background: #f3f4f6;
   border-radius: 6px;
   overflow: hidden;
 }
-
 .progress-fill {
   height: 100%;
   background: linear-gradient(to right, #9333ea, #f472b6);
@@ -236,6 +218,7 @@
   border-radius: 6px;
 }
 
+/* Animations */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.25s ease;

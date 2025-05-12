@@ -9,7 +9,6 @@ import ProfilePage from '@/views/ProfilePage.vue';
 // ✅ Profile Sub-Pages
 import MainPage from '@/components/Profile/MainPage.vue';
 import UserAnalyticsPanel from '@/components/Profile/UserAnalyticsPanel.vue';
-import SubjectProgress from '@/components/Profile/SubjectProgress.vue';
 import StudyGoal from '@/components/Profile/StudyGoal.vue';
 import HomeworkHelp from '@/components/Profile/HomeworkHelp.vue';
 import DiaryPage from '@/components/Profile/DiaryPage.vue';
@@ -40,9 +39,8 @@ const routes = [
     children: [
       { path: '', redirect: '/profile/main' },
       { path: 'main', name: 'MainPage', component: MainPage },
-      { path: 'catalogue', name: 'CataloguePage', component: CataloguePage }, // ✅ Moved here
+      { path: 'catalogue', name: 'CataloguePage', component: CataloguePage },
       { path: 'analytics', name: 'UserAnalyticsPanel', component: UserAnalyticsPanel },
-      { path: 'progress', name: 'SubjectProgress', component: SubjectProgress },
       { path: 'goal', name: 'StudyGoal', component: StudyGoal },
       { path: 'homework', name: 'HomeworkHelp', component: HomeworkHelp },
       { path: 'diary', name: 'DiaryPage', component: DiaryPage },
