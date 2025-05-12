@@ -22,13 +22,13 @@
 
           <!-- Unified Catalogue Page -->
           <router-link
-            to="/catalogue"
-            class="nav-item"
-            :class="{ active: isRoute('/catalogue') }"
-          >
-            <span class="highlight"></span>
-            Каталог
-          </router-link>
+  to="/profile/catalogue"
+  class="nav-item"
+  :class="{ active: isActive('catalogue') }"
+>
+  <span class="highlight"></span>
+  Каталог
+</router-link>
 
           <!-- Other Pages -->
           <router-link
