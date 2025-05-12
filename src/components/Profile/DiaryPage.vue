@@ -261,106 +261,159 @@ export default {
 
 
 <style scoped>
-/* 📋 Same beautiful styles you wrote — no changes needed */
 .diary-page {
-  padding: 24px;
+  padding: 32px;
   font-family: 'Inter', sans-serif;
+  background-color: #f9fafb;
   min-height: 100vh;
 }
+
 .page-title {
-  font-size: 2.4rem;
+  font-size: 2.5rem;
   font-weight: 800;
-  color: #7c3aed;
-  margin-bottom: 32px;
+  color: #4f46e5;
   text-align: center;
+  margin-bottom: 40px;
 }
+
 .loading {
   text-align: center;
   margin-top: 80px;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   color: #6b7280;
 }
+
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 24px;
+  margin-bottom: 40px;
 }
+
 .card {
   background: white;
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease;
 }
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
 .card h2 {
-  font-size: 1.4rem;
-  margin-bottom: 16px;
-  color: #6d28d9;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #4f46e5;
+  margin-bottom: 14px;
 }
+
+.card p,
+.card li {
+  font-size: 1rem;
+  color: #374151;
+}
+
 ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
+
 li {
-  margin-bottom: 10px;
-  color: #374151;
-  font-size: 1rem;
+  margin-bottom: 8px;
 }
+
 .progress-area {
-  margin-top: 40px;
   text-align: center;
+  margin-top: 30px;
 }
+
+.progress-area p {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
 .progress-bar {
-  background: #e5e7eb;
   height: 16px;
   border-radius: 10px;
   overflow: hidden;
-  margin-top: 10px;
-  width: 100%;
+  background: #e5e7eb;
+  margin-top: 12px;
   max-width: 600px;
   margin-left: auto;
   margin-right: auto;
 }
+
 .progress-fill {
-  background: linear-gradient(to right, #8b5cf6, #60a5fa);
   height: 100%;
-  transition: width 0.5s ease;
+  background: linear-gradient(to right, #6366f1, #60a5fa);
+  transition: width 0.5s ease-in-out;
 }
+
 .save-diary {
   margin-top: 40px;
   text-align: center;
 }
+
 .save-btn {
-  background: linear-gradient(to right, #8b5cf6, #60a5fa);
+  background: linear-gradient(to right, #4f46e5, #6366f1);
   color: white;
-  padding: 12px 24px;
+  padding: 14px 28px;
   font-size: 1.1rem;
   border-radius: 12px;
   border: none;
+  font-weight: 600;
   cursor: pointer;
   transition: background 0.3s;
 }
+
 .save-btn:hover {
-  background: linear-gradient(to right, #7c3aed, #4f46e5);
+  background: linear-gradient(to right, #4338ca, #4f46e5);
 }
+
 .save-success {
   margin-top: 12px;
   color: #10b981;
   font-weight: 600;
+  font-size: 0.95rem;
 }
+
 .diary-history {
-  margin-top: 50px;
+  margin-top: 60px;
 }
+
 .history-title {
   font-size: 2rem;
-  margin-bottom: 24px;
   text-align: center;
-  color: #4c1d95;
+  font-weight: 700;
+  margin-bottom: 30px;
+  color: #4f46e5;
 }
+
 .history-card {
-  background: #f9fafb;
+  background: white;
   border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 24px;
   margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
+
+.history-card h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 10px;
+}
+
+.history-card h4 {
+  font-size: 1.1rem;
+  margin-top: 16px;
+  color: #374151;
+  font-weight: 600;
+}
+
 </style>

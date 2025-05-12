@@ -3,8 +3,8 @@ import store from '@/store';
 
 // ✅ Main Views
 import HomePage from '@/views/HomePage.vue';
-import AcedSettings from '@/components/Main/AcedSettings.vue';
 import ProfilePage from '@/views/ProfilePage.vue';
+import SettingsPage from '@/views/SettingsPage.vue'; // ✅ Updated
 
 // ✅ Profile Sub-Pages
 import MainPage from '@/components/Profile/MainPage.vue';
@@ -12,7 +12,7 @@ import UserAnalyticsPanel from '@/components/Profile/UserAnalyticsPanel.vue';
 import StudyGoal from '@/components/Profile/StudyGoal.vue';
 import HomeworkHelp from '@/components/Profile/HomeworkHelp.vue';
 import DiaryPage from '@/components/Profile/DiaryPage.vue';
-import CataloguePage from '@/views/CataloguePage.vue'; // ✅ Now under profile
+import CataloguePage from '@/views/CataloguePage.vue';
 
 // ✅ Payments
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
@@ -31,7 +31,7 @@ const routes = [
   {
     path: '/settings',
     name: 'SettingsPage',
-    component: AcedSettings,
+    component: SettingsPage, // ✅ Now uses SettingsPage wrapper
   },
   {
     path: '/profile',
