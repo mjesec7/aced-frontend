@@ -26,15 +26,15 @@
       </div>
 
       <div v-else-if="filteredRecommendations.length" class="grid">
-        <TopicCard
-          v-for="topic in filteredRecommendations"
-          :key="topic._id"
-          :topic="topic"
-          :lessons="topic.lessons"
-          :description="topic.description"
-          @add="handleAddTopic"
-          @start="handleStartTopic"
-        />
+        <div class="topic-card" v-for="topic in filteredRecommendations" :key="topic._id">
+          <h3 class="topic-title">📘 {{ topic.name }}</h3>
+          <p class="topic-desc">{{ topic.description || 'Описание отсутствует' }}</p>
+          <p class="lesson-count">Уроков: {{ topic.lessons.length }}</p>
+          <div class="card-buttons">
+            <button class="btn-add" @click="handleAddTopic(topic)">＋ Добавить</button>
+            <button class="btn-start" @click="handleStartTopic(topic)">🚀 Начать</button>
+          </div>
+        </div>
       </div>
 
       <div v-else class="empty-message">Нет подходящих рекомендаций.</div>
@@ -67,14 +67,13 @@
 import { mapState } from 'vuex';
 import axios from 'axios';
 import { auth } from '@/firebase';
-import TopicCard from '@/components/Topics/TopicCard.vue';
 import StudyCard from '@/components/Profile/StudyCard.vue';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default {
   name: 'MainPage',
-  components: { TopicCard, StudyCard },
+  components: { StudyCard },
   data() {
     return {
       userId: null,
@@ -91,15 +90,17 @@ export default {
   computed: {
     ...mapState(['firebaseUserId']),
     filteredRecommendations() {
-      return this.recommendations.filter(t => {
-        const name = typeof t.name === 'string' ? t.name : '';
-        const description = typeof t.description === 'string' ? t.description : '';
-        return (
-          (!this.filterSubject || t.subject === this.filterSubject) &&
-          (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-            description.toLowerCase().includes(this.searchQuery.toLowerCase()))
-        );
-      });
+      return this.recommendations
+        .filter(t => Array.isArray(t.lessons) && t.lessons.length > 0)
+        .filter(t => {
+          const name = typeof t.name === 'string' ? t.name : '';
+          const description = typeof t.description === 'string' ? t.description : '';
+          return (
+            (!this.filterSubject || t.subject === this.filterSubject) &&
+            (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+              description.toLowerCase().includes(this.searchQuery.toLowerCase()))
+          );
+        });
     },
     filteredStudyList() {
       return this.studyList.filter(t => {
@@ -200,7 +201,6 @@ export default {
   },
 };
 </script>
-
 
 <style scoped>
 .dashboard {
@@ -312,5 +312,55 @@ export default {
   margin-top: 30px;
   font-size: 1.1rem;
   color: #9ca3af;
+}
+
+.topic-card {
+  background: #ede9fe;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.topic-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #4f46e5;
+}
+.topic-desc {
+  font-size: 0.95rem;
+  color: #4b5563;
+  margin: 10px 0;
+}
+.lesson-count {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+.card-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+}
+.btn-add {
+  background: #60a5fa;
+  color: white;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-start {
+  background: #f472b6;
+  color: white;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-add:hover {
+  background: #3b82f6;
+}
+.btn-start:hover {
+  background: #ec4899;
 }
 </style>
