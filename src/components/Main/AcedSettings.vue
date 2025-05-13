@@ -1,6 +1,5 @@
 <template>
   <div class="settings-page">
-    <button class="close-btn" @click="goBack">✖</button>
     <div class="settings-content">
       <h2 class="section-title">Настройки профиля</h2>
 
@@ -13,7 +12,6 @@
       <label>Email</label>
       <input type="email" v-model="user.email" placeholder="Введите email" />
 
-      <!-- Password Section -->
       <div v-if="!isGoogleUser">
         <label>Текущий пароль</label>
         <input type="password" v-model="oldPassword" placeholder="Введите текущий пароль" />
@@ -26,21 +24,18 @@
       </div>
 
       <p class="forgot-password" @click="sendPasswordReset">Забыли пароль?</p>
-      <p v-if="isGoogleUser" class="forgot-password" @click="sendPasswordReset">
-        Создать пароль
-      </p>
+      <p v-if="isGoogleUser" class="forgot-password" @click="sendPasswordReset">Создать пароль</p>
 
-      <!-- Buttons -->
       <div class="button-group">
         <button class="save-button" @click="saveChanges">Сохранить</button>
         <button class="back-button" @click="goToProfile">В профиль</button>
       </div>
     </div>
 
-    <!-- Notifications -->
     <div v-if="notification" class="notification">{{ notification }}</div>
   </div>
 </template>
+
 
 <script>
 import { auth, db } from "@/firebase";
@@ -166,16 +161,7 @@ export default {
   min-height: 100vh;
   position: relative;
 }
-.close-btn {
-  position: absolute;
-  top: 20px;
-  right: 30px;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 24px;
-  cursor: pointer;
-}
+
 .section-title {
   font-size: 24px;
   margin-bottom: 20px;
