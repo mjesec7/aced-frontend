@@ -1,15 +1,12 @@
 <template>
   <div v-if="lessonExists" class="study-card">
-    <!-- ❌ Delete Button -->
     <button class="close-btn" @click="showDeleteModal = true">✕</button>
 
-    <!-- Header with Name + Medal -->
     <div class="card-header">
       <h3 class="topic-name">{{ displayName }}</h3>
       <img v-if="medal" :src="`/assets/medals/${medal}.png`" :alt="medal" class="medal-icon" />
     </div>
 
-    <!-- Progress -->
     <div class="progress-bar">
       <div class="progress-fill" :style="{ width: lessonProgress + '%' }"></div>
     </div>
@@ -19,12 +16,10 @@
       <p class="estimated-time">⏱ ~{{ estimatedDuration }} мин</p>
     </div>
 
-    <!-- Start Button -->
     <button class="continue-btn" @click="goToLesson">
       ▶️ Продолжить
     </button>
 
-    <!-- 🗑 Confirm Delete Modal -->
     <div v-if="showDeleteModal" class="modal-overlay">
       <div class="modal-content">
         <p>❗ Вы уверены, что хотите удалить это?</p>
@@ -52,7 +47,7 @@ export default {
   data() {
     return {
       showDeleteModal: false,
-      lessonExists: true,
+      lessonExists: false,
     };
   },
   computed: {
@@ -87,7 +82,8 @@ export default {
       try {
         const subject = this.topic.subject;
         const topicName = this.topic.name || this.topic.topic;
-        if (!subject || !topicName) return (this.lessonExists = false);
+
+        if (!subject || !topicName) return;
 
         const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
         const token = await auth.currentUser.getIdToken();
@@ -95,9 +91,9 @@ export default {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (!data?._id) this.lessonExists = false;
+        if (data && data._id) this.lessonExists = true;
       } catch (err) {
-        console.warn('❌ Lesson not found:', err.message);
+        console.warn('❌ Урок не найден:', err.message);
         this.lessonExists = false;
       }
     },
@@ -143,6 +139,7 @@ export default {
   },
 };
 </script>
+
 
 <style scoped>
 .study-card {
