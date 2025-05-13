@@ -35,7 +35,8 @@
 
 <script>
 import axios from 'axios';
-import { auth, onAuthStateChanged } from '@/firebase';
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/firebase";
 
 export default {
   name: 'StudyCard',
