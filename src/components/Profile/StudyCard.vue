@@ -35,7 +35,6 @@
 
 <script>
 import axios from 'axios';
-import { auth } from '@/firebase';
 
 export default {
   name: 'StudyCard',
@@ -74,8 +73,8 @@ export default {
       return readTime + exerciseTime;
     },
   },
-  async mounted() {
-    await this.checkLessonExists();
+  mounted() {
+    this.checkLessonExists();
   },
   methods: {
     async checkLessonExists() {
@@ -83,15 +82,23 @@ export default {
         const subject = this.topic.subject;
         const topicName = this.topic.name || this.topic.topic;
 
-        if (!subject || !topicName) return;
+        if (!subject || !topicName) {
+          console.warn('⚠️ Не указан предмет или тема');
+          return;
+        }
 
         const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
+        console.log('🔍 Проверка существования урока по адресу:', url);
         const { data } = await axios.get(url);
 
-        this.lessonExists = !!(data && data._id);
+        if (data && data._id) {
+          console.log('✅ Урок найден:', data._id);
+          this.lessonExists = true;
+        } else {
+          console.warn('❌ Урок не найден по данным теме/предмету');
+        }
       } catch (err) {
-        console.warn('❌ Урок не найден:', err.message);
-        this.lessonExists = false;
+        console.error('❌ Ошибка при проверке урока:', err);
       }
     },
 
@@ -106,6 +113,7 @@ export default {
 
       try {
         const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
+        console.log('➡️ Переход к уроку:', url);
         const { data } = await axios.get(url);
 
         if (!data?._id) throw new Error('Lesson not found');
@@ -118,11 +126,9 @@ export default {
 
     async confirmDelete() {
       try {
-        const token = await auth.currentUser.getIdToken();
-        const headers = { Authorization: `Bearer ${token}` };
         const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.topic.userId}/study-list/${this.topic._id}`;
-
-        await axios.delete(url, { headers });
+        console.log('🗑 Удаление из учебного плана:', url);
+        await axios.delete(url);
         this.lessonExists = false;
         this.$emit('deleted', this.topic._id);
       } catch (err) {
