@@ -35,6 +35,7 @@
 
 <script>
 import axios from 'axios';
+import { auth } from '@/firebase';
 
 export default {
   name: 'StudyCard',
@@ -73,8 +74,8 @@ export default {
       return readTime + exerciseTime;
     },
   },
-  mounted() {
-    this.checkLessonExists();
+  async mounted() {
+    await this.checkLessonExists();
   },
   methods: {
     async checkLessonExists() {
@@ -82,23 +83,24 @@ export default {
         const subject = this.topic.subject;
         const topicName = this.topic.name || this.topic.topic;
 
+        console.log('📦 Проверка существования урока:', { subject, topicName });
+
         if (!subject || !topicName) {
           console.warn('⚠️ Не указан предмет или тема');
           return;
         }
 
+        const token = await auth.currentUser.getIdToken();
         const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
-        console.log('🔍 Проверка существования урока по адресу:', url);
-        const { data } = await axios.get(url);
+        const { data } = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-        if (data && data._id) {
-          console.log('✅ Урок найден:', data._id);
-          this.lessonExists = true;
-        } else {
-          console.warn('❌ Урок не найден по данным теме/предмету');
-        }
+        this.lessonExists = !!(data && data._id);
+        console.log('✅ Урок найден:', this.lessonExists);
       } catch (err) {
-        console.error('❌ Ошибка при проверке урока:', err);
+        console.warn('❌ Урок не найден:', err.message);
+        this.lessonExists = false;
       }
     },
 
@@ -112,9 +114,11 @@ export default {
       }
 
       try {
+        const token = await auth.currentUser.getIdToken();
         const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
-        console.log('➡️ Переход к уроку:', url);
-        const { data } = await axios.get(url);
+        const { data } = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         if (!data?._id) throw new Error('Lesson not found');
         this.$router.push({ name: 'LessonPage', params: { id: data._id } });
@@ -126,9 +130,11 @@ export default {
 
     async confirmDelete() {
       try {
+        const token = await auth.currentUser.getIdToken();
+        const headers = { Authorization: `Bearer ${token}` };
         const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.topic.userId}/study-list/${this.topic._id}`;
-        console.log('🗑 Удаление из учебного плана:', url);
-        await axios.delete(url);
+
+        await axios.delete(url, { headers });
         this.lessonExists = false;
         this.$emit('deleted', this.topic._id);
       } catch (err) {
