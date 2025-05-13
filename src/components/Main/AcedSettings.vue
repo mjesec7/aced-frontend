@@ -23,6 +23,10 @@
         <option value="pro">Pro</option>
       </select>
 
+      <p class="current-plan">
+        Текущий тариф: <span :class="['plan-badge', currentPlanClass]">{{ currentPlanLabel }}</span>
+      </p>
+
       <button class="promo-button" @click="applyPromo">Применить промокод</button>
 
       <div v-if="!isGoogleUser">
@@ -75,8 +79,23 @@ export default {
       isGoogleUser: false,
       notification: "",
       promoCode: "",
-      selectedPlan: ""
+      selectedPlan: "",
+      currentPlan: "free"
     };
+  },
+  computed: {
+    currentPlanLabel() {
+      if (this.currentPlan === 'pro') return 'Pro';
+      if (this.currentPlan === 'start') return 'Start';
+      return 'Free';
+    },
+    currentPlanClass() {
+      return {
+        pro: 'badge-pro',
+        start: 'badge-start',
+        free: 'badge-free'
+      }[this.currentPlan] || 'badge-free';
+    }
   },
   mounted() {
     this.checkAuthState();
@@ -88,6 +107,7 @@ export default {
         if (user) {
           this.isGoogleUser = user.providerData[0]?.providerId === "google.com";
           await this.fetchUserData();
+          await this.fetchSubscriptionStatus();
         }
       });
     },
@@ -108,6 +128,18 @@ export default {
         }
       } catch (error) {
         this.showNotification("Ошибка загрузки данных: " + error.message);
+      }
+    },
+    async fetchSubscriptionStatus() {
+      try {
+        const token = await this.currentUser.getIdToken();
+        const res = await axios.get(`/api/users/${this.currentUser.uid}/status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        this.currentPlan = res.data?.status || 'free';
+      } catch (err) {
+        console.warn('⚠️ Не удалось получить текущий тариф:', err);
+        this.currentPlan = 'free';
       }
     },
     async saveChanges() {
@@ -150,6 +182,7 @@ export default {
           promoCode: this.promoCode
         });
         this.showNotification(res.data.message || "✅ Промокод применён!");
+        this.currentPlan = this.selectedPlan;
       } catch (err) {
         console.error("Promo error:", err);
         this.showNotification(err.response?.data?.message || "❌ Не удалось применить промокод");
@@ -179,7 +212,6 @@ export default {
 };
 </script>
 
-
 <style scoped>
 .settings-page {
   display: flex;
@@ -191,7 +223,6 @@ export default {
   min-height: 100vh;
   position: relative;
 }
-
 .section-title {
   font-size: 24px;
   margin-bottom: 20px;
@@ -274,5 +305,29 @@ input {
     opacity: 1;
     bottom: 20px;
   }
+}
+.current-plan {
+  margin-top: 10px;
+  font-size: 0.95rem;
+}
+.plan-badge {
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-weight: bold;
+  margin-left: 8px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+.badge-free {
+  background-color: #6b7280;
+  color: white;
+}
+.badge-start {
+  background-color: #facc15;
+  color: black;
+}
+.badge-pro {
+  background-color: #10b981;
+  color: white;
 }
 </style>

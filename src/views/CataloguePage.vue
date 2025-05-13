@@ -111,7 +111,7 @@ export default {
 
         const topicsMap = new Map();
         this.lessons.forEach(lesson => {
-          const topicId = lesson.topicId;
+          const topicId = lesson.topicId?.toString();
           const name = this.getTopicName(lesson);
           if (!topicId || !name) return;
 
@@ -164,7 +164,7 @@ export default {
       try {
         const token = await auth.currentUser.getIdToken();
         const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`;
-        const body = { subject: topic.subject, topic: topic.name };
+        const body = { subject: topic.subject, topic: topic.name, level: topic.level, topicId: topic.topicId };
         await axios.post(url, body, { headers: { Authorization: `Bearer ${token}` } });
         alert(`✅ Тема "${topic.name}" добавлена!`);
       } catch (error) {
@@ -175,6 +175,7 @@ export default {
   }
 };
 </script>
+
 
 
 

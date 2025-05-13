@@ -3,7 +3,7 @@
     <div v-if="loading" class="loading">Загрузка информации о курсе...</div>
 
     <div v-else-if="topic" class="topic-card">
-      <h1 class="title">📘 {{ topic.name?.en || topic.name }}</h1>
+      <h1 class="title">📘 {{ topic.name?.en || topic.name || 'Без названия' }}</h1>
       <p class="description">{{ topic.description?.en || topic.description || 'Нет описания для этой темы.' }}</p>
 
       <div class="lesson-list">
@@ -16,7 +16,10 @@
             :class="{ locked: lesson.type === 'premium' && userPlan === 'free' }"
           >
             <span>{{ lesson.lessonName?.en || lesson.lessonName }}</span>
-            <button @click="startLesson(lesson)" :disabled="lesson.type === 'premium' && userPlan === 'free'">
+            <button
+              @click="startLesson(lesson)"
+              :disabled="lesson.type === 'premium' && userPlan === 'free'"
+            >
               {{ lesson.type === 'premium' ? '🔒 Премиум' : 'Начать' }}
             </button>
           </li>
@@ -51,16 +54,19 @@ export default {
     const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
     try {
-      const token = await auth.currentUser.getIdToken();
+      const token = await auth.currentUser?.getIdToken();
       const headers = { Authorization: `Bearer ${token}` };
 
+      // 🔐 Load subscription status
       const userStatusRes = await axios.get(`${BASE_URL}/users/${auth.currentUser.uid}/status`, { headers });
       this.userPlan = userStatusRes.data?.status || 'free';
 
-      const topicRes = await axios.get(`${BASE_URL}/topics/${topicId}`, { headers });
+      // ✅ Load topic by ID
+      const topicRes = await axios.get(`${BASE_URL}/topics/${topicId}`);
       this.topic = topicRes.data;
 
-      const lessonsRes = await axios.get(`${BASE_URL}/lessons/topic/${topicId}`, { headers });
+      // ✅ Load lessons for the topic
+      const lessonsRes = await axios.get(`${BASE_URL}/topics/${topicId}/lessons`);
       this.lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
     } catch (err) {
       console.error('❌ Ошибка загрузки темы или уроков:', err);
@@ -78,7 +84,9 @@ export default {
       this.$router.push({ name: 'LessonPage', params: { id: lesson._id } });
     },
     startFirstLesson() {
-      const first = this.lessons.find(l => l.type !== 'premium' || this.userPlan !== 'free');
+      const first = this.lessons.find(
+        l => l.type !== 'premium' || this.userPlan !== 'free'
+      );
       if (first) {
         this.startLesson(first);
       } else {
@@ -88,6 +96,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .topic-overview {
