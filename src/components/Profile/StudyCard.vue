@@ -87,6 +87,7 @@ export default {
       try {
         const subject = this.topic.subject;
         const topicName = this.topic.name || this.topic.topic;
+        if (!subject || !topicName) return (this.lessonExists = false);
 
         const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
         const token = await auth.currentUser.getIdToken();
@@ -132,8 +133,8 @@ export default {
         const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.topic.userId}/study-list/${this.topic._id}`;
 
         await axios.delete(url, { headers });
-
         this.lessonExists = false;
+        this.$emit('deleted', this.topic._id);
       } catch (err) {
         console.error('❌ Ошибка удаления:', err);
         alert('Не удалось удалить курс.');

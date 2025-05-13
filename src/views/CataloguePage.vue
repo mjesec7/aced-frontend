@@ -184,242 +184,235 @@ export default {
 
   
   
-  <style scoped>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
 .page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 30px;
 }
 
 .subscription-badge {
-  padding: 8px 16px;
-  font-weight: 700;
-  border-radius: 16px;
-  font-size: 0.85rem;
+padding: 8px 16px;
+font-weight: 700;
+border-radius: 16px;
+font-size: 0.85rem;
+box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .badge-free {
-  background-color: #f87171;
-  color: white;
+background-color: #f87171;
+color: white;
 }
 
 .badge-start {
-  background-color: #facc15;
-  color: black;
+background-color: #facc15;
+color: black;
 }
 
 .badge-pro {
-  background-color: #10b981;
-  color: white;
+background-color: #10b981;
+color: white;
 }
 
 .lessons-page {
-  padding: 40px 20px;
-  max-width: 1300px;
-  margin: 0 auto;
-  font-family: 'Inter', sans-serif;
-  background: linear-gradient(to bottom, #f9fafb, #ffffff);
-  border-radius: 16px;
+padding: 40px 20px;
+max-width: 1300px;
+margin: 0 auto;
+font-family: 'Inter', sans-serif;
+background: linear-gradient(to bottom, #f9fafb, #ffffff);
+border-radius: 16px;
 }
 
 .page-title {
-  font-size: 2.8rem;
-  font-weight: 900;
-  background: linear-gradient(to right, #4f46e5, #9333ea);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 40px;
-  text-align: center;
+font-size: 3rem;
+font-weight: 900;
+color: #1f2937;
+margin-bottom: 40px;
+text-align: center;
+text-shadow: 1px 1px 0 rgba(0,0,0,0.03);
 }
 
 .controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  justify-content: center;
-  margin-bottom: 30px;
+display: flex;
+flex-wrap: wrap;
+gap: 16px;
+justify-content: center;
+margin-bottom: 50px;
 }
 
 .search-input,
 .filter-select {
-  padding: 12px 16px;
-  font-size: 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 12px;
-  min-width: 250px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-  background: white;
-  transition: 0.3s;
+padding: 14px 18px;
+font-size: 1rem;
+border: 1px solid #d1d5db;
+border-radius: 14px;
+min-width: 260px;
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+background: white;
+transition: 0.3s;
 }
 
 .search-input:focus,
 .filter-select:focus {
-  outline: none;
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.3);
+outline: none;
+border-color: #7c3aed;
+box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.25);
 }
 
 .loading,
 .no-lessons {
-  text-align: center;
-  font-size: 1.2rem;
-  color: #6b7280;
-  margin-top: 60px;
+text-align: center;
+font-size: 1.2rem;
+color: #6b7280;
+margin-top: 60px;
 }
 
 .lessons-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 28px;
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+gap: 36px;
 }
 
 .lesson-card {
-  background: linear-gradient(to bottom, #ffffff, #f3f4f6);
-  border: 1px solid #e5e7eb;
-  border-radius: 18px;
-  padding: 24px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  cursor: default;
-  position: relative;
-}
-
-.lesson-card.locked {
-  opacity: 0.6;
-  pointer-events: none;
+background: white;
+border: 1px solid #e5e7eb;
+border-radius: 20px;
+padding: 28px;
+box-shadow: 0 8px 18px rgba(0, 0, 0, 0.04);
+display: flex;
+flex-direction: column;
+transition: transform 0.3s ease, box-shadow 0.3s ease;
+position: relative;
 }
 
 .lesson-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 24px rgba(79, 70, 229, 0.2);
+transform: translateY(-6px);
+box-shadow: 0 16px 32px rgba(0, 0, 0, 0.06);
 }
 
 .card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+display: flex;
+justify-content: space-between;
+align-items: center;
 }
 
 .lesson-title {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: #1f2937;
+font-size: 1.5rem;
+font-weight: 800;
+color: #1f2937;
 }
 
 .lesson-topic {
-  font-size: 1rem;
-  color: #6b7280;
-  margin-top: 12px;
+font-size: 1rem;
+color: #6b7280;
+margin-top: 12px;
 }
 
 .subject-badge {
-  font-size: 0.8rem;
-  padding: 6px 12px;
-  background: linear-gradient(to right, #8b5cf6, #ec4899);
-  color: white;
-  border-radius: 20px;
-  display: inline-block;
-  font-weight: 600;
-  margin-top: 10px;
+font-size: 0.8rem;
+padding: 6px 12px;
+background: linear-gradient(to right, #6366f1, #ec4899);
+color: white;
+border-radius: 20px;
+display: inline-block;
+font-weight: 600;
+margin-top: 10px;
 }
 
 .access-label {
-  margin-top: 8px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 5px 12px;
-  border-radius: 14px;
-  display: inline-block;
-  align-self: flex-start;
+margin-top: 8px;
+font-size: 0.8rem;
+font-weight: 700;
+padding: 5px 12px;
+border-radius: 14px;
+display: inline-block;
+align-self: flex-start;
 }
 
 .access-label.free {
-  background-color: #10b981;
-  color: white;
+background-color: #10b981;
+color: white;
 }
 
 .access-label.paid {
-  background-color: #ef4444;
-  color: white;
+background-color: #ef4444;
+color: white;
 }
 
 .add-btn {
-  background: #10b981;
-  color: white;
-  font-size: 1.2rem;
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  transition: background 0.3s ease;
+background: #10b981;
+color: white;
+font-size: 1.2rem;
+border: none;
+border-radius: 50%;
+width: 36px;
+height: 36px;
+cursor: pointer;
+transition: background 0.3s ease;
 }
 
 .add-btn:hover {
-  background: #059669;
+background: #059669;
 }
 
 .start-btn {
-  margin-top: 20px;
-  background: linear-gradient(to right, #60a5fa, #818cf8);
-  color: white;
-  padding: 12px 18px;
-  font-size: 0.95rem;
-  border: none;
-  border-radius: 14px;
-  cursor: pointer;
-  transition: background 0.3s ease;
+margin-top: 20px;
+background: linear-gradient(to right, #60a5fa, #818cf8);
+color: white;
+padding: 12px 18px;
+font-size: 0.95rem;
+border: none;
+border-radius: 14px;
+cursor: pointer;
+transition: background 0.3s ease;
 }
 
 .start-btn:hover {
-  background: linear-gradient(to right, #3b82f6, #6366f1);
+background: linear-gradient(to right, #3b82f6, #6366f1);
 }
 
 .modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10000;
+position: fixed;
+top: 0;
+left: 0;
+width: 100vw;
+height: 100vh;
+background-color: rgba(0, 0, 0, 0.5);
+display: flex;
+justify-content: center;
+align-items: center;
+z-index: 10000;
 }
 
 .modal-content {
-  background: white;
-  padding: 30px;
-  border-radius: 14px;
-  text-align: center;
-  max-width: 400px;
-  width: 90%;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+background: white;
+padding: 30px;
+border-radius: 14px;
+text-align: center;
+max-width: 400px;
+width: 90%;
+box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
 .modal-content button {
-  margin-top: 15px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 10px;
-  font-weight: 600;
-  cursor: pointer;
+margin-top: 15px;
+padding: 10px 20px;
+border: none;
+border-radius: 10px;
+font-weight: 600;
+cursor: pointer;
 }
 
 .modal-content button:first-child {
-  background: linear-gradient(to right, #7c3aed, #8b5cf6);
-  color: white;
+background: linear-gradient(to right, #7c3aed, #8b5cf6);
+color: white;
 }
 
 .modal-content button:last-child {
-  background: #e5e7eb;
-  color: #1f2937;
+background: #e5e7eb;
+color: #1f2937;
 }
-
-  </style>
+</style>
