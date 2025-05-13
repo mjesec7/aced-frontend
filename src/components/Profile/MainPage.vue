@@ -145,35 +145,49 @@ export default {
       }
     },
     async fetchRecommendations() {
-      try {
-        this.loadingRecommendations = true;
-        const token = await auth.currentUser.getIdToken();
-        const headers = { Authorization: `Bearer ${token}` };
-        const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/recommendations`, { headers });
+  try {
+    this.loadingRecommendations = true;
 
-        this.recommendations = data || [];
-        this.extractSubjects(this.recommendations);
-      } catch (err) {
-        console.error('❌ Ошибка загрузки рекомендаций:', err);
-      } finally {
-        this.loadingRecommendations = false;
-      }
-    },
-    async fetchStudyList() {
-      try {
-        this.loadingStudyList = true;
-        const token = await auth.currentUser.getIdToken();
-        const headers = { Authorization: `Bearer ${token}` };
-        const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
+    if (!auth.currentUser) {
+      console.warn('⚠️ Пользователь не авторизован. Пропуск загрузки рекомендаций.');
+      return;
+    }
 
-        this.studyList = data || [];
-        this.extractSubjects(this.studyList);
-      } catch (err) {
-        console.error('❌ Ошибка загрузки курсов:', err);
-      } finally {
-        this.loadingStudyList = false;
-      }
-    },
+    const token = await auth.currentUser.getIdToken();
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/recommendations`, { headers });
+
+    this.recommendations = data || [];
+    this.extractSubjects(this.recommendations);
+  } catch (err) {
+    console.error('❌ Ошибка загрузки рекомендаций:', err);
+  } finally {
+    this.loadingRecommendations = false;
+  }
+},
+
+async fetchStudyList() {
+  try {
+    this.loadingStudyList = true;
+
+    if (!auth.currentUser) {
+      console.warn('⚠️ Пользователь не авторизован. Пропуск загрузки курсов.');
+      return;
+    }
+
+    const token = await auth.currentUser.getIdToken();
+    const headers = { Authorization: `Bearer ${token}` };
+    const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
+
+    this.studyList = data || [];
+    this.extractSubjects(this.studyList);
+  } catch (err) {
+    console.error('❌ Ошибка загрузки курсов:', err);
+  } finally {
+    this.loadingStudyList = false;
+  }
+},
+
     extractSubjects(items) {
       const subjects = new Set(items.map(item => item.subject).filter(Boolean));
       this.allSubjects = Array.from(subjects);
