@@ -20,6 +20,7 @@
       ▶️ Продолжить
     </button>
 
+    <!-- 🗑 Modal -->
     <div v-if="showDeleteModal" class="modal-overlay">
       <div class="modal-content">
         <p>❗ Вы уверены, что хотите удалить это?</p>
@@ -47,12 +48,12 @@ export default {
   data() {
     return {
       showDeleteModal: false,
-      lessonExists: false,
+      lessonExists: false
     };
   },
   computed: {
     displayName() {
-      return this.topic.name || this.topic.topic || 'Без названия';
+      return this.topic.name?.en || this.topic.name || this.topic.topic || 'Без названия';
     },
     lessonProgress() {
       const val = parseFloat(this.progress.percent);
@@ -62,10 +63,10 @@ export default {
       return this.progress.medal || '';
     },
     estimatedDuration() {
-      const textBlocks = ['explanation', 'content', 'examples']
-        .map(k => this.topic[k] || '')
+      const wordSource = ['explanation', 'content', 'examples']
+        .map(k => this.topic[k]?.en || this.topic[k] || '')
         .join(' ');
-      const wordCount = textBlocks.split(/\s+/).length;
+      const wordCount = wordSource.trim().split(/\s+/).length;
       const readTime = Math.ceil(wordCount / 50);
       const exerciseTime = Math.ceil((this.topic.exercises?.length || 0) * 1.5);
       return readTime + exerciseTime;
@@ -76,75 +77,69 @@ export default {
   },
   methods: {
     async checkLessonExists() {
-  try {
-    const subject = this.topic.subject;
-    const topicName = this.topic.name || this.topic.topic;
-    if (!subject || !topicName) return;
+      try {
+        const subject = this.topic.subject;
+        const topicName = this.topic.name?.en || this.topic.name || this.topic.topic;
+        if (!subject || !topicName || !auth.currentUser) return;
 
-    if (!auth.currentUser) {
-      console.warn('⚠️ Пользователь не авторизован.');
-      return;
+        const token = await auth.currentUser.getIdToken();
+        const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
+        const { data } = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        this.lessonExists = !!(data && data._id);
+      } catch (err) {
+        console.warn('❌ Урок не найден или ошибка запроса:', err.message);
+        this.lessonExists = false;
+      }
+    },
+
+    async goToLesson() {
+      try {
+        const subject = this.topic.subject;
+        const topicName = this.topic.name?.en || this.topic.name || this.topic.topic;
+        if (!subject || !topicName || !auth.currentUser) {
+          alert('❌ Не удалось открыть урок. Данные темы отсутствуют.');
+          return;
+        }
+
+        const token = await auth.currentUser.getIdToken();
+        const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
+        const { data } = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (!data?._id) throw new Error('Урок не найден');
+        this.$router.push({ name: 'LessonPage', params: { id: data._id } });
+      } catch (err) {
+        console.error('❌ Ошибка перехода:', err);
+        alert('❌ Не удалось открыть урок.');
+      }
+    },
+
+    async confirmDelete() {
+      try {
+        if (!auth.currentUser) {
+          alert('Пожалуйста, войдите в аккаунт.');
+          return;
+        }
+
+        const token = await auth.currentUser.getIdToken();
+        const headers = { Authorization: `Bearer ${token}` };
+        const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.topic.userId}/study-list/${this.topic._id}`;
+        await axios.delete(url, { headers });
+
+        this.lessonExists = false;
+        this.$emit('deleted', this.topic._id);
+      } catch (err) {
+        console.error('❌ Ошибка удаления:', err);
+        alert('❌ Не удалось удалить курс.');
+      }
     }
-
-    const token = await auth.currentUser.getIdToken();
-    const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
-    const { data } = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    this.lessonExists = !!(data && data._id);
-  } catch (err) {
-    console.warn('❌ Урок не найден:', err.message);
-    this.lessonExists = false;
-  }
-},
-
-async goToLesson() {
-  try {
-    const subject = this.topic.subject;
-    const topicName = this.topic.name || this.topic.topic;
-    if (!subject || !topicName) return alert('❌ Нет данных темы или предмета.');
-
-    if (!auth.currentUser) {
-      alert('Пожалуйста, войдите в аккаунт.');
-      return;
-    }
-
-    const token = await auth.currentUser.getIdToken();
-    const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
-    const { data } = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!data?._id) throw new Error('Урок не найден');
-    this.$router.push({ name: 'LessonPage', params: { id: data._id } });
-  } catch (err) {
-    console.error('❌ Ошибка перехода:', err);
-    alert('❌ Не удалось открыть урок.');
-  }
-},
-
-async confirmDelete() {
-  try {
-    if (!auth.currentUser) {
-      alert('Пожалуйста, войдите в аккаунт.');
-      return;
-    }
-
-    const token = await auth.currentUser.getIdToken();
-    const headers = { Authorization: `Bearer ${token}` };
-    const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.topic.userId}/study-list/${this.topic._id}`;
-    await axios.delete(url, { headers });
-    this.lessonExists = false;
-    this.$emit('deleted', this.topic._id);
-  } catch (err) {
-    console.error('❌ Ошибка удаления:', err);
-    alert('❌ Не удалось удалить.');
-  }
-}
-
   }
 };
 </script>
-
 
 <style scoped>
 .study-card {
@@ -160,57 +155,47 @@ async confirmDelete() {
   justify-content: space-between;
   transition: transform 0.3s, box-shadow 0.3s;
 }
-
 .study-card:hover {
   transform: translateY(-6px) scale(1.02);
   box-shadow: 0 12px 24px rgba(147, 51, 234, 0.2);
 }
-
 .card-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
 }
-
 .topic-name {
   font-size: 1.3rem;
   font-weight: 800;
   color: #7c3aed;
 }
-
 .medal-icon {
   width: 36px;
   height: 36px;
 }
-
 .progress-bar {
   background: #e5e7eb;
   height: 10px;
   border-radius: 8px;
   overflow: hidden;
 }
-
 .progress-fill {
   height: 100%;
   background: linear-gradient(to right, #7c3aed, #8b5cf6);
   transition: width 0.3s ease;
 }
-
 .progress-info {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   font-size: 0.95rem;
   font-weight: 600;
   color: #4b5563;
 }
-
 .estimated-time {
   font-style: italic;
   font-weight: 500;
   color: #6b7280;
 }
-
 .continue-btn {
   align-self: center;
   padding: 10px 24px;
@@ -223,11 +208,9 @@ async confirmDelete() {
   cursor: pointer;
   transition: background 0.3s ease;
 }
-
 .continue-btn:hover {
   background: linear-gradient(to right, #4338ca, #7c3aed);
 }
-
 .close-btn {
   position: absolute;
   top: 12px;
@@ -239,11 +222,9 @@ async confirmDelete() {
   cursor: pointer;
   transition: color 0.2s ease;
 }
-
 .close-btn:hover {
   color: #ef4444;
 }
-
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -256,23 +237,19 @@ async confirmDelete() {
   align-items: center;
   z-index: 9999;
 }
-
 .modal-content {
   background: white;
   padding: 24px 32px;
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   text-align: center;
-  font-family: 'Unbounded', sans-serif;
 }
-
 .modal-actions {
   margin-top: 20px;
   display: flex;
   justify-content: center;
   gap: 16px;
 }
-
 .confirm-btn {
   background: #ef4444;
   color: white;
@@ -281,7 +258,6 @@ async confirmDelete() {
   border-radius: 8px;
   cursor: pointer;
 }
-
 .cancel-btn {
   background: #e5e7eb;
   color: #111827;

@@ -10,10 +10,10 @@
       <span class="user-status-badge" :class="userStatus">{{ userStatusLabel }}</span>
     </div>
 
-    <!-- 🎯 Recommendations -->
+    <!-- 🌟 Recommendations -->
     <div class="section">
       <div class="section-header">
-        <h2>🎯 Рекомендовано для вас</h2>
+        <h2>🌟 Рекомендовано для вас</h2>
         <button class="refresh-btn" @click="refreshRecommendations" :disabled="loadingRecommendations">
           🔄 Обновить
         </button>
@@ -25,9 +25,9 @@
 
       <div v-else-if="filteredRecommendations.length" class="grid">
         <div class="topic-card" v-for="topic in filteredRecommendations" :key="topic._id">
-          <h3 class="topic-title">📘 {{ topic.name }}</h3>
-          <p class="topic-desc">{{ topic.description || 'Описание отсутствует' }}</p>
-          <p class="lesson-count">Уроков: {{ topic.lessons.length }}</p>
+          <h3 class="topic-title">📘 {{ topic.name?.en || topic.name }}</h3>
+          <p class="topic-desc">{{ topic.description?.en || topic.description || 'Описание отсутствует' }}</p>
+          <p class="lesson-count">Уроков: {{ topic.lessons?.length || 0 }}</p>
           <div class="card-buttons">
             <button class="btn-add" @click="handleAddTopic(topic)">＋ Добавить</button>
             <button class="btn-start" @click="handleStartTopic(topic)">🚀 Начать</button>
@@ -51,7 +51,7 @@
           :key="topic._id"
           :topic="topic"
           :progress="topic.progress || { percent: 0, medal: 'none' }"
-          :lessons="topic.lessons"
+          :lessons="topic.lessons || []"
           @delete="removeStudyCard"
         />
       </div>
@@ -59,6 +59,7 @@
       <div v-else class="empty-message">У вас пока нет активных курсов.</div>
     </div>
 
+    <!-- 💳 Payment Modal -->
     <PaymentModal
       :user-id="userId"
       :visible="showPaywall"
@@ -99,26 +100,24 @@ export default {
   computed: {
     ...mapState(['firebaseUserId']),
     filteredRecommendations() {
-      return this.recommendations
-        .filter(t => Array.isArray(t.lessons) && t.lessons.length > 0)
-        .filter(t => {
-          const name = typeof t.name === 'string' ? t.name : '';
-          const description = typeof t.description === 'string' ? t.description : '';
-          return (
-            (!this.filterSubject || t.subject === this.filterSubject) &&
-            (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-              description.toLowerCase().includes(this.searchQuery.toLowerCase()))
-          );
-        });
-    },
-    filteredStudyList() {
-      return this.studyList.filter(t => {
-        const name = typeof t.name === 'string' ? t.name : '';
-        const description = typeof t.description === 'string' ? t.description : '';
+      return this.recommendations.filter(t => t.lessons?.length).filter(t => {
+        const name = t.name?.en || t.name || '';
+        const description = t.description?.en || t.description || '';
         return (
           (!this.filterSubject || t.subject === this.filterSubject) &&
           (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-            description.toLowerCase().includes(this.searchQuery.toLowerCase()))
+           description.toLowerCase().includes(this.searchQuery.toLowerCase()))
+        );
+      });
+    },
+    filteredStudyList() {
+      return this.studyList.filter(t => {
+        const name = t.name?.en || t.name || '';
+        const description = t.description?.en || t.description || '';
+        return (
+          (!this.filterSubject || t.subject === this.filterSubject) &&
+          (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+           description.toLowerCase().includes(this.searchQuery.toLowerCase()))
         );
       });
     },
@@ -132,18 +131,14 @@ export default {
     const storedId = this.firebaseUserId || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
     if (!storedId) return this.$router.push('/');
     this.userId = storedId;
-
     await this.fetchUserStatus();
     await Promise.all([this.fetchRecommendations(), this.fetchStudyList()]);
   },
   methods: {
     async fetchUserStatus() {
       try {
-        if (!auth.currentUser) {
-          console.warn('⚠️ Пользователь не авторизован.');
-          return;
-        }
-        const token = await auth.currentUser.getIdToken();
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) return;
         const headers = { Authorization: `Bearer ${token}` };
         const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/status`, { headers });
         this.userStatus = data.status || 'free';
@@ -154,14 +149,11 @@ export default {
     async fetchRecommendations() {
       try {
         this.loadingRecommendations = true;
-        if (!auth.currentUser) {
-          console.warn('⚠️ Пользователь не авторизован. Пропуск загрузки рекомендаций.');
-          return;
-        }
-        const token = await auth.currentUser.getIdToken();
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) return;
         const headers = { Authorization: `Bearer ${token}` };
         const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/recommendations`, { headers });
-        this.recommendations = data || [];
+        this.recommendations = Array.isArray(data) ? data : [];
         this.extractSubjects(this.recommendations);
       } catch (err) {
         console.error('❌ Ошибка загрузки рекомендаций:', err);
@@ -172,14 +164,11 @@ export default {
     async fetchStudyList() {
       try {
         this.loadingStudyList = true;
-        if (!auth.currentUser) {
-          console.warn('⚠️ Пользователь не авторизован. Пропуск загрузки курсов.');
-          return;
-        }
-        const token = await auth.currentUser.getIdToken();
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) return;
         const headers = { Authorization: `Bearer ${token}` };
         const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
-        this.studyList = data || [];
+        this.studyList = Array.isArray(data) ? data : [];
         this.extractSubjects(this.studyList);
       } catch (err) {
         console.error('❌ Ошибка загрузки курсов:', err);
@@ -195,14 +184,18 @@ export default {
       await this.fetchRecommendations();
     },
     async handleAddTopic(topic) {
-      if (!auth.currentUser) return alert('Пожалуйста, войдите в аккаунт.');
-      const token = await auth.currentUser.getIdToken();
-      const headers = { Authorization: `Bearer ${token}` };
-      const url = `${BASE_URL}/users/${this.userId}/study-list`;
-      const payload = { subject: topic.subject, level: topic.level, topic: topic.name };
-      await axios.post(url, payload, { headers });
-      await this.fetchStudyList();
-      this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) return alert('Пожалуйста, войдите в аккаунт.');
+        const headers = { Authorization: `Bearer ${token}` };
+        const url = `${BASE_URL}/users/${this.userId}/study-list`;
+        const payload = { subject: topic.subject, level: topic.level, topic: topic.name };
+        await axios.post(url, payload, { headers });
+        await this.fetchStudyList();
+        this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
+      } catch (err) {
+        console.error('❌ Ошибка добавления темы:', err);
+      }
     },
     handleStartTopic(topic) {
       if (!topic._id) return;
@@ -219,6 +212,7 @@ export default {
   }
 };
 </script>
+
 
 
 

@@ -78,7 +78,7 @@ export default {
     };
   },
   computed: {
-    ...mapState(['firebaseUserId', 'user']),
+    ...mapState(['firebaseUserId']),
     subscriptionClass() {
       return this.plan === 'pro' ? 'badge-pro' : this.plan === 'start' ? 'badge-start' : 'badge-free';
     },
@@ -112,10 +112,13 @@ export default {
         const topicsMap = new Map();
         this.lessons.forEach(lesson => {
           const topicId = lesson.topicId;
+          const name = this.getTopicName(lesson);
+          if (!topicId || !name) return;
+
           if (!topicsMap.has(topicId)) {
             topicsMap.set(topicId, {
               topicId,
-              name: this.getTopicName(lesson),
+              name,
               subject: lesson.subject,
               level: lesson.level,
               type: lesson.type,
@@ -129,14 +132,12 @@ export default {
           }
         });
 
-        const filtered = [...topicsMap.values()].filter(topic => {
+        const query = this.searchQuery.toLowerCase();
+        this.groupedTopics = [...topicsMap.values()].filter(topic => {
           const matchesFilter = this.filterType === 'all' || topic.type === this.filterType;
-          const query = this.searchQuery.toLowerCase();
           const matchesSearch = topic.name.toLowerCase().includes(query) || topic.subject.toLowerCase().includes(query);
           return matchesFilter && matchesSearch;
         });
-
-        this.groupedTopics = filtered;
       } catch (error) {
         console.error('❌ Ошибка при загрузке уроков:', error.response?.data || error.message);
       } finally {
