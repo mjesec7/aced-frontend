@@ -4,7 +4,7 @@ import store from '@/store';
 // ✅ Main Views
 import HomePage from '@/views/HomePage.vue';
 import ProfilePage from '@/views/ProfilePage.vue';
-import SettingsPage from '@/views/SettingsPage.vue'; // ✅ Updated
+import AcedSettings from '@/components/Main/AcedSettings.vue'; // ✅ Use directly
 
 // ✅ Profile Sub-Pages
 import MainPage from '@/components/Profile/MainPage.vue';
@@ -31,7 +31,7 @@ const routes = [
   {
     path: '/settings',
     name: 'SettingsPage',
-    component: SettingsPage, // ✅ Now uses SettingsPage wrapper
+    component: AcedSettings, // ✅ Use actual AcedSettings.vue directly
   },
   {
     path: '/profile',
@@ -103,7 +103,6 @@ router.beforeEach((to, from, next) => {
   next();
 });
 
-// ✅ Route Errors
 router.onError((err) => {
   console.error('❌ Ошибка маршрута:', err);
 });

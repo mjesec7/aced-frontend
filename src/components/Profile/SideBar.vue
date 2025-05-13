@@ -9,39 +9,38 @@
         </div>
 
         <!-- 📚 Navigation Links -->
-        <div class="nav-links">
-          <!-- Главная (Dashboard) -->
-          <router-link
-            to="/profile/main"
-            class="nav-item"
-            :class="{ active: isActive('main') }"
-          >
-            <span class="highlight"></span>
-            Главная
-          </router-link>
+       <!-- 📚 Navigation Links -->
+<div class="nav-links">
+  <router-link
+    to="/profile/main"
+    class="nav-item"
+    :class="{ active: isActive('main') }"
+  >
+    <span class="highlight"></span>
+    Главная
+  </router-link>
 
-          <!-- Каталог -->
-          <router-link
-            to="/profile/catalogue"
-            class="nav-item"
-            :class="{ active: isActive('catalogue') }"
-          >
-            <span class="highlight"></span>
-            Каталог
-          </router-link>
+  <router-link
+    to="/profile/catalogue"
+    class="nav-item"
+    :class="{ active: isActive('catalogue') }"
+  >
+    <span class="highlight"></span>
+    Каталог
+  </router-link>
 
-          <!-- Dynamic Links -->
-          <router-link
-            v-for="link in links"
-            :key="link.name"
-            :to="link.name === 'settings' ? `/${link.name}` : `/profile/${link.name}`"
-            class="nav-item"
-            :class="{ active: isActive(link.name) }"
-          >
-            <span class="highlight"></span>
-            {{ link.label }}
-          </router-link>
-        </div>
+  <router-link
+    v-for="link in links"
+    :key="link.name"
+    :to="link.name === 'settings' ? `/${link.name}` : `/profile/${link.name}`"
+    class="nav-item"
+    :class="{ active: isActive(link.name) }"
+  >
+    <span class="highlight"></span>
+    {{ link.label }}
+  </router-link>
+</div>
+
 
         <!-- 🚪 Logout -->
         <div class="bottom-logout">
