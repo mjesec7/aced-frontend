@@ -23,32 +23,34 @@
 
     <div v-if="loading" class="loading">Загрузка уроков...</div>
 
-    <div v-else-if="filteredLessons.length" class="lessons-grid">
-      <div v-for="lesson in filteredLessons" :key="lesson._id" class="lesson-card">
+    <div v-else-if="groupedTopics.length" class="lessons-grid">
+      <div v-for="topic in groupedTopics" :key="topic.topicId" class="lesson-card">
         <div class="card-header">
-          <h2 class="lesson-title">{{ lesson.lessonName.en }}</h2>
-          <button class="add-btn" @click="addToStudyPlan(lesson)">＋</button>
+          <h2 class="lesson-title">{{ topic.name }}</h2>
+          <button class="add-btn" @click="addToStudyPlan(topic)">＋</button>
         </div>
         <p class="lesson-topic">
-          {{ getTopicName(lesson) }}
+          Уровень: {{ topic.level }} / Предмет: {{ topic.subject }}
         </p>
-        <span class="subject-badge">{{ lesson.subject }}</span>
-        <span class="access-label" :class="lesson.type === 'premium' ? 'paid' : 'free'">
-          {{ lesson.type === 'premium' ? 'Платный' : 'Бесплатный' }}
+        <p class="lesson-topic">
+          📅 Уроков: {{ topic.lessonCount }} / Среднее время: {{ topic.totalTime }} мин.
+        </p>
+        <span class="access-label" :class="topic.type === 'premium' ? 'paid' : 'free'">
+          {{ topic.type === 'premium' ? 'Платный' : 'Бесплатный' }}
         </span>
-        <button class="start-btn" @click="handleAccess(lesson)">Начать курс</button>
+        <button class="start-btn" @click="handleAccess(topic.topicId, topic.type)">Начать курс</button>
       </div>
     </div>
 
     <div v-else class="no-lessons">❌ Уроки не найдены.</div>
 
-    <div v-if="showPaywall" class="modal">
-      <div class="modal-content">
-        <p>🚫 Этот курс доступен только по подписке.</p>
-        <button @click="goToPayment">Перейти к тарифам</button>
-        <button @click="showPaywall = false">Отмена</button>
-      </div>
-    </div>
+    <PaymentModal
+      :user-id="userId"
+      :visible="showPaywall"
+      :requested-topic-id="requestedTopicId"
+      @close="showPaywall = false"
+      @unlocked="plan = $event"
+    />
   </div>
 </template>
 
@@ -56,12 +58,15 @@
 import axios from 'axios';
 import { mapState } from 'vuex';
 import { auth } from '@/firebase';
+import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
 export default {
   name: 'CataloguePage',
+  components: { PaymentModal },
   data() {
     return {
       lessons: [],
+      groupedTopics: [],
       loading: true,
       userId: null,
       filterType: 'all',
@@ -74,22 +79,6 @@ export default {
   },
   computed: {
     ...mapState(['firebaseUserId', 'user']),
-    filteredLessons() {
-      return this.lessons.filter((lesson) => {
-        const matchesFilter = this.filterType === 'all' || lesson.type === this.filterType;
-
-        const name = lesson.lessonName?.en?.toLowerCase() || '';
-        const topic = this.getTopicName(lesson)?.toLowerCase() || '';
-        const subject = lesson.subject?.toLowerCase() || '';
-
-        const matchesSearch =
-          name.includes(this.searchQuery.toLowerCase()) ||
-          topic.includes(this.searchQuery.toLowerCase()) ||
-          subject.includes(this.searchQuery.toLowerCase());
-
-        return matchesFilter && matchesSearch;
-      });
-    },
     subscriptionClass() {
       return this.plan === 'pro' ? 'badge-pro' : this.plan === 'start' ? 'badge-start' : 'badge-free';
     },
@@ -98,17 +87,8 @@ export default {
     }
   },
   async mounted() {
-    const storedId =
-      this.firebaseUserId ||
-      localStorage.getItem('firebaseUserId') ||
-      localStorage.getItem('userId');
-
-    if (!storedId) {
-      console.warn('❌ Нет ID пользователя.');
-      this.loading = false;
-      return;
-    }
-
+    const storedId = this.firebaseUserId || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
+    if (!storedId) return (this.loading = false);
     this.userId = storedId;
 
     try {
@@ -124,62 +104,77 @@ export default {
     this.loadLessons();
   },
   methods: {
-    getTopicName(lesson) {
-      if (typeof lesson.topic === 'string') return lesson.topic;
-      if (lesson.translations?.[this.lang]?.topic) return lesson.translations[this.lang].topic;
-      if (lesson.topic?.[this.lang]) return lesson.topic[this.lang];
-      return lesson.topic?.en || 'Без темы';
-    },
     async loadLessons() {
       try {
         const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/lessons`);
         this.lessons = Array.isArray(data) ? data : [];
-        console.log(`✅ Загрузено ${this.lessons.length} уроков`);
+
+        const topicsMap = new Map();
+        this.lessons.forEach(lesson => {
+          const topicId = lesson.topicId;
+          if (!topicsMap.has(topicId)) {
+            topicsMap.set(topicId, {
+              topicId,
+              name: this.getTopicName(lesson),
+              subject: lesson.subject,
+              level: lesson.level,
+              type: lesson.type,
+              lessonCount: 1,
+              totalTime: 10
+            });
+          } else {
+            const entry = topicsMap.get(topicId);
+            entry.lessonCount += 1;
+            entry.totalTime += 10;
+          }
+        });
+
+        const filtered = [...topicsMap.values()].filter(topic => {
+          const matchesFilter = this.filterType === 'all' || topic.type === this.filterType;
+          const query = this.searchQuery.toLowerCase();
+          const matchesSearch = topic.name.toLowerCase().includes(query) || topic.subject.toLowerCase().includes(query);
+          return matchesFilter && matchesSearch;
+        });
+
+        this.groupedTopics = filtered;
       } catch (error) {
         console.error('❌ Ошибка при загрузке уроков:', error.response?.data || error.message);
       } finally {
         this.loading = false;
       }
     },
-    handleAccess(lesson) {
-      if (lesson.type === 'premium' && (!this.plan || this.plan === 'free')) {
-        this.requestedTopicId = lesson.topicId;
+    getTopicName(lesson) {
+      if (typeof lesson.topic === 'string') return lesson.topic;
+      if (lesson.translations?.[this.lang]?.topic) return lesson.translations[this.lang].topic;
+      if (lesson.topic?.[this.lang]) return lesson.topic[this.lang];
+      return lesson.topic?.en || 'Без темы';
+    },
+    handleAccess(topicId, type) {
+      if (type === 'premium' && (!this.plan || this.plan === 'free')) {
+        this.requestedTopicId = topicId;
         this.showPaywall = true;
       } else {
-        this.$router.push({ name: 'TopicOverview', params: { id: lesson.topicId } });
+        this.$router.push({ name: 'TopicOverview', params: { id: topicId } });
       }
     },
-    async addToStudyPlan(lesson) {
-      if (!auth.currentUser) {
-        alert('Пожалуйста, войдите в аккаунт.');
-        return;
-      }
+    async addToStudyPlan(topic) {
+      if (!auth.currentUser) return alert('Пожалуйста, войдите в аккаунт.');
 
       try {
         const token = await auth.currentUser.getIdToken();
         const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`;
-        const body = {
-          subject: lesson.subject,
-          topic: this.getTopicName(lesson)
-        };
-
-        await axios.post(url, body, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        alert(`✅ Урок "${lesson.lessonName?.en || 'Без названия'}" добавлен!`);
+        const body = { subject: topic.subject, topic: topic.name };
+        await axios.post(url, body, { headers: { Authorization: `Bearer ${token}` } });
+        alert(`✅ Тема "${topic.name}" добавлена!`);
       } catch (error) {
         console.error('❌ Ошибка при добавлении в учебный план:', error.response?.data || error.message);
-        alert('❌ Не удалось добавить урок в учебный план');
+        alert('❌ Не удалось добавить в учебный план');
       }
-    },
-    goToPayment() {
-      this.showPaywall = false;
-      this.$router.push({ name: 'PaymePayment', params: { plan: 'start' } });
     }
   }
 };
 </script>
+
 
 
   

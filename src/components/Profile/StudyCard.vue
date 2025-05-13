@@ -42,7 +42,7 @@ export default {
   props: {
     topic: { type: Object, required: true },
     progress: { type: Object, default: () => ({ percent: 0, medal: 'none' }) },
-    lessons: { type: Array, default: () => [] },
+    lessons: { type: Array, default: () => [] }
   },
   data() {
     return {
@@ -62,17 +62,14 @@ export default {
       return this.progress.medal || '';
     },
     estimatedDuration() {
-      const explanation = this.topic.explanation || '';
-      const content = this.topic.content || '';
-      const examples = this.topic.examples || '';
-      const exercisesCount = this.topic.exercises?.length || 0;
-
-      const wordCount = (explanation + content + examples).split(/\s+/).length;
+      const textBlocks = ['explanation', 'content', 'examples']
+        .map(k => this.topic[k] || '')
+        .join(' ');
+      const wordCount = textBlocks.split(/\s+/).length;
       const readTime = Math.ceil(wordCount / 50);
-      const exerciseTime = Math.ceil(exercisesCount * 1.5);
-
+      const exerciseTime = Math.ceil((this.topic.exercises?.length || 0) * 1.5);
       return readTime + exerciseTime;
-    },
+    }
   },
   async mounted() {
     await this.checkLessonExists();
@@ -82,69 +79,54 @@ export default {
       try {
         const subject = this.topic.subject;
         const topicName = this.topic.name || this.topic.topic;
-
-        console.log('📦 Проверка существования урока:', { subject, topicName });
-
-        if (!subject || !topicName) {
-          console.warn('⚠️ Не указан предмет или тема');
-          return;
-        }
+        if (!subject || !topicName) return;
 
         const token = await auth.currentUser.getIdToken();
         const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
         const { data } = await axios.get(url, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}` }
         });
-
         this.lessonExists = !!(data && data._id);
-        console.log('✅ Урок найден:', this.lessonExists);
       } catch (err) {
         console.warn('❌ Урок не найден:', err.message);
         this.lessonExists = false;
       }
     },
-
     async goToLesson() {
-      const subject = this.topic.subject;
-      const topicName = this.topic.name || this.topic.topic;
-
-      if (!subject || !topicName) {
-        alert('❌ Урок не может быть открыт — нет темы или предмета.');
-        return;
-      }
-
       try {
+        const subject = this.topic.subject;
+        const topicName = this.topic.name || this.topic.topic;
+        if (!subject || !topicName) return alert('❌ Нет данных темы или предмета.');
+
         const token = await auth.currentUser.getIdToken();
         const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
         const { data } = await axios.get(url, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}` }
         });
-
-        if (!data?._id) throw new Error('Lesson not found');
+        if (!data?._id) throw new Error('Урок не найден');
         this.$router.push({ name: 'LessonPage', params: { id: data._id } });
       } catch (err) {
-        console.error('❌ Ошибка загрузки урока:', err);
-        alert('❌ Урок не найден.');
+        console.error('❌ Ошибка перехода:', err);
+        alert('❌ Не удалось открыть урок.');
       }
     },
-
     async confirmDelete() {
       try {
         const token = await auth.currentUser.getIdToken();
         const headers = { Authorization: `Bearer ${token}` };
         const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.topic.userId}/study-list/${this.topic._id}`;
-
         await axios.delete(url, { headers });
         this.lessonExists = false;
         this.$emit('deleted', this.topic._id);
       } catch (err) {
         console.error('❌ Ошибка удаления:', err);
-        alert('Не удалось удалить курс.');
+        alert('❌ Не удалось удалить.');
       }
-    },
-  },
+    }
+  }
 };
 </script>
+
 
 <style scoped>
 .study-card {

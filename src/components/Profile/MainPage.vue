@@ -1,8 +1,6 @@
 <template>
   <div class="dashboard">
     <h1 class="title">👋 Добро пожаловать обратно!</h1>
-
-    <!-- 🔍 Search and Filter -->
     <div class="controls">
       <input v-model="searchQuery" class="search-input" placeholder="🔍 Поиск тем или курсов..." />
       <select v-model="filterSubject" class="filter-select">
@@ -12,7 +10,7 @@
       <span class="user-status-badge" :class="userStatus">{{ userStatusLabel }}</span>
     </div>
 
-    <!-- 🎯 Smart Recommendations Block -->
+    <!-- 🎯 Recommendations -->
     <div class="section">
       <div class="section-header">
         <h2>🎯 Рекомендовано для вас</h2>
@@ -40,10 +38,9 @@
       <div v-else class="empty-message">Нет подходящих рекомендаций.</div>
     </div>
 
-    <!-- 📚 Study List Block -->
+    <!-- 📚 Study List -->
     <div class="section">
       <h2>📘 Мои курсы</h2>
-
       <div v-if="loadingStudyList" class="grid">
         <div class="study-placeholder" v-for="n in 3" :key="n">⏳</div>
       </div>
@@ -55,27 +52,35 @@
           :topic="topic"
           :progress="topic.progress || { percent: 0, medal: 'none' }"
           :lessons="topic.lessons"
-          @delete="removeStudyCard" 
+          @delete="removeStudyCard"
         />
       </div>
 
       <div v-else class="empty-message">У вас пока нет активных курсов.</div>
     </div>
+
+    <PaymentModal
+      :user-id="userId"
+      :visible="showPaywall"
+      :requested-topic-id="requestedTopicId"
+      @close="showPaywall = false"
+      @unlocked="userStatus = $event"
+    />
   </div>
 </template>
-
 
 <script>
 import { mapState } from 'vuex';
 import axios from 'axios';
 import { auth } from '@/firebase';
 import StudyCard from '@/components/Profile/StudyCard.vue';
+import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default {
   name: 'MainPage',
-  components: { StudyCard },
+  components: { StudyCard, PaymentModal },
   data() {
     return {
       userId: null,
@@ -87,6 +92,8 @@ export default {
       loadingStudyList: true,
       searchQuery: '',
       filterSubject: '',
+      showPaywall: false,
+      requestedTopicId: null
     };
   },
   computed: {
@@ -122,13 +129,8 @@ export default {
     }
   },
   async mounted() {
-    const storedId =
-      this.firebaseUserId ||
-      localStorage.getItem('firebaseUserId') ||
-      localStorage.getItem('userId');
-
+    const storedId = this.firebaseUserId || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
     if (!storedId) return this.$router.push('/');
-
     this.userId = storedId;
     await this.fetchUserStatus();
     await Promise.all([this.fetchRecommendations(), this.fetchStudyList()]);
@@ -145,49 +147,33 @@ export default {
       }
     },
     async fetchRecommendations() {
-  try {
-    this.loadingRecommendations = true;
-
-    if (!auth.currentUser) {
-      console.warn('⚠️ Пользователь не авторизован. Пропуск загрузки рекомендаций.');
-      return;
-    }
-
-    const token = await auth.currentUser.getIdToken();
-    const headers = { Authorization: `Bearer ${token}` };
-    const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/recommendations`, { headers });
-
-    this.recommendations = data || [];
-    this.extractSubjects(this.recommendations);
-  } catch (err) {
-    console.error('❌ Ошибка загрузки рекомендаций:', err);
-  } finally {
-    this.loadingRecommendations = false;
-  }
-},
-
-async fetchStudyList() {
-  try {
-    this.loadingStudyList = true;
-
-    if (!auth.currentUser) {
-      console.warn('⚠️ Пользователь не авторизован. Пропуск загрузки курсов.');
-      return;
-    }
-
-    const token = await auth.currentUser.getIdToken();
-    const headers = { Authorization: `Bearer ${token}` };
-    const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
-
-    this.studyList = data || [];
-    this.extractSubjects(this.studyList);
-  } catch (err) {
-    console.error('❌ Ошибка загрузки курсов:', err);
-  } finally {
-    this.loadingStudyList = false;
-  }
-},
-
+      try {
+        this.loadingRecommendations = true;
+        const token = await auth.currentUser.getIdToken();
+        const headers = { Authorization: `Bearer ${token}` };
+        const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/recommendations`, { headers });
+        this.recommendations = data || [];
+        this.extractSubjects(this.recommendations);
+      } catch (err) {
+        console.error('❌ Ошибка загрузки рекомендаций:', err);
+      } finally {
+        this.loadingRecommendations = false;
+      }
+    },
+    async fetchStudyList() {
+      try {
+        this.loadingStudyList = true;
+        const token = await auth.currentUser.getIdToken();
+        const headers = { Authorization: `Bearer ${token}` };
+        const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
+        this.studyList = data || [];
+        this.extractSubjects(this.studyList);
+      } catch (err) {
+        console.error('❌ Ошибка загрузки курсов:', err);
+      } finally {
+        this.loadingStudyList = false;
+      }
+    },
     extractSubjects(items) {
       const subjects = new Set(items.map(item => item.subject).filter(Boolean));
       this.allSubjects = Array.from(subjects);
@@ -199,28 +185,27 @@ async fetchStudyList() {
       const token = await auth.currentUser.getIdToken();
       const headers = { Authorization: `Bearer ${token}` };
       const url = `${BASE_URL}/users/${this.userId}/study-list`;
-
-      const payload = {
-        subject: topic.subject,
-        level: topic.level,
-        topic: topic.name,
-      };
-
+      const payload = { subject: topic.subject, level: topic.level, topic: topic.name };
       await axios.post(url, payload, { headers });
       await this.fetchStudyList();
       this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
     },
     handleStartTopic(topic) {
       if (!topic._id) return;
-      this.$router.push({ path: `/topic/${topic._id}/overview` });
+      if (topic.type === 'premium' && (!this.userStatus || this.userStatus === 'free')) {
+        this.requestedTopicId = topic._id;
+        this.showPaywall = true;
+      } else {
+        this.$router.push({ path: `/topic/${topic._id}/overview` });
+      }
     },
-    // ✅ This method removes deleted topic from studyList
     removeStudyCard(id) {
       this.studyList = this.studyList.filter(topic => topic._id !== id);
     }
   }
 };
 </script>
+
 
 
 <style scoped>

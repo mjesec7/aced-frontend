@@ -12,6 +12,19 @@
       <label>Email</label>
       <input type="email" v-model="user.email" placeholder="Введите email" />
 
+      <!-- 🔒 PROMO FEATURE -->
+      <label>Промокод</label>
+      <input type="text" v-model="promoCode" placeholder="acedpromocode2406" />
+
+      <label>Выберите тариф</label>
+      <select v-model="selectedPlan">
+        <option value="">Выберите...</option>
+        <option value="start">Start</option>
+        <option value="pro">Pro</option>
+      </select>
+
+      <button class="promo-button" @click="applyPromo">Применить промокод</button>
+
       <div v-if="!isGoogleUser">
         <label>Текущий пароль</label>
         <input type="password" v-model="oldPassword" placeholder="Введите текущий пароль" />
@@ -36,9 +49,9 @@
   </div>
 </template>
 
-
 <script>
 import { auth, db } from "@/firebase";
+import axios from "axios";
 import {
   updateEmail,
   reauthenticateWithCredential,
@@ -61,6 +74,8 @@ export default {
       currentUser: null,
       isGoogleUser: false,
       notification: "",
+      promoCode: "",
+      selectedPlan: ""
     };
   },
   mounted() {
@@ -126,6 +141,20 @@ export default {
         this.showNotification("Ошибка: " + error.message);
       }
     },
+    async applyPromo() {
+      if (!this.promoCode || !this.selectedPlan) return this.showNotification("Введите промокод и выберите тариф.");
+      try {
+        const res = await axios.post("/api/payments/promo", {
+          userId: this.currentUser.uid,
+          plan: this.selectedPlan,
+          promoCode: this.promoCode
+        });
+        this.showNotification(res.data.message || "✅ Промокод применён!");
+      } catch (err) {
+        console.error("Promo error:", err);
+        this.showNotification(err.response?.data?.message || "❌ Не удалось применить промокод");
+      }
+    },
     async sendPasswordReset() {
       try {
         if (!this.currentUser) return this.showNotification("Ошибка: Пользователь не авторизован.");
@@ -145,10 +174,11 @@ export default {
     },
     goToProfile() {
       this.$router.push("/profile/main");
-    },
-  },
+    }
+  }
 };
 </script>
+
 
 <style scoped>
 .settings-page {

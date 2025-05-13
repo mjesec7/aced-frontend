@@ -11,21 +11,18 @@
           placeholder="Ваше имя (как при регистрации)"
           required
         />
-
         <input
           type="text"
           v-model="form.phone"
           placeholder="Номер телефона (например, +998901234567)"
           required
         />
-
         <input
           type="text"
           v-model="form.userId"
           placeholder="Ваш ID пользователя"
           required
         />
-
         <input
           type="text"
           v-model="form.promocode"
@@ -33,53 +30,61 @@
         />
 
         <button type="submit" class="pay-button" :disabled="loading">
-          {{ loading ? 'Обработка...' : 'Оплатить через Payme' }}
+          {{ loading ? '⏳ Обработка...' : '💳 Оплатить через Payme' }}
         </button>
       </form>
 
       <p v-if="error" class="error-text">❌ {{ error }}</p>
-      <p v-if="success" class="success-text">🎉 Промокод активирован! Вам открыт доступ к PRO-курсам.</p>
+      <p v-if="success" class="success-text">
+        🎉 Промокод применён! Вам открыт доступ к премиум-курсам.
+      </p>
     </div>
   </div>
 </template>
 
 <script>
-import axios from "axios";
+import axios from 'axios';
+import { auth } from '@/firebase';
 
 export default {
-  props: ["plan"],
+  props: ['plan'],
   data() {
     return {
       form: {
-        name: "",
-        phone: "",
-        userId: "",
-        promocode: "",
+        name: '',
+        phone: '',
+        userId: '',
+        promocode: '',
       },
       loading: false,
-      error: "",
+      error: '',
       success: false,
     };
   },
   computed: {
-  amount() {
-    return this.plan === "pro" ? 455000 : 260000;
+    amount() {
+      return this.plan === 'pro' ? 455000 : 260000;
+    },
+    planLabel() {
+      return this.plan === 'pro' ? 'PRO' : 'STARTER';
+    },
+    formattedAmount() {
+      return this.amount.toLocaleString('ru-RU');
+    },
+    apiUrl() {
+      return import.meta.env.VITE_API_BASE_URL;
+    }
   },
-  planLabel() {
-    return this.plan === "pro" ? "PRO" : "STARTER";
+  async mounted() {
+    const localId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
+    if (localId && !this.form.userId) {
+      this.form.userId = localId;
+    }
   },
-  formattedAmount() {
-    return this.amount.toLocaleString("ru-RU");
-  },
-  apiUrl() {
-    return import.meta.env.VITE_API_BASE_URL;
-  },
-},
-
   methods: {
     async initiatePayment() {
       this.loading = true;
-      this.error = "";
+      this.error = '';
       this.success = false;
 
       const payload = {
@@ -91,13 +96,13 @@ export default {
       };
 
       if (!payload.name || !payload.phone || !payload.userId) {
-        this.error = "Пожалуйста, заполните все обязательные поля.";
+        this.error = 'Пожалуйста, заполните все обязательные поля.';
         this.loading = false;
         return;
       }
 
       try {
-        // ✅ 1. Promo First
+        // ✅ First: Promo Check
         if (payload.promocode) {
           const promoRes = await axios.post(`${this.apiUrl}/payments/promo`, payload);
           if (promoRes.data?.unlocked) {
@@ -106,7 +111,7 @@ export default {
           }
         }
 
-        // ✅ 2. Payment
+        // ✅ Then: Real Payme Redirect
         const response = await axios.post(`${this.apiUrl}/payments/payme`, {
           amount: this.amount,
           phone: payload.phone,
@@ -118,16 +123,16 @@ export default {
         if (response.data?.redirectUrl) {
           window.location.href = response.data.redirectUrl;
         } else {
-          this.error = "Ошибка при получении ссылки на оплату.";
+          this.error = 'Не удалось получить ссылку на оплату.';
         }
       } catch (err) {
-        console.error("❌ Payment Error:", err.response?.data || err.message);
-        this.error = err.response?.data?.error || "Ошибка обработки платежа.";
+        console.error('❌ Payment Error:', err.response?.data || err.message);
+        this.error = err.response?.data?.error || 'Ошибка при обработке платежа.';
       } finally {
         this.loading = false;
       }
-    },
-  },
+    }
+  }
 };
 </script>
 
@@ -138,31 +143,36 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: 30px;
 }
 
 .payment-box {
   background: white;
-  padding: 40px;
+  padding: 40px 30px;
   border-radius: 20px;
-  max-width: 460px;
+  max-width: 500px;
   width: 100%;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.07);
   font-family: 'Unbounded', sans-serif;
   text-align: center;
+  transition: all 0.3s ease;
 }
 
 .payment-box h2 {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   font-size: 24px;
-  font-weight: 700;
-  color: #333;
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.payment-box span {
+  color: #7c3aed;
 }
 
 .amount {
-  margin-bottom: 24px;
   font-size: 18px;
-  color: #4b5563;
+  margin-bottom: 30px;
+  color: #374151;
 }
 
 form {
@@ -177,16 +187,16 @@ input {
   border: 1px solid #cbd5e1;
   font-size: 15px;
   font-family: inherit;
-  transition: border 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 input:focus {
-  border-color: #9333ea;
+  border-color: #7c3aed;
   outline: none;
 }
 
 .pay-button {
-  background-color: #9333ea;
+  background-color: #7c3aed;
   color: white;
   padding: 14px;
   border: none;
@@ -194,11 +204,11 @@ input:focus {
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
-  transition: 0.3s ease;
+  transition: background-color 0.3s ease;
 }
 
 .pay-button:hover {
-  background-color: #7e22ce;
+  background-color: #6d28d9;
 }
 
 .error-text {
