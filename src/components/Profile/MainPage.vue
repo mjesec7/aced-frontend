@@ -132,12 +132,17 @@ export default {
     const storedId = this.firebaseUserId || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
     if (!storedId) return this.$router.push('/');
     this.userId = storedId;
+
     await this.fetchUserStatus();
     await Promise.all([this.fetchRecommendations(), this.fetchStudyList()]);
   },
   methods: {
     async fetchUserStatus() {
       try {
+        if (!auth.currentUser) {
+          console.warn('⚠️ Пользователь не авторизован.');
+          return;
+        }
         const token = await auth.currentUser.getIdToken();
         const headers = { Authorization: `Bearer ${token}` };
         const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/status`, { headers });
@@ -149,6 +154,10 @@ export default {
     async fetchRecommendations() {
       try {
         this.loadingRecommendations = true;
+        if (!auth.currentUser) {
+          console.warn('⚠️ Пользователь не авторизован. Пропуск загрузки рекомендаций.');
+          return;
+        }
         const token = await auth.currentUser.getIdToken();
         const headers = { Authorization: `Bearer ${token}` };
         const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/recommendations`, { headers });
@@ -163,6 +172,10 @@ export default {
     async fetchStudyList() {
       try {
         this.loadingStudyList = true;
+        if (!auth.currentUser) {
+          console.warn('⚠️ Пользователь не авторизован. Пропуск загрузки курсов.');
+          return;
+        }
         const token = await auth.currentUser.getIdToken();
         const headers = { Authorization: `Bearer ${token}` };
         const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
@@ -182,6 +195,7 @@ export default {
       await this.fetchRecommendations();
     },
     async handleAddTopic(topic) {
+      if (!auth.currentUser) return alert('Пожалуйста, войдите в аккаунт.');
       const token = await auth.currentUser.getIdToken();
       const headers = { Authorization: `Bearer ${token}` };
       const url = `${BASE_URL}/users/${this.userId}/study-list`;
@@ -205,6 +219,7 @@ export default {
   }
 };
 </script>
+
 
 
 

@@ -76,53 +76,71 @@ export default {
   },
   methods: {
     async checkLessonExists() {
-      try {
-        const subject = this.topic.subject;
-        const topicName = this.topic.name || this.topic.topic;
-        if (!subject || !topicName) return;
+  try {
+    const subject = this.topic.subject;
+    const topicName = this.topic.name || this.topic.topic;
+    if (!subject || !topicName) return;
 
-        const token = await auth.currentUser.getIdToken();
-        const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
-        const { data } = await axios.get(url, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        this.lessonExists = !!(data && data._id);
-      } catch (err) {
-        console.warn('❌ Урок не найден:', err.message);
-        this.lessonExists = false;
-      }
-    },
-    async goToLesson() {
-      try {
-        const subject = this.topic.subject;
-        const topicName = this.topic.name || this.topic.topic;
-        if (!subject || !topicName) return alert('❌ Нет данных темы или предмета.');
-
-        const token = await auth.currentUser.getIdToken();
-        const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
-        const { data } = await axios.get(url, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!data?._id) throw new Error('Урок не найден');
-        this.$router.push({ name: 'LessonPage', params: { id: data._id } });
-      } catch (err) {
-        console.error('❌ Ошибка перехода:', err);
-        alert('❌ Не удалось открыть урок.');
-      }
-    },
-    async confirmDelete() {
-      try {
-        const token = await auth.currentUser.getIdToken();
-        const headers = { Authorization: `Bearer ${token}` };
-        const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.topic.userId}/study-list/${this.topic._id}`;
-        await axios.delete(url, { headers });
-        this.lessonExists = false;
-        this.$emit('deleted', this.topic._id);
-      } catch (err) {
-        console.error('❌ Ошибка удаления:', err);
-        alert('❌ Не удалось удалить.');
-      }
+    if (!auth.currentUser) {
+      console.warn('⚠️ Пользователь не авторизован.');
+      return;
     }
+
+    const token = await auth.currentUser.getIdToken();
+    const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
+    const { data } = await axios.get(url, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    this.lessonExists = !!(data && data._id);
+  } catch (err) {
+    console.warn('❌ Урок не найден:', err.message);
+    this.lessonExists = false;
+  }
+},
+
+async goToLesson() {
+  try {
+    const subject = this.topic.subject;
+    const topicName = this.topic.name || this.topic.topic;
+    if (!subject || !topicName) return alert('❌ Нет данных темы или предмета.');
+
+    if (!auth.currentUser) {
+      alert('Пожалуйста, войдите в аккаунт.');
+      return;
+    }
+
+    const token = await auth.currentUser.getIdToken();
+    const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
+    const { data } = await axios.get(url, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!data?._id) throw new Error('Урок не найден');
+    this.$router.push({ name: 'LessonPage', params: { id: data._id } });
+  } catch (err) {
+    console.error('❌ Ошибка перехода:', err);
+    alert('❌ Не удалось открыть урок.');
+  }
+},
+
+async confirmDelete() {
+  try {
+    if (!auth.currentUser) {
+      alert('Пожалуйста, войдите в аккаунт.');
+      return;
+    }
+
+    const token = await auth.currentUser.getIdToken();
+    const headers = { Authorization: `Bearer ${token}` };
+    const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.topic.userId}/study-list/${this.topic._id}`;
+    await axios.delete(url, { headers });
+    this.lessonExists = false;
+    this.$emit('deleted', this.topic._id);
+  } catch (err) {
+    console.error('❌ Ошибка удаления:', err);
+    alert('❌ Не удалось удалить.');
+  }
+}
+
   }
 };
 </script>
