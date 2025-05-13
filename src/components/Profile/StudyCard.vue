@@ -35,7 +35,7 @@
 
 <script>
 import axios from 'axios';
-import { auth } from '@/firebase';
+import { auth, onAuthStateChanged } from '@/firebase';
 
 export default {
   name: 'StudyCard',
@@ -74,8 +74,10 @@ export default {
       return readTime + exerciseTime;
     },
   },
-  async mounted() {
-    await this.checkLessonExists();
+  mounted() {
+    onAuthStateChanged(auth, async (user) => {
+      if (user) await this.checkLessonExists();
+    });
   },
   methods: {
     async checkLessonExists() {
@@ -83,15 +85,15 @@ export default {
         const subject = this.topic.subject;
         const topicName = this.topic.name || this.topic.topic;
 
-        if (!subject || !topicName) return;
+        if (!subject || !topicName || !auth.currentUser) return;
 
-        const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
         const token = await auth.currentUser.getIdToken();
+        const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
         const { data } = await axios.get(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        if (data && data._id) this.lessonExists = true;
+        this.lessonExists = !!(data && data._id);
       } catch (err) {
         console.warn('❌ Урок не найден:', err.message);
         this.lessonExists = false;
@@ -102,14 +104,14 @@ export default {
       const subject = this.topic.subject;
       const topicName = this.topic.name || this.topic.topic;
 
-      if (!subject || !topicName) {
+      if (!subject || !topicName || !auth.currentUser) {
         alert('❌ Урок не может быть открыт — нет темы или предмета.');
         return;
       }
 
       try {
-        const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
         const token = await auth.currentUser.getIdToken();
+        const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
         const { data } = await axios.get(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -124,6 +126,8 @@ export default {
 
     async confirmDelete() {
       try {
+        if (!auth.currentUser) return;
+
         const token = await auth.currentUser.getIdToken();
         const headers = { Authorization: `Bearer ${token}` };
         const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.topic.userId}/study-list/${this.topic._id}`;
