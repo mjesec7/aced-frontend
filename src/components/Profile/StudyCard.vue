@@ -1,10 +1,15 @@
 <template>
-  <div class="study-card">
+  <div v-if="lessonExists" class="study-card">
+    <!-- ❌ Delete Button -->
+    <button class="close-btn" @click="showDeleteModal = true">✕</button>
+
+    <!-- Header with Name + Medal -->
     <div class="card-header">
       <h3 class="topic-name">{{ displayName }}</h3>
       <img v-if="medal" :src="`/assets/medals/${medal}.png`" :alt="medal" class="medal-icon" />
     </div>
 
+    <!-- Progress -->
     <div class="progress-bar">
       <div class="progress-fill" :style="{ width: lessonProgress + '%' }"></div>
     </div>
@@ -14,20 +19,41 @@
       <p class="estimated-time">⏱ ~{{ estimatedDuration }} мин</p>
     </div>
 
+    <!-- Start Button -->
     <button class="continue-btn" @click="goToLesson">
       ▶️ Продолжить
     </button>
+
+    <!-- 🗑 Confirm Delete Modal -->
+    <div v-if="showDeleteModal" class="modal-overlay">
+      <div class="modal-content">
+        <p>❗ Вы уверены, что хотите удалить это?</p>
+        <p>Это также удалит ваш прогресс.</p>
+        <div class="modal-actions">
+          <button class="confirm-btn" @click="confirmDelete">Удалить</button>
+          <button class="cancel-btn" @click="showDeleteModal = false">Отмена</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import { auth } from '@/firebase';
 
 export default {
   name: 'StudyCard',
   props: {
     topic: { type: Object, required: true },
     progress: { type: Object, default: () => ({ percent: 0, medal: 'none' }) },
+    lessons: { type: Array, default: () => [] },
+  },
+  data() {
+    return {
+      showDeleteModal: false,
+      lessonExists: true,
+    };
   },
   computed: {
     displayName() {
@@ -47,13 +73,34 @@ export default {
       const exercisesCount = this.topic.exercises?.length || 0;
 
       const wordCount = (explanation + content + examples).split(/\s+/).length;
-      const readTime = Math.ceil(wordCount / 50); // 50 words/min
+      const readTime = Math.ceil(wordCount / 50);
       const exerciseTime = Math.ceil(exercisesCount * 1.5);
 
       return readTime + exerciseTime;
-    }
+    },
+  },
+  async mounted() {
+    await this.checkLessonExists();
   },
   methods: {
+    async checkLessonExists() {
+      try {
+        const subject = this.topic.subject;
+        const topicName = this.topic.name || this.topic.topic;
+
+        const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
+        const token = await auth.currentUser.getIdToken();
+        const { data } = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!data?._id) this.lessonExists = false;
+      } catch (err) {
+        console.warn('❌ Lesson not found:', err.message);
+        this.lessonExists = false;
+      }
+    },
+
     async goToLesson() {
       const subject = this.topic.subject;
       const topicName = this.topic.name || this.topic.topic;
@@ -65,25 +112,40 @@ export default {
 
       try {
         const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
-        const { data } = await axios.get(url);
-        const lessonId = data?._id;
+        const token = await auth.currentUser.getIdToken();
+        const { data } = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-        if (!lessonId) throw new Error('Lesson not found');
-        this.$router.push({ name: 'LessonPage', params: { id: lessonId } });
-
+        if (!data?._id) throw new Error('Lesson not found');
+        this.$router.push({ name: 'LessonPage', params: { id: data._id } });
       } catch (err) {
         console.error('❌ Ошибка загрузки урока:', err);
         alert('❌ Урок не найден.');
+      }
+    },
+
+    async confirmDelete() {
+      try {
+        const token = await auth.currentUser.getIdToken();
+        const headers = { Authorization: `Bearer ${token}` };
+        const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.topic.userId}/study-list/${this.topic._id}`;
+
+        await axios.delete(url, { headers });
+
+        this.lessonExists = false;
+      } catch (err) {
+        console.error('❌ Ошибка удаления:', err);
+        alert('Не удалось удалить курс.');
       }
     },
   },
 };
 </script>
 
-
-
 <style scoped>
 .study-card {
+  position: relative;
   background: linear-gradient(to right, #f9fafb, #f3f4f6);
   padding: 24px;
   border-radius: 18px;
@@ -94,7 +156,6 @@ export default {
   height: 280px;
   justify-content: space-between;
   transition: transform 0.3s, box-shadow 0.3s;
-  cursor: default;
 }
 
 .study-card:hover {
@@ -124,7 +185,6 @@ export default {
   height: 10px;
   border-radius: 8px;
   overflow: hidden;
-  margin-top: 4px;
 }
 
 .progress-fill {
@@ -140,7 +200,6 @@ export default {
   font-size: 0.95rem;
   font-weight: 600;
   color: #4b5563;
-  margin-top: 4px;
 }
 
 .estimated-time {
@@ -164,5 +223,68 @@ export default {
 
 .continue-btn:hover {
   background: linear-gradient(to right, #4338ca, #7c3aed);
+}
+
+.close-btn {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  color: #6b7280;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.close-btn:hover {
+  color: #ef4444;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal-content {
+  background: white;
+  padding: 24px 32px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  font-family: 'Unbounded', sans-serif;
+}
+
+.modal-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.confirm-btn {
+  background: #ef4444;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.cancel-btn {
+  background: #e5e7eb;
+  color: #111827;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
 }
 </style>

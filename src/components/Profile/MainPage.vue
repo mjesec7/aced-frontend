@@ -55,6 +55,7 @@
           :topic="topic"
           :progress="topic.progress || { percent: 0, medal: 'none' }"
           :lessons="topic.lessons"
+          @delete="removeStudyCard" 
         />
       </div>
 
@@ -62,6 +63,7 @@
     </div>
   </div>
 </template>
+
 
 <script>
 import { mapState } from 'vuex';
@@ -198,9 +200,14 @@ export default {
       if (!topic._id) return;
       this.$router.push({ path: `/topic/${topic._id}/overview` });
     },
-  },
+    // ✅ This method removes deleted topic from studyList
+    removeStudyCard(id) {
+      this.studyList = this.studyList.filter(topic => topic._id !== id);
+    }
+  }
 };
 </script>
+
 
 <style scoped>
 .dashboard {
