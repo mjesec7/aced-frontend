@@ -13,29 +13,74 @@
         <ul>
           <li><a href="#about-us">О Нас</a></li>
           <li><a href="#cards">Возможности</a></li>
-          <li><a href="#passion-test">Тест</a></li>
-          <li><a href="#ai">AI Помощник</a></li>
+          <li><a @click.prevent="scrollToPassionTest">Тест</a></li>
+          <li><a @click.prevent="showAIHelperModal">AI Помощник</a></li>
         </ul>
       </div>
 
       <!-- Contact -->
       <div class="footer-section">
         <h4>Контакты</h4>
-        <p>Email: <a href="mailto:hello@aced.ai">hello@aced.ai</a></p>
-        <p>Telegram: @aced_ai</p>
+        <p>Telegram: @aced.live</p>
+        <p><a @click.prevent="showContactModal" class="contact-link">Написать нам</a></p>
       </div>
     </div>
 
     <div class="footer-bottom">
       <p>© 2025 ACED. Все права защищены.</p>
     </div>
+
+    <!-- AI Helper Modal -->
+    <div v-if="showAIModal" class="modal-overlay" @click.self="showAIModal = false">
+      <div class="modal-content">
+        <span class="close-btn" @click="showAIModal = false">×</span>
+        <h3>Где найти AI помощника?</h3>
+        <p>Наш AI помощник доступен в правом нижнем углу экрана. Просто кликни по иконке чата!</p>
+        <button class="modal-button" @click="showAIModal = false">Понял!</button>
+      </div>
+    </div>
+
+    <!-- Contact Modal -->
+    <ContactModal v-if="showContact" @close="showContact = false" />
   </footer>
 </template>
 
 <script>
+import ContactModal from '@/modals/ContactModal.vue';
+
 export default {
-  name: 'FooterBar'
-}
+  name: 'FooterBar',
+  components: {
+    ContactModal
+  },
+  data() {
+    return {
+      showAIModal: false,
+      showContact: false
+    };
+  },
+  methods: {
+    scrollToPassionTest() {
+      const section = document.querySelector('#passion-test');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        this.$router.push('/main/passiontestvue').then(() => {
+          setTimeout(() => {
+            const retry = document.querySelector('#passion-test');
+            if (retry) retry.scrollIntoView({ behavior: 'smooth' });
+          }, 400);
+        });
+      }
+    },
+    showAIHelperModal() {
+      this.showAIModal = true;
+    },
+    showContactModal() {
+      this.showContact = true;
+    }
+  }
+};
 </script>
 
 <style scoped>
@@ -97,19 +142,89 @@ export default {
   text-decoration: none;
   color: #d1d5db;
   transition: color 0.3s ease;
+  cursor: pointer;
 }
 
 .footer-section a:hover {
   color: #ffffff;
 }
 
+.contact-link {
+  color: #93c5fd;
+  font-weight: bold;
+}
+
+.contact-link:hover {
+  color: #ffffff;
+}
+
 .footer-bottom {
-  border-top: 1px solid rgba(255,255,255,0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   margin-top: 50px;
   padding-top: 20px;
   font-size: 0.9rem;
   color: #a3a3c2;
   text-align: center;
   width: 100%;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 12, 43, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-content {
+  background: #1b1e44;
+  border: 1px solid #a855f7;
+  padding: 30px;
+  border-radius: 16px;
+  text-align: center;
+  color: white;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 0 20px #a855f7aa;
+  position: relative;
+}
+
+.modal-content h3 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+
+.modal-content p {
+  font-size: 1rem;
+  margin-bottom: 20px;
+}
+
+.modal-button {
+  background: #a855f7;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.modal-button:hover {
+  background: #9333ea;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: #ccc;
 }
 </style>

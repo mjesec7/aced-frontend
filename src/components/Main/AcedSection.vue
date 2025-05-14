@@ -40,6 +40,9 @@
 </template>
 
 <script>
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { useRouter } from "vue-router";
+
 export default {
   name: "AcedSection",
   data() {
@@ -47,47 +50,53 @@ export default {
       selectedSubject: null,
       modalInfo: {
         history: {
-  label: "История",
-  image: new URL('@/assets/icons/history2.svg', import.meta.url).href,
-  description: "Изучи развитие человечества, цивилизаций и ключевых событий.",
-  funFact: "История помогает предсказывать будущее, изучая прошлое.",
-  audience: "Тем, кто интересуется обществом, культурой и прошлым."
-},
-biology: {
-  label: "Биология",
-  image: new URL('@/assets/icons/biology2.svg', import.meta.url).href,
-  description: "Пойми, как устроена жизнь: от клетки до экосистемы.",
-  funFact: "В твоем теле больше бактерий, чем собственных клеток.",
-  audience: "Любителям природы, здоровья и науки о жизни."
-},
-coding: {
-  label: "Кодинг",
-  image: new URL('@/assets/icons/coding2.svg', import.meta.url).href,
-  description: "Создавай сайты, игры и приложения с помощью программирования.",
-  funFact: "Первая программистка была женщина — Ада Лавлейс.",
-  audience: "Тем, кто хочет строить цифровое будущее."
-},
-math: {
-  label: "Математика",
-  image: new URL('@/assets/icons/math2.svg', import.meta.url).href,
-  description: "Развивай логическое мышление и понимание мира через числа и формулы.",
-  funFact: "Математика — универсальный язык Вселенной.",
-  audience: "Тем, кто любит точность, закономерности и логику."
-}
-
+          label: "История",
+          image: new URL('@/assets/icons/history2.svg', import.meta.url).href,
+          description: "Изучи развитие человечества, цивилизаций и ключевых событий.",
+          funFact: "История помогает предсказывать будущее, изучая прошлое.",
+          audience: "Тем, кто интересуется обществом, культурой и прошлым."
+        },
+        biology: {
+          label: "Биология",
+          image: new URL('@/assets/icons/biology2.svg', import.meta.url).href,
+          description: "Пойми, как устроена жизнь: от клетки до экосистемы.",
+          funFact: "В твоем теле больше бактерий, чем собственных клеток.",
+          audience: "Любителям природы, здоровья и науки о жизни."
+        },
+        coding: {
+          label: "Кодинг",
+          image: new URL('@/assets/icons/coding2.svg', import.meta.url).href,
+          description: "Создавай сайты, игры и приложения с помощью программирования.",
+          funFact: "Первая программистка была женщина — Ада Лавлейс.",
+          audience: "Тем, кто хочет строить цифровое будущее."
+        },
+        math: {
+          label: "Математика",
+          image: new URL('@/assets/icons/math2.svg', import.meta.url).href,
+          description: "Развивай логическое мышление и понимание мира через числа и формулы.",
+          funFact: "Математика — универсальный язык Вселенной.",
+          audience: "Тем, кто любит точность, закономерности и логику."
+        }
       }
     };
   },
   methods: {
     triggerLogin() {
-      const hero = document.getElementById("hero");
-      if (hero) {
-        hero.scrollIntoView({ behavior: "smooth" });
-        setTimeout(() => {
-          window.dispatchEvent(new Event("open-login-modal"));
-        }, 600);
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (user) {
+        this.$router.push("/profile/main");
       } else {
-        window.dispatchEvent(new Event("open-login-modal"));
+        const hero = document.getElementById("hero");
+        if (hero) {
+          hero.scrollIntoView({ behavior: "smooth" });
+          setTimeout(() => {
+            window.dispatchEvent(new Event("open-login-modal"));
+          }, 600);
+        } else {
+          window.dispatchEvent(new Event("open-login-modal"));
+        }
       }
     },
     showInfo(subjectKey) {
@@ -98,6 +107,7 @@ math: {
   }
 };
 </script>
+
 
 
 

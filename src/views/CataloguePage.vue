@@ -13,8 +13,9 @@
         type="text"
         class="search-input"
         placeholder="🔍 Поиск уроков или тем..."
+        @input="applyFilters"
       />
-      <select v-model="filterType" class="filter-select">
+      <select v-model="filterType" class="filter-select" @change="applyFilters">
         <option value="all">Все</option>
         <option value="free">Бесплатные</option>
         <option value="premium">Премиум</option>
@@ -66,6 +67,7 @@ export default {
   data() {
     return {
       lessons: [],
+      allTopics: [],
       groupedTopics: [],
       loading: true,
       userId: null,
@@ -132,16 +134,17 @@ export default {
           }
         });
 
-        this.applyFilters([...topicsMap.values()]);
+        this.allTopics = [...topicsMap.values()];
+        this.applyFilters();
       } catch (error) {
         console.error('❌ Ошибка при загрузке уроков:', error.response?.data || error.message);
       } finally {
         this.loading = false;
       }
     },
-    applyFilters(topics) {
+    applyFilters() {
       const query = this.searchQuery.toLowerCase();
-      this.groupedTopics = topics.filter(topic => {
+      this.groupedTopics = this.allTopics.filter(topic => {
         const matchesFilter = this.filterType === 'all' || topic.type === this.filterType;
         const matchesSearch = topic.name.toLowerCase().includes(query) || topic.subject.toLowerCase().includes(query);
         return matchesFilter && matchesSearch;
@@ -174,14 +177,6 @@ export default {
         console.error('❌ Ошибка при добавлении в учебный план:', error.response?.data || error.message);
         alert('❌ Не удалось добавить в учебный план');
       }
-    }
-  },
-  watch: {
-    searchQuery() {
-      this.applyFilters([...this.groupedTopics]);
-    },
-    filterType() {
-      this.applyFilters([...this.groupedTopics]);
     }
   }
 };
