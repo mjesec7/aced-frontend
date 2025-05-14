@@ -168,7 +168,20 @@ export default {
         if (!token) return;
         const headers = { Authorization: `Bearer ${token}` };
         const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
-        this.studyList = Array.isArray(data) ? data : [];
+
+        const enriched = await Promise.all(
+          data.map(async (item) => {
+            try {
+              const topicRes = await axios.get(`${BASE_URL}/topics/${item.topicId}`, { headers });
+              return { ...topicRes.data, progress: item.progress || {} };
+            } catch (e) {
+              console.warn('❌ Failed to fetch topic:', item.topicId);
+              return null;
+            }
+          })
+        );
+
+        this.studyList = enriched.filter(Boolean);
         this.extractSubjects(this.studyList);
       } catch (err) {
         console.error('❌ Ошибка загрузки курсов:', err);
@@ -212,6 +225,7 @@ export default {
   }
 };
 </script>
+
 
 
 

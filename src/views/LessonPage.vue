@@ -11,28 +11,28 @@
 
     <div v-if="!started && !showPaywallModal" class="intro-screen">
       <button class="exit-btn" @click="confirmExit">❌</button>
-      <h2 class="lesson-title">{{ lesson.lessonName || 'Без названия' }}</h2>
+      <h2 class="lesson-title">{{ lesson.lessonName?.en || lesson.lessonName || 'Без названия' }}</h2>
       <p>⏱️ Время прохождения: ~10 минут</p>
-      <p>📌 Что вы узнаете: {{ lesson.description || 'описание недоступно' }}</p>
+      <p>📌 Что вы узнаете: {{ lesson.description?.en || lesson.description || 'описание недоступно' }}</p>
       <button class="start-btn" @click="startLesson">Начать урок</button>
     </div>
 
     <div v-else-if="!showPaywallModal" class="lesson-split">
       <div class="lesson-left">
         <div class="lesson-header">
-          <h2 class="lesson-title">{{ lesson.lessonName }}</h2>
+          <h2 class="lesson-title">{{ lesson.lessonName?.en || lesson.lessonName }}</h2>
           <div class="timer-display">⏱ {{ formattedTime }}</div>
         </div>
 
         <div v-if="!lessonCompleted">
           <div class="section explanation-block">
             <h3>📚 Объяснение</h3>
-            <div v-html="lesson.explanation || 'Нет объяснения'" class="explanation-text"></div>
+            <div v-html="lesson.explanation?.en || lesson.explanation || 'Нет объяснения'" class="explanation-text"></div>
           </div>
 
           <div class="section example-block">
             <h3>💗 Примеры</h3>
-            <div v-html="lesson.examples || 'Нет примеров'" class="example-text"></div>
+            <div v-html="lesson.examples?.en || lesson.examples || 'Нет примеров'" class="example-text"></div>
           </div>
 
           <div class="navigation-area">
@@ -65,6 +65,7 @@
           </template>
           <button class="submit-btn" @click="submitAnswer">Готово</button>
           <div v-if="confirmation" class="confirmation">{{ confirmation }}</div>
+          <div v-if="mistakeCount >= 3 && currentExercise.hint" class="hint-box">💡 Подсказка: {{ currentExercise.hint }}</div>
         </div>
         <div v-else-if="!understood">
           <div class="locked-overlay">⛔️ Заблокировано до нажатия "Понял"</div>
@@ -96,12 +97,11 @@ export default {
     return {
       lesson: {},
       allLessons: [],
-      loading: true,
       userAnswer: '',
       confirmation: '',
       currentStep: 0,
       started: false,
-      startTime: null,
+      elapsedSeconds: 0,
       timerInterval: null,
       understood: false,
       showExitModal: false,
@@ -125,10 +125,8 @@ export default {
       return this.lesson.exercises[index] || {};
     },
     formattedTime() {
-      if (!this.startTime) return '0:00';
-      const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
-      const minutes = Math.floor(elapsed / 60);
-      const seconds = elapsed % 60;
+      const minutes = Math.floor(this.elapsedSeconds / 60);
+      const seconds = this.elapsedSeconds % 60;
       return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     },
     canProceed() {
@@ -142,10 +140,10 @@ export default {
 
     try {
       const token = await auth.currentUser?.getIdToken();
-      const userRes = await axios.get(`${BASE_URL}/users/${this.userId}/status`, {
+      const res = await axios.get(`${BASE_URL}/users/${this.userId}/status`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      this.userStatus = userRes.data.status || 'free';
+      this.userStatus = res.data.status || 'free';
     } catch (err) {
       console.warn('⚠️ Не удалось получить статус пользователя. По умолчанию: free');
     }
@@ -161,27 +159,15 @@ export default {
         const lessonId = this.$route.params.id;
         const { data: lessonData } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
         if (!lessonData || !lessonData._id) {
-          console.warn('❌ Урок не найден или пустой.');
-          this.$router.push('/catalogue');
-          return;
+          return this.$router.push('/catalogue');
         }
         if (lessonData.type === 'premium' && this.userStatus === 'free') {
           this.showPaywallModal = true;
           return;
         }
         this.lesson = lessonData;
-        if (this.lesson.topicId) {
-          try {
-            const { data: topicLessons } = await axios.get(`${BASE_URL}/lessons/topic/${this.lesson.topicId}`);
-            this.allLessons = Array.isArray(topicLessons) ? topicLessons : [];
-          } catch (err) {
-            console.warn('⚠️ Ошибка загрузки уроков по теме:', err);
-          }
-        }
-      } catch (error) {
-        console.error('Ошибка загрузки урока:', error);
-      } finally {
-        this.loading = false;
+      } catch (err) {
+        console.error('Ошибка загрузки урока:', err);
       }
     },
     startLesson() {
@@ -190,8 +176,10 @@ export default {
         return;
       }
       this.started = true;
-      this.startTime = Date.now();
-      this.timerInterval = setInterval(() => this.$forceUpdate(), 1000);
+      this.elapsedSeconds = 0;
+      this.timerInterval = setInterval(() => {
+        this.elapsedSeconds++;
+      }, 1000);
     },
     confirmUnderstanding() {
       this.understood = true;
@@ -224,8 +212,8 @@ export default {
       this.lessonCompleted = true;
       this.showConfetti = true;
       setTimeout(() => this.launchConfetti(), 200);
-      const duration = Math.floor((Date.now() - this.startTime) / 1000);
       const token = await auth.currentUser?.getIdToken();
+      const duration = this.elapsedSeconds;
       this.medalImage = this.mistakeCount === 0
         ? '/images/medals/gold.png'
         : this.mistakeCount <= 2
@@ -233,7 +221,7 @@ export default {
         : '/images/medals/bronze.png';
 
       await axios.post(`${BASE_URL}/users/${this.userId}/diary`, {
-        lessonName: this.lesson.lessonName,
+        lessonName: this.lesson.lessonName?.en || this.lesson.lessonName,
         duration,
         date: new Date().toISOString(),
         mistakes: this.mistakeCount
@@ -271,10 +259,6 @@ export default {
 };
 </script>
 
-
-<style>
-@import '@/assets/css/LessonPage.css';
-</style>
 
 <style scoped>
 @import '@/assets/css/LessonPage.css';

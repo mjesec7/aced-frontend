@@ -12,23 +12,6 @@
       <label>Email</label>
       <input type="email" v-model="user.email" placeholder="Введите email" />
 
-      <!-- 🔒 PROMO FEATURE -->
-      <label>Промокод</label>
-      <input type="text" v-model="promoCode" placeholder="acedpromocode2406" />
-
-      <label>Выберите тариф</label>
-      <select v-model="selectedPlan">
-        <option value="">Выберите...</option>
-        <option value="start">Start</option>
-        <option value="pro">Pro</option>
-      </select>
-
-      <p class="current-plan">
-        Текущий тариф: <span :class="['plan-badge', currentPlanClass]">{{ currentPlanLabel }}</span>
-      </p>
-
-      <button class="promo-button" @click="applyPromo">Применить промокод</button>
-
       <div v-if="!isGoogleUser">
         <label>Текущий пароль</label>
         <input type="password" v-model="oldPassword" placeholder="Введите текущий пароль" />
@@ -47,6 +30,27 @@
         <button class="save-button" @click="saveChanges">Сохранить</button>
         <button class="back-button" @click="goToProfile">В профиль</button>
       </div>
+    </div>
+
+    <div class="settings-content">
+      <h2 class="section-title">💳 Подписка и оплата</h2>
+
+      <label>Промокод</label>
+      <input type="text" v-model="promoCode" placeholder="acedpromocode2406" />
+
+      <label>Выберите тариф</label>
+      <select v-model="selectedPlan">
+        <option value="">Выберите...</option>
+        <option value="start">Start</option>
+        <option value="pro">Pro</option>
+      </select>
+
+      <p class="current-plan">
+        Текущий тариф: <span :class="['plan-badge', currentPlanClass]">{{ currentPlanLabel }}</span>
+      </p>
+
+      <button class="promo-button" @click="applyPromo">Применить промокод</button>
+      <button class="payment-button" @click="goToPayment">Перейти к оплате</button>
     </div>
 
     <div v-if="notification" class="notification">{{ notification }}</div>
@@ -198,6 +202,9 @@ export default {
         this.showNotification("Ошибка: " + error.message);
       }
     },
+    goToPayment() {
+      alert("🧾 Платёжная система ещё не подключена. Пожалуйста, попробуйте позже.");
+    },
     showNotification(message) {
       this.notification = message;
       setTimeout(() => (this.notification = ""), 5000);
@@ -212,6 +219,7 @@ export default {
 };
 </script>
 
+
 <style scoped>
 .settings-page {
   display: flex;
@@ -221,59 +229,91 @@ export default {
   background-color: #121212;
   color: white;
   min-height: 100vh;
-  position: relative;
+  gap: 40px;
 }
+
 .section-title {
-  font-size: 24px;
+  font-size: 26px;
+  font-weight: 800;
   margin-bottom: 20px;
-  font-weight: bold;
   text-align: center;
+  color: #f3f4f6;
 }
+
 .settings-content {
   width: 100%;
-  max-width: 440px;
-  background: #1e1e1e;
-  padding: 30px;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.08);
+  max-width: 480px;
+  background: #1f1f1f;
+  padding: 32px;
+  border-radius: 18px;
+  box-shadow: 0 6px 24px rgba(255, 255, 255, 0.06);
 }
-input {
+
+input, select {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   margin-top: 5px;
-  margin-bottom: 15px;
+  margin-bottom: 18px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #2a2a2a;
   color: white;
+  font-size: 1rem;
 }
+
 .button-group {
   display: flex;
   justify-content: space-between;
   margin-top: 30px;
 }
-.save-button, .back-button {
-  padding: 10px 20px;
+
+.save-button, .back-button, .promo-button, .payment-button {
+  padding: 12px 22px;
   border: none;
-  border-radius: 8px;
-  font-size: 16px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: bold;
   cursor: pointer;
   transition: background 0.3s;
 }
+
 .save-button {
   background: #8b5cf6;
   color: white;
 }
+
 .save-button:hover {
   background: #7c3aed;
 }
+
 .back-button {
   background: white;
   color: #7c3aed;
 }
+
 .back-button:hover {
   background: #f3f4f6;
 }
+
+.promo-button {
+  background: linear-gradient(to right, #10b981, #34d399);
+  color: white;
+  margin-bottom: 10px;
+}
+
+.promo-button:hover {
+  background: linear-gradient(to right, #059669, #10b981);
+}
+
+.payment-button {
+  background: linear-gradient(to right, #60a5fa, #818cf8);
+  color: white;
+}
+
+.payment-button:hover {
+  background: linear-gradient(to right, #3b82f6, #6366f1);
+}
+
 .forgot-password {
   color: #a000a0;
   cursor: pointer;
@@ -281,9 +321,11 @@ input {
   font-size: 14px;
   margin-bottom: 10px;
 }
+
 .forgot-password:hover {
   text-decoration: underline;
 }
+
 .notification {
   position: fixed;
   bottom: 20px;
@@ -292,10 +334,11 @@ input {
   background: rgba(0, 0, 0, 0.8);
   color: white;
   padding: 12px 20px;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 14px;
   animation: fadeIn 0.5s;
 }
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -306,26 +349,32 @@ input {
     bottom: 20px;
   }
 }
+
 .current-plan {
   margin-top: 10px;
   font-size: 0.95rem;
+  margin-bottom: 10px;
 }
+
 .plan-badge {
-  padding: 5px 12px;
-  border-radius: 12px;
+  padding: 6px 14px;
+  border-radius: 14px;
   font-weight: bold;
   margin-left: 8px;
   font-size: 0.85rem;
   text-transform: uppercase;
 }
+
 .badge-free {
   background-color: #6b7280;
   color: white;
 }
+
 .badge-start {
   background-color: #facc15;
   color: black;
 }
+
 .badge-pro {
   background-color: #10b981;
   color: white;

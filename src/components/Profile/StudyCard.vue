@@ -34,6 +34,42 @@
   </div>
 </template>
 
+<template>
+  <div v-if="lessonExists" class="study-card">
+    <button class="close-btn" @click="showDeleteModal = true">✕</button>
+
+    <div class="card-header">
+      <h3 class="topic-name">{{ displayName }}</h3>
+      <img v-if="medal" :src="`/assets/medals/${medal}.png`" :alt="medal" class="medal-icon" />
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" :style="{ width: lessonProgress + '%' }"></div>
+    </div>
+
+    <div class="progress-info">
+      <span>{{ lessonProgress }}% завершено</span>
+      <p class="estimated-time">⏱ ~{{ estimatedDuration }} мин</p>
+    </div>
+
+    <button class="continue-btn" @click="goToLesson">
+      ▶️ Продолжить
+    </button>
+
+    <!-- 🗑 Modal -->
+    <div v-if="showDeleteModal" class="modal-overlay">
+      <div class="modal-content">
+        <p>❗ Вы уверены, что хотите удалить это?</p>
+        <p>Это также удалит ваш прогресс.</p>
+        <div class="modal-actions">
+          <button class="confirm-btn" @click="confirmDelete">Удалить</button>
+          <button class="cancel-btn" @click="showDeleteModal = false">Отмена</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
 <script>
 import axios from 'axios';
 import { auth } from '@/firebase';
@@ -127,7 +163,7 @@ export default {
 
         const token = await auth.currentUser.getIdToken();
         const headers = { Authorization: `Bearer ${token}` };
-        const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.topic.userId}/study-list/${this.topic._id}`;
+        const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.topic.userId || localStorage.getItem('firebaseUserId')}/study-list/${this.topic._id}`;
         await axios.delete(url, { headers });
 
         this.lessonExists = false;
@@ -140,6 +176,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .study-card {
