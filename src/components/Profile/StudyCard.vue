@@ -113,8 +113,6 @@ export default {
 </script>
 
 
-
-
 <style scoped>
 .study-card {
   position: relative;

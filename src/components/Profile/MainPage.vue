@@ -250,6 +250,7 @@ export default {
   margin: auto;
   font-family: 'Inter', sans-serif;
 }
+
 .title {
   font-size: 2.5rem;
   font-weight: 800;
@@ -257,6 +258,7 @@ export default {
   color: #7c3aed;
   margin-bottom: 30px;
 }
+
 .controls {
   display: flex;
   gap: 16px;
@@ -264,86 +266,142 @@ export default {
   justify-content: center;
   align-items: center;
 }
-.search-input, .filter-select {
-  padding: 8px 12px;
+
+.search-input,
+.filter-select {
+  padding: 12px 16px;
   font-size: 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  min-width: 220px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.user-status-badge {
+  font-size: 0.9rem;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-weight: bold;
+  color: white;
+  text-transform: uppercase;
 }
 .user-status-badge.free {
-  background-color: #9ca3af;
+  background: #6b7280;
 }
 .user-status-badge.start {
-  background-color: #facc15;
+  background: #f59e0b;
 }
 .user-status-badge.pro {
-  background-color: #10b981;
+  background: #10b981;
 }
+
 .section {
   margin-bottom: 60px;
 }
+
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
 }
+
+.refresh-btn {
+  background: linear-gradient(to right, #8b5cf6, #60a5fa);
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.refresh-btn:hover {
+  background: linear-gradient(to right, #7c3aed, #4f46e5);
+}
+
 .grid {
   display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 28px;
+  margin-top: 20px;
 }
-.topic-card, .study-placeholder, .recommendation-placeholder {
+
+.recommendation-placeholder,
+.study-placeholder {
   background: #f3f4f6;
-  padding: 16px;
-  border-radius: 12px;
+  border-radius: 16px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #cbd5e1;
+  font-weight: bold;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease-in-out;
+}
+
+.recommendation-placeholder:hover,
+.study-placeholder:hover {
+  transform: scale(1.02);
+  background: linear-gradient(to right, #e0e7ff, #ede9fe);
+  color: #7c3aed;
+}
+
+.empty-message {
+  text-align: center;
+  margin-top: 30px;
+  font-size: 1.1rem;
+  color: #9ca3af;
+}
+
+.topic-card {
+  background: #ede9fe;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 .topic-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 8px;
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #4f46e5;
 }
 .topic-desc {
   font-size: 0.95rem;
-  margin-bottom: 8px;
   color: #4b5563;
+  margin: 10px 0;
 }
 .lesson-count {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #6b7280;
-  margin-bottom: 12px;
 }
 .card-buttons {
   display: flex;
-  justify-content: space-between;
-}
-.btn-add, .btn-start {
-  border: none;
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  color: white;
+  gap: 12px;
+  margin-top: 14px;
 }
 .btn-add {
-  background-color: #6b7280;
+  background: #60a5fa;
+  color: white;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
 }
 .btn-start {
-  background-color: #7c3aed;
+  background: #f472b6;
+  color: white;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
 }
 .btn-add:hover {
-  background-color: #4b5563;
+  background: #3b82f6;
 }
 .btn-start:hover {
-  background-color: #6d28d9;
-}
-.empty-message {
-  text-align: center;
-  color: #6b7280;
-  font-size: 1rem;
-  font-style: italic;
-}
-.refresh-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
+  background: #ec4899;
 }
 </style>

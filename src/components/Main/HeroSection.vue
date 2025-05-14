@@ -10,6 +10,8 @@
 
     <!-- Background -->
     <div class="video-container">
+     
+
       <spline-viewer
         class="spline-bg"
         url="https://prod.spline.design/zoavmG9WcCYRE1gQ/scene.splinecode"
@@ -22,19 +24,10 @@
         Разблокируйте будущее образования вместе с ACED
       </h1>
       <div class="hero-buttons">
-        <button class="hero-btn" @click="scrollToAbout">Узнать больше</button>
+        <button class="hero-btn">Узнать больше</button>
       </div>
     </div>
   </div>
-
-  <!-- About Us Section -->
-  <section id="about" class="about-section">
-    <h2>О нас</h2>
-    <p>
-      ACED — это платформа, меняющая подход к обучению. Мы создаем инновационные
-      решения для будущего образования с помощью ИИ и интерактивных технологий.
-    </p>
-  </section>
 </template>
 
 <script>
@@ -58,12 +51,6 @@ export default {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       const maxScroll = window.innerHeight;
       this.heroOpacity = Math.max(1 - scrollTop / maxScroll, 0);
-    },
-    scrollToAbout() {
-      const aboutSection = document.getElementById("about");
-      if (aboutSection) {
-        aboutSection.scrollIntoView({ behavior: "smooth" });
-      }
     },
   },
 };
@@ -99,7 +86,8 @@ body {
   width: 100%;
   height: 100px;
   display: flex;
-  justify-content: center;
+  justify-content: center; /* center content horizontally */
+  padding: 0;
   z-index: 3;
   align-items: center;
 }
@@ -116,6 +104,26 @@ body {
 
 .aced-logo {
   height: 80px;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 15px;
+}
+
+.auth-button {
+  border: 2px solid purple;
+  background: transparent;
+  color: black;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+  max-height: 50px;
+}
+
+.auth-button:hover {
+  color: white;
+  background: purple;
 }
 
 /* 🌌 Spline 3D Background */
@@ -179,24 +187,4 @@ body {
   background: black;
   border: 0;
 }
-
-/* 📖 About Section */
-.about-section {
-  background: white;
-  padding: 100px 20px;
-  text-align: center;
-  border-top: 1px solid #eee;
-}
-
-.about-section h2 {
-  font-size: 36px;
-  margin-bottom: 20px;
-}
-
-.about-section p {
-  font-size: 18px;
-  max-width: 800px;
-  margin: 0 auto;
-  line-height: 1.6;
-}
-</style>
+</style> 
