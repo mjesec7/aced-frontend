@@ -1,130 +1,178 @@
 <template>
   <div class="topic-overview">
-    <div v-if="loading" class="loading">Загрузка информации о теме...</div>
+    <div v-if="loading" class="loading">Загрузка информации о курсе...</div>
 
-    <div v-else>
-      <h1 class="title">{{ topic.name?.en || topic.name }}</h1>
-      <p class="description">{{ topic.description?.en || topic.description }}</p>
+    <div v-else-if="topic" class="topic-card">
+      <h1 class="title">📘 {{ topic.name?.en || topic.name || 'Без названия' }}</h1>
+      <p class="description">{{ topic.description?.en || topic.description || 'Нет описания для этой темы.' }}</p>
 
-      <ul class="details">
-        <li><strong>⏳ Время изучения:</strong> {{ topic.timeEstimate || estimatedTime }} минут</li>
-        <li v-if="topic.skills?.length"><strong>✨ Навыки:</strong> {{ topic.skills.join(', ') }}</li>
-        <li><strong>🧠 Предмет:</strong> {{ topic.subject }}</li>
-      </ul>
+      <div class="lesson-list">
+        <h2>📚 Уроки</h2>
+        <ul>
+          <li
+            v-for="lesson in lessons"
+            :key="lesson._id"
+            class="lesson-item"
+            :class="{ locked: lesson.type === 'premium' && userPlan === 'free' }"
+          >
+            <span>{{ lesson.lessonName?.en || lesson.lessonName }}</span>
+            <button
+              @click="startLesson(lesson)"
+              :disabled="lesson.type === 'premium' && userPlan === 'free'"
+            >
+              {{ lesson.type === 'premium' ? '🔒 Премиум' : 'Начать' }}
+            </button>
+          </li>
+        </ul>
+      </div>
 
-      <div class="buttons">
-        <button class="start-btn" @click="startLearning">🚀 Начать обучение</button>
+      <div class="start-button-wrapper">
+        <button class="start-course-btn" @click="startFirstLesson">🚀 Поехали!</button>
       </div>
     </div>
+
+    <div v-else class="error">❌ Тема не найдена.</div>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import { auth } from '@/firebase';
 
 export default {
   name: 'TopicOverview',
   data() {
     return {
-      topic: {},
+      topic: null,
+      lessons: [],
       loading: true,
-      estimatedTime: 0,
+      userPlan: 'free'
     };
   },
   async mounted() {
     const topicId = this.$route.params.id;
-    try {
-      // Try fetching the lesson first (used to get topicId)
-      const lessonRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/lessons/by-topic/${topicId}`);
-      const lessonTopic = lessonRes.data?.topicId || topicId;
+    const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-      // Fetch topic by topicId
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/topics/${lessonTopic}`);
-      this.topic = res.data;
-      this.calculateEstimatedTime();
+    // Получаем статус подписки пользователя
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (token) {
+        const headers = { Authorization: `Bearer ${token}` };
+        const userStatusRes = await axios.get(`${BASE_URL}/users/${auth.currentUser.uid}/status`, { headers });
+        this.userPlan = userStatusRes.data?.status || 'free';
+      } else {
+        this.userPlan = 'free';
+      }
     } catch (err) {
-      console.error('❌ Ошибка загрузки темы:', err);
+      console.warn('⚠️ Не удалось получить текущий тариф пользователя.');
+      this.userPlan = 'free';
+    }
+
+    // Загружаем данные темы и связанные уроки
+    try {
+      const topicRes = await axios.get(`${BASE_URL}/topics/${topicId}`);
+      this.topic = topicRes.data;
+      const lessonsRes = await axios.get(`${BASE_URL}/topics/${topicId}/lessons`);
+      this.lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
+    } catch (err) {
+      console.error('❌ Ошибка загрузки темы или уроков:', err);
+      this.topic = null;
     } finally {
       this.loading = false;
     }
   },
   methods: {
-    calculateEstimatedTime() {
-      const textBlocks = ['explanation', 'content', 'examples']
-        .map(k => this.topic[k]?.en || this.topic[k] || '')
-        .join(' ');
-      const wordCount = textBlocks.trim().split(/\s+/).length;
-      const readTime = Math.ceil(wordCount / 50);
-      const exerciseTime = Math.ceil((this.topic.exercises?.length || 0) * 1.5);
-      this.estimatedTime = readTime + exerciseTime;
+    startLesson(lesson) {
+      if (lesson.type === 'premium' && this.userPlan === 'free') {
+        alert('❌ Этот урок доступен только подписчикам.');
+        return;
+      }
+      this.$router.push({ name: 'LessonPage', params: { id: lesson._id } });
     },
-    startLearning() {
-      this.$router.push(`/topic/${this.$route.params.id}/lessons`);
-    },
-  },
+    startFirstLesson() {
+      const first = this.lessons.find(
+        l => l.type !== 'premium' || this.userPlan !== 'free'
+      );
+      if (first) {
+        this.startLesson(first);
+      } else {
+        alert('❌ Все уроки этой темы доступны только подписчикам.');
+      }
+    }
+  }
 };
 </script>
 
 <style scoped>
 .topic-overview {
-  padding: 40px 20px;
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
+  padding: 40px 20px;
   font-family: 'Inter', sans-serif;
 }
-
-.loading {
+.loading,
+.error {
   text-align: center;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   color: #6b7280;
-  margin-top: 60px;
 }
-
 .title {
   font-size: 2.4rem;
-  font-weight: 800;
-  color: #c084fc;
+  font-weight: 900;
   margin-bottom: 20px;
-  text-align: center;
+  color: #4c1d95;
 }
-
 .description {
   font-size: 1.1rem;
-  color: #4b5563;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.details {
-  list-style: none;
-  padding: 0;
+  color: #374151;
   margin-bottom: 30px;
-  color: #4b5563;
-  font-size: 1rem;
 }
-.details li {
-  margin-bottom: 10px;
+.lesson-list h2 {
+  font-size: 1.4rem;
+  margin-bottom: 12px;
+  color: #4c1d95;
 }
-
-.buttons {
+.lesson-item {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  margin-bottom: 10px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
 }
-
-.start-btn {
-  padding: 12px 24px;
-  background: linear-gradient(to right, #60a5fa, #9333ea);
+.lesson-item.locked {
+  opacity: 0.6;
+  pointer-events: none;
+}
+.lesson-item button {
+  padding: 6px 14px;
+  background: linear-gradient(to right, #7c3aed, #6d28d9);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lesson-item button:hover {
+  background: linear-gradient(to right, #5b21b6, #6d28d9);
+}
+.start-button-wrapper {
+  text-align: center;
+  margin-top: 40px;
+}
+.start-course-btn {
+  padding: 14px 28px;
+  font-size: 1.1rem;
+  background: linear-gradient(to right, #6d28d9, #7c3aed);
   color: white;
   border: none;
   border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: bold;
   cursor: pointer;
-  transition: transform 0.3s, background 0.3s;
 }
-
-.start-btn:hover {
-  transform: scale(1.05);
-  background: linear-gradient(to right, #4f46e5, #8b5cf6);
+.start-course-btn:hover {
+  background: linear-gradient(to right, #5b21b6, #6b21a8);
 }
 </style>

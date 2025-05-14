@@ -52,7 +52,7 @@
           :topic="topic"
           :progress="topic.progress || { percent: 0, medal: 'none' }"
           :lessons="topic.lessons || []"
-          @delete="removeStudyCard"
+          @deleted="removeStudyCard"
         />
       </div>
 
@@ -100,15 +100,17 @@ export default {
   computed: {
     ...mapState(['firebaseUserId']),
     filteredRecommendations() {
-      return this.recommendations.filter(t => t.lessons?.length).filter(t => {
-        const name = t.name?.en || t.name || '';
-        const description = t.description?.en || t.description || '';
-        return (
-          (!this.filterSubject || t.subject === this.filterSubject) &&
-          (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-           description.toLowerCase().includes(this.searchQuery.toLowerCase()))
-        );
-      });
+      return this.recommendations
+        .filter(t => t.lessons?.length)
+        .filter(t => {
+          const name = t.name?.en || t.name || '';
+          const description = t.description?.en || t.description || '';
+          return (
+            (!this.filterSubject || t.subject === this.filterSubject) &&
+            (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+             description.toLowerCase().includes(this.searchQuery.toLowerCase()))
+          );
+        });
     },
     filteredStudyList() {
       return this.studyList.filter(t => {
@@ -129,7 +131,9 @@ export default {
   },
   async mounted() {
     const storedId = this.firebaseUserId || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
-    if (!storedId) return this.$router.push('/');
+    if (!storedId) {
+      return this.$router.push('/');
+    }
     this.userId = storedId;
     await this.fetchUserStatus();
     await Promise.all([this.fetchRecommendations(), this.fetchStudyList()]);
@@ -144,6 +148,7 @@ export default {
         this.userStatus = data.status || 'free';
       } catch (err) {
         console.warn('⚠️ Не удалось загрузить статус пользователя. По умолчанию: free');
+        this.userStatus = 'free';
       }
     },
     async fetchRecommendations() {
@@ -168,16 +173,19 @@ export default {
         if (!token) return;
         const headers = { Authorization: `Bearer ${token}` };
         const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
-
         const enriched = await Promise.all(
           data.map(async (item) => {
             try {
               const topicRes = await axios.get(`${BASE_URL}/topics/${item.topicId}`, { headers });
               const lessonsRes = await axios.get(`${BASE_URL}/lessons/topic/${item.topicId}`, { headers });
+              if (!Array.isArray(lessonsRes.data) || lessonsRes.data.length === 0) {
+                console.warn('❌ No lessons for topic, removing from list:', item.topicId);
+                return null;
+              }
               return {
                 ...topicRes.data,
                 lessons: lessonsRes.data,
-                progress: item.progress || {},
+                progress: item.progress || {}
               };
             } catch (e) {
               console.warn('❌ Failed to fetch topic:', item.topicId);
@@ -185,7 +193,6 @@ export default {
             }
           })
         );
-
         this.studyList = enriched.filter(Boolean);
         this.extractSubjects(this.studyList);
       } catch (err) {
@@ -236,12 +243,6 @@ export default {
 };
 </script>
 
-
-
-
-
-
-
 <style scoped>
 .dashboard {
   padding: 40px 20px;
@@ -249,7 +250,6 @@ export default {
   margin: auto;
   font-family: 'Inter', sans-serif;
 }
-
 .title {
   font-size: 2.5rem;
   font-weight: 800;
@@ -257,7 +257,6 @@ export default {
   color: #7c3aed;
   margin-bottom: 30px;
 }
-
 .controls {
   display: flex;
   gap: 16px;
@@ -265,142 +264,86 @@ export default {
   justify-content: center;
   align-items: center;
 }
-
-.search-input,
-.filter-select {
-  padding: 12px 16px;
+.search-input, .filter-select {
+  padding: 8px 12px;
   font-size: 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  min-width: 220px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-}
-
-.user-status-badge {
-  font-size: 0.9rem;
-  padding: 8px 14px;
-  border-radius: 20px;
-  font-weight: bold;
-  color: white;
-  text-transform: uppercase;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
 }
 .user-status-badge.free {
-  background: #6b7280;
+  background-color: #9ca3af;
 }
 .user-status-badge.start {
-  background: #f59e0b;
+  background-color: #facc15;
 }
 .user-status-badge.pro {
-  background: #10b981;
+  background-color: #10b981;
 }
-
 .section {
   margin-bottom: 60px;
 }
-
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 16px;
 }
-
-.refresh-btn {
-  background: linear-gradient(to right, #8b5cf6, #60a5fa);
-  color: white;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-.refresh-btn:hover {
-  background: linear-gradient(to right, #7c3aed, #4f46e5);
-}
-
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 28px;
-  margin-top: 20px;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
 }
-
-.recommendation-placeholder,
-.study-placeholder {
+.topic-card, .study-placeholder, .recommendation-placeholder {
   background: #f3f4f6;
-  border-radius: 16px;
-  height: 220px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  color: #cbd5e1;
-  font-weight: bold;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s ease-in-out;
-}
-
-.recommendation-placeholder:hover,
-.study-placeholder:hover {
-  transform: scale(1.02);
-  background: linear-gradient(to right, #e0e7ff, #ede9fe);
-  color: #7c3aed;
-}
-
-.empty-message {
-  text-align: center;
-  margin-top: 30px;
-  font-size: 1.1rem;
-  color: #9ca3af;
-}
-
-.topic-card {
-  background: #ede9fe;
-  padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 16px;
+  border-radius: 12px;
 }
 .topic-title {
-  font-size: 1.3rem;
-  font-weight: bold;
-  color: #4f46e5;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
 }
 .topic-desc {
   font-size: 0.95rem;
+  margin-bottom: 8px;
   color: #4b5563;
-  margin: 10px 0;
 }
 .lesson-count {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: #6b7280;
+  margin-bottom: 12px;
 }
 .card-buttons {
   display: flex;
-  gap: 12px;
-  margin-top: 14px;
+  justify-content: space-between;
+}
+.btn-add, .btn-start {
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: white;
 }
 .btn-add {
-  background: #60a5fa;
-  color: white;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 10px;
-  font-weight: bold;
-  cursor: pointer;
+  background-color: #6b7280;
 }
 .btn-start {
-  background: #f472b6;
-  color: white;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 10px;
-  font-weight: bold;
-  cursor: pointer;
+  background-color: #7c3aed;
 }
 .btn-add:hover {
-  background: #3b82f6;
+  background-color: #4b5563;
 }
 .btn-start:hover {
-  background: #ec4899;
+  background-color: #6d28d9;
+}
+.empty-message {
+  text-align: center;
+  color: #6b7280;
+  font-size: 1rem;
+  font-style: italic;
+}
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 </style>

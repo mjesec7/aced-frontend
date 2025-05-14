@@ -136,7 +136,9 @@ export default {
   async mounted() {
     const storedId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
     this.userId = storedId;
-    if (!storedId) return this.$router.push('/');
+    if (!storedId) {
+      return this.$router.push('/');
+    }
 
     try {
       const token = await auth.currentUser?.getIdToken();
@@ -146,6 +148,7 @@ export default {
       this.userStatus = res.data.status || 'free';
     } catch (err) {
       console.warn('⚠️ Не удалось получить статус пользователя. По умолчанию: free');
+      this.userStatus = 'free';
     }
 
     await this.loadLesson();
@@ -206,6 +209,8 @@ export default {
       this.understood = false;
       this.userAnswer = '';
       if (this.currentStep < this.exerciseSteps) {
+        // Сбрасываем счетчик ошибок для следующего этапа (нового упражнения)
+        this.mistakeCount = 0;
         this.currentStep++;
       } else {
         this.completeLesson();

@@ -13,9 +13,8 @@
         type="text"
         class="search-input"
         placeholder="🔍 Поиск уроков или тем..."
-        @input="applyFilters"
       />
-      <select v-model="filterType" class="filter-select" @change="applyFilters">
+      <select v-model="filterType" class="filter-select">
         <option value="all">Все</option>
         <option value="free">Бесплатные</option>
         <option value="premium">Премиум</option>
@@ -67,8 +66,8 @@ export default {
   data() {
     return {
       lessons: [],
-      allTopics: [],
       groupedTopics: [],
+      originalTopics: [], // сохраняем полный список тем для фильтрации
       loading: true,
       userId: null,
       filterType: 'all',
@@ -82,15 +81,22 @@ export default {
   computed: {
     ...mapState(['firebaseUserId']),
     subscriptionClass() {
-      return this.plan === 'pro' ? 'badge-pro' : this.plan === 'start' ? 'badge-start' : 'badge-free';
+      return this.plan === 'pro' ? 'badge-pro' 
+           : this.plan === 'start' ? 'badge-start' 
+           : 'badge-free';
     },
     subscriptionText() {
-      return this.plan === 'pro' ? 'Pro подписка' : this.plan === 'start' ? 'Start подписка' : 'Бесплатный доступ';
+      return this.plan === 'pro' ? 'Pro подписка' 
+           : this.plan === 'start' ? 'Start подписка' 
+           : 'Бесплатный доступ';
     }
   },
   async mounted() {
     const storedId = this.firebaseUserId || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
-    if (!storedId) return (this.loading = false);
+    if (!storedId) {
+      this.loading = false;
+      return;
+    }
     this.userId = storedId;
 
     try {
@@ -101,6 +107,7 @@ export default {
       this.plan = res.data.status || 'free';
     } catch (err) {
       console.warn('⚠️ Не удалось получить статус подписки.');
+      this.plan = 'free';
     }
 
     this.loadLessons();
@@ -134,7 +141,8 @@ export default {
           }
         });
 
-        this.allTopics = [...topicsMap.values()];
+        // Применяем фильтры к полному списку тем
+        this.originalTopics = [...topicsMap.values()];
         this.applyFilters();
       } catch (error) {
         console.error('❌ Ошибка при загрузке уроков:', error.response?.data || error.message);
@@ -144,9 +152,12 @@ export default {
     },
     applyFilters() {
       const query = this.searchQuery.toLowerCase();
-      this.groupedTopics = this.allTopics.filter(topic => {
+      // Фильтруем всегда по полному списку тем, чтобы фильтры не накладывались друг на друга
+      this.groupedTopics = this.originalTopics.filter(topic => {
         const matchesFilter = this.filterType === 'all' || topic.type === this.filterType;
-        const matchesSearch = topic.name.toLowerCase().includes(query) || topic.subject.toLowerCase().includes(query);
+        const matchesSearch =
+          topic.name.toLowerCase().includes(query) ||
+          topic.subject.toLowerCase().includes(query);
         return matchesFilter && matchesSearch;
       });
     },
@@ -165,12 +176,14 @@ export default {
       }
     },
     async addToStudyPlan(topic) {
-      if (!auth.currentUser) return alert('Пожалуйста, войдите в аккаунт.');
-
+      if (!auth.currentUser) {
+        return alert('Пожалуйста, войдите в аккаунт.');
+      }
       try {
         const token = await auth.currentUser.getIdToken();
         const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`;
-        const body = { subject: topic.subject, topic: topic.name, level: topic.level, topicId: topic.topicId };
+        // Используем название темы (topic.name) для сохранения
+        const body = { subject: topic.subject, level: topic.level, topic: topic.name, topicId: topic.topicId };
         await axios.post(url, body, { headers: { Authorization: `Bearer ${token}` } });
         alert(`✅ Тема "${topic.name}" добавлена!`);
       } catch (error) {
@@ -178,244 +191,175 @@ export default {
         alert('❌ Не удалось добавить в учебный план');
       }
     }
+  },
+  watch: {
+    searchQuery() {
+      this.applyFilters();
+    },
+    filterType() {
+      this.applyFilters();
+    }
   }
 };
 </script>
 
-
-
-
-  
-  
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
 .page-header {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
 }
 
 .subscription-badge {
-padding: 8px 16px;
-font-weight: 700;
-border-radius: 16px;
-font-size: 0.85rem;
-box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  padding: 8px 16px;
+  font-weight: 700;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .badge-free {
-background-color: #f87171;
-color: white;
+  background-color: #f87171;
+  color: white;
 }
 
 .badge-start {
-background-color: #facc15;
-color: black;
+  background-color: #facc15;
+  color: black;
 }
 
 .badge-pro {
-background-color: #10b981;
-color: white;
+  background-color: #10b981;
+  color: white;
 }
 
 .lessons-page {
-padding: 40px 20px;
-max-width: 1300px;
-margin: 0 auto;
-font-family: 'Inter', sans-serif;
-background: linear-gradient(to bottom, #f9fafb, #ffffff);
-border-radius: 16px;
+  padding: 40px 20px;
+  max-width: 1300px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(to bottom, #f9fafb, #ffffff);
+  border-radius: 16px;
 }
 
 .page-title {
-font-size: 3rem;
-font-weight: 900;
-color: #1f2937;
-margin-bottom: 40px;
-text-align: center;
-text-shadow: 1px 1px 0 rgba(0,0,0,0.03);
+  font-size: 3rem;
+  font-weight: 900;
+  color: #1f2937;
+  margin-bottom: 40px;
+  text-align: center;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.03);
 }
 
 .controls {
-display: flex;
-flex-wrap: wrap;
-gap: 16px;
-justify-content: center;
-margin-bottom: 50px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 50px;
 }
 
 .search-input,
 .filter-select {
-padding: 14px 18px;
-font-size: 1rem;
-border: 1px solid #d1d5db;
-border-radius: 14px;
-min-width: 260px;
-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-background: white;
-transition: 0.3s;
+  padding: 14px 18px;
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 14px;
+  min-width: 260px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  background: white;
+  transition: 0.3s;
 }
 
 .search-input:focus,
 .filter-select:focus {
-outline: none;
-border-color: #7c3aed;
-box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.25);
-}
-
-.loading,
-.no-lessons {
-text-align: center;
-font-size: 1.2rem;
-color: #6b7280;
-margin-top: 60px;
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.25);
 }
 
 .lessons-grid {
-display: grid;
-grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-gap: 36px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 36px;
 }
 
 .lesson-card {
-background: white;
-border: 1px solid #e5e7eb;
-border-radius: 20px;
-padding: 28px;
-box-shadow: 0 8px 18px rgba(0, 0, 0, 0.04);
-display: flex;
-flex-direction: column;
-transition: transform 0.3s ease, box-shadow 0.3s ease;
-position: relative;
-}
-
-.lesson-card:hover {
-transform: translateY(-6px);
-box-shadow: 0 16px 32px rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .card-header {
-display: flex;
-justify-content: space-between;
-align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .lesson-title {
-font-size: 1.5rem;
-font-weight: 800;
-color: #1f2937;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
 }
 
 .lesson-topic {
-font-size: 1rem;
-color: #6b7280;
-margin-top: 12px;
-}
-
-.subject-badge {
-font-size: 0.8rem;
-padding: 6px 12px;
-background: linear-gradient(to right, #6366f1, #ec4899);
-color: white;
-border-radius: 20px;
-display: inline-block;
-font-weight: 600;
-margin-top: 10px;
+  font-size: 0.95rem;
+  color: #374151;
+  margin: 4px 0;
 }
 
 .access-label {
-margin-top: 8px;
-font-size: 0.8rem;
-font-weight: 700;
-padding: 5px 12px;
-border-radius: 14px;
-display: inline-block;
-align-self: flex-start;
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .access-label.free {
-background-color: #10b981;
-color: white;
+  background-color: #34d399;
+  color: #fff;
 }
 
 .access-label.paid {
-background-color: #ef4444;
-color: white;
+  background-color: #fbbf24;
+  color: #1f2937;
+}
+
+.add-btn,
+.start-btn {
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .add-btn {
-background: #10b981;
-color: white;
-font-size: 1.2rem;
-border: none;
-border-radius: 50%;
-width: 36px;
-height: 36px;
-cursor: pointer;
-transition: background 0.3s ease;
+  background: #10b981;
 }
 
 .add-btn:hover {
-background: #059669;
-}
-
-.start-btn {
-margin-top: 20px;
-background: linear-gradient(to right, #60a5fa, #818cf8);
-color: white;
-padding: 12px 18px;
-font-size: 0.95rem;
-border: none;
-border-radius: 14px;
-cursor: pointer;
-transition: background 0.3s ease;
+  background: #059669;
 }
 
 .start-btn:hover {
-background: linear-gradient(to right, #3b82f6, #6366f1);
+  background: #4338ca;
 }
 
-.modal {
-position: fixed;
-top: 0;
-left: 0;
-width: 100vw;
-height: 100vh;
-background-color: rgba(0, 0, 0, 0.5);
-display: flex;
-justify-content: center;
-align-items: center;
-z-index: 10000;
-}
-
-.modal-content {
-background: white;
-padding: 30px;
-border-radius: 14px;
-text-align: center;
-max-width: 400px;
-width: 90%;
-box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-}
-
-.modal-content button {
-margin-top: 15px;
-padding: 10px 20px;
-border: none;
-border-radius: 10px;
-font-weight: 600;
-cursor: pointer;
-}
-
-.modal-content button:first-child {
-background: linear-gradient(to right, #7c3aed, #8b5cf6);
-color: white;
-}
-
-.modal-content button:last-child {
-background: #e5e7eb;
-color: #1f2937;
+.no-lessons {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #6b7280;
 }
 </style>

@@ -16,9 +16,7 @@
       <p class="estimated-time">⏱ ~{{ estimatedDuration }} мин</p>
     </div>
 
-    <button class="continue-btn" @click="goToLesson">
-      ▶️ Продолжить
-    </button>
+    <button class="continue-btn" @click="goToLesson">▶️ Продолжить</button>
 
     <!-- 🗑 Modal -->
     <div v-if="showDeleteModal" class="modal-overlay">
@@ -72,64 +70,37 @@ export default {
       return readTime + exerciseTime;
     }
   },
-  async mounted() {
-    await this.checkLessonExists();
+  mounted() {
+    this.checkLessonExists();
   },
   methods: {
-    async checkLessonExists() {
-      try {
-        const subject = this.topic.subject;
-        const topicName = this.displayName;
-        if (!subject || !topicName || !auth.currentUser) return;
-
-        const token = await auth.currentUser.getIdToken();
-        const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
-        const { data } = await axios.get(url, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        this.lessonExists = !!(data && data._id);
-      } catch (err) {
-        console.warn('❌ Урок не найден или ошибка запроса:', err.message);
-        this.lessonExists = false;
-      }
+    checkLessonExists() {
+      this.lessonExists = Array.isArray(this.lessons) && this.lessons.length > 0;
     },
-
-    async goToLesson() {
+    goToLesson() {
       try {
-        const subject = this.topic.subject;
-        const topicName = this.displayName;
-        if (!subject || !topicName || !auth.currentUser) {
+        if (!Array.isArray(this.lessons) || this.lessons.length === 0) {
           alert('❌ Не удалось открыть урок. Данные темы отсутствуют.');
           return;
         }
-
-        const token = await auth.currentUser.getIdToken();
-        const url = `${import.meta.env.VITE_API_BASE_URL}/lessons/by-name?subject=${encodeURIComponent(subject)}&name=${encodeURIComponent(topicName)}`;
-        const { data } = await axios.get(url, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (!data?._id) throw new Error('Урок не найден');
-        this.$router.push({ name: 'LessonPage', params: { id: data._id } });
+        const firstLesson = this.lessons[0];
+        if (!firstLesson?._id) throw new Error('Урок не найден');
+        this.$router.push({ name: 'LessonPage', params: { id: firstLesson._id } });
       } catch (err) {
-        console.error('❌ Ошибка перехода:', err);
+        console.error('❌ Ошибка перехода к уроку:', err);
         alert('❌ Не удалось открыть урок.');
       }
     },
-
     async confirmDelete() {
       try {
         if (!auth.currentUser) {
           alert('Пожалуйста, войдите в аккаунт.');
           return;
         }
-
         const token = await auth.currentUser.getIdToken();
         const headers = { Authorization: `Bearer ${token}` };
         const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.topic.userId || localStorage.getItem('firebaseUserId')}/study-list/${this.topic._id}`;
         await axios.delete(url, { headers });
-
         this.lessonExists = false;
         this.$emit('deleted', this.topic._id);
       } catch (err) {
@@ -140,6 +111,8 @@ export default {
   }
 };
 </script>
+
+
 
 
 <style scoped>
