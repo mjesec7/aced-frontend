@@ -11,28 +11,28 @@
 
     <div v-if="!started && !showPaywallModal" class="intro-screen">
       <button class="exit-btn" @click="confirmExit">❌</button>
-      <h2 class="lesson-title">{{ lesson.lessonName?.en || lesson.lessonName || 'Без названия' }}</h2>
+      <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) || 'Без названия' }}</h2>
       <p>⏱️ Время прохождения: ~10 минут</p>
-      <p>📌 Что вы узнаете: {{ lesson.description?.en || lesson.description || 'описание недоступно' }}</p>
+      <p>📌 Что вы узнаете: {{ getLocalized(lesson.description) || 'описание недоступно' }}</p>
       <button class="start-btn" @click="startLesson">Начать урок</button>
     </div>
 
     <div v-else-if="!showPaywallModal" class="lesson-split">
       <div class="lesson-left">
         <div class="lesson-header">
-          <h2 class="lesson-title">{{ lesson.lessonName?.en || lesson.lessonName }}</h2>
+          <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) }}</h2>
           <div class="timer-display">⏱ {{ formattedTime }}</div>
         </div>
 
         <div v-if="!lessonCompleted">
           <div class="section explanation-block">
             <h3>📚 Объяснение</h3>
-            <div v-html="lesson.explanation?.en || lesson.explanation || 'Нет объяснения'" class="explanation-text"></div>
+            <div v-html="getLocalized(lesson.explanation) || 'Нет объяснения'" class="explanation-text"></div>
           </div>
 
           <div class="section example-block">
             <h3>💗 Примеры</h3>
-            <div v-html="lesson.examples?.en || lesson.examples || 'Нет примеров'" class="example-text"></div>
+            <div v-html="getLocalized(lesson.examples) || 'Нет примеров'" class="example-text"></div>
           </div>
 
           <div class="navigation-area">
@@ -154,6 +154,9 @@ export default {
     clearInterval(this.timerInterval);
   },
   methods: {
+    getLocalized(field) {
+      return field?.[this.$i18n?.locale || 'en'] || field?.en || (typeof field === 'string' ? field : '');
+    },
     async loadLesson() {
       try {
         const lessonId = this.$route.params.id;
@@ -221,7 +224,7 @@ export default {
         : '/images/medals/bronze.png';
 
       await axios.post(`${BASE_URL}/users/${this.userId}/diary`, {
-        lessonName: this.lesson.lessonName?.en || this.lesson.lessonName,
+        lessonName: this.getLocalized(this.lesson.lessonName),
         duration,
         date: new Date().toISOString(),
         mistakes: this.mistakeCount
@@ -258,6 +261,7 @@ export default {
   }
 };
 </script>
+
 
 
 <style scoped>

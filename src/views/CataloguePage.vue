@@ -132,17 +132,20 @@ export default {
           }
         });
 
-        const query = this.searchQuery.toLowerCase();
-        this.groupedTopics = [...topicsMap.values()].filter(topic => {
-          const matchesFilter = this.filterType === 'all' || topic.type === this.filterType;
-          const matchesSearch = topic.name.toLowerCase().includes(query) || topic.subject.toLowerCase().includes(query);
-          return matchesFilter && matchesSearch;
-        });
+        this.applyFilters([...topicsMap.values()]);
       } catch (error) {
         console.error('❌ Ошибка при загрузке уроков:', error.response?.data || error.message);
       } finally {
         this.loading = false;
       }
+    },
+    applyFilters(topics) {
+      const query = this.searchQuery.toLowerCase();
+      this.groupedTopics = topics.filter(topic => {
+        const matchesFilter = this.filterType === 'all' || topic.type === this.filterType;
+        const matchesSearch = topic.name.toLowerCase().includes(query) || topic.subject.toLowerCase().includes(query);
+        return matchesFilter && matchesSearch;
+      });
     },
     getTopicName(lesson) {
       if (typeof lesson.topic === 'string') return lesson.topic;
@@ -171,6 +174,14 @@ export default {
         console.error('❌ Ошибка при добавлении в учебный план:', error.response?.data || error.message);
         alert('❌ Не удалось добавить в учебный план');
       }
+    }
+  },
+  watch: {
+    searchQuery() {
+      this.applyFilters([...this.groupedTopics]);
+    },
+    filterType() {
+      this.applyFilters([...this.groupedTopics]);
     }
   }
 };

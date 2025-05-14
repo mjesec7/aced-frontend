@@ -173,7 +173,12 @@ export default {
           data.map(async (item) => {
             try {
               const topicRes = await axios.get(`${BASE_URL}/topics/${item.topicId}`, { headers });
-              return { ...topicRes.data, progress: item.progress || {} };
+              const lessonsRes = await axios.get(`${BASE_URL}/lessons/topic/${item.topicId}`, { headers });
+              return {
+                ...topicRes.data,
+                lessons: lessonsRes.data,
+                progress: item.progress || {},
+              };
             } catch (e) {
               console.warn('❌ Failed to fetch topic:', item.topicId);
               return null;
@@ -202,7 +207,12 @@ export default {
         if (!token) return alert('Пожалуйста, войдите в аккаунт.');
         const headers = { Authorization: `Bearer ${token}` };
         const url = `${BASE_URL}/users/${this.userId}/study-list`;
-        const payload = { subject: topic.subject, level: topic.level, topic: topic.name };
+        const payload = {
+          subject: topic.subject,
+          level: topic.level,
+          topic: topic.name?.en || topic.name || topic.topic,
+          topicId: topic._id
+        };
         await axios.post(url, payload, { headers });
         await this.fetchStudyList();
         this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
@@ -225,6 +235,7 @@ export default {
   }
 };
 </script>
+
 
 
 

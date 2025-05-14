@@ -34,7 +34,6 @@
   </div>
 </template>
 
-
 <script>
 import axios from 'axios';
 import { auth } from '@/firebase';
@@ -80,7 +79,7 @@ export default {
     async checkLessonExists() {
       try {
         const subject = this.topic.subject;
-        const topicName = this.topic.name?.en || this.topic.name || this.topic.topic;
+        const topicName = this.displayName;
         if (!subject || !topicName || !auth.currentUser) return;
 
         const token = await auth.currentUser.getIdToken();
@@ -99,7 +98,7 @@ export default {
     async goToLesson() {
       try {
         const subject = this.topic.subject;
-        const topicName = this.topic.name?.en || this.topic.name || this.topic.topic;
+        const topicName = this.displayName;
         if (!subject || !topicName || !auth.currentUser) {
           alert('❌ Не удалось открыть урок. Данные темы отсутствуют.');
           return;
