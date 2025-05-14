@@ -46,7 +46,7 @@
 </template>
 
 <script>
-import ContactModal from '@/modals/ContactsModal.vue';
+import ContactModal from '../Modals/ContactsModal.vue';
 
 export default {
   name: 'FooterBar',
