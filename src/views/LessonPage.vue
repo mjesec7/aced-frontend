@@ -51,7 +51,7 @@
       <div class="lesson-right">
         <h3>✏️ Практическая зона</h3>
         <div v-if="understood && !lessonCompleted">
-          <template v-if="currentExercise.options">
+          <template v-if="Array.isArray(currentExercise.options)">
             <p class="exercise-question">{{ currentExercise.question || 'Вопрос отсутствует' }}</p>
             <div class="exercise-options">
               <label v-for="(opt, i) in currentExercise.options" :key="i">
@@ -96,7 +96,6 @@ export default {
   data() {
     return {
       lesson: {},
-      allLessons: [],
       userAnswer: '',
       confirmation: '',
       currentStep: 0,
@@ -105,7 +104,6 @@ export default {
       timerInterval: null,
       understood: false,
       showExitModal: false,
-      completedLessons: new Set(),
       mistakeCount: 0,
       lessonCompleted: false,
       showConfetti: false,
@@ -121,8 +119,7 @@ export default {
     },
     currentExercise() {
       const index = this.currentStep - 2;
-      if (index < 0 || !Array.isArray(this.lesson.exercises)) return {};
-      return this.lesson.exercises[index] || {};
+      return (index < 0 || !Array.isArray(this.lesson.exercises)) ? {} : this.lesson.exercises[index] || {};
     },
     formattedTime() {
       const minutes = Math.floor(this.elapsedSeconds / 60);
@@ -134,11 +131,8 @@ export default {
     }
   },
   async mounted() {
-    const storedId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
-    this.userId = storedId;
-    if (!storedId) {
-      return this.$router.push('/');
-    }
+    this.userId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
+    if (!this.userId) return this.$router.push('/');
 
     try {
       const token = await auth.currentUser?.getIdToken();
@@ -148,7 +142,6 @@ export default {
       this.userStatus = res.data.status || 'free';
     } catch (err) {
       console.warn('⚠️ Не удалось получить статус пользователя. По умолчанию: free');
-      this.userStatus = 'free';
     }
 
     await this.loadLesson();
@@ -163,15 +156,14 @@ export default {
     async loadLesson() {
       try {
         const lessonId = this.$route.params.id;
-        const { data: lessonData } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
-        if (!lessonData || !lessonData._id) {
-          return this.$router.push('/catalogue');
-        }
-        if (lessonData.type === 'premium' && this.userStatus === 'free') {
+        const { data } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
+        if (!data || !data._id) return this.$router.push('/catalogue');
+        if (data.type === 'premium' && this.userStatus === 'free') {
           this.showPaywallModal = true;
           return;
         }
-        this.lesson = lessonData;
+        if (!Array.isArray(data.exercises)) data.exercises = [];
+        this.lesson = data;
       } catch (err) {
         console.error('Ошибка загрузки урока:', err);
       }
@@ -183,9 +175,7 @@ export default {
       }
       this.started = true;
       this.elapsedSeconds = 0;
-      this.timerInterval = setInterval(() => {
-        this.elapsedSeconds++;
-      }, 1000);
+      this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
     },
     confirmUnderstanding() {
       this.understood = true;
@@ -193,13 +183,9 @@ export default {
     submitAnswer() {
       const correct = this.currentExercise.answer?.toLowerCase();
       const answer = this.userAnswer.trim().toLowerCase();
-      if (!answer) {
-        this.confirmation = '⚠️ Пожалуйста, введите ответ.';
-        return;
-      }
-      if (answer === correct) {
-        this.confirmation = '✅ Верно!';
-      } else {
+      if (!answer) return this.confirmation = '⚠️ Пожалуйста, введите ответ.';
+      if (answer === correct) this.confirmation = '✅ Верно!';
+      else {
         this.confirmation = '❌ Неверно. Попробуйте снова.';
         this.mistakeCount++;
       }
@@ -209,7 +195,6 @@ export default {
       this.understood = false;
       this.userAnswer = '';
       if (this.currentStep < this.exerciseSteps) {
-        // Сбрасываем счетчик ошибок для следующего этапа (нового упражнения)
         this.mistakeCount = 0;
         this.currentStep++;
       } else {
@@ -220,6 +205,7 @@ export default {
       this.lessonCompleted = true;
       this.showConfetti = true;
       setTimeout(() => this.launchConfetti(), 200);
+
       const token = await auth.currentUser?.getIdToken();
       const duration = this.elapsedSeconds;
       this.medalImage = this.mistakeCount === 0
@@ -228,24 +214,28 @@ export default {
         ? '/images/medals/silver.png'
         : '/images/medals/bronze.png';
 
-      await axios.post(`${BASE_URL}/users/${this.userId}/diary`, {
-        lessonName: this.getLocalized(this.lesson.lessonName),
-        duration,
-        date: new Date().toISOString(),
-        mistakes: this.mistakeCount
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      try {
+        await axios.post(`${BASE_URL}/users/${this.userId}/diary`, {
+          lessonName: this.getLocalized(this.lesson.lessonName),
+          duration,
+          date: new Date().toISOString(),
+          mistakes: this.mistakeCount
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
-      await axios.post(`${BASE_URL}/users/${this.userId}/analytics`, {
-        subject: this.lesson.subject,
-        topic: this.lesson.topic,
-        timeSpent: duration,
-        mistakes: this.mistakeCount,
-        completed: true
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+        await axios.post(`${BASE_URL}/users/${this.userId}/analytics`, {
+          subject: this.lesson.subject,
+          topic: this.lesson.topic,
+          timeSpent: duration,
+          mistakes: this.mistakeCount,
+          completed: true
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch (err) {
+        console.error('❌ Ошибка отправки аналитики:', err);
+      }
     },
     launchConfetti() {
       const canvas = this.$refs.confettiCanvas;
@@ -276,68 +266,90 @@ export default {
   position: fixed;
   bottom: 22px;
   right: 22px;
-  background: #8b5cf6;
-  color: white;
+  background: linear-gradient(to right, #7c3aed, #8b5cf6);
+  color: #fff;
   border: none;
-  font-size: 1.2rem;
-  padding: 12px 16px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  font-size: 1.1rem;
+  padding: 12px 18px;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.3);
   z-index: 9998;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.3s ease, transform 0.2s ease;
 }
+
 .ai-help-btn:hover {
-  background: #7c3aed;
+  background: linear-gradient(to right, #6d28d9, #7c3aed);
+  transform: translateY(-2px);
 }
 
 .ai-chat-modal {
   position: fixed;
   bottom: 90px;
   right: 20px;
-  width: 340px;
-  background: white;
+  width: 360px;
+  background: #ffffff;
   border: 2px solid #c4b5fd;
-  border-radius: 14px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
   z-index: 9999;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 500px;
 }
+
 .ai-chat-header {
   background: #ede9fe;
-  padding: 10px 16px;
+  padding: 12px 18px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-weight: 700;
   color: #4c1d95;
   border-bottom: 1px solid #ddd6fe;
+  font-size: 1.05rem;
 }
+
 .ai-chat-body {
   padding: 16px;
-  max-height: 300px;
+  flex-grow: 1;
   overflow-y: auto;
   font-size: 0.95rem;
+  background: #f9fafb;
 }
+
 .chat-message {
-  margin-bottom: 10px;
-  padding: 10px;
-  border-radius: 10px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  line-height: 1.5;
+  max-width: 90%;
 }
+
 .chat-message.ai {
   background: #f3e8ff;
   color: #4c1d95;
+  align-self: flex-start;
 }
+
 .chat-message.user {
   background: #dbeafe;
   color: #1e3a8a;
   text-align: right;
+  align-self: flex-end;
 }
+
 .ai-close-btn {
   background: transparent;
   border: none;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   color: #6b21a8;
   cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.ai-close-btn:hover {
+  color: #4c1d95;
 }
 </style>

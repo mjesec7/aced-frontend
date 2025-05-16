@@ -25,8 +25,8 @@
 
       <div v-else-if="filteredRecommendations.length" class="grid">
         <div class="topic-card" v-for="topic in filteredRecommendations" :key="topic._id">
-          <h3 class="topic-title">📘 {{ topic.name?.en || topic.name }}</h3>
-          <p class="topic-desc">{{ topic.description?.en || topic.description || 'Описание отсутствует' }}</p>
+          <h3 class="topic-title">📘 {{ getTopicName(topic) }}</h3>
+          <p class="topic-desc">{{ getTopicDescription(topic) }}</p>
           <p class="lesson-count">Уроков: {{ topic.lessons?.length || 0 }}</p>
           <div class="card-buttons">
             <button class="btn-add" @click="handleAddTopic(topic)">＋ Добавить</button>
@@ -94,7 +94,8 @@ export default {
       searchQuery: '',
       filterSubject: '',
       showPaywall: false,
-      requestedTopicId: null
+      requestedTopicId: null,
+      lang: localStorage.getItem('lang') || 'en'
     };
   },
   computed: {
@@ -103,8 +104,8 @@ export default {
       return this.recommendations
         .filter(t => t.lessons?.length)
         .filter(t => {
-          const name = t.name?.en || t.name || '';
-          const description = t.description?.en || t.description || '';
+          const name = this.getTopicName(t);
+          const description = this.getTopicDescription(t);
           return (
             (!this.filterSubject || t.subject === this.filterSubject) &&
             (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
@@ -114,8 +115,8 @@ export default {
     },
     filteredStudyList() {
       return this.studyList.filter(t => {
-        const name = t.name?.en || t.name || '';
-        const description = t.description?.en || t.description || '';
+        const name = this.getTopicName(t);
+        const description = this.getTopicDescription(t);
         return (
           (!this.filterSubject || t.subject === this.filterSubject) &&
           (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
@@ -139,6 +140,12 @@ export default {
     await Promise.all([this.fetchRecommendations(), this.fetchStudyList()]);
   },
   methods: {
+    getTopicName(topic) {
+      return topic.name?.[this.lang] || topic.name?.en || topic.name || 'Без названия';
+    },
+    getTopicDescription(topic) {
+      return topic.description?.[this.lang] || topic.description?.en || topic.description || 'Описание отсутствует';
+    },
     async fetchUserStatus() {
       try {
         const token = await auth.currentUser?.getIdToken();
@@ -217,7 +224,7 @@ export default {
         const payload = {
           subject: topic.subject,
           level: topic.level,
-          topic: topic.name?.en || topic.name || topic.topic,
+          topic: this.getTopicName(topic),
           topicId: topic._id
         };
         await axios.post(url, payload, { headers });

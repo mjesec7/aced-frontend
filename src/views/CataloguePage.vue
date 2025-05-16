@@ -67,7 +67,7 @@ export default {
     return {
       lessons: [],
       groupedTopics: [],
-      originalTopics: [], // сохраняем полный список тем для фильтрации
+      originalTopics: [],
       loading: true,
       userId: null,
       filterType: 'all',
@@ -141,7 +141,6 @@ export default {
           }
         });
 
-        // Применяем фильтры к полному списку тем
         this.originalTopics = [...topicsMap.values()];
         this.applyFilters();
       } catch (error) {
@@ -152,7 +151,6 @@ export default {
     },
     applyFilters() {
       const query = this.searchQuery.toLowerCase();
-      // Фильтруем всегда по полному списку тем, чтобы фильтры не накладывались друг на друга
       this.groupedTopics = this.originalTopics.filter(topic => {
         const matchesFilter = this.filterType === 'all' || topic.type === this.filterType;
         const matchesSearch =
@@ -165,7 +163,8 @@ export default {
       if (typeof lesson.topic === 'string') return lesson.topic;
       if (lesson.translations?.[this.lang]?.topic) return lesson.translations[this.lang].topic;
       if (lesson.topic?.[this.lang]) return lesson.topic[this.lang];
-      return lesson.topic?.en || 'Без темы';
+      if (lesson.topic?.en) return lesson.topic.en;
+      return 'Без темы';
     },
     handleAccess(topicId, type) {
       if (type === 'premium' && (!this.plan || this.plan === 'free')) {
@@ -182,8 +181,12 @@ export default {
       try {
         const token = await auth.currentUser.getIdToken();
         const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`;
-        // Используем название темы (topic.name) для сохранения
-        const body = { subject: topic.subject, level: topic.level, topic: topic.name, topicId: topic.topicId };
+        const body = {
+          subject: topic.subject,
+          level: topic.level,
+          topic: topic.name,
+          topicId: topic.topicId
+        };
         await axios.post(url, body, { headers: { Authorization: `Bearer ${token}` } });
         alert(`✅ Тема "${topic.name}" добавлена!`);
       } catch (error) {
@@ -202,7 +205,6 @@ export default {
   }
 };
 </script>
-  
   
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');

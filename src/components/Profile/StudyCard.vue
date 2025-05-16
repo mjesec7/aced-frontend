@@ -46,12 +46,13 @@ export default {
   data() {
     return {
       showDeleteModal: false,
-      lessonExists: false
+      lessonExists: false,
+      lang: localStorage.getItem('lang') || 'en'
     };
   },
   computed: {
     displayName() {
-      return this.topic.name?.en || this.topic.name || this.topic.topic || 'Без названия';
+      return this.topic.name?.[this.lang] || this.topic.name?.en || this.topic.name || this.topic.topic || 'Без названия';
     },
     lessonProgress() {
       const val = parseFloat(this.progress.percent);
@@ -62,7 +63,7 @@ export default {
     },
     estimatedDuration() {
       const wordSource = ['explanation', 'content', 'examples']
-        .map(k => this.topic[k]?.en || this.topic[k] || '')
+        .map(k => this.topic[k]?.[this.lang] || this.topic[k]?.en || this.topic[k] || '')
         .join(' ');
       const wordCount = wordSource.trim().split(/\s+/).length;
       const readTime = Math.ceil(wordCount / 50);
@@ -83,8 +84,8 @@ export default {
           alert('❌ Не удалось открыть урок. Данные темы отсутствуют.');
           return;
         }
-        const firstLesson = this.lessons[0];
-        if (!firstLesson?._id) throw new Error('Урок не найден');
+        const firstLesson = this.lessons.find(l => l && l._id);
+        if (!firstLesson) throw new Error('Урок не найден');
         this.$router.push({ name: 'LessonPage', params: { id: firstLesson._id } });
       } catch (err) {
         console.error('❌ Ошибка перехода к уроку:', err);
@@ -99,7 +100,8 @@ export default {
         }
         const token = await auth.currentUser.getIdToken();
         const headers = { Authorization: `Bearer ${token}` };
-        const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.topic.userId || localStorage.getItem('firebaseUserId')}/study-list/${this.topic._id}`;
+        const userId = this.topic.userId || localStorage.getItem('firebaseUserId');
+        const url = `${import.meta.env.VITE_API_BASE_URL}/users/${userId}/study-list/${this.topic._id}`;
         await axios.delete(url, { headers });
         this.lessonExists = false;
         this.$emit('deleted', this.topic._id);
