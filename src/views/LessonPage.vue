@@ -115,11 +115,17 @@ export default {
   },
   computed: {
     exerciseSteps() {
-      return 2 + (this.lesson.exercises?.length || 0);
+      const exCount = Array.isArray(this.lesson.exercises) ? this.lesson.exercises.length : 0;
+      const abcCount = Array.isArray(this.lesson.abcExercises) ? this.lesson.abcExercises.length : 0;
+      return 2 + exCount + abcCount;
     },
     currentExercise() {
       const index = this.currentStep - 2;
-      return (index < 0 || !Array.isArray(this.lesson.exercises)) ? {} : this.lesson.exercises[index] || {};
+      const exLength = this.lesson.exercises?.length || 0;
+      if (index < 0) return {};
+      if (index < exLength) return this.lesson.exercises[index];
+      const abcIndex = index - exLength;
+      return this.lesson.abcExercises?.[abcIndex] || {};
     },
     formattedTime() {
       const minutes = Math.floor(this.elapsedSeconds / 60);
@@ -163,6 +169,7 @@ export default {
           return;
         }
         if (!Array.isArray(data.exercises)) data.exercises = [];
+        if (!Array.isArray(data.abcExercises)) data.abcExercises = [];
         this.lesson = data;
       } catch (err) {
         console.error('Ошибка загрузки урока:', err);
@@ -181,7 +188,7 @@ export default {
       this.understood = true;
     },
     submitAnswer() {
-      const correct = this.currentExercise.answer?.toLowerCase();
+      const correct = this.currentExercise.correctAnswer?.toLowerCase() || this.currentExercise.answer?.toLowerCase();
       const answer = this.userAnswer.trim().toLowerCase();
       if (!answer) return this.confirmation = '⚠️ Пожалуйста, введите ответ.';
       if (answer === correct) this.confirmation = '✅ Верно!';
@@ -256,6 +263,7 @@ export default {
   }
 };
 </script>
+
 
 
 
