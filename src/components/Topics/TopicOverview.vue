@@ -99,7 +99,7 @@ export default {
     },
     startFirstLesson() {
       const first = this.lessons.find(
-        l => l.type === 'free' || this.userPlan !== 'free'
+        l => l.type === 'free' || (l.type === 'premium' && this.userPlan !== 'free')
       );
       if (first) {
         this.startLesson(first);
