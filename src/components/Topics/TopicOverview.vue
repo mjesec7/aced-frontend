@@ -8,26 +8,31 @@
 
       <div class="lesson-list">
         <h2>📚 Уроки</h2>
-        <ul>
-          <li
+        <div class="lesson-grid">
+          <div
             v-for="lesson in lessons"
             :key="lesson._id"
-            class="lesson-item"
+            class="lesson-card"
             :class="{ locked: lesson.type === 'premium' && userPlan === 'free' }"
           >
-            <span>{{ getLessonName(lesson) }}</span>
+            <div class="card-top">
+              <h3 class="lesson-name">{{ getLessonName(lesson) }}</h3>
+              <span class="tag" :class="lesson.type === 'premium' ? 'premium' : 'free'">
+                {{ lesson.type === 'premium' ? '🔒 Премиум' : 'Бесплатно' }}
+              </span>
+            </div>
             <button
               @click="startLesson(lesson)"
               :disabled="lesson.type === 'premium' && userPlan === 'free'"
             >
-              {{ lesson.type === 'premium' ? '🔒 Премиум' : 'Начать' }}
+              {{ lesson.type === 'premium' ? 'Оформить подписку' : 'Начать' }}
             </button>
-          </li>
-        </ul>
+          </div>
+        </div>
       </div>
 
       <div class="start-button-wrapper">
-        <button class="start-course-btn" @click="startFirstLesson">🚀 Поехали!</button>
+        <button class="start-course-btn" @click="startFirstLesson">🚀 Начать курс</button>
       </div>
     </div>
 
@@ -60,10 +65,10 @@ export default {
         const headers = { Authorization: `Bearer ${token}` };
         const statusRes = await axios.get(`${BASE_URL}/users/${auth.currentUser.uid}/status`, { headers });
         this.userPlan = statusRes.data?.status || 'free';
-        console.log('📦 User plan loaded:', this.userPlan);
+        console.log('📦 Подписка:', this.userPlan);
       }
     } catch (err) {
-      console.warn('⚠️ Не удалось получить статус пользователя. Установлено по умолчанию: free');
+      console.warn('⚠️ Не удалось получить тариф. Используется: free');
       this.userPlan = 'free';
     }
 
@@ -74,7 +79,7 @@ export default {
       const lessonsRes = await axios.get(`${BASE_URL}/topics/${topicId}/lessons`);
       this.lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
     } catch (err) {
-      console.error('❌ Ошибка загрузки темы или уроков:', err);
+      console.error('❌ Ошибка загрузки:', err);
       this.topic = null;
     } finally {
       this.loading = false;
@@ -82,29 +87,29 @@ export default {
   },
   methods: {
     getTopicName(topic) {
-      return topic.name?.[this.lang] || topic.name?.en || topic.name || 'Без названия';
+      return topic.name || 'Без названия';
     },
     getTopicDescription(topic) {
-      return topic.description?.[this.lang] || topic.description?.en || topic.description || 'Нет описания для этой темы.';
+      return topic.description || 'Нет описания для этой темы.';
     },
     getLessonName(lesson) {
-      return lesson.lessonName?.[this.lang] || lesson.lessonName?.en || lesson.lessonName || 'Без названия';
+      return lesson.lessonName || 'Без названия';
     },
     startLesson(lesson) {
       if (lesson.type === 'premium' && this.userPlan === 'free') {
-        alert('❌ Этот урок доступен только подписчикам.');
+        alert('❌ Урок доступен только подписчикам.');
         return;
       }
       this.$router.push({ name: 'LessonPage', params: { id: lesson._id } });
     },
     startFirstLesson() {
       const first = this.lessons.find(
-        l => l.type === 'free' || (l.type === 'premium' && this.userPlan !== 'free')
+        l => l.type === 'free' || this.userPlan !== 'free'
       );
       if (first) {
         this.startLesson(first);
       } else {
-        alert('❌ Все уроки этой темы доступны только подписчикам.');
+        alert('❌ Нет доступных бесплатных уроков.');
       }
     }
   }
@@ -113,74 +118,94 @@ export default {
 
 <style scoped>
 .topic-overview {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 40px 20px;
-  font-family: 'Inter', sans-serif;
-}
-.loading,
-.error {
-  text-align: center;
-  font-size: 1.2rem;
-  color: #6b7280;
+  padding: 20px;
+  font-family: 'Unbounded', sans-serif;
 }
 .title {
-  font-size: 2.4rem;
-  font-weight: 900;
-  margin-bottom: 20px;
-  color: #4c1d95;
+  font-size: 2rem;
+  margin-bottom: 10px;
 }
 .description {
-  font-size: 1.1rem;
-  color: #374151;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
+  color: #555;
 }
-.lesson-list h2 {
-  font-size: 1.4rem;
-  margin-bottom: 12px;
-  color: #4c1d95;
+.lesson-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
 }
-.lesson-item {
+.lesson-card {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: 0.2s;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.lesson-card.locked {
+  opacity: 0.6;
+}
+.card-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
   margin-bottom: 10px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
 }
-.lesson-item.locked {
-  opacity: 0.6;
-  pointer-events: none;
+.lesson-name {
+  font-weight: bold;
+  font-size: 1rem;
 }
-.lesson-item button {
-  padding: 6px 14px;
-  background: linear-gradient(to right, #7c3aed, #6d28d9);
+.tag {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.tag.premium {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.tag.free {
+  background: #ecfdf5;
+  color: #065f46;
+}
+.lesson-card button {
+  margin-top: 10px;
+  background: #4f46e5;
   color: white;
+  padding: 8px 12px;
   border: none;
   border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.lesson-item button:hover {
-  background: linear-gradient(to right, #5b21b6, #6d28d9);
-}
-.start-button-wrapper {
-  text-align: center;
-  margin-top: 40px;
-}
-.start-course-btn {
-  padding: 14px 28px;
-  font-size: 1.1rem;
-  background: linear-gradient(to right, #6d28d9, #7c3aed);
-  color: white;
-  border: none;
-  border-radius: 12px;
   font-weight: bold;
   cursor: pointer;
 }
+.lesson-card button:disabled {
+  background-color: #bbb;
+  cursor: not-allowed;
+}
+.start-button-wrapper {
+  margin-top: 30px;
+  text-align: center;
+}
+.start-course-btn {
+  background-color: #10b981;
+  padding: 10px 20px;
+  color: white;
+  font-size: 1rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
 .start-course-btn:hover {
-  background: linear-gradient(to right, #5b21b6, #6b21a8);
+  background-color: #059669;
+}
+.error {
+  color: red;
+  font-weight: bold;
 }
 </style>
