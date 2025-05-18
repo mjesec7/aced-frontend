@@ -1,3 +1,4 @@
+/* Updated LessonPage.css */
 .lesson-page {
   background: linear-gradient(135deg, #f9fafb, #eef2ff);
   min-height: 100vh;
@@ -72,11 +73,10 @@
 }
 
 .lesson-left {
-  width: 42%;
+  width: 100%;
   padding: 40px;
   overflow-y: auto;
   background: #ffffff;
-  border-right: 5px solid #ddd6fe;
   display: flex;
   flex-direction: column;
   animation: slideInLeft 0.5s ease-in-out;
@@ -95,8 +95,26 @@
   color: #6b21a8;
 }
 
-.explanation-block, .example-block {
-  margin-bottom: 36px;
+.progress-bar-wrapper {
+  background: #e0e7ff;
+  border-radius: 8px;
+  height: 20px;
+  margin: 20px 0;
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(to right, #7c3aed, #8b5cf6);
+  border-radius: 8px;
+  transition: width 0.4s ease-in-out;
+}
+
+.progress-label {
+  font-size: 1rem;
+  color: #334155;
+  margin-top: 8px;
+  display: block;
 }
 
 .explanation-text {
@@ -107,33 +125,14 @@
   padding-left: 6px;
 }
 
-.example-text {
-  font-family: 'Fira Code', monospace;
-  background: #ede9fe;
-  color: #5b21b6;
-  font-size: 1.05rem;
-  padding: 18px;
-  border-left: 5px solid #a78bfa;
-  border-radius: 10px;
-  white-space: pre-wrap;
+.exercise-question {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #1f2937;
 }
 
-.lesson-right {
-  width: 58%;
-  padding: 48px;
-  background: #f3f4f6;
-  display: flex;
-  flex-direction: column;
-  animation: slideInRight 0.5s ease-in-out;
-}
-
-.lesson-right h3 {
-  font-size: 1.5rem;
-  color: #1e293b;
-  margin-bottom: 24px;
-}
-
-.lesson-right textarea {
+textarea {
   background: #ffffff;
   border: 2px solid #c4b5fd;
   font-size: 1rem;
@@ -146,22 +145,20 @@
   transition: all 0.2s ease;
 }
 
-.lesson-right textarea:focus {
+textarea:focus {
   outline: none;
   border-color: #8b5cf6;
   box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.25);
 }
 
-.exercise-question {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 20px;
-  color: #1f2937;
+label input[type="radio"] {
+  margin-right: 10px;
+  accent-color: #7c3aed;
 }
 
 .navigation-area {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-top: auto;
   padding-top: 48px;
@@ -193,58 +190,24 @@
   color: #10b981;
 }
 
-.locked-overlay {
-  padding: 50px;
-  background: #e0e7ff;
-  color: #475569;
-  border-radius: 12px;
-  text-align: center;
-  font-size: 1.125rem;
-  border: 2px dashed #c084fc;
-}
-
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(30, 41, 59, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-}
-
-.modal-content {
-  background: white;
-  padding: 36px;
-  border-radius: 18px;
-  text-align: center;
-  width: 90%;
-  max-width: 420px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
-}
-
-.modal-content button {
-  margin: 14px;
-  padding: 12px 26px;
-  border-radius: 12px;
-  font-weight: 600;
+.hint {
+  margin-top: 8px;
+  color: #0284c7;
+  font-style: italic;
   font-size: 1rem;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
-.modal-content button:first-child {
-  background: #f3f4f6;
-  color: #1e293b;
+.quiz-question {
+  margin-bottom: 32px;
+  padding: 20px;
+  border-radius: 12px;
+  background: #f9f9ff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.modal-content button:last-child {
-  background: linear-gradient(to right, #7c3aed, #8b5cf6);
-  color: white;
+.congrats-section {
+  text-align: center;
+  margin-top: 80px;
 }
 
 .medal-image {
@@ -276,10 +239,5 @@
 
 @keyframes slideInLeft {
   0% { opacity: 0; transform: translateX(-24px); }
-  100% { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes slideInRight {
-  0% { opacity: 0; transform: translateX(24px); }
   100% { opacity: 1; transform: translateX(0); }
 }

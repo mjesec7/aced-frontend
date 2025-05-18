@@ -26,7 +26,7 @@
 
         <div class="progress-bar-wrapper">
           <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
-          <span class="progress-label">Прогресс: {{ currentStep + 1 }} / {{ totalSteps }}</span>
+          <span class="progress-label">Прогресс: {{ currentPhaseIndex + 1 }} / {{ allPhases.length }}</span>
         </div>
 
         <div v-if="!lessonCompleted">
@@ -38,41 +38,32 @@
             </div>
           </div>
 
-          <div v-else-if="currentPhase.type === 'exerciseGroup'">
-            <h3>✏️ Упражнения</h3>
-            <div v-for="(exercise, i) in currentPhase.data.exercises" :key="i" class="exercise-block">
-              <p class="exercise-question">{{ exercise.question }}</p>
-              <div v-if="Array.isArray(exercise.options) && exercise.options.length">
-                <label v-for="(opt, j) in exercise.options" :key="j">
-                  <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
-                </label>
-              </div>
-              <div v-else>
-                <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
-              </div>
-              <button @click="submitAnswer(exercise)">Проверить</button>
-              <p v-if="confirmation">{{ confirmation }}</p>
-              <p v-if="mistakeCount >= 3 && exercise.hint" class="hint">💡 Подсказка: {{ exercise.hint }}</p>
+          <div v-else-if="currentPhase.type === 'exercise'">
+            <h3>✏️ Упражнение</h3>
+            <p class="exercise-question">{{ currentPhase.data.question }}</p>
+            <div v-if="Array.isArray(currentPhase.data.options) && currentPhase.data.options.length">
+              <label v-for="(opt, j) in currentPhase.data.options" :key="j">
+                <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
+              </label>
             </div>
-            <div class="navigation-area">
-              <button class="nav-btn" @click="goNext">Далее</button>
+            <div v-else>
+              <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
             </div>
+            <button class="submit-btn" @click="submitAnswer">Проверить</button>
+            <p v-if="confirmation">{{ confirmation }}</p>
+            <p v-if="mistakeCount >= 3 && currentPhase.data.hint" class="hint">💡 Подсказка: {{ currentPhase.data.hint }}</p>
           </div>
 
           <div v-else-if="currentPhase.type === 'quiz'">
             <h3>🎮 Финальный тест</h3>
-            <div v-for="(q, i) in currentPhase.data" :key="i" class="quiz-question">
-              <p>{{ q.question }}</p>
-              <div v-for="(opt, j) in q.options" :key="j">
-                <label>
-                  <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
-                </label>
-              </div>
-              <p v-if="mistakeCount >= 3 && q.hint" class="hint">💡 Подсказка: {{ q.hint }}</p>
+            <p>{{ currentPhase.data.question }}</p>
+            <div v-for="(opt, j) in currentPhase.data.options" :key="j">
+              <label>
+                <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
+              </label>
             </div>
-            <div class="navigation-area">
-              <button class="nav-btn" @click="completeLesson">Завершить</button>
-            </div>
+            <button class="submit-btn" @click="submitAnswer">Ответить</button>
+            <p v-if="confirmation">{{ confirmation }}</p>
           </div>
         </div>
 
@@ -86,7 +77,6 @@
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
-
 
 <script>
 import axios from 'axios';
@@ -103,7 +93,6 @@ export default {
       lesson: {},
       started: false,
       currentPhaseIndex: 0,
-      currentExerciseIndex: 0,
       userAnswer: '',
       confirmation: '',
       mistakeCount: 0,
@@ -122,18 +111,18 @@ export default {
     allPhases() {
       const phases = [];
       if (Array.isArray(this.lesson.explanations)) {
-        this.lesson.explanations.forEach((ex, i) => phases.push({ type: 'explanation', data: ex, index: i }));
+        this.lesson.explanations.forEach((ex) => phases.push({ type: 'explanation', data: ex }));
       }
       if (Array.isArray(this.lesson.exerciseGroups)) {
-        this.lesson.exerciseGroups.forEach((group, i) => {
-          group.exercises.forEach((ex, j) =>
-            phases.push({ type: 'exercise', groupIndex: i, data: ex, index: j })
+        this.lesson.exerciseGroups.forEach((group) => {
+          group.exercises.forEach((ex) =>
+            phases.push({ type: 'exercise', data: ex })
           );
         });
       }
       if (Array.isArray(this.lesson.quiz)) {
-        this.lesson.quiz.forEach((quiz, i) =>
-          phases.push({ type: 'quiz', data: quiz, index: i })
+        this.lesson.quiz.forEach((quiz) =>
+          phases.push({ type: 'quiz', data: quiz })
         );
       }
       return phases;
@@ -266,10 +255,6 @@ export default {
   }
 };
 </script>
-
-
-
-
 
 
 <style scoped>
