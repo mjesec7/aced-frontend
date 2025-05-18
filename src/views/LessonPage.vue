@@ -18,6 +18,7 @@
     </div>
 
     <div v-else-if="!showPaywallModal" class="lesson-split">
+      <!-- Left Panel: Explanation / Theory -->
       <div class="lesson-left">
         <div class="lesson-header">
           <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) }}</h2>
@@ -33,43 +34,55 @@
           <div v-if="currentPhase.type === 'explanation'">
             <h3>📚 Объяснение</h3>
             <p class="explanation-text">{{ currentPhase.data }}</p>
+            <p class="example-text">{{ lesson.examples }}</p>
             <div class="navigation-area">
-              <button class="nav-btn" @click="goNext">Далее</button>
+              <button class="nav-btn" @click="goNext">➡️ Далее</button>
             </div>
           </div>
 
-          <div v-else-if="currentPhase.type === 'exercise'">
-            <h3>✏️ Упражнение</h3>
-            <p class="exercise-question">{{ currentPhase.data.question }}</p>
-            <div v-if="Array.isArray(currentPhase.data.options) && currentPhase.data.options.length">
-              <label v-for="(opt, j) in currentPhase.data.options" :key="j">
-                <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
-              </label>
-            </div>
-            <div v-else>
-              <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
-            </div>
-            <button class="submit-btn" @click="submitAnswer">Проверить</button>
-            <p v-if="confirmation">{{ confirmation }}</p>
-            <p v-if="mistakeCount >= 3 && currentPhase.data.hint" class="hint">💡 Подсказка: {{ currentPhase.data.hint }}</p>
-          </div>
-
-          <div v-else-if="currentPhase.type === 'quiz'">
-            <h3>🎮 Финальный тест</h3>
-            <p>{{ currentPhase.data.question }}</p>
-            <div v-for="(opt, j) in currentPhase.data.options" :key="j">
-              <label>
-                <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
-              </label>
-            </div>
-            <button class="submit-btn" @click="submitAnswer">Ответить</button>
-            <p v-if="confirmation">{{ confirmation }}</p>
+          <div v-else class="locked-overlay">
+            📌 Практическая часть справа ⮕
           </div>
         </div>
 
         <div v-else class="congrats-section">
           <h3>🏆 Урок завершён!</h3>
           <img :src="medalImage" alt="Медаль" class="medal-image" />
+        </div>
+      </div>
+
+      <!-- Right Panel: Practical -->
+      <div class="lesson-right" v-if="!lessonCompleted">
+        <div v-if="currentPhase.type === 'exercise'">
+          <h3>✏️ Упражнение</h3>
+          <p class="exercise-question">{{ currentPhase.data.question }}</p>
+          <div v-if="Array.isArray(currentPhase.data.options) && currentPhase.data.options.length">
+            <label v-for="(opt, j) in currentPhase.data.options" :key="j">
+              <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
+            </label>
+          </div>
+          <div v-else>
+            <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
+          </div>
+          <button class="submit-btn" @click="submitAnswer">Проверить</button>
+          <p v-if="confirmation" class="confirmation">{{ confirmation }}</p>
+          <p v-if="mistakeCount >= 3 && currentPhase.data.hint" class="hint">💡 Подсказка: {{ currentPhase.data.hint }}</p>
+        </div>
+
+        <div v-else-if="currentPhase.type === 'quiz'">
+          <h3>🎮 Финальный тест</h3>
+          <p class="exercise-question">{{ currentPhase.data.question }}</p>
+          <div v-for="(opt, j) in currentPhase.data.options" :key="j">
+            <label>
+              <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
+            </label>
+          </div>
+          <button class="submit-btn" @click="submitAnswer">Ответить</button>
+          <p v-if="confirmation" class="confirmation">{{ confirmation }}</p>
+        </div>
+
+        <div v-else>
+          <h3>⌛ Ожидание действия слева...</h3>
         </div>
       </div>
     </div>

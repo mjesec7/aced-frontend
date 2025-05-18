@@ -1,4 +1,4 @@
-/* Updated LessonPage.css */
+/* Updated LessonPage.css with split screen adjustments */
 .lesson-page {
   background: linear-gradient(135deg, #f9fafb, #eef2ff);
   min-height: 100vh;
@@ -9,63 +9,6 @@
   scroll-behavior: smooth;
 }
 
-.intro-screen {
-  padding: 60px 40px;
-  max-width: 800px;
-  margin: auto;
-  text-align: center;
-  animation: fadeIn 0.6s ease-in-out;
-}
-
-.intro-screen .lesson-title {
-  font-size: 3.25rem;
-  font-weight: 900;
-  margin-bottom: 24px;
-  color: #5b21b6;
-}
-
-.intro-screen p {
-  font-size: 1.25rem;
-  margin: 12px 0;
-  color: #475569;
-  line-height: 1.6;
-}
-
-.start-btn {
-  margin-top: 30px;
-  padding: 14px 48px;
-  font-weight: 700;
-  font-size: 1.2rem;
-  border: none;
-  border-radius: 16px;
-  background: linear-gradient(to right, #8b5cf6, #7c3aed);
-  color: #fff;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35);
-  transition: transform 0.2s ease, background 0.3s;
-}
-
-.start-btn:hover {
-  transform: translateY(-2px) scale(1.03);
-  background: linear-gradient(to right, #7c3aed, #6d28d9);
-}
-
-.exit-btn {
-  position: absolute;
-  top: 24px;
-  right: 32px;
-  font-size: 1.6rem;
-  background: transparent;
-  border: none;
-  color: #7c3aed;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.exit-btn:hover {
-  color: #5b21b6;
-}
-
 .lesson-split {
   display: flex;
   height: 100vh;
@@ -73,13 +16,24 @@
 }
 
 .lesson-left {
-  width: 100%;
+  width: 48%;
   padding: 40px;
   overflow-y: auto;
   background: #ffffff;
+  border-right: 4px solid #e5e7eb;
   display: flex;
   flex-direction: column;
   animation: slideInLeft 0.5s ease-in-out;
+}
+
+.lesson-right {
+  width: 52%;
+  padding: 40px;
+  background: #f9fafb;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.5s ease-in-out;
 }
 
 .lesson-header {
@@ -125,6 +79,13 @@
   padding-left: 6px;
 }
 
+.example-text {
+  margin-top: 20px;
+  font-style: italic;
+  color: #4c1d95;
+  font-size: 1rem;
+}
+
 .exercise-question {
   font-size: 1.25rem;
   font-weight: 600;
@@ -160,8 +121,7 @@ label input[type="radio"] {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  margin-top: auto;
-  padding-top: 48px;
+  margin-top: 32px;
 }
 
 .confirm-btn, .nav-btn, .submit-btn {
@@ -205,6 +165,16 @@ label input[type="radio"] {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
+.locked-overlay {
+  margin-top: 40px;
+  font-size: 1.1rem;
+  padding: 24px;
+  background: #ede9fe;
+  border-left: 5px solid #a78bfa;
+  border-radius: 10px;
+  color: #6b21a8;
+}
+
 .congrats-section {
   text-align: center;
   margin-top: 80px;
@@ -239,5 +209,10 @@ label input[type="radio"] {
 
 @keyframes slideInLeft {
   0% { opacity: 0; transform: translateX(-24px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  0% { opacity: 0; transform: translateX(24px); }
   100% { opacity: 1; transform: translateX(0); }
 }
