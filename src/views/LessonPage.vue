@@ -270,7 +270,7 @@ export default {
 </script>
 
 
-<style scoped>
+<style>
 @import '@/assets/css/LessonPage.css';
 
 .ai-help-btn {
