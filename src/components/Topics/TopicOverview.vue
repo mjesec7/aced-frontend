@@ -13,12 +13,12 @@
             v-for="lesson in lessons"
             :key="lesson._id"
             class="lesson-item"
-            :class="{ locked: lesson.type === 'premium' && userStatus === 'free' }"
+            :class="{ locked: lesson.type === 'premium' && userPlan === 'free' }"
           >
             <span>{{ getLessonName(lesson) }}</span>
             <button
               @click="startLesson(lesson)"
-              :disabled="lesson.type === 'premium' && userStatus === 'free'"
+              :disabled="lesson.type === 'premium' && userPlan === 'free'"
             >
               {{ lesson.type === 'premium' ? '🔒 Премиум' : 'Начать' }}
             </button>
@@ -46,7 +46,7 @@ export default {
       topic: null,
       lessons: [],
       loading: true,
-      userStatus: 'free',
+      userPlan: 'free',
       lang: localStorage.getItem('lang') || 'en'
     };
   },
@@ -56,21 +56,21 @@ export default {
 
     try {
       const token = await auth.currentUser?.getIdToken();
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      if (token && auth.currentUser?.uid) {
-        const res = await axios.get(`${BASE_URL}/users/${auth.currentUser.uid}/status`, { headers });
-        this.userStatus = res.data?.status || 'free';
-      } else {
-        this.userStatus = 'free';
+      if (token) {
+        const headers = { Authorization: `Bearer ${token}` };
+        const statusRes = await axios.get(`${BASE_URL}/users/${auth.currentUser.uid}/status`, { headers });
+        this.userPlan = statusRes.data?.status || 'free';
+        console.log('📦 User plan loaded:', this.userPlan);
       }
     } catch (err) {
-      console.warn('⚠️ Не удалось получить статус пользователя, устанавливаем free.');
-      this.userStatus = 'free';
+      console.warn('⚠️ Не удалось получить статус пользователя. Установлено по умолчанию: free');
+      this.userPlan = 'free';
     }
 
     try {
       const topicRes = await axios.get(`${BASE_URL}/topics/${topicId}`);
       this.topic = topicRes.data;
+
       const lessonsRes = await axios.get(`${BASE_URL}/topics/${topicId}/lessons`);
       this.lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
     } catch (err) {
@@ -91,14 +91,16 @@ export default {
       return lesson.lessonName?.[this.lang] || lesson.lessonName?.en || lesson.lessonName || 'Без названия';
     },
     startLesson(lesson) {
-      if (lesson.type === 'premium' && this.userStatus === 'free') {
+      if (lesson.type === 'premium' && this.userPlan === 'free') {
         alert('❌ Этот урок доступен только подписчикам.');
         return;
       }
       this.$router.push({ name: 'LessonPage', params: { id: lesson._id } });
     },
     startFirstLesson() {
-      const first = this.lessons.find(l => l.type !== 'premium' || this.userStatus !== 'free');
+      const first = this.lessons.find(
+        l => l.type === 'free' || this.userPlan !== 'free'
+      );
       if (first) {
         this.startLesson(first);
       } else {
