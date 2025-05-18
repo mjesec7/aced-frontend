@@ -51,8 +51,8 @@
       <div class="lesson-right">
         <h3>✏️ Практическая зона</h3>
         <div v-if="understood && !lessonCompleted">
-          <template v-if="Array.isArray(currentExercise.options)">
-            <p class="exercise-question">{{ currentExercise.question || 'Вопрос отсутствует' }}</p>
+          <template v-if="currentExercise && Array.isArray(currentExercise.options)">
+            <p class="exercise-question">{{ currentExercise.question || '❌ Вопрос не найден. Проверьте структуру упражнения.' }}</p>
             <div class="exercise-options">
               <label v-for="(opt, i) in currentExercise.options" :key="i">
                 <input type="radio" :value="opt.option || opt" v-model="userAnswer" /> {{ opt.option || opt }}
@@ -60,7 +60,7 @@
             </div>
           </template>
           <template v-else>
-            <p class="exercise-question">{{ currentExercise.question || 'Вопрос отсутствует' }}</p>
+            <p class="exercise-question">{{ currentExercise.question || '❌ Вопрос не найден. Проверьте структуру упражнения.' }}</p>
             <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
           </template>
           <button class="submit-btn" @click="submitAnswer">Готово</button>
@@ -123,10 +123,10 @@ export default {
     currentExercise() {
       const index = this.currentStep - 2;
       const exLength = this.lesson.exercises?.length || 0;
-      if (index < 0) return {};
+      if (index < 0) return null;
       if (index < exLength) return this.lesson.exercises[index];
       const abcIndex = index - exLength;
-      return this.lesson.abcExercises?.[abcIndex] || {};
+      return this.lesson.abcExercises?.[abcIndex] || null;
     },
     formattedTime() {
       const minutes = Math.floor(this.elapsedSeconds / 60);
@@ -147,7 +147,7 @@ export default {
   },
   methods: {
     getLocalized(field) {
-      return field?.[this.$i18n?.locale || 'en'] || field?.en || (typeof field === 'string' ? field : '');
+      return typeof field === 'string' ? field : (field?.en || '');
     },
     async loadLesson() {
       try {
@@ -178,7 +178,7 @@ export default {
       this.understood = true;
     },
     submitAnswer() {
-      const correct = this.currentExercise.correctAnswer?.toLowerCase() || this.currentExercise.answer?.toLowerCase();
+      const correct = this.currentExercise?.correctAnswer?.toLowerCase() || this.currentExercise?.answer?.toLowerCase();
       const answer = this.userAnswer.trim().toLowerCase();
       if (!answer) return this.confirmation = '⚠️ Пожалуйста, введите ответ.';
       if (answer === correct) this.confirmation = '✅ Верно!';
