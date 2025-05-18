@@ -117,18 +117,22 @@ export default {
   },
   computed: {
     ...mapGetters('user', ['userStatus', 'isPremiumUser']),
-    exerciseSteps() {
-      const exCount = Array.isArray(this.lesson.exercises) ? this.lesson.exercises.length : 0;
-      const abcCount = Array.isArray(this.lesson.abcExercises) ? this.lesson.abcExercises.length : 0;
-      return 2 + exCount + abcCount;
+    totalSteps() {
+      const explanationCount = Array.isArray(this.lesson.explanations) ? this.lesson.explanations.length : 0;
+      const groupCount = Array.isArray(this.lesson.exerciseGroups) ? this.lesson.exerciseGroups.length : 0;
+      return explanationCount + groupCount + 1; // +1 for quiz
     },
-    currentExercise() {
-      const index = this.currentStep - 2;
-      const exLength = this.lesson.exercises?.length || 0;
-      if (index < 0) return null;
-      if (index < exLength) return this.lesson.exercises[index];
-      const abcIndex = index - exLength;
-      return this.lesson.abcExercises?.[abcIndex] || null;
+    currentPhase() {
+      const index = this.currentStep;
+      const explanationCount = this.lesson.explanations?.length || 0;
+      const groupCount = this.lesson.exerciseGroups?.length || 0;
+
+      if (index < explanationCount) return { type: 'explanation', data: this.lesson.explanations[index] };
+      if (index < explanationCount + groupCount) {
+        const exIndex = index - explanationCount;
+        return { type: 'exerciseGroup', data: this.lesson.exerciseGroups[exIndex] };
+      }
+      return { type: 'quiz', data: this.lesson.quiz || [] };
     },
     formattedTime() {
       const minutes = Math.floor(this.elapsedSeconds / 60);
@@ -136,7 +140,7 @@ export default {
       return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     },
     canProceed() {
-      return this.understood && this.confirmation.includes('✅');
+      return this.understood || this.confirmation.includes('✅');
     }
   },
   async mounted() {
@@ -160,30 +164,24 @@ export default {
           this.showPaywallModal = true;
           return;
         }
-        if (!Array.isArray(data.exercises)) data.exercises = [];
-        if (!Array.isArray(data.abcExercises)) data.abcExercises = [];
         this.lesson = data;
+        if (!Array.isArray(this.lesson.explanations)) this.lesson.explanations = [];
+        if (!Array.isArray(this.lesson.exerciseGroups)) this.lesson.exerciseGroups = [];
+        if (!Array.isArray(this.lesson.quiz)) this.lesson.quiz = [];
       } catch (err) {
         console.error('Ошибка загрузки урока:', err);
       }
     },
     startLesson() {
-      if (this.lesson.type === 'premium' && !this.isPremiumUser) {
-        this.showPaywallModal = true;
-        return;
-      }
       this.started = true;
       this.elapsedSeconds = 0;
       this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
     },
     confirmUnderstanding() {
       this.understood = true;
-      if (this.currentStep < 2) {
-        this.currentStep = 2;
-      }
     },
     submitAnswer() {
-      const correct = this.currentExercise?.correctAnswer?.toLowerCase() || this.currentExercise?.answer?.toLowerCase();
+      const correct = this.currentPhase.data?.correctAnswer?.toLowerCase() || this.currentPhase.data?.answer?.toLowerCase();
       const answer = this.userAnswer.trim().toLowerCase();
       if (!answer) return this.confirmation = '⚠️ Пожалуйста, введите ответ.';
       if (answer === correct) this.confirmation = '✅ Верно!';
@@ -196,7 +194,7 @@ export default {
       this.confirmation = '';
       this.understood = false;
       this.userAnswer = '';
-      if (this.currentStep < this.exerciseSteps) {
+      if (this.currentStep + 1 < this.totalSteps) {
         this.mistakeCount = 0;
         this.currentStep++;
       } else {
@@ -258,6 +256,7 @@ export default {
   }
 };
 </script>
+
 
 
 
