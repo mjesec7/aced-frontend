@@ -50,23 +50,25 @@
 
       <div class="lesson-right">
         <h3>✏️ Практическая зона</h3>
-        <div v-if="understood && !lessonCompleted">
-          <template v-if="currentExercise && Array.isArray(currentExercise.options)">
-            <p class="exercise-question">{{ currentExercise.question || '❌ Вопрос не найден. Проверьте структуру упражнения.' }}</p>
-            <div class="exercise-options">
-              <label v-for="(opt, i) in currentExercise.options" :key="i">
-                <input type="radio" :value="opt.option || opt" v-model="userAnswer" /> {{ opt.option || opt }}
-              </label>
-            </div>
-          </template>
-          <template v-else>
-            <p class="exercise-question">{{ currentExercise.question || '❌ Вопрос не найден. Проверьте структуру упражнения.' }}</p>
+        <div v-if="understood && !lessonCompleted && currentExercise">
+          <p class="exercise-question">{{ currentExercise.question || '❌ Вопрос отсутствует' }}</p>
+
+          <div v-if="Array.isArray(currentExercise.options)" class="exercise-options">
+            <label v-for="(opt, i) in currentExercise.options" :key="i">
+              <input type="radio" :value="opt.option || opt" v-model="userAnswer" />
+              {{ opt.option || opt }}
+            </label>
+          </div>
+
+          <div v-else>
             <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
-          </template>
+          </div>
+
           <button class="submit-btn" @click="submitAnswer">Готово</button>
           <div v-if="confirmation" class="confirmation">{{ confirmation }}</div>
           <div v-if="mistakeCount >= 3 && currentExercise.hint" class="hint-box">💡 Подсказка: {{ currentExercise.hint }}</div>
         </div>
+
         <div v-else-if="!understood">
           <div class="locked-overlay">⛔️ Заблокировано до нажатия "Понял"</div>
         </div>
@@ -90,6 +92,7 @@ import axios from 'axios';
 import confetti from 'canvas-confetti';
 import { auth } from '@/firebase';
 import { mapGetters } from 'vuex';
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default {
@@ -116,22 +119,21 @@ export default {
   computed: {
     ...mapGetters('user', ['userStatus', 'isPremiumUser']),
     exerciseSteps() {
-      const exCount = Array.isArray(this.lesson.exercises) ? this.lesson.exercises.length : 0;
-      const abcCount = Array.isArray(this.lesson.abcExercises) ? this.lesson.abcExercises.length : 0;
-      return 2 + exCount + abcCount;
+      return 2 + (this.lesson.exercises?.length || 0) + (this.lesson.abcExercises?.length || 0);
     },
     currentExercise() {
-      const index = this.currentStep - 2;
-      const exLength = this.lesson.exercises?.length || 0;
-      if (index < 0) return null;
-      if (index < exLength) return this.lesson.exercises[index];
-      const abcIndex = index - exLength;
-      return this.lesson.abcExercises?.[abcIndex] || null;
+      const step = this.currentStep - 2;
+      const ex = this.lesson.exercises || [];
+      const abc = this.lesson.abcExercises || [];
+      if (step < 0) return null;
+      if (step < ex.length) return ex[step];
+      const abcIndex = step - ex.length;
+      return abc[abcIndex] || null;
     },
     formattedTime() {
-      const minutes = Math.floor(this.elapsedSeconds / 60);
-      const seconds = this.elapsedSeconds % 60;
-      return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+      const min = Math.floor(this.elapsedSeconds / 60);
+      const sec = this.elapsedSeconds % 60;
+      return `${min}:${sec < 10 ? '0' : ''}${sec}`;
     },
     canProceed() {
       return this.understood && this.confirmation.includes('✅');
@@ -154,15 +156,17 @@ export default {
         const lessonId = this.$route.params.id;
         const { data } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
         if (!data || !data._id) return this.$router.push('/catalogue');
+
         if (data.type === 'premium' && !this.isPremiumUser) {
           this.showPaywallModal = true;
           return;
         }
-        if (!Array.isArray(data.exercises)) data.exercises = [];
-        if (!Array.isArray(data.abcExercises)) data.abcExercises = [];
+
+        data.exercises = Array.isArray(data.exercises) ? data.exercises : [];
+        data.abcExercises = Array.isArray(data.abcExercises) ? data.abcExercises : [];
         this.lesson = data;
       } catch (err) {
-        console.error('Ошибка загрузки урока:', err);
+        console.error('❌ Ошибка загрузки урока:', err);
       }
     },
     startLesson() {
@@ -181,11 +185,8 @@ export default {
       const correct = this.currentExercise?.correctAnswer?.toLowerCase() || this.currentExercise?.answer?.toLowerCase();
       const answer = this.userAnswer.trim().toLowerCase();
       if (!answer) return this.confirmation = '⚠️ Пожалуйста, введите ответ.';
-      if (answer === correct) this.confirmation = '✅ Верно!';
-      else {
-        this.confirmation = '❌ Неверно. Попробуйте снова.';
-        this.mistakeCount++;
-      }
+      this.confirmation = answer === correct ? '✅ Верно!' : '❌ Неверно. Попробуйте снова.';
+      if (answer !== correct) this.mistakeCount++;
     },
     goNext() {
       this.confirmation = '';
@@ -203,23 +204,21 @@ export default {
       this.showConfetti = true;
       setTimeout(() => this.launchConfetti(), 200);
 
-      const token = await auth.currentUser?.getIdToken();
-      const duration = this.elapsedSeconds;
-      this.medalImage = this.mistakeCount === 0
-        ? '/images/medals/gold.png'
-        : this.mistakeCount <= 2
-        ? '/images/medals/silver.png'
-        : '/images/medals/bronze.png';
-
       try {
+        const token = await auth.currentUser?.getIdToken();
+        const duration = this.elapsedSeconds;
+        this.medalImage = this.mistakeCount === 0
+          ? '/images/medals/gold.png'
+          : this.mistakeCount <= 2
+          ? '/images/medals/silver.png'
+          : '/images/medals/bronze.png';
+
         await axios.post(`${BASE_URL}/users/${this.userId}/diary`, {
           lessonName: this.getLocalized(this.lesson.lessonName),
           duration,
           date: new Date().toISOString(),
           mistakes: this.mistakeCount
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        }, { headers: { Authorization: `Bearer ${token}` } });
 
         await axios.post(`${BASE_URL}/users/${this.userId}/analytics`, {
           subject: this.lesson.subject,
@@ -227,17 +226,15 @@ export default {
           timeSpent: duration,
           mistakes: this.mistakeCount,
           completed: true
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        }, { headers: { Authorization: `Bearer ${token}` } });
       } catch (err) {
         console.error('❌ Ошибка отправки аналитики:', err);
       }
     },
     launchConfetti() {
       const canvas = this.$refs.confettiCanvas;
-      const myConfetti = confetti.create(canvas, { resize: true, useWorker: true });
-      myConfetti({ particleCount: 150, spread: 160, origin: { y: 0.6 } });
+      const confettiFx = confetti.create(canvas, { resize: true, useWorker: true });
+      confettiFx({ particleCount: 150, spread: 160, origin: { y: 0.6 } });
       setTimeout(() => (this.showConfetti = false), 5000);
     },
     confirmExit() {
@@ -253,6 +250,7 @@ export default {
   }
 };
 </script>
+
 
 
 
