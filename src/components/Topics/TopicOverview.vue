@@ -3,8 +3,8 @@
     <div v-if="loading" class="loading">Загрузка информации о курсе...</div>
 
     <div v-else-if="topic" class="topic-card">
-      <h1 class="title">📘 {{ topic.name?.en || topic.name || 'Без названия' }}</h1>
-      <p class="description">{{ topic.description?.en || topic.description || 'Нет описания для этой темы.' }}</p>
+      <h1 class="title">📘 {{ getTopicName(topic) }}</h1>
+      <p class="description">{{ getTopicDescription(topic) }}</p>
 
       <div class="lesson-list">
         <h2>📚 Уроки</h2>
@@ -13,12 +13,12 @@
             v-for="lesson in lessons"
             :key="lesson._id"
             class="lesson-item"
-            :class="{ locked: lesson.type === 'premium' && userPlan === 'free' }"
+            :class="{ locked: lesson.type === 'premium' && userStatus === 'free' }"
           >
-            <span>{{ lesson.lessonName?.en || lesson.lessonName }}</span>
+            <span>{{ getLessonName(lesson) }}</span>
             <button
               @click="startLesson(lesson)"
-              :disabled="lesson.type === 'premium' && userPlan === 'free'"
+              :disabled="lesson.type === 'premium' && userStatus === 'free'"
             >
               {{ lesson.type === 'premium' ? '🔒 Премиум' : 'Начать' }}
             </button>
@@ -46,29 +46,28 @@ export default {
       topic: null,
       lessons: [],
       loading: true,
-      userPlan: 'free'
+      userStatus: 'free',
+      lang: localStorage.getItem('lang') || 'en'
     };
   },
   async mounted() {
     const topicId = this.$route.params.id;
     const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-    // Получаем статус подписки пользователя
     try {
       const token = await auth.currentUser?.getIdToken();
-      if (token) {
-        const headers = { Authorization: `Bearer ${token}` };
-        const userStatusRes = await axios.get(`${BASE_URL}/users/${auth.currentUser.uid}/status`, { headers });
-        this.userPlan = userStatusRes.data?.status || 'free';
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      if (token && auth.currentUser?.uid) {
+        const res = await axios.get(`${BASE_URL}/users/${auth.currentUser.uid}/status`, { headers });
+        this.userStatus = res.data?.status || 'free';
       } else {
-        this.userPlan = 'free';
+        this.userStatus = 'free';
       }
     } catch (err) {
-      console.warn('⚠️ Не удалось получить текущий тариф пользователя.');
-      this.userPlan = 'free';
+      console.warn('⚠️ Не удалось получить статус пользователя, устанавливаем free.');
+      this.userStatus = 'free';
     }
 
-    // Загружаем данные темы и связанные уроки
     try {
       const topicRes = await axios.get(`${BASE_URL}/topics/${topicId}`);
       this.topic = topicRes.data;
@@ -82,17 +81,24 @@ export default {
     }
   },
   methods: {
+    getTopicName(topic) {
+      return topic.name?.[this.lang] || topic.name?.en || topic.name || 'Без названия';
+    },
+    getTopicDescription(topic) {
+      return topic.description?.[this.lang] || topic.description?.en || topic.description || 'Нет описания для этой темы.';
+    },
+    getLessonName(lesson) {
+      return lesson.lessonName?.[this.lang] || lesson.lessonName?.en || lesson.lessonName || 'Без названия';
+    },
     startLesson(lesson) {
-      if (lesson.type === 'premium' && this.userPlan === 'free') {
+      if (lesson.type === 'premium' && this.userStatus === 'free') {
         alert('❌ Этот урок доступен только подписчикам.');
         return;
       }
       this.$router.push({ name: 'LessonPage', params: { id: lesson._id } });
     },
     startFirstLesson() {
-      const first = this.lessons.find(
-        l => l.type !== 'premium' || this.userPlan !== 'free'
-      );
+      const first = this.lessons.find(l => l.type !== 'premium' || this.userStatus !== 'free');
       if (first) {
         this.startLesson(first);
       } else {
