@@ -29,11 +29,9 @@
           <h2 class="lesson-title">{{ topic.name }}</h2>
           <button class="add-btn" @click="addToStudyPlan(topic)">＋</button>
         </div>
-        <p class="lesson-topic">
-          Уровень: {{ topic.level }} / Предмет: {{ topic.subject }}
+        <p class="lesson-topic">Уровень: {{ topic.level }} / Предмет: {{ topic.subject }}
         </p>
-        <p class="lesson-topic">
-          📅 Уроков: {{ topic.lessonCount }} / Среднее время: {{ topic.totalTime }} мин.
+        <p class="lesson-topic">📅 Уроков: {{ topic.lessonCount }} / Среднее время: {{ topic.totalTime }} мин.
         </p>
         <span class="access-label" :class="topic.type === 'premium' ? 'paid' : 'free'">
           {{ topic.type === 'premium' ? 'Платный' : 'Бесплатный' }}
@@ -56,7 +54,7 @@
 
 <script>
 import axios from 'axios';
-import { mapState } from 'vuex';
+import { mapGetters } from 'vuex';
 import { auth } from '@/firebase';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
@@ -74,42 +72,29 @@ export default {
       searchQuery: '',
       showPaywall: false,
       requestedTopicId: null,
-      plan: 'free',
       lang: localStorage.getItem('lang') || 'en'
     };
   },
   computed: {
-    ...mapState(['firebaseUserId']),
+    ...mapGetters('user', ['isPremiumUser', 'userStatus']),
     subscriptionClass() {
-      return this.plan === 'pro' ? 'badge-pro' 
-           : this.plan === 'start' ? 'badge-start' 
-           : 'badge-free';
+      return this.userStatus === 'pro' ? 'badge-pro'
+        : this.userStatus === 'start' ? 'badge-start'
+        : 'badge-free';
     },
     subscriptionText() {
-      return this.plan === 'pro' ? 'Pro подписка' 
-           : this.plan === 'start' ? 'Start подписка' 
-           : 'Бесплатный доступ';
+      return this.userStatus === 'pro' ? 'Pro подписка'
+        : this.userStatus === 'start' ? 'Start подписка'
+        : 'Бесплатный доступ';
     }
   },
   async mounted() {
-    const storedId = this.firebaseUserId || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
+    const storedId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
     if (!storedId) {
       this.loading = false;
       return;
     }
     this.userId = storedId;
-
-    try {
-      const token = await auth.currentUser?.getIdToken();
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/status`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      this.plan = res.data.status || 'free';
-    } catch (err) {
-      console.warn('⚠️ Не удалось получить статус подписки.');
-      this.plan = 'free';
-    }
-
     this.loadLessons();
   },
   methods: {
@@ -167,7 +152,7 @@ export default {
       return 'Без темы';
     },
     handleAccess(topicId, type) {
-      if (type === 'premium' && (!this.plan || this.plan === 'free')) {
+      if (type === 'premium' && !this.isPremiumUser) {
         this.requestedTopicId = topicId;
         this.showPaywall = true;
       } else {
@@ -205,6 +190,7 @@ export default {
   }
 };
 </script>
+
   
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');

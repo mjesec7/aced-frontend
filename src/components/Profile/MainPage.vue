@@ -71,7 +71,7 @@
 </template>
 
 <script>
-import { mapState } from 'vuex';
+import { mapGetters } from 'vuex';
 import axios from 'axios';
 import { auth } from '@/firebase';
 import StudyCard from '@/components/Profile/StudyCard.vue';
@@ -85,7 +85,6 @@ export default {
   data() {
     return {
       userId: null,
-      userStatus: 'free',
       recommendations: [],
       studyList: [],
       allSubjects: [],
@@ -99,7 +98,7 @@ export default {
     };
   },
   computed: {
-    ...mapState(['firebaseUserId']),
+    ...mapGetters('user', ['userStatus']),
     filteredRecommendations() {
       return this.recommendations
         .filter(t => t.lessons?.length)
@@ -131,12 +130,11 @@ export default {
     }
   },
   async mounted() {
-    const storedId = this.firebaseUserId || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
+    const storedId = this.$store.state.firebaseUserId || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
     if (!storedId) {
       return this.$router.push('/');
     }
     this.userId = storedId;
-    await this.fetchUserStatus();
     await Promise.all([this.fetchRecommendations(), this.fetchStudyList()]);
   },
   methods: {
@@ -145,18 +143,6 @@ export default {
     },
     getTopicDescription(topic) {
       return topic.description?.[this.lang] || topic.description?.en || topic.description || 'Описание отсутствует';
-    },
-    async fetchUserStatus() {
-      try {
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) return;
-        const headers = { Authorization: `Bearer ${token}` };
-        const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/status`, { headers });
-        this.userStatus = data.status || 'free';
-      } catch (err) {
-        console.warn('⚠️ Не удалось загрузить статус пользователя. По умолчанию: free');
-        this.userStatus = 'free';
-      }
     },
     async fetchRecommendations() {
       try {
@@ -249,6 +235,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .dashboard {

@@ -13,12 +13,12 @@
             v-for="lesson in lessons"
             :key="lesson._id"
             class="lesson-item"
-            :class="{ locked: lesson.type === 'premium' && userPlan === 'free' }"
+            :class="{ locked: lesson.type === 'premium' && !isPremiumUser }"
           >
             <span>{{ lesson.lessonName?.en || lesson.lessonName }}</span>
             <button
               @click="startLesson(lesson)"
-              :disabled="lesson.type === 'premium' && userPlan === 'free'"
+              :disabled="lesson.type === 'premium' && !isPremiumUser"
             >
               {{ lesson.type === 'premium' ? '🔒 Премиум' : 'Начать' }}
             </button>
@@ -38,6 +38,7 @@
 <script>
 import axios from 'axios';
 import { auth } from '@/firebase';
+import { mapGetters } from 'vuex';
 
 export default {
   name: 'TopicOverview',
@@ -45,9 +46,11 @@ export default {
     return {
       topic: null,
       lessons: [],
-      loading: true,
-      userPlan: 'free'
+      loading: true
     };
+  },
+  computed: {
+    ...mapGetters('user', ['isPremiumUser', 'userStatus'])
   },
   async mounted() {
     const topicId = this.$route.params.id;
@@ -56,10 +59,6 @@ export default {
     try {
       const token = await auth.currentUser?.getIdToken();
       const headers = { Authorization: `Bearer ${token}` };
-
-      // 🔐 Load subscription status
-      const userStatusRes = await axios.get(`${BASE_URL}/users/${auth.currentUser.uid}/status`, { headers });
-      this.userPlan = userStatusRes.data?.status || 'free';
 
       // ✅ Load topic by ID
       const topicRes = await axios.get(`${BASE_URL}/topics/${topicId}`);
@@ -77,7 +76,7 @@ export default {
   },
   methods: {
     startLesson(lesson) {
-      if (lesson.type === 'premium' && this.userPlan === 'free') {
+      if (lesson.type === 'premium' && !this.isPremiumUser) {
         alert('❌ Этот урок доступен только подписчикам.');
         return;
       }
@@ -85,7 +84,7 @@ export default {
     },
     startFirstLesson() {
       const first = this.lessons.find(
-        l => l.type !== 'premium' || this.userPlan !== 'free'
+        l => l.type !== 'premium' || this.isPremiumUser
       );
       if (first) {
         this.startLesson(first);
@@ -96,6 +95,7 @@ export default {
   }
 };
 </script>
+
 
 
 <style scoped>

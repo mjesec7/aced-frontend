@@ -5,42 +5,43 @@
         <!-- 👤 User Info -->
         <div class="user-info" v-if="user">
           <img src="@/assets/icons/user.png" alt="User Icon" class="user-icon" />
-          <span class="user-name">{{ user.name || user.email }}</span>
+          <div class="user-details">
+            <span class="user-name">{{ user.name || user.email }}</span>
+            <span class="user-plan">📦 {{ planLabel }}</span>
+          </div>
         </div>
 
         <!-- 📚 Navigation Links -->
-       <!-- 📚 Navigation Links -->
-<div class="nav-links">
-  <router-link
-    to="/profile/main"
-    class="nav-item"
-    :class="{ active: isActive('main') }"
-  >
-    <span class="highlight"></span>
-    Главная
-  </router-link>
+        <div class="nav-links">
+          <router-link
+            to="/profile/main"
+            class="nav-item"
+            :class="{ active: isActive('main') }"
+          >
+            <span class="highlight"></span>
+            Главная
+          </router-link>
 
-  <router-link
-    to="/profile/catalogue"
-    class="nav-item"
-    :class="{ active: isActive('catalogue') }"
-  >
-    <span class="highlight"></span>
-    Каталог
-  </router-link>
+          <router-link
+            to="/profile/catalogue"
+            class="nav-item"
+            :class="{ active: isActive('catalogue') }"
+          >
+            <span class="highlight"></span>
+            Каталог
+          </router-link>
 
-  <router-link
-    v-for="link in links"
-    :key="link.name"
-    :to="link.name === 'settings' ? `/${link.name}` : `/profile/${link.name}`"
-    class="nav-item"
-    :class="{ active: isActive(link.name) }"
-  >
-    <span class="highlight"></span>
-    {{ link.label }}
-  </router-link>
-</div>
-
+          <router-link
+            v-for="link in links"
+            :key="link.name"
+            :to="link.name === 'settings' ? `/${link.name}` : `/profile/${link.name}`"
+            class="nav-item"
+            :class="{ active: isActive(link.name) }"
+          >
+            <span class="highlight"></span>
+            {{ link.label }}
+          </router-link>
+        </div>
 
         <!-- 🚪 Logout -->
         <div class="bottom-logout">
@@ -65,7 +66,7 @@
 <script>
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase';
-import { mapState, mapMutations } from 'vuex';
+import { mapState, mapMutations, mapGetters } from 'vuex';
 
 export default {
   name: 'SideBar',
@@ -77,12 +78,18 @@ export default {
         { name: 'goal', label: 'Цели' },
         { name: 'diary', label: 'Дневник' },
         { name: 'homework', label: 'Помощь с ДЗ' },
-        { name: 'settings', label: 'Настройки' } // ✅ Added
+        { name: 'settings', label: 'Настройки' }
       ]
     };
   },
   computed: {
-    ...mapState(['user'])
+    ...mapState(['user']),
+    ...mapGetters('user', ['userStatus']),
+    planLabel() {
+      if (this.userStatus === 'pro') return 'Pro';
+      if (this.userStatus === 'start') return 'Start';
+      return 'Free';
+    }
   },
   mounted() {
     onAuthStateChanged(auth, (user) => {
@@ -90,8 +97,7 @@ export default {
         this.setUser({
           name: user.displayName || user.email?.split('@')[0],
           email: user.email,
-          uid: user.uid,
-          subscriptionPlan: localStorage.getItem('plan') || 'start'
+          uid: user.uid
         });
       }
     });
@@ -127,7 +133,6 @@ export default {
 </script>
 
 <style scoped>
-/* same beautiful styles unchanged */
 .sidebar-wrapper {
   position: relative;
 }
@@ -150,7 +155,7 @@ export default {
   height: 100%;
 }
 .user-info {
-  padding: 40px 20px 30px;
+  padding: 40px 20px 10px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -163,9 +168,17 @@ export default {
   width: 32px;
   height: 32px;
 }
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
 .user-name {
   font-weight: 700;
   font-size: 1rem;
+}
+.user-plan {
+  font-size: 0.85rem;
+  color: #6b7280;
 }
 .nav-links {
   flex-grow: 1;

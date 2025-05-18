@@ -35,6 +35,7 @@
 <script>
 import axios from 'axios';
 import { auth } from '@/firebase';
+import { mapGetters } from 'vuex';
 
 export default {
   name: 'StudyCard',
@@ -51,6 +52,7 @@ export default {
     };
   },
   computed: {
+    ...mapGetters('user', ['isPremiumUser']),
     displayName() {
       return this.topic.name?.[this.lang] || this.topic.name?.en || this.topic.name || this.topic.topic || 'Без названия';
     },
@@ -84,8 +86,10 @@ export default {
           alert('❌ Не удалось открыть урок. Данные темы отсутствуют.');
           return;
         }
-        const firstLesson = this.lessons.find(l => l && l._id);
-        if (!firstLesson) throw new Error('Урок не найден');
+        const firstLesson = this.lessons.find(
+          l => l && l._id && (l.type !== 'premium' || this.isPremiumUser)
+        );
+        if (!firstLesson) throw new Error('Нет доступа к уроку.');
         this.$router.push({ name: 'LessonPage', params: { id: firstLesson._id } });
       } catch (err) {
         console.error('❌ Ошибка перехода к уроку:', err);
@@ -113,6 +117,7 @@ export default {
   }
 };
 </script>
+
 
 
 <style scoped>

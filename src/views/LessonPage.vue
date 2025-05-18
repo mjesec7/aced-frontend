@@ -89,6 +89,7 @@
 import axios from 'axios';
 import confetti from 'canvas-confetti';
 import { auth } from '@/firebase';
+import { mapGetters } from 'vuex';
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default {
@@ -109,11 +110,11 @@ export default {
       showConfetti: false,
       medalImage: '',
       userId: null,
-      showPaywallModal: false,
-      userStatus: 'free'
+      showPaywallModal: false
     };
   },
   computed: {
+    ...mapGetters('user', ['userStatus', 'isPremiumUser']),
     exerciseSteps() {
       const exCount = Array.isArray(this.lesson.exercises) ? this.lesson.exercises.length : 0;
       const abcCount = Array.isArray(this.lesson.abcExercises) ? this.lesson.abcExercises.length : 0;
@@ -139,17 +140,6 @@ export default {
   async mounted() {
     this.userId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
     if (!this.userId) return this.$router.push('/');
-
-    try {
-      const token = await auth.currentUser?.getIdToken();
-      const res = await axios.get(`${BASE_URL}/users/${this.userId}/status`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      this.userStatus = res.data.status || 'free';
-    } catch (err) {
-      console.warn('⚠️ Не удалось получить статус пользователя. По умолчанию: free');
-    }
-
     await this.loadLesson();
   },
   beforeUnmount() {
@@ -164,7 +154,7 @@ export default {
         const lessonId = this.$route.params.id;
         const { data } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
         if (!data || !data._id) return this.$router.push('/catalogue');
-        if (data.type === 'premium' && this.userStatus === 'free') {
+        if (data.type === 'premium' && !this.isPremiumUser) {
           this.showPaywallModal = true;
           return;
         }
@@ -176,7 +166,7 @@ export default {
       }
     },
     startLesson() {
-      if (this.lesson.type === 'premium' && this.userStatus === 'free') {
+      if (this.lesson.type === 'premium' && !this.isPremiumUser) {
         this.showPaywallModal = true;
         return;
       }
