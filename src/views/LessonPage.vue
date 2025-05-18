@@ -1,5 +1,6 @@
 <template>
   <div class="lesson-page">
+    <!-- 🔒 Paywall -->
     <div v-if="showPaywallModal" class="modal">
       <div class="modal-content">
         <h3>🔒 Платный контент</h3>
@@ -9,6 +10,7 @@
       </div>
     </div>
 
+    <!-- 🚀 Intro Screen -->
     <div v-if="!started && !showPaywallModal" class="intro-screen">
       <button class="exit-btn" @click="confirmExit">❌</button>
       <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) || 'Без названия' }}</h2>
@@ -17,72 +19,102 @@
       <button class="start-btn" @click="startLesson">Начать урок</button>
     </div>
 
-    <div v-else-if="!showPaywallModal" class="lesson-split">
+    <!-- 📚 Main Lesson Split View -->
+    <div v-else-if="!showPaywallModal && !lessonCompleted" class="lesson-split">
       <div class="lesson-left">
+        <!-- 🕐 Header -->
         <div class="lesson-header">
           <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) }}</h2>
           <div class="timer-display">⏱ {{ formattedTime }}</div>
         </div>
 
-        <div class="progress-bar-wrapper">
-          <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
-          <span class="progress-label">Прогресс: {{ currentStep + 1 }} / {{ totalSteps }}</span>
+        <!-- 📊 Progress -->
+        <div class="progress-wrapper">
+          <div class="progress-bar" :style="{ width: ((currentStep + 1) / totalSteps) * 100 + '%' }"></div>
+          <span class="progress-text">{{ ((currentStep + 1) / totalSteps * 100).toFixed(0) }}% завершено</span>
         </div>
 
-        <div v-if="!lessonCompleted">
-          <div v-if="currentPhase.type === 'explanation'">
-            <h3>📚 Объяснение</h3>
-            <p class="explanation-text">{{ currentPhase.data }}</p>
-            <div class="navigation-area">
-              <button class="nav-btn" @click="goNext">Далее</button>
-            </div>
-          </div>
-
-          <div v-else-if="currentPhase.type === 'exerciseGroup'">
-            <h3>✏️ Упражнения</h3>
-            <div v-for="(exercise, i) in currentPhase.data.exercises" :key="i" class="exercise-block">
-              <p class="exercise-question">{{ exercise.question }}</p>
-              <div v-if="Array.isArray(exercise.options) && exercise.options.length">
-                <label v-for="(opt, j) in exercise.options" :key="j">
-                  <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
-                </label>
-              </div>
-              <div v-else>
-                <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
-              </div>
-              <button @click="submitAnswer(exercise)">Проверить</button>
-              <p v-if="confirmation">{{ confirmation }}</p>
-              <p v-if="mistakeCount >= 3 && exercise.hint" class="hint">💡 Подсказка: {{ exercise.hint }}</p>
-            </div>
-            <div class="navigation-area">
-              <button class="nav-btn" @click="goNext">Далее</button>
-            </div>
-          </div>
-
-          <div v-else-if="currentPhase.type === 'quiz'">
-            <h3>🎮 Финальный тест</h3>
-            <div v-for="(q, i) in currentPhase.data" :key="i" class="quiz-question">
-              <p>{{ q.question }}</p>
-              <div v-for="(opt, j) in q.options" :key="j">
-                <label>
-                  <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
-                </label>
-              </div>
-              <p v-if="mistakeCount >= 3 && q.hint" class="hint">💡 Подсказка: {{ q.hint }}</p>
-            </div>
-            <div class="navigation-area">
-              <button class="nav-btn" @click="completeLesson">Завершить</button>
-            </div>
-          </div>
+        <!-- 📖 Explanation Phase -->
+        <div v-if="currentPhase.type === 'explanation'" class="phase-block">
+          <h3>📚 Объяснение</h3>
+          <div v-html="getLocalized(currentPhase.data)" class="explanation-text"></div>
+          <button class="nav-btn" @click="goNext">Далее</button>
         </div>
 
-        <div v-else class="congrats-section">
-          <h3>🏆 Урок завершён!</h3>
-          <img :src="medalImage" alt="Медаль" class="medal-image" />
+        <!-- ✏️ Exercises Phase -->
+        <div v-else-if="currentPhase.type === 'exerciseGroup'" class="phase-block">
+          <h3>✏️ Практика</h3>
+          <div v-for="(ex, index) in currentPhase.data.exercises" :key="index" class="exercise-question-block">
+            <p class="exercise-question">{{ ex.question }}</p>
+
+            <div v-if="Array.isArray(ex.options)">
+              <label v-for="(opt, i) in ex.options" :key="i">
+                <input type="radio" :value="opt.option || opt" v-model="userAnswer" />
+                {{ opt.option || opt }}
+              </label>
+            </div>
+            <div v-else>
+              <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
+            </div>
+
+            <div class="btn-row">
+              <button @click="submitAnswer(ex)">Проверить</button>
+              <button @click="userAnswer = ''; confirmation = ''">Сброс</button>
+            </div>
+
+            <div v-if="confirmation" class="confirmation">{{ confirmation }}</div>
+            <div v-if="mistakeCount >= 3 && ex.hint" class="hint-box">
+              💡 Подсказка: {{ ex.hint }}
+            </div>
+          </div>
+
+          <button class="nav-btn" @click="goNext" :disabled="!confirmation.includes('✅')">Далее</button>
+        </div>
+
+        <!-- 🧠 Quiz Phase -->
+        <div v-else-if="currentPhase.type === 'quiz'" class="phase-block">
+          <h3>🧠 Квиз</h3>
+          <div v-for="(qz, i) in currentPhase.data" :key="i" class="quiz-block">
+            <p class="exercise-question">{{ qz.question }}</p>
+
+            <label v-for="(opt, j) in qz.options" :key="j">
+              <input type="radio" :value="opt" v-model="userAnswer" />
+              {{ opt }}
+            </label>
+
+            <div class="btn-row">
+              <button @click="submitAnswer(qz)">Проверить</button>
+              <button @click="userAnswer = ''; confirmation = ''">Сброс</button>
+            </div>
+
+            <div v-if="confirmation" class="confirmation">{{ confirmation }}</div>
+            <div v-if="mistakeCount >= 3 && qz.hint" class="hint-box">
+              💡 Подсказка: {{ qz.hint }}
+            </div>
+          </div>
+
+          <button class="nav-btn" @click="goNext" :disabled="!confirmation.includes('✅')">Завершить</button>
         </div>
       </div>
     </div>
 
+    <!-- 🏆 Completion -->
+    <div v-if="lessonCompleted" class="congrats-section">
+      <h3>🏁 Урок завершён!</h3>
+      <p>Вы прошли все этапы!</p>
+      <img :src="medalImage" class="medal-image" alt="Медаль" />
+    </div>
+
+    <!-- ❓ Exit Modal -->
+    <div v-if="showExitModal" class="modal">
+      <div class="modal-content">
+        <p>Вы уверены, что хотите выйти? Прогресс будет потерян.</p>
+        <button @click="cancelExit">Отмена</button>
+        <button @click="exitLesson">Выйти</button>
+      </div>
+    </div>
+
+    <!-- 🎉 Confetti Canvas -->
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
@@ -266,6 +298,7 @@ export default {
   }
 };
 </script>
+
 
 
 
