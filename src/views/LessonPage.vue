@@ -24,62 +24,62 @@
           <div class="timer-display">⏱ {{ formattedTime }}</div>
         </div>
 
+        <div class="progress-bar-wrapper">
+          <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
+          <span class="progress-label">Прогресс: {{ currentStep + 1 }} / {{ totalSteps }}</span>
+        </div>
+
         <div v-if="!lessonCompleted">
-          <div class="section explanation-block">
+          <div v-if="currentPhase.type === 'explanation'">
             <h3>📚 Объяснение</h3>
-            <div v-html="getLocalized(lesson.explanation) || 'Нет объяснения'" class="explanation-text"></div>
+            <p class="explanation-text">{{ currentPhase.data }}</p>
+            <div class="navigation-area">
+              <button class="nav-btn" @click="goNext">Далее</button>
+            </div>
           </div>
 
-          <div class="section example-block">
-            <h3>💗 Примеры</h3>
-            <div v-html="getLocalized(lesson.examples) || 'Нет примеров'" class="example-text"></div>
+          <div v-else-if="currentPhase.type === 'exerciseGroup'">
+            <h3>✏️ Упражнения</h3>
+            <div v-for="(exercise, i) in currentPhase.data.exercises" :key="i" class="exercise-block">
+              <p class="exercise-question">{{ exercise.question }}</p>
+              <div v-if="Array.isArray(exercise.options) && exercise.options.length">
+                <label v-for="(opt, j) in exercise.options" :key="j">
+                  <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
+                </label>
+              </div>
+              <div v-else>
+                <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
+              </div>
+              <button @click="submitAnswer(exercise)">Проверить</button>
+              <p v-if="confirmation">{{ confirmation }}</p>
+              <p v-if="mistakeCount >= 3 && exercise.hint" class="hint">💡 Подсказка: {{ exercise.hint }}</p>
+            </div>
+            <div class="navigation-area">
+              <button class="nav-btn" @click="goNext">Далее</button>
+            </div>
           </div>
 
-          <div class="navigation-area">
-            <button class="confirm-btn" @click="confirmUnderstanding" :disabled="understood">Понял</button>
-            <button class="nav-btn" @click="goNext" :disabled="!canProceed">Далее</button>
+          <div v-else-if="currentPhase.type === 'quiz'">
+            <h3>🎮 Финальный тест</h3>
+            <div v-for="(q, i) in currentPhase.data" :key="i" class="quiz-question">
+              <p>{{ q.question }}</p>
+              <div v-for="(opt, j) in q.options" :key="j">
+                <label>
+                  <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
+                </label>
+              </div>
+              <p v-if="mistakeCount >= 3 && q.hint" class="hint">💡 Подсказка: {{ q.hint }}</p>
+            </div>
+            <div class="navigation-area">
+              <button class="nav-btn" @click="completeLesson">Завершить</button>
+            </div>
           </div>
         </div>
 
         <div v-else class="congrats-section">
           <h3>🏆 Урок завершён!</h3>
-          <p>Вы прошли все этапы!</p>
           <img :src="medalImage" alt="Медаль" class="medal-image" />
         </div>
-      </div>
-
-      <div class="lesson-right">
-        <h3>✏️ Практическая зона</h3>
-        <div v-if="understood && !lessonCompleted && currentExercise">
-          <p class="exercise-question">{{ currentExercise.question || '❌ Вопрос отсутствует' }}</p>
-
-          <div v-if="Array.isArray(currentExercise.options)" class="exercise-options">
-            <label v-for="(opt, i) in currentExercise.options" :key="i">
-              <input type="radio" :value="opt.option || opt" v-model="userAnswer" />
-              {{ opt.option || opt }}
-            </label>
-          </div>
-
-          <div v-else>
-            <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
-          </div>
-
-          <button class="submit-btn" @click="submitAnswer">Готово</button>
-          <div v-if="confirmation" class="confirmation">{{ confirmation }}</div>
-          <div v-if="mistakeCount >= 3 && currentExercise.hint" class="hint-box">💡 Подсказка: {{ currentExercise.hint }}</div>
-        </div>
-
-        <div v-else-if="!understood">
-          <div class="locked-overlay">⛔️ Заблокировано до нажатия "Понял"</div>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="showExitModal" class="modal">
-      <div class="modal-content">
-        <p>Вы уверены, что хотите выйти? Прогресс будет потерян.</p>
-        <button @click="cancelExit">Отмена</button>
-        <button @click="exitLesson">Выйти</button>
       </div>
     </div>
 
@@ -87,11 +87,13 @@
   </div>
 </template>
 
+
 <script>
 import axios from 'axios';
 import confetti from 'canvas-confetti';
 import { auth } from '@/firebase';
 import { mapGetters } from 'vuex';
+
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default {
@@ -99,48 +101,53 @@ export default {
   data() {
     return {
       lesson: {},
+      started: false,
+      currentPhaseIndex: 0,
+      currentExerciseIndex: 0,
       userAnswer: '',
       confirmation: '',
-      currentStep: 0,
-      started: false,
-      elapsedSeconds: 0,
-      timerInterval: null,
-      understood: false,
-      showExitModal: false,
       mistakeCount: 0,
       lessonCompleted: false,
       showConfetti: false,
-      medalImage: '',
+      showExitModal: false,
+      showPaywallModal: false,
+      elapsedSeconds: 0,
+      timerInterval: null,
       userId: null,
-      showPaywallModal: false
+      medalImage: ''
     };
   },
   computed: {
-    ...mapGetters('user', ['userStatus', 'isPremiumUser']),
-    totalSteps() {
-      const explanationCount = Array.isArray(this.lesson.explanations) ? this.lesson.explanations.length : 0;
-      const groupCount = Array.isArray(this.lesson.exerciseGroups) ? this.lesson.exerciseGroups.length : 0;
-      return explanationCount + groupCount + 1; // +1 for quiz
+    ...mapGetters('user', ['isPremiumUser']),
+    allPhases() {
+      const phases = [];
+      if (Array.isArray(this.lesson.explanations)) {
+        this.lesson.explanations.forEach((ex, i) => phases.push({ type: 'explanation', data: ex, index: i }));
+      }
+      if (Array.isArray(this.lesson.exerciseGroups)) {
+        this.lesson.exerciseGroups.forEach((group, i) => {
+          group.exercises.forEach((ex, j) =>
+            phases.push({ type: 'exercise', groupIndex: i, data: ex, index: j })
+          );
+        });
+      }
+      if (Array.isArray(this.lesson.quiz)) {
+        this.lesson.quiz.forEach((quiz, i) =>
+          phases.push({ type: 'quiz', data: quiz, index: i })
+        );
+      }
+      return phases;
     },
     currentPhase() {
-      const index = this.currentStep;
-      const explanationCount = this.lesson.explanations?.length || 0;
-      const groupCount = this.lesson.exerciseGroups?.length || 0;
-
-      if (index < explanationCount) return { type: 'explanation', data: this.lesson.explanations[index] };
-      if (index < explanationCount + groupCount) {
-        const exIndex = index - explanationCount;
-        return { type: 'exerciseGroup', data: this.lesson.exerciseGroups[exIndex] };
-      }
-      return { type: 'quiz', data: this.lesson.quiz || [] };
+      return this.allPhases[this.currentPhaseIndex] || null;
+    },
+    progressPercentage() {
+      return Math.floor((this.currentPhaseIndex / this.allPhases.length) * 100);
     },
     formattedTime() {
-      const minutes = Math.floor(this.elapsedSeconds / 60);
-      const seconds = this.elapsedSeconds % 60;
-      return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-    },
-    canProceed() {
-      return this.understood || this.confirmation.includes('✅');
+      const min = Math.floor(this.elapsedSeconds / 60);
+      const sec = this.elapsedSeconds % 60;
+      return `${min}:${sec < 10 ? '0' : ''}${sec}`;
     }
   },
   async mounted() {
@@ -164,39 +171,41 @@ export default {
           this.showPaywallModal = true;
           return;
         }
-        this.lesson = data;
-        if (!Array.isArray(this.lesson.explanations)) this.lesson.explanations = [];
-        if (!Array.isArray(this.lesson.exerciseGroups)) this.lesson.exerciseGroups = [];
-        if (!Array.isArray(this.lesson.quiz)) this.lesson.quiz = [];
+
+        this.lesson = {
+          ...data,
+          explanations: data.explanations || [],
+          exerciseGroups: data.exerciseGroups || [],
+          quiz: data.quiz || []
+        };
       } catch (err) {
-        console.error('Ошибка загрузки урока:', err);
+        console.error('❌ Ошибка загрузки урока:', err);
       }
     },
     startLesson() {
       this.started = true;
-      this.elapsedSeconds = 0;
       this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
     },
-    confirmUnderstanding() {
-      this.understood = true;
-    },
     submitAnswer() {
-      const correct = this.currentPhase.data?.correctAnswer?.toLowerCase() || this.currentPhase.data?.answer?.toLowerCase();
+      const phase = this.currentPhase;
+      const correct = (phase.data.correctAnswer || phase.data.answer || '').toLowerCase();
       const answer = this.userAnswer.trim().toLowerCase();
-      if (!answer) return this.confirmation = '⚠️ Пожалуйста, введите ответ.';
-      if (answer === correct) this.confirmation = '✅ Верно!';
-      else {
+      if (!answer) return (this.confirmation = '⚠️ Введите ответ.');
+
+      if (answer === correct) {
+        this.confirmation = '✅ Верно!';
+      } else {
         this.confirmation = '❌ Неверно. Попробуйте снова.';
         this.mistakeCount++;
       }
     },
     goNext() {
-      this.confirmation = '';
-      this.understood = false;
       this.userAnswer = '';
-      if (this.currentStep + 1 < this.totalSteps) {
-        this.mistakeCount = 0;
-        this.currentStep++;
+      this.confirmation = '';
+      this.mistakeCount = 0;
+
+      if (this.currentPhaseIndex + 1 < this.allPhases.length) {
+        this.currentPhaseIndex++;
       } else {
         this.completeLesson();
       }
@@ -208,11 +217,12 @@ export default {
 
       const token = await auth.currentUser?.getIdToken();
       const duration = this.elapsedSeconds;
-      this.medalImage = this.mistakeCount === 0
-        ? '/images/medals/gold.png'
-        : this.mistakeCount <= 2
-        ? '/images/medals/silver.png'
-        : '/images/medals/bronze.png';
+      this.medalImage =
+        this.mistakeCount === 0
+          ? '/images/medals/gold.png'
+          : this.mistakeCount <= 2
+          ? '/images/medals/silver.png'
+          : '/images/medals/bronze.png';
 
       try {
         await axios.post(`${BASE_URL}/users/${this.userId}/diary`, {
@@ -240,7 +250,7 @@ export default {
     launchConfetti() {
       const canvas = this.$refs.confettiCanvas;
       const myConfetti = confetti.create(canvas, { resize: true, useWorker: true });
-      myConfetti({ particleCount: 150, spread: 160, origin: { y: 0.6 } });
+      myConfetti({ particleCount: 150, spread: 180, origin: { y: 0.6 } });
       setTimeout(() => (this.showConfetti = false), 5000);
     },
     confirmExit() {
@@ -256,6 +266,7 @@ export default {
   }
 };
 </script>
+
 
 
 
