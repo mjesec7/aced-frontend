@@ -219,90 +219,110 @@ export default {
 };
 </script>
 
-
 <style scoped>
 .settings-page {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 40px;
-  background-color: #121212;
-  color: white;
+  padding: 50px 20px;
+  background: linear-gradient(to bottom right, #f8fafc, #ffffff);
+  color: #1f2937;
   min-height: 100vh;
-  gap: 40px;
+  gap: 50px;
+  font-family: 'Inter', sans-serif;
 }
 
 .section-title {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 800;
   margin-bottom: 20px;
   text-align: center;
-  color: #f3f4f6;
+  color: #4c1d95;
 }
 
 .settings-content {
   width: 100%;
-  max-width: 480px;
-  background: #1f1f1f;
-  padding: 32px;
-  border-radius: 18px;
-  box-shadow: 0 6px 24px rgba(255, 255, 255, 0.06);
+  max-width: 520px;
+  background: #ffffff;
+  padding: 36px;
+  border-radius: 20px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.3s ease;
+}
+
+.settings-content:hover {
+  box-shadow: 0 12px 40px rgba(124, 58, 237, 0.15);
 }
 
 input, select {
   width: 100%;
-  padding: 12px;
-  margin-top: 5px;
-  margin-bottom: 18px;
-  border: none;
+  padding: 14px;
+  margin-top: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #d1d5db;
   border-radius: 10px;
-  background: #2a2a2a;
-  color: white;
+  background: #f9fafb;
+  color: #1f2937;
   font-size: 1rem;
+  transition: border 0.3s, box-shadow 0.3s;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
 }
 
 .button-group {
   display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
   justify-content: space-between;
   margin-top: 30px;
 }
 
-.save-button, .back-button, .promo-button, .payment-button {
-  padding: 12px 22px;
+.save-button,
+.back-button,
+.promo-button,
+.payment-button {
+  flex: 1 1 45%;
+  padding: 12px 20px;
   border: none;
-  border-radius: 10px;
-  font-size: 15px;
+  border-radius: 12px;
+  font-size: 0.95rem;
   font-weight: bold;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: background 0.3s ease, transform 0.2s ease;
 }
 
 .save-button {
-  background: #8b5cf6;
+  background: linear-gradient(to right, #7c3aed, #8b5cf6);
   color: white;
 }
 
 .save-button:hover {
-  background: #7c3aed;
+  background: linear-gradient(to right, #6d28d9, #7c3aed);
+  transform: translateY(-2px);
 }
 
 .back-button {
-  background: white;
-  color: #7c3aed;
+  background: #f3f4f6;
+  color: #4c1d95;
 }
 
 .back-button:hover {
-  background: #f3f4f6;
+  background: #e5e7eb;
+  transform: translateY(-2px);
 }
 
 .promo-button {
   background: linear-gradient(to right, #10b981, #34d399);
   color: white;
-  margin-bottom: 10px;
 }
 
 .promo-button:hover {
   background: linear-gradient(to right, #059669, #10b981);
+  transform: translateY(-2px);
 }
 
 .payment-button {
@@ -312,14 +332,15 @@ input, select {
 
 .payment-button:hover {
   background: linear-gradient(to right, #3b82f6, #6366f1);
+  transform: translateY(-2px);
 }
 
 .forgot-password {
-  color: #a000a0;
+  color: #7c3aed;
   cursor: pointer;
   text-align: right;
   font-size: 14px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .forgot-password:hover {
@@ -331,42 +352,44 @@ input, select {
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
+  background: #1f2937;
   color: white;
-  padding: 12px 20px;
+  padding: 14px 24px;
   border-radius: 10px;
-  font-size: 14px;
-  animation: fadeIn 0.5s;
+  font-size: 0.95rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.4s ease-in-out;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    bottom: 10px;
+    transform: translate(-50%, 10px);
   }
   to {
     opacity: 1;
-    bottom: 20px;
+    transform: translate(-50%, 0);
   }
 }
 
 .current-plan {
-  margin-top: 10px;
-  font-size: 0.95rem;
-  margin-bottom: 10px;
+  margin-top: 12px;
+  font-size: 1rem;
+  margin-bottom: 12px;
+  color: #334155;
 }
 
 .plan-badge {
-  padding: 6px 14px;
-  border-radius: 14px;
+  padding: 6px 16px;
+  border-radius: 16px;
   font-weight: bold;
-  margin-left: 8px;
+  margin-left: 10px;
   font-size: 0.85rem;
   text-transform: uppercase;
 }
 
 .badge-free {
-  background-color: #6b7280;
+  background-color: #ef4444;
   color: white;
 }
 
