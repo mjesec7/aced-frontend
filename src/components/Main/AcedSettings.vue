@@ -389,17 +389,17 @@ input:focus, select:focus {
 }
 
 .badge-free {
-  background-color: #ef4444;
+  background-color: #d20000;
   color: white;
 }
 
 .badge-start {
-  background-color: #facc15;
+  background-color: #ffcc00;
   color: black;
 }
 
 .badge-pro {
-  background-color: #10b981;
+  background-color: #005438;
   color: white;
 }
 </style>
