@@ -1,7 +1,7 @@
 <template>
   <div class="lessons-page">
     <div class="page-header">
-      <h1 class="page-title">📚 Каталог Уроков</h1>
+      <h1 class="page-title">Каталог Уроков</h1>
       <span class="subscription-badge" :class="subscriptionClass">
         {{ subscriptionText }}
       </span>
@@ -29,36 +29,39 @@
           <h2 class="lesson-title">{{ topic.name }}</h2>
           <button class="add-btn" @click="addToStudyPlan(topic)">＋</button>
         </div>
-        <p class="lesson-topic">
-          Уровень: {{ topic.level }} / Предмет: {{ topic.subject }}
-        </p>
-        <p class="lesson-topic">
-          📅 Уроков: {{ topic.lessonCount }} / Среднее время: {{ topic.totalTime }} мин.
-        </p>
+        <p class="lesson-topic">Уровень: {{ topic.level }} / Предмет: {{ topic.subject }}</p>
+        <p class="lesson-topic">📅 Уроков: {{ topic.lessonCount }} / Среднее время: {{ topic.totalTime }} мин.</p>
         <span class="access-label" :class="topic.type === 'premium' ? 'paid' : 'free'">
           {{ topic.type === 'premium' ? 'Платный' : 'Бесплатный' }}
         </span>
-        <button class="start-btn" @click="handleAccess(topic.topicId, topic.type)">
-          Начать курс
-        </button>
+        <button class="start-btn" @click="handleAccess(topic.topicId, topic.type)">Начать курс</button>
       </div>
     </div>
 
     <div v-else class="no-lessons">❌ Уроки не найдены.</div>
 
-    <!-- ✅ Modal for Adding to Study Plan -->
+    <!-- Confirm Add Modal -->
     <div v-if="showAddModal" class="modal">
       <div class="modal-content">
+        <button class="modal-close" @click="showAddModal = false">×</button>
         <h3>Добавить в учебный план?</h3>
-        <p>📘 {{ selectedTopic?.name }}</p>
+        <p>{{ selectedTopic?.name }}</p>
         <div style="margin-top: 20px;">
           <button @click="confirmAddToStudyPlan">✅ Да, добавить</button>
-          <button @click="showAddModal = false">❌ Отмена</button>
         </div>
       </div>
     </div>
 
-    <!-- Payment Modal for premium topics -->
+    <!-- Success Message Modal -->
+    <div v-if="showSuccessModal" class="modal">
+      <div class="modal-content">
+        <button class="modal-close" @click="showSuccessModal = false">×</button>
+        <h3>✅ Успешно!</h3>
+        <p>Тема "{{ selectedTopic?.name }}" добавлена в ваш учебный план.</p>
+      </div>
+    </div>
+
+    <!-- Payment Modal -->
     <PaymentModal
       :user-id="userId"
       :visible="showPaywall"
@@ -68,6 +71,7 @@
     />
   </div>
 </template>
+
 
 
 <script>
@@ -91,9 +95,8 @@ export default {
       showPaywall: false,
       requestedTopicId: null,
       lang: localStorage.getItem('lang') || 'en',
-
-      // 👇 NEW: for add-to-plan modal
       showAddModal: false,
+      showSuccessModal: false,
       selectedTopic: null
     };
   },
@@ -160,9 +163,7 @@ export default {
       const query = this.searchQuery.toLowerCase();
       this.groupedTopics = this.originalTopics.filter(topic => {
         const matchesFilter = this.filterType === 'all' || topic.type === this.filterType;
-        const matchesSearch =
-          topic.name.toLowerCase().includes(query) ||
-          topic.subject.toLowerCase().includes(query);
+        const matchesSearch = topic.name.toLowerCase().includes(query) || topic.subject.toLowerCase().includes(query);
         return matchesFilter && matchesSearch;
       });
     },
@@ -181,14 +182,10 @@ export default {
         this.$router.push({ name: 'TopicOverview', params: { id: topicId } });
       }
     },
-
-    // 👇 UPDATED: opens modal
     addToStudyPlan(topic) {
       this.selectedTopic = topic;
       this.showAddModal = true;
     },
-
-    // 👇 NEW: confirms inside modal
     async confirmAddToStudyPlan() {
       if (!auth.currentUser) {
         alert('Пожалуйста, войдите в аккаунт.');
@@ -204,11 +201,11 @@ export default {
           topicId: this.selectedTopic.topicId
         };
         await axios.post(url, body, { headers: { Authorization: `Bearer ${token}` } });
-        alert(`✅ Тема "${this.selectedTopic.name}" добавлена в учебный план!`);
+        this.showAddModal = false;
+        this.showSuccessModal = true;
       } catch (error) {
         console.error('❌ Ошибка при добавлении в план:', error.response?.data || error.message);
         alert('❌ Не удалось добавить тему');
-      } finally {
         this.showAddModal = false;
       }
     }
@@ -223,6 +220,7 @@ export default {
   }
 };
 </script>
+
 
 
   
@@ -520,6 +518,32 @@ export default {
 .modal-content button:last-child {
   background: #e5e7eb;
   color: #1f2937;
+}
+
+.page-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin-bottom: 32px;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.03);
+}
+
+/* Close button for modals */
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: #9ca3af;
+  font-weight: bold;
+  transition: color 0.2s ease;
+}
+.modal-close:hover {
+  color: #374151;
 }
 
 </style>
