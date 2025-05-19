@@ -20,15 +20,15 @@
     </div>
 
     <!-- Lesson Content -->
-    <div v-else-if="!showPaywallModal" class="lesson-split">
-      <!-- Left Panel: Explanation -->
-      <div class="lesson-left">
-        <div class="lesson-header">
+    <div v-else-if="!showPaywallModal" :class="lessonCompleted ? 'lesson-complete-wrapper' : 'lesson-split'">
+      <!-- Left Panel / Full Panel -->
+      <div :class="lessonCompleted ? 'lesson-complete-full' : 'lesson-left'">
+        <div v-if="!lessonCompleted" class="lesson-header">
           <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) }}</h2>
           <div class="timer-display">⏱ {{ formattedTime }}</div>
         </div>
 
-        <div class="progress-bar-wrapper">
+        <div v-if="!lessonCompleted" class="progress-bar-wrapper">
           <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
           <span class="progress-label">Прогресс: {{ currentPhaseIndex + 1 }} / {{ allPhases.length }}</span>
         </div>
@@ -49,13 +49,15 @@
           </div>
         </div>
 
-        <div v-else class="congrats-section">
+        <!-- ✅ Lesson Completion Result -->
+        <div v-else>
           <h3>🏆 Урок завершён!</h3>
           <img :src="medalImage" alt="Медаль" class="medal-image" />
+          <button class="return-btn" @click="$router.push('/catalogue')">⬅️ Вернуться в каталог</button>
         </div>
       </div>
 
-      <!-- Right Panel: Practice -->
+      <!-- Right Panel -->
       <div class="lesson-right" v-if="!lessonCompleted">
         <!-- Exercise Phase -->
         <div v-if="currentPhase.type === 'exercise'">
@@ -105,6 +107,7 @@
 </template>
 
 
+
 <script>
 import axios from 'axios';
 import confetti from 'canvas-confetti';
@@ -131,6 +134,7 @@ export default {
       timerInterval: null,
       userId: null,
       medalImage: '',
+      medalLabel: '',
       answerWasCorrect: false
     };
   },
@@ -254,12 +258,17 @@ export default {
       const token = await auth.currentUser?.getIdToken();
       const duration = this.elapsedSeconds;
 
-      this.medalImage =
-        this.mistakeCount === 0
-          ? '/images/medals/gold.png'
-          : this.mistakeCount <= 2
-          ? '/images/medals/silver.png'
-          : '/images/medals/bronze.png';
+      // 🏅 Set medal image + label
+      if (this.mistakeCount === 0) {
+        this.medalImage = '/images/medals/gold.png';
+        this.medalLabel = '🥇 Золотая медаль';
+      } else if (this.mistakeCount <= 2) {
+        this.medalImage = '/images/medals/silver.png';
+        this.medalLabel = '🥈 Серебряная медаль';
+      } else {
+        this.medalImage = '/images/medals/bronze.png';
+        this.medalLabel = '🥉 Бронзовая медаль';
+      }
 
       try {
         await axios.post(
@@ -311,6 +320,7 @@ export default {
   }
 };
 </script>
+
 
 
 
