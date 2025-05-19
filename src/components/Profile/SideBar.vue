@@ -136,8 +136,9 @@ export default {
 .sidebar-wrapper {
   position: relative;
 }
+
 .sidebar {
-  width: 250px;
+  width: 260px;
   min-height: 100vh;
   position: fixed;
   left: 0;
@@ -148,38 +149,60 @@ export default {
   z-index: 1000;
   transition: transform 0.3s ease-in-out;
   color: #111827;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
+
 .sidebar-content {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
+
 .user-info {
   padding: 40px 20px 10px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   font-size: 1rem;
-  font-weight: 700;
   color: #111827;
   border-bottom: 1px solid #eee;
 }
+
 .user-icon {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #f3f4f6;
+  border: 2px solid #c7d2fe;
 }
+
 .user-details {
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
+
 .user-name {
-  font-weight: 700;
-  font-size: 1rem;
+  font-weight: 800;
+  font-size: 1.05rem;
+  line-height: 1.2;
+  color: #1f2937;
 }
+
 .user-plan {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: #6b7280;
+  margin-top: 4px;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
 }
+
 .nav-links {
   flex-grow: 1;
   padding: 30px 20px 0;
@@ -187,6 +210,7 @@ export default {
   flex-direction: column;
   gap: 18px;
 }
+
 .nav-item {
   font-size: 0.95rem;
   padding: 10px 14px;
@@ -198,12 +222,18 @@ export default {
   background-color: #f9fafb;
   position: relative;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
+
 .nav-item:hover {
   background: linear-gradient(to right, #ede9fe, #f0f5ff);
   color: #4f46e5;
   transform: translateX(6px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
 }
+
 .nav-item .highlight {
   position: absolute;
   left: 0;
@@ -213,6 +243,7 @@ export default {
   background: linear-gradient(to bottom, #6366f1, #8b5cf6);
   border-radius: 2px;
 }
+
 .nav-item.active {
   background: linear-gradient(to right, #ede9fe, #f0f5ff);
   color: #4f46e5;
@@ -220,9 +251,12 @@ export default {
   font-weight: 700;
   box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
 }
+
 .bottom-logout {
   padding: 30px 20px;
+  border-top: 1px solid #e5e7eb;
 }
+
 .logout-button {
   padding: 10px 16px;
   background: #ef4444;
@@ -233,10 +267,14 @@ export default {
   cursor: pointer;
   font-family: 'Unbounded', sans-serif;
   transition: 0.3s;
+  width: 100%;
+  font-weight: 700;
 }
+
 .logout-button:hover {
   background: #dc2626;
 }
+
 .logout-modal {
   position: fixed;
   top: 0;
@@ -249,6 +287,7 @@ export default {
   align-items: center;
   z-index: 9999;
 }
+
 .logout-modal-content {
   background: white;
   padding: 30px;
@@ -256,13 +295,18 @@ export default {
   text-align: center;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   font-family: 'Unbounded', sans-serif;
+  max-width: 380px;
+  width: 90%;
+  animation: fadeIn 0.3s ease-in-out;
 }
+
 .logout-actions {
   display: flex;
   justify-content: center;
   gap: 20px;
   margin-top: 20px;
 }
+
 .confirm-btn,
 .cancel-btn {
   padding: 10px 20px;
@@ -270,13 +314,25 @@ export default {
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
 }
+
 .confirm-btn {
-  background: red;
+  background: #ef4444;
   color: white;
 }
+
 .cancel-btn {
-  background: #ccc;
-  color: #222;
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
+.confirm-btn:hover {
+  background: #dc2626;
+}
+
+.cancel-btn:hover {
+  background: #d1d5db;
 }
 </style>
