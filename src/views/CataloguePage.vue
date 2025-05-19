@@ -231,9 +231,20 @@ export default {
   letter-spacing: 0.5px;
 }
 
-.badge-free { background-color: #f87171; color: white; }
-.badge-start { background-color: #facc15; color: black; }
-.badge-pro { background-color: #10b981; color: white; }
+.badge-free {
+  background-color: #ef4444;
+  color: white;
+}
+
+.badge-start {
+  background-color: #facc15;
+  color: black;
+}
+
+.badge-pro {
+  background-color: #10b981;
+  color: white;
+}
 
 .controls {
   display: flex;
@@ -346,7 +357,7 @@ export default {
 .access-label.paid { background-color: #ef4444; color: white; }
 
 .add-btn {
-  background: #10b981;
+  background: linear-gradient(to right, #7c3aed, #8b5cf6);
   color: white;
   font-size: 1.2rem;
   border: none;
@@ -358,12 +369,12 @@ export default {
 }
 
 .add-btn:hover {
-  background: #059669;
+  background: linear-gradient(to right, #6d28d9, #7c3aed);
 }
 
 .start-btn {
   margin-top: 20px;
-  background: linear-gradient(to right, #60a5fa, #818cf8);
+  background: linear-gradient(to right, #6366f1, #8b5cf6);
   color: white;
   padding: 12px 18px;
   font-size: 0.95rem;
@@ -372,11 +383,11 @@ export default {
   cursor: pointer;
   transition: background 0.3s ease;
   font-weight: 700;
-  box-shadow: 0 6px 14px rgba(96, 165, 250, 0.25);
+  box-shadow: 0 6px 14px rgba(124, 58, 237, 0.25);
 }
 
 .start-btn:hover {
-  background: linear-gradient(to right, #3b82f6, #6366f1);
+  background: linear-gradient(to right, #4f46e5, #7c3aed);
 }
 
 .modal {
@@ -401,6 +412,7 @@ export default {
   width: 90%;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   animation: fadeIn 0.3s ease-in-out;
+  font-family: 'Inter', sans-serif;
 }
 
 .modal-content button {
@@ -411,6 +423,7 @@ export default {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-size: 0.95rem;
 }
 
 .modal-content button:first-child {
@@ -419,8 +432,8 @@ export default {
 }
 
 .modal-content button:last-child {
-  background: #e5e7eb;
-  color: #1f2937;
+  background: linear-gradient(to right, #f9fafb, #e5e7eb);
+  color: #374151;
 }
 
 .modal-content button:hover {
