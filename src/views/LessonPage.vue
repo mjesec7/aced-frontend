@@ -50,11 +50,17 @@
         </div>
 
         <!-- ✅ Lesson Completion Result -->
-        <div v-else>
-          <h3>🏆 Урок завершён!</h3>
+        <div v-else class="completion-content">
+          <h3 class="lesson-complete-title">🏆 Урок завершён!</h3>
           <img :src="medalImage" alt="Медаль" class="medal-image" />
           <p class="medal-label">{{ medalLabel }}</p>
-          <button class="return-btn" @click="$router.push('/catalogue')">⬅️ Вернуться в каталог</button>
+          <p class="completion-time">⏱ Вы прошли урок за {{ readableTime }}</p>
+          <p class="completion-motivation">🚀 Великолепно! Вы делаете прогресс, не останавливайтесь!</p>
+          <p class="completion-stats">Количество ошибок: {{ mistakeCount }}</p>
+          <div class="completion-buttons">
+            <button class="return-btn" @click="$router.push('/catalogue')">⬅️ Вернуться в каталог</button>
+            <button class="share-btn" @click="shareResult">📤 Поделиться успехом</button>
+          </div>
         </div>
       </div>
 

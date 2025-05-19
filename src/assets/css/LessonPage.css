@@ -1,4 +1,16 @@
-/* Updated LessonPage.css with split screen adjustments */
+/* Updated LessonPage.css with complete redesign */
+
+.lesson-page {
+  background: linear-gradient(135deg, #f9fafb, #eef2ff);
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  color: #1f2937;
+  position: relative;
+  overflow: hidden;
+  scroll-behavior: smooth;
+}
+
+/* Intro Screen */
 .intro-screen {
   padding: 60px 40px;
   max-width: 800px;
@@ -54,16 +66,6 @@
 
 .exit-btn:hover {
   color: #5b21b6;
-}
-
-.lesson-page {
-  background: linear-gradient(135deg, #f9fafb, #eef2ff);
-  min-height: 100vh;
-  font-family: 'Inter', sans-serif;
-  color: #1f2937;
-  position: relative;
-  overflow: hidden;
-  scroll-behavior: smooth;
 }
 
 .lesson-split {
@@ -159,7 +161,7 @@ textarea {
   width: 100%;
   height: 160px;
   resize: none;
-  box-shadow: inset 0 3px 6px rgba(0,0,0,0.05);
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
 }
 
@@ -199,8 +201,9 @@ label input[type="radio"] {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(124, 58, 237, 0.45);
 }
+
 .next-btn {
-  background: linear-gradient(to right, #10b981, #059669); /* Green gradient */
+  background: linear-gradient(to right, #10b981, #059669);
   color: white;
   font-weight: 700;
   border: none;
@@ -216,13 +219,6 @@ label input[type="radio"] {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(5, 150, 105, 0.45);
 }
-.medal-label {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #4c1d95;
-  margin-top: 12px;
-}
-
 
 .confirmation {
   margin-top: 14px;
@@ -256,31 +252,106 @@ label input[type="radio"] {
   color: #6b21a8;
 }
 
-.congrats-section {
+.lesson-complete-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 20px;
+  background: linear-gradient(to bottom, #f3f4f6, #f9fafb);
+  min-height: 100vh;
+}
+
+.lesson-complete-full {
+  max-width: 600px;
+  width: 100%;
+  background: #ffffff;
+  padding: 60px 40px;
+  border-radius: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
   text-align: center;
-  margin-top: 80px;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.lesson-complete-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1e293b;
 }
 
 .medal-image {
   width: 96px;
-  margin: 30px auto;
+  margin: 30px auto 16px;
   display: block;
   animation: pulse 2s infinite ease-in-out;
+}
+
+.medal-label {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #9333ea;
+  margin-bottom: 12px;
+}
+
+.completion-time {
+  font-size: 1.1rem;
+  color: #475569;
+}
+
+.completion-motivation {
+  font-size: 1.1rem;
+  margin-top: 14px;
+  color: #10b981;
+  font-style: italic;
+}
+
+.completion-stats {
+  font-size: 1rem;
+  color: #64748b;
+  margin-top: 8px;
+}
+
+.completion-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 30px;
+}
+
+.return-btn,
+.share-btn {
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 14px 28px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 6px 18px rgba(124, 58, 237, 0.25);
+}
+
+.return-btn {
+  background: linear-gradient(to right, #7c3aed, #8b5cf6);
+  color: white;
+}
+
+.return-btn:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(to right, #6d28d9, #7c3aed);
+}
+
+.share-btn {
+  background: linear-gradient(to right, #0ea5e9, #0284c7);
+  color: white;
+}
+
+.share-btn:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(to right, #0369a1, #0ea5e9);
 }
 
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }
-}
-
-.confetti-canvas {
-  position: fixed;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-  width: 100%;
-  height: 100%;
-  z-index: 9999;
 }
 
 @keyframes fadeIn {
@@ -296,4 +367,14 @@ label input[type="radio"] {
 @keyframes slideInRight {
   0% { opacity: 0; transform: translateX(24px); }
   100% { opacity: 1; transform: translateX(0); }
+}
+
+.confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
 }
