@@ -225,7 +225,7 @@ export default {
   flex-direction: column;
   align-items: center;
   padding: 50px 20px;
-  background: linear-gradient(to bottom right, #f8fafc, #ffffff);
+  background: linear-gradient(to bottom right, #f9fafb, #ffffff);
   color: #1f2937;
   min-height: 100vh;
   gap: 50px;
@@ -296,12 +296,12 @@ input:focus, select:focus {
 }
 
 .save-button {
-  background: linear-gradient(to right, #7c3aed, #8b5cf6);
+  background: linear-gradient(to right, #9333ea, #a855f7); /* violet */
   color: white;
 }
 
 .save-button:hover {
-  background: linear-gradient(to right, #6d28d9, #7c3aed);
+  background: linear-gradient(to right, #7e22ce, #9333ea);
   transform: translateY(-2px);
 }
 
@@ -316,22 +316,22 @@ input:focus, select:focus {
 }
 
 .promo-button {
-  background: linear-gradient(to right, #10b981, #34d399);
+  background: linear-gradient(to right, #ec4899, #f472b6); /* pinkish */
   color: white;
 }
 
 .promo-button:hover {
-  background: linear-gradient(to right, #059669, #10b981);
+  background: linear-gradient(to right, #db2777, #ec4899);
   transform: translateY(-2px);
 }
 
 .payment-button {
-  background: linear-gradient(to right, #60a5fa, #818cf8);
+  background: linear-gradient(to right, #4f46e5, #6366f1); /* deep indigo */
   color: white;
 }
 
 .payment-button:hover {
-  background: linear-gradient(to right, #3b82f6, #6366f1);
+  background: linear-gradient(to right, #4338ca, #4f46e5);
   transform: translateY(-2px);
 }
 

@@ -245,59 +245,71 @@ export default {
   max-width: 1400px;
   margin: auto;
   font-family: 'Inter', sans-serif;
+  background: linear-gradient(to bottom, #f9fafb, #ffffff);
 }
 
 .title {
-  font-size: 2rem;
-  font-weight: 800;
+  font-size: 2.4rem;
+  font-weight: 900;
   text-align: center;
-  color: #4f46e5;
-  margin-bottom: 24px;
+  color: #2e1065; /* rich dark purple */
+  margin-bottom: 36px;
+  text-shadow: 1px 2px 0 rgba(0, 0, 0, 0.03);
 }
 
 .controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 16px;
   justify-content: center;
   align-items: center;
-  margin-bottom: 36px;
+  margin-bottom: 40px;
 }
 
 .search-input,
 .filter-select {
-  padding: 10px 16px;
-  font-size: 0.95rem;
-  border: 1px solid #d1d5db;
-  border-radius: 12px;
-  background: white;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-  transition: all 0.3s ease;
+  padding: 12px 18px;
+  font-size: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #1f2937;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+  transition: 0.3s ease;
 }
 
 .search-input:focus,
 .filter-select:focus {
   border-color: #7c3aed;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
   outline: none;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
 }
 
 .user-status-badge {
-  font-size: 0.8rem;
-  padding: 8px 14px;
+  font-size: 0.85rem;
+  padding: 8px 16px;
   border-radius: 20px;
-  font-weight: 700;
+  font-weight: 800;
   color: white;
   text-transform: uppercase;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.user-status-badge.free { background: #ef4444; }
-.user-status-badge.start { background: #f59e0b; }
-.user-status-badge.pro { background: #10b981; }
+.user-status-badge.free {
+  background: #dc2626;
+}
+
+.user-status-badge.start {
+  background: #fbbf24;
+  color: black;
+}
+
+.user-status-badge.pro {
+  background: #0f766e;
+}
 
 .section {
-  margin-bottom: 50px;
+  margin-bottom: 60px;
 }
 
 .section-header {
@@ -307,46 +319,46 @@ export default {
 }
 
 .refresh-btn {
-  background: linear-gradient(to right, #7c3aed, #6366f1);
+  background: linear-gradient(to right, #7c3aed, #8b5cf6);
   color: white;
-  padding: 10px 16px;
+  padding: 10px 18px;
   border: none;
-  border-radius: 10px;
-  font-weight: 600;
+  border-radius: 12px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.15);
+  transition: 0.3s ease;
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.15);
 }
 
 .refresh-btn:hover {
-  background: linear-gradient(to right, #6d28d9, #4f46e5);
+  background: linear-gradient(to right, #6d28d9, #7c3aed);
   transform: translateY(-2px);
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
+  gap: 28px;
 }
 
 .recommendation-placeholder,
 .study-placeholder {
-  background: #f1f5f9;
+  background: #f3f4f6;
   border-radius: 16px;
   height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   color: #94a3b8;
-  font-weight: 600;
+  font-weight: 700;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s ease;
+  transition: all 0.3s ease-in-out;
 }
 
 .recommendation-placeholder:hover,
 .study-placeholder:hover {
-  transform: scale(1.03);
+  transform: scale(1.035);
   background: linear-gradient(to right, #e0e7ff, #ede9fe);
   color: #7c3aed;
 }
@@ -354,33 +366,37 @@ export default {
 .empty-message {
   text-align: center;
   margin-top: 30px;
-  font-size: 1rem;
-  color: #9ca3af;
+  font-size: 1.05rem;
+  color: #64748b;
+  font-weight: 500;
 }
 
 .topic-card {
   background: white;
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-  transition: 0.3s ease;
+  padding: 24px;
+  border-radius: 18px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  transition: 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .topic-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
 }
 
 .topic-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #4f46e5;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #4c1d95;
 }
 
 .topic-desc {
-  font-size: 0.9rem;
-  color: #4b5563;
-  margin: 8px 0;
+  font-size: 0.95rem;
+  color: #475569;
+  margin: 10px 0;
 }
 
 .lesson-count {
@@ -390,39 +406,41 @@ export default {
 
 .card-buttons {
   display: flex;
-  gap: 10px;
-  margin-top: 12px;
+  gap: 12px;
+  margin-top: 18px;
 }
 
 .btn-add {
-  background: #6366f1;
+  background: #9333ea;
   color: white;
-  padding: 8px 12px;
-  font-size: 0.85rem;
+  padding: 10px 14px;
+  font-size: 0.9rem;
   border: none;
   border-radius: 10px;
   font-weight: 700;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition: 0.2s ease-in-out;
 }
 
 .btn-add:hover {
-  background: #4f46e5;
+  background: #7e22ce;
+  transform: scale(1.03);
 }
 
 .btn-start {
-  background: #ec4899;
+  background: #f43f5e;
   color: white;
-  padding: 8px 12px;
-  font-size: 0.85rem;
+  padding: 10px 14px;
+  font-size: 0.9rem;
   border: none;
   border-radius: 10px;
   font-weight: 700;
   cursor: pointer;
-  transition: 0.2s ease;
+  transition: 0.2s ease-in-out;
 }
 
 .btn-start:hover {
-  background: #db2777;
+  background: #be123c;
+  transform: scale(1.03);
 }
 </style>
