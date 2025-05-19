@@ -1,6 +1,11 @@
 import { createStore } from 'vuex';
+import global from './global'; // ✅ Import the global loading module
 
 export default createStore({
+  modules: {
+    global // ✅ Register as a Vuex module
+  },
+
   state: {
     user: null,
     firebaseUserId: null,
@@ -38,7 +43,6 @@ export default createStore({
   actions: {
     loginUser({ commit }, { userData, token }) {
       console.log('✅ [Vuex] Logging in user:', userData?.email);
-
       commit('setUser', userData);
       commit('setFirebaseUserId', userData.uid);
       commit('setToken', token);
