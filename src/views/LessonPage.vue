@@ -53,6 +53,7 @@
         <div v-else>
           <h3>🏆 Урок завершён!</h3>
           <img :src="medalImage" alt="Медаль" class="medal-image" />
+          <p class="medal-label">{{ medalLabel }}</p>
           <button class="return-btn" @click="$router.push('/catalogue')">⬅️ Вернуться в каталог</button>
         </div>
       </div>
@@ -175,6 +176,11 @@ export default {
       const min = Math.floor(this.elapsedSeconds / 60);
       const sec = this.elapsedSeconds % 60;
       return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+    },
+    readableTime() {
+      const min = Math.floor(this.elapsedSeconds / 60);
+      const sec = this.elapsedSeconds % 60;
+      return `${min} мин ${sec} сек`;
     }
   },
   async mounted() {
@@ -258,7 +264,6 @@ export default {
       const token = await auth.currentUser?.getIdToken();
       const duration = this.elapsedSeconds;
 
-      // 🏅 Set medal image + label
       if (this.mistakeCount === 0) {
         this.medalImage = '/images/medals/gold.png';
         this.medalLabel = '🥇 Золотая медаль';
@@ -320,6 +325,7 @@ export default {
   }
 };
 </script>
+
 
 
 
