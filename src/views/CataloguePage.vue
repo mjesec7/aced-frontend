@@ -29,19 +29,36 @@
           <h2 class="lesson-title">{{ topic.name }}</h2>
           <button class="add-btn" @click="addToStudyPlan(topic)">＋</button>
         </div>
-        <p class="lesson-topic">Уровень: {{ topic.level }} / Предмет: {{ topic.subject }}
+        <p class="lesson-topic">
+          Уровень: {{ topic.level }} / Предмет: {{ topic.subject }}
         </p>
-        <p class="lesson-topic">📅 Уроков: {{ topic.lessonCount }} / Среднее время: {{ topic.totalTime }} мин.
+        <p class="lesson-topic">
+          📅 Уроков: {{ topic.lessonCount }} / Среднее время: {{ topic.totalTime }} мин.
         </p>
         <span class="access-label" :class="topic.type === 'premium' ? 'paid' : 'free'">
           {{ topic.type === 'premium' ? 'Платный' : 'Бесплатный' }}
         </span>
-        <button class="start-btn" @click="handleAccess(topic.topicId, topic.type)">Начать курс</button>
+        <button class="start-btn" @click="handleAccess(topic.topicId, topic.type)">
+          Начать курс
+        </button>
       </div>
     </div>
 
     <div v-else class="no-lessons">❌ Уроки не найдены.</div>
 
+    <!-- ✅ Modal for Adding to Study Plan -->
+    <div v-if="showAddModal" class="modal">
+      <div class="modal-content">
+        <h3>Добавить в учебный план?</h3>
+        <p>📘 {{ selectedTopic?.name }}</p>
+        <div style="margin-top: 20px;">
+          <button @click="confirmAddToStudyPlan">✅ Да, добавить</button>
+          <button @click="showAddModal = false">❌ Отмена</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Modal for premium topics -->
     <PaymentModal
       :user-id="userId"
       :visible="showPaywall"
@@ -51,6 +68,7 @@
     />
   </div>
 </template>
+
 
 <script>
 import axios from 'axios';
@@ -72,7 +90,11 @@ export default {
       searchQuery: '',
       showPaywall: false,
       requestedTopicId: null,
-      lang: localStorage.getItem('lang') || 'en'
+      lang: localStorage.getItem('lang') || 'en',
+
+      // 👇 NEW: for add-to-plan modal
+      showAddModal: false,
+      selectedTopic: null
     };
   },
   computed: {
@@ -159,24 +181,35 @@ export default {
         this.$router.push({ name: 'TopicOverview', params: { id: topicId } });
       }
     },
-    async addToStudyPlan(topic) {
+
+    // 👇 UPDATED: opens modal
+    addToStudyPlan(topic) {
+      this.selectedTopic = topic;
+      this.showAddModal = true;
+    },
+
+    // 👇 NEW: confirms inside modal
+    async confirmAddToStudyPlan() {
       if (!auth.currentUser) {
-        return alert('Пожалуйста, войдите в аккаунт.');
+        alert('Пожалуйста, войдите в аккаунт.');
+        return;
       }
       try {
         const token = await auth.currentUser.getIdToken();
         const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`;
         const body = {
-          subject: topic.subject,
-          level: topic.level,
-          topic: topic.name,
-          topicId: topic.topicId
+          subject: this.selectedTopic.subject,
+          level: this.selectedTopic.level,
+          topic: this.selectedTopic.name,
+          topicId: this.selectedTopic.topicId
         };
         await axios.post(url, body, { headers: { Authorization: `Bearer ${token}` } });
-        alert(`✅ Тема "${topic.name}" добавлена!`);
+        alert(`✅ Тема "${this.selectedTopic.name}" добавлена в учебный план!`);
       } catch (error) {
-        console.error('❌ Ошибка при добавлении в учебный план:', error.response?.data || error.message);
-        alert('❌ Не удалось добавить в учебный план');
+        console.error('❌ Ошибка при добавлении в план:', error.response?.data || error.message);
+        alert('❌ Не удалось добавить тему');
+      } finally {
+        this.showAddModal = false;
       }
     }
   },
@@ -190,6 +223,7 @@ export default {
   }
 };
 </script>
+
 
   
 <style scoped>
@@ -353,7 +387,7 @@ export default {
   text-transform: uppercase;
 }
 
-.access-label.free { background-color: #10b981; color: white; }
+.access-label.free { background-color: #026418; color: white; }
 .access-label.paid { background-color: #ef4444; color: white; }
 
 .add-btn {
@@ -444,4 +478,48 @@ export default {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 14px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.modal-content button {
+  margin: 10px 8px 0;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-content button:first-child {
+  background: linear-gradient(to right, #22c55e, #16a34a);
+  color: white;
+}
+
+.modal-content button:last-child {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
 </style>
