@@ -1,4 +1,61 @@
 /* Updated LessonPage.css with split screen adjustments */
+.intro-screen {
+  padding: 60px 40px;
+  max-width: 800px;
+  margin: auto;
+  text-align: center;
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+.intro-screen .lesson-title {
+  font-size: 3.25rem;
+  font-weight: 900;
+  margin-bottom: 24px;
+  color: #5b21b6;
+}
+
+.intro-screen p {
+  font-size: 1.25rem;
+  margin: 12px 0;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.start-btn {
+  margin-top: 30px;
+  padding: 14px 48px;
+  font-weight: 700;
+  font-size: 1.2rem;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(to right, #8b5cf6, #7c3aed);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35);
+  transition: transform 0.2s ease, background 0.3s;
+}
+
+.start-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  background: linear-gradient(to right, #7c3aed, #6d28d9);
+}
+
+.exit-btn {
+  position: absolute;
+  top: 24px;
+  right: 32px;
+  font-size: 1.6rem;
+  background: transparent;
+  border: none;
+  color: #7c3aed;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.exit-btn:hover {
+  color: #5b21b6;
+}
+
 .lesson-page {
   background: linear-gradient(135deg, #f9fafb, #eef2ff);
   min-height: 100vh;
@@ -142,6 +199,24 @@ label input[type="radio"] {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(124, 58, 237, 0.45);
 }
+.next-btn {
+  background: linear-gradient(to right, #10b981, #059669); /* Green gradient */
+  color: white;
+  font-weight: 700;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  transition: all 0.2s ease;
+  margin-top: 16px;
+}
+
+.next-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.45);
+}
+
 
 .confirmation {
   margin-top: 14px;

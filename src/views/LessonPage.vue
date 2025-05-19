@@ -1,5 +1,6 @@
 <template>
   <div class="lesson-page">
+    <!-- Paywall Modal -->
     <div v-if="showPaywallModal" class="modal">
       <div class="modal-content">
         <h3>🔒 Платный контент</h3>
@@ -9,6 +10,7 @@
       </div>
     </div>
 
+    <!-- Intro Screen -->
     <div v-if="!started && !showPaywallModal" class="intro-screen">
       <button class="exit-btn" @click="confirmExit">❌</button>
       <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) || 'Без названия' }}</h2>
@@ -17,8 +19,9 @@
       <button class="start-btn" @click="startLesson">Начать урок</button>
     </div>
 
+    <!-- Lesson Content -->
     <div v-else-if="!showPaywallModal" class="lesson-split">
-      <!-- Left Panel: Explanation / Theory -->
+      <!-- Left Panel: Explanation -->
       <div class="lesson-left">
         <div class="lesson-header">
           <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) }}</h2>
@@ -34,12 +37,13 @@
           <div v-if="currentPhase.type === 'explanation'">
             <h3>📚 Объяснение</h3>
             <p class="explanation-text">{{ currentPhase.data }}</p>
-            <p class="example-text">{{ lesson.examples }}</p>
+            <div v-if="Array.isArray(lesson.examples) && lesson.examples.length">
+              <div class="example-text" v-for="(ex, i) in lesson.examples" :key="i">🔹 {{ ex }}</div>
+            </div>
             <div class="navigation-area">
               <button class="nav-btn" @click="goNext">➡️ Далее</button>
             </div>
           </div>
-
           <div v-else class="locked-overlay">
             📌 Практическая часть справа ⮕
           </div>
@@ -51,8 +55,9 @@
         </div>
       </div>
 
-      <!-- Right Panel: Practical -->
+      <!-- Right Panel: Practice -->
       <div class="lesson-right" v-if="!lessonCompleted">
+        <!-- Exercise Phase -->
         <div v-if="currentPhase.type === 'exercise'">
           <h3>✏️ Упражнение</h3>
           <p class="exercise-question">{{ currentPhase.data.question }}</p>
@@ -64,11 +69,15 @@
           <div v-else>
             <textarea v-model="userAnswer" placeholder="Введите ваш ответ..."></textarea>
           </div>
-          <button class="submit-btn" @click="submitAnswer">Проверить</button>
+
+          <button v-if="!answerWasCorrect" class="submit-btn" @click="handleSubmitOrNext">Проверить / Далее</button>
+          <button v-else class="next-btn" @click="goNext">✅ Далее</button>
+
           <p v-if="confirmation" class="confirmation">{{ confirmation }}</p>
           <p v-if="mistakeCount >= 3 && currentPhase.data.hint" class="hint">💡 Подсказка: {{ currentPhase.data.hint }}</p>
         </div>
 
+        <!-- Quiz Phase -->
         <div v-else-if="currentPhase.type === 'quiz'">
           <h3>🎮 Финальный тест</h3>
           <p class="exercise-question">{{ currentPhase.data.question }}</p>
@@ -77,10 +86,14 @@
               <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
             </label>
           </div>
-          <button class="submit-btn" @click="submitAnswer">Ответить</button>
+
+          <button v-if="!answerWasCorrect" class="submit-btn" @click="handleSubmitOrNext">Ответить / Далее</button>
+          <button v-else class="next-btn" @click="goNext">✅ Далее</button>
+
           <p v-if="confirmation" class="confirmation">{{ confirmation }}</p>
         </div>
 
+        <!-- Other Phase -->
         <div v-else>
           <h3>⌛ Ожидание действия слева...</h3>
         </div>
@@ -90,6 +103,7 @@
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
+
 
 <script>
 import axios from 'axios';
@@ -116,16 +130,21 @@ export default {
       elapsedSeconds: 0,
       timerInterval: null,
       userId: null,
-      medalImage: ''
+      medalImage: '',
+      answerWasCorrect: false
     };
   },
   computed: {
     ...mapGetters('user', ['isPremiumUser']),
     allPhases() {
       const phases = [];
+
       if (Array.isArray(this.lesson.explanations)) {
-        this.lesson.explanations.forEach((ex) => phases.push({ type: 'explanation', data: ex }));
+        this.lesson.explanations.forEach((ex) =>
+          phases.push({ type: 'explanation', data: ex })
+        );
       }
+
       if (Array.isArray(this.lesson.exerciseGroups)) {
         this.lesson.exerciseGroups.forEach((group) => {
           group.exercises.forEach((ex) =>
@@ -133,11 +152,13 @@ export default {
           );
         });
       }
+
       if (Array.isArray(this.lesson.quiz)) {
         this.lesson.quiz.forEach((quiz) =>
           phases.push({ type: 'quiz', data: quiz })
         );
       }
+
       return phases;
     },
     currentPhase() {
@@ -168,6 +189,7 @@ export default {
       try {
         const lessonId = this.$route.params.id;
         const { data } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
+
         if (!data || !data._id) return this.$router.push('/catalogue');
         if (data.type === 'premium' && !this.isPremiumUser) {
           this.showPaywallModal = true;
@@ -178,7 +200,12 @@ export default {
           ...data,
           explanations: data.explanations || [],
           exerciseGroups: data.exerciseGroups || [],
-          quiz: data.quiz || []
+          quiz: data.quiz || [],
+          examples: Array.isArray(data.examples)
+            ? data.examples
+            : data.examples
+            ? [data.examples]
+            : []
         };
       } catch (err) {
         console.error('❌ Ошибка загрузки урока:', err);
@@ -188,23 +215,30 @@ export default {
       this.started = true;
       this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
     },
-    submitAnswer() {
+    handleSubmitOrNext() {
       const phase = this.currentPhase;
-      const correct = (phase.data.correctAnswer || phase.data.answer || '').toLowerCase();
-      const answer = this.userAnswer.trim().toLowerCase();
-      if (!answer) return (this.confirmation = '⚠️ Введите ответ.');
+      const correctAnswer = (phase.data.correctAnswer || phase.data.answer || '').toLowerCase();
+      const userResponse = this.userAnswer.trim().toLowerCase();
 
-      if (answer === correct) {
+      if (!userResponse) {
+        this.confirmation = '⚠️ Введите ответ.';
+        return;
+      }
+
+      if (userResponse === correctAnswer) {
         this.confirmation = '✅ Верно!';
+        this.answerWasCorrect = true;
       } else {
         this.confirmation = '❌ Неверно. Попробуйте снова.';
         this.mistakeCount++;
+        this.answerWasCorrect = false;
       }
     },
     goNext() {
       this.userAnswer = '';
       this.confirmation = '';
       this.mistakeCount = 0;
+      this.answerWasCorrect = false;
 
       if (this.currentPhaseIndex + 1 < this.allPhases.length) {
         this.currentPhaseIndex++;
@@ -219,6 +253,7 @@ export default {
 
       const token = await auth.currentUser?.getIdToken();
       const duration = this.elapsedSeconds;
+
       this.medalImage =
         this.mistakeCount === 0
           ? '/images/medals/gold.png'
@@ -227,24 +262,32 @@ export default {
           : '/images/medals/bronze.png';
 
       try {
-        await axios.post(`${BASE_URL}/users/${this.userId}/diary`, {
-          lessonName: this.getLocalized(this.lesson.lessonName),
-          duration,
-          date: new Date().toISOString(),
-          mistakes: this.mistakeCount
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await axios.post(
+          `${BASE_URL}/users/${this.userId}/diary`,
+          {
+            lessonName: this.getLocalized(this.lesson.lessonName),
+            duration,
+            date: new Date().toISOString(),
+            mistakes: this.mistakeCount
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
 
-        await axios.post(`${BASE_URL}/users/${this.userId}/analytics`, {
-          subject: this.lesson.subject,
-          topic: this.lesson.topic,
-          timeSpent: duration,
-          mistakes: this.mistakeCount,
-          completed: true
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await axios.post(
+          `${BASE_URL}/users/${this.userId}/analytics`,
+          {
+            subject: this.lesson.subject,
+            topic: this.lesson.topic,
+            timeSpent: duration,
+            mistakes: this.mistakeCount,
+            completed: true
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
       } catch (err) {
         console.error('❌ Ошибка отправки аналитики:', err);
       }
@@ -268,6 +311,7 @@ export default {
   }
 };
 </script>
+
 
 
 <style>
