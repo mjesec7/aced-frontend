@@ -21,7 +21,6 @@
 
     <!-- Lesson Content -->
     <div v-else-if="!showPaywallModal" :class="lessonCompleted ? 'lesson-complete-wrapper' : 'lesson-split'">
-      <!-- Left Panel / Full Panel -->
       <div :class="lessonCompleted ? 'lesson-complete-full' : 'lesson-left'">
         <div v-if="!lessonCompleted" class="lesson-header">
           <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) }}</h2>
@@ -30,26 +29,33 @@
 
         <div v-if="!lessonCompleted" class="progress-bar-wrapper">
           <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
-          <span class="progress-label">Прогресс: {{ currentPhaseIndex + 1 }} / {{ allPhases.length }}</span>
+          <span class="progress-label">Прогресс: {{ currentIndex + 1 }} / {{ steps.length }}</span>
         </div>
 
         <div v-if="!lessonCompleted">
-          <div v-if="currentPhase.type === 'explanation'">
+          <!-- Explanation Step -->
+          <div v-if="currentStep.type === 'explanation'">
             <h3>📚 Объяснение</h3>
-            <p class="explanation-text">{{ currentPhase.data }}</p>
-            <div v-if="Array.isArray(lesson.examples) && lesson.examples.length">
-              <div class="example-text" v-for="(ex, i) in lesson.examples" :key="i">🔹 {{ ex }}</div>
-            </div>
+            <p class="explanation-text">{{ currentStep.data }}</p>
             <div class="navigation-area">
               <button class="nav-btn" @click="goNext">➡️ Далее</button>
             </div>
           </div>
-          <div v-else class="locked-overlay">
-            📌 Практическая часть справа ⮕
+
+          <!-- Example Step -->
+          <div v-else-if="currentStep.type === 'example'">
+            <h3>💡 Пример</h3>
+            <p class="example-text">{{ currentStep.data }}</p>
+            <div class="navigation-area">
+              <button class="nav-btn" @click="goNext">➡️ Далее</button>
+            </div>
           </div>
+
+          <!-- Locked for right panel steps -->
+          <div v-else class="locked-overlay">📌 Практическая часть справа ⮕</div>
         </div>
 
-        <!-- ✅ Lesson Completion Result -->
+        <!-- Completion -->
         <div v-else class="completion-content">
           <h3 class="lesson-complete-title">🏆 Урок завершён!</h3>
           <img :src="medalImage" alt="Медаль" class="medal-image" />
@@ -66,12 +72,12 @@
 
       <!-- Right Panel -->
       <div class="lesson-right" v-if="!lessonCompleted">
-        <!-- Exercise Phase -->
-        <div v-if="currentPhase.type === 'exercise'">
+        <!-- Tryout or Exercise Step -->
+        <div v-if="['tryout', 'exercise'].includes(currentStep.type)">
           <h3>✏️ Упражнение</h3>
-          <p class="exercise-question">{{ currentPhase.data.question }}</p>
-          <div v-if="Array.isArray(currentPhase.data.options) && currentPhase.data.options.length">
-            <label v-for="(opt, j) in currentPhase.data.options" :key="j">
+          <p class="exercise-question">{{ currentStep.data.question }}</p>
+          <div v-if="Array.isArray(currentStep.data.options) && currentStep.data.options.length">
+            <label v-for="(opt, j) in currentStep.data.options" :key="j">
               <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
             </label>
           </div>
@@ -83,14 +89,14 @@
           <button v-else class="next-btn" @click="goNext">✅ Далее</button>
 
           <p v-if="confirmation" class="confirmation">{{ confirmation }}</p>
-          <p v-if="mistakeCount >= 3 && currentPhase.data.hint" class="hint">💡 Подсказка: {{ currentPhase.data.hint }}</p>
+          <p v-if="mistakeCount >= 3 && currentStep.data.hint" class="hint">💡 Подсказка: {{ currentStep.data.hint }}</p>
         </div>
 
-        <!-- Quiz Phase -->
-        <div v-else-if="currentPhase.type === 'quiz'">
+        <!-- Quiz Step -->
+        <div v-else-if="currentStep.type === 'quiz'">
           <h3>🎮 Финальный тест</h3>
-          <p class="exercise-question">{{ currentPhase.data.question }}</p>
-          <div v-for="(opt, j) in currentPhase.data.options" :key="j">
+          <p class="exercise-question">{{ currentStep.data.question }}</p>
+          <div v-for="(opt, j) in currentStep.data.options" :key="j">
             <label>
               <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
             </label>
@@ -102,7 +108,7 @@
           <p v-if="confirmation" class="confirmation">{{ confirmation }}</p>
         </div>
 
-        <!-- Other Phase -->
+        <!-- Default fallback -->
         <div v-else>
           <h3>⌛ Ожидание действия слева...</h3>
         </div>
@@ -128,55 +134,31 @@ export default {
   data() {
     return {
       lesson: {},
+      steps: [],
+      currentIndex: 0,
       started: false,
-      currentPhaseIndex: 0,
       userAnswer: '',
       confirmation: '',
       mistakeCount: 0,
+      answerWasCorrect: false,
       lessonCompleted: false,
-      showConfetti: false,
-      showExitModal: false,
-      showPaywallModal: false,
       elapsedSeconds: 0,
+      showConfetti: false,
+      showPaywallModal: false,
+      showExitModal: false,
       timerInterval: null,
       userId: null,
       medalImage: '',
-      medalLabel: '',
-      answerWasCorrect: false
+      medalLabel: ''
     };
   },
   computed: {
     ...mapGetters('user', ['isPremiumUser']),
-    allPhases() {
-      const phases = [];
-
-      if (Array.isArray(this.lesson.explanations)) {
-        this.lesson.explanations.forEach((ex) =>
-          phases.push({ type: 'explanation', data: ex })
-        );
-      }
-
-      if (Array.isArray(this.lesson.exerciseGroups)) {
-        this.lesson.exerciseGroups.forEach((group) => {
-          group.exercises.forEach((ex) =>
-            phases.push({ type: 'exercise', data: ex })
-          );
-        });
-      }
-
-      if (Array.isArray(this.lesson.quiz)) {
-        this.lesson.quiz.forEach((quiz) =>
-          phases.push({ type: 'quiz', data: quiz })
-        );
-      }
-
-      return phases;
-    },
-    currentPhase() {
-      return this.allPhases[this.currentPhaseIndex] || null;
+    currentStep() {
+      return this.steps[this.currentIndex] || null;
     },
     progressPercentage() {
-      return Math.floor((this.currentPhaseIndex / this.allPhases.length) * 100);
+      return Math.floor((this.currentIndex / this.steps.length) * 100);
     },
     formattedTime() {
       const min = Math.floor(this.elapsedSeconds / 60);
@@ -212,17 +194,26 @@ export default {
           return;
         }
 
-        this.lesson = {
-          ...data,
-          explanations: data.explanations || [],
-          exerciseGroups: data.exerciseGroups || [],
-          quiz: data.quiz || [],
-          examples: Array.isArray(data.examples)
-            ? data.examples
-            : data.examples
-            ? [data.examples]
-            : []
-        };
+        this.lesson = data;
+        this.steps = Array.isArray(data.steps) ? data.steps : [];
+
+        if (!this.steps.length) {
+          console.warn('⚠️ steps[] not found in lesson. Fallback to legacy.');
+          if (Array.isArray(data.explanations)) {
+            data.explanations.forEach(ex => this.steps.push({ type: 'explanation', data: ex }));
+          }
+          if (Array.isArray(data.examples)) {
+            data.examples.forEach(ex => this.steps.push({ type: 'example', data: ex }));
+          }
+          if (Array.isArray(data.exerciseGroups)) {
+            data.exerciseGroups.forEach(group => {
+              group.exercises.forEach(ex => this.steps.push({ type: 'exercise', data: ex }));
+            });
+          }
+          if (Array.isArray(data.quiz)) {
+            data.quiz.forEach(q => this.steps.push({ type: 'quiz', data: q }));
+          }
+        }
       } catch (err) {
         console.error('❌ Ошибка загрузки урока:', err);
       }
@@ -232,7 +223,7 @@ export default {
       this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
     },
     handleSubmitOrNext() {
-      const phase = this.currentPhase;
+      const phase = this.currentStep;
       const correctAnswer = (phase.data.correctAnswer || phase.data.answer || '').toLowerCase();
       const userResponse = this.userAnswer.trim().toLowerCase();
 
@@ -256,8 +247,8 @@ export default {
       this.mistakeCount = 0;
       this.answerWasCorrect = false;
 
-      if (this.currentPhaseIndex + 1 < this.allPhases.length) {
-        this.currentPhaseIndex++;
+      if (this.currentIndex + 1 < this.steps.length) {
+        this.currentIndex++;
       } else {
         this.completeLesson();
       }
@@ -290,9 +281,7 @@ export default {
             date: new Date().toISOString(),
             mistakes: this.mistakeCount
           },
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
 
         await axios.post(
@@ -304,9 +293,7 @@ export default {
             mistakes: this.mistakeCount,
             completed: true
           },
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
       } catch (err) {
         console.error('❌ Ошибка отправки аналитики:', err);
@@ -331,6 +318,7 @@ export default {
   }
 };
 </script>
+
 
 
 
