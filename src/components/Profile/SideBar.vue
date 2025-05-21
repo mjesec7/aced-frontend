@@ -138,20 +138,23 @@ export default {
 }
 
 .sidebar {
-  width: 260px;
+  width: 240px;
   min-height: 100vh;
   position: fixed;
   left: 0;
   top: 0;
   background: #ffffff;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.06);
-  padding: 20px 0;
+  border-top-right-radius: 24px;
+  border-bottom-right-radius: 24px;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.05);
+  padding: 30px 0;
   z-index: 1000;
   transition: transform 0.3s ease-in-out;
   color: #111827;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  font-family: 'Inter', sans-serif;
 }
 
 .sidebar-content {
@@ -161,18 +164,18 @@ export default {
 }
 
 .user-info {
-  padding: 40px 20px 10px;
+  padding: 20px 24px 10px;
   display: flex;
   align-items: center;
   gap: 14px;
   font-size: 1rem;
   color: #111827;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .user-icon {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   object-fit: cover;
   background: #f3f4f6;
@@ -182,20 +185,18 @@ export default {
 .user-details {
   display: flex;
   flex-direction: column;
-  justify-content: center;
 }
 
 .user-name {
-  font-weight: 800;
-  font-size: 1.05rem;
-  line-height: 1.2;
+  font-weight: 700;
+  font-size: 1rem;
   color: #1f2937;
 }
 
 .user-plan {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #6b7280;
-  margin-top: 4px;
+  margin-top: 2px;
   background: #f3f4f6;
   padding: 2px 8px;
   border-radius: 6px;
@@ -208,30 +209,36 @@ export default {
   padding: 30px 20px 0;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
 }
 
 .nav-item {
   font-size: 0.95rem;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-weight: 600;
-  transition: 0.3s;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 500;
   color: #111827;
   text-decoration: none;
-  background-color: #f9fafb;
-  position: relative;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
   display: flex;
   align-items: center;
-  gap: 10px;
+  position: relative;
+  transition: 0.25s;
 }
 
 .nav-item:hover {
-  background: linear-gradient(to right, #ede9fe, #f0f5ff);
-  color: #4f46e5;
+  background: #f3f4f6;
   transform: translateX(6px);
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
+}
+
+.nav-item.active {
+  background: linear-gradient(to right, #8b5cf6, #7c3aed);
+  color: white;
+  font-weight: 700;
+  transform: translateX(6px);
+}
+
+.nav-item.active .highlight {
+  display: none;
 }
 
 .nav-item .highlight {
@@ -244,17 +251,9 @@ export default {
   border-radius: 2px;
 }
 
-.nav-item.active {
-  background: linear-gradient(to right, #ede9fe, #f0f5ff);
-  color: #4f46e5;
-  transform: translateX(6px);
-  font-weight: 700;
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
-}
-
 .bottom-logout {
   padding: 30px 20px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid #f1f5f9;
 }
 
 .logout-button {
@@ -265,7 +264,7 @@ export default {
   font-size: 0.9rem;
   border-radius: 10px;
   cursor: pointer;
-  font-family: 'Unbounded', sans-serif;
+  font-family: 'Inter', sans-serif;
   transition: 0.3s;
   width: 100%;
   font-weight: 700;
@@ -294,7 +293,7 @@ export default {
   border-radius: 12px;
   text-align: center;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  font-family: 'Unbounded', sans-serif;
+  font-family: 'Inter', sans-serif;
   max-width: 380px;
   width: 90%;
   animation: fadeIn 0.3s ease-in-out;
@@ -334,5 +333,16 @@ export default {
 
 .cancel-btn:hover {
   background: #d1d5db;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

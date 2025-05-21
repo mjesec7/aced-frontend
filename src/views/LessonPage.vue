@@ -33,7 +33,6 @@
         </div>
 
         <div v-if="!lessonCompleted">
-          <!-- Explanation Step -->
           <div v-if="currentStep.type === 'explanation'">
             <h3>📚 Объяснение</h3>
             <p class="explanation-text">{{ currentStep.data }}</p>
@@ -42,7 +41,6 @@
             </div>
           </div>
 
-          <!-- Example Step -->
           <div v-else-if="currentStep.type === 'example'">
             <h3>💡 Пример</h3>
             <p class="example-text">{{ currentStep.data }}</p>
@@ -51,11 +49,9 @@
             </div>
           </div>
 
-          <!-- Locked for right panel steps -->
           <div v-else class="locked-overlay">📌 Практическая часть справа ⮕</div>
         </div>
 
-        <!-- Completion -->
         <div v-else class="completion-content">
           <h3 class="lesson-complete-title">🏆 Урок завершён!</h3>
           <img :src="medalImage" alt="Медаль" class="medal-image" />
@@ -70,9 +66,7 @@
         </div>
       </div>
 
-      <!-- Right Panel -->
       <div class="lesson-right" v-if="!lessonCompleted">
-        <!-- Tryout or Exercise Step -->
         <div v-if="['tryout', 'exercise'].includes(currentStep.type)">
           <h3>✏️ Упражнение</h3>
           <p class="exercise-question">{{ currentStep.data.question }}</p>
@@ -92,7 +86,6 @@
           <p v-if="mistakeCount >= 3 && currentStep.data.hint" class="hint">💡 Подсказка: {{ currentStep.data.hint }}</p>
         </div>
 
-        <!-- Quiz Step -->
         <div v-else-if="currentStep.type === 'quiz'">
           <h3>🎮 Финальный тест</h3>
           <p class="exercise-question">{{ currentStep.data.question }}</p>
@@ -108,7 +101,6 @@
           <p v-if="confirmation" class="confirmation">{{ confirmation }}</p>
         </div>
 
-        <!-- Default fallback -->
         <div v-else>
           <h3>⌛ Ожидание действия слева...</h3>
         </div>
@@ -118,8 +110,6 @@
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
-
-
 
 <script>
 import axios from 'axios';
@@ -314,11 +304,13 @@ export default {
     exitLesson() {
       this.showExitModal = false;
       this.$router.push('/profile');
+    },
+    shareResult() {
+      alert('📤 Поделиться функцией ещё не реализована.');
     }
   }
 };
 </script>
-
 
 
 
