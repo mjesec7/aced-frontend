@@ -133,27 +133,25 @@ export default {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500&display=swap');
-
 .sidebar-wrapper {
-  font-family: 'Unbounded', sans-serif;
   position: relative;
 }
 
 .sidebar {
-  width: 240px;
+  width: 260px;
   min-height: 100vh;
   position: fixed;
-  top: 0;
   left: 0;
+  top: 0;
   background: #ffffff;
-  border-right: 1px solid #e5e7eb;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.03);
-  padding: 24px 0;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.06);
+  padding: 20px 0;
+  z-index: 1000;
+  transition: transform 0.3s ease-in-out;
+  color: #111827;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  z-index: 1000;
 }
 
 .sidebar-content {
@@ -163,43 +161,46 @@ export default {
 }
 
 .user-info {
+  padding: 40px 20px 10px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 28px 24px 12px;
-  border-bottom: 1px solid #f1f5f9;
+  gap: 14px;
+  font-size: 1rem;
+  color: #111827;
+  border-bottom: 1px solid #eee;
 }
 
 .user-icon {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
   background: #f3f4f6;
-  border: 1.5px solid #e0e7ff;
+  border: 2px solid #c7d2fe;
 }
 
 .user-details {
   display: flex;
   flex-direction: column;
-  font-size: 0.85rem;
-  color: #1e293b;
+  justify-content: center;
 }
 
 .user-name {
-  font-weight: 500;
-  font-size: 0.9rem;
+  font-weight: 800;
+  font-size: 1.05rem;
+  line-height: 1.2;
   color: #1f2937;
 }
 
 .user-plan {
-  font-size: 0.7rem;
-  margin-top: 2px;
-  color: #64748b;
-  background: #f1f5f9;
-  padding: 2px 6px;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 4px;
+  background: #f3f4f6;
+  padding: 2px 8px;
   border-radius: 6px;
-  letter-spacing: 0.5px;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .nav-links {
@@ -207,35 +208,30 @@ export default {
   padding: 30px 20px 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
 }
 
 .nav-item {
-  padding: 10px 16px;
-  font-size: 0.9rem;
-  color: #334155;
-  background: #f9fafb;
-  border-radius: 12px;
+  font-size: 0.95rem;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: 0.3s;
+  color: #111827;
   text-decoration: none;
+  background-color: #f9fafb;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
   display: flex;
   align-items: center;
   gap: 10px;
-  transition: all 0.2s ease;
-  position: relative;
 }
 
 .nav-item:hover {
   background: linear-gradient(to right, #ede9fe, #f0f5ff);
-  transform: translateX(4px);
-  color: #6d28d9;
-  box-shadow: 0 4px 8px rgba(109, 40, 217, 0.08);
-}
-
-.nav-item.active {
-  background: linear-gradient(to right, #ede9fe, #f0f5ff);
-  color: #6d28d9;
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.15);
+  color: #4f46e5;
+  transform: translateX(6px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
 }
 
 .nav-item .highlight {
@@ -244,30 +240,39 @@ export default {
   top: 0;
   height: 100%;
   width: 4px;
-  background: linear-gradient(to bottom, #8b5cf6, #7c3aed);
+  background: linear-gradient(to bottom, #6366f1, #8b5cf6);
   border-radius: 2px;
 }
 
+.nav-item.active {
+  background: linear-gradient(to right, #ede9fe, #f0f5ff);
+  color: #4f46e5;
+  transform: translateX(6px);
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+}
+
 .bottom-logout {
-  padding: 24px;
-  border-top: 1px solid #e2e8f0;
+  padding: 30px 20px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .logout-button {
-  width: 100%;
-  background: #f87171;
-  color: #fff;
   padding: 10px 16px;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  background: #ef4444;
+  color: white;
   border: none;
+  font-size: 0.9rem;
+  border-radius: 10px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  font-family: 'Unbounded', sans-serif;
+  transition: 0.3s;
+  width: 100%;
+  font-weight: 700;
 }
 
 .logout-button:hover {
-  background: #ef4444;
+  background: #dc2626;
 }
 
 .logout-modal {
@@ -276,7 +281,7 @@ export default {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.4);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -284,32 +289,33 @@ export default {
 }
 
 .logout-modal-content {
-  background: #ffffff;
+  background: white;
   padding: 30px;
-  border-radius: 14px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
   text-align: center;
-  max-width: 360px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  font-family: 'Unbounded', sans-serif;
+  max-width: 380px;
   width: 90%;
   animation: fadeIn 0.3s ease-in-out;
 }
 
 .logout-actions {
-  margin-top: 20px;
   display: flex;
   justify-content: center;
-  gap: 14px;
+  gap: 20px;
+  margin-top: 20px;
 }
 
 .confirm-btn,
 .cancel-btn {
   padding: 10px 20px;
   font-size: 0.9rem;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
   border: none;
+  border-radius: 8px;
+  cursor: pointer;
   transition: all 0.2s ease;
+  font-weight: 600;
 }
 
 .confirm-btn {
@@ -317,27 +323,16 @@ export default {
   color: white;
 }
 
+.cancel-btn {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
 .confirm-btn:hover {
   background: #dc2626;
 }
 
-.cancel-btn {
-  background: #e2e8f0;
-  color: #1f2937;
-}
-
 .cancel-btn:hover {
-  background: #cbd5e1;
-}
-
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  background: #d1d5db;
 }
 </style>
