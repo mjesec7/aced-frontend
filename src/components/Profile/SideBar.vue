@@ -78,6 +78,7 @@ export default {
         { name: 'goal', label: 'Цели' },
         { name: 'diary', label: 'Дневник' },
         { name: 'homework', label: 'Помощь с ДЗ' },
+        { name: 'homeworks', label: 'Домашние задания' }, // ✅ New link
         { name: 'settings', label: 'Настройки' }
       ]
     };
@@ -131,6 +132,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .sidebar-wrapper {

@@ -62,6 +62,7 @@
           <div class="completion-buttons">
             <button class="return-btn" @click="$router.push('/catalogue')">⬅️ Вернуться в каталог</button>
             <button class="share-btn" @click="shareResult">📤 Поделиться успехом</button>
+            <button class="homework-btn" @click="goToHomework">➡️ К домашке</button>
           </div>
         </div>
       </div>
@@ -172,6 +173,9 @@ export default {
   methods: {
     getLocalized(field) {
       return typeof field === 'string' ? field : (field?.en || '');
+    },
+    goToHomework() {
+      this.$router.push(`/profile/homeworks/${this.lesson._id}`);
     },
     async loadLesson() {
       try {
@@ -311,7 +315,6 @@ export default {
   }
 };
 </script>
-
 
 
 

@@ -4,13 +4,15 @@ import store from '@/store';
 // ✅ Main Views
 import HomePage from '@/views/HomePage.vue';
 import ProfilePage from '@/views/ProfilePage.vue';
-import AcedSettings from '@/components/Main/AcedSettings.vue'; // ✅ Use directly
+import AcedSettings from '@/components/Main/AcedSettings.vue';
 
 // ✅ Profile Sub-Pages
 import MainPage from '@/components/Profile/MainPage.vue';
 import UserAnalyticsPanel from '@/components/Profile/UserAnalyticsPanel.vue';
 import StudyGoal from '@/components/Profile/StudyGoal.vue';
 import HomeworkHelp from '@/components/Profile/HomeworkHelp.vue';
+import HomeworkList from '@/components/Profile/HomeworkList.vue'; // ✅ NEW
+import HomeworkPage from '@/components/Profile/HomeworkPage.vue'; // ✅ NEW
 import DiaryPage from '@/components/Profile/DiaryPage.vue';
 import CataloguePage from '@/views/CataloguePage.vue';
 
@@ -31,7 +33,7 @@ const routes = [
   {
     path: '/settings',
     name: 'SettingsPage',
-    component: AcedSettings, // ✅ Use actual AcedSettings.vue directly
+    component: AcedSettings,
   },
   {
     path: '/profile',
@@ -43,6 +45,8 @@ const routes = [
       { path: 'analytics', name: 'UserAnalyticsPanel', component: UserAnalyticsPanel },
       { path: 'goal', name: 'StudyGoal', component: StudyGoal },
       { path: 'homework', name: 'HomeworkHelp', component: HomeworkHelp },
+      { path: 'homeworks', name: 'HomeworkList', component: HomeworkList }, // ✅ NEW
+      { path: 'homeworks/:lessonId', name: 'HomeworkPage', component: HomeworkPage, props: true }, // ✅ NEW
       { path: 'diary', name: 'DiaryPage', component: DiaryPage },
     ],
   },
