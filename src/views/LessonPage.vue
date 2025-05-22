@@ -189,9 +189,17 @@ export default {
         }
 
         this.lesson = data;
-        this.steps = Array.isArray(data.steps) ? data.steps : [];
+        this.steps = [];
 
-        if (!this.steps.length) {
+        if (Array.isArray(data.steps)) {
+          data.steps.forEach(step => {
+            if ((step.type === 'exercise' || step.type === 'tryout') && Array.isArray(step.data)) {
+              step.data.forEach(ex => this.steps.push({ type: step.type, data: ex }));
+            } else {
+              this.steps.push(step);
+            }
+          });
+        } else {
           console.warn('⚠️ steps[] not found in lesson. Fallback to legacy.');
           if (Array.isArray(data.explanations)) {
             data.explanations.forEach(ex => this.steps.push({ type: 'explanation', data: ex }));
@@ -267,28 +275,20 @@ export default {
       }
 
       try {
-        await axios.post(
-          `${BASE_URL}/users/${this.userId}/diary`,
-          {
-            lessonName: this.getLocalized(this.lesson.lessonName),
-            duration,
-            date: new Date().toISOString(),
-            mistakes: this.mistakeCount
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await axios.post(`${BASE_URL}/users/${this.userId}/diary`, {
+          lessonName: this.getLocalized(this.lesson.lessonName),
+          duration,
+          date: new Date().toISOString(),
+          mistakes: this.mistakeCount
+        }, { headers: { Authorization: `Bearer ${token}` } });
 
-        await axios.post(
-          `${BASE_URL}/users/${this.userId}/analytics`,
-          {
-            subject: this.lesson.subject,
-            topic: this.lesson.topic,
-            timeSpent: duration,
-            mistakes: this.mistakeCount,
-            completed: true
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await axios.post(`${BASE_URL}/users/${this.userId}/analytics`, {
+          subject: this.lesson.subject,
+          topic: this.lesson.topic,
+          timeSpent: duration,
+          mistakes: this.mistakeCount,
+          completed: true
+        }, { headers: { Authorization: `Bearer ${token}` } });
       } catch (err) {
         console.error('❌ Ошибка отправки аналитики:', err);
       }
