@@ -30,9 +30,8 @@
   </template>
   
   <script>
-  import axios from 'axios';
+  import api from '@/api';
   import { auth } from '@/firebase';
-  import { BASE_URL } from '@/config';
   
   export default {
     name: 'HomeworkPage',
@@ -49,26 +48,23 @@
       async fetchHomework() {
         try {
           this.loading = true;
+  
           const user = auth.currentUser;
+          if (!user) throw new Error('Пользователь не авторизован');
           const token = await user.getIdToken();
           const userId = user.uid;
   
-          // Fetch lesson (with homework)
-          const { data: lessonRes } = await axios.get(`${BASE_URL}/lessons/${this.lessonId}`);
-          const lesson = lessonRes;
+          const { data: lesson } = await api.get(`/lessons/${this.lessonId}`);
           this.lessonName = lesson.lessonName;
           this.questions = lesson.homework || [];
-  
-          // Init empty answers
           this.userAnswers = this.questions.map(() => '');
   
-          // Fetch previous answers if exist
-          const { data: progressRes } = await axios.get(
-            `${BASE_URL}/users/${userId}/homeworks/lesson/${this.lessonId}`,
+          const { data: progressRes } = await api.get(
+            `/users/${userId}/homeworks/lesson/${this.lessonId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
   
-          if (progressRes.data && progressRes.data.answers?.length) {
+          if (progressRes?.data?.answers?.length) {
             for (const entry of progressRes.data.answers) {
               this.userAnswers[entry.questionIndex] = entry.answer;
             }
@@ -83,6 +79,7 @@
       async saveHomework() {
         try {
           const user = auth.currentUser;
+          if (!user) throw new Error('Пользователь не авторизован');
           const token = await user.getIdToken();
           const userId = user.uid;
   
@@ -91,8 +88,8 @@
             answer: ans
           }));
   
-          await axios.post(
-            `${BASE_URL}/users/${userId}/homeworks`,
+          await api.post(
+            `/users/${userId}/homeworks`,
             { lessonId: this.lessonId, answers, completed: false },
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -106,6 +103,7 @@
       async submitHomework() {
         try {
           const user = auth.currentUser;
+          if (!user) throw new Error('Пользователь не авторизован');
           const token = await user.getIdToken();
           const userId = user.uid;
   
@@ -114,8 +112,8 @@
             answer: ans
           }));
   
-          const { data } = await axios.post(
-            `${BASE_URL}/users/${userId}/homeworks/lesson/${this.lessonId}/submit`,
+          const { data } = await api.post(
+            `/users/${userId}/homeworks/lesson/${this.lessonId}/submit`,
             { answers },
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -135,48 +133,93 @@
   </script>
   
   <style scoped>
-  .homework-page {
-    max-width: 800px;
-    margin: auto;
-    padding: 2rem;
-  }
-  
-  .loading {
-    text-align: center;
-    font-size: 1.2rem;
-    color: #888;
-  }
-  
-  .question-block {
-    margin-bottom: 2rem;
-  }
-  
-  .options {
-    display: flex;
-    flex-direction: column;
-    margin-top: 0.5rem;
-  }
-  
-  .option {
-    margin: 0.3rem 0;
-  }
-  
-  .actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
-  }
-  
-  button {
-    padding: 0.6rem 1.2rem;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-  
-  .submit-btn {
-    background-color: #6a5acd;
-    color: white;
-  }
-  </style>
-  
+.homework-page {
+  max-width: 800px;
+  margin: auto;
+  padding: 2rem;
+  background: linear-gradient(to bottom right, #f0f4ff, #ffffff);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.loading {
+  text-align: center;
+  font-size: 1.3rem;
+  color: #6a5acd;
+  margin-top: 3rem;
+}
+
+.question-block {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(106, 90, 205, 0.1);
+  margin-bottom: 2rem;
+  transition: transform 0.2s ease;
+}
+
+.question-block:hover {
+  transform: scale(1.01);
+}
+
+.question-block p {
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  color: #333;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.option {
+  background: #f9f9ff;
+  padding: 0.6rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  transition: background 0.3s ease;
+}
+
+.option:hover {
+  background: #ececff;
+}
+
+.option input {
+  margin-right: 0.6rem;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+button {
+  padding: 0.65rem 1.4rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease-in-out;
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+button:hover {
+  background-color: #d1d1f0;
+}
+
+.submit-btn {
+  background-color: #6a5acd;
+  color: white;
+}
+
+.submit-btn:hover {
+  background-color: #5848c2;
+}
+</style>

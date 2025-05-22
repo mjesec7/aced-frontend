@@ -4,12 +4,12 @@
   
       <div v-if="loading" class="loading">Загрузка...</div>
       <div v-else-if="homeworks.length === 0" class="empty">Нет домашних заданий.</div>
-      
+  
       <div v-else class="homework-cards">
         <div v-for="hw in homeworks" :key="hw.lessonId" class="homework-card">
           <h3>{{ hw.lessonName || 'Без названия' }}</h3>
           <p>
-            Статус: 
+            Статус:
             <span v-if="!hw.record">Не начато</span>
             <span v-else-if="!hw.record.completed">В процессе</span>
             <span v-else>Завершено ({{ hw.record.score }}%)</span>
@@ -21,9 +21,8 @@
   </template>
   
   <script>
-  import axios from 'axios';
+  import api from '@/api'; // ✅ centralized axios instance
   import { auth } from '@/firebase';
-  import { BASE_URL } from '@/config';
   
   export default {
     name: 'HomeworkList',
@@ -34,42 +33,39 @@
       };
     },
     methods: {
-      async goToHomework(lessonId) {
+      goToHomework(lessonId) {
         this.$router.push(`/profile/homeworks/${lessonId}`);
       },
       async fetchHomeworks() {
         try {
           this.loading = true;
+  
           const user = auth.currentUser;
-          if (!user) throw new Error('User not logged in');
+          if (!user) throw new Error('Пользователь не авторизован');
   
           const token = await user.getIdToken();
           const userId = user.uid;
   
-          // Get all homework progress
-          const { data: progressRes } = await axios.get(
-            `${BASE_URL}/users/${userId}/homeworks`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
+          // ✅ Use centralized api instead of axios
+          const { data: progressRes } = await api.get(`/users/${userId}/homeworks`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
   
           const progressMap = {};
           for (const hw of progressRes.data) {
             progressMap[hw.lessonId] = hw;
           }
   
-          // Optional: Get list of lessons that have homework
-          const { data: lessonsRes } = await axios.get(`${BASE_URL}/lessons`);
+          const { data: lessonsRes } = await api.get(`/lessons`);
           const homeworkLessons = lessonsRes.data.filter(lesson => lesson.homework?.length > 0);
   
-          // Merge
           this.homeworks = homeworkLessons.map(lesson => ({
             lessonId: lesson._id,
             lessonName: lesson.lessonName,
             record: progressMap[lesson._id] || null
           }));
-  
         } catch (err) {
-          console.error('❌ Error loading homework list:', err);
+          console.error('❌ Ошибка загрузки домашних заданий:', err);
           this.$toast?.error('Ошибка загрузки домашних заданий.');
         } finally {
           this.loading = false;
