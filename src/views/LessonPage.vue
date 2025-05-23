@@ -200,7 +200,6 @@ export default {
             }
           });
         } else {
-          console.warn('⚠️ steps[] not found in lesson. Fallback to legacy.');
           if (Array.isArray(data.explanations)) {
             data.explanations.forEach(ex => this.steps.push({ type: 'explanation', data: ex }));
           }
