@@ -22,34 +22,16 @@
           </div>
 
           <div class="modal-section options-grid">
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="studyDays" />
-              Дней в обучении
-            </label>
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="completedSubjects" />
-              Завершено предметов
-            </label>
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="weeklyLessons" />
-              Уроков за неделю
-            </label>
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="monthlyLessons" />
-              Уроков за месяц
-            </label>
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="streakDays" />
-              Учебный стрик
-            </label>
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="mostActiveDay" />
-              Активный день
-            </label>
-            <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="totalLessonsDone" />
-              Всего уроков
-            </label>
+            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="studyDays" /> Дней в обучении</label>
+            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="completedSubjects" /> Завершено предметов</label>
+            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="weeklyLessons" /> Уроков за неделю</label>
+            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="monthlyLessons" /> Уроков за месяц</label>
+            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="streakDays" /> Учебный стрик</label>
+            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="mostActiveDay" /> Активный день</label>
+            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="totalLessonsDone" /> Всего уроков</label>
+            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="totalStars" /> Всего звёзд</label>
+            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="totalPoints" /> Общие очки</label>
+            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="hintsUsed" /> Использовано подсказок</label>
           </div>
 
           <div class="modal-buttons">
@@ -62,6 +44,11 @@
 
     <!-- Summary Cards -->
     <div class="card-grid">
+      <Card label="Всего звёзд" :value="analytics.totalStars" subtext="Заработанные звёзды 🌟" />
+      <Card label="Общие очки" :value="analytics.totalPoints" subtext="Баллы за активность 💯" />
+      <Card label="Использовано подсказок" :value="analytics.hintsUsed" subtext="Подсказки во время уроков 💡" />
+      <Card label="Пройденные тесты" :value="analytics.passedQuizzes || 0" subtext="Успешные попытки ✅" />
+      <Card label="Ошибок всего" :value="analytics.totalMistakes || 0" subtext="Общее количество ошибок ❌" />
       <Card label="Дней в обучении" :value="analytics.studyDays" :subtext="formatDaysToHuman(analytics.studyDays)" />
       <Card label="Завершено предметов" :value="analytics.completedSubjects" :subtext="`${remainingSubjects} из ${analytics.totalSubjects}`" />
       <Card label="Уроков за неделю" :value="analytics.weeklyLessons" subtext="Текущий темп 📈" />
@@ -100,6 +87,7 @@
   </div>
 </template>
 
+
 <script>
 import { mapState } from 'vuex';
 import LineChart from '@/components/Charts/LineChart.vue';
@@ -120,21 +108,13 @@ export default {
         'monthlyLessons',
         'streakDays',
         'mostActiveDay',
-        'totalLessonsDone'
+        'totalLessonsDone',
+        'totalStars',
+        'totalPoints',
+        'hintsUsed'
       ],
       period: 30,
       analytics: {
-      showModal: false,
-      selectedStats: [
-        'studyDays',
-        'completedSubjects',
-        'weeklyLessons',
-        'monthlyLessons',
-        'streakDays',
-        'mostActiveDay',
-        'totalLessonsDone'
-      ],
-      
         studyDays: 0,
         completedSubjects: 0,
         totalSubjects: 0,
@@ -167,7 +147,10 @@ export default {
           evening: 0
         },
         globalRank: null,
-        progressTrend: []
+        progressTrend: [],
+        totalStars: 0,
+        totalPoints: 0,
+        hintsUsed: 0
       }
     };
   },
@@ -177,7 +160,9 @@ export default {
       return Math.max(this.analytics.totalSubjects - this.analytics.completedSubjects, 0);
     },
     chartData() {
-      const trendData = this.analytics.progressTrend.length ? this.analytics.progressTrend : this.analytics.knowledgeChart;
+      const trendData = this.analytics.progressTrend.length
+        ? this.analytics.progressTrend
+        : this.analytics.knowledgeChart;
       return {
         labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'],
         datasets: [{
@@ -203,10 +188,7 @@ export default {
       if (!res.ok) throw new Error('Ошибка загрузки аналитики');
       const response = await res.json();
       const data = response?.studyDays !== undefined ? response : {};
-      this.analytics = {
-        ...this.analytics,
-        ...data
-      };
+      this.analytics = { ...this.analytics, ...data };
     } catch (err) {
       console.error('❌ Аналитика не получена:', err);
     }
@@ -223,7 +205,10 @@ export default {
         monthlyLessons: 'Уроков за месяц',
         streakDays: 'Учебный стрик',
         mostActiveDay: 'Активный день',
-        totalLessonsDone: 'Всего уроков'
+        totalLessonsDone: 'Всего уроков',
+        totalStars: 'Всего звёзд',
+        totalPoints: 'Общие очки',
+        hintsUsed: 'Использовано подсказок'
       };
       const wrapper = document.createElement('div');
       wrapper.innerHTML = `<h2 style="text-align:center;font-family:'Segoe UI';margin-bottom:16px;">📊 Твоя аналитика</h2>`;
@@ -253,6 +238,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 @import '@/assets/css/UserAnalyticsPanel.css';

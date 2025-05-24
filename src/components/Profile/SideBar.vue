@@ -78,7 +78,8 @@ export default {
         { name: 'goal', label: 'Цели' },
         { name: 'diary', label: 'Дневник' },
         { name: 'homework', label: 'Помощь с ДЗ' },
-        { name: 'homeworks', label: 'Домашние задания' }, // ✅ New link
+        { name: 'homeworks', label: 'Домашние задания' },
+        { name: 'tests', label: 'Тесты' }, // ✅ Newly added
         { name: 'settings', label: 'Настройки' }
       ]
     };

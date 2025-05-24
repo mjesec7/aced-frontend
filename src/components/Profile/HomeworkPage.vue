@@ -1,137 +1,143 @@
 <template>
-    <div class="homework-page">
-      <h1>Домашка: {{ lessonName || 'Без названия' }}</h1>
-  
-      <div v-if="loading" class="loading">Загрузка...</div>
-  
-      <form v-else @submit.prevent="submitHomework">
-        <div v-for="(q, i) in questions" :key="i" class="question-block">
-          <p><strong>{{ i + 1 }}. {{ q.question }}</strong></p>
-  
-          <div class="options">
-            <label v-for="(opt, j) in q.options" :key="j" class="option">
-              <input
-                type="radio"
-                :name="'q' + i"
-                :value="opt"
-                v-model="userAnswers[i]"
-              />
-              {{ opt }}
-            </label>
-          </div>
+  <div class="homework-page">
+    <h1>Домашка: {{ lessonName || 'Без названия' }}</h1>
+
+    <div v-if="loading" class="loading">Загрузка...</div>
+
+    <form v-else @submit.prevent="submitHomework">
+      <div v-for="(q, i) in questions" :key="i" class="question-block">
+        <p><strong>{{ i + 1 }}. {{ q.question }}</strong></p>
+
+        <div class="options">
+          <label v-for="(opt, j) in q.options" :key="j" class="option">
+            <input
+              type="radio"
+              :name="'q' + i"
+              :value="opt"
+              v-model="userAnswers[i]"
+            />
+            {{ opt }}
+          </label>
         </div>
-  
-        <div class="actions">
-          <button type="button" @click="saveHomework">Сохранить</button>
-          <button type="submit" class="submit-btn">Завершить</button>
-        </div>
-      </form>
-    </div>
-  </template>
-  
-  <script>
-  import api from '@/api';
-  import { auth } from '@/firebase';
-  
-  export default {
-    name: 'HomeworkPage',
-    props: ['lessonId'],
-    data() {
-      return {
-        questions: [],
-        lessonName: '',
-        userAnswers: [],
-        loading: true,
-      };
-    },
-    methods: {
-      async fetchHomework() {
-        try {
-          this.loading = true;
-  
-          const user = auth.currentUser;
-          if (!user) throw new Error('Пользователь не авторизован');
-          const token = await user.getIdToken();
-          const userId = user.uid;
-  
-          const { data: lesson } = await api.get(`/lessons/${this.lessonId}`);
-          this.lessonName = lesson.lessonName;
-          this.questions = lesson.homework || [];
-          this.userAnswers = this.questions.map(() => '');
-  
-          const { data: progressRes } = await api.get(
-            `/users/${userId}/homeworks/lesson/${this.lessonId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-  
-          if (progressRes?.data?.answers?.length) {
-            for (const entry of progressRes.data.answers) {
-              this.userAnswers[entry.questionIndex] = entry.answer;
-            }
+      </div>
+
+      <div class="actions">
+        <button type="button" @click="saveHomework">Сохранить</button>
+        <button type="submit" class="submit-btn">Завершить</button>
+      </div>
+    </form>
+  </div>
+</template>
+
+<script>
+import api from '@/api';
+import { auth } from '@/firebase';
+
+export default {
+  name: 'HomeworkPage',
+  props: ['lessonId'],
+  data() {
+    return {
+      questions: [],
+      lessonName: '',
+      userAnswers: [],
+      loading: true,
+    };
+  },
+  methods: {
+    async fetchHomework() {
+      try {
+        this.loading = true;
+        const user = auth.currentUser;
+        if (!user) throw new Error('Пользователь не авторизован');
+        const token = await user.getIdToken();
+        const userId = user.uid;
+
+        const { data: lesson } = await api.get(`/lessons/${this.lessonId}`);
+        this.lessonName = lesson.lessonName;
+        this.questions = lesson.homework || [];
+        this.userAnswers = this.questions.map(() => '');
+
+        const { data: progressRes } = await api.get(
+          `/users/${userId}/homeworks/lesson/${this.lessonId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (progressRes?.data?.answers?.length) {
+          for (const entry of progressRes.data.answers) {
+            this.userAnswers[entry.questionIndex] = entry.answer;
           }
-        } catch (err) {
-          console.error('❌ Ошибка загрузки домашки:', err);
-          this.$toast?.error('Ошибка загрузки домашки.');
-        } finally {
-          this.loading = false;
         }
-      },
-      async saveHomework() {
-        try {
-          const user = auth.currentUser;
-          if (!user) throw new Error('Пользователь не авторизован');
-          const token = await user.getIdToken();
-          const userId = user.uid;
-  
-          const answers = this.userAnswers.map((ans, i) => ({
-            questionIndex: i,
-            answer: ans
-          }));
-  
-          await api.post(
-            `/users/${userId}/homeworks`,
-            { lessonId: this.lessonId, answers, completed: false },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-  
-          this.$toast?.success('Ответы сохранены!');
-        } catch (err) {
-          console.error('❌ Ошибка при сохранении:', err);
-          this.$toast?.error('Не удалось сохранить.');
-        }
-      },
-      async submitHomework() {
-        try {
-          const user = auth.currentUser;
-          if (!user) throw new Error('Пользователь не авторизован');
-          const token = await user.getIdToken();
-          const userId = user.uid;
-  
-          const answers = this.userAnswers.map((ans, i) => ({
-            questionIndex: i,
-            answer: ans
-          }));
-  
-          const { data } = await api.post(
-            `/users/${userId}/homeworks/lesson/${this.lessonId}/submit`,
-            { answers },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-  
-          this.$toast?.success(`Домашка завершена! Оценка: ${data.data.score}%`);
-          this.$router.push('/profile/homeworks');
-        } catch (err) {
-          console.error('❌ Ошибка при отправке:', err);
-          this.$toast?.error('Ошибка отправки ответов.');
-        }
+      } catch (err) {
+        console.error('❌ Ошибка загрузки домашки:', err);
+        this.$toast?.error('Ошибка загрузки домашки.');
+      } finally {
+        this.loading = false;
       }
     },
-    mounted() {
-      this.fetchHomework();
+
+    async saveHomework() {
+      try {
+        const user = auth.currentUser;
+        if (!user) throw new Error('Пользователь не авторизован');
+        const token = await user.getIdToken();
+        const userId = user.uid;
+
+        const answers = this.userAnswers.map((ans, i) => ({
+          questionIndex: i,
+          answer: ans
+        }));
+
+        await api.post(
+          `/users/${userId}/homeworks`,
+          { lessonId: this.lessonId, answers, completed: false },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        this.$toast?.success('Ответы сохранены!');
+      } catch (err) {
+        console.error('❌ Ошибка при сохранении:', err);
+        this.$toast?.error('Не удалось сохранить.');
+      }
+    },
+
+    async submitHomework() {
+      try {
+        if (this.userAnswers.includes('')) {
+          this.$toast?.warning('Пожалуйста, ответьте на все вопросы.');
+          return;
+        }
+
+        const user = auth.currentUser;
+        if (!user) throw new Error('Пользователь не авторизован');
+        const token = await user.getIdToken();
+        const userId = user.uid;
+
+        const answers = this.userAnswers.map((ans, i) => ({
+          questionIndex: i,
+          answer: ans
+        }));
+
+        const { data } = await api.post(
+          `/users/${userId}/homeworks/lesson/${this.lessonId}/submit`,
+          { answers },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        this.$toast?.success(`Домашка завершена! Ваша оценка: ${data.score || data.data?.score || 0}%`);
+        this.$router.push('/profile/homeworks');
+      } catch (err) {
+        console.error('❌ Ошибка при отправке:', err);
+        this.$toast?.error('Ошибка отправки ответов.');
+      }
     }
-  };
-  </script>
-  
+  },
+  mounted() {
+    this.fetchHomework();
+  }
+};
+</script>
+
   <style scoped>
 .homework-page {
   max-width: 800px;

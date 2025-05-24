@@ -12,6 +12,14 @@
           <p>{{ studyMinutes }} минут</p>
         </div>
 
+        <!-- Points and Stars -->
+        <div class="card">
+          <h2>🌟 Очки и звезды</h2>
+          <p>⭐ Звезды: {{ analytics.totalStars }}</p>
+          <p>🏅 Очки: {{ analytics.totalPoints }}</p>
+          <p>💡 Подсказки: {{ analytics.hintsUsed }}</p>
+        </div>
+
         <!-- Lessons for Today -->
         <div class="card">
           <h2>🕓 Уроки на сегодня</h2>
@@ -115,6 +123,11 @@ export default {
       loading: true,
       saving: false,
       timer: null,
+      analytics: {
+        totalStars: 0,
+        totalPoints: 0,
+        hintsUsed: 0
+      }
     };
   },
   computed: {
@@ -124,9 +137,7 @@ export default {
       return total > 0 ? Math.round((this.completedToday.length / total) * 100) : 0;
     },
     recentDiaryLogs() {
-      return [...this.diaryLogs]
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 7);
+      return [...this.diaryLogs].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 7);
     }
   },
   mounted() {
@@ -160,14 +171,16 @@ export default {
         const token = await auth.currentUser.getIdToken();
         const headers = { Authorization: `Bearer ${token}` };
 
-        const [lessonsRes, userRes] = await Promise.all([
+        const [lessonsRes, userRes, analyticsRes] = await Promise.all([
           axios.get(`${BASE_URL}/lessons`, { headers }),
-          axios.get(`${BASE_URL}/users/${userId}`, { headers })
+          axios.get(`${BASE_URL}/users/${userId}`, { headers }),
+          axios.get(`${BASE_URL}/users/${userId}/analytics`, { headers })
         ]);
 
         this.lessons = lessonsRes.data || [];
         this.userProgress = userRes.data.progress || {};
         this.diaryLogs = userRes.data.diary || [];
+        this.analytics = analyticsRes.data || {};
 
         this.calculateToday();
       } catch (error) {

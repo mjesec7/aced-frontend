@@ -11,10 +11,11 @@ import MainPage from '@/components/Profile/MainPage.vue';
 import UserAnalyticsPanel from '@/components/Profile/UserAnalyticsPanel.vue';
 import StudyGoal from '@/components/Profile/StudyGoal.vue';
 import HomeworkHelp from '@/components/Profile/HomeworkHelp.vue';
-import HomeworkList from '@/components/Profile/HomeworkList.vue'; // ✅ NEW
-import HomeworkPage from '@/components/Profile/HomeworkPage.vue'; // ✅ NEW
+import HomeworkList from '@/components/Profile/HomeworkList.vue';
+import HomeworkPage from '@/components/Profile/HomeworkPage.vue';
 import DiaryPage from '@/components/Profile/DiaryPage.vue';
 import CataloguePage from '@/views/CataloguePage.vue';
+import TestsPage from '@/components/Profile/TestsPage.vue'; // ✅ Tests page (used for both /tests and /tests/:id)
 
 // ✅ Payments
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
@@ -45,10 +46,21 @@ const routes = [
       { path: 'analytics', name: 'UserAnalyticsPanel', component: UserAnalyticsPanel },
       { path: 'goal', name: 'StudyGoal', component: StudyGoal },
       { path: 'homework', name: 'HomeworkHelp', component: HomeworkHelp },
-      { path: 'homeworks', name: 'HomeworkList', component: HomeworkList }, // ✅ NEW
-      { path: 'homeworks/:lessonId', name: 'HomeworkPage', component: HomeworkPage, props: true }, // ✅ NEW
+      { path: 'homeworks', name: 'HomeworkList', component: HomeworkList },
+      { path: 'homeworks/:lessonId', name: 'HomeworkPage', component: HomeworkPage, props: true },
       { path: 'diary', name: 'DiaryPage', component: DiaryPage },
     ],
+  },
+  {
+    path: '/tests',
+    name: 'TestsPage',
+    component: TestsPage,
+  },
+  {
+    path: '/tests/:id',
+    name: 'SingleTestPage',
+    component: TestsPage,
+    props: true,
   },
   {
     path: '/pay/:plan',

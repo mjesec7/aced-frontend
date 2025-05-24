@@ -1,5 +1,7 @@
 <template>
   <div class="lesson-page">
+    <spline-viewer url="https://prod.spline.design/fu0idy7KllGEhHvI/scene.splinecode" class="floating-robot"></spline-viewer>
+
     <!-- Paywall Modal -->
     <div v-if="showPaywallModal" class="modal">
       <div class="modal-content">
@@ -140,7 +142,8 @@ export default {
       timerInterval: null,
       userId: null,
       medalImage: '',
-      medalLabel: ''
+      medalLabel: '',
+      stars: 0
     };
   },
   computed: {
@@ -172,7 +175,9 @@ export default {
   },
   methods: {
     getLocalized(field) {
-      return typeof field === 'string' ? field : (field?.en || '');
+      return typeof field === 'string' ? field : (field?.en || '')
+        .replace(/^en:/i, '') // Remove en: if any left
+        .trim();
     },
     goToHomework() {
       this.$router.push(`/profile/homeworks/${this.lesson._id}`);
@@ -194,17 +199,17 @@ export default {
         if (Array.isArray(data.steps)) {
           data.steps.forEach(step => {
             if ((step.type === 'exercise' || step.type === 'tryout') && Array.isArray(step.data)) {
-              step.data.forEach(ex => this.steps.push({ type: step.type, data: ex }));
+              this.steps.push(...step.data.map(ex => ({ type: step.type, data: ex })));
             } else {
               this.steps.push(step);
             }
           });
         } else {
           if (Array.isArray(data.explanations)) {
-            data.explanations.forEach(ex => this.steps.push({ type: 'explanation', data: ex }));
+            this.steps.push(...data.explanations.map(ex => ({ type: 'explanation', data: ex })));
           }
           if (Array.isArray(data.examples)) {
-            data.examples.forEach(ex => this.steps.push({ type: 'example', data: ex }));
+            this.steps.push(...data.examples.map(ex => ({ type: 'example', data: ex })));
           }
           if (Array.isArray(data.exerciseGroups)) {
             data.exerciseGroups.forEach(group => {
@@ -212,7 +217,7 @@ export default {
             });
           }
           if (Array.isArray(data.quiz)) {
-            data.quiz.forEach(q => this.steps.push({ type: 'quiz', data: q }));
+            this.steps.push(...data.quiz.map(q => ({ type: 'quiz', data: q })));
           }
         }
       } catch (err) {
@@ -236,6 +241,7 @@ export default {
       if (userResponse === correctAnswer) {
         this.confirmation = '✅ Верно!';
         this.answerWasCorrect = true;
+        this.stars += 1;
       } else {
         this.confirmation = '❌ Неверно. Попробуйте снова.';
         this.mistakeCount++;
@@ -245,9 +251,7 @@ export default {
     goNext() {
       this.userAnswer = '';
       this.confirmation = '';
-      this.mistakeCount = 0;
       this.answerWasCorrect = false;
-
       if (this.currentIndex + 1 < this.steps.length) {
         this.currentIndex++;
       } else {
@@ -255,6 +259,7 @@ export default {
       }
     },
     async completeLesson() {
+      clearInterval(this.timerInterval);
       this.lessonCompleted = true;
       this.showConfetti = true;
       setTimeout(() => this.launchConfetti(), 200);
@@ -275,7 +280,7 @@ export default {
 
       try {
         await axios.post(`${BASE_URL}/users/${this.userId}/diary`, {
-          lessonName: this.getLocalized(this.lesson.lessonName),
+          lessonName: this.lesson.lessonName,
           duration,
           date: new Date().toISOString(),
           mistakes: this.mistakeCount
@@ -286,7 +291,9 @@ export default {
           topic: this.lesson.topic,
           timeSpent: duration,
           mistakes: this.mistakeCount,
-          completed: true
+          completed: true,
+          stars: this.stars,
+          points: Math.max(0, 100 - this.mistakeCount * 10)
         }, { headers: { Authorization: `Bearer ${token}` } });
       } catch (err) {
         console.error('❌ Ошибка отправки аналитики:', err);
@@ -320,6 +327,14 @@ export default {
 
 <style>
 @import '@/assets/css/LessonPage.css';
+.floating-robot {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  width: 150px;
+  height: 150px;
+  z-index: 100;
+}
 
 .ai-help-btn {
   position: fixed;
