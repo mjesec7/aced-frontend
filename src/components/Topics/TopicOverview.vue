@@ -58,28 +58,39 @@ export default {
   async mounted() {
     const topicId = this.$route.params.id;
     const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+    console.log('🔍 TopicOverview mounted');
+    console.log('🧭 Topic ID from route:', topicId);
+    console.log('🌐 API Base URL:', BASE_URL);
 
     try {
       const token = await auth.currentUser?.getIdToken();
       if (token) {
         const headers = { Authorization: `Bearer ${token}` };
+        console.log('🔑 Auth token retrieved');
+
         const statusRes = await axios.get(`${BASE_URL}/users/${auth.currentUser.uid}/status`, { headers });
         this.userPlan = statusRes.data?.status || 'free';
-        console.log('📦 Подписка:', this.userPlan);
+        console.log('📦 User plan:', this.userPlan);
+      } else {
+        console.warn('⚠️ No token found — defaulting to free plan');
       }
     } catch (err) {
-      console.warn('⚠️ Не удалось получить тариф. Используется: free');
+      console.warn('⚠️ Failed to fetch user plan — defaulting to free:', err.message);
       this.userPlan = 'free';
     }
 
     try {
+      console.log(`📡 Requesting topic data from /topics/${topicId}`);
       const topicRes = await axios.get(`${BASE_URL}/topics/${topicId}`);
       this.topic = topicRes.data;
+      console.log('📘 Topic loaded:', this.topic);
 
+      console.log(`📡 Requesting lessons for topic from /topics/${topicId}/lessons`);
       const lessonsRes = await axios.get(`${BASE_URL}/topics/${topicId}/lessons`);
       this.lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
+      console.log(`📚 Lessons loaded (${this.lessons.length}):`, this.lessons);
     } catch (err) {
-      console.error('❌ Ошибка загрузки:', err);
+      console.error('❌ Ошибка загрузки темы или уроков:', err);
       this.topic = null;
     } finally {
       this.loading = false;
@@ -96,6 +107,7 @@ export default {
       return lesson.lessonName || 'Без названия';
     },
     startLesson(lesson) {
+      console.log('➡️ Start lesson clicked:', lesson._id);
       if (lesson.type === 'premium' && this.userPlan === 'free') {
         alert('❌ Урок доступен только подписчикам.');
         return;
@@ -107,6 +119,7 @@ export default {
         l => l.type === 'free' || this.userPlan !== 'free'
       );
       if (first) {
+        console.log('🚀 Starting first lesson:', first._id);
         this.startLesson(first);
       } else {
         alert('❌ Нет доступных бесплатных уроков.');
@@ -115,6 +128,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .topic-overview {
