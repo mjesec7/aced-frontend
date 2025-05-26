@@ -1,5 +1,5 @@
 import { createStore } from 'vuex';
-import global from './global'; // ✅ Global loading module
+import global from './global'; // Global loading module
 import axios from 'axios';
 
 export default createStore({
@@ -8,7 +8,7 @@ export default createStore({
   },
 
   state: {
-    user: null,                // ✅ Backend user (not Firebase only)
+    user: null,                // Full backend user object
     firebaseUserId: null,
     token: null,
     progress: {},
@@ -46,32 +46,32 @@ export default createStore({
       try {
         console.log('✅ [Vuex] Logging in user via Firebase:', userData?.email);
 
-        // ✅ Save user to backend
+        // Save user to backend
         const res = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/users/save`,
           {
             token,
-            name: userData.displayName,
+            name: userData.displayName || userData.name || 'Unnamed User',
             subscriptionPlan: 'free'
           }
         );
 
         const savedUser = res.data;
 
-        // ✅ Commit to Vuex
+        // Commit to Vuex
         commit('setUser', savedUser);
         commit('setFirebaseUserId', savedUser.firebaseId);
         commit('setToken', token);
 
-        // ✅ Save to localStorage
+        // Save to localStorage
         localStorage.setItem('user', JSON.stringify(savedUser));
         localStorage.setItem('firebaseUserId', savedUser.firebaseId);
-        localStorage.setItem('userId', savedUser.firebaseId); // Used by user.js
+        localStorage.setItem('userId', savedUser.firebaseId); // Used elsewhere
         localStorage.setItem('token', token);
 
         console.log('✅ [Vuex] User saved & stored');
       } catch (err) {
-        console.error('❌ [Vuex] Failed to login/save user:', err);
+        console.error('❌ [Vuex] Failed to login/save user:', err.response?.data || err.message);
       }
     },
 
