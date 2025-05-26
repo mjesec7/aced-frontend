@@ -1,6 +1,6 @@
 const state = () => ({
   currentUser: null,
-  userStatus: 'free' // default fallback
+  userStatus: 'free' // fallback
 });
 
 const mutations = {
@@ -19,13 +19,22 @@ const mutations = {
 const actions = {
   async loadUserStatus({ commit }) {
     try {
-      const userId = localStorage.getItem('userId');
-      if (!userId) return;
+      const userId =
+        localStorage.getItem('userId') ||
+        localStorage.getItem('firebaseUserId');
+      if (!userId) {
+        console.warn('⚠️ No userId found for subscription status check');
+        return;
+      }
+
       const res = await fetch(`/api/users/${userId}/status`);
+      if (!res.ok) throw new Error('Request failed');
+
       const data = await res.json();
-      commit('setUserStatus', data.status);
+      commit('setUserStatus', data.status || 'free');
+      console.log('✅ [Vuex:user] Loaded user status:', data.status);
     } catch (err) {
-      console.error('❌ Failed to load user status:', err);
+      console.error('❌ [Vuex:user] Failed to load user status:', err);
     }
   }
 };
