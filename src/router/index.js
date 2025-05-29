@@ -15,7 +15,7 @@ import HomeworkList from '@/components/Profile/HomeworkList.vue';
 import HomeworkPage from '@/components/Profile/HomeworkPage.vue';
 import DiaryPage from '@/components/Profile/DiaryPage.vue';
 import CataloguePage from '@/views/CataloguePage.vue';
-import TestsPage from '@/components/Profile/TestsPage.vue'; // ✅ Tests page (used for both /tests and /tests/:id)
+import TestsPage from '@/components/Profile/TestsPage.vue';
 
 // ✅ Payments
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
@@ -106,7 +106,7 @@ const router = createRouter({
   },
 });
 
-// ✅ Route Guard
+// ✅ Global Route Guard
 router.beforeEach((to, from, next) => {
   const isPublic = to.name === 'HomePage';
   const isLoggedIn = !!store.getters.getFirebaseUserId;
@@ -119,6 +119,7 @@ router.beforeEach((to, from, next) => {
   next();
 });
 
+// ✅ Catch route errors
 router.onError((err) => {
   console.error('❌ Ошибка маршрута:', err);
 });
