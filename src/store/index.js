@@ -12,7 +12,8 @@ export default createStore({
     firebaseUserId: null,
     token: null,
     progress: {},
-    diaryLogs: []
+    diaryLogs: [],
+    authInitialized: false     // New flag to track Firebase auth readiness
   },
 
   mutations: {
@@ -31,12 +32,16 @@ export default createStore({
     setDiaryLogs(state, logs) {
       state.diaryLogs = logs;
     },
+    setAuthInitialized(state, value) {
+      state.authInitialized = value;
+    },
     logout(state) {
       state.user = null;
       state.firebaseUserId = null;
       state.token = null;
       state.progress = {};
       state.diaryLogs = [];
+      state.authInitialized = false;
       localStorage.clear();
     }
   },
@@ -62,6 +67,7 @@ export default createStore({
         commit('setUser', savedUser);
         commit('setFirebaseUserId', savedUser.firebaseId);
         commit('setToken', token);
+        commit('setAuthInitialized', true);
 
         // Save to localStorage
         localStorage.setItem('user', JSON.stringify(savedUser));
@@ -97,9 +103,22 @@ export default createStore({
         if (token) commit('setToken', token);
         commit('setProgress', progress);
         commit('setDiaryLogs', diaryLogs);
+        commit('setAuthInitialized', true);
       } catch (error) {
         console.error('❌ [Vuex] Error loading from localStorage:', error);
       }
+    },
+
+    waitForAuthInit({ state }) {
+      return new Promise((resolve) => {
+        if (state.authInitialized) return resolve();
+        const check = setInterval(() => {
+          if (state.authInitialized) {
+            clearInterval(check);
+            resolve();
+          }
+        }, 50);
+      });
     },
 
     updateProgress({ commit }, progress) {
@@ -122,6 +141,7 @@ export default createStore({
     getFirebaseUserId: (state) => state.firebaseUserId,
     getToken: (state) => state.token,
     getProgress: (state) => state.progress,
-    getDiaryLogs: (state) => state.diaryLogs
+    getDiaryLogs: (state) => state.diaryLogs,
+    isAuthInitialized: (state) => state.authInitialized
   }
 });
