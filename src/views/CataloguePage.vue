@@ -296,8 +296,8 @@ export default {
           topicsMap.set(topicId, {
             topicId,
             name,
-            subject: lesson.subject,
-            level: lesson.level,
+            subject: lesson.subject || '',
+            level: lesson.level || '',
             type: lesson.type,
             lessonCount: 1,
             totalTime: 10
@@ -323,8 +323,11 @@ export default {
     applyFilters() {
       const query = this.searchQuery.toLowerCase();
       this.groupedTopics = this.originalTopics.filter(topic => {
-        const matchesSearch = topic.name.toLowerCase().includes(query) || 
-                            topic.subject.toLowerCase().includes(query);
+        // Safe string conversion with fallback to empty string
+        const topicName = (topic.name || '').toString().toLowerCase();
+        const topicSubject = (topic.subject || '').toString().toLowerCase();
+        
+        const matchesSearch = topicName.includes(query) || topicSubject.includes(query);
         
         let matchesFilter = true;
         switch (this.filterType) {
