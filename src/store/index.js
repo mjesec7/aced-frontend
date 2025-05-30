@@ -1,5 +1,5 @@
 import { createStore } from 'vuex';
-import global from './global'; // Global loading module
+import global from './global'; // Optional global loading module
 import axios from 'axios';
 
 export default createStore({
@@ -8,12 +8,12 @@ export default createStore({
   },
 
   state: {
-    user: null,                // Full backend user object
+    user: null,
     firebaseUserId: null,
     token: null,
     progress: {},
     diaryLogs: [],
-    authInitialized: false     // New flag to track Firebase auth readiness
+    authInitialized: false
   },
 
   mutations: {
@@ -27,10 +27,10 @@ export default createStore({
       state.token = token;
     },
     setProgress(state, progress) {
-      state.progress = progress;
+      state.progress = progress || {};
     },
     setDiaryLogs(state, logs) {
-      state.diaryLogs = logs;
+      state.diaryLogs = logs || [];
     },
     setAuthInitialized(state, value) {
       state.authInitialized = value;
@@ -50,34 +50,29 @@ export default createStore({
     async loginUser({ commit }, { userData, token }) {
       try {
         console.log('✅ [Vuex] Logging in user via Firebase:', userData?.email);
-
-        // Save user to backend
         const res = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/users/save`,
           {
             token,
-            name: userData.displayName || userData.name || 'Unnamed User',
+            name: userData.displayName || userData.email || 'Unnamed User',
             subscriptionPlan: 'free'
           }
         );
 
         const savedUser = res.data;
 
-        // Commit to Vuex
         commit('setUser', savedUser);
         commit('setFirebaseUserId', savedUser.firebaseId);
         commit('setToken', token);
         commit('setAuthInitialized', true);
 
-        // Save to localStorage
         localStorage.setItem('user', JSON.stringify(savedUser));
         localStorage.setItem('firebaseUserId', savedUser.firebaseId);
-        localStorage.setItem('userId', savedUser.firebaseId); // Used elsewhere
         localStorage.setItem('token', token);
 
-        console.log('✅ [Vuex] User saved & stored');
+        console.log('✅ [Vuex] User saved and synced');
       } catch (err) {
-        console.error('❌ [Vuex] Failed to login/save user:', err.response?.data || err.message);
+        console.error('❌ [Vuex] Login error:', err.response?.data || err.message);
       }
     },
 
@@ -88,7 +83,7 @@ export default createStore({
 
     loadUserFromLocalStorage({ commit }) {
       try {
-        console.log('📦 [Vuex] Loading session from localStorage...');
+        console.log('📦 [Vuex] Loading session...');
         const user = JSON.parse(localStorage.getItem('user'));
         const firebaseUserId = localStorage.getItem('firebaseUserId');
         const token = localStorage.getItem('token');
@@ -105,16 +100,16 @@ export default createStore({
         commit('setDiaryLogs', diaryLogs);
         commit('setAuthInitialized', true);
       } catch (error) {
-        console.error('❌ [Vuex] Error loading from localStorage:', error);
+        console.error('❌ [Vuex] Error loading local session:', error);
       }
     },
 
     waitForAuthInit({ state }) {
       return new Promise((resolve) => {
         if (state.authInitialized) return resolve();
-        const check = setInterval(() => {
+        const interval = setInterval(() => {
           if (state.authInitialized) {
-            clearInterval(check);
+            clearInterval(interval);
             resolve();
           }
         }, 50);

@@ -106,10 +106,14 @@ const router = createRouter({
   },
 });
 
-// ✅ Global Route Guard
-router.beforeEach((to, from, next) => {
+// ✅ Route Guard with wait
+router.beforeEach(async (to, from, next) => {
   const isPublic = to.name === 'HomePage';
-  const isLoggedIn = !!store.getters.getFirebaseUserId;
+
+  // ⏳ Wait for Firebase auth to initialize
+  await store.dispatch('waitForAuthInit');
+
+  const isLoggedIn = store.getters.isLoggedIn;
 
   if (!isPublic && !isLoggedIn) {
     console.warn('❌ Нет доступа: пользователь не вошел. Перенаправление на главную.');
