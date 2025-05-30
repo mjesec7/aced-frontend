@@ -32,20 +32,21 @@
     <!-- Lesson Content -->
     <div v-else-if="!showPaywallModal" :class="lessonCompleted ? 'lesson-complete-wrapper' : 'lesson-split'">
       <div :class="lessonCompleted ? 'lesson-complete-full' : 'lesson-left'">
-        <!-- Header & Timer -->
+        <!-- Header -->
         <div v-if="!lessonCompleted" class="lesson-header">
           <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) }}</h2>
           <div class="timer-display">⏱ {{ formattedTime }}</div>
         </div>
 
-        <!-- Progress -->
+        <!-- Progress Bar -->
         <div v-if="!lessonCompleted" class="progress-bar-wrapper">
           <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
           <span class="progress-label">Прогресс: {{ currentIndex + 1 }} / {{ steps.length }}</span>
         </div>
 
-        <!-- Step Display (left side) -->
+        <!-- LEFT SIDE: Single step only -->
         <div v-if="!lessonCompleted && currentStep">
+          <!-- Explanation or Example -->
           <div v-if="['explanation', 'example'].includes(currentStep.type)">
             <h3 v-if="currentStep.type === 'explanation'">📚 Объяснение</h3>
             <h3 v-else>💡 Пример</h3>
@@ -54,15 +55,19 @@
               <button class="nav-btn" @click="goNext">➡️ Далее</button>
             </div>
           </div>
+
+          <!-- Lock left side during interactive step -->
           <div v-else-if="['exercise', 'tryout', 'quiz'].includes(currentStep.type)">
             <div class="locked-overlay">📌 Практическая часть справа ⮕</div>
           </div>
+
+          <!-- Fallback unknown step -->
           <div v-else>
-            <div class="locked-overlay">❗ Неизвестный шаг: {{ currentStep.type }}</div>
+            <div class="locked-overlay">❗ Неизвестный тип шага: {{ currentStep.type }}</div>
           </div>
         </div>
 
-        <!-- Completion -->
+        <!-- Completion block -->
         <div v-else class="completion-content">
           <h3 class="lesson-complete-title">🏆 Урок завершён!</h3>
           <img :src="medalImage" alt="Медаль" class="medal-image" />
@@ -75,11 +80,26 @@
             <button class="share-btn" @click="shareResult">📤 Поделиться успехом</button>
             <button class="homework-btn" @click="goToHomework">➡️ К домашке</button>
           </div>
+
+          <!-- Mistake review -->
+          <div v-if="mistakeLog?.length" class="mistake-review">
+            <h4>🛠 Ошибки</h4>
+            <ul>
+              <li v-for="(entry, idx) in mistakeLog" :key="idx">
+                ❌ <strong>Вопрос:</strong> {{ entry.question }}<br />
+                <strong>Ваш ответ:</strong> {{ entry.userAnswer }}<br />
+                <strong>Правильный ответ:</strong> {{ entry.correctAnswer }}<br />
+                <span v-if="entry.hint"><strong>Подсказка:</strong> {{ entry.hint }}</span><br />
+                <button @click="retryStep(entry.stepIndex)">🔁 Повторить</button>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
 
-      <!-- Right Side: Exercises & Quizzes -->
+      <!-- RIGHT SIDE: Only for interactive steps -->
       <div class="lesson-right" v-if="!lessonCompleted && ['exercise', 'tryout', 'quiz'].includes(currentStep?.type)">
+        <!-- Tryout / Exercise -->
         <div v-if="['exercise', 'tryout'].includes(currentStep.type)">
           <h3>✏️ Упражнение</h3>
           <p class="exercise-question">{{ getLocalized(currentStep.data.question) }}</p>
@@ -99,6 +119,7 @@
           <p v-if="mistakeCount >= 3 && currentStep.data.hint" class="hint">💡 Подсказка: {{ currentStep.data.hint }}</p>
         </div>
 
+        <!-- Quiz -->
         <div v-else-if="currentStep.type === 'quiz'">
           <h3>🎮 Финальный тест</h3>
           <p class="exercise-question">{{ getLocalized(currentStep.data.question) }}</p>
@@ -120,6 +141,7 @@
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
+
 
 <script>
 import axios from 'axios';
