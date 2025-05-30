@@ -28,32 +28,32 @@
       <span>Загрузка уроков...</span>
     </div>
 
-    <div v-else-if="groupedTopics.length" class="lessons-grid">
+    <div v-else-if="groupedTopics && groupedTopics.length" class="lessons-grid">
       <div v-for="topic in groupedTopics" :key="topic.topicId" class="lesson-card">
         <div class="card-header">
-          <h2 class="lesson-title">{{ topic.name }}</h2>
+          <h2 class="lesson-title">{{ topic.name || 'Без названия' }}</h2>
           <button class="add-btn" @click="addToStudyPlan(topic)" :disabled="topic.inStudyPlan">
             {{ topic.inStudyPlan ? '✓' : '＋' }}
           </button>
         </div>
         
         <p class="lesson-topic">
-          <span class="topic-info">📚 {{ topic.subject }}</span>
+          <span class="topic-info">📚 {{ topic.subject || 'Без предмета' }}</span>
           <span class="level-badge" :class="getLevelClass(topic.level)">
-                                    {{ topic.level }}
+            {{ topic.level || 'Базовый' }}
           </span>
         </p>
         
         <p class="lesson-stats">
-          <span>📅 {{ topic.lessonCount }} уроков</span>
-          <span>⏱️ {{ topic.totalTime }} мин</span>
+          <span>📅 {{ topic.lessonCount || 0 }} уроков</span>
+          <span>⏱️ {{ topic.totalTime || 0 }} мин</span>
         </p>
 
         <!-- Progress Section -->
-        <div class="progress-section" v-if="topic.progress !== undefined">
+        <div class="progress-section" v-if="topic.progress !== undefined && topic.progress !== null">
           <div class="progress-header">
             <span class="progress-label">Прогресс</span>
-            <span class="progress-percentage">{{ Math.round(topic.progress) }}%</span>
+            <span class="progress-percentage">{{ Math.round(topic.progress || 0) }}%</span>
           </div>
           
           <!-- Modern Progress Bar -->
@@ -61,14 +61,14 @@
             <div class="progress-bar">
               <div 
                 class="progress-fill" 
-                :style="{ width: topic.progress + '%' }"
-                :class="getProgressClass(topic.progress)"
+                :style="{ width: (topic.progress || 0) + '%' }"
+                :class="getProgressClass(topic.progress || 0)"
               ></div>
             </div>
           </div>
           
           <!-- Mini Pie Chart for completed topics -->
-          <div v-if="topic.progress > 0" class="mini-chart">
+          <div v-if="(topic.progress || 0) > 0" class="mini-chart">
             <svg width="40" height="40" viewBox="0 0 40 40" class="pie-chart">
               <circle
                 cx="20"
@@ -83,16 +83,16 @@
                 cy="20"
                 r="16"
                 fill="none"
-                :stroke="getProgressColor(topic.progress)"
+                :stroke="getProgressColor(topic.progress || 0)"
                 stroke-width="4"
                 stroke-linecap="round"
                 :stroke-dasharray="circumference"
-                :stroke-dashoffset="circumference - (topic.progress / 100) * circumference"
+                :stroke-dashoffset="circumference - ((topic.progress || 0) / 100) * circumference"
                 transform="rotate(-90 20 20)"
                 class="progress-circle"
               />
               <text x="20" y="20" text-anchor="middle" dy="0.3em" class="progress-text">
-                {{ Math.round(topic.progress) }}%
+                {{ Math.round(topic.progress || 0) }}%
               </text>
             </svg>
           </div>
@@ -100,15 +100,15 @@
 
         <!-- Status Badges -->
         <div class="status-section">
-          <span class="access-label" :class="topic.type === 'premium' ? 'paid' : 'free'">
-            {{ topic.type === 'premium' ? '⭐ Премиум' : '🆓 Бесплатный' }}
+          <span class="access-label" :class="(topic.type === 'premium') ? 'paid' : 'free'">
+            {{ (topic.type === 'premium') ? '⭐ Премиум' : '🆓 Бесплатный' }}
           </span>
           
           <div class="status-badges">
-            <span v-if="topic.progress === 100" class="status-badge completed">
+            <span v-if="(topic.progress || 0) === 100" class="status-badge completed">
               ✅ Завершен
             </span>
-            <span v-else-if="topic.progress > 0" class="status-badge in-progress">
+            <span v-else-if="(topic.progress || 0) > 0" class="status-badge in-progress">
               🔄 В процессе
             </span>
             <span v-else class="status-badge not-started">
@@ -120,9 +120,9 @@
         <button 
           class="start-btn" 
           @click="handleAccess(topic.topicId, topic.type)"
-          :class="getButtonClass(topic.progress)"
+          :class="getButtonClass(topic.progress || 0)"
         >
-          {{ getButtonText(topic.progress) }}
+          {{ getButtonText(topic.progress || 0) }}
         </button>
       </div>
     </div>
@@ -143,12 +143,12 @@
           <h3>📚 Добавить в учебный план</h3>
         </div>
         <div class="modal-body">
-          <div class="topic-preview">
-            <h4>{{ selectedTopic?.name }}</h4>
-            <p>{{ selectedTopic?.subject }} • {{ selectedTopic?.level }}</p>
+          <div class="topic-preview" v-if="selectedTopic">
+            <h4>{{ selectedTopic.name || 'Без названия' }}</h4>
+            <p>{{ selectedTopic.subject || 'Без предмета' }} • {{ selectedTopic.level || 'Базовый' }}</p>
             <div class="topic-stats">
-              <span>📅 {{ selectedTopic?.lessonCount }} уроков</span>
-              <span>⏱️ {{ selectedTopic?.totalTime }} минут</span>
+              <span>📅 {{ selectedTopic.lessonCount || 0 }} уроков</span>
+              <span>⏱️ {{ selectedTopic.totalTime || 0 }} минут</span>
             </div>
           </div>
         </div>
@@ -167,7 +167,7 @@
         <div class="success-content">
           <div class="success-icon">✅</div>
           <h3>Успешно добавлено!</h3>
-          <p>Тема "{{ selectedTopic?.name }}" добавлена в ваш учебный план.</p>
+          <p>Тема "{{ selectedTopic?.name || 'Без названия' }}" добавлена в ваш учебный план.</p>
           <button class="btn-primary" @click="showSuccessModal = false">
             Понятно
           </button>
@@ -176,11 +176,12 @@
     </div>
 
     <PaymentModal
+      v-if="showPaywall"
       :user-id="userId"
       :visible="showPaywall"
       :requested-topic-id="requestedTopicId"
       @close="showPaywall = false"
-      @unlocked="plan = $event"
+      @unlocked="handlePlanUpdate"
     />
   </div>
 </template>
@@ -193,7 +194,9 @@ import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
 export default {
   name: 'CataloguePage',
-  components: { PaymentModal },
+  components: { 
+    PaymentModal 
+  },
   data() {
     return {
       lessons: [],
@@ -207,40 +210,58 @@ export default {
       searchQuery: '',
       showPaywall: false,
       requestedTopicId: null,
-      lang: localStorage.getItem('lang') || 'en',
+      lang: '',
       showAddModal: false,
       showSuccessModal: false,
       selectedTopic: null,
-      circumference: 2 * Math.PI * 16 // for the pie chart
+      circumference: 2 * Math.PI * 16, // for the pie chart
+      plan: null
     };
   },
   computed: {
     ...mapGetters('user', ['isPremiumUser', 'userStatus']),
     subscriptionClass() {
-      return this.userStatus === 'pro' ? 'badge-pro'
-        : this.userStatus === 'start' ? 'badge-start'
+      const status = this.userStatus || 'free';
+      return status === 'pro' ? 'badge-pro'
+        : status === 'start' ? 'badge-start'
         : 'badge-free';
     },
     subscriptionText() {
-      return this.userStatus === 'pro' ? 'Pro подписка'
-        : this.userStatus === 'start' ? 'Start подписка'
+      const status = this.userStatus || 'free';
+      return status === 'pro' ? 'Pro подписка'
+        : status === 'start' ? 'Start подписка'
         : 'Бесплатный доступ';
     }
   },
   async mounted() {
-    const storedId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
-    if (!storedId) {
-      this.loading = false;
-      return;
-    }
-    this.userId = storedId;
-    await Promise.all([
-      this.loadLessons(),
-      this.loadUserProgress(),
-      this.loadStudyPlan()
-    ]);
+    await this.initializeComponent();
   },
   methods: {
+    async initializeComponent() {
+      try {
+        // Initialize language
+        this.lang = localStorage.getItem('lang') || 'en';
+        
+        // Get user ID
+        const storedId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
+        if (!storedId) {
+          this.loading = false;
+          return;
+        }
+        this.userId = storedId;
+
+        // Load all data
+        await Promise.all([
+          this.loadLessons(),
+          this.loadUserProgress(),
+          this.loadStudyPlan()
+        ]);
+      } catch (error) {
+        console.error('❌ Ошибка инициализации компонента:', error);
+        this.loading = false;
+      }
+    },
+
     async loadLessons() {
       try {
         const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/lessons`);
@@ -248,13 +269,18 @@ export default {
         this.processTopics();
       } catch (error) {
         console.error('❌ Ошибка при загрузке уроков:', error.response?.data || error.message);
+        this.lessons = [];
+        this.processTopics();
       }
     },
 
     async loadUserProgress() {
       if (!this.userId) return;
       try {
-        const token = await auth.currentUser?.getIdToken();
+        const currentUser = auth.currentUser;
+        if (!currentUser) return;
+
+        const token = await currentUser.getIdToken();
         if (!token) return;
 
         const { data } = await axios.get(
@@ -271,14 +297,22 @@ export default {
     async loadStudyPlan() {
       if (!this.userId) return;
       try {
-        const token = await auth.currentUser?.getIdToken();
+        const currentUser = auth.currentUser;
+        if (!currentUser) return;
+
+        const token = await currentUser.getIdToken();
         if (!token) return;
 
         const { data } = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        this.studyPlanTopics = (data || []).map(item => item.topicId?.toString());
+        this.studyPlanTopics = (data || []).map(item => {
+          if (item && item.topicId) {
+            return String(item.topicId);
+          }
+          return '';
+        }).filter(id => id);
       } catch (error) {
         console.error('❌ Ошибка при загрузке учебного плана:', error.response?.data || error.message);
         this.studyPlanTopics = [];
@@ -286,106 +320,188 @@ export default {
     },
 
     processTopics() {
-      const topicsMap = new Map();
-      this.lessons.forEach(lesson => {
-        const topicId = lesson.topicId?.toString();
-        const name = this.getTopicName(lesson);
-        if (!topicId || !name) return;
-
-        if (!topicsMap.has(topicId)) {
-          topicsMap.set(topicId, {
-            topicId,
-            name: String(name || ''),
-            subject: String(lesson.subject || ''),
-            level: String(lesson.level || ''),
-            type: lesson.type,
-            lessonCount: 1,
-            totalTime: 10
-          });
-        } else {
-          const entry = topicsMap.get(topicId);
-          entry.lessonCount += 1;
-          entry.totalTime += 10;
+      try {
+        const topicsMap = new Map();
+        
+        if (!Array.isArray(this.lessons)) {
+          this.lessons = [];
         }
-      });
 
-      // Add progress and study plan info
-      this.originalTopics = [...topicsMap.values()].map(topic => ({
-        ...topic,
-        progress: this.userProgress[topic.topicId] || 0,
-        inStudyPlan: this.studyPlanTopics.includes(topic.topicId)
-      }));
+        this.lessons.forEach(lesson => {
+          if (!lesson) return;
+          
+          const topicId = lesson.topicId ? String(lesson.topicId) : null;
+          const name = this.getTopicName(lesson);
+          
+          if (!topicId || !name) return;
 
-      this.applyFilters();
-      this.loading = false;
+          if (!topicsMap.has(topicId)) {
+            topicsMap.set(topicId, {
+              topicId,
+              name: String(name || ''),
+              subject: String(lesson.subject || ''),
+              level: String(lesson.level || 'Базовый'),
+              type: lesson.type || 'free',
+              lessonCount: 1,
+              totalTime: 10
+            });
+          } else {
+            const entry = topicsMap.get(topicId);
+            if (entry) {
+              entry.lessonCount += 1;
+              entry.totalTime += 10;
+            }
+          }
+        });
+
+        // Add progress and study plan info
+        this.originalTopics = [...topicsMap.values()].map(topic => {
+          if (!topic) return null;
+          
+          return {
+            ...topic,
+            progress: this.userProgress[topic.topicId] || 0,
+            inStudyPlan: this.studyPlanTopics.includes(topic.topicId)
+          };
+        }).filter(topic => topic !== null);
+
+        this.applyFilters();
+        this.loading = false;
+      } catch (error) {
+        console.error('❌ Ошибка при обработке тем:', error);
+        this.originalTopics = [];
+        this.groupedTopics = [];
+        this.loading = false;
+      }
     },
 
     applyFilters() {
-      const query = this.searchQuery.toLowerCase();
-      this.groupedTopics = this.originalTopics.filter(topic => {
-        // Extra safe string conversion
-        const topicName = String(topic.name || '').toLowerCase();
-        const topicSubject = String(topic.subject || '').toLowerCase();
+      try {
+        const query = String(this.searchQuery || '').toLowerCase();
         
-        const matchesSearch = topicName.includes(query) || topicSubject.includes(query);
-        
-        let matchesFilter = true;
-        switch (this.filterType) {
-          case 'free':
-            matchesFilter = topic.type === 'free';
-            break;
-          case 'premium':
-            matchesFilter = topic.type === 'premium';
-            break;
-          case 'in-progress':
-            matchesFilter = topic.progress > 0 && topic.progress < 100;
-            break;
-          case 'completed':
-            matchesFilter = topic.progress === 100;
-            break;
-          default:
-            matchesFilter = true;
-        }
-        
-        return matchesFilter && matchesSearch;
-      });
+        this.groupedTopics = this.originalTopics.filter(topic => {
+          if (!topic) return false;
+          
+          // Safe string conversion for search
+          const topicName = String(topic.name || '').toLowerCase();
+          const topicSubject = String(topic.subject || '').toLowerCase();
+          
+          const matchesSearch = topicName.includes(query) || topicSubject.includes(query);
+          
+          let matchesFilter = true;
+          const progress = topic.progress || 0;
+          
+          switch (this.filterType) {
+            case 'free':
+              matchesFilter = topic.type === 'free';
+              break;
+            case 'premium':
+              matchesFilter = topic.type === 'premium';
+              break;
+            case 'in-progress':
+              matchesFilter = progress > 0 && progress < 100;
+              break;
+            case 'completed':
+              matchesFilter = progress === 100;
+              break;
+            default:
+              matchesFilter = true;
+          }
+          
+          return matchesFilter && matchesSearch;
+        });
+      } catch (error) {
+        console.error('❌ Ошибка при применении фильтров:', error);
+        this.groupedTopics = [];
+      }
     },
 
     getTopicName(lesson) {
-      if (typeof lesson.topic === 'string') return lesson.topic;
-      if (lesson.translations?.[this.lang]?.topic) return String(lesson.translations[this.lang].topic);
-      if (lesson.topic?.[this.lang]) return String(lesson.topic[this.lang]);
-      if (lesson.topic?.en) return String(lesson.topic.en);
-      return 'Без темы';
+      if (!lesson) return 'Без темы';
+      
+      try {
+        // Check different possible structures
+        if (typeof lesson.topic === 'string') {
+          return lesson.topic;
+        }
+        
+        if (lesson.translations && lesson.translations[this.lang] && lesson.translations[this.lang].topic) {
+          return String(lesson.translations[this.lang].topic);
+        }
+        
+        if (lesson.topic && typeof lesson.topic === 'object') {
+          if (lesson.topic[this.lang]) {
+            return String(lesson.topic[this.lang]);
+          }
+          if (lesson.topic.en) {
+            return String(lesson.topic.en);
+          }
+        }
+        
+        return 'Без темы';
+      } catch (error) {
+        console.error('❌ Ошибка при получении названия темы:', error);
+        return 'Без темы';
+      }
+    },
+
+    getLevelClass(level) {
+      const levelStr = String(level || '').toLowerCase();
+      switch (levelStr) {
+        case 'beginner':
+        case 'начинающий':
+        case 'базовый':
+          return 'level-beginner';
+        case 'intermediate':
+        case 'средний':
+          return 'level-intermediate';
+        case 'advanced':
+        case 'продвинутый':
+          return 'level-advanced';
+        case 'expert':
+        case 'эксперт':
+          return 'level-expert';
+        default:
+          return 'level-beginner';
+      }
     },
 
     getProgressClass(progress) {
-      if (progress === 100) return 'progress-completed';
-      if (progress >= 70) return 'progress-high';
-      if (progress >= 30) return 'progress-medium';
+      const prog = Number(progress) || 0;
+      if (prog === 100) return 'progress-completed';
+      if (prog >= 70) return 'progress-high';
+      if (prog >= 30) return 'progress-medium';
       return 'progress-low';
     },
 
     getProgressColor(progress) {
-      if (progress === 100) return '#10b981';
-      if (progress >= 70) return '#3b82f6';
-      if (progress >= 30) return '#f59e0b';
+      const prog = Number(progress) || 0;
+      if (prog === 100) return '#10b981';
+      if (prog >= 70) return '#3b82f6';
+      if (prog >= 30) return '#f59e0b';
       return '#ef4444';
     },
 
     getButtonClass(progress) {
-      if (progress === 100) return 'btn-completed';
-      if (progress > 0) return 'btn-continue';
+      const prog = Number(progress) || 0;
+      if (prog === 100) return 'btn-completed';
+      if (prog > 0) return 'btn-continue';
       return 'btn-start';
     },
 
     getButtonText(progress) {
-      if (progress === 100) return '✅ Завершен';
-      if (progress > 0) return '▶️ Продолжить';
+      const prog = Number(progress) || 0;
+      if (prog === 100) return '✅ Завершен';
+      if (prog > 0) return '▶️ Продолжить';
       return '🚀 Начать курс';
     },
 
     handleAccess(topicId, type) {
+      if (!topicId) {
+        console.error('❌ Не указан ID темы');
+        return;
+      }
+      
       if (type === 'premium' && !this.isPremiumUser) {
         this.requestedTopicId = topicId;
         this.showPaywall = true;
@@ -395,30 +511,43 @@ export default {
     },
 
     addToStudyPlan(topic) {
-      if (topic.inStudyPlan) return;
+      if (!topic || topic.inStudyPlan) return;
       this.selectedTopic = topic;
       this.showAddModal = true;
     },
 
     async confirmAddToStudyPlan() {
-      if (!auth.currentUser) {
-        alert('Пожалуйста, войдите в аккаунт.');
+      if (!this.selectedTopic) {
+        this.showAddModal = false;
         return;
       }
+
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        alert('Пожалуйста, войдите в аккаунт.');
+        this.showAddModal = false;
+        return;
+      }
+
       try {
-        const token = await auth.currentUser.getIdToken();
+        const token = await currentUser.getIdToken();
         const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`;
         const body = {
-          subject: this.selectedTopic.subject,
-          level: this.selectedTopic.level,
-          topic: this.selectedTopic.name,
+          subject: this.selectedTopic.subject || '',
+          level: this.selectedTopic.level || '',
+          topic: this.selectedTopic.name || '',
           topicId: this.selectedTopic.topicId
         };
-        await axios.post(url, body, { headers: { Authorization: `Bearer ${token}` } });
+        
+        await axios.post(url, body, { 
+          headers: { Authorization: `Bearer ${token}` } 
+        });
         
         // Update local state
         this.selectedTopic.inStudyPlan = true;
-        this.studyPlanTopics.push(this.selectedTopic.topicId);
+        if (!this.studyPlanTopics.includes(this.selectedTopic.topicId)) {
+          this.studyPlanTopics.push(this.selectedTopic.topicId);
+        }
         
         this.showAddModal = false;
         this.showSuccessModal = true;
@@ -427,14 +556,25 @@ export default {
         alert('❌ Не удалось добавить тему');
         this.showAddModal = false;
       }
+    },
+
+    handlePlanUpdate(newPlan) {
+      this.plan = newPlan;
+      // You can add additional logic here if needed
     }
   },
   watch: {
-    searchQuery() {
-      this.applyFilters();
+    searchQuery: {
+      handler() {
+        this.applyFilters();
+      },
+      immediate: false
     },
-    filterType() {
-      this.applyFilters();
+    filterType: {
+      handler() {
+        this.applyFilters();
+      },
+      immediate: false
     }
   }
 };
