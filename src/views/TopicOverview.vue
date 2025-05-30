@@ -100,10 +100,11 @@ export default {
 
 <style scoped>
 .topic-overview {
-  max-width: 900px;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 40px 20px;
-  font-family: 'Inter', sans-serif;
+  padding: 50px 24px;
+  font-family: 'Unbounded', sans-serif;
+  color: #1f2937;
 }
 
 .loading,
@@ -114,71 +115,86 @@ export default {
 }
 
 .title {
-  font-size: 2.4rem;
-  font-weight: 900;
-  margin-bottom: 20px;
-  color: #4c1d95;
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #5b21b6;
+  margin-bottom: 24px;
+  text-align: center;
 }
 
 .description {
-  font-size: 1.1rem;
-  color: #374151;
-  margin-bottom: 30px;
+  font-size: 1.2rem;
+  color: #475569;
+  line-height: 1.7;
+  margin-bottom: 36px;
+  text-align: center;
 }
 
 .lesson-list h2 {
-  font-size: 1.4rem;
-  margin-bottom: 12px;
-  color: #4c1d95;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #6b21a8;
 }
 
 .lesson-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
-  margin-bottom: 10px;
-  background: #f9fafb;
+  background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: 14px;
+  padding: 14px 20px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 8px rgba(93, 97, 120, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lesson-item:hover {
+  transform: scale(1.01);
+  box-shadow: 0 6px 12px rgba(93, 97, 120, 0.12);
 }
 
 .lesson-item.locked {
-  opacity: 0.6;
+  opacity: 0.5;
   pointer-events: none;
 }
 
 .lesson-item button {
-  padding: 6px 14px;
+  padding: 8px 18px;
   background: linear-gradient(to right, #7c3aed, #6d28d9);
-  color: white;
+  color: #fff;
+  font-weight: 500;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 10px;
   cursor: pointer;
+  transition: transform 0.2s ease, background 0.3s ease;
 }
 
 .lesson-item button:hover {
-  background: linear-gradient(to right, #5b21b6, #6d28d9);
+  transform: scale(1.05);
+  background: linear-gradient(to right, #5b21b6, #6b21a8);
 }
 
 .start-button-wrapper {
   text-align: center;
-  margin-top: 40px;
+  margin-top: 50px;
 }
 
 .start-course-btn {
-  padding: 14px 28px;
-  font-size: 1.1rem;
+  padding: 16px 36px;
+  font-size: 1.2rem;
+  font-weight: 600;
   background: linear-gradient(to right, #6d28d9, #7c3aed);
   color: white;
   border: none;
-  border-radius: 12px;
-  font-weight: bold;
+  border-radius: 14px;
   cursor: pointer;
+  transition: transform 0.2s ease, background 0.3s ease;
 }
 
 .start-course-btn:hover {
+  transform: scale(1.05);
   background: linear-gradient(to right, #5b21b6, #6b21a8);
 }
 </style>
