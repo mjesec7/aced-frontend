@@ -25,14 +25,14 @@ const i18n = createI18n({
 // 🧠 Restore Vuex state from localStorage
 store.dispatch('loadUserFromLocalStorage');
 
-// 🚀 Create app instance (but delay mounting)
+// 🚀 Prepare app instance (do not mount yet)
 const app = createApp(App);
 app.use(store);
 app.use(router);
 app.use(VueToast);
 app.use(i18n);
 
-// 🔐 Firebase Auth & Backend Sync
+// 🔐 Wait for Firebase Auth state before mounting
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     try {
@@ -53,15 +53,15 @@ onAuthStateChanged(auth, async (user) => {
       localStorage.setItem('firebaseUserId', savedUser.firebaseId);
       localStorage.setItem('token', token);
 
-      console.log('✅ User synced with backend');
+      console.log('✅ User authenticated and synced with backend');
     } catch (error) {
-      console.error('❌ Failed to sync user:', error.response?.data || error.message);
+      console.error('❌ Backend sync failed:', error.response?.data || error.message);
     }
   } else {
-    console.log('👋 No Firebase session found, clearing Vuex state');
+    console.log('👋 No Firebase session. Logging out.');
     store.commit('logout');
   }
 
-  // ✅ Mount app only after auth check is done
+  // ✅ Mount app after auth check completes
   app.mount('#app');
 });

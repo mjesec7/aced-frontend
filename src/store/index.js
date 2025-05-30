@@ -1,10 +1,12 @@
 import { createStore } from 'vuex';
-import global from './global'; // Optional global loading module
+import global from './global';
 import axios from 'axios';
+
+const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'https://api.aced.live';
 
 export default createStore({
   modules: {
-    global
+    global,
   },
 
   state: {
@@ -13,7 +15,7 @@ export default createStore({
     token: null,
     progress: {},
     diaryLogs: [],
-    authInitialized: false
+    authInitialized: false,
   },
 
   mutations: {
@@ -41,7 +43,7 @@ export default createStore({
       state.token = null;
       state.progress = {};
       state.diaryLogs = [];
-      state.authInitialized = false;
+      state.authInitialized = true; // ✅ Still set to true to prevent auth wait from blocking forever
       localStorage.clear();
     }
   },
@@ -50,14 +52,12 @@ export default createStore({
     async loginUser({ commit }, { userData, token }) {
       try {
         console.log('✅ [Vuex] Logging in user via Firebase:', userData?.email);
-        const res = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/users/save`,
-          {
-            token,
-            name: userData.displayName || userData.email || 'Unnamed User',
-            subscriptionPlan: 'free'
-          }
-        );
+
+        const res = await axios.post(`${API_BASE_URL}/users/save`, {
+          token,
+          name: userData.displayName || userData.email || 'Unnamed User',
+          subscriptionPlan: 'free',
+        });
 
         const savedUser = res.data;
 
@@ -101,6 +101,7 @@ export default createStore({
         commit('setAuthInitialized', true);
       } catch (error) {
         console.error('❌ [Vuex] Error loading local session:', error);
+        commit('setAuthInitialized', true); // Prevent hanging
       }
     },
 
@@ -137,6 +138,6 @@ export default createStore({
     getToken: (state) => state.token,
     getProgress: (state) => state.progress,
     getDiaryLogs: (state) => state.diaryLogs,
-    isAuthInitialized: (state) => state.authInitialized
+    isAuthInitialized: (state) => state.authInitialized,
   }
 });

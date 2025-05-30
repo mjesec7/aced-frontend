@@ -106,14 +106,14 @@ const router = createRouter({
   },
 });
 
-// ✅ Route Guard with Firebase Auth wait
+// ✅ Route Guard: wait for Firebase auth before navigation
 router.beforeEach(async (to, from, next) => {
   const isPublic = to.name === 'HomePage';
 
   try {
     await store.dispatch('waitForAuthInit');
   } catch (err) {
-    console.warn('⚠️ Firebase auth check timeout or failed:', err);
+    console.warn('⚠️ Firebase auth wait failed:', err);
   }
 
   const isLoggedIn = store.getters.isLoggedIn;
