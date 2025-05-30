@@ -10,6 +10,16 @@
       </div>
     </div>
 
+    <!-- Exit Modal -->
+    <div v-if="showExitModal" class="modal">
+      <div class="modal-content">
+        <h3>Вы действительно хотите выйти?</h3>
+        <p>Ваш прогресс не будет сохранён.</p>
+        <button @click="exitLesson">Да, выйти</button>
+        <button @click="cancelExit">Нет, остаться</button>
+      </div>
+    </div>
+
     <!-- Intro Screen -->
     <div v-if="!started && !showPaywallModal" class="intro-screen">
       <button class="exit-btn" @click="confirmExit">❌</button>
@@ -22,36 +32,37 @@
     <!-- Lesson Content -->
     <div v-else-if="!showPaywallModal" :class="lessonCompleted ? 'lesson-complete-wrapper' : 'lesson-split'">
       <div :class="lessonCompleted ? 'lesson-complete-full' : 'lesson-left'">
+        <!-- Header & Timer -->
         <div v-if="!lessonCompleted" class="lesson-header">
           <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) }}</h2>
           <div class="timer-display">⏱ {{ formattedTime }}</div>
         </div>
 
+        <!-- Progress -->
         <div v-if="!lessonCompleted" class="progress-bar-wrapper">
           <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
           <span class="progress-label">Прогресс: {{ currentIndex + 1 }} / {{ steps.length }}</span>
         </div>
 
-        <div v-if="!lessonCompleted">
-          <div v-if="currentStep.type === 'explanation'">
-            <h3>📚 Объяснение</h3>
+        <!-- Step Display (left side) -->
+        <div v-if="!lessonCompleted && currentStep">
+          <div v-if="['explanation', 'example'].includes(currentStep.type)">
+            <h3 v-if="currentStep.type === 'explanation'">📚 Объяснение</h3>
+            <h3 v-else>💡 Пример</h3>
             <p class="explanation-text">{{ getLocalized(currentStep.data) }}</p>
             <div class="navigation-area">
               <button class="nav-btn" @click="goNext">➡️ Далее</button>
             </div>
           </div>
-
-          <div v-else-if="currentStep.type === 'example'">
-            <h3>💡 Пример</h3>
-            <p class="example-text">{{ getLocalized(currentStep.data) }}</p>
-            <div class="navigation-area">
-              <button class="nav-btn" @click="goNext">➡️ Далее</button>
-            </div>
+          <div v-else-if="['exercise', 'tryout', 'quiz'].includes(currentStep.type)">
+            <div class="locked-overlay">📌 Практическая часть справа ⮕</div>
           </div>
-
-          <div v-else class="locked-overlay">📌 Практическая часть справа ⮕</div>
+          <div v-else>
+            <div class="locked-overlay">❗ Неизвестный шаг: {{ currentStep.type }}</div>
+          </div>
         </div>
 
+        <!-- Completion -->
         <div v-else class="completion-content">
           <h3 class="lesson-complete-title">🏆 Урок завершён!</h3>
           <img :src="medalImage" alt="Медаль" class="medal-image" />
@@ -67,8 +78,9 @@
         </div>
       </div>
 
-      <div class="lesson-right" v-if="!lessonCompleted">
-        <div v-if="['tryout', 'exercise'].includes(currentStep.type)">
+      <!-- Right Side: Exercises & Quizzes -->
+      <div class="lesson-right" v-if="!lessonCompleted && ['exercise', 'tryout', 'quiz'].includes(currentStep?.type)">
+        <div v-if="['exercise', 'tryout'].includes(currentStep.type)">
           <h3>✏️ Упражнение</h3>
           <p class="exercise-question">{{ getLocalized(currentStep.data.question) }}</p>
           <div v-if="Array.isArray(currentStep.data.options) && currentStep.data.options.length">
@@ -101,16 +113,14 @@
 
           <p v-if="confirmation" class="confirmation">{{ confirmation }}</p>
         </div>
-
-        <div v-else>
-          <h3>⌛ Ожидание действия слева...</h3>
-        </div>
       </div>
     </div>
 
+    <!-- Confetti -->
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
+
 
 
 <script>
@@ -195,7 +205,7 @@ export default {
 
         if (Array.isArray(data.steps)) {
           data.steps.forEach(step => {
-            if ((step.type === 'exercise' || step.type === 'tryout') && Array.isArray(step.data)) {
+            if (['exercise', 'tryout'].includes(step.type) && Array.isArray(step.data)) {
               this.steps.push(...step.data.map(ex => ({ type: step.type, data: ex })));
             } else {
               this.steps.push(step);
@@ -226,8 +236,8 @@ export default {
       this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
     },
     handleSubmitOrNext() {
-      const phase = this.currentStep;
-      const correctAnswer = (phase.data.correctAnswer || phase.data.answer || '').toLowerCase();
+      const step = this.currentStep;
+      const correctAnswer = (step.data.correctAnswer || step.data.answer || '').toLowerCase();
       const userResponse = this.userAnswer.trim().toLowerCase();
 
       if (!userResponse) {
@@ -238,7 +248,7 @@ export default {
       if (userResponse === correctAnswer) {
         this.confirmation = '✅ Верно!';
         this.answerWasCorrect = true;
-        this.stars += 1;
+        this.stars++;
       } else {
         this.confirmation = '❌ Неверно. Попробуйте снова.';
         this.mistakeCount++;
@@ -249,6 +259,7 @@ export default {
       this.userAnswer = '';
       this.confirmation = '';
       this.answerWasCorrect = false;
+
       if (this.currentIndex + 1 < this.steps.length) {
         this.currentIndex++;
       } else {
@@ -318,6 +329,7 @@ export default {
   }
 };
 </script>
+
 
 
 
