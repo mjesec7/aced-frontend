@@ -65,7 +65,6 @@ import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  onAuthStateChanged,
 } from "firebase/auth";
 import { mapMutations, mapActions, mapGetters } from "vuex";
 import AcedSettings from "@/components/Main/AcedSettings.vue";
@@ -97,36 +96,13 @@ export default {
   },
 
   mounted() {
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const token = await user.getIdToken();
-        try {
-          const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/${user.uid}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          const { name, subscriptionPlan } = res.data;
-          this.setUser({
-            name: name || user.email,
-            email: user.email,
-            uid: user.uid,
-            subscriptionPlan: subscriptionPlan || 'free',
-          });
-          localStorage.setItem('plan', subscriptionPlan || 'free');
-        } catch (err) {
-          console.warn('⚠️ Не удалось получить данные пользователя:', err);
-        }
-      } else {
-        this.logoutUser();
-      }
-    });
-
     window.addEventListener("open-login-modal", () => {
       this.openModal("login");
     });
   },
 
   methods: {
-    ...mapMutations(["setUser"]),
+    ...mapMutations(["setUser", "setFirebaseUserId", "setToken"]),
     ...mapActions(["loginUser", "logoutUser"]),
 
     openModal(mode) {
@@ -144,6 +120,7 @@ export default {
     toggleDropdown() {
       this.dropdownOpen = !this.dropdownOpen;
     },
+
     async loginWithGoogle() {
       if (this.loggingIn) return;
       this.loggingIn = true;
@@ -155,27 +132,25 @@ export default {
         const token = await user.getIdToken(true);
 
         const apiBase = import.meta.env.VITE_API_BASE_URL;
-        const res = await axios.get(`${apiBase}/users/${user.uid}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
 
-        const subscriptionPlan = res.data.subscriptionPlan || 'free';
-        const name = res.data.name || user.displayName || user.email;
-
-        await axios.post(`${apiBase}/users/save`, {
+        // Optional: sync user to backend
+        const saveRes = await axios.post(`${apiBase}/users/save`, {
           token,
-          name,
-          subscriptionPlan,
+          name: user.displayName || user.email,
+          subscriptionPlan: 'free',
         });
 
-        localStorage.setItem("firebaseUserId", user.uid);
-        localStorage.setItem("userId", user.uid);
-        localStorage.setItem("plan", subscriptionPlan);
-        this.setUser({ name, email: user.email, subscriptionPlan, uid: user.uid });
+        const savedUser = saveRes.data;
 
-        if (this.$store && this.$store.commit) {
-          this.$store.commit("setFirebaseUserId", user.uid);
-        }
+        // Save to Vuex and localStorage
+        this.setUser(savedUser);
+        this.setFirebaseUserId(user.uid);
+        this.setToken(token);
+
+        localStorage.setItem("user", JSON.stringify(savedUser));
+        localStorage.setItem("firebaseUserId", user.uid);
+        localStorage.setItem("token", token);
+        localStorage.setItem("plan", savedUser.subscriptionPlan || 'free');
 
         this.$router.push("/profile");
       } catch (error) {
@@ -254,6 +229,9 @@ export default {
         this.logoutUser();
         this.dropdownOpen = false;
         localStorage.removeItem("plan");
+        localStorage.removeItem("user");
+        localStorage.removeItem("firebaseUserId");
+        localStorage.removeItem("token");
       });
     },
 
@@ -264,6 +242,7 @@ export default {
   },
 };
 </script>
+
 
 <style scoped>
 @import "@/assets/css/UserSection.css";

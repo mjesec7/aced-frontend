@@ -26,13 +26,8 @@ const i18n = createI18n({
 store.dispatch('loadUserFromLocalStorage');
 
 // 🚀 Prepare app instance (do not mount yet)
-const app = createApp(App);
-app.use(store);
-app.use(router);
-app.use(VueToast);
-app.use(i18n);
+let app;
 
-// 🔐 Wait for Firebase Auth state before mounting
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     try {
@@ -41,7 +36,7 @@ onAuthStateChanged(auth, async (user) => {
       const response = await axios.post('https://api.aced.live/api/users/save', {
         token,
         name: user.displayName || user.email || 'Unnamed User',
-        subscriptionPlan: 'free'
+        subscriptionPlan: 'free',
       });
 
       const savedUser = response.data;
@@ -62,6 +57,13 @@ onAuthStateChanged(auth, async (user) => {
     store.commit('logout');
   }
 
-  // ✅ Mount app after auth check completes
-  app.mount('#app');
+  // ✅ Mount app only once
+  if (!app) {
+    app = createApp(App);
+    app.use(store);
+    app.use(router);
+    app.use(VueToast);
+    app.use(i18n);
+    app.mount('#app');
+  }
 });
