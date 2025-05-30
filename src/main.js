@@ -25,7 +25,7 @@ const i18n = createI18n({
 // 🧠 Restore Vuex state from localStorage
 store.dispatch('loadUserFromLocalStorage');
 
-// 🚀 Create app instance (but don't mount yet)
+// 🚀 Create app instance (but delay mounting)
 const app = createApp(App);
 app.use(store);
 app.use(router);
@@ -38,13 +38,13 @@ onAuthStateChanged(auth, async (user) => {
     try {
       const token = await user.getIdToken();
 
-      const saveRes = await axios.post('https://api.aced.live/api/users/save', {
+      const response = await axios.post('https://api.aced.live/api/users/save', {
         token,
         name: user.displayName || user.email || 'Unnamed User',
         subscriptionPlan: 'free'
       });
 
-      const savedUser = saveRes.data;
+      const savedUser = response.data;
       store.commit('setUser', savedUser);
       store.commit('setFirebaseUserId', savedUser.firebaseId);
       store.commit('setToken', token);
@@ -53,15 +53,15 @@ onAuthStateChanged(auth, async (user) => {
       localStorage.setItem('firebaseUserId', savedUser.firebaseId);
       localStorage.setItem('token', token);
 
-      console.log('✅ Firebase user authenticated & saved to backend');
-    } catch (err) {
-      console.error('❌ Backend sync failed:', err.response?.data || err.message);
+      console.log('✅ User synced with backend');
+    } catch (error) {
+      console.error('❌ Failed to sync user:', error.response?.data || error.message);
     }
   } else {
-    console.log('👋 No Firebase session. Clearing user...');
+    console.log('👋 No Firebase session found, clearing Vuex state');
     store.commit('logout');
   }
 
-  // ✅ Mount app after session check
+  // ✅ Mount app only after auth check is done
   app.mount('#app');
 });
