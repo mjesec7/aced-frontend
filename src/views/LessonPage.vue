@@ -121,8 +121,6 @@
   </div>
 </template>
 
-
-
 <script>
 import axios from 'axios';
 import confetti from 'canvas-confetti';
@@ -149,10 +147,12 @@ export default {
       showPaywallModal: false,
       showExitModal: false,
       timerInterval: null,
+      autosaveTimer: null,
       userId: null,
       medalImage: '',
       medalLabel: '',
-      stars: 0
+      stars: 0,
+      mistakeLog: []
     };
   },
   computed: {
@@ -181,6 +181,7 @@ export default {
   },
   beforeUnmount() {
     clearInterval(this.timerInterval);
+    clearInterval(this.autosaveTimer);
   },
   methods: {
     getLocalized(field) {
@@ -234,6 +235,23 @@ export default {
     startLesson() {
       this.started = true;
       this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
+      this.autosaveTimer = setInterval(() => this.autosaveProgress(), 15000); // autosave every 15s
+    },
+    async autosaveProgress() {
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        await axios.post(`${BASE_URL}/users/${this.userId}/progress`, {
+          lessonId: this.lesson._id,
+          currentIndex: this.currentIndex,
+          elapsedSeconds: this.elapsedSeconds,
+          mistakeCount: this.mistakeCount,
+          stars: this.stars
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch (err) {
+        console.warn('⚠️ Ошибка автосохранения:', err);
+      }
     },
     handleSubmitOrNext() {
       const step = this.currentStep;
@@ -253,6 +271,14 @@ export default {
         this.confirmation = '❌ Неверно. Попробуйте снова.';
         this.mistakeCount++;
         this.answerWasCorrect = false;
+
+        this.mistakeLog.push({
+          stepIndex: this.currentIndex,
+          question: step.data.question,
+          userAnswer: this.userAnswer,
+          correctAnswer: correctAnswer,
+          hint: step.data.hint || null
+        });
       }
     },
     goNext() {
@@ -266,8 +292,17 @@ export default {
         this.completeLesson();
       }
     },
+    retryStep(index) {
+      this.lessonCompleted = false;
+      this.started = true;
+      this.currentIndex = index;
+      this.userAnswer = '';
+      this.confirmation = '';
+      this.answerWasCorrect = false;
+    },
     async completeLesson() {
       clearInterval(this.timerInterval);
+      clearInterval(this.autosaveTimer);
       this.lessonCompleted = true;
       this.showConfetti = true;
       setTimeout(() => this.launchConfetti(), 200);
@@ -329,6 +364,7 @@ export default {
   }
 };
 </script>
+
 
 
 
