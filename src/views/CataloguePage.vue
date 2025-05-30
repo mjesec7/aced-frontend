@@ -39,8 +39,8 @@
         
         <p class="lesson-topic">
           <span class="topic-info">📚 {{ topic.subject }}</span>
-          <span class="level-badge" :class="`level-${topic.level?.toLowerCase()}`">
-            {{ topic.level }}
+          <span class="level-badge" :class="getLevelClass(topic.level)">
+                        {{ topic.level }}
           </span>
         </p>
         
@@ -295,9 +295,9 @@ export default {
         if (!topicsMap.has(topicId)) {
           topicsMap.set(topicId, {
             topicId,
-            name,
-            subject: lesson.subject || '',
-            level: lesson.level || '',
+            name: String(name || ''),
+            subject: String(lesson.subject || ''),
+            level: String(lesson.level || ''),
             type: lesson.type,
             lessonCount: 1,
             totalTime: 10
@@ -323,9 +323,9 @@ export default {
     applyFilters() {
       const query = this.searchQuery.toLowerCase();
       this.groupedTopics = this.originalTopics.filter(topic => {
-        // Safe string conversion with fallback to empty string
-        const topicName = (topic.name || '').toString().toLowerCase();
-        const topicSubject = (topic.subject || '').toString().toLowerCase();
+        // Extra safe string conversion
+        const topicName = String(topic.name || '').toLowerCase();
+        const topicSubject = String(topic.subject || '').toLowerCase();
         
         const matchesSearch = topicName.includes(query) || topicSubject.includes(query);
         
@@ -353,9 +353,9 @@ export default {
 
     getTopicName(lesson) {
       if (typeof lesson.topic === 'string') return lesson.topic;
-      if (lesson.translations?.[this.lang]?.topic) return lesson.translations[this.lang].topic;
-      if (lesson.topic?.[this.lang]) return lesson.topic[this.lang];
-      if (lesson.topic?.en) return lesson.topic.en;
+      if (lesson.translations?.[this.lang]?.topic) return String(lesson.translations[this.lang].topic);
+      if (lesson.topic?.[this.lang]) return String(lesson.topic[this.lang]);
+      if (lesson.topic?.en) return String(lesson.topic.en);
       return 'Без темы';
     },
 
