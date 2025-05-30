@@ -29,9 +29,8 @@
             <label class="option-box"><input type="checkbox" v-model="selectedStats" value="streakDays" /> Учебный стрик</label>
             <label class="option-box"><input type="checkbox" v-model="selectedStats" value="mostActiveDay" /> Активный день</label>
             <label class="option-box"><input type="checkbox" v-model="selectedStats" value="totalLessonsDone" /> Всего уроков</label>
-            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="totalStars" /> Всего звёзд</label>
             <label class="option-box"><input type="checkbox" v-model="selectedStats" value="totalPoints" /> Общие очки</label>
-            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="hintsUsed" /> Использовано подсказок</label>
+            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="avgPointsPerDay" /> Очков в день</label>
           </div>
 
           <div class="modal-buttons">
@@ -44,11 +43,8 @@
 
     <!-- Summary Cards -->
     <div class="card-grid">
-      <Card label="Всего звёзд" :value="analytics.totalStars" subtext="Заработанные звёзды 🌟" />
       <Card label="Общие очки" :value="analytics.totalPoints" subtext="Баллы за активность 💯" />
-      <Card label="Использовано подсказок" :value="analytics.hintsUsed" subtext="Подсказки во время уроков 💡" />
-      <Card label="Пройденные тесты" :value="analytics.passedQuizzes || 0" subtext="Успешные попытки ✅" />
-      <Card label="Ошибок всего" :value="analytics.totalMistakes || 0" subtext="Общее количество ошибок ❌" />
+      <Card label="Очков в день" :value="analytics.avgPointsPerDay" subtext="Средний заработок 📈" />
       <Card label="Дней в обучении" :value="analytics.studyDays" :subtext="formatDaysToHuman(analytics.studyDays)" />
       <Card label="Завершено предметов" :value="analytics.completedSubjects" :subtext="`${remainingSubjects} из ${analytics.totalSubjects}`" />
       <Card label="Уроков за неделю" :value="analytics.weeklyLessons" subtext="Текущий темп 📈" />
@@ -57,18 +53,25 @@
       <Card label="Активный день" :value="analytics.mostActiveDay || 'Нет данных'" subtext="Повтори успех 💪" />
       <Card label="Всего уроков" :value="analytics.totalLessonsDone" subtext="Общий прогресс 📚" />
       <Card label="Среднее время в день" :value="analytics.averageTime || '0 мин'" subtext="Сколько ты учишься ежедневно" />
-      <Card label="Дата начала" :value="analytics.firstLessonDate || '—'" subtext="Когда ты начал учиться" />
-      <Card label="Лучшая неделя" :value="analytics.bestWeek || '—'" subtext="Неделя с лучшим прогрессом" />
-      <Card label="Цель месяца" :value="analytics.monthlyGoalProgress + '%'" subtext="Прогресс выполнения цели" />
-      <Card label="Медали" :value="analytics.medalsEarned.join(', ') || '—'" subtext="Заработанные награды" />
-      <Card label="XP и уровень" :value="`Lv ${analytics.level} — ${analytics.xp} XP`" subtext="Твоя прокачка 💥" />
-      <Card label="Процент возвратов к темам" :value="analytics.revisitRate + '%'" subtext="Повторение — мать учения" />
-      <Card label="Процент завершения уроков" :value="analytics.lessonCompletionRate + '%'" subtext="Завершенные из начатых" />
-      <Card label="Точность на тестах" :value="analytics.quizAccuracyRate + '%'" subtext="Правильные ответы на квизы" />
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="chart-box" v-if="analytics.recentActivity && analytics.recentActivity.length > 0">
+      <h2 class="chart-heading">📋 Последняя активность</h2>
+      <div class="recent-activity-list">
+        <div v-for="activity in analytics.recentActivity" :key="activity.date" class="activity-item">
+          <div class="activity-date">{{ formatDate(activity.date) }}</div>
+          <div class="activity-lesson">{{ activity.lesson }}</div>
+          <div class="activity-stats">
+            <span class="points">{{ activity.points }} очков</span>
+            <span class="duration">{{ activity.duration }} мин</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Subject Progress Bars -->
-    <div class="chart-box">
+    <div class="chart-box" v-if="analytics.subjects && analytics.subjects.length > 0">
       <h2 class="chart-heading">📚 Прогресс по предметам</h2>
       <div v-for="subject in analytics.subjects" :key="subject.name" class="subject-progress">
         <div class="progress-header">
@@ -80,13 +83,35 @@
     </div>
 
     <!-- Line Chart -->
-    <div class="chart-box">
+    <div class="chart-box" v-if="analytics.knowledgeChart && analytics.knowledgeChart.length > 0">
       <h2 class="chart-heading">📊 Рост знаний по месяцам</h2>
       <LineChart :chart-data="chartData" />
     </div>
+
+    <!-- Data Quality Info -->
+    <div class="chart-box" v-if="analytics.dataQuality">
+      <h2 class="chart-heading">📋 Качество данных</h2>
+      <div class="data-quality-grid">
+        <div class="quality-item">
+          <span class="quality-label">Данные активности:</span>
+          <span :class="{'quality-good': analytics.dataQuality.hasActivityData, 'quality-poor': !analytics.dataQuality.hasActivityData}">
+            {{ analytics.dataQuality.hasActivityData ? '✅ Есть' : '❌ Нет' }}
+          </span>
+        </div>
+        <div class="quality-item">
+          <span class="quality-label">Данные предметов:</span>
+          <span :class="{'quality-good': analytics.dataQuality.hasSubjectData, 'quality-poor': !analytics.dataQuality.hasSubjectData}">
+            {{ analytics.dataQuality.hasSubjectData ? '✅ Есть' : '❌ Нет' }}
+          </span>
+        </div>
+        <div class="quality-item">
+          <span class="quality-label">Валидные даты:</span>
+          <span class="quality-neutral">{{ analytics.dataQuality.validDates }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
-
 
 <script>
 import { mapState } from 'vuex';
@@ -109,48 +134,43 @@ export default {
         'streakDays',
         'mostActiveDay',
         'totalLessonsDone',
-        'totalStars',
         'totalPoints',
-        'hintsUsed'
+        'avgPointsPerDay'
       ],
       period: 30,
       analytics: {
+        // Basic stats from backend
         studyDays: 0,
+        totalDays: 0,
         completedSubjects: 0,
         totalSubjects: 0,
+        totalLessonsDone: 0,
+        
+        // Time-based metrics
         weeklyLessons: 0,
         monthlyLessons: 0,
         streakDays: 0,
-        mostActiveDay: null,
-        totalLessonsDone: 0,
         averageTime: '0 мин',
+        
+        // Points and performance
+        totalPoints: 0,
+        avgPointsPerDay: 0,
+        
+        // Charts and progress
         knowledgeChart: [],
         subjects: [],
-        firstLessonDate: null,
-        bestWeek: null,
-        monthlyGoalProgress: 0,
-        medalsEarned: [],
-        xp: 0,
-        level: 1,
-        revisitRate: 0,
-        lessonCompletionRate: 0,
-        quizAccuracyRate: 0,
-        averageQuizAttempts: 0,
-        failedQuizzes: 0,
-        passedQuizzes: 0,
-        totalMistakes: 0,
-        mostChallengingSubject: null,
-        longestSession: 0,
-        timeOfDayActivity: {
-          morning: 0,
-          afternoon: 0,
-          evening: 0
-        },
-        globalRank: null,
-        progressTrend: [],
-        totalStars: 0,
-        totalPoints: 0,
-        hintsUsed: 0
+        
+        // Activity patterns
+        mostActiveDay: null,
+        recentActivity: [],
+        
+        // Metadata
+        lastUpdated: null,
+        dataQuality: {
+          hasActivityData: false,
+          hasSubjectData: false,
+          validDates: 0
+        }
       }
     };
   },
@@ -160,14 +180,21 @@ export default {
       return Math.max(this.analytics.totalSubjects - this.analytics.completedSubjects, 0);
     },
     chartData() {
-      const trendData = this.analytics.progressTrend.length
-        ? this.analytics.progressTrend
-        : this.analytics.knowledgeChart;
+      const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+      const currentMonth = new Date().getMonth();
+      
+      // Generate labels for last 12 months
+      const labels = [];
+      for (let i = 11; i >= 0; i--) {
+        const monthIndex = (currentMonth - i + 12) % 12;
+        labels.push(months[monthIndex]);
+      }
+      
       return {
-        labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'],
+        labels,
         datasets: [{
           label: 'Рост знаний',
-          data: trendData,
+          data: this.analytics.knowledgeChart,
           borderColor: '#7c3aed',
           backgroundColor: 'rgba(124, 58, 237, 0.1)',
           pointBackgroundColor: '#7c3aed',
@@ -180,15 +207,25 @@ export default {
   async mounted() {
     const id = this.user?.uid || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
     if (!id) return this.$router.push('/');
+    
     try {
       const token = await auth.currentUser.getIdToken();
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/analytics/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
       if (!res.ok) throw new Error('Ошибка загрузки аналитики');
+      
       const response = await res.json();
-      const data = response?.studyDays !== undefined ? response : {};
-      this.analytics = { ...this.analytics, ...data };
+      console.log('📊 Analytics response:', response);
+      
+      // Backend returns data in nested 'data' object
+      if (response.success && response.data) {
+        this.analytics = { ...this.analytics, ...response.data };
+      } else {
+        console.warn('⚠️ Unexpected response format:', response);
+      }
+      
     } catch (err) {
       console.error('❌ Аналитика не получена:', err);
     }
@@ -206,19 +243,24 @@ export default {
         streakDays: 'Учебный стрик',
         mostActiveDay: 'Активный день',
         totalLessonsDone: 'Всего уроков',
-        totalStars: 'Всего звёзд',
         totalPoints: 'Общие очки',
-        hintsUsed: 'Использовано подсказок'
+        avgPointsPerDay: 'Очков в день'
       };
+      
       const wrapper = document.createElement('div');
       wrapper.innerHTML = `<h2 style="text-align:center;font-family:'Segoe UI';margin-bottom:16px;">📊 Твоя аналитика</h2>`;
+      
       this.selectedStats.forEach(key => {
         const label = labelMap[key];
         const value = this.analytics[key] ?? '—';
         wrapper.innerHTML += `<div style="margin: 10px 0; font-size: 14px;"><strong>${label}:</strong> ${value}</div>`;
       });
+      
       wrapper.innerHTML += `<div style="margin-top:12px;"><strong>Период:</strong> ${this.period} дней</div>`;
+      wrapper.innerHTML += `<div style="margin-top:8px;"><strong>Последнее обновление:</strong> ${this.formatDate(this.analytics.lastUpdated)}</div>`;
+      
       this.showModal = false;
+      
       import('html2pdf.js').then(html2pdf => {
         html2pdf.default().set({
           margin: 0.5,
@@ -230,16 +272,107 @@ export default {
       });
     },
     formatDaysToHuman(days) {
+      if (!days) return '0 дней';
       const y = Math.floor(days / 365);
       const m = Math.floor((days % 365) / 30);
       const d = days % 30;
       return `≈ ${[y && `${y} г.`, m && `${m} мес.`, `${d} дн.`].filter(Boolean).join(' ')}`;
+    },
+    formatDate(dateString) {
+      if (!dateString) return '—';
+      try {
+        return new Date(dateString).toLocaleDateString('ru-RU', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (err) {
+        return '—';
+      }
     }
   }
 };
 </script>
 
-
 <style scoped>
 @import '@/assets/css/UserAnalyticsPanel.css';
+
+/* Additional styles for new components */
+.recent-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.activity-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border-left: 3px solid #7c3aed;
+}
+
+.activity-date {
+  font-size: 12px;
+  color: #9ca3af;
+  min-width: 80px;
+}
+
+.activity-lesson {
+  flex: 1;
+  margin: 0 12px;
+  font-weight: 500;
+}
+
+.activity-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.points {
+  color: #10b981;
+}
+
+.duration {
+  color: #6366f1;
+}
+
+.data-quality-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.quality-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.quality-label {
+  font-size: 14px;
+}
+
+.quality-good {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.quality-poor {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.quality-neutral {
+  color: #6b7280;
+  font-weight: 500;
+}
 </style>
