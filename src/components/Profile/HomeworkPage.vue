@@ -4,6 +4,10 @@
 
     <div v-if="loading" class="loading">Загрузка...</div>
 
+    <div v-else-if="questions.length === 0" class="empty">
+      В этом уроке нет домашнего задания.
+    </div>
+
     <form v-else @submit.prevent="submitHomework">
       <div v-for="(q, i) in questions" :key="i" class="question-block">
         <p><strong>{{ i + 1 }}. {{ q.question }}</strong></p>
@@ -55,8 +59,13 @@ export default {
 
         const { data: lesson } = await api.get(`/lessons/${this.lessonId}`);
         this.lessonName = lesson.lessonName;
-        this.questions = lesson.homework || [];
+        this.questions = Array.isArray(lesson.homework) ? lesson.homework : [];
         this.userAnswers = this.questions.map(() => '');
+
+        if (!this.questions.length) {
+          console.warn('⚠️ Нет заданий в homework этого урока.');
+          return;
+        }
 
         const { data: progressRes } = await api.get(
           `/users/${userId}/homeworks/lesson/${this.lessonId}`,
@@ -89,7 +98,7 @@ export default {
         }));
 
         await api.post(
-          `/users/${userId}/homeworks`,
+          `/users/${userId}/homeworks/save`,
           { lessonId: this.lessonId, answers, completed: false },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -138,7 +147,7 @@ export default {
 };
 </script>
 
-  <style scoped>
+<style scoped>
 .homework-page {
   max-width: 800px;
   margin: auto;
@@ -148,7 +157,8 @@ export default {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
-.loading {
+.loading,
+.empty {
   text-align: center;
   font-size: 1.3rem;
   color: #6a5acd;
