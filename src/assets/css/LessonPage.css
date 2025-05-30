@@ -9,60 +9,59 @@
 
 /* === INTRO SCREEN === */
 .intro-screen {
-  padding: 48px 32px;
-  max-width: 720px;
-  margin: 80px auto;
+  padding: 36px 28px;
+  max-width: 600px;
+  margin: 60px auto;
   text-align: center;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(14px);
-  border-radius: 28px;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
-  animation: fadeIn 0.6s ease-in-out;
+  border-radius: 26px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.07);
+  animation: fadeIn 0.5s ease-in-out;
   position: relative;
 }
 
 .intro-screen .lesson-title {
-  font-size: 2.75rem;
+  font-size: 2.4rem;
   font-weight: 900;
   background: linear-gradient(to right, #7e22ce, #a855f7);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   line-height: 1.2;
 }
 
 .intro-screen p {
-  font-size: 1.2rem;
-  line-height: 1.65;
+  font-size: 1.05rem;
+  line-height: 1.6;
   color: #334155;
-  margin-top: 14px;
+  margin-top: 12px;
 }
 
 .start-btn {
-  margin-top: 32px;
-  padding: 14px 48px;
-  font-size: 1.2rem;
+  margin-top: 28px;
+  padding: 13px 44px;
+  font-size: 1.15rem;
   font-weight: 800;
   background: linear-gradient(to right, #a78bfa, #8b5cf6);
   color: white;
   border: none;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.5);
+  box-shadow: 0 10px 28px rgba(139, 92, 246, 0.45);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .start-btn:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   background: linear-gradient(to right, #7c3aed, #6d28d9);
 }
 
-/* === EXIT BUTTON === */
 .exit-btn {
   position: absolute;
-  top: 20px;
-  right: 24px;
-  font-size: 1.6rem;
+  top: 16px;
+  right: 20px;
+  font-size: 1.4rem;
   background: none;
   border: none;
   color: #9333ea;
@@ -74,76 +73,197 @@
   color: #6b21a8;
 }
 
-/* === TO HOMEWORK BUTTON === */
-.homework-btn {
-  padding: 14px 36px;
+/* === SPLIT SCREEN === */
+.lesson-split {
+  display: flex;
+  height: 100vh;
+}
+
+.lesson-left, .lesson-right {
+  padding: 32px 28px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.lesson-left {
+  width: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-right: 1px solid #e0e7ff;
+  animation: slideInLeft 0.5s ease-out;
+}
+
+.lesson-right {
+  width: 50%;
+  background: rgba(248, 250, 252, 0.9);
+  backdrop-filter: blur(6px);
+  animation: slideInRight 0.5s ease-out;
+}
+
+.lesson-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.timer-display {
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: 700;
+  color: #6b21a8;
+}
+
+.progress-bar-wrapper {
+  background: #e0e7ff;
+  height: 20px;
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 16px 0;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(to right, #9333ea, #a78bfa);
+  transition: width 0.4s ease-in-out;
+}
+
+.progress-label {
+  font-size: 0.95rem;
+  color: #334155;
+  margin-top: 6px;
+}
+
+.explanation-text {
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.7;
+  color: #1f2937;
+  padding-left: 6px;
+}
+
+.example-text {
+  margin-top: 16px;
+  font-style: italic;
+  color: #4c1d95;
+  font-size: 1rem;
+}
+
+.exercise-question {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 24px 0 18px;
+}
+
+textarea {
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid #c4b5fd;
+  font-size: 1rem;
+  padding: 16px;
+  border-radius: 12px;
+  width: 100%;
+  height: 140px;
+  resize: none;
+  box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.2);
+}
+
+label input[type="radio"] {
+  margin-right: 8px;
+  accent-color: #7c3aed;
+}
+
+.confirm-btn, .nav-btn, .submit-btn, .next-btn {
   border: none;
-  border-radius: 16px;
-  background: linear-gradient(to right, #6366f1, #8b5cf6);
-  color: white;
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.5);
+  padding: 12px 32px;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 14px;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3);
 }
 
-.homework-btn:hover {
-  transform: translateY(-3px);
-  background: linear-gradient(to right, #4f46e5, #6d28d9);
+.confirm-btn, .nav-btn, .submit-btn {
+  background: linear-gradient(to right, #7c3aed, #a78bfa);
+  color: white;
 }
 
-/* === LESSON COMPLETE WRAPPER === */
+.next-btn {
+  background: linear-gradient(to right, #10b981, #059669);
+  color: white;
+}
+
+.confirm-btn:hover, .nav-btn:hover, .submit-btn:hover, .next-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+}
+
+.locked-overlay {
+  margin-top: 30px;
+  font-size: 1rem;
+  padding: 20px;
+  background: #ede9fe;
+  border-left: 4px solid #a78bfa;
+  border-radius: 10px;
+  color: #6b21a8;
+}
+
 .lesson-complete-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 50px 20px;
+  padding: 36px 16px;
   background: linear-gradient(to bottom, #f9fafb, #f1f5f9);
   min-height: 100vh;
 }
 
 .lesson-complete-full {
-  max-width: 600px;
+  max-width: 520px;
   width: 100%;
   background: #ffffff;
-  padding: 56px 40px;
-  border-radius: 30px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.07);
+  padding: 40px 30px;
+  border-radius: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
   text-align: center;
-  animation: fadeIn 0.6s ease-in-out;
+  animation: fadeIn 0.5s ease-in-out;
 }
 
 .lesson-complete-title {
-  font-size: 2.25rem;
-  font-weight: 900;
+  font-size: 1.9rem;
+  font-weight: 800;
   color: #1f2937;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .medal-image {
-  width: 90px;
-  margin: 28px auto 20px;
+  width: 80px;
+  margin: 20px auto 16px;
   display: block;
-  animation: pulse 2.2s infinite ease-in-out;
+  animation: pulse 2s infinite ease-in-out;
 }
 
 .medal-label {
-  font-size: 1.4rem;
-  font-weight: 800;
+  font-size: 1.2rem;
+  font-weight: 700;
   color: #9333ea;
 }
 
-.completion-time,
-.completion-stats {
-  font-size: 1.05rem;
+.completion-time, .completion-stats {
+  font-size: 0.95rem;
   color: #475569;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .completion-motivation {
-  font-size: 1.1rem;
-  margin-top: 16px;
+  font-size: 1rem;
+  margin-top: 14px;
   color: #10b981;
   font-style: italic;
 }
@@ -151,16 +271,15 @@
 .completion-buttons {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 32px;
+  gap: 12px;
+  margin-top: 28px;
 }
 
-.return-btn,
-.share-btn {
-  font-weight: 800;
-  font-size: 1.05rem;
-  padding: 14px 28px;
-  border-radius: 14px;
+.return-btn, .share-btn, .homework-btn {
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 12px 24px;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -188,6 +307,17 @@
   background: linear-gradient(to right, #0369a1, #0ea5e9);
 }
 
+.homework-btn {
+  background: linear-gradient(to right, #6366f1, #8b5cf6);
+  color: white;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+
+.homework-btn:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(to right, #4f46e5, #6d28d9);
+}
+
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }
@@ -196,4 +326,14 @@
 @keyframes fadeIn {
   0% { opacity: 0; transform: translateY(16px); }
   100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  0% { opacity: 0; transform: translateX(-32px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  0% { opacity: 0; transform: translateX(32px); }
+  100% { opacity: 1; transform: translateX(0); }
 }
