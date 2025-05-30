@@ -1,5 +1,5 @@
 .lesson-page {
-  background: linear-gradient(135deg, #ede9fe, #e0f2fe);
+  background: linear-gradient(135deg, #f3e8ff, #e0f2fe);
   min-height: 100vh;
   font-family: 'Inter', sans-serif;
   color: #1f2937;
@@ -9,233 +9,107 @@
 
 /* === INTRO SCREEN === */
 .intro-screen {
-  padding: 80px 40px;
-  max-width: 860px;
-  margin: auto;
+  padding: 48px 32px;
+  max-width: 720px;
+  margin: 80px auto;
   text-align: center;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  border-radius: 24px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+  border-radius: 28px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
   animation: fadeIn 0.6s ease-in-out;
+  position: relative;
 }
 
 .intro-screen .lesson-title {
-  font-size: 3.75rem;
+  font-size: 2.75rem;
   font-weight: 900;
-  background: linear-gradient(to right, #7e22ce, #9333ea);
+  background: linear-gradient(to right, #7e22ce, #a855f7);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+  line-height: 1.2;
 }
 
 .intro-screen p {
-  font-size: 1.35rem;
-  line-height: 1.75;
-  color: #475569;
-  margin-top: 16px;
+  font-size: 1.2rem;
+  line-height: 1.65;
+  color: #334155;
+  margin-top: 14px;
 }
 
 .start-btn {
-  margin-top: 36px;
-  padding: 16px 52px;
-  font-size: 1.25rem;
+  margin-top: 32px;
+  padding: 14px 48px;
+  font-size: 1.2rem;
   font-weight: 800;
-  background: linear-gradient(to right, #a78bfa, #7c3aed);
+  background: linear-gradient(to right, #a78bfa, #8b5cf6);
   color: white;
   border: none;
-  border-radius: 18px;
-  box-shadow: 0 10px 28px rgba(124, 58, 237, 0.5);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.5);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .start-btn:hover {
-  transform: translateY(-3px) scale(1.05);
+  transform: translateY(-4px);
   background: linear-gradient(to right, #7c3aed, #6d28d9);
 }
 
-/* === EXIT === */
+/* === EXIT BUTTON === */
 .exit-btn {
   position: absolute;
-  top: 24px;
-  right: 32px;
-  font-size: 1.8rem;
+  top: 20px;
+  right: 24px;
+  font-size: 1.6rem;
   background: none;
   border: none;
-  color: #7c3aed;
+  color: #9333ea;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 
 .exit-btn:hover {
-  color: #5b21b6;
-}
-
-/* === SPLIT SCREEN === */
-.lesson-split {
-  display: flex;
-  height: 100vh;
-}
-
-.lesson-left, .lesson-right {
-  padding: 48px 40px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-.lesson-left {
-  width: 48%;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(8px);
-  border-right: 1px solid #e0e7ff;
-  animation: slideInLeft 0.5s ease-out;
-}
-
-.lesson-right {
-  width: 52%;
-  background: rgba(248, 250, 252, 0.9);
-  backdrop-filter: blur(6px);
-  animation: slideInRight 0.5s ease-out;
-}
-
-/* === HEADER === */
-.lesson-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-}
-
-.timer-display {
-  font-size: 1.25rem;
-  font-weight: 700;
   color: #6b21a8;
 }
 
-/* === PROGRESS === */
-.progress-bar-wrapper {
-  background: #e0e7ff;
-  height: 22px;
-  border-radius: 12px;
-  overflow: hidden;
-  margin: 20px 0;
-}
-
-.progress-bar {
-  height: 100%;
-  background: linear-gradient(to right, #9333ea, #a78bfa);
-  transition: width 0.4s ease-in-out;
-}
-
-.progress-label {
-  font-size: 1rem;
-  color: #334155;
-  margin-top: 8px;
-}
-
-/* === CONTENT === */
-.explanation-text {
-  font-size: 1.15rem;
-  font-weight: 500;
-  line-height: 1.75;
-  color: #1f2937;
-  padding-left: 6px;
-}
-
-.example-text {
-  margin-top: 20px;
-  font-style: italic;
-  color: #4c1d95;
-  font-size: 1.05rem;
-}
-
-.exercise-question {
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 28px 0 20px;
-}
-
-/* === INPUT === */
-textarea {
-  background: rgba(255, 255, 255, 0.85);
-  border: 2px solid #c4b5fd;
-  font-size: 1rem;
-  padding: 20px;
-  border-radius: 14px;
-  width: 100%;
-  height: 160px;
-  resize: none;
-  transition: all 0.2s ease;
-  box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.05);
-}
-
-textarea:focus {
-  outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 5px rgba(139, 92, 246, 0.25);
-}
-
-label input[type="radio"] {
-  margin-right: 10px;
-  accent-color: #7c3aed;
-}
-
-/* === BUTTONS === */
-.navigation-area {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 32px;
-  gap: 16px;
-}
-
-.confirm-btn, .nav-btn, .submit-btn, .next-btn {
-  border: none;
+/* === TO HOMEWORK BUTTON === */
+.homework-btn {
   padding: 14px 36px;
   font-size: 1.1rem;
-  font-weight: 700;
-  border-radius: 18px;
+  font-weight: 800;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(to right, #6366f1, #8b5cf6);
+  color: white;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.5);
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.3);
 }
 
-.confirm-btn, .nav-btn, .submit-btn {
-  background: linear-gradient(to right, #7c3aed, #a78bfa);
-  color: white;
+.homework-btn:hover {
+  transform: translateY(-3px);
+  background: linear-gradient(to right, #4f46e5, #6d28d9);
 }
 
-.next-btn {
-  background: linear-gradient(to right, #10b981, #059669);
-  color: white;
-}
-
-.confirm-btn:hover,
-.nav-btn:hover,
-.submit-btn:hover,
-.next-btn:hover {
-  transform: translateY(-2px) scale(1.03);
-}
-
-/* === COMPLETION === */
+/* === LESSON COMPLETE WRAPPER === */
 .lesson-complete-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 60px 20px;
-  background: linear-gradient(to bottom, #f3f4f6, #f9fafb);
+  padding: 50px 20px;
+  background: linear-gradient(to bottom, #f9fafb, #f1f5f9);
   min-height: 100vh;
 }
 
 .lesson-complete-full {
-  max-width: 620px;
+  max-width: 600px;
   width: 100%;
   background: #ffffff;
-  padding: 60px 44px;
-  border-radius: 28px;
-  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.08);
+  padding: 56px 40px;
+  border-radius: 30px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.07);
   text-align: center;
   animation: fadeIn 0.6s ease-in-out;
 }
@@ -243,31 +117,32 @@ label input[type="radio"] {
 .lesson-complete-title {
   font-size: 2.25rem;
   font-weight: 900;
-  color: #1e293b;
+  color: #1f2937;
+  margin-bottom: 20px;
 }
 
 .medal-image {
-  width: 100px;
-  margin: 32px auto 20px;
+  width: 90px;
+  margin: 28px auto 20px;
   display: block;
-  animation: pulse 2.4s infinite ease-in-out;
+  animation: pulse 2.2s infinite ease-in-out;
 }
 
 .medal-label {
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   font-weight: 800;
   color: #9333ea;
 }
 
 .completion-time,
 .completion-stats {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: #475569;
   margin-top: 10px;
 }
 
 .completion-motivation {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   margin-top: 16px;
   color: #10b981;
   font-style: italic;
@@ -282,18 +157,19 @@ label input[type="radio"] {
 
 .return-btn,
 .share-btn {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 1.05rem;
   padding: 14px 28px;
   border-radius: 14px;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .return-btn {
   background: linear-gradient(to right, #7c3aed, #a78bfa);
   color: white;
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.3);
 }
 
 .return-btn:hover {
@@ -304,6 +180,7 @@ label input[type="radio"] {
 .share-btn {
   background: linear-gradient(to right, #0ea5e9, #0284c7);
   color: white;
+  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.3);
 }
 
 .share-btn:hover {
@@ -311,37 +188,6 @@ label input[type="radio"] {
   background: linear-gradient(to right, #0369a1, #0ea5e9);
 }
 
-/* === QUIZ & LOCK === */
-.quiz-question {
-  margin-bottom: 32px;
-  padding: 20px;
-  border-radius: 12px;
-  background: #f9f9ff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.locked-overlay {
-  margin-top: 40px;
-  font-size: 1.1rem;
-  padding: 24px;
-  background: #ede9fe;
-  border-left: 5px solid #a78bfa;
-  border-radius: 12px;
-  color: #6b21a8;
-}
-
-/* === CONFETTI === */
-.confetti-canvas {
-  position: fixed;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-  width: 100%;
-  height: 100%;
-  z-index: 9999;
-}
-
-/* === ANIMATIONS === */
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }
@@ -350,14 +196,4 @@ label input[type="radio"] {
 @keyframes fadeIn {
   0% { opacity: 0; transform: translateY(16px); }
   100% { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideInLeft {
-  0% { opacity: 0; transform: translateX(-32px); }
-  100% { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes slideInRight {
-  0% { opacity: 0; transform: translateX(32px); }
-  100% { opacity: 1; transform: translateX(0); }
 }

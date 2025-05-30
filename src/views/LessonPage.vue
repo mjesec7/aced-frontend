@@ -1,7 +1,5 @@
 <template>
   <div class="lesson-page">
-    <spline-viewer url="https://prod.spline.design/fu0idy7KllGEhHvI/scene.splinecode" class="floating-robot"></spline-viewer>
-
     <!-- Paywall Modal -->
     <div v-if="showPaywallModal" class="modal">
       <div class="modal-content">
@@ -37,7 +35,7 @@
         <div v-if="!lessonCompleted">
           <div v-if="currentStep.type === 'explanation'">
             <h3>📚 Объяснение</h3>
-            <p class="explanation-text">{{ currentStep.data }}</p>
+            <p class="explanation-text">{{ getLocalized(currentStep.data) }}</p>
             <div class="navigation-area">
               <button class="nav-btn" @click="goNext">➡️ Далее</button>
             </div>
@@ -45,7 +43,7 @@
 
           <div v-else-if="currentStep.type === 'example'">
             <h3>💡 Пример</h3>
-            <p class="example-text">{{ currentStep.data }}</p>
+            <p class="example-text">{{ getLocalized(currentStep.data) }}</p>
             <div class="navigation-area">
               <button class="nav-btn" @click="goNext">➡️ Далее</button>
             </div>
@@ -72,7 +70,7 @@
       <div class="lesson-right" v-if="!lessonCompleted">
         <div v-if="['tryout', 'exercise'].includes(currentStep.type)">
           <h3>✏️ Упражнение</h3>
-          <p class="exercise-question">{{ currentStep.data.question }}</p>
+          <p class="exercise-question">{{ getLocalized(currentStep.data.question) }}</p>
           <div v-if="Array.isArray(currentStep.data.options) && currentStep.data.options.length">
             <label v-for="(opt, j) in currentStep.data.options" :key="j">
               <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
@@ -91,7 +89,7 @@
 
         <div v-else-if="currentStep.type === 'quiz'">
           <h3>🎮 Финальный тест</h3>
-          <p class="exercise-question">{{ currentStep.data.question }}</p>
+          <p class="exercise-question">{{ getLocalized(currentStep.data.question) }}</p>
           <div v-for="(opt, j) in currentStep.data.options" :key="j">
             <label>
               <input type="radio" :value="opt" v-model="userAnswer" /> {{ opt }}
@@ -113,6 +111,7 @@
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
+
 
 <script>
 import axios from 'axios';
@@ -175,9 +174,7 @@ export default {
   },
   methods: {
     getLocalized(field) {
-      return typeof field === 'string' ? field : (field?.en || '')
-        .replace(/^en:/i, '') // Remove en: if any left
-        .trim();
+      return typeof field === 'string' ? field : (field?.en || '').replace(/^en:/i, '').trim();
     },
     goToHomework() {
       this.$router.push(`/profile/homeworks/${this.lesson._id}`);
@@ -321,6 +318,7 @@ export default {
   }
 };
 </script>
+
 
 
 
