@@ -40,7 +40,7 @@
         <p class="lesson-topic">
           <span class="topic-info">📚 {{ topic.subject }}</span>
           <span class="level-badge" :class="getLevelClass(topic.level)">
-                        {{ topic.level }}
+                                    {{ topic.level }}
           </span>
         </p>
         
