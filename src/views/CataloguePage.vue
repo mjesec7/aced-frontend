@@ -432,12 +432,33 @@ export default {
         });
 
         // Add progress and study plan info
+        // Add progress and study plan info
         this.originalTopics = [...topicsMap.values()].map(topic => {
           if (!topic) return null;
           
+          // Try to find progress with different topicId formats
+          let progress = 0;
+          
+          // Try exact match first
+          if (this.userProgress[topic.topicId]) {
+            progress = this.userProgress[topic.topicId];
+          } else {
+            // Try to find by matching the first part of the ID or by name
+            Object.keys(this.userProgress).forEach(progressTopicId => {
+              // Check if it's a partial match or the topic name matches
+              if (progressTopicId.includes(topic.topicId) || 
+                  topic.topicId.includes(progressTopicId) ||
+                  progressTopicId === topic.name) {
+                progress = this.userProgress[progressTopicId];
+              }
+            });
+          }
+          
+          console.log(`📊 Topic "${topic.name}" (${topic.topicId}) - Progress: ${progress}%`);
+          
           return {
             ...topic,
-            progress: this.userProgress[topic.topicId] || 0,
+            progress: progress,
             inStudyPlan: this.studyPlanTopics.includes(topic.topicId)
           };
         }).filter(topic => topic !== null);

@@ -49,6 +49,7 @@ const routes = [
       { path: 'homeworks', name: 'HomeworkList', component: HomeworkList },
       { path: 'homeworks/:lessonId', name: 'HomeworkPage', component: HomeworkPage, props: true },
       { path: 'diary', name: 'DiaryPage', component: DiaryPage },
+      { path: 'tests', name: 'TestsPage', component: TestsPage },
     ],
   },
   {

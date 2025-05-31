@@ -238,6 +238,12 @@ export default {
       const min = Math.floor(this.elapsedSeconds / 60);
       const sec = this.elapsedSeconds % 60;
       return `${min} мин ${sec} сек`;
+    },
+    isLastStep() {
+      return this.currentIndex >= this.steps.length - 1;
+    },
+    userHasAccess() {
+      return this.lesson.type !== 'premium' || this.isPremiumUser;
     }
   },
   async mounted() {
@@ -257,6 +263,61 @@ export default {
   methods: {
     getLocalized(field) {
       return typeof field === 'string' ? field : (field?.en || '').replace(/^en:/i, '').trim();
+    },
+    
+    // Fixed method to go to catalogue
+    goToCatalogue() {
+      // Use Vue Router navigation instead of window.location
+      this.$router.push({ name: 'CataloguePage' });
+    },
+    
+    // Alternative method with fallback
+    navigateToCatalogue() {
+      try {
+        // Try to navigate using named route
+        this.$router.push({ name: 'CataloguePage' });
+      } catch (error) {
+        // Fallback to path-based navigation
+        this.$router.push('/profile/catalogue');
+      }
+    },
+    
+    // Method to go back to topic overview
+    goToTopicOverview() {
+      if (this.lesson && this.lesson.topicId) {
+        this.$router.push({ 
+          name: 'TopicOverview', 
+          params: { id: this.lesson.topicId } 
+        });
+      }
+    },
+    
+    // Method to go to main dashboard
+    goToMainDashboard() {
+      this.$router.push({ name: 'MainPage' });
+    },
+    
+    // Method to handle navigation with paywall check
+    handleNavigation(destination) {
+      // Check if user has access
+      if (this.userHasAccess) {
+        switch (destination) {
+          case 'catalogue':
+            this.goToCatalogue();
+            break;
+          case 'topic':
+            this.goToTopicOverview();
+            break;
+          case 'main':
+            this.goToMainDashboard();
+            break;
+          default:
+            this.goToCatalogue();
+        }
+      } else {
+        // Show paywall or redirect to upgrade
+        this.showPaywallModal = true;
+      }
     },
     
     goToHomework() {
@@ -308,6 +369,7 @@ export default {
       }
     },
 
+    // Enhanced loadPreviousProgress with better error handling
     async loadPreviousProgress() {
       if (!this.lesson._id) return;
       
@@ -318,15 +380,29 @@ export default {
           return;
         }
 
-        const { data } = await axios.get(`${BASE_URL}/user/${this.userId}/lesson/${this.lesson._id}`, {
-          headers: { Authorization: `Bearer ${token}` }
+        console.log(`📋 Loading previous progress for lesson: ${this.lesson._id}`);
+
+        const response = await axios.get(`${BASE_URL}/user/${this.userId}/lesson/${this.lesson._id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000,
+          validateStatus: function (status) {
+            return status < 500; // Don't throw for 404
+          }
         });
         
-        if (data && data.completedSteps && data.completedSteps.length > 0) {
-          this.previousProgress = data;
+        if (response.status === 200 && response.data) {
+          if (response.data.completedSteps && response.data.completedSteps.length > 0) {
+            this.previousProgress = response.data;
+            console.log('✅ Previous progress loaded:', this.previousProgress);
+          }
+        } else if (response.status === 404) {
+          console.log('ℹ️ No previous progress found for this lesson');
+        } else {
+          console.warn('⚠️ Unexpected response:', response.status, response.data);
         }
       } catch (err) {
-        console.warn('⚠️ Не удалось загрузить предыдущий прогресс:', err);
+        console.warn('⚠️ Failed to load previous progress:', err);
+        // Don't show error toast - this is not critical
       }
     },
 
@@ -352,338 +428,246 @@ export default {
       this.autosaveTimer = setInterval(() => this.autosaveProgress(), 15000);
     },
 
+    // Enhanced autosave with retry logic
     async autosaveProgress() {
-      await this.saveProgress(false);
+      try {
+        const success = await this.saveProgress(false);
+        if (!success) {
+          console.log('🔄 Autosave failed, will retry in 30 seconds');
+          setTimeout(() => this.autosaveProgress(), 30000);
+        }
+      } catch (error) {
+        console.error('❌ Autosave error:', error);
+      }
     },
 
-    // 🔧 IMPROVED FRONTEND PROGRESS METHODS - Replace in your LessonPage component
+    // Enhanced saveProgress method with better error handling
+    async saveProgress(completed = false) {
+      try {
+        // Validation - Check required data
+        if (!this.userId) {
+          console.error('❌ No userId available');
+          this.showErrorToast('Ошибка аутентификации');
+          return false;
+        }
+        
+        if (!this.lesson._id) {
+          console.error('❌ No lesson ID available');
+          this.showErrorToast('Ошибка урока');
+          return false;
+        }
 
-// 💾 Enhanced saveProgress method with better error handling
-async saveProgress(completed = false) {
-  try {
-    // 🔍 Validation - Check required data
-    if (!this.userId) {
-      console.error('❌ No userId available');
-      this.showErrorToast('Ошибка аутентификации');
-      return false;
-    }
-    
-    if (!this.lesson._id) {
-      console.error('❌ No lesson ID available');
-      this.showErrorToast('Ошибка урока');
-      return false;
-    }
+        // Get authentication token with better error handling
+        let token;
+        try {
+          if (!auth.currentUser) {
+            console.error('❌ No authenticated user');
+            this.showErrorToast('Необходимо войти в систему');
+            return false;
+          }
+          token = await auth.currentUser.getIdToken(true); // Force refresh
+        } catch (authError) {
+          console.error('❌ Failed to get auth token:', authError);
+          this.showErrorToast('Ошибка аутентификации');
+          return false;
+        }
 
-    // 🔐 Get authentication token with better error handling
-    let token;
-    try {
-      if (!auth.currentUser) {
-        console.error('❌ No authenticated user');
-        this.showErrorToast('Необходимо войти в систему');
+        // Build completed steps array safely
+        const completedSteps = [];
+        if (this.started) {
+          const maxIndex = Math.min(this.currentIndex, this.steps.length - 1);
+          for (let i = 0; i <= maxIndex; i++) {
+            completedSteps.push(i);
+          }
+        }
+
+        // Calculate progress percentage safely
+        const progressPercent = this.steps.length > 0 
+          ? Math.floor((completedSteps.length / this.steps.length) * 100) 
+          : 0;
+
+        // Ensure topicId is valid
+        let topicId = this.lesson._id;
+        if (this.lesson.topic && 
+            this.lesson.topic !== null && 
+            this.lesson.topic !== undefined && 
+            this.lesson.topic !== '') {
+          topicId = this.lesson.topic;
+        }
+
+        // Build progress data with validation
+        const progressData = {
+          userId: String(this.userId),
+          lessonId: String(this.lesson._id),
+          topicId: String(topicId),
+          completedSteps: completedSteps,
+          percent: Math.max(0, Math.min(100, progressPercent)),
+          stars: Math.max(0, parseInt(this.stars) || 0),
+          pointsEarned: Math.max(0, parseInt(this.earnedPoints) || 0),
+          mistakes: Math.max(0, parseInt(this.mistakeCount) || 0),
+          durationSeconds: Math.max(0, parseInt(this.elapsedSeconds) || 0),
+          usedHints: Boolean(this.hintsUsed),
+          submittedHomework: false
+        };
+
+        // Add completion data if completed
+        if (completed) {
+          progressData.completedAt = new Date().toISOString();
+          progressData.completed = true;
+        }
+
+        console.log('📤 Saving progress data:', progressData);
+
+        // Make API request with improved error handling
+        const response = await axios.post(`${BASE_URL}/progress`, progressData, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 15000, // 15 second timeout
+          validateStatus: function (status) {
+            return status < 500; // Resolve only if status is less than 500
+          }
+        });
+
+        if (response.status === 200 || response.status === 201) {
+          console.log('✅ Progress saved successfully:', response.data);
+          return true;
+        } else {
+          console.error('❌ Progress save failed:', response.status, response.data);
+          this.showErrorToast(`Ошибка сохранения: ${response.data.error || 'Неизвестная ошибка'}`);
+          return false;
+        }
+        
+      } catch (err) {
+        console.error('❌ Progress save error:', err);
+        
+        // Handle different error types
+        if (err.code === 'ECONNABORTED') {
+          this.showErrorToast('Превышено время ожидания');
+        } else if (err.response) {
+          // Server responded with error
+          const status = err.response.status;
+          const message = err.response.data?.error || err.response.data?.message || 'Server error';
+          
+          console.error('Response data:', err.response.data);
+          console.error('Response status:', status);
+          
+          if (status === 401) {
+            this.showErrorToast('Необходимо войти в систему заново');
+            this.$router.push('/login');
+          } else if (status === 404) {
+            this.showErrorToast('Урок не найден');
+          } else if (status === 500) {
+            this.showErrorToast('Ошибка сервера. Попробуйте позже');
+          } else {
+            this.showErrorToast(`Ошибка: ${message}`);
+          }
+        } else if (err.request) {
+          // Request was made but no response received
+          console.error('No response received:', err.request);
+          this.showErrorToast('Нет связи с сервером');
+        } else {
+          // Something else happened
+          console.error('Request setup error:', err.message);
+          this.showErrorToast('Ошибка запроса');
+        }
+        
         return false;
       }
-      token = await auth.currentUser.getIdToken(true); // Force refresh
-    } catch (authError) {
-      console.error('❌ Failed to get auth token:', authError);
-      this.showErrorToast('Ошибка аутентификации');
-      return false;
-    }
+    },
 
-    // 📊 Build completed steps array safely
-    const completedSteps = [];
-    if (this.started) {
-      const maxIndex = Math.min(this.currentIndex, this.steps.length - 1);
-      for (let i = 0; i <= maxIndex; i++) {
-        completedSteps.push(i);
+    // Enhanced analytics saving
+    async saveAnalytics() {
+      try {
+        if (!this.userId || !this.lesson._id) return;
+
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) {
+          console.warn('⚠️ No auth token for analytics');
+          return;
+        }
+
+        const analyticsData = {
+          subject: this.lesson.subject || 'general',
+          topic: this.lesson.topic || this.lesson._id,
+          timeSpent: this.elapsedSeconds,
+          mistakes: this.mistakeCount,
+          completed: this.lessonCompleted,
+          stars: this.stars,
+          points: this.earnedPoints
+        };
+
+        console.log('📊 Saving analytics:', analyticsData);
+
+        await axios.post(`${BASE_URL}/user/${this.userId}/analytics`, analyticsData, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000
+        });
+
+        console.log('✅ Analytics saved successfully');
+      } catch (err) {
+        console.error('❌ Analytics save error:', err);
+        // Don't show toast for analytics errors - they're not critical
       }
-    }
+    },
 
-    // 📈 Calculate progress percentage safely
-    const progressPercent = this.steps.length > 0 
-      ? Math.floor((completedSteps.length / this.steps.length) * 100) 
-      : 0;
+    // Enhanced diary saving
+    async saveDiary() {
+      try {
+        if (!this.userId || !this.lesson.lessonName) return;
 
-    // 🆔 Ensure topicId is valid
-    let topicId = this.lesson._id;
-    if (this.lesson.topic && 
-        this.lesson.topic !== null && 
-        this.lesson.topic !== undefined && 
-        this.lesson.topic !== '') {
-      topicId = this.lesson.topic;
-    }
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) {
+          console.warn('⚠️ No auth token for diary');
+          return;
+        }
 
-    // 📦 Build progress data with validation
-    const progressData = {
-      userId: String(this.userId),
-      lessonId: String(this.lesson._id),
-      topicId: String(topicId),
-      completedSteps: completedSteps,
-      percent: Math.max(0, Math.min(100, progressPercent)),
-      stars: Math.max(0, parseInt(this.stars) || 0),
-      pointsEarned: Math.max(0, parseInt(this.earnedPoints) || 0),
-      mistakes: Math.max(0, parseInt(this.mistakeCount) || 0),
-      durationSeconds: Math.max(0, parseInt(this.elapsedSeconds) || 0),
-      usedHints: Boolean(this.hintsUsed),
-      submittedHomework: false
-    };
+        const diaryData = {
+          lessonName: this.getLocalized(this.lesson.lessonName),
+          duration: this.elapsedSeconds,
+          date: new Date().toISOString(),
+          mistakes: this.mistakeCount,
+          stars: this.stars
+        };
 
-    // ✅ Add completion data if completed
-    if (completed) {
-      progressData.completedAt = new Date().toISOString();
-      progressData.completed = true;
-    }
+        console.log('📔 Saving diary entry:', diaryData);
 
-    console.log('📤 Saving progress data:', progressData);
+        await axios.post(`${BASE_URL}/user/${this.userId}/diary`, diaryData, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000
+        });
 
-    // 🌐 Make API request with improved error handling
-    const response = await axios.post(`${BASE_URL}/progress`, progressData, {
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      timeout: 15000, // 15 second timeout
-      validateStatus: function (status) {
-        return status < 500; // Resolve only if status is less than 500
+        console.log('✅ Diary entry saved successfully');
+      } catch (err) {
+        console.error('❌ Diary save error:', err);
+        // Don't show toast for diary errors - they're not critical
       }
-    });
+    },
 
-    if (response.status === 200 || response.status === 201) {
-      console.log('✅ Progress saved successfully:', response.data);
-      return true;
-    } else {
-      console.error('❌ Progress save failed:', response.status, response.data);
-      this.showErrorToast(`Ошибка сохранения: ${response.data.error || 'Неизвестная ошибка'}`);
-      return false;
-    }
-    
-  } catch (err) {
-    console.error('❌ Progress save error:', err);
-    
-    // 🔍 Handle different error types
-    if (err.code === 'ECONNABORTED') {
-      this.showErrorToast('Превышено время ожидания');
-    } else if (err.response) {
-      // Server responded with error
-      const status = err.response.status;
-      const message = err.response.data?.error || err.response.data?.message || 'Server error';
-      
-      console.error('Response data:', err.response.data);
-      console.error('Response status:', status);
-      
-      if (status === 401) {
-        this.showErrorToast('Необходимо войти в систему заново');
-        this.$router.push('/login');
-      } else if (status === 404) {
-        this.showErrorToast('Урок не найден');
-      } else if (status === 500) {
-        this.showErrorToast('Ошибка сервера. Попробуйте позже');
+    // Show error toast helper
+    showErrorToast(message) {
+      if (this.$toast) {
+        this.$toast.error(message, {
+          position: 'top-right',
+          timeout: 5000,
+          closeOnClick: true,
+          pauseOnFocusLoss: true,
+          pauseOnHover: true,
+          draggable: true,
+          draggablePercent: 0.6,
+          showCloseButtonOnHover: false,
+          hideProgressBar: true,
+          closeButton: "button",
+          icon: true,
+          rtl: false
+        });
       } else {
-        this.showErrorToast(`Ошибка: ${message}`);
+        console.error('❌ Toast not available:', message);
+        alert(message); // Fallback
       }
-    } else if (err.request) {
-      // Request was made but no response received
-      console.error('No response received:', err.request);
-      this.showErrorToast('Нет связи с сервером');
-    } else {
-      // Something else happened
-      console.error('Request setup error:', err.message);
-      this.showErrorToast('Ошибка запроса');
-    }
-    
-    return false;
-  }
-},
+    },
 
-// 🔄 Enhanced autosave with retry logic
-async autosaveProgress() {
-  try {
-    const success = await this.saveProgress(false);
-    if (!success) {
-      console.log('🔄 Autosave failed, will retry in 30 seconds');
-      setTimeout(() => this.autosaveProgress(), 30000);
-    }
-  } catch (error) {
-    console.error('❌ Autosave error:', error);
-  }
-},
-
-// 📊 Enhanced analytics saving
-async saveAnalytics() {
-  try {
-    if (!this.userId || !this.lesson._id) return;
-
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) {
-      console.warn('⚠️ No auth token for analytics');
-      return;
-    }
-
-    const analyticsData = {
-      subject: this.lesson.subject || 'general',
-      topic: this.lesson.topic || this.lesson._id,
-      timeSpent: this.elapsedSeconds,
-      mistakes: this.mistakeCount,
-      completed: this.lessonCompleted,
-      stars: this.stars,
-      points: this.earnedPoints
-    };
-
-    console.log('📊 Saving analytics:', analyticsData);
-
-    await axios.post(`${BASE_URL}/user/${this.userId}/analytics`, analyticsData, {
-      headers: { Authorization: `Bearer ${token}` },
-      timeout: 10000
-    });
-
-    console.log('✅ Analytics saved successfully');
-  } catch (err) {
-    console.error('❌ Analytics save error:', err);
-    // Don't show toast for analytics errors - they're not critical
-  }
-},
-
-// 📔 Enhanced diary saving
-async saveDiary() {
-  try {
-    if (!this.userId || !this.lesson.lessonName) return;
-
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) {
-      console.warn('⚠️ No auth token for diary');
-      return;
-    }
-
-    const diaryData = {
-      lessonName: this.getLocalized(this.lesson.lessonName),
-      duration: this.elapsedSeconds,
-      date: new Date().toISOString(),
-      mistakes: this.mistakeCount,
-      stars: this.stars
-    };
-
-    console.log('📔 Saving diary entry:', diaryData);
-
-    await axios.post(`${BASE_URL}/user/${this.userId}/diary`, diaryData, {
-      headers: { Authorization: `Bearer ${token}` },
-      timeout: 10000
-    });
-
-    console.log('✅ Diary entry saved successfully');
-  } catch (err) {
-    console.error('❌ Diary save error:', err);
-    // Don't show toast for diary errors - they're not critical
-  }
-},
-
-// 🎉 Enhanced lesson completion with better error handling
-async completeLesson() {
-  clearInterval(this.timerInterval);
-  clearInterval(this.autosaveTimer);
-  this.lessonCompleted = true;
-  this.showConfetti = true;
-
-  // Calculate final points
-  this.earnedPoints = Math.max(0, 100 - this.mistakeCount * 10 + this.stars * 5);
-
-  // Set medal based on performance
-  if (this.mistakeCount === 0) {
-    this.medalImage = '/images/medals/gold.png';
-    this.medalLabel = '🥇 Золотая медаль - Безупречно!';
-  } else if (this.mistakeCount <= 2) {
-    this.medalImage = '/images/medals/silver.png';
-    this.medalLabel = '🥈 Серебряная медаль - Отлично!';
-  } else {
-    this.medalImage = '/images/medals/bronze.png';
-    this.medalLabel = '🥉 Бронзовая медаль - Хорошо!';
-  }
-
-  setTimeout(() => this.launchConfetti(), 200);
-
-  // Save final progress with retry logic
-  let progressSaved = false;
-  let retries = 3;
-  
-  while (!progressSaved && retries > 0) {
-    progressSaved = await this.saveProgress(true);
-    if (!progressSaved) {
-      retries--;
-      if (retries > 0) {
-        console.log(`🔄 Progress save failed, retrying... (${retries} attempts left)`);
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
-      }
-    }
-  }
-
-  if (!progressSaved) {
-    this.showErrorToast('Не удалось сохранить прогресс. Проверьте соединение.');
-  }
-
-  // Save analytics and diary (non-critical, don't retry)
-  await Promise.all([
-    this.saveAnalytics(),
-    this.saveDiary()
-  ]);
-},
-
-// 🚨 Show error toast helper
-showErrorToast(message) {
-  if (this.$toast) {
-    this.$toast.error(message, {
-      position: 'top-right',
-      timeout: 5000,
-      closeOnClick: true,
-      pauseOnFocusLoss: true,
-      pauseOnHover: true,
-      draggable: true,
-      draggablePercent: 0.6,
-      showCloseButtonOnHover: false,
-      hideProgressBar: true,
-      closeButton: "button",
-      icon: true,
-      rtl: false
-    });
-  } else {
-    console.error('❌ Toast not available:', message);
-    alert(message); // Fallback
-  }
-},
-
-// 🔧 Enhanced loadPreviousProgress with better error handling
-async loadPreviousProgress() {
-  if (!this.lesson._id) return;
-  
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) {
-      console.warn('⚠️ No auth token available for loading progress');
-      return;
-    }
-
-    console.log(`📋 Loading previous progress for lesson: ${this.lesson._id}`);
-
-    const response = await axios.get(`${BASE_URL}/user/${this.userId}/lesson/${this.lesson._id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      timeout: 10000,
-      validateStatus: function (status) {
-        return status < 500; // Don't throw for 404
-      }
-    });
-    
-    if (response.status === 200 && response.data) {
-      if (response.data.completedSteps && response.data.completedSteps.length > 0) {
-        this.previousProgress = response.data;
-        console.log('✅ Previous progress loaded:', this.previousProgress);
-      }
-    } else if (response.status === 404) {
-      console.log('ℹ️ No previous progress found for this lesson');
-    } else {
-      console.warn('⚠️ Unexpected response:', response.status, response.data);
-    }
-  } catch (err) {
-    console.warn('⚠️ Failed to load previous progress:', err);
-    // Don't show error toast - this is not critical
-  }
-},
     handleSubmitOrNext() {
       const step = this.currentStep;
       const correctAnswer = (step.data.correctAnswer || step.data.answer || '').toLowerCase().trim();
@@ -721,15 +705,18 @@ async loadPreviousProgress() {
       }
     },
 
+    // If you have a method that handles the "next" button
     goNext() {
       this.userAnswer = '';
       this.confirmation = '';
       this.answerWasCorrect = false;
 
-      if (this.currentIndex + 1 < this.steps.length) {
-        this.currentIndex++;
-      } else {
+      // If this is the last step, complete the lesson
+      if (this.isLastStep) {
         this.completeLesson();
+      } else {
+        // Go to next step
+        this.currentIndex++;
       }
     },
 
@@ -758,6 +745,7 @@ async loadPreviousProgress() {
       }
     },
 
+    // Enhanced lesson completion with better error handling
     async completeLesson() {
       clearInterval(this.timerInterval);
       clearInterval(this.autosaveTimer);
@@ -781,45 +769,30 @@ async loadPreviousProgress() {
 
       setTimeout(() => this.launchConfetti(), 200);
 
-      // Save final progress
-      await this.saveProgress(true);
-
-      // Save to diary and analytics
-      try {
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) {
-          console.warn('⚠️ No auth token for analytics');
-          return;
+      // Save final progress with retry logic
+      let progressSaved = false;
+      let retries = 3;
+      
+      while (!progressSaved && retries > 0) {
+        progressSaved = await this.saveProgress(true);
+        if (!progressSaved) {
+          retries--;
+          if (retries > 0) {
+            console.log(`🔄 Progress save failed, retrying... (${retries} attempts left)`);
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+          }
         }
-
-        // Save to diary
-        await axios.post(`${BASE_URL}/users/${this.userId}/diary`, {
-          lessonName: this.getLocalized(this.lesson.lessonName),
-          duration: this.elapsedSeconds,
-          date: new Date().toISOString(),
-          mistakes: this.mistakeCount,
-          stars: this.stars
-        }, { 
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000
-        });
-
-        // Save analytics
-        await axios.post(`${BASE_URL}/users/${this.userId}/analytics`, {
-          subject: this.lesson.subject || 'general',
-          topic: this.lesson.topic || this.lesson._id,
-          timeSpent: this.elapsedSeconds,
-          mistakes: this.mistakeCount,
-          completed: true,
-          stars: this.stars,
-          points: this.earnedPoints
-        }, { 
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000
-        });
-      } catch (err) {
-        console.error('❌ Ошибка отправки аналитики:', err);
       }
+
+      if (!progressSaved) {
+        this.showErrorToast('Не удалось сохранить прогресс. Проверьте соединение.');
+      }
+
+      // Save analytics and diary (non-critical, don't retry)
+      await Promise.all([
+        this.saveAnalytics(),
+        this.saveDiary()
+      ]);
     },
 
     launchConfetti() {
@@ -845,7 +818,7 @@ async loadPreviousProgress() {
         await this.saveProgress(false);
       }
       this.showExitModal = false;
-      this.$router.push('/catalogue');
+      this.goToCatalogue(); // Use the fixed navigation method
     },
 
     shareResult() {
