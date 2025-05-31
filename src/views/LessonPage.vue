@@ -225,7 +225,9 @@ export default {
       return this.steps[this.currentIndex] || null;
     },
     progressPercentage() {
-      return this.steps.length > 0 ? Math.floor((this.currentIndex / this.steps.length) * 100) : 0;
+      if (this.steps.length === 0) return 0;
+      const completed = Math.min(this.currentIndex + 1, this.steps.length);
+      return Math.floor((completed / this.steps.length) * 100);
     },
     formattedTime() {
       const min = Math.floor(this.elapsedSeconds / 60);
@@ -311,6 +313,11 @@ export default {
       
       try {
         const token = await auth.currentUser?.getIdToken();
+        if (!token) {
+          console.warn('⚠️ No auth token available for loading progress');
+          return;
+        }
+
         const { data } = await axios.get(`${BASE_URL}/user/${this.userId}/lesson/${this.lesson._id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -325,11 +332,16 @@ export default {
 
     continuePreviousProgress() {
       if (this.previousProgress) {
-        this.currentIndex = this.previousProgress.completedSteps.length;
-        this.stars = this.previousProgress.stars || 0;
-        this.mistakeCount = this.previousProgress.mistakes || 0;
-        this.elapsedSeconds = this.previousProgress.durationSeconds || 0;
-        this.hintsUsed = this.previousProgress.usedHints || false;
+        // Ensure currentIndex doesn't exceed steps length
+        this.currentIndex = Math.min(
+          this.previousProgress.completedSteps.length, 
+          this.steps.length - 1
+        );
+        this.stars = parseInt(this.previousProgress.stars) || 0;
+        this.mistakeCount = parseInt(this.previousProgress.mistakes) || 0;
+        this.elapsedSeconds = parseInt(this.previousProgress.durationSeconds) || 0;
+        this.hintsUsed = Boolean(this.previousProgress.usedHints);
+        this.earnedPoints = parseInt(this.previousProgress.pointsEarned) || 0;
       }
       this.startLesson();
     },
@@ -346,35 +358,96 @@ export default {
 
     async saveProgress(completed = false) {
       try {
-        const token = await auth.currentUser?.getIdToken();
-        const completedSteps = [];
-        for (let i = 0; i <= this.currentIndex && i < this.steps.length; i++) {
-          completedSteps.push(i);
+        // Validate required data before making request
+        if (!this.userId) {
+          console.error('❌ No userId available');
+          return;
+        }
+        
+        if (!this.lesson._id) {
+          console.error('❌ No lesson ID available');
+          return;
         }
 
+        // Get authentication token with better error handling
+        let token;
+        try {
+          if (!auth.currentUser) {
+            console.error('❌ No authenticated user');
+            return;
+          }
+          token = await auth.currentUser.getIdToken();
+        } catch (authError) {
+          console.error('❌ Failed to get auth token:', authError);
+          return;
+        }
+
+        // Build completed steps array more safely
+        const completedSteps = [];
+        if (this.started) {
+          const maxIndex = Math.min(this.currentIndex, this.steps.length - 1);
+          for (let i = 0; i <= maxIndex; i++) {
+            completedSteps.push(i);
+          }
+        }
+
+        // Calculate progress percentage more safely
+        const progressPercent = this.steps.length > 0 
+          ? Math.floor((completedSteps.length / this.steps.length) * 100) 
+          : 0;
+
+        // Ensure topicId is valid - use lesson._id as fallback
+        let topicId = this.lesson._id;
+        if (this.lesson.topic && this.lesson.topic !== null && this.lesson.topic !== undefined) {
+          topicId = this.lesson.topic;
+        }
+
+        // Ensure all numeric values are valid
         const progressData = {
-          userId: this.userId,
-          lessonId: this.lesson._id,
-          topicId: this.lesson.topic || this.lesson._id,
-          completedSteps,
-          percent: this.progressPercentage,
-          stars: this.stars,
-          pointsEarned: this.earnedPoints,
-          mistakes: this.mistakeCount,
-          durationSeconds: this.elapsedSeconds,
-          usedHints: this.hintsUsed,
+          userId: String(this.userId),
+          lessonId: String(this.lesson._id),
+          topicId: String(topicId),
+          completedSteps: completedSteps,
+          percent: Math.max(0, Math.min(100, progressPercent)),
+          stars: Math.max(0, parseInt(this.stars) || 0),
+          pointsEarned: Math.max(0, parseInt(this.earnedPoints) || 0),
+          mistakes: Math.max(0, parseInt(this.mistakeCount) || 0),
+          durationSeconds: Math.max(0, parseInt(this.elapsedSeconds) || 0),
+          usedHints: Boolean(this.hintsUsed),
           submittedHomework: false
         };
 
+        // Add completion data if completed
         if (completed) {
           progressData.completedAt = new Date().toISOString();
+          progressData.completed = true;
         }
 
-        await axios.post(`${BASE_URL}/progress`, progressData, {
-          headers: { Authorization: `Bearer ${token}` }
+        console.log('📤 Saving progress data:', progressData);
+
+        const response = await axios.post(`${BASE_URL}/progress`, progressData, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000
         });
+
+        console.log('✅ Progress saved successfully:', response.data);
+        
       } catch (err) {
-        console.warn('⚠️ Ошибка сохранения прогресса:', err);
+        console.error('❌ Ошибка сохранения прогресса:', err);
+        
+        // Log more detailed error information
+        if (err.response) {
+          console.error('Response data:', err.response.data);
+          console.error('Response status:', err.response.status);
+          console.error('Response headers:', err.response.headers);
+        } else if (err.request) {
+          console.error('Request was made but no response received:', err.request);
+        } else {
+          console.error('Error setting up request:', err.message);
+        }
       }
     },
 
@@ -440,7 +513,7 @@ export default {
       this.lessonCompleted = false;
       this.showConfetti = false;
       this.started = true;
-      this.currentIndex = index;
+      this.currentIndex = Math.max(0, Math.min(index, this.steps.length - 1));
       this.userAnswer = '';
       this.confirmation = '';
       this.answerWasCorrect = false;
@@ -481,24 +554,36 @@ export default {
       // Save to diary and analytics
       try {
         const token = await auth.currentUser?.getIdToken();
+        if (!token) {
+          console.warn('⚠️ No auth token for analytics');
+          return;
+        }
 
+        // Save to diary
         await axios.post(`${BASE_URL}/users/${this.userId}/diary`, {
           lessonName: this.getLocalized(this.lesson.lessonName),
           duration: this.elapsedSeconds,
           date: new Date().toISOString(),
           mistakes: this.mistakeCount,
           stars: this.stars
-        }, { headers: { Authorization: `Bearer ${token}` } });
+        }, { 
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000
+        });
 
+        // Save analytics
         await axios.post(`${BASE_URL}/users/${this.userId}/analytics`, {
-          subject: this.lesson.subject,
-          topic: this.lesson.topic,
+          subject: this.lesson.subject || 'general',
+          topic: this.lesson.topic || this.lesson._id,
           timeSpent: this.elapsedSeconds,
           mistakes: this.mistakeCount,
           completed: true,
           stars: this.stars,
           points: this.earnedPoints
-        }, { headers: { Authorization: `Bearer ${token}` } });
+        }, { 
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000
+        });
       } catch (err) {
         console.error('❌ Ошибка отправки аналитики:', err);
       }
@@ -538,19 +623,29 @@ export default {
           title: 'Мой успех в обучении!',
           text: message,
           url: window.location.href
+        }).catch(err => {
+          console.log('Share failed:', err);
+          this.fallbackShare(message);
         });
       } else {
+        this.fallbackShare(message);
+      }
+    },
+
+    fallbackShare(message) {
+      if (navigator.clipboard) {
         navigator.clipboard.writeText(message).then(() => {
           alert('📋 Результат скопирован в буфер обмена!');
         }).catch(() => {
-          alert('📤 Функция поделиться пока не реализована полностью.');
+          alert('📤 ' + message);
         });
+      } else {
+        alert('📤 ' + message);
       }
     }
   }
 };
 </script>
-
 
 
 
