@@ -283,11 +283,88 @@ export default {
         const token = await currentUser.getIdToken();
         if (!token) return;
 
+        // Use the new dedicated endpoint for topic progress
+        const { data } = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/topics-progress`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        console.log('📊 Topic progress loaded:', data);
+        this.userProgress = data || {};
+        
+      } catch (error) {
+        console.error('❌ Ошибка при загрузке прогресса:', error.response?.data || error.message);
+        // Fallback to calculating locally if the endpoint doesn't exist
+        await this.loadUserProgressFallback();
+      }
+    },
+
+    async loadUserProgressFallback() {
+      if (!this.userId) return;
+      try {
+        const currentUser = auth.currentUser;
+        if (!currentUser) return;
+
+        const token = await currentUser.getIdToken();
+        if (!token) return;
+
+        // Get all user progress data
         const { data } = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/progress`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        this.userProgress = data || {};
+
+        // Process the progress data to calculate topic progress
+        const progressData = data.data || data || [];
+        const topicProgressMap = {};
+
+        // Group lessons by topicId and calculate progress
+        const topicLessons = {};
+        
+        // First, count total lessons per topic from all lessons
+        this.lessons.forEach(lesson => {
+          if (lesson && lesson.topicId) {
+            const topicId = String(lesson.topicId);
+            if (!topicLessons[topicId]) {
+              topicLessons[topicId] = {
+                total: 0,
+                completed: 0
+              };
+            }
+            topicLessons[topicId].total++;
+          }
+        });
+
+        // Then, count completed lessons from progress data
+        progressData.forEach(progress => {
+          if (progress && progress.lessonId) {
+            // Find the lesson to get its topicId
+            const lesson = this.lessons.find(l => 
+              l && (String(l._id) === String(progress.lessonId._id || progress.lessonId))
+            );
+            
+            if (lesson && lesson.topicId) {
+              const topicId = String(lesson.topicId);
+              if (topicLessons[topicId] && progress.completed) {
+                topicLessons[topicId].completed++;
+              }
+            }
+          }
+        });
+
+        // Calculate percentage for each topic
+        Object.keys(topicLessons).forEach(topicId => {
+          const topic = topicLessons[topicId];
+          if (topic.total > 0) {
+            topicProgressMap[topicId] = Math.round((topic.completed / topic.total) * 100);
+          } else {
+            topicProgressMap[topicId] = 0;
+          }
+        });
+
+        console.log('📊 Topic progress calculated:', topicProgressMap);
+        this.userProgress = topicProgressMap;
+        
       } catch (error) {
         console.error('❌ Ошибка при загрузке прогресса:', error.response?.data || error.message);
         this.userProgress = {};
