@@ -136,7 +136,7 @@
 </template>
 
 <script>
-import { mapState } from 'vuex';
+import { mapState, mapGetters } from 'vuex';
 import LineChart from '@/components/Charts/LineChart.vue';
 import Card from '@/components/Profile/AnalyticsCard.vue';
 import ProgressBar from '@/components/Profile/ProgressBar.vue';
@@ -202,14 +202,27 @@ export default {
   },
   computed: {
     ...mapState(['user']),
+    ...mapGetters(['isAuthenticated']),
+    
+    // Get user ID from multiple sources with better fallback
+    userId() {
+      return this.user?.uid || 
+             this.user?.firebaseId || 
+             localStorage.getItem('firebaseUserId') || 
+             localStorage.getItem('userId') ||
+             (auth.currentUser ? auth.currentUser.uid : null);
+    },
+    
     remainingSubjects() {
       return Math.max(this.analytics.totalSubjects - this.analytics.completedSubjects, 0);
     },
+    
     hasAnyData() {
       return this.analytics.totalLessonsDone > 0 || 
              this.analytics.studyDays > 0 || 
              (this.analytics.subjects && this.analytics.subjects.length > 0);
     },
+    
     chartData() {
       const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
       const currentMonth = new Date().getMonth();
@@ -235,74 +248,141 @@ export default {
       };
     }
   },
+  
   async mounted() {
+    console.log('🔧 UserAnalyticsPanel mounted');
     await this.loadAnalytics();
   },
+  
   methods: {
     async loadAnalytics() {
+      console.log('📊 Starting analytics loading...');
       this.loading = true;
       this.error = null;
       
       try {
-        // Get user ID from multiple sources
-        const userId = this.user?.uid || 
-                      localStorage.getItem('firebaseUserId') || 
-                      localStorage.getItem('userId');
-        
-        if (!userId) {
-          this.error = 'Пользователь не найден';
-          this.$router.push('/');
-          return;
-        }
-
-        // Get Firebase token
-        const currentUser = auth.currentUser;
-        if (!currentUser) {
+        // Check authentication first
+        if (!this.isAuthenticated) {
+          console.error('❌ User not authenticated');
           this.error = 'Необходима авторизация';
           this.$router.push('/login');
           return;
         }
 
-        const token = await currentUser.getIdToken();
+        // Get user ID with improved logic
+        const userId = this.userId;
+        console.log('🔍 Resolved userId:', userId);
         
-        // Make API request with correct URL format
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/user/${userId}/analytics`, {
+        if (!userId) {
+          console.error('❌ No user ID found');
+          this.error = 'Пользователь не найден';
+          this.$router.push('/login');
+          return;
+        }
+
+        // Wait for Firebase auth if needed
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+          console.log('⏳ Waiting for Firebase auth...');
+          await new Promise((resolve, reject) => {
+            const unsubscribe = auth.onAuthStateChanged(user => {
+              unsubscribe();
+              if (user) {
+                resolve(user);
+              } else {
+                reject(new Error('Firebase auth failed'));
+              }
+            });
+            
+            // Timeout after 10 seconds
+            setTimeout(() => {
+              unsubscribe();
+              reject(new Error('Firebase auth timeout'));
+            }, 10000);
+          });
+        }
+
+        // Get fresh Firebase token
+        const token = await auth.currentUser.getIdToken(true);
+        console.log('🔑 Got Firebase token');
+        
+        // Construct API URL correctly
+        const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/user/${userId}/analytics`;
+        console.log('📡 Making API request to:', apiUrl);
+        
+        // Make API request with proper headers
+        const response = await fetch(apiUrl, {
           method: 'GET',
           headers: { 
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           }
         });
 
+        console.log('📡 Response status:', response.status, response.statusText);
+
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ API Error:', errorText);
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
         const data = await response.json();
-        console.log('📊 Analytics response:', data);
+        console.log('📊 Raw analytics response:', data);
 
-        // Handle the response format from backend
+        // Handle backend response format correctly
         if (data.success && data.data) {
+          // Backend returned { success: true, data: {...} }
           this.analytics = { ...this.analytics, ...data.data };
-          console.log('✅ Analytics loaded successfully:', this.analytics);
-        } else if (data.error) {
-          throw new Error(data.error);
+          console.log('✅ Analytics loaded from data field:', this.analytics);
+        } else if (data.success === false) {
+          // Backend returned error
+          throw new Error(data.error || data.message || 'Unknown error');
         } else {
-          console.warn('⚠️ Unexpected response format:', data);
-          // Try to use the data directly if no success flag
+          // Direct data format (fallback)
+          console.log('⚠️ Using direct data format');
           this.analytics = { ...this.analytics, ...data };
         }
 
+        // Validate critical data
+        const criticalFields = ['studyDays', 'totalLessonsDone', 'totalPoints'];
+        const hasData = criticalFields.some(field => (this.analytics[field] || 0) > 0);
+        
+        if (!hasData) {
+          console.log('📊 No analytics data available yet');
+        } else {
+          console.log('✅ Analytics data validated:', {
+            studyDays: this.analytics.studyDays,
+            totalLessonsDone: this.analytics.totalLessonsDone,
+            totalPoints: this.analytics.totalPoints,
+            subjects: this.analytics.subjects?.length || 0
+          });
+        }
+
       } catch (err) {
-        console.error('❌ Failed to load analytics:', err);
-        this.error = err.message || 'Ошибка загрузки аналитики';
+        console.error('❌ Analytics loading failed:', err);
+        
+        // Provide more specific error messages
+        if (err.message.includes('401') || err.message.includes('403')) {
+          this.error = 'Ошибка авторизации. Войдите заново.';
+          this.$router.push('/login');
+        } else if (err.message.includes('404')) {
+          this.error = 'Данные не найдены';
+        } else if (err.message.includes('timeout')) {
+          this.error = 'Превышено время ожидания';
+        } else {
+          this.error = err.message || 'Ошибка загрузки аналитики';
+        }
       } finally {
         this.loading = false;
       }
     },
+    
     openModal() {
       this.showModal = true;
     },
+    
     async downloadPDF() {
       const labelMap = {
         studyDays: 'Дней в обучении',
@@ -355,6 +435,7 @@ export default {
         alert('Ошибка генерации PDF. Попробуйте позже.');
       }
     },
+    
     formatDaysToHuman(days) {
       if (!days || days === 0) return '0 дней';
       
@@ -369,6 +450,7 @@ export default {
       
       return `≈ ${parts.join(' ')}`;
     },
+    
     formatDate(dateString) {
       if (!dateString) return '—';
       
@@ -552,5 +634,96 @@ export default {
   .data-quality-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Modal styles */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-section {
+  margin-bottom: 20px;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.option-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.option-box:hover {
+  background: #f9fafb;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.modal-buttons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.modal-buttons button:first-child {
+  background: #7c3aed;
+  color: white;
+}
+
+.modal-buttons button:first-child:hover {
+  background: #6d28d9;
+}
+
+.modal-buttons button.cancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.modal-buttons button.cancel:hover {
+  background: #e5e7eb;
 }
 </style>
