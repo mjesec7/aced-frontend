@@ -34,7 +34,7 @@
           <router-link
             v-for="link in links"
             :key="link.name"
-            :to="link.name === 'settings' ? `/${link.name}` : `/profile/${link.name}`"
+            :to="getRoutePath(link.name)"
             class="nav-item"
             :class="{ active: isActive(link.name) }"
           >
@@ -79,7 +79,7 @@ export default {
         { name: 'diary', label: 'Дневник' },
         { name: 'homework', label: 'Помощь с ДЗ' },
         { name: 'homeworks', label: 'Домашние задания' },
-        { name: 'tests', label: 'Тесты' }, // ✅ Newly added
+        { name: 'tests', label: 'Тесты' },
         { name: 'settings', label: 'Настройки' }
       ]
     };
@@ -123,17 +123,25 @@ export default {
           this.$toast.error('Ошибка при выходе: попробуйте ещё раз.');
         });
     },
+    getRoutePath(linkName) {
+      // Settings page is at root level
+      if (linkName === 'settings') {
+        return '/settings';
+      }
+      // All other pages are under /profile/
+      return `/profile/${linkName}`;
+    },
     isActive(name) {
       const path = this.$route.path;
       if (name === 'main') return path === '/profile/main';
       if (name === 'catalogue') return path === '/profile/catalogue';
       if (name === 'settings') return path === '/settings';
+      if (name === 'tests') return path === '/profile/tests';
       return path.includes(`/profile/${name}`);
     }
   }
 };
 </script>
-
 
 <style scoped>
 .sidebar-wrapper {
