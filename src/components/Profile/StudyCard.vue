@@ -398,7 +398,7 @@ export default {
   .confirm-btn,
   .cancel-btn {
     width: 100%;
-    max-width: 200px;
+    max-width: 201px;
   }
 }
 </style>
