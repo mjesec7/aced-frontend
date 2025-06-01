@@ -67,35 +67,8 @@
             </div>
           </div>
           
-          <!-- Mini Pie Chart for completed topics -->
-          <div v-if="(topic.progress || 0) > 0" class="mini-chart">
-            <svg width="40" height="40" viewBox="0 0 40 40" class="pie-chart">
-              <circle
-                cx="20"
-                cy="20"
-                r="16"
-                fill="none"
-                stroke="#e5e7eb"
-                stroke-width="4"
-              />
-              <circle
-                cx="20"
-                cy="20"
-                r="16"
-                fill="none"
-                :stroke="getProgressColor(topic.progress || 0)"
-                stroke-width="4"
-                stroke-linecap="round"
-                :stroke-dasharray="circumference"
-                :stroke-dashoffset="circumference - ((topic.progress || 0) / 100) * circumference"
-                transform="rotate(-90 20 20)"
-                class="progress-circle"
-              />
-              <text x="20" y="20" text-anchor="middle" dy="0.3em" class="progress-text">
-                {{ Math.round(topic.progress || 0) }}%
-              </text>
-            </svg>
-          </div>
+   
+         
         </div>
 
         <!-- Status Badges -->
