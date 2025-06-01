@@ -369,21 +369,48 @@ export default {
       }
     },
 
-    // Enhanced loadPreviousProgress with better error handling
     async loadPreviousProgress() {
-      if (!this.lesson._id) return;
-      
-      try {
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) {
-          console.warn('⚠️ No auth token available for loading progress');
-          return;
+  if (!this.lesson._id) return;
+  
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      console.warn('⚠️ No auth token available for loading progress');
+      return;
+    }
+
+    console.log(`📋 Loading previous progress for lesson: ${this.lesson._id}`);
+
+    // Try multiple endpoints to find progress
+    let progressData = null;
+    
+    // First try the user lesson endpoint
+    try {
+      const response = await axios.get(`${BASE_URL}/user/${this.userId}/lesson/${this.lesson._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 10000,
+        validateStatus: function (status) {
+          return status < 500; // Don't throw for 404
         }
-
-        console.log(`📋 Loading previous progress for lesson: ${this.lesson._id}`);
-
-        const response = await axios.get(`${BASE_URL}/user/${this.userId}/lesson/${this.lesson._id}`, {
+      });
+      
+      if (response.status === 200 && response.data && Object.keys(response.data).length > 0) {
+        progressData = response.data;
+        console.log('✅ Found progress at /user/lesson endpoint');
+      }
+    } catch (err) {
+      console.log('📋 No progress at /user endpoint, trying /progress endpoint...');
+    }
+    
+    // If no data, try the progress endpoint with query params
+    if (!progressData) {
+      try {
+        const response = await axios.get(`${BASE_URL}/progress`, {
           headers: { Authorization: `Bearer ${token}` },
+          params: {
+            userId: this.userId,
+            lessonId: this.lesson._id
+          },
           timeout: 10000,
           validateStatus: function (status) {
             return status < 500; // Don't throw for 404
@@ -391,20 +418,119 @@ export default {
         });
         
         if (response.status === 200 && response.data) {
-          if (response.data.completedSteps && response.data.completedSteps.length > 0) {
-            this.previousProgress = response.data;
-            console.log('✅ Previous progress loaded:', this.previousProgress);
+          // Handle different response formats
+          if (response.data.data) {
+            progressData = response.data.data;
+          } else if (response.data.message && response.data.data === null) {
+            // No progress found
+            progressData = null;
+          } else if (Array.isArray(response.data)) {
+            // If it returns an array, find the matching lesson
+            progressData = response.data.find(p => p.lessonId === this.lesson._id);
+          } else {
+            progressData = response.data;
           }
-        } else if (response.status === 404) {
-          console.log('ℹ️ No previous progress found for this lesson');
-        } else {
-          console.warn('⚠️ Unexpected response:', response.status, response.data);
+          
+          if (progressData) {
+            console.log('✅ Found progress at /progress endpoint');
+          }
         }
       } catch (err) {
-        console.warn('⚠️ Failed to load previous progress:', err);
-        // Don't show error toast - this is not critical
+        console.log('📋 No progress at /progress endpoint either');
       }
-    },
+    }
+    
+    // If still no data, try the user progress endpoint
+    if (!progressData) {
+      try {
+        const response = await axios.get(`${BASE_URL}/users/${this.userId}/progress`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000,
+          validateStatus: function (status) {
+            return status < 500;
+          }
+        });
+        
+        if (response.status === 200 && response.data) {
+          // Find progress for this specific lesson
+          const allProgress = response.data.data || response.data || [];
+          progressData = allProgress.find(p => 
+            (p.lessonId?._id || p.lessonId) === this.lesson._id
+          );
+          
+          if (progressData) {
+            console.log('✅ Found progress at /users/progress endpoint');
+          }
+        }
+      } catch (err) {
+        console.log('📋 No progress at /users/progress endpoint');
+      }
+    }
+    
+    // If we found progress data, use it
+    if (progressData && progressData.completedSteps && progressData.completedSteps.length > 0) {
+      this.previousProgress = {
+        _id: progressData._id,
+        userId: progressData.userId,
+        lessonId: progressData.lessonId,
+        completedSteps: progressData.completedSteps || [],
+        accuracy: progressData.accuracy || 0,
+        attemptsCount: progressData.attemptsCount || 1,
+        completed: progressData.completed || false,
+        completedAt: progressData.completedAt,
+        createdAt: progressData.createdAt,
+        currentStreak: progressData.currentStreak || 0,
+        duration: progressData.duration || 0,
+        durationSeconds: progressData.duration || 0, // Ensure we have this field
+        hintsUsed: progressData.hintsUsed || 0,
+        homeworkScore: progressData.homeworkScore,
+        lastAccessedAt: progressData.lastAccessedAt,
+        medal: progressData.medal || 'none',
+        mistakes: progressData.mistakes || 0,
+        points: progressData.points || 0,
+        pointsEarned: progressData.points || 0, // Ensure we have this field
+        progressPercent: progressData.progressPercent || 0,
+        stars: progressData.stars || 0,
+        submittedHomework: progressData.submittedHomework || false,
+        topicId: progressData.topicId,
+        updatedAt: progressData.updatedAt,
+        usedHints: progressData.hintsUsed > 0 || false
+      };
+      
+      console.log('✅ Previous progress loaded:', this.previousProgress);
+      console.log(`   - Completed steps: ${this.previousProgress.completedSteps.length}`);
+      console.log(`   - Stars: ${this.previousProgress.stars}`);
+      console.log(`   - Mistakes: ${this.previousProgress.mistakes}`);
+      console.log(`   - Duration: ${this.previousProgress.duration} seconds`);
+      
+      // Show a toast notification if we have toast available
+      if (this.$toast) {
+        this.$toast.info(`📚 Найден предыдущий прогресс: ${progressData.completedSteps.length} из ${this.steps.length} шагов завершено`, {
+          position: 'top-right',
+          timeout: 3000,
+          closeOnClick: true,
+          pauseOnFocusLoss: true,
+          pauseOnHover: true,
+          draggable: true,
+          draggablePercent: 0.6,
+          showCloseButtonOnHover: false,
+          hideProgressBar: true,
+          closeButton: "button",
+          icon: true,
+          rtl: false
+        });
+      }
+    } else {
+      console.log('ℹ️ No previous progress found for this lesson');
+      this.previousProgress = null;
+    }
+    
+  } catch (err) {
+    console.warn('⚠️ Failed to load previous progress:', err);
+    this.previousProgress = null;
+    // Don't show error toast - this is not critical
+  }
+},
 
     continuePreviousProgress() {
       if (this.previousProgress) {

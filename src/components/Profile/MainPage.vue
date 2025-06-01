@@ -159,41 +159,104 @@ export default {
         this.loadingRecommendations = false;
       }
     },
-    async fetchStudyList() {
-      try {
-        this.loadingStudyList = true;
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) return;
-        const headers = { Authorization: `Bearer ${token}` };
-        const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
-        const enriched = await Promise.all(
-          data.map(async (item) => {
-            try {
-              const topicRes = await axios.get(`${BASE_URL}/topics/${item.topicId}`, { headers });
-              const lessonsRes = await axios.get(`${BASE_URL}/lessons/topic/${item.topicId}`, { headers });
-              if (!Array.isArray(lessonsRes.data) || lessonsRes.data.length === 0) {
-                console.warn('❌ No lessons for topic, removing from list:', item.topicId);
-                return null;
-              }
-              return {
-                ...topicRes.data,
-                lessons: lessonsRes.data,
-                progress: item.progress || {}
-              };
-            } catch (e) {
-              console.warn('❌ Failed to fetch topic:', item.topicId);
-              return null;
+    // In MainPage.vue, update the fetchStudyList method to include progress:
+
+async fetchStudyList() {
+  try {
+    this.loadingStudyList = true;
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) return;
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    // Get study list
+    const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
+    
+    // Get user's progress for all lessons
+    const progressResponse = await axios.get(`${BASE_URL}/progress`, {
+      headers,
+      params: { userId: this.userId }
+    });
+    
+    const userProgressData = progressResponse.data.data || [];
+    
+    // Create a map of topic progress
+    const topicProgressMap = {};
+    
+    // Process each study list item
+    const enriched = await Promise.all(
+      data.map(async (item) => {
+        try {
+          // Get topic details
+          const topicRes = await axios.get(`${BASE_URL}/topics/${item.topicId}`, { headers });
+          const lessonsRes = await axios.get(`${BASE_URL}/lessons/topic/${item.topicId}`, { headers });
+          
+          if (!Array.isArray(lessonsRes.data) || lessonsRes.data.length === 0) {
+            console.warn('❌ No lessons for topic, removing from list:', item.topicId);
+            return null;
+          }
+          
+          const lessons = lessonsRes.data;
+          const topicId = item.topicId;
+          
+          // Calculate progress for this topic
+          let completedLessons = 0;
+          let totalStars = 0;
+          let totalPoints = 0;
+          
+          lessons.forEach(lesson => {
+            const progress = userProgressData.find(p => 
+              (p.lessonId?._id || p.lessonId) === lesson._id
+            );
+            
+            if (progress && progress.completed) {
+              completedLessons++;
+              totalStars += progress.stars || 0;
+              totalPoints += progress.points || 0;
             }
-          })
-        );
-        this.studyList = enriched.filter(Boolean);
-        this.extractSubjects(this.studyList);
-      } catch (err) {
-        console.error('❌ Ошибка загрузки курсов:', err);
-      } finally {
-        this.loadingStudyList = false;
-      }
-    },
+          });
+          
+          const progressPercent = lessons.length > 0 
+            ? Math.round((completedLessons / lessons.length) * 100)
+            : 0;
+          
+          // Determine medal based on completion and performance
+          let medal = 'none';
+          if (progressPercent === 100) {
+            const avgStars = totalStars / lessons.length;
+            if (avgStars >= 2.5) medal = 'gold';
+            else if (avgStars >= 1.5) medal = 'silver';
+            else medal = 'bronze';
+          }
+          
+          return {
+            ...topicRes.data,
+            lessons: lessons,
+            progress: {
+              percent: progressPercent,
+              medal: medal,
+              completedLessons: completedLessons,
+              totalLessons: lessons.length,
+              stars: totalStars,
+              points: totalPoints
+            }
+          };
+        } catch (e) {
+          console.warn('❌ Failed to fetch topic:', item.topicId);
+          return null;
+        }
+      })
+    );
+    
+    this.studyList = enriched.filter(Boolean);
+    this.extractSubjects(this.studyList);
+    
+    console.log('📚 Study list with progress loaded:', this.studyList);
+  } catch (err) {
+    console.error('❌ Error loading study list:', err);
+  } finally {
+    this.loadingStudyList = false;
+  }
+},
     extractSubjects(items) {
       const subjects = new Set(items.map(item => item.subject).filter(Boolean));
       this.allSubjects = Array.from(subjects);
