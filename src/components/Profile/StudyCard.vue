@@ -61,7 +61,22 @@ export default {
       return isNaN(val) ? 0 : Math.round(val);
     },
     medal() {
-      return this.progress.medal || '';
+      // Enhanced medal logic based on progress percentage and quality
+      const percent = this.lessonProgress;
+      const stars = this.progress.stars || 0;
+      const totalLessons = this.progress.totalLessons || this.lessons.length || 1;
+      
+      if (percent === 100) {
+        const avgStars = totalLessons > 0 ? stars / totalLessons : 0;
+        if (avgStars >= 2.7) return 'gold';
+        else if (avgStars >= 1.5) return 'silver';
+        else return 'bronze';
+      } else if (percent >= 80) {
+        return 'silver';
+      } else if (percent >= 50) {
+        return 'bronze';
+      }
+      return 'none';
     },
     estimatedDuration() {
       const wordSource = ['explanation', 'content', 'examples']
@@ -70,7 +85,7 @@ export default {
       const wordCount = wordSource.trim().split(/\s+/).length;
       const readTime = Math.ceil(wordCount / 50);
       const exerciseTime = Math.ceil((this.topic.exercises?.length || 0) * 1.5);
-      return readTime + exerciseTime;
+      return Math.max(readTime + exerciseTime, 5); // Minimum 5 minutes
     }
   },
   mounted() {
@@ -123,126 +138,267 @@ export default {
 <style scoped>
 .study-card {
   position: relative;
-  background: linear-gradient(to right, #f9fafb, #f3f4f6);
-  padding: 24px;
-  border-radius: 18px;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.04);
+  background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 28px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  height: 280px;
+  gap: 18px;
+  min-height: 320px;
   justify-content: space-between;
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
 }
+
 .study-card:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 12px 24px rgba(147, 51, 234, 0.2);
+  transform: translateY(-8px);
+  box-shadow: 0 16px 48px rgba(59, 130, 246, 0.25), 0 0 0 1px rgba(147, 51, 234, 0.2);
+  background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 50%, #581c87 100%);
 }
+
 .card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 16px;
+  min-height: 44px;
 }
+
 .topic-name {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: #7c3aed;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.3;
+  margin: 0;
+  flex: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
+
 .medal-icon {
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
 }
+
 .progress-bar {
-  background: #e5e7eb;
-  height: 10px;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  height: 12px;
+  border-radius: 10px;
   overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
+
 .progress-fill {
   height: 100%;
-  background: linear-gradient(to right, #7c3aed, #8b5cf6);
-  transition: width 0.3s ease;
+  background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #9333ea 100%);
+  border-radius: 10px;
+  transition: width 0.5s ease-out;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
 }
+
 .progress-info {
   display: flex;
   justify-content: space-between;
-  font-size: 0.95rem;
+  align-items: center;
+  font-size: 1rem;
   font-weight: 600;
-  color: #4b5563;
+  gap: 12px;
 }
+
+.progress-info > span {
+  color: #e2e8f0;
+  font-weight: 700;
+}
+
 .estimated-time {
-  font-style: italic;
-  font-weight: 500;
-  color: #6b7280;
-}
-.continue-btn {
-  align-self: center;
-  padding: 10px 24px;
   font-size: 0.9rem;
-  font-weight: 600;
-  color: white;
-  background: linear-gradient(to right, #4f46e5, #8b5cf6);
+  font-weight: 500;
+  color: #cbd5e1;
+  margin: 0;
+  font-style: normal;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.continue-btn {
+  align-self: stretch;
+  padding: 14px 28px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, #1d4ed8 0%, #7c3aed 100%);
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 16px rgba(29, 78, 216, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
+
 .continue-btn:hover {
-  background: linear-gradient(to right, #4338ca, #7c3aed);
+  background: linear-gradient(135deg, #1e40af 0%, #6d28d9 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(29, 78, 216, 0.4);
 }
+
+.continue-btn:active {
+  transform: translateY(0);
+}
+
 .close-btn {
   position: absolute;
-  top: 12px;
-  right: 14px;
-  background: transparent;
-  border: none;
-  font-size: 1.1rem;
-  color: #6b7280;
+  top: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #e2e8f0;
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
 }
+
 .close-btn:hover {
-  color: #ef4444;
+  background: rgba(239, 68, 68, 0.8);
+  color: #ffffff;
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: scale(1.1);
 }
+
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 9999;
+  backdrop-filter: blur(8px);
 }
+
 .modal-content {
-  background: white;
-  padding: 24px 32px;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 32px 40px;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   text-align: center;
+  max-width: 420px;
+  width: 90%;
 }
+
+.modal-content p {
+  color: #e2e8f0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+}
+
+.modal-content p:last-of-type {
+  color: #cbd5e1;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 24px;
+}
+
 .modal-actions {
-  margin-top: 20px;
+  margin-top: 28px;
   display: flex;
   justify-content: center;
   gap: 16px;
+  flex-wrap: wrap;
 }
+
 .confirm-btn {
-  background: #ef4444;
-  color: white;
-  padding: 10px 20px;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: #ffffff;
+  padding: 12px 24px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  min-width: 100px;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.3);
 }
+
+.confirm-btn:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+}
+
 .cancel-btn {
-  background: #e5e7eb;
-  color: #111827;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 12px 24px;
+  border-radius: 10px;
   cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  min-width: 100px;
+  backdrop-filter: blur(4px);
+}
+
+.cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .study-card {
+    padding: 24px;
+    min-height: 300px;
+  }
+  
+  .topic-name {
+    font-size: 1.2rem;
+  }
+  
+  .continue-btn {
+    padding: 12px 24px;
+    font-size: 0.9rem;
+  }
+  
+  .modal-content {
+    padding: 28px 32px;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .confirm-btn,
+  .cancel-btn {
+    width: 100%;
+    max-width: 200px;
+  }
 }
 </style>
