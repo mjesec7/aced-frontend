@@ -10,6 +10,18 @@
       <span class="user-status-badge" :class="userStatus">{{ userStatusLabel }}</span>
     </div>
 
+    <!-- Error Alert -->
+    <div v-if="hasErrors" class="error-alert">
+      <div class="error-content">
+        <span class="error-icon">⚠️</span>
+        <div class="error-messages">
+          <p v-if="errors.recommendations">{{ errors.recommendations }}</p>
+          <p v-if="errors.studyList">{{ errors.studyList }}</p>
+        </div>
+        <button class="retry-btn" @click="retryAll">🔄 Retry</button>
+      </div>
+    </div>
+
     <!-- 🌟 Recommendations -->
     <div class="section recommendations-section">
       <div class="section-header">
@@ -35,12 +47,23 @@
         </div>
       </div>
 
-      <div v-else class="empty-message">Нет подходящих рекомендаций.</div>
+      <div v-else class="empty-message">
+        <p>Нет подходящих рекомендаций.</p>
+        <button v-if="errors.recommendations" class="retry-btn inline" @click="fetchRecommendations">
+          🔄 Попробовать снова
+        </button>
+      </div>
     </div>
 
     <!-- 📚 Study List -->
     <div class="section study-section">
-      <h2>📘 Мои курсы</h2>
+      <div class="section-header">
+        <h2>📘 Мои курсы</h2>
+        <button v-if="invalidTopicsCleanedUp > 0" class="info-badge">
+          🧹 Очищено: {{ invalidTopicsCleanedUp }}
+        </button>
+      </div>
+      
       <div v-if="loadingStudyList" class="grid">
         <div class="study-placeholder" v-for="n in 3" :key="n">⏳</div>
       </div>
@@ -56,7 +79,12 @@
         />
       </div>
 
-      <div v-else class="empty-message">У вас пока нет активных курсов.</div>
+      <div v-else class="empty-message">
+        <p>У вас пока нет активных курсов.</p>
+        <router-link to="/profile/catalogue" class="browse-link">
+          📚 Просмотреть каталог курсов
+        </router-link>
+      </div>
     </div>
 
     <!-- 💳 Payment Modal -->
@@ -101,7 +129,8 @@ export default {
         studyList: null
       },
       retryCount: 0,
-      maxRetries: 3
+      maxRetries: 3,
+      invalidTopicsCleanedUp: 0
     };
   },
   computed: {
@@ -145,12 +174,18 @@ export default {
       return this.$router.push('/');
     }
     this.userId = storedId;
-    await Promise.all([this.fetchRecommendations(), this.fetchStudyList()]);
+    
+    // Load in parallel but handle errors independently
+    await Promise.allSettled([
+      this.fetchRecommendations(),
+      this.fetchStudyList()
+    ]);
   },
   methods: {
     getTopicName(topic) {
       return topic.name?.[this.lang] || topic.name?.en || topic.name || 'Без названия';
     },
+    
     getTopicDescription(topic) {
       return topic.description?.[this.lang] || topic.description?.en || topic.description || 'Описание отсутствует';
     },
@@ -173,8 +208,8 @@ export default {
           case 401:
             errorMessage = 'Authentication failed. Please log in again.';
             // Redirect to login if auth fails
-            this.$router.push('/');
-            return;
+            setTimeout(() => this.$router.push('/'), 2000);
+            return { message: errorMessage, shouldRedirect: true };
           case 403:
             errorMessage = 'Access denied. You may not have permission.';
             break;
@@ -212,6 +247,7 @@ export default {
           try {
             await axios.delete(`${BASE_URL}/users/${this.userId}/study-list/${topicId}`, { headers });
             console.log(`✅ Removed invalid topic ${topicId} from study list`);
+            this.invalidTopicsCleanedUp++;
           } catch (error) {
             console.warn(`⚠️ Failed to remove invalid topic ${topicId}:`, error.message);
           }
@@ -232,7 +268,22 @@ export default {
         }
         
         const headers = { Authorization: `Bearer ${token}` };
-        const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/recommendations`, { headers });
+        
+        // Try both endpoints for compatibility
+        let data = [];
+        try {
+          const response = await axios.get(`${BASE_URL}/users/${this.userId}/recommendations`, { headers });
+          data = response.data;
+        } catch (error) {
+          if (error.response?.status === 404) {
+            // Try alternative endpoint
+            console.log('🔄 Trying alternative recommendations endpoint...');
+            const response = await axios.get(`${BASE_URL}/recommendations/user/${this.userId}`, { headers });
+            data = response.data;
+          } else {
+            throw error;
+          }
+        }
         
         this.recommendations = Array.isArray(data) ? data : [];
         this.extractSubjects(this.recommendations);
@@ -242,7 +293,14 @@ export default {
       } catch (err) {
         const errorInfo = this.handleApiError(err, 'fetch-recommendations');
         this.errors.recommendations = errorInfo.message;
+        
+        // Provide default recommendations if API fails
         this.recommendations = [];
+        
+        // Don't show error if it's just empty recommendations
+        if (err.response?.status === 404) {
+          this.errors.recommendations = null;
+        }
       } finally {
         this.loadingRecommendations = false;
       }
@@ -252,6 +310,7 @@ export default {
       try {
         this.loadingStudyList = true;
         this.errors.studyList = null;
+        this.invalidTopicsCleanedUp = 0;
         
         const token = await auth.currentUser?.getIdToken();
         if (!token) {
@@ -279,6 +338,7 @@ export default {
           userProgressData = progressResponse.data.data || [];
         } catch (progressError) {
           console.warn('⚠️ Failed to load progress data:', progressError.message);
+          // Continue without progress data
         }
         
         // Track invalid topics for cleanup
@@ -286,77 +346,64 @@ export default {
         const validTopics = [];
         
         // Process each study list item with improved error handling
-        for (const item of data) {
+        const topicPromises = data.map(async (item) => {
+          if (!item.topicId) {
+            console.warn('⚠️ Study list item missing topicId:', item);
+            return null;
+          }
+          
           try {
-            if (!item.topicId) {
-              console.warn('⚠️ Study list item missing topicId:', item);
-              continue;
-            }
-            
             console.log(`🔍 Processing topic: ${item.topicId}`);
             
             // First, check if the topic exists
-            let topicRes;
-            try {
-              topicRes = await axios.get(`${BASE_URL}/topics/${item.topicId}`, { 
-                headers,
-                timeout: 10000 // 10 second timeout
-              });
-              
-              // Validate topic response
-              if (!topicRes.data || !topicRes.data._id) {
-                console.warn(`⚠️ Invalid topic data structure for ${item.topicId}`);
-                invalidTopicIds.push(item.topicId);
-                continue;
-              }
-              
-              console.log(`✅ Topic found: ${topicRes.data.name?.en || 'Unknown'}`);
-              
-            } catch (topicError) {
-              console.warn(`⚠️ Topic ${item.topicId} fetch failed:`, topicError.message);
-              
-              if (topicError.response?.status === 404) {
-                console.warn(`🗑️ Topic ${item.topicId} doesn't exist - marking for cleanup`);
-                invalidTopicIds.push(item.topicId);
-              } else if (topicError.code === 'ECONNABORTED') {
-                console.warn(`⏰ Topic ${item.topicId} request timed out`);
-              } else {
-                console.error(`❌ Unexpected error fetching topic ${item.topicId}:`, topicError);
-              }
-              continue; // Skip this topic entirely
+            const topicRes = await axios.get(`${BASE_URL}/topics/${item.topicId}`, { 
+              headers,
+              timeout: 10000,
+              validateStatus: (status) => status < 500 // Don't throw on 404
+            });
+            
+            if (topicRes.status === 404) {
+              console.warn(`🗑️ Topic ${item.topicId} doesn't exist - marking for cleanup`);
+              invalidTopicIds.push(item.topicId);
+              return null;
             }
             
-            // Now fetch lessons for this valid topic
+            // Handle the response structure properly
+            const topicData = topicRes.data?.data || topicRes.data;
+            
+            if (!topicData || !topicData._id) {
+              console.warn(`⚠️ Invalid topic data structure for ${item.topicId}`);
+              invalidTopicIds.push(item.topicId);
+              return null;
+            }
+            
+            console.log(`✅ Topic found: ${this.getTopicName(topicData)}`);
+            
+            // Get lessons - handle both embedded and separate fetch
             let lessons = [];
-            try {
-              console.log(`📚 Fetching lessons for topic: ${item.topicId}`);
-              const lessonsRes = await axios.get(`${BASE_URL}/lessons/topic/${item.topicId}`, { 
-                headers,
-                timeout: 10000 
-              });
-              
-              lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
-              console.log(`✅ Found ${lessons.length} lessons for topic ${item.topicId}`);
-              
-            } catch (lessonsError) {
-              console.warn(`⚠️ Failed to fetch lessons for topic ${item.topicId}:`, lessonsError.message);
-              
-              // Check if it's a server error vs topic not having lessons
-              if (lessonsError.response?.status === 404) {
-                console.log(`ℹ️ Topic ${item.topicId} has no lessons (404 response)`);
-                lessons = []; // Continue with empty lessons - topic exists but has no lessons
-              } else if (lessonsError.code === 'ECONNABORTED') {
-                console.warn(`⏰ Lessons request timed out for topic ${item.topicId}`);
-                lessons = []; // Continue with empty lessons
-              } else {
-                console.error(`❌ Unexpected error fetching lessons for topic ${item.topicId}:`, lessonsError);
-                lessons = []; // Continue anyway
+            
+            if (topicData.lessons && Array.isArray(topicData.lessons)) {
+              // Lessons are already embedded in topic response
+              lessons = topicData.lessons;
+            } else {
+              // Fetch lessons separately
+              try {
+                const lessonsRes = await axios.get(`${BASE_URL}/lessons/topic/${item.topicId}`, { 
+                  headers,
+                  timeout: 10000,
+                  validateStatus: (status) => status < 500
+                });
+                
+                if (lessonsRes.status === 200) {
+                  lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
+                }
+              } catch (lessonsError) {
+                console.warn(`⚠️ Failed to fetch lessons for topic ${item.topicId}:`, lessonsError.message);
+                // Continue with empty lessons
               }
             }
             
-            if (lessons.length === 0) {
-              console.log(`ℹ️ Topic ${item.topicId} (${topicRes.data.name?.en || 'Unknown'}) has no lessons`);
-            }
+            console.log(`✅ Found ${lessons.length} lessons for topic ${item.topicId}`);
             
             // Calculate progress for this topic
             let completedLessons = 0;
@@ -388,8 +435,8 @@ export default {
               else medal = 'bronze';
             }
             
-            const enrichedTopic = {
-              ...topicRes.data,
+            return {
+              ...topicData,
               lessons: lessons,
               progress: {
                 percent: progressPercent,
@@ -401,14 +448,27 @@ export default {
               }
             };
             
-            validTopics.push(enrichedTopic);
-            console.log(`✅ Successfully processed topic: ${topicRes.data.name?.en || 'Unknown'} (${lessons.length} lessons, ${progressPercent}% complete)`);
-            
           } catch (error) {
             console.error(`❌ Unexpected error processing topic ${item.topicId}:`, error);
-            // Don't add to invalid list for unexpected errors - might be temporary network issues
+            
+            // If it's a 404, mark for cleanup
+            if (error.response?.status === 404) {
+              invalidTopicIds.push(item.topicId);
+            }
+            
+            return null;
           }
-        }
+        });
+        
+        // Wait for all topic fetches to complete
+        const results = await Promise.allSettled(topicPromises);
+        
+        // Filter out null results and extract valid topics
+        results.forEach(result => {
+          if (result.status === 'fulfilled' && result.value) {
+            validTopics.push(result.value);
+          }
+        });
         
         // Clean up invalid topics
         if (invalidTopicIds.length > 0) {
@@ -439,10 +499,6 @@ export default {
       await this.fetchRecommendations();
     },
 
-    async refreshStudyList() {
-      await this.fetchStudyList();
-    },
-
     async retryAll() {
       if (this.retryCount >= this.maxRetries) {
         console.warn('⚠️ Max retries reached');
@@ -452,16 +508,10 @@ export default {
       this.retryCount++;
       console.log(`🔄 Retrying... (${this.retryCount}/${this.maxRetries})`);
       
-      await Promise.all([
+      await Promise.allSettled([
         this.errors.recommendations ? this.fetchRecommendations() : Promise.resolve(),
         this.errors.studyList ? this.fetchStudyList() : Promise.resolve()
       ]);
-    },
-
-    clearErrors() {
-      this.errors.recommendations = null;
-      this.errors.studyList = null;
-      this.retryCount = 0;
     },
 
     async handleAddTopic(topic) {
@@ -507,7 +557,6 @@ export default {
     async removeStudyCard(id) {
       try {
         // Remove from UI immediately for better UX
-        const removedTopic = this.studyList.find(topic => topic._id === id);
         this.studyList = this.studyList.filter(topic => topic._id !== id);
         
         // Remove from backend
