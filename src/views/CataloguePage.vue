@@ -203,6 +203,7 @@ export default {
       groupedTopics: [],
       originalTopics: [],
       userProgress: {},
+      lessonProgress: {}, // This was missing!
       studyPlanTopics: [],
       loading: true,
       userId: null,
@@ -235,6 +236,7 @@ export default {
   },
   async mounted() {
     await this.initializeComponent();
+    await this.loadLessonProgress(); // Load lesson progress after initialization
   },
   methods: {
     async initializeComponent() {
@@ -266,6 +268,7 @@ export default {
       try {
         const { data } = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/lessons`);
         this.lessons = Array.isArray(data) ? data : [];
+        console.log('📚 Lessons loaded:', this.lessons.length);
         this.processTopics();
       } catch (error) {
         console.error('❌ Ошибка при загрузке уроков:', error.response?.data || error.message);
@@ -309,13 +312,16 @@ export default {
         if (!token) return;
 
         // Get all user progress data
-        const { data } = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/progress`,
-          { headers: { Authorization: `Bearer ${token}` } }
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/progress`,
+          { 
+            headers: { Authorization: `Bearer ${token}` },
+            params: { userId: this.userId }
+          }
         );
 
         // Process the progress data to calculate topic progress
-        const progressData = data.data || data || [];
+        const progressData = response.data?.data || response.data || [];
         const topicProgressMap = {};
 
         // Group lessons by topicId and calculate progress
@@ -390,154 +396,145 @@ export default {
           }
           return '';
         }).filter(id => id);
+        
+        console.log('📚 Study plan loaded:', this.studyPlanTopics);
       } catch (error) {
         console.error('❌ Ошибка при загрузке учебного плана:', error.response?.data || error.message);
         this.studyPlanTopics = [];
       }
     },
 
-    // In CataloguePage.vue, update the processTopics method to properly display progress:
-
-processTopics() {
-  try {
-    const topicsMap = new Map();
-    
-    if (!Array.isArray(this.lessons)) {
-      this.lessons = [];
-    }
-
-    // Group lessons by topic
-    this.lessons.forEach(lesson => {
-      if (!lesson) return;
-      
-      const topicId = lesson.topicId ? String(lesson.topicId) : null;
-      const name = this.getTopicName(lesson);
-      
-      if (!topicId || !name) return;
-
-      if (!topicsMap.has(topicId)) {
-        topicsMap.set(topicId, {
-          topicId,
-          name: String(name || ''),
-          subject: String(lesson.subject || ''),
-          level: String(lesson.level || 'Базовый'),
-          type: lesson.type || 'free',
-          lessonCount: 1,
-          totalTime: 10,
-          lessons: [lesson] // Keep track of lessons
-        });
-      } else {
-        const entry = topicsMap.get(topicId);
-        if (entry) {
-          entry.lessonCount += 1;
-          entry.totalTime += 10;
-          entry.lessons.push(lesson);
+    // Single processTopics method
+    processTopics() {
+      try {
+        const topicsMap = new Map();
+        
+        if (!Array.isArray(this.lessons)) {
+          this.lessons = [];
         }
-      }
-    });
 
-    // Add progress and study plan info
-    this.originalTopics = [...topicsMap.values()].map(topic => {
-      if (!topic) return null;
-      
-      // Calculate progress based on actual lesson completion
-      let progress = 0;
-      
-      // Method 1: Try to get from userProgress object
-      if (this.userProgress[topic.topicId]) {
-        progress = this.userProgress[topic.topicId];
-      } 
-      // Method 2: Try by topic name
-      else if (this.userProgress[topic.name]) {
-        progress = this.userProgress[topic.name];
+        // Group lessons by topic
+        this.lessons.forEach(lesson => {
+          if (!lesson) return;
+          
+          const topicId = lesson.topicId ? String(lesson.topicId) : null;
+          const name = this.getTopicName(lesson);
+          
+          if (!topicId || !name) return;
+
+          if (!topicsMap.has(topicId)) {
+            topicsMap.set(topicId, {
+              topicId,
+              name: String(name || ''),
+              subject: String(lesson.subject || ''),
+              level: String(lesson.level || 'Базовый'),
+              type: lesson.type || 'free',
+              lessonCount: 1,
+              totalTime: 10,
+              lessons: [lesson] // Keep track of lessons
+            });
+          } else {
+            const entry = topicsMap.get(topicId);
+            if (entry) {
+              entry.lessonCount += 1;
+              entry.totalTime += 10;
+              entry.lessons.push(lesson);
+            }
+          }
+        });
+
+        console.log('📚 Topics grouped:', topicsMap.size);
+
+        // Add progress and study plan info
+        this.originalTopics = [...topicsMap.values()].map(topic => {
+          if (!topic) return null;
+          
+          // Calculate progress based on actual lesson completion
+          let progress = 0;
+          
+          // Method 1: Try to get from userProgress object
+          if (this.userProgress[topic.topicId]) {
+            progress = this.userProgress[topic.topicId];
+          } 
+          // Method 2: Try by topic name
+          else if (this.userProgress[topic.name]) {
+            progress = this.userProgress[topic.name];
+          }
+          // Method 3: Calculate from individual lesson progress if available
+          else if (topic.lessons && topic.lessons.length > 0 && this.lessonProgress) {
+            let completedLessons = 0;
+            topic.lessons.forEach(lesson => {
+              // Check if this lesson is completed in lessonProgress
+              if (this.lessonProgress[lesson._id]) {
+                completedLessons++;
+              }
+            });
+            
+            if (topic.lessons.length > 0) {
+              progress = Math.round((completedLessons / topic.lessons.length) * 100);
+            }
+          }
+          
+          console.log(`📊 Topic "${topic.name}" (${topic.topicId}) - Progress: ${progress}%`);
+          
+          return {
+            ...topic,
+            progress: progress,
+            inStudyPlan: this.studyPlanTopics.includes(topic.topicId)
+          };
+        }).filter(topic => topic !== null);
+
+        console.log('✅ Original topics processed:', this.originalTopics.length);
+        this.applyFilters();
+        this.loading = false;
+      } catch (error) {
+        console.error('❌ Error processing topics:', error);
+        this.originalTopics = [];
+        this.groupedTopics = [];
+        this.loading = false;
       }
-      // Method 3: Calculate from individual lesson progress if available
-      else if (topic.lessons && topic.lessons.length > 0) {
-        let completedLessons = 0;
-        topic.lessons.forEach(lesson => {
-          // Check if this lesson is completed in userProgress
-          if (this.lessonProgress && this.lessonProgress[lesson._id]) {
-            completedLessons++;
+    },
+
+    // Add this new method to load individual lesson progress
+    async loadLessonProgress() {
+      if (!this.userId) return;
+      
+      try {
+        const currentUser = auth.currentUser;
+        if (!currentUser) return;
+
+        const token = await currentUser.getIdToken();
+        if (!token) return;
+
+        // Get all user progress records
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/progress`,
+          { 
+            headers: { Authorization: `Bearer ${token}` },
+            params: { userId: this.userId }
+          }
+        );
+
+        // Create a map of lesson progress
+        this.lessonProgress = {};
+        const progressData = response.data?.data || response.data || [];
+        
+        progressData.forEach(progress => {
+          if (progress.lessonId) {
+            const lessonId = progress.lessonId._id || progress.lessonId;
+            this.lessonProgress[lessonId] = progress.completed || false;
           }
         });
         
-        if (topic.lessons.length > 0) {
-          progress = Math.round((completedLessons / topic.lessons.length) * 100);
-        }
+        console.log('📚 Lesson progress loaded:', Object.keys(this.lessonProgress).length, 'lessons');
+        
+        // Reprocess topics after loading lesson progress
+        this.processTopics();
+      } catch (error) {
+        console.error('❌ Error loading lesson progress:', error);
+        this.lessonProgress = {};
       }
-      
-      console.log(`📊 Topic "${topic.name}" (${topic.topicId}) - Progress: ${progress}%`);
-      
-      return {
-        ...topic,
-        progress: progress,
-        inStudyPlan: this.studyPlanTopics.includes(topic.topicId)
-      };
-    }).filter(topic => topic !== null);
-
-    this.applyFilters();
-    this.loading = false;
-  } catch (error) {
-    console.error('❌ Error processing topics:', error);
-    this.originalTopics = [];
-    this.groupedTopics = [];
-    this.loading = false;
-  }
-},
-
-// Add this new method to load individual lesson progress
-async loadLessonProgress() {
-  if (!this.userId) return;
-  
-  try {
-    const currentUser = auth.currentUser;
-    if (!currentUser) return;
-
-    const token = await currentUser.getIdToken();
-    if (!token) return;
-
-    // Get all user progress records
-    const { data } = await axios.get(
-      `${import.meta.env.VITE_API_BASE_URL}/progress`,
-      { 
-        headers: { Authorization: `Bearer ${token}` },
-        params: { userId: this.userId }
-      }
-    );
-
-    // Create a map of lesson progress
-    this.lessonProgress = {};
-    const progressData = data.data || data || [];
-    
-    progressData.forEach(progress => {
-      if (progress.lessonId) {
-        const lessonId = progress.lessonId._id || progress.lessonId;
-        this.lessonProgress[lessonId] = progress.completed || false;
-      }
-    });
-    
-    console.log('📚 Lesson progress loaded:', Object.keys(this.lessonProgress).length, 'lessons');
-  } catch (error) {
-    console.error('❌ Error loading lesson progress:', error);
-    this.lessonProgress = {};
-  }
-},
-
-// Update the mounted method to also load lesson progress
-async mounted() {
-  await this.initializeComponent();
-  await this.loadLessonProgress(); // Add this line
-},
-
-// Update the progress bar to show different colors based on progress
-getProgressClass(progress) {
-  const prog = Number(progress) || 0;
-  if (prog === 100) return 'progress-completed';
-  if (prog >= 70) return 'progress-high';
-  if (prog >= 30) return 'progress-medium';
-  if (prog > 0) return 'progress-low';
-  return 'progress-none';
-},
+    },
 
     applyFilters() {
       try {
@@ -574,6 +571,8 @@ getProgressClass(progress) {
           
           return matchesFilter && matchesSearch;
         });
+        
+        console.log('🔍 Filtered topics:', this.groupedTopics.length);
       } catch (error) {
         console.error('❌ Ошибка при применении фильтров:', error);
         this.groupedTopics = [];
@@ -615,15 +614,20 @@ getProgressClass(progress) {
         case 'beginner':
         case 'начинающий':
         case 'базовый':
+        case '1':
           return 'level-beginner';
         case 'intermediate':
         case 'средний':
+        case '2':
           return 'level-intermediate';
         case 'advanced':
         case 'продвинутый':
+        case '3':
           return 'level-advanced';
         case 'expert':
         case 'эксперт':
+        case '4':
+        case '5':
           return 'level-expert';
         default:
           return 'level-beginner';
@@ -635,7 +639,8 @@ getProgressClass(progress) {
       if (prog === 100) return 'progress-completed';
       if (prog >= 70) return 'progress-high';
       if (prog >= 30) return 'progress-medium';
-      return 'progress-low';
+      if (prog > 0) return 'progress-low';
+      return 'progress-none';
     },
 
     getProgressColor(progress) {
