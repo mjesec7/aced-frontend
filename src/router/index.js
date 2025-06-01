@@ -49,19 +49,9 @@ const routes = [
       { path: 'homeworks', name: 'HomeworkList', component: HomeworkList },
       { path: 'homeworks/:lessonId', name: 'HomeworkPage', component: HomeworkPage, props: true },
       { path: 'diary', name: 'DiaryPage', component: DiaryPage },
-      { path: 'tests', name: 'TestsPage', component: TestsPage },
+      { path: 'tests', name: 'ProfileTestsPage', component: TestsPage },
+      { path: 'tests/:id', name: 'ProfileSingleTestPage', component: TestsPage, props: true },
     ],
-  },
-  {
-    path: '/tests',
-    name: 'TestsPage',
-    component: TestsPage,
-  },
-  {
-    path: '/tests/:id',
-    name: 'SingleTestPage',
-    component: TestsPage,
-    props: true,
   },
   {
     path: '/pay/:plan',
