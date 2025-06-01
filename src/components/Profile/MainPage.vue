@@ -94,7 +94,14 @@ export default {
       filterSubject: '',
       showPaywall: false,
       requestedTopicId: null,
-      lang: localStorage.getItem('lang') || 'en'
+      lang: localStorage.getItem('lang') || 'en',
+      // Error handling state
+      errors: {
+        recommendations: null,
+        studyList: null
+      },
+      retryCount: 0,
+      maxRetries: 3
     };
   },
   computed: {
@@ -127,6 +134,9 @@ export default {
       if (this.userStatus === 'pro') return 'Pro';
       if (this.userStatus === 'start') return 'Start';
       return 'Free';
+    },
+    hasErrors() {
+      return this.errors.recommendations || this.errors.studyList;
     }
   },
   async mounted() {
@@ -144,128 +154,291 @@ export default {
     getTopicDescription(topic) {
       return topic.description?.[this.lang] || topic.description?.en || topic.description || 'Описание отсутствует';
     },
+
+    // Enhanced error handling method
+    handleApiError(error, context) {
+      console.error(`❌ API Error [${context}]:`, error);
+      
+      let errorMessage = 'An unexpected error occurred';
+      
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const data = error.response.data;
+        
+        switch (status) {
+          case 404:
+            errorMessage = 'Resource not found. It may have been deleted.';
+            break;
+          case 401:
+            errorMessage = 'Authentication failed. Please log in again.';
+            // Redirect to login if auth fails
+            this.$router.push('/');
+            return;
+          case 403:
+            errorMessage = 'Access denied. You may not have permission.';
+            break;
+          case 500:
+            errorMessage = 'Server error. Please try again later.';
+            break;
+          default:
+            errorMessage = data?.message || `Server error (${status})`;
+        }
+      } else if (error.request) {
+        // Network error
+        errorMessage = 'Network error. Please check your connection.';
+      } else {
+        // Other error
+        errorMessage = error.message || 'Something went wrong';
+      }
+      
+      return { message: errorMessage, originalError: error };
+    },
+
+    // Clean up invalid topic references
+    async cleanupInvalidTopics(invalidTopicIds) {
+      if (!invalidTopicIds.length) return;
+      
+      console.log(`🧹 Cleaning up ${invalidTopicIds.length} invalid topic references:`, invalidTopicIds);
+      
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) return;
+        
+        const headers = { Authorization: `Bearer ${token}` };
+        
+        // Remove invalid topics from user's study list
+        for (const topicId of invalidTopicIds) {
+          try {
+            await axios.delete(`${BASE_URL}/users/${this.userId}/study-list/${topicId}`, { headers });
+            console.log(`✅ Removed invalid topic ${topicId} from study list`);
+          } catch (error) {
+            console.warn(`⚠️ Failed to remove invalid topic ${topicId}:`, error.message);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error during cleanup:', error);
+      }
+    },
+
     async fetchRecommendations() {
       try {
         this.loadingRecommendations = true;
+        this.errors.recommendations = null;
+        
         const token = await auth.currentUser?.getIdToken();
-        if (!token) return;
+        if (!token) {
+          throw new Error('No authentication token available');
+        }
+        
         const headers = { Authorization: `Bearer ${token}` };
         const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/recommendations`, { headers });
+        
         this.recommendations = Array.isArray(data) ? data : [];
         this.extractSubjects(this.recommendations);
+        
+        console.log(`✅ Loaded ${this.recommendations.length} recommendations`);
+        
       } catch (err) {
-        console.error('❌ Ошибка загрузки рекомендаций:', err);
+        const errorInfo = this.handleApiError(err, 'fetch-recommendations');
+        this.errors.recommendations = errorInfo.message;
+        this.recommendations = [];
       } finally {
         this.loadingRecommendations = false;
       }
     },
+
     async fetchStudyList() {
       try {
         this.loadingStudyList = true;
+        this.errors.studyList = null;
+        
         const token = await auth.currentUser?.getIdToken();
-        if (!token) return;
+        if (!token) {
+          throw new Error('No authentication token available');
+        }
+        
         const headers = { Authorization: `Bearer ${token}` };
         
         // Get study list
         const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
+        console.log(`📋 Raw study list data:`, data);
+        
+        if (!Array.isArray(data) || data.length === 0) {
+          this.studyList = [];
+          return;
+        }
         
         // Get user's progress for all lessons
-        const progressResponse = await axios.get(`${BASE_URL}/progress`, {
-          headers,
-          params: { userId: this.userId }
-        });
+        let userProgressData = [];
+        try {
+          const progressResponse = await axios.get(`${BASE_URL}/progress`, {
+            headers,
+            params: { userId: this.userId }
+          });
+          userProgressData = progressResponse.data.data || [];
+        } catch (progressError) {
+          console.warn('⚠️ Failed to load progress data:', progressError.message);
+        }
         
-        const userProgressData = progressResponse.data.data || [];
+        // Track invalid topics for cleanup
+        const invalidTopicIds = [];
+        const validTopics = [];
         
-        // Create a map of topic progress
-        const topicProgressMap = {};
-        
-        // Process each study list item
-        const enriched = await Promise.all(
-          data.map(async (item) => {
-            try {
-              // Get topic details
-              const topicRes = await axios.get(`${BASE_URL}/topics/${item.topicId}`, { headers });
-              const lessonsRes = await axios.get(`${BASE_URL}/lessons/topic/${item.topicId}`, { headers });
-              
-              if (!Array.isArray(lessonsRes.data) || lessonsRes.data.length === 0) {
-                console.warn('❌ No lessons for topic, removing from list:', item.topicId);
-                return null;
-              }
-              
-              const lessons = lessonsRes.data;
-              const topicId = item.topicId;
-              
-              // Calculate progress for this topic
-              let completedLessons = 0;
-              let totalStars = 0;
-              let totalPoints = 0;
-              
-              lessons.forEach(lesson => {
-                const progress = userProgressData.find(p => 
-                  (p.lessonId?._id || p.lessonId) === lesson._id
-                );
-                
-                if (progress && progress.completed) {
-                  completedLessons++;
-                  totalStars += progress.stars || 0;
-                  totalPoints += progress.points || 0;
-                }
-              });
-              
-              const progressPercent = lessons.length > 0 
-                ? Math.round((completedLessons / lessons.length) * 100)
-                : 0;
-              
-              // Determine medal based on completion and performance
-              let medal = 'none';
-              if (progressPercent === 100) {
-                const avgStars = totalStars / lessons.length;
-                if (avgStars >= 2.5) medal = 'gold';
-                else if (avgStars >= 1.5) medal = 'silver';
-                else medal = 'bronze';
-              }
-              
-              return {
-                ...topicRes.data,
-                lessons: lessons,
-                progress: {
-                  percent: progressPercent,
-                  medal: medal,
-                  completedLessons: completedLessons,
-                  totalLessons: lessons.length,
-                  stars: totalStars,
-                  points: totalPoints
-                }
-              };
-            } catch (e) {
-              console.warn('❌ Failed to fetch topic:', item.topicId);
-              return null;
+        // Process each study list item with better error handling
+        for (const item of data) {
+          try {
+            if (!item.topicId) {
+              console.warn('⚠️ Study list item missing topicId:', item);
+              continue;
             }
-          })
-        );
+            
+            console.log(`🔍 Fetching topic: ${item.topicId}`);
+            
+            // Get topic details with timeout
+            const topicPromise = axios.get(`${BASE_URL}/topics/${item.topicId}`, { 
+              headers,
+              timeout: 10000 // 10 second timeout
+            });
+            
+            const lessonsPromise = axios.get(`${BASE_URL}/lessons/topic/${item.topicId}`, { 
+              headers,
+              timeout: 10000 
+            });
+            
+            const [topicRes, lessonsRes] = await Promise.all([topicPromise, lessonsPromise]);
+            
+            // Validate responses
+            if (!topicRes.data || !topicRes.data._id) {
+              console.warn(`⚠️ Invalid topic data for ${item.topicId}`);
+              invalidTopicIds.push(item.topicId);
+              continue;
+            }
+            
+            const lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
+            
+            if (lessons.length === 0) {
+              console.warn(`⚠️ No lessons found for topic ${item.topicId}`);
+              // Don't add to invalid list - topic exists but has no lessons
+            }
+            
+            // Calculate progress for this topic
+            let completedLessons = 0;
+            let totalStars = 0;
+            let totalPoints = 0;
+            
+            lessons.forEach(lesson => {
+              const progress = userProgressData.find(p => 
+                (p.lessonId?._id || p.lessonId) === lesson._id
+              );
+              
+              if (progress && progress.completed) {
+                completedLessons++;
+                totalStars += progress.stars || 0;
+                totalPoints += progress.points || 0;
+              }
+            });
+            
+            const progressPercent = lessons.length > 0 
+              ? Math.round((completedLessons / lessons.length) * 100)
+              : 0;
+            
+            // Determine medal based on completion and performance
+            let medal = 'none';
+            if (progressPercent === 100 && lessons.length > 0) {
+              const avgStars = totalStars / lessons.length;
+              if (avgStars >= 2.5) medal = 'gold';
+              else if (avgStars >= 1.5) medal = 'silver';
+              else medal = 'bronze';
+            }
+            
+            const enrichedTopic = {
+              ...topicRes.data,
+              lessons: lessons,
+              progress: {
+                percent: progressPercent,
+                medal: medal,
+                completedLessons: completedLessons,
+                totalLessons: lessons.length,
+                stars: totalStars,
+                points: totalPoints
+              }
+            };
+            
+            validTopics.push(enrichedTopic);
+            console.log(`✅ Successfully processed topic: ${topicRes.data.name?.en || 'Unknown'}`);
+            
+          } catch (error) {
+            console.warn(`⚠️ Failed to process topic ${item.topicId}:`, error.message);
+            
+            // Check if it's a 404 (topic doesn't exist)
+            if (error.response?.status === 404) {
+              console.warn(`🗑️ Topic ${item.topicId} not found - marking for cleanup`);
+              invalidTopicIds.push(item.topicId);
+            } else {
+              console.error(`❌ Unexpected error for topic ${item.topicId}:`, error);
+            }
+          }
+        }
         
-        this.studyList = enriched.filter(Boolean);
+        // Clean up invalid topics
+        if (invalidTopicIds.length > 0) {
+          await this.cleanupInvalidTopics(invalidTopicIds);
+        }
+        
+        this.studyList = validTopics;
         this.extractSubjects(this.studyList);
         
-        console.log('📚 Study list with progress loaded:', this.studyList);
+        console.log(`✅ Study list loaded: ${validTopics.length} valid topics, ${invalidTopicIds.length} invalid topics cleaned up`);
+        
       } catch (err) {
-        console.error('❌ Error loading study list:', err);
+        const errorInfo = this.handleApiError(err, 'fetch-study-list');
+        this.errors.studyList = errorInfo.message;
+        this.studyList = [];
       } finally {
         this.loadingStudyList = false;
       }
     },
+
     extractSubjects(items) {
       const subjects = new Set(items.map(item => item.subject).filter(Boolean));
       this.allSubjects = Array.from(subjects);
     },
+
     async refreshRecommendations() {
       await this.fetchRecommendations();
     },
+
+    async refreshStudyList() {
+      await this.fetchStudyList();
+    },
+
+    async retryAll() {
+      if (this.retryCount >= this.maxRetries) {
+        console.warn('⚠️ Max retries reached');
+        return;
+      }
+      
+      this.retryCount++;
+      console.log(`🔄 Retrying... (${this.retryCount}/${this.maxRetries})`);
+      
+      await Promise.all([
+        this.errors.recommendations ? this.fetchRecommendations() : Promise.resolve(),
+        this.errors.studyList ? this.fetchStudyList() : Promise.resolve()
+      ]);
+    },
+
+    clearErrors() {
+      this.errors.recommendations = null;
+      this.errors.studyList = null;
+      this.retryCount = 0;
+    },
+
     async handleAddTopic(topic) {
       try {
         const token = await auth.currentUser?.getIdToken();
         if (!token) return alert('Пожалуйста, войдите в аккаунт.');
+        
         const headers = { Authorization: `Bearer ${token}` };
         const url = `${BASE_URL}/users/${this.userId}/study-list`;
         const payload = {
@@ -274,15 +447,25 @@ export default {
           topic: this.getTopicName(topic),
           topicId: topic._id
         };
+        
         await axios.post(url, payload, { headers });
         await this.fetchStudyList();
         this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
+        
+        console.log(`✅ Added topic to study list: ${this.getTopicName(topic)}`);
+        
       } catch (err) {
-        console.error('❌ Ошибка добавления темы:', err);
+        const errorInfo = this.handleApiError(err, 'add-topic');
+        alert(`Error adding topic: ${errorInfo.message}`);
       }
     },
+
     handleStartTopic(topic) {
-      if (!topic._id) return;
+      if (!topic._id) {
+        console.warn('⚠️ Cannot start topic without ID');
+        return;
+      }
+      
       if (topic.type === 'premium' && (!this.userStatus || this.userStatus === 'free')) {
         this.requestedTopicId = topic._id;
         this.showPaywall = true;
@@ -290,8 +473,24 @@ export default {
         this.$router.push({ path: `/topic/${topic._id}/overview` });
       }
     },
-    removeStudyCard(id) {
-      this.studyList = this.studyList.filter(topic => topic._id !== id);
+
+    async removeStudyCard(id) {
+      try {
+        // Remove from UI immediately for better UX
+        this.studyList = this.studyList.filter(topic => topic._id !== id);
+        
+        // Remove from backend
+        const token = await auth.currentUser?.getIdToken();
+        if (token) {
+          const headers = { Authorization: `Bearer ${token}` };
+          await axios.delete(`${BASE_URL}/users/${this.userId}/study-list/${id}`, { headers });
+          console.log(`✅ Removed topic ${id} from study list`);
+        }
+      } catch (error) {
+        console.error('❌ Error removing study card:', error);
+        // Refresh the list to ensure consistency
+        await this.fetchStudyList();
+      }
     }
   }
 };
