@@ -750,12 +750,12 @@ export default {
 </script>
 
 <style scoped>
-/* Enhanced Styles */
+/* Professional Black & White Design with Purple/Blue Accents */
 .lessons-page {
-  padding: 24px;
+  padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: #fafafa;
   min-height: 100vh;
 }
 
@@ -763,78 +763,90 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
-  padding: 24px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
 }
 
 .page-title {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4c1d95 0%, #1e40af 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0;
 }
 
 .subscription-badge {
-  padding: 8px 16px;
-  border-radius: 20px;
+  padding: 6px 14px;
+  border-radius: 16px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  border: 1px solid;
 }
 
-.badge-pro { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
-.badge-start { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
-.badge-free { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
+.badge-pro { 
+  background: linear-gradient(135deg, #4c1d95 0%, #1e40af 100%); 
+  color: white; 
+  border-color: #4c1d95;
+}
+.badge-start { 
+  background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%); 
+  color: white; 
+  border-color: #1e40af;
+}
+.badge-free { 
+  background: #f8fafc; 
+  color: #374151; 
+  border-color: #d1d5db;
+}
 
 .controls {
   display: flex;
-  gap: 16px;
-  margin-bottom: 32px;
+  gap: 12px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
 .search-input, .filter-select {
-  padding: 12px 16px;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 10px 14px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  color: #374151;
 }
 
 .search-input {
   flex: 1;
-  min-width: 300px;
+  min-width: 280px;
 }
 
 .search-input:focus, .filter-select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+  border-color: #4c1d95;
+  box-shadow: 0 0 0 3px rgba(76, 29, 149, 0.1);
 }
 
 .loading {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 64px;
-  font-size: 1.2rem;
-  color: #64748b;
+  gap: 12px;
+  padding: 48px;
+  font-size: 1.1rem;
+  color: #6b7280;
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e2e8f0;
-  border-top: 4px solid #667eea;
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #4c1d95;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -846,83 +858,69 @@ export default {
 
 .lessons-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
 }
 
 .lesson-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  border: 1px solid #e5e7eb;
   position: relative;
-  overflow: hidden;
-}
-
-.lesson-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
-  opacity: 0;
-  transition: opacity 0.3s ease;
 }
 
 .lesson-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
-}
-
-.lesson-card:hover::before {
-  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #4c1d95;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  gap: 12px;
 }
 
 .lesson-title {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #1e293b;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #111827;
   margin: 0;
   line-height: 1.4;
   flex: 1;
 }
 
 .add-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  font-size: 1.2rem;
+  background: #ffffff;
+  color: #4c1d95;
+  border: 2px solid #4c1d95;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 1rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  flex-shrink: 0;
 }
 
 .add-btn:disabled {
-  background: #64748b;
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-color: #d1d5db;
   cursor: not-allowed;
 }
 
 .add-btn:hover:not(:disabled) {
-  transform: scale(1.1);
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+  background: #4c1d95;
+  color: white;
 }
 
 .lesson-topic {
@@ -930,35 +928,38 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
-  font-size: 0.9rem;
-  color: #64748b;
+  font-size: 0.85rem;
+  color: #6b7280;
 }
 
 .level-badge {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 0.8rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.75rem;
   text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
-.level-beginner { background: #dcfce7; color: #166534; }
-.level-intermediate { background: #fef3c7; color: #92400e; }
-.level-advanced { background: #fee2e2; color: #991b1b; }
+.level-beginner { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.level-intermediate { background: #fffbeb; color: #92400e; border: 1px solid #fed7aa; }
+.level-advanced { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.level-expert { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
 
 .lesson-stats {
   display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-  font-size: 0.9rem;
-  color: #64748b;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  color: #6b7280;
 }
 
 .progress-section {
-  margin: 16px 0;
-  padding: 16px;
-  background: rgba(248, 250, 252, 0.8);
-  border-radius: 12px;
+  margin: 12px 0;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
 }
 
 .progress-header {
@@ -969,57 +970,59 @@ export default {
 }
 
 .progress-label {
-  font-weight: 600;
+  font-weight: 500;
   color: #374151;
+  font-size: 0.85rem;
 }
 
 .progress-percentage {
-  font-weight: 700;
-  color: #1f2937;
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.85rem;
 }
 
 .progress-bar-container {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .progress-bar {
   flex: 1;
-  height: 8px;
+  height: 6px;
   background: #e5e7eb;
-  border-radius: 4px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  border-radius: 4px;
-  transition: width 0.5s ease;
-  position: relative;
+  border-radius: 3px;
+  transition: width 0.3s ease;
 }
 
-.progress-low { background: linear-gradient(90deg, #ef4444, #f87171); }
-.progress-medium { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-.progress-high { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
-.progress-completed { background: linear-gradient(90deg, #10b981, #34d399); }
+.progress-none { background: #e5e7eb; }
+.progress-low { background: #dc2626; }
+.progress-medium { background: #d97706; }
+.progress-high { background: #1e40af; }
+.progress-completed { background: #4c1d95; }
 
 .mini-chart {
-  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .pie-chart {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
 }
 
 .progress-circle {
-  transition: stroke-dashoffset 0.5s ease;
+  transition: stroke-dashoffset 0.3s ease;
 }
 
 .progress-text {
-  font-size: 8px;
-  font-weight: 600;
+  font-size: 7px;
+  font-weight: 500;
   fill: #374151;
 }
 
@@ -1027,230 +1030,253 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 16px 0;
-  flex-wrap: wrap;
+  margin: 12px 0;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .access-label {
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid;
 }
 
 .access-label.free {
-  background: #dcfce7;
+  background: #f0fdf4;
   color: #166534;
+  border-color: #bbf7d0;
 }
 
 .access-label.paid {
-  background: #fef3c7;
-  color: #92400e;
+  background: linear-gradient(135deg, #4c1d95 0%, #1e40af 100%);
+  color: white;
+  border-color: #4c1d95;
 }
 
 .status-badges {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .status-badge {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  border: 1px solid;
 }
 
 .status-badge.completed {
-  background: #dcfce7;
+  background: #f0fdf4;
   color: #166534;
+  border-color: #bbf7d0;
 }
 
 .status-badge.in-progress {
-  background: #dbeafe;
+  background: #eff6ff;
   color: #1d4ed8;
+  border-color: #bfdbfe;
 }
 
 .status-badge.not-started {
-  background: #f1f5f9;
-  color: #475569;
+  background: #f8fafc;
+  color: #6b7280;
+  border-color: #d1d5db;
 }
 
 .start-btn {
   width: 100%;
-  padding: 12px 24px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 12px;
-  font-size: 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   margin-top: 8px;
 }
 
 .btn-start {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4c1d95 0%, #1e40af 100%);
   color: white;
 }
 
 .btn-continue {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%);
   color: white;
 }
 
 .btn-completed {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: default;
 }
 
-.start-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+.btn-start:hover, .btn-continue:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 29, 149, 0.3);
+}
+
+.btn-completed:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .empty-state {
   text-align: center;
-  padding: 64px 32px;
-  color: #64748b;
+  padding: 48px 24px;
+  color: #6b7280;
 }
 
 .empty-icon {
-  font-size: 4rem;
-  margin-bottom: 16px;
+  font-size: 3rem;
+  margin-bottom: 12px;
+  opacity: 0.6;
 }
 
 .empty-state h3 {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 600;
   margin-bottom: 8px;
   color: #374151;
 }
 
-/* Enhanced Modal Styles */
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  animation: fade-in 0.3s ease;
+  animation: fade-in 0.2s ease;
 }
 
 .modal-content {
   background: white;
-  border-radius: 20px;
+  border-radius: 12px;
   padding: 0;
-  max-width: 500px;
+  max-width: 450px;
   width: 90%;
   max-height: 80vh;
   overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-  animation: slide-up 0.3s ease;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.2);
+  animation: slide-up 0.2s ease;
   position: relative;
+  border: 1px solid #e5e7eb;
 }
 
 .modal-header {
-  padding: 24px 24px 16px;
+  padding: 20px 20px 16px;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .modal-header h3 {
   margin: 0;
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #1f2937;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #111827;
 }
 
 .modal-body {
-  padding: 24px;
+  padding: 20px;
 }
 
 .modal-footer {
-  padding: 16px 24px 24px;
+  padding: 12px 20px 20px;
   display: flex;
-  gap: 12px;
+  gap: 10px;
   justify-content: flex-end;
 }
 
 .modal-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  background: rgba(107, 114, 128, 0.1);
+  top: 12px;
+  right: 12px;
+  background: #f3f4f6;
   border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  font-size: 1.2rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 1.1rem;
   cursor: pointer;
   color: #6b7280;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal-close:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  background: #ef4444;
+  color: white;
 }
 
 .topic-preview {
   text-align: center;
   padding: 16px;
   background: #f8fafc;
-  border-radius: 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
 }
 
 .topic-preview h4 {
   margin: 0 0 8px;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  color: #1f2937;
+  color: #111827;
 }
 
 .topic-preview p {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   color: #6b7280;
+  font-size: 0.9rem;
 }
 
 .topic-stats {
   display: flex;
   justify-content: center;
-  gap: 16px;
-  font-size: 0.9rem;
-  color: #64748b;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: #6b7280;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4c1d95 0%, #1e40af 100%);
   color: white;
   border: none;
-  padding: 12px 24px;
-  border-radius: 12px;
+  padding: 10px 20px;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 29, 149, 0.3);
 }
 
 .btn-secondary {
-  background: #f1f5f9;
-  color: #475569;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 12px;
+  background: #f8fafc;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  padding: 10px 20px;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
 }
 
 .btn-secondary:hover {
-  background: #e2e8f0;
+  background: #f3f4f6;
+  border-color: #9ca3af;
 }
 
 .success-modal {
@@ -1258,25 +1284,26 @@ export default {
 }
 
 .success-content {
-  padding: 40px 24px;
+  padding: 32px 20px;
 }
 
 .success-icon {
-  font-size: 4rem;
-  margin-bottom: 16px;
+  font-size: 3rem;
+  margin-bottom: 12px;
 }
 
 .success-content h3 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0 0 12px;
-  color: #10b981;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0 0 10px;
+  color: #4c1d95;
 }
 
 .success-content p {
-  color: #64748b;
-  margin: 0 0 24px;
-  line-height: 1.6;
+  color: #6b7280;
+  margin: 0 0 20px;
+  line-height: 1.5;
+  font-size: 0.95rem;
 }
 
 @keyframes fade-in {
@@ -1287,7 +1314,7 @@ export default {
 @keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -1303,20 +1330,23 @@ export default {
   
   .page-header {
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     text-align: center;
+    padding: 16px 20px;
   }
   
   .page-title {
-    font-size: 2rem;
+    font-size: 1.8rem;
   }
   
   .lessons-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
   
   .controls {
     flex-direction: column;
+    gap: 10px;
   }
   
   .search-input {
@@ -1324,7 +1354,21 @@ export default {
   }
   
   .lesson-card {
-    padding: 20px;
+    padding: 16px;
+  }
+  
+  .card-header {
+    gap: 8px;
+  }
+  
+  .lesson-title {
+    font-size: 1.1rem;
+  }
+  
+  .add-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
   }
   
   .progress-bar-container {
@@ -1334,18 +1378,18 @@ export default {
   }
   
   .mini-chart {
-    margin: 8px auto 0;
+    align-self: center;
   }
   
   .status-section {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 8px;
   }
   
   .modal-content {
     width: 95%;
-    max-height: 90vh;
+    max-height: 85vh;
   }
   
   .modal-footer {
@@ -1360,37 +1404,38 @@ export default {
 
 @media (max-width: 480px) {
   .page-title {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
   }
   
   .lesson-card {
-    padding: 16px;
+    padding: 14px;
   }
   
   .card-header {
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
+    align-items: stretch;
   }
   
   .add-btn {
     align-self: flex-end;
-    width: 32px;
-    height: 32px;
-    font-size: 1rem;
+    width: 26px;
+    height: 26px;
+    font-size: 0.85rem;
   }
   
   .lesson-stats {
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
   
   .progress-section {
-    padding: 12px;
+    padding: 10px;
   }
   
   .pie-chart {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
   }
   
   .progress-text {
@@ -1401,41 +1446,75 @@ export default {
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
   .lessons-page {
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-    color: #f1f5f9;
+    background: #111827;
+    color: #f9fafb;
+  }
+  
+  .page-header {
+    background: #1f2937;
+    border-color: #374151;
   }
   
   .lesson-card {
-    background: rgba(30, 41, 59, 0.9);
-    border-color: rgba(100, 116, 139, 0.3);
+    background: #1f2937;
+    border-color: #374151;
+  }
+  
+  .lesson-card:hover {
+    border-color: #8b5cf6;
   }
   
   .lesson-title {
-    color: #f1f5f9;
+    color: #f9fafb;
   }
   
   .progress-section {
-    background: rgba(15, 23, 42, 0.5);
+    background: #111827;
+    border-color: #374151;
   }
   
   .search-input,
   .filter-select {
-    background: rgba(30, 41, 59, 0.9);
-    color: #f1f5f9;
-    border-color: rgba(100, 116, 139, 0.3);
+    background: #1f2937;
+    color: #f9fafb;
+    border-color: #374151;
+  }
+  
+  .search-input:focus,
+  .filter-select:focus {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
   }
   
   .modal-content {
-    background: #1e293b;
-    color: #f1f5f9;
+    background: #1f2937;
+    color: #f9fafb;
+    border-color: #374151;
   }
   
   .modal-header {
-    border-color: rgba(100, 116, 139, 0.3);
+    border-color: #374151;
   }
   
   .topic-preview {
-    background: rgba(15, 23, 42, 0.5);
+    background: #111827;
+    border-color: #374151;
+  }
+  
+  .modal-close {
+    background: #374151;
+    color: #9ca3af;
+  }
+  
+  .btn-secondary {
+    background: #374151;
+    color: #d1d5db;
+    border-color: #4b5563;
+  }
+  
+  .btn-secondary:hover {
+    background: #4b5563;
+    border-color: #6b7280;
   }
 }
 
@@ -1451,7 +1530,7 @@ export default {
     box-shadow: none;
     border: 1px solid #ccc;
     break-inside: avoid;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   
   .add-btn,
@@ -1461,27 +1540,6 @@ export default {
   
   .progress-section {
     background: #f5f5f5;
-  }
-}
-
-/* High Contrast Mode */
-@media (prefers-contrast: high) {
-  .lesson-card {
-    border: 2px solid #000;
-    background: #fff;
-  }
-  
-  .progress-bar {
-    background: #000;
-  }
-  
-  .progress-fill {
-    background: #000 !important;
-  }
-  
-  .btn-primary {
-    background: #000;
-    color: #fff;
   }
 }
 
@@ -1501,5 +1559,4 @@ export default {
     animation: none;
   }
 }
-
 </style>
