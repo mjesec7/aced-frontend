@@ -230,33 +230,6 @@ export default {
       return { message: errorMessage, originalError: error };
     },
 
-    // Clean up invalid topic references
-    async cleanupInvalidTopics(invalidTopicIds) {
-      if (!invalidTopicIds.length) return;
-      
-      console.log(`🧹 Cleaning up ${invalidTopicIds.length} invalid topic references:`, invalidTopicIds);
-      
-      try {
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) return;
-        
-        const headers = { Authorization: `Bearer ${token}` };
-        
-        // Remove invalid topics from user's study list
-        for (const topicId of invalidTopicIds) {
-          try {
-            await axios.delete(`${BASE_URL}/users/${this.userId}/study-list/${topicId}`, { headers });
-            console.log(`✅ Removed invalid topic ${topicId} from study list`);
-            this.invalidTopicsCleanedUp++;
-          } catch (error) {
-            console.warn(`⚠️ Failed to remove invalid topic ${topicId}:`, error.message);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error during cleanup:', error);
-      }
-    },
-
     async fetchRecommendations() {
       try {
         this.loadingRecommendations = true;
@@ -269,21 +242,9 @@ export default {
         
         const headers = { Authorization: `Bearer ${token}` };
         
-        // Try both endpoints for compatibility
-        let data = [];
-        try {
-          const response = await axios.get(`${BASE_URL}/users/${this.userId}/recommendations`, { headers });
-          data = response.data;
-        } catch (error) {
-          if (error.response?.status === 404) {
-            // Try alternative endpoint
-            console.log('🔄 Trying alternative recommendations endpoint...');
-            const response = await axios.get(`${BASE_URL}/recommendations/user/${this.userId}`, { headers });
-            data = response.data;
-          } else {
-            throw error;
-          }
-        }
+        // Use the correct endpoint from userRoutes: /:firebaseId/recommendations
+        const response = await axios.get(`${BASE_URL}/users/${this.userId}/recommendations`, { headers });
+        const data = response.data;
         
         this.recommendations = Array.isArray(data) ? data : [];
         this.extractSubjects(this.recommendations);
@@ -319,91 +280,79 @@ export default {
         
         const headers = { Authorization: `Bearer ${token}` };
         
-        // Get study list
-        const { data } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
-        console.log(`📋 Raw study list data:`, data);
+        // Get study list - backend now returns just the study list entries
+        const { data: studyListEntries } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
+        console.log(`📋 Raw study list data:`, studyListEntries);
         
-        if (!Array.isArray(data) || data.length === 0) {
+        if (!Array.isArray(studyListEntries) || studyListEntries.length === 0) {
           this.studyList = [];
           return;
         }
         
-        // Get user's progress for all lessons
+        // Get user's progress for all lessons - using the correct endpoint from userRoutes
         let userProgressData = [];
         try {
-          const progressResponse = await axios.get(`${BASE_URL}/progress`, {
-            headers,
-            params: { userId: this.userId }
-          });
-          userProgressData = progressResponse.data.data || [];
+          const progressResponse = await axios.get(`${BASE_URL}/users/${this.userId}/progress`, { headers });
+          // Handle the response structure from userProgressController
+          userProgressData = progressResponse.data?.data || progressResponse.data || [];
         } catch (progressError) {
           console.warn('⚠️ Failed to load progress data:', progressError.message);
           // Continue without progress data
         }
         
-        // Track invalid topics for cleanup
-        const invalidTopicIds = [];
+        // Now process each study list entry to get full topic data
         const validTopics = [];
         
-        // Process each study list item with improved error handling
-        const topicPromises = data.map(async (item) => {
-          if (!item.topicId) {
-            console.warn('⚠️ Study list item missing topicId:', item);
+        const topicPromises = studyListEntries.map(async (entry) => {
+          if (!entry.topicId) {
+            console.warn('⚠️ Study list entry missing topicId:', entry);
             return null;
           }
           
           try {
-            console.log(`🔍 Processing topic: ${item.topicId}`);
+            console.log(`🔍 Processing topic: ${entry.topicId}`);
             
-            // First, check if the topic exists
-            const topicRes = await axios.get(`${BASE_URL}/topics/${item.topicId}`, { 
+            // Fetch the full topic data
+            const topicRes = await axios.get(`${BASE_URL}/topics/${entry.topicId}`, { 
               headers,
-              timeout: 10000,
-              validateStatus: (status) => status < 500 // Don't throw on 404
+              timeout: 10000
             });
-            
-            if (topicRes.status === 404) {
-              console.warn(`🗑️ Topic ${item.topicId} doesn't exist - marking for cleanup`);
-              invalidTopicIds.push(item.topicId);
-              return null;
-            }
             
             // Handle the response structure properly
             const topicData = topicRes.data?.data || topicRes.data;
             
             if (!topicData || !topicData._id) {
-              console.warn(`⚠️ Invalid topic data structure for ${item.topicId}`);
-              invalidTopicIds.push(item.topicId);
+              console.warn(`⚠️ Invalid topic data structure for ${entry.topicId}`);
               return null;
             }
             
             console.log(`✅ Topic found: ${this.getTopicName(topicData)}`);
             
-            // Get lessons - handle both embedded and separate fetch
+            // Get lessons for this topic
             let lessons = [];
             
-            if (topicData.lessons && Array.isArray(topicData.lessons)) {
+            if (topicData.lessons && Array.isArray(topicData.lessons) && topicData.lessons.length > 0) {
               // Lessons are already embedded in topic response
               lessons = topicData.lessons;
             } else {
               // Fetch lessons separately
               try {
-                const lessonsRes = await axios.get(`${BASE_URL}/lessons/topic/${item.topicId}`, { 
+                const lessonsRes = await axios.get(`${BASE_URL}/lessons/topic/${entry.topicId}`, { 
                   headers,
-                  timeout: 10000,
-                  validateStatus: (status) => status < 500
+                  timeout: 10000
                 });
                 
                 if (lessonsRes.status === 200) {
-                  lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
+                  lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : 
+                           Array.isArray(lessonsRes.data?.data) ? lessonsRes.data.data : [];
                 }
               } catch (lessonsError) {
-                console.warn(`⚠️ Failed to fetch lessons for topic ${item.topicId}:`, lessonsError.message);
+                console.warn(`⚠️ Failed to fetch lessons for topic ${entry.topicId}:`, lessonsError.message);
                 // Continue with empty lessons
               }
             }
             
-            console.log(`✅ Found ${lessons.length} lessons for topic ${item.topicId}`);
+            console.log(`✅ Found ${lessons.length} lessons for topic ${entry.topicId}`);
             
             // Calculate progress for this topic
             let completedLessons = 0;
@@ -411,9 +360,10 @@ export default {
             let totalPoints = 0;
             
             lessons.forEach(lesson => {
-              const progress = userProgressData.find(p => 
-                (p.lessonId?._id || p.lessonId) === lesson._id
-              );
+              const progress = userProgressData.find(p => {
+                const progressLessonId = p.lessonId?._id || p.lessonId;
+                return progressLessonId?.toString() === lesson._id?.toString();
+              });
               
               if (progress && progress.completed) {
                 completedLessons++;
@@ -449,13 +399,7 @@ export default {
             };
             
           } catch (error) {
-            console.error(`❌ Unexpected error processing topic ${item.topicId}:`, error);
-            
-            // If it's a 404, mark for cleanup
-            if (error.response?.status === 404) {
-              invalidTopicIds.push(item.topicId);
-            }
-            
+            console.error(`❌ Error processing topic ${entry.topicId}:`, error);
             return null;
           }
         });
@@ -470,15 +414,10 @@ export default {
           }
         });
         
-        // Clean up invalid topics
-        if (invalidTopicIds.length > 0) {
-          await this.cleanupInvalidTopics(invalidTopicIds);
-        }
-        
         this.studyList = validTopics;
         this.extractSubjects(this.studyList);
         
-        console.log(`✅ Study list loaded: ${validTopics.length} valid topics, ${invalidTopicIds.length} invalid topics cleaned up`);
+        console.log(`✅ Study list loaded: ${validTopics.length} valid topics`);
         
       } catch (err) {
         const errorInfo = this.handleApiError(err, 'fetch-study-list');
@@ -521,21 +460,26 @@ export default {
         
         const headers = { Authorization: `Bearer ${token}` };
         const url = `${BASE_URL}/users/${this.userId}/study-list`;
+        
+        // Updated payload to match backend expectations
         const payload = {
           subject: topic.subject,
           level: topic.level,
-          topic: this.getTopicName(topic),
-          topicId: topic._id
+          topic: this.getTopicName(topic), // This becomes the 'name' field
+          topicId: topic._id // Make sure this is a valid ObjectId string
         };
         
         await axios.post(url, payload, { headers });
         await this.fetchStudyList();
+        
+        // Remove from recommendations
         this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
         
         console.log(`✅ Added topic to study list: ${this.getTopicName(topic)}`);
         
       } catch (err) {
         const errorInfo = this.handleApiError(err, 'add-topic');
+        console.error('❌ Add topic error details:', err.response?.data);
         alert(`Error adding topic: ${errorInfo.message}`);
       }
     },
@@ -559,7 +503,7 @@ export default {
         // Remove from UI immediately for better UX
         this.studyList = this.studyList.filter(topic => topic._id !== id);
         
-        // Remove from backend
+        // Remove from backend using the correct endpoint
         const token = await auth.currentUser?.getIdToken();
         if (token) {
           const headers = { Authorization: `Bearer ${token}` };
