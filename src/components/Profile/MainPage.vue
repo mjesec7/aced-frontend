@@ -285,7 +285,7 @@ export default {
         const invalidTopicIds = [];
         const validTopics = [];
         
-        // Process each study list item with better error handling
+        // Process each study list item with improved error handling
         for (const item of data) {
           try {
             if (!item.topicId) {
@@ -293,33 +293,69 @@ export default {
               continue;
             }
             
-            console.log(`🔍 Fetching topic: ${item.topicId}`);
+            console.log(`🔍 Processing topic: ${item.topicId}`);
             
-            // Get topic details with timeout
-            const topicPromise = axios.get(`${BASE_URL}/topics/${item.topicId}`, { 
-              headers,
-              timeout: 10000 // 10 second timeout
-            });
-            
-            const lessonsPromise = axios.get(`${BASE_URL}/lessons/topic/${item.topicId}`, { 
-              headers,
-              timeout: 10000 
-            });
-            
-            const [topicRes, lessonsRes] = await Promise.all([topicPromise, lessonsPromise]);
-            
-            // Validate responses
-            if (!topicRes.data || !topicRes.data._id) {
-              console.warn(`⚠️ Invalid topic data for ${item.topicId}`);
-              invalidTopicIds.push(item.topicId);
-              continue;
+            // First, check if the topic exists
+            let topicRes;
+            try {
+              topicRes = await axios.get(`${BASE_URL}/topics/${item.topicId}`, { 
+                headers,
+                timeout: 10000 // 10 second timeout
+              });
+              
+              // Validate topic response
+              if (!topicRes.data || !topicRes.data._id) {
+                console.warn(`⚠️ Invalid topic data structure for ${item.topicId}`);
+                invalidTopicIds.push(item.topicId);
+                continue;
+              }
+              
+              console.log(`✅ Topic found: ${topicRes.data.name?.en || 'Unknown'}`);
+              
+            } catch (topicError) {
+              console.warn(`⚠️ Topic ${item.topicId} fetch failed:`, topicError.message);
+              
+              if (topicError.response?.status === 404) {
+                console.warn(`🗑️ Topic ${item.topicId} doesn't exist - marking for cleanup`);
+                invalidTopicIds.push(item.topicId);
+              } else if (topicError.code === 'ECONNABORTED') {
+                console.warn(`⏰ Topic ${item.topicId} request timed out`);
+              } else {
+                console.error(`❌ Unexpected error fetching topic ${item.topicId}:`, topicError);
+              }
+              continue; // Skip this topic entirely
             }
             
-            const lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
+            // Now fetch lessons for this valid topic
+            let lessons = [];
+            try {
+              console.log(`📚 Fetching lessons for topic: ${item.topicId}`);
+              const lessonsRes = await axios.get(`${BASE_URL}/lessons/topic/${item.topicId}`, { 
+                headers,
+                timeout: 10000 
+              });
+              
+              lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
+              console.log(`✅ Found ${lessons.length} lessons for topic ${item.topicId}`);
+              
+            } catch (lessonsError) {
+              console.warn(`⚠️ Failed to fetch lessons for topic ${item.topicId}:`, lessonsError.message);
+              
+              // Check if it's a server error vs topic not having lessons
+              if (lessonsError.response?.status === 404) {
+                console.log(`ℹ️ Topic ${item.topicId} has no lessons (404 response)`);
+                lessons = []; // Continue with empty lessons - topic exists but has no lessons
+              } else if (lessonsError.code === 'ECONNABORTED') {
+                console.warn(`⏰ Lessons request timed out for topic ${item.topicId}`);
+                lessons = []; // Continue with empty lessons
+              } else {
+                console.error(`❌ Unexpected error fetching lessons for topic ${item.topicId}:`, lessonsError);
+                lessons = []; // Continue anyway
+              }
+            }
             
             if (lessons.length === 0) {
-              console.warn(`⚠️ No lessons found for topic ${item.topicId}`);
-              // Don't add to invalid list - topic exists but has no lessons
+              console.log(`ℹ️ Topic ${item.topicId} (${topicRes.data.name?.en || 'Unknown'}) has no lessons`);
             }
             
             // Calculate progress for this topic
@@ -366,18 +402,11 @@ export default {
             };
             
             validTopics.push(enrichedTopic);
-            console.log(`✅ Successfully processed topic: ${topicRes.data.name?.en || 'Unknown'}`);
+            console.log(`✅ Successfully processed topic: ${topicRes.data.name?.en || 'Unknown'} (${lessons.length} lessons, ${progressPercent}% complete)`);
             
           } catch (error) {
-            console.warn(`⚠️ Failed to process topic ${item.topicId}:`, error.message);
-            
-            // Check if it's a 404 (topic doesn't exist)
-            if (error.response?.status === 404) {
-              console.warn(`🗑️ Topic ${item.topicId} not found - marking for cleanup`);
-              invalidTopicIds.push(item.topicId);
-            } else {
-              console.error(`❌ Unexpected error for topic ${item.topicId}:`, error);
-            }
+            console.error(`❌ Unexpected error processing topic ${item.topicId}:`, error);
+            // Don't add to invalid list for unexpected errors - might be temporary network issues
           }
         }
         
@@ -395,6 +424,7 @@ export default {
         const errorInfo = this.handleApiError(err, 'fetch-study-list');
         this.errors.studyList = errorInfo.message;
         this.studyList = [];
+        console.error('❌ Critical error in fetchStudyList:', err);
       } finally {
         this.loadingStudyList = false;
       }
@@ -477,6 +507,7 @@ export default {
     async removeStudyCard(id) {
       try {
         // Remove from UI immediately for better UX
+        const removedTopic = this.studyList.find(topic => topic._id === id);
         this.studyList = this.studyList.filter(topic => topic._id !== id);
         
         // Remove from backend
