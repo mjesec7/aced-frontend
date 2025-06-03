@@ -676,11 +676,23 @@ export default {
     const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`;
     
     // Enhanced body structure to match backend expectations
+    // Fix topicId to ensure it's a string, not an object
+    let topicId = this.selectedTopic.topicId;
+    if (typeof topicId === 'object' && topicId !== null) {
+      // If topicId is an object, try to extract the actual ID
+      topicId = topicId._id || topicId.id || String(topicId);
+    } else if (topicId) {
+      topicId = String(topicId);
+    } else {
+      console.error('❌ No valid topicId found in selectedTopic:', this.selectedTopic);
+      throw new Error('No valid topicId provided');
+    }
+    
     const body = {
       subject: this.selectedTopic.subject || '',
       level: this.selectedTopic.level || 'Базовый',
       topic: this.selectedTopic.name || '',
-      topicId: this.selectedTopic.topicId,
+      topicId: topicId, // Use the processed topicId
       // Additional fields that might be expected
       lessonCount: this.selectedTopic.lessonCount || 0,
       totalTime: this.selectedTopic.totalTime || 0,
@@ -747,6 +759,111 @@ export default {
     
     alert(errorMessage);
     this.showAddModal = false;
+  }
+},
+// Replace your processTopics method with this fixed version
+processTopics() {
+  try {
+    const topicsMap = new Map();
+    
+    if (!Array.isArray(this.lessons)) {
+      this.lessons = [];
+    }
+
+    // Group lessons by topic
+    this.lessons.forEach(lesson => {
+      if (!lesson) return;
+      
+      // Fix topicId extraction to ensure it's always a string
+      let topicId = lesson.topicId;
+      if (typeof topicId === 'object' && topicId !== null) {
+        // If topicId is an object, extract the actual ID
+        topicId = topicId._id || topicId.id || String(topicId);
+      } else if (topicId) {
+        topicId = String(topicId);
+      } else {
+        console.warn('⚠️ Lesson without valid topicId:', lesson);
+        return; // Skip lessons without valid topicId
+      }
+      
+      const name = this.getTopicName(lesson);
+      
+      if (!topicId || !name) {
+        console.warn('⚠️ Skipping lesson - missing topicId or name:', { topicId, name, lesson });
+        return;
+      }
+
+      if (!topicsMap.has(topicId)) {
+        topicsMap.set(topicId, {
+          topicId: topicId, // Ensure this is always a string
+          name: String(name || ''),
+          subject: String(lesson.subject || ''),
+          level: String(lesson.level || 'Базовый'),
+          type: lesson.type || 'free',
+          lessonCount: 1,
+          totalTime: 10,
+          lessons: [lesson] // Keep track of lessons
+        });
+      } else {
+        const entry = topicsMap.get(topicId);
+        if (entry) {
+          entry.lessonCount += 1;
+          entry.totalTime += 10;
+          entry.lessons.push(lesson);
+        }
+      }
+    });
+
+    console.log('📚 Topics grouped:', topicsMap.size);
+
+    // Add progress and study plan info
+    this.originalTopics = [...topicsMap.values()].map(topic => {
+      if (!topic) return null;
+      
+      // Calculate progress based on actual lesson completion
+      let progress = 0;
+      
+      // Method 1: Try to get from userProgress object
+      if (this.userProgress[topic.topicId]) {
+        progress = this.userProgress[topic.topicId];
+      } 
+      // Method 2: Try by topic name
+      else if (this.userProgress[topic.name]) {
+        progress = this.userProgress[topic.name];
+      }
+      // Method 3: Calculate from individual lesson progress if available
+      else if (topic.lessons && topic.lessons.length > 0 && this.lessonProgress) {
+        let completedLessons = 0;
+        topic.lessons.forEach(lesson => {
+          // Check if this lesson is completed in lessonProgress
+          if (this.lessonProgress[lesson._id]) {
+            completedLessons++;
+          }
+        });
+        
+        if (topic.lessons.length > 0) {
+          progress = Math.round((completedLessons / topic.lessons.length) * 100);
+        }
+      }
+      
+      console.log(`📊 Topic "${topic.name}" (${topic.topicId}) - Progress: ${progress}%`);
+      
+      return {
+        ...topic,
+        topicId: String(topic.topicId), // Ensure topicId is always a string
+        progress: progress,
+        inStudyPlan: this.studyPlanTopics.includes(String(topic.topicId))
+      };
+    }).filter(topic => topic !== null);
+
+    console.log('✅ Original topics processed:', this.originalTopics.length);
+    this.applyFilters();
+    this.loading = false;
+  } catch (error) {
+    console.error('❌ Error processing topics:', error);
+    this.originalTopics = [];
+    this.groupedTopics = [];
+    this.loading = false;
   }
 },
 
