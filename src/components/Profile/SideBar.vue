@@ -133,10 +133,37 @@ export default {
     },
     isActive(name) {
       const path = this.$route.path;
-      if (name === 'main') return path === '/profile/main';
-      if (name === 'catalogue') return path === '/profile/catalogue';
-      if (name === 'settings') return path === '/settings';
-      if (name === 'tests') return path === '/profile/tests';
+      
+      // Handle specific route matches
+      if (name === 'main') {
+        return path === '/profile/main' || path === '/profile' || path === '/profile/';
+      }
+      if (name === 'catalogue') {
+        return path === '/profile/catalogue';
+      }
+      if (name === 'analytics') {
+        return path === '/profile/analytics';
+      }
+      if (name === 'goal') {
+        return path === '/profile/goal';
+      }
+      if (name === 'diary') {
+        return path === '/profile/diary';
+      }
+      if (name === 'homework') {
+        return path === '/profile/homework';
+      }
+      if (name === 'homeworks') {
+        return path === '/profile/homeworks' || path.startsWith('/profile/homeworks/');
+      }
+      if (name === 'tests') {
+        return path === '/profile/tests' || path.startsWith('/profile/tests/');
+      }
+      if (name === 'settings') {
+        return path === '/settings';
+      }
+      
+      // Fallback for any other routes
       return path.includes(`/profile/${name}`);
     }
   }
