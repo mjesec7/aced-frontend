@@ -56,14 +56,14 @@
       <p>Загрузка домашних заданий...</p>
     </div>
     
-    <div v-else-if="hasNoResults" class="empty">
+    <div v-else-if="displayableHomeworks.length === 0 && homeworks.length > 0" class="empty">
       <div class="empty-icon">🔍</div>
       <h3>Ничего не найдено</h3>
       <p>Попробуйте изменить фильтры поиска</p>
       <button @click="clearFilters" class="clear-filters-btn">Очистить фильтры</button>
     </div>
 
-    <div v-else-if="hasNoHomeworks" class="empty">
+    <div v-else-if="homeworks.length === 0" class="empty">
       <div class="empty-icon">📝</div>
       <h3>Нет домашних заданий</h3>
       <p>Домашние задания появятся после начала курса или завершения урока</p>
@@ -71,73 +71,73 @@
 
     <div v-else class="homework-cards">
       <TransitionGroup name="card" tag="div" class="cards-container">
-        <template v-for="hw in displayedHomeworks" :key="hw.lessonId">
-          <div 
-            class="homework-card"
-            :class="{ 'urgent': isUrgent(hw) }"
-          >
-            <div class="card-header">
-              <div class="title-section">
-                <h3>{{ hw.lessonName || 'Без названия' }}</h3>
-                <span v-if="hw.subject" class="subject-tag">{{ hw.subject }}</span>
+        <div 
+          v-for="hw in displayableHomeworks" 
+          :key="hw.lessonId || `temp-${Math.random()}`" 
+          class="homework-card"
+          :class="{ 'urgent': isUrgent(hw) }"
+        >
+          <div class="card-header">
+            <div class="title-section">
+              <h3>{{ hw.lessonName || 'Без названия' }}</h3>
+              <span v-if="hw.subject" class="subject-tag">{{ hw.subject }}</span>
+            </div>
+            <span class="status-chip" :class="statusClass(hw)">
+              {{ statusLabel(hw) }}
+            </span>
+          </div>
+
+          <div class="card-body">
+            <div class="progress-section">
+              <div class="progress-info">
+                <strong>Прогресс:</strong>
+                <span v-if="hw.record?.completed" class="score-badge success">
+                  {{ hw.record.score }}% ✨
+                </span>
+                <span v-else-if="hw.record" class="score-badge progress">
+                  {{ hw.record.score || 0 }}% 🔄
+                </span>
+                <span v-else class="score-badge pending">Не начато ⏳</span>
               </div>
-              <span class="status-chip" :class="statusClass(hw)">
-                {{ statusLabel(hw) }}
+              
+              <div class="progress-bar">
+                <div 
+                  class="progress-fill" 
+                  :style="{ width: getProgressWidth(hw) }"
+                  :class="getProgressClass(hw)"
+                ></div>
+              </div>
+            </div>
+
+            <div v-if="hw.dueDate" class="due-date">
+              <span class="due-label">📅 Срок сдачи:</span>
+              <span class="due-value" :class="{ 'overdue': isOverdue(hw) }">
+                {{ formatDate(hw.dueDate) }}
               </span>
             </div>
 
-            <div class="card-body">
-              <div class="progress-section">
-                <div class="progress-info">
-                  <strong>Прогресс:</strong>
-                  <span v-if="hw.record?.completed" class="score-badge success">
-                    {{ hw.record.score }}% ✨
-                  </span>
-                  <span v-else-if="hw.record" class="score-badge progress">
-                    {{ hw.record.score || 0 }}% 🔄
-                  </span>
-                  <span v-else class="score-badge pending">Не начато ⏳</span>
-                </div>
-                
-                <div class="progress-bar">
-                  <div 
-                    class="progress-fill" 
-                    :style="{ width: getProgressWidth(hw) }"
-                    :class="getProgressClass(hw)"
-                  ></div>
-                </div>
+            <div v-if="hw.difficulty" class="difficulty">
+              <span class="difficulty-label">⚡ Сложность:</span>
+              <div class="difficulty-stars">
+                <span v-for="i in 5" :key="i" class="star" :class="{ 'filled': i <= hw.difficulty }">★</span>
               </div>
-
-              <div v-if="hw.dueDate" class="due-date">
-                <span class="due-label">📅 Срок сдачи:</span>
-                <span class="due-value" :class="{ 'overdue': isOverdue(hw) }">
-                  {{ formatDate(hw.dueDate) }}
-                </span>
-              </div>
-
-              <div v-if="hw.difficulty" class="difficulty">
-                <span class="difficulty-label">⚡ Сложность:</span>
-                <div class="difficulty-stars">
-                  <span v-for="i in 5" :key="i" class="star" :class="{ 'filled': i <= hw.difficulty }">★</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="card-footer">
-              <div class="footer-info">
-                <span v-if="hw.record?.lastAttempt" class="last-attempt">
-                  Последняя попытка: {{ formatDate(hw.record.lastAttempt) }}
-                </span>
-              </div>
-              <button @click="goToHomework(hw.lessonId)" class="action-btn">
-                <span v-if="!hw.record">Начать</span>
-                <span v-else-if="!hw.record.completed">Продолжить</span>
-                <span v-else>Просмотреть</span>
-                →
-              </button>
             </div>
           </div>
-        </template>
+
+          <div class="card-footer">
+            <div class="footer-info">
+              <span v-if="hw.record?.lastAttempt" class="last-attempt">
+                Последняя попытка: {{ formatDate(hw.record.lastAttempt) }}
+              </span>
+            </div>
+            <button @click="goToHomework(hw.lessonId)" class="action-btn">
+              <span v-if="!hw.record">Начать</span>
+              <span v-else-if="!hw.record.completed">Продолжить</span>
+              <span v-else>Просмотреть</span>
+              →
+            </button>
+          </div>
+        </div>
       </TransitionGroup>
     </div>
   </div>
@@ -163,8 +163,23 @@ export default {
       const subjects = [...new Set(this.homeworks.map(hw => hw.subject).filter(Boolean))];
       return subjects.sort();
     },
-    filteredHomeworks() {
+    validHomeworks() {
+      // Filter out homeworks without valid lessonId
       return this.homeworks.filter(hw => {
+        const hasValidId = hw.lessonId && 
+                          hw.lessonId !== 'null' && 
+                          hw.lessonId !== 'undefined' &&
+                          hw.lessonId !== '';
+        
+        if (!hasValidId) {
+          console.warn('⚠️ Homework without valid lessonId:', hw);
+        }
+        
+        return hasValidId;
+      });
+    },
+    filteredHomeworks() {
+      return this.validHomeworks.filter(hw => {
         const matchesSubject = !this.selectedSubject || hw.subject === this.selectedSubject;
         const matchesStatus = !this.selectedStatus || this.getStatus(hw) === this.selectedStatus;
         const matchesSearch = !this.searchQuery || 
@@ -173,38 +188,42 @@ export default {
         return matchesSubject && matchesStatus && matchesSearch;
       });
     },
-    displayedHomeworks() {
-      // This computed property ensures we have a clean separation for the v-for directive
-      return this.filteredHomeworks;
-    },
-    hasNoResults() {
-      return this.filteredHomeworks.length === 0 && this.homeworks.length > 0;
-    },
-    hasNoHomeworks() {
-      return this.homeworks.length === 0;
+    displayableHomeworks() {
+      // Final filtered list that's safe to display
+      // This ensures we never try to render a homework without a valid lessonId
+      return this.filteredHomeworks.filter(hw => hw.lessonId);
     },
     totalHomeworks() {
-      return this.homeworks.length;
+      return this.validHomeworks.length;
     },
     completedHomeworks() {
-      return this.homeworks.filter(hw => hw.record?.completed).length;
+      return this.validHomeworks.filter(hw => hw.record?.completed).length;
     },
     inProgressHomeworks() {
-      return this.homeworks.filter(hw => hw.record && !hw.record.completed).length;
+      return this.validHomeworks.filter(hw => hw.record && !hw.record.completed).length;
     }
   },
   methods: {
     goToHomework(lessonId) {
-      if (!lessonId) {
-        console.error('❌ No lessonId provided');
+      console.log('🚀 goToHomework called with:', lessonId, typeof lessonId);
+      
+      if (!lessonId || lessonId === null || lessonId === 'null' || lessonId === 'undefined') {
+        console.error('❌ Invalid lessonId provided:', lessonId);
         this.$toast?.error('Ошибка: ID урока не найден');
         return;
       }
       
       // Ensure lessonId is a string and not null/undefined
-      const validLessonId = String(lessonId);
+      const validLessonId = String(lessonId).trim();
       
-      console.log('🚀 Navigating to homework for lesson:', validLessonId);
+      // Double-check the ID is valid
+      if (!validLessonId || validLessonId === 'null' || validLessonId === 'undefined' || validLessonId === '') {
+        console.error('❌ LessonId validation failed:', validLessonId);
+        this.$toast?.error('Ошибка: Некорректный ID урока');
+        return;
+      }
+      
+      console.log('✅ Navigating to homework for lesson:', validLessonId);
       
       // Use programmatic navigation with validation
       this.$router.push({
@@ -281,14 +300,19 @@ export default {
 
           console.log('✅ Homework data received:', homeworksResponse);
           
+          // Log the raw data structure for debugging
+          if (homeworksResponse.data && homeworksResponse.data.length > 0) {
+            console.log('📊 First homework item structure:', homeworksResponse.data[0]);
+          }
+          
           // Handle the response structure
           const homeworkData = homeworksResponse.data || homeworksResponse;
           
           if (Array.isArray(homeworkData) && homeworkData.length > 0) {
             // Process homework data
             this.homeworks = homeworkData.map(hw => ({
-              lessonId: hw.lessonId,
-              lessonName: hw.lessonName || `Урок ${hw.lessonId}`,
+              lessonId: hw.lessonId || hw._id || hw.id, // Multiple fallbacks for ID
+              lessonName: hw.lessonName || `Урок ${hw.lessonId || hw._id || 'Unknown'}`,
               subject: hw.subject || 'Общий',
               record: hw.completed !== undefined ? {
                 completed: hw.completed || false,
@@ -300,7 +324,7 @@ export default {
               dueDate: hw.dueDate,
               difficulty: hw.difficulty || 3,
               courseId: hw.courseId
-            }));
+            })).filter(hw => hw.lessonId && hw.lessonId !== 'null' && hw.lessonId !== 'undefined'); // Filter out invalid entries
 
             console.log(`✅ Processed ${this.homeworks.length} homeworks`);
             return;
@@ -347,8 +371,8 @@ export default {
           const homeworkData = homeworkResults.find(r => r.lessonId === lesson._id)?.homework;
           
           return {
-            lessonId: lesson._id,
-            lessonName: lesson.lessonName || lesson.title || `Урок ${lesson._id}`,
+            lessonId: lesson._id || lesson.id,
+            lessonName: lesson.lessonName || lesson.title || `Урок ${lesson._id || lesson.id}`,
             subject: lesson.subject || 'Общий',
             record: homeworkData ? {
               completed: homeworkData.completed || false,
