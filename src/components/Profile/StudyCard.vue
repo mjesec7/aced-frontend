@@ -223,6 +223,8 @@ export default {
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
+  /* Add padding-right to ensure space for close button */
+  padding-right: 40px;
 }
 
 .topic-info {
@@ -274,6 +276,9 @@ export default {
   width: 32px;
   height: 32px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  /* Ensure proper image loading */
+  object-fit: contain;
+  background: transparent;
 }
 
 .stats {
@@ -448,126 +453,192 @@ export default {
   font-size: 0.8rem;
 }
 
+/* FIXED: Better close button positioning and accessibility */
 .close-btn {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #e5e5e5;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e5e7eb;
   border-radius: 50%;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: #6b7280;
   cursor: pointer;
   transition: all 0.2s ease;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
+  z-index: 10;
+  /* Improved accessibility */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .close-btn:hover {
   background: #ef4444;
   color: white;
   border-color: #ef4444;
-  transform: scale(1.1);
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
+.close-btn:active {
+  transform: scale(1.05);
+}
+
+/* FIXED: Stable modal without flickering */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
-  backdrop-filter: blur(4px);
+  z-index: 99999;
+  backdrop-filter: blur(8px);
+  /* Prevent flickering */
+  animation: fadeIn 0.2s ease-out;
+  /* Prevent interaction with background */
+  pointer-events: all;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
 }
 
 .modal-content {
   background: white;
-  border: 1px solid #e5e5e5;
+  border: 1px solid #e5e7eb;
   padding: 32px;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
   text-align: center;
-  max-width: 400px;
+  max-width: 420px;
   width: 90%;
+  /* Prevent modal from flickering */
+  transform: scale(1);
+  animation: modalSlideIn 0.3s ease-out;
+  /* Ensure modal stays on top */
+  position: relative;
+  z-index: 100000;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .modal-icon {
-  font-size: 2.5rem;
-  margin-bottom: 16px;
+  font-size: 3rem;
+  margin-bottom: 20px;
+  animation: bounceIn 0.5s ease-out;
+}
+
+@keyframes bounceIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .modal-content h4 {
-  color: #1a1a1a;
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin: 0 0 12px 0;
+  color: #111827;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+  line-height: 1.3;
 }
 
 .modal-content p {
   color: #374151;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 400;
-  margin: 0 0 8px 0;
-  line-height: 1.5;
+  margin: 0 0 12px 0;
+  line-height: 1.6;
 }
 
 .warning-text {
-  color: #ef4444 !important;
-  font-weight: 500 !important;
-  margin-bottom: 24px !important;
+  color: #dc2626 !important;
+  font-weight: 600 !important;
+  margin-bottom: 28px !important;
+  background: #fef2f2;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
 }
 
 .modal-actions {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
 .confirm-btn {
-  background: #ef4444;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
-  padding: 10px 24px;
+  padding: 12px 28px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 700;
+  font-size: 0.95rem;
   transition: all 0.2s ease;
-  min-width: 100px;
+  min-width: 120px;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
 }
 
 .confirm-btn:hover {
-  background: #dc2626;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+}
+
+.confirm-btn:active {
+  transform: translateY(0);
 }
 
 .cancel-btn {
-  background: white;
+  background: #f9fafb;
   color: #374151;
   border: 1px solid #d1d5db;
-  padding: 10px 24px;
-  border-radius: 8px;
+  padding: 12px 28px;
+  border-radius: 10px;
   cursor: pointer;
-  font-weight: 500;
-  font-size: 0.9rem;
+  font-weight: 600;
+  font-size: 0.95rem;
   transition: all 0.2s ease;
-  min-width: 100px;
+  min-width: 120px;
 }
 
 .cancel-btn:hover {
-  background: #f9fafb;
+  background: #f3f4f6;
   border-color: #9ca3af;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cancel-btn:active {
+  transform: translateY(0);
 }
 
 /* Responsive adjustments */
@@ -585,6 +656,8 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+    /* Maintain padding for close button on mobile */
+    padding-right: 35px;
   }
   
   .achievement-section {
@@ -604,6 +677,45 @@ export default {
   .continue-btn,
   .overview-btn {
     flex: 1;
+  }
+  
+  /* Adjust close button for mobile */
+  .close-btn {
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+  
+  .modal-content {
+    padding: 28px 24px;
+    margin: 20px;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .confirm-btn,
+  .cancel-btn {
+    width: 100%;
+    min-width: unset;
+  }
+}
+
+@media (max-width: 480px) {
+  .close-btn {
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
+  .card-header {
+    padding-right: 32px;
   }
 }
 </style>
