@@ -8,6 +8,12 @@
 
     <div v-if="loading" class="loading">Загрузка...</div>
 
+    <div v-else-if="error" class="error">
+      <div class="error-icon">⚠️</div>
+      <h3>{{ error }}</h3>
+      <router-link to="/profile/homeworks" class="error-button">Вернуться к списку</router-link>
+    </div>
+
     <div v-else-if="!lessonId" class="error">
       <div class="error-icon">⚠️</div>
       <h3>Ошибка загрузки</h3>
@@ -63,6 +69,7 @@ export default {
       lessonName: '',
       userAnswers: [],
       loading: true,
+      error: null,
     };
   },
   computed: {
@@ -129,16 +136,35 @@ export default {
         const userId = user.uid;
 
         // Fetch lesson data to get homework questions
-        const { data: lesson } = await api.get(`/lessons/${lessonId}`);
-        console.log('✅ Lesson data loaded:', lesson.lessonName);
-        
-        this.lessonName = lesson.lessonName || lesson.title || 'Урок';
-        this.questions = Array.isArray(lesson.homework) ? lesson.homework : [];
-        this.userAnswers = this.questions.map(() => '');
+        try {
+          const { data: lesson } = await api.get(`/lessons/${lessonId}`);
+          console.log('✅ Lesson data loaded:', lesson.lessonName);
+          
+          this.lessonName = lesson.lessonName || lesson.title || 'Урок';
+          this.questions = Array.isArray(lesson.homework) ? lesson.homework : [];
+          this.userAnswers = this.questions.map(() => '');
 
-        if (!this.questions.length) {
-          console.warn('⚠️ Нет заданий в homework этого урока.');
-          return;
+          if (!this.questions.length) {
+            console.warn('⚠️ Нет заданий в homework этого урока.');
+            return;
+          }
+        } catch (lessonError) {
+          console.error('❌ Failed to load lesson:', lessonError);
+          
+          // If lesson not found, show appropriate error
+          if (lessonError.response && lessonError.response.status === 404) {
+            this.$toast?.error('Урок не найден');
+            this.error = 'Урок не найден. Возможно, он был удален.';
+            this.loading = false;
+            
+            // Redirect back to homework list after a delay
+            setTimeout(() => {
+              this.$router.push('/profile/homeworks');
+            }, 2000);
+            return;
+          }
+          
+          throw lessonError; // Re-throw if not a 404
         }
 
         // FIXED: Use correct API endpoint format
@@ -178,7 +204,20 @@ export default {
         }
       } catch (err) {
         console.error('❌ Ошибка загрузки домашки:', err);
-        this.$toast?.error('Ошибка загрузки домашки.');
+        
+        // Check if it's a 404 error (lesson not found)
+        if (err.response && err.response.status === 404) {
+          this.error = 'Урок не найден. Возможно, он был удален.';
+          this.$toast?.error('Урок не найден');
+          
+          // Redirect back to homework list after a delay
+          setTimeout(() => {
+            this.$router.push('/profile/homeworks');
+          }, 2000);
+        } else {
+          this.error = 'Ошибка загрузки домашнего задания';
+          this.$toast?.error('Ошибка загрузки домашки.');
+        }
       } finally {
         this.loading = false;
       }
