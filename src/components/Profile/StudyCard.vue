@@ -11,7 +11,6 @@
         </div>
       </div>
       <div class="achievement-section">
-        <img v-if="medal !== 'none'" :src="`/assets/medals/${medal}.png`" :alt="medal" class="medal-icon" />
         <div class="stats">
           <div class="stat-item">
             <span class="stat-value">{{ progress.completedLessons || 0 }}</span>
@@ -59,19 +58,21 @@
       </button>
     </div>
 
-    <!-- 🗑 Modal -->
-    <div v-if="showDeleteModal" class="modal-overlay">
-      <div class="modal-content">
-        <div class="modal-icon">🗑️</div>
-        <h4>Удалить курс?</h4>
-        <p>Вы уверены, что хотите удалить <strong>{{ displayName }}</strong>?</p>
-        <p class="warning-text">Это также удалит весь ваш прогресс по этому курсу.</p>
-        <div class="modal-actions">
-          <button class="confirm-btn" @click="confirmDelete">Удалить</button>
-          <button class="cancel-btn" @click="showDeleteModal = false">Отмена</button>
+    <!-- Delete Modal - Fixed Implementation -->
+    <Teleport to="body">
+      <div v-if="showDeleteModal" class="modal-overlay" @click.self="showDeleteModal = false">
+        <div class="modal-content" @click.stop>
+          <div class="modal-icon">🗑️</div>
+          <h4>Удалить курс?</h4>
+          <p>Вы уверены, что хотите удалить <strong>{{ displayName }}</strong>?</p>
+          <p class="warning-text">Это также удалит весь ваш прогресс по этому курсу.</p>
+          <div class="modal-actions">
+            <button class="confirm-btn" @click="confirmDelete">Удалить</button>
+            <button class="cancel-btn" @click="showDeleteModal = false">Отмена</button>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
@@ -84,7 +85,7 @@ export default {
   name: 'StudyCard',
   props: {
     topic: { type: Object, required: true },
-    progress: { type: Object, default: () => ({ percent: 0, medal: 'none' }) },
+    progress: { type: Object, default: () => ({ percent: 0 }) },
     lessons: { type: Array, default: () => [] }
   },
   data() {
@@ -102,23 +103,6 @@ export default {
     lessonProgress() {
       const val = parseFloat(this.progress.percent);
       return isNaN(val) ? 0 : Math.round(val);
-    },
-    medal() {
-      const percent = this.lessonProgress;
-      const stars = this.progress.stars || 0;
-      const totalLessons = this.progress.totalLessons || this.lessons.length || 1;
-      
-      if (percent === 100) {
-        const avgStars = totalLessons > 0 ? stars / totalLessons : 0;
-        if (avgStars >= 2.7) return 'gold';
-        else if (avgStars >= 1.5) return 'silver';
-        else return 'bronze';
-      } else if (percent >= 80) {
-        return 'silver';
-      } else if (percent >= 50) {
-        return 'bronze';
-      }
-      return 'none';
     },
     estimatedDuration() {
       const wordSource = ['explanation', 'content', 'examples']
@@ -176,6 +160,7 @@ export default {
         const url = `${import.meta.env.VITE_API_BASE_URL}/users/${userId}/study-list/${this.topic._id}`;
         await axios.delete(url, { headers });
         this.lessonExists = false;
+        this.showDeleteModal = false; // Close modal after successful deletion
         this.$emit('deleted', this.topic._id);
       } catch (err) {
         console.error('❌ Ошибка удаления:', err);
@@ -223,7 +208,6 @@ export default {
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
-  /* Add padding-right to ensure space for close button */
   padding-right: 40px;
 }
 
@@ -270,15 +254,6 @@ export default {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-}
-
-.medal-icon {
-  width: 32px;
-  height: 32px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-  /* Ensure proper image loading */
-  object-fit: contain;
-  background: transparent;
 }
 
 .stats {
@@ -453,7 +428,6 @@ export default {
   font-size: 0.8rem;
 }
 
-/* FIXED: Better close button positioning and accessibility */
 .close-btn {
   position: absolute;
   top: 12px;
@@ -473,7 +447,6 @@ export default {
   transition: all 0.2s ease;
   backdrop-filter: blur(8px);
   z-index: 10;
-  /* Improved accessibility */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -489,23 +462,20 @@ export default {
   transform: scale(1.05);
 }
 
-/* FIXED: Stable modal without flickering */
+/* Fixed Modal Styles - Using Teleport to body prevents glitching */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 99999;
+  z-index: 10000;
   backdrop-filter: blur(8px);
-  /* Prevent flickering */
-  animation: fadeIn 0.2s ease-out;
-  /* Prevent interaction with background */
-  pointer-events: all;
+  animation: fadeIn 0.3s ease-out;
 }
 
 @keyframes fadeIn {
@@ -528,12 +498,10 @@ export default {
   text-align: center;
   max-width: 420px;
   width: 90%;
-  /* Prevent modal from flickering */
-  transform: scale(1);
+  max-height: 90vh;
+  overflow-y: auto;
   animation: modalSlideIn 0.3s ease-out;
-  /* Ensure modal stays on top */
   position: relative;
-  z-index: 100000;
 }
 
 @keyframes modalSlideIn {
@@ -656,7 +624,6 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
-    /* Maintain padding for close button on mobile */
     padding-right: 35px;
   }
   
@@ -679,7 +646,6 @@ export default {
     flex: 1;
   }
   
-  /* Adjust close button for mobile */
   .close-btn {
     top: 10px;
     right: 10px;
