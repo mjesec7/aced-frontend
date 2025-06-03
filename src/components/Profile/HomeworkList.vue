@@ -56,14 +56,14 @@
       <p>Загрузка домашних заданий...</p>
     </div>
     
-    <div v-else-if="filteredHomeworks.length === 0 && homeworks.length > 0" class="empty">
+    <div v-else-if="hasNoResults" class="empty">
       <div class="empty-icon">🔍</div>
       <h3>Ничего не найдено</h3>
       <p>Попробуйте изменить фильтры поиска</p>
       <button @click="clearFilters" class="clear-filters-btn">Очистить фильтры</button>
     </div>
 
-    <div v-else-if="homeworks.length === 0" class="empty">
+    <div v-else-if="hasNoHomeworks" class="empty">
       <div class="empty-icon">📝</div>
       <h3>Нет домашних заданий</h3>
       <p>Домашние задания появятся после начала курса или завершения урока</p>
@@ -71,73 +71,73 @@
 
     <div v-else class="homework-cards">
       <TransitionGroup name="card" tag="div" class="cards-container">
-        <div 
-          v-for="hw in filteredHomeworks" 
-          :key="hw.lessonId" 
-          class="homework-card"
-          :class="{ 'urgent': isUrgent(hw) }"
-        >
-          <div class="card-header">
-            <div class="title-section">
-              <h3>{{ hw.lessonName || 'Без названия' }}</h3>
-              <span v-if="hw.subject" class="subject-tag">{{ hw.subject }}</span>
-            </div>
-            <span class="status-chip" :class="statusClass(hw)">
-              {{ statusLabel(hw) }}
-            </span>
-          </div>
-
-          <div class="card-body">
-            <div class="progress-section">
-              <div class="progress-info">
-                <strong>Прогресс:</strong>
-                <span v-if="hw.record?.completed" class="score-badge success">
-                  {{ hw.record.score }}% ✨
-                </span>
-                <span v-else-if="hw.record" class="score-badge progress">
-                  {{ hw.record.score || 0 }}% 🔄
-                </span>
-                <span v-else class="score-badge pending">Не начато ⏳</span>
+        <template v-for="hw in displayedHomeworks" :key="hw.lessonId">
+          <div 
+            class="homework-card"
+            :class="{ 'urgent': isUrgent(hw) }"
+          >
+            <div class="card-header">
+              <div class="title-section">
+                <h3>{{ hw.lessonName || 'Без названия' }}</h3>
+                <span v-if="hw.subject" class="subject-tag">{{ hw.subject }}</span>
               </div>
-              
-              <div class="progress-bar">
-                <div 
-                  class="progress-fill" 
-                  :style="{ width: getProgressWidth(hw) }"
-                  :class="getProgressClass(hw)"
-                ></div>
-              </div>
-            </div>
-
-            <div v-if="hw.dueDate" class="due-date">
-              <span class="due-label">📅 Срок сдачи:</span>
-              <span class="due-value" :class="{ 'overdue': isOverdue(hw) }">
-                {{ formatDate(hw.dueDate) }}
+              <span class="status-chip" :class="statusClass(hw)">
+                {{ statusLabel(hw) }}
               </span>
             </div>
 
-            <div v-if="hw.difficulty" class="difficulty">
-              <span class="difficulty-label">⚡ Сложность:</span>
-              <div class="difficulty-stars">
-                <span v-for="i in 5" :key="i" class="star" :class="{ 'filled': i <= hw.difficulty }">★</span>
+            <div class="card-body">
+              <div class="progress-section">
+                <div class="progress-info">
+                  <strong>Прогресс:</strong>
+                  <span v-if="hw.record?.completed" class="score-badge success">
+                    {{ hw.record.score }}% ✨
+                  </span>
+                  <span v-else-if="hw.record" class="score-badge progress">
+                    {{ hw.record.score || 0 }}% 🔄
+                  </span>
+                  <span v-else class="score-badge pending">Не начато ⏳</span>
+                </div>
+                
+                <div class="progress-bar">
+                  <div 
+                    class="progress-fill" 
+                    :style="{ width: getProgressWidth(hw) }"
+                    :class="getProgressClass(hw)"
+                  ></div>
+                </div>
+              </div>
+
+              <div v-if="hw.dueDate" class="due-date">
+                <span class="due-label">📅 Срок сдачи:</span>
+                <span class="due-value" :class="{ 'overdue': isOverdue(hw) }">
+                  {{ formatDate(hw.dueDate) }}
+                </span>
+              </div>
+
+              <div v-if="hw.difficulty" class="difficulty">
+                <span class="difficulty-label">⚡ Сложность:</span>
+                <div class="difficulty-stars">
+                  <span v-for="i in 5" :key="i" class="star" :class="{ 'filled': i <= hw.difficulty }">★</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="card-footer">
-            <div class="footer-info">
-              <span v-if="hw.record?.lastAttempt" class="last-attempt">
-                Последняя попытка: {{ formatDate(hw.record.lastAttempt) }}
-              </span>
+            <div class="card-footer">
+              <div class="footer-info">
+                <span v-if="hw.record?.lastAttempt" class="last-attempt">
+                  Последняя попытка: {{ formatDate(hw.record.lastAttempt) }}
+                </span>
+              </div>
+              <button @click="goToHomework(hw.lessonId)" class="action-btn">
+                <span v-if="!hw.record">Начать</span>
+                <span v-else-if="!hw.record.completed">Продолжить</span>
+                <span v-else>Просмотреть</span>
+                →
+              </button>
             </div>
-            <button @click="goToHomework(hw.lessonId)" class="action-btn">
-              <span v-if="!hw.record">Начать</span>
-              <span v-else-if="!hw.record.completed">Продолжить</span>
-              <span v-else>Просмотреть</span>
-              →
-            </button>
           </div>
-        </div>
+        </template>
       </TransitionGroup>
     </div>
   </div>
@@ -172,6 +172,16 @@ export default {
         
         return matchesSubject && matchesStatus && matchesSearch;
       });
+    },
+    displayedHomeworks() {
+      // This computed property ensures we have a clean separation for the v-for directive
+      return this.filteredHomeworks;
+    },
+    hasNoResults() {
+      return this.filteredHomeworks.length === 0 && this.homeworks.length > 0;
+    },
+    hasNoHomeworks() {
+      return this.homeworks.length === 0;
     },
     totalHomeworks() {
       return this.homeworks.length;
