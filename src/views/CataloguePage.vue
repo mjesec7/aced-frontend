@@ -659,46 +659,96 @@ export default {
     },
 
     async confirmAddToStudyPlan() {
-      if (!this.selectedTopic) {
-        this.showAddModal = false;
-        return;
-      }
+  if (!this.selectedTopic) {
+    this.showAddModal = false;
+    return;
+  }
 
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        alert('Пожалуйста, войдите в аккаунт.');
-        this.showAddModal = false;
-        return;
-      }
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    alert('Пожалуйста, войдите в аккаунт.');
+    this.showAddModal = false;
+    return;
+  }
 
-      try {
-        const token = await currentUser.getIdToken();
-        const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`;
-        const body = {
-          subject: this.selectedTopic.subject || '',
-          level: this.selectedTopic.level || '',
-          topic: this.selectedTopic.name || '',
-          topicId: this.selectedTopic.topicId
-        };
-        
-        await axios.post(url, body, { 
-          headers: { Authorization: `Bearer ${token}` } 
-        });
-        
-        // Update local state
-        this.selectedTopic.inStudyPlan = true;
-        if (!this.studyPlanTopics.includes(this.selectedTopic.topicId)) {
-          this.studyPlanTopics.push(this.selectedTopic.topicId);
-        }
-        
-        this.showAddModal = false;
-        this.showSuccessModal = true;
-      } catch (error) {
-        console.error('❌ Ошибка при добавлении в план:', error.response?.data || error.message);
-        alert('❌ Не удалось добавить тему');
-        this.showAddModal = false;
+  try {
+    const token = await currentUser.getIdToken();
+    const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`;
+    
+    // Enhanced body structure to match backend expectations
+    const body = {
+      subject: this.selectedTopic.subject || '',
+      level: this.selectedTopic.level || 'Базовый',
+      topic: this.selectedTopic.name || '',
+      topicId: this.selectedTopic.topicId,
+      // Additional fields that might be expected
+      lessonCount: this.selectedTopic.lessonCount || 0,
+      totalTime: this.selectedTopic.totalTime || 0,
+      type: this.selectedTopic.type || 'free'
+    };
+    
+    console.log('📤 Sending request to add topic to study plan:', {
+      url,
+      body,
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    const response = await axios.post(url, body, { 
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      } 
+    });
+    
+    console.log('✅ Successfully added to study plan:', response.data);
+    
+    // Update local state
+    this.selectedTopic.inStudyPlan = true;
+    if (!this.studyPlanTopics.includes(this.selectedTopic.topicId)) {
+      this.studyPlanTopics.push(this.selectedTopic.topicId);
+    }
+    
+    // Update the topic in the arrays
+    const updateTopic = (topics) => {
+      const index = topics.findIndex(t => t && t.topicId === this.selectedTopic.topicId);
+      if (index !== -1) {
+        topics[index].inStudyPlan = true;
       }
-    },
+    };
+    
+    updateTopic(this.originalTopics);
+    updateTopic(this.groupedTopics);
+    
+    this.showAddModal = false;
+    this.showSuccessModal = true;
+    
+  } catch (error) {
+    console.error('❌ Ошибка при добавлении в план:', {
+      error: error.response?.data || error.message,
+      status: error.response?.status,
+      headers: error.response?.headers,
+      config: error.config
+    });
+    
+    // More specific error handling
+    let errorMessage = '❌ Не удалось добавить тему';
+    
+    if (error.response?.status === 400) {
+      errorMessage = '❌ Неверные данные. Проверьте правильность заполнения полей.';
+    } else if (error.response?.status === 401) {
+      errorMessage = '❌ Необходимо войти в аккаунт заново.';
+    } else if (error.response?.status === 403) {
+      errorMessage = '❌ Недостаточно прав для выполнения операции.';
+    } else if (error.response?.status === 409) {
+      errorMessage = '❌ Тема уже добавлена в учебный план.';
+    } else if (error.response?.status >= 500) {
+      errorMessage = '❌ Ошибка сервера. Попробуйте позже.';
+    }
+    
+    alert(errorMessage);
+    this.showAddModal = false;
+  }
+},
 
     handlePlanUpdate(newPlan) {
       this.plan = newPlan;
