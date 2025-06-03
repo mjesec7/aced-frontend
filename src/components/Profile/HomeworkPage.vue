@@ -1,8 +1,19 @@
 <template>
   <div class="homework-page">
+    <div class="back-button">
+      <router-link to="/profile/homeworks" class="back-link">← Назад к списку</router-link>
+    </div>
+    
     <h1>Домашка: {{ lessonName || 'Без названия' }}</h1>
 
     <div v-if="loading" class="loading">Загрузка...</div>
+
+    <div v-else-if="!lessonId" class="error">
+      <div class="error-icon">⚠️</div>
+      <h3>Ошибка загрузки</h3>
+      <p>ID урока не найден. Пожалуйста, вернитесь к списку домашних заданий.</p>
+      <router-link to="/profile/homeworks" class="error-button">Вернуться к списку</router-link>
+    </div>
 
     <div v-else-if="questions.length === 0" class="empty">
       В этом уроке нет домашнего задания.
@@ -39,7 +50,13 @@ import { auth } from '@/firebase';
 
 export default {
   name: 'HomeworkPage',
-  props: ['lessonId'],
+  props: {
+    lessonId: {
+      type: String,
+      required: false,
+      default: null
+    }
+  },
   data() {
     return {
       questions: [],
@@ -48,18 +65,74 @@ export default {
       loading: true,
     };
   },
+  computed: {
+    // Get lessonId from route params if not passed as prop
+    computedLessonId() {
+      // Priority: props > route params > route query
+      const fromProp = this.lessonId;
+      const fromParams = this.$route.params.lessonId;
+      const fromQuery = this.$route.query.lessonId;
+      
+      const id = fromProp || fromParams || fromQuery;
+      
+      // Validate the ID
+      if (!id || id === 'null' || id === 'undefined') {
+        return null;
+      }
+      
+      return String(id);
+    }
+  },
+  watch: {
+    // Watch for route changes
+    '$route.params.lessonId': {
+      immediate: true,
+      handler(newId, oldId) {
+        console.log('📍 Route param lessonId changed:', { old: oldId, new: newId });
+        if (newId && newId !== oldId) {
+          this.fetchHomework();
+        }
+      }
+    },
+    
+    // Watch computed lessonId
+    computedLessonId: {
+      immediate: true,
+      handler(newId, oldId) {
+        console.log('📍 Computed lessonId changed:', { old: oldId, new: newId });
+        if (newId && newId !== oldId && !this.loading) {
+          this.fetchHomework();
+        }
+      }
+    }
+  },
   methods: {
     async fetchHomework() {
       try {
         this.loading = true;
+        
+        // Get lessonId with fallbacks
+        const lessonId = this.computedLessonId;
+        
+        if (!lessonId) {
+          console.error('❌ No lessonId available');
+          this.$toast?.error('Ошибка: ID урока не найден');
+          this.loading = false;
+          return;
+        }
+        
+        console.log('📚 Fetching homework for lesson:', lessonId);
+        
         const user = auth.currentUser;
         if (!user) throw new Error('Пользователь не авторизован');
         const token = await user.getIdToken();
         const userId = user.uid;
 
         // Fetch lesson data to get homework questions
-        const { data: lesson } = await api.get(`/lessons/${this.lessonId}`);
-        this.lessonName = lesson.lessonName;
+        const { data: lesson } = await api.get(`/lessons/${lessonId}`);
+        console.log('✅ Lesson data loaded:', lesson.lessonName);
+        
+        this.lessonName = lesson.lessonName || lesson.title || 'Урок';
         this.questions = Array.isArray(lesson.homework) ? lesson.homework : [];
         this.userAnswers = this.questions.map(() => '');
 
@@ -72,7 +145,7 @@ export default {
         // The correct format is: /homeworks/user/:firebaseId/lesson/:lessonId
         try {
           const { data: progressRes } = await api.get(
-            `/homeworks/user/${userId}/lesson/${this.lessonId}`,
+            `/homeworks/user/${userId}/lesson/${lessonId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
@@ -113,6 +186,12 @@ export default {
 
     async saveHomework() {
       try {
+        const lessonId = this.computedLessonId;
+        if (!lessonId) {
+          this.$toast?.error('Ошибка: ID урока не найден');
+          return;
+        }
+        
         const user = auth.currentUser;
         if (!user) throw new Error('Пользователь не авторизован');
         const token = await user.getIdToken();
@@ -126,7 +205,7 @@ export default {
         // FIXED: Use correct API endpoint format
         await api.post(
           `/homeworks/user/${userId}/save`,
-          { lessonId: this.lessonId, answers, completed: false },
+          { lessonId: lessonId, answers, completed: false },
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -139,6 +218,12 @@ export default {
 
     async submitHomework() {
       try {
+        const lessonId = this.computedLessonId;
+        if (!lessonId) {
+          this.$toast?.error('Ошибка: ID урока не найден');
+          return;
+        }
+        
         if (this.userAnswers.includes('')) {
           this.$toast?.warning('Пожалуйста, ответьте на все вопросы.');
           return;
@@ -156,7 +241,7 @@ export default {
 
         // FIXED: Use correct API endpoint format
         const { data } = await api.post(
-          `/homeworks/user/${userId}/lesson/${this.lessonId}/submit`,
+          `/homeworks/user/${userId}/lesson/${lessonId}/submit`,
           { answers },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -169,8 +254,22 @@ export default {
       }
     }
   },
+  created() {
+    // Debug route info on component creation
+    console.group('🎯 HomeworkPage Created');
+    console.log('Props lessonId:', this.lessonId);
+    console.log('Route params:', this.$route.params);
+    console.log('Computed lessonId:', this.computedLessonId);
+    console.groupEnd();
+  },
   mounted() {
-    this.fetchHomework();
+    // Only fetch if we have a lessonId
+    if (this.computedLessonId) {
+      this.fetchHomework();
+    } else {
+      console.error('❌ No lessonId available on mount');
+      this.loading = false;
+    }
   }
 };
 </script>
@@ -185,12 +284,65 @@ export default {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
+.back-button {
+  margin-bottom: 1.5rem;
+}
+
+.back-link {
+  color: #6a5acd;
+  text-decoration: none;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: color 0.2s ease;
+}
+
+.back-link:hover {
+  color: #5848c2;
+}
+
 .loading,
-.empty {
+.empty,
+.error {
   text-align: center;
   font-size: 1.3rem;
   color: #6a5acd;
   margin-top: 3rem;
+}
+
+.error {
+  color: #ef4444;
+}
+
+.error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.error h3 {
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.error p {
+  color: #6b7280;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.error-button {
+  display: inline-block;
+  background: #6a5acd;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.error-button:hover {
+  background: #5848c2;
 }
 
 .question-block {
@@ -224,6 +376,7 @@ export default {
   border: 1px solid #ddd;
   border-radius: 8px;
   transition: background 0.3s ease;
+  cursor: pointer;
 }
 
 .option:hover {
@@ -232,6 +385,7 @@ export default {
 
 .option input {
   margin-right: 0.6rem;
+  cursor: pointer;
 }
 
 .actions {
@@ -265,5 +419,19 @@ button:hover {
 
 .submit-btn:hover {
   background-color: #5848c2;
+}
+
+@media (max-width: 768px) {
+  .homework-page {
+    padding: 1rem;
+  }
+  
+  .actions {
+    justify-content: stretch;
+  }
+  
+  button {
+    flex: 1;
+  }
 }
 </style>

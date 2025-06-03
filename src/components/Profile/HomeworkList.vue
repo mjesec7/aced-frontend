@@ -185,7 +185,25 @@ export default {
   },
   methods: {
     goToHomework(lessonId) {
-      this.$router.push(`/profile/homeworks/${lessonId}`);
+      if (!lessonId) {
+        console.error('❌ No lessonId provided');
+        this.$toast?.error('Ошибка: ID урока не найден');
+        return;
+      }
+      
+      // Ensure lessonId is a string and not null/undefined
+      const validLessonId = String(lessonId);
+      
+      console.log('🚀 Navigating to homework for lesson:', validLessonId);
+      
+      // Use programmatic navigation with validation
+      this.$router.push({
+        name: 'HomeworkPage',
+        params: { lessonId: validLessonId }
+      }).catch(err => {
+        console.error('❌ Navigation error:', err);
+        this.$toast?.error('Ошибка навигации');
+      });
     },
     statusLabel(hw) {
       if (!hw.record) return '⏳ Не начато';
