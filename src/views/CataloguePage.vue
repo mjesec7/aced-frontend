@@ -1024,6 +1024,7 @@ processTopics() {
   align-items: flex-start;
   margin-bottom: 12px;
   gap: 12px;
+  position: relative;
 }
 
 .lesson-title {
@@ -1033,22 +1034,34 @@ processTopics() {
   margin: 0;
   line-height: 1.4;
   flex: 1;
+  padding-right: 8px; /* Give space for the button */
 }
 
+/* Fixed Add/Remove Button Styles */
 .add-btn {
   background: #ffffff;
   color: #4c1d95;
   border: 2px solid #4c1d95;
-  width: 32px;
-  height: 32px;
+  min-width: 36px;
+  min-height: 36px;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 1.1rem;
+  font-weight: bold;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  position: relative;
+  z-index: 10; /* Ensure it's above other elements */
+  padding: 0;
+  line-height: 1;
+  /* Better touch target for mobile */
+  touch-action: manipulation;
+  user-select: none;
 }
 
 .add-btn:disabled {
@@ -1061,6 +1074,25 @@ processTopics() {
 .add-btn:hover:not(:disabled) {
   background: #4c1d95;
   color: white;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(76, 29, 149, 0.3);
+}
+
+.add-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Remove button specific styles */
+.add-btn.remove-btn {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
+.add-btn.remove-btn:hover {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
 }
 
 .lesson-topic {
@@ -1283,104 +1315,127 @@ processTopics() {
   color: #374151;
 }
 
-/* Modal Styles */
+/* Enhanced Modal Styles with Fixed Flickering */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  animation: fade-in 0.2s ease;
+  z-index: 9999; /* Higher z-index to prevent conflicts */
+  animation: fade-in 0.15s ease-out;
+  /* Prevent pointer events from bubbling */
+  pointer-events: all;
 }
 
 .modal-content {
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 0;
-  max-width: 450px;
-  width: 90%;
-  max-height: 80vh;
+  max-width: 480px;
+  width: 92%;
+  max-height: 85vh;
   overflow: hidden;
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.2);
-  animation: slide-up 0.2s ease;
+  box-shadow: 0 20px 64px rgba(0, 0, 0, 0.3);
+  animation: slide-up 0.2s ease-out;
   position: relative;
   border: 1px solid #e5e7eb;
+  /* Prevent event bubbling */
+  pointer-events: all;
 }
 
 .modal-header {
-  padding: 20px 20px 16px;
+  padding: 24px 24px 16px;
   border-bottom: 1px solid #e5e7eb;
+  position: relative;
 }
 
 .modal-header h3 {
   margin: 0;
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 1.3rem;
+  font-weight: 700;
   color: #111827;
+  padding-right: 40px; /* Space for close button */
 }
 
 .modal-body {
-  padding: 20px;
+  padding: 24px;
+  max-height: 60vh;
+  overflow-y: auto;
 }
 
 .modal-footer {
-  padding: 12px 20px 20px;
+  padding: 16px 24px 24px;
   display: flex;
-  gap: 10px;
+  gap: 12px;
   justify-content: flex-end;
+  border-top: 1px solid #f3f4f6;
 }
 
+/* Enhanced Close Button */
 .modal-close {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  background: #f3f4f6;
-  border: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  font-size: 1.1rem;
+  top: 16px;
+  right: 16px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: bold;
   cursor: pointer;
   color: #6b7280;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 10;
+  /* Better touch target */
+  touch-action: manipulation;
+  user-select: none;
+  line-height: 1;
 }
 
 .modal-close:hover {
   background: #ef4444;
   color: white;
+  border-color: #ef4444;
+  transform: scale(1.05);
+}
+
+.modal-close:active {
+  transform: scale(0.95);
 }
 
 .topic-preview {
   text-align: center;
-  padding: 16px;
+  padding: 20px;
   background: #f8fafc;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid #e5e7eb;
 }
 
 .topic-preview h4 {
-  margin: 0 0 8px;
-  font-size: 1.1rem;
+  margin: 0 0 10px;
+  font-size: 1.2rem;
   font-weight: 600;
   color: #111827;
 }
 
 .topic-preview p {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   color: #6b7280;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 
 .topic-stats {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 16px;
   font-size: 0.85rem;
   color: #6b7280;
 }
@@ -1389,34 +1444,56 @@ processTopics() {
   background: linear-gradient(135deg, #4c1d95 0%, #1e40af 100%);
   color: white;
   border: none;
-  padding: 10px 20px;
+  padding: 12px 24px;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  min-width: 100px;
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(76, 29, 149, 0.3);
+  box-shadow: 0 4px 16px rgba(76, 29, 149, 0.3);
 }
 
 .btn-secondary {
   background: #f8fafc;
   color: #6b7280;
   border: 1px solid #d1d5db;
-  padding: 10px 20px;
+  padding: 12px 24px;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  min-width: 100px;
 }
 
 .btn-secondary:hover {
   background: #f3f4f6;
   border-color: #9ca3af;
+  color: #374151;
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  min-width: 100px;
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.3);
 }
 
 .success-modal {
@@ -1424,41 +1501,61 @@ processTopics() {
 }
 
 .success-content {
-  padding: 32px 20px;
+  padding: 40px 24px;
 }
 
 .success-icon {
-  font-size: 3rem;
-  margin-bottom: 12px;
+  font-size: 3.5rem;
+  margin-bottom: 16px;
 }
 
 .success-content h3 {
-  font-size: 1.3rem;
-  font-weight: 600;
-  margin: 0 0 10px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 12px;
   color: #4c1d95;
 }
 
 .success-content p {
   color: #6b7280;
-  margin: 0 0 20px;
-  line-height: 1.5;
-  font-size: 0.95rem;
+  margin: 0 0 24px;
+  line-height: 1.6;
+  font-size: 1rem;
 }
 
+/* Medal/Badge Icons Fix */
+.medal-icon, .badge-icon {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+/* Ensure emojis render properly */
+.status-badge::before,
+.access-label::before {
+  margin-right: 4px;
+}
+
+/* Animation Keyframes */
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { 
+    opacity: 0; 
+  }
+  to { 
+    opacity: 1; 
+  }
 }
 
 @keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(20px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -1498,17 +1595,20 @@ processTopics() {
   }
   
   .card-header {
-    gap: 8px;
+    gap: 10px;
   }
   
   .lesson-title {
     font-size: 1.1rem;
+    padding-right: 12px;
   }
   
   .add-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 0.9rem;
+    min-width: 40px;
+    min-height: 40px;
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
   }
   
   .progress-bar-container {
@@ -1529,16 +1629,36 @@ processTopics() {
   
   .modal-content {
     width: 95%;
-    max-height: 85vh;
+    max-height: 90vh;
+  }
+  
+  .modal-header {
+    padding: 20px 20px 14px;
+  }
+  
+  .modal-header h3 {
+    font-size: 1.2rem;
+    padding-right: 45px;
+  }
+  
+  .modal-close {
+    top: 14px;
+    right: 14px;
+    width: 36px;
+    height: 36px;
+    font-size: 1.3rem;
   }
   
   .modal-footer {
     flex-direction: column;
+    gap: 10px;
   }
   
   .btn-primary,
-  .btn-secondary {
+  .btn-secondary,
+  .btn-danger {
     width: 100%;
+    padding: 14px 20px;
   }
 }
 
@@ -1552,16 +1672,15 @@ processTopics() {
   }
   
   .card-header {
-    flex-direction: column;
     gap: 8px;
-    align-items: stretch;
   }
   
   .add-btn {
-    align-self: flex-end;
-    width: 26px;
-    height: 26px;
-    font-size: 0.85rem;
+    min-width: 38px;
+    min-height: 38px;
+    width: 38px;
+    height: 38px;
+    font-size: 1.1rem;
   }
   
   .lesson-stats {
@@ -1580,6 +1699,14 @@ processTopics() {
   
   .progress-text {
     font-size: 6px;
+  }
+  
+  .modal-overlay {
+    padding: 10px;
+  }
+  
+  .modal-content {
+    width: 100%;
   }
 }
 
@@ -1644,6 +1771,13 @@ processTopics() {
   .modal-close {
     background: #374151;
     color: #9ca3af;
+    border-color: #4b5563;
+  }
+  
+  .modal-close:hover {
+    background: #ef4444;
+    color: white;
+    border-color: #ef4444;
   }
   
   .btn-secondary {
@@ -1655,6 +1789,63 @@ processTopics() {
   .btn-secondary:hover {
     background: #4b5563;
     border-color: #6b7280;
+    color: #f3f4f6;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .lesson-card {
+    border: 2px solid #000;
+  }
+  
+  .add-btn {
+    border: 2px solid #000;
+  }
+  
+  .modal-content {
+    border: 3px solid #000;
+  }
+  
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    border: 2px solid #000;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .lesson-card:hover {
+    transform: none;
+  }
+  
+  .add-btn:hover {
+    transform: none;
+  }
+  
+  .btn-primary:hover,
+  .btn-secondary:hover,
+  .btn-danger:hover {
+    transform: none;
+  }
+  
+  .loading-spinner {
+    animation: none;
+  }
+  
+  .modal-overlay {
+    animation: none;
+  }
+  
+  .modal-content {
+    animation: none;
   }
 }
 
@@ -1681,22 +1872,37 @@ processTopics() {
   .progress-section {
     background: #f5f5f5;
   }
+  
+  .modal-overlay {
+    display: none;
+  }
 }
 
-/* Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  
-  .lesson-card:hover {
-    transform: none;
-  }
-  
-  .loading-spinner {
-    animation: none;
-  }
+/* Focus Styles for Accessibility */
+.add-btn:focus,
+.modal-close:focus,
+.btn-primary:focus,
+.btn-secondary:focus,
+.btn-danger:focus {
+  outline: 2px solid #4c1d95;
+  outline-offset: 2px;
+}
+
+/* Loading State for Buttons */
+.add-btn.loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.add-btn.loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 </style>
