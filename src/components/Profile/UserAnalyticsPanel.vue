@@ -256,128 +256,212 @@ export default {
   
   methods: {
     async loadAnalytics() {
-      console.log('📊 Starting analytics loading...');
-      this.loading = true;
-      this.error = null;
-      
+  console.log('📊 Starting analytics loading...');
+  this.loading = true;
+  this.error = null;
+  
+  try {
+    // 1. Check authentication state
+    if (!this.isAuthenticated) {
+      console.error('❌ User not authenticated');
+      this.error = 'Необходима авторизация';
+      this.$router.push('/login');
+      return;
+    }
+
+    // 2. Wait for Firebase auth to be ready
+    let currentUser = auth.currentUser;
+    if (!currentUser) {
+      console.log('⏳ Waiting for Firebase auth...');
       try {
-        // Check authentication first
-        if (!this.isAuthenticated) {
-          console.error('❌ User not authenticated');
-          this.error = 'Необходима авторизация';
-          this.$router.push('/login');
-          return;
-        }
-
-        // Get user ID with improved logic
-        const userId = this.userId;
-        console.log('🔍 Resolved userId:', userId);
-        
-        if (!userId) {
-          console.error('❌ No user ID found');
-          this.error = 'Пользователь не найден';
-          this.$router.push('/login');
-          return;
-        }
-
-        // Wait for Firebase auth if needed
-        const currentUser = auth.currentUser;
-        if (!currentUser) {
-          console.log('⏳ Waiting for Firebase auth...');
-          await new Promise((resolve, reject) => {
-            const unsubscribe = auth.onAuthStateChanged(user => {
-              unsubscribe();
-              if (user) {
-                resolve(user);
-              } else {
-                reject(new Error('Firebase auth failed'));
-              }
-            });
-            
-            // Timeout after 10 seconds
-            setTimeout(() => {
-              unsubscribe();
-              reject(new Error('Firebase auth timeout'));
-            }, 10000);
+        currentUser = await new Promise((resolve, reject) => {
+          const unsubscribe = auth.onAuthStateChanged(user => {
+            unsubscribe();
+            if (user) {
+              console.log('✅ Firebase user found:', user.uid);
+              resolve(user);
+            } else {
+              reject(new Error('No Firebase user'));
+            }
           });
-        }
-
-        // Get fresh Firebase token
-        const token = await auth.currentUser.getIdToken(true);
-        console.log('🔑 Got Firebase token');
-        
-        // Construct API URL correctly
-        const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/user/${userId}/analytics`;
-        console.log('📡 Making API request to:', apiUrl);
-        
-        // Make API request with proper headers
-        const response = await fetch(apiUrl, {
-          method: 'GET',
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
+          
+          // Timeout after 5 seconds
+          setTimeout(() => {
+            unsubscribe();
+            reject(new Error('Firebase auth timeout'));
+          }, 5000);
         });
-
-        console.log('📡 Response status:', response.status, response.statusText);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ API Error:', errorText);
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log('📊 Raw analytics response:', data);
-
-        // Handle backend response format correctly
-        if (data.success && data.data) {
-          // Backend returned { success: true, data: {...} }
-          this.analytics = { ...this.analytics, ...data.data };
-          console.log('✅ Analytics loaded from data field:', this.analytics);
-        } else if (data.success === false) {
-          // Backend returned error
-          throw new Error(data.error || data.message || 'Unknown error');
-        } else {
-          // Direct data format (fallback)
-          console.log('⚠️ Using direct data format');
-          this.analytics = { ...this.analytics, ...data };
-        }
-
-        // Validate critical data
-        const criticalFields = ['studyDays', 'totalLessonsDone', 'totalPoints'];
-        const hasData = criticalFields.some(field => (this.analytics[field] || 0) > 0);
-        
-        if (!hasData) {
-          console.log('📊 No analytics data available yet');
-        } else {
-          console.log('✅ Analytics data validated:', {
-            studyDays: this.analytics.studyDays,
-            totalLessonsDone: this.analytics.totalLessonsDone,
-            totalPoints: this.analytics.totalPoints,
-            subjects: this.analytics.subjects?.length || 0
-          });
-        }
-
-      } catch (err) {
-        console.error('❌ Analytics loading failed:', err);
-        
-        // Provide more specific error messages
-        if (err.message.includes('401') || err.message.includes('403')) {
-          this.error = 'Ошибка авторизации. Войдите заново.';
-          this.$router.push('/login');
-        } else if (err.message.includes('404')) {
-          this.error = 'Данные не найдены';
-        } else if (err.message.includes('timeout')) {
-          this.error = 'Превышено время ожидания';
-        } else {
-          this.error = err.message || 'Ошибка загрузки аналитики';
-        }
-      } finally {
-        this.loading = false;
+      } catch (authError) {
+        console.error('❌ Firebase auth failed:', authError);
+        this.error = 'Ошибка авторизации Firebase';
+        this.$router.push('/login');
+        return;
       }
-    },
+    }
+
+    // 3. Get user ID (must match what backend expects)
+    const userId = currentUser.uid;
+    console.log('🔍 Using Firebase user ID:', userId);
+    
+    if (!userId) {
+      console.error('❌ No user ID available');
+      this.error = 'Пользователь не найден';
+      this.$router.push('/login');
+      return;
+    }
+
+    // 4. Get fresh Firebase token
+    let token;
+    try {
+      token = await currentUser.getIdToken(true); // Force refresh
+      console.log('🔑 Got fresh Firebase token');
+    } catch (tokenError) {
+      console.error('❌ Failed to get Firebase token:', tokenError);
+      this.error = 'Ошибка получения токена';
+      this.$router.push('/login');
+      return;
+    }
+    
+    // 5. Construct correct API URL based on your backend route
+    // Your backend route is: router.get('/:userId', verifyToken, ...)
+    // So the URL should be: /api/analytics/{userId}
+    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const apiUrl = `${baseURL}/analytics/${userId}`;
+    console.log('📡 Making API request to:', apiUrl);
+    
+    // 6. Make API request with proper headers
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      // Add credentials if needed for CORS
+      credentials: 'include'
+    });
+
+    console.log('📡 Response status:', response.status, response.statusText);
+
+    // 7. Handle different response statuses
+    if (response.status === 401) {
+      console.error('❌ Unauthorized - token invalid');
+      this.error = 'Срок авторизации истек. Войдите заново.';
+      // Clear auth state
+      await auth.signOut();
+      this.$store.dispatch('logout');
+      this.$router.push('/login');
+      return;
+    }
+
+    if (response.status === 403) {
+      console.error('❌ Forbidden - access denied');
+      this.error = 'Доступ запрещен';
+      return;
+    }
+
+    if (response.status === 404) {
+      console.error('❌ Not found - endpoint or user data not found');
+      this.error = 'Данные не найдены';
+      return;
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ API Error:', response.status, errorText);
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    // 8. Parse response
+    const data = await response.json();
+    console.log('📊 Raw analytics response:', data);
+
+    // 9. Handle backend response format
+    if (data.success && data.data) {
+      // Backend returned { success: true, data: {...} }
+      this.analytics = { ...this.analytics, ...data.data };
+      console.log('✅ Analytics loaded successfully:', {
+        studyDays: this.analytics.studyDays,
+        totalLessonsDone: this.analytics.totalLessonsDone,
+        totalPoints: this.analytics.totalPoints,
+        subjects: this.analytics.subjects?.length || 0
+      });
+    } else if (data.success === false) {
+      // Backend returned error
+      console.error('❌ Backend error:', data.error);
+      this.error = data.error || 'Ошибка сервера';
+      return;
+    } else {
+      // Direct data format (fallback)
+      console.log('⚠️ Using direct data format');
+      this.analytics = { ...this.analytics, ...data };
+    }
+
+    // 10. Validate data
+    const hasAnyData = this.analytics.studyDays > 0 || 
+                      this.analytics.totalLessonsDone > 0 || 
+                      (this.analytics.subjects && this.analytics.subjects.length > 0);
+    
+    if (!hasAnyData) {
+      console.log('📊 No analytics data available yet - user hasn\'t started learning');
+    }
+
+  } catch (err) {
+    console.error('❌ Analytics loading failed:', err);
+    
+    // Provide specific error messages
+    if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+      this.error = 'Проблема с сетью. Проверьте интернет-соединение.';
+    } else if (err.message.includes('timeout')) {
+      this.error = 'Превышено время ожидания. Попробуйте позже.';
+    } else if (err.message.includes('Firebase')) {
+      this.error = 'Ошибка авторизации. Войдите заново.';
+      this.$router.push('/login');
+    } else {
+      this.error = err.message || 'Ошибка загрузки аналитики';
+    }
+  } finally {
+    this.loading = false;
+  }
+},
+
+// 🔧 Additional helper method for checking auth state
+async ensureAuthenticated() {
+  if (!auth.currentUser) {
+    return new Promise((resolve, reject) => {
+      const unsubscribe = auth.onAuthStateChanged(user => {
+        unsubscribe();
+        if (user) {
+          resolve(user);
+        } else {
+          reject(new Error('User not authenticated'));
+        }
+      });
+      
+      setTimeout(() => {
+        unsubscribe();
+        reject(new Error('Auth timeout'));
+      }, 5000);
+    });
+  }
+  return auth.currentUser;
+},
+
+// 🔧 Enhanced mounted lifecycle
+async mounted() {
+  console.log('🔧 UserAnalyticsPanel mounted');
+  
+  // Check if user is authenticated before loading analytics
+  try {
+    await this.ensureAuthenticated();
+    await this.loadAnalytics();
+  } catch (error) {
+    console.error('❌ Mount failed:', error);
+    this.error = 'Необходима авторизация';
+    this.$router.push('/login');
+  }
+},
+
     
     openModal() {
       this.showModal = true;
