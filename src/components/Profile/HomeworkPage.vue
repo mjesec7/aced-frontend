@@ -57,6 +57,7 @@ export default {
         const token = await user.getIdToken();
         const userId = user.uid;
 
+        // Fetch lesson data to get homework questions
         const { data: lesson } = await api.get(`/lessons/${this.lessonId}`);
         this.lessonName = lesson.lessonName;
         this.questions = Array.isArray(lesson.homework) ? lesson.homework : [];
@@ -67,15 +68,40 @@ export default {
           return;
         }
 
-        const { data: progressRes } = await api.get(
-          `/users/${userId}/homeworks/lesson/${this.lessonId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        // FIXED: Use correct API endpoint format
+        // The correct format is: /homeworks/user/:firebaseId/lesson/:lessonId
+        try {
+          const { data: progressRes } = await api.get(
+            `/homeworks/user/${userId}/lesson/${this.lessonId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
 
-        if (progressRes?.data?.answers?.length) {
-          for (const entry of progressRes.data.answers) {
-            this.userAnswers[entry.questionIndex] = entry.answer;
+          console.log('✅ Loaded homework progress:', progressRes);
+
+          // Handle the response structure
+          const homeworkData = progressRes?.data || progressRes;
+          
+          if (homeworkData?.answers) {
+            // If answers is an object with questionIndex as keys
+            if (!Array.isArray(homeworkData.answers)) {
+              Object.entries(homeworkData.answers).forEach(([index, answer]) => {
+                const idx = parseInt(index);
+                if (!isNaN(idx) && idx >= 0 && idx < this.userAnswers.length) {
+                  this.userAnswers[idx] = answer;
+                }
+              });
+            } else {
+              // If answers is an array
+              for (const entry of homeworkData.answers) {
+                if (entry.questionIndex !== undefined && entry.answer !== undefined) {
+                  this.userAnswers[entry.questionIndex] = entry.answer;
+                }
+              }
+            }
           }
+        } catch (progressErr) {
+          // It's OK if no progress exists yet
+          console.log('ℹ️ No existing homework progress found');
         }
       } catch (err) {
         console.error('❌ Ошибка загрузки домашки:', err);
@@ -97,8 +123,9 @@ export default {
           answer: ans
         }));
 
+        // FIXED: Use correct API endpoint format
         await api.post(
-          `/users/${userId}/homeworks/save`,
+          `/homeworks/user/${userId}/save`,
           { lessonId: this.lessonId, answers, completed: false },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -127,8 +154,9 @@ export default {
           answer: ans
         }));
 
+        // FIXED: Use correct API endpoint format
         const { data } = await api.post(
-          `/users/${userId}/homeworks/lesson/${this.lessonId}/submit`,
+          `/homeworks/user/${userId}/lesson/${this.lessonId}/submit`,
           { answers },
           { headers: { Authorization: `Bearer ${token}` } }
         );
