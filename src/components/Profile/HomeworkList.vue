@@ -343,9 +343,16 @@ export default {
 
         // Get user's homework progress for each lesson
         const homeworkPromises = [];
-        const lessonsWithHomework = allLessons.filter(lesson => 
-          lesson.homework && Array.isArray(lesson.homework) && lesson.homework.length > 0
-        );
+        const lessonsWithHomework = allLessons.filter(lesson => {
+          // Check if lesson has valid ID and homework
+          if (!lesson._id) {
+            console.warn('⚠️ Lesson without _id found:', lesson);
+            return false;
+          }
+          return lesson.homework && Array.isArray(lesson.homework) && lesson.homework.length > 0;
+        });
+
+        console.log(`📚 Found ${lessonsWithHomework.length} lessons with homework`);
 
         // Fetch homework progress for each lesson
         for (const lesson of lessonsWithHomework) {
@@ -355,7 +362,7 @@ export default {
             }).then(response => ({
               lessonId: lesson._id,
               lessonName: lesson.lessonName || lesson.title,
-              homework: response.data
+              homework: response.data?.data || response.data
             })).catch(() => ({
               lessonId: lesson._id,
               lessonName: lesson.lessonName || lesson.title,
