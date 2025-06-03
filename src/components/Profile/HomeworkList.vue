@@ -242,48 +242,123 @@ export default {
         const token = await user.getIdToken();
         const userId = user.uid;
 
-        // Fetch user's homework progress
-        const { data: progressRes } = await api.get(`/users/${userId}/homeworks`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        console.log('🔍 Fetching homeworks for user:', userId);
 
-        const progressMap = {};
-        for (const hw of progressRes.data) {
-          progressMap[hw.lessonId] = hw;
+        // Method 1: Try to use the dedicated homework endpoint
+        try {
+          const { data: homeworksResponse } = await api.get(`/users/${userId}/homeworks`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          console.log('✅ Homework data received from dedicated endpoint:', homeworksResponse);
+          
+          // Handle the response structure
+          const homeworkData = homeworksResponse.data || homeworksResponse;
+          
+          if (Array.isArray(homeworkData) && homeworkData.length > 0) {
+            // If we got homework data, process it
+            this.homeworks = homeworkData.map(hw => ({
+              lessonId: hw.lessonId,
+              lessonName: hw.lessonName || `Урок ${hw.lessonId}`,
+              subject: hw.subject || 'Общий',
+              record: {
+                completed: hw.completed || false,
+                score: hw.score || 0,
+                answers: hw.answers || {},
+                hintsUsed: hw.hintsUsed || 0
+              },
+              dueDate: hw.dueDate,
+              difficulty: hw.difficulty || 3,
+              courseId: hw.courseId
+            }));
+
+            console.log(`✅ Processed ${this.homeworks.length} homeworks from dedicated endpoint`);
+            return; // Exit early if successful
+          }
+        } catch (homeworkEndpointError) {
+          console.warn('⚠️ Dedicated homework endpoint failed:', homeworkEndpointError.message);
+          // Continue to fallback method
         }
 
-        // Fetch all lessons with homework
-        const { data: lessonsRes } = await api.get(`/lessons`);
-        
-        // Filter lessons that:
-        // 1. Have homework
-        // 2. User has started the course OR completed the lesson
-        // 3. Are available based on user's course enrollment
-        const { data: enrollmentsRes } = await api.get(`/users/${userId}/enrollments`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        // Method 2: Fallback - Build homework list from lessons and user progress
+        console.log('📦 Using fallback method: fetching lessons and user progress separately');
 
-        const enrolledCourseIds = enrollmentsRes.data.map(e => e.courseId);
-        const availableLessons = lessonsRes.data.filter(lesson => {
+        // Fetch all lessons
+        const { data: lessonsRes } = await api.get('/lessons');
+        const allLessons = lessonsRes.data || lessonsRes;
+        console.log(`✅ Fetched ${allLessons.length} lessons`);
+
+        // Fetch user progress for lessons
+        let userProgressMap = {};
+        try {
+          const { data: progressRes } = await api.get(`/users/${userId}/progress`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          const progressData = progressRes.data || progressRes;
+          if (Array.isArray(progressData)) {
+            progressData.forEach(progress => {
+              if (progress.lessonId) {
+                userProgressMap[progress.lessonId] = progress;
+              }
+            });
+          }
+          console.log(`✅ Fetched progress for ${Object.keys(userProgressMap).length} lessons`);
+        } catch (progressError) {
+          console.warn('⚠️ Could not fetch user progress:', progressError.message);
+        }
+
+        // Fetch user enrollments (optional filtering)
+        let enrolledCourseIds = [];
+        try {
+          const { data: enrollmentsRes } = await api.get(`/users/${userId}/enrollments`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          enrolledCourseIds = (enrollmentsRes.data || enrollmentsRes).map(e => e.courseId);
+          console.log('✅ User enrolled in courses:', enrolledCourseIds);
+        } catch (enrollmentError) {
+          console.warn('⚠️ Could not fetch enrollments:', enrollmentError.message);
+        }
+
+        // Filter lessons that have homework
+        const lessonsWithHomework = allLessons.filter(lesson => {
           // Must have homework
-          if (!lesson.homework?.length) return false;
+          if (!lesson.homework || !Array.isArray(lesson.homework) || lesson.homework.length === 0) {
+            return false;
+          }
           
-          // Must be part of an enrolled course
-          if (!enrolledCourseIds.includes(lesson.courseId)) return false;
+          // If we have enrollment data, filter by enrolled courses
+          if (enrolledCourseIds.length > 0 && lesson.courseId && !enrolledCourseIds.includes(lesson.courseId)) {
+            return false;
+          }
           
-          // Show if user has progress on this lesson OR if it's the next available lesson
-          return progressMap[lesson._id] || this.isLessonAvailable(lesson, progressRes.data);
+          return true;
         });
 
-        this.homeworks = availableLessons.map(lesson => ({
-          lessonId: lesson._id,
-          lessonName: lesson.lessonName,
-          subject: lesson.subject || this.getCourseSubject(lesson.courseId, lessonsRes.data),
-          record: progressMap[lesson._id] || null,
-          dueDate: lesson.homework?.[0]?.dueDate,
-          difficulty: lesson.difficulty || 3,
-          courseId: lesson.courseId
-        }));
+        console.log(`✅ Found ${lessonsWithHomework.length} lessons with homework`);
+
+        // Build homework list
+        this.homeworks = lessonsWithHomework.map(lesson => {
+          const lessonId = lesson._id;
+          const userProgress = userProgressMap[lessonId];
+          
+          return {
+            lessonId: lessonId,
+            lessonName: lesson.lessonName || lesson.title || `Урок ${lessonId}`,
+            subject: lesson.subject || this.getCourseSubject(lesson.courseId, allLessons),
+            record: userProgress ? {
+              completed: userProgress.completed || false,
+              score: userProgress.score || 0,
+              answers: userProgress.answers || {},
+              hintsUsed: userProgress.hintsUsed || 0
+            } : null,
+            dueDate: lesson.homework[0]?.dueDate,
+            difficulty: lesson.difficulty || 3,
+            courseId: lesson.courseId
+          };
+        });
+
+        console.log(`✅ Built homework list with ${this.homeworks.length} items`);
 
         // Sort by priority: in-progress, pending, completed
         this.homeworks.sort((a, b) => {
@@ -300,12 +375,15 @@ export default {
             return new Date(a.dueDate) - new Date(b.dueDate);
           }
           
-          return a.lessonName.localeCompare(b.lessonName);
+          return (a.lessonName || '').localeCompare(b.lessonName || '');
         });
+
+        console.log('✅ Homeworks sorted successfully');
 
       } catch (err) {
         console.error('❌ Ошибка загрузки домашних заданий:', err);
-        this.$toast?.error('Ошибка загрузки домашних заданий.');
+        this.$toast?.error(`Ошибка загрузки домашних заданий: ${err.message}`);
+        this.homeworks = []; // Set empty array on error
       } finally {
         this.loading = false;
       }
@@ -316,6 +394,7 @@ export default {
       return true;
     },
     getCourseSubject(courseId, allLessons) {
+      if (!courseId || !allLessons) return 'Общий';
       const courseLesson = allLessons.find(l => l.courseId === courseId);
       return courseLesson?.subject || 'Общий';
     }
