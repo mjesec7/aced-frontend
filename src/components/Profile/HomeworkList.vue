@@ -168,19 +168,49 @@ export default {
       const subjects = [...new Set(this.homeworks.map(hw => hw.subject).filter(Boolean))];
       return subjects.sort();
     },
+    // ✅ FIXED: More flexible validation that handles both types of homework
     validHomeworks() {
       return this.homeworks.filter(hw => {
+        // Debug logging for invalid entries
+        if (!hw) {
+          console.warn('⚠️ Null/undefined homework entry');
+          return false;
+        }
+        
         // For standalone homework (created in admin panel)
-        if (hw._id && hw.exercises && hw.exercises.length > 0) {
-          return true;
+        if (hw._id) {
+          // Standalone homework is valid if it has an ID and either exercises or is marked as type 'standalone'
+          const hasExercises = hw.exercises && Array.isArray(hw.exercises) && hw.exercises.length > 0;
+          const isStandaloneType = hw.type === 'standalone';
+          
+          if (hasExercises || isStandaloneType) {
+            console.log('✅ Valid standalone homework:', hw.title || hw._id);
+            return true;
+          }
+          
+          // Also accept if it has a title and subject (basic homework info)
+          if (hw.title && hw.subject) {
+            console.log('✅ Valid homework with basic info:', hw.title);
+            return true;
+          }
         }
         
         // For lesson-based homework
-        if (hw.lessonId && hw.lessonId !== 'null' && hw.lessonId !== 'undefined' && hw.lessonId !== '') {
-          return true;
+        if (hw.lessonId) {
+          const hasValidLessonId = hw.lessonId !== 'null' && hw.lessonId !== 'undefined' && hw.lessonId !== '';
+          if (hasValidLessonId) {
+            console.log('✅ Valid lesson-based homework:', hw.lessonName || hw.lessonId);
+            return true;
+          }
         }
         
-        console.warn('⚠️ Invalid homework entry:', hw);
+        console.warn('⚠️ Invalid homework entry:', {
+          id: hw._id,
+          lessonId: hw.lessonId,
+          title: hw.title,
+          hasExercises: hw.exercises?.length,
+          type: hw.type
+        });
         return false;
       });
     },
@@ -211,18 +241,27 @@ export default {
     goToHomework(hw) {
       console.log('🚀 goToHomework called with:', hw);
       
-      // Handle different types of homework
+      // ✅ FIXED: Better logic for determining homework type and navigation
       let targetId = null;
       let routeName = 'HomeworkPage';
       
-      if (hw._id && hw.exercises && hw.exercises.length > 0) {
-        // Standalone homework created in admin panel
+      // Check if it's standalone homework
+      if (hw._id && (hw.type === 'standalone' || (hw.exercises && hw.exercises.length > 0))) {
         targetId = hw._id;
-        routeName = 'StandaloneHomeworkPage'; // You'll need to create this route
-      } else if (hw.lessonId) {
-        // Lesson-based homework
+        routeName = 'StandaloneHomeworkPage';
+        console.log('📝 Navigating to standalone homework:', targetId);
+      } 
+      // Check if it's lesson-based homework
+      else if (hw.lessonId) {
         targetId = hw.lessonId;
         routeName = 'HomeworkPage';
+        console.log('📚 Navigating to lesson homework:', targetId);
+      }
+      // Fallback: if we have an _id but no lessonId, treat as standalone
+      else if (hw._id) {
+        targetId = hw._id;
+        routeName = 'HomeworkPage'; // Use regular homework page as fallback
+        console.log('🔄 Fallback navigation for homework:', targetId);
       }
       
       if (!targetId) {
@@ -241,7 +280,17 @@ export default {
         }
       }).catch(err => {
         console.error('❌ Navigation error:', err);
-        this.$toast?.error('Ошибка навигации');
+        // Fallback navigation if route doesn't exist
+        this.$router.push({
+          name: 'HomeworkPage',
+          params: { 
+            homeworkId: targetId,
+            lessonId: hw.lessonId || targetId 
+          }
+        }).catch(fallbackErr => {
+          console.error('❌ Fallback navigation error:', fallbackErr);
+          this.$toast?.error('Ошибка навигации');
+        });
       });
     },
     statusLabel(hw) {
@@ -302,45 +351,57 @@ export default {
 
         console.log('🔍 Fetching homeworks for user:', userId);
 
-        // ✅ FIXED: Use the correct API endpoint that exists in userRoutes.js
-        let userHomeworkProgress = [];
+        // ✅ SIMPLIFIED: Try the main user homework endpoint first
         try {
-          const { data: progressResponse } = await api.get(`/users/${userId}/homeworks`, {
+          const { data: response } = await api.get(`/users/${userId}/homeworks`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           
-          userHomeworkProgress = progressResponse.data || progressResponse || [];
-          console.log('✅ User homework progress loaded:', userHomeworkProgress.length);
+          const homeworkData = response.data || response || [];
+          console.log('✅ User homework data loaded directly:', homeworkData.length);
           
-          // If the main endpoint returned data, use it directly
-          if (userHomeworkProgress.length > 0) {
-            this.homeworks = userHomeworkProgress;
-            console.log('✅ Using homework data from main endpoint');
+          if (Array.isArray(homeworkData) && homeworkData.length > 0) {
+            // Process and enhance the homework data
+            this.homeworks = homeworkData.map(hw => ({
+              ...hw,
+              // Ensure consistent structure
+              record: hw.userProgress || hw.progress || (hw.completed !== undefined ? {
+                completed: hw.completed,
+                score: hw.score || 0,
+                lastAttempt: hw.updatedAt
+              } : null),
+              hasProgress: !!(hw.userProgress || hw.progress || hw.completed !== undefined)
+            }));
+            
+            console.log('✅ Processed homework list:', this.homeworks.length, 'items');
             return;
           }
-        } catch (progressError) {
-          console.warn('⚠️ Could not fetch user homework progress:', progressError.message);
+        } catch (error) {
+          console.warn('⚠️ Main homework endpoint failed:', error.message);
         }
 
-        // ✅ FIXED: Fallback strategy - get homework from correct admin endpoints
+        // ✅ FALLBACK: Build homework list from multiple sources
+        console.log('🔄 Building homework list from multiple sources...');
+        
         let allHomeworks = [];
+        let lessonsWithHomework = [];
+        let userProgress = [];
+
+        // Get admin homework
         try {
-          // Use the correct admin homework endpoint
-          const { data: homeworkResponse } = await api.get('/homeworks', {
+          const { data: hwResponse } = await api.get('/homeworks', {
             headers: { Authorization: `Bearer ${token}` }
           });
-          allHomeworks = homeworkResponse.data || homeworkResponse || [];
-          console.log('✅ All homeworks from admin loaded:', allHomeworks.length);
-        } catch (homeworkError) {
-          console.warn('⚠️ Could not fetch homework from admin panel:', homeworkError.message);
+          allHomeworks = hwResponse.data || hwResponse || [];
+          console.log('✅ Admin homeworks loaded:', allHomeworks.length);
+        } catch (hwError) {
+          console.warn('⚠️ Could not fetch admin homeworks:', hwError.message);
         }
 
-        // Strategy 3: Get lessons with homework
-        let lessonsWithHomework = [];
+        // Get lessons with homework
         try {
           const { data: lessonsResponse } = await api.get('/lessons');
           const allLessons = lessonsResponse.data || lessonsResponse || [];
-          
           lessonsWithHomework = allLessons.filter(lesson => 
             lesson.homework && Array.isArray(lesson.homework) && lesson.homework.length > 0
           );
@@ -349,81 +410,57 @@ export default {
           console.warn('⚠️ Could not fetch lessons:', lessonsError.message);
         }
 
-        // ✅ FIXED: Use homework progress endpoint for individual homework data
-        let individualHomeworkProgress = [];
+        // Get user progress
         try {
-          // Get user's homework progress using the homeworks routes
-          const { data: hwProgressResponse } = await api.get(`/homeworks/user/${userId}`, {
+          const { data: progressResponse } = await api.get(`/homeworks/user/${userId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          individualHomeworkProgress = hwProgressResponse.data || hwProgressResponse || [];
-          console.log('✅ Individual homework progress loaded:', individualHomeworkProgress.length);
-        } catch (hwProgressError) {
-          console.warn('⚠️ Could not fetch individual homework progress:', hwProgressError.message);
+          userProgress = progressResponse.data || progressResponse || [];
+          console.log('✅ User progress loaded:', userProgress.length);
+        } catch (progressError) {
+          console.warn('⚠️ Could not fetch user progress:', progressError.message);
         }
 
-        // Combine all homework sources
+        // Combine all sources
         const combinedHomeworks = [];
 
-        // Add standalone homework from admin panel
-        for (const hw of allHomeworks) {
-          // Check if user has progress on this homework
-          const userProgress = individualHomeworkProgress.find(up => 
-            up.homeworkId === hw._id || up._id === hw._id
-          );
-
+        // Add standalone homework
+        allHomeworks.forEach(hw => {
+          const userHwProgress = userProgress.find(up => up.homeworkId === hw._id);
           combinedHomeworks.push({
-            _id: hw._id,
-            title: hw.title,
-            subject: hw.subject,
-            dueDate: hw.dueDate,
-            difficulty: hw.difficulty || 3,
-            exercises: hw.exercises || [],
-            instructions: hw.instructions,
+            ...hw,
             type: 'standalone',
-            
-            // User progress data
-            hasProgress: !!userProgress,
-            completed: userProgress?.completed || false,
-            score: userProgress?.score || 0,
-            record: userProgress ? {
-              completed: userProgress.completed || false,
-              score: userProgress.score || 0,
-              answers: userProgress.answers || {},
-              lastAttempt: userProgress.updatedAt || userProgress.submittedAt
+            hasProgress: !!userHwProgress,
+            completed: userHwProgress?.completed || false,
+            score: userHwProgress?.score || 0,
+            record: userHwProgress ? {
+              completed: userHwProgress.completed || false,
+              score: userHwProgress.score || 0,
+              lastAttempt: userHwProgress.updatedAt
             } : null
           });
-        }
+        });
 
         // Add lesson-based homework
-        for (const lesson of lessonsWithHomework) {
-          // Check if user has progress on this lesson's homework
-          const userProgress = individualHomeworkProgress.find(up => 
-            up.lessonId === lesson._id
-          );
-
+        lessonsWithHomework.forEach(lesson => {
+          const userLessonProgress = userProgress.find(up => up.lessonId === lesson._id);
           combinedHomeworks.push({
             lessonId: lesson._id,
             lessonName: lesson.lessonName || lesson.title,
             title: `Домашнее задание: ${lesson.lessonName || lesson.title}`,
             subject: lesson.subject,
-            dueDate: lesson.homework[0]?.dueDate,
-            difficulty: lesson.difficulty || 3,
-            exercises: lesson.homework || [],
+            exercises: lesson.homework,
             type: 'lesson',
-            
-            // User progress data
-            hasProgress: !!userProgress,
-            completed: userProgress?.completed || false,
-            score: userProgress?.score || 0,
-            record: userProgress ? {
-              completed: userProgress.completed || false,
-              score: userProgress.score || 0,
-              answers: userProgress.answers || {},
-              lastAttempt: userProgress.updatedAt || userProgress.submittedAt
+            hasProgress: !!userLessonProgress,
+            completed: userLessonProgress?.completed || false,
+            score: userLessonProgress?.score || 0,
+            record: userLessonProgress ? {
+              completed: userLessonProgress.completed || false,
+              score: userLessonProgress.score || 0,
+              lastAttempt: userLessonProgress.updatedAt
             } : null
           });
-        }
+        });
 
         // Remove duplicates and sort
         const uniqueHomeworks = combinedHomeworks.filter((hw, index, arr) => {
@@ -443,15 +480,11 @@ export default {
             return statusPriority[aStatus] - statusPriority[bStatus];
           }
           
-          if (a.dueDate && b.dueDate) {
-            return new Date(a.dueDate) - new Date(b.dueDate);
-          }
-          
           return (a.title || a.lessonName || '').localeCompare(b.title || b.lessonName || '');
         });
 
         this.homeworks = uniqueHomeworks;
-        console.log('✅ Final homework list:', this.homeworks.length, 'items');
+        console.log('✅ Final homework list assembled:', this.homeworks.length, 'items');
 
       } catch (err) {
         console.error('❌ Ошибка загрузки домашних заданий:', err);
