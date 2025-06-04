@@ -238,58 +238,71 @@ export default {
     }
   },
   methods: {
-    // Updated goToHomework method for HomeworkList.vue
-// Replace the existing method with this fixed version
+ // FINAL FIX: Replace the goToHomework method in HomeworkList.vue
 
 goToHomework(hw) {
   console.log('🚀 goToHomework called with:', hw);
   
-  // ✅ FIXED: Use the correct route that exists in your router
-  let targetId = null;
-  let homeworkType = 'unknown';
+  // ✅ SOLUTION: Use specific routes based on homework type
+  let routeName;
+  let params;
+  let query = {
+    title: hw.title || hw.lessonName,
+    subject: hw.subject
+  };
   
-  // Determine the homework ID and type
   if (hw._id && (hw.type === 'standalone' || (hw.exercises && hw.exercises.length > 0))) {
-    // Standalone homework - use _id
-    targetId = hw._id;
-    homeworkType = 'standalone';
-    console.log('📝 Navigating to standalone homework:', targetId);
+    // ✅ Standalone homework from admin panel
+    routeName = 'StandaloneHomeworkPage';
+    params = { homeworkId: hw._id };
+    query.type = 'standalone';
+    console.log('📝 Navigating to standalone homework:', hw._id);
   } 
   else if (hw.lessonId) {
-    // Lesson-based homework - use lessonId
-    targetId = hw.lessonId;
-    homeworkType = 'lesson';
-    console.log('📚 Navigating to lesson homework:', targetId);
+    // ✅ Lesson-based homework
+    routeName = 'LessonHomeworkPage';
+    params = { lessonId: hw.lessonId };
+    query.type = 'lesson';
+    console.log('📚 Navigating to lesson homework:', hw.lessonId);
   }
   else if (hw._id) {
-    // Fallback: treat as homework ID
-    targetId = hw._id;
-    homeworkType = 'standalone';
-    console.log('🔄 Fallback navigation for homework:', targetId);
+    // ✅ Fallback: Try with flexible route
+    routeName = 'HomeworkPage';
+    params = { id: hw._id };
+    query.type = 'standalone';
+    console.log('🔄 Fallback navigation for homework:', hw._id);
   }
-  
-  if (!targetId) {
+  else {
     console.error('❌ No valid homework ID found:', hw);
     this.$toast?.error('Ошибка: Не удается найти домашнее задание');
     return;
   }
   
-  // ✅ SOLUTION: Use the existing HomeworkPage route with the ID parameter
-  console.log('✅ Navigating to HomeworkPage with ID:', targetId, 'Type:', homeworkType);
+  console.log('✅ Navigating to:', routeName, 'with params:', params);
   
   this.$router.push({
-    name: 'HomeworkPage',
-    params: { 
-      id: targetId  // Use 'id' parameter that matches your router config
-    },
-    query: {
-      type: homeworkType,
-      title: hw.title || hw.lessonName,
-      subject: hw.subject
-    }
+    name: routeName,
+    params: params,
+    query: query
   }).catch(err => {
     console.error('❌ Navigation error:', err);
-    this.$toast?.error('Ошибка навигации: ' + err.message);
+    
+    // ✅ FALLBACK: If specific route fails, try the flexible route
+    console.log('🔄 Trying fallback navigation...');
+    
+    const fallbackId = hw._id || hw.lessonId;
+    this.$router.push({
+      name: 'HomeworkPage',
+      params: { id: fallbackId },
+      query: { 
+        type: hw.type || (hw.lessonId ? 'lesson' : 'standalone'),
+        title: hw.title || hw.lessonName,
+        subject: hw.subject
+      }
+    }).catch(fallbackErr => {
+      console.error('❌ Fallback navigation failed:', fallbackErr);
+      this.$toast?.error('Ошибка навигации. Обратитесь к администратору.');
+    });
   });
 },
     statusLabel(hw) {
