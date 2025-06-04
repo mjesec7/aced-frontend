@@ -302,7 +302,7 @@ export default {
 
         console.log('🔍 Fetching homeworks for user:', userId);
 
-        // Strategy 1: Try to get user's homework progress from progress routes
+        // ✅ FIXED: Use the correct API endpoint that exists in userRoutes.js
         let userHomeworkProgress = [];
         try {
           const { data: progressResponse } = await api.get(`/users/${userId}/homeworks`, {
@@ -311,14 +311,24 @@ export default {
           
           userHomeworkProgress = progressResponse.data || progressResponse || [];
           console.log('✅ User homework progress loaded:', userHomeworkProgress.length);
+          
+          // If the main endpoint returned data, use it directly
+          if (userHomeworkProgress.length > 0) {
+            this.homeworks = userHomeworkProgress;
+            console.log('✅ Using homework data from main endpoint');
+            return;
+          }
         } catch (progressError) {
           console.warn('⚠️ Could not fetch user homework progress:', progressError.message);
         }
 
-        // Strategy 2: Get all available homework from admin panel
+        // ✅ FIXED: Fallback strategy - get homework from correct admin endpoints
         let allHomeworks = [];
         try {
-          const { data: homeworkResponse } = await api.get('/homework');
+          // Use the correct admin homework endpoint
+          const { data: homeworkResponse } = await api.get('/homeworks', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
           allHomeworks = homeworkResponse.data || homeworkResponse || [];
           console.log('✅ All homeworks from admin loaded:', allHomeworks.length);
         } catch (homeworkError) {
@@ -339,13 +349,26 @@ export default {
           console.warn('⚠️ Could not fetch lessons:', lessonsError.message);
         }
 
+        // ✅ FIXED: Use homework progress endpoint for individual homework data
+        let individualHomeworkProgress = [];
+        try {
+          // Get user's homework progress using the homeworks routes
+          const { data: hwProgressResponse } = await api.get(`/homeworks/user/${userId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          individualHomeworkProgress = hwProgressResponse.data || hwProgressResponse || [];
+          console.log('✅ Individual homework progress loaded:', individualHomeworkProgress.length);
+        } catch (hwProgressError) {
+          console.warn('⚠️ Could not fetch individual homework progress:', hwProgressError.message);
+        }
+
         // Combine all homework sources
         const combinedHomeworks = [];
 
         // Add standalone homework from admin panel
         for (const hw of allHomeworks) {
           // Check if user has progress on this homework
-          const userProgress = userHomeworkProgress.find(up => 
+          const userProgress = individualHomeworkProgress.find(up => 
             up.homeworkId === hw._id || up._id === hw._id
           );
 
@@ -357,6 +380,7 @@ export default {
             difficulty: hw.difficulty || 3,
             exercises: hw.exercises || [],
             instructions: hw.instructions,
+            type: 'standalone',
             
             // User progress data
             hasProgress: !!userProgress,
@@ -374,7 +398,7 @@ export default {
         // Add lesson-based homework
         for (const lesson of lessonsWithHomework) {
           // Check if user has progress on this lesson's homework
-          const userProgress = userHomeworkProgress.find(up => 
+          const userProgress = individualHomeworkProgress.find(up => 
             up.lessonId === lesson._id
           );
 
@@ -386,6 +410,7 @@ export default {
             dueDate: lesson.homework[0]?.dueDate,
             difficulty: lesson.difficulty || 3,
             exercises: lesson.homework || [],
+            type: 'lesson',
             
             // User progress data
             hasProgress: !!userProgress,

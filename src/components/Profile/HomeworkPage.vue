@@ -163,10 +163,15 @@ export default {
         const token = await user.getIdToken();
         const userId = user.uid;
 
-        // Strategy 1: Try to fetch standalone homework from admin panel
+        // ✅ FIXED: Strategy 1 - Try to fetch standalone homework from admin panel
         if (homeworkId && homeworkId !== lessonId) {
           try {
-            const { data: homeworkData } = await api.get(`/homework/${homeworkId}`);
+            // Use the correct endpoint for getting individual homework
+            const { data: homeworkResponse } = await api.get(`/homeworks/${homeworkId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            const homeworkData = homeworkResponse.data || homeworkResponse;
             console.log('✅ Standalone homework loaded:', homeworkData.title);
             
             this.isStandalone = true;
@@ -175,15 +180,15 @@ export default {
             this.questions = homeworkData.exercises || [];
             this.userAnswers = this.questions.map(() => '');
 
-            // Try to load user's progress on this homework
+            // ✅ FIXED: Try to load user's progress on this homework using correct endpoint
             try {
               const { data: progressRes } = await api.get(
-                `/users/${userId}/homework/${homeworkId}/progress`,
+                `/users/${userId}/homework/${homeworkId}`,
                 { headers: { Authorization: `Bearer ${token}` } }
               );
 
-              if (progressRes?.data?.answers) {
-                this.loadUserAnswers(progressRes.data.answers);
+              if (progressRes?.data?.userProgress?.answers) {
+                this.loadUserAnswers(progressRes.data.userProgress.answers);
               }
             } catch (progressErr) {
               console.log('ℹ️ No existing progress found for standalone homework');
@@ -199,7 +204,7 @@ export default {
           }
         }
 
-        // Strategy 2: Fetch lesson-based homework
+        // ✅ FIXED: Strategy 2 - Fetch lesson-based homework
         const targetLessonId = lessonId || homeworkId;
         if (!targetLessonId) {
           this.error = 'ID урока не найден';
@@ -222,7 +227,7 @@ export default {
             return;
           }
 
-          // Try to load user's progress on this lesson's homework
+          // ✅ FIXED: Try to load user's progress on this lesson's homework using correct endpoint
           try {
             const { data: progressRes } = await api.get(
               `/homeworks/user/${userId}/lesson/${targetLessonId}`,
@@ -232,8 +237,8 @@ export default {
             console.log('✅ Loaded homework progress:', progressRes);
             const homeworkData = progressRes?.data || progressRes;
             
-            if (homeworkData?.answers) {
-              this.loadUserAnswers(homeworkData.answers);
+            if (homeworkData?.homework?.answers) {
+              this.loadUserAnswers(homeworkData.homework.answers);
             }
           } catch (progressErr) {
             console.log('ℹ️ No existing homework progress found');
@@ -303,16 +308,15 @@ export default {
         let saveData;
 
         if (this.isStandalone) {
-          // Save standalone homework progress
+          // ✅ FIXED: Save standalone homework progress using correct endpoint
           saveEndpoint = `/users/${userId}/homework/${this.computedHomeworkId}/save`;
-          saveData = { answers, completed: false };
+          saveData = { answers };
         } else {
-          // Save lesson homework progress
+          // ✅ FIXED: Save lesson homework progress using correct endpoint
           saveEndpoint = `/homeworks/user/${userId}/save`;
           saveData = { 
             lessonId: this.computedLessonId || this.computedHomeworkId, 
-            answers, 
-            completed: false 
+            answers
           };
         }
 
@@ -355,11 +359,11 @@ export default {
         let submitData;
 
         if (this.isStandalone) {
-          // Submit standalone homework
+          // ✅ FIXED: Submit standalone homework using correct endpoint
           submitEndpoint = `/users/${userId}/homework/${this.computedHomeworkId}/submit`;
           submitData = { answers };
         } else {
-          // Submit lesson homework
+          // ✅ FIXED: Submit lesson homework using correct endpoint
           const lessonId = this.computedLessonId || this.computedHomeworkId;
           submitEndpoint = `/homeworks/user/${userId}/lesson/${lessonId}/submit`;
           submitData = { answers };
