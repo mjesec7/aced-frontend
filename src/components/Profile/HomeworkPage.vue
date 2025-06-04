@@ -107,8 +107,24 @@ export default {
       type: String,
       required: false,
       default: null
+    },
+    homeworkType: {
+      type: String,
+      required: false,
+      default: null
+    },
+    title: {
+      type: String,
+      required: false,
+      default: null
+    },
+    subject: {
+      type: String,
+      required: false,
+      default: null
     }
   },
+  
   data() {
     return {
       questions: [],
@@ -119,171 +135,342 @@ export default {
       saving: false,
       submitting: false,
       error: null,
-      isStandalone: false, // Whether this is standalone homework from admin panel
+      isStandalone: false,
+      detectedHomeworkType: null,
     };
   },
+  
   computed: {
+    // ✅ FIXED: Extract ID from actual route structure
     computedHomeworkId() {
-      return this.homeworkId || this.$route.params.homeworkId || this.$route.query.homeworkId;
-    },
-    computedLessonId() {
-      return this.lessonId || this.$route.params.lessonId || this.$route.query.lessonId;
-    }
-  },
-  watch: {
-    '$route.params': {
-      immediate: true,
-      handler(newParams, oldParams) {
-        console.log('📍 Route params changed:', { old: oldParams, new: newParams });
-        if (newParams && !this.loading) {
-          this.fetchHomework();
+      const sources = [
+        { name: 'props.homeworkId', value: this.homeworkId },
+        { name: 'route.params.homeworkId', value: this.$route.params.homeworkId },
+        { name: 'route.params.id', value: this.$route.params.id },
+        { name: 'route.query.homeworkId', value: this.$route.query.homeworkId },
+        { name: 'url.path', value: this.extractIdFromPath() }
+      ];
+      
+      console.log('🔍 HomeworkId sources:', sources);
+      
+      for (const source of sources) {
+        if (source.value && source.value !== 'null' && source.value !== 'undefined') {
+          console.log(`✅ Using homeworkId from ${source.name}:`, source.value);
+          return source.value;
         }
       }
+      
+      console.log('⚠️ No valid homeworkId found');
+      return null;
+    },
+    
+    computedLessonId() {
+      const sources = [
+        { name: 'props.lessonId', value: this.lessonId },
+        { name: 'route.params.lessonId', value: this.$route.params.lessonId },
+        { name: 'route.params.id', value: this.$route.params.id },
+        { name: 'route.query.lessonId', value: this.$route.query.lessonId },
+        { name: 'url.path', value: this.extractIdFromPath() }
+      ];
+      
+      console.log('🔍 LessonId sources:', sources);
+      
+      for (const source of sources) {
+        if (source.value && source.value !== 'null' && source.value !== 'undefined') {
+          console.log(`✅ Using lessonId from ${source.name}:`, source.value);
+          return source.value;
+        }
+      }
+      
+      console.log('⚠️ No valid lessonId found');
+      return null;
+    },
+    
+    computedHomeworkType() {
+      const sources = [
+        { name: 'props.homeworkType', value: this.homeworkType },
+        { name: 'route.query.type', value: this.$route.query.type },
+        { name: 'route.query.homeworkType', value: this.$route.query.homeworkType },
+        { name: 'detected', value: this.detectedHomeworkType },
+        { name: 'url.path', value: this.extractTypeFromPath() }
+      ];
+      
+      console.log('🔍 HomeworkType sources:', sources);
+      
+      for (const source of sources) {
+        if (source.value) {
+          console.log(`✅ Using homeworkType from ${source.name}:`, source.value);
+          return source.value;
+        }
+      }
+      
+      console.log('⚠️ No homework type found, defaulting to unknown');
+      return 'unknown';
+    },
+    
+    primaryId() {
+      const hwId = this.computedHomeworkId;
+      const lessonId = this.computedLessonId;
+      const type = this.computedHomeworkType;
+      
+      console.log('🎯 Computing primary ID:', { 
+        hwId, 
+        lessonId, 
+        type,
+        routeParams: this.$route.params,
+        routeQuery: this.$route.query,
+        routePath: this.$route.path
+      });
+      
+      // Use type to determine priority
+      if (type === 'standalone' && hwId) {
+        console.log('✅ Primary ID (standalone):', hwId);
+        return hwId;
+      }
+      
+      if (type === 'lesson' && lessonId) {
+        console.log('✅ Primary ID (lesson):', lessonId);
+        return lessonId;
+      }
+      
+      // Prefer homework ID over lesson ID
+      if (hwId) {
+        console.log('✅ Primary ID (preferred hwId):', hwId);
+        return hwId;
+      }
+      
+      if (lessonId) {
+        console.log('✅ Primary ID (fallback lessonId):', lessonId);
+        return lessonId;
+      }
+      
+      console.error('❌ No primary ID found:', { hwId, lessonId, type, routeParams: this.$route.params });
+      return null;
     }
   },
+  
   methods: {
-    // CORRECTED fetchHomework method for HomeworkPage.vue
-// Replace the existing fetchHomework method with this fixed version
+    // ✅ NEW: Extract ID from URL path as fallback
+    extractIdFromPath() {
+      const path = this.$route.path || window.location.pathname;
+      const pathParts = path.split('/');
+      
+      // Look for MongoDB ObjectId pattern (24 hex characters)
+      const mongoIdPattern = /^[a-f0-9]{24}$/i;
+      const possibleId = pathParts.find(part => mongoIdPattern.test(part));
+      
+      console.log('🔍 Extracting ID from path:', { path, pathParts, possibleId });
+      return possibleId || null;
+    },
+    
+    // ✅ NEW: Extract type from URL path
+    extractTypeFromPath() {
+      const path = this.$route.path || window.location.pathname;
+      
+      if (path.includes('/standalone/')) {
+        return 'standalone';
+      } else if (path.includes('/lesson/')) {
+        return 'lesson';
+      }
+      
+      return null;
+    },
 
-async fetchHomework() {
-  try {
-    this.loading = true;
-    this.error = null;
-    
-    const homeworkId = this.computedHomeworkId;
-    const lessonId = this.computedLessonId;
-    const primaryId = this.primaryId;
-    const suggestedType = this.computedHomeworkType;
-    
-    console.log('📚 Fetching homework with details:', { 
-      homeworkId, 
-      lessonId, 
-      primaryId,
-      suggestedType,
-      routeParams: this.$route.params,
-      routeQuery: this.$route.query
-    });
-    
-    if (!primaryId) {
-      console.error('❌ No homework or lesson ID available');
-      this.error = 'ID задания не найден';
-      return;
-    }
-    
-    const user = auth.currentUser;
-    if (!user) throw new Error('Пользователь не авторизован');
-    const token = await user.getIdToken();
-    const userId = user.uid;
-
-    // ✅ STRATEGY 1: Try as standalone homework if type suggests it
-    const shouldTryStandalone = suggestedType === 'standalone' || 
-                               !suggestedType || 
-                               suggestedType === 'unknown';
-    
-    if (shouldTryStandalone && primaryId) {
+    async fetchHomework() {
       try {
-        console.log('🔍 Trying standalone homework approach with ID:', primaryId);
+        this.loading = true;
+        this.error = null;
         
-        // ✅ FIXED: Use the correct homework endpoint from your backend
-        const { data: homeworkResponse } = await api.get(`/homeworks/${primaryId}`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const homeworkId = this.computedHomeworkId;
+        const lessonId = this.computedLessonId;
+        const primaryId = this.primaryId;
+        const suggestedType = this.computedHomeworkType;
+        
+        console.log('📚 Fetching homework with details:', { 
+          homeworkId, 
+          lessonId, 
+          primaryId,
+          suggestedType,
+          routeParams: this.$route.params,
+          routeQuery: this.$route.query,
+          routePath: this.$route.path
         });
         
-        const homeworkData = homeworkResponse.data || homeworkResponse;
-        console.log('✅ Standalone homework loaded:', homeworkData.title);
+        if (!primaryId) {
+          console.error('❌ No homework or lesson ID available');
+          this.error = 'ID задания не найден';
+          return;
+        }
         
-        // Check if this is actually standalone homework
-        if (homeworkData && (homeworkData.exercises || homeworkData.title)) {
-          this.isStandalone = true;
-          this.detectedHomeworkType = 'standalone';
-          this.homeworkTitle = homeworkData.title || this.title || 'Домашнее задание';
-          this.instructions = homeworkData.instructions || '';
-          this.questions = homeworkData.exercises || [];
-          this.userAnswers = this.questions.map(() => '');
+        const user = auth.currentUser;
+        if (!user) throw new Error('Пользователь не авторизован');
+        const token = await user.getIdToken();
+        const userId = user.uid;
 
-          // ✅ FIXED: Try to load user's progress using correct endpoint
+        // ✅ STRATEGY 1: Try as standalone homework if type suggests it
+        const shouldTryStandalone = suggestedType === 'standalone' || 
+                                   !suggestedType || 
+                                   suggestedType === 'unknown';
+        
+        if (shouldTryStandalone && primaryId) {
           try {
-            const { data: progressRes } = await api.get(
-              `/users/${userId}/homework/${primaryId}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (progressRes?.data?.userProgress?.answers) {
-              this.loadUserAnswers(progressRes.data.userProgress.answers);
+            console.log('🔍 Trying standalone homework approach with ID:', primaryId);
+            
+            // ✅ FIXED: Add proper headers and error handling for HTML responses
+            const response = await api.get(`/homeworks/${primaryId}`, {
+              headers: { 
+                Authorization: `Bearer ${token}`,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            // ✅ FIXED: Check if response is actually JSON
+            let homeworkData;
+            if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE')) {
+              console.warn('⚠️ Received HTML instead of JSON from homework endpoint');
+              throw new Error('API returned HTML instead of JSON');
             }
-          } catch (progressErr) {
-            console.log('ℹ️ No existing progress found for standalone homework');
+            
+            homeworkData = response.data?.data || response.data;
+            console.log('✅ Standalone homework loaded:', homeworkData.title);
+            
+            // Check if this is actually standalone homework
+            if (homeworkData && (homeworkData.exercises || homeworkData.title)) {
+              this.isStandalone = true;
+              this.detectedHomeworkType = 'standalone';
+              this.homeworkTitle = homeworkData.title || this.title || 'Домашнее задание';
+              this.instructions = homeworkData.instructions || '';
+              this.questions = homeworkData.exercises || [];
+              this.userAnswers = this.questions.map(() => '');
+
+              // Try to load user's progress
+              try {
+                const progressResponse = await api.get(
+                  `/users/${userId}/homework/${primaryId}`,
+                  { 
+                    headers: { 
+                      Authorization: `Bearer ${token}`,
+                      'Accept': 'application/json'
+                    } 
+                  }
+                );
+
+                // Check for HTML response
+                if (typeof progressResponse.data === 'string' && progressResponse.data.includes('<!DOCTYPE')) {
+                  console.warn('⚠️ Progress endpoint returned HTML');
+                } else if (progressResponse.data?.data?.userProgress?.answers) {
+                  this.loadUserAnswers(progressResponse.data.data.userProgress.answers);
+                }
+              } catch (progressErr) {
+                console.log('ℹ️ No existing progress found for standalone homework:', progressErr.message);
+              }
+              
+              return; // Success - exit early
+            }
+          } catch (homeworkError) {
+            console.warn('⚠️ Standalone homework approach failed:', homeworkError.message);
+            
+            // ✅ FIXED: If we get HTML response, it might be a routing issue
+            if (homeworkError.message.includes('HTML')) {
+              console.error('🚨 API is returning HTML - possible backend routing issue');
+              this.error = 'Ошибка сервера: неправильный ответ API';
+              return;
+            }
+            // Continue to try lesson approach
+          }
+        }
+
+        // ✅ STRATEGY 2: Try as lesson homework
+        console.log('🔍 Trying lesson homework approach with ID:', primaryId);
+        try {
+          const response = await api.get(`/lessons/${primaryId}`, {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          // Check for HTML response
+          if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE')) {
+            console.warn('⚠️ Lesson endpoint returned HTML instead of JSON');
+            throw new Error('API returned HTML instead of JSON');
           }
           
+          const lesson = response.data;
+          console.log('✅ Lesson data loaded:', lesson.lessonName || lesson.title);
+          
+          this.isStandalone = false;
+          this.detectedHomeworkType = 'lesson';
+          this.homeworkTitle = `Домашнее задание: ${lesson.lessonName || lesson.title}`;
+          this.instructions = lesson.homeworkInstructions || '';
+          this.questions = Array.isArray(lesson.homework) ? lesson.homework : [];
+          this.userAnswers = this.questions.map(() => '');
+
+          if (!this.questions.length) {
+            console.warn('⚠️ No homework questions found in lesson');
+            this.error = 'В этом уроке нет домашнего задания';
+            return;
+          }
+
+          // Try to load user's progress
+          try {
+            const progressResponse = await api.get(
+              `/homeworks/user/${userId}/lesson/${primaryId}`,
+              { 
+                headers: { 
+                  Authorization: `Bearer ${token}`,
+                  'Accept': 'application/json'
+                } 
+              }
+            );
+
+            // Check for HTML response
+            if (typeof progressResponse.data === 'string' && progressResponse.data.includes('<!DOCTYPE')) {
+              console.warn('⚠️ Progress endpoint returned HTML');
+            } else {
+              console.log('✅ Loaded homework progress:', progressResponse.data);
+              const homeworkData = progressResponse.data?.data || progressResponse.data;
+              
+              if (homeworkData?.homework?.answers) {
+                this.loadUserAnswers(homeworkData.homework.answers);
+              }
+            }
+          } catch (progressErr) {
+            console.log('ℹ️ No existing homework progress found');
+          }
+
           return; // Success - exit early
+        } catch (lessonError) {
+          console.error('❌ Lesson homework approach also failed:', lessonError);
+          
+          // Check if it's an HTML response issue
+          if (lessonError.message.includes('HTML')) {
+            console.error('🚨 API is returning HTML - possible backend routing issue');
+            this.error = 'Ошибка сервера: неправильный ответ API. Проверьте настройки сервера.';
+            return;
+          }
+          
+          if (lessonError.response?.status === 404) {
+            if (suggestedType === 'standalone') {
+              this.error = 'Домашнее задание не найдено. Возможно, оно было удалено.';
+            } else {
+              this.error = 'Урок не найден. Возможно, он был удален.';
+            }
+          } else {
+            this.error = 'Ошибка загрузки домашнего задания';
+          }
         }
-      } catch (homeworkError) {
-        console.warn('⚠️ Standalone homework approach failed:', homeworkError.message);
-        // Continue to try lesson approach
-      }
-    }
 
-    // ✅ STRATEGY 2: Try as lesson homework
-    console.log('🔍 Trying lesson homework approach with ID:', primaryId);
-    try {
-      // ✅ FIXED: Use the correct lessons endpoint from your backend
-      const { data: lesson } = await api.get(`/lessons/${primaryId}`);
-      console.log('✅ Lesson data loaded:', lesson.lessonName || lesson.title);
-      
-      this.isStandalone = false;
-      this.detectedHomeworkType = 'lesson';
-      this.homeworkTitle = `Домашнее задание: ${lesson.lessonName || lesson.title}`;
-      this.instructions = lesson.homeworkInstructions || '';
-      this.questions = Array.isArray(lesson.homework) ? lesson.homework : [];
-      this.userAnswers = this.questions.map(() => '');
-
-      if (!this.questions.length) {
-        console.warn('⚠️ No homework questions found in lesson');
-        this.error = 'В этом уроке нет домашнего задания';
-        return;
-      }
-
-      // ✅ FIXED: Try to load user's progress using correct endpoint
-      try {
-        const { data: progressRes } = await api.get(
-          `/homeworks/user/${userId}/lesson/${primaryId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        console.log('✅ Loaded homework progress:', progressRes);
-        const homeworkData = progressRes?.data || progressRes;
-        
-        if (homeworkData?.homework?.answers) {
-          this.loadUserAnswers(homeworkData.homework.answers);
-        }
-      } catch (progressErr) {
-        console.log('ℹ️ No existing homework progress found');
-      }
-
-      return; // Success - exit early
-    } catch (lessonError) {
-      console.error('❌ Lesson homework approach also failed:', lessonError);
-      
-      // ✅ ENHANCED: Show specific error message based on the error
-      if (lessonError.response?.status === 404) {
-        if (suggestedType === 'standalone') {
-          this.error = 'Домашнее задание не найдено. Возможно, оно было удалено.';
-        } else {
-          this.error = 'Урок не найден. Возможно, он был удален.';
-        }
-      } else {
+      } catch (err) {
+        console.error('❌ Ошибка загрузки домашки:', err);
         this.error = 'Ошибка загрузки домашнего задания';
+        this.$toast?.error('Ошибка загрузки домашки.');
+      } finally {
+        this.loading = false;
       }
-    }
-
-  } catch (err) {
-    console.error('❌ Ошибка загрузки домашки:', err);
-    this.error = 'Ошибка загрузки домашнего задания';
-    this.$toast?.error('Ошибка загрузки домашки.');
-  } finally {
-    this.loading = false;
-  }
-},
+    },
 
     loadUserAnswers(answers) {
       console.log('📝 Loading user answers:', answers);
@@ -327,14 +514,14 @@ async fetchHomework() {
         let saveData;
 
         if (this.isStandalone) {
-          // ✅ FIXED: Save standalone homework progress using correct endpoint
-          saveEndpoint = `/users/${userId}/homework/${this.computedHomeworkId}/save`;
+          // Save standalone homework progress
+          saveEndpoint = `/users/${userId}/homework/${this.primaryId}/save`;
           saveData = { answers };
         } else {
-          // ✅ FIXED: Save lesson homework progress using correct endpoint
+          // Save lesson homework progress
           saveEndpoint = `/homeworks/user/${userId}/save`;
           saveData = { 
-            lessonId: this.computedLessonId || this.computedHomeworkId, 
+            lessonId: this.primaryId, 
             answers
           };
         }
@@ -378,13 +565,12 @@ async fetchHomework() {
         let submitData;
 
         if (this.isStandalone) {
-          // ✅ FIXED: Submit standalone homework using correct endpoint
-          submitEndpoint = `/users/${userId}/homework/${this.computedHomeworkId}/submit`;
+          // Submit standalone homework
+          submitEndpoint = `/users/${userId}/homework/${this.primaryId}/submit`;
           submitData = { answers };
         } else {
-          // ✅ FIXED: Submit lesson homework using correct endpoint
-          const lessonId = this.computedLessonId || this.computedHomeworkId;
-          submitEndpoint = `/homeworks/user/${userId}/lesson/${lessonId}/submit`;
+          // Submit lesson homework
+          submitEndpoint = `/homeworks/user/${userId}/lesson/${this.primaryId}/submit`;
           submitData = { answers };
         }
 
@@ -416,22 +602,42 @@ async fetchHomework() {
       return 'баллов';
     }
   },
+  
   created() {
     console.group('🎯 HomeworkPage Created');
-    console.log('Props homeworkId:', this.homeworkId);
-    console.log('Props lessonId:', this.lessonId);
+    console.log('Props:', {
+      homeworkId: this.homeworkId,
+      lessonId: this.lessonId,
+      homeworkType: this.homeworkType,
+      title: this.title,
+      subject: this.subject
+    });
     console.log('Route params:', this.$route.params);
-    console.log('Computed homeworkId:', this.computedHomeworkId);
-    console.log('Computed lessonId:', this.computedLessonId);
+    console.log('Route query:', this.$route.query);
+    console.log('Route path:', this.$route.path);
+    console.log('Window location:', window.location.pathname);
     console.groupEnd();
   },
+
   mounted() {
-    if (this.computedHomeworkId || this.computedLessonId) {
+    if (this.primaryId) {
       this.fetchHomework();
     } else {
       console.error('❌ No homework or lesson ID available on mount');
       this.loading = false;
       this.error = 'ID задания не найден';
+    }
+  },
+
+  watch: {
+    '$route'(to, from) {
+      console.log('📍 Route changed in HomeworkPage:', { 
+        from: { params: from.params, path: from.path },
+        to: { params: to.params, path: to.path }
+      });
+      if (to.params !== from.params && this.primaryId) {
+        this.fetchHomework();
+      }
     }
   }
 };
