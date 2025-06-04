@@ -78,22 +78,79 @@ const routes = [
         component: HomeworkList,
         meta: { title: 'Домашние задания' }
       },
+      
+      // ✅ ENHANCED: Flexible homework routes that support both standalone and lesson-based homework
       { 
-        path: 'homeworks/:lessonId', 
+        path: 'homeworks/:id', 
         name: 'HomeworkPage', 
         component: HomeworkPage, 
-        props: true,
+        props: route => ({
+          // Pass the ID as both homeworkId and lessonId - component will determine which one to use
+          homeworkId: route.params.id,
+          lessonId: route.params.id,
+          // Pass query parameters for additional context
+          homeworkType: route.query.type || route.query.homeworkType,
+          title: route.query.title,
+          subject: route.query.subject
+        }),
         meta: { title: 'Выполнение домашнего задания' },
         beforeEnter: (to, from, next) => {
-          // Validate lessonId before entering the route
-          if (!to.params.lessonId || to.params.lessonId === 'null' || to.params.lessonId === 'undefined') {
-            console.error('❌ Invalid lessonId:', to.params.lessonId);
+          // Validate ID before entering the route
+          if (!to.params.id || to.params.id === 'null' || to.params.id === 'undefined') {
+            console.error('❌ Invalid homework/lesson ID:', to.params.id);
             next({ name: 'HomeworkList' });
           } else {
+            console.log('✅ Valid homework/lesson ID:', to.params.id, 'Type:', to.query.type);
             next();
           }
         }
       },
+      
+      // ✅ ADDITIONAL: Specific routes for different homework types (for cleaner URLs and explicit routing)
+      { 
+        path: 'homework/lesson/:lessonId', 
+        name: 'LessonHomeworkPage', 
+        component: HomeworkPage, 
+        props: route => ({
+          lessonId: route.params.lessonId,
+          homeworkType: 'lesson',
+          title: route.query.title,
+          subject: route.query.subject
+        }),
+        meta: { title: 'Домашнее задание урока' },
+        beforeEnter: (to, from, next) => {
+          if (!to.params.lessonId || to.params.lessonId === 'null' || to.params.lessonId === 'undefined') {
+            console.error('❌ Invalid lessonId:', to.params.lessonId);
+            next({ name: 'HomeworkList' });
+          } else {
+            console.log('✅ Valid lessonId:', to.params.lessonId);
+            next();
+          }
+        }
+      },
+      
+      { 
+        path: 'homework/standalone/:homeworkId', 
+        name: 'StandaloneHomeworkPage', 
+        component: HomeworkPage, 
+        props: route => ({
+          homeworkId: route.params.homeworkId,
+          homeworkType: 'standalone',
+          title: route.query.title,
+          subject: route.query.subject
+        }),
+        meta: { title: 'Домашнее задание' },
+        beforeEnter: (to, from, next) => {
+          if (!to.params.homeworkId || to.params.homeworkId === 'null' || to.params.homeworkId === 'undefined') {
+            console.error('❌ Invalid homeworkId:', to.params.homeworkId);
+            next({ name: 'HomeworkList' });
+          } else {
+            console.log('✅ Valid homeworkId:', to.params.homeworkId);
+            next();
+          }
+        }
+      },
+      
       { 
         path: 'diary', 
         name: 'DiaryPage', 
@@ -163,7 +220,7 @@ const router = createRouter({
   },
 });
 
-// ✅ Route Guard: wait for Firebase auth before navigation
+// ✅ Enhanced Route Guard: wait for Firebase auth before navigation
 router.beforeEach(async (to, from, next) => {
   // Public routes that don't require authentication
   const publicRoutes = ['HomePage', 'SettingsPage'];
@@ -195,25 +252,52 @@ router.beforeEach(async (to, from, next) => {
     return next({ name: 'HomePage' });
   }
 
+  // ✅ ENHANCED: Additional homework route validation
+  if (to.name && to.name.includes('Homework') && to.params.id) {
+    // Log homework navigation for debugging
+    console.log('📚 Homework route navigation:', {
+      route: to.name,
+      id: to.params.id || to.params.homeworkId || to.params.lessonId,
+      type: to.query.type,
+      from: from.path
+    });
+  }
+
   next();
 });
 
-// ✅ Set page title after navigation
+// ✅ Enhanced navigation logging after route changes
 router.afterEach((to, from) => {
   // Update document title
   const baseTitle = 'ACED';
   document.title = to.meta.title ? `${to.meta.title} - ${baseTitle}` : baseTitle;
   
-  // Log navigation for debugging
-  console.log(`📍 Navigated from ${from.path} to ${to.path}`);
+  // Enhanced logging for homework routes
+  if (to.name && to.name.includes('Homework')) {
+    console.log(`📚 Homework navigation completed:`, {
+      route: to.name,
+      path: to.path,
+      params: to.params,
+      query: to.query,
+      from: from.path
+    });
+  } else {
+    // Standard navigation logging
+    console.log(`📍 Navigated from ${from.path} to ${to.path}`);
+  }
   
   // Log params if any
   if (Object.keys(to.params).length > 0) {
     console.log('📦 Route params:', to.params);
   }
+  
+  // Log query params if any
+  if (Object.keys(to.query).length > 0) {
+    console.log('🔍 Query params:', to.query);
+  }
 });
 
-// ✅ Catch routing errors
+// ✅ Enhanced error handling for routing errors
 router.onError((err) => {
   console.error('❌ Ошибка маршрута:', err);
   
@@ -222,11 +306,23 @@ router.onError((err) => {
     console.log('🔄 Reloading due to chunk loading error...');
     window.location.reload();
   }
+  
+  // Handle navigation errors specifically for homework routes
+  if (err.message.includes('homework') || err.message.includes('Homework')) {
+    console.error('📚 Homework route error:', err);
+    // Could redirect to homework list as fallback
+    // router.push({ name: 'HomeworkList' });
+  }
 });
 
-// ✅ Debug navigation failures
+// ✅ Debug navigation failures with enhanced logging
 router.isReady().then(() => {
   console.log('✅ Router is ready');
+  console.log('📋 Available homework routes:');
+  console.log('  - /profile/homeworks (list)');
+  console.log('  - /profile/homeworks/:id (flexible)');
+  console.log('  - /profile/homework/lesson/:lessonId (specific lesson)');
+  console.log('  - /profile/homework/standalone/:homeworkId (specific standalone)');
 }).catch(err => {
   console.error('❌ Router initialization failed:', err);
 });

@@ -238,61 +238,60 @@ export default {
     }
   },
   methods: {
-    goToHomework(hw) {
-      console.log('🚀 goToHomework called with:', hw);
-      
-      // ✅ FIXED: Better logic for determining homework type and navigation
-      let targetId = null;
-      let routeName = 'HomeworkPage';
-      
-      // Check if it's standalone homework
-      if (hw._id && (hw.type === 'standalone' || (hw.exercises && hw.exercises.length > 0))) {
-        targetId = hw._id;
-        routeName = 'StandaloneHomeworkPage';
-        console.log('📝 Navigating to standalone homework:', targetId);
-      } 
-      // Check if it's lesson-based homework
-      else if (hw.lessonId) {
-        targetId = hw.lessonId;
-        routeName = 'HomeworkPage';
-        console.log('📚 Navigating to lesson homework:', targetId);
-      }
-      // Fallback: if we have an _id but no lessonId, treat as standalone
-      else if (hw._id) {
-        targetId = hw._id;
-        routeName = 'HomeworkPage'; // Use regular homework page as fallback
-        console.log('🔄 Fallback navigation for homework:', targetId);
-      }
-      
-      if (!targetId) {
-        console.error('❌ No valid homework ID found:', hw);
-        this.$toast?.error('Ошибка: Не удается найти домашнее задание');
-        return;
-      }
-      
-      console.log('✅ Navigating to:', routeName, 'with ID:', targetId);
-      
-      this.$router.push({
-        name: routeName,
-        params: { 
-          homeworkId: targetId,
-          lessonId: hw.lessonId || targetId 
-        }
-      }).catch(err => {
-        console.error('❌ Navigation error:', err);
-        // Fallback navigation if route doesn't exist
-        this.$router.push({
-          name: 'HomeworkPage',
-          params: { 
-            homeworkId: targetId,
-            lessonId: hw.lessonId || targetId 
-          }
-        }).catch(fallbackErr => {
-          console.error('❌ Fallback navigation error:', fallbackErr);
-          this.$toast?.error('Ошибка навигации');
-        });
-      });
+    // Updated goToHomework method for HomeworkList.vue
+// Replace the existing method with this fixed version
+
+goToHomework(hw) {
+  console.log('🚀 goToHomework called with:', hw);
+  
+  // ✅ FIXED: Use the correct route that exists in your router
+  let targetId = null;
+  let homeworkType = 'unknown';
+  
+  // Determine the homework ID and type
+  if (hw._id && (hw.type === 'standalone' || (hw.exercises && hw.exercises.length > 0))) {
+    // Standalone homework - use _id
+    targetId = hw._id;
+    homeworkType = 'standalone';
+    console.log('📝 Navigating to standalone homework:', targetId);
+  } 
+  else if (hw.lessonId) {
+    // Lesson-based homework - use lessonId
+    targetId = hw.lessonId;
+    homeworkType = 'lesson';
+    console.log('📚 Navigating to lesson homework:', targetId);
+  }
+  else if (hw._id) {
+    // Fallback: treat as homework ID
+    targetId = hw._id;
+    homeworkType = 'standalone';
+    console.log('🔄 Fallback navigation for homework:', targetId);
+  }
+  
+  if (!targetId) {
+    console.error('❌ No valid homework ID found:', hw);
+    this.$toast?.error('Ошибка: Не удается найти домашнее задание');
+    return;
+  }
+  
+  // ✅ SOLUTION: Use the existing HomeworkPage route with the ID parameter
+  console.log('✅ Navigating to HomeworkPage with ID:', targetId, 'Type:', homeworkType);
+  
+  this.$router.push({
+    name: 'HomeworkPage',
+    params: { 
+      id: targetId  // Use 'id' parameter that matches your router config
     },
+    query: {
+      type: homeworkType,
+      title: hw.title || hw.lessonName,
+      subject: hw.subject
+    }
+  }).catch(err => {
+    console.error('❌ Navigation error:', err);
+    this.$toast?.error('Ошибка навигации: ' + err.message);
+  });
+},
     statusLabel(hw) {
       if (!hw.record && !hw.hasProgress) return '⏳ Не начато';
       if (!(hw.record?.completed || hw.completed)) return '🔄 В процессе';
