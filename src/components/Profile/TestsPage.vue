@@ -23,8 +23,41 @@
     <div v-else class="content-container">
       <!-- Test List Page -->
       <div v-if="!activeTest" class="tests-section">
+        <!-- Filters Section -->
+        <div v-if="tests.length > 0" class="filters-section">
+          <div class="filter-group">
+            <label class="filter-label">📚 Предмет:</label>
+            <select v-model="selectedSubject" class="filter-select">
+              <option value="">Все предметы</option>
+              <option v-for="subject in uniqueSubjects" :key="subject" :value="subject">
+                {{ subject }}
+              </option>
+            </select>
+          </div>
+          
+          <div class="filter-group">
+            <label class="filter-label">📊 Уровень:</label>
+            <select v-model="selectedLevel" class="filter-select">
+              <option value="">Все уровни</option>
+              <option v-for="level in uniqueLevels" :key="level" :value="level">
+                Уровень {{ level }}
+              </option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label class="filter-label">🔍 Поиск:</label>
+            <input 
+              v-model="searchQuery" 
+              type="text" 
+              class="filter-input" 
+              placeholder="Название теста..."
+            />
+          </div>
+        </div>
+
         <!-- Empty State -->
-        <div v-if="tests.length === 0" class="empty-state">
+        <div v-if="filteredTests.length === 0 && tests.length === 0" class="empty-state">
           <div class="empty-icon">📝</div>
           <h3 class="empty-title">Тестов пока нет</h3>
           <p class="empty-description">
@@ -36,11 +69,21 @@
             <div class="decoration-dot"></div>
           </div>
         </div>
+
+        <!-- No Results State -->
+        <div v-else-if="filteredTests.length === 0 && tests.length > 0" class="empty-state">
+          <div class="empty-icon">🔍</div>
+          <h3 class="empty-title">Ничего не найдено</h3>
+          <p class="empty-description">
+            Попробуйте изменить фильтры поиска
+          </p>
+          <button @click="clearFilters" class="clear-filters-btn">Очистить фильтры</button>
+        </div>
         
         <!-- Tests Grid -->
         <div v-else class="tests-grid">
           <div 
-            v-for="test in tests" 
+            v-for="test in filteredTests" 
             :key="test._id" 
             class="test-card"
             @click="startTest(test)"
@@ -53,14 +96,21 @@
               
               <div class="test-main">
                 <h3 class="test-title">{{ test.title }}</h3>
+                <div v-if="test.description" class="test-description">
+                  {{ test.description }}
+                </div>
                 <div class="test-meta">
                   <div class="meta-item">
                     <span class="meta-icon">📘</span>
-                    <span class="meta-text">{{ test.topic }}</span>
+                    <span class="meta-text">{{ test.subject || 'Общий' }}</span>
                   </div>
                   <div class="meta-item">
                     <span class="meta-icon">📚</span>
-                    <span class="meta-text">{{ test.subject }}</span>
+                    <span class="meta-text">Уровень {{ test.level || 1 }}</span>
+                  </div>
+                  <div v-if="test.duration" class="meta-item">
+                    <span class="meta-icon">⏱️</span>
+                    <span class="meta-text">{{ test.duration }} мин</span>
                   </div>
                 </div>
               </div>
@@ -82,6 +132,9 @@
         <div class="test-header">
           <div class="test-info">
             <h2 class="test-name">{{ activeTest.title }}</h2>
+            <div v-if="activeTest.description" class="test-description-header">
+              {{ activeTest.description }}
+            </div>
             <div class="progress-section">
               <div class="progress-bar">
                 <div 
@@ -100,34 +153,79 @@
         <div v-if="currentQuestionIndex < activeTest.questions.length" class="question-section">
           <div class="question-card">
             <div class="question-number">{{ currentQuestionIndex + 1 }}</div>
-            <h3 class="question-text">{{ currentQuestion.question }}</h3>
+            <h3 class="question-text">{{ currentQuestion.text || currentQuestion.question }}</h3>
             
-            <div class="options-container">
+            <!-- Multiple Choice -->
+            <div v-if="currentQuestion.type === 'multiple-choice' || (currentQuestion.options && currentQuestion.options.length > 0)" class="options-container">
               <label 
                 v-for="(opt, j) in currentQuestion.options" 
                 :key="j" 
                 class="option-item"
-                :class="{ 'selected': userAnswers[currentQuestionIndex] === opt }"
+                :class="{ 'selected': userAnswers[currentQuestionIndex] === (opt.text || opt) }"
               >
                 <input
                   type="radio"
-                  :value="opt"
+                  :value="opt.text || opt"
                   v-model="userAnswers[currentQuestionIndex]"
                   class="option-input"
                 />
                 <div class="option-content">
                   <div class="option-radio"></div>
-                  <span class="option-text">{{ opt }}</span>
+                  <span class="option-text">{{ opt.text || opt }}</span>
                 </div>
               </label>
+            </div>
+
+            <!-- True/False -->
+            <div v-else-if="currentQuestion.type === 'true-false'" class="options-container">
+              <label 
+                class="option-item"
+                :class="{ 'selected': userAnswers[currentQuestionIndex] === 'true' }"
+              >
+                <input
+                  type="radio"
+                  value="true"
+                  v-model="userAnswers[currentQuestionIndex]"
+                  class="option-input"
+                />
+                <div class="option-content">
+                  <div class="option-radio"></div>
+                  <span class="option-text">Правда</span>
+                </div>
+              </label>
+              <label 
+                class="option-item"
+                :class="{ 'selected': userAnswers[currentQuestionIndex] === 'false' }"
+              >
+                <input
+                  type="radio"
+                  value="false"
+                  v-model="userAnswers[currentQuestionIndex]"
+                  class="option-input"
+                />
+                <div class="option-content">
+                  <div class="option-radio"></div>
+                  <span class="option-text">Ложь</span>
+                </div>
+              </label>
+            </div>
+
+            <!-- Short Answer -->
+            <div v-else class="text-answer-container">
+              <textarea
+                v-model="userAnswers[currentQuestionIndex]"
+                class="text-answer-input"
+                :placeholder="'Введите ваш ответ на вопрос ' + (currentQuestionIndex + 1)"
+                rows="4"
+              ></textarea>
             </div>
 
             <div class="question-actions">
               <button 
                 class="next-btn"
                 @click="nextQuestion"
-                :disabled="!userAnswers[currentQuestionIndex]"
-                :class="{ 'disabled': !userAnswers[currentQuestionIndex] }"
+                :disabled="!userAnswers[currentQuestionIndex] || userAnswers[currentQuestionIndex].trim() === ''"
+                :class="{ 'disabled': !userAnswers[currentQuestionIndex] || userAnswers[currentQuestionIndex].trim() === '' }"
               >
                 <span v-if="currentQuestionIndex === activeTest.questions.length - 1">
                   ✅ Завершить тест
@@ -179,10 +277,8 @@
 </template>
 
 <script>
-import axios from 'axios';
+import api from '@/api';
 import { auth } from '@/firebase';
-
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default {
   name: 'TestsPage',
@@ -192,7 +288,12 @@ export default {
       tests: [],
       activeTest: null,
       userAnswers: [],
-      currentQuestionIndex: 0
+      currentQuestionIndex: 0,
+      
+      // Filters
+      selectedSubject: '',
+      selectedLevel: '',
+      searchQuery: ''
     };
   },
   computed: {
@@ -203,12 +304,47 @@ export default {
     correctCount() {
       if (!this.activeTest || !this.activeTest.questions) return 0;
       return this.activeTest.questions.reduce((acc, q, idx) => {
-        return acc + (q.correctAnswer === this.userAnswers[idx] ? 1 : 0);
+        const correctAnswer = q.correctAnswer;
+        const userAnswer = this.userAnswers[idx];
+        
+        // Handle different answer formats
+        let isCorrect = false;
+        if (q.type === 'multiple-choice' && Array.isArray(q.options)) {
+          // For multiple choice, correctAnswer might be an index or the actual text
+          if (typeof correctAnswer === 'number') {
+            const correctOptionText = q.options[correctAnswer]?.text || q.options[correctAnswer];
+            isCorrect = userAnswer === correctOptionText;
+          } else {
+            isCorrect = userAnswer === correctAnswer;
+          }
+        } else {
+          // For other types, do direct comparison
+          isCorrect = userAnswer?.toString().toLowerCase().trim() === correctAnswer?.toString().toLowerCase().trim();
+        }
+        
+        return acc + (isCorrect ? 1 : 0);
       }, 0);
     },
     score() {
       if (!this.activeTest || !this.activeTest.questions) return 0;
       return Math.round((this.correctCount / this.activeTest.questions.length) * 100);
+    },
+    uniqueSubjects() {
+      return [...new Set(this.tests.map(test => test.subject).filter(Boolean))].sort();
+    },
+    uniqueLevels() {
+      return [...new Set(this.tests.map(test => test.level).filter(Boolean))].sort((a, b) => a - b);
+    },
+    filteredTests() {
+      return this.tests.filter(test => {
+        const matchesSubject = !this.selectedSubject || test.subject === this.selectedSubject;
+        const matchesLevel = !this.selectedLevel || test.level == this.selectedLevel;
+        const matchesSearch = !this.searchQuery || 
+          test.title?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+          test.description?.toLowerCase().includes(this.searchQuery.toLowerCase());
+        
+        return matchesSubject && matchesLevel && matchesSearch;
+      });
     }
   },
   async mounted() {
@@ -218,19 +354,53 @@ export default {
     async loadTests() {
       try {
         this.loading = true;
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) {
+        const user = auth.currentUser;
+        if (!user) {
           console.error('❌ Пользователь не авторизован');
+          this.$toast?.error('Необходимо войти в систему');
           return;
         }
 
-        const { data } = await axios.get(`${BASE_URL}/tests`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        this.tests = data.tests || [];
+        const token = await user.getIdToken();
+        const userId = user.uid;
+
+        console.log('🔍 Loading tests for user:', userId);
+
+        // Method 1: Try user-specific tests endpoint
+        try {
+          const { data: userTestsResponse } = await api.get(`/users/${userId}/tests`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (userTestsResponse?.tests && Array.isArray(userTestsResponse.tests)) {
+            this.tests = userTestsResponse.tests;
+            console.log('✅ Loaded tests from user endpoint:', this.tests.length);
+            return;
+          }
+        } catch (userTestsError) {
+          console.warn('⚠️ User tests endpoint failed:', userTestsError.message);
+        }
+
+        // Method 2: Try direct tests endpoint
+        try {
+          const { data: testsResponse } = await api.get('/tests', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          const testsData = testsResponse?.data || testsResponse || [];
+          // Filter only active tests for users
+          this.tests = Array.isArray(testsData) ? testsData.filter(test => test.isActive !== false) : [];
+          console.log('✅ Loaded tests from direct endpoint:', this.tests.length);
+        } catch (directTestsError) {
+          console.error('❌ Failed to load tests:', directTestsError);
+          this.$toast?.error('Ошибка загрузки тестов');
+          this.tests = [];
+        }
+
       } catch (err) {
         console.error('❌ Ошибка загрузки тестов:', err);
         this.$toast?.error('Ошибка загрузки тестов');
+        this.tests = [];
       } finally {
         this.loading = false;
       }
@@ -239,29 +409,65 @@ export default {
     async startTest(test) {
       try {
         this.loading = true;
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) {
+        const user = auth.currentUser;
+        if (!user) {
           console.error('❌ Пользователь не авторизован');
           return;
         }
 
-        const { data } = await axios.get(`${BASE_URL}/tests/${test._id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        this.activeTest = data.test;
+        const token = await user.getIdToken();
+        const userId = user.uid;
+
+        console.log('🚀 Starting test:', test.title, 'ID:', test._id);
+
+        // Try to get the full test with questions
+        try {
+          const { data: fullTestResponse } = await api.get(`/users/${userId}/tests/${test._id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          this.activeTest = fullTestResponse?.test || fullTestResponse?.data || fullTestResponse;
+        } catch (userTestError) {
+          console.warn('⚠️ User-specific test endpoint failed, trying direct:', userTestError.message);
+          
+          // Fallback to direct test endpoint
+          const { data: directTestResponse } = await api.get(`/tests/${test._id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          this.activeTest = directTestResponse?.data || directTestResponse;
+        }
+
+        if (!this.activeTest || !this.activeTest.questions || this.activeTest.questions.length === 0) {
+          throw new Error('Тест не содержит вопросов');
+        }
+
+        // Process questions to ensure they have proper structure
+        this.activeTest.questions = this.activeTest.questions.map(q => ({
+          ...q,
+          text: q.text || q.question,
+          type: q.type || 'multiple-choice',
+          options: q.options || [],
+          correctAnswer: q.correctAnswer
+        }));
+
         this.userAnswers = Array(this.activeTest.questions.length).fill('');
         this.currentQuestionIndex = 0;
+        
+        console.log('✅ Test loaded successfully:', this.activeTest.title);
+        console.log('📊 Questions:', this.activeTest.questions.length);
+        
       } catch (err) {
         console.error('❌ Ошибка загрузки теста:', err);
-        this.$toast?.error('Ошибка загрузки теста');
+        this.$toast?.error('Ошибка загрузки теста: ' + err.message);
       } finally {
         this.loading = false;
       }
     },
 
     nextQuestion() {
-      if (!this.userAnswers[this.currentQuestionIndex]) {
+      const currentAnswer = this.userAnswers[this.currentQuestionIndex];
+      if (!currentAnswer || currentAnswer.trim() === '') {
         this.$toast?.warning('Пожалуйста, выберите ответ');
         return;
       }
@@ -275,21 +481,48 @@ export default {
 
     async submitTest() {
       try {
-        const token = await auth.currentUser?.getIdToken();
-        const userId = auth.currentUser?.uid;
-
-        if (!token || !userId) {
+        const user = auth.currentUser;
+        if (!user) {
           console.error('❌ Пользователь не авторизован');
           return;
         }
 
-        await axios.post(
-          `${BASE_URL}/users/${userId}/tests/${this.activeTest._id}/submit`,
-          { answers: this.userAnswers },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const token = await user.getIdToken();
+        const userId = user.uid;
 
+        console.log('📤 Submitting test results...');
+
+        // Format answers for submission
+        const formattedAnswers = this.userAnswers.map((answer, index) => ({
+          questionIndex: index,
+          answer: answer
+        }));
+
+        try {
+          await api.post(
+            `/users/${userId}/tests/${this.activeTest._id}/submit`,
+            { answers: formattedAnswers },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          
+          console.log('✅ Test results submitted successfully');
+        } catch (submitError) {
+          console.warn('⚠️ User-specific submit failed, trying direct route:', submitError.message);
+          
+          // Fallback submit
+          await api.post(
+            `/tests/${this.activeTest._id}/submit`,
+            { 
+              userId: userId,
+              answers: formattedAnswers 
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        }
+
+        // Move to results view
         this.currentQuestionIndex = this.activeTest.questions.length;
+        
       } catch (err) {
         console.error('❌ Ошибка отправки теста:', err);
         this.$toast?.error('Ошибка отправки результатов теста');
@@ -300,6 +533,12 @@ export default {
       this.activeTest = null;
       this.userAnswers = [];
       this.currentQuestionIndex = 0;
+    },
+
+    clearFilters() {
+      this.selectedSubject = '';
+      this.selectedLevel = '';
+      this.searchQuery = '';
     },
 
     getScoreClass(score) {
@@ -320,6 +559,7 @@ export default {
 </script>
 
 <style scoped>
+/* Keep all the existing comprehensive styles from the original file */
 .tests-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -456,6 +696,48 @@ export default {
   margin: 0;
 }
 
+/* Filters Section */
+.filters-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.filter-select,
+.filter-input {
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
 .empty-state {
   text-align: center;
   padding: 6rem 2rem;
@@ -484,6 +766,21 @@ export default {
   color: #6b7280;
   margin: 0 0 2rem 0;
   line-height: 1.6;
+}
+
+.clear-filters-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.clear-filters-btn:hover {
+  background: #5a67d8;
 }
 
 .empty-decoration {
@@ -584,6 +881,13 @@ export default {
   line-height: 1.3;
 }
 
+.test-description {
+  color: #6b7280;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
 .test-meta {
   display: flex;
   flex-direction: column;
@@ -662,7 +966,14 @@ export default {
 .test-name {
   font-size: 1.8rem;
   font-weight: 700;
-  margin: 0 0 2rem 0;
+  margin: 0 0 1rem 0;
+}
+
+.test-description-header {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin-bottom: 2rem;
+  line-height: 1.5;
 }
 
 .progress-bar {
@@ -794,6 +1105,30 @@ export default {
   color: #374151;
   line-height: 1.4;
   flex: 1;
+}
+
+.text-answer-container {
+  margin-bottom: 3rem;
+}
+
+.text-answer-input {
+  width: 100%;
+  padding: 1.2rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 16px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 120px;
+  transition: border-color 0.3s ease;
+  background: #fafafa;
+}
+
+.text-answer-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  background: white;
 }
 
 .question-actions {
@@ -1008,6 +1343,12 @@ export default {
   
   .content-container {
     padding: 0 1rem 3rem;
+  }
+  
+  .filters-section {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem;
   }
   
   .tests-grid {

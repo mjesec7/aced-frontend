@@ -4,9 +4,12 @@
       <router-link to="/profile/homeworks" class="back-link">← Назад к списку</router-link>
     </div>
     
-    <h1>Домашка: {{ lessonName || 'Без названия' }}</h1>
+    <h1>{{ homeworkTitle }}</h1>
 
-    <div v-if="loading" class="loading">Загрузка...</div>
+    <div v-if="loading" class="loading">
+      <div class="spinner"></div>
+      <p>Загрузка задания...</p>
+    </div>
 
     <div v-else-if="error" class="error">
       <div class="error-icon">⚠️</div>
@@ -14,39 +17,77 @@
       <router-link to="/profile/homeworks" class="error-button">Вернуться к списку</router-link>
     </div>
 
-    <div v-else-if="!lessonId" class="error">
+    <div v-else-if="!homeworkId && !lessonId" class="error">
       <div class="error-icon">⚠️</div>
       <h3>Ошибка загрузки</h3>
-      <p>ID урока не найден. Пожалуйста, вернитесь к списку домашних заданий.</p>
+      <p>ID задания не найден. Пожалуйста, вернитесь к списку домашних заданий.</p>
       <router-link to="/profile/homeworks" class="error-button">Вернуться к списку</router-link>
     </div>
 
     <div v-else-if="questions.length === 0" class="empty">
-      В этом уроке нет домашнего задания.
+      <div class="empty-icon">📝</div>
+      <h3>В этом задании нет вопросов</h3>
+      <p>Обратитесь к преподавателю для получения дополнительной информации.</p>
     </div>
 
-    <form v-else @submit.prevent="submitHomework">
-      <div v-for="(q, i) in questions" :key="i" class="question-block">
-        <p><strong>{{ i + 1 }}. {{ q.question }}</strong></p>
+    <div v-else>
+      <!-- Instructions Section -->
+      <div v-if="instructions" class="instructions-section">
+        <h3>📋 Инструкции</h3>
+        <div class="instructions-content">{{ instructions }}</div>
+      </div>
 
-        <div class="options">
-          <label v-for="(opt, j) in q.options" :key="j" class="option">
-            <input
-              type="radio"
-              :name="'q' + i"
-              :value="opt"
+      <form @submit.prevent="submitHomework">
+        <div v-for="(q, i) in questions" :key="q._id || i" class="question-block">
+          <div class="question-header">
+            <span class="question-number">{{ i + 1 }}</span>
+            <div class="question-content">
+              <p class="question-text"><strong>{{ q.question || q.text }}</strong></p>
+              <div v-if="q.instruction" class="question-instruction">
+                <em>{{ q.instruction }}</em>
+              </div>
+            </div>
+          </div>
+
+          <!-- Multiple Choice Questions -->
+          <div v-if="q.type === 'abc' || q.type === 'multiple-choice' || (q.options && q.options.length > 0)" class="options">
+            <label v-for="(opt, j) in q.options" :key="j" class="option">
+              <input
+                type="radio"
+                :name="'q' + i"
+                :value="opt.text || opt"
+                v-model="userAnswers[i]"
+              />
+              <span class="option-text">{{ opt.text || opt }}</span>
+            </label>
+          </div>
+
+          <!-- Text Input Questions -->
+          <div v-else class="text-input">
+            <textarea
               v-model="userAnswers[i]"
-            />
-            {{ opt }}
-          </label>
-        </div>
-      </div>
+              :placeholder="'Введите ваш ответ на вопрос ' + (i + 1)"
+              rows="3"
+              class="answer-textarea"
+            ></textarea>
+          </div>
 
-      <div class="actions">
-        <button type="button" @click="saveHomework">Сохранить</button>
-        <button type="submit" class="submit-btn">Завершить</button>
-      </div>
-    </form>
+          <!-- Points Display -->
+          <div v-if="q.points" class="question-points">
+            <span class="points-badge">{{ q.points }} {{ getPointsText(q.points) }}</span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" @click="saveHomework" class="save-btn" :disabled="saving">
+            {{ saving ? 'Сохранение...' : 'Сохранить' }}
+          </button>
+          <button type="submit" class="submit-btn" :disabled="submitting">
+            {{ submitting ? 'Отправка...' : 'Завершить' }}
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -57,6 +98,11 @@ import { auth } from '@/firebase';
 export default {
   name: 'HomeworkPage',
   props: {
+    homeworkId: {
+      type: String,
+      required: false,
+      default: null
+    },
     lessonId: {
       type: String,
       required: false,
@@ -66,48 +112,30 @@ export default {
   data() {
     return {
       questions: [],
-      lessonName: '',
+      homeworkTitle: 'Домашнее задание',
+      instructions: '',
       userAnswers: [],
       loading: true,
+      saving: false,
+      submitting: false,
       error: null,
+      isStandalone: false, // Whether this is standalone homework from admin panel
     };
   },
   computed: {
-    // Get lessonId from route params if not passed as prop
+    computedHomeworkId() {
+      return this.homeworkId || this.$route.params.homeworkId || this.$route.query.homeworkId;
+    },
     computedLessonId() {
-      // Priority: props > route params > route query
-      const fromProp = this.lessonId;
-      const fromParams = this.$route.params.lessonId;
-      const fromQuery = this.$route.query.lessonId;
-      
-      const id = fromProp || fromParams || fromQuery;
-      
-      // Validate the ID
-      if (!id || id === 'null' || id === 'undefined') {
-        return null;
-      }
-      
-      return String(id);
+      return this.lessonId || this.$route.params.lessonId || this.$route.query.lessonId;
     }
   },
   watch: {
-    // Watch for route changes
-    '$route.params.lessonId': {
+    '$route.params': {
       immediate: true,
-      handler(newId, oldId) {
-        console.log('📍 Route param lessonId changed:', { old: oldId, new: newId });
-        if (newId && newId !== oldId) {
-          this.fetchHomework();
-        }
-      }
-    },
-    
-    // Watch computed lessonId
-    computedLessonId: {
-      immediate: true,
-      handler(newId, oldId) {
-        console.log('📍 Computed lessonId changed:', { old: oldId, new: newId });
-        if (newId && newId !== oldId && !this.loading) {
+      handler(newParams, oldParams) {
+        console.log('📍 Route params changed:', { old: oldParams, new: newParams });
+        if (newParams && !this.loading) {
           this.fetchHomework();
         }
       }
@@ -117,119 +145,148 @@ export default {
     async fetchHomework() {
       try {
         this.loading = true;
+        this.error = null;
         
-        // Get lessonId with fallbacks
+        const homeworkId = this.computedHomeworkId;
         const lessonId = this.computedLessonId;
         
-        if (!lessonId) {
-          console.error('❌ No lessonId available');
-          this.$toast?.error('Ошибка: ID урока не найден');
-          this.loading = false;
+        console.log('📚 Fetching homework:', { homeworkId, lessonId });
+        
+        if (!homeworkId && !lessonId) {
+          console.error('❌ No homework or lesson ID available');
+          this.error = 'ID задания не найден';
           return;
         }
-        
-        console.log('📚 Fetching homework for lesson:', lessonId);
         
         const user = auth.currentUser;
         if (!user) throw new Error('Пользователь не авторизован');
         const token = await user.getIdToken();
         const userId = user.uid;
 
-        // Fetch lesson data to get homework questions
+        // Strategy 1: Try to fetch standalone homework from admin panel
+        if (homeworkId && homeworkId !== lessonId) {
+          try {
+            const { data: homeworkData } = await api.get(`/homework/${homeworkId}`);
+            console.log('✅ Standalone homework loaded:', homeworkData.title);
+            
+            this.isStandalone = true;
+            this.homeworkTitle = homeworkData.title || 'Домашнее задание';
+            this.instructions = homeworkData.instructions || '';
+            this.questions = homeworkData.exercises || [];
+            this.userAnswers = this.questions.map(() => '');
+
+            // Try to load user's progress on this homework
+            try {
+              const { data: progressRes } = await api.get(
+                `/users/${userId}/homework/${homeworkId}/progress`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+
+              if (progressRes?.data?.answers) {
+                this.loadUserAnswers(progressRes.data.answers);
+              }
+            } catch (progressErr) {
+              console.log('ℹ️ No existing progress found for standalone homework');
+            }
+            
+            return;
+          } catch (homeworkError) {
+            console.warn('⚠️ Could not fetch standalone homework, trying lesson-based approach');
+            if (homeworkError.response?.status === 404) {
+              this.error = 'Домашнее задание не найдено';
+              return;
+            }
+          }
+        }
+
+        // Strategy 2: Fetch lesson-based homework
+        const targetLessonId = lessonId || homeworkId;
+        if (!targetLessonId) {
+          this.error = 'ID урока не найден';
+          return;
+        }
+
         try {
-          const { data: lesson } = await api.get(`/lessons/${lessonId}`);
+          const { data: lesson } = await api.get(`/lessons/${targetLessonId}`);
           console.log('✅ Lesson data loaded:', lesson.lessonName);
           
-          this.lessonName = lesson.lessonName || lesson.title || 'Урок';
+          this.isStandalone = false;
+          this.homeworkTitle = `Домашнее задание: ${lesson.lessonName || lesson.title}`;
+          this.instructions = lesson.homeworkInstructions || '';
           this.questions = Array.isArray(lesson.homework) ? lesson.homework : [];
           this.userAnswers = this.questions.map(() => '');
 
           if (!this.questions.length) {
-            console.warn('⚠️ Нет заданий в homework этого урока.');
+            console.warn('⚠️ No homework questions found in lesson');
+            this.error = 'В этом уроке нет домашнего задания';
             return;
           }
+
+          // Try to load user's progress on this lesson's homework
+          try {
+            const { data: progressRes } = await api.get(
+              `/homeworks/user/${userId}/lesson/${targetLessonId}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            console.log('✅ Loaded homework progress:', progressRes);
+            const homeworkData = progressRes?.data || progressRes;
+            
+            if (homeworkData?.answers) {
+              this.loadUserAnswers(homeworkData.answers);
+            }
+          } catch (progressErr) {
+            console.log('ℹ️ No existing homework progress found');
+          }
+
         } catch (lessonError) {
           console.error('❌ Failed to load lesson:', lessonError);
           
-          // If lesson not found, show appropriate error
-          if (lessonError.response && lessonError.response.status === 404) {
-            this.$toast?.error('Урок не найден');
+          if (lessonError.response?.status === 404) {
             this.error = 'Урок не найден. Возможно, он был удален.';
-            this.loading = false;
-            
-            // Redirect back to homework list after a delay
             setTimeout(() => {
               this.$router.push('/profile/homeworks');
             }, 2000);
-            return;
+          } else {
+            this.error = 'Ошибка загрузки домашнего задания';
           }
-          
-          throw lessonError; // Re-throw if not a 404
         }
 
-        // FIXED: Use correct API endpoint format
-        // The correct format is: /homeworks/user/:firebaseId/lesson/:lessonId
-        try {
-          const { data: progressRes } = await api.get(
-            `/homeworks/user/${userId}/lesson/${lessonId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-
-          console.log('✅ Loaded homework progress:', progressRes);
-
-          // Handle the response structure
-          const homeworkData = progressRes?.data || progressRes;
-          
-          if (homeworkData?.answers) {
-            // If answers is an object with questionIndex as keys
-            if (!Array.isArray(homeworkData.answers)) {
-              Object.entries(homeworkData.answers).forEach(([index, answer]) => {
-                const idx = parseInt(index);
-                if (!isNaN(idx) && idx >= 0 && idx < this.userAnswers.length) {
-                  this.userAnswers[idx] = answer;
-                }
-              });
-            } else {
-              // If answers is an array
-              for (const entry of homeworkData.answers) {
-                if (entry.questionIndex !== undefined && entry.answer !== undefined) {
-                  this.userAnswers[entry.questionIndex] = entry.answer;
-                }
-              }
-            }
-          }
-        } catch (progressErr) {
-          // It's OK if no progress exists yet
-          console.log('ℹ️ No existing homework progress found');
-        }
       } catch (err) {
         console.error('❌ Ошибка загрузки домашки:', err);
-        
-        // Check if it's a 404 error (lesson not found)
-        if (err.response && err.response.status === 404) {
-          this.error = 'Урок не найден. Возможно, он был удален.';
-          this.$toast?.error('Урок не найден');
-          
-          // Redirect back to homework list after a delay
-          setTimeout(() => {
-            this.$router.push('/profile/homeworks');
-          }, 2000);
-        } else {
-          this.error = 'Ошибка загрузки домашнего задания';
-          this.$toast?.error('Ошибка загрузки домашки.');
-        }
+        this.error = 'Ошибка загрузки домашнего задания';
+        this.$toast?.error('Ошибка загрузки домашки.');
       } finally {
         this.loading = false;
       }
     },
 
+    loadUserAnswers(answers) {
+      console.log('📝 Loading user answers:', answers);
+      
+      if (Array.isArray(answers)) {
+        // Answers is an array of objects with questionIndex and answer
+        for (const entry of answers) {
+          if (entry.questionIndex !== undefined && entry.questionIndex >= 0 && entry.questionIndex < this.userAnswers.length) {
+            this.userAnswers[entry.questionIndex] = entry.userAnswer || entry.answer || '';
+          }
+        }
+      } else if (typeof answers === 'object') {
+        // Answers is an object with questionIndex as keys
+        Object.entries(answers).forEach(([index, answer]) => {
+          const idx = parseInt(index);
+          if (!isNaN(idx) && idx >= 0 && idx < this.userAnswers.length) {
+            this.userAnswers[idx] = answer?.userAnswer || answer?.answer || answer || '';
+          }
+        });
+      }
+      
+      console.log('✅ User answers loaded:', this.userAnswers);
+    },
+
     async saveHomework() {
       try {
-        const lessonId = this.computedLessonId;
-        if (!lessonId) {
-          this.$toast?.error('Ошибка: ID урока не найден');
-          return;
-        }
+        this.saving = true;
         
         const user = auth.currentUser;
         if (!user) throw new Error('Пользователь не авторизован');
@@ -238,32 +295,47 @@ export default {
 
         const answers = this.userAnswers.map((ans, i) => ({
           questionIndex: i,
+          userAnswer: ans,
           answer: ans
         }));
 
-        // FIXED: Use correct API endpoint format
-        await api.post(
-          `/homeworks/user/${userId}/save`,
-          { lessonId: lessonId, answers, completed: false },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        let saveEndpoint;
+        let saveData;
+
+        if (this.isStandalone) {
+          // Save standalone homework progress
+          saveEndpoint = `/users/${userId}/homework/${this.computedHomeworkId}/save`;
+          saveData = { answers, completed: false };
+        } else {
+          // Save lesson homework progress
+          saveEndpoint = `/homeworks/user/${userId}/save`;
+          saveData = { 
+            lessonId: this.computedLessonId || this.computedHomeworkId, 
+            answers, 
+            completed: false 
+          };
+        }
+
+        await api.post(saveEndpoint, saveData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
         this.$toast?.success('Ответы сохранены!');
       } catch (err) {
         console.error('❌ Ошибка при сохранении:', err);
         this.$toast?.error('Не удалось сохранить.');
+      } finally {
+        this.saving = false;
       }
     },
 
     async submitHomework() {
       try {
-        const lessonId = this.computedLessonId;
-        if (!lessonId) {
-          this.$toast?.error('Ошибка: ID урока не найден');
-          return;
-        }
+        this.submitting = true;
         
-        if (this.userAnswers.includes('')) {
+        // Check if all questions are answered
+        const unansweredQuestions = this.userAnswers.filter(ans => !ans || ans.trim() === '');
+        if (unansweredQuestions.length > 0) {
           this.$toast?.warning('Пожалуйста, ответьте на все вопросы.');
           return;
         }
@@ -275,39 +347,68 @@ export default {
 
         const answers = this.userAnswers.map((ans, i) => ({
           questionIndex: i,
+          userAnswer: ans,
           answer: ans
         }));
 
-        // FIXED: Use correct API endpoint format
-        const { data } = await api.post(
-          `/homeworks/user/${userId}/lesson/${lessonId}/submit`,
-          { answers },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        let submitEndpoint;
+        let submitData;
 
-        this.$toast?.success(`Домашка завершена! Ваша оценка: ${data.score || data.data?.score || 0}%`);
-        this.$router.push('/profile/homeworks');
+        if (this.isStandalone) {
+          // Submit standalone homework
+          submitEndpoint = `/users/${userId}/homework/${this.computedHomeworkId}/submit`;
+          submitData = { answers };
+        } else {
+          // Submit lesson homework
+          const lessonId = this.computedLessonId || this.computedHomeworkId;
+          submitEndpoint = `/homeworks/user/${userId}/lesson/${lessonId}/submit`;
+          submitData = { answers };
+        }
+
+        const { data } = await api.post(submitEndpoint, submitData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const score = data?.data?.score || data?.score || 0;
+        const details = data?.data?.details || data?.details || `Задание выполнено`;
+        
+        this.$toast?.success(`Домашка завершена! Ваша оценка: ${score}%`);
+        
+        // Wait a bit before redirecting
+        setTimeout(() => {
+          this.$router.push('/profile/homeworks');
+        }, 2000);
+        
       } catch (err) {
         console.error('❌ Ошибка при отправке:', err);
         this.$toast?.error('Ошибка отправки ответов.');
+      } finally {
+        this.submitting = false;
       }
+    },
+
+    getPointsText(points) {
+      if (points === 1) return 'балл';
+      if (points >= 2 && points <= 4) return 'балла';
+      return 'баллов';
     }
   },
   created() {
-    // Debug route info on component creation
     console.group('🎯 HomeworkPage Created');
+    console.log('Props homeworkId:', this.homeworkId);
     console.log('Props lessonId:', this.lessonId);
     console.log('Route params:', this.$route.params);
+    console.log('Computed homeworkId:', this.computedHomeworkId);
     console.log('Computed lessonId:', this.computedLessonId);
     console.groupEnd();
   },
   mounted() {
-    // Only fetch if we have a lessonId
-    if (this.computedLessonId) {
+    if (this.computedHomeworkId || this.computedLessonId) {
       this.fetchHomework();
     } else {
-      console.error('❌ No lessonId available on mount');
+      console.error('❌ No homework or lesson ID available on mount');
       this.loading = false;
+      this.error = 'ID задания не найден';
     }
   }
 };
@@ -341,7 +442,34 @@ export default {
   color: #5848c2;
 }
 
-.loading,
+h1 {
+  color: #2d3748;
+  margin-bottom: 2rem;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #6a5acd;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #6a5acd;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .empty,
 .error {
   text-align: center;
@@ -354,17 +482,20 @@ export default {
   color: #ef4444;
 }
 
-.error-icon {
+.error-icon,
+.empty-icon {
   font-size: 3rem;
   margin-bottom: 1rem;
 }
 
-.error h3 {
+.error h3,
+.empty h3 {
   color: #374151;
   margin-bottom: 0.5rem;
 }
 
-.error p {
+.error p,
+.empty p {
   color: #6b7280;
   font-size: 1rem;
   margin-bottom: 1.5rem;
@@ -384,6 +515,27 @@ export default {
   background: #5848c2;
 }
 
+.instructions-section {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.instructions-section h3 {
+  color: #374151;
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.instructions-content {
+  color: #4a5568;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
 .question-block {
   background: white;
   padding: 1.5rem;
@@ -397,34 +549,114 @@ export default {
   transform: scale(1.01);
 }
 
-.question-block p {
+.question-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.question-number {
+  background: #6a5acd;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.question-content {
+  flex: 1;
+}
+
+.question-text {
   font-size: 1.1rem;
-  margin-bottom: 0.75rem;
+  margin: 0 0 0.5rem 0;
   color: #333;
+  line-height: 1.4;
+}
+
+.question-instruction {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
 }
 
 .options {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .option {
   background: #f9f9ff;
-  padding: 0.6rem 1rem;
-  border: 1px solid #ddd;
+  padding: 0.8rem 1rem;
+  border: 2px solid #e2e8f0;
   border-radius: 8px;
-  transition: background 0.3s ease;
+  transition: all 0.3s ease;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .option:hover {
   background: #ececff;
+  border-color: #c7d2fe;
 }
 
-.option input {
-  margin-right: 0.6rem;
+.option input[type="radio"] {
+  margin: 0;
   cursor: pointer;
+}
+
+.option-text {
+  flex: 1;
+  font-size: 1rem;
+  color: #374151;
+}
+
+.text-input {
+  margin-bottom: 1rem;
+}
+
+.answer-textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.3s ease;
+}
+
+.answer-textarea:focus {
+  outline: none;
+  border-color: #6a5acd;
+  box-shadow: 0 0 0 3px rgba(106, 90, 205, 0.1);
+}
+
+.question-points {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.points-badge {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .actions {
@@ -436,28 +668,42 @@ export default {
 }
 
 button {
-  padding: 0.65rem 1.4rem;
+  padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 8px;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.25s ease-in-out;
-  background-color: #e0e0e0;
-  color: #333;
+  min-width: 120px;
 }
 
-button:hover {
-  background-color: #d1d1f0;
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.save-btn {
+  background-color: #e2e8f0;
+  color: #4a5568;
+  border: 2px solid #cbd5e0;
+}
+
+.save-btn:hover:not(:disabled) {
+  background-color: #cbd5e0;
+  transform: translateY(-1px);
 }
 
 .submit-btn {
-  background-color: #6a5acd;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
 }
 
-.submit-btn:hover {
-  background-color: #5848c2;
+.submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
 }
 
 @media (max-width: 768px) {
@@ -465,12 +711,22 @@ button:hover {
     padding: 1rem;
   }
   
+  .question-header {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .question-number {
+    align-self: flex-start;
+  }
+  
   .actions {
     justify-content: stretch;
+    flex-direction: column;
   }
   
   button {
-    flex: 1;
+    width: 100%;
   }
 }
 </style>
