@@ -527,7 +527,10 @@ export default {
         }
 
         await api.post(saveEndpoint, saveData, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         });
 
         this.$toast?.success('Ответы сохранены!');
@@ -565,17 +568,20 @@ export default {
         let submitData;
 
         if (this.isStandalone) {
-          // Submit standalone homework
+          // Submit standalone homework - FIXED: Changed from GET to POST
           submitEndpoint = `/users/${userId}/homework/${this.primaryId}/submit`;
           submitData = { answers };
         } else {
-          // Submit lesson homework
+          // Submit lesson homework - FIXED: Changed from GET to POST
           submitEndpoint = `/homeworks/user/${userId}/lesson/${this.primaryId}/submit`;
           submitData = { answers };
         }
 
         const { data } = await api.post(submitEndpoint, submitData, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         });
 
         const score = data?.data?.score || data?.score || 0;
