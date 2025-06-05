@@ -276,271 +276,206 @@ export default {
       return null;
     },
 
-    // Fix the HomeworkPage.vue methods section
-
-async fetchHomework() {
-  try {
-    this.loading = true;
-    this.error = null;
-    
-    const homeworkId = this.computedHomeworkId;
-    const lessonId = this.computedLessonId;
-    const primaryId = this.primaryId;
-    const suggestedType = this.computedHomeworkType;
-    
-    console.log('📚 Fetching homework with details:', { 
-      homeworkId, 
-      lessonId, 
-      primaryId,
-      suggestedType,
-      routeParams: this.$route.params,
-      routeQuery: this.$route.query,
-      routePath: this.$route.path
-    });
-    
-    if (!primaryId) {
-      console.error('❌ No homework or lesson ID available');
-      this.error = 'ID задания не найден';
-      return;
-    }
-    
-    const user = auth.currentUser;
-    if (!user) throw new Error('Пользователь не авторизован');
-    const token = await user.getIdToken();
-    const userId = user.uid;
-
-    // ✅ STRATEGY 1: Try as standalone homework
-    const shouldTryStandalone = suggestedType === 'standalone' || 
-                               !suggestedType || 
-                               suggestedType === 'unknown';
-    
-    if (shouldTryStandalone && primaryId) {
+    async fetchHomework() {
       try {
-        console.log('🔍 Trying standalone homework approach with ID:', primaryId);
+        this.loading = true;
+        this.error = null;
         
-        // ✅ FIXED: Use the proper API function
-        const response = await api.getStandaloneHomework(userId, primaryId);
+        const homeworkId = this.computedHomeworkId;
+        const lessonId = this.computedLessonId;
+        const primaryId = this.primaryId;
+        const suggestedType = this.computedHomeworkType;
         
-        console.log('✅ Standalone homework API response:', response);
+        console.log('📚 Fetching homework with details:', { 
+          homeworkId, 
+          lessonId, 
+          primaryId,
+          suggestedType,
+          routeParams: this.$route.params,
+          routeQuery: this.$route.query,
+          routePath: this.$route.path
+        });
         
-        if (response.success && response.data) {
-          const homeworkData = response.data.homework;
-          const userProgress = response.data.userProgress;
-          
-          if (homeworkData && (homeworkData.exercises || homeworkData.title)) {
-            this.isStandalone = true;
-            this.detectedHomeworkType = 'standalone';
-            this.homeworkTitle = homeworkData.title || this.title || 'Домашнее задание';
-            this.instructions = homeworkData.instructions || '';
-            this.questions = homeworkData.exercises || [];
-            this.userAnswers = this.questions.map(() => '');
-
-            // Load existing progress if available
-            if (userProgress && userProgress.answers) {
-              this.loadUserAnswers(userProgress.answers);
-            }
-            
-            console.log('✅ Loaded standalone homework:', {
-              title: this.homeworkTitle,
-              questionsCount: this.questions.length,
-              hasProgress: !!userProgress
-            });
-            
-            return; // Success - exit early
-          }
-        }
-      } catch (homeworkError) {
-        console.warn('⚠️ Standalone homework approach failed:', homeworkError.message);
-        
-        // Check if it's a 404 (homework not found) vs server error
-        if (homeworkError.response?.status === 404) {
-          console.log('ℹ️ Homework not found as standalone, trying lesson approach...');
-        } else {
-          console.error('🚨 Server error in standalone homework:', homeworkError);
-          // For server errors, don't continue to lesson approach
-          this.error = 'Ошибка сервера при загрузке задания';
+        if (!primaryId) {
+          console.error('❌ No homework or lesson ID available');
+          this.error = 'ID задания не найден';
           return;
         }
-      }
-    }
-
-    // ✅ STRATEGY 2: Try as lesson homework
-    console.log('🔍 Trying lesson homework approach with ID:', primaryId);
-    try {
-      // Try to get lesson data
-      const lessonResponse = await api.get(`/lessons/${primaryId}`, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Accept': 'application/json'
-        }
-      });
-      
-      const lesson = lessonResponse.data;
-      console.log('✅ Lesson data loaded:', lesson.lessonName || lesson.title);
-      
-      if (!lesson.homework || !Array.isArray(lesson.homework) || lesson.homework.length === 0) {
-        console.warn('⚠️ No homework questions found in lesson');
-        this.error = 'В этом уроке нет домашнего задания';
-        return;
-      }
-      
-      this.isStandalone = false;
-      this.detectedHomeworkType = 'lesson';
-      this.homeworkTitle = `Домашнее задание: ${lesson.lessonName || lesson.title}`;
-      this.instructions = lesson.homeworkInstructions || '';
-      this.questions = lesson.homework;
-      this.userAnswers = this.questions.map(() => '');
-
-      // Try to load user's progress
-      try {
-        const progressResponse = await api.getHomeworkByLesson(userId, primaryId);
         
-        console.log('✅ Loaded lesson homework progress:', progressResponse);
-        const homeworkData = progressResponse?.data || progressResponse;
+        const user = auth.currentUser;
+        if (!user) throw new Error('Пользователь не авторизован');
+        const token = await user.getIdToken();
+        const userId = user.uid;
+
+        // ✅ STRATEGY 1: Try as standalone homework
+        const shouldTryStandalone = suggestedType === 'standalone' || 
+                                   !suggestedType || 
+                                   suggestedType === 'unknown';
         
-        if (homeworkData?.homework?.answers) {
-          this.loadUserAnswers(homeworkData.homework.answers);
-        }
-      } catch (progressErr) {
-        console.log('ℹ️ No existing homework progress found for lesson');
-      }
+        if (shouldTryStandalone && primaryId) {
+          try {
+            console.log('🔍 Trying standalone homework approach with ID:', primaryId);
+            
+            // ✅ FIXED: Use direct API calls instead of missing functions
+            let response;
+            try {
+              // Try user-specific endpoint first
+              response = await api.get(`/users/${userId}/homework/${primaryId}`, {
+                headers: { 
+                  Authorization: `Bearer ${token}`,
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json'
+                }
+              });
+              console.log('✅ User homework endpoint response:', response.data);
+            } catch (userError) {
+              console.warn('⚠️ User homework endpoint failed, trying direct:', userError.message);
+              
+              // Fallback to direct homework endpoint
+              response = await api.get(`/homeworks/${primaryId}`, {
+                headers: { 
+                  Authorization: `Bearer ${token}`,
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json'
+                }
+              });
+              console.log('✅ Direct homework endpoint response:', response.data);
+              
+              // Transform the response to match expected format
+              const homeworkData = response.data.data || response.data;
+              response.data = {
+                success: true,
+                data: {
+                  homework: homeworkData,
+                  userProgress: null,
+                  questions: homeworkData?.exercises || []
+                }
+              };
+            }
+            
+            const homeworkResponse = response.data;
+            
+            if (homeworkResponse.success && homeworkResponse.data) {
+              const homeworkData = homeworkResponse.data.homework;
+              const userProgress = homeworkResponse.data.userProgress;
+              
+              if (homeworkData && (homeworkData.exercises || homeworkData.title)) {
+                this.isStandalone = true;
+                this.detectedHomeworkType = 'standalone';
+                this.homeworkTitle = homeworkData.title || this.title || 'Домашнее задание';
+                this.instructions = homeworkData.instructions || '';
+                this.questions = homeworkData.exercises || [];
+                this.userAnswers = this.questions.map(() => '');
 
-      console.log('✅ Loaded lesson homework:', {
-        title: this.homeworkTitle,
-        questionsCount: this.questions.length
-      });
-
-      return; // Success
-      
-    } catch (lessonError) {
-      console.error('❌ Lesson homework approach also failed:', lessonError);
-      
-      if (lessonError.response?.status === 404) {
-        if (suggestedType === 'standalone') {
-          this.error = 'Домашнее задание не найдено. Возможно, оно было удалено.';
-        } else {
-          this.error = 'Урок не найден. Возможно, он был удален.';
+                // Load existing progress if available
+                if (userProgress && userProgress.answers) {
+                  this.loadUserAnswers(userProgress.answers);
+                }
+                
+                console.log('✅ Loaded standalone homework:', {
+                  title: this.homeworkTitle,
+                  questionsCount: this.questions.length,
+                  hasProgress: !!userProgress
+                });
+                
+                return; // Success - exit early
+              }
+            }
+          } catch (homeworkError) {
+            console.warn('⚠️ Standalone homework approach failed:', homeworkError.message);
+            
+            // Check if it's a 404 (homework not found) vs server error
+            if (homeworkError.response?.status === 404) {
+              console.log('ℹ️ Homework not found as standalone, trying lesson approach...');
+            } else {
+              console.error('🚨 Server error in standalone homework:', homeworkError);
+              // For server errors, don't continue to lesson approach
+              if (homeworkError.response?.status >= 500) {
+                this.error = 'Ошибка сервера при загрузке задания';
+                return;
+              }
+            }
+          }
         }
-      } else {
+
+        // ✅ STRATEGY 2: Try as lesson homework
+        console.log('🔍 Trying lesson homework approach with ID:', primaryId);
+        try {
+          // Try to get lesson data
+          const lessonResponse = await api.get(`/lessons/${primaryId}`, {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          const lesson = lessonResponse.data;
+          console.log('✅ Lesson data loaded:', lesson.lessonName || lesson.title);
+          
+          if (!lesson.homework || !Array.isArray(lesson.homework) || lesson.homework.length === 0) {
+            console.warn('⚠️ No homework questions found in lesson');
+            this.error = 'В этом уроке нет домашнего задания';
+            return;
+          }
+          
+          this.isStandalone = false;
+          this.detectedHomeworkType = 'lesson';
+          this.homeworkTitle = `Домашнее задание: ${lesson.lessonName || lesson.title}`;
+          this.instructions = lesson.homeworkInstructions || '';
+          this.questions = lesson.homework;
+          this.userAnswers = this.questions.map(() => '');
+
+          // Try to load user's progress
+          try {
+            const progressResponse = await api.get(`/homeworks/user/${userId}/lesson/${primaryId}`, {
+              headers: { 
+                Authorization: `Bearer ${token}`,
+                'Accept': 'application/json'
+              }
+            });
+            
+            console.log('✅ Loaded lesson homework progress:', progressResponse.data);
+            const homeworkData = progressResponse.data?.data || progressResponse.data;
+            
+            if (homeworkData?.homework?.answers) {
+              this.loadUserAnswers(homeworkData.homework.answers);
+            }
+          } catch (progressErr) {
+            console.log('ℹ️ No existing homework progress found for lesson');
+          }
+
+          console.log('✅ Loaded lesson homework:', {
+            title: this.homeworkTitle,
+            questionsCount: this.questions.length
+          });
+
+          return; // Success
+          
+        } catch (lessonError) {
+          console.error('❌ Lesson homework approach also failed:', lessonError);
+          
+          if (lessonError.response?.status === 404) {
+            if (suggestedType === 'standalone') {
+              this.error = 'Домашнее задание не найдено. Возможно, оно было удалено.';
+            } else {
+              this.error = 'Урок не найден. Возможно, он был удален.';
+            }
+          } else if (lessonError.response?.status >= 500) {
+            this.error = 'Ошибка сервера при загрузке урока';
+          } else {
+            this.error = 'Ошибка загрузки домашнего задания';
+          }
+        }
+
+      } catch (err) {
+        console.error('❌ General error loading homework:', err);
         this.error = 'Ошибка загрузки домашнего задания';
+        this.$toast?.error('Ошибка загрузки домашки.');
+      } finally {
+        this.loading = false;
       }
-    }
-
-  } catch (err) {
-    console.error('❌ General error loading homework:', err);
-    this.error = 'Ошибка загрузки домашнего задания';
-    this.$toast?.error('Ошибка загрузки домашки.');
-  } finally {
-    this.loading = false;
-  }
-},
-
-async saveHomework() {
-  try {
-    this.saving = true;
-    
-    const user = auth.currentUser;
-    if (!user) throw new Error('Пользователь не авторизован');
-    const userId = user.uid;
-
-    const answers = this.userAnswers.map((ans, i) => ({
-      questionIndex: i,
-      userAnswer: ans,
-      answer: ans
-    }));
-
-    console.log('💾 Saving homework:', {
-      isStandalone: this.isStandalone,
-      primaryId: this.primaryId,
-      answersCount: answers.length
-    });
-
-    if (this.isStandalone) {
-      // ✅ FIXED: Use proper API method for standalone homework
-      await api.saveStandaloneHomework(userId, this.primaryId, answers);
-    } else {
-      // Save lesson homework progress
-      await api.saveHomework(userId, this.primaryId, answers);
-    }
-
-    this.$toast?.success('Ответы сохранены!');
-  } catch (err) {
-    console.error('❌ Error saving homework:', err);
-    this.$toast?.error('Не удалось сохранить.');
-  } finally {
-    this.saving = false;
-  }
-},
-
-async submitHomework() {
-  try {
-    this.submitting = true;
-    
-    // Check if all questions are answered
-    const unansweredQuestions = this.userAnswers.filter(ans => !ans || ans.trim() === '');
-    if (unansweredQuestions.length > 0) {
-      this.$toast?.warning('Пожалуйста, ответьте на все вопросы.');
-      return;
-    }
-
-    const user = auth.currentUser;
-    if (!user) throw new Error('Пользователь не авторизован');
-    const userId = user.uid;
-
-    const answers = this.userAnswers.map((ans, i) => ({
-      questionIndex: i,
-      userAnswer: ans,
-      answer: ans
-    }));
-
-    console.log('📤 Submitting homework:', {
-      isStandalone: this.isStandalone,
-      primaryId: this.primaryId,
-      answersCount: answers.length
-    });
-
-    let result;
-    
-    if (this.isStandalone) {
-      // ✅ FIXED: Use proper API method for standalone homework
-      result = await api.submitStandaloneHomework(userId, this.primaryId, answers);
-    } else {
-      // Submit lesson homework
-      result = await api.submitHomework(userId, this.primaryId, answers);
-    }
-
-    console.log('✅ Homework submission result:', result);
-
-    const score = result?.data?.score || result?.score || 0;
-    const stars = result?.data?.stars || result?.stars || 0;
-    const details = result?.data?.details || result?.details || `Задание выполнено`;
-    
-    this.$toast?.success(`Домашка завершена! Ваша оценка: ${score}% (${stars} ⭐)`);
-    
-    // Wait a bit before redirecting
-    setTimeout(() => {
-      this.$router.push('/profile/homeworks');
-    }, 3000);
-    
-  } catch (err) {
-    console.error('❌ Error submitting homework:', err);
-    
-    // ✅ FIXED: Better error handling
-    let errorMessage = 'Ошибка отправки ответов.';
-    
-    if (err.response?.data?.details) {
-      errorMessage = `Ошибка: ${err.response.data.details}`;
-    } else if (err.response?.data?.error) {
-      errorMessage = err.response.data.error;
-    } else if (err.message) {
-      errorMessage = err.message;
-    }
-    
-    this.$toast?.error(errorMessage);
-  } finally {
-    this.submitting = false;
-  }
-},
+    },
 
     loadUserAnswers(answers) {
       console.log('📝 Loading user answers:', answers);
@@ -580,33 +515,45 @@ async submitHomework() {
           answer: ans
         }));
 
-        let saveEndpoint;
-        let saveData;
+        console.log('💾 Saving homework:', {
+          isStandalone: this.isStandalone,
+          primaryId: this.primaryId,
+          answersCount: answers.length
+        });
 
         if (this.isStandalone) {
-          // Save standalone homework progress
-          saveEndpoint = `/users/${userId}/homework/${this.primaryId}/save`;
-          saveData = { answers };
+          // ✅ FIXED: Use direct API call for standalone homework
+          await api.post(`/users/${userId}/homework/${this.primaryId}/save`, { answers }, {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
         } else {
           // Save lesson homework progress
-          saveEndpoint = `/homeworks/user/${userId}/save`;
-          saveData = { 
+          await api.post(`/homeworks/user/${userId}/save`, { 
             lessonId: this.primaryId, 
             answers
-          };
+          }, {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
         }
-
-        await api.post(saveEndpoint, saveData, {
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
 
         this.$toast?.success('Ответы сохранены!');
       } catch (err) {
-        console.error('❌ Ошибка при сохранении:', err);
-        this.$toast?.error('Не удалось сохранить.');
+        console.error('❌ Error saving homework:', err);
+        
+        let errorMessage = 'Не удалось сохранить.';
+        if (err.response?.data?.error) {
+          errorMessage = err.response.data.error;
+        } else if (err.response?.data?.details) {
+          errorMessage = err.response.data.details;
+        }
+        
+        this.$toast?.error(errorMessage);
       } finally {
         this.saving = false;
       }
@@ -634,39 +581,80 @@ async submitHomework() {
           answer: ans
         }));
 
-        let submitEndpoint;
-        let submitData;
-
-        if (this.isStandalone) {
-          // Submit standalone homework - FIXED: Changed from GET to POST
-          submitEndpoint = `/users/${userId}/homework/${this.primaryId}/submit`;
-          submitData = { answers };
-        } else {
-          // Submit lesson homework - FIXED: Changed from GET to POST
-          submitEndpoint = `/homeworks/user/${userId}/lesson/${this.primaryId}/submit`;
-          submitData = { answers };
-        }
-
-        const { data } = await api.post(submitEndpoint, submitData, {
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+        console.log('📤 Submitting homework:', {
+          isStandalone: this.isStandalone,
+          primaryId: this.primaryId,
+          answersCount: answers.length,
+          answers: answers
         });
 
-        const score = data?.data?.score || data?.score || 0;
-        const details = data?.data?.details || data?.details || `Задание выполнено`;
+        let result;
         
-        this.$toast?.success(`Домашка завершена! Ваша оценка: ${score}%`);
+        if (this.isStandalone) {
+          // ✅ FIXED: Use direct API call for standalone homework
+          result = await api.post(`/users/${userId}/homework/${this.primaryId}/submit`, { answers }, {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+        } else {
+          // Submit lesson homework
+          result = await api.post(`/homeworks/user/${userId}/lesson/${this.primaryId}/submit`, { answers }, {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+        }
+
+        console.log('✅ Homework submission result:', result.data);
+
+        const responseData = result.data?.data || result.data;
+        const score = responseData?.score || 0;
+        const stars = responseData?.stars || 0;
+        const details = responseData?.details || `Задание выполнено`;
+        const correctAnswers = responseData?.correctAnswers || 0;
+        const totalQuestions = responseData?.totalQuestions || this.questions.length;
+        
+        let successMessage = `Домашка завершена! Ваша оценка: ${score}%`;
+        if (stars > 0) {
+          successMessage += ` (${stars} ⭐)`;
+        }
+        if (correctAnswers > 0) {
+          successMessage += ` - ${correctAnswers}/${totalQuestions} правильных ответов`;
+        }
+        
+        this.$toast?.success(successMessage);
         
         // Wait a bit before redirecting
         setTimeout(() => {
           this.$router.push('/profile/homeworks');
-        }, 2000);
+        }, 3000);
         
       } catch (err) {
-        console.error('❌ Ошибка при отправке:', err);
-        this.$toast?.error('Ошибка отправки ответов.');
+        console.error('❌ Error submitting homework:', err);
+        
+        // ✅ ENHANCED: Better error handling with specific messages
+        let errorMessage = 'Ошибка отправки ответов.';
+        
+        if (err.response?.status === 404) {
+          errorMessage = 'Задание не найдено. Возможно, оно было удалено.';
+        } else if (err.response?.status === 403) {
+          errorMessage = 'Доступ запрещен. Проверьте права доступа.';
+        } else if (err.response?.status === 400) {
+          errorMessage = 'Некорректные данные. Проверьте ответы.';
+        } else if (err.response?.status >= 500) {
+          errorMessage = 'Ошибка сервера. Попробуйте позже.';
+        } else if (err.response?.data?.details) {
+          errorMessage = `Ошибка: ${err.response.data.details}`;
+        } else if (err.response?.data?.error) {
+          errorMessage = err.response.data.error;
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+        
+        this.$toast?.error(errorMessage);
       } finally {
         this.submitting = false;
       }
