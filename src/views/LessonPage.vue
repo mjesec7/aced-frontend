@@ -625,6 +625,8 @@ export default {
 
     // ✅ REPLACE these 3 methods in LessonPage.vue script section
 
+// ✅ REPLACE the saveProgress method in LessonPage.vue
+
 async saveProgress(completed = false) {
   try {
     // Validation - Check required data
@@ -665,35 +667,51 @@ async saveProgress(completed = false) {
       ? Math.floor((completedSteps.length / this.steps.length) * 100) 
       : 0;
 
-    // ✅ FIXED: Better topicId handling
-    let topicId = this.lesson.topicId || this.lesson._id;
-
-    // ✅ FIXED: Use the correct data structure that your API expects
+    // ✅ SIMPLIFIED: Cleaner data structure
     const progressData = {
-      userId: String(this.userId),
       lessonId: String(this.lesson._id),
-      topicId: String(topicId),
+      topicId: String(this.lesson.topicId || this.lesson._id),
       completedSteps: completedSteps,
-      progressPercent: Math.max(0, Math.min(100, progressPercent)),
+      progressPercent: progressPercent,
       completed: completed,
-      mistakes: Math.max(0, parseInt(this.mistakeCount) || 0),
+      mistakes: this.mistakeCount,
       medal: this.mistakeCount === 0 ? 'gold' : this.mistakeCount <= 2 ? 'silver' : 'bronze',
-      duration: Math.max(0, parseInt(this.elapsedSeconds) || 0),
-      stars: Math.max(0, parseInt(this.stars) || 0),
-      points: Math.max(0, parseInt(this.earnedPoints) || 0),
-      hintsUsed: Math.max(0, this.hintsUsed ? 1 : 0),
+      duration: this.elapsedSeconds,
+      stars: this.stars,
+      points: this.earnedPoints,
+      hintsUsed: this.hintsUsed ? 1 : 0,
       submittedHomework: false
     };
 
     console.log('📤 Saving progress data:', progressData);
 
-    // ✅ FIXED: Try multiple endpoints with different data formats
+    // ✅ FIXED: Try emergency endpoint first, then fallbacks
     let response;
-    let success = false;
     
-    // Try endpoint 1: /api/progress (your current one)
+    // Try emergency endpoint first (most likely to work)
     try {
-      response = await axios.post(`${BASE_URL}/progress`, progressData, {
+      response = await axios.post(`${BASE_URL}/users/${this.userId}/progress/save`, progressData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 15000
+      });
+      
+      if (response.status === 200 || response.status === 201) {
+        console.log('✅ Progress saved via EMERGENCY endpoint:', response.data);
+        return true;
+      }
+    } catch (emergencyError) {
+      console.warn('⚠️ Emergency endpoint failed:', emergencyError.response?.status, emergencyError.response?.data);
+    }
+    
+    // Try the original progress endpoint
+    try {
+      // Add userId to the data for the original endpoint
+      const originalData = { userId: this.userId, ...progressData };
+      
+      response = await axios.post(`${BASE_URL}/progress`, originalData, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -706,10 +724,10 @@ async saveProgress(completed = false) {
         return true;
       }
     } catch (progressError) {
-      console.warn('⚠️ /api/progress failed:', progressError.response?.status, progressError.response?.data);
+      console.warn('⚠️ /api/progress failed:', progressError.response?.status);
     }
     
-    // Try endpoint 2: /api/users/{userId}/lesson/{lessonId} (alternative format)
+    // Try a simple POST to user lesson endpoint
     try {
       response = await axios.post(`${BASE_URL}/users/${this.userId}/lesson/${this.lesson._id}`, progressData, {
         headers: { 
@@ -727,26 +745,25 @@ async saveProgress(completed = false) {
       console.warn('⚠️ /api/users/lesson failed:', userLessonError.response?.status);
     }
     
-    // Try endpoint 3: /api/user/{userId}/lesson/{lessonId} (legacy format)
-    try {
-      response = await axios.post(`${BASE_URL}/user/${this.userId}/lesson/${this.lesson._id}`, progressData, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 15000
-      });
-      
-      if (response.status === 200 || response.status === 201) {
-        console.log('✅ Progress saved via /api/user/lesson:', response.data);
-        return true;
-      }
-    } catch (legacyError) {
-      console.warn('⚠️ /api/user/lesson failed:', legacyError.response?.status);
-    }
-    
     console.error('❌ All progress endpoints failed');
-    return false;
+    
+    // ✅ LAST RESORT: Save to localStorage as backup
+    try {
+      const backupKey = `lesson_progress_${this.lesson._id}_${this.userId}`;
+      const backupData = {
+        ...progressData,
+        timestamp: Date.now(),
+        saved: false
+      };
+      localStorage.setItem(backupKey, JSON.stringify(backupData));
+      console.log('💾 Progress saved to localStorage as backup');
+      
+      // Return true so lesson can complete, but mark as unsaved
+      return true;
+    } catch (localError) {
+      console.error('❌ Failed to save backup progress:', localError);
+      return false;
+    }
     
   } catch (err) {
     console.error('❌ Progress save error:', err);

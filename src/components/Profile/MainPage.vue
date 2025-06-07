@@ -7,6 +7,12 @@
         <option value="">Все предметы</option>
         <option v-for="subject in allSubjects" :key="subject" :value="subject">{{ subject }}</option>
       </select>
+      <select v-model="filterType" class="filter-select">
+        <option value="">Все типы</option>
+        <option value="free">💚 Бесплатные</option>
+        <option value="premium">💎 Премиум</option>
+        <option value="pro">🌟 Pro</option>
+      </select>
       <span class="user-status-badge" :class="userStatus">{{ userStatusLabel }}</span>
     </div>
 
@@ -26,9 +32,12 @@
     <div class="section recommendations-section">
       <div class="section-header">
         <h2>🌟 Рекомендовано для вас</h2>
-        <button class="refresh-btn" @click="refreshRecommendations" :disabled="loadingRecommendations">
-          🔄 Обновить
-        </button>
+        <div class="header-controls">
+          <span class="results-count">{{ filteredRecommendations.length }} найдено</span>
+          <button class="refresh-btn" @click="refreshRecommendations" :disabled="loadingRecommendations">
+            🔄 Обновить
+          </button>
+        </div>
       </div>
 
       <div v-if="loadingRecommendations" class="grid">
@@ -36,21 +45,80 @@
       </div>
 
       <div v-else-if="filteredRecommendations.length" class="grid">
-        <div class="topic-card" v-for="topic in filteredRecommendations" :key="topic._id">
-          <h3 class="topic-title">📘 {{ getTopicName(topic) }}</h3>
-          <p class="topic-desc">{{ getTopicDescription(topic) }}</p>
-          <p class="lesson-count">Уроков: {{ topic.lessons?.length || 0 }}</p>
+        <div class="topic-card" v-for="topic in filteredRecommendations" :key="topic._id" :class="getTopicTypeClass(topic)">
+          <!-- Topic Type Badge -->
+          <div class="topic-type-badge" :class="getTopicType(topic)">
+            <span class="badge-icon">{{ getTopicTypeIcon(topic) }}</span>
+            <span class="badge-text">{{ getTopicTypeLabel(topic) }}</span>
+          </div>
+
+          <!-- Topic Content -->
+          <div class="topic-content">
+            <h3 class="topic-title">📘 {{ getTopicName(topic) }}</h3>
+            <p class="topic-desc">{{ getTopicDescription(topic) }}</p>
+            
+            <!-- Topic Metadata -->
+            <div class="topic-metadata">
+              <div class="metadata-item">
+                <span class="metadata-icon">📚</span>
+                <span class="metadata-text">{{ topic.lessons?.length || 0 }} уроков</span>
+              </div>
+              <div v-if="topic.subject" class="metadata-item">
+                <span class="metadata-icon">🏷️</span>
+                <span class="metadata-text">{{ topic.subject }}</span>
+              </div>
+              <div v-if="topic.difficulty" class="metadata-item">
+                <span class="metadata-icon">⚡</span>
+                <div class="difficulty-stars">
+                  <span v-for="i in 5" :key="i" class="star" :class="{ 'filled': i <= topic.difficulty }">★</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Access Status for Current User -->
+            <div class="access-status" :class="getAccessStatus(topic)">
+              <span class="access-icon">{{ getAccessIcon(topic) }}</span>
+              <span class="access-text">{{ getAccessText(topic) }}</span>
+            </div>
+          </div>
+
+          <!-- Card Actions -->
           <div class="card-buttons">
-            <button class="btn-add" @click="handleAddTopic(topic)">＋ Добавить</button>
-            <button class="btn-start" @click="handleStartTopic(topic)">🚀 Начать</button>
+            <button 
+              class="btn-add" 
+              @click="handleAddTopic(topic)"
+              :disabled="isInStudyList(topic)"
+              :title="isInStudyList(topic) ? 'Уже в списке' : 'Добавить в мои курсы'"
+            >
+              {{ isInStudyList(topic) ? '✓ Добавлено' : '＋ Добавить' }}
+            </button>
+            <button 
+              class="btn-start" 
+              @click="handleStartTopic(topic)"
+              :class="getStartButtonClass(topic)"
+              :title="getStartButtonTitle(topic)"
+            >
+              <span class="btn-icon">{{ getStartButtonIcon(topic) }}</span>
+              <span class="btn-text">{{ getStartButtonText(topic) }}</span>
+            </button>
           </div>
         </div>
       </div>
 
       <div v-else class="empty-message">
-        <p>Нет подходящих рекомендаций.</p>
+        <div class="empty-icon">🔍</div>
+        <h3>Нет подходящих рекомендаций</h3>
+        <p v-if="filterType || filterSubject || searchQuery">
+          Попробуйте изменить фильтры поиска
+        </p>
+        <p v-else>
+          Рекомендации появятся на основе ваших интересов
+        </p>
         <button v-if="errors.recommendations" class="retry-btn inline" @click="fetchRecommendations">
           🔄 Попробовать снова
+        </button>
+        <button v-else-if="filterType || filterSubject || searchQuery" class="clear-filters-btn" @click="clearFilters">
+          🗑️ Очистить фильтры
         </button>
       </div>
     </div>
@@ -59,9 +127,12 @@
     <div class="section study-section">
       <div class="section-header">
         <h2>📘 Мои курсы</h2>
-        <button v-if="invalidTopicsCleanedUp > 0" class="info-badge">
-          🧹 Очищено: {{ invalidTopicsCleanedUp }}
-        </button>
+        <div class="header-controls">
+          <span class="results-count">{{ filteredStudyList.length }} активных</span>
+          <button v-if="invalidTopicsCleanedUp > 0" class="info-badge">
+            🧹 Очищено: {{ invalidTopicsCleanedUp }}
+          </button>
+        </div>
       </div>
       
       <div v-if="loadingStudyList" class="grid">
@@ -80,10 +151,22 @@
       </div>
 
       <div v-else class="empty-message">
-        <p>У вас пока нет активных курсов.</p>
-        <router-link to="/profile/catalogue" class="browse-link">
-          📚 Просмотреть каталог курсов
-        </router-link>
+        <div class="empty-icon">📚</div>
+        <h3>У вас пока нет активных курсов</h3>
+        <p v-if="filterType || filterSubject || searchQuery">
+          Нет курсов, соответствующих фильтрам
+        </p>
+        <p v-else>
+          Добавьте курсы из рекомендаций или найдите их в каталоге
+        </p>
+        <div class="empty-actions">
+          <button v-if="filterType || filterSubject || searchQuery" class="clear-filters-btn" @click="clearFilters">
+            🗑️ Очистить фильтры
+          </button>
+          <router-link to="/profile/catalogue" class="browse-link">
+            📚 Просмотреть каталог курсов
+          </router-link>
+        </div>
       </div>
     </div>
 
@@ -120,6 +203,7 @@ export default {
       loadingStudyList: true,
       searchQuery: '',
       filterSubject: '',
+      filterType: '', // New filter for free/premium/pro
       showPaywall: false,
       requestedTopicId: null,
       lang: localStorage.getItem('lang') || 'en',
@@ -135,35 +219,45 @@ export default {
   },
   computed: {
     ...mapGetters('user', ['userStatus']),
+    
     filteredRecommendations() {
       return this.recommendations
         .filter(t => t.lessons?.length)
         .filter(t => {
           const name = this.getTopicName(t);
           const description = this.getTopicDescription(t);
+          const topicType = this.getTopicType(t);
+          
           return (
             (!this.filterSubject || t.subject === this.filterSubject) &&
+            (!this.filterType || topicType === this.filterType) &&
             (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
              description.toLowerCase().includes(this.searchQuery.toLowerCase()))
           );
         });
     },
+    
     filteredStudyList() {
       return this.studyList.filter(t => {
         const name = this.getTopicName(t);
         const description = this.getTopicDescription(t);
+        const topicType = this.getTopicType(t);
+        
         return (
           (!this.filterSubject || t.subject === this.filterSubject) &&
+          (!this.filterType || topicType === this.filterType) &&
           (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
            description.toLowerCase().includes(this.searchQuery.toLowerCase()))
         );
       });
     },
+    
     userStatusLabel() {
       if (this.userStatus === 'pro') return 'Pro';
       if (this.userStatus === 'start') return 'Start';
       return 'Free';
     },
+    
     hasErrors() {
       return this.errors.recommendations || this.errors.studyList;
     }
@@ -182,6 +276,129 @@ export default {
     ]);
   },
   methods: {
+    // ✅ ENHANCED: Topic type detection methods
+    getTopicType(topic) {
+      // Check various possible fields for topic type
+      const type = topic.type || topic.accessType || topic.pricing || topic.plan;
+      
+      if (!type || type === 'free' || type === 'public') return 'free';
+      if (type === 'premium' || type === 'paid' || type === 'start') return 'premium';
+      if (type === 'pro' || type === 'professional') return 'pro';
+      
+      // Fallback: if no explicit type, assume free
+      return 'free';
+    },
+    
+    getTopicTypeClass(topic) {
+      return `topic-${this.getTopicType(topic)}`;
+    },
+    
+    getTopicTypeIcon(topic) {
+      const type = this.getTopicType(topic);
+      switch (type) {
+        case 'free': return '💚';
+        case 'premium': return '💎';
+        case 'pro': return '🌟';
+        default: return '💚';
+      }
+    },
+    
+    getTopicTypeLabel(topic) {
+      const type = this.getTopicType(topic);
+      switch (type) {
+        case 'free': return 'Бесплатно';
+        case 'premium': return 'Премиум';
+        case 'pro': return 'Pro';
+        default: return 'Бесплатно';
+      }
+    },
+    
+    // ✅ ENHANCED: Access status methods
+    getAccessStatus(topic) {
+      const topicType = this.getTopicType(topic);
+      const hasAccess = this.hasTopicAccess(topic);
+      
+      if (hasAccess) return 'accessible';
+      if (topicType === 'free') return 'accessible';
+      return 'restricted';
+    },
+    
+    getAccessIcon(topic) {
+      const status = this.getAccessStatus(topic);
+      switch (status) {
+        case 'accessible': return '✅';
+        case 'restricted': return '🔒';
+        default: return '✅';
+      }
+    },
+    
+    getAccessText(topic) {
+      const status = this.getAccessStatus(topic);
+      const topicType = this.getTopicType(topic);
+      
+      if (status === 'accessible') {
+        return topicType === 'free' ? 'Бесплатный доступ' : 'У вас есть доступ';
+      }
+      
+      return `Требуется ${this.getTopicTypeLabel(topic)}`;
+    },
+    
+    hasTopicAccess(topic) {
+      const topicType = this.getTopicType(topic);
+      
+      if (topicType === 'free') return true;
+      if (topicType === 'premium' && (this.userStatus === 'start' || this.userStatus === 'pro')) return true;
+      if (topicType === 'pro' && this.userStatus === 'pro') return true;
+      
+      return false;
+    },
+    
+    // ✅ ENHANCED: Button state methods
+    isInStudyList(topic) {
+      return this.studyList.some(t => t._id === topic._id);
+    },
+    
+    getStartButtonClass(topic) {
+      const hasAccess = this.hasTopicAccess(topic);
+      const topicType = this.getTopicType(topic);
+      
+      if (!hasAccess) return 'btn-restricted';
+      if (topicType === 'pro') return 'btn-pro';
+      if (topicType === 'premium') return 'btn-premium';
+      return 'btn-free';
+    },
+    
+    getStartButtonIcon(topic) {
+      if (!this.hasTopicAccess(topic)) return '🔒';
+      return '🚀';
+    },
+    
+    getStartButtonText(topic) {
+      if (!this.hasTopicAccess(topic)) {
+        const topicType = this.getTopicType(topic);
+        return topicType === 'pro' ? 'Нужен Pro' : 'Нужен Start';
+      }
+      return 'Начать';
+    },
+    
+    getStartButtonTitle(topic) {
+      const topicType = this.getTopicType(topic);
+      const hasAccess = this.hasTopicAccess(topic);
+      
+      if (!hasAccess) {
+        return `Этот курс требует подписку ${this.getTopicTypeLabel(topic)}`;
+      }
+      
+      return `Начать изучение курса "${this.getTopicName(topic)}"`;
+    },
+    
+    // ✅ Enhanced filter methods
+    clearFilters() {
+      this.searchQuery = '';
+      this.filterSubject = '';
+      this.filterType = '';
+    },
+    
     getTopicName(topic) {
       return topic.name?.[this.lang] || topic.name?.en || topic.name || 'Без названия';
     },
@@ -197,7 +414,6 @@ export default {
       let errorMessage = 'An unexpected error occurred';
       
       if (error.response) {
-        // Server responded with error status
         const status = error.response.status;
         const data = error.response.data;
         
@@ -207,7 +423,6 @@ export default {
             break;
           case 401:
             errorMessage = 'Authentication failed. Please log in again.';
-            // Redirect to login if auth fails
             setTimeout(() => this.$router.push('/'), 2000);
             return { message: errorMessage, shouldRedirect: true };
           case 403:
@@ -220,10 +435,8 @@ export default {
             errorMessage = data?.message || `Server error (${status})`;
         }
       } else if (error.request) {
-        // Network error
         errorMessage = 'Network error. Please check your connection.';
       } else {
-        // Other error
         errorMessage = error.message || 'Something went wrong';
       }
       
@@ -242,7 +455,6 @@ export default {
         
         const headers = { Authorization: `Bearer ${token}` };
         
-        // Use the correct endpoint from userRoutes: /:firebaseId/recommendations
         const response = await axios.get(`${BASE_URL}/users/${this.userId}/recommendations`, { headers });
         const data = response.data;
         
@@ -255,10 +467,8 @@ export default {
         const errorInfo = this.handleApiError(err, 'fetch-recommendations');
         this.errors.recommendations = errorInfo.message;
         
-        // Provide default recommendations if API fails
         this.recommendations = [];
         
-        // Don't show error if it's just empty recommendations
         if (err.response?.status === 404) {
           this.errors.recommendations = null;
         }
@@ -280,7 +490,6 @@ export default {
         
         const headers = { Authorization: `Bearer ${token}` };
         
-        // Get study list - backend now returns just the study list entries
         const { data: studyListEntries } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
         console.log(`📋 Raw study list data:`, studyListEntries);
         
@@ -289,18 +498,14 @@ export default {
           return;
         }
         
-        // Get user's progress for all lessons - using the correct endpoint from userRoutes
         let userProgressData = [];
         try {
           const progressResponse = await axios.get(`${BASE_URL}/users/${this.userId}/progress`, { headers });
-          // Handle the response structure from userProgressController
           userProgressData = progressResponse.data?.data || progressResponse.data || [];
         } catch (progressError) {
           console.warn('⚠️ Failed to load progress data:', progressError.message);
-          // Continue without progress data
         }
         
-        // Now process each study list entry to get full topic data
         const validTopics = [];
         
         const topicPromises = studyListEntries.map(async (entry) => {
@@ -312,13 +517,11 @@ export default {
           try {
             console.log(`🔍 Processing topic: ${entry.topicId}`);
             
-            // Fetch the full topic data
             const topicRes = await axios.get(`${BASE_URL}/topics/${entry.topicId}`, { 
               headers,
               timeout: 10000
             });
             
-            // Handle the response structure properly
             const topicData = topicRes.data?.data || topicRes.data;
             
             if (!topicData || !topicData._id) {
@@ -328,14 +531,11 @@ export default {
             
             console.log(`✅ Topic found: ${this.getTopicName(topicData)}`);
             
-            // Get lessons for this topic
             let lessons = [];
             
             if (topicData.lessons && Array.isArray(topicData.lessons) && topicData.lessons.length > 0) {
-              // Lessons are already embedded in topic response
               lessons = topicData.lessons;
             } else {
-              // Fetch lessons separately
               try {
                 const lessonsRes = await axios.get(`${BASE_URL}/lessons/topic/${entry.topicId}`, { 
                   headers,
@@ -348,13 +548,11 @@ export default {
                 }
               } catch (lessonsError) {
                 console.warn(`⚠️ Failed to fetch lessons for topic ${entry.topicId}:`, lessonsError.message);
-                // Continue with empty lessons
               }
             }
             
             console.log(`✅ Found ${lessons.length} lessons for topic ${entry.topicId}`);
             
-            // Calculate progress for this topic
             let completedLessons = 0;
             let totalStars = 0;
             let totalPoints = 0;
@@ -376,7 +574,6 @@ export default {
               ? Math.round((completedLessons / lessons.length) * 100)
               : 0;
             
-            // Determine medal based on completion and performance
             let medal = 'none';
             if (progressPercent === 100 && lessons.length > 0) {
               const avgStars = totalStars / lessons.length;
@@ -404,10 +601,8 @@ export default {
           }
         });
         
-        // Wait for all topic fetches to complete
         const results = await Promise.allSettled(topicPromises);
         
-        // Filter out null results and extract valid topics
         results.forEach(result => {
           if (result.status === 'fulfilled' && result.value) {
             validTopics.push(result.value);
@@ -461,18 +656,16 @@ export default {
         const headers = { Authorization: `Bearer ${token}` };
         const url = `${BASE_URL}/users/${this.userId}/study-list`;
         
-        // Updated payload to match backend expectations
         const payload = {
           subject: topic.subject,
           level: topic.level,
-          topic: this.getTopicName(topic), // This becomes the 'name' field
-          topicId: topic._id // Make sure this is a valid ObjectId string
+          topic: this.getTopicName(topic),
+          topicId: topic._id
         };
         
         await axios.post(url, payload, { headers });
         await this.fetchStudyList();
         
-        // Remove from recommendations
         this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
         
         console.log(`✅ Added topic to study list: ${this.getTopicName(topic)}`);
@@ -490,7 +683,10 @@ export default {
         return;
       }
       
-      if (topic.type === 'premium' && (!this.userStatus || this.userStatus === 'free')) {
+      const topicType = this.getTopicType(topic);
+      const hasAccess = this.hasTopicAccess(topic);
+      
+      if (!hasAccess) {
         this.requestedTopicId = topic._id;
         this.showPaywall = true;
       } else {
@@ -500,10 +696,8 @@ export default {
 
     async removeStudyCard(id) {
       try {
-        // Remove from UI immediately for better UX
         this.studyList = this.studyList.filter(topic => topic._id !== id);
         
-        // Remove from backend using the correct endpoint
         const token = await auth.currentUser?.getIdToken();
         if (token) {
           const headers = { Authorization: `Bearer ${token}` };
@@ -512,7 +706,6 @@ export default {
         }
       } catch (error) {
         console.error('❌ Error removing study card:', error);
-        // Refresh the list to ensure consistency
         await this.fetchStudyList();
       }
     }
@@ -653,6 +846,64 @@ export default {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
 
+/* Error Alert */
+.error-alert {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid #fca5a5;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+}
+
+.error-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.error-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.error-messages {
+  flex: 1;
+}
+
+.error-messages p {
+  margin: 0 0 4px 0;
+  color: #dc2626;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.retry-btn {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-btn:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.retry-btn.inline {
+  background: #3b82f6;
+  margin-top: 12px;
+}
+
+.retry-btn.inline:hover {
+  background: #2563eb;
+}
+
 .section {
   margin-bottom: 60px;
   position: relative;
@@ -716,6 +967,21 @@ export default {
   margin-bottom: 0;
 }
 
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.results-count {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
 .refresh-btn {
   background: linear-gradient(135deg, #1a1a1a 0%, #374151 100%);
   color: white;
@@ -757,9 +1023,20 @@ export default {
   transform: none;
 }
 
+.info-badge {
+  background: #10b981;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: default;
+}
+
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 24px;
   padding: 0;
 }
@@ -769,7 +1046,7 @@ export default {
   background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
   border: 1px solid rgba(229, 231, 235, 0.6);
   border-radius: 16px;
-  height: 220px;
+  height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -810,17 +1087,84 @@ export default {
   backdrop-filter: blur(10px);
 }
 
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-message h3 {
+  margin: 0 0 12px 0;
+  color: #374151;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.empty-message p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.empty-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.clear-filters-btn {
+  background: #6b7280;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.clear-filters-btn:hover {
+  background: #4b5563;
+  transform: translateY(-1px);
+}
+
+.browse-link {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.browse-link:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+/* ✅ ENHANCED: Topic card styles with type indicators */
 .topic-card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
-  padding: 24px;
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   transition: all 0.4s ease;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   border: 1px solid rgba(229, 231, 235, 0.6);
-  min-height: 220px;
+  min-height: 280px;
   position: relative;
   overflow: hidden;
   backdrop-filter: blur(10px);
@@ -848,49 +1192,183 @@ export default {
   border-color: rgba(59, 130, 246, 0.3);
 }
 
+/* Topic type specific styles */
+.topic-free {
+  border-left: 4px solid #10b981;
+}
+
+.topic-premium {
+  border-left: 4px solid #f59e0b;
+}
+
+.topic-pro {
+  border-left: 4px solid #8b5cf6;
+}
+
+/* Topic type badge */
+.topic-type-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 2;
+}
+
+.topic-type-badge.free {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.topic-type-badge.premium {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+.topic-type-badge.pro {
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+  color: #4338ca;
+  border: 1px solid #8b5cf6;
+}
+
+.badge-icon {
+  font-size: 0.9rem;
+}
+
+.badge-text {
+  font-size: 0.7rem;
+}
+
+/* Topic content */
+.topic-content {
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 .topic-title {
   font-size: 1.1rem;
   font-weight: 600;
   color: #1a1a1a;
   margin-bottom: 8px;
   line-height: 1.4;
+  margin-top: 20px; /* Space for badge */
 }
 
 .topic-desc {
   font-size: 0.85rem;
   color: #6b7280;
-  margin: 8px 0 12px 0;
+  margin: 8px 0 16px 0;
   line-height: 1.6;
   flex-grow: 1;
 }
 
-.lesson-count {
+/* Topic metadata */
+.topic-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.metadata-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.8rem;
-  color: #9ca3af;
+  color: #6b7280;
+}
+
+.metadata-icon {
+  font-size: 0.9rem;
+}
+
+.metadata-text {
+  font-weight: 500;
+}
+
+.difficulty-stars {
+  display: flex;
+  gap: 1px;
+}
+
+.star {
+  color: #d1d5db;
+  font-size: 0.8rem;
+}
+
+.star.filled {
+  color: #fbbf24;
+}
+
+/* Access status */
+.access-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
   font-weight: 500;
   margin-bottom: 16px;
 }
 
+.access-status.accessible {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.access-status.restricted {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+  border: 1px solid #ef4444;
+}
+
+.access-icon {
+  font-size: 0.9rem;
+}
+
+.access-text {
+  font-size: 0.75rem;
+}
+
+/* Card buttons */
 .card-buttons {
   display: flex;
   gap: 12px;
   margin-top: auto;
+  padding: 0 24px 24px 24px;
 }
 
 .btn-add,
 .btn-start {
   flex: 1;
-  padding: 10px 16px;
-  font-size: 0.8rem;
-  border: 1px solid #e2e8f0;
+  padding: 12px 16px;
+  font-size: 0.85rem;
   border-radius: 8px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  color: #374151;
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
 }
 
 .btn-add::before,
@@ -910,6 +1388,12 @@ export default {
   left: 100%;
 }
 
+.btn-add {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  color: #374151;
+  border: 1px solid #e2e8f0;
+}
+
 .btn-add:hover {
   background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
   border-color: #3b82f6;
@@ -918,17 +1402,73 @@ export default {
   box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
 }
 
-.btn-start {
-  background: linear-gradient(135deg, #1a1a1a 0%, #374151 100%);
-  color: white;
-  border-color: #1a1a1a;
+.btn-add:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+  border-color: #e5e7eb;
 }
 
-.btn-start:hover {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border-color: #3b82f6;
+.btn-add:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Start button variants */
+.btn-free {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: 1px solid #10b981;
+}
+
+.btn-free:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+
+.btn-premium {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border: 1px solid #f59e0b;
+}
+
+.btn-premium:hover {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+}
+
+.btn-pro {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border: 1px solid #8b5cf6;
+}
+
+.btn-pro:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+}
+
+.btn-restricted {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: white;
+  border: 1px solid #6b7280;
+}
+
+.btn-restricted:hover {
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(107, 114, 128, 0.4);
+}
+
+.btn-icon {
+  font-size: 0.9rem;
+}
+
+.btn-text {
+  font-size: 0.8rem;
 }
 
 /* Responsive Design */
@@ -968,9 +1508,61 @@ export default {
     padding: 24px;
   }
   
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .header-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
   .card-buttons {
     flex-direction: column;
     gap: 8px;
+  }
+  
+  .topic-metadata {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .empty-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 1.5rem;
+  }
+  
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+  
+  .search-input,
+  .filter-select {
+    width: 100%;
+  }
+  
+  .recommendations-section,
+  .study-section {
+    padding: 20px;
+  }
+  
+  .topic-content {
+    padding: 20px;
+  }
+  
+  .card-buttons {
+    padding: 0 20px 20px 20px;
   }
 }
 
