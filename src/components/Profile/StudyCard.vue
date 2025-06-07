@@ -1,6 +1,12 @@
 <template>
-  <div v-if="lessonExists" class="study-card">
+  <div v-if="lessonExists" class="study-card" :class="getTopicTypeClass(topic)">
     <button class="close-btn" @click="showDeleteModal = true">✕</button>
+
+    <!-- Topic Type Badge -->
+    <div class="topic-type-badge" :class="getTopicType(topic)">
+      <span class="badge-icon">{{ getTopicTypeIcon(topic) }}</span>
+      <span class="badge-text">{{ getTopicTypeLabel(topic) }}</span>
+    </div>
 
     <div class="card-header">
       <div class="topic-info">
@@ -8,14 +14,6 @@
         <div class="topic-meta">
           <span class="subject-tag" v-if="topic.subject">{{ topic.subject }}</span>
           <span class="level-tag" v-if="topic.level">{{ topic.level }}</span>
-        </div>
-      </div>
-      <div class="achievement-section">
-        <div class="stats">
-          <div class="stat-item">
-            <span class="stat-value">{{ progress.completedLessons || 0 }}</span>
-            <span class="stat-label">из {{ progress.totalLessons || lessons.length }}</span>
-          </div>
         </div>
       </div>
     </div>
@@ -33,8 +31,15 @@
     <div class="card-details">
       <div class="detail-row">
         <div class="detail-item">
+          <span class="detail-icon">📚</span>
+          <span class="detail-text">{{ progress.completedLessons || 0 }} из {{ progress.totalLessons || lessons.length }} уроков</span>
+        </div>
+      </div>
+      
+      <div class="detail-row">
+        <div class="detail-item">
           <span class="detail-icon">⭐</span>
-          <span class="detail-text">{{ progress.stars || 0 }} звезд получено</span>
+          <span class="detail-text">{{ progress.stars || 0 }} звезд</span>
         </div>
         <div class="detail-item">
           <span class="detail-icon">⏱</span>
@@ -48,17 +53,17 @@
     </div>
 
     <div class="card-actions">
-      <button class="continue-btn primary" @click="goToLesson">
+      <button class="continue-btn" @click="goToLesson">
         <span class="btn-icon">▶️</span>
         <span>{{ lessonProgress > 0 ? 'Продолжить' : 'Начать изучение' }}</span>
       </button>
-      <button class="overview-btn secondary" @click="goToOverview">
+      <button class="overview-btn" @click="goToOverview">
         <span class="btn-icon">📋</span>
         <span>Обзор</span>
       </button>
     </div>
 
-    <!-- Delete Modal - Fixed Implementation -->
+    <!-- Delete Modal -->
     <Teleport to="body">
       <div v-if="showDeleteModal" class="modal-overlay" @click.self="showDeleteModal = false">
         <div class="modal-content" @click.stop>
@@ -114,7 +119,6 @@ export default {
       return Math.max(readTime + exerciseTime, 5);
     },
     lastActivity() {
-      // Mock data - you can implement real last activity tracking
       if (this.lessonProgress > 0) {
         const days = Math.floor(Math.random() * 7) + 1;
         return days === 1 ? 'вчера' : `${days} дней назад`;
@@ -126,6 +130,41 @@ export default {
     this.checkLessonExists();
   },
   methods: {
+    // ✅ Topic type detection methods (same as MainPage)
+    getTopicType(topic) {
+      const type = topic.type || topic.accessType || topic.pricing || topic.plan;
+      
+      if (!type || type === 'free' || type === 'public') return 'free';
+      if (type === 'premium' || type === 'paid' || type === 'start') return 'premium';
+      if (type === 'pro' || type === 'professional') return 'pro';
+      
+      return 'free';
+    },
+    
+    getTopicTypeClass(topic) {
+      return `topic-${this.getTopicType(topic)}`;
+    },
+    
+    getTopicTypeIcon(topic) {
+      const type = this.getTopicType(topic);
+      switch (type) {
+        case 'free': return '💚';
+        case 'premium': return '💎';
+        case 'pro': return '🌟';
+        default: return '💚';
+      }
+    },
+    
+    getTopicTypeLabel(topic) {
+      const type = this.getTopicType(topic);
+      switch (type) {
+        case 'free': return 'Бесплатно';
+        case 'premium': return 'Премиум';
+        case 'pro': return 'Pro';
+        default: return 'Бесплатно';
+      }
+    },
+
     checkLessonExists() {
       this.lessonExists = Array.isArray(this.lessons) && this.lessons.length > 0;
     },
@@ -160,7 +199,7 @@ export default {
         const url = `${import.meta.env.VITE_API_BASE_URL}/users/${userId}/study-list/${this.topic._id}`;
         await axios.delete(url, { headers });
         this.lessonExists = false;
-        this.showDeleteModal = false; // Close modal after successful deletion
+        this.showDeleteModal = false;
         this.$emit('deleted', this.topic._id);
       } catch (err) {
         console.error('❌ Ошибка удаления:', err);
@@ -172,43 +211,128 @@ export default {
 </script>
 
 <style scoped>
+/* ========================================
+   🎴 STUDY CARD - CLEAN THEME
+======================================== */
 .study-card {
   position: relative;
-  background: white;
-  border: 1px solid #e5e5e5;
-  padding: 24px;
+  background: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.4s ease;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  border: 1px solid #e5e7eb;
   min-height: 280px;
-  transition: all 0.3s ease;
+  padding: 24px;
+  gap: 20px;
   overflow: hidden;
 }
 
-.study-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-}
-
 .study-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-  border-color: #d1d5db;
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  border-color: #8b5cf6;
 }
 
+/* Topic type specific styles */
+.topic-free {
+  border-left: 4px solid #1a1a1a;
+}
+
+.topic-premium {
+  border-left: 4px solid #8b5cf6;
+}
+
+.topic-pro {
+  border-left: 4px solid #6b7280;
+}
+
+/* ========================================
+   🏷️ TOPIC TYPE BADGE
+======================================== */
+.topic-type-badge {
+  position: absolute;
+  top: 16px;
+  right: 50px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 2;
+}
+
+.topic-type-badge.free {
+  background: #f3f4f6;
+  color: #1a1a1a;
+  border: 1px solid #e5e7eb;
+}
+
+.topic-type-badge.premium {
+  background: #f3f0ff;
+  color: #8b5cf6;
+  border: 1px solid #8b5cf6;
+}
+
+.topic-type-badge.pro {
+  background: #1a1a1a;
+  color: #ffffff;
+  border: 1px solid #1a1a1a;
+}
+
+.badge-icon {
+  font-size: 0.9rem;
+}
+
+.badge-text {
+  font-size: 0.7rem;
+}
+
+/* ========================================
+   🎯 CLOSE BUTTON
+======================================== */
+.close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.close-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  transform: scale(1.15);
+}
+
+/* ========================================
+   📋 CARD HEADER
+======================================== */
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
-  padding-right: 40px;
+  margin-top: 20px;
 }
 
 .topic-info {
@@ -240,45 +364,18 @@ export default {
 
 .subject-tag {
   background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  color: #1a1a1a;
+  border: 1px solid #e5e7eb;
 }
 
 .level-tag {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
+  background: #8b5cf6;
+  color: #ffffff;
 }
 
-.achievement-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.stats {
-  text-align: center;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.stat-value {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 0.7rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
+/* ========================================
+   📊 PROGRESS SECTION
+======================================== */
 .progress-section {
   display: flex;
   flex-direction: column;
@@ -294,17 +391,17 @@ export default {
 .progress-text {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #374151;
+  color: #1a1a1a;
 }
 
 .points-earned {
   font-size: 0.8rem;
   font-weight: 500;
-  color: #059669;
-  background: #ecfdf5;
+  color: #8b5cf6;
+  background: #f3f0ff;
   padding: 2px 8px;
   border-radius: 8px;
-  border: 1px solid #a7f3d0;
+  border: 1px solid #8b5cf6;
 }
 
 .progress-bar {
@@ -312,33 +409,19 @@ export default {
   height: 8px;
   border-radius: 4px;
   overflow: hidden;
-  border: 1px solid #e5e5e5;
+  border: 1px solid #e5e7eb;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: #8b5cf6;
   border-radius: 4px;
   transition: width 0.5s ease;
-  position: relative;
 }
 
-.progress-fill::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
+/* ========================================
+   📝 CARD DETAILS
+======================================== */
 .card-details {
   display: flex;
   flex-direction: column;
@@ -379,6 +462,9 @@ export default {
   font-style: italic;
 }
 
+/* ========================================
+   🔘 CARD ACTIONS
+======================================== */
 .card-actions {
   display: flex;
   gap: 10px;
@@ -387,82 +473,54 @@ export default {
 
 .continue-btn,
 .overview-btn {
-  padding: 10px 16px;
+  padding: 12px 16px;
   font-size: 0.85rem;
-  border: none;
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   text-decoration: none;
+  border: 2px solid transparent;
 }
 
-.continue-btn.primary {
+.continue-btn {
   background: #1a1a1a;
-  color: white;
+  color: #ffffff;
+  border-color: #1a1a1a;
   flex: 2;
 }
 
-.continue-btn.primary:hover {
-  background: #333;
-  transform: translateY(-1px);
+.continue-btn:hover {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  transform: translateY(-2px);
 }
 
-.overview-btn.secondary {
-  background: #f9fafb;
-  color: #374151;
-  border: 1px solid #d1d5db;
+.overview-btn {
+  background: #ffffff;
+  color: #1a1a1a;
+  border-color: #e5e7eb;
   flex: 1;
 }
 
-.overview-btn.secondary:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
+.overview-btn:hover {
+  background: #f9fafb;
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+  transform: translateY(-2px);
 }
 
 .btn-icon {
   font-size: 0.8rem;
 }
 
-.close-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid #e5e7eb;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(8px);
-  z-index: 10;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.close-btn:hover {
-  background: #ef4444;
-  color: white;
-  border-color: #ef4444;
-  transform: scale(1.15);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-
-.close-btn:active {
-  transform: scale(1.05);
-}
-
-/* Fixed Modal Styles - Using Teleport to body prevents glitching */
+/* ========================================
+   🔔 MODAL STYLES
+======================================== */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -481,16 +539,14 @@ export default {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    backdrop-filter: blur(0px);
   }
   to {
     opacity: 1;
-    backdrop-filter: blur(8px);
   }
 }
 
 .modal-content {
-  background: white;
+  background: #ffffff;
   border: 1px solid #e5e7eb;
   padding: 32px;
   border-radius: 20px;
@@ -501,7 +557,6 @@ export default {
   max-height: 90vh;
   overflow-y: auto;
   animation: modalSlideIn 0.3s ease-out;
-  position: relative;
 }
 
 @keyframes modalSlideIn {
@@ -518,18 +573,10 @@ export default {
 .modal-icon {
   font-size: 3rem;
   margin-bottom: 20px;
-  animation: bounceIn 0.5s ease-out;
-}
-
-@keyframes bounceIn {
-  0% { transform: scale(0.3); opacity: 0; }
-  50% { transform: scale(1.05); }
-  70% { transform: scale(0.9); }
-  100% { transform: scale(1); opacity: 1; }
 }
 
 .modal-content h4 {
-  color: #111827;
+  color: #1a1a1a;
   font-size: 1.3rem;
   font-weight: 700;
   margin: 0 0 16px 0;
@@ -537,7 +584,7 @@ export default {
 }
 
 .modal-content p {
-  color: #374151;
+  color: #6b7280;
   font-size: 1rem;
   font-weight: 400;
   margin: 0 0 12px 0;
@@ -562,8 +609,8 @@ export default {
 }
 
 .confirm-btn {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
+  background: #ef4444;
+  color: #ffffff;
   padding: 12px 28px;
   border: none;
   border-radius: 10px;
@@ -572,23 +619,17 @@ export default {
   font-size: 0.95rem;
   transition: all 0.2s ease;
   min-width: 120px;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
 }
 
 .confirm-btn:hover {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  background: #dc2626;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
-}
-
-.confirm-btn:active {
-  transform: translateY(0);
 }
 
 .cancel-btn {
-  background: #f9fafb;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
   padding: 12px 28px;
   border-radius: 10px;
   cursor: pointer;
@@ -599,17 +640,15 @@ export default {
 }
 
 .cancel-btn:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
+  background: #f9fafb;
+  border-color: #8b5cf6;
+  color: #8b5cf6;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.cancel-btn:active {
-  transform: translateY(0);
-}
-
-/* Responsive adjustments */
+/* ========================================
+   📱 RESPONSIVE DESIGN
+======================================== */
 @media (max-width: 768px) {
   .study-card {
     padding: 20px;
@@ -624,12 +663,6 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
-    padding-right: 35px;
-  }
-  
-  .achievement-section {
-    flex-direction: row;
-    align-self: flex-end;
   }
   
   .detail-row {
@@ -652,6 +685,12 @@ export default {
     width: 30px;
     height: 30px;
     font-size: 13px;
+  }
+  
+  .topic-type-badge {
+    top: 10px;
+    right: 45px;
+    padding: 4px 8px;
   }
   
   .modal-content {
@@ -680,8 +719,14 @@ export default {
     font-size: 12px;
   }
   
-  .card-header {
-    padding-right: 32px;
+  .topic-type-badge {
+    top: 8px;
+    right: 40px;
+    padding: 3px 6px;
+  }
+  
+  .badge-text {
+    font-size: 0.6rem;
   }
 }
 </style>
