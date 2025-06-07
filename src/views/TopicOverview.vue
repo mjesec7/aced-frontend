@@ -52,28 +52,74 @@ export default {
   computed: {
     ...mapGetters('user', ['isPremiumUser', 'userStatus'])
   },
-  async mounted() {
-    const topicId = this.$route.params.id;
-    const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  // ✅ REPLACE the mounted() method in TopicOverview.vue
 
-    try {
-      const token = await auth.currentUser?.getIdToken();
-      const headers = { Authorization: `Bearer ${token}` };
+async mounted() {
+  const topicId = this.$route.params.id;
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-      // ✅ Load topic by ID
-      const topicRes = await axios.get(`${BASE_URL}/topics/${topicId}`);
-      this.topic = topicRes.data;
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      // ✅ Load lessons for the topic
-      const lessonsRes = await axios.get(`${BASE_URL}/topics/${topicId}/lessons`);
-      this.lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
-    } catch (err) {
-      console.error('❌ Ошибка загрузки темы или уроков:', err);
-      this.topic = null;
-    } finally {
-      this.loading = false;
+    console.log('🔍 Loading topic:', topicId);
+
+    // ✅ FIX: Load topic by ID - handle the response structure correctly
+    const topicRes = await axios.get(`${BASE_URL}/topics/${topicId}`, { headers });
+    
+    // ✅ Handle both possible response structures
+    if (topicRes.data.success) {
+      this.topic = topicRes.data.data; // New structure with success flag
+    } else {
+      this.topic = topicRes.data; // Legacy structure
     }
-  },
+
+    console.log('✅ Topic loaded:', this.topic?.name?.en || this.topic?.name);
+
+    // ✅ FIX: Load lessons for the topic - handle response structure correctly
+    try {
+      const lessonsRes = await axios.get(`${BASE_URL}/topics/${topicId}/lessons`, { headers });
+      
+      // ✅ Handle the response structure from your topicRoutes
+      if (lessonsRes.data.success) {
+        this.lessons = lessonsRes.data.data || []; // New structure
+      } else {
+        this.lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : []; // Legacy structure
+      }
+      
+      console.log('✅ Lessons loaded:', this.lessons.length);
+    } catch (lessonError) {
+      console.warn('⚠️ Could not load lessons:', lessonError.response?.status);
+      // If lessons endpoint fails, try to get lessons from topic data
+      if (this.topic && this.topic.lessons) {
+        this.lessons = this.topic.lessons;
+        console.log('✅ Using lessons from topic data:', this.lessons.length);
+      } else {
+        this.lessons = [];
+      }
+    }
+
+  } catch (err) {
+    console.error('❌ Error loading topic:', err.response?.status, err.response?.data || err.message);
+    
+    // Better error handling
+    if (err.response?.status === 404) {
+      console.error('❌ Topic not found');
+      alert('❌ Тема не найдена');
+    } else if (err.response?.status === 400) {
+      console.error('❌ Invalid topic ID');
+      alert('❌ Неверный ID темы');
+    } else {
+      console.error('❌ Server error');
+      alert('❌ Ошибка сервера');
+    }
+    
+    this.topic = null;
+    this.lessons = [];
+  } finally {
+    this.loading = false;
+  }
+},
   methods: {
     startLesson(lesson) {
       if (lesson.type === 'premium' && !this.isPremiumUser) {
