@@ -191,33 +191,74 @@ export default {
     },
 
     async handleAuthStateChange(firebaseUser) {
-      try {
-        const token = await firebaseUser.getIdToken(true);
-        const apiBase = this.getApiBase();
+  try {
+    console.log('🔄 Auth state changed for user:', firebaseUser.uid);
+    console.log('🌐 Frontend domain:', window.location.hostname);
+    
+    const token = await firebaseUser.getIdToken(true);
+    const apiBase = this.getApiBase();
+    
+    console.log('📡 Using API base:', apiBase);
 
-        // Try to get existing user data
-        const response = await axios.get(`${apiBase}/users/${firebaseUser.uid}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+    // ✅ Production-optimized API call
+    const response = await axios.get(`${apiBase}/users/${firebaseUser.uid}`, {
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 15000
+    });
 
-        if (response.data) {
-          const userData = {
-            name: response.data.name || firebaseUser.displayName || firebaseUser.email,
-            email: firebaseUser.email,
-            uid: firebaseUser.uid,
-            subscriptionPlan: response.data.subscriptionPlan || 'free',
-          };
+    if (response.data) {
+      const userData = {
+        name: response.data.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+        email: firebaseUser.email,
+        uid: firebaseUser.uid,
+        subscriptionPlan: response.data.subscriptionPlan || 'free',
+      };
 
-          this.setUserData(userData, firebaseUser.uid, token);
-        }
-      } catch (error) {
-        console.log('User not found in database, will be created on next login');
-      }
-    },
-
-    getApiBase() {
-      return import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live/api';
-    },
+      console.log('✅ User data loaded from api.aced.live:', userData);
+      this.setUserData(userData, firebaseUser.uid, token);
+    }
+  } catch (error) {
+    console.log('⚠️ Could not load user from api.aced.live:', {
+      status: error.response?.status,
+      message: error.message,
+      url: error.config?.url
+    });
+    
+    if (error.response?.status === 404) {
+      console.log('👤 User not found in backend - will be created on next action');
+      const userData = {
+        name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+        email: firebaseUser.email,
+        uid: firebaseUser.uid,
+        subscriptionPlan: 'free',
+      };
+      this.setUserData(userData, firebaseUser.uid, await firebaseUser.getIdToken(true));
+    } else {
+      console.error('🌐 Backend connection issue with api.aced.live');
+      this.showError('Проблема с подключением к серверу');
+    }
+  }
+},
+getApiBase() {
+  // ✅ Production-aware API base URL
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  
+  // Always use production API for live site
+  if (window.location.hostname === 'aced.live') {
+    return 'https://api.aced.live/api';
+  }
+  
+  // For local development
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return envUrl || 'http://localhost:5000/api';
+  }
+  
+  // Default fallback
+  return envUrl || 'https://api.aced.live/api';
+},
 
     setUserData(userData, firebaseUserId, token) {
       this.setUser(userData);
