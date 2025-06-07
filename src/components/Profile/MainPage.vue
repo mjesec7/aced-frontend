@@ -74,12 +74,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- Access Status for Current User -->
-            <div class="access-status" :class="getAccessStatus(topic)">
-              <span class="access-icon">{{ getAccessIcon(topic) }}</span>
-              <span class="access-text">{{ getAccessText(topic) }}</span>
-            </div>
           </div>
 
           <!-- Card Actions -->
@@ -716,43 +710,31 @@ export default {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* ========================================
+   🎨 BASE THEME: BLACK, WHITE, PURPLE
+======================================== */
 .dashboard {
   padding: 24px 16px;
   max-width: 1200px;
   margin: 0 auto;
   font-family: 'Inter', sans-serif;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: #ffffff;
   min-height: 100vh;
-  position: relative;
-}
-
-.dashboard::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 200px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  opacity: 0.03;
-  z-index: 0;
-}
-
-.dashboard > * {
-  position: relative;
-  z-index: 1;
+  color: #1a1a1a;
 }
 
 .title {
   font-size: 2rem;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
   color: #1a1a1a;
   margin-bottom: 32px;
   letter-spacing: -0.02em;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
+/* ========================================
+   🎛️ CONTROLS
+======================================== */
 .controls {
   display: flex;
   flex-wrap: wrap;
@@ -761,11 +743,10 @@ export default {
   align-items: center;
   margin-bottom: 40px;
   padding: 24px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
+  background: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
 }
 
 .search-input,
@@ -773,87 +754,64 @@ export default {
   padding: 12px 16px;
   font-size: 0.9rem;
   font-weight: 400;
-  border: 1px solid #e2e8f0;
+  border: 2px solid #e5e7eb;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.8);
-  color: #374151;
+  background: #ffffff;
+  color: #1a1a1a;
   transition: all 0.3s ease;
   min-width: 180px;
-  backdrop-filter: blur(5px);
 }
 
 .search-input:focus,
 .filter-select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-  background: white;
-  transform: translateY(-1px);
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
 }
 
 .search-input::placeholder {
-  color: #9ca3af;
+  color: #6b7280;
   font-weight: 400;
 }
 
 .filter-select option {
-  background: white;
-  color: #374151;
+  background: #ffffff;
+  color: #1a1a1a;
 }
 
+/* User Status Badge */
 .user-status-badge {
   font-size: 0.75rem;
   padding: 8px 16px;
   border-radius: 20px;
   font-weight: 600;
-  color: white;
+  color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.user-status-badge::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
-
-.user-status-badge:hover::before {
-  left: 100%;
 }
 
 .user-status-badge.free {
-  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  background: #6b7280;
 }
 
 .user-status-badge.start {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: #8b5cf6;
 }
 
 .user-status-badge.pro {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: #1a1a1a;
 }
 
-.user-status-badge:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-}
-
-/* Error Alert */
+/* ========================================
+   🚨 ERROR ALERTS
+======================================== */
 .error-alert {
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-  border: 1px solid #fca5a5;
+  background: #fef2f2;
+  border: 1px solid #ef4444;
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 24px;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
 }
 
 .error-content {
@@ -879,8 +837,8 @@ export default {
 }
 
 .retry-btn {
-  background: #dc2626;
-  color: white;
+  background: #1a1a1a;
+  color: #ffffff;
   border: none;
   padding: 8px 16px;
   border-radius: 8px;
@@ -891,38 +849,33 @@ export default {
 }
 
 .retry-btn:hover {
-  background: #b91c1c;
+  background: #8b5cf6;
   transform: translateY(-1px);
 }
 
 .retry-btn.inline {
-  background: #3b82f6;
+  background: #8b5cf6;
   margin-top: 12px;
 }
 
 .retry-btn.inline:hover {
-  background: #2563eb;
+  background: #7c3aed;
 }
 
+/* ========================================
+   📦 SECTIONS
+======================================== */
 .section {
   margin-bottom: 60px;
   position: relative;
 }
 
-.recommendations-section {
-  background: linear-gradient(135deg, rgba(147, 51, 234, 0.02) 0%, rgba(79, 70, 229, 0.02) 100%);
-  padding: 32px;
-  border-radius: 20px;
-  border: 1px solid rgba(147, 51, 234, 0.1);
-  backdrop-filter: blur(10px);
-}
-
+.recommendations-section,
 .study-section {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.02) 0%, rgba(5, 150, 105, 0.02) 100%);
   padding: 32px;
   border-radius: 20px;
-  border: 1px solid rgba(16, 185, 129, 0.1);
-  backdrop-filter: blur(10px);
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
 }
 
 .section h2 {
@@ -934,25 +887,14 @@ export default {
   position: relative;
 }
 
-.recommendations-section h2::after {
+.section h2::after {
   content: '';
   position: absolute;
   bottom: -8px;
   left: 0;
   width: 60px;
   height: 3px;
-  background: linear-gradient(90deg, #9333ea, #4f46e5);
-  border-radius: 2px;
-}
-
-.study-section h2::after {
-  content: '';
-  position: absolute;
-  bottom: -8px;
-  left: 0;
-  width: 60px;
-  height: 3px;
-  background: linear-gradient(90deg, #10b981, #059669);
+  background: #8b5cf6;
   border-radius: 2px;
 }
 
@@ -974,8 +916,8 @@ export default {
 }
 
 .results-count {
-  background: rgba(59, 130, 246, 0.1);
-  color: #2563eb;
+  background: #f3f4f6;
+  color: #1a1a1a;
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 0.8rem;
@@ -983,8 +925,8 @@ export default {
 }
 
 .refresh-btn {
-  background: linear-gradient(135deg, #1a1a1a 0%, #374151 100%);
-  color: white;
+  background: #1a1a1a;
+  color: #ffffff;
   padding: 10px 20px;
   border: none;
   border-radius: 10px;
@@ -992,29 +934,11 @@ export default {
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.refresh-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
-
-.refresh-btn:hover::before {
-  left: 100%;
 }
 
 .refresh-btn:hover {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: #8b5cf6;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
 }
 
 .refresh-btn:disabled {
@@ -1024,8 +948,8 @@ export default {
 }
 
 .info-badge {
-  background: #10b981;
-  color: white;
+  background: #8b5cf6;
+  color: #ffffff;
   padding: 6px 12px;
   border: none;
   border-radius: 20px;
@@ -1034,6 +958,9 @@ export default {
   cursor: default;
 }
 
+/* ========================================
+   🃏 GRID & CARDS
+======================================== */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -1043,35 +970,16 @@ export default {
 
 .recommendation-placeholder,
 .study-placeholder {
-  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-  border: 1px solid rgba(229, 231, 235, 0.6);
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 16px;
   height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.2rem;
-  color: #9ca3af;
+  color: #6b7280;
   font-weight: 500;
-  position: relative;
-  overflow: hidden;
-}
-
-.recommendation-placeholder::before,
-.study-placeholder::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
 }
 
 .empty-message {
@@ -1081,10 +989,9 @@ export default {
   color: #6b7280;
   font-weight: 400;
   padding: 40px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.8) 100%);
+  background: #ffffff;
   border-radius: 16px;
-  border: 1px solid rgba(229, 231, 235, 0.6);
-  backdrop-filter: blur(10px);
+  border: 1px solid #e5e7eb;
 }
 
 .empty-icon {
@@ -1095,7 +1002,7 @@ export default {
 
 .empty-message h3 {
   margin: 0 0 12px 0;
-  color: #374151;
+  color: #1a1a1a;
   font-size: 1.25rem;
   font-weight: 600;
 }
@@ -1115,7 +1022,7 @@ export default {
 
 .clear-filters-btn {
   background: #6b7280;
-  color: white;
+  color: #ffffff;
   border: none;
   padding: 10px 20px;
   border-radius: 8px;
@@ -1135,8 +1042,8 @@ export default {
 }
 
 .browse-link {
-  background: #3b82f6;
-  color: white;
+  background: #8b5cf6;
+  color: #ffffff;
   border: none;
   padding: 10px 20px;
   border-radius: 8px;
@@ -1151,61 +1058,46 @@ export default {
 }
 
 .browse-link:hover {
-  background: #2563eb;
+  background: #7c3aed;
   transform: translateY(-1px);
 }
 
-/* ✅ ENHANCED: Topic card styles with type indicators */
+/* ========================================
+   🎴 TOPIC CARDS - CLEAN DESIGN
+======================================== */
 .topic-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
+  background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   transition: all 0.4s ease;
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(229, 231, 235, 0.6);
+  border: 1px solid #e5e7eb;
   min-height: 280px;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(10px);
-}
-
-.topic-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
-  transform: scaleX(0);
-  transition: transform 0.4s ease;
-}
-
-.topic-card:hover::before {
-  transform: scaleX(1);
 }
 
 .topic-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  border-color: rgba(59, 130, 246, 0.3);
+  border-color: #8b5cf6;
 }
 
-/* Topic type specific styles */
+/* Clean type indicators */
 .topic-free {
-  border-left: 4px solid #10b981;
+  border-left: 4px solid #1a1a1a;
 }
 
 .topic-premium {
-  border-left: 4px solid #f59e0b;
-}
-
-.topic-pro {
   border-left: 4px solid #8b5cf6;
 }
 
-/* Topic type badge */
+.topic-pro {
+  border-left: 4px solid #6b7280;
+}
+
+/* Topic type badge - simplified */
 .topic-type-badge {
   position: absolute;
   top: 16px;
@@ -1223,21 +1115,21 @@ export default {
 }
 
 .topic-type-badge.free {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  color: #065f46;
-  border: 1px solid #10b981;
+  background: #f3f4f6;
+  color: #1a1a1a;
+  border: 1px solid #e5e7eb;
 }
 
 .topic-type-badge.premium {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  color: #92400e;
-  border: 1px solid #f59e0b;
+  background: #f3f0ff;
+  color: #8b5cf6;
+  border: 1px solid #8b5cf6;
 }
 
 .topic-type-badge.pro {
-  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-  color: #4338ca;
-  border: 1px solid #8b5cf6;
+  background: #1a1a1a;
+  color: #ffffff;
+  border: 1px solid #1a1a1a;
 }
 
 .badge-icon {
@@ -1262,7 +1154,7 @@ export default {
   color: #1a1a1a;
   margin-bottom: 8px;
   line-height: 1.4;
-  margin-top: 20px; /* Space for badge */
+  margin-top: 20px;
 }
 
 .topic-desc {
@@ -1273,7 +1165,7 @@ export default {
   flex-grow: 1;
 }
 
-/* Topic metadata */
+/* Topic metadata - clean */
 .topic-metadata {
   display: flex;
   flex-wrap: wrap;
@@ -1305,47 +1197,17 @@ export default {
 }
 
 .star {
-  color: #d1d5db;
+  color: #e5e7eb;
   font-size: 0.8rem;
 }
 
 .star.filled {
-  color: #fbbf24;
+  color: #8b5cf6;
 }
 
-/* Access status */
-.access-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  margin-bottom: 16px;
-}
-
-.access-status.accessible {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  color: #065f46;
-  border: 1px solid #10b981;
-}
-
-.access-status.restricted {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  color: #991b1b;
-  border: 1px solid #ef4444;
-}
-
-.access-icon {
-  font-size: 0.9rem;
-}
-
-.access-text {
-  font-size: 0.75rem;
-}
-
-/* Card buttons */
+/* ========================================
+   🔘 BUTTONS - CLEAN DESIGN
+======================================== */
 .card-buttons {
   display: flex;
   gap: 12px;
@@ -1362,44 +1224,25 @@ export default {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   text-decoration: none;
-}
-
-.btn-add::before,
-.btn-start::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  transition: left 0.5s;
-}
-
-.btn-add:hover::before,
-.btn-start:hover::before {
-  left: 100%;
+  border: 2px solid transparent;
 }
 
 .btn-add {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  color: #374151;
-  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #1a1a1a;
+  border-color: #e5e7eb;
 }
 
 .btn-add:hover {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-  border-color: #3b82f6;
-  color: #1d4ed8;
+  background: #f9fafb;
+  border-color: #8b5cf6;
+  color: #8b5cf6;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
 }
 
 .btn-add:disabled {
@@ -1411,56 +1254,35 @@ export default {
 
 .btn-add:disabled:hover {
   transform: none;
-  box-shadow: none;
 }
 
-/* Start button variants */
-.btn-free {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border: 1px solid #10b981;
-}
-
-.btn-free:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-}
-
-.btn-premium {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  border: 1px solid #f59e0b;
-}
-
-.btn-premium:hover {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
-}
-
+/* Start button variants - clean */
+.btn-free,
+.btn-premium,
 .btn-pro {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
-  border: 1px solid #8b5cf6;
+  background: #1a1a1a;
+  color: #ffffff;
+  border-color: #1a1a1a;
 }
 
+.btn-free:hover,
+.btn-premium:hover,
 .btn-pro:hover {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  background: #8b5cf6;
+  border-color: #8b5cf6;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
 }
 
 .btn-restricted {
-  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-  color: white;
-  border: 1px solid #6b7280;
+  background: #6b7280;
+  color: #ffffff;
+  border-color: #6b7280;
 }
 
 .btn-restricted:hover {
-  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  background: #4b5563;
+  border-color: #4b5563;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(107, 114, 128, 0.4);
 }
 
 .btn-icon {
@@ -1471,7 +1293,9 @@ export default {
   font-size: 0.8rem;
 }
 
-/* Responsive Design */
+/* ========================================
+   📱 RESPONSIVE DESIGN
+======================================== */
 @media (max-width: 768px) {
   .dashboard {
     padding: 16px 12px;
