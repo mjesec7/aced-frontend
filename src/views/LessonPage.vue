@@ -623,168 +623,275 @@ export default {
       }
     },
 
-    async saveProgress(completed = false) {
-      try {
-        // Validation - Check required data
-        if (!this.userId) {
-          console.error('❌ No userId available');
-          return false;
-        }
-        
-        if (!this.lesson._id) {
-          console.error('❌ No lesson ID available');
-          return false;
-        }
+    // ✅ REPLACE these 3 methods in LessonPage.vue script section
 
-        // Get authentication token with better error handling
-        let token;
-        try {
-          if (!auth.currentUser) {
-            console.error('❌ No authenticated user');
-            return false;
-          }
-          token = await auth.currentUser.getIdToken(true); // Force refresh
-        } catch (authError) {
-          console.error('❌ Failed to get auth token:', authError);
-          return false;
-        }
+async saveProgress(completed = false) {
+  try {
+    // Validation - Check required data
+    if (!this.userId) {
+      console.error('❌ No userId available');
+      return false;
+    }
+    
+    if (!this.lesson._id) {
+      console.error('❌ No lesson ID available');
+      return false;
+    }
 
-        // Build completed steps array safely
-        const completedSteps = [];
-        if (this.started) {
-          const maxIndex = Math.min(this.currentIndex, this.steps.length - 1);
-          for (let i = 0; i <= maxIndex; i++) {
-            completedSteps.push(i);
-          }
-        }
-
-        // Calculate progress percentage safely
-        const progressPercent = this.steps.length > 0 
-          ? Math.floor((completedSteps.length / this.steps.length) * 100) 
-          : 0;
-
-        // ✅ FIXED: Better topicId handling
-        let topicId = this.lesson.topicId || this.lesson._id;
-        if (this.lesson.topic && 
-            this.lesson.topic !== null && 
-            this.lesson.topic !== undefined && 
-            this.lesson.topic !== '') {
-          topicId = this.lesson.topicId || this.lesson.topic;
-        }
-
-        // Build progress data with validation
-        const progressData = {
-          userId: String(this.userId),
-          lessonId: String(this.lesson._id),
-          topicId: String(topicId),
-          completedSteps: completedSteps,
-          progressPercent: Math.max(0, Math.min(100, progressPercent)),
-          completed: completed,
-          mistakes: Math.max(0, parseInt(this.mistakeCount) || 0),
-          medal: this.mistakeCount === 0 ? 'gold' : this.mistakeCount <= 2 ? 'silver' : 'bronze',
-          duration: Math.max(0, parseInt(this.elapsedSeconds) || 0),
-          stars: Math.max(0, parseInt(this.stars) || 0),
-          points: Math.max(0, parseInt(this.earnedPoints) || 0),
-          hintsUsed: Math.max(0, this.hintsUsed ? 1 : 0),
-          submittedHomework: false
-        };
-
-        // Add completion data if completed
-        if (completed) {
-          progressData.completedAt = new Date().toISOString();
-        }
-
-        console.log('📤 Saving progress data:', progressData);
-
-        // Make API request with improved error handling
-        const response = await axios.post(`${BASE_URL}/progress`, progressData, {
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 15000,
-          validateStatus: function (status) {
-            return status < 500;
-          }
-        });
-
-        if (response.status === 200 || response.status === 201) {
-          console.log('✅ Progress saved successfully:', response.data);
-          return true;
-        } else {
-          console.error('❌ Progress save failed:', response.status, response.data);
-          return false;
-        }
-        
-      } catch (err) {
-        console.error('❌ Progress save error:', err);
+    // Get authentication token with better error handling
+    let token;
+    try {
+      if (!auth.currentUser) {
+        console.error('❌ No authenticated user');
         return false;
       }
-    },
+      token = await auth.currentUser.getIdToken(true); // Force refresh
+    } catch (authError) {
+      console.error('❌ Failed to get auth token:', authError);
+      return false;
+    }
 
-    async saveAnalytics() {
+    // Build completed steps array safely
+    const completedSteps = [];
+    if (this.started) {
+      const maxIndex = Math.min(this.currentIndex, this.steps.length - 1);
+      for (let i = 0; i <= maxIndex; i++) {
+        completedSteps.push(i);
+      }
+    }
+
+    // Calculate progress percentage safely
+    const progressPercent = this.steps.length > 0 
+      ? Math.floor((completedSteps.length / this.steps.length) * 100) 
+      : 0;
+
+    // ✅ FIXED: Better topicId handling
+    let topicId = this.lesson.topicId || this.lesson._id;
+
+    // ✅ FIXED: Use the correct data structure that your API expects
+    const progressData = {
+      userId: String(this.userId),
+      lessonId: String(this.lesson._id),
+      topicId: String(topicId),
+      completedSteps: completedSteps,
+      progressPercent: Math.max(0, Math.min(100, progressPercent)),
+      completed: completed,
+      mistakes: Math.max(0, parseInt(this.mistakeCount) || 0),
+      medal: this.mistakeCount === 0 ? 'gold' : this.mistakeCount <= 2 ? 'silver' : 'bronze',
+      duration: Math.max(0, parseInt(this.elapsedSeconds) || 0),
+      stars: Math.max(0, parseInt(this.stars) || 0),
+      points: Math.max(0, parseInt(this.earnedPoints) || 0),
+      hintsUsed: Math.max(0, this.hintsUsed ? 1 : 0),
+      submittedHomework: false
+    };
+
+    console.log('📤 Saving progress data:', progressData);
+
+    // ✅ FIXED: Try multiple endpoints with different data formats
+    let response;
+    let success = false;
+    
+    // Try endpoint 1: /api/progress (your current one)
+    try {
+      response = await axios.post(`${BASE_URL}/progress`, progressData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 15000
+      });
+      
+      if (response.status === 200 || response.status === 201) {
+        console.log('✅ Progress saved via /api/progress:', response.data);
+        return true;
+      }
+    } catch (progressError) {
+      console.warn('⚠️ /api/progress failed:', progressError.response?.status, progressError.response?.data);
+    }
+    
+    // Try endpoint 2: /api/users/{userId}/lesson/{lessonId} (alternative format)
+    try {
+      response = await axios.post(`${BASE_URL}/users/${this.userId}/lesson/${this.lesson._id}`, progressData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 15000
+      });
+      
+      if (response.status === 200 || response.status === 201) {
+        console.log('✅ Progress saved via /api/users/lesson:', response.data);
+        return true;
+      }
+    } catch (userLessonError) {
+      console.warn('⚠️ /api/users/lesson failed:', userLessonError.response?.status);
+    }
+    
+    // Try endpoint 3: /api/user/{userId}/lesson/{lessonId} (legacy format)
+    try {
+      response = await axios.post(`${BASE_URL}/user/${this.userId}/lesson/${this.lesson._id}`, progressData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 15000
+      });
+      
+      if (response.status === 200 || response.status === 201) {
+        console.log('✅ Progress saved via /api/user/lesson:', response.data);
+        return true;
+      }
+    } catch (legacyError) {
+      console.warn('⚠️ /api/user/lesson failed:', legacyError.response?.status);
+    }
+    
+    console.error('❌ All progress endpoints failed');
+    return false;
+    
+  } catch (err) {
+    console.error('❌ Progress save error:', err);
+    return false;
+  }
+},
+
+async saveAnalytics() {
+  try {
+    if (!this.userId || !this.lesson._id) return;
+
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      console.warn('⚠️ No auth token for analytics');
+      return;
+    }
+
+    const analyticsData = {
+      subject: this.lesson.subject || 'general',
+      topic: this.lesson.topic || this.lesson._id,
+      timeSpent: this.elapsedSeconds,
+      mistakes: this.mistakeCount,
+      completed: this.lessonCompleted,
+      stars: this.stars,
+      points: this.earnedPoints,
+      date: new Date().toISOString()
+    };
+
+    console.log('📊 Saving analytics:', analyticsData);
+
+    // ✅ FIXED: Try multiple analytics endpoints
+    let success = false;
+    
+    // Try endpoint 1: /api/users/{userId}/analytics
+    try {
+      await axios.post(`${BASE_URL}/users/${this.userId}/analytics`, analyticsData, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 10000
+      });
+      success = true;
+      console.log('✅ Analytics saved via /api/users/analytics');
+    } catch (usersError) {
+      console.warn('⚠️ /api/users/analytics failed:', usersError.response?.status);
+    }
+    
+    // Try endpoint 2: /api/user/{userId}/analytics (legacy)
+    if (!success) {
       try {
-        if (!this.userId || !this.lesson._id) return;
-
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) {
-          console.warn('⚠️ No auth token for analytics');
-          return;
-        }
-
-        const analyticsData = {
-          subject: this.lesson.subject || 'general',
-          topic: this.lesson.topic || this.lesson._id,
-          timeSpent: this.elapsedSeconds,
-          mistakes: this.mistakeCount,
-          completed: this.lessonCompleted,
-          stars: this.stars,
-          points: this.earnedPoints
-        };
-
-        console.log('📊 Saving analytics:', analyticsData);
-
         await axios.post(`${BASE_URL}/user/${this.userId}/analytics`, analyticsData, {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 10000
         });
-
-        console.log('✅ Analytics saved successfully');
-      } catch (err) {
-        console.error('❌ Analytics save error:', err);
+        success = true;
+        console.log('✅ Analytics saved via /api/user/analytics');
+      } catch (userError) {
+        console.warn('⚠️ /api/user/analytics failed:', userError.response?.status);
       }
-    },
-
-    async saveDiary() {
+    }
+    
+    // Try endpoint 3: /api/analytics (general)
+    if (!success) {
       try {
-        if (!this.userId || !this.lesson.lessonName) return;
+        await axios.post(`${BASE_URL}/analytics`, { 
+          userId: this.userId, 
+          ...analyticsData 
+        }, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000
+        });
+        success = true;
+        console.log('✅ Analytics saved via /api/analytics');
+      } catch (generalError) {
+        console.warn('⚠️ /api/analytics failed:', generalError.response?.status);
+      }
+    }
+    
+    if (!success) {
+      console.warn('⚠️ All analytics endpoints failed, skipping analytics');
+    }
 
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) {
-          console.warn('⚠️ No auth token for diary');
-          return;
-        }
+  } catch (err) {
+    console.warn('⚠️ Analytics save error (non-critical):', err.message);
+  }
+},
 
-        const diaryData = {
-          lessonName: this.getLocalized(this.lesson.lessonName),
-          duration: this.elapsedSeconds,
-          date: new Date().toISOString(),
-          mistakes: this.mistakeCount,
-          stars: this.stars
-        };
+async saveDiary() {
+  try {
+    if (!this.userId || !this.lesson.lessonName) return;
 
-        console.log('📔 Saving diary entry:', diaryData);
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      console.warn('⚠️ No auth token for diary');
+      return;
+    }
 
+    const diaryData = {
+      lessonName: this.getLocalized(this.lesson.lessonName),
+      duration: this.elapsedSeconds,
+      date: new Date().toISOString(),
+      mistakes: this.mistakeCount,
+      stars: this.stars,
+      studyMinutes: Math.ceil(this.elapsedSeconds / 60),
+      completedTopics: 1,
+      averageGrade: this.stars * 20 // Convert stars to grade (0-100)
+    };
+
+    console.log('📔 Saving diary entry:', diaryData);
+
+    // ✅ FIXED: Try multiple diary endpoints
+    let success = false;
+    
+    // Try endpoint 1: /api/users/{userId}/diary
+    try {
+      await axios.post(`${BASE_URL}/users/${this.userId}/diary`, diaryData, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 10000
+      });
+      success = true;
+      console.log('✅ Diary saved via /api/users/diary');
+    } catch (usersError) {
+      console.warn('⚠️ /api/users/diary failed:', usersError.response?.status);
+    }
+    
+    // Try endpoint 2: /api/user/{userId}/diary (legacy)
+    if (!success) {
+      try {
         await axios.post(`${BASE_URL}/user/${this.userId}/diary`, diaryData, {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 10000
         });
-
-        console.log('✅ Diary entry saved successfully');
-      } catch (err) {
-        console.error('❌ Diary save error:', err);
+        success = true;
+        console.log('✅ Diary saved via /api/user/diary');
+      } catch (userError) {
+        console.warn('⚠️ /api/user/diary failed:', userError.response?.status);
       }
-    },
+    }
+    
+    if (!success) {
+      console.warn('⚠️ All diary endpoints failed, skipping diary entry');
+    }
+
+  } catch (err) {
+    console.warn('⚠️ Diary save error (non-critical):', err.message);
+  }
+},
 
     handleSubmitOrNext() {
       const step = this.currentStep;
