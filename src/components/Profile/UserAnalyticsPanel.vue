@@ -258,7 +258,7 @@ export default {
     let currentUser = auth.currentUser;
     if (!currentUser) {
       console.log('⏳ Waiting for Firebase auth...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Increased wait time
       currentUser = auth.currentUser;
     }
     
@@ -271,17 +271,23 @@ export default {
     const userId = currentUser.uid;
     console.log('🔍 Using Firebase user ID:', userId);
     
-    // Get fresh Firebase token and update localStorage immediately
-    const token = await currentUser.getIdToken(true);
-    localStorage.setItem('token', token); // ✅ Update localStorage with fresh token
+    // 🔥 FIXED: Get fresh token and ensure it's properly set
+    const token = await currentUser.getIdToken(true); // Force refresh
+    localStorage.setItem('token', token);
     console.log('🔑 Got fresh Firebase token and updated localStorage');
     
-    // Small delay to ensure token is properly set
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // 🔥 FIXED: Wait longer to ensure token is properly propagated
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     try {
-      // The api call will now use the fresh token from localStorage via the interceptor
-      const response = await api.get(`/users/${userId}/analytics`);
+      // 🔥 FIXED: Use explicit header to bypass potential interceptor issues
+      const response = await axios.get(`${api.defaults.baseURL}/users/${userId}/analytics`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 15000
+      });
 
       console.log('📊 Analytics response:', response);
 
@@ -303,15 +309,19 @@ export default {
       console.error('❌ API Error:', apiError);
       
       if (apiError.response?.status === 401) {
-        // If still 401, try one more time with explicit token
-        console.log('🔄 Retrying with explicit token header...');
+        // Try one more time with fresh token
+        console.log('🔄 401 error, trying once more...');
         
         try {
-          const freshToken = await currentUser.getIdToken(true);
-          const retryResponse = await api.get(`/users/${userId}/analytics`, {
+          const freshestToken = await currentUser.getIdToken(true);
+          localStorage.setItem('token', freshestToken);
+          
+          const retryResponse = await axios.get(`${api.defaults.baseURL}/users/${userId}/analytics`, {
             headers: { 
-              'Authorization': `Bearer ${freshToken}`
-            }
+              'Authorization': `Bearer ${freshestToken}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 15000
           });
           
           if (retryResponse.data) {

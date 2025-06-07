@@ -324,50 +324,87 @@ export default {
       this.$router.push(`/profile/homeworks/${this.lesson._id}`);
     },
     
-    async loadLesson() {
-      try {
-        const lessonId = this.$route.params.id;
-        const { data } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
+    // In LessonPage.vue - Fixed loadLesson method
+async loadLesson() {
+  try {
+    const lessonId = this.$route.params.id;
+    const { data } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
 
-        if (!data || !data._id) return this.$router.push('/catalogue');
-        if (data.type === 'premium' && !this.isPremiumUser) {
-          this.showPaywallModal = true;
-          return;
-        }
+    if (!data || !data._id) {
+      console.error('❌ Lesson not found');
+      return this.$router.push('/catalogue');
+    }
 
-        this.lesson = data;
-        this.steps = [];
+    this.lesson = data;
+    
+    // 🔥 FIXED: Check lesson access logic
+    console.log('🔍 Lesson type:', data.type);
+    console.log('🔍 User premium status:', this.isPremiumUser);
+    console.log('🔍 User status from store:', this.$store.getters['user/userStatus']);
+    
+    // ✅ CORRECT ACCESS CHECK:
+    // - If lesson.type is 'free' OR undefined/null -> allow access
+    // - If lesson.type is 'premium' -> check if user is premium
+    const lessonType = data.type || 'free'; // Default to 'free' if not specified
+    const isLessonFree = lessonType === 'free';
+    const userHasPremium = this.isPremiumUser || this.$store.getters['user/userStatus'] !== 'free';
+    
+    console.log('🔍 Access check:', {
+      lessonType,
+      isLessonFree,
+      userHasPremium,
+      shouldAllowAccess: isLessonFree || userHasPremium
+    });
+    
+    // Show paywall only if lesson is premium AND user doesn't have premium
+    if (lessonType === 'premium' && !userHasPremium) {
+      console.log('🔒 Showing paywall for premium lesson');
+      this.showPaywallModal = true;
+      return;
+    }
+    
+    console.log('✅ Access granted to lesson');
 
-        if (Array.isArray(data.steps)) {
-          data.steps.forEach(step => {
-            if (['exercise', 'tryout'].includes(step.type) && Array.isArray(step.data)) {
-              this.steps.push(...step.data.map(ex => ({ type: step.type, data: ex })));
-            } else {
-              this.steps.push(step);
-            }
-          });
+    // Process lesson steps
+    this.steps = [];
+    if (Array.isArray(data.steps)) {
+      data.steps.forEach(step => {
+        if (['exercise', 'tryout'].includes(step.type) && Array.isArray(step.data)) {
+          this.steps.push(...step.data.map(ex => ({ type: step.type, data: ex })));
         } else {
-          // Legacy format support
-          if (Array.isArray(data.explanations)) {
-            this.steps.push(...data.explanations.map(ex => ({ type: 'explanation', data: ex })));
-          }
-          if (Array.isArray(data.examples)) {
-            this.steps.push(...data.examples.map(ex => ({ type: 'example', data: ex })));
-          }
-          if (Array.isArray(data.exerciseGroups)) {
-            data.exerciseGroups.forEach(group => {
-              group.exercises.forEach(ex => this.steps.push({ type: 'exercise', data: ex }));
-            });
-          }
-          if (Array.isArray(data.quiz)) {
-            this.steps.push(...data.quiz.map(q => ({ type: 'quiz', data: q })));
-          }
+          this.steps.push(step);
         }
-      } catch (err) {
-        console.error('❌ Ошибка загрузки урока:', err);
-        this.$router.push('/catalogue');
+      });
+    } else {
+      // Legacy format support
+      if (Array.isArray(data.explanations)) {
+        this.steps.push(...data.explanations.map(ex => ({ type: 'explanation', data: ex })));
       }
-    },
+      if (Array.isArray(data.examples)) {
+        this.steps.push(...data.examples.map(ex => ({ type: 'example', data: ex })));
+      }
+      if (Array.isArray(data.exerciseGroups)) {
+        data.exerciseGroups.forEach(group => {
+          group.exercises.forEach(ex => this.steps.push({ type: 'exercise', data: ex }));
+        });
+      }
+      if (Array.isArray(data.quiz)) {
+        this.steps.push(...data.quiz.map(q => ({ type: 'quiz', data: q })));
+      }
+    }
+    
+    console.log(`✅ Lesson loaded with ${this.steps.length} steps`);
+    
+  } catch (err) {
+    console.error('❌ Error loading lesson:', err);
+    console.error('❌ Error details:', {
+      status: err.response?.status,
+      data: err.response?.data,
+      message: err.message
+    });
+    this.$router.push('/catalogue');
+  }
+},
 
     async loadPreviousProgress() {
   if (!this.lesson._id) return;
