@@ -200,20 +200,52 @@ export default {
     ...mapState(['user']),
     ...mapGetters(['isAuthenticated']),
     
-    // FIX 3: Get user status directly from store
+    // ✅ FIXED: Enhanced user status checking
     userStatus() {
-      // Try multiple ways to get user status
-      return this.$store.state.user?.subscriptionPlan || 
-             this.$store.getters['user/userStatus'] || 
-             this.user?.subscriptionPlan || 
-             'free';
+      // Check multiple sources for user status
+      const storeStatus = this.$store.state.user?.subscriptionPlan || 
+                         this.$store.getters['user/userStatus'] || 
+                         this.user?.subscriptionPlan;
+      
+      const localStatus = localStorage.getItem('subscriptionPlan');
+      
+      // Prefer store status, fallback to localStorage
+      const status = storeStatus || localStatus || 'free';
+      
+      console.log('📊 User status sources:', {
+        store: storeStatus,
+        localStorage: localStatus,
+        final: status,
+        currentUser: auth.currentUser?.email
+      });
+      
+      return status;
     },
     
-    // FIX 4: Properly check if user is premium
+    // ✅ FIXED: More robust premium user checking
     isPremiumUser() {
       const status = this.userStatus;
-      console.log('🔍 User status check:', status);
-      return status === 'premium' || status === 'start' || status === 'pro';
+      console.log('🔍 Premium access check:', {
+        status,
+        currentUser: auth.currentUser?.email,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Check multiple sources for premium status
+      const premiumStatuses = ['premium', 'start', 'pro'];
+      
+      // Check store status
+      if (premiumStatuses.includes(status)) {
+        return true;
+      }
+      
+      // Check localStorage as fallback
+      const localStatus = localStorage.getItem('subscriptionPlan');
+      if (premiumStatuses.includes(localStatus)) {
+        return true;
+      }
+      
+      return false;
     },
     
     currentStep() {
@@ -244,15 +276,22 @@ export default {
   async mounted() {
     console.log('🔧 LessonPage mounted');
     
-    // Wait for auth to be ready
-    await this.$store.dispatch('waitForAuthInit');
+    // ✅ FIXED: Better authentication waiting
+    await this.waitForAuth();
     
     this.userId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
     if (!this.userId) {
-      console.error('❌ No user ID found');
+      console.error('❌ No user ID found in localStorage');
       return this.$router.push('/');
     }
     
+    // ✅ FIXED: Double-check authentication before loading lesson
+    if (!this.isAuthenticated && !auth.currentUser) {
+      console.error('❌ User not authenticated after waiting');
+      return this.$router.push('/login');
+    }
+    
+    console.log('✅ Authentication confirmed, loading lesson...');
     await this.loadLesson();
     await this.loadPreviousProgress();
   },
@@ -265,6 +304,52 @@ export default {
     }
   },
   methods: {
+    // ✅ NEW: Wait for authentication method
+    async waitForAuth() {
+      console.log('⏳ Waiting for authentication...');
+      
+      // Check if user is already authenticated
+      if (auth.currentUser) {
+        console.log('✅ User already authenticated:', auth.currentUser.email);
+        return;
+      }
+      
+      // Wait for auth state to resolve
+      return new Promise((resolve) => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          console.log('🔐 Auth state changed:', user ? user.email : 'No user');
+          unsubscribe(); // Stop listening
+          
+          if (user) {
+            // Update store if needed
+            if (this.$store.commit) {
+              try {
+                this.$store.commit('user/setUser', {
+                  uid: user.uid,
+                  email: user.email,
+                  displayName: user.displayName
+                });
+              } catch (storeError) {
+                console.warn('⚠️ Could not update store:', storeError.message);
+              }
+            }
+            console.log('✅ Authentication confirmed');
+          } else {
+            console.warn('⚠️ No authenticated user found');
+          }
+          
+          resolve();
+        });
+        
+        // Timeout after 5 seconds
+        setTimeout(() => {
+          console.warn('⚠️ Authentication wait timeout');
+          unsubscribe();
+          resolve();
+        }, 5000);
+      });
+    },
+
     getLocalized(field) {
       return typeof field === 'string' ? field : (field?.en || '').replace(/^en:/i, '').trim();
     },
@@ -277,7 +362,7 @@ export default {
       this.$router.push(`/profile/homeworks/${this.lesson._id}`);
     },
     
-    // FIX 5: Complete rewrite of loadLesson with proper access control
+    // ✅ FIXED: Enhanced lesson loading with better access control
     async loadLesson() {
       try {
         const lessonId = this.$route.params.id;
@@ -292,33 +377,28 @@ export default {
 
         this.lesson = data;
         
-        // FIX 6: Proper access control logic
+        // ✅ FIXED: Enhanced access control logic
         const lessonType = data.type || 'free';
-        const isFreeLeson = lessonType === 'free' || !lessonType;
         const userHasPremium = this.isPremiumUser;
         
         console.log('🔐 Access Control Check:', {
           lessonId: data._id,
           lessonName: this.getLocalized(data.lessonName),
           lessonType: lessonType,
-          isFreeLeson: isFreeLeson,
           userStatus: this.userStatus,
           userHasPremium: userHasPremium,
-          isAuthenticated: this.isAuthenticated
+          isAuthenticated: this.isAuthenticated,
+          currentUser: auth.currentUser?.email
         });
         
-        // Access rules:
-        // 1. If lesson is free, anyone logged in can access
-        // 2. If lesson is premium, only premium users can access
-        // 3. If user is not logged in at all, redirect to login
-        
-        if (!this.isAuthenticated) {
-          console.log('❌ User not authenticated');
+        // ✅ FIXED: Better access rules
+        if (!auth.currentUser) {
+          console.log('❌ No Firebase user - redirecting to login');
           return this.$router.push('/login');
         }
         
         if (lessonType === 'premium' && !userHasPremium) {
-          console.log('🔒 Premium lesson, user does not have premium');
+          console.log('🔒 Premium lesson, user does not have premium access');
           this.showPaywallModal = true;
           return;
         }
@@ -357,6 +437,10 @@ export default {
         
       } catch (err) {
         console.error('❌ Error loading lesson:', err);
+        if (err.response?.status === 401) {
+          console.error('❌ Authentication error - redirecting to login');
+          return this.$router.push('/login');
+        }
         this.$router.push('/catalogue');
       }
     },
@@ -373,7 +457,7 @@ export default {
 
         console.log(`📋 Loading previous progress for lesson: ${this.lesson._id}`);
 
-        // Try multiple endpoints to find progress
+        // ✅ FIXED: Try multiple endpoints with better error handling
         let progressData = null;
         
         // First try the user lesson endpoint
@@ -579,13 +663,13 @@ export default {
           ? Math.floor((completedSteps.length / this.steps.length) * 100) 
           : 0;
 
-        // Ensure topicId is valid
-        let topicId = this.lesson._id;
+        // ✅ FIXED: Better topicId handling
+        let topicId = this.lesson.topicId || this.lesson._id;
         if (this.lesson.topic && 
             this.lesson.topic !== null && 
             this.lesson.topic !== undefined && 
             this.lesson.topic !== '') {
-          topicId = this.lesson.topic;
+          topicId = this.lesson.topicId || this.lesson.topic;
         }
 
         // Build progress data with validation
@@ -594,19 +678,20 @@ export default {
           lessonId: String(this.lesson._id),
           topicId: String(topicId),
           completedSteps: completedSteps,
-          percent: Math.max(0, Math.min(100, progressPercent)),
-          stars: Math.max(0, parseInt(this.stars) || 0),
-          pointsEarned: Math.max(0, parseInt(this.earnedPoints) || 0),
+          progressPercent: Math.max(0, Math.min(100, progressPercent)),
+          completed: completed,
           mistakes: Math.max(0, parseInt(this.mistakeCount) || 0),
-          durationSeconds: Math.max(0, parseInt(this.elapsedSeconds) || 0),
-          usedHints: Boolean(this.hintsUsed),
+          medal: this.mistakeCount === 0 ? 'gold' : this.mistakeCount <= 2 ? 'silver' : 'bronze',
+          duration: Math.max(0, parseInt(this.elapsedSeconds) || 0),
+          stars: Math.max(0, parseInt(this.stars) || 0),
+          points: Math.max(0, parseInt(this.earnedPoints) || 0),
+          hintsUsed: Math.max(0, this.hintsUsed ? 1 : 0),
           submittedHomework: false
         };
 
         // Add completion data if completed
         if (completed) {
           progressData.completedAt = new Date().toISOString();
-          progressData.completed = true;
         }
 
         console.log('📤 Saving progress data:', progressData);
