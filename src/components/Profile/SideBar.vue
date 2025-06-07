@@ -1,16 +1,13 @@
-<!-- SideBar.vue -->
 <template>
   <div class="sidebar-wrapper">
     <div class="sidebar" :class="{ open: isOpen }">
       <div class="sidebar-content">
-        <!-- 👤 User Info - Fixed at top with proper spacing -->
+        <!-- 👤 User Info - Fixed at top -->
         <div class="user-info" v-if="user">
-          <div class="user-avatar">
-            <span class="avatar-text">{{ getInitials(user.name || user.email) }}</span>
-          </div>
+          <img src="@/assets/icons/user.png" alt="User Icon" class="user-icon" />
           <div class="user-details">
             <span class="user-name">{{ user.name || user.email }}</span>
-            <span class="user-plan" :class="userStatus">{{ planLabel }}</span>
+            <span class="user-plan">📦 {{ planLabel }}</span>
           </div>
         </div>
 
@@ -22,8 +19,8 @@
             :class="{ active: isActive('main') }"
             @click="closeSidebarOnMobile"
           >
-            <span class="nav-icon">🏠</span>
-            <span class="nav-text">Главная</span>
+            <span class="highlight"></span>
+            Главная
           </router-link>
 
           <router-link
@@ -32,8 +29,8 @@
             :class="{ active: isActive('catalogue') }"
             @click="closeSidebarOnMobile"
           >
-            <span class="nav-icon">📚</span>
-            <span class="nav-text">Каталог</span>
+            <span class="highlight"></span>
+            Каталог
           </router-link>
 
           <router-link
@@ -44,17 +41,14 @@
             :class="{ active: isActive(link.name) }"
             @click="closeSidebarOnMobile"
           >
-            <span class="nav-icon">{{ link.icon }}</span>
-            <span class="nav-text">{{ link.label }}</span>
+            <span class="highlight"></span>
+            {{ link.label }}
           </router-link>
         </div>
 
         <!-- 🚪 Logout - Fixed at bottom -->
         <div class="bottom-logout">
-          <button class="logout-button" @click="showLogoutModal = true">
-            <span class="logout-icon">🚪</span>
-            <span>Выйти</span>
-          </button>
+          <button class="logout-button" @click="showLogoutModal = true">Выйти</button>
         </div>
       </div>
     </div>
@@ -67,19 +61,15 @@
     ></div>
 
     <!-- 🔐 Confirm Logout Modal -->
-    <Teleport to="body">
-      <div class="logout-modal" v-if="showLogoutModal" @click.self="showLogoutModal = false">
-        <div class="logout-modal-content" @click.stop>
-          <div class="modal-icon">🚪</div>
-          <h4>Выйти из аккаунта?</h4>
-          <p>Вы уверены, что хотите выйти?</p>
-          <div class="logout-actions">
-            <button class="confirm-btn" @click="logout">Выйти</button>
-            <button class="cancel-btn" @click="showLogoutModal = false">Отмена</button>
-          </div>
+    <div class="logout-modal" v-if="showLogoutModal">
+      <div class="logout-modal-content">
+        <p>Вы уверены, что хотите выйти?</p>
+        <div class="logout-actions">
+          <button class="confirm-btn" @click="logout">Да</button>
+          <button class="cancel-btn" @click="showLogoutModal = false">Нет</button>
         </div>
       </div>
-    </Teleport>
+    </div>
   </div>
 </template>
 
@@ -100,13 +90,13 @@ export default {
     return {
       showLogoutModal: false,
       links: [
-        { name: 'analytics', label: 'Аналитика', icon: '📊' },
-        { name: 'goal', label: 'Цели', icon: '🎯' },
-        { name: 'diary', label: 'Дневник', icon: '📔' },
-        { name: 'homework', label: 'Помощь с ДЗ', icon: '🤝' },
-        { name: 'homeworks', label: 'Домашние задания', icon: '📝' },
-        { name: 'tests', label: 'Тесты', icon: '📋' },
-        { name: 'settings', label: 'Настройки', icon: '⚙️' }
+        { name: 'analytics', label: 'Аналитика' },
+        { name: 'goal', label: 'Цели' },
+        { name: 'diary', label: 'Дневник' },
+        { name: 'homework', label: 'Помощь с ДЗ' },
+        { name: 'homeworks', label: 'Домашние задания' },
+        { name: 'tests', label: 'Тесты' },
+        { name: 'settings', label: 'Настройки' }
       ],
       isMobile: false
     };
@@ -150,16 +140,11 @@ export default {
         this.closeSidebar();
       }
     },
-    getInitials(name) {
-      if (!name) return '?';
-      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    },
     logout() {
       signOut(auth)
         .then(() => {
           this.clearUser();
-          this.showLogoutModal = false;
-          this.$toast?.success('Вы успешно вышли из аккаунта.', {
+          this.$toast.success('Вы успешно вышли из аккаунта.', {
             duration: 3000,
             position: 'top-center'
           });
@@ -169,7 +154,7 @@ export default {
         })
         .catch((err) => {
           console.error('❌ Ошибка выхода:', err.message);
-          this.$toast?.error('Ошибка при выходе: попробуйте ещё раз.');
+          this.$toast.error('Ошибка при выходе: попробуйте ещё раз.');
         });
     },
     getRoutePath(linkName) {
@@ -216,28 +201,24 @@ export default {
 </script>
 
 <style scoped>
-/* ========================================
-   🎨 SIDEBAR - CLEAN THEME
-======================================== */
 .sidebar-wrapper {
   position: relative;
 }
 
 .sidebar {
-  width: 280px;
+  width: 260px;
   min-height: 100vh;
   position: fixed;
   left: 0;
   top: 0;
   background: #ffffff;
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.06);
   z-index: 1000;
   transition: transform 0.3s ease-in-out;
-  color: #1a1a1a;
+  color: #111827;
   display: flex;
   flex-direction: column;
   transform: translateX(-100%);
-  border-right: 1px solid #e5e7eb;
 }
 
 .sidebar.open {
@@ -252,7 +233,6 @@ export default {
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 999;
-  backdrop-filter: blur(4px);
 }
 
 .sidebar-content {
@@ -262,91 +242,59 @@ export default {
   overflow: hidden;
 }
 
-/* ========================================
-   👤 USER INFO
-======================================== */
 .user-info {
-  padding: 24px 20px 20px;
+  padding: 30px 16px 20px;
   display: flex;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.95rem;
+  color: #111827;
+  border-bottom: 1px solid #eee;
   flex-shrink: 0;
-  background: #ffffff;
 }
 
-.user-avatar {
-  width: 44px;
-  height: 44px;
+.user-icon {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: #8b5cf6;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.avatar-text {
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 0.9rem;
-  letter-spacing: 0.5px;
+  object-fit: cover;
+  background: #f3f4f6;
+  border: 2px solid #c7d2fe;
 }
 
 .user-details {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-width: 0;
-  flex: 1;
+  margin-top: 6px;
 }
 
 .user-name {
-  font-weight: 600;
-  font-size: 1rem;
+  font-weight: 700;
+  font-size: 0.95rem;
   line-height: 1.2;
-  color: #1a1a1a;
+  color: #1f2937;
   word-break: break-word;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 160px;
 }
 
 .user-plan {
-  font-size: 0.75rem;
-  margin-top: 4px;
-  padding: 2px 8px;
-  border-radius: 12px;
+  font-size: 0.7rem;
+  color: #6b7280;
+  margin-top: 2px;
+  background: #f3f4f6;
+  padding: 1px 6px;
+  border-radius: 4px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  width: fit-content;
 }
 
-.user-plan.free {
-  background: #f3f4f6;
-  color: #6b7280;
-}
-
-.user-plan.start {
-  background: #f3f0ff;
-  color: #8b5cf6;
-}
-
-.user-plan.pro {
-  background: #1a1a1a;
-  color: #ffffff;
-}
-
-/* ========================================
-   📚 NAVIGATION LINKS
-======================================== */
 .nav-links {
   flex: 1;
-  padding: 20px 16px 0;
+  padding: 16px 16px 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .nav-links.scrollable {
@@ -374,76 +322,73 @@ export default {
 }
 
 .nav-item {
-  font-size: 0.9rem;
-  padding: 12px 16px;
-  border-radius: 12px;
-  font-weight: 500;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
   transition: all 0.2s ease;
-  color: #6b7280;
+  color: #111827;
   text-decoration: none;
-  background-color: transparent;
+  background-color: #f9fafb;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 48px;
-  position: relative;
+  gap: 8px;
+  min-height: 40px;
 }
 
 .nav-item:hover {
-  background: #f9fafb;
-  color: #1a1a1a;
-  transform: translateX(2px);
+  background: linear-gradient(to right, #ede9fe, #f0f5ff);
+  color: #4f46e5;
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.12);
+}
+
+.nav-item .highlight {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: linear-gradient(to bottom, #6366f1, #8b5cf6);
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.nav-item.active .highlight,
+.nav-item:hover .highlight {
+  opacity: 1;
 }
 
 .nav-item.active {
-  background: #f3f0ff;
-  color: #8b5cf6;
-  font-weight: 600;
-  border-left: 3px solid #8b5cf6;
-  margin-left: -3px;
-  padding-left: 19px;
+  background: linear-gradient(to right, #ede9fe, #f0f5ff);
+  color: #4f46e5;
+  transform: translateX(4px);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
 }
 
-.nav-icon {
-  font-size: 1rem;
-  width: 20px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.nav-text {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ========================================
-   🚪 LOGOUT SECTION
-======================================== */
 .bottom-logout {
-  padding: 16px 20px 20px;
+  padding: 16px;
   border-top: 1px solid #e5e7eb;
   flex-shrink: 0;
-  background: #ffffff;
 }
 
 .logout-button {
-  padding: 12px 16px;
+  padding: 8px 14px;
   background: #ef4444;
-  color: #ffffff;
+  color: white;
   border: none;
-  font-size: 0.9rem;
-  border-radius: 12px;
+  font-size: 0.8rem;
+  border-radius: 8px;
   cursor: pointer;
+  font-family: 'Unbounded', sans-serif;
   transition: all 0.2s ease;
   width: 100%;
   font-weight: 600;
-  min-height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  min-height: 36px;
 }
 
 .logout-button:hover {
@@ -451,123 +396,67 @@ export default {
   transform: translateY(-1px);
 }
 
-.logout-icon {
-  font-size: 1rem;
-}
-
-/* ========================================
-   🔔 LOGOUT MODAL
-======================================== */
 .logout-modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000;
-  backdrop-filter: blur(8px);
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  z-index: 9999;
 }
 
 .logout-modal-content {
-  background: #ffffff;
-  padding: 32px;
-  border-radius: 20px;
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
   text-align: center;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  font-family: 'Unbounded', sans-serif;
+  max-width: 380px;
   width: 90%;
-  animation: modalSlideIn 0.3s ease-out;
-  border: 1px solid #e5e7eb;
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.modal-icon {
-  font-size: 3rem;
-  margin-bottom: 20px;
-}
-
-.logout-modal-content h4 {
-  color: #1a1a1a;
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin: 0 0 12px 0;
-  line-height: 1.3;
-}
-
-.logout-modal-content p {
-  color: #6b7280;
-  font-size: 1rem;
-  margin: 0 0 24px 0;
-  line-height: 1.5;
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 .logout-actions {
   display: flex;
   justify-content: center;
-  gap: 16px;
+  gap: 20px;
+  margin-top: 20px;
 }
 
 .confirm-btn,
 .cancel-btn {
-  padding: 12px 24px;
+  padding: 10px 20px;
   font-size: 0.9rem;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 600;
-  min-width: 100px;
 }
 
 .confirm-btn {
   background: #ef4444;
-  color: #ffffff;
+  color: white;
+}
+
+.cancel-btn {
+  background: #e5e7eb;
+  color: #1f2937;
 }
 
 .confirm-btn:hover {
   background: #dc2626;
-  transform: translateY(-1px);
-}
-
-.cancel-btn {
-  background: #f9fafb;
-  color: #6b7280;
-  border: 1px solid #e5e7eb;
 }
 
 .cancel-btn:hover {
-  background: #f3f4f6;
-  color: #1a1a1a;
-  transform: translateY(-1px);
+  background: #d1d5db;
 }
 
-/* ========================================
-   📱 RESPONSIVE DESIGN
-======================================== */
 /* Desktop: Always show sidebar */
 @media (min-width: 769px) {
   .sidebar {
@@ -583,36 +472,17 @@ export default {
 @media (max-width: 768px) {
   .sidebar {
     z-index: 1001;
-    width: 260px;
   }
-  
-  .user-info {
-    padding: 20px 16px 16px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
   }
-  
-  .nav-links {
-    padding: 16px 12px 0;
-  }
-  
-  .bottom-logout {
-    padding: 12px 16px 16px;
-  }
-  
-  .logout-modal-content {
-    margin: 20px;
-    padding: 28px 24px;
-  }
-  
-  .logout-actions {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .confirm-btn,
-  .cancel-btn {
-    width: 100%;
-    min-width: unset;
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 </style>
-
