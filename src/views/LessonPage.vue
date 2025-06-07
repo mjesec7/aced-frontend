@@ -1,3 +1,4 @@
+
 <template>
   <div class="lesson-page">
     <!-- Paywall Modal -->
@@ -149,30 +150,6 @@
           </div>
 
           <p v-if="confirmation" :class="['confirmation', answerWasCorrect ? 'correct' : 'incorrect']">{{ confirmation }}</p>
-          <p v-if="mistakeCount >= 3 && currentStep.data.hint && !answerWasCorrect" class="hint">
-            💡 Подсказка: {{ currentStep.data.hint }}
-          </p>
-        </div>
-
-        <!-- Quiz -->
-        <div v-else-if="currentStep.type === 'quiz'">
-          <h3>🎮 Финальный тест</h3>
-          <p class="exercise-question">{{ getLocalized(currentStep.data.question) }}</p>
-          <div class="options-container">
-            <label v-for="(opt, j) in currentStep.data.options" :key="j" class="option-label">
-              <input type="radio" :value="opt" v-model="userAnswer" class="option-radio" />
-              <span class="option-text">{{ opt }}</span>
-            </label>
-          </div>
-
-          <div class="action-buttons">
-            <button v-if="!answerWasCorrect" class="submit-btn" @click="handleSubmitOrNext" :disabled="!userAnswer.trim()">
-              🎯 Ответить
-            </button>
-            <button v-else class="next-btn" @click="goNext">✅ Далее</button>
-          </div>
-
-          <p v-if="confirmation" :class="['confirmation', answerWasCorrect ? 'correct' : 'incorrect']">{{ confirmation }}</p>
         </div>
       </div>
     </div>
@@ -186,7 +163,7 @@
 import axios from 'axios';
 import confetti from 'canvas-confetti';
 import { auth } from '@/firebase';
-import { mapGetters } from 'vuex';
+import { mapGetters, mapState } from 'vuex';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -220,7 +197,25 @@ export default {
     };
   },
   computed: {
-    ...mapGetters('user', ['isPremiumUser']),
+    ...mapState(['user']),
+    ...mapGetters(['isAuthenticated']),
+    
+    // FIX 3: Get user status directly from store
+    userStatus() {
+      // Try multiple ways to get user status
+      return this.$store.state.user?.subscriptionPlan || 
+             this.$store.getters['user/userStatus'] || 
+             this.user?.subscriptionPlan || 
+             'free';
+    },
+    
+    // FIX 4: Properly check if user is premium
+    isPremiumUser() {
+      const status = this.userStatus;
+      console.log('🔍 User status check:', status);
+      return status === 'premium' || status === 'start' || status === 'pro';
+    },
+    
     currentStep() {
       return this.steps[this.currentIndex] || null;
     },
@@ -247,8 +242,17 @@ export default {
     }
   },
   async mounted() {
+    console.log('🔧 LessonPage mounted');
+    
+    // Wait for auth to be ready
+    await this.$store.dispatch('waitForAuthInit');
+    
     this.userId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
-    if (!this.userId) return this.$router.push('/');
+    if (!this.userId) {
+      console.error('❌ No user ID found');
+      return this.$router.push('/');
+    }
+    
     await this.loadLesson();
     await this.loadPreviousProgress();
   },
@@ -265,309 +269,241 @@ export default {
       return typeof field === 'string' ? field : (field?.en || '').replace(/^en:/i, '').trim();
     },
     
-    // Fixed method to go to catalogue
     goToCatalogue() {
-      // Use Vue Router navigation instead of window.location
       this.$router.push({ name: 'CataloguePage' });
-    },
-    
-    // Alternative method with fallback
-    navigateToCatalogue() {
-      try {
-        // Try to navigate using named route
-        this.$router.push({ name: 'CataloguePage' });
-      } catch (error) {
-        // Fallback to path-based navigation
-        this.$router.push('/profile/catalogue');
-      }
-    },
-    
-    // Method to go back to topic overview
-    goToTopicOverview() {
-      if (this.lesson && this.lesson.topicId) {
-        this.$router.push({ 
-          name: 'TopicOverview', 
-          params: { id: this.lesson.topicId } 
-        });
-      }
-    },
-    
-    // Method to go to main dashboard
-    goToMainDashboard() {
-      this.$router.push({ name: 'MainPage' });
-    },
-    
-    // Method to handle navigation with paywall check
-    handleNavigation(destination) {
-      // Check if user has access
-      if (this.userHasAccess) {
-        switch (destination) {
-          case 'catalogue':
-            this.goToCatalogue();
-            break;
-          case 'topic':
-            this.goToTopicOverview();
-            break;
-          case 'main':
-            this.goToMainDashboard();
-            break;
-          default:
-            this.goToCatalogue();
-        }
-      } else {
-        // Show paywall or redirect to upgrade
-        this.showPaywallModal = true;
-      }
     },
     
     goToHomework() {
       this.$router.push(`/profile/homeworks/${this.lesson._id}`);
     },
     
-    // In LessonPage.vue - Fixed loadLesson method
-async loadLesson() {
-  try {
-    const lessonId = this.$route.params.id;
-    const { data } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
+    // FIX 5: Complete rewrite of loadLesson with proper access control
+    async loadLesson() {
+      try {
+        const lessonId = this.$route.params.id;
+        console.log('📚 Loading lesson:', lessonId);
+        
+        const { data } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
 
-    if (!data || !data._id) {
-      console.error('❌ Lesson not found');
-      return this.$router.push('/catalogue');
-    }
-
-    this.lesson = data;
-    
-    // 🔥 FIXED: Check lesson access logic
-    console.log('🔍 Lesson type:', data.type);
-    console.log('🔍 User premium status:', this.isPremiumUser);
-    console.log('🔍 User status from store:', this.$store.getters['user/userStatus']);
-    
-    // ✅ CORRECT ACCESS CHECK:
-    // - If lesson.type is 'free' OR undefined/null -> allow access
-    // - If lesson.type is 'premium' -> check if user is premium
-    const lessonType = data.type || 'free'; // Default to 'free' if not specified
-    const isLessonFree = lessonType === 'free';
-    const userHasPremium = this.isPremiumUser || this.$store.getters['user/userStatus'] !== 'free';
-    
-    console.log('🔍 Access check:', {
-      lessonType,
-      isLessonFree,
-      userHasPremium,
-      shouldAllowAccess: isLessonFree || userHasPremium
-    });
-    
-    // Show paywall only if lesson is premium AND user doesn't have premium
-    if (lessonType === 'premium' && !userHasPremium) {
-      console.log('🔒 Showing paywall for premium lesson');
-      this.showPaywallModal = true;
-      return;
-    }
-    
-    console.log('✅ Access granted to lesson');
-
-    // Process lesson steps
-    this.steps = [];
-    if (Array.isArray(data.steps)) {
-      data.steps.forEach(step => {
-        if (['exercise', 'tryout'].includes(step.type) && Array.isArray(step.data)) {
-          this.steps.push(...step.data.map(ex => ({ type: step.type, data: ex })));
-        } else {
-          this.steps.push(step);
+        if (!data || !data._id) {
+          console.error('❌ Lesson not found');
+          return this.$router.push('/catalogue');
         }
-      });
-    } else {
-      // Legacy format support
-      if (Array.isArray(data.explanations)) {
-        this.steps.push(...data.explanations.map(ex => ({ type: 'explanation', data: ex })));
-      }
-      if (Array.isArray(data.examples)) {
-        this.steps.push(...data.examples.map(ex => ({ type: 'example', data: ex })));
-      }
-      if (Array.isArray(data.exerciseGroups)) {
-        data.exerciseGroups.forEach(group => {
-          group.exercises.forEach(ex => this.steps.push({ type: 'exercise', data: ex }));
+
+        this.lesson = data;
+        
+        // FIX 6: Proper access control logic
+        const lessonType = data.type || 'free';
+        const isFreeLeson = lessonType === 'free' || !lessonType;
+        const userHasPremium = this.isPremiumUser;
+        
+        console.log('🔐 Access Control Check:', {
+          lessonId: data._id,
+          lessonName: this.getLocalized(data.lessonName),
+          lessonType: lessonType,
+          isFreeLeson: isFreeLeson,
+          userStatus: this.userStatus,
+          userHasPremium: userHasPremium,
+          isAuthenticated: this.isAuthenticated
         });
+        
+        // Access rules:
+        // 1. If lesson is free, anyone logged in can access
+        // 2. If lesson is premium, only premium users can access
+        // 3. If user is not logged in at all, redirect to login
+        
+        if (!this.isAuthenticated) {
+          console.log('❌ User not authenticated');
+          return this.$router.push('/login');
+        }
+        
+        if (lessonType === 'premium' && !userHasPremium) {
+          console.log('🔒 Premium lesson, user does not have premium');
+          this.showPaywallModal = true;
+          return;
+        }
+        
+        console.log('✅ Access granted to lesson');
+
+        // Process lesson steps
+        this.steps = [];
+        if (Array.isArray(data.steps)) {
+          data.steps.forEach(step => {
+            if (['exercise', 'tryout'].includes(step.type) && Array.isArray(step.data)) {
+              this.steps.push(...step.data.map(ex => ({ type: step.type, data: ex })));
+            } else {
+              this.steps.push(step);
+            }
+          });
+        } else {
+          // Legacy format support
+          if (Array.isArray(data.explanations)) {
+            this.steps.push(...data.explanations.map(ex => ({ type: 'explanation', data: ex })));
+          }
+          if (Array.isArray(data.examples)) {
+            this.steps.push(...data.examples.map(ex => ({ type: 'example', data: ex })));
+          }
+          if (Array.isArray(data.exerciseGroups)) {
+            data.exerciseGroups.forEach(group => {
+              group.exercises.forEach(ex => this.steps.push({ type: 'exercise', data: ex }));
+            });
+          }
+          if (Array.isArray(data.quiz)) {
+            this.steps.push(...data.quiz.map(q => ({ type: 'quiz', data: q })));
+          }
+        }
+        
+        console.log(`✅ Lesson loaded with ${this.steps.length} steps`);
+        
+      } catch (err) {
+        console.error('❌ Error loading lesson:', err);
+        this.$router.push('/catalogue');
       }
-      if (Array.isArray(data.quiz)) {
-        this.steps.push(...data.quiz.map(q => ({ type: 'quiz', data: q })));
-      }
-    }
-    
-    console.log(`✅ Lesson loaded with ${this.steps.length} steps`);
-    
-  } catch (err) {
-    console.error('❌ Error loading lesson:', err);
-    console.error('❌ Error details:', {
-      status: err.response?.status,
-      data: err.response?.data,
-      message: err.message
-    });
-    this.$router.push('/catalogue');
-  }
-},
+    },
 
     async loadPreviousProgress() {
-  if (!this.lesson._id) return;
-  
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) {
-      console.warn('⚠️ No auth token available for loading progress');
-      return;
-    }
-
-    console.log(`📋 Loading previous progress for lesson: ${this.lesson._id}`);
-
-    // Try multiple endpoints to find progress
-    let progressData = null;
-    
-    // First try the user lesson endpoint
-    try {
-      const response = await axios.get(`${BASE_URL}/user/${this.userId}/lesson/${this.lesson._id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000,
-        validateStatus: function (status) {
-          return status < 500; // Don't throw for 404
-        }
-      });
+      if (!this.lesson._id) return;
       
-      if (response.status === 200 && response.data && Object.keys(response.data).length > 0) {
-        progressData = response.data;
-        console.log('✅ Found progress at /user/lesson endpoint');
-      }
-    } catch (err) {
-      console.log('📋 No progress at /user endpoint, trying /progress endpoint...');
-    }
-    
-    // If no data, try the progress endpoint with query params
-    if (!progressData) {
       try {
-        const response = await axios.get(`${BASE_URL}/progress`, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: {
-            userId: this.userId,
-            lessonId: this.lesson._id
-          },
-          timeout: 10000,
-          validateStatus: function (status) {
-            return status < 500; // Don't throw for 404
-          }
-        });
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) {
+          console.warn('⚠️ No auth token available for loading progress');
+          return;
+        }
+
+        console.log(`📋 Loading previous progress for lesson: ${this.lesson._id}`);
+
+        // Try multiple endpoints to find progress
+        let progressData = null;
         
-        if (response.status === 200 && response.data) {
-          // Handle different response formats
-          if (response.data.data) {
-            progressData = response.data.data;
-          } else if (response.data.message && response.data.data === null) {
-            // No progress found
-            progressData = null;
-          } else if (Array.isArray(response.data)) {
-            // If it returns an array, find the matching lesson
-            progressData = response.data.find(p => p.lessonId === this.lesson._id);
-          } else {
+        // First try the user lesson endpoint
+        try {
+          const response = await axios.get(`${BASE_URL}/user/${this.userId}/lesson/${this.lesson._id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 10000,
+            validateStatus: function (status) {
+              return status < 500; // Don't throw for 404
+            }
+          });
+          
+          if (response.status === 200 && response.data && Object.keys(response.data).length > 0) {
             progressData = response.data;
+            console.log('✅ Found progress at /user/lesson endpoint');
           }
-          
-          if (progressData) {
-            console.log('✅ Found progress at /progress endpoint');
-          }
+        } catch (err) {
+          console.log('📋 No progress at /user endpoint, trying /progress endpoint...');
         }
-      } catch (err) {
-        console.log('📋 No progress at /progress endpoint either');
-      }
-    }
-    
-    // If still no data, try the user progress endpoint
-    if (!progressData) {
-      try {
-        const response = await axios.get(`${BASE_URL}/users/${this.userId}/progress`, {
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000,
-          validateStatus: function (status) {
-            return status < 500;
-          }
-        });
         
-        if (response.status === 200 && response.data) {
-          // Find progress for this specific lesson
-          const allProgress = response.data.data || response.data || [];
-          progressData = allProgress.find(p => 
-            (p.lessonId?._id || p.lessonId) === this.lesson._id
-          );
-          
-          if (progressData) {
-            console.log('✅ Found progress at /users/progress endpoint');
+        // If no data, try the progress endpoint with query params
+        if (!progressData) {
+          try {
+            const response = await axios.get(`${BASE_URL}/progress`, {
+              headers: { Authorization: `Bearer ${token}` },
+              params: {
+                userId: this.userId,
+                lessonId: this.lesson._id
+              },
+              timeout: 10000,
+              validateStatus: function (status) {
+                return status < 500; // Don't throw for 404
+              }
+            });
+            
+            if (response.status === 200 && response.data) {
+              // Handle different response formats
+              if (response.data.data) {
+                progressData = response.data.data;
+              } else if (response.data.message && response.data.data === null) {
+                // No progress found
+                progressData = null;
+              } else if (Array.isArray(response.data)) {
+                // If it returns an array, find the matching lesson
+                progressData = response.data.find(p => p.lessonId === this.lesson._id);
+              } else {
+                progressData = response.data;
+              }
+              
+              if (progressData) {
+                console.log('✅ Found progress at /progress endpoint');
+              }
+            }
+          } catch (err) {
+            console.log('📋 No progress at /progress endpoint either');
           }
         }
+        
+        // If still no data, try the user progress endpoint
+        if (!progressData) {
+          try {
+            const response = await axios.get(`${BASE_URL}/users/${this.userId}/progress`, {
+              headers: { Authorization: `Bearer ${token}` },
+              timeout: 10000,
+              validateStatus: function (status) {
+                return status < 500;
+              }
+            });
+            
+            if (response.status === 200 && response.data) {
+              // Find progress for this specific lesson
+              const allProgress = response.data.data || response.data || [];
+              progressData = allProgress.find(p => 
+                (p.lessonId?._id || p.lessonId) === this.lesson._id
+              );
+              
+              if (progressData) {
+                console.log('✅ Found progress at /users/progress endpoint');
+              }
+            }
+          } catch (err) {
+            console.log('📋 No progress at /users/progress endpoint');
+          }
+        }
+        
+        // If we found progress data, use it
+        if (progressData && progressData.completedSteps && progressData.completedSteps.length > 0) {
+          this.previousProgress = {
+            _id: progressData._id,
+            userId: progressData.userId,
+            lessonId: progressData.lessonId,
+            completedSteps: progressData.completedSteps || [],
+            accuracy: progressData.accuracy || 0,
+            attemptsCount: progressData.attemptsCount || 1,
+            completed: progressData.completed || false,
+            completedAt: progressData.completedAt,
+            createdAt: progressData.createdAt,
+            currentStreak: progressData.currentStreak || 0,
+            duration: progressData.duration || 0,
+            durationSeconds: progressData.duration || 0,
+            hintsUsed: progressData.hintsUsed || 0,
+            homeworkScore: progressData.homeworkScore,
+            lastAccessedAt: progressData.lastAccessedAt,
+            medal: progressData.medal || 'none',
+            mistakes: progressData.mistakes || 0,
+            points: progressData.points || 0,
+            pointsEarned: progressData.points || 0,
+            progressPercent: progressData.progressPercent || 0,
+            stars: progressData.stars || 0,
+            submittedHomework: progressData.submittedHomework || false,
+            topicId: progressData.topicId,
+            updatedAt: progressData.updatedAt,
+            usedHints: progressData.hintsUsed > 0 || false
+          };
+          
+          console.log('✅ Previous progress loaded:', this.previousProgress);
+          console.log(`   - Completed steps: ${this.previousProgress.completedSteps.length}`);
+          console.log(`   - Stars: ${this.previousProgress.stars}`);
+          console.log(`   - Mistakes: ${this.previousProgress.mistakes}`);
+          console.log(`   - Duration: ${this.previousProgress.duration} seconds`);
+        } else {
+          console.log('ℹ️ No previous progress found for this lesson');
+          this.previousProgress = null;
+        }
+        
       } catch (err) {
-        console.log('📋 No progress at /users/progress endpoint');
+        console.warn('⚠️ Failed to load previous progress:', err);
+        this.previousProgress = null;
       }
-    }
-    
-    // If we found progress data, use it
-    if (progressData && progressData.completedSteps && progressData.completedSteps.length > 0) {
-      this.previousProgress = {
-        _id: progressData._id,
-        userId: progressData.userId,
-        lessonId: progressData.lessonId,
-        completedSteps: progressData.completedSteps || [],
-        accuracy: progressData.accuracy || 0,
-        attemptsCount: progressData.attemptsCount || 1,
-        completed: progressData.completed || false,
-        completedAt: progressData.completedAt,
-        createdAt: progressData.createdAt,
-        currentStreak: progressData.currentStreak || 0,
-        duration: progressData.duration || 0,
-        durationSeconds: progressData.duration || 0, // Ensure we have this field
-        hintsUsed: progressData.hintsUsed || 0,
-        homeworkScore: progressData.homeworkScore,
-        lastAccessedAt: progressData.lastAccessedAt,
-        medal: progressData.medal || 'none',
-        mistakes: progressData.mistakes || 0,
-        points: progressData.points || 0,
-        pointsEarned: progressData.points || 0, // Ensure we have this field
-        progressPercent: progressData.progressPercent || 0,
-        stars: progressData.stars || 0,
-        submittedHomework: progressData.submittedHomework || false,
-        topicId: progressData.topicId,
-        updatedAt: progressData.updatedAt,
-        usedHints: progressData.hintsUsed > 0 || false
-      };
-      
-      console.log('✅ Previous progress loaded:', this.previousProgress);
-      console.log(`   - Completed steps: ${this.previousProgress.completedSteps.length}`);
-      console.log(`   - Stars: ${this.previousProgress.stars}`);
-      console.log(`   - Mistakes: ${this.previousProgress.mistakes}`);
-      console.log(`   - Duration: ${this.previousProgress.duration} seconds`);
-      
-      // Show a toast notification if we have toast available
-      if (this.$toast) {
-        this.$toast.info(`📚 Найден предыдущий прогресс: ${progressData.completedSteps.length} из ${this.steps.length} шагов завершено`, {
-          position: 'top-right',
-          timeout: 3000,
-          closeOnClick: true,
-          pauseOnFocusLoss: true,
-          pauseOnHover: true,
-          draggable: true,
-          draggablePercent: 0.6,
-          showCloseButtonOnHover: false,
-          hideProgressBar: true,
-          closeButton: "button",
-          icon: true,
-          rtl: false
-        });
-      }
-    } else {
-      console.log('ℹ️ No previous progress found for this lesson');
-      this.previousProgress = null;
-    }
-    
-  } catch (err) {
-    console.warn('⚠️ Failed to load previous progress:', err);
-    this.previousProgress = null;
-    // Don't show error toast - this is not critical
-  }
-},
+    },
 
     continuePreviousProgress() {
       if (this.previousProgress) {
@@ -591,7 +527,6 @@ async loadLesson() {
       this.autosaveTimer = setInterval(() => this.autosaveProgress(), 15000);
     },
 
-    // Enhanced autosave with retry logic
     async autosaveProgress() {
       try {
         const success = await this.saveProgress(false);
@@ -604,19 +539,16 @@ async loadLesson() {
       }
     },
 
-    // Enhanced saveProgress method with better error handling
     async saveProgress(completed = false) {
       try {
         // Validation - Check required data
         if (!this.userId) {
           console.error('❌ No userId available');
-          this.showErrorToast('Ошибка аутентификации');
           return false;
         }
         
         if (!this.lesson._id) {
           console.error('❌ No lesson ID available');
-          this.showErrorToast('Ошибка урока');
           return false;
         }
 
@@ -625,13 +557,11 @@ async loadLesson() {
         try {
           if (!auth.currentUser) {
             console.error('❌ No authenticated user');
-            this.showErrorToast('Необходимо войти в систему');
             return false;
           }
           token = await auth.currentUser.getIdToken(true); // Force refresh
         } catch (authError) {
           console.error('❌ Failed to get auth token:', authError);
-          this.showErrorToast('Ошибка аутентификации');
           return false;
         }
 
@@ -687,9 +617,9 @@ async loadLesson() {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          timeout: 15000, // 15 second timeout
+          timeout: 15000,
           validateStatus: function (status) {
-            return status < 500; // Resolve only if status is less than 500
+            return status < 500;
           }
         });
 
@@ -698,49 +628,15 @@ async loadLesson() {
           return true;
         } else {
           console.error('❌ Progress save failed:', response.status, response.data);
-          this.showErrorToast(`Ошибка сохранения: ${response.data.error || 'Неизвестная ошибка'}`);
           return false;
         }
         
       } catch (err) {
         console.error('❌ Progress save error:', err);
-        
-        // Handle different error types
-        if (err.code === 'ECONNABORTED') {
-          this.showErrorToast('Превышено время ожидания');
-        } else if (err.response) {
-          // Server responded with error
-          const status = err.response.status;
-          const message = err.response.data?.error || err.response.data?.message || 'Server error';
-          
-          console.error('Response data:', err.response.data);
-          console.error('Response status:', status);
-          
-          if (status === 401) {
-            this.showErrorToast('Необходимо войти в систему заново');
-            this.$router.push('/login');
-          } else if (status === 404) {
-            this.showErrorToast('Урок не найден');
-          } else if (status === 500) {
-            this.showErrorToast('Ошибка сервера. Попробуйте позже');
-          } else {
-            this.showErrorToast(`Ошибка: ${message}`);
-          }
-        } else if (err.request) {
-          // Request was made but no response received
-          console.error('No response received:', err.request);
-          this.showErrorToast('Нет связи с сервером');
-        } else {
-          // Something else happened
-          console.error('Request setup error:', err.message);
-          this.showErrorToast('Ошибка запроса');
-        }
-        
         return false;
       }
     },
 
-    // Enhanced analytics saving
     async saveAnalytics() {
       try {
         if (!this.userId || !this.lesson._id) return;
@@ -771,11 +667,9 @@ async loadLesson() {
         console.log('✅ Analytics saved successfully');
       } catch (err) {
         console.error('❌ Analytics save error:', err);
-        // Don't show toast for analytics errors - they're not critical
       }
     },
 
-    // Enhanced diary saving
     async saveDiary() {
       try {
         if (!this.userId || !this.lesson.lessonName) return;
@@ -804,30 +698,6 @@ async loadLesson() {
         console.log('✅ Diary entry saved successfully');
       } catch (err) {
         console.error('❌ Diary save error:', err);
-        // Don't show toast for diary errors - they're not critical
-      }
-    },
-
-    // Show error toast helper
-    showErrorToast(message) {
-      if (this.$toast) {
-        this.$toast.error(message, {
-          position: 'top-right',
-          timeout: 5000,
-          closeOnClick: true,
-          pauseOnFocusLoss: true,
-          pauseOnHover: true,
-          draggable: true,
-          draggablePercent: 0.6,
-          showCloseButtonOnHover: false,
-          hideProgressBar: true,
-          closeButton: "button",
-          icon: true,
-          rtl: false
-        });
-      } else {
-        console.error('❌ Toast not available:', message);
-        alert(message); // Fallback
       }
     },
 
@@ -868,7 +738,6 @@ async loadLesson() {
       }
     },
 
-    // If you have a method that handles the "next" button
     goNext() {
       this.userAnswer = '';
       this.confirmation = '';
@@ -908,7 +777,6 @@ async loadLesson() {
       }
     },
 
-    // Enhanced lesson completion with better error handling
     async completeLesson() {
       clearInterval(this.timerInterval);
       clearInterval(this.autosaveTimer);
@@ -948,7 +816,7 @@ async loadLesson() {
       }
 
       if (!progressSaved) {
-        this.showErrorToast('Не удалось сохранить прогресс. Проверьте соединение.');
+        alert('Не удалось сохранить прогресс. Проверьте соединение.');
       }
 
       // Save analytics and diary (non-critical, don't retry)
@@ -981,7 +849,7 @@ async loadLesson() {
         await this.saveProgress(false);
       }
       this.showExitModal = false;
-      this.goToCatalogue(); // Use the fixed navigation method
+      this.goToCatalogue();
     },
 
     shareResult() {
@@ -1015,9 +883,6 @@ async loadLesson() {
   }
 };
 </script>
-
-
-
 
 
 <style>

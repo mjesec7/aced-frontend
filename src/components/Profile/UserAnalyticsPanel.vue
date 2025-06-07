@@ -1,3 +1,4 @@
+
 <template>
   <div class="analytics-panel" ref="pdfContent">
     <div class="header-row">
@@ -141,7 +142,8 @@ import LineChart from '@/components/Charts/LineChart.vue';
 import Card from '@/components/Profile/AnalyticsCard.vue';
 import ProgressBar from '@/components/Profile/ProgressBar.vue';
 import { auth } from '@/firebase';
-import api from '@/api';
+// FIX 1: Import the api module properly
+import { getUserAnalytics } from '@/api';
 
 export default {
   name: 'UserAnalyticsPanel',
@@ -243,124 +245,77 @@ export default {
   
   async mounted() {
     console.log('🔧 UserAnalyticsPanel mounted');
-    // Don't wait for auth in mounted, loadAnalytics will handle it
     await this.loadAnalytics();
   },
   
   methods: {
     async loadAnalytics() {
-  console.log('📊 Starting analytics loading...');
-  this.loading = true;
-  this.error = null;
-  
-  try {
-    // Wait for auth to be ready
-    let currentUser = auth.currentUser;
-    if (!currentUser) {
-      console.log('⏳ Waiting for Firebase auth...');
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Increased wait time
-      currentUser = auth.currentUser;
-    }
-    
-    if (!currentUser) {
-      console.error('❌ No authenticated user found');
-      this.error = 'Необходима авторизация';
-      return;
-    }
-
-    const userId = currentUser.uid;
-    console.log('🔍 Using Firebase user ID:', userId);
-    
-    // 🔥 FIXED: Get fresh token and ensure it's properly set
-    const token = await currentUser.getIdToken(true); // Force refresh
-    localStorage.setItem('token', token);
-    console.log('🔑 Got fresh Firebase token and updated localStorage');
-    
-    // 🔥 FIXED: Wait longer to ensure token is properly propagated
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    try {
-      // 🔥 FIXED: Use explicit header to bypass potential interceptor issues
-      const response = await axios.get(`${api.defaults.baseURL}/users/${userId}/analytics`, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 15000
-      });
-
-      console.log('📊 Analytics response:', response);
-
-      if (response.data) {
-        if (response.data.success && response.data.data) {
-          this.analytics = { ...this.analytics, ...response.data.data };
-        } else if (response.data.success === false) {
-          console.error('❌ Backend error:', response.data.error);
-          this.error = response.data.error || 'Ошибка сервера';
-          return;
-        } else {
-          this.analytics = { ...this.analytics, ...response.data };
+      console.log('📊 Starting analytics loading...');
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        // Wait for auth to be ready
+        let currentUser = auth.currentUser;
+        if (!currentUser) {
+          console.log('⏳ Waiting for Firebase auth...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          currentUser = auth.currentUser;
         }
         
-        console.log('✅ Analytics loaded successfully');
-      }
+        if (!currentUser) {
+          console.error('❌ No authenticated user found');
+          this.error = 'Необходима авторизация';
+          return;
+        }
 
-    } catch (apiError) {
-      console.error('❌ API Error:', apiError);
-      
-      if (apiError.response?.status === 401) {
-        // Try one more time with fresh token
-        console.log('🔄 401 error, trying once more...');
+        const userId = currentUser.uid;
+        console.log('🔍 Using Firebase user ID:', userId);
         
+        // FIX 2: Use the imported getUserAnalytics function from api.js
         try {
-          const freshestToken = await currentUser.getIdToken(true);
-          localStorage.setItem('token', freshestToken);
+          const response = await getUserAnalytics(userId);
           
-          const retryResponse = await axios.get(`${api.defaults.baseURL}/users/${userId}/analytics`, {
-            headers: { 
-              'Authorization': `Bearer ${freshestToken}`,
-              'Content-Type': 'application/json'
-            },
-            timeout: 15000
-          });
-          
-          if (retryResponse.data) {
-            if (retryResponse.data.success && retryResponse.data.data) {
-              this.analytics = { ...this.analytics, ...retryResponse.data.data };
-            } else {
-              this.analytics = { ...this.analytics, ...retryResponse.data };
-            }
-            console.log('✅ Analytics loaded on retry');
-            return;
-          }
-        } catch (retryError) {
-          console.error('❌ Retry also failed:', retryError);
-          this.error = 'Ошибка авторизации. Попробуйте войти заново.';
-          return;
-        }
-      }
-      
-      // Handle other error types
-      if (apiError.response) {
-        if (apiError.response.status === 404) {
-          this.error = 'Данные аналитики не найдены';
-        } else {
-          this.error = apiError.response.data?.error || 'Ошибка загрузки данных';
-        }
-      } else if (apiError.request) {
-        this.error = 'Проблема с сетью. Проверьте интернет-соединение.';
-      } else {
-        this.error = apiError.message || 'Ошибка загрузки аналитики';
-      }
-    }
+          console.log('📊 Analytics response:', response);
 
-  } catch (err) {
-    console.error('❌ Analytics loading failed:', err);
-    this.error = err.message || 'Ошибка загрузки аналитики';
-  } finally {
-    this.loading = false;
-  }
-},
+          if (response.data) {
+            if (response.data.success && response.data.data) {
+              this.analytics = { ...this.analytics, ...response.data.data };
+            } else if (response.data.success === false) {
+              console.error('❌ Backend error:', response.data.error);
+              this.error = response.data.error || 'Ошибка сервера';
+              return;
+            } else {
+              // If response.data is the analytics object directly
+              this.analytics = { ...this.analytics, ...response.data };
+            }
+            
+            console.log('✅ Analytics loaded successfully');
+          }
+
+        } catch (apiError) {
+          console.error('❌ API Error:', apiError);
+          
+          if (apiError.response?.status === 401) {
+            this.error = 'Ошибка авторизации. Попробуйте войти заново.';
+          } else if (apiError.response?.status === 404) {
+            this.error = 'Данные аналитики не найдены';
+          } else if (apiError.response) {
+            this.error = apiError.response.data?.error || 'Ошибка загрузки данных';
+          } else if (apiError.request) {
+            this.error = 'Проблема с сетью. Проверьте интернет-соединение.';
+          } else {
+            this.error = apiError.message || 'Ошибка загрузки аналитики';
+          }
+        }
+
+      } catch (err) {
+        console.error('❌ Analytics loading failed:', err);
+        this.error = err.message || 'Ошибка загрузки аналитики';
+      } finally {
+        this.loading = false;
+      }
+    },
     
     openModal() {
       this.showModal = true;

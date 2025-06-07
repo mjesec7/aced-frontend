@@ -1,6 +1,6 @@
 <template>
   <div class="sidebar-wrapper">
-    <div class="sidebar open">
+    <div class="sidebar" :class="{ open: isOpen }">
       <div class="sidebar-content">
         <!-- 👤 User Info - Fixed at top -->
         <div class="user-info" v-if="user">
@@ -17,6 +17,7 @@
             to="/profile/main"
             class="nav-item"
             :class="{ active: isActive('main') }"
+            @click="closeSidebarOnMobile"
           >
             <span class="highlight"></span>
             Главная
@@ -26,6 +27,7 @@
             to="/profile/catalogue"
             class="nav-item"
             :class="{ active: isActive('catalogue') }"
+            @click="closeSidebarOnMobile"
           >
             <span class="highlight"></span>
             Каталог
@@ -37,6 +39,7 @@
             :to="getRoutePath(link.name)"
             class="nav-item"
             :class="{ active: isActive(link.name) }"
+            @click="closeSidebarOnMobile"
           >
             <span class="highlight"></span>
             {{ link.label }}
@@ -49,6 +52,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Overlay for mobile -->
+    <div 
+      class="sidebar-overlay" 
+      v-if="isOpen && isMobile" 
+      @click="closeSidebar"
+    ></div>
 
     <!-- 🔐 Confirm Logout Modal -->
     <div class="logout-modal" v-if="showLogoutModal">
@@ -70,6 +80,12 @@ import { mapState, mapMutations, mapGetters } from 'vuex';
 
 export default {
   name: 'SideBar',
+  props: {
+    isOpen: {
+      type: Boolean,
+      default: true
+    }
+  },
   data() {
     return {
       showLogoutModal: false,
@@ -81,7 +97,8 @@ export default {
         { name: 'homeworks', label: 'Домашние задания' },
         { name: 'tests', label: 'Тесты' },
         { name: 'settings', label: 'Настройки' }
-      ]
+      ],
+      isMobile: false
     };
   },
   computed: {
@@ -94,6 +111,9 @@ export default {
     }
   },
   mounted() {
+    this.checkMobile();
+    window.addEventListener('resize', this.checkMobile);
+    
     onAuthStateChanged(auth, (user) => {
       if (user) {
         this.setUser({
@@ -104,8 +124,22 @@ export default {
       }
     });
   },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.checkMobile);
+  },
   methods: {
     ...mapMutations(['setUser', 'clearUser']),
+    checkMobile() {
+      this.isMobile = window.innerWidth <= 768;
+    },
+    closeSidebar() {
+      this.$emit('toggle-sidebar', false);
+    },
+    closeSidebarOnMobile() {
+      if (this.isMobile) {
+        this.closeSidebar();
+      }
+    },
     logout() {
       signOut(auth)
         .then(() => {
@@ -184,6 +218,21 @@ export default {
   color: #111827;
   display: flex;
   flex-direction: column;
+  transform: translateX(-100%);
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
 }
 
 .sidebar-content {
@@ -201,7 +250,7 @@ export default {
   font-size: 0.95rem;
   color: #111827;
   border-bottom: 1px solid #eee;
-  flex-shrink: 0; /* Prevents shrinking */
+  flex-shrink: 0;
 }
 
 .user-icon {
@@ -224,6 +273,8 @@ export default {
   font-size: 0.95rem;
   line-height: 1.2;
   color: #1f2937;
+  word-break: break-word;
+  max-width: 160px;
 }
 
 .user-plan {
@@ -252,7 +303,6 @@ export default {
   scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
 }
 
-/* Custom scrollbar for webkit browsers */
 .nav-links.scrollable::-webkit-scrollbar {
   width: 4px;
 }
@@ -284,7 +334,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px; /* Ensures consistent height */
+  min-height: 40px;
 }
 
 .nav-item:hover {
@@ -322,7 +372,7 @@ export default {
 .bottom-logout {
   padding: 16px;
   border-top: 1px solid #e5e7eb;
-  flex-shrink: 0; /* Prevents shrinking */
+  flex-shrink: 0;
 }
 
 .logout-button {
@@ -404,6 +454,24 @@ export default {
 
 .cancel-btn:hover {
   background: #d1d5db;
+}
+
+/* Desktop: Always show sidebar */
+@media (min-width: 769px) {
+  .sidebar {
+    transform: translateX(0) !important;
+  }
+  
+  .sidebar-overlay {
+    display: none !important;
+  }
+}
+
+/* Mobile: Hide sidebar by default */
+@media (max-width: 768px) {
+  .sidebar {
+    z-index: 1001;
+  }
 }
 
 @keyframes fadeIn {
