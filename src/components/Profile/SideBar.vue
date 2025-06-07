@@ -243,7 +243,7 @@ export default {
 }
 
 .user-info {
-  padding: 30px 16px 20px;
+  padding: 60px 16px 20px;
   display: flex;
   align-items: center;
   gap: 12px;
