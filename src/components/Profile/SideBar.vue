@@ -2,7 +2,7 @@
   <div class="sidebar-wrapper">
     <div class="sidebar open">
       <div class="sidebar-content">
-        <!-- 👤 User Info -->
+        <!-- 👤 User Info - Fixed at top -->
         <div class="user-info" v-if="user">
           <img src="@/assets/icons/user.png" alt="User Icon" class="user-icon" />
           <div class="user-details">
@@ -11,8 +11,8 @@
           </div>
         </div>
 
-        <!-- 📚 Navigation Links -->
-        <div class="nav-links">
+        <!-- 📚 Navigation Links - Scrollable -->
+        <div class="nav-links scrollable">
           <router-link
             to="/profile/main"
             class="nav-item"
@@ -43,7 +43,7 @@
           </router-link>
         </div>
 
-        <!-- 🚪 Logout -->
+        <!-- 🚪 Logout - Fixed at bottom -->
         <div class="bottom-logout">
           <button class="logout-button" @click="showLogoutModal = true">Выйти</button>
         </div>
@@ -124,17 +124,14 @@ export default {
         });
     },
     getRoutePath(linkName) {
-      // Settings page is at root level
       if (linkName === 'settings') {
         return '/settings';
       }
-      // All other pages are under /profile/
       return `/profile/${linkName}`;
     },
     isActive(name) {
       const path = this.$route.path;
       
-      // Handle specific route matches
       if (name === 'main') {
         return path === '/profile/main' || path === '/profile' || path === '/profile/';
       }
@@ -163,7 +160,6 @@ export default {
         return path === '/settings';
       }
       
-      // Fallback for any other routes
       return path.includes(`/profile/${name}`);
     }
   }
@@ -183,34 +179,34 @@ export default {
   top: 0;
   background: #ffffff;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.06);
-  padding: 20px 0;
   z-index: 1000;
   transition: transform 0.3s ease-in-out;
   color: #111827;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
 }
 
 .sidebar-content {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .user-info {
-  padding: 40px 20px 10px;
+  padding: 20px 16px 16px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  font-size: 1rem;
+  gap: 12px;
+  font-size: 0.95rem;
   color: #111827;
   border-bottom: 1px solid #eee;
+  flex-shrink: 0; /* Prevents shrinking */
 }
 
 .user-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   object-fit: cover;
   background: #f3f4f6;
@@ -224,52 +220,78 @@ export default {
 }
 
 .user-name {
-  font-weight: 800;
-  font-size: 1.05rem;
+  font-weight: 700;
+  font-size: 0.95rem;
   line-height: 1.2;
   color: #1f2937;
 }
 
 .user-plan {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #6b7280;
-  margin-top: 4px;
+  margin-top: 2px;
   background: #f3f4f6;
-  padding: 2px 8px;
-  border-radius: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
   font-weight: 600;
   text-transform: uppercase;
 }
 
 .nav-links {
-  flex-grow: 1;
-  padding: 30px 20px 0;
+  flex: 1;
+  padding: 16px 16px 0;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 8px;
+}
+
+.nav-links.scrollable {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+}
+
+/* Custom scrollbar for webkit browsers */
+.nav-links.scrollable::-webkit-scrollbar {
+  width: 4px;
+}
+
+.nav-links.scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.nav-links.scrollable::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 2px;
+}
+
+.nav-links.scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
 }
 
 .nav-item {
-  font-size: 0.95rem;
-  padding: 10px 14px;
-  border-radius: 10px;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  border-radius: 8px;
   font-weight: 600;
-  transition: 0.3s;
+  transition: all 0.2s ease;
   color: #111827;
   text-decoration: none;
   background-color: #f9fafb;
   position: relative;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  min-height: 40px; /* Ensures consistent height */
 }
 
 .nav-item:hover {
   background: linear-gradient(to right, #ede9fe, #f0f5ff);
   color: #4f46e5;
-  transform: translateX(6px);
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.12);
 }
 
 .nav-item .highlight {
@@ -277,40 +299,50 @@ export default {
   left: 0;
   top: 0;
   height: 100%;
-  width: 4px;
+  width: 3px;
   background: linear-gradient(to bottom, #6366f1, #8b5cf6);
-  border-radius: 2px;
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.nav-item.active .highlight,
+.nav-item:hover .highlight {
+  opacity: 1;
 }
 
 .nav-item.active {
   background: linear-gradient(to right, #ede9fe, #f0f5ff);
   color: #4f46e5;
-  transform: translateX(6px);
+  transform: translateX(4px);
   font-weight: 700;
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
 }
 
 .bottom-logout {
-  padding: 30px 20px;
+  padding: 16px;
   border-top: 1px solid #e5e7eb;
+  flex-shrink: 0; /* Prevents shrinking */
 }
 
 .logout-button {
-  padding: 10px 16px;
+  padding: 8px 14px;
   background: #ef4444;
   color: white;
   border: none;
-  font-size: 0.9rem;
-  border-radius: 10px;
+  font-size: 0.8rem;
+  border-radius: 8px;
   cursor: pointer;
   font-family: 'Unbounded', sans-serif;
-  transition: 0.3s;
+  transition: all 0.2s ease;
   width: 100%;
-  font-weight: 700;
+  font-weight: 600;
+  min-height: 36px;
 }
 
 .logout-button:hover {
   background: #dc2626;
+  transform: translateY(-1px);
 }
 
 .logout-modal {
@@ -372,5 +404,16 @@ export default {
 
 .cancel-btn:hover {
   background: #d1d5db;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 </style>

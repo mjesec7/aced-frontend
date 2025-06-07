@@ -1,5 +1,6 @@
-// src/api.js - MAIN WEBSITE API CONFIGURATION
+// src/api.js - ENHANCED MAIN WEBSITE API CONFIGURATION
 import axios from 'axios';
+import { auth } from '@/firebase';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -12,29 +13,112 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 15000
 });
 
 console.log('✅ Main Website API Base URL:', BASE_URL);
 
-// 🔐 Attach token to requests if needed
-api.interceptors.request.use(async (config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+// ✅ ENHANCED TOKEN MANAGEMENT
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+const getValidToken = async () => {
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      console.warn('⚠️ No Firebase user available');
+      return null;
+    }
+    
+    const token = await currentUser.getIdToken(true);
+    localStorage.setItem('token', token);
+    console.log('🔑 Fresh token obtained');
+    return token;
+  } catch (error) {
+    console.error('❌ Failed to get valid token:', error);
+    return null;
   }
-  return config;
+};
+
+// ✅ ENHANCED REQUEST INTERCEPTOR
+api.interceptors.request.use(async (config) => {
+  try {
+    const token = await getValidToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  } catch (error) {
+    console.error('❌ Request interceptor error:', error);
+    return Promise.reject(error);
+  }
 });
 
-// ✅ Enhanced Error Handling
+// ✅ ENHANCED RESPONSE INTERCEPTOR WITH TOKEN REFRESH
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // Enhanced error logging
     console.error('API Error:', {
       url: error.config?.url,
       method: error.config?.method,
       status: error.response?.status,
       message: error.response?.data?.message || error.message
     });
+    
+    // Handle 401 errors with token refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        });
+      }
+      
+      originalRequest._retry = true;
+      isRefreshing = true;
+      
+      try {
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+          processQueue(new Error('No user available'), null);
+          isRefreshing = false;
+          return Promise.reject(error);
+        }
+        
+        const freshToken = await currentUser.getIdToken(true);
+        localStorage.setItem('token', freshToken);
+        
+        originalRequest.headers.Authorization = `Bearer ${freshToken}`;
+        processQueue(null, freshToken);
+        isRefreshing = false;
+        
+        return api(originalRequest);
+        
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        isRefreshing = false;
+        localStorage.removeItem('token');
+        return Promise.reject(refreshError);
+      }
+    }
+    
     return Promise.reject(error);
   }
 );
@@ -290,7 +374,7 @@ export const saveDiaryEntry = (userId, diaryData) =>
 export const getDiaryEntries = (userId) =>
   api.get(`/users/${userId}/diary`);
 
-// ✅ Analytics
+// ✅ ENHANCED: Analytics with fallback support
 export const getUserAnalytics = async (userId) => {
   try {
     // Try user-specific analytics endpoint
@@ -325,6 +409,9 @@ export const getAllLessons = () =>
 
 export const getTopics = () =>
   api.get(`/topics`);
+
+export const getTopicById = (topicId) =>
+  api.get(`/topics/${topicId}`);
 
 export const getSubjects = () =>
   api.get(`/subjects`);

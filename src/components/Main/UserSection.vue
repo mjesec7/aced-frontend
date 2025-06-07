@@ -6,20 +6,35 @@
       <button class="auth-button" @click="openModal('login')">Вход</button>
     </div>
 
-    <!-- 👤 User Info -->
-    <div v-else class="user-menu">
-      <button class="user-button" @click="toggleDropdown">
-        Привет, {{ currentUser.name }}
-        <span class="badge">
-          {{ displayPlan }}
-        </span>
+    <!-- 👤 User Info with separate profile button -->
+    <div v-else class="user-section">
+      <!-- Profile Button -->
+      <button class="profile-button" @click="$router.push('/profile')">
+        Профиль
       </button>
-      <div v-if="dropdownOpen" class="dropdown-menu">
-        <ul>
-          <li @click="$router.push('/profile')">Профиль</li>
-          <li @click="$router.push('/settings')">Настройки</li>
-          <li @click="logout">Выйти</li>
-        </ul>
+      
+      <!-- User Menu with Dropdown -->
+      <div class="user-menu">
+        <button 
+          class="user-button" 
+          :class="{ active: dropdownOpen }"
+          @click="toggleDropdown"
+        >
+          Привет, {{ currentUser.name }}
+          <span class="badge">
+            {{ displayPlan }}
+          </span>
+        </button>
+        <div 
+          v-if="dropdownOpen" 
+          class="dropdown-menu show"
+          @click.stop
+        >
+          <ul>
+            <li @click="$router.push('/settings')">⚙️ Настройки</li>
+            <li @click="logout">🚪 Выйти</li>
+          </ul>
+        </div>
       </div>
     </div>
 
@@ -98,6 +113,13 @@ export default {
   mounted() {
     window.addEventListener("open-login-modal", () => {
       this.openModal("login");
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (event) => {
+      if (!this.$el.contains(event.target)) {
+        this.dropdownOpen = false;
+      }
     });
   },
 
@@ -243,16 +265,6 @@ export default {
 };
 </script>
 
-
 <style scoped>
 @import "@/assets/css/UserSection.css";
-
-.badge {
-  margin-left: 8px;
-  background-color: #9333ea;
-  color: white;
-  padding: 2px 6px;
-  border-radius: 8px;
-  font-size: 0.7rem;
-}
 </style>
