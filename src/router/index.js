@@ -5,6 +5,7 @@ import store from '@/store';
 import HomePage from '@/views/HomePage.vue';
 import ProfilePage from '@/views/ProfilePage.vue';
 import AcedSettings from '@/components/Main/AcedSettings.vue';
+import VocabularyPage from '@/views/VocabularyPage.vue';
 
 // ✅ Profile Sub-Pages
 import MainPage from '@/components/Profile/MainPage.vue';
@@ -16,6 +17,7 @@ import HomeworkPage from '@/components/Profile/HomeworkPage.vue';
 import DiaryPage from '@/components/Profile/DiaryPage.vue';
 import CataloguePage from '@/views/CataloguePage.vue';
 import TestsPage from '@/components/Profile/TestsPage.vue';
+import VocabularyTopics from '@/components/Profile/VocabularyTopics.vue';
 
 // ✅ Payments
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
@@ -35,6 +37,12 @@ const routes = [
     path: '/settings',
     name: 'SettingsPage',
     component: AcedSettings,
+  },
+  {
+    path: '/vocabulary',
+    name: 'VocabularyPage',
+    component: VocabularyPage,
+    meta: { requiresAuth: true, title: 'Словарь' }
   },
   {
     path: '/profile',
@@ -170,6 +178,32 @@ const routes = [
         props: true,
         meta: { title: 'Прохождение теста' }
       },
+      { 
+        path: 'vocabulary', 
+        name: 'VocabularyTopics', 
+        component: VocabularyTopics,
+        meta: { title: 'Словарные темы' }
+      },
+      { 
+        path: 'vocabulary/:topicId', 
+        name: 'VocabularyTopicDetail', 
+        component: VocabularyTopics, 
+        props: route => ({
+          topicId: route.params.topicId,
+          topicName: route.query.name,
+          subject: route.query.subject
+        }),
+        meta: { title: 'Словарная тема' },
+        beforeEnter: (to, from, next) => {
+          if (!to.params.topicId || to.params.topicId === 'null' || to.params.topicId === 'undefined') {
+            console.error('❌ Invalid vocabulary topic ID:', to.params.topicId);
+            next({ name: 'VocabularyTopics' });
+          } else {
+            console.log('✅ Valid vocabulary topic ID:', to.params.topicId);
+            next();
+          }
+        }
+      },
     ],
   },
   {
@@ -263,6 +297,16 @@ router.beforeEach(async (to, from, next) => {
     });
   }
 
+  // ✅ NEW: Vocabulary route validation
+  if (to.name && to.name.includes('Vocabulary') && to.params.topicId) {
+    console.log('📖 Vocabulary route navigation:', {
+      route: to.name,
+      topicId: to.params.topicId,
+      topicName: to.query.name,
+      from: from.path
+    });
+  }
+
   next();
 });
 
@@ -275,6 +319,16 @@ router.afterEach((to, from) => {
   // Enhanced logging for homework routes
   if (to.name && to.name.includes('Homework')) {
     console.log(`📚 Homework navigation completed:`, {
+      route: to.name,
+      path: to.path,
+      params: to.params,
+      query: to.query,
+      from: from.path
+    });
+  } 
+  // Enhanced logging for vocabulary routes
+  else if (to.name && to.name.includes('Vocabulary')) {
+    console.log(`📖 Vocabulary navigation completed:`, {
       route: to.name,
       path: to.path,
       params: to.params,
@@ -313,6 +367,13 @@ router.onError((err) => {
     // Could redirect to homework list as fallback
     // router.push({ name: 'HomeworkList' });
   }
+  
+  // Handle navigation errors specifically for vocabulary routes
+  if (err.message.includes('vocabulary') || err.message.includes('Vocabulary')) {
+    console.error('📖 Vocabulary route error:', err);
+    // Could redirect to vocabulary topics as fallback
+    // router.push({ name: 'VocabularyTopics' });
+  }
 });
 
 // ✅ Debug navigation failures with enhanced logging
@@ -323,6 +384,10 @@ router.isReady().then(() => {
   console.log('  - /profile/homeworks/:id (flexible)');
   console.log('  - /profile/homework/lesson/:lessonId (specific lesson)');
   console.log('  - /profile/homework/standalone/:homeworkId (specific standalone)');
+  console.log('📖 Available vocabulary routes:');
+  console.log('  - /vocabulary (main vocabulary page)');
+  console.log('  - /profile/vocabulary (vocabulary topics in profile)');
+  console.log('  - /profile/vocabulary/:topicId (specific vocabulary topic)');
 }).catch(err => {
   console.error('❌ Router initialization failed:', err);
 });
