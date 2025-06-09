@@ -1,28 +1,45 @@
-<template>
+getSelectedLanguageName,
+      getLanguageNameRu,
+      getTopicNameRu,
+      toggleDifficulty,    const filteredTopics = computed(() => {
+      let filtered = [...topics.value]; // Create a copy to avoid mutating original
+      
+      if (searchQuery.value && searchQuery.value.trim()) {
+        const query = searchQuery.value.toLowerCase().trim();
+        filtered = filtered.filter(topic =>
+          topic.name.toLowerCase().includes(query) ||
+          getTopicNameRu(topic.name).toLowerCase().includes(query) ||
+          getTopicDescription(topic.name).toLowerCase().includes(query)
+        );
+      }
+      
+      if (selectedDifficulty.value) {
+        filtered = filtered.filter(topic => 
+          (topic.difficulty || 'beginner') === selectedDifficulty.value<template>
     <div class="vocabulary-page">
       <!-- Header Section -->
       <header class="page-header">
         <h1 class="page-title">
-          <span class="title-text">Vocabulary Mastery</span>
+          <span class="title-text">Изучение Словаря</span>
           <div class="title-decoration"></div>
         </h1>
-        <p class="page-subtitle">Master languages through intelligent vocabulary building</p>
+        <p class="page-subtitle">Изучайте языки через умное построение словарного запаса</p>
         
         <!-- Quick Stats -->
         <div class="quick-stats" v-if="stats">
           <div class="stat-card">
             <div class="stat-number">{{ stats.totalWords || 0 }}</div>
-            <div class="stat-label">Words Total</div>
-            <div class="stat-trend">{{ stats.byLanguage?.length || 0 }} languages</div>
+            <div class="stat-label">Всего слов</div>
+            <div class="stat-trend">{{ stats.byLanguage?.length || 0 }} языков</div>
           </div>
           <div class="stat-card">
             <div class="stat-number">{{ userProgress?.wordsLearned || 0 }}</div>
-            <div class="stat-label">Words Learned</div>
+            <div class="stat-label">Изучено слов</div>
             <div class="stat-trend">{{ getProgressTrend() }}</div>
           </div>
           <div class="stat-card">
             <div class="stat-number">{{ userProgress?.accuracy || 0 }}%</div>
-            <div class="stat-label">Accuracy</div>
+            <div class="stat-label">Точность</div>
             <div class="stat-trend">{{ getAccuracyTrend() }}</div>
           </div>
         </div>
@@ -31,22 +48,22 @@
       <!-- Loading State -->
       <div v-if="loading" class="loading-container">
         <div class="spinner"></div>
-        <p>Loading vocabulary data...</p>
+        <p>Загрузка данных словаря...</p>
       </div>
 
       <!-- Error State -->
       <div v-else-if="error" class="error-container">
         <div class="error-icon">😔</div>
-        <h3>Something went wrong</h3>
+        <h3>Что-то пошло не так</h3>
         <p>{{ error }}</p>
-        <button @click="fetchData" class="retry-btn">Try Again</button>
+        <button @click="fetchData" class="retry-btn">Попробовать снова</button>
       </div>
 
       <!-- Main Content -->
-      <div v-else>
+      <div v-else class="main-content">
         <!-- Language Cards Grid -->
-        <section class="languages-section">
-          <h2 class="section-title">Available Languages</h2>
+        <section class="languages-section" v-if="!selectedLanguage">
+          <h2 class="section-title">Доступные языки</h2>
           <div class="languages-grid">
             <div 
               v-for="language in languages" 
@@ -55,7 +72,7 @@
               :class="{ popular: language.isPopular }"
               @click="selectLanguage(language)"
             >
-              <div v-if="language.isPopular" class="language-badge">Most Popular</div>
+              <div v-if="language.isPopular" class="language-badge">Популярный</div>
               
               <!-- Progress Ring -->
               <div class="progress-ring">
@@ -75,11 +92,11 @@
               
               <div class="language-flag">{{ getLanguageFlag(language.code) }}</div>
               <div class="language-info">
-                <h3 class="language-name">{{ language.name }}</h3>
-                <p class="language-name-ru">{{ language.nameRu }}</p>
+                <h3 class="language-name">{{ language.nameRu || language.name }}</h3>
+                <p class="language-name-en">{{ language.name }}</p>
                 <div class="language-stats">
-                  <span class="word-count">{{ getLanguageWordCount(language.code) }} words</span>
-                  <span class="topic-count">{{ getLanguageTopicCount(language.code) }} topics</span>
+                  <span class="word-count">{{ getLanguageWordCount(language.code) }} слов</span>
+                  <span class="topic-count">{{ getLanguageTopicCount(language.code) }} тем</span>
                 </div>
               </div>
               <div class="card-arrow">→</div>
@@ -91,14 +108,14 @@
         <section v-if="selectedLanguage" class="topics-section">
           <div class="section-header">
             <button @click="goBackToLanguages" class="back-btn">
-              ← Back to Languages
+              ← Назад к языкам
             </button>
             
             <div class="language-header">
               <div class="language-flag-large">{{ getLanguageFlag(selectedLanguage) }}</div>
               <div class="language-info-detailed">
-                <h2 class="selected-language-title">{{ getLanguageName(selectedLanguage) }}</h2>
-                <p class="selected-language-subtitle">Choose a topic to study</p>
+                <h2 class="selected-language-title">{{ getSelectedLanguageName() }}</h2>
+                <p class="selected-language-subtitle">Выберите тему для изучения</p>
               </div>
             </div>
           </div>
@@ -109,7 +126,7 @@
               <input
                 v-model="searchQuery"
                 type="text"
-                placeholder="🔍 Search topics..."
+                placeholder="🔍 Поиск тем..."
                 class="search-input"
               />
             </div>
@@ -118,7 +135,7 @@
               <button
                 v-for="difficulty in difficultyLevels"
                 :key="difficulty.value"
-                @click="selectedDifficulty = selectedDifficulty === difficulty.value ? '' : difficulty.value"
+                @click="toggleDifficulty(difficulty.value)"
                 class="filter-btn"
                 :class="{ active: selectedDifficulty === difficulty.value }"
               >
@@ -130,7 +147,7 @@
           <!-- Topics Loading -->
           <div v-if="topicsLoading" class="loading-container">
             <div class="spinner"></div>
-            <p>Loading topics...</p>
+            <p>Загрузка тем...</p>
           </div>
 
           <!-- Topics Grid -->
@@ -148,27 +165,27 @@
               <div class="topic-icon">{{ getTopicIcon(topic.name) }}</div>
               
               <div class="topic-content">
-                <h3 class="topic-name">{{ topic.name }}</h3>
+                <h3 class="topic-name">{{ getTopicNameRu(topic.name) }}</h3>
                 <p class="topic-description">{{ getTopicDescription(topic.name) }}</p>
                 
                 <div class="topic-stats">
                   <div class="stat-badge">
                     <span class="stat-icon">📝</span>
-                    <span>{{ topic.wordCount }} words</span>
+                    <span>{{ topic.wordCount || 0 }} слов</span>
                   </div>
                   <div class="stat-badge">
                     <span class="stat-icon">📚</span>
-                    <span>{{ topic.subtopicCount }} sections</span>
+                    <span>{{ topic.subtopicCount || 1 }} разделов</span>
                   </div>
-                  <div class="stat-badge difficulty" :class="topic.difficulty">
-                    <span class="stat-icon">{{ getDifficultyIcon(topic.difficulty) }}</span>
-                    <span>{{ getDifficultyLabel(topic.difficulty) }}</span>
+                  <div class="stat-badge difficulty" :class="topic.difficulty || 'beginner'">
+                    <span class="stat-icon">{{ getDifficultyIcon(topic.difficulty || 'beginner') }}</span>
+                    <span>{{ getDifficultyLabel(topic.difficulty || 'beginner') }}</span>
                   </div>
                 </div>
               </div>
               
               <!-- Progress Bar -->
-              <div class="progress-container" v-if="getTopicProgress(topic)">
+              <div class="progress-container" v-if="getTopicProgress(topic) > 0">
                 <div class="progress-bar-topic">
                   <div 
                     class="progress-fill" 
@@ -180,13 +197,13 @@
               
               <!-- Status Badge -->
               <div class="status-badge" v-if="isTopicCompleted(topic)">
-                ✅ Completed
+                ✅ Завершено
               </div>
               <div class="status-badge in-progress" v-else-if="isTopicInProgress(topic)">
-                📖 In Progress
+                📖 В процессе
               </div>
               <div class="status-badge new" v-else>
-                🆕 New
+                🆕 Новое
               </div>
               
               <div class="card-arrow">→</div>
@@ -196,53 +213,53 @@
           <!-- No Topics Found -->
           <div v-else class="empty-state">
             <div class="empty-icon">📚</div>
-            <h3>No topics found</h3>
+            <h3>Темы не найдены</h3>
             <p v-if="searchQuery">
-              Try changing your search query or reset filters
+              Попробуйте изменить поисковый запрос или сбросить фильтры
             </p>
             <p v-else>
-              No topics available for {{ getLanguageName(selectedLanguage) }} yet
+              Пока нет доступных тем для {{ getSelectedLanguageName() }}
             </p>
             <button v-if="searchQuery || selectedDifficulty" @click="clearFilters" class="clear-filters-btn">
-              Clear Filters
+              Очистить фильтры
             </button>
           </div>
         </section>
 
         <!-- Quick Actions (only show when no language selected) -->
         <section class="quick-actions" v-if="!selectedLanguage">
-          <h2 class="section-title">Quick Actions</h2>
+          <h2 class="section-title">Быстрые действия</h2>
           <div class="action-cards">
             <div class="action-card" @click="reviewWords" v-if="wordsForReview > 0">
               <div class="action-count">{{ wordsForReview }}</div>
               <div class="action-icon">📚</div>
-              <h4>Review Due</h4>
-              <p>Practice words you learned recently</p>
+              <h4>Повторить</h4>
+              <p>Практика недавно изученных слов</p>
             </div>
             
             <div class="action-card" @click="startRandomQuiz">
               <div class="action-icon">🎯</div>
-              <h4>Daily Challenge</h4>
-              <p>Complete today's vocabulary quiz</p>
+              <h4>Дневной вызов</h4>
+              <p>Выполните сегодняшний словарный тест</p>
             </div>
             
             <div class="action-card" @click="viewProgress">
               <div class="action-icon">📊</div>
-              <h4>Progress Report</h4>
-              <p>View your learning analytics</p>
+              <h4>Отчет о прогрессе</h4>
+              <p>Посмотрите свою аналитику обучения</p>
             </div>
             
             <div class="action-card" @click="viewAchievements">
               <div class="action-icon">🏆</div>
-              <h4>Achievements</h4>
-              <p>Check your learning milestones</p>
+              <h4>Достижения</h4>
+              <p>Проверьте свои учебные достижения</p>
             </div>
           </div>
         </section>
 
         <!-- Recent Activity (only show when no language selected) -->
         <section class="recent-activity" v-if="!selectedLanguage && recentWords.length > 0">
-          <h2 class="section-title">Recently Added Words</h2>
+          <h2 class="section-title">Недавно добавленные слова</h2>
           <div class="recent-words">
             <div 
               v-for="word in recentWords" 
@@ -253,7 +270,7 @@
               <div class="word-main">{{ word.word }}</div>
               <div class="word-translation">{{ word.translation }}</div>
               <div class="word-meta">
-                <span class="word-language">{{ getLanguageName(word.language) }}</span>
+                <span class="word-language">{{ getLanguageNameRu(word.language) }}</span>
                 <span class="word-topic">{{ word.topic }}</span>
               </div>
             </div>
@@ -270,67 +287,67 @@
       <div v-if="showModal" class="modal-overlay" @click="closeModalOnOverlay">
         <div class="add-word-modal">
           <div class="modal-header">
-            <h3>Add New Word</h3>
+            <h3>Добавить новое слово</h3>
             <button class="close-btn" @click="closeAddWordModal">×</button>
           </div>
           <form class="add-word-form" @submit.prevent="submitWord">
             <div class="form-row">
               <div class="form-group">
-                <label for="word">Word</label>
+                <label for="word">Слово</label>
                 <input 
                   type="text" 
                   id="word" 
                   v-model="newWord.word" 
-                  placeholder="Enter word" 
+                  placeholder="Введите слово" 
                   required
                 >
               </div>
               <div class="form-group">
-                <label for="translation">Translation</label>
+                <label for="translation">Перевод</label>
                 <input 
                   type="text" 
                   id="translation" 
                   v-model="newWord.translation" 
-                  placeholder="Enter translation" 
+                  placeholder="Введите перевод" 
                   required
                 >
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label for="language">Language</label>
+                <label for="language">Язык</label>
                 <select id="language" v-model="newWord.language" required>
-                  <option value="">Select language</option>
+                  <option value="">Выберите язык</option>
                   <option v-for="lang in languages" :key="lang.code" :value="lang.code">
-                    {{ lang.name }}
+                    {{ lang.nameRu || lang.name }}
                   </option>
                 </select>
               </div>
               <div class="form-group">
-                <label for="topic">Topic</label>
+                <label for="topic">Тема</label>
                 <input 
                   type="text" 
                   id="topic" 
                   v-model="newWord.topic" 
-                  placeholder="e.g., Travel, Business"
+                  placeholder="например, Путешествия, Бизнес"
                   required
                 >
               </div>
             </div>
             <div class="form-group">
-              <label for="subtopic">Subtopic</label>
+              <label for="subtopic">Подтема</label>
               <input 
                 type="text" 
                 id="subtopic" 
                 v-model="newWord.subtopic" 
-                placeholder="e.g., At the Airport"
+                placeholder="например, В аэропорту"
                 required
               >
             </div>
             <div class="form-actions">
-              <button type="button" class="btn-secondary" @click="closeAddWordModal">Cancel</button>
+              <button type="button" class="btn-secondary" @click="closeAddWordModal">Отмена</button>
               <button type="submit" class="btn-primary" :disabled="!isFormValid || submitting">
-                {{ submitting ? 'Adding...' : 'Add Word' }}
+                {{ submitting ? 'Добавление...' : 'Добавить слово' }}
               </button>
             </div>
           </form>
@@ -386,9 +403,9 @@ export default {
 
     // Constants
     const difficultyLevels = [
-      { value: 'beginner', label: 'Beginner', icon: '🟢' },
-      { value: 'intermediate', label: 'Intermediate', icon: '🟡' },
-      { value: 'advanced', label: 'Advanced', icon: '🔴' }
+      { value: 'beginner', label: 'Начальный', icon: '🟢' },
+      { value: 'intermediate', label: 'Средний', icon: '🟡' },
+      { value: 'advanced', label: 'Продвинутый', icon: '🔴' }
     ];
 
     // Form data
@@ -414,18 +431,21 @@ export default {
     });
 
     const filteredTopics = computed(() => {
-      let filtered = topics.value;
+      let filtered = [...topics.value]; // Create a copy to avoid mutating original
       
-      if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase();
+      if (searchQuery.value && searchQuery.value.trim()) {
+        const query = searchQuery.value.toLowerCase().trim();
         filtered = filtered.filter(topic =>
           topic.name.toLowerCase().includes(query) ||
+          getTopicNameRu(topic.name).toLowerCase().includes(query) ||
           getTopicDescription(topic.name).toLowerCase().includes(query)
         );
       }
       
       if (selectedDifficulty.value) {
-        filtered = filtered.filter(topic => topic.difficulty === selectedDifficulty.value);
+        filtered = filtered.filter(topic => 
+          (topic.difficulty || 'beginner') === selectedDifficulty.value
+        );
       }
       
       return filtered;
@@ -451,6 +471,17 @@ export default {
     const getLanguageName = (code) => {
       const language = languages.value.find(l => l.code === code);
       return language ? language.name : code;
+    };
+
+    const getLanguageNameRu = (code) => {
+      const language = languages.value.find(l => l.code === code);
+      return language ? (language.nameRu || language.name) : code;
+    };
+
+    const getSelectedLanguageName = () => {
+      if (!selectedLanguage.value) return '';
+      const language = languages.value.find(l => l.code === selectedLanguage.value);
+      return language ? (language.nameRu || language.name) : selectedLanguage.value;
     };
 
     const getLanguageColor = (code) => {
@@ -488,45 +519,94 @@ export default {
     };
 
     const getProgressTrend = () => {
-      if (!userProgress.value) return 'Getting started';
+      if (!userProgress.value) return 'Начинаем изучение';
       return userProgress.value.weeklyGrowth > 0 ? 
-        `+${userProgress.value.weeklyGrowth} this week` : 
-        'Keep practicing';
+        `+${userProgress.value.weeklyGrowth} на этой неделе` : 
+        'Продолжайте практиковаться';
     };
 
     const getAccuracyTrend = () => {
-      if (!userProgress.value) return 'No data yet';
+      if (!userProgress.value) return 'Пока нет данных';
       return userProgress.value.accuracyTrend > 0 ? 
-        `+${userProgress.value.accuracyTrend}% improved` : 
-        'Stay consistent';
+        `+${userProgress.value.accuracyTrend}% улучшение` : 
+        'Будьте последовательны';
     };
 
     // Topic-related methods
     const getTopicIcon = (topicName) => {
       const icons = {
-        'Travel': '✈️', 'Business': '💼', 'Food': '🍽️', 'Family': '👨‍👩‍👧‍👦',
-        'Education': '🎓', 'Health': '🏥', 'Technology': '💻', 'Sports': '⚽',
-        'Music': '🎵', 'Art': '🎨', 'Nature': '🌿', 'Animals': '🐾',
-        'Transportation': '🚗', 'Shopping': '🛍️', 'Weather': '🌤️',
-        'Time': '⏰', 'Colors': '🌈', 'Numbers': '🔢', 'Daily Life': '🏠'
+        'Travel': '✈️', 'Путешествия': '✈️',
+        'Business': '💼', 'Бизнес': '💼', 
+        'Food': '🍽️', 'Еда': '🍽️',
+        'Family': '👨‍👩‍👧‍👦', 'Семья': '👨‍👩‍👧‍👦',
+        'Education': '🎓', 'Образование': '🎓',
+        'Health': '🏥', 'Здоровье': '🏥',
+        'Technology': '💻', 'Технологии': '💻',
+        'Sports': '⚽', 'Спорт': '⚽',
+        'Music': '🎵', 'Музыка': '🎵',
+        'Art': '🎨', 'Искусство': '🎨',
+        'Nature': '🌿', 'Природа': '🌿',
+        'Animals': '🐾', 'Животные': '🐾',
+        'Transportation': '🚗', 'Транспорт': '🚗',
+        'Shopping': '🛍️', 'Покупки': '🛍️',
+        'Weather': '🌤️', 'Погода': '🌤️',
+        'Time': '⏰', 'Время': '⏰',
+        'Colors': '🌈', 'Цвета': '🌈',
+        'Numbers': '🔢', 'Числа': '🔢',
+        'Daily Life': '🏠', 'Повседневная жизнь': '🏠'
       };
       return icons[topicName] || '📖';
     };
 
+    const getTopicNameRu = (topicName) => {
+      const translations = {
+        'Travel': 'Путешествия',
+        'Business': 'Бизнес',
+        'Food': 'Еда',
+        'Family': 'Семья',
+        'Education': 'Образование',
+        'Health': 'Здоровье',
+        'Technology': 'Технологии',
+        'Sports': 'Спорт',
+        'Music': 'Музыка',
+        'Art': 'Искусство',
+        'Nature': 'Природа',
+        'Animals': 'Животные',
+        'Transportation': 'Транспорт',
+        'Shopping': 'Покупки',
+        'Weather': 'Погода',
+        'Time': 'Время',
+        'Colors': 'Цвета',
+        'Numbers': 'Числа',
+        'Daily Life': 'Повседневная жизнь'
+      };
+      return translations[topicName] || topicName;
+    };
+
     const getTopicDescription = (topicName) => {
       const descriptions = {
-        'Travel': 'Words for travel and tourism',
-        'Business': 'Business vocabulary and terms',
-        'Food': 'Food, drinks and cooking',
-        'Family': 'Family, relatives and relationships',
-        'Education': 'Education, school, university',
-        'Health': 'Health, medicine, body parts',
-        'Technology': 'Technology, computers, internet',
-        'Sports': 'Sports, games, physical activity',
-        'Music': 'Music, instruments, genres',
-        'Art': 'Art, creativity, culture'
+        'Travel': 'Слова для путешествий и туризма',
+        'Путешествия': 'Слова для путешествий и туризма',
+        'Business': 'Деловая лексика и термины',
+        'Бизнес': 'Деловая лексика и термины',
+        'Food': 'Еда, напитки и приготовление пищи',
+        'Еда': 'Еда, напитки и приготовление пищи',
+        'Family': 'Семья, родственники и отношения',
+        'Семья': 'Семья, родственники и отношения',
+        'Education': 'Образование, школа, университет',
+        'Образование': 'Образование, школа, университет',
+        'Health': 'Здоровье, медицина, части тела',
+        'Здоровье': 'Здоровье, медицина, части тела',
+        'Technology': 'Технологии, компьютеры, интернет',
+        'Технологии': 'Технологии, компьютеры, интернет',
+        'Sports': 'Спорт, игры, физическая активность',
+        'Спорт': 'Спорт, игры, физическая активность',
+        'Music': 'Музыка, инструменты, жанры',
+        'Музыка': 'Музыка, инструменты, жанры',
+        'Art': 'Искусство, творчество, культура',
+        'Искусство': 'Искусство, творчество, культура'
       };
-      return descriptions[topicName] || 'Learn new words and expressions';
+      return descriptions[topicName] || 'Изучайте новые слова и выражения';
     };
 
     const getDifficultyIcon = (difficulty) => {
@@ -535,7 +615,11 @@ export default {
     };
 
     const getDifficultyLabel = (difficulty) => {
-      const labels = { beginner: 'Easy', intermediate: 'Medium', advanced: 'Hard' };
+      const labels = { 
+        beginner: 'Легкий', 
+        intermediate: 'Средний', 
+        advanced: 'Сложный' 
+      };
       return labels[difficulty] || difficulty;
     };
 
@@ -558,7 +642,7 @@ export default {
     };
 
     const selectLanguage = async (language) => {
-      console.log('🌍 Selecting language:', language.code);
+      console.log('🌍 Выбран язык:', language.code);
       selectedLanguage.value = language.code;
       await fetchTopics(language.code);
     };
@@ -571,25 +655,35 @@ export default {
     };
 
     const selectTopic = (topic) => {
-      console.log('📖 Selecting topic:', topic.name);
-      showToast(`Selected: ${topic.name} (${topic.wordCount} words)`);
+      console.log('📖 Выбрана тема:', topic.name);
+      showToast(`Выбрано: ${getTopicNameRu(topic.name)} (${topic.wordCount || 0} слов)`);
+    };
+
+    const toggleDifficulty = (difficulty) => {
+      if (selectedDifficulty.value === difficulty) {
+        selectedDifficulty.value = '';
+      } else {
+        selectedDifficulty.value = difficulty;
+      }
+      console.log('🎯 Фильтр сложности:', selectedDifficulty.value || 'сброшен');
     };
 
     const clearFilters = () => {
       searchQuery.value = '';
       selectedDifficulty.value = '';
+      showToast('Фильтры очищены');
     };
 
-    const reviewWords = () => showToast('Review feature coming soon!');
-    const startRandomQuiz = () => showToast('Quiz feature coming soon!');
-    const viewProgress = () => showToast('Progress feature coming soon!');
-    const viewAchievements = () => showToast('Achievements feature coming soon!');
-    const viewWord = (word) => showToast(`Viewing: ${word.word} - ${word.translation}`);
+    const reviewWords = () => showToast('Функция повторения скоро появится!');
+    const startRandomQuiz = () => showToast('Функция викторины скоро появится!');
+    const viewProgress = () => showToast('Функция прогресса скоро появится!');
+    const viewAchievements = () => showToast('Функция достижений скоро появится!');
+    const viewWord = (word) => showToast(`Просмотр: ${word.word} - ${word.translation}`);
 
     // Modal methods
     const openAddWordModal = () => {
       if (!currentUser.value) {
-        showToast('Please log in to add words', 'error');
+        showToast('Пожалуйста, войдите в систему для добавления слов', 'error');
         return;
       }
       showModal.value = true;
@@ -628,7 +722,7 @@ export default {
           examples: [], synonyms: [], antonyms: []
         };
         
-        console.log('📝 Adding word:', wordData);
+        console.log('📝 Добавление слова:', wordData);
         const response = await addVocabularyWord(wordData);
         
         recentWords.value.unshift({
@@ -643,13 +737,13 @@ export default {
           recentWords.value = recentWords.value.slice(0, 10);
         }
         
-        showToast('Word added successfully!');
+        showToast('Слово успешно добавлено!');
         closeAddWordModal();
         await fetchStats();
         
       } catch (error) {
-        console.error('❌ Error adding word:', error);
-        showToast('Failed to add word. Please try again.', 'error');
+        console.error('❌ Ошибка добавления слова:', error);
+        showToast('Не удалось добавить слово. Попробуйте еще раз.', 'error');
       } finally {
         submitting.value = false;
       }
@@ -674,7 +768,12 @@ export default {
           { code: 'spanish', name: 'Spanish', nameRu: 'Испанский', isPopular: true },
           { code: 'french', name: 'French', nameRu: 'Французский', isPopular: true },
           { code: 'german', name: 'German', nameRu: 'Немецкий', isPopular: false },
-          { code: 'chinese', name: 'Chinese', nameRu: 'Китайский', isPopular: false }
+          { code: 'chinese', name: 'Chinese', nameRu: 'Китайский', isPopular: false },
+          { code: 'arabic', name: 'Arabic', nameRu: 'Арабский', isPopular: false },
+          { code: 'japanese', name: 'Japanese', nameRu: 'Японский', isPopular: false },
+          { code: 'korean', name: 'Korean', nameRu: 'Корейский', isPopular: false },
+          { code: 'uzbek', name: 'Uzbek', nameRu: 'Узбекский', isPopular: false },
+          { code: 'russian', name: 'Russian', nameRu: 'Русский', isPopular: false }
         ];
       }
     };
@@ -773,7 +872,7 @@ export default {
         
       } catch (err) {
         console.error('❌ Error fetching vocabulary data:', err);
-        error.value = 'Failed to load vocabulary data. Please try again.';
+        error.value = 'Не удалось загрузить данные словаря. Попробуйте еще раз.';
       } finally {
         loading.value = false;
       }
@@ -908,12 +1007,20 @@ export default {
   --transition-slow: 0.5s ease;
 }
 
+/* Base styles and layout fixes */
 .vocabulary-page {
   max-width: 1400px;
   margin: 0 auto;
   padding: 32px 24px;
   position: relative;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.main-content {
+  position: relative;
+  z-index: 1;
 }
 
 /* Header Styles */
@@ -921,6 +1028,7 @@ export default {
   text-align: center;
   margin-bottom: 64px;
   position: relative;
+  z-index: 2;
 }
 
 .page-title {
@@ -1057,12 +1165,16 @@ export default {
 /* Languages Section */
 .languages-section {
   margin-bottom: 80px;
+  position: relative;
+  z-index: 1;
 }
 
 .languages-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 32px;
+  position: relative;
+  z-index: 1;
 }
 
 .language-card {
@@ -1225,10 +1337,15 @@ export default {
 /* Topics Section */
 .topics-section {
   margin-bottom: 80px;
+  position: relative;
+  z-index: 1;
+  min-height: 400px;
 }
 
 .section-header {
   margin-bottom: 40px;
+  position: relative;
+  z-index: 2;
 }
 
 .back-btn {
