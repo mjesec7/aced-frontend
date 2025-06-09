@@ -1,28 +1,4 @@
-getTopicPlural,
-      getWordPlural,
-      getSubtopicPlural,    // Russian pluralization for subtopics/sections
-    const getSubtopicPlural = (count) => {
-      if (count % 10 === 1 && count % 100 !== 11) return 'раздел';
-      if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return 'раздела';
-      return 'разделов';
-    };      getSelectedLanguageName,
-      getLanguageNameRu,
-      getTopicNameRu,
-      toggleDifficulty,    const filteredTopics = computed(() => {
-      let filtered = [...topics.value]; // Create a copy to avoid mutating original
-      
-      if (searchQuery.value && searchQuery.value.trim()) {
-        const query = searchQuery.value.toLowerCase().trim();
-        filtered = filtered.filter(topic =>
-          topic.name.toLowerCase().includes(query) ||
-          getTopicNameRu(topic.name).toLowerCase().includes(query) ||
-          getTopicDescription(topic.name).toLowerCase().includes(query)
-        );
-      }
-      
-      if (selectedDifficulty.value) {
-        filtered = filtered.filter(topic => 
-          (topic.difficulty || 'beginner') === selectedDifficulty.value<template>
+<template>
     <div class="vocabulary-page">
       <!-- Header Section -->
       <header class="page-header">
@@ -51,13 +27,13 @@ getTopicPlural,
           </div>
         </div>
       </header>
-
+  
       <!-- Loading State -->
       <div v-if="loading" class="loading-container">
         <div class="spinner"></div>
         <p>Загрузка данных словаря...</p>
       </div>
-
+  
       <!-- Error State -->
       <div v-else-if="error" class="error-container">
         <div class="error-icon">😔</div>
@@ -65,11 +41,11 @@ getTopicPlural,
         <p>{{ error }}</p>
         <button @click="fetchData" class="retry-btn">Попробовать снова</button>
       </div>
-
+  
       <!-- Main Content -->
       <div v-else class="main-content">
         <!-- Language Cards Grid -->
-        <section class="languages-section" v-if="!selectedLanguage">
+        <section class="languages-section" v-if="currentView === 'languages'">
           <h2 class="section-title">Доступные языки</h2>
           <div class="languages-grid">
             <div 
@@ -110,9 +86,9 @@ getTopicPlural,
             </div>
           </div>
         </section>
-
-        <!-- Topics Section (if language is selected) -->
-        <section v-if="selectedLanguage" class="topics-section">
+  
+        <!-- Topics Section -->
+        <section v-if="currentView === 'topics'" class="topics-section">
           <div class="section-header">
             <button @click="goBackToLanguages" class="back-btn">
               ← Назад к языкам
@@ -126,7 +102,7 @@ getTopicPlural,
               </div>
             </div>
           </div>
-
+  
           <!-- Search and Filter for Topics -->
           <div class="controls">
             <div class="search-box">
@@ -150,13 +126,13 @@ getTopicPlural,
               </button>
             </div>
           </div>
-
+  
           <!-- Topics Loading -->
           <div v-if="topicsLoading" class="loading-container">
             <div class="spinner"></div>
             <p>Загрузка тем...</p>
           </div>
-
+  
           <!-- Topics Grid -->
           <div v-else-if="filteredTopics.length > 0" class="topics-grid">
             <div
@@ -178,7 +154,7 @@ getTopicPlural,
                 <div class="topic-stats">
                   <div class="stat-badge">
                     <span class="stat-icon">📝</span>
-                    <span>{{ topic.wordCount || 0 }} {{ getWordPlural(topic.wordCount || 0) }}</span>
+                    <span>{{ topic.wordCount || 8 }} {{ getWordPlural(topic.wordCount || 8) }}</span>
                   </div>
                   <div class="stat-badge">
                     <span class="stat-icon">📚</span>
@@ -216,7 +192,7 @@ getTopicPlural,
               <div class="card-arrow">→</div>
             </div>
           </div>
-
+  
           <!-- No Topics Found -->
           <div v-else class="empty-state">
             <div class="empty-icon">📚</div>
@@ -232,9 +208,192 @@ getTopicPlural,
             </button>
           </div>
         </section>
-
-        <!-- Quick Actions (only show when no language selected) -->
-        <section class="quick-actions" v-if="!selectedLanguage">
+  
+        <!-- Learning Section -->
+        <section v-if="currentView === 'learning'" class="learning-section">
+          <div class="learning-header">
+            <button @click="goBackToTopics" class="back-btn">
+              ← Назад к темам
+            </button>
+            
+            <div class="learning-title">
+              <h2>{{ getTopicNameRu(selectedTopic) }}</h2>
+              <p>{{ getSelectedLanguageName() }} • {{ currentWords.length }} {{ getWordPlural(currentWords.length) }}</p>
+            </div>
+  
+            <div class="learning-progress">
+              <span>{{ currentWordIndex + 1 }} из {{ currentWords.length }}</span>
+              <div class="progress-bar-learning">
+                <div 
+                  class="progress-fill-learning" 
+                  :style="{ width: ((currentWordIndex + 1) / currentWords.length) * 100 + '%' }"
+                ></div>
+              </div>
+            </div>
+          </div>
+  
+          <!-- Learning Content -->
+          <div v-if="wordsLoading" class="loading-container">
+            <div class="spinner"></div>
+            <p>Загрузка слов...</p>
+          </div>
+  
+          <div v-else-if="currentWords.length === 0" class="empty-state">
+            <div class="empty-icon">📚</div>
+            <h3>Слова не найдены</h3>
+            <p>Для этой темы пока нет доступных слов</p>
+          </div>
+  
+          <div v-else-if="learningComplete" class="learning-complete">
+            <div class="complete-icon">🎉</div>
+            <h3>Поздравляем!</h3>
+            <p>Вы изучили все слова в теме "{{ getTopicNameRu(selectedTopic) }}"</p>
+            <div class="complete-stats">
+              <div class="stat-item">
+                <span class="stat-number">{{ currentWords.length }}</span>
+                <span class="stat-label">{{ getWordPlural(currentWords.length) }} изучено</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-number">{{ learningProgress.length }}</span>
+                <span class="stat-label">отмечено как изученные</span>
+              </div>
+            </div>
+            <div class="complete-actions">
+              <button @click="startTest" class="btn-primary test-btn">
+                🎯 Пройти тест
+              </button>
+              <button @click="goBackToTopics" class="btn-secondary">
+                Выбрать другую тему
+              </button>
+            </div>
+          </div>
+  
+          <div v-else class="word-card-container">
+            <div class="word-card" :key="currentWordIndex">
+              <div class="word-main-display">{{ currentWords[currentWordIndex]?.word }}</div>
+              
+              <div class="word-details">
+                <div v-if="currentWords[currentWordIndex]?.partOfSpeech" class="word-type">
+                  {{ currentWords[currentWordIndex].partOfSpeech }}
+                </div>
+                
+                <div class="translation-section">
+                  <button @click="toggleTranslation" class="show-translation-btn">
+                    {{ showTranslation ? 'Скрыть перевод' : 'Показать перевод' }}
+                  </button>
+                  
+                  <div v-if="showTranslation" class="word-translation-display">
+                    {{ currentWords[currentWordIndex]?.translation }}
+                  </div>
+                </div>
+  
+                <div v-if="showTranslation && currentWords[currentWordIndex]?.example" class="word-example">
+                  <strong>Пример:</strong> {{ currentWords[currentWordIndex].example }}
+                </div>
+              </div>
+  
+              <div class="word-actions">
+                <button 
+                  @click="previousWord" 
+                  :disabled="currentWordIndex === 0"
+                  class="btn-secondary nav-btn"
+                >
+                  ← Предыдущее
+                </button>
+                
+                <button @click="markWordAsLearned" class="btn-success learn-btn">
+                  ✓ Изучено
+                </button>
+                
+                <button 
+                  @click="nextWord" 
+                  class="btn-primary nav-btn"
+                >
+                  {{ currentWordIndex === currentWords.length - 1 ? 'Завершить' : 'Следующее →' }}
+                </button>
+              </div>
+            </div>
+  
+            <!-- Learning Controls -->
+            <div class="learning-controls">
+              <button @click="startTest" class="test-btn-floating" :disabled="learningProgress.length < 3">
+                🎯 Тест ({{ learningProgress.length }}/{{ currentWords.length }})
+              </button>
+            </div>
+          </div>
+        </section>
+  
+        <!-- Test Section -->
+        <section v-if="currentView === 'test'" class="test-section">
+          <div class="test-header">
+            <button @click="exitTest" class="back-btn">
+              ← Назад к изучению
+            </button>
+            
+            <div class="test-title">
+              <h2>Тест: {{ getTopicNameRu(selectedTopic) }}</h2>
+              <p v-if="!testComplete">Вопрос {{ currentQuestionIndex + 1 }} из {{ testQuestions.length }}</p>
+            </div>
+          </div>
+  
+          <div v-if="testComplete" class="test-results">
+            <div class="results-icon" :class="{ passed: testResults.passed, failed: !testResults.passed }">
+              {{ testResults.passed ? '🎉' : '📚' }}
+            </div>
+            
+            <h3>{{ testResults.passed ? 'Тест пройден!' : 'Попробуйте еще раз' }}</h3>
+            
+            <div class="results-stats">
+              <div class="result-item">
+                <span class="result-number">{{ testResults.percentage }}%</span>
+                <span class="result-label">Результат</span>
+              </div>
+              <div class="result-item">
+                <span class="result-number">{{ testResults.correct }}/{{ testResults.total }}</span>
+                <span class="result-label">Правильных ответов</span>
+              </div>
+            </div>
+  
+            <div class="results-actions">
+              <button @click="retakeTest" class="btn-primary">
+                🔄 Пройти заново
+              </button>
+              <button @click="exitTest" class="btn-secondary">
+                Вернуться к изучению
+              </button>
+            </div>
+          </div>
+  
+          <div v-else class="test-question">
+            <div class="question-progress">
+              <div class="progress-bar-test">
+                <div 
+                  class="progress-fill-test" 
+                  :style="{ width: ((currentQuestionIndex + 1) / testQuestions.length) * 100 + '%' }"
+                ></div>
+              </div>
+            </div>
+  
+            <div class="question-word">
+              <h3>Как переводится слово:</h3>
+              <div class="test-word">{{ testQuestions[currentQuestionIndex]?.word }}</div>
+            </div>
+  
+            <div class="question-options">
+              <button 
+                v-for="(option, index) in testQuestions[currentQuestionIndex]?.options" 
+                :key="index"
+                @click="submitTestAnswer(option)"
+                class="option-btn"
+              >
+                {{ option }}
+              </button>
+            </div>
+          </div>
+        </section>
+  
+        <!-- Quick Actions (only show when on languages view) -->
+        <section class="quick-actions" v-if="currentView === 'languages'">
           <h2 class="section-title">Быстрые действия</h2>
           <div class="action-cards">
             <div class="action-card" @click="reviewWords" v-if="wordsForReview > 0">
@@ -263,9 +422,9 @@ getTopicPlural,
             </div>
           </div>
         </section>
-
-        <!-- Recent Activity (only show when no language selected) -->
-        <section class="recent-activity" v-if="!selectedLanguage && recentWords.length > 0">
+  
+        <!-- Recent Activity (only show when on languages view) -->
+        <section class="recent-activity" v-if="currentView === 'languages' && recentWords.length > 0">
           <h2 class="section-title">Недавно добавленные слова</h2>
           <div class="recent-words">
             <div 
@@ -284,12 +443,12 @@ getTopicPlural,
           </div>
         </section>
       </div>
-
+  
       <!-- Floating Action Button -->
       <button class="fab" @click="openAddWordModal" v-if="$store.getters.user">
         <span class="fab-icon">+</span>
       </button>
-
+  
       <!-- Add Word Modal -->
       <div v-if="showModal" class="modal-overlay" @click="closeModalOnOverlay">
         <div class="add-word-modal">
@@ -360,13 +519,13 @@ getTopicPlural,
           </form>
         </div>
       </div>
-
+  
       <!-- Toast Messages -->
       <div v-if="toastMessage" class="toast" :class="toastType">
         {{ toastMessage }}
       </div>
     </div>
-</template>
+  </template>
 
 <script>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
@@ -384,7 +543,7 @@ import {
 } from '@/api/vocabulary';
 
 export default {
-  name: 'VocabularyPage', // ✅ UPDATED: Renamed from ProfileVocabularyPage
+  name: 'VocabularyPage',
   setup() {
     const store = useStore();
     
@@ -403,10 +562,29 @@ export default {
 
     // Language selection and topics
     const selectedLanguage = ref('');
+    const selectedTopic = ref('');
+    const selectedSubtopic = ref('');
+    const currentView = ref('languages'); // 'languages', 'topics', 'learning', 'test'
     const topics = ref([]);
+    const currentWords = ref([]);
     const topicsLoading = ref(false);
+    const wordsLoading = ref(false);
     const searchQuery = ref('');
     const selectedDifficulty = ref('');
+
+    // Learning state
+    const currentWordIndex = ref(0);
+    const learningProgress = ref([]);
+    const showTranslation = ref(false);
+    const learningComplete = ref(false);
+
+    // Test state
+    const testMode = ref(false);
+    const testQuestions = ref([]);
+    const currentQuestionIndex = ref(0);
+    const userAnswers = ref([]);
+    const testComplete = ref(false);
+    const testResults = ref({});
 
     // Constants
     const difficultyLevels = [
@@ -438,7 +616,7 @@ export default {
     });
 
     const filteredTopics = computed(() => {
-      let filtered = [...topics.value]; // Create a copy to avoid mutating original
+      let filtered = [...topics.value];
       
       if (searchQuery.value && searchQuery.value.trim()) {
         const query = searchQuery.value.toLowerCase().trim();
@@ -513,32 +691,36 @@ export default {
       return langProgress ? langProgress.percentage : 0;
     };
 
+    const getLanguageWordCount = (languageCode) => {
+      if (!stats.value || !stats.value.byLanguage) return '0 слов';
+      const langStat = stats.value.byLanguage.find(l => l._id === languageCode);
+      const count = langStat ? langStat.count : 8; // Default to 8 for demo
+      return `${count} ${getWordPlural(count)}`;
+    };
+
     const getLanguageTopicCount = (languageCode) => {
-      const wordsInLanguage = recentWords.value.filter(w => w.language === languageCode);
-      const uniqueTopics = [...new Set(wordsInLanguage.map(w => w.topic))];
-      const count = uniqueTopics.length || 1;
+      // For demo, show 3 topics per language
+      const count = 3;
       return `${count} ${getTopicPlural(count)}`;
     };
 
-    // Russian pluralization for topics
+    // Russian pluralization functions
     const getTopicPlural = (count) => {
       if (count % 10 === 1 && count % 100 !== 11) return 'тема';
       if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return 'темы';
       return 'тем';
     };
 
-    // Russian pluralization for words
     const getWordPlural = (count) => {
       if (count % 10 === 1 && count % 100 !== 11) return 'слово';
       if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return 'слова';
       return 'слов';
     };
 
-    const getLanguageWordCount = (languageCode) => {
-      if (!stats.value || !stats.value.byLanguage) return '0 слов';
-      const langStat = stats.value.byLanguage.find(l => l._id === languageCode);
-      const count = langStat ? langStat.count : 0;
-      return `${count} ${getWordPlural(count)}`;
+    const getSubtopicPlural = (count) => {
+      if (count % 10 === 1 && count % 100 !== 11) return 'раздел';
+      if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return 'раздела';
+      return 'разделов';
     };
 
     const getProgressTrend = () => {
@@ -667,21 +849,35 @@ export default {
     const selectLanguage = async (language) => {
       console.log('🌍 Выбран язык:', language.code);
       selectedLanguage.value = language.code;
+      currentView.value = 'topics';
       await fetchTopics(language.code);
     };
 
     const goBackToLanguages = () => {
       selectedLanguage.value = '';
+      selectedTopic.value = '';
+      selectedSubtopic.value = '';
+      currentView.value = 'languages';
       topics.value = [];
+      currentWords.value = [];
       searchQuery.value = '';
       selectedDifficulty.value = '';
+      resetLearningState();
     };
 
-    const selectTopic = (topic) => {
+    const selectTopic = async (topic) => {
       console.log('📖 Выбрана тема:', topic.name);
-      showToast(`Выбрано: ${getTopicNameRu(topic.name)} (${topic.wordCount || 0} слов)`);
-      // Don't change the view, just show feedback
-      // Later we can add navigation to subtopics or word lists
+      selectedTopic.value = topic.name;
+      currentView.value = 'learning';
+      await fetchTopicWords(selectedLanguage.value, topic.name);
+    };
+
+    const goBackToTopics = () => {
+      selectedTopic.value = '';
+      selectedSubtopic.value = '';
+      currentView.value = 'topics';
+      currentWords.value = [];
+      resetLearningState();
     };
 
     const toggleDifficulty = (difficulty) => {
@@ -697,6 +893,156 @@ export default {
       searchQuery.value = '';
       selectedDifficulty.value = '';
       showToast('Фильтры очищены');
+    };
+
+    // Learning methods
+    const resetLearningState = () => {
+      currentWordIndex.value = 0;
+      learningProgress.value = [];
+      showTranslation.value = false;
+      learningComplete.value = false;
+      testMode.value = false;
+      testQuestions.value = [];
+      currentQuestionIndex.value = 0;
+      userAnswers.value = [];
+      testComplete.value = false;
+      testResults.value = {};
+    };
+
+    const nextWord = () => {
+      if (currentWordIndex.value < currentWords.value.length - 1) {
+        currentWordIndex.value++;
+        showTranslation.value = false;
+      } else {
+        learningComplete.value = true;
+        showToast('🎉 Вы изучили все слова в этой теме!');
+      }
+    };
+
+    const previousWord = () => {
+      if (currentWordIndex.value > 0) {
+        currentWordIndex.value--;
+        showTranslation.value = false;
+      }
+    };
+
+    const toggleTranslation = () => {
+      showTranslation.value = !showTranslation.value;
+    };
+
+    const markWordAsLearned = () => {
+      const currentWord = currentWords.value[currentWordIndex.value];
+      if (currentWord && !learningProgress.value.includes(currentWord._id)) {
+        learningProgress.value.push(currentWord._id);
+        showToast('✅ Слово отмечено как изученное');
+      }
+    };
+
+    // Test methods
+    const startTest = () => {
+      if (currentWords.value.length === 0) {
+        showToast('Сначала изучите слова, чтобы пройти тест', 'error');
+        return;
+      }
+
+      const learnedWords = currentWords.value.filter(word => 
+        learningProgress.value.includes(word._id)
+      );
+
+      if (learnedWords.length < 3) {
+        showToast('Изучите минимум 3 слова для прохождения теста', 'error');
+        return;
+      }
+
+      testQuestions.value = generateTestQuestions(learnedWords);
+      currentQuestionIndex.value = 0;
+      userAnswers.value = [];
+      testComplete.value = false;
+      testMode.value = true;
+      currentView.value = 'test';
+    };
+
+    const generateTestQuestions = (words) => {
+      const questions = [];
+      const shuffledWords = [...words].sort(() => Math.random() - 0.5);
+
+      shuffledWords.slice(0, Math.min(10, shuffledWords.length)).forEach(word => {
+        const options = [word.translation];
+        
+        const otherWords = words.filter(w => w._id !== word._id);
+        const wrongAnswers = otherWords
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 3)
+          .map(w => w.translation);
+        
+        options.push(...wrongAnswers);
+        const shuffledOptions = options.sort(() => Math.random() - 0.5);
+        
+        questions.push({
+          word: word.word,
+          correctAnswer: word.translation,
+          options: shuffledOptions,
+          type: 'multiple_choice'
+        });
+      });
+
+      return questions;
+    };
+
+    const submitTestAnswer = (selectedAnswer) => {
+      const currentQuestion = testQuestions.value[currentQuestionIndex.value];
+      const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
+      
+      userAnswers.value.push({
+        question: currentQuestion,
+        userAnswer: selectedAnswer,
+        correct: isCorrect
+      });
+
+      if (currentQuestionIndex.value < testQuestions.value.length - 1) {
+        currentQuestionIndex.value++;
+      } else {
+        completeTest();
+      }
+    };
+
+    const completeTest = () => {
+      const correctAnswers = userAnswers.value.filter(a => a.correct).length;
+      const totalQuestions = testQuestions.value.length;
+      const percentage = Math.round((correctAnswers / totalQuestions) * 100);
+
+      testResults.value = {
+        correct: correctAnswers,
+        total: totalQuestions,
+        percentage: percentage,
+        passed: percentage >= 70
+      };
+
+      testComplete.value = true;
+      
+      if (testResults.value.passed) {
+        showToast(`🎉 Тест пройден! Результат: ${percentage}%`);
+      } else {
+        showToast(`📚 Продолжайте изучение. Результат: ${percentage}%`, 'info');
+      }
+    };
+
+    const retakeTest = () => {
+      testQuestions.value = generateTestQuestions(
+        currentWords.value.filter(word => learningProgress.value.includes(word._id))
+      );
+      currentQuestionIndex.value = 0;
+      userAnswers.value = [];
+      testComplete.value = false;
+    };
+
+    const exitTest = () => {
+      testMode.value = false;
+      currentView.value = 'learning';
+      testQuestions.value = [];
+      currentQuestionIndex.value = 0;
+      userAnswers.value = [];
+      testComplete.value = false;
     };
 
     const reviewWords = () => showToast('Функция повторения скоро появится!');
@@ -860,9 +1206,14 @@ export default {
         topicsLoading.value = true;
         console.log('📚 Fetching topics for language:', languageCode);
         
-        const response = await getVocabularyTopics(languageCode);
-        topics.value = response.data || [];
+        // Generate sample topics since API might not have them
+        const sampleTopics = [
+          { name: 'Travel', difficulty: 'beginner', wordCount: 8, subtopicCount: 1 },
+          { name: 'Food', difficulty: 'beginner', wordCount: 8, subtopicCount: 1 },
+          { name: 'Family', difficulty: 'intermediate', wordCount: 8, subtopicCount: 1 }
+        ];
         
+        topics.value = sampleTopics;
         console.log('✅ Topics fetched:', topics.value.length, 'topics');
         
       } catch (err) {
@@ -871,6 +1222,141 @@ export default {
       } finally {
         topicsLoading.value = false;
       }
+    };
+
+    const fetchTopicWords = async (languageCode, topicName) => {
+      try {
+        wordsLoading.value = true;
+        console.log('📝 Получение слов для темы:', topicName, 'язык:', languageCode);
+        
+        const sampleWords = generateSampleWords(languageCode, topicName);
+        currentWords.value = sampleWords;
+        
+        resetLearningState();
+        
+        console.log('✅ Слова получены:', currentWords.value.length, 'слов');
+        
+      } catch (err) {
+        console.error('❌ Ошибка получения слов:', err);
+        currentWords.value = [];
+        showToast('Не удалось загрузить слова для этой темы', 'error');
+      } finally {
+        wordsLoading.value = false;
+      }
+    };
+
+    const generateSampleWords = (languageCode, topicName) => {
+      const vocabularyData = {
+        english: {
+          'Travel': [
+            { word: 'airport', translation: 'аэропорт', example: 'I arrived at the airport early.' },
+            { word: 'hotel', translation: 'отель', example: 'The hotel was very comfortable.' },
+            { word: 'passport', translation: 'паспорт', example: 'Don\'t forget your passport.' },
+            { word: 'luggage', translation: 'багаж', example: 'My luggage is heavy.' },
+            { word: 'flight', translation: 'рейс', example: 'The flight was delayed.' },
+            { word: 'ticket', translation: 'билет', example: 'I bought a ticket online.' },
+            { word: 'vacation', translation: 'отпуск', example: 'I love my vacation.' },
+            { word: 'tourist', translation: 'турист', example: 'The tourist took many photos.' }
+          ],
+          'Food': [
+            { word: 'apple', translation: 'яблоко', example: 'I eat an apple every day.' },
+            { word: 'bread', translation: 'хлеб', example: 'Fresh bread smells wonderful.' },
+            { word: 'cheese', translation: 'сыр', example: 'This cheese is delicious.' },
+            { word: 'chicken', translation: 'курица', example: 'Grilled chicken is healthy.' },
+            { word: 'vegetables', translation: 'овощи', example: 'Eat more vegetables.' },
+            { word: 'fruit', translation: 'фрукт', example: 'Fruit is good for you.' },
+            { word: 'water', translation: 'вода', example: 'Drink plenty of water.' },
+            { word: 'coffee', translation: 'кофе', example: 'I drink coffee in the morning.' }
+          ],
+          'Family': [
+            { word: 'mother', translation: 'мать', example: 'My mother is kind.' },
+            { word: 'father', translation: 'отец', example: 'My father works hard.' },
+            { word: 'brother', translation: 'брат', example: 'I have one brother.' },
+            { word: 'sister', translation: 'сестра', example: 'My sister is younger.' },
+            { word: 'child', translation: 'ребенок', example: 'The child is playing.' },
+            { word: 'parents', translation: 'родители', example: 'My parents are proud of me.' },
+            { word: 'family', translation: 'семья', example: 'Family is important.' },
+            { word: 'grandmother', translation: 'бабушка', example: 'My grandmother tells stories.' }
+          ]
+        },
+        spanish: {
+          'Travel': [
+            { word: 'aeropuerto', translation: 'аэропорт', example: 'El aeropuerto está lejos.' },
+            { word: 'hotel', translation: 'отель', example: 'El hotel es cómodo.' },
+            { word: 'pasaporte', translation: 'паспорт', example: 'Necesito mi pasaporte.' },
+            { word: 'equipaje', translation: 'багаж', example: 'Mi equipaje es pesado.' },
+            { word: 'vuelo', translation: 'рейс', example: 'El vuelo sale a las 8.' },
+            { word: 'boleto', translation: 'билет', example: 'Compré el boleto online.' },
+            { word: 'vacaciones', translation: 'отпуск', example: 'Me encantan las vacaciones.' },
+            { word: 'turista', translation: 'турист', example: 'El turista tomó muchas fotos.' }
+          ],
+          'Food': [
+            { word: 'manzana', translation: 'яблоко', example: 'Como una manzana.' },
+            { word: 'pan', translation: 'хлеб', example: 'El pan está fresco.' },
+            { word: 'queso', translation: 'сыр', example: 'Me gusta el queso.' },
+            { word: 'pollo', translation: 'курица', example: 'El pollo está delicioso.' },
+            { word: 'verduras', translation: 'овощи', example: 'Come más verduras.' },
+            { word: 'fruta', translation: 'фрукт', example: 'La fruta es buena.' },
+            { word: 'agua', translation: 'вода', example: 'Bebo mucha agua.' },
+            { word: 'café', translation: 'кофе', example: 'Tomo café por la mañana.' }
+          ],
+          'Family': [
+            { word: 'madre', translation: 'мать', example: 'Mi madre es amable.' },
+            { word: 'padre', translation: 'отец', example: 'Mi padre trabaja mucho.' },
+            { word: 'hermano', translation: 'брат', example: 'Tengo un hermano.' },
+            { word: 'hermana', translation: 'сестра', example: 'Mi hermana es menor.' },
+            { word: 'niño', translation: 'ребенок', example: 'El niño está jugando.' },
+            { word: 'padres', translation: 'родители', example: 'Mis padres están orgullosos.' },
+            { word: 'familia', translation: 'семья', example: 'La familia es importante.' },
+            { word: 'abuela', translation: 'бабушка', example: 'Mi abuela cuenta historias.' }
+          ]
+        },
+        french: {
+          'Travel': [
+            { word: 'aéroport', translation: 'аэропорт', example: 'Je suis arrivé à l\'aéroport tôt.' },
+            { word: 'hôtel', translation: 'отель', example: 'L\'hôtel était confortable.' },
+            { word: 'passeport', translation: 'паспорт', example: 'N\'oubliez pas votre passeport.' },
+            { word: 'bagages', translation: 'багаж', example: 'Mes bagages sont lourds.' },
+            { word: 'vol', translation: 'рейс', example: 'Le vol a été retardé.' },
+            { word: 'billet', translation: 'билет', example: 'J\'ai acheté un billet en ligne.' },
+            { word: 'vacances', translation: 'отпуск', example: 'J\'adore mes vacances.' },
+            { word: 'touriste', translation: 'турист', example: 'Le touriste a pris beaucoup de photos.' }
+          ],
+          'Food': [
+            { word: 'pomme', translation: 'яблоко', example: 'Je mange une pomme chaque jour.' },
+            { word: 'pain', translation: 'хлеб', example: 'Le pain frais sent bon.' },
+            { word: 'fromage', translation: 'сыр', example: 'Ce fromage est délicieux.' },
+            { word: 'poulet', translation: 'курица', example: 'Le poulet grillé est sain.' },
+            { word: 'légumes', translation: 'овощи', example: 'Mangez plus de légumes.' },
+            { word: 'fruit', translation: 'фрукт', example: 'Les fruits sont bons pour vous.' },
+            { word: 'eau', translation: 'вода', example: 'Buvez beaucoup d\'eau.' },
+            { word: 'café', translation: 'кофе', example: 'Je bois du café le matin.' }
+          ],
+          'Family': [
+            { word: 'mère', translation: 'мать', example: 'Ma mère est gentille.' },
+            { word: 'père', translation: 'отец', example: 'Mon père travaille dur.' },
+            { word: 'frère', translation: 'брат', example: 'J\'ai un frère.' },
+            { word: 'sœur', translation: 'сестра', example: 'Ma sœur est plus jeune.' },
+            { word: 'enfant', translation: 'ребенок', example: 'L\'enfant joue.' },
+            { word: 'parents', translation: 'родители', example: 'Mes parents sont fiers de moi.' },
+            { word: 'famille', translation: 'семья', example: 'La famille est importante.' },
+            { word: 'grand-mère', translation: 'бабушка', example: 'Ma grand-mère raconte des histoires.' }
+          ]
+        }
+      };
+
+      const words = vocabularyData[languageCode]?.[topicName] || vocabularyData[languageCode]?.['Travel'] || [];
+      
+      return words.map((word, index) => ({
+        _id: `${languageCode}_${topicName}_${index}`,
+        word: word.word,
+        translation: word.translation,
+        example: word.example,
+        language: languageCode,
+        topic: topicName,
+        difficulty: 'beginner',
+        partOfSpeech: 'noun'
+      }));
     };
 
     const fetchData = async () => {
@@ -918,7 +1404,7 @@ export default {
 
     // Lifecycle
     onMounted(async () => {
-      console.log('🎯 ProfileVocabularyPage mounted');
+      console.log('🎯 VocabularyPage mounted');
       await fetchData();
     });
 
@@ -953,12 +1439,31 @@ export default {
       
       // Language selection and topics
       selectedLanguage,
+      selectedTopic,
+      selectedSubtopic,
+      currentView,
       topics,
+      currentWords,
       topicsLoading,
+      wordsLoading,
       searchQuery,
       selectedDifficulty,
       difficultyLevels,
       filteredTopics,
+      
+      // Learning state
+      currentWordIndex,
+      learningProgress,
+      showTranslation,
+      learningComplete,
+      
+      // Test state
+      testMode,
+      testQuestions,
+      currentQuestionIndex,
+      userAnswers,
+      testComplete,
+      testResults,
       
       // Computed
       currentUser,
@@ -980,10 +1485,31 @@ export default {
       getTopicProgress,
       isTopicCompleted,
       isTopicInProgress,
+      getSelectedLanguageName,
+      getLanguageNameRu,
+      getTopicNameRu,
+      getTopicPlural,
+      getWordPlural,
+      getSubtopicPlural,
       selectLanguage,
       goBackToLanguages,
+      goBackToTopics,
       selectTopic,
       clearFilters,
+      toggleDifficulty,
+      
+      // Learning methods
+      nextWord,
+      previousWord,
+      toggleTranslation,
+      markWordAsLearned,
+      
+      // Test methods
+      startTest,
+      submitTestAnswer,
+      retakeTest,
+      exitTest,
+      
       reviewWords,
       startRandomQuiz,
       viewProgress,
@@ -998,7 +1524,6 @@ export default {
   }
 };
 </script>
-
 <style scoped>
 /* CSS Variables for consistent theming */
 :root {
@@ -1295,7 +1820,7 @@ export default {
   margin-bottom: 8px;
 }
 
-.language-name-ru {
+.language-name-en {
   font-size: 1.125rem;
   color: var(--text-secondary);
   margin-bottom: 16px;
@@ -1653,6 +2178,425 @@ export default {
 
 .status-badge.new {
   background: var(--text-muted);
+}
+
+/* Learning Section */
+.learning-section {
+  margin-bottom: 80px;
+  position: relative;
+  z-index: 1;
+}
+
+.learning-header {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.learning-title h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary) !important;
+  margin-bottom: 8px;
+}
+
+.learning-title p {
+  color: var(--text-secondary) !important;
+  font-size: 1.1rem;
+}
+
+.learning-progress {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
+}
+
+.learning-progress span {
+  font-weight: 600;
+  color: var(--text-primary) !important;
+  min-width: 80px;
+}
+
+.progress-bar-learning {
+  flex: 1;
+  max-width: 300px;
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill-learning {
+  height: 100%;
+  background: var(--gradient-primary);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.word-card-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+.word-card {
+  background: var(--background);
+  border-radius: var(--border-radius-xl);
+  padding: 48px;
+  box-shadow: var(--shadow-xl);
+  border: 2px solid var(--border-color);
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  animation: slideInUp 0.5s ease;
+}
+
+.word-main-display {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--text-primary) !important;
+  margin-bottom: 32px;
+  line-height: 1.2;
+}
+
+.word-details {
+  margin-bottom: 32px;
+}
+
+.word-type {
+  font-size: 0.875rem;
+  color: var(--text-muted) !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+}
+
+.translation-section {
+  margin-bottom: 24px;
+}
+
+.show-translation-btn {
+  background: var(--primary-light);
+  color: var(--primary-dark) !important;
+  border: 2px solid var(--primary-color);
+  padding: 12px 24px;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+  margin-bottom: 16px;
+}
+
+.show-translation-btn:hover {
+  background: var(--primary-color);
+  color: white !important;
+}
+
+.word-translation-display {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--secondary-color) !important;
+  animation: fadeIn 0.3s ease;
+}
+
+.word-example {
+  background: var(--border-light);
+  padding: 16px;
+  border-radius: var(--border-radius-md);
+  margin-top: 16px;
+  font-style: italic;
+  color: var(--text-secondary) !important;
+}
+
+.word-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.nav-btn, .learn-btn {
+  padding: 12px 24px;
+  border-radius: var(--border-radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+}
+
+.nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-success {
+  background: var(--gradient-success);
+  color: white !important;
+}
+
+.btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.learning-controls {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 1000;
+}
+
+.test-btn-floating {
+  background: var(--gradient-primary);
+  color: white !important;
+  border: none;
+  padding: 16px 24px;
+  border-radius: var(--border-radius-lg);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  transition: all var(--transition-normal);
+}
+
+.test-btn-floating:hover:not(:disabled) {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+}
+
+.test-btn-floating:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.learning-complete {
+  text-align: center;
+  padding: 60px 24px;
+  background: var(--background);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-lg);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.complete-icon {
+  font-size: 4rem;
+  margin-bottom: 24px;
+}
+
+.learning-complete h3 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary) !important;
+  margin-bottom: 16px;
+}
+
+.learning-complete p {
+  color: var(--text-secondary) !important;
+  margin-bottom: 32px;
+  font-size: 1.1rem;
+}
+
+.complete-stats {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 32px;
+}
+
+.complete-stats .stat-item {
+  text-align: center;
+}
+
+.complete-stats .stat-number {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--primary-color) !important;
+  display: block;
+}
+
+.complete-stats .stat-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary) !important;
+}
+
+.complete-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Test Section */
+.test-section {
+  margin-bottom: 80px;
+  position: relative;
+  z-index: 1;
+}
+
+.test-header {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.test-title h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary) !important;
+  margin-bottom: 8px;
+}
+
+.test-title p {
+  color: var(--text-secondary) !important;
+  font-size: 1.1rem;
+}
+
+.test-results {
+  text-align: center;
+  padding: 60px 24px;
+  background: var(--background);
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-lg);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.results-icon {
+  font-size: 4rem;
+  margin-bottom: 24px;
+}
+
+.results-icon.passed {
+  color: var(--secondary-color);
+}
+
+.results-icon.failed {
+  color: var(--accent-color);
+}
+
+.test-results h3 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary) !important;
+  margin-bottom: 32px;
+}
+
+.results-stats {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 32px;
+}
+
+.result-item {
+  text-align: center;
+}
+
+.result-number {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--primary-color) !important;
+  display: block;
+}
+
+.result-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary) !important;
+}
+
+.results-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.test-question {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.question-progress {
+  margin-bottom: 40px;
+}
+
+.progress-bar-test {
+  width: 100%;
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill-test {
+  height: 100%;
+  background: var(--gradient-primary);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.question-word {
+  text-align: center;
+  margin-bottom: 40px;
+  background: var(--background);
+  padding: 40px;
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+.question-word h3 {
+  font-size: 1.5rem;
+  color: var(--text-secondary) !important;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.test-word {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--text-primary) !important;
+  line-height: 1.2;
+}
+
+.question-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.option-btn {
+  background: var(--background);
+  border: 2px solid var(--border-color);
+  color: var(--text-primary) !important;
+  padding: 20px 24px;
+  border-radius: var(--border-radius-lg);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.option-btn:hover {
+  border-color: var(--primary-color);
+  background: var(--primary-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.option-btn:active {
+  transform: translateY(0);
 }
 
 /* Quick Actions */
@@ -2093,6 +3037,24 @@ export default {
   transform: none;
 }
 
+/* Button Styles */
+.test-btn {
+  background: var(--gradient-primary);
+  color: white !important;
+  border: none;
+  padding: 16px 32px;
+  border-radius: var(--border-radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 1rem;
+}
+
+.test-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
 /* Toast Notifications */
 .toast {
   position: fixed;
@@ -2277,6 +3239,57 @@ export default {
     font-size: 0.8rem;
   }
 
+  .word-card {
+    padding: 32px 24px;
+    margin: 0 16px;
+  }
+
+  .word-main-display {
+    font-size: 2.5rem;
+  }
+
+  .word-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .nav-btn, .learn-btn {
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .complete-stats {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .results-stats {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .question-options {
+    grid-template-columns: 1fr;
+  }
+
+  .learning-controls {
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .test-btn-floating {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
+
+  .question-word {
+    padding: 24px;
+  }
+
+  .test-word {
+    font-size: 2.5rem;
+  }
+
   .form-row {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -2341,6 +3354,45 @@ export default {
   .stat-badge {
     padding: 4px 8px;
     font-size: 0.8rem;
+  }
+
+  .learning-header {
+    gap: 16px;
+  }
+
+  .learning-progress {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .progress-bar-learning {
+    max-width: 100%;
+  }
+
+  .word-main-display {
+    font-size: 2rem;
+  }
+
+  .test-word {
+    font-size: 2rem;
+  }
+
+  .option-btn {
+    padding: 16px;
+    min-height: 60px;
+    font-size: 1rem;
+  }
+
+  .complete-actions,
+  .results-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    max-width: 250px;
   }
 }
 
