@@ -5,6 +5,7 @@ import store from '@/store';
 import HomePage from '@/views/HomePage.vue';
 import ProfilePage from '@/views/ProfilePage.vue';
 import AcedSettings from '@/components/Main/AcedSettings.vue';
+// ✅ UPDATED: Import vocabulary from views folder
 import VocabularyPage from '@/views/VocabularyPage.vue';
 
 // ✅ Profile Sub-Pages
@@ -17,7 +18,6 @@ import HomeworkPage from '@/components/Profile/HomeworkPage.vue';
 import DiaryPage from '@/components/Profile/DiaryPage.vue';
 import CataloguePage from '@/views/CataloguePage.vue';
 import TestsPage from '@/components/Profile/TestsPage.vue';
-import VocabularyTopics from '@/components/Profile/VocabularyTopics.vue';
 
 // ✅ Payments
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
@@ -38,22 +38,11 @@ const routes = [
     name: 'SettingsPage',
     component: AcedSettings,
   },
-  {
-    path: '/vocabulary',
-    name: 'VocabularyPage',
-    component: VocabularyPage,
-    meta: { requiresAuth: true, title: 'Словарь' }
-  },
-  // ✅ FIXED: Add vocabulary language selection route
-  {
-    path: '/vocabulary/:language',
-    name: 'VocabularyLanguageTopics',
-    component: VocabularyTopics,
-    props: route => ({
-      language: route.params.language
-    }),
-    meta: { requiresAuth: true, title: 'Темы словаря' }
-  },
+  // ✅ REMOVED: Standalone vocabulary routes completely removed
+  // Old routes that are now removed:
+  // - /vocabulary
+  // - /vocabulary/:language
+  
   {
     path: '/profile',
     component: ProfilePage,
@@ -187,9 +176,15 @@ const routes = [
         component: TestsPage, 
         props: true,
         meta: { title: 'Прохождение теста' }
+      },
+      
+      // ✅ UPDATED: Vocabulary route now uses VocabularyPage from views
+      { 
+        path: 'vocabulary', 
+        name: 'VocabularyPage', 
+        component: VocabularyPage,
+        meta: { title: 'Словарь' }
       }
-      // ✅ REMOVED: Conflicting vocabulary routes from profile section
-      // These were causing conflicts with main vocabulary routes
     ],
   },
   {
@@ -219,6 +214,17 @@ const routes = [
     component: TopicFinished,
     meta: { requiresAuth: true, title: 'Тема завершена' }
   },
+  
+  // ✅ ADDED: Redirect old vocabulary routes to profile vocabulary
+  {
+    path: '/vocabulary',
+    redirect: '/profile/vocabulary'
+  },
+  {
+    path: '/vocabulary/:language',
+    redirect: to => `/profile/vocabulary`
+  },
+  
   {
     path: '/:catchAll(.*)',
     redirect: '/',
@@ -283,11 +289,11 @@ router.beforeEach(async (to, from, next) => {
     });
   }
 
-  // ✅ NEW: Vocabulary route validation
-  if (to.name && to.name.includes('Vocabulary') && to.params.language) {
+  // ✅ NEW: Vocabulary route validation and logging
+  if (to.name && to.name.includes('Vocabulary')) {
     console.log('📖 Vocabulary route navigation:', {
       route: to.name,
-      language: to.params.language,
+      path: to.path,
       from: from.path
     });
   }
@@ -356,8 +362,8 @@ router.onError((err) => {
   // Handle navigation errors specifically for vocabulary routes
   if (err.message.includes('vocabulary') || err.message.includes('Vocabulary')) {
     console.error('📖 Vocabulary route error:', err);
-    // Could redirect to main vocabulary page as fallback
-    // router.push({ name: 'VocabularyPage' });
+    // Could redirect to main profile page as fallback
+    // router.push({ name: 'MainPage' });
   }
 });
 
@@ -368,14 +374,16 @@ router.isReady().then(() => {
   console.log('  Main routes:');
   console.log('    / (HomePage)');
   console.log('    /settings (SettingsPage)');
-  console.log('    /vocabulary (VocabularyPage)');
-  console.log('    /vocabulary/:language (VocabularyLanguageTopics)');
   console.log('  Profile routes:');
   console.log('    /profile/main');
+  console.log('    /profile/vocabulary (VocabularyPage from views)');
   console.log('    /profile/homeworks');
   console.log('    /profile/homeworks/:id (flexible)');
   console.log('    /profile/homework/lesson/:lessonId (specific lesson)');
   console.log('    /profile/homework/standalone/:homeworkId (specific standalone)');
+  console.log('  Redirects:');
+  console.log('    /vocabulary → /profile/vocabulary');
+  console.log('    /vocabulary/:language → /profile/vocabulary');
   console.log('  Payment routes:');
   console.log('    /pay/:plan');
   console.log('  Learning routes:');
