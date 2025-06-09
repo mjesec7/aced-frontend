@@ -96,6 +96,7 @@ export default {
         { name: 'homework', label: 'Помощь с ДЗ' },
         { name: 'homeworks', label: 'Домашние задания' },
         { name: 'tests', label: 'Тесты' },
+        { name: 'vocabulary', label: 'Словарь' },
         { name: 'settings', label: 'Настройки' }
       ],
       isMobile: false
@@ -189,6 +190,9 @@ export default {
       }
       if (name === 'tests') {
         return path === '/profile/tests' || path.startsWith('/profile/tests/');
+      }
+      if (name === 'vocabulary') {
+        return path === '/profile/vocabulary' || path.startsWith('/profile/vocabulary/');
       }
       if (name === 'settings') {
         return path === '/settings';
