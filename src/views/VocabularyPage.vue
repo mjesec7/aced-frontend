@@ -360,7 +360,7 @@ import {
 } from '@/api/vocabulary';
 
 export default {
-  name: 'ProfileVocabularyPage',
+  name: 'VocabularyPage', // ✅ UPDATED: Renamed from ProfileVocabularyPage
   setup() {
     const store = useStore();
     
