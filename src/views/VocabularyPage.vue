@@ -9,95 +9,138 @@
         <p class="page-subtitle">Master languages through intelligent vocabulary building</p>
         
         <!-- Quick Stats -->
-        <div class="quick-stats">
-          <div class="stat-card" v-for="stat in stats" :key="stat.label">
-            <div class="stat-number">{{ stat.value }}</div>
-            <div class="stat-label">{{ stat.label }}</div>
-            <div class="stat-trend">{{ stat.trend }}</div>
+        <div class="quick-stats" v-if="stats">
+          <div class="stat-card">
+            <div class="stat-number">{{ stats.totalWords || 0 }}</div>
+            <div class="stat-label">Words Total</div>
+            <div class="stat-trend">{{ stats.byLanguage?.length || 0 }} languages</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ userProgress?.wordsLearned || 0 }}</div>
+            <div class="stat-label">Words Learned</div>
+            <div class="stat-trend">{{ getProgressTrend() }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">{{ userProgress?.accuracy || 0 }}%</div>
+            <div class="stat-label">Accuracy</div>
+            <div class="stat-trend">{{ getAccuracyTrend() }}</div>
           </div>
         </div>
       </header>
   
-      <!-- Language Cards Grid -->
-      <section class="languages-section">
-        <h2 class="section-title">Your Languages</h2>
-        <div class="languages-grid">
-          <div 
-            v-for="language in languages" 
-            :key="language.id"
-            class="language-card"
-            :class="{ popular: language.isPopular }"
-            @click="selectLanguage(language)"
-          >
-            <div v-if="language.isPopular" class="language-badge">Most Active</div>
-            <div class="progress-ring">
-              <svg width="60" height="60" class="progress-circle">
-                <circle cx="30" cy="30" r="25" fill="none" stroke="#e5e7eb" stroke-width="4"/>
-                <circle 
-                  cx="30" cy="30" r="25" fill="none" 
-                  :stroke="language.color" 
-                  stroke-width="4" 
-                  stroke-dasharray="157" 
-                  :stroke-dashoffset="157 - (157 * language.progress / 100)" 
-                  class="progress-bar"
-                />
-              </svg>
-              <div class="progress-text">{{ language.progress }}%</div>
+      <!-- Loading State -->
+      <div v-if="loading" class="loading-container">
+        <div class="spinner"></div>
+        <p>Loading vocabulary data...</p>
+      </div>
+  
+      <!-- Error State -->
+      <div v-else-if="error" class="error-container">
+        <div class="error-icon">😔</div>
+        <h3>Something went wrong</h3>
+        <p>{{ error }}</p>
+        <button @click="fetchData" class="retry-btn">Try Again</button>
+      </div>
+  
+      <!-- Main Content -->
+      <div v-else>
+        <!-- Language Cards Grid -->
+        <section class="languages-section">
+          <h2 class="section-title">Available Languages</h2>
+          <div class="languages-grid">
+            <div 
+              v-for="language in languages" 
+              :key="language.code"
+              class="language-card"
+              :class="{ popular: language.isPopular }"
+              @click="selectLanguage(language)"
+            >
+              <div v-if="language.isPopular" class="language-badge">Most Popular</div>
+              
+              <!-- Progress Ring -->
+              <div class="progress-ring">
+                <svg width="60" height="60" class="progress-circle">
+                  <circle cx="30" cy="30" r="25" fill="none" stroke="#e5e7eb" stroke-width="4"/>
+                  <circle 
+                    cx="30" cy="30" r="25" fill="none" 
+                    :stroke="getLanguageColor(language.code)" 
+                    stroke-width="4" 
+                    stroke-dasharray="157" 
+                    :stroke-dashoffset="157 - (157 * getLanguageProgress(language.code) / 100)" 
+                    class="progress-bar"
+                  />
+                </svg>
+                <div class="progress-text">{{ Math.round(getLanguageProgress(language.code)) }}%</div>
+              </div>
+              
+              <div class="language-flag">{{ getLanguageFlag(language.code) }}</div>
+              <div class="language-info">
+                <h3 class="language-name">{{ language.name }}</h3>
+                <p class="language-name-ru">{{ language.nameRu }}</p>
+                <div class="language-stats">
+                  <span class="word-count">{{ getLanguageWordCount(language.code) }} words</span>
+                  <span class="topic-count">{{ getLanguageTopicCount(language.code) }} topics</span>
+                </div>
+              </div>
+              <div class="card-arrow">→</div>
             </div>
-            <div class="language-flag">{{ language.flag }}</div>
-            <div class="language-info">
-              <h3 class="language-name">{{ language.name }}</h3>
-              <p class="language-name-ru">{{ language.nativeName }}</p>
-              <div class="language-stats">
-                <span class="word-count">{{ language.wordCount }} words</span>
-                <span class="topic-count">{{ language.topicCount }} topics</span>
+          </div>
+        </section>
+  
+        <!-- Quick Actions -->
+        <section class="quick-actions">
+          <h2 class="section-title">Quick Actions</h2>
+          <div class="action-cards">
+            <div class="action-card" @click="reviewWords" v-if="wordsForReview > 0">
+              <div class="action-count">{{ wordsForReview }}</div>
+              <div class="action-icon">📚</div>
+              <h4>Review Due</h4>
+              <p>Practice words you learned recently</p>
+            </div>
+            
+            <div class="action-card" @click="startRandomQuiz">
+              <div class="action-icon">🎯</div>
+              <h4>Daily Challenge</h4>
+              <p>Complete today's vocabulary quiz</p>
+            </div>
+            
+            <div class="action-card" @click="viewProgress">
+              <div class="action-icon">📊</div>
+              <h4>Progress Report</h4>
+              <p>View your learning analytics</p>
+            </div>
+            
+            <div class="action-card" @click="viewAchievements">
+              <div class="action-icon">🏆</div>
+              <h4>Achievements</h4>
+              <p>Check your learning milestones</p>
+            </div>
+          </div>
+        </section>
+  
+        <!-- Recent Activity -->
+        <section class="recent-activity" v-if="recentWords.length > 0">
+          <h2 class="section-title">Recently Added Words</h2>
+          <div class="recent-words">
+            <div 
+              v-for="word in recentWords" 
+              :key="word._id"
+              class="recent-word-card"
+              @click="viewWord(word)"
+            >
+              <div class="word-main">{{ word.word }}</div>
+              <div class="word-translation">{{ word.translation }}</div>
+              <div class="word-meta">
+                <span class="word-language">{{ getLanguageName(word.language) }}</span>
+                <span class="word-topic">{{ word.topic }}</span>
               </div>
             </div>
-            <div class="card-arrow">→</div>
           </div>
-        </div>
-      </section>
-  
-      <!-- Quick Actions -->
-      <section class="quick-actions">
-        <h2 class="section-title">Quick Actions</h2>
-        <div class="action-cards">
-          <div 
-            v-for="action in actions" 
-            :key="action.id"
-            class="action-card"
-            @click="performAction(action)"
-          >
-            <div v-if="action.count" class="action-count">{{ action.count }}</div>
-            <div class="action-icon">{{ action.icon }}</div>
-            <h4>{{ action.title }}</h4>
-            <p>{{ action.description }}</p>
-          </div>
-        </div>
-      </section>
-  
-      <!-- Recent Activity -->
-      <section class="recent-activity">
-        <h2 class="section-title">Recently Added Words</h2>
-        <div class="recent-words">
-          <div 
-            v-for="word in recentWords" 
-            :key="word.id"
-            class="recent-word-card"
-            @click="viewWord(word)"
-          >
-            <div class="word-main">{{ word.word }}</div>
-            <div class="word-translation">{{ word.translation }}</div>
-            <div class="word-meta">
-              <span class="word-language">{{ word.language }}</span>
-              <span class="word-topic">{{ word.topic }}</span>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
   
       <!-- Floating Action Button -->
-      <button class="fab" @click="openAddWordModal">
+      <button class="fab" @click="openAddWordModal" v-if="$store.getters.user">
         <span class="fab-icon">+</span>
       </button>
   
@@ -136,240 +179,512 @@
                 <label for="language">Language</label>
                 <select id="language" v-model="newWord.language" required>
                   <option value="">Select language</option>
-                  <option v-for="lang in availableLanguages" :key="lang.value" :value="lang.value">
-                    {{ lang.label }}
+                  <option v-for="lang in languages" :key="lang.code" :value="lang.code">
+                    {{ lang.name }}
                   </option>
                 </select>
               </div>
               <div class="form-group">
                 <label for="topic">Topic</label>
-                <select id="topic" v-model="newWord.topic">
-                  <option value="">Select topic</option>
-                  <option v-for="topic in availableTopics" :key="topic.value" :value="topic.value">
-                    {{ topic.label }}
-                  </option>
-                </select>
+                <input 
+                  type="text" 
+                  id="topic" 
+                  v-model="newWord.topic" 
+                  placeholder="e.g., Travel, Business"
+                  required
+                >
               </div>
+            </div>
+            <div class="form-group">
+              <label for="subtopic">Subtopic</label>
+              <input 
+                type="text" 
+                id="subtopic" 
+                v-model="newWord.subtopic" 
+                placeholder="e.g., At the Airport"
+                required
+              >
             </div>
             <div class="form-actions">
               <button type="button" class="btn-secondary" @click="closeAddWordModal">Cancel</button>
-              <button type="submit" class="btn-primary" :disabled="!isFormValid">Add Word</button>
+              <button type="submit" class="btn-primary" :disabled="!isFormValid || submitting">
+                {{ submitting ? 'Adding...' : 'Add Word' }}
+              </button>
             </div>
           </form>
         </div>
+      </div>
+  
+      <!-- Toast Messages -->
+      <div v-if="toastMessage" class="toast" :class="toastType">
+        {{ toastMessage }}
       </div>
     </div>
   </template>
   
   <script>
+// Update the imports in VocabularyPage.vue
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'; 
+ import { useRouter } from 'vue-router';
+  import { useStore } from 'vuex';
+  import {
+    getVocabularyLanguages,
+    getVocabularyStats,
+    getUserVocabularyProgress,
+    getWordsForReview,
+    searchVocabulary,
+    addVocabularyWord
+  } from '@/api/vocabulary';
+  
   export default {
-    name: 'VocabularyDashboard',
-    data() {
-      return {
-        showModal: false,
-        stats: [
-          { value: 247, label: 'Words Learned', trend: '+12 this week' },
-          { value: 5, label: 'Languages', trend: '2 active' },
-          { value: '85%', label: 'Accuracy', trend: '+3% improved' }
-        ],
-        languages: [
-          {
-            id: 1,
-            name: 'Spanish',
-            nativeName: 'Español',
-            flag: '🇪🇸',
-            progress: 75,
-            color: '#3b82f6',
-            wordCount: 89,
-            topicCount: 12,
-            isPopular: true
-          },
-          {
-            id: 2,
-            name: 'French',
-            nativeName: 'Français',
-            flag: '🇫🇷',
-            progress: 50,
-            color: '#10b981',
-            wordCount: 64,
-            topicCount: 8,
-            isPopular: false
-          },
-          {
-            id: 3,
-            name: 'German',
-            nativeName: 'Deutsch',
-            flag: '🇩🇪',
-            progress: 30,
-            color: '#f59e0b',
-            wordCount: 43,
-            topicCount: 6,
-            isPopular: false
-          }
-        ],
-        actions: [
-          {
-            id: 1,
-            title: 'Review Due',
-            description: 'Practice words you learned recently',
-            icon: '📚',
-            count: 5
-          },
-          {
-            id: 2,
-            title: 'Daily Challenge',
-            description: 'Complete today\'s vocabulary quiz',
-            icon: '🎯'
-          },
-          {
-            id: 3,
-            title: 'Progress Report',
-            description: 'View your learning analytics',
-            icon: '📊'
-          },
-          {
-            id: 4,
-            title: 'Achievements',
-            description: 'Check your learning milestones',
-            icon: '🏆'
-          }
-        ],
-        recentWords: [
-          {
-            id: 1,
-            word: 'Biblioteca',
-            translation: 'Library',
-            language: 'Spanish',
-            topic: 'Education'
-          },
-          {
-            id: 2,
-            word: 'Cuisine',
-            translation: 'Kitchen',
-            language: 'French',
-            topic: 'Home'
-          },
-          {
-            id: 3,
-            word: 'Wissenschaft',
-            translation: 'Science',
-            language: 'German',
-            topic: 'Academic'
-          }
-        ],
-        newWord: {
-          word: '',
-          translation: '',
-          language: '',
-          topic: ''
-        },
-        availableLanguages: [
-          { value: 'spanish', label: 'Spanish' },
-          { value: 'french', label: 'French' },
-          { value: 'german', label: 'German' }
-        ],
-        availableTopics: [
-          { value: 'education', label: 'Education' },
-          { value: 'home', label: 'Home' },
-          { value: 'academic', label: 'Academic' },
-          { value: 'travel', label: 'Travel' }
-        ]
-      }
-    },
-    computed: {
-      isFormValid() {
-        return this.newWord.word.trim() && 
-               this.newWord.translation.trim() && 
-               this.newWord.language;
-      }
-    },
-    methods: {
-      openAddWordModal() {
-        this.showModal = true;
-        document.body.style.overflow = 'hidden';
-      },
-      closeAddWordModal() {
-        this.showModal = false;
-        document.body.style.overflow = 'auto';
-        this.resetForm();
-      },
-      closeModalOnOverlay(e) {
-        if (e.target.classList.contains('modal-overlay')) {
-          this.closeAddWordModal();
-        }
-      },
-      resetForm() {
-        this.newWord = {
-          word: '',
-          translation: '',
-          language: '',
-          topic: ''
+    name: 'VocabularyPage',
+    setup() {
+      const router = useRouter();
+      const store = useStore();
+      
+      // Data
+      const loading = ref(true);
+      const error = ref('');
+      const languages = ref([]);
+      const stats = ref(null);
+      const userProgress = ref(null);
+      const recentWords = ref([]);
+      const wordsForReview = ref(0);
+      const showModal = ref(false);
+      const submitting = ref(false);
+      const toastMessage = ref('');
+      const toastType = ref('success');
+  
+      // Form data
+      const newWord = ref({
+        word: '',
+        translation: '',
+        language: '',
+        topic: '',
+        subtopic: '',
+        partOfSpeech: 'noun',
+        difficulty: 'beginner'
+      });
+  
+      // Computed
+      const currentUser = computed(() => store.getters.user);
+      
+      const isFormValid = computed(() => {
+        return newWord.value.word.trim() && 
+               newWord.value.translation.trim() && 
+               newWord.value.language &&
+               newWord.value.topic.trim() &&
+               newWord.value.subtopic.trim();
+      });
+  
+      // Methods
+      const getLanguageFlag = (code) => {
+        const flags = {
+          english: '🇺🇸',
+          spanish: '🇪🇸',
+          french: '🇫🇷',
+          german: '🇩🇪',
+          chinese: '🇨🇳',
+          arabic: '🇸🇦',
+          japanese: '🇯🇵',
+          korean: '🇰🇷',
+          uzbek: '🇺🇿',
+          russian: '🇷🇺'
         };
-      },
-      submitWord() {
-        if (!this.isFormValid) return;
-        
-        const wordData = { ...this.newWord, id: Date.now() };
-        
-        // Add to recent words (in real app, this would be an API call)
-        this.recentWords.unshift({
-          ...wordData,
-          language: this.getLanguageLabel(wordData.language),
-          topic: this.getTopicLabel(wordData.topic) || 'General'
+        return flags[code] || '🌐';
+      };
+  
+      const getLanguageName = (code) => {
+        const language = languages.value.find(l => l.code === code);
+        return language ? language.name : code;
+      };
+  
+      const getLanguageColor = (code) => {
+        const colors = {
+          english: '#3b82f6',
+          spanish: '#ef4444',
+          french: '#8b5cf6',
+          german: '#f59e0b',
+          chinese: '#dc2626',
+          arabic: '#059669',
+          japanese: '#db2777',
+          korean: '#7c3aed',
+          uzbek: '#0891b2',
+          russian: '#be123c'
+        };
+        return colors[code] || '#6b7280';
+      };
+  
+      const getLanguageProgress = (languageCode) => {
+        if (!userProgress.value || !userProgress.value.byLanguage) return 0;
+        const langProgress = userProgress.value.byLanguage[languageCode];
+        return langProgress ? langProgress.percentage : 0;
+      };
+  
+      const getLanguageWordCount = (languageCode) => {
+        if (!stats.value || !stats.value.byLanguage) return 0;
+        const langStat = stats.value.byLanguage.find(l => l._id === languageCode);
+        return langStat ? langStat.count : 0;
+      };
+  
+      const getLanguageTopicCount = (languageCode) => {
+        // Calculate based on recent words or stats
+        const wordsInLanguage = recentWords.value.filter(w => w.language === languageCode);
+        const uniqueTopics = [...new Set(wordsInLanguage.map(w => w.topic))];
+        return uniqueTopics.length || 1;
+      };
+  
+      const getProgressTrend = () => {
+        if (!userProgress.value) return 'Getting started';
+        return userProgress.value.weeklyGrowth > 0 ? 
+          `+${userProgress.value.weeklyGrowth} this week` : 
+          'Keep practicing';
+      };
+  
+      const getAccuracyTrend = () => {
+        if (!userProgress.value) return 'No data yet';
+        return userProgress.value.accuracyTrend > 0 ? 
+          `+${userProgress.value.accuracyTrend}% improved` : 
+          'Stay consistent';
+      };
+  
+      const showToast = (message, type = 'success') => {
+        toastMessage.value = message;
+        toastType.value = type;
+        setTimeout(() => {
+          toastMessage.value = '';
+        }, 3000);
+      };
+  
+      const selectLanguage = (language) => {
+        console.log('🌍 Selecting language:', language.code);
+        router.push({
+          name: 'VocabularyLanguageTopics',
+          params: { language: language.code }
         });
-        
-        // Keep only last 10 recent words
-        if (this.recentWords.length > 10) {
-          this.recentWords = this.recentWords.slice(0, 10);
+      };
+  
+      const reviewWords = () => {
+        // Navigate to review interface
+        router.push({ 
+          name: 'VocabularyPage',
+          query: { mode: 'review' }
+        });
+      };
+  
+      const startRandomQuiz = () => {
+        // Navigate to quiz interface
+        router.push({ 
+          name: 'VocabularyPage',
+          query: { mode: 'quiz' }
+        });
+      };
+  
+      const viewProgress = () => {
+        // Navigate to progress page
+        router.push({ name: 'UserAnalyticsPanel' });
+      };
+  
+      const viewAchievements = () => {
+        // Navigate to achievements
+        showToast('Achievements feature coming soon!', 'info');
+      };
+  
+      const viewWord = (word) => {
+        console.log('📖 Viewing word:', word.word);
+        // Could open a detailed word view modal or navigate to word details
+        showToast(`Viewing: ${word.word} - ${word.translation}`);
+      };
+  
+      const openAddWordModal = () => {
+        if (!currentUser.value) {
+          showToast('Please log in to add words', 'error');
+          return;
         }
-        
-        // Update stats
-        this.updateStats();
-        
-        // Emit event for parent component
-        this.$emit('word-added', wordData);
-        
-        this.closeAddWordModal();
-      },
-      getLanguageLabel(value) {
-        const lang = this.availableLanguages.find(l => l.value === value);
-        return lang ? lang.label : value;
-      },
-      getTopicLabel(value) {
-        const topic = this.availableTopics.find(t => t.value === value);
-        return topic ? topic.label : value;
-      },
-      updateStats() {
-        // Update word count
-        this.stats[0].value += 1;
-        this.stats[0].trend = `+${this.stats[0].value - 246} this week`;
-      },
-      selectLanguage(language) {
-        this.$emit('language-selected', language);
-      },
-      performAction(action) {
-        this.$emit('action-performed', action);
-      },
-      viewWord(word) {
-        this.$emit('word-selected', word);
-      }
-    },
-    mounted() {
-      // Handle keyboard events
-      const handleKeydown = (e) => {
-        if (e.key === 'Escape' && this.showModal) {
-          this.closeAddWordModal();
+        showModal.value = true;
+        document.body.style.overflow = 'hidden';
+      };
+  
+      const closeAddWordModal = () => {
+        showModal.value = false;
+        document.body.style.overflow = 'auto';
+        resetForm();
+      };
+  
+      const closeModalOnOverlay = (e) => {
+        if (e.target.classList.contains('modal-overlay')) {
+          closeAddWordModal();
         }
       };
-      
-      document.addEventListener('keydown', handleKeydown);
-      
-      // Cleanup
-      this.$once('hook:beforeDestroy', () => {
+  
+      const resetForm = () => {
+        newWord.value = {
+          word: '',
+          translation: '',
+          language: '',
+          topic: '',
+          subtopic: '',
+          partOfSpeech: 'noun',
+          difficulty: 'beginner'
+        };
+      };
+  
+      const submitWord = async () => {
+        if (!isFormValid.value || submitting.value) return;
+        
+        try {
+          submitting.value = true;
+          
+          const wordData = {
+            ...newWord.value,
+            translationLanguage: 'russian',
+            isActive: true,
+            importance: 3,
+            examples: [],
+            synonyms: [],
+            antonyms: []
+          };
+          
+          console.log('📝 Adding word:', wordData);
+          
+          const response = await addVocabularyWord(wordData);
+          
+          console.log('✅ Word added successfully:', response);
+          
+          // Add to recent words list
+          recentWords.value.unshift({
+            _id: response._id || Date.now(),
+            word: wordData.word,
+            translation: wordData.translation,
+            language: wordData.language,
+            topic: wordData.topic
+          });
+          
+          // Keep only last 10 recent words
+          if (recentWords.value.length > 10) {
+            recentWords.value = recentWords.value.slice(0, 10);
+          }
+          
+          showToast('Word added successfully!');
+          closeAddWordModal();
+          
+          // Refresh stats
+          await fetchStats();
+          
+        } catch (error) {
+          console.error('❌ Error adding word:', error);
+          showToast('Failed to add word. Please try again.', 'error');
+        } finally {
+          submitting.value = false;
+        }
+      };
+  
+      // API calls
+      const fetchLanguages = async () => {
+        try {
+          console.log('🌍 Fetching available languages...');
+          const response = await getVocabularyLanguages();
+          
+          const languageData = response.data || [];
+          console.log('✅ Languages fetched:', languageData.length);
+          
+          // Mark popular languages
+          languages.value = languageData.map(lang => ({
+            ...lang,
+            isPopular: ['english', 'spanish', 'french'].includes(lang.code)
+          }));
+          
+        } catch (err) {
+          console.error('❌ Error fetching languages:', err);
+          // Fallback to default languages if API fails
+          languages.value = [
+            { code: 'english', name: 'English', nameRu: 'Английский', isPopular: true },
+            { code: 'spanish', name: 'Spanish', nameRu: 'Испанский', isPopular: true },
+            { code: 'french', name: 'French', nameRu: 'Французский', isPopular: true },
+            { code: 'german', name: 'German', nameRu: 'Немецкий', isPopular: false },
+            { code: 'chinese', name: 'Chinese', nameRu: 'Китайский', isPopular: false }
+          ];
+        }
+      };
+  
+      const fetchStats = async () => {
+        try {
+          console.log('📊 Fetching vocabulary stats...');
+          const response = await getVocabularyStats();
+          stats.value = response.data || {};
+          console.log('✅ Stats fetched:', stats.value);
+        } catch (err) {
+          console.error('❌ Error fetching stats:', err);
+          stats.value = {
+            totalWords: 0,
+            byLanguage: [],
+            topTopics: []
+          };
+        }
+      };
+  
+      const fetchUserProgress = async () => {
+        if (!currentUser.value) {
+          console.log('⚠️ No user logged in, skipping progress fetch');
+          return;
+        }
+        
+        try {
+          console.log('📈 Fetching user progress for:', currentUser.value.uid);
+          const response = await getUserVocabularyProgress(currentUser.value.uid);
+          userProgress.value = response.data || {};
+          console.log('✅ User progress fetched:', userProgress.value);
+        } catch (err) {
+          console.error('❌ Error fetching user progress:', err);
+          userProgress.value = {
+            wordsLearned: 0,
+            accuracy: 0,
+            weeklyGrowth: 0,
+            accuracyTrend: 0,
+            byLanguage: {}
+          };
+        }
+      };
+  
+      const fetchWordsForReview = async () => {
+        if (!currentUser.value) return;
+        
+        try {
+          console.log('🔄 Fetching words for review...');
+          const response = await getWordsForReview(currentUser.value.uid, { limit: 50 });
+          wordsForReview.value = response.count || 0;
+          console.log('✅ Words for review:', wordsForReview.value);
+        } catch (err) {
+          console.error('❌ Error fetching words for review:', err);
+          wordsForReview.value = 0;
+        }
+      };
+  
+      const fetchRecentWords = async () => {
+        try {
+          console.log('📚 Fetching recent words...');
+          const response = await searchVocabulary({ 
+            limit: 10,
+            sort: '-createdAt'
+          });
+          
+          recentWords.value = response.data || [];
+          console.log('✅ Recent words fetched:', recentWords.value.length);
+        } catch (err) {
+          console.error('❌ Error fetching recent words:', err);
+          recentWords.value = [];
+        }
+      };
+  
+      const fetchData = async () => {
+        try {
+          loading.value = true;
+          error.value = '';
+          
+          console.log('🚀 Starting vocabulary data fetch...');
+          
+          // Fetch all data in parallel
+          await Promise.all([
+            fetchLanguages(),
+            fetchStats(),
+            fetchRecentWords()
+          ]);
+          
+          // Fetch user-specific data if logged in
+          if (currentUser.value) {
+            await Promise.all([
+              fetchUserProgress(),
+              fetchWordsForReview()
+            ]);
+          }
+          
+          console.log('✅ All vocabulary data fetched successfully');
+          
+        } catch (err) {
+          console.error('❌ Error fetching vocabulary data:', err);
+          error.value = 'Failed to load vocabulary data. Please try again.';
+        } finally {
+          loading.value = false;
+        }
+      };
+  
+      // Watchers
+      watch(currentUser, async (newUser, oldUser) => {
+        if (newUser && !oldUser) {
+          // User just logged in, fetch user-specific data
+          console.log('👤 User logged in, fetching user data...');
+          await fetchUserProgress();
+          await fetchWordsForReview();
+        } else if (!newUser && oldUser) {
+          // User logged out, clear user-specific data
+          console.log('👋 User logged out, clearing user data...');
+          userProgress.value = null;
+          wordsForReview.value = 0;
+        }
+      });
+  
+      // Lifecycle
+      onMounted(async () => {
+        console.log('🎯 VocabularyPage mounted');
+        await fetchData();
+      });
+  
+      // Keyboard event handling
+      const handleKeydown = (e) => {
+        if (e.key === 'Escape' && showModal.value) {
+          closeAddWordModal();
+        }
+      };
+  
+      onMounted(() => {
+        document.addEventListener('keydown', handleKeydown);
+      });
+  
+      onBeforeUnmount(() => {
         document.removeEventListener('keydown', handleKeydown);
       });
+  
+      return {
+        loading,
+        error,
+        languages,
+        stats,
+        userProgress,
+        recentWords,
+        wordsForReview,
+        showModal,
+        submitting,
+        toastMessage,
+        toastType,
+        newWord,
+        
+        // Computed
+        currentUser,
+        isFormValid,
+        
+        // Methods
+        getLanguageFlag,
+        getLanguageName,
+        getLanguageColor,
+        getLanguageProgress,
+        getLanguageWordCount,
+        getLanguageTopicCount,
+        getProgressTrend,
+        getAccuracyTrend,
+        selectLanguage,
+        reviewWords,
+        startRandomQuiz,
+        viewProgress,
+        viewAchievements,
+        viewWord,
+        openAddWordModal,
+        closeAddWordModal,
+        closeModalOnOverlay,
+        submitWord,
+        fetchData
+      };
     }
-  }
+  };
   </script>
 
     <style>

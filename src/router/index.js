@@ -44,6 +44,16 @@ const routes = [
     component: VocabularyPage,
     meta: { requiresAuth: true, title: 'Словарь' }
   },
+  // ✅ FIXED: Add vocabulary language selection route
+  {
+    path: '/vocabulary/:language',
+    name: 'VocabularyLanguageTopics',
+    component: VocabularyTopics,
+    props: route => ({
+      language: route.params.language
+    }),
+    meta: { requiresAuth: true, title: 'Темы словаря' }
+  },
   {
     path: '/profile',
     component: ProfilePage,
@@ -177,33 +187,9 @@ const routes = [
         component: TestsPage, 
         props: true,
         meta: { title: 'Прохождение теста' }
-      },
-      { 
-        path: 'vocabulary', 
-        name: 'VocabularyTopics', 
-        component: VocabularyTopics,
-        meta: { title: 'Словарные темы' }
-      },
-      { 
-        path: 'vocabulary/:topicId', 
-        name: 'VocabularyTopicDetail', 
-        component: VocabularyTopics, 
-        props: route => ({
-          topicId: route.params.topicId,
-          topicName: route.query.name,
-          subject: route.query.subject
-        }),
-        meta: { title: 'Словарная тема' },
-        beforeEnter: (to, from, next) => {
-          if (!to.params.topicId || to.params.topicId === 'null' || to.params.topicId === 'undefined') {
-            console.error('❌ Invalid vocabulary topic ID:', to.params.topicId);
-            next({ name: 'VocabularyTopics' });
-          } else {
-            console.log('✅ Valid vocabulary topic ID:', to.params.topicId);
-            next();
-          }
-        }
-      },
+      }
+      // ✅ REMOVED: Conflicting vocabulary routes from profile section
+      // These were causing conflicts with main vocabulary routes
     ],
   },
   {
@@ -298,11 +284,10 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // ✅ NEW: Vocabulary route validation
-  if (to.name && to.name.includes('Vocabulary') && to.params.topicId) {
+  if (to.name && to.name.includes('Vocabulary') && to.params.language) {
     console.log('📖 Vocabulary route navigation:', {
       route: to.name,
-      topicId: to.params.topicId,
-      topicName: to.query.name,
+      language: to.params.language,
       from: from.path
     });
   }
@@ -371,23 +356,31 @@ router.onError((err) => {
   // Handle navigation errors specifically for vocabulary routes
   if (err.message.includes('vocabulary') || err.message.includes('Vocabulary')) {
     console.error('📖 Vocabulary route error:', err);
-    // Could redirect to vocabulary topics as fallback
-    // router.push({ name: 'VocabularyTopics' });
+    // Could redirect to main vocabulary page as fallback
+    // router.push({ name: 'VocabularyPage' });
   }
 });
 
 // ✅ Debug navigation failures with enhanced logging
 router.isReady().then(() => {
   console.log('✅ Router is ready');
-  console.log('📋 Available homework routes:');
-  console.log('  - /profile/homeworks (list)');
-  console.log('  - /profile/homeworks/:id (flexible)');
-  console.log('  - /profile/homework/lesson/:lessonId (specific lesson)');
-  console.log('  - /profile/homework/standalone/:homeworkId (specific standalone)');
-  console.log('📖 Available vocabulary routes:');
-  console.log('  - /vocabulary (main vocabulary page)');
-  console.log('  - /profile/vocabulary (vocabulary topics in profile)');
-  console.log('  - /profile/vocabulary/:topicId (specific vocabulary topic)');
+  console.log('📋 Available routes:');
+  console.log('  Main routes:');
+  console.log('    / (HomePage)');
+  console.log('    /settings (SettingsPage)');
+  console.log('    /vocabulary (VocabularyPage)');
+  console.log('    /vocabulary/:language (VocabularyLanguageTopics)');
+  console.log('  Profile routes:');
+  console.log('    /profile/main');
+  console.log('    /profile/homeworks');
+  console.log('    /profile/homeworks/:id (flexible)');
+  console.log('    /profile/homework/lesson/:lessonId (specific lesson)');
+  console.log('    /profile/homework/standalone/:homeworkId (specific standalone)');
+  console.log('  Payment routes:');
+  console.log('    /pay/:plan');
+  console.log('  Learning routes:');
+  console.log('    /lesson/:id');
+  console.log('    /topic/:id/overview');
 }).catch(err => {
   console.error('❌ Router initialization failed:', err);
 });

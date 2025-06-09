@@ -3,14 +3,14 @@
       <!-- Header with Back Button -->
       <div class="page-header">
         <button @click="goBack" class="back-btn">
-          ← Назад к языкам
+          ← Back to Languages
         </button>
         
         <div class="language-header">
-          <div class="language-flag">{{ getLanguageFlag(languageCode) }}</div>
+          <div class="language-flag">{{ getLanguageFlag(language) }}</div>
           <div class="language-info">
-            <h1 class="language-title">{{ getLanguageName(languageCode) }}</h1>
-            <p class="language-subtitle">Выберите тему для изучения</p>
+            <h1 class="language-title">{{ getLanguageName(language) }}</h1>
+            <p class="language-subtitle">Choose a topic to study</p>
           </div>
         </div>
         
@@ -18,15 +18,15 @@
         <div class="language-stats" v-if="languageStats">
           <div class="stat-item">
             <div class="stat-number">{{ languageStats.totalWords || 0 }}</div>
-            <div class="stat-label">слов</div>
+            <div class="stat-label">words</div>
           </div>
           <div class="stat-item">
             <div class="stat-number">{{ topics.length }}</div>
-            <div class="stat-label">тем</div>
+            <div class="stat-label">topics</div>
           </div>
           <div class="stat-item" v-if="userProgress">
             <div class="stat-number">{{ userProgress.mastered || 0 }}</div>
-            <div class="stat-label">изучено</div>
+            <div class="stat-label">mastered</div>
           </div>
         </div>
       </div>
@@ -37,7 +37,7 @@
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="🔍 Поиск по темам..."
+            placeholder="🔍 Search topics..."
             class="search-input"
           />
         </div>
@@ -58,15 +58,15 @@
       <!-- Loading State -->
       <div v-if="loading" class="loading-container">
         <div class="spinner"></div>
-        <p>Загружаем темы...</p>
+        <p>Loading topics...</p>
       </div>
   
       <!-- Error State -->
       <div v-else-if="error" class="error-container">
         <div class="error-icon">😔</div>
-        <h3>Произошла ошибка</h3>
+        <h3>Something went wrong</h3>
         <p>{{ error }}</p>
-        <button @click="fetchTopics" class="retry-btn">Попробовать снова</button>
+        <button @click="fetchTopics" class="retry-btn">Try Again</button>
       </div>
   
       <!-- Topics Grid -->
@@ -90,11 +90,11 @@
             <div class="topic-stats">
               <div class="stat-badge">
                 <span class="stat-icon">📝</span>
-                <span>{{ topic.wordCount }} слов</span>
+                <span>{{ topic.wordCount }} words</span>
               </div>
               <div class="stat-badge">
                 <span class="stat-icon">📚</span>
-                <span>{{ topic.subtopicCount }} разделов</span>
+                <span>{{ topic.subtopicCount }} sections</span>
               </div>
               <div class="stat-badge difficulty" :class="topic.difficulty">
                 <span class="stat-icon">{{ getDifficultyIcon(topic.difficulty) }}</span>
@@ -116,13 +116,13 @@
           
           <!-- Status Badge -->
           <div class="status-badge" v-if="isTopicCompleted(topic)">
-            ✅ Завершено
+            ✅ Completed
           </div>
           <div class="status-badge in-progress" v-else-if="isTopicInProgress(topic)">
-            📖 В процессе
+            📖 In Progress
           </div>
           <div class="status-badge new" v-else>
-            🆕 Новое
+            🆕 New
           </div>
           
           <div class="card-arrow">→</div>
@@ -132,41 +132,46 @@
       <!-- Empty State -->
       <div v-else class="empty-state">
         <div class="empty-icon">📚</div>
-        <h3>Темы не найдены</h3>
+        <h3>No topics found</h3>
         <p v-if="searchQuery">
-          Попробуйте изменить поисковый запрос или сбросить фильтры
+          Try changing your search query or reset filters
         </p>
         <p v-else>
-          Пока нет доступных тем для изучения {{ getLanguageName(languageCode) }}
+          No topics available for {{ getLanguageName(language) }} yet
         </p>
         <button v-if="searchQuery || selectedDifficulty" @click="clearFilters" class="clear-filters-btn">
-          Сбросить фильтры
+          Clear Filters
         </button>
       </div>
   
       <!-- Quick Actions -->
       <div class="quick-actions" v-if="!loading && topics.length > 0">
-        <h3>🎯 Быстрые действия</h3>
+        <h3>🎯 Quick Actions</h3>
         <div class="action-cards">
           <div class="action-card" @click="startRandomQuiz">
             <div class="action-icon">🎲</div>
-            <h4>Случайный тест</h4>
-            <p>Из всех тем {{ getLanguageName(languageCode) }}</p>
+            <h4>Random Quiz</h4>
+            <p>From all {{ getLanguageName(language) }} topics</p>
           </div>
           
           <div class="action-card" @click="continueLastTopic" v-if="lastTopic">
             <div class="action-icon">📖</div>
-            <h4>Продолжить</h4>
+            <h4>Continue</h4>
             <p>{{ lastTopic.name }}</p>
           </div>
           
           <div class="action-card" @click="reviewWords">
             <div class="action-icon">🔄</div>
-            <h4>Повторение</h4>
-            <p>Слова на повторение</p>
+            <h4>Review</h4>
+            <p>Words for review</p>
             <span class="action-count" v-if="reviewCount > 0">{{ reviewCount }}</span>
           </div>
         </div>
+      </div>
+  
+      <!-- Toast Messages -->
+      <div v-if="toastMessage" class="toast" :class="toastType">
+        {{ toastMessage }}
       </div>
     </div>
   </template>
@@ -183,7 +188,13 @@
   
   export default {
     name: 'VocabularyTopics',
-    setup() {
+    props: {
+      language: {
+        type: String,
+        required: true
+      }
+    },
+    setup(props) {
       const router = useRouter();
       const route = useRoute();
       const store = useStore();
@@ -196,15 +207,14 @@
       const userProgress = ref(null);
       const searchQuery = ref('');
       const selectedDifficulty = ref('');
-      
-      // Route params
-      const languageCode = computed(() => route.params.language);
+      const toastMessage = ref('');
+      const toastType = ref('success');
       
       // Constants
       const difficultyLevels = [
-        { value: 'beginner', label: 'Начальный', icon: '🟢' },
-        { value: 'intermediate', label: 'Средний', icon: '🟡' },
-        { value: 'advanced', label: 'Продвинутый', icon: '🔴' }
+        { value: 'beginner', label: 'Beginner', icon: '🟢' },
+        { value: 'intermediate', label: 'Intermediate', icon: '🟡' },
+        { value: 'advanced', label: 'Advanced', icon: '🔴' }
       ];
       
       // Computed
@@ -256,16 +266,16 @@
       
       const getLanguageName = (languageCode) => {
         const names = {
-          english: 'Английский',
-          spanish: 'Испанский',
-          french: 'Французский',
-          german: 'Немецкий',
-          chinese: 'Китайский',
-          arabic: 'Арабский',
-          japanese: 'Японский',
-          korean: 'Корейский',
-          uzbek: 'Узбекский',
-          russian: 'Русский'
+          english: 'English',
+          spanish: 'Spanish',
+          french: 'French',
+          german: 'German',
+          chinese: 'Chinese',
+          arabic: 'Arabic',
+          japanese: 'Japanese',
+          korean: 'Korean',
+          uzbek: 'Uzbek',
+          russian: 'Russian'
         };
         return names[languageCode] || languageCode;
       };
@@ -307,27 +317,27 @@
       
       const getTopicDescription = (topicName) => {
         const descriptions = {
-          'Travel': 'Слова для путешествий и туризма',
-          'Business': 'Деловая лексика и бизнес-термины',
-          'Food': 'Еда, напитки и кулинария',
-          'Family': 'Семья, родственники и отношения',
-          'Education': 'Образование, школа, университет',
-          'Health': 'Здоровье, медицина, части тела',
-          'Technology': 'Технологии, компьютеры, интернет',
-          'Sports': 'Спорт, игры, физическая активность',
-          'Music': 'Музыка, инструменты, жанры',
-          'Art': 'Искусство, творчество, культура',
-          'Nature': 'Природа, окружающая среда',
-          'Animals': 'Животные, домашние питомцы',
-          'Transportation': 'Транспорт, поездки, дороги',
-          'Shopping': 'Покупки, магазины, торговля',
-          'Weather': 'Погода, времена года, климат',
-          'Time': 'Время, даты, календарь',
-          'Colors': 'Цвета, оттенки, описания',
-          'Numbers': 'Числа, математика, количество',
-          'Daily Life': 'Повседневная жизнь, быт'
+          'Travel': 'Words for travel and tourism',
+          'Business': 'Business vocabulary and terms',
+          'Food': 'Food, drinks and cooking',
+          'Family': 'Family, relatives and relationships',
+          'Education': 'Education, school, university',
+          'Health': 'Health, medicine, body parts',
+          'Technology': 'Technology, computers, internet',
+          'Sports': 'Sports, games, physical activity',
+          'Music': 'Music, instruments, genres',
+          'Art': 'Art, creativity, culture',
+          'Nature': 'Nature, environment',
+          'Animals': 'Animals, pets',
+          'Transportation': 'Transport, travel, roads',
+          'Shopping': 'Shopping, stores, commerce',
+          'Weather': 'Weather, seasons, climate',
+          'Time': 'Time, dates, calendar',
+          'Colors': 'Colors, shades, descriptions',
+          'Numbers': 'Numbers, math, quantities',
+          'Daily Life': 'Daily life, household'
         };
-        return descriptions[topicName] || 'Изучение новых слов и выражений';
+        return descriptions[topicName] || 'Learn new words and expressions';
       };
       
       const getDifficultyIcon = (difficulty) => {
@@ -341,9 +351,9 @@
       
       const getDifficultyLabel = (difficulty) => {
         const labels = {
-          beginner: 'Легко',
-          intermediate: 'Средне',
-          advanced: 'Сложно'
+          beginner: 'Easy',
+          intermediate: 'Medium',
+          advanced: 'Hard'
         };
         return labels[difficulty] || difficulty;
       };
@@ -363,14 +373,28 @@
         return progress > 0 && progress < 90;
       };
       
+      const showToast = (message, type = 'success') => {
+        toastMessage.value = message;
+        toastType.value = type;
+        setTimeout(() => {
+          toastMessage.value = '';
+        }, 3000);
+      };
+      
       const selectTopic = (topic) => {
-        router.push({
-          name: 'VocabularySubtopics',
-          params: {
-            language: languageCode.value,
-            topic: topic.name
-          }
-        });
+        console.log('📖 Selecting topic:', topic.name, 'for language:', props.language);
+        
+        // For now, show a message since subtopics view isn't implemented yet
+        showToast(`Selected: ${topic.name} (${topic.wordCount} words)`);
+        
+        // TODO: Navigate to subtopics when implemented
+        // router.push({
+        //   name: 'VocabularySubtopics',
+        //   params: {
+        //     language: props.language,
+        //     topic: topic.name
+        //   }
+        // });
       };
       
       const goBack = () => {
@@ -383,10 +407,7 @@
       };
       
       const startRandomQuiz = () => {
-        router.push({
-          name: 'VocabularyQuiz',
-          query: { language: languageCode.value }
-        });
+        showToast('Random quiz feature coming soon!');
       };
       
       const continueLastTopic = () => {
@@ -396,10 +417,7 @@
       };
       
       const reviewWords = () => {
-        router.push({
-          name: 'VocabularyReview',
-          query: { language: languageCode.value }
-        });
+        showToast('Review feature coming soon!');
       };
       
       // API calls
@@ -408,12 +426,17 @@
           loading.value = true;
           error.value = '';
           
-          const response = await getVocabularyTopics(languageCode.value);
+          console.log('📚 Fetching topics for language:', props.language);
+          
+          const response = await getVocabularyTopics(props.language);
           topics.value = response.data || [];
           
+          console.log('✅ Topics fetched:', topics.value.length, 'topics');
+          
         } catch (err) {
-          console.error('Error fetching topics:', err);
-          error.value = 'Не удалось загрузить темы';
+          console.error('❌ Error fetching topics:', err);
+          error.value = 'Failed to load topics';
+          topics.value = [];
         } finally {
           loading.value = false;
         }
@@ -421,39 +444,77 @@
       
       const fetchLanguageStats = async () => {
         try {
-          const response = await getLanguageStats(languageCode.value);
+          console.log('📊 Fetching language stats for:', props.language);
+          const response = await getLanguageStats(props.language);
           languageStats.value = response.data || null;
+          console.log('✅ Language stats fetched:', languageStats.value);
         } catch (err) {
-          console.error('Error fetching language stats:', err);
+          console.error('❌ Error fetching language stats:', err);
+          languageStats.value = null;
         }
       };
       
       const fetchUserProgress = async () => {
-        if (!currentUser.value) return;
+        if (!currentUser.value) {
+          console.log('⚠️ No user logged in, skipping progress fetch');
+          return;
+        }
         
         try {
+          console.log('📈 Fetching user progress for:', currentUser.value.uid, 'language:', props.language);
           const response = await getUserLanguageProgress(
             currentUser.value.uid,
-            languageCode.value
+            props.language
           );
           userProgress.value = response.data || null;
+          console.log('✅ User progress fetched:', userProgress.value);
         } catch (err) {
-          console.error('Error fetching user progress:', err);
+          console.error('❌ Error fetching user progress:', err);
+          userProgress.value = null;
         }
+      };
+      
+      const fetchData = async () => {
+        console.log('🚀 Starting data fetch for language:', props.language);
+        
+        await Promise.all([
+          fetchTopics(),
+          fetchLanguageStats()
+        ]);
+        
+        // Fetch user progress if logged in
+        if (currentUser.value) {
+          await fetchUserProgress();
+        }
+        
+        console.log('✅ All data fetched for language:', props.language);
       };
       
       // Lifecycle
       onMounted(async () => {
-        await fetchTopics();
-        await fetchLanguageStats();
-        await fetchUserProgress();
+        console.log('🎯 VocabularyTopics mounted for language:', props.language);
+        await fetchData();
       });
       
       // Watch for language changes
-      watch(languageCode, async () => {
-        await fetchTopics();
-        await fetchLanguageStats();
-        await fetchUserProgress();
+      watch(() => props.language, async (newLanguage, oldLanguage) => {
+        if (newLanguage !== oldLanguage) {
+          console.log('🔄 Language changed from', oldLanguage, 'to', newLanguage);
+          await fetchData();
+        }
+      });
+      
+      // Watch for user login/logout
+      watch(currentUser, async (newUser, oldUser) => {
+        if (newUser && !oldUser) {
+          // User just logged in
+          console.log('👤 User logged in, fetching user progress...');
+          await fetchUserProgress();
+        } else if (!newUser && oldUser) {
+          // User logged out
+          console.log('👋 User logged out, clearing user progress...');
+          userProgress.value = null;
+        }
       });
       
       return {
@@ -464,7 +525,8 @@
         userProgress,
         searchQuery,
         selectedDifficulty,
-        languageCode,
+        toastMessage,
+        toastType,
         difficultyLevels,
         filteredTopics,
         lastTopic,
