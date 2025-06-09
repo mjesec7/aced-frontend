@@ -1,4 +1,11 @@
-getSelectedLanguageName,
+getTopicPlural,
+      getWordPlural,
+      getSubtopicPlural,    // Russian pluralization for subtopics/sections
+    const getSubtopicPlural = (count) => {
+      if (count % 10 === 1 && count % 100 !== 11) return 'раздел';
+      if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return 'раздела';
+      return 'разделов';
+    };      getSelectedLanguageName,
       getLanguageNameRu,
       getTopicNameRu,
       toggleDifficulty,    const filteredTopics = computed(() => {
@@ -95,8 +102,8 @@ getSelectedLanguageName,
                 <h3 class="language-name">{{ language.nameRu || language.name }}</h3>
                 <p class="language-name-en">{{ language.name }}</p>
                 <div class="language-stats">
-                  <span class="word-count">{{ getLanguageWordCount(language.code) }} слов</span>
-                  <span class="topic-count">{{ getLanguageTopicCount(language.code) }} тем</span>
+                  <span class="word-count">{{ getLanguageWordCount(language.code) }}</span>
+                  <span class="topic-count">{{ getLanguageTopicCount(language.code) }}</span>
                 </div>
               </div>
               <div class="card-arrow">→</div>
@@ -171,11 +178,11 @@ getSelectedLanguageName,
                 <div class="topic-stats">
                   <div class="stat-badge">
                     <span class="stat-icon">📝</span>
-                    <span>{{ topic.wordCount || 0 }} слов</span>
+                    <span>{{ topic.wordCount || 0 }} {{ getWordPlural(topic.wordCount || 0) }}</span>
                   </div>
                   <div class="stat-badge">
                     <span class="stat-icon">📚</span>
-                    <span>{{ topic.subtopicCount || 1 }} разделов</span>
+                    <span>{{ topic.subtopicCount || 1 }} {{ getSubtopicPlural(topic.subtopicCount || 1) }}</span>
                   </div>
                   <div class="stat-badge difficulty" :class="topic.difficulty || 'beginner'">
                     <span class="stat-icon">{{ getDifficultyIcon(topic.difficulty || 'beginner') }}</span>
@@ -506,16 +513,32 @@ export default {
       return langProgress ? langProgress.percentage : 0;
     };
 
-    const getLanguageWordCount = (languageCode) => {
-      if (!stats.value || !stats.value.byLanguage) return 0;
-      const langStat = stats.value.byLanguage.find(l => l._id === languageCode);
-      return langStat ? langStat.count : 0;
-    };
-
     const getLanguageTopicCount = (languageCode) => {
       const wordsInLanguage = recentWords.value.filter(w => w.language === languageCode);
       const uniqueTopics = [...new Set(wordsInLanguage.map(w => w.topic))];
-      return uniqueTopics.length || 1;
+      const count = uniqueTopics.length || 1;
+      return `${count} ${getTopicPlural(count)}`;
+    };
+
+    // Russian pluralization for topics
+    const getTopicPlural = (count) => {
+      if (count % 10 === 1 && count % 100 !== 11) return 'тема';
+      if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return 'темы';
+      return 'тем';
+    };
+
+    // Russian pluralization for words
+    const getWordPlural = (count) => {
+      if (count % 10 === 1 && count % 100 !== 11) return 'слово';
+      if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return 'слова';
+      return 'слов';
+    };
+
+    const getLanguageWordCount = (languageCode) => {
+      if (!stats.value || !stats.value.byLanguage) return '0 слов';
+      const langStat = stats.value.byLanguage.find(l => l._id === languageCode);
+      const count = langStat ? langStat.count : 0;
+      return `${count} ${getWordPlural(count)}`;
     };
 
     const getProgressTrend = () => {
@@ -657,6 +680,8 @@ export default {
     const selectTopic = (topic) => {
       console.log('📖 Выбрана тема:', topic.name);
       showToast(`Выбрано: ${getTopicNameRu(topic.name)} (${topic.wordCount || 0} слов)`);
+      // Don't change the view, just show feedback
+      // Later we can add navigation to subtopics or word lists
     };
 
     const toggleDifficulty = (difficulty) => {
@@ -1016,11 +1041,35 @@ export default {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   min-height: 100vh;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  color: var(--text-primary);
 }
 
 .main-content {
   position: relative;
   z-index: 1;
+}
+
+/* Ensure all text is visible */
+.vocabulary-page * {
+  color: inherit;
+}
+
+.vocabulary-page h1,
+.vocabulary-page h2,
+.vocabulary-page h3,
+.vocabulary-page h4,
+.vocabulary-page .language-name,
+.vocabulary-page .topic-name,
+.vocabulary-page .selected-language-title {
+  color: var(--text-primary) !important;
+}
+
+.vocabulary-page p,
+.vocabulary-page span,
+.vocabulary-page .language-name-en,
+.vocabulary-page .topic-description,
+.vocabulary-page .selected-language-subtitle {
+  color: var(--text-secondary) !important;
 }
 
 /* Header Styles */
@@ -1265,7 +1314,7 @@ export default {
   background: var(--border-light);
   padding: 8px 16px;
   border-radius: var(--border-radius-md);
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
   font-weight: 600;
   transition: all var(--transition-fast);
 }
@@ -1401,6 +1450,8 @@ export default {
   flex-direction: column;
   gap: 20px;
   margin-bottom: 32px;
+  position: relative;
+  z-index: 2;
 }
 
 .search-box {
@@ -1460,6 +1511,9 @@ export default {
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 24px;
   margin-bottom: 50px;
+  position: relative;
+  z-index: 1;
+  min-height: 300px;
 }
 
 .topic-card {
@@ -1530,7 +1584,7 @@ export default {
   padding: 6px 12px;
   border-radius: 8px;
   font-size: 0.875rem;
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
 }
 
 .stat-badge.difficulty {
@@ -1604,6 +1658,8 @@ export default {
 /* Quick Actions */
 .quick-actions {
   margin-bottom: 80px;
+  position: relative;
+  z-index: 1;
 }
 
 .action-cards {
@@ -1778,6 +1834,13 @@ export default {
 .empty-state {
   text-align: center;
   padding: 80px 24px;
+  color: var(--text-primary) !important;
+}
+
+.loading-container p,
+.error-container p,
+.empty-state p {
+  color: var(--text-secondary) !important;
 }
 
 .spinner {
