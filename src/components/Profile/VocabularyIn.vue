@@ -310,7 +310,7 @@
   import { ref, computed, onMounted, watch } from 'vue';
   import { useStore } from 'vuex';
   import { useRouter, useRoute } from 'vue-router';
-  import CreateTestModal from './CreateTestModal.vue';
+  import CreateTestModal from '../components/Modals/CreateTestModal';
   import {
     getVocabularyTopics,
     searchVocabulary,
