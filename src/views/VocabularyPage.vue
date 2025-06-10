@@ -158,7 +158,7 @@
   import { ref, computed, onMounted, watch } from 'vue';
   import { useStore } from 'vuex';
   import { useRouter } from 'vue-router';
-  import CreateTestModal from '../components/Modals/CreateTestModal';
+  import CreateTestModal from '../components/Modals/CreateTestModal.vue';
   import {
     getVocabularyLanguages,
     getVocabularyStats,
