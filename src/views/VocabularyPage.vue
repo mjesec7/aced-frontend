@@ -278,13 +278,12 @@
         toastType.value = type;
         setTimeout(() => { toastMessage.value = ''; }, 3000);
       };
-  
       const selectLanguage = (language) => {
-        router.push({
-          name: 'VocabularyIn',
-          params: { languageCode: language.code }
-        });
-      };
+  router.push({
+    name: 'VocabularyIn',
+    params: { languageCode: language.code }
+  });
+};
   
       const openCreateTestModal = () => {
         if (!currentUser.value) {
@@ -318,30 +317,53 @@
   
       // API calls
       const fetchLanguages = async () => {
-        try {
-          const response = await getVocabularyLanguages();
-          const languageData = response.data || [];
-          
-          languages.value = languageData.map(lang => ({
-            ...lang,
-            isPopular: ['english', 'spanish', 'french'].includes(lang.code)
-          }));
-          
-        } catch (err) {
-          console.error('Error fetching languages:', err);
-          languages.value = [
-            { code: 'english', name: 'English', nameRu: 'Английский', isPopular: true },
-            { code: 'spanish', name: 'Spanish', nameRu: 'Испанский', isPopular: true },
-            { code: 'french', name: 'French', nameRu: 'Французский', isPopular: true },
-            { code: 'german', name: 'German', nameRu: 'Немецкий', isPopular: false },
-            { code: 'chinese', name: 'Chinese', nameRu: 'Китайский', isPopular: false },
-            { code: 'arabic', name: 'Arabic', nameRu: 'Арабский', isPopular: false },
-            { code: 'japanese', name: 'Japanese', nameRu: 'Японский', isPopular: false },
-            { code: 'korean', name: 'Korean', nameRu: 'Корейский', isPopular: false }
-          ];
-        }
-      };
-  
+  try {
+    console.log('🌍 Fetching available languages...');
+    const response = await getVocabularyLanguages();
+    
+    // Check if response has data property and it's an array
+    let languageData = [];
+    if (response && response.data) {
+      languageData = Array.isArray(response.data) ? response.data : [];
+    } else if (Array.isArray(response)) {
+      languageData = response;
+    }
+    
+    // If still no data, use defaults
+    if (languageData.length === 0) {
+      console.warn('⚠️ No languages from API, using defaults');
+      languageData = [
+        { code: 'english', name: 'English', nameRu: 'Английский' },
+        { code: 'spanish', name: 'Spanish', nameRu: 'Испанский' },
+        { code: 'french', name: 'French', nameRu: 'Французский' },
+        { code: 'german', name: 'German', nameRu: 'Немецкий' },
+        { code: 'chinese', name: 'Chinese', nameRu: 'Китайский' },
+        { code: 'arabic', name: 'Arabic', nameRu: 'Арабский' },
+        { code: 'japanese', name: 'Japanese', nameRu: 'Японский' },
+        { code: 'korean', name: 'Korean', nameRu: 'Корейский' }
+      ];
+    }
+    
+    languages.value = languageData.map(lang => ({
+      ...lang,
+      isPopular: ['english', 'spanish', 'french'].includes(lang.code)
+    }));
+    
+  } catch (err) {
+    console.error('❌ Error fetching languages:', err);
+    // Use default languages on error
+    languages.value = [
+      { code: 'english', name: 'English', nameRu: 'Английский', isPopular: true },
+      { code: 'spanish', name: 'Spanish', nameRu: 'Испанский', isPopular: true },
+      { code: 'french', name: 'French', nameRu: 'Французский', isPopular: true },
+      { code: 'german', name: 'German', nameRu: 'Немецкий', isPopular: false },
+      { code: 'chinese', name: 'Chinese', nameRu: 'Китайский', isPopular: false },
+      { code: 'arabic', name: 'Arabic', nameRu: 'Арабский', isPopular: false },
+      { code: 'japanese', name: 'Japanese', nameRu: 'Японский', isPopular: false },
+      { code: 'korean', name: 'Korean', nameRu: 'Корейский', isPopular: false }
+    ];
+  }
+};
       const fetchStats = async () => {
         try {
           const response = await getVocabularyStats();

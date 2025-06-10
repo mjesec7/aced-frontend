@@ -19,6 +19,9 @@ import DiaryPage from '@/components/Profile/DiaryPage.vue';
 import CataloguePage from '@/views/CataloguePage.vue';
 import TestsPage from '@/components/Profile/TestsPage.vue';
 
+// ✅ NEW: Import VocabularyIn component
+import VocabularyIn from '@/components/Profile/VocabularyIn.vue';
+
 // ✅ Payments
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
 
@@ -38,11 +41,6 @@ const routes = [
     name: 'SettingsPage',
     component: AcedSettings,
   },
-  // ✅ REMOVED: Standalone vocabulary routes completely removed
-  // Old routes that are now removed:
-  // - /vocabulary
-  // - /vocabulary/:language
-  
   {
     path: '/profile',
     component: ProfilePage,
@@ -92,17 +90,14 @@ const routes = [
         name: 'HomeworkPage', 
         component: HomeworkPage, 
         props: route => ({
-          // Pass the ID as both homeworkId and lessonId - component will determine which one to use
           homeworkId: route.params.id,
           lessonId: route.params.id,
-          // Pass query parameters for additional context
           homeworkType: route.query.type || route.query.homeworkType,
           title: route.query.title,
           subject: route.query.subject
         }),
         meta: { title: 'Выполнение домашнего задания' },
         beforeEnter: (to, from, next) => {
-          // Validate ID before entering the route
           if (!to.params.id || to.params.id === 'null' || to.params.id === 'undefined') {
             console.error('❌ Invalid homework/lesson ID:', to.params.id);
             next({ name: 'HomeworkList' });
@@ -113,7 +108,6 @@ const routes = [
         }
       },
       
-      // ✅ ADDITIONAL: Specific routes for different homework types (for cleaner URLs and explicit routing)
       { 
         path: 'homework/lesson/:lessonId', 
         name: 'LessonHomeworkPage', 
@@ -184,6 +178,25 @@ const routes = [
         name: 'VocabularyPage', 
         component: VocabularyPage,
         meta: { title: 'Словарь' }
+      },
+      
+      // ✅ NEW: VocabularyIn route for specific language learning
+      { 
+        path: 'vocabulary/:languageCode', 
+        name: 'VocabularyIn', 
+        component: VocabularyIn,
+        props: true,
+        meta: { title: 'Изучение языка' },
+        beforeEnter: (to, from, next) => {
+          const validLanguages = ['english', 'spanish', 'french', 'german', 'chinese', 'arabic', 'japanese', 'korean', 'uzbek', 'russian'];
+          if (!to.params.languageCode || !validLanguages.includes(to.params.languageCode)) {
+            console.error('❌ Invalid language code:', to.params.languageCode);
+            next({ name: 'VocabularyPage' });
+          } else {
+            console.log('✅ Valid language code:', to.params.languageCode);
+            next();
+          }
+        }
       }
     ],
   },
@@ -222,7 +235,7 @@ const routes = [
   },
   {
     path: '/vocabulary/:language',
-    redirect: to => `/profile/vocabulary`
+    redirect: to => `/profile/vocabulary/${to.params.language}`
   },
   
   {
@@ -268,7 +281,7 @@ router.beforeEach(async (to, from, next) => {
     console.warn('❌ Нет доступа: пользователь не вошел. Перенаправление на главную.');
     return next({ 
       name: 'HomePage',
-      query: { redirect: to.fullPath } // Save the intended destination
+      query: { redirect: to.fullPath }
     });
   }
 
@@ -280,7 +293,6 @@ router.beforeEach(async (to, from, next) => {
 
   // ✅ ENHANCED: Additional homework route validation
   if (to.name && to.name.includes('Homework') && to.params.id) {
-    // Log homework navigation for debugging
     console.log('📚 Homework route navigation:', {
       route: to.name,
       id: to.params.id || to.params.homeworkId || to.params.lessonId,
@@ -294,6 +306,7 @@ router.beforeEach(async (to, from, next) => {
     console.log('📖 Vocabulary route navigation:', {
       route: to.name,
       path: to.path,
+      params: to.params,
       from: from.path
     });
   }
@@ -355,15 +368,11 @@ router.onError((err) => {
   // Handle navigation errors specifically for homework routes
   if (err.message.includes('homework') || err.message.includes('Homework')) {
     console.error('📚 Homework route error:', err);
-    // Could redirect to homework list as fallback
-    // router.push({ name: 'HomeworkList' });
   }
   
   // Handle navigation errors specifically for vocabulary routes
   if (err.message.includes('vocabulary') || err.message.includes('Vocabulary')) {
     console.error('📖 Vocabulary route error:', err);
-    // Could redirect to main profile page as fallback
-    // router.push({ name: 'MainPage' });
   }
 });
 
@@ -376,14 +385,15 @@ router.isReady().then(() => {
   console.log('    /settings (SettingsPage)');
   console.log('  Profile routes:');
   console.log('    /profile/main');
-  console.log('    /profile/vocabulary (VocabularyPage from views)');
+  console.log('    /profile/vocabulary (VocabularyPage)');
+  console.log('    /profile/vocabulary/:languageCode (VocabularyIn)');
   console.log('    /profile/homeworks');
-  console.log('    /profile/homeworks/:id (flexible)');
-  console.log('    /profile/homework/lesson/:lessonId (specific lesson)');
-  console.log('    /profile/homework/standalone/:homeworkId (specific standalone)');
+  console.log('    /profile/homeworks/:id');
+  console.log('    /profile/homework/lesson/:lessonId');
+  console.log('    /profile/homework/standalone/:homeworkId');
   console.log('  Redirects:');
   console.log('    /vocabulary → /profile/vocabulary');
-  console.log('    /vocabulary/:language → /profile/vocabulary');
+  console.log('    /vocabulary/:language → /profile/vocabulary/:language');
   console.log('  Payment routes:');
   console.log('    /pay/:plan');
   console.log('  Learning routes:');
