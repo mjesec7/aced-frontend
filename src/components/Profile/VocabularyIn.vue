@@ -3,42 +3,44 @@
     <!-- Header -->
     <div class="page-header">
       <button @click="goBack" class="back-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <path d="m15 18-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Back
+        <div class="btn-icon">←</div>
+        <span>Назад</span>
       </button>
       
       <div class="language-info">
-        <span class="language-flag">{{ getLanguageFlag(languageCode) }}</span>
+        <div class="language-flag-container">
+          <span class="language-flag">{{ getLanguageFlag(languageCode) }}</span>
+          <div class="flag-glow"></div>
+        </div>
         <div class="language-details">
           <h1 class="language-title">{{ getSelectedLanguageName() }}</h1>
           <p class="language-subtitle">
-            {{ currentView === 'topics' ? 'Select a topic to start learning' : 
-               currentView === 'learning' ? `Learning: ${selectedTopic}` :
-               currentView === 'test' ? 'Testing Mode' : '' }}
+            {{ currentView === 'topics' ? 'Выберите тему для начала изучения' : 
+               currentView === 'learning' ? `Изучение: ${selectedTopic}` :
+               currentView === 'test' ? 'Режим тестирования' : '' }}
           </p>
         </div>
       </div>
 
-      <!-- Test Button (visible in topics view) -->
       <button 
         v-if="currentView === 'topics'"
         @click="openCreateTestModal" 
         class="create-test-btn"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-          <path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Create Test
+        <div class="btn-icon">🎯</div>
+        <span>Создать тест</span>
+        <div class="btn-glow"></div>
       </button>
     </div>
 
     <!-- Loading State -->
     <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <span>Loading...</span>
+      <div class="loading-animation">
+        <div class="loading-circle"></div>
+        <div class="loading-circle"></div>
+        <div class="loading-circle"></div>
+      </div>
+      <span>Загрузка...</span>
     </div>
 
     <!-- Topics View -->
@@ -46,16 +48,14 @@
       <!-- Search and Filter -->
       <div class="controls">
         <div class="search-container">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" class="search-icon">
-            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
-            <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <div class="search-icon">🔍</div>
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Search topics..."
+            placeholder="Поиск тем..."
             class="search-input"
           />
+          <div class="search-glow"></div>
         </div>
         
         <div class="filter-buttons">
@@ -66,6 +66,7 @@
             class="filter-btn"
             :class="{ active: selectedDifficulty === difficulty.value }"
           >
+            <span class="filter-icon">{{ difficulty.icon }}</span>
             {{ difficulty.label }}
           </button>
         </div>
@@ -83,11 +84,19 @@
           }"
           @click="selectTopic(topic)"
         >
+          <div class="card-glow"></div>
           <div class="card-header">
-            <div class="topic-icon">{{ getTopicIcon(topic.name) }}</div>
+            <div class="topic-icon-container">
+              <div class="topic-icon">{{ getTopicIcon(topic.name) }}</div>
+              <div class="icon-pulse"></div>
+            </div>
             <div class="topic-status">
-              <div v-if="isTopicCompleted(topic)" class="status-indicator completed">✓</div>
-              <div v-else-if="isTopicInProgress(topic)" class="status-indicator in-progress">⋯</div>
+              <div v-if="isTopicCompleted(topic)" class="status-indicator completed">
+                <span class="status-icon">✓</span>
+              </div>
+              <div v-else-if="isTopicInProgress(topic)" class="status-indicator in-progress">
+                <span class="status-icon">⋯</span>
+              </div>
             </div>
           </div>
           
@@ -96,10 +105,14 @@
             <p class="topic-description">{{ getTopicDescription(topic.name) }}</p>
             
             <div class="topic-meta">
-              <span class="meta-item">{{ topic.wordCount || 8 }} words</span>
-              <span class="meta-item difficulty" :class="topic.difficulty || 'beginner'">
-                {{ getDifficultyLabel(topic.difficulty || 'beginner') }}
-              </span>
+              <div class="meta-item">
+                <span class="meta-icon">📝</span>
+                <span>{{ topic.wordCount || 8 }} слов</span>
+              </div>
+              <div class="meta-item difficulty" :class="topic.difficulty || 'beginner'">
+                <span class="meta-icon">{{ getDifficultyIcon(topic.difficulty || 'beginner') }}</span>
+                <span>{{ getDifficultyLabel(topic.difficulty || 'beginner') }}</span>
+              </div>
             </div>
           </div>
           
@@ -110,19 +123,32 @@
                 class="progress-fill" 
                 :style="{ width: getTopicProgress(topic) + '%' }"
               ></div>
+              <div class="progress-glow"></div>
             </div>
             <span class="progress-text">{{ Math.round(getTopicProgress(topic)) }}%</span>
+          </div>
+
+          <div class="card-hover-effect">
+            <div class="hover-text">Начать изучение</div>
+            <div class="hover-arrow">→</div>
           </div>
         </div>
       </div>
 
       <!-- Empty State -->
       <div v-else class="empty-state">
-        <div class="empty-icon">📚</div>
-        <h3>No topics found</h3>
-        <p>Try adjusting your search or filters</p>
+        <div class="empty-animation">
+          <div class="empty-icon">📚</div>
+          <div class="empty-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+        <h3>Темы не найдены</h3>
+        <p>Попробуйте изменить поисковый запрос или сбросить фильтры</p>
         <button v-if="searchQuery || selectedDifficulty" @click="clearFilters" class="clear-btn">
-          Clear filters
+          Очистить фильтры
         </button>
       </div>
     </section>
@@ -132,48 +158,59 @@
       <div class="learning-header">
         <div class="learning-info">
           <h2>{{ getTopicNameRu(selectedTopic) }}</h2>
-          <p>{{ currentWords.length }} words to learn</p>
+          <p>{{ currentWords.length }} слов для изучения</p>
         </div>
 
         <div class="learning-progress">
-          <span class="progress-counter">{{ currentWordIndex + 1 }} / {{ currentWords.length }}</span>
-          <div class="progress-bar">
+          <div class="progress-stats">
+            <span class="progress-counter">{{ currentWordIndex + 1 }} / {{ currentWords.length }}</span>
+            <span class="progress-percentage">{{ Math.round(((currentWordIndex + 1) / currentWords.length) * 100) }}%</span>
+          </div>
+          <div class="progress-bar-learning">
             <div 
-              class="progress-fill" 
+              class="progress-fill-learning" 
               :style="{ width: ((currentWordIndex + 1) / currentWords.length) * 100 + '%' }"
             ></div>
+            <div class="progress-sparkle"></div>
           </div>
         </div>
       </div>
 
       <!-- Learning Complete -->
       <div v-if="learningComplete" class="learning-complete">
-        <div class="complete-content">
+        <div class="complete-animation">
           <div class="complete-icon">🎉</div>
-          <h3>Congratulations!</h3>
-          <p>You've completed all words in "{{ getTopicNameRu(selectedTopic) }}"</p>
+          <div class="celebration-particles">
+            <span v-for="i in 6" :key="i" class="particle"></span>
+          </div>
+        </div>
+        <div class="complete-content">
+          <h3>Поздравляем!</h3>
+          <p>Вы завершили все слова в теме "{{ getTopicNameRu(selectedTopic) }}"</p>
           
           <div class="complete-stats">
             <div class="stat-item">
-              <span class="stat-number">{{ currentWords.length }}</span>
-              <span class="stat-label">words studied</span>
+              <div class="stat-circle">
+                <span class="stat-number">{{ currentWords.length }}</span>
+              </div>
+              <span class="stat-label">слов изучено</span>
             </div>
             <div class="stat-item">
-              <span class="stat-number">{{ learningProgress.length }}</span>
-              <span class="stat-label">marked as learned</span>
+              <div class="stat-circle">
+                <span class="stat-number">{{ learningProgress.length }}</span>
+              </div>
+              <span class="stat-label">отмечено как изученные</span>
             </div>
           </div>
           
           <div class="complete-actions">
             <button @click="startTopicTest" class="btn primary">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                <path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Take Topic Test
+              <span class="btn-icon">🎯</span>
+              <span>Пройти тест по теме</span>
+              <div class="btn-glow"></div>
             </button>
             <button @click="goBackToTopics" class="btn secondary">
-              Choose Another Topic
+              <span>Выбрать другую тему</span>
             </button>
           </div>
         </div>
@@ -182,25 +219,33 @@
       <!-- Word Card -->
       <div v-else class="word-container">
         <div class="word-card" :key="currentWordIndex">
+          <div class="word-card-glow"></div>
+          <div class="word-header">
+            <div class="word-number">{{ currentWordIndex + 1 }}</div>
+            <div class="word-type" v-if="currentWords[currentWordIndex]?.partOfSpeech">
+              {{ currentWords[currentWordIndex].partOfSpeech }}
+            </div>
+          </div>
+
           <div class="word-main">{{ currentWords[currentWordIndex]?.word }}</div>
           
           <div class="word-details">
-            <div v-if="currentWords[currentWordIndex]?.partOfSpeech" class="word-type">
-              {{ currentWords[currentWordIndex].partOfSpeech }}
-            </div>
-            
             <div class="translation-section">
-              <button @click="toggleTranslation" class="toggle-btn">
-                {{ showTranslation ? 'Hide Translation' : 'Show Translation' }}
+              <button @click="toggleTranslation" class="toggle-btn" :class="{ active: showTranslation }">
+                <span class="toggle-icon">{{ showTranslation ? '👁️' : '👁️‍🗨️' }}</span>
+                <span>{{ showTranslation ? 'Скрыть перевод' : 'Показать перевод' }}</span>
+                <div class="toggle-glow"></div>
               </button>
               
               <div v-if="showTranslation" class="word-translation">
-                {{ currentWords[currentWordIndex]?.translation }}
+                <div class="translation-text">{{ currentWords[currentWordIndex]?.translation }}</div>
+                <div class="translation-glow"></div>
               </div>
             </div>
 
             <div v-if="showTranslation && currentWords[currentWordIndex]?.example" class="word-example">
-              <strong>Example:</strong> {{ currentWords[currentWordIndex].example }}
+              <div class="example-label">Пример:</div>
+              <div class="example-text">{{ currentWords[currentWordIndex].example }}</div>
             </div>
           </div>
 
@@ -208,29 +253,24 @@
             <button 
               @click="previousWord" 
               :disabled="currentWordIndex === 0"
-              class="btn secondary"
+              class="btn secondary nav-btn"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="m15 18-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Previous
+              <span class="btn-icon">←</span>
+              <span>Предыдущее</span>
             </button>
             
-            <button @click="markWordAsLearned" class="btn success">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Learned
+            <button @click="markWordAsLearned" class="btn success learn-btn">
+              <span class="btn-icon">✓</span>
+              <span>Изучено</span>
+              <div class="btn-glow"></div>
             </button>
             
             <button 
               @click="nextWord" 
-              class="btn primary"
+              class="btn primary nav-btn"
             >
-              {{ currentWordIndex === currentWords.length - 1 ? 'Complete' : 'Next' }}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+              <span>{{ currentWordIndex === currentWords.length - 1 ? 'Завершить' : 'Следующее' }}</span>
+              <span class="btn-icon">→</span>
             </button>
           </div>
         </div>
@@ -240,13 +280,14 @@
           @click="startTopicTest" 
           class="floating-test-btn" 
           :disabled="learningProgress.length < 3"
-          :title="`Need 3+ learned words (${learningProgress.length}/${currentWords.length})`"
+          :title="`Нужно 3+ изученных слов (${learningProgress.length}/${currentWords.length})`"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-            <path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Test ({{ learningProgress.length }}/{{ currentWords.length }})
+          <div class="floating-icon">🎯</div>
+          <div class="floating-text">
+            <span>Тест</span>
+            <span class="floating-counter">({{ learningProgress.length }}/{{ currentWords.length }})</span>
+          </div>
+          <div class="floating-glow"></div>
         </button>
       </div>
     </section>
@@ -254,42 +295,47 @@
     <!-- Test View -->
     <section v-else-if="currentView === 'test'" class="test-section">
       <div class="test-header">
-        <h2>{{ testConfig.type === 'random' ? 'Random Words Test' : `${getTopicNameRu(selectedTopic)} Test` }}</h2>
-        <p v-if="!testComplete">Question {{ currentQuestionIndex + 1 }} of {{ testQuestions.length }}</p>
+        <h2>{{ testConfig.type === 'random' ? 'Тест: Случайные слова' : `Тест: ${getTopicNameRu(selectedTopic)}` }}</h2>
+        <p v-if="!testComplete">Вопрос {{ currentQuestionIndex + 1 }} из {{ testQuestions.length }}</p>
       </div>
 
       <!-- Test Results -->
       <div v-if="testComplete" class="test-results">
-        <div class="results-content">
+        <div class="results-animation">
           <div class="results-icon" :class="{ passed: testResults.passed, failed: !testResults.passed }">
             {{ testResults.passed ? '🎉' : '📚' }}
           </div>
-          
-          <h3>{{ testResults.passed ? 'Test Passed!' : 'Keep Practicing' }}</h3>
+          <div class="results-particles" v-if="testResults.passed">
+            <span v-for="i in 8" :key="i" class="result-particle"></span>
+          </div>
+        </div>
+        
+        <div class="results-content">
+          <h3>{{ testResults.passed ? 'Тест пройден!' : 'Продолжайте практиковаться' }}</h3>
           
           <div class="results-stats">
             <div class="result-item">
-              <span class="result-number">{{ testResults.percentage }}%</span>
-              <span class="result-label">Score</span>
+              <div class="result-circle" :class="getScoreClass(testResults.percentage)">
+                <span class="result-number">{{ testResults.percentage }}%</span>
+              </div>
+              <span class="result-label">Результат</span>
             </div>
             <div class="result-item">
-              <span class="result-number">{{ testResults.correct }}/{{ testResults.total }}</span>
-              <span class="result-label">Correct</span>
+              <div class="result-circle">
+                <span class="result-number">{{ testResults.correct }}/{{ testResults.total }}</span>
+              </div>
+              <span class="result-label">Правильных</span>
             </div>
           </div>
 
           <div class="results-actions">
             <button @click="retakeTest" class="btn primary">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M21 3v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M8 21v-5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Retake Test
+              <span class="btn-icon">🔄</span>
+              <span>Пройти заново</span>
+              <div class="btn-glow"></div>
             </button>
             <button @click="goBackToTopics" class="btn secondary">
-              Back to Topics
+              <span>Вернуться к темам</span>
             </button>
           </div>
         </div>
@@ -298,17 +344,24 @@
       <!-- Test Question -->
       <div v-else class="test-question">
         <div class="question-progress">
-          <div class="progress-bar">
+          <div class="progress-bar-test">
             <div 
-              class="progress-fill" 
+              class="progress-fill-test" 
               :style="{ width: ((currentQuestionIndex + 1) / testQuestions.length) * 100 + '%' }"
             ></div>
+            <div class="progress-pulse"></div>
           </div>
         </div>
 
         <div class="question-content">
-          <h3>What does this word mean?</h3>
-          <div class="test-word">{{ testQuestions[currentQuestionIndex]?.word }}</div>
+          <div class="question-header">
+            <div class="question-number">{{ currentQuestionIndex + 1 }}</div>
+            <h3>Как переводится это слово?</h3>
+          </div>
+          <div class="test-word">
+            <span class="word-text">{{ testQuestions[currentQuestionIndex]?.word }}</span>
+            <div class="word-glow"></div>
+          </div>
         </div>
 
         <div class="question-options">
@@ -318,7 +371,9 @@
             @click="submitTestAnswer(option)"
             class="option-btn"
           >
-            {{ option }}
+            <span class="option-letter">{{ String.fromCharCode(65 + index) }}</span>
+            <span class="option-text">{{ option }}</span>
+            <div class="option-glow"></div>
           </button>
         </div>
       </div>
@@ -336,21 +391,20 @@
 
     <!-- Toast Messages -->
     <div v-if="toastMessage" class="toast" :class="toastType">
-      {{ toastMessage }}
+      <div class="toast-icon">
+        {{ toastType === 'success' ? '✅' : toastType === 'error' ? '❌' : 'ℹ️' }}
+      </div>
+      <span>{{ toastMessage }}</span>
+      <div class="toast-glow"></div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
 import CreateTestModal from '../Modals/CreateTestModal.vue';
-import {
-  getVocabularyTopics,
-  searchVocabulary,
-  getUserVocabularyProgress
-} from '@/api/vocabulary';
 
 export default {
   name: 'VocabularyIn',
@@ -362,7 +416,7 @@ export default {
     const router = useRouter();
     const route = useRoute();
     
-    // Data
+    // Reactive data
     const loading = ref(true);
     const languageCode = ref(route.params.languageCode);
     const currentView = ref('topics'); // 'topics', 'learning', 'test'
@@ -388,32 +442,29 @@ export default {
     const userAnswers = ref([]);
     const testComplete = ref(false);
     const testResults = ref({});
-    
-    // User progress
     const userProgress = ref(null);
 
     // Constants
     const difficultyLevels = [
-      { value: 'beginner', label: 'Beginner' },
-      { value: 'intermediate', label: 'Intermediate' },
-      { value: 'advanced', label: 'Advanced' }
+      { value: 'beginner', label: 'Начальный', icon: '🟢' },
+      { value: 'intermediate', label: 'Средний', icon: '🟡' },
+      { value: 'advanced', label: 'Продвинутый', icon: '🔴' }
     ];
 
-    // Language data
     const languageNames = {
-      english: { name: 'English', nameRu: 'English' },
-      spanish: { name: 'Spanish', nameRu: 'Spanish' },
-      french: { name: 'French', nameRu: 'French' },
-      german: { name: 'German', nameRu: 'German' },
-      chinese: { name: 'Chinese', nameRu: 'Chinese' },
-      arabic: { name: 'Arabic', nameRu: 'Arabic' },
-      japanese: { name: 'Japanese', nameRu: 'Japanese' },
-      korean: { name: 'Korean', nameRu: 'Korean' },
-      uzbek: { name: 'Uzbek', nameRu: 'Uzbek' },
-      russian: { name: 'Russian', nameRu: 'Russian' }
+      english: { name: 'English', nameRu: 'Английский' },
+      spanish: { name: 'Spanish', nameRu: 'Испанский' },
+      french: { name: 'French', nameRu: 'Французский' },
+      german: { name: 'German', nameRu: 'Немецкий' },
+      chinese: { name: 'Chinese', nameRu: 'Китайский' },
+      arabic: { name: 'Arabic', nameRu: 'Арабский' },
+      japanese: { name: 'Japanese', nameRu: 'Японский' },
+      korean: { name: 'Korean', nameRu: 'Корейский' },
+      uzbek: { name: 'Uzbek', nameRu: 'Узбекский' },
+      russian: { name: 'Russian', nameRu: 'Русский' }
     };
 
-    // Computed
+    // Computed properties
     const currentUser = computed(() => store.getters.user);
     
     const filteredTopics = computed(() => {
@@ -436,7 +487,7 @@ export default {
       return filtered;
     });
 
-    // Methods
+    // Helper methods
     const getLanguageFlag = (code) => {
       const flags = {
         english: '🇺🇸', spanish: '🇪🇸', french: '🇫🇷', german: '🇩🇪',
@@ -462,33 +513,38 @@ export default {
 
     const getTopicNameRu = (topicName) => {
       const translations = {
-        'Travel': 'Travel', 'Business': 'Business', 'Food': 'Food',
-        'Family': 'Family', 'Education': 'Education', 'Health': 'Health',
-        'Technology': 'Technology', 'Sports': 'Sports', 'Music': 'Music',
-        'Art': 'Art', 'Nature': 'Nature', 'Animals': 'Animals'
+        'Travel': 'Путешествия', 'Business': 'Бизнес', 'Food': 'Еда',
+        'Family': 'Семья', 'Education': 'Образование', 'Health': 'Здоровье',
+        'Technology': 'Технологии', 'Sports': 'Спорт', 'Music': 'Музыка',
+        'Art': 'Искусство', 'Nature': 'Природа', 'Animals': 'Животные'
       };
       return translations[topicName] || topicName;
     };
 
     const getTopicDescription = (topicName) => {
       const descriptions = {
-        'Travel': 'Essential words for travel and tourism',
-        'Business': 'Professional vocabulary and terms',
-        'Food': 'Food, drinks and cooking vocabulary',
-        'Family': 'Family members and relationships',
-        'Education': 'School, university and learning',
-        'Health': 'Health, medicine and body parts',
-        'Technology': 'Technology, computers and internet',
-        'Sports': 'Sports, games and physical activities'
+        'Travel': 'Основные слова для путешествий и туризма',
+        'Business': 'Деловая лексика и термины',
+        'Food': 'Еда, напитки и приготовление пищи',
+        'Family': 'Семья, родственники и отношения',
+        'Education': 'Образование, школа, университет',
+        'Health': 'Здоровье, медицина, части тела',
+        'Technology': 'Технологии, компьютеры, интернет',
+        'Sports': 'Спорт, игры, физическая активность'
       };
-      return descriptions[topicName] || 'Learn new words and expressions';
+      return descriptions[topicName] || 'Изучайте новые слова и выражения';
+    };
+
+    const getDifficultyIcon = (difficulty) => {
+      const icons = { beginner: '🟢', intermediate: '🟡', advanced: '🔴' };
+      return icons[difficulty] || '⚪';
     };
 
     const getDifficultyLabel = (difficulty) => {
       const labels = { 
-        beginner: 'Beginner', 
-        intermediate: 'Intermediate', 
-        advanced: 'Advanced' 
+        beginner: 'Начальный', 
+        intermediate: 'Средний', 
+        advanced: 'Продвинутый' 
       };
       return labels[difficulty] || difficulty;
     };
@@ -505,6 +561,14 @@ export default {
       return progress > 0 && progress < 90;
     };
 
+    const getScoreClass = (score) => {
+      if (score >= 90) return 'excellent';
+      if (score >= 70) return 'good';
+      if (score >= 50) return 'average';
+      return 'poor';
+    };
+
+    // Action methods
     const showToast = (message, type = 'success') => {
       toastMessage.value = message;
       toastType.value = type;
@@ -542,7 +606,7 @@ export default {
 
     const openCreateTestModal = () => {
       if (!currentUser.value) {
-        showToast('Please sign in to create a test', 'error');
+        showToast('Пожалуйста, войдите в систему для создания теста', 'error');
         return;
       }
       showCreateTestModal.value = true;
@@ -565,7 +629,7 @@ export default {
       if (currentWords.value.length > 0) {
         startTest();
       } else {
-        showToast('Could not find words for test', 'error');
+        showToast('Не удалось найти слова для теста', 'error');
       }
     };
 
@@ -588,7 +652,7 @@ export default {
         showTranslation.value = false;
       } else {
         learningComplete.value = true;
-        showToast('🎉 You completed all words!');
+        showToast('🎉 Вы изучили все слова!');
       }
     };
 
@@ -607,7 +671,7 @@ export default {
       const currentWord = currentWords.value[currentWordIndex.value];
       if (currentWord && !learningProgress.value.includes(currentWord._id)) {
         learningProgress.value.push(currentWord._id);
-        showToast('✅ Word marked as learned');
+        showToast('✅ Слово отмечено как изученное');
       }
     };
 
@@ -626,7 +690,7 @@ export default {
       );
 
       if (learnedWords.length < 3) {
-        showToast('Learn at least 3 words to take the test', 'error');
+        showToast('Изучите минимум 3 слова для прохождения теста', 'error');
         return;
       }
 
@@ -692,9 +756,9 @@ export default {
       testComplete.value = true;
       
       if (testResults.value.passed) {
-        showToast(`🎉 Test passed! Score: ${percentage}%`);
+        showToast(`🎉 Тест пройден! Результат: ${percentage}%`);
       } else {
-        showToast(`📚 Keep practicing. Score: ${percentage}%`, 'info');
+        showToast(`📚 Продолжайте изучение. Результат: ${percentage}%`, 'info');
       }
     };
 
@@ -705,7 +769,7 @@ export default {
       testComplete.value = false;
     };
 
-    // API calls
+    // Data fetching methods
     const fetchTopics = async () => {
       try {
         loading.value = true;
@@ -722,7 +786,7 @@ export default {
         
       } catch (err) {
         console.error('Error fetching topics:', err);
-        showToast('Failed to load topics', 'error');
+        showToast('Не удалось загрузить темы', 'error');
       } finally {
         loading.value = false;
       }
@@ -739,7 +803,7 @@ export default {
         
       } catch (err) {
         console.error('Error fetching words:', err);
-        showToast('Failed to load words', 'error');
+        showToast('Не удалось загрузить слова', 'error');
       } finally {
         loading.value = false;
       }
@@ -761,7 +825,7 @@ export default {
           
       } catch (err) {
         console.error('Error fetching random words:', err);
-        showToast('Failed to load words', 'error');
+        showToast('Не удалось загрузить слова', 'error');
       } finally {
         loading.value = false;
       }
@@ -780,20 +844,9 @@ export default {
         
       } catch (err) {
         console.error('Error fetching topic words:', err);
-        showToast('Failed to load words', 'error');
+        showToast('Не удалось загрузить слова', 'error');
       } finally {
         loading.value = false;
-      }
-    };
-
-    const fetchUserProgress = async () => {
-      if (!currentUser.value) return;
-      
-      try {
-        const response = await getUserVocabularyProgress(currentUser.value.uid);
-        userProgress.value = response.data || {};
-      } catch (err) {
-        console.error('Error fetching user progress:', err);
       }
     };
 
@@ -830,15 +883,17 @@ export default {
             { _id: 'en_family_7', word: 'family', translation: 'семья', example: 'Family is important.', partOfSpeech: 'noun' },
             { _id: 'en_family_8', word: 'grandmother', translation: 'бабушка', example: 'My grandmother tells stories.', partOfSpeech: 'noun' }
           ]
-        },
-        // Add more languages as needed
+        }
       };
 
       return vocabularyData[lang]?.[topic] || [];
     };
 
-    // Check for test mode from query params
-    const checkTestMode = () => {
+    // Lifecycle
+    onMounted(async () => {
+      await fetchTopics();
+      
+      // Check for test mode from query params
       if (route.query.mode === 'test') {
         const config = {
           type: route.query.type || 'random',
@@ -848,16 +903,10 @@ export default {
         
         createCustomTest(config);
       }
-    };
-
-    // Lifecycle
-    onMounted(async () => {
-      await fetchTopics();
-      await fetchUserProgress();
-      checkTestMode();
     });
 
     return {
+      // Data
       loading,
       languageCode,
       currentView,
@@ -880,17 +929,23 @@ export default {
       testComplete,
       testResults,
       difficultyLevels,
+      
+      // Computed
       filteredTopics,
       currentUser,
+      
+      // Methods
       getLanguageFlag,
       getSelectedLanguageName,
       getTopicIcon,
       getTopicNameRu,
       getTopicDescription,
+      getDifficultyIcon,
       getDifficultyLabel,
       getTopicProgress,
       isTopicCompleted,
       isTopicInProgress,
+      getScoreClass,
       goBack,
       goBackToTopics,
       selectTopic,
@@ -912,13 +967,18 @@ export default {
 </script>
 
 <style scoped>
-/* Variables */
+/* ===== CSS VARIABLES ===== */
 :root {
+  /* Brand Colors */
   --brand-purple: #8b5cf6;
   --brand-purple-dark: #7c3aed;
   --brand-purple-light: #a78bfa;
+  
+  /* Base Colors */
   --black: #000000;
   --white: #ffffff;
+  
+  /* Gray Scale */
   --gray-50: #f9fafb;
   --gray-100: #f3f4f6;
   --gray-200: #e5e7eb;
@@ -929,61 +989,141 @@ export default {
   --gray-700: #374151;
   --gray-800: #1f2937;
   --gray-900: #111827;
+  
+  /* Status Colors */
   --success: #10b981;
+  --warning: #f59e0b;
   --error: #ef4444;
+  
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  --gradient-success: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+  --gradient-card: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(124, 58, 237, 0.05) 100%);
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
 }
 
-/* Base */
+/* ===== BASE STYLES ===== */
 .vocabulary-in-page {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 32px 24px;
   min-height: 100vh;
-  background: var(--white);
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   color: var(--black);
   font-family: 'Inter', system-ui, sans-serif;
+  position: relative;
 }
 
-/* Header */
+.vocabulary-in-page::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(124, 58, 237, 0.06) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ===== HEADER STYLES ===== */
 .page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 32px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--gray-200);
+  margin-bottom: 48px;
+  padding: 24px 32px;
+  background: var(--white);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--gradient-primary);
 }
 
 .back-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: none;
-  border: 1px solid var(--gray-300);
+  background: var(--gray-50);
+  border: 2px solid var(--gray-200);
   color: var(--gray-700);
-  padding: 8px 12px;
-  border-radius: 6px;
+  padding: 12px 16px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
+  font-weight: 600;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.back-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.1), transparent);
+  transition: left var(--transition-slow);
+}
+
+.back-btn:hover::before {
+  left: 100%;
 }
 
 .back-btn:hover {
-  background: var(--gray-50);
-  border-color: var(--gray-400);
+  background: var(--gray-100);
+  border-color: var(--brand-purple);
+  transform: translateX(-4px);
 }
 
 .language-info {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   flex: 1;
   justify-content: center;
 }
 
+.language-flag-container {
+  position: relative;
+}
+
 .language-flag {
-  font-size: 32px;
+  font-size: 48px;
+  position: relative;
+  z-index: 2;
+  animation: bounce 3s ease-in-out infinite;
+}
+
+.flag-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .language-details {
@@ -991,38 +1131,61 @@ export default {
 }
 
 .language-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0 0 4px 0;
-  color: var(--black);
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0 0 8px 0;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.025em;
 }
 
 .language-subtitle {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--gray-600);
   margin: 0;
+  font-weight: 500;
 }
 
 .create-test-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: var(--brand-purple);
+  gap: 12px;
+  background: var(--gradient-primary);
   color: var(--white);
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 12px 20px;
+  border-radius: 16px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+}
+
+.btn-glow {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left var(--transition-slow);
+}
+
+.create-test-btn:hover .btn-glow {
+  left: 100%;
 }
 
 .create-test-btn:hover {
-  background: var(--brand-purple-dark);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
 }
 
-/* Loading State */
+/* ===== LOADING STATE ===== */
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -1030,479 +1193,727 @@ export default {
   justify-content: center;
   padding: 80px 24px;
   text-align: center;
+  background: var(--white);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-.spinner {
+.loading-animation {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 24px;
+}
+
+.loading-circle {
+  position: absolute;
   width: 20px;
   height: 20px;
-  border: 2px solid var(--gray-200);
-  border-top: 2px solid var(--brand-purple);
+  background: var(--brand-purple);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
+  animation: loadingBounce 1.5s infinite ease-in-out;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.loading-circle:nth-child(1) {
+  left: 0;
+  top: 30px;
+  animation-delay: -0.32s;
+}
+
+.loading-circle:nth-child(2) {
+  left: 30px;
+  top: 30px;
+  animation-delay: -0.16s;
+}
+
+.loading-circle:nth-child(3) {
+  left: 60px;
+  top: 30px;
 }
 
 .loading-state span {
   color: var(--gray-600);
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 500;
 }
 
-/* Topics Section */
+/* ===== TOPICS SECTION ===== */
 .topics-section {
-  margin-bottom: 48px;
+  margin-bottom: 64px;
+  animation: fadeInUp 0.8s ease 0.2s both;
 }
 
 .controls {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 24px;
+  margin-bottom: 40px;
+  align-items: center;
 }
 
 .search-container {
   position: relative;
-  max-width: 400px;
-  margin: 0 auto;
+  max-width: 500px;
+  width: 100%;
 }
 
 .search-icon {
   position: absolute;
-  left: 12px;
+  left: 16px;
   top: 50%;
   transform: translateY(-50%);
+  font-size: 20px;
   color: var(--gray-400);
+  z-index: 2;
 }
 
 .search-input {
   width: 100%;
-  padding: 10px 12px 10px 40px;
-  border: 1px solid var(--gray-300);
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 16px 16px 16px 50px;
+  border: 2px solid var(--gray-200);
+  border-radius: 16px;
+  font-size: 16px;
   background: var(--white);
-  transition: border-color 0.2s ease;
+  transition: all var(--transition-normal);
+  position: relative;
+  z-index: 1;
 }
 
 .search-input:focus {
   outline: none;
   border-color: var(--brand-purple);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+}
+
+.search-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--gradient-primary);
+  border-radius: 16px;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+  z-index: 0;
+}
+
+.search-input:focus ~ .search-glow {
+  opacity: 0.1;
 }
 
 .filter-buttons {
   display: flex;
   justify-content: center;
-  gap: 8px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: var(--white);
-  border: 1px solid var(--gray-300);
+  border: 2px solid var(--gray-200);
   color: var(--gray-700);
-  padding: 6px 12px;
-  border-radius: 16px;
+  padding: 10px 16px;
+  border-radius: 20px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
 }
 
-.filter-btn:hover {
-  border-color: var(--gray-400);
-  background: var(--gray-50);
+.filter-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--gradient-primary);
+  transition: left 0.4s ease;
+  z-index: 0;
 }
 
+.filter-btn:hover::before,
+.filter-btn.active::before {
+  left: 0;
+}
+
+.filter-btn:hover,
 .filter-btn.active {
-  background: var(--brand-purple);
   border-color: var(--brand-purple);
   color: var(--white);
+  transform: translateY(-2px);
 }
 
-/* Topics Grid */
+.filter-icon,
+.filter-btn span {
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== TOPICS GRID ===== */
 .topics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 24px;
 }
 
 .topic-card {
-  border: 1px solid var(--gray-200);
-  border-radius: 8px;
-  padding: 20px;
-  cursor: pointer;
-  transition: all 0.2s ease;
   background: var(--white);
+  border-radius: 20px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.card-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-primary);
+  transform: scaleX(0);
+  transition: transform 0.4s ease;
+}
+
+.topic-card:hover .card-glow {
+  transform: scaleX(1);
 }
 
 .topic-card:hover {
+  transform: translateY(-12px) scale(1.02);
   border-color: var(--brand-purple);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+  box-shadow: 0 20px 60px rgba(139, 92, 246, 0.25);
 }
 
 .topic-card.completed {
   border-color: var(--success);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%);
 }
 
 .topic-card.in-progress {
-  border-color: #f59e0b;
+  border-color: var(--warning);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(217, 119, 6, 0.05) 100%);
 }
 
 .card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.topic-icon-container {
+  position: relative;
 }
 
 .topic-icon {
-  font-size: 24px;
+  font-size: 48px;
+  position: relative;
+  z-index: 2;
+  animation: float 4s ease-in-out infinite;
+}
+
+.icon-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120%;
+  height: 40px;
+  background: radial-gradient(ellipse, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
+  animation: translationGlow 2s ease-in-out infinite;
+}
+
+.topic-status {
+  position: relative;
 }
 
 .status-indicator {
-  width: 20px;
-  height: 20px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--white);
+  position: relative;
+  overflow: hidden;
 }
 
 .status-indicator.completed {
-  background: var(--success);
-  color: var(--white);
+  background: var(--gradient-success);
+  animation: successPulse 2s ease-in-out infinite;
 }
 
 .status-indicator.in-progress {
-  background: #f59e0b;
-  color: var(--white);
+  background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+  animation: progressSpin 3s linear infinite;
+}
+
+.status-icon {
+  font-size: 16px;
 }
 
 .card-content {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  text-align: center;
 }
 
 .topic-name {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   color: var(--black);
   margin: 0 0 8px 0;
+  line-height: 1.3;
 }
 
 .topic-description {
   font-size: 14px;
   color: var(--gray-600);
-  margin: 0 0 12px 0;
-  line-height: 1.4;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
 }
 
 .topic-meta {
   display: flex;
-  gap: 12px;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--gray-50);
+  padding: 6px 12px;
+  border-radius: 12px;
   font-size: 12px;
-  color: var(--gray-600);
-  background: var(--gray-100);
-  padding: 4px 8px;
-  border-radius: 4px;
+  font-weight: 600;
+  color: var(--gray-700);
+  transition: all var(--transition-normal);
+}
+
+.topic-card:hover .meta-item {
+  background: var(--gradient-card);
+  color: var(--brand-purple);
 }
 
 .meta-item.difficulty.beginner {
-  background: #dcfce7;
-  color: #166534;
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
 }
 
 .meta-item.difficulty.intermediate {
-  background: #fef3c7;
-  color: #92400e;
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
 }
 
 .meta-item.difficulty.advanced {
-  background: #fee2e2;
-  color: #991b1b;
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+}
+
+.meta-icon {
+  font-size: 14px;
 }
 
 .progress-container {
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-bottom: 16px;
+  position: relative;
 }
 
 .progress-bar {
   flex: 1;
-  height: 4px;
+  height: 6px;
   background: var(--gray-200);
-  border-radius: 2px;
+  border-radius: 3px;
   overflow: hidden;
+  position: relative;
 }
 
 .progress-fill {
   height: 100%;
-  background: var(--brand-purple);
-  border-radius: 2px;
-  transition: width 0.3s ease;
+  background: var(--gradient-primary);
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.progress-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: progressShimmer 2s ease-in-out infinite;
 }
 
 .progress-text {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--brand-purple);
-  min-width: 30px;
+  min-width: 35px;
 }
 
-/* Empty State */
+.card-hover-effect {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--gradient-card);
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all var(--transition-normal);
+}
+
+.topic-card:hover .card-hover-effect {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.hover-text {
+  font-weight: 600;
+  color: var(--brand-purple);
+  font-size: 14px;
+}
+
+.hover-arrow {
+  font-size: 18px;
+  color: var(--brand-purple);
+  transition: transform var(--transition-normal);
+}
+
+.topic-card:hover .hover-arrow {
+  transform: translateX(4px);
+}
+
+/* ===== EMPTY STATE ===== */
 .empty-state {
   text-align: center;
   padding: 80px 24px;
+  background: var(--white);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.empty-animation {
+  margin-bottom: 24px;
+  position: relative;
 }
 
 .empty-icon {
-  font-size: 48px;
+  font-size: 64px;
   margin-bottom: 16px;
-  opacity: 0.5;
+  animation: float 3s ease-in-out infinite;
 }
 
+.empty-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.empty-dots span {
+  width: 8px;
+  height: 8px;
+  background: var(--brand-purple);
+  border-radius: 50%;
+  animation: dotBounce 1.5s infinite ease-in-out;
+}
+
+.empty-dots span:nth-child(1) { animation-delay: -0.32s; }
+.empty-dots span:nth-child(2) { animation-delay: -0.16s; }
+
 .empty-state h3 {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 24px;
+  font-weight: 700;
   color: var(--black);
-  margin: 0 0 8px 0;
+  margin: 0 0 12px 0;
 }
 
 .empty-state p {
   color: var(--gray-600);
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .clear-btn {
-  background: var(--brand-purple);
+  background: var(--gradient-primary);
   color: var(--white);
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 12px 24px;
+  border-radius: 12px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.clear-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left var(--transition-slow);
+}
+
+.clear-btn:hover::before {
+  left: 100%;
 }
 
 .clear-btn:hover {
-  background: var(--brand-purple-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
 }
 
-/* Learning Section */
+/* ===== LEARNING SECTION ===== */
 .learning-section {
-  margin-bottom: 48px;
+  margin-bottom: 64px;
+  animation: fadeInUp 0.8s ease 0.2s both;
 }
 
 .learning-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 40px;
+  background: var(--white);
+  padding: 32px;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.1);
 }
 
 .learning-info h2 {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 800;
   color: var(--black);
-  margin: 0 0 4px 0;
+  margin: 0 0 8px 0;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .learning-info p {
   color: var(--gray-600);
-  margin: 0 0 24px 0;
+  margin: 0 0 32px 0;
+  font-size: 16px;
 }
 
 .learning-progress {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  max-width: 300px;
+  max-width: 400px;
   margin: 0 auto;
+}
+
+.progress-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
 .progress-counter {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--black);
-  font-size: 14px;
-  min-width: 60px;
+  font-size: 16px;
 }
 
-/* Learning Complete */
+.progress-percentage {
+  font-weight: 700;
+  color: var(--brand-purple);
+  font-size: 16px;
+}
+
+.progress-bar-learning {
+  height: 8px;
+  background: var(--gray-200);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill-learning {
+  height: 100%;
+  background: var(--gradient-primary);
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.progress-sparkle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+/* ===== LEARNING COMPLETE ===== */
 .learning-complete {
-  max-width: 500px;
-  margin: 0 auto;
+  background: var(--white);
+  border-radius: 24px;
+  padding: 48px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  border: 2px solid var(--success);
+  position: relative;
+  overflow: hidden;
 }
 
-.complete-content {
-  text-align: center;
-  padding: 48px 24px;
-  border: 1px solid var(--gray-200);
-  border-radius: 8px;
-  background: var(--white);
+.complete-animation {
+  position: relative;
+  margin-bottom: 32px;
 }
 
 .complete-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
+  font-size: 80px;
+  animation: celebrate 2s ease-in-out infinite;
 }
 
+.celebration-particles {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: particleFloat 3s ease-in-out infinite;
+}
+
+.particle:nth-child(1) { animation-delay: 0s; top: -40px; left: -30px; }
+.particle:nth-child(2) { animation-delay: 0.5s; top: -50px; left: 20px; }
+.particle:nth-child(3) { animation-delay: 1s; top: -30px; left: 40px; }
+.particle:nth-child(4) { animation-delay: 1.5s; top: 30px; left: -40px; }
+.particle:nth-child(5) { animation-delay: 2s; top: 40px; left: 30px; }
+.particle:nth-child(6) { animation-delay: 2.5s; top: 20px; left: -20px; }
+
 .complete-content h3 {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--black);
-  margin: 0 0 8px 0;
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--success);
+  margin: 0 0 16px 0;
 }
 
 .complete-content p {
   color: var(--gray-600);
   margin-bottom: 32px;
+  font-size: 18px;
+  line-height: 1.6;
 }
 
 .complete-stats {
   display: flex;
   justify-content: center;
-  gap: 32px;
-  margin-bottom: 32px;
+  gap: 48px;
+  margin-bottom: 40px;
 }
 
 .stat-item {
   text-align: center;
 }
 
+.stat-circle {
+  width: 80px;
+  height: 80px;
+  background: var(--gradient-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-circle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: statShimmer 3s ease-in-out infinite;
+}
+
 .stat-number {
-  display: block;
   font-size: 24px;
-  font-weight: 700;
-  color: var(--brand-purple);
-  line-height: 1;
+  font-weight: 800;
+  color: var(--white);
+  position: relative;
+  z-index: 1;
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--gray-600);
-  margin-top: 4px;
+  font-weight: 500;
 }
 
 .complete-actions {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
-/* Word Container */
-.word-container {
-  position: relative;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.word-card {
-  border: 1px solid var(--gray-200);
-  border-radius: 8px;
-  padding: 32px;
-  text-align: center;
-  background: var(--white);
-  margin-bottom: 24px;
-}
-
-.word-main {
-  font-size: 36px;
-  font-weight: 700;
-  color: var(--black);
-  margin-bottom: 24px;
-  line-height: 1.2;
-}
-
-.word-details {
-  margin-bottom: 32px;
-}
-
-.word-type {
-  font-size: 12px;
-  color: var(--gray-500);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 16px;
-}
-
-.translation-section {
-  margin-bottom: 16px;
-}
-
-.toggle-btn {
-  background: var(--gray-100);
-  color: var(--gray-700);
-  border: 1px solid var(--gray-300);
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 16px;
-  transition: all 0.2s ease;
-}
-
-.toggle-btn:hover {
-  background: var(--gray-200);
-}
-
-.word-translation {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--brand-purple);
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.word-example {
-  background: var(--gray-50);
-  padding: 16px;
-  border-radius: 6px;
-  font-style: italic;
-  color: var(--gray-700);
-  text-align: left;
-}
-
-.word-actions {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-/* Buttons */
+/* ===== BUTTONS ===== */
 .btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  gap: 10px;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
+  transition: all var(--transition-normal);
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
 }
 
 .btn.primary {
-  background: var(--brand-purple);
+  background: var(--gradient-primary);
   color: var(--white);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
 }
 
 .btn.primary:hover {
-  background: var(--brand-purple-dark);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
 }
 
 .btn.secondary {
@@ -1514,46 +1925,252 @@ export default {
 .btn.secondary:hover {
   background: var(--gray-50);
   border-color: var(--gray-400);
+  transform: translateY(-2px);
 }
 
 .btn.secondary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn.success {
-  background: var(--success);
+  background: var(--gradient-success);
   color: var(--white);
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
 }
 
 .btn.success:hover {
-  background: #059669;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
 }
 
-/* Floating Test Button */
-.floating-test-btn {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: var(--brand-purple);
+.btn-icon {
+  font-size: 18px;
+  transition: transform var(--transition-normal);
+}
+
+.btn:hover .btn-icon {
+  transform: scale(1.1);
+}
+
+/* ===== WORD CONTAINER ===== */
+.word-container {
+  position: relative;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.word-card {
+  background: var(--white);
+  border-radius: 24px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  border: 2px solid rgba(139, 92, 246, 0.1);
+  position: relative;
+  overflow: hidden;
+  animation: wordAppear 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.word-card-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--gradient-primary);
+  animation: wordGlow 3s ease-in-out infinite;
+}
+
+.word-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.word-number {
+  background: var(--gradient-primary);
   color: var(--white);
-  border: none;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-  transition: all 0.2s ease;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.word-type {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.word-main {
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--black);
+  margin-bottom: 32px;
+  line-height: 1.2;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.word-details {
+  margin-bottom: 40px;
+}
+
+.translation-section {
+  margin-bottom: 24px;
+}
+
+.toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border: 2px solid var(--gray-300);
+  padding: 12px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 auto 20px;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.toggle-glow {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--gradient-primary);
+  opacity: 0;
+  transition: all var(--transition-normal);
+}
+
+.toggle-btn.active .toggle-glow,
+.toggle-btn:hover .toggle-glow {
+  left: 0;
+  opacity: 1;
+}
+
+.toggle-btn.active,
+.toggle-btn:hover {
+  color: var(--white);
+  border-color: var(--brand-purple);
+  transform: translateY(-2px);
+}
+
+.toggle-icon {
+  font-size: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.toggle-btn span {
+  position: relative;
+  z-index: 1;
+}
+
+.word-translation {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.translation-text {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--brand-purple);
+  animation: translateAppear 0.4s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.translation-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120%;
+  height: 60px;
+  background: radial-gradient(ellipse, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
+  animation: testWordGlow 3s ease-in-out infinite;
+}
+
+.word-example {
+  background: var(--gray-50);
+  padding: 20px;
+  border-radius: 16px;
+  border-left: 4px solid var(--brand-purple);
+  text-align: left;
+  margin-top: 16px;
+}
+
+.example-label {
+  font-weight: 700;
+  color: var(--brand-purple);
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.example-text {
+  color: var(--gray-700);
+  font-style: italic;
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+.word-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.nav-btn {
+  min-width: 140px;
+}
+
+.learn-btn {
+  min-width: 120px;
+}
+
+/* ===== FLOATING TEST BUTTON ===== */
+.floating-test-btn {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  background: var(--gradient-primary);
+  color: var(--white);
+  border: none;
+  padding: 16px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1000;
+  position: relative;
+  overflow: hidden;
 }
 
 .floating-test-btn:hover:not(:disabled) {
-  background: var(--brand-purple-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 12px 40px rgba(139, 92, 246, 0.5);
 }
 
 .floating-test-btn:disabled {
@@ -1562,44 +2179,81 @@ export default {
   transform: none;
 }
 
-/* Test Section */
+.floating-icon {
+  font-size: 20px;
+}
+
+.floating-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.floating-counter {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.floating-glow {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: floatingGlow 3s ease-in-out infinite;
+}
+
+/* ===== TEST SECTION ===== */
 .test-section {
-  margin-bottom: 48px;
+  margin-bottom: 64px;
+  animation: fadeInUp 0.8s ease 0.2s both;
 }
 
 .test-header {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 40px;
+  background: var(--white);
+  padding: 32px;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .test-header h2 {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 800;
   color: var(--black);
-  margin: 0 0 4px 0;
+  margin: 0 0 8px 0;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .test-header p {
   color: var(--gray-600);
+  font-size: 16px;
 }
 
-/* Test Results */
+/* ===== TEST RESULTS ===== */
 .test-results {
-  max-width: 500px;
-  margin: 0 auto;
+  background: var(--white);
+  border-radius: 24px;
+  padding: 48px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
 }
 
-.results-content {
-  text-align: center;
-  padding: 48px 24px;
-  border: 1px solid var(--gray-200);
-  border-radius: 8px;
-  background: var(--white);
+.results-animation {
+  position: relative;
+  margin-bottom: 32px;
 }
 
 .results-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
+  font-size: 80px;
+  animation: resultsAnimation 2s ease-in-out infinite;
 }
 
 .results-icon.passed {
@@ -1607,51 +2261,115 @@ export default {
 }
 
 .results-icon.failed {
-  color: #f59e0b;
+  color: var(--warning);
 }
 
+.results-particles {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.result-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: resultParticleFloat 4s ease-in-out infinite;
+}
+
+.result-particle:nth-child(1) { animation-delay: 0s; top: -50px; left: -40px; }
+.result-particle:nth-child(2) { animation-delay: 0.5s; top: -60px; left: 30px; }
+.result-particle:nth-child(3) { animation-delay: 1s; top: -40px; left: 50px; }
+.result-particle:nth-child(4) { animation-delay: 1.5s; top: 40px; left: -50px; }
+.result-particle:nth-child(5) { animation-delay: 2s; top: 50px; left: 40px; }
+.result-particle:nth-child(6) { animation-delay: 2.5s; top: 30px; left: -30px; }
+.result-particle:nth-child(7) { animation-delay: 3s; top: -30px; left: 0px; }
+.result-particle:nth-child(8) { animation-delay: 3.5s; top: 0px; left: 60px; }
+
 .results-content h3 {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--black);
-  margin: 0 0 24px 0;
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0 0 32px 0;
 }
 
 .results-stats {
   display: flex;
   justify-content: center;
-  gap: 32px;
-  margin-bottom: 32px;
+  gap: 48px;
+  margin-bottom: 40px;
 }
 
 .result-item {
   text-align: center;
 }
 
+.result-circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  position: relative;
+  overflow: hidden;
+  background: var(--gradient-primary);
+}
+
+.result-circle.excellent {
+  background: var(--gradient-success);
+}
+
+.result-circle.good {
+  background: var(--gradient-primary);
+}
+
+.result-circle.average {
+  background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+}
+
+.result-circle.poor {
+  background: linear-gradient(135deg, var(--error) 0%, #dc2626 100%);
+}
+
+.result-circle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: resultShimmer 3s ease-in-out infinite;
+}
+
 .result-number {
-  display: block;
   font-size: 24px;
-  font-weight: 700;
-  color: var(--brand-purple);
-  line-height: 1;
+  font-weight: 800;
+  color: var(--white);
+  position: relative;
+  z-index: 1;
 }
 
 .result-label {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--gray-600);
-  margin-top: 4px;
+  font-weight: 500;
 }
 
 .results-actions {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
-/* Test Question */
+/* ===== TEST QUESTION ===== */
 .test-question {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -1659,81 +2377,375 @@ export default {
   margin-bottom: 32px;
 }
 
-.question-content {
-  text-align: center;
-  margin-bottom: 32px;
-  padding: 32px;
-  border: 1px solid var(--gray-200);
-  border-radius: 8px;
-  background: var(--white);
+.progress-bar-test {
+  width: 100%;
+  height: 8px;
+  background: var(--gray-200);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
 }
 
-.question-content h3 {
-  font-size: 16px;
+.progress-fill-test {
+  height: 100%;
+  background: var(--gradient-primary);
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.progress-pulse {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: progressPulse 2s ease-in-out infinite;
+}
+
+.question-content {
+  text-align: center;
+  margin-bottom: 40px;
+  background: var(--white);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.question-header {
+  margin-bottom: 24px;
+}
+
+.question-number {
+  background: var(--gradient-primary);
+  color: var(--white);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  margin: 0 auto 16px;
+  animation: questionNumberPulse 2s ease-in-out infinite;
+}
+
+.question-header h3 {
+  font-size: 20px;
   color: var(--gray-600);
-  margin: 0 0 16px 0;
-  font-weight: 500;
+  margin: 0;
+  font-weight: 600;
 }
 
 .test-word {
-  font-size: 32px;
-  font-weight: 700;
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.word-text {
+  font-size: 48px;
+  font-weight: 800;
   color: var(--black);
-  line-height: 1.2;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
+}
+
+.word-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120%;
+  height: 60px;
+  background: radial-gradient(ellipse, rgba(139, 92, 246, 0.2) 0%, transparent 70%);
+  animation: testWordGlow 3s ease-in-out infinite;
 }
 
 .question-options {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
 }
 
 .option-btn {
   background: var(--white);
-  border: 1px solid var(--gray-300);
+  border: 2px solid var(--gray-200);
   color: var(--gray-700);
-  padding: 16px 20px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  padding: 20px;
+  border-radius: 16px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: center;
-  min-height: 60px;
+  transition: all var(--transition-normal);
+  text-align: left;
+  min-height: 80px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.option-glow {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--gradient-primary);
+  opacity: 0;
+  transition: all var(--transition-normal);
+}
+
+.option-btn:hover .option-glow {
+  left: 0;
+  opacity: 0.1;
 }
 
 .option-btn:hover {
   border-color: var(--brand-purple);
-  background: var(--gray-50);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
 }
 
-/* Toast */
-.toast {
-  position: fixed;
-  top: 20px;
-  right: 20px;
+.option-letter {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: all var(--transition-normal);
+  position: relative;
+  z-index: 1;
+}
+
+.option-btn:hover .option-letter {
   background: var(--brand-purple);
   color: var(--white);
-  padding: 12px 16px;
-  border-radius: 6px;
+}
+
+.option-text {
+  font-size: 16px;
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+}
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  background: var(--white);
+  color: var(--black);
+  padding: 16px 24px;
+  border-radius: 16px;
   font-size: 14px;
   font-weight: 500;
   z-index: 1000;
-  animation: slideIn 0.3s ease;
+  animation: toastSlideIn 0.4s ease;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  border: 2px solid var(--brand-purple);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 400px;
+  position: relative;
+  overflow: hidden;
 }
 
 .toast.error {
-  background: var(--error);
+  border-color: var(--error);
+  background: #fef2f2;
+  color: #991b1b;
 }
 
-.toast.info {
-  background: #3b82f6;
+.toast.success {
+  border-color: var(--success);
+  background: #ecfdf5;
+  color: #065f46;
 }
 
-@keyframes slideIn {
+.toast-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.toast-glow {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.2), transparent);
+  animation: toastGlow 3s ease-in-out infinite;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-8px); }
+  60% { transform: translateY(-4px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+}
+
+@keyframes loadingBounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes translationGlow {
+  0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scaleX(1); }
+  50% { opacity: 0.7; transform: translate(-50%, -50%) scaleX(1.2); }
+}
+
+@keyframes successPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+}
+
+@keyframes progressSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes progressShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes dotBounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: translateX(-10px); }
+  50% { opacity: 1; transform: translateX(10px); }
+}
+
+@keyframes celebrate {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(-5deg); }
+  75% { transform: scale(1.1) rotate(5deg); }
+}
+
+@keyframes particleFloat {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 1; }
+  50% { transform: translateY(-20px) scale(1.2); opacity: 0.7; }
+}
+
+@keyframes statShimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes wordAppear {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes wordGlow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@keyframes translateAppear {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floatingGlow {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes resultsAnimation {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(-3deg); }
+  75% { transform: scale(1.1) rotate(3deg); }
+}
+
+@keyframes resultParticleFloat {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 1; }
+  50% { transform: translateY(-30px) scale(1.5); opacity: 0.7; }
+}
+
+@keyframes resultShimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes progressPulse {
+  0%, 100% { opacity: 0; transform: translateX(-15px); }
+  50% { opacity: 1; transform: translateX(15px); }
+}
+
+@keyframes questionNumberPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); }
+  50% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
+}
+
+@keyframes testWordGlow {
+  0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+@keyframes toastSlideIn {
   from {
     transform: translateX(100%);
     opacity: 0;
@@ -1744,91 +2756,193 @@ export default {
   }
 }
 
-/* Responsive */
+@keyframes toastGlow {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 1024px) {
+  .vocabulary-in-page {
+    padding: 24px 20px;
+  }
+
+  .topics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+
+  .complete-stats {
+    gap: 32px;
+  }
+
+  .results-stats {
+    gap: 32px;
+  }
+}
+
 @media (max-width: 768px) {
   .vocabulary-in-page {
-    padding: 16px;
+    padding: 20px 16px;
   }
-  
+
   .page-header {
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
     text-align: center;
+    padding: 20px;
   }
-  
+
   .language-info {
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
   }
-  
+
+  .language-flag {
+    font-size: 40px;
+  }
+
+  .language-title {
+    font-size: 24px;
+  }
+
   .topics-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .controls {
-    align-items: center;
+    align-items: stretch;
   }
-  
+
   .filter-buttons {
-    gap: 6px;
+    gap: 8px;
   }
-  
+
   .word-card {
-    padding: 24px 16px;
+    padding: 32px 24px;
   }
-  
+
   .word-main {
-    font-size: 28px;
+    font-size: 36px;
   }
-  
+
   .word-actions {
     flex-direction: column;
     align-items: center;
   }
-  
+
   .btn {
     width: 100%;
-    max-width: 200px;
+    max-width: 250px;
     justify-content: center;
   }
-  
+
   .complete-stats {
     flex-direction: column;
-    gap: 16px;
+    gap: 24px;
   }
-  
+
   .results-stats {
     flex-direction: column;
-    gap: 16px;
+    gap: 24px;
   }
-  
+
   .question-options {
     grid-template-columns: 1fr;
   }
-  
+
   .floating-test-btn {
-    bottom: 16px;
-    right: 16px;
-    padding: 10px 12px;
-    font-size: 12px;
+    bottom: 20px;
+    right: 20px;
+    padding: 12px 16px;
+  }
+
+  .floating-text {
+    font-size: 14px;
+  }
+
+  .floating-counter {
+    font-size: 11px;
+  }
+
+  .test-word .word-text {
+    font-size: 36px;
   }
 }
 
 @media (max-width: 480px) {
-  .learning-progress {
+  .language-flag {
+    font-size: 32px;
+  }
+
+  .language-title {
+    font-size: 20px;
+  }
+
+  .topic-meta {
     flex-direction: column;
     gap: 8px;
   }
-  
-  .complete-actions,
-  .results-actions {
-    flex-direction: column;
-    align-items: center;
+
+  .word-main {
+    font-size: 28px;
   }
-  
-  .btn {
-    width: 100%;
-    max-width: 250px;
+
+  .complete-content h3 {
+    font-size: 24px;
+  }
+
+  .results-content h3 {
+    font-size: 24px;
+  }
+
+  .test-word .word-text {
+    font-size: 28px;
+  }
+
+  .option-btn {
+    padding: 16px;
+    min-height: 60px;
+  }
+
+  .option-text {
+    font-size: 14px;
+  }
+
+  .toast {
+    left: 16px;
+    right: 16px;
+    top: 16px;
+    max-width: none;
+  }
+}
+
+/* ===== ACCESSIBILITY ===== */
+.topic-card:focus,
+.btn:focus,
+.option-btn:focus,
+.toggle-btn:focus {
+  outline: 3px solid var(--brand-purple);
+  outline-offset: 2px;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .topic-card,
+  .word-card,
+  .option-btn {
+    border-width: 3px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 </style>

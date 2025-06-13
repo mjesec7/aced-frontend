@@ -3,39 +3,44 @@
     <!-- Header Section -->
     <div class="page-header">
       <div class="header-content">
-        <h1 class="page-title">Tests</h1>
-        <p class="page-subtitle">Test your knowledge and track your progress</p>
+        <div class="header-icon" aria-hidden="true">🧪</div>
+        <h1 class="page-title">Тесты</h1>
+        <p class="page-subtitle">Проверьте свои знания и отслеживайте прогресс</p>
+        <div class="header-decoration" aria-hidden="true"></div>
       </div>
     </div>
 
     <!-- Loading State -->
     <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <span>Loading tests...</span>
+      <div class="loading-animation" aria-hidden="true">
+        <div class="loading-circle"></div>
+        <div class="loading-circle"></div>
+        <div class="loading-circle"></div>
+      </div>
+      <span class="loading-text">Загрузка тестов...</span>
     </div>
 
+    <!-- Main Content -->
     <div v-else class="content-container">
-      <!-- Test List Page -->
-      <div v-if="!activeTest" class="tests-section">
+      <!-- Test List View -->
+      <div v-if="!activeTest" class="test-list-view">
         <!-- Filters Section -->
         <div v-if="tests.length > 0" class="filters-section">
           <div class="search-container">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" class="search-icon">
-              <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
-              <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <div class="search-icon">🔍</div>
             <input 
               v-model="searchQuery" 
               type="text" 
               class="search-input" 
-              placeholder="Search tests..."
+              placeholder="Поиск тестов..."
             />
+            <div class="search-glow"></div>
           </div>
           
           <div class="filter-group">
-            <label class="filter-label">Subject:</label>
+            <label class="filter-label">📚 Предмет:</label>
             <select v-model="selectedSubject" class="filter-select">
-              <option value="">All subjects</option>
+              <option value="">Все предметы</option>
               <option v-for="subject in uniqueSubjects" :key="subject" :value="subject">
                 {{ subject }}
               </option>
@@ -43,11 +48,11 @@
           </div>
           
           <div class="filter-group">
-            <label class="filter-label">Level:</label>
+            <label class="filter-label">📊 Уровень:</label>
             <select v-model="selectedLevel" class="filter-select">
-              <option value="">All levels</option>
+              <option value="">Все уровни</option>
               <option v-for="level in uniqueLevels" :key="level" :value="level">
-                Level {{ level }}
+                Уровень {{ level }}
               </option>
             </select>
           </div>
@@ -55,17 +60,28 @@
 
         <!-- Empty State -->
         <div v-if="filteredTests.length === 0 && tests.length === 0" class="empty-state">
-          <div class="empty-icon">📝</div>
-          <h3>No tests available</h3>
-          <p>Tests will appear here when they are added by administrators</p>
+          <div class="empty-animation">
+            <div class="empty-icon">📝</div>
+            <div class="empty-particles">
+              <span v-for="i in 5" :key="i" class="particle"></span>
+            </div>
+          </div>
+          <h3>Тестов пока нет</h3>
+          <p>Тесты появятся здесь, когда они будут добавлены администратором</p>
         </div>
 
         <!-- No Results State -->
         <div v-else-if="filteredTests.length === 0 && tests.length > 0" class="empty-state">
-          <div class="empty-icon">🔍</div>
-          <h3>No tests found</h3>
-          <p>Try adjusting your search filters</p>
-          <button @click="clearFilters" class="clear-btn">Clear filters</button>
+          <div class="empty-animation">
+            <div class="empty-icon">🔍</div>
+            <div class="search-ripple"></div>
+          </div>
+          <h3>Ничего не найдено</h3>
+          <p>Попробуйте изменить фильтры поиска</p>
+          <button @click="clearFilters" class="clear-btn">
+            <span class="btn-icon">✨</span>
+            Очистить фильтры
+          </button>
         </div>
         
         <!-- Tests Grid -->
@@ -74,15 +90,21 @@
             v-for="test in filteredTests" 
             :key="test._id" 
             class="test-card"
-            @click="startTest(test)"
+            @click="handleStartTest(test)"
           >
+            <div class="card-glow"></div>
             <div class="card-header">
-              <div class="test-badge">
-                {{ test.questions?.length || 0 }} questions
+              <div class="test-badges">
+                <div class="test-badge questions">
+                  <span class="badge-icon">📝</span>
+                  {{ test.questions?.length || 0 }} вопросов
+                </div>
+                <div v-if="test.duration" class="test-badge duration">
+                  <span class="badge-icon">⏱️</span>
+                  {{ test.duration }}м
+                </div>
               </div>
-              <div v-if="test.duration" class="duration-badge">
-                {{ test.duration }}m
-              </div>
+              <div class="card-corner"></div>
             </div>
             
             <div class="card-content">
@@ -90,34 +112,33 @@
               <p v-if="test.description" class="test-description">{{ test.description }}</p>
               
               <div class="test-meta">
-                <div class="meta-item">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path d="M2 3h6l4 6 4-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span>{{ test.subject || 'General' }}</span>
+                <div class="meta-item subject">
+                  <span class="meta-icon">📘</span>
+                  <span>{{ test.subject || 'Общий' }}</span>
                 </div>
                 <div class="meta-item level" :class="getLevelClass(test.level || 1)">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span>Level {{ test.level || 1 }}</span>
+                  <span class="meta-icon">{{ getLevelIcon(test.level || 1) }}</span>
+                  <span>Уровень {{ test.level || 1 }}</span>
                 </div>
               </div>
             </div>
             
             <div class="card-action">
               <button class="start-btn">
-                <span>Start Test</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                <span class="btn-text">Начать тест</span>
+                <span class="btn-arrow">→</span>
+                <div class="btn-ripple"></div>
               </button>
+            </div>
+
+            <div class="card-hover-effect">
+              <div class="hover-glow"></div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Single Test Page -->
+      <!-- Active Test View -->
       <div v-else class="test-container">
         <!-- Test Header -->
         <div class="test-header">
@@ -127,23 +148,39 @@
             
             <div class="progress-section">
               <div class="progress-info">
-                <span class="progress-text">Question {{ currentQuestionIndex + 1 }} of {{ activeTest.questions.length }}</span>
-                <span class="progress-percentage">{{ Math.round(((currentQuestionIndex + 1) / activeTest.questions.length) * 100) }}%</span>
+                <span class="progress-text">Вопрос {{ currentQuestionIndex + 1 }} из {{ activeTest.questions.length }}</span>
+                <span class="progress-percentage">{{ progressPercentage }}%</span>
               </div>
               <div class="progress-bar">
                 <div 
                   class="progress-fill" 
-                  :style="{ width: `${((currentQuestionIndex + 1) / activeTest.questions.length) * 100}%` }"
-                ></div>
+                  :style="{ width: `${progressPercentage}%` }"
+                >
+                  <div class="progress-sparkle"></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Question Section -->
-        <div v-if="currentQuestionIndex < activeTest.questions.length" class="question-section">
+        <div v-if="!isTestCompleted" class="question-section">
           <div class="question-card">
-            <div class="question-number">{{ currentQuestionIndex + 1 }}</div>
+            <div class="question-header">
+              <div class="question-number">{{ currentQuestionIndex + 1 }}</div>
+              <div class="question-indicator">
+                <div 
+                  v-for="(q, index) in activeTest.questions" 
+                  :key="index" 
+                  class="indicator-dot" 
+                  :class="{ 
+                    active: index === currentQuestionIndex, 
+                    completed: index < currentQuestionIndex 
+                  }"
+                ></div>
+              </div>
+            </div>
+            
             <h3 class="question-text">{{ currentQuestion.text || currentQuestion.question }}</h3>
             
             <!-- Multiple Choice -->
@@ -161,8 +198,11 @@
                   class="option-input"
                 />
                 <div class="option-content">
-                  <div class="option-radio"></div>
+                  <div class="option-radio">
+                    <div class="radio-inner"></div>
+                  </div>
                   <span class="option-text">{{ opt.text || opt }}</span>
+                  <div class="option-glow"></div>
                 </div>
               </label>
             </div>
@@ -180,8 +220,11 @@
                   class="option-input"
                 />
                 <div class="option-content">
-                  <div class="option-radio"></div>
-                  <span class="option-text">True</span>
+                  <div class="option-radio">
+                    <div class="radio-inner"></div>
+                  </div>
+                  <span class="option-text">Правда</span>
+                  <div class="option-glow"></div>
                 </div>
               </label>
               <label 
@@ -195,8 +238,11 @@
                   class="option-input"
                 />
                 <div class="option-content">
-                  <div class="option-radio"></div>
-                  <span class="option-text">False</span>
+                  <div class="option-radio">
+                    <div class="radio-inner"></div>
+                  </div>
+                  <span class="option-text">Ложь</span>
+                  <div class="option-glow"></div>
                 </div>
               </label>
             </div>
@@ -206,27 +252,27 @@
               <textarea
                 v-model="userAnswers[currentQuestionIndex]"
                 class="text-answer-input"
-                :placeholder="`Enter your answer for question ${currentQuestionIndex + 1}`"
+                :placeholder="`Введите ваш ответ на вопрос ${currentQuestionIndex + 1}`"
                 rows="4"
               ></textarea>
+              <div class="input-glow"></div>
             </div>
 
             <div class="question-actions">
               <button 
                 class="next-btn"
-                @click="nextQuestion"
+                @click="handleNextQuestion"
                 :disabled="!userAnswers[currentQuestionIndex] || userAnswers[currentQuestionIndex].trim() === ''"
                 :class="{ 'disabled': !userAnswers[currentQuestionIndex] || userAnswers[currentQuestionIndex].trim() === '' }"
               >
-                <span v-if="currentQuestionIndex === activeTest.questions.length - 1">
-                  Complete Test
+                <span class="btn-icon">{{ isLastQuestion ? '✅' : '→' }}</span>
+                <span v-if="isLastQuestion">
+                  Завершить тест
                 </span>
                 <span v-else>
-                  Next Question
+                  Следующий вопрос
                 </span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                <div class="btn-ripple"></div>
               </button>
             </div>
           </div>
@@ -235,36 +281,43 @@
         <!-- Results Section -->
         <div v-else class="results-section">
           <div class="results-card">
-            <div class="results-header">
+            <div class="results-animation">
               <div class="results-icon">🎉</div>
-              <h3 class="results-title">Test completed!</h3>
+              <div class="celebration-burst">
+                <span v-for="i in 12" :key="i" class="burst-particle"></span>
+              </div>
             </div>
             
-            <div class="results-stats">
-              <div class="stat-card">
-                <div class="stat-value">{{ correctCount }}</div>
-                <div class="stat-total">of {{ activeTest.questions.length }}</div>
-                <div class="stat-label">correct answers</div>
-              </div>
+            <div class="results-content">
+              <h3 class="results-title">Тест завершен!</h3>
               
-              <div class="stat-card score-card">
-                <div class="stat-value score-value" :class="getScoreClass(score)">
-                  {{ score }}%
+              <div class="results-stats">
+                <div class="stat-card answers">
+                  <div class="stat-circle">
+                    <div class="stat-value">{{ correctCount }}</div>
+                    <div class="stat-total">из {{ activeTest.questions.length }}</div>
+                  </div>
+                  <div class="stat-label">правильных ответов</div>
+                  <div class="stat-decoration"></div>
                 </div>
-                <div class="stat-label">final score</div>
-                <div class="score-description" :class="getScoreClass(score)">
-                  {{ getScoreDescription(score) }}
+                
+                <div class="stat-card score" :class="getScoreClass(score)">
+                  <div class="stat-circle score-circle" :class="getScoreClass(score)">
+                    <div class="stat-value score-value">{{ score }}%</div>
+                  </div>
+                  <div class="stat-label">итоговый результат</div>
+                  <div class="score-description" :class="getScoreClass(score)">{{ getScoreDescription(score) }}</div>
+                  <div class="stat-decoration" :class="getScoreClass(score)"></div>
                 </div>
               </div>
-            </div>
 
-            <div class="results-actions">
-              <button class="back-btn" @click="goBack">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="m15 18-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Back to Tests
-              </button>
+              <div class="results-actions">
+                <button class="back-btn" @click="handleGoBack">
+                  <span class="btn-icon">←</span>
+                  <span>Вернуться к тестам</span>
+                  <div class="btn-glow"></div>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -274,301 +327,371 @@
 </template>
 
 <script>
-import api from '@/api';
-import { auth } from '@/firebase';
+import { ref, computed, onMounted } from 'vue'
+import api from '@/api'
+import { auth } from '@/firebase'
 
 export default {
   name: 'TestsPage',
-  data() {
-    return {
-      loading: true,
-      tests: [],
-      activeTest: null,
-      userAnswers: [],
-      currentQuestionIndex: 0,
+  
+  setup() {
+    // Reactive state
+    const loading = ref(true)
+    const tests = ref([])
+    const activeTest = ref(null)
+    const userAnswers = ref([])
+    const currentQuestionIndex = ref(0)
+    
+    // Filter state
+    const searchQuery = ref('')
+    const selectedSubject = ref('')
+    const selectedLevel = ref('')
+
+    // Computed properties
+    const uniqueSubjects = computed(() => 
+      [...new Set(tests.value.map(test => test.subject).filter(Boolean))].sort()
+    )
+
+    const uniqueLevels = computed(() => 
+      [...new Set(tests.value.map(test => test.level).filter(Boolean))].sort((a, b) => a - b)
+    )
+
+    const filteredTests = computed(() => {
+      return tests.value.filter(test => {
+        const matchesSubject = !selectedSubject.value || test.subject === selectedSubject.value
+        const matchesLevel = !selectedLevel.value || test.level == selectedLevel.value
+        const matchesSearch = !searchQuery.value || 
+          test.title?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+          test.description?.toLowerCase().includes(searchQuery.value.toLowerCase())
+        
+        return matchesSubject && matchesLevel && matchesSearch
+      })
+    })
+
+    const currentQuestion = computed(() => {
+      if (!activeTest.value?.questions) return null
+      return activeTest.value.questions[currentQuestionIndex.value]
+    })
+
+    const progressPercentage = computed(() => 
+      Math.round(((currentQuestionIndex.value + 1) / (activeTest.value?.questions?.length || 1)) * 100)
+    )
+
+    const isLastQuestion = computed(() => 
+      currentQuestionIndex.value === (activeTest.value?.questions?.length || 0) - 1
+    )
+
+    const isTestCompleted = computed(() => 
+      activeTest.value && currentQuestionIndex.value >= activeTest.value.questions?.length
+    )
+
+    const correctCount = computed(() => {
+      if (!activeTest.value?.questions) return 0
       
-      // Filters
-      selectedSubject: '',
-      selectedLevel: '',
-      searchQuery: ''
-    };
-  },
-  computed: {
-    currentQuestion() {
-      if (!this.activeTest || !this.activeTest.questions) return null;
-      return this.activeTest.questions[this.currentQuestionIndex];
-    },
-    correctCount() {
-      if (!this.activeTest || !this.activeTest.questions) return 0;
-      return this.activeTest.questions.reduce((acc, q, idx) => {
-        const correctAnswer = q.correctAnswer;
-        const userAnswer = this.userAnswers[idx];
-        
-        // Handle different answer formats
-        let isCorrect = false;
-        if (q.type === 'multiple-choice' && Array.isArray(q.options)) {
-          // For multiple choice, correctAnswer might be an index or the actual text
-          if (typeof correctAnswer === 'number') {
-            const correctOptionText = q.options[correctAnswer]?.text || q.options[correctAnswer];
-            isCorrect = userAnswer === correctOptionText;
-          } else {
-            isCorrect = userAnswer === correctAnswer;
-          }
-        } else {
-          // For other types, do direct comparison
-          isCorrect = userAnswer?.toString().toLowerCase().trim() === correctAnswer?.toString().toLowerCase().trim();
-        }
-        
-        return acc + (isCorrect ? 1 : 0);
-      }, 0);
-    },
-    score() {
-      if (!this.activeTest || !this.activeTest.questions) return 0;
-      return Math.round((this.correctCount / this.activeTest.questions.length) * 100);
-    },
-    uniqueSubjects() {
-      return [...new Set(this.tests.map(test => test.subject).filter(Boolean))].sort();
-    },
-    uniqueLevels() {
-      return [...new Set(this.tests.map(test => test.level).filter(Boolean))].sort((a, b) => a - b);
-    },
-    filteredTests() {
-      return this.tests.filter(test => {
-        const matchesSubject = !this.selectedSubject || test.subject === this.selectedSubject;
-        const matchesLevel = !this.selectedLevel || test.level == this.selectedLevel;
-        const matchesSearch = !this.searchQuery || 
-          test.title?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-          test.description?.toLowerCase().includes(this.searchQuery.toLowerCase());
-        
-        return matchesSubject && matchesLevel && matchesSearch;
-      });
-    }
-  },
-  async mounted() {
-    await this.loadTests();
-  },
-  methods: {
-    async loadTests() {
+      return activeTest.value.questions.reduce((acc, question, index) => {
+        const userAnswer = userAnswers.value[index]
+        const isCorrect = checkAnswer(question, userAnswer)
+        return acc + (isCorrect ? 1 : 0)
+      }, 0)
+    })
+
+    const score = computed(() => {
+      if (!activeTest.value?.questions?.length) return 0
+      return Math.round((correctCount.value / activeTest.value.questions.length) * 100)
+    })
+
+    // Methods
+    const loadTests = async () => {
       try {
-        this.loading = true;
-        const user = auth.currentUser;
+        loading.value = true
+        const user = auth.currentUser
+        
         if (!user) {
-          console.error('❌ User not authenticated');
-          this.$toast?.error('Please sign in');
-          return;
+          throw new Error('Пользователь не авторизован')
         }
 
-        const token = await user.getIdToken();
-        const userId = user.uid;
+        const token = await user.getIdToken()
+        const userId = user.uid
 
-        console.log('🔍 Loading tests for user:', userId);
+        console.log('🔍 Loading tests for user:', userId)
 
-        // Method 1: Try user-specific tests endpoint
+        // Try user-specific tests endpoint first
         try {
           const { data: userTestsResponse } = await api.get(`/users/${userId}/tests`, {
             headers: { Authorization: `Bearer ${token}` }
-          });
+          })
           
           if (userTestsResponse?.tests && Array.isArray(userTestsResponse.tests)) {
-            this.tests = userTestsResponse.tests;
-            console.log('✅ Loaded tests from user endpoint:', this.tests.length);
-            return;
+            tests.value = userTestsResponse.tests
+            console.log('✅ Loaded tests from user endpoint:', tests.value.length)
+            return
           }
         } catch (userTestsError) {
-          console.warn('⚠️ User tests endpoint failed:', userTestsError.message);
+          console.warn('⚠️ User tests endpoint failed:', userTestsError.message)
         }
 
-        // Method 2: Try direct tests endpoint
+        // Fallback to direct tests endpoint
         try {
           const { data: testsResponse } = await api.get('/tests', {
             headers: { Authorization: `Bearer ${token}` }
-          });
+          })
           
-          const testsData = testsResponse?.data || testsResponse || [];
-          // Filter only active tests for users
-          this.tests = Array.isArray(testsData) ? testsData.filter(test => test.isActive !== false) : [];
-          console.log('✅ Loaded tests from direct endpoint:', this.tests.length);
+          const testsData = testsResponse?.data || testsResponse || []
+          tests.value = Array.isArray(testsData) ? testsData.filter(test => test.isActive !== false) : []
+          console.log('✅ Loaded tests from direct endpoint:', tests.value.length)
         } catch (directTestsError) {
-          console.error('❌ Failed to load tests:', directTestsError);
-          this.$toast?.error('Error loading tests');
-          this.tests = [];
+          console.error('❌ Failed to load tests:', directTestsError)
+          showToast('Ошибка загрузки тестов', 'error')
+          tests.value = []
         }
 
       } catch (err) {
-        console.error('❌ Error loading tests:', err);
-        this.$toast?.error('Error loading tests');
-        this.tests = [];
+        console.error('❌ Ошибка загрузки тестов:', err)
+        showToast('Ошибка загрузки тестов', 'error')
+        tests.value = []
       } finally {
-        this.loading = false;
+        loading.value = false
       }
-    },
+    }
 
-    async startTest(test) {
+    const handleStartTest = async (test) => {
       try {
-        this.loading = true;
-        const user = auth.currentUser;
+        loading.value = true
+        const user = auth.currentUser
+        
         if (!user) {
-          console.error('❌ User not authenticated');
-          return;
+          console.error('❌ Пользователь не авторизован')
+          return
         }
 
-        const token = await user.getIdToken();
-        const userId = user.uid;
+        const token = await user.getIdToken()
+        const userId = user.uid
 
-        console.log('🚀 Starting test:', test.title, 'ID:', test._id);
+        console.log('🚀 Starting test:', test.title, 'ID:', test._id)
 
         // Try to get the full test with questions
         try {
           const { data: fullTestResponse } = await api.get(`/users/${userId}/tests/${test._id}`, {
             headers: { Authorization: `Bearer ${token}` }
-          });
+          })
           
-          this.activeTest = fullTestResponse?.test || fullTestResponse?.data || fullTestResponse;
+          activeTest.value = fullTestResponse?.test || fullTestResponse?.data || fullTestResponse
         } catch (userTestError) {
-          console.warn('⚠️ User-specific test endpoint failed, trying direct:', userTestError.message);
+          console.warn('⚠️ User-specific test endpoint failed, trying direct:', userTestError.message)
           
           // Fallback to direct test endpoint
           const { data: directTestResponse } = await api.get(`/tests/${test._id}`, {
             headers: { Authorization: `Bearer ${token}` }
-          });
+          })
           
-          this.activeTest = directTestResponse?.data || directTestResponse;
+          activeTest.value = directTestResponse?.data || directTestResponse
         }
 
-        if (!this.activeTest || !this.activeTest.questions || this.activeTest.questions.length === 0) {
-          throw new Error('Test contains no questions');
+        if (!activeTest.value || !activeTest.value.questions || activeTest.value.questions.length === 0) {
+          throw new Error('Тест не содержит вопросов')
         }
 
         // Process questions to ensure they have proper structure
-        this.activeTest.questions = this.activeTest.questions.map(q => ({
+        activeTest.value.questions = activeTest.value.questions.map(q => ({
           ...q,
           text: q.text || q.question,
           type: q.type || 'multiple-choice',
           options: q.options || [],
           correctAnswer: q.correctAnswer
-        }));
+        }))
 
-        this.userAnswers = Array(this.activeTest.questions.length).fill('');
-        this.currentQuestionIndex = 0;
+        userAnswers.value = Array(activeTest.value.questions.length).fill('')
+        currentQuestionIndex.value = 0
         
-        console.log('✅ Test loaded successfully:', this.activeTest.title);
-        console.log('📊 Questions:', this.activeTest.questions.length);
+        console.log('✅ Test loaded successfully:', activeTest.value.title)
+        console.log('📊 Questions:', activeTest.value.questions.length)
         
       } catch (err) {
-        console.error('❌ Error loading test:', err);
-        this.$toast?.error('Error loading test: ' + err.message);
+        console.error('❌ Ошибка загрузки теста:', err)
+        showToast('Ошибка загрузки теста: ' + err.message, 'error')
       } finally {
-        this.loading = false;
+        loading.value = false
       }
-    },
+    }
 
-    nextQuestion() {
-      const currentAnswer = this.userAnswers[this.currentQuestionIndex];
+    const handleNextQuestion = () => {
+      const currentAnswer = userAnswers.value[currentQuestionIndex.value]
       if (!currentAnswer || currentAnswer.trim() === '') {
-        this.$toast?.warning('Please select an answer');
-        return;
+        showToast('Пожалуйста, выберите ответ', 'warning')
+        return
       }
 
-      if (this.currentQuestionIndex + 1 < this.activeTest.questions.length) {
-        this.currentQuestionIndex++;
+      if (currentQuestionIndex.value + 1 < activeTest.value.questions.length) {
+        currentQuestionIndex.value++
       } else {
-        this.submitTest();
+        handleSubmitTest()
       }
-    },
+    }
 
-    async submitTest() {
+    const handleSubmitTest = async () => {
       try {
-        const user = auth.currentUser;
+        const user = auth.currentUser
         if (!user) {
-          console.error('❌ User not authenticated');
-          return;
+          console.error('❌ Пользователь не авторизован')
+          return
         }
 
-        const token = await user.getIdToken();
-        const userId = user.uid;
+        const token = await user.getIdToken()
+        const userId = user.uid
 
-        console.log('📤 Submitting test results...');
+        console.log('📤 Submitting test results...')
 
-        // Format answers for submission
-        const formattedAnswers = this.userAnswers.map((answer, index) => ({
+        const formattedAnswers = userAnswers.value.map((answer, index) => ({
           questionIndex: index,
           answer: answer
-        }));
+        }))
 
         try {
           await api.post(
-            `/users/${userId}/tests/${this.activeTest._id}/submit`,
+            `/users/${userId}/tests/${activeTest.value._id}/submit`,
             { answers: formattedAnswers },
             { headers: { Authorization: `Bearer ${token}` } }
-          );
+          )
           
-          console.log('✅ Test results submitted successfully');
+          console.log('✅ Test results submitted successfully')
         } catch (submitError) {
-          console.warn('⚠️ User-specific submit failed, trying direct route:', submitError.message);
+          console.warn('⚠️ User-specific submit failed, trying direct route:', submitError.message)
           
           // Fallback submit
           await api.post(
-            `/tests/${this.activeTest._id}/submit`,
+            `/tests/${activeTest.value._id}/submit`,
             { 
               userId: userId,
               answers: formattedAnswers 
             },
             { headers: { Authorization: `Bearer ${token}` } }
-          );
+          )
         }
 
         // Move to results view
-        this.currentQuestionIndex = this.activeTest.questions.length;
+        currentQuestionIndex.value = activeTest.value.questions.length
         
       } catch (err) {
-        console.error('❌ Error submitting test:', err);
-        this.$toast?.error('Error submitting test results');
+        console.error('❌ Ошибка отправки теста:', err)
+        showToast('Ошибка отправки результатов теста', 'error')
       }
-    },
+    }
 
-    goBack() {
-      this.activeTest = null;
-      this.userAnswers = [];
-      this.currentQuestionIndex = 0;
-    },
+    const handleGoBack = () => {
+      activeTest.value = null
+      userAnswers.value = []
+      currentQuestionIndex.value = 0
+    }
 
-    clearFilters() {
-      this.selectedSubject = '';
-      this.selectedLevel = '';
-      this.searchQuery = '';
-    },
+    const clearFilters = () => {
+      selectedSubject.value = ''
+      selectedLevel.value = ''
+      searchQuery.value = ''
+    }
 
-    getLevelClass(level) {
-      if (level <= 2) return 'beginner';
-      if (level <= 4) return 'intermediate';
-      return 'advanced';
-    },
+    const checkAnswer = (question, userAnswer) => {
+      if (!userAnswer) return false
 
-    getScoreClass(score) {
-      if (score >= 90) return 'excellent';
-      if (score >= 70) return 'good';
-      if (score >= 50) return 'average';
-      return 'poor';
-    },
+      const correctAnswer = question.correctAnswer
 
-    getScoreDescription(score) {
-      if (score >= 90) return 'Excellent!';
-      if (score >= 70) return 'Good job!';
-      if (score >= 50) return 'Satisfactory';
-      return 'Needs improvement';
+      if (question.type === 'multiple-choice' && Array.isArray(question.options)) {
+        if (typeof correctAnswer === 'number') {
+          const correctOptionText = question.options[correctAnswer]?.text || question.options[correctAnswer]
+          return userAnswer === correctOptionText
+        }
+        return userAnswer === correctAnswer
+      }
+
+      return userAnswer.toString().toLowerCase().trim() === 
+             correctAnswer.toString().toLowerCase().trim()
+    }
+
+    const getLevelClass = (level) => {
+      if (level <= 2) return 'beginner'
+      if (level <= 4) return 'intermediate'
+      return 'advanced'
+    }
+
+    const getLevelIcon = (level) => {
+      if (level <= 2) return '🟢'
+      if (level <= 4) return '🟡'
+      return '🔴'
+    }
+
+    const getScoreClass = (score) => {
+      if (score >= 90) return 'excellent'
+      if (score >= 70) return 'good'
+      if (score >= 50) return 'average'
+      return 'poor'
+    }
+
+    const getScoreDescription = (score) => {
+      if (score >= 90) return 'Отлично!'
+      if (score >= 70) return 'Хорошо!'
+      if (score >= 50) return 'Удовлетворительно'
+      return 'Нужно подтянуть знания'
+    }
+
+    const showToast = (message, type = 'info') => {
+      // Use your toast notification system
+      if (window.$toast) {
+        window.$toast[type](message)
+      } else {
+        console.log(`${type.toUpperCase()}: ${message}`)
+      }
+    }
+
+    // Lifecycle
+    onMounted(() => {
+      loadTests()
+    })
+
+    return {
+      // State
+      loading,
+      tests,
+      activeTest,
+      userAnswers,
+      currentQuestionIndex,
+      searchQuery,
+      selectedSubject,
+      selectedLevel,
+      
+      // Computed
+      uniqueSubjects,
+      uniqueLevels,
+      filteredTests,
+      currentQuestion,
+      progressPercentage,
+      isLastQuestion,
+      isTestCompleted,
+      correctCount,
+      score,
+      
+      // Methods
+      handleStartTest,
+      handleNextQuestion,
+      handleSubmitTest,
+      handleGoBack,
+      clearFilters,
+      getLevelClass,
+      getLevelIcon,
+      getScoreClass,
+      getScoreDescription
     }
   }
-};
+}
 </script>
 
 <style scoped>
-/* Variables */
+/* CSS Variables */
 :root {
   --brand-purple: #8b5cf6;
   --brand-purple-dark: #7c3aed;
   --brand-purple-light: #a78bfa;
-  --black: #000000;
-  --white: #ffffff;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
   --gray-50: #f9fafb;
   --gray-100: #f3f4f6;
   --gray-200: #e5e7eb;
@@ -579,46 +702,105 @@ export default {
   --gray-700: #374151;
   --gray-800: #1f2937;
   --gray-900: #111827;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
 }
 
-/* Base */
+/* Base Styles */
 .tests-page {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 2rem 1.5rem;
   min-height: 100vh;
-  background: var(--white);
-  color: var(--black);
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   font-family: 'Inter', system-ui, sans-serif;
+  position: relative;
+}
+
+.tests-page::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(124, 58, 237, 0.06) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.content-container {
+  position: relative;
+  z-index: 1;
 }
 
 /* Header Section */
 .page-header {
   text-align: center;
-  margin-bottom: 48px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--gray-200);
-}
-
-.header-content {
+  margin-bottom: 4rem;
   position: relative;
 }
 
+.header-content {
+  background: #ffffff;
+  border-radius: 1.5rem;
+  padding: 3rem;
+  box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.header-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0.25rem;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+}
+
+.header-icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-0.5rem) rotate(2deg); }
+  75% { transform: translateY(-0.25rem) rotate(-2deg); }
+}
+
 .page-title {
-  font-size: 32px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  color: var(--black);
+  font-size: 3rem;
+  font-weight: 900;
+  margin: 0 0 1rem 0;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   letter-spacing: -0.025em;
 }
 
 .page-subtitle {
-  font-size: 16px;
+  font-size: 1.125rem;
   color: var(--gray-600);
   margin: 0;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.header-decoration {
+  position: absolute;
+  bottom: -1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6.25rem;
+  height: 0.25rem;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  border-radius: 0.125rem;
 }
 
 /* Loading State */
@@ -627,379 +809,744 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 24px;
+  padding: 5rem 1.5rem;
   text-align: center;
+  background: #ffffff;
+  border-radius: 1.25rem;
+  box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.1);
 }
 
-.spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--gray-200);
-  border-top: 2px solid var(--brand-purple);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-state span {
-  color: var(--gray-600);
-  font-size: 14px;
-}
-
-/* Content Container */
-.content-container {
+.loading-animation {
   position: relative;
+  width: 5rem;
+  height: 5rem;
+  margin-bottom: 1.5rem;
+}
+
+.loading-circle {
+  position: absolute;
+  width: 1.25rem;
+  height: 1.25rem;
+  background: var(--brand-purple);
+  border-radius: 50%;
+  animation: bounce 1.5s infinite ease-in-out;
+}
+
+.loading-circle:nth-child(1) {
+  left: 0;
+  top: 1.875rem;
+  animation-delay: -0.32s;
+}
+
+.loading-circle:nth-child(2) {
+  left: 1.875rem;
+  top: 1.875rem;
+  animation-delay: -0.16s;
+}
+
+.loading-circle:nth-child(3) {
+  left: 3.75rem;
+  top: 1.875rem;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.loading-text {
+  color: var(--gray-600);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* Test List View */
+.test-list-view {
+  animation: fadeInUp 0.8s ease 0.2s both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(1.875rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Filters Section */
 .filters-section {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 32px;
-  padding: 16px;
-  background: var(--gray-50);
-  border-radius: 8px;
-  border: 1px solid var(--gray-200);
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+  padding: 1.5rem;
+  background: #ffffff;
+  border-radius: 1.25rem;
+  box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.1);
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .search-container {
   position: relative;
   flex: 1;
-  min-width: 200px;
+  min-width: 300px;
+  max-width: 400px;
 }
 
 .search-icon {
   position: absolute;
-  left: 12px;
+  left: 1rem;
   top: 50%;
   transform: translateY(-50%);
+  font-size: 1.25rem;
   color: var(--gray-400);
+  z-index: 2;
 }
 
 .search-input {
   width: 100%;
-  padding: 8px 12px 8px 36px;
-  border: 1px solid var(--gray-300);
-  border-radius: 6px;
-  font-size: 14px;
-  background: var(--white);
-  transition: border-color 0.2s ease;
+  padding: 1rem 1rem 1rem 3.125rem;
+  border: 2px solid var(--gray-200);
+  border-radius: 1rem;
+  font-size: 1rem;
+  background: #ffffff;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .search-input:focus {
   outline: none;
   border-color: var(--brand-purple);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+}
+
+.search-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  border-radius: 1rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.search-input:focus ~ .search-glow {
+  opacity: 0.1;
 }
 
 .filter-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 120px;
+  gap: 0.5rem;
+  min-width: 150px;
 }
 
 .filter-label {
-  font-weight: 500;
+  font-weight: 600;
   color: var(--gray-700);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 0.875rem;
 }
 
 .filter-select {
-  padding: 8px 12px;
-  border: 1px solid var(--gray-300);
-  border-radius: 6px;
-  font-size: 14px;
-  background: var(--white);
-  transition: border-color 0.2s ease;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--gray-200);
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  background: #ffffff;
+  transition: all 0.3s ease;
 }
 
 .filter-select:focus {
   outline: none;
   border-color: var(--brand-purple);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
 }
 
-/* Empty State */
+/* Empty States */
 .empty-state {
   text-align: center;
-  padding: 80px 24px;
+  padding: 5rem 1.5rem;
+  background: #ffffff;
+  border-radius: 1.25rem;
+  box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.1);
+}
+
+.empty-animation {
+  position: relative;
+  margin-bottom: 2rem;
 }
 
 .empty-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  opacity: 0.5;
+  font-size: 5rem;
+  margin-bottom: 1.25rem;
+  animation: emptyFloat 3s ease-in-out infinite;
+}
+
+@keyframes emptyFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-0.75rem); }
+}
+
+.empty-particles {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.particle {
+  position: absolute;
+  width: 0.375rem;
+  height: 0.375rem;
+  background: var(--brand-purple);
+  border-radius: 50%;
+  animation: particleFloat 2s ease-in-out infinite;
+}
+
+.particle:nth-child(1) { top: -2.5rem; left: -1.875rem; animation-delay: 0s; }
+.particle:nth-child(2) { top: -3.125rem; left: 1.25rem; animation-delay: 0.4s; }
+.particle:nth-child(3) { top: -1.875rem; left: 2.5rem; animation-delay: 0.8s; }
+.particle:nth-child(4) { top: 1.875rem; left: -2.5rem; animation-delay: 1.2s; }
+.particle:nth-child(5) { top: 2.5rem; left: 1.875rem; animation-delay: 1.6s; }
+
+@keyframes particleFloat {
+  0%, 100% { opacity: 0.3; transform: translateY(0) scale(1); }
+  50% { opacity: 1; transform: translateY(-1.25rem) scale(1.2); }
+}
+
+.search-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6.25rem;
+  height: 6.25rem;
+  border: 2px solid var(--brand-purple);
+  border-radius: 50%;
+  animation: searchRipple 2s ease-out infinite;
+}
+
+@keyframes searchRipple {
+  0% { width: 0; height: 0; opacity: 1; }
+  100% { width: 7.5rem; height: 7.5rem; opacity: 0; }
 }
 
 .empty-state h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--black);
-  margin: 0 0 8px 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #000000;
+  margin: 0 0 1rem 0;
 }
 
 .empty-state p {
   color: var(--gray-600);
-  margin-bottom: 24px;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
 .clear-btn {
-  background: var(--brand-purple);
-  color: var(--white);
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  color: #ffffff;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  padding: 1rem 2rem;
+  border-radius: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.clear-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.clear-btn:hover::before {
+  left: 100%;
 }
 
 .clear-btn:hover {
-  background: var(--brand-purple-dark);
+  transform: translateY(-0.25rem) scale(1.05);
+  box-shadow: 0 0.5rem 2rem rgba(139, 92, 246, 0.4);
 }
 
 /* Tests Grid */
 .tests-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 2rem;
 }
 
 .test-card {
-  border: 1px solid var(--gray-200);
-  border-radius: 8px;
-  padding: 20px;
+  background: #ffffff;
+  border-radius: 1.5rem;
+  padding: 2rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-  background: var(--white);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.1);
+}
+
+.card-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0.25rem;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  transform: scaleX(0);
+  transition: transform 0.4s ease;
+}
+
+.test-card:hover .card-glow {
+  transform: scaleX(1);
 }
 
 .test-card:hover {
+  transform: translateY(-0.75rem) scale(1.02);
   border-color: var(--brand-purple);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+  box-shadow: 0 1.25rem 3.75rem rgba(139, 92, 246, 0.25);
 }
 
 .card-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.test-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .test-badge {
-  background: var(--brand-purple);
-  color: var(--white);
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 4px 8px;
-  border-radius: 12px;
 }
 
-.duration-badge {
+.test-badge.questions {
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  color: #ffffff;
+}
+
+.test-badge.duration {
   background: var(--gray-100);
   color: var(--gray-700);
-  font-size: 12px;
-  font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 12px;
+}
+
+.badge-icon {
+  font-size: 0.875rem;
+}
+
+.card-corner {
+  width: 1.25rem;
+  height: 1.25rem;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  border-radius: 0 0 0 1.25rem;
+  position: absolute;
+  top: -2rem;
+  right: -2rem;
 }
 
 .card-content {
-  margin-bottom: 20px;
+  margin-bottom: 1.5rem;
 }
 
 .test-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--black);
-  margin: 0 0 8px 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #000000;
+  margin: 0 0 0.75rem 0;
   line-height: 1.3;
 }
 
 .test-description {
   color: var(--gray-600);
-  font-size: 14px;
-  line-height: 1.4;
-  margin: 0 0 16px 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0 0 1.25rem 0;
 }
 
 .test-meta {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .meta-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 0.5rem;
+  font-size: 0.875rem;
   color: var(--gray-600);
+  font-weight: 500;
+}
+
+.meta-item.subject {
+  background: var(--gray-50);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+}
+
+.meta-item.level {
+  background: var(--gray-50);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
 }
 
 .meta-item.level.beginner {
+  background: rgba(16, 185, 129, 0.1);
   color: var(--success);
 }
 
 .meta-item.level.intermediate {
+  background: rgba(245, 158, 11, 0.1);
   color: var(--warning);
 }
 
 .meta-item.level.advanced {
+  background: rgba(239, 68, 68, 0.1);
   color: var(--error);
 }
 
+.meta-icon {
+  font-size: 1rem;
+}
+
 .card-action {
-  display: flex;
-  justify-content: flex-end;
+  position: relative;
 }
 
 .start-btn {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: var(--brand-purple);
-  color: var(--white);
+  justify-content: center;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  color: #ffffff;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.start-btn:hover .btn-ripple {
+  left: 100%;
 }
 
 .start-btn:hover {
-  background: var(--brand-purple-dark);
+  transform: translateY(-0.125rem);
+  box-shadow: 0 0.5rem 1.5rem rgba(139, 92, 246, 0.4);
+}
+
+.btn-text {
+  position: relative;
+  z-index: 1;
+}
+
+.btn-arrow {
+  font-size: 1.125rem;
+  transition: transform 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.start-btn:hover .btn-arrow {
+  transform: translateX(0.25rem);
+}
+
+.card-hover-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 1.5rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.hover-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120%;
+  height: 120%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: hoverPulse 2s ease-in-out infinite;
+}
+
+@keyframes hoverPulse {
+  0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.test-card:hover .card-hover-effect {
+  opacity: 1;
 }
 
 /* Test Container */
 .test-container {
-  background: var(--white);
-  border-radius: 8px;
+  background: #ffffff;
+  border-radius: 1.5rem;
   overflow: hidden;
-  border: 1px solid var(--gray-200);
+  box-shadow: 0 1.25rem 3.75rem rgba(0, 0, 0, 0.15);
+  border: 2px solid rgba(139, 92, 246, 0.1);
+  animation: fadeInUp 0.8s ease 0.2s both;
 }
 
+/* Test Header */
 .test-header {
-  background: var(--gray-50);
-  padding: 32px;
+  background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
+  padding: 2.5rem;
   border-bottom: 1px solid var(--gray-200);
+  text-align: center;
+  position: relative;
+}
+
+.test-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0.25rem;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
 }
 
 .test-info {
-  text-align: center;
   max-width: 600px;
   margin: 0 auto;
 }
 
 .test-name {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--black);
-  margin: 0 0 8px 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #000000;
+  margin: 0 0 0.75rem 0;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .test-description {
   color: var(--gray-600);
-  margin: 0 0 24px 0;
-  line-height: 1.5;
+  margin: 0 0 2rem 0;
+  line-height: 1.6;
+  font-size: 1rem;
 }
 
 .progress-section {
-  margin-top: 24px;
+  margin-top: 1.5rem;
 }
 
 .progress-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 0.75rem;
 }
 
 .progress-text {
-  font-size: 14px;
+  font-size: 1rem;
   color: var(--gray-700);
-  font-weight: 500;
-}
-
-.progress-percentage {
-  font-size: 14px;
-  color: var(--brand-purple);
   font-weight: 600;
 }
 
+.progress-percentage {
+  font-size: 1rem;
+  color: var(--brand-purple);
+  font-weight: 700;
+}
+
 .progress-bar {
-  height: 6px;
+  height: 0.5rem;
   background: var(--gray-200);
-  border-radius: 3px;
+  border-radius: 0.25rem;
   overflow: hidden;
+  position: relative;
 }
 
 .progress-fill {
   height: 100%;
-  background: var(--brand-purple);
-  border-radius: 3px;
-  transition: width 0.3s ease;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  border-radius: 0.25rem;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.progress-sparkle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 1.875rem;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: progressSparkle 2s ease-in-out infinite;
+}
+
+@keyframes progressSparkle {
+  0%, 100% { opacity: 0; transform: translateX(-0.9375rem); }
+  50% { opacity: 1; transform: translateX(0.9375rem); }
 }
 
 /* Question Section */
 .question-section {
-  padding: 32px;
+  padding: 3rem;
 }
 
 .question-card {
-  max-width: 700px;
+  max-width: 800px;
   margin: 0 auto;
-  background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: 8px;
-  padding: 32px;
+  background: var(--gray-50);
+  border-radius: 1.25rem;
+  padding: 2.5rem;
+  border: 2px solid var(--gray-200);
+  position: relative;
+  animation: questionAppear 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes questionAppear {
+  from {
+    opacity: 0;
+    transform: translateY(1.875rem) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.question-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
 }
 
 .question-number {
-  display: inline-flex;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  color: #ffffff;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: var(--brand-purple);
-  color: var(--white);
+  font-weight: 700;
+  font-size: 1.125rem;
+  animation: questionPulse 2s ease-in-out infinite;
+}
+
+@keyframes questionPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); }
+  50% { box-shadow: 0 0 0 0.75rem rgba(139, 92, 246, 0); }
+}
+
+.question-indicator {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.indicator-dot {
+  width: 0.75rem;
+  height: 0.75rem;
   border-radius: 50%;
-  font-weight: 600;
-  font-size: 14px;
-  margin-bottom: 16px;
+  background: var(--gray-300);
+  transition: all 0.3s ease;
+}
+
+.indicator-dot.active {
+  background: var(--brand-purple);
+  transform: scale(1.2);
+  box-shadow: 0 0 0 0.25rem rgba(139, 92, 246, 0.3);
+}
+
+.indicator-dot.completed {
+  background: var(--success);
 }
 
 .question-text {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--black);
-  margin: 0 0 24px 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #000000;
+  margin: 0 0 2rem 0;
   line-height: 1.4;
+  text-align: center;
 }
 
+/* Options Container */
 .options-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 32px;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
 }
 
 .option-item {
   display: block;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .option-input {
@@ -1009,429 +1556,629 @@ export default {
 .option-content {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
+  gap: 1rem;
+  padding: 1.25rem;
   border: 2px solid var(--gray-200);
-  border-radius: 8px;
-  background: var(--white);
-  transition: all 0.2s ease;
+  border-radius: 1rem;
+  background: #ffffff;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.option-glow {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  opacity: 0;
+  transition: all 0.3s ease;
 }
 
 .option-item:hover .option-content {
   border-color: var(--brand-purple-light);
   background: var(--gray-50);
+  transform: translateX(0.5rem);
+}
+
+.option-item:hover .option-glow {
+  left: 0;
+  opacity: 0.05;
 }
 
 .option-item.selected .option-content {
   border-color: var(--brand-purple);
-  background: var(--brand-purple-light);
-  background-opacity: 0.1;
+  background: rgba(139, 92, 246, 0.05);
+  transform: translateX(0.5rem);
+}
+
+.option-item.selected .option-glow {
+  left: 0;
+  opacity: 0.1;
 }
 
 .option-radio {
-  width: 20px;
-  height: 20px;
+  width: 1.5rem;
+  height: 1.5rem;
   border: 2px solid var(--gray-300);
   border-radius: 50%;
   position: relative;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .option-item.selected .option-radio {
   border-color: var(--brand-purple);
+  background: var(--brand-purple);
 }
 
-.option-item.selected .option-radio::after {
-  content: '';
+.radio-inner {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 8px;
-  height: 8px;
-  background: var(--brand-purple);
+  transform: translate(-50%, -50%) scale(0);
+  width: 0.5rem;
+  height: 0.5rem;
+  background: #ffffff;
   border-radius: 50%;
-  transform: translate(-50%, -50%);
+  transition: transform 0.3s ease;
+}
+
+.option-item.selected .radio-inner {
+  transform: translate(-50%, -50%) scale(1);
 }
 
 .option-text {
-  font-size: 14px;
-  color: var(--black);
+  font-size: 1rem;
+  color: #000000;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.5;
+  position: relative;
+  z-index: 1;
 }
 
+/* Text Answer */
 .text-answer-container {
-  margin-bottom: 32px;
+  margin-bottom: 2.5rem;
+  position: relative;
 }
 
 .text-answer-input {
   width: 100%;
-  padding: 16px;
+  padding: 1.25rem;
   border: 2px solid var(--gray-200);
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 1rem;
+  font-size: 1rem;
   font-family: inherit;
   resize: vertical;
-  transition: border-color 0.2s ease;
+  min-height: 7.5rem;
+  transition: all 0.3s ease;
+  background: #ffffff;
 }
 
 .text-answer-input:focus {
   outline: none;
   border-color: var(--brand-purple);
+  box-shadow: 0 0 0 0.25rem rgba(139, 92, 246, 0.1);
 }
 
+.input-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  border-radius: 1rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.text-answer-input:focus ~ .input-glow {
+  opacity: 0.05;
+}
+
+/* Question Actions */
 .question-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .next-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: var(--brand-purple);
-  color: var(--white);
+  gap: 0.75rem;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  color: #ffffff;
   border: none;
-  padding: 12px 24px;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 1rem 2rem;
+  border-radius: 1rem;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  min-width: 12.5rem;
 }
 
 .next-btn:hover:not(.disabled) {
-  background: var(--brand-purple-dark);
+  transform: translateY(-0.125rem) scale(1.05);
+  box-shadow: 0 0.5rem 1.5rem rgba(139, 92, 246, 0.4);
 }
 
 .next-btn.disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
+}
+
+.btn-icon {
+  font-size: 1.125rem;
+  position: relative;
+  z-index: 1;
+}
+
+.next-btn span {
+  position: relative;
+  z-index: 1;
 }
 
 /* Results Section */
 .results-section {
-  padding: 48px 32px;
+  padding: 4rem 3rem;
 }
 
 .results-card {
-  max-width: 500px;
+  max-width: 600px;
   margin: 0 auto;
   text-align: center;
-  background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: 8px;
-  padding: 48px 32px;
+  background: var(--gray-50);
+  border-radius: 1.5rem;
+  padding: 3rem;
+  border: 2px solid var(--gray-200);
+  position: relative;
+  overflow: hidden;
 }
 
-.results-header {
-  margin-bottom: 32px;
+.results-animation {
+  position: relative;
+  margin-bottom: 2.5rem;
 }
 
 .results-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
+  font-size: 5rem;
+  animation: resultsFloat 3s ease-in-out infinite;
+}
+
+@keyframes resultsFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-0.5rem) rotate(3deg); }
+  75% { transform: translateY(-0.25rem) rotate(-3deg); }
+}
+
+.celebration-burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.burst-particle {
+  position: absolute;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--success);
+  border-radius: 50%;
+  animation: burstFloat 4s ease-in-out infinite;
+}
+
+.burst-particle:nth-child(1) { top: -3.75rem; left: -3.125rem; animation-delay: 0s; }
+.burst-particle:nth-child(2) { top: -4.375rem; left: 2.5rem; animation-delay: 0.3s; }
+.burst-particle:nth-child(3) { top: -3.125rem; left: 3.75rem; animation-delay: 0.6s; }
+.burst-particle:nth-child(4) { top: 3.125rem; left: -3.75rem; animation-delay: 0.9s; }
+.burst-particle:nth-child(5) { top: 3.75rem; left: 3.125rem; animation-delay: 1.2s; }
+.burst-particle:nth-child(6) { top: 2.5rem; left: -2.5rem; animation-delay: 1.5s; }
+.burst-particle:nth-child(7) { top: -2.5rem; left: 0px; animation-delay: 1.8s; }
+.burst-particle:nth-child(8) { top: 0px; left: 4.375rem; animation-delay: 2.1s; }
+.burst-particle:nth-child(9) { top: 4.375rem; left: 0px; animation-delay: 2.4s; }
+.burst-particle:nth-child(10) { top: -1.875rem; left: -4.375rem; animation-delay: 2.7s; }
+.burst-particle:nth-child(11) { top: 1.875rem; left: 5rem; animation-delay: 3s; }
+.burst-particle:nth-child(12) { top: -5rem; left: 1.25rem; animation-delay: 3.3s; }
+
+@keyframes burstFloat {
+  0%, 100% { opacity: 0.3; transform: translateY(0) scale(1); }
+  25% { opacity: 1; transform: translateY(-1.25rem) scale(1.3); }
+  75% { opacity: 0.7; transform: translateY(-0.625rem) scale(0.8); }
+}
+
+.results-content h3 {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #000000;
+  margin: 0 0 2.5rem 0;
 }
 
 .results-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--black);
-  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #000000;
+  margin: 0 0 2.5rem 0;
 }
 
 .results-stats {
   display: flex;
   justify-content: center;
-  gap: 32px;
-  margin-bottom: 32px;
+  gap: 2.5rem;
+  margin-bottom: 3rem;
 }
 
 .stat-card {
   text-align: center;
-  padding: 20px;
-  background: var(--gray-50);
-  border-radius: 8px;
-  border: 1px solid var(--gray-200);
+  background: #ffffff;
+  padding: 2rem 1.5rem;
+  border-radius: 1.25rem;
+  border: 2px solid var(--gray-200);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
-.stat-card.score-card {
-  background: linear-gradient(135deg, var(--brand-purple-light), var(--brand-purple));
-  color: var(--white);
+.stat-card:hover {
+  transform: translateY(-0.25rem);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+}
+
+.stat-card.score.excellent {
+  border-color: var(--success);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%);
+}
+
+.stat-card.score.good {
   border-color: var(--brand-purple);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(124, 58, 237, 0.05) 100%);
+}
+
+.stat-card.score.average {
+  border-color: var(--warning);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(217, 119, 6, 0.05) 100%);
+}
+
+.stat-card.score.poor {
+  border-color: var(--error);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(220, 38, 38, 0.05) 100%);
+}
+
+.stat-circle {
+  width: 6.25rem;
+  height: 6.25rem;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.score-circle.excellent {
+  background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+}
+
+.score-circle.good {
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
+}
+
+.score-circle.average {
+  background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+}
+
+.score-circle.poor {
+  background: linear-gradient(135deg, var(--error) 0%, #dc2626 100%);
+}
+
+.stat-circle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: statShimmer 3s ease-in-out infinite;
+}
+
+@keyframes statShimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
 }
 
 .stat-value {
-  display: block;
-  font-size: 32px;
-  font-weight: 700;
-  color: var(--black);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
   line-height: 1;
-  margin-bottom: 4px;
+  position: relative;
+  z-index: 1;
 }
 
-.stat-value.score-value {
-  color: var(--white);
-  font-size: 36px;
-}
-
-.stat-value.excellent {
-  color: var(--success);
-}
-
-.stat-value.good {
-  color: var(--brand-purple);
-}
-
-.stat-value.average {
-  color: var(--warning);
-}
-
-.stat-value.poor {
-  color: var(--error);
+.score-value {
+  font-size: 1.5rem;
 }
 
 .stat-total {
-  font-size: 14px;
-  color: var(--gray-600);
-  margin-bottom: 8px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  position: relative;
+  z-index: 1;
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 0.875rem;
   color: var(--gray-600);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 500;
-}
-
-.score-card .stat-label {
-  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
 }
 
 .score-description {
-  font-size: 14px;
+  font-size: 1rem;
   font-weight: 600;
-  margin-top: 8px;
-  color: var(--white);
+  margin-top: 0.5rem;
 }
 
-.score-description.excellent {
-  color: var(--success);
+.score-description.excellent { color: var(--success); }
+.score-description.good { color: var(--brand-purple); }
+.score-description.average { color: var(--warning); }
+.score-description.poor { color: var(--error); }
+
+.stat-decoration {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0.25rem;
+  background: linear-gradient(135deg, var(--brand-purple) 0%, var(--brand-purple-dark) 100%);
 }
 
-.score-description.good {
-  color: var(--brand-purple);
+.stat-card.score.excellent .stat-decoration {
+  background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
 }
 
-.score-description.average {
-  color: var(--warning);
+.stat-card.score.average .stat-decoration {
+  background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
 }
 
-.score-description.poor {
-  color: var(--error);
+.stat-card.score.poor .stat-decoration {
+  background: linear-gradient(135deg, var(--error) 0%, #dc2626 100%);
 }
 
 .results-actions {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 1.25rem;
+  flex-wrap: wrap;
 }
 
 .back-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: var(--white);
+  gap: 0.75rem;
+  background: #ffffff;
   color: var(--gray-700);
-  border: 1px solid var(--gray-300);
-  padding: 12px 24px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
+  border: 2px solid var(--gray-300);
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-glow {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.back-btn:hover .btn-glow {
+  left: 100%;
 }
 
 .back-btn:hover {
   background: var(--gray-50);
-  border-color: var(--gray-400);
+  border-color: var(--brand-purple);
+  transform: translateY(-0.125rem);
+}
+
+.back-btn span {
+  position: relative;
+  z-index: 1;
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+  .tests-page {
+    padding: 1.5rem 1rem;
+  }
+
+  .tests-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .results-stats {
+    gap: 1.5rem;
+  }
+}
+
 @media (max-width: 768px) {
   .tests-page {
-    padding: 16px;
+    padding: 1rem;
   }
-  
+
+  .header-content {
+    padding: 2rem 1.5rem;
+  }
+
+  .page-title {
+    font-size: 2.25rem;
+  }
+
+  .page-subtitle {
+    font-size: 1rem;
+  }
+
+  .header-icon {
+    font-size: 3rem;
+  }
+
   .filters-section {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+    gap: 1rem;
   }
-  
+
   .filter-group {
     min-width: auto;
   }
-  
+
+  .search-container {
+    min-width: auto;
+    max-width: none;
+  }
+
   .tests-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .test-header {
-    padding: 24px 16px;
+    padding: 2rem 1.5rem;
   }
-  
+
   .question-section {
-    padding: 24px 16px;
+    padding: 2rem 1.5rem;
   }
-  
+
   .question-card {
-    padding: 24px 16px;
+    padding: 2rem 1.5rem;
   }
-  
+
   .results-section {
-    padding: 32px 16px;
+    padding: 3rem 1.5rem;
   }
-  
+
   .results-card {
-    padding: 32px 16px;
+    padding: 2rem 1.5rem;
   }
-  
+
   .results-stats {
     flex-direction: column;
-    gap: 16px;
+    gap: 1.25rem;
+    align-items: center;
   }
-  
+
   .stat-card {
-    padding: 16px;
-  }
-  
-  .progress-info {
-    flex-direction: column;
-    gap: 4px;
-    text-align: center;
+    max-width: 200px;
+    width: 100%;
   }
 }
 
 @media (max-width: 480px) {
+  .page-title {
+    font-size: 1.75rem;
+  }
+
+  .header-icon {
+    font-size: 2.5rem;
+  }
+
   .question-text {
-    font-size: 16px;
+    font-size: 1.25rem;
   }
-  
+
   .option-content {
-    padding: 12px;
+    padding: 1rem;
   }
-  
+
   .option-text {
-    font-size: 13px;
+    font-size: 0.875rem;
   }
-  
+
   .text-answer-input {
-    padding: 12px;
-    font-size: 13px;
+    padding: 1rem;
+    font-size: 0.875rem;
   }
-  
+
   .next-btn {
-    padding: 10px 20px;
-    font-size: 13px;
+    padding: 0.875rem 1.5rem;
+    font-size: 0.875rem;
+    min-width: 10rem;
   }
-  
+
   .results-card {
-    padding: 24px 12px;
+    padding: 1.5rem 1rem;
   }
-  
+
+  .stat-circle {
+    width: 5rem;
+    height: 5rem;
+  }
+
   .stat-value {
-    font-size: 24px;
+    font-size: 1.125rem;
   }
-  
-  .stat-value.score-value {
-    font-size: 28px;
+
+  .score-value {
+    font-size: 1.25rem;
+  }
+
+  .question-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .question-indicator {
+    order: -1;
   }
 }
 
-/* Animation for smooth transitions */
-.question-card {
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Accessibility improvements */
-.option-item:focus-within .option-content {
-  outline: 2px solid var(--brand-purple);
+/* Accessibility */
+.test-card:focus,
+.option-item:focus-within,
+.next-btn:focus,
+.back-btn:focus,
+.clear-btn:focus {
+  outline: 3px solid var(--brand-purple);
   outline-offset: 2px;
 }
 
-.text-answer-input:focus {
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
-}
-
-.next-btn:focus {
-  outline: 2px solid var(--brand-purple-light);
-  outline-offset: 2px;
-}
-
-/* Print styles */
-@media print {
-  .tests-page {
-    background: white;
-    color: black;
-  }
-  
-  .test-header,
-  .question-section,
-  .results-section {
-    break-inside: avoid;
-  }
-  
-  .next-btn,
-  .back-btn {
-    display: none;
-  }
-}
-
-/* Focus and accessibility styles */
-.test-card:focus {
-  outline: 2px solid var(--brand-purple);
-  outline-offset: 2px;
-}
-
-.filter-select:focus,
-.search-input:focus {
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
-}
-
-/* Smooth transitions for all interactive elements */
-* {
-  transition-property: color, background-color, border-color, transform, box-shadow, opacity;
-  transition-duration: 0.2s;
-  transition-timing-function: ease;
-}
-
-/* High contrast mode support */
+/* High contrast mode */
 @media (prefers-contrast: high) {
   .test-card,
   .question-card,
-  .results-card {
-    border-width: 2px;
-  }
-  
   .option-content {
     border-width: 3px;
   }
+  
+  .tests-page {
+    background: #ffffff;
+    color: #000000;
+  }
 }
 
-/* Reduced motion support */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1442,15 +2189,18 @@ export default {
   }
 }
 
-/* Dark mode support (optional) */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --white: #1f2937;
-    --black: #f9fafb;
-    --gray-50: #374151;
-    --gray-100: #4b5563;
-    --gray-200: #6b7280;
-    --gray-300: #9ca3af;
+/* Print styles */
+@media print {
+  .tests-page {
+    background: #ffffff;
+    color: #000000;
+  }
+  
+  .header-icon,
+  .loading-animation,
+  .empty-animation,
+  .celebration-burst {
+    display: none;
   }
 }
 </style>
