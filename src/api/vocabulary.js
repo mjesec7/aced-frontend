@@ -1,70 +1,71 @@
-// src/api/vocabulary.js - UPDATED WITH FALLBACK INTEGRATION
+// src/api/vocabulary.js - CLEAN VERSION WITHOUT FALLBACK
 import api from '@/api';
-import {
-  safeVocabularyApiCall,
-  handleVocabularyApiError,
-  getFallbackLanguages,
-  getFallbackTopics,
-  getFallbackWords,
-  getFallbackStats,
-  mockAnalyticsCall
-} from '@/utils/vocabularyFallback';
 
 // ========================================
-// 🌐 PUBLIC VOCABULARY API (With Fallback)
+// 🌐 PUBLIC VOCABULARY API
 // ========================================
 
 export const getVocabularyLanguages = async () => {
-  return await safeVocabularyApiCall(
-    () => api.get('/vocabulary/languages'),
-    getFallbackLanguages(),
-    'Languages'
-  );
+  try {
+    const response = await api.get('/vocabulary/languages');
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching languages:', error);
+    throw error;
+  }
 };
 
 export const getVocabularyTopics = async (language) => {
-  return await safeVocabularyApiCall(
-    () => api.get(`/vocabulary/topics/${language}`),
-    getFallbackTopics(language),
-    'Topics'
-  );
+  try {
+    const response = await api.get(`/vocabulary/topics/${language}`);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching topics:', error);
+    throw error;
+  }
 };
 
 export const getVocabularySubtopics = async (language, topic) => {
-  return await safeVocabularyApiCall(
-    () => api.get(`/vocabulary/subtopics/${language}/${encodeURIComponent(topic)}`),
-    [], // No fallback subtopics for now
-    'Subtopics'
-  );
+  try {
+    const response = await api.get(`/vocabulary/subtopics/${language}/${encodeURIComponent(topic)}`);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching subtopics:', error);
+    throw error;
+  }
 };
 
 export const getVocabularyWords = async (language, topic, subtopic, params = {}) => {
-  return await safeVocabularyApiCall(
-    () => {
-      const queryParams = new URLSearchParams(params).toString();
-      const baseUrl = `/vocabulary/words/${language}/${encodeURIComponent(topic)}/${encodeURIComponent(subtopic)}`;
-      const url = queryParams ? `${baseUrl}?${queryParams}` : baseUrl;
-      return api.get(url);
-    },
-    getFallbackWords(language, topic),
-    'Words'
-  );
+  try {
+    const queryParams = new URLSearchParams(params).toString();
+    const baseUrl = `/vocabulary/words/${language}/${encodeURIComponent(topic)}/${encodeURIComponent(subtopic)}`;
+    const url = queryParams ? `${baseUrl}?${queryParams}` : baseUrl;
+    const response = await api.get(url);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching words:', error);
+    throw error;
+  }
 };
 
 export const searchVocabulary = async (params = {}) => {
-  return await safeVocabularyApiCall(
-    () => api.get('/vocabulary/search', { params }),
-    [], // No fallback for search
-    'Search'
-  );
+  try {
+    const response = await api.get('/vocabulary/search', { params });
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error searching vocabulary:', error);
+    throw error;
+  }
 };
 
 export const getVocabularyStats = async () => {
-  return await safeVocabularyApiCall(
-    () => api.get('/vocabulary/stats/overview'),
-    getFallbackStats(),
-    'Stats'
-  );
+  try {
+    const response = await api.get('/vocabulary/stats/overview');
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching stats:', error);
+    throw error;
+  }
 };
 
 // ========================================
@@ -78,17 +79,7 @@ export const getUserVocabularyProgress = async (userId, params = {}) => {
     return response.data;
   } catch (error) {
     console.error('❌ Error fetching user progress:', error);
-    return {
-      success: true,
-      data: {
-        wordsLearned: 0,
-        accuracy: 0,
-        weeklyGrowth: 0,
-        accuracyTrend: 0,
-        byLanguage: {}
-      },
-      fromFallback: true
-    };
+    throw error;
   }
 };
 
@@ -111,50 +102,54 @@ export const updateWordProgress = async (userId, progressData) => {
     console.error('❌ Error updating word progress:', error);
     
     // Still try to log analytics even if API fails
-    await logVocabularyActivity(userId, {
-      action: 'word_progress_updated_offline',
-      language: progressData.language,
-      topic: progressData.topic,
-      correct: progressData.correct,
-      timeSpent: progressData.timeSpent
-    });
+    try {
+      await logVocabularyActivity(userId, {
+        action: 'word_progress_updated_offline',
+        language: progressData.language,
+        topic: progressData.topic,
+        correct: progressData.correct,
+        timeSpent: progressData.timeSpent
+      });
+    } catch (analyticsError) {
+      console.warn('⚠️ Analytics logging also failed:', analyticsError);
+    }
     
     throw error;
   }
 };
 
 export const getWordsForReview = async (userId, params = {}) => {
-  return await safeVocabularyApiCall(
-    () => api.get(`/vocabulary/review/${userId}`, { params }),
-    [], // No fallback for review words
-    'Review Words'
-  );
+  try {
+    const response = await api.get(`/vocabulary/review/${userId}`, { params });
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching review words:', error);
+    throw error;
+  }
 };
 
 export const getUserLanguageProgress = async (userId, language) => {
-  return await safeVocabularyApiCall(
-    () => api.get(`/vocabulary/progress/${userId}?language=${language}`),
-    null, // No fallback for user language progress
-    'Language Progress'
-  );
+  try {
+    const response = await api.get(`/vocabulary/progress/${userId}?language=${language}`);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching language progress:', error);
+    throw error;
+  }
 };
 
 export const getLanguageStats = async (language) => {
-  return await safeVocabularyApiCall(
-    () => api.get(`/vocabulary/stats/language/${language}`),
-    {
-      language,
-      totalWords: 24,
-      topicsCount: 6,
-      topics: ['Travel', 'Food', 'Family', 'Business', 'Technology', 'Health'],
-      difficulties: ['beginner', 'intermediate', 'advanced']
-    },
-    'Language Stats'
-  );
+  try {
+    const response = await api.get(`/vocabulary/stats/language/${language}`);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching language stats:', error);
+    throw error;
+  }
 };
 
 // ========================================
-// 🎮 VOCABULARY GAMES & QUIZZES (Enhanced)
+// 🎮 VOCABULARY GAMES & QUIZZES
 // ========================================
 
 export const generateVocabularyQuiz = async (userId, params = {}) => {
@@ -163,50 +158,8 @@ export const generateVocabularyQuiz = async (userId, params = {}) => {
     const response = await api.get(`/vocabulary/game/quiz/${userId}`, { params });
     return response.data;
   } catch (error) {
-    console.error('❌ Error generating quiz, creating fallback quiz:', error);
-    
-    // Create fallback quiz from available words
-    const { language = 'english', topic, count = 10 } = params;
-    let words = [];
-    
-    if (topic) {
-      words = getFallbackWords(language, topic);
-    } else {
-      // Get mixed words from multiple topics
-      const topics = getFallbackTopics(language);
-      topics.forEach(t => {
-        words.push(...getFallbackWords(language, t.name));
-      });
-    }
-    
-    // Generate quiz questions
-    const shuffledWords = words.sort(() => Math.random() - 0.5).slice(0, count);
-    const quizQuestions = shuffledWords.map(word => {
-      const wrongAnswers = words
-        .filter(w => w._id !== word._id)
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 3)
-        .map(w => w.translation);
-      
-      const options = [word.translation, ...wrongAnswers].sort(() => Math.random() - 0.5);
-      
-      return {
-        wordId: word._id,
-        word: word.word,
-        options: options,
-        correctAnswer: word.translation,
-        examples: [word.example],
-        difficulty: word.difficulty
-      };
-    });
-    
-    return {
-      success: true,
-      data: quizQuestions,
-      count: quizQuestions.length,
-      fromFallback: true,
-      message: '✅ Fallback quiz generated successfully'
-    };
+    console.error('❌ Error generating quiz:', error);
+    throw error;
   }
 };
 
@@ -232,88 +185,74 @@ export const submitQuizResults = async (userId, results) => {
     console.error('❌ Error submitting quiz results:', error);
     
     // Still log analytics even if submission fails
-    await logVocabularyActivity(userId, {
-      action: 'quiz_completed_offline',
-      language: results.language,
-      topic: results.topic,
-      score: results.score,
-      totalQuestions: results.totalQuestions,
-      timeSpent: results.timeSpent,
-      wordsCount: results.totalQuestions,
-      points: results.score * 10
-    });
-    
-    // Return mock success for offline mode
-    return {
-      success: true,
-      data: {
+    try {
+      await logVocabularyActivity(userId, {
+        action: 'quiz_completed_offline',
+        language: results.language,
+        topic: results.topic,
         score: results.score,
         totalQuestions: results.totalQuestions,
-        percentage: Math.round((results.score / results.totalQuestions) * 100),
-        results: results.answers || []
-      },
-      fromFallback: true,
-      message: '✅ Quiz results saved locally'
-    };
+        timeSpent: results.timeSpent,
+        wordsCount: results.totalQuestions,
+        points: results.score * 10
+      });
+    } catch (analyticsError) {
+      console.warn('⚠️ Analytics logging failed:', analyticsError);
+    }
+    
+    throw error;
   }
 };
 
 // ========================================
-// 📊 USER ANALYTICS (Enhanced with Fallback)
+// 📊 USER ANALYTICS
 // ========================================
 
 export const getVocabularyAnalytics = async (userId, params = {}) => {
-  return await safeVocabularyApiCall(
-    () => api.get(`/vocabulary/analytics/${userId}`, { params }),
-    {
-      totalWordsLearned: 0,
-      wordsInProgress: 0,
-      wordsForReview: 0,
-      accuracy: 0,
-      byLanguage: {},
-      byTopic: {},
-      recentActivity: []
-    },
-    'Analytics'
-  );
+  try {
+    const response = await api.get(`/vocabulary/analytics/${userId}`, { params });
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching analytics:', error);
+    throw error;
+  }
 };
 
 export const getLearningInsights = async (userId, language = null) => {
-  const url = language 
-    ? `/vocabulary/insights/${userId}?language=${language}`
-    : `/vocabulary/insights/${userId}`;
-
-  return await safeVocabularyApiCall(
-    () => api.get(url),
-    {
-      learningStreak: 0,
-      strongestTopics: [],
-      needsReview: 0,
-      recommendations: [],
-      weeklyGoal: { target: 50, current: 0, percentage: 0 }
-    },
-    'Learning Insights'
-  );
+  try {
+    const url = language 
+      ? `/vocabulary/insights/${userId}?language=${language}`
+      : `/vocabulary/insights/${userId}`;
+    const response = await api.get(url);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching learning insights:', error);
+    throw error;
+  }
 };
 
 export const getVocabularyAchievements = async (userId) => {
-  return await safeVocabularyApiCall(
-    () => api.get(`/vocabulary/achievements/${userId}`),
-    [], // No fallback achievements
-    'Achievements'
-  );
+  try {
+    const response = await api.get(`/vocabulary/achievements/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching achievements:', error);
+    throw error;
+  }
 };
 
 export const getStudyRecommendations = async (userId, params = {}) => {
-  return await safeVocabularyApiCall(
-    () => api.get(`/vocabulary/recommendations/${userId}`, { params }),
-    [], // No fallback recommendations
-    'Study Recommendations'
-  );
+  try {
+    const response = await api.get(`/vocabulary/recommendations/${userId}`, { params });
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching study recommendations:', error);
+    throw error;
+  }
 };
 
 // ========================================
-// 🔥 ENHANCED ANALYTICS INTEGRATION
+// 🔥 ANALYTICS INTEGRATION
 // ========================================
 
 export const logVocabularyActivity = async (userId, activityData) => {
@@ -340,8 +279,7 @@ export const logVocabularyActivity = async (userId, activityData) => {
       console.log('✅ Analytics sent to user analytics endpoint');
     } catch (analyticsError) {
       console.warn('⚠️ Failed to send to analytics endpoint:', analyticsError.message);
-      // Use mock analytics as fallback
-      await mockAnalyticsCall(userId, analyticsData);
+      throw analyticsError;
     }
     
     try {
@@ -363,11 +301,7 @@ export const logVocabularyActivity = async (userId, activityData) => {
     return { success: true };
   } catch (error) {
     console.error('❌ Error logging vocabulary activity:', error);
-    // Use mock analytics as complete fallback
-    return await mockAnalyticsCall(userId, {
-      ...activityData,
-      timestamp: new Date().toISOString()
-    });
+    throw error;
   }
 };
 
@@ -383,27 +317,7 @@ export const markWordAsLearned = async (userId, vocabularyId, wordData = {}) => 
       topic: wordData.topic
     };
     
-    let response;
-    try {
-      response = await updateWordProgress(userId, progressData);
-    } catch (apiError) {
-      console.warn('⚠️ API call failed, logging activity only:', apiError.message);
-      // If API fails, still log the activity
-      await logVocabularyActivity(userId, {
-        action: 'word_learned_offline',
-        language: wordData.language,
-        topic: wordData.topic,
-        wordsCount: 1,
-        timeSpent: wordData.timeSpent || 0,
-        points: 5
-      });
-      
-      return {
-        success: true,
-        fromFallback: true,
-        message: 'Word marked as learned (offline mode)'
-      };
-    }
+    const response = await updateWordProgress(userId, progressData);
     
     // 🔥 ANALYTICS INTEGRATION: Log word learned
     await logVocabularyActivity(userId, {
@@ -581,7 +495,12 @@ export const addVocabularyWord = async (wordData) => {
 // ========================================
 
 export const handleVocabularyError = (error, context = 'Vocabulary') => {
-  return handleVocabularyApiError(error, null);
+  console.error(`❌ ${context} Error:`, error);
+  return {
+    success: false,
+    error: error.message || 'An unexpected error occurred',
+    context
+  };
 };
 
 // ========================================
