@@ -8,52 +8,42 @@
   flex-wrap: wrap;
 }
 
-/* ==== SIMPLIFIED AUTH BUTTONS ==== */
+/* ==== CLEAN AUTH BUTTONS ==== */
 .auth-button {
   font-family: 'Unbounded', sans-serif;
   font-size: 16px;
   font-weight: 600;
   padding: 14px 28px;
-  border: 2px solid #8b5cf6;
+  border: 2px solid #3b82f6;
   border-radius: 12px;
   cursor: pointer;
-  position: relative;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   transition: all 0.3s ease;
   
-  /* Clean gradient background */
-  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  /* Clean blue gradient background */
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
-  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.25);
 }
 
 .auth-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.35);
-  border-color: #7c3aed;
-  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.35);
+  border-color: #1d4ed8;
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
 }
 
 .auth-button:active {
   transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
 }
 
 .auth-button:focus {
   outline: none;
   box-shadow: 
-    0 4px 15px rgba(139, 92, 246, 0.25),
-    0 0 0 3px rgba(139, 92, 246, 0.2);
-}
-
-/* Individual button variations - removed complex animations */
-.auth-button:nth-child(1) {
-  /* No special styling needed */
-}
-
-.auth-button:nth-child(2) {
-  /* No special styling needed */
+    0 4px 15px rgba(59, 130, 246, 0.25),
+    0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 /* ==== MODAL STYLES ==== */
@@ -184,8 +174,8 @@
 
 .modal-content input:focus {
   outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .auth-submit,
@@ -204,16 +194,16 @@
 }
 
 .auth-submit {
-  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
   border: none;
-  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.25);
 }
 
 .auth-submit:hover {
-  background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.35);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.35);
 }
 
 .google-auth {
@@ -225,7 +215,7 @@
 
 .google-auth:hover {
   background: #f9fafb;
-  border-color: #8b5cf6;
+  border-color: #3b82f6;
   transform: translateY(-1px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
@@ -238,7 +228,7 @@
 }
 
 .switch-text span {
-  color: #8b5cf6;
+  color: #3b82f6;
   cursor: pointer;
   font-weight: bold;
   transition: all 0.3s ease;
@@ -246,7 +236,7 @@
 
 .switch-text span:hover {
   text-decoration: underline;
-  color: #7c3aed;
+  color: #1d4ed8;
 }
 
 /* ==== USER SECTION - CLEAN DESIGN ==== */
@@ -258,10 +248,10 @@
 
 .profile-button {
   font-family: 'Unbounded', sans-serif;
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
   color: white;
   padding: 12px 24px;
-  border: 2px solid #475569;
+  border: 2px solid #4b5563;
   border-radius: 12px;
   cursor: pointer;
   font-size: 14px;
@@ -269,19 +259,19 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(30, 41, 59, 0.3);
+  box-shadow: 0 4px 15px rgba(55, 65, 81, 0.3);
 }
 
 .profile-button:hover {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  border-color: #64748b;
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border-color: #6b7280;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(30, 41, 59, 0.4);
+  box-shadow: 0 8px 25px rgba(55, 65, 81, 0.4);
 }
 
 .profile-button:active {
   transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(30, 41, 59, 0.3);
+  box-shadow: 0 2px 10px rgba(55, 65, 81, 0.3);
 }
 
 .user-menu {
@@ -307,7 +297,7 @@
 
 .user-button:hover {
   background: #f9fafb;
-  border-color: #8b5cf6;
+  border-color: #3b82f6;
   transform: translateY(-1px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
@@ -316,7 +306,7 @@
   content: '⌄';
   font-size: 12px;
   transition: transform 0.3s ease;
-  color: #8b5cf6;
+  color: #3b82f6;
 }
 
 .user-button.active::after {
@@ -376,7 +366,7 @@
 
 .dropdown-menu li:hover {
   background: #f3f4f6;
-  color: #8b5cf6;
+  color: #3b82f6;
 }
 
 .dropdown-menu li:last-child {
@@ -393,7 +383,7 @@
 
 .badge {
   margin-left: 8px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
   padding: 4px 8px;
   border-radius: 6px;
