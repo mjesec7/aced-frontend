@@ -1,136 +1,565 @@
 <template>
   <div class="payme-payment">
-    <div class="payment-box">
-      <h2>Оплата тарифа: <span>{{ planLabel }}</span></h2>
-      <p class="amount">Сумма к оплате: <strong>{{ formattedAmount }} сум</strong></p>
-
-      <form @submit.prevent="initiatePayment">
-        <input
-          type="text"
-          v-model="form.name"
-          placeholder="Ваше имя (как при регистрации)"
-          required
-        />
-        <input
-          type="text"
-          v-model="form.phone"
-          placeholder="Номер телефона (например, +998901234567)"
-          required
-        />
-        <input
-          type="text"
-          v-model="form.userId"
-          placeholder="Ваш ID пользователя"
-          required
-        />
-        <input
-          type="text"
-          v-model="form.promocode"
-          placeholder="Промокод (если есть)"
-        />
-
-        <button type="submit" class="pay-button" :disabled="loading">
-          {{ loading ? '⏳ Обработка...' : '💳 Оплатить через Payme' }}
+    <div class="payment-container">
+      <!-- Header -->
+      <div class="payment-header">
+        <button class="back-btn" @click="goBack" aria-label="Назад">
+          ← Назад
         </button>
-      </form>
+        <h1>Оплата тарифа</h1>
+      </div>
 
-      <p v-if="error" class="error-text">❌ {{ error }}</p>
-      <p v-if="success" class="success-text">
-        🎉 Промокод применён! Вам открыт доступ к премиум-курсам.
-      </p>
+      <!-- Payment Form -->
+      <div class="payment-box">
+        <!-- Plan Summary -->
+        <div class="plan-summary">
+          <div class="plan-info">
+            <h2>{{ planDetails.label }}</h2>
+            <div class="plan-price">{{ planDetails.formattedPrice }}</div>
+            <ul class="plan-features">
+              <li v-for="feature in planDetails.features" :key="feature">
+                ✓ {{ feature }}
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Payment Steps -->
+        <div class="payment-steps">
+          <div class="step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
+            <div class="step-number">1</div>
+            <span>Проверка данных</span>
+          </div>
+          <div class="step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
+            <div class="step-number">2</div>
+            <span>Инициация платежа</span>
+          </div>
+          <div class="step" :class="{ active: currentStep >= 3 }">
+            <div class="step-number">3</div>
+            <span>Оплата</span>
+          </div>
+        </div>
+
+        <!-- Form -->
+        <form @submit.prevent="handlePayment" class="payment-form">
+          <!-- User Information -->
+          <div class="form-section">
+            <h3>Информация об аккаунте</h3>
+            <div class="form-group">
+              <label for="userId">ID пользователя</label>
+              <input
+                id="userId"
+                type="text"
+                v-model="form.userId"
+                placeholder="Ваш ID пользователя"
+                required
+                :disabled="loading"
+              />
+              <button 
+                type="button" 
+                class="validate-btn"
+                @click="validateUser"
+                :disabled="loading || !form.userId.trim()"
+              >
+                {{ userValidation.loading ? '⏳' : userValidation.valid ? '✅' : '🔍' }}
+                Проверить
+              </button>
+            </div>
+            
+            <div class="form-group">
+              <label for="name">Имя пользователя</label>
+              <input
+                id="name"
+                type="text"
+                v-model="form.name"
+                placeholder="Как указано при регистрации"
+                required
+                :disabled="loading"
+              />
+            </div>
+          </div>
+
+          <!-- Contact Information -->
+          <div class="form-section">
+            <h3>Контактная информация</h3>
+            <div class="form-group">
+              <label for="phone">Номер телефона</label>
+              <input
+                id="phone"
+                type="tel"
+                v-model="form.phone"
+                placeholder="+998 90 123 45 67"
+                required
+                :disabled="loading"
+                @input="formatPhone"
+              />
+            </div>
+          </div>
+
+          <!-- Promo Code -->
+          <div class="form-section">
+            <h3>Промокод (необязательно)</h3>
+            <div class="form-group promo-group">
+              <input
+                type="text"
+                v-model="form.promoCode"
+                placeholder="Введите промокод"
+                :disabled="loading"
+                @keyup.enter="applyPromoCode"
+              />
+              <button 
+                type="button"
+                class="promo-apply-btn"
+                @click="applyPromoCode"
+                :disabled="loading || !form.promoCode.trim()"
+              >
+                Применить
+              </button>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button 
+            type="submit" 
+            class="payment-submit-btn"
+            :disabled="loading || !isFormValid"
+          >
+            <span v-if="loading" class="loading-text">
+              <div class="spinner-small"></div>
+              {{ loadingText }}
+            </span>
+            <span v-else class="submit-text">
+              💳 Оплатить {{ planDetails.formattedPrice }}
+            </span>
+          </button>
+        </form>
+
+        <!-- Messages -->
+        <div v-if="error" class="message error-message">
+          <span class="message-icon">❌</span>
+          <div>
+            <strong>Ошибка:</strong>
+            <p>{{ error }}</p>
+          </div>
+        </div>
+
+        <div v-if="success" class="message success-message">
+          <span class="message-icon">✅</span>
+          <div>
+            <strong>Успех:</strong>
+            <p>{{ success }}</p>
+          </div>
+        </div>
+
+        <div v-if="promoSuccess" class="message success-message">
+          <span class="message-icon">🎉</span>
+          <div>
+            <strong>Промокод применён!</strong>
+            <p>{{ promoSuccess }}</p>
+          </div>
+        </div>
+
+        <!-- Payment Info -->
+        <div class="payment-info">
+          <h4>💡 Информация об оплате</h4>
+          <ul>
+            <li>💳 Оплата через систему PayMe</li>
+            <li>🔒 Безопасная обработка платежей</li>
+            <li>⚡ Мгновенная активация после оплаты</li>
+            <li>🔄 Возможность возврата в течение 14 дней</li>
+          </ul>
+        </div>
+
+        <!-- Transaction Tracking -->
+        <div v-if="transaction" class="transaction-status">
+          <h4>📊 Статус транзакции</h4>
+          <div class="transaction-info">
+            <div class="transaction-row">
+              <span>ID транзакции:</span>
+              <code>{{ transaction.id }}</code>
+            </div>
+            <div class="transaction-row">
+              <span>Статус:</span>
+              <span class="status-badge" :class="getStatusClass(transaction.state)">
+                {{ getStatusText(transaction.state) }}
+              </span>
+            </div>
+            <div class="transaction-row">
+              <span>Сумма:</span>
+              <span>{{ formatAmount(transaction.amount) }}</span>
+            </div>
+          </div>
+          
+          <button 
+            class="check-status-btn"
+            @click="checkTransactionStatus"
+            :disabled="statusLoading"
+          >
+            {{ statusLoading ? '⏳ Проверка...' : '🔄 Обновить статус' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div v-if="loading && currentStep >= 2" class="loading-overlay">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <h3>{{ loadingText }}</h3>
+        <p>Пожалуйста, не закрывайте страницу</p>
+        <div class="loading-steps">
+          <div v-for="(step, index) in loadingSteps" :key="index" 
+               class="loading-step" 
+               :class="{ active: index <= currentLoadingStep }">
+            {{ step }}
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import axios from 'axios';
-import { auth } from '@/firebase';
+import { 
+  initiatePaymePayment, 
+  applyPromoCode, 
+  checkPaymentStatus, 
+  validateUser,
+  getPaymentAmounts,
+  formatPaymentAmount,
+  getTransactionStateText,
+  handlePaymentError
+} from '@/api/payments';
 
 export default {
-  props: ['plan'],
+  name: 'PaymePayment',
+  props: {
+    plan: {
+      type: String,
+      required: true,
+      validator: value => ['start', 'pro'].includes(value)
+    }
+  },
   data() {
     return {
+      currentStep: 1,
+      currentLoadingStep: 0,
       form: {
+        userId: '',
         name: '',
         phone: '',
-        userId: '',
-        promocode: '',
+        promoCode: ''
       },
       loading: false,
+      statusLoading: false,
+      loadingText: 'Подготовка к оплате...',
       error: '',
-      success: false,
+      success: '',
+      promoSuccess: '',
+      transaction: null,
+      userValidation: {
+        loading: false,
+        valid: null,
+        user: null
+      },
+      pollInterval: null,
+      loadingSteps: [
+        '🔍 Проверка данных',
+        '🔧 Создание транзакции',
+        '💳 Перенаправление в PayMe',
+        '✅ Завершение'
+      ]
     };
   },
   computed: {
-    amount() {
-      return this.plan === 'pro' ? 455000 : 260000;
+    planDetails() {
+      const amounts = getPaymentAmounts();
+      const planData = amounts[this.plan];
+      
+      const features = {
+        start: [
+          'Доступ к базовым курсам',
+          'Домашние задания',
+          'Основные тесты',
+          'Прогресс-трекинг'
+        ],
+        pro: [
+          'Все возможности Start',
+          'Продвинутые курсы',
+          'Персональная аналитика',
+          'Приоритетная поддержка',
+          'Эксклюзивные материалы'
+        ]
+      };
+
+      return {
+        label: planData.label,
+        price: planData.uzs,
+        formattedPrice: formatPaymentAmount(planData.uzs, 'UZS'),
+        features: features[this.plan] || []
+      };
     },
-    planLabel() {
-      return this.plan === 'pro' ? 'PRO' : 'STARTER';
-    },
-    formattedAmount() {
-      return this.amount.toLocaleString('ru-RU');
-    },
-    apiUrl() {
-      return import.meta.env.VITE_API_BASE_URL;
+
+    isFormValid() {
+      return (
+        this.form.userId.trim() &&
+        this.form.name.trim() &&
+        this.form.phone.trim() &&
+        this.userValidation.valid !== false
+      );
     }
   },
   async mounted() {
-    const localId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
-    if (localId && !this.form.userId) {
-      this.form.userId = localId;
+    await this.initializeForm();
+    this.validateUser();
+  },
+  beforeUnmount() {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
     }
   },
   methods: {
-    async initiatePayment() {
-      this.loading = true;
-      this.error = '';
-      this.success = false;
+    async initializeForm() {
+      // Auto-fill user ID from various sources
+      const userId = 
+        this.$route.query.userId ||
+        localStorage.getItem('userId') ||
+        localStorage.getItem('firebaseUserId') ||
+        this.$store.getters['user/getUser']?.firebaseId;
+      
+      if (userId) {
+        this.form.userId = userId;
+      }
 
-      const payload = {
-        name: this.form.name.trim(),
-        phone: this.form.phone.trim(),
-        userId: this.form.userId.trim(),
-        plan: this.plan,
-        promocode: this.form.promocode.trim()
-      };
+      // Auto-fill user name if available
+      const user = this.$store.getters['user/getUser'];
+      if (user?.name) {
+        this.form.name = user.name;
+      }
+    },
 
-      if (!payload.name || !payload.phone || !payload.userId) {
-        this.error = 'Пожалуйста, заполните все обязательные поля.';
-        this.loading = false;
+    formatPhone() {
+      // Remove all non-digits
+      let phone = this.form.phone.replace(/\D/g, '');
+      
+      // Add +998 prefix if not present and format
+      if (phone.length > 0 && !phone.startsWith('998')) {
+        if (phone.startsWith('9')) {
+          phone = '998' + phone;
+        }
+      }
+      
+      // Format as +998 XX XXX XX XX
+      if (phone.startsWith('998') && phone.length <= 12) {
+        const formatted = phone.replace(/^998/, '+998 ')
+          .replace(/(\+998 \d{2})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4');
+        this.form.phone = formatted;
+      }
+    },
+
+    async validateUser() {
+      if (!this.form.userId.trim()) {
+        this.userValidation = { loading: false, valid: false, user: null };
         return;
       }
 
+      this.userValidation.loading = true;
+      this.clearMessages();
+
       try {
-        // ✅ First: Promo Check
-        if (payload.promocode) {
-          const promoRes = await axios.post(`${this.apiUrl}/payments/promo`, payload);
-          if (promoRes.data?.unlocked) {
-            this.success = true;
-            return;
+        const result = await validateUser(this.form.userId.trim());
+        
+        this.userValidation = {
+          loading: false,
+          valid: result.valid,
+          user: result.user
+        };
+
+        if (result.valid && result.user) {
+          // Auto-fill name if we got user data
+          if (result.user.name && !this.form.name) {
+            this.form.name = result.user.name;
           }
-        }
-
-        // ✅ Then: Real Payme Redirect
-        const response = await axios.post(`${this.apiUrl}/payments/payme`, {
-          amount: this.amount,
-          phone: payload.phone,
-          plan: payload.plan,
-          userId: payload.userId,
-          name: payload.name
-        });
-
-        if (response.data?.redirectUrl) {
-          window.location.href = response.data.redirectUrl;
+          this.success = `✅ Пользователь найден: ${result.user.name}`;
         } else {
-          this.error = 'Не удалось получить ссылку на оплату.';
+          this.error = 'Пользователь не найден. Проверьте ID.';
         }
+
       } catch (err) {
-        console.error('❌ Payment Error:', err.response?.data || err.message);
-        this.error = err.response?.data?.error || 'Ошибка при обработке платежа.';
+        console.error('❌ User validation error:', err);
+        this.userValidation = { loading: false, valid: false, user: null };
+        this.error = 'Ошибка проверки пользователя';
+      }
+    },
+
+    async applyPromoCode() {
+      if (!this.form.promoCode.trim()) {
+        this.error = 'Введите промокод';
+        return;
+      }
+
+      if (!this.form.userId.trim()) {
+        this.error = 'Сначала укажите ID пользователя';
+        return;
+      }
+
+      this.loading = true;
+      this.clearMessages();
+
+      try {
+        const result = await applyPromoCode(
+          this.form.userId.trim(),
+          this.plan,
+          this.form.promoCode.trim()
+        );
+
+        if (result.success) {
+          this.promoSuccess = result.message;
+          
+          // Redirect after successful promo application
+          setTimeout(() => {
+            const returnTo = this.$route.query.returnTo;
+            if (returnTo) {
+              this.$router.push({ name: 'TopicOverview', params: { id: returnTo } });
+            } else {
+              this.$router.push({ name: 'MainPage' });
+            }
+          }, 3000);
+
+        } else {
+          this.error = result.error;
+        }
+
+      } catch (err) {
+        console.error('❌ Promo code error:', err);
+        this.error = handlePaymentError(err, 'Применение промокода');
       } finally {
         this.loading = false;
       }
+    },
+
+    async handlePayment() {
+      if (!this.isFormValid) {
+        this.error = 'Пожалуйста, заполните все поля корректно';
+        return;
+      }
+
+      this.loading = true;
+      this.currentStep = 2;
+      this.currentLoadingStep = 0;
+      this.clearMessages();
+
+      try {
+        // Step 1: Validate data
+        this.loadingText = 'Проверка данных...';
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        this.currentLoadingStep = 1;
+
+        // Step 2: Create transaction
+        this.loadingText = 'Создание транзакции...';
+        const result = await initiatePaymePayment(
+          this.form.userId.trim(),
+          this.plan,
+          {
+            name: this.form.name.trim(),
+            phone: this.form.phone.trim()
+          }
+        );
+
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+
+        this.transaction = result.transaction;
+        this.currentLoadingStep = 2;
+
+        // Step 3: Redirect to PayMe
+        this.loadingText = 'Перенаправление в PayMe...';
+        this.currentStep = 3;
+        
+        if (result.paymentUrl) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          this.currentLoadingStep = 3;
+          
+          // Redirect to PayMe
+          window.location.href = result.paymentUrl;
+        } else {
+          throw new Error('Не получена ссылка для оплаты');
+        }
+
+      } catch (err) {
+        console.error('❌ Payment initiation error:', err);
+        this.error = handlePaymentError(err, 'Инициация платежа');
+        this.currentStep = 1;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async checkTransactionStatus() {
+      if (!this.transaction?.id) return;
+
+      this.statusLoading = true;
+      this.clearMessages();
+
+      try {
+        const result = await checkPaymentStatus(
+          this.transaction.id,
+          this.form.userId.trim()
+        );
+
+        if (result.success) {
+          this.transaction = { ...this.transaction, ...result.transaction };
+          
+          // Handle completed payment
+          if (result.transaction.state === 2) {
+            this.success = 'Платёж успешно завершён! Доступ к курсам активирован.';
+            
+            // Redirect after successful payment
+            setTimeout(() => {
+              const returnTo = this.$route.query.returnTo;
+              if (returnTo) {
+                this.$router.push({ name: 'TopicOverview', params: { id: returnTo } });
+              } else {
+                this.$router.push({ name: 'MainPage' });
+              }
+            }, 3000);
+          }
+        } else {
+          this.error = result.error;
+        }
+
+      } catch (err) {
+        console.error('❌ Status check error:', err);
+        this.error = handlePaymentError(err, 'Проверка статуса');
+      } finally {
+        this.statusLoading = false;
+      }
+    },
+
+    getStatusClass(state) {
+      const stateInfo = getTransactionStateText(state);
+      return `status-${stateInfo.color}`;
+    },
+
+    getStatusText(state) {
+      const stateInfo = getTransactionStateText(state);
+      return `${stateInfo.icon} ${stateInfo.text}`;
+    },
+
+    formatAmount(amount) {
+      return formatPaymentAmount(amount / 100, 'UZS');
+    },
+
+    clearMessages() {
+      this.error = '';
+      this.success = '';
+      this.promoSuccess = '';
+    },
+
+    goBack() {
+      if (this.loading) return;
+      this.$router.go(-1);
     }
   }
 };
@@ -139,87 +568,521 @@ export default {
 <style scoped>
 .payme-payment {
   min-height: 100vh;
-  background: linear-gradient(to bottom right, #f8fafc, #f3e8ff);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.payment-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.payment-header {
   display: flex;
-  justify-content: center;
   align-items: center;
-  padding: 30px;
+  margin-bottom: 30px;
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  margin-right: 20px;
+  transition: background 0.2s ease;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.payment-header h1 {
+  color: white;
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0;
 }
 
 .payment-box {
   background: white;
-  padding: 40px 30px;
   border-radius: 20px;
-  max-width: 500px;
-  width: 100%;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.07);
-  font-family: 'Unbounded', sans-serif;
-  text-align: center;
+  padding: 40px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+}
+
+.plan-summary {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 30px;
+  border-radius: 16px;
+  margin-bottom: 30px;
+}
+
+.plan-info h2 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.plan-price {
+  font-size: 2.5rem;
+  font-weight: 900;
+  margin-bottom: 20px;
+}
+
+.plan-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.plan-features li {
+  padding: 8px 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.payment-steps {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.payment-steps::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  height: 2px;
+  background: #e5e7eb;
+  z-index: 1;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  background: white;
+  padding: 0 10px;
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #6b7280;
+  font-size: 0.9rem;
+  text-align: left;
   transition: all 0.3s ease;
 }
 
-.payment-box h2 {
-  margin-bottom: 16px;
-  font-size: 24px;
-  font-weight: 800;
+.loading-step.active {
+  background: #dbeafe;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .payme-payment {
+    padding: 10px;
+  }
+  
+  .payment-box {
+    padding: 24px;
+  }
+  
+  .payment-header {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+  
+  .payment-steps {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .payment-steps::before {
+    display: none;
+  }
+  
+  .form-group.promo-group {
+    flex-direction: column;
+  }
+  
+  .validate-btn {
+    position: static;
+    margin-top: 8px;
+    align-self: flex-start;
+  }
+  
+  .plan-features {
+    columns: 1;
+  }
+  
+  .transaction-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .payment-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .plan-price {
+    font-size: 2rem;
+  }
+  
+  .payment-submit-btn {
+    font-size: 1rem;
+    padding: 16px 24px;
+  }
+}
+
+
+.step.active .step-number {
+  background: #667eea;
+  color: white;
+}
+
+.step.completed .step-number {
+  background: #10b981;
+  color: white;
+}
+
+.step span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-align: center;
+}
+
+.step.active span,
+.step.completed span {
   color: #1f2937;
 }
 
-.payment-box span {
-  color: #7c3aed;
-}
-
-.amount {
-  font-size: 18px;
-  margin-bottom: 30px;
-  color: #374151;
-}
-
-form {
+.payment-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 30px;
 }
 
-input {
-  padding: 14px;
+.form-section h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.form-group.promo-group {
+  flex-direction: row;
+  gap: 12px;
+}
+
+.form-group.promo-group input {
+  flex: 1;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.form-group input {
+  padding: 14px 16px;
+  border: 2px solid #e5e7eb;
   border-radius: 12px;
-  border: 1px solid #cbd5e1;
-  font-size: 15px;
-  font-family: inherit;
+  font-size: 1rem;
   transition: border-color 0.2s ease;
 }
 
-input:focus {
-  border-color: #7c3aed;
+.form-group input:focus {
+  border-color: #667eea;
   outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.pay-button {
-  background-color: #7c3aed;
+.validate-btn,
+.promo-apply-btn {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
-  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.validate-btn:hover:not(:disabled),
+.promo-apply-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+}
+
+.validate-btn {
+  position: absolute;
+  right: 8px;
+  top: 32px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+}
+
+.payment-submit-btn {
+  padding: 18px 32px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
   border: none;
   border-radius: 12px;
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 1.2rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.pay-button:hover {
-  background-color: #6d28d9;
-}
-
-.error-text {
+  transition: all 0.3s ease;
   margin-top: 20px;
+}
+
+.payment-submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5a67d8, #6b46c1);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.payment-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.loading-text,
+.submit-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.spinner-small {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-left: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.message {
+  padding: 16px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.error-message {
+  background-color: #fef2f2;
   color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.success-message {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.message-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.payment-info {
+  background: #f8fafc;
+  padding: 24px;
+  border-radius: 12px;
+  margin-top: 30px;
+}
+
+.payment-info h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 16px;
+}
+
+.payment-info ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.payment-info li {
+  padding: 6px 0;
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
+.transaction-status {
+  background: #f1f5f9;
+  padding: 24px;
+  border-radius: 12px;
+  margin-top: 20px;
+}
+
+.transaction-status h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 16px;
+}
+
+.transaction-info {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.transaction-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.transaction-row:last-child {
+  border-bottom: none;
+}
+
+.transaction-row code {
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
   font-weight: 600;
 }
 
-.success-text {
-  margin-top: 20px;
-  color: #16a34a;
+.status-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.check-status-btn {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.check-status-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  transform: translateY(-1px);
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.loading-content {
+  text-align: center;
+  max-width: 400px;
+  padding: 40px;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid #e5e7eb;
+  border-left: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 24px;
+}
+
+.loading-content h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 12px;
+}
+
+.loading-content p {
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.loading-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.loading-step {
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  color: #6b7280;
 }
 </style>
