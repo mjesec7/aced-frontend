@@ -5,7 +5,6 @@ import store from '@/store';
 import HomePage from '@/views/HomePage.vue';
 import ProfilePage from '@/views/ProfilePage.vue';
 import AcedSettings from '@/components/Main/AcedSettings.vue';
-// ✅ UPDATED: Import vocabulary from views folder
 import VocabularyPage from '@/views/VocabularyPage.vue';
 
 // ✅ Profile Sub-Pages
@@ -18,11 +17,9 @@ import HomeworkPage from '@/components/Profile/HomeworkPage.vue';
 import DiaryPage from '@/components/Profile/DiaryPage.vue';
 import CataloguePage from '@/views/CataloguePage.vue';
 import TestsPage from '@/components/Profile/TestsPage.vue';
-
-// ✅ NEW: Import VocabularyIn component
 import VocabularyIn from '@/components/Profile/VocabularyIn.vue';
 
-// ✅ Payments
+// ✅ Payment Components
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
 
 // ✅ Lazy-loaded Views
@@ -35,11 +32,20 @@ const routes = [
     path: '/',
     name: 'HomePage',
     component: HomePage,
+    meta: { title: 'Главная' }
   },
   {
     path: '/settings',
     name: 'SettingsPage',
     component: AcedSettings,
+    meta: { 
+      title: 'Настройки',
+      requiresAuth: true 
+    },
+    beforeEnter: (to, from, next) => {
+      console.log('🔧 Accessing settings page');
+      next();
+    }
   },
   {
     path: '/profile',
@@ -200,35 +206,132 @@ const routes = [
       }
     ],
   },
+  
+  // ✅ ENHANCED: Payment Routes with validation and authentication
   {
     path: '/pay/:plan',
     name: 'PaymePayment',
     component: PaymePayment,
-    props: true,
-    meta: { title: 'Оплата' }
+    props: route => ({
+      plan: route.params.plan,
+      userId: route.query.userId,
+      returnTo: route.query.returnTo
+    }),
+    meta: { 
+      title: 'Оплата',
+      requiresAuth: true,
+      description: 'Страница оплаты подписки'
+    },
+    beforeEnter: (to, from, next) => {
+      const validPlans = ['start', 'pro'];
+      
+      if (!to.params.plan || !validPlans.includes(to.params.plan)) {
+        console.error('❌ Invalid payment plan:', to.params.plan);
+        return next({ 
+          name: 'SettingsPage',
+          query: { error: 'invalid_plan' }
+        });
+      }
+      
+      console.log('💳 Payment route accessed:', {
+        plan: to.params.plan,
+        userId: to.query.userId,
+        returnTo: to.query.returnTo,
+        from: from.path
+      });
+      
+      next();
+    }
   },
+  
+  // ✅ ENHANCED: Payment Success/Failure Routes
+  {
+    path: '/payment/success',
+    name: 'PaymentSuccess',
+    component: () => import('@/views/PaymentSuccess.vue'),
+    meta: { 
+      title: 'Оплата успешна',
+      requiresAuth: true 
+    },
+    beforeEnter: (to, from, next) => {
+      console.log('✅ Payment success page accessed');
+      // Check for payment status updates
+      if (store.getters['user/isAuthenticated']) {
+        store.dispatch('user/checkPendingPayments');
+      }
+      next();
+    }
+  },
+  
+  {
+    path: '/payment/cancelled',
+    name: 'PaymentCancelled',
+    component: () => import('@/views/PaymentCancelled.vue'),
+    meta: { 
+      title: 'Оплата отменена',
+      requiresAuth: true 
+    },
+    beforeEnter: (to, from, next) => {
+      console.log('❌ Payment cancelled page accessed');
+      next();
+    }
+  },
+  
+  // ✅ Learning Content Routes
   {
     path: '/lesson/:id',
     name: 'LessonPage',
     component: LessonPage,
     props: true,
-    meta: { requiresAuth: true, title: 'Урок' }
+    meta: { 
+      requiresAuth: true, 
+      title: 'Урок',
+      description: 'Страница урока'
+    },
+    beforeEnter: (to, from, next) => {
+      if (!to.params.id || to.params.id === 'null' || to.params.id === 'undefined') {
+        console.error('❌ Invalid lesson ID:', to.params.id);
+        return next({ name: 'CataloguePage' });
+      }
+      
+      console.log('📚 Lesson accessed:', to.params.id);
+      next();
+    }
   },
+  
   {
     path: '/topic/:id/overview',
     name: 'TopicOverview',
     component: TopicOverview,
     props: true,
-    meta: { requiresAuth: true, title: 'Обзор темы' }
+    meta: { 
+      requiresAuth: true, 
+      title: 'Обзор темы',
+      description: 'Обзор темы курса'
+    },
+    beforeEnter: (to, from, next) => {
+      if (!to.params.id || to.params.id === 'null' || to.params.id === 'undefined') {
+        console.error('❌ Invalid topic ID:', to.params.id);
+        return next({ name: 'CataloguePage' });
+      }
+      
+      console.log('📖 Topic overview accessed:', to.params.id);
+      next();
+    }
   },
+  
   {
     path: '/finished',
     name: 'TopicFinished',
     component: TopicFinished,
-    meta: { requiresAuth: true, title: 'Тема завершена' }
+    meta: { 
+      requiresAuth: true, 
+      title: 'Тема завершена',
+      description: 'Страница завершения темы'
+    }
   },
   
-  // ✅ ADDED: Redirect old vocabulary routes to profile vocabulary
+  // ✅ LEGACY REDIRECTS: Redirect old vocabulary routes to profile vocabulary
   {
     path: '/vocabulary',
     redirect: '/profile/vocabulary'
@@ -238,16 +341,29 @@ const routes = [
     redirect: to => `/profile/vocabulary/${to.params.language}`
   },
   
+  // ✅ OLD PAYMENT REDIRECTS: Handle legacy payment URLs
+  {
+    path: '/payment/:plan?',
+    redirect: to => {
+      const plan = to.params.plan || 'start';
+      return `/pay/${plan}`;
+    }
+  },
+  
+  // ✅ Catch-all route
   {
     path: '/:catchAll(.*)',
+    name: 'NotFound',
     redirect: '/',
-  },
+    meta: { title: 'Страница не найдена' }
+  }
 ];
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
   scrollBehavior(to, from, savedPosition) {
+    // Handle anchors
     if (to.hash) {
       return {
         el: to.hash,
@@ -255,43 +371,95 @@ const router = createRouter({
         top: 80,
       };
     }
-    return savedPosition || { top: 0 };
+    
+    // Return to saved position when using browser back/forward
+    if (savedPosition) {
+      return savedPosition;
+    }
+    
+    // Scroll to top for new routes
+    return { top: 0 };
   },
 });
 
-// ✅ Enhanced Route Guard: wait for Firebase auth before navigation
+// ✅ ENHANCED Route Guard with Payment Integration
 router.beforeEach(async (to, from, next) => {
+  console.log(`🧭 Navigation: ${from.path || '/'} → ${to.path}`);
+  
   // Public routes that don't require authentication
-  const publicRoutes = ['HomePage', 'SettingsPage'];
+  const publicRoutes = ['HomePage', 'NotFound'];
   const isPublic = publicRoutes.includes(to.name);
   
   // Check if route requires authentication
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
 
   try {
+    // Wait for Firebase auth initialization
     await store.dispatch('waitForAuthInit');
   } catch (err) {
     console.warn('⚠️ Firebase auth wait failed:', err);
   }
 
   const isLoggedIn = store.getters.isLoggedIn;
+  const userId = store.getters['user/getUserId'];
 
-  // If route requires auth and user is not logged in
+  // ✅ AUTHENTICATION CHECKS
   if (requiresAuth && !isLoggedIn) {
-    console.warn('❌ Нет доступа: пользователь не вошел. Перенаправление на главную.');
+    console.warn('❌ Authentication required. Redirecting to home with login prompt.');
     return next({ 
       name: 'HomePage',
-      query: { redirect: to.fullPath }
+      query: { 
+        redirect: to.fullPath,
+        loginRequired: 'true'
+      }
     });
   }
 
-  // If trying to access profile routes without auth
-  if (!isPublic && !isLoggedIn && to.path.startsWith('/profile')) {
-    console.warn('❌ Профиль недоступен без авторизации.');
-    return next({ name: 'HomePage' });
+  // ✅ PAYMENT ROUTE SPECIFIC CHECKS
+  if (to.name === 'PaymePayment') {
+    if (!isLoggedIn) {
+      console.warn('❌ Payment requires authentication');
+      return next({ 
+        name: 'HomePage',
+        query: { 
+          redirect: to.fullPath,
+          loginRequired: 'true',
+          message: 'Для оплаты необходимо войти в систему'
+        }
+      });
+    }
+    
+    // Add userId to query if not present
+    if (!to.query.userId && userId) {
+      const newQuery = { ...to.query, userId };
+      console.log('💳 Adding userId to payment route:', userId);
+      return next({ 
+        path: to.path, 
+        query: newQuery 
+      });
+    }
+    
+    // Check user subscription status
+    try {
+      await store.dispatch('user/checkPendingPayments');
+    } catch (err) {
+      console.warn('⚠️ Failed to check pending payments:', err);
+    }
   }
 
-  // ✅ ENHANCED: Additional homework route validation
+  // ✅ PROFILE ROUTE CHECKS
+  if (!isPublic && !isLoggedIn && to.path.startsWith('/profile')) {
+    console.warn('❌ Profile access requires authentication.');
+    return next({ 
+      name: 'HomePage',
+      query: { 
+        redirect: to.fullPath,
+        loginRequired: 'true'
+      }
+    });
+  }
+
+  // ✅ ENHANCED LOGGING for specific route types
   if (to.name && to.name.includes('Homework') && to.params.id) {
     console.log('📚 Homework route navigation:', {
       route: to.name,
@@ -301,7 +469,6 @@ router.beforeEach(async (to, from, next) => {
     });
   }
 
-  // ✅ NEW: Vocabulary route validation and logging
   if (to.name && to.name.includes('Vocabulary')) {
     console.log('📖 Vocabulary route navigation:', {
       route: to.name,
@@ -311,16 +478,29 @@ router.beforeEach(async (to, from, next) => {
     });
   }
 
+  if (to.name && (to.name.includes('Payment') || to.name.includes('Payme'))) {
+    console.log('💳 Payment route navigation:', {
+      route: to.name,
+      path: to.path,
+      params: to.params,
+      query: to.query,
+      from: from.path,
+      isAuthenticated: isLoggedIn,
+      userId: userId
+    });
+  }
+
+  // ✅ SUCCESS: Allow navigation
   next();
 });
 
-// ✅ Enhanced navigation logging after route changes
+// ✅ ENHANCED navigation logging after route changes
 router.afterEach((to, from) => {
   // Update document title
-  const baseTitle = 'ACED';
-  document.title = to.meta.title ? `${to.meta.title} - ${baseTitle}` : baseTitle;
+  const baseTitle = 'ACED - Образовательная платформа';
+  document.title = to.meta.title ? `${to.meta.title} - ACED` : baseTitle;
   
-  // Enhanced logging for homework routes
+  // Enhanced logging for specific route types
   if (to.name && to.name.includes('Homework')) {
     console.log(`📚 Homework navigation completed:`, {
       route: to.name,
@@ -330,7 +510,6 @@ router.afterEach((to, from) => {
       from: from.path
     });
   } 
-  // Enhanced logging for vocabulary routes
   else if (to.name && to.name.includes('Vocabulary')) {
     console.log(`📖 Vocabulary navigation completed:`, {
       route: to.name,
@@ -339,9 +518,17 @@ router.afterEach((to, from) => {
       query: to.query,
       from: from.path
     });
+  }
+  else if (to.name && (to.name.includes('Payment') || to.name.includes('Payme'))) {
+    console.log(`💳 Payment navigation completed:`, {
+      route: to.name,
+      path: to.path,
+      params: to.params,
+      query: to.query,
+      from: from.path
+    });
   } else {
-    // Standard navigation logging
-    console.log(`📍 Navigated from ${from.path} to ${to.path}`);
+    console.log(`📍 Navigation completed: ${from.path} → ${to.path}`);
   }
   
   // Log params if any
@@ -353,54 +540,154 @@ router.afterEach((to, from) => {
   if (Object.keys(to.query).length > 0) {
     console.log('🔍 Query params:', to.query);
   }
+  
+  // ✅ AUTO-CHECK PAYMENTS on navigation (for authenticated users)
+  if (store.getters.isLoggedIn && !to.path.includes('/pay')) {
+    // Check for pending payments periodically
+    const lastCheck = store.getters['user/lastPaymentCheck'];
+    const now = Date.now();
+    const fiveMinutes = 5 * 60 * 1000;
+    
+    if (!lastCheck || (now - lastCheck) > fiveMinutes) {
+      store.dispatch('user/checkPendingPayments').catch(err => {
+        console.warn('⚠️ Auto payment check failed:', err);
+      });
+    }
+  }
 });
 
-// ✅ Enhanced error handling for routing errors
+// ✅ ENHANCED error handling for routing errors
 router.onError((err) => {
-  console.error('❌ Ошибка маршрута:', err);
+  console.error('❌ Router error:', err);
   
-  // If chunk loading fails, reload the page
-  if (err.message.includes('Failed to fetch dynamically imported module')) {
+  // Handle chunk loading failures (common in production)
+  if (err.message.includes('Failed to fetch dynamically imported module') || 
+      err.message.includes('Loading chunk')) {
     console.log('🔄 Reloading due to chunk loading error...');
     window.location.reload();
+    return;
   }
   
-  // Handle navigation errors specifically for homework routes
+  // Handle navigation errors for specific route types
   if (err.message.includes('homework') || err.message.includes('Homework')) {
     console.error('📚 Homework route error:', err);
   }
   
-  // Handle navigation errors specifically for vocabulary routes
   if (err.message.includes('vocabulary') || err.message.includes('Vocabulary')) {
     console.error('📖 Vocabulary route error:', err);
   }
+  
+  if (err.message.includes('payment') || err.message.includes('Payment')) {
+    console.error('💳 Payment route error:', err);
+  }
+  
+  // Generic error handling
+  console.error('🔄 Navigation failed, attempting recovery...');
 });
 
-// ✅ Debug navigation failures with enhanced logging
+// ✅ ENHANCED Debug information when router is ready
 router.isReady().then(() => {
-  console.log('✅ Router is ready');
-  console.log('📋 Available routes:');
-  console.log('  Main routes:');
+  console.log('✅ ACED Router initialized successfully');
+  console.log('📋 Available route groups:');
+  console.log('  🏠 Public routes:');
   console.log('    / (HomePage)');
-  console.log('    /settings (SettingsPage)');
-  console.log('  Profile routes:');
-  console.log('    /profile/main');
+  console.log('    /settings (AcedSettings - requires auth)');
+  
+  console.log('  👤 Profile routes:');
+  console.log('    /profile/main (MainPage)');
+  console.log('    /profile/catalogue (CataloguePage)');
+  console.log('    /profile/analytics (UserAnalyticsPanel)');
   console.log('    /profile/vocabulary (VocabularyPage)');
   console.log('    /profile/vocabulary/:languageCode (VocabularyIn)');
-  console.log('    /profile/homeworks');
-  console.log('    /profile/homeworks/:id');
-  console.log('    /profile/homework/lesson/:lessonId');
-  console.log('    /profile/homework/standalone/:homeworkId');
-  console.log('  Redirects:');
+  console.log('    /profile/homeworks (HomeworkList)');
+  console.log('    /profile/homeworks/:id (HomeworkPage)');
+  console.log('    /profile/homework/lesson/:lessonId (LessonHomeworkPage)');
+  console.log('    /profile/homework/standalone/:homeworkId (StandaloneHomeworkPage)');
+  console.log('    /profile/tests (TestsPage)');
+  console.log('    /profile/diary (DiaryPage)');
+  console.log('    /profile/goal (StudyGoal)');
+  
+  console.log('  💳 Payment routes:');
+  console.log('    /pay/:plan (PaymePayment - requires auth)');
+  console.log('    /payment/success (PaymentSuccess - requires auth)');
+  console.log('    /payment/cancelled (PaymentCancelled - requires auth)');
+  
+  console.log('  📚 Learning routes:');
+  console.log('    /lesson/:id (LessonPage - requires auth)');
+  console.log('    /topic/:id/overview (TopicOverview - requires auth)');
+  console.log('    /finished (TopicFinished - requires auth)');
+  
+  console.log('  🔄 Redirects:');
   console.log('    /vocabulary → /profile/vocabulary');
   console.log('    /vocabulary/:language → /profile/vocabulary/:language');
-  console.log('  Payment routes:');
-  console.log('    /pay/:plan');
-  console.log('  Learning routes:');
-  console.log('    /lesson/:id');
-  console.log('    /topic/:id/overview');
+  console.log('    /payment/:plan? → /pay/:plan');
+  
+  console.log('  🎯 Valid payment plans: start, pro');
+  console.log('  💰 Payment amounts: Start (260,000 сум), Pro (455,000 сум)');
+  
 }).catch(err => {
   console.error('❌ Router initialization failed:', err);
 });
+
+// ✅ PAYMENT NAVIGATION HELPERS (can be imported and used in components)
+export const navigateToPayment = (plan = 'start', options = {}) => {
+  const { userId, returnTo, router: routerInstance } = options;
+  
+  if (!['start', 'pro'].includes(plan)) {
+    console.error('❌ Invalid payment plan:', plan);
+    return false;
+  }
+  
+  const query = {};
+  if (userId) query.userId = userId;
+  if (returnTo) query.returnTo = returnTo;
+  
+  const route = {
+    name: 'PaymePayment',
+    params: { plan },
+    ...(Object.keys(query).length > 0 && { query })
+  };
+  
+  console.log('🚀 Navigating to payment:', route);
+  
+  if (routerInstance) {
+    return routerInstance.push(route);
+  } else {
+    return router.push(route);
+  }
+};
+
+export const navigateToSettings = (options = {}) => {
+  const { returnTo, router: routerInstance } = options;
+  
+  const route = {
+    name: 'SettingsPage',
+    ...(returnTo && { query: { returnTo } })
+  };
+  
+  console.log('⚙️ Navigating to settings:', route);
+  
+  if (routerInstance) {
+    return routerInstance.push(route);
+  } else {
+    return router.push(route);
+  }
+};
+
+// ✅ SUBSCRIPTION CHECK HELPER
+export const checkSubscriptionAccess = (requiredPlan = 'start') => {
+  const userStatus = store.getters['user/userStatus'];
+  const planHierarchy = {
+    free: 0,
+    start: 1,
+    pro: 2,
+    premium: 3
+  };
+  
+  const userLevel = planHierarchy[userStatus] || 0;
+  const requiredLevel = planHierarchy[requiredPlan] || 1;
+  
+  return userLevel >= requiredLevel;
+};
 
 export default router;

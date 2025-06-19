@@ -1,65 +1,232 @@
 <template>
   <div class="settings-page">
+    <!-- User Profile Settings -->
     <div class="settings-content">
-      <h2 class="section-title">Настройки профиля</h2>
+      <h2 class="section-title">⚙️ Настройки профиля</h2>
 
       <label>Имя</label>
-      <input type="text" v-model="user.name" placeholder="Введите имя" />
+      <input 
+        type="text" 
+        v-model="user.name" 
+        placeholder="Введите имя"
+        :disabled="loading" 
+      />
 
       <label>Фамилия</label>
-      <input type="text" v-model="user.surname" placeholder="Введите фамилию" />
+      <input 
+        type="text" 
+        v-model="user.surname" 
+        placeholder="Введите фамилию"
+        :disabled="loading" 
+      />
 
       <label>Email</label>
-      <input type="email" v-model="user.email" placeholder="Введите email" />
+      <input 
+        type="email" 
+        v-model="user.email" 
+        placeholder="Введите email"
+        :disabled="loading" 
+      />
 
       <div v-if="!isGoogleUser">
         <label>Текущий пароль</label>
-        <input type="password" v-model="oldPassword" placeholder="Введите текущий пароль" />
+        <input 
+          type="password" 
+          v-model="oldPassword" 
+          placeholder="Введите текущий пароль"
+          :disabled="loading" 
+        />
 
         <label>Новый пароль</label>
-        <input type="password" v-model="newPassword" placeholder="Введите новый пароль" />
+        <input 
+          type="password" 
+          v-model="newPassword" 
+          placeholder="Введите новый пароль"
+          :disabled="loading" 
+        />
 
         <label>Подтвердите новый пароль</label>
-        <input type="password" v-model="confirmPassword" placeholder="Повторите новый пароль" />
+        <input 
+          type="password" 
+          v-model="confirmPassword" 
+          placeholder="Повторите новый пароль"
+          :disabled="loading" 
+        />
       </div>
 
-      <p class="forgot-password" @click="sendPasswordReset">Забыли пароль?</p>
-      <p v-if="isGoogleUser" class="forgot-password" @click="sendPasswordReset">Создать пароль</p>
+      <p class="forgot-password" @click="sendPasswordReset">
+        {{ isGoogleUser ? 'Создать пароль' : 'Забыли пароль?' }}
+      </p>
 
       <div class="button-group">
-        <button class="save-button" @click="saveChanges">Сохранить</button>
+        <button 
+          class="save-button" 
+          @click="saveChanges"
+          :disabled="loading"
+        >
+          {{ loading ? '⏳ Сохранение...' : 'Сохранить' }}
+        </button>
         <button class="back-button" @click="goToProfile">В профиль</button>
       </div>
     </div>
 
+    <!-- Subscription and Payment Settings -->
     <div class="settings-content">
       <h2 class="section-title">💳 Подписка и оплата</h2>
 
-      <label>Промокод</label>
-      <input type="text" v-model="promoCode" placeholder="acedpromocode2406" />
+      <!-- Current Plan Display -->
+      <div class="current-plan-section">
+        <div class="plan-info">
+          <h3>Текущий тариф</h3>
+          <div class="plan-display">
+            <span :class="['plan-badge', currentPlanClass]">
+              {{ currentPlanLabel }}
+            </span>
+            <div class="plan-details">
+              <p class="plan-description">{{ currentPlanDescription }}</p>
+              <p v-if="subscriptionDetails?.expiryDate" class="plan-expiry">
+                Активен до: {{ formatDate(subscriptionDetails.expiryDate) }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <label>Выберите тариф</label>
-      <select v-model="selectedPlan">
-        <option value="">Выберите...</option>
-        <option value="start">Start</option>
-        <option value="pro">Pro</option>
-      </select>
+      <!-- Payment Options -->
+      <div class="payment-options">
+        <h3>Варианты оплаты</h3>
+        
+        <!-- Promo Code Section -->
+        <div class="promo-section">
+          <h4>🎟️ Промокод</h4>
+          <div class="promo-input-group">
+            <input 
+              type="text" 
+              v-model="promoCode" 
+              placeholder="acedpromocode2406"
+              :disabled="loading"
+              @keyup.enter="applyPromo"
+            />
+            <select v-model="selectedPlan" :disabled="loading">
+              <option value="">Выберите тариф...</option>
+              <option value="start">Start (260,000 сум)</option>
+              <option value="pro">Pro (455,000 сум)</option>
+            </select>
+          </div>
+          <button 
+            class="promo-button" 
+            @click="applyPromo"
+            :disabled="loading || !promoCode.trim() || !selectedPlan"
+          >
+            {{ loading ? '⏳ Применение...' : 'Применить промокод' }}
+          </button>
+        </div>
 
-      <p class="current-plan">
-        Текущий тариф: <span :class="['plan-badge', currentPlanClass]">{{ currentPlanLabel }}</span>
-      </p>
+        <!-- Payment Plans -->
+        <div class="plans-section">
+          <h4>💰 Выберите тариф для оплаты</h4>
+          <div class="plans-grid">
+            <div 
+              class="plan-card" 
+              :class="{ active: paymentPlan === 'start', disabled: currentPlan === 'start' || currentPlan === 'pro' }"
+              @click="selectPaymentPlan('start')"
+            >
+              <div class="plan-header">
+                <h5>Start</h5>
+                <div class="plan-price">260,000 сум</div>
+              </div>
+              <ul class="plan-features">
+                <li>✅ Базовые курсы</li>
+                <li>✅ Домашние задания</li>
+                <li>✅ Основные тесты</li>
+                <li>✅ Прогресс-трекинг</li>
+              </ul>
+              <div v-if="currentPlan === 'start'" class="plan-status">
+                ✅ Активен
+              </div>
+            </div>
+            
+            <div 
+              class="plan-card recommended" 
+              :class="{ active: paymentPlan === 'pro', disabled: currentPlan === 'pro' }"
+              @click="selectPaymentPlan('pro')"
+            >
+              <div class="plan-badge">Рекомендуем</div>
+              <div class="plan-header">
+                <h5>Pro</h5>
+                <div class="plan-price">455,000 сум</div>
+              </div>
+              <ul class="plan-features">
+                <li>✅ Все возможности Start</li>
+                <li>✅ Продвинутые курсы</li>
+                <li>✅ Персональная аналитика</li>
+                <li>✅ Приоритетная поддержка</li>
+                <li>✅ Эксклюзивные материалы</li>
+              </ul>
+              <div v-if="currentPlan === 'pro'" class="plan-status">
+                ✅ Активен
+              </div>
+            </div>
+          </div>
+          
+          <button 
+            class="payment-button" 
+            @click="goToPayment"
+            :disabled="loading || !paymentPlan || (currentPlan !== 'free' && paymentPlan === currentPlan)"
+          >
+            {{ getPaymentButtonText() }}
+          </button>
+        </div>
 
-      <button class="promo-button" @click="applyPromo">Применить промокод</button>
-      <button class="payment-button" @click="goToPayment">Перейти к оплате</button>
+        <!-- Payment History -->
+        <div v-if="paymentHistory.length > 0" class="payment-history">
+          <h4>📊 История платежей</h4>
+          <div class="history-list">
+            <div 
+              v-for="payment in paymentHistory" 
+              :key="payment.id"
+              class="payment-item"
+            >
+              <div class="payment-info">
+                <span class="payment-id">{{ payment.id }}</span>
+                <span class="payment-amount">{{ formatAmount(payment.amount) }}</span>
+              </div>
+              <div class="payment-status">
+                <span :class="['status-badge', getStatusClass(payment.state)]">
+                  {{ payment.stateText }}
+                </span>
+                <span class="payment-date">{{ formatDate(payment.timestamp) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div v-if="notification" class="notification">{{ notification }}</div>
+    <!-- Notification -->
+    <div v-if="notification" class="notification" :class="notificationClass">
+      <span class="notification-icon">{{ notificationIcon }}</span>
+      {{ notification }}
+    </div>
+
+    <!-- Loading Overlay -->
+    <div v-if="loading" class="loading-overlay">
+      <div class="spinner"></div>
+      <p>{{ loadingText }}</p>
+    </div>
   </div>
 </template>
 
 <script>
 import { auth, db } from "@/firebase";
-import axios from "axios";
+import { 
+  applyPromoCode, 
+  getUserStatus,
+  getPaymentAmounts,
+  formatPaymentAmount,
+  getTransactionStateText,
+  handlePaymentError
+} from "@/api";
 import {
   updateEmail,
   reauthenticateWithCredential,
@@ -73,145 +240,398 @@ import {
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
 export default {
+  name: 'AcedSettings',
   data() {
     return {
+      // User profile data
       user: { name: "", surname: "", email: "" },
       oldPassword: "",
       newPassword: "",
       confirmPassword: "",
       currentUser: null,
       isGoogleUser: false,
-      notification: "",
+      
+      // Payment data
       promoCode: "",
       selectedPlan: "",
-      currentPlan: "free"
+      paymentPlan: "",
+      currentPlan: "free",
+      subscriptionDetails: null,
+      paymentHistory: [],
+      
+      // UI state
+      loading: false,
+      loadingText: "",
+      notification: "",
+      notificationClass: "",
+      notificationIcon: ""
     };
   },
   computed: {
     currentPlanLabel() {
-      if (this.currentPlan === 'pro') return 'Pro';
-      if (this.currentPlan === 'start') return 'Start';
-      return 'Free';
+      const labels = {
+        pro: 'Pro',
+        start: 'Start', 
+        premium: 'Premium',
+        free: 'Free'
+      };
+      return labels[this.currentPlan] || 'Free';
     },
+    
     currentPlanClass() {
-      return {
+      const classes = {
         pro: 'badge-pro',
         start: 'badge-start',
+        premium: 'badge-premium',
         free: 'badge-free'
-      }[this.currentPlan] || 'badge-free';
+      };
+      return classes[this.currentPlan] || 'badge-free';
+    },
+    
+    currentPlanDescription() {
+      const descriptions = {
+        pro: 'Полный доступ ко всем курсам и функциям',
+        start: 'Доступ к базовым курсам и материалам',
+        premium: 'Премиум подписка с эксклюзивным контентом',
+        free: 'Бесплатный доступ с ограниченным функционалом'
+      };
+      return descriptions[this.currentPlan] || 'Бесплатный доступ';
+    },
+    
+    userId() {
+      return this.currentUser?.uid || this.$store.getters['user/getUserId'];
     }
   },
-  mounted() {
-    this.checkAuthState();
+  
+  async mounted() {
+    await this.initializeComponent();
   },
+  
   methods: {
+    async initializeComponent() {
+      this.loading = true;
+      this.loadingText = 'Загрузка настроек...';
+      
+      try {
+        await this.checkAuthState();
+        await this.loadPaymentHistory();
+      } catch (error) {
+        console.error('❌ Settings initialization error:', error);
+        this.showNotification('Ошибка загрузки настроек', 'error');
+      } finally {
+        this.loading = false;
+      }
+    },
+    
     checkAuthState() {
-      onAuthStateChanged(auth, async (user) => {
-        this.currentUser = user;
-        if (user) {
-          this.isGoogleUser = user.providerData[0]?.providerId === "google.com";
-          await this.fetchUserData();
-          await this.fetchSubscriptionStatus();
-        }
+      return new Promise((resolve) => {
+        onAuthStateChanged(auth, async (user) => {
+          this.currentUser = user;
+          if (user) {
+            this.isGoogleUser = user.providerData[0]?.providerId === "google.com";
+            await this.fetchUserData();
+            await this.fetchSubscriptionStatus();
+          }
+          resolve();
+        });
       });
     },
+    
     async fetchUserData() {
       try {
         if (!this.currentUser) return;
+        
         const userRef = doc(db, "users", this.currentUser.uid);
         const userDoc = await getDoc(userRef);
+        
         if (userDoc.exists()) {
           this.user = userDoc.data();
         } else {
-          await setDoc(userRef, {
+          const newUserData = {
             name: "Новый пользователь",
             surname: "",
             email: this.currentUser.email,
-          });
-          this.user = { name: "Новый пользователь", surname: "", email: this.currentUser.email };
+          };
+          await setDoc(userRef, newUserData);
+          this.user = newUserData;
         }
       } catch (error) {
-        this.showNotification("Ошибка загрузки данных: " + error.message);
+        console.error('❌ User data fetch error:', error);
+        this.showNotification("Ошибка загрузки данных пользователя", 'error');
       }
     },
+    
     async fetchSubscriptionStatus() {
       try {
-        const token = await this.currentUser.getIdToken();
-        const res = await axios.get(`/api/users/${this.currentUser.uid}/status`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        this.currentPlan = res.data?.status || 'free';
+        if (!this.currentUser) return;
+        
+        const result = await getUserStatus(this.currentUser.uid);
+        
+        if (result.data) {
+          this.currentPlan = result.data.status || result.data.subscriptionPlan || 'free';
+          this.subscriptionDetails = result.data.subscriptionDetails || null;
+        } else {
+          this.currentPlan = 'free';
+        }
+        
+        console.log('✅ Subscription status loaded:', this.currentPlan);
+        
       } catch (err) {
-        console.warn('⚠️ Не удалось получить текущий тариф:', err);
+        console.warn('⚠️ Failed to fetch subscription status:', err);
         this.currentPlan = 'free';
       }
     },
-    async saveChanges() {
-      if (!this.currentUser) return this.showNotification("Пользователь не авторизован.");
+    
+    async loadPaymentHistory() {
       try {
+        // Get payment history from store
+        const history = this.$store.getters['user/paymentHistory'] || [];
+        this.paymentHistory = history.slice(0, 5); // Show last 5 payments
+      } catch (error) {
+        console.warn('⚠️ Failed to load payment history:', error);
+      }
+    },
+    
+    async saveChanges() {
+      if (!this.currentUser) {
+        return this.showNotification("Пользователь не авторизован", 'error');
+      }
+      
+      this.loading = true;
+      this.loadingText = 'Сохранение изменений...';
+      
+      try {
+        // Update Firestore
         const userRef = doc(db, "users", this.currentUser.uid);
-        await updateDoc(userRef, { name: this.user.name, surname: this.user.surname });
+        await updateDoc(userRef, { 
+          name: this.user.name, 
+          surname: this.user.surname 
+        });
+        
+        // Update email if changed
         if (this.user.email !== this.currentUser.email) {
           if (this.isGoogleUser) {
             const provider = new GoogleAuthProvider();
             await signInWithPopup(auth, provider);
             await updateEmail(this.currentUser, this.user.email);
           } else {
-            if (!this.oldPassword) return this.showNotification("Введите текущий пароль для изменения email.");
+            if (!this.oldPassword) {
+              return this.showNotification("Введите текущий пароль для изменения email", 'error');
+            }
             const credential = EmailAuthProvider.credential(this.currentUser.email, this.oldPassword);
             await reauthenticateWithCredential(this.currentUser, credential);
             await updateEmail(this.currentUser, this.user.email);
           }
         }
+        
+        // Update password if provided
         if (this.newPassword) {
-          if (this.isGoogleUser) return this.showNotification("Вы вошли через Google. Пароль изменить нельзя.");
-          if (this.newPassword !== this.confirmPassword)
-            return this.showNotification("Пароли не совпадают.");
+          if (this.isGoogleUser) {
+            return this.showNotification("Вы вошли через Google. Пароль изменить нельзя", 'error');
+          }
+          if (this.newPassword !== this.confirmPassword) {
+            return this.showNotification("Пароли не совпадают", 'error');
+          }
           const credential = EmailAuthProvider.credential(this.currentUser.email, this.oldPassword);
           await reauthenticateWithCredential(this.currentUser, credential);
           await updatePassword(this.currentUser, this.newPassword);
         }
-        this.showNotification("Изменения сохранены!");
-      } catch (error) {
-        console.error("🚨 Ошибка:", error);
-        this.showNotification("Ошибка: " + error.message);
-      }
-    },
-    async applyPromo() {
-      if (!this.promoCode || !this.selectedPlan) return this.showNotification("Введите промокод и выберите тариф.");
-      try {
-        const res = await axios.post("/api/payments/promo", {
-          userId: this.currentUser.uid,
-          plan: this.selectedPlan,
-          promoCode: this.promoCode
+        
+        // Update store
+        await this.$store.dispatch('user/updateProfile', {
+          name: this.user.name,
+          surname: this.user.surname,
+          email: this.user.email
         });
-        this.showNotification(res.data.message || "✅ Промокод применён!");
-        this.currentPlan = this.selectedPlan;
-      } catch (err) {
-        console.error("Promo error:", err);
-        this.showNotification(err.response?.data?.message || "❌ Не удалось применить промокод");
+        
+        this.showNotification("Изменения успешно сохранены!", 'success');
+        
+        // Clear password fields
+        this.oldPassword = "";
+        this.newPassword = "";
+        this.confirmPassword = "";
+        
+      } catch (error) {
+        console.error("❌ Save changes error:", error);
+        this.showNotification(`Ошибка: ${error.message}`, 'error');
+      } finally {
+        this.loading = false;
       }
     },
+    
+    async applyPromo() {
+      if (!this.promoCode.trim() || !this.selectedPlan) {
+        return this.showNotification("Введите промокод и выберите тариф", 'error');
+      }
+      
+      if (!this.userId) {
+        return this.showNotification("Ошибка авторизации", 'error');
+      }
+      
+      this.loading = true;
+      this.loadingText = 'Применение промокода...';
+      
+      try {
+        console.log('🎟️ Applying promo code:', {
+          userId: this.userId,
+          plan: this.selectedPlan,
+          promoCode: this.promoCode.trim()
+        });
+        
+        const result = await applyPromoCode(
+          this.userId,
+          this.selectedPlan,
+          this.promoCode.trim()
+        );
+        
+        if (result.success) {
+          this.showNotification(result.message || "✅ Промокод успешно применён!", 'success');
+          
+          // Update current plan
+          this.currentPlan = this.selectedPlan;
+          
+          // Update store
+          await this.$store.dispatch('user/loadUserStatus');
+          
+          // Clear form
+          this.promoCode = "";
+          this.selectedPlan = "";
+          
+        } else {
+          this.showNotification(result.error || "❌ Не удалось применить промокод", 'error');
+        }
+        
+      } catch (error) {
+        console.error("❌ Promo code error:", error);
+        this.showNotification(handlePaymentError(error, 'Применение промокода'), 'error');
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    selectPaymentPlan(plan) {
+      // Don't allow selecting current plan or downgrade
+      if (this.currentPlan === plan || 
+          (this.currentPlan === 'pro' && plan === 'start')) {
+        return;
+      }
+      
+      this.paymentPlan = plan;
+    },
+    
+    async goToPayment() {
+      if (!this.paymentPlan) {
+        return this.showNotification("Выберите тариф для оплаты", 'error');
+      }
+      
+      if (!this.userId) {
+        return this.showNotification("Ошибка авторизации", 'error');
+      }
+      
+      try {
+        console.log('💳 Redirecting to payment:', {
+          plan: this.paymentPlan,
+          userId: this.userId
+        });
+        
+        // Navigate to payment page
+        await this.$router.push({ 
+          name: 'PaymePayment', 
+          params: { plan: this.paymentPlan },
+          query: { 
+            userId: this.userId,
+            returnTo: this.$route.query.returnTo || 'settings'
+          }
+        });
+        
+      } catch (error) {
+        console.error('❌ Payment navigation error:', error);
+        this.showNotification('Ошибка при переходе к оплате', 'error');
+      }
+    },
+    
+    getPaymentButtonText() {
+      if (!this.paymentPlan) {
+        return 'Выберите тариф';
+      }
+      
+      if (this.loading) {
+        return '⏳ Обработка...';
+      }
+      
+      if (this.currentPlan === this.paymentPlan) {
+        return '✅ Уже активен';
+      }
+      
+      const amounts = getPaymentAmounts();
+      const planData = amounts[this.paymentPlan];
+      
+      if (planData) {
+        return `💳 Оплатить ${planData.label} (${formatPaymentAmount(planData.uzs, 'UZS')})`;
+      }
+      
+      return 'Перейти к оплате';
+    },
+    
     async sendPasswordReset() {
       try {
-        if (!this.currentUser) return this.showNotification("Ошибка: Пользователь не авторизован.");
+        if (!this.currentUser) {
+          return this.showNotification("Ошибка: Пользователь не авторизован", 'error');
+        }
+        
         await sendPasswordResetEmail(auth, this.currentUser.email);
-        this.showNotification("Ссылка для создания пароля отправлена на ваш email.");
+        this.showNotification("Ссылка для создания пароля отправлена на ваш email", 'success');
+        
       } catch (error) {
-        console.error("Ошибка отправки email:", error);
-        this.showNotification("Ошибка: " + error.message);
+        console.error("❌ Password reset error:", error);
+        this.showNotification(`Ошибка: ${error.message}`, 'error');
       }
     },
-    goToPayment() {
-      alert("🧾 Платёжная система ещё не подключена. Пожалуйста, попробуйте позже.");
+    
+    // Utility methods
+    formatAmount(amount) {
+      return formatPaymentAmount(amount / 100, 'UZS');
     },
-    showNotification(message) {
+    
+    formatDate(timestamp) {
+      if (!timestamp) return '';
+      const date = new Date(timestamp);
+      return date.toLocaleDateString('ru-RU', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    },
+    
+    getStatusClass(state) {
+      const stateInfo = getTransactionStateText(state);
+      return `status-${stateInfo.color}`;
+    },
+    
+    showNotification(message, type = 'info') {
       this.notification = message;
-      setTimeout(() => (this.notification = ""), 5000);
+      this.notificationClass = `notification-${type}`;
+      
+      const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+      };
+      this.notificationIcon = icons[type] || 'ℹ️';
+      
+      setTimeout(() => {
+        this.notification = "";
+        this.notificationClass = "";
+        this.notificationIcon = "";
+      }, 5000);
     },
+    
+    // Navigation methods
     goBack() {
       this.$router.push("/");
     },
+    
     goToProfile() {
       this.$router.push("/profile/main");
     }
@@ -224,147 +644,286 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 50px 20px;
-  background: linear-gradient(to bottom right, #f9fafb, #ffffff);
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   color: #1f2937;
   min-height: 100vh;
-  gap: 50px;
-  font-family: 'Inter', sans-serif;
+  gap: 40px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .section-title {
-  font-size: 28px;
+  font-size: 1.75rem;
   font-weight: 800;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   text-align: center;
   color: #4c1d95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .settings-content {
   width: 100%;
-  max-width: 520px;
+  max-width: 600px;
   background: #ffffff;
-  padding: 36px;
-  border-radius: 20px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.3s ease;
+  padding: 40px;
+  border-radius: 24px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 1px solid #f1f5f9;
 }
 
 .settings-content:hover {
-  box-shadow: 0 12px 40px rgba(124, 58, 237, 0.15);
+  box-shadow: 0 20px 60px rgba(124, 58, 237, 0.15);
+  transform: translateY(-2px);
 }
 
-input, select {
-  width: 100%;
-  padding: 14px;
-  margin-top: 8px;
-  margin-bottom: 20px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  background: #f9fafb;
-  color: #1f2937;
-  font-size: 1rem;
-  transition: border 0.3s, box-shadow 0.3s;
-}
-
-input:focus, select:focus {
-  outline: none;
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
-}
-
-.button-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  justify-content: space-between;
-  margin-top: 30px;
-}
-
-.save-button,
-.back-button,
-.promo-button,
-.payment-button {
-  flex: 1 1 45%;
-  padding: 12px 20px;
-  border: none;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  font-weight: bold;
+/* Form Elements */
+label {
+  display: block;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.3s ease, transform 0.2s ease;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+  min-height: 48px;
 }
 
 .save-button {
-  background: linear-gradient(to right, #9333ea, #a855f7); /* violet */
+  background: linear-gradient(135deg, #9333ea, #a855f7);
   color: white;
 }
 
-.save-button:hover {
-  background: linear-gradient(to right, #7e22ce, #9333ea);
+.save-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7e22ce, #9333ea);
   transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(147, 51, 234, 0.3);
 }
 
 .back-button {
   background: #f3f4f6;
   color: #4c1d95;
+  border: 2px solid #e5e7eb;
 }
 
 .back-button:hover {
   background: #e5e7eb;
   transform: translateY(-2px);
+  border-color: #d1d5db;
 }
 
 .promo-button {
-  background: linear-gradient(to right, #ec4899, #f472b6); /* pinkish */
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
+  width: 100%;
+  margin-top: 8px;
 }
 
-.promo-button:hover {
-  background: linear-gradient(to right, #db2777, #ec4899);
+.promo-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669, #047857);
   transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
 }
 
 .payment-button {
-  background: linear-gradient(to right, #4f46e5, #6366f1); /* deep indigo */
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: white;
+  width: 100%;
+  font-size: 1.1rem;
+  padding: 16px 24px;
 }
 
-.payment-button:hover {
-  background: linear-gradient(to right, #4338ca, #4f46e5);
+.payment-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
   transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
 }
 
+.save-button:disabled,
+.promo-button:disabled,
+.payment-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Payment History */
+.payment-history {
+  background: #f8fafc;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.payment-history h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 16px;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-item {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.payment-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.payment-id {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.payment-amount {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.payment-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.payment-date {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* Forgot Password */
 .forgot-password {
   color: #7c3aed;
   cursor: pointer;
   text-align: right;
-  font-size: 14px;
-  margin-bottom: 12px;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+  transition: color 0.2s ease;
 }
 
 .forgot-password:hover {
   text-decoration: underline;
+  color: #6d28d9;
 }
 
+/* Notification */
 .notification {
   position: fixed;
-  bottom: 20px;
+  bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
   background: #1f2937;
   color: white;
-  padding: 14px 24px;
-  border-radius: 10px;
+  padding: 16px 24px;
+  border-radius: 12px;
   font-size: 0.95rem;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
-  animation: fadeIn 0.4s ease-in-out;
+  font-weight: 500;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.4s ease-out;
+  z-index: 1000;
+  max-width: 90%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-@keyframes fadeIn {
+.notification-success {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.notification-error {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.notification-warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.notification-icon {
+  font-size: 1.2rem;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #e5e7eb;
+  border-left: 4px solid #7c3aed;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+.loading-overlay p {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* Animations */
+@keyframes slideUp {
   from {
     opacity: 0;
-    transform: translate(-50%, 10px);
+    transform: translate(-50%, 20px);
   }
   to {
     opacity: 1;
@@ -372,34 +931,679 @@ input:focus, select:focus {
   }
 }
 
-.current-plan {
-  margin-top: 12px;
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .settings-page {
+    padding: 20px 15px;
+    gap: 30px;
+  }
+  
+  .settings-content {
+    padding: 24px;
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+  }
+  
+  .plans-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .promo-input-group {
+    gap: 8px;
+  }
+  
+  .button-group {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .save-button,
+  .back-button {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+  
+  .plan-display {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .payment-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .payment-status {
+    align-items: flex-start;
+  }
+  
+  .notification {
+    margin: 0 20px;
+    bottom: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-content {
+    padding: 20px;
+  }
+  
+  .section-title {
+    font-size: 1.3rem;
+  }
+  
+  .plan-card {
+    padding: 20px;
+  }
+  
+  .plan-price {
+    font-size: 1.2rem;
+  }
+  
+  .promo-input-group {
+    flex-direction: column;
+  }
+  
+  .promo-input-group input,
+  .promo-input-group select {
+    margin-bottom: 8px;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 360px) {
+  .settings-page {
+    padding: 15px 10px;
+  }
+  
+  .settings-content {
+    padding: 16px;
+  }
+  
+  .section-title {
+    font-size: 1.2rem;
+  }
+  
+  .plan-card {
+    padding: 16px;
+  }
+  
+  .plan-header h5 {
+    font-size: 1.1rem;
+  }
+  
+  .plan-price {
+    font-size: 1.1rem;
+  }
+  
+  .plan-features li {
+    font-size: 0.85rem;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .spinner {
+    border-width: 3px;
+  }
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .settings-page {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    color: #f9fafb;
+  }
+  
+  .settings-content {
+    background: #374151;
+    border-color: #4b5563;
+  }
+  
+  .section-title {
+    color: #a78bfa;
+  }
+  
+  input, select {
+    background: #4b5563;
+    border-color: #6b7280;
+    color: #f9fafb;
+  }
+  
+  input:focus, select:focus {
+    border-color: #a78bfa;
+    background: #374151;
+  }
+  
+  .plan-card {
+    background: #4b5563;
+    border-color: #6b7280;
+  }
+  
+  .plan-card:hover:not(.disabled) {
+    border-color: #a78bfa;
+  }
+  
+  .plan-card.active {
+    background: linear-gradient(135deg, #312e81 0%, #3730a3 100%);
+  }
+  
+  .promo-section,
+  .plans-section,
+  .payment-history {
+    background: #4b5563;
+    border-color: #6b7280;
+  }
+  
+  .payment-item {
+    background: #374151;
+    border-color: #4b5563;
+  }
+}
+
+/* Print styles */
+@media print {
+  .settings-page {
+    background: white;
+    color: black;
+  }
+  
+  .loading-overlay,
+  .notification,
+  .save-button,
+  .back-button,
+  .promo-button,
+  .payment-button {
+    display: none !important;
+  }
+  
+  .settings-content {
+    box-shadow: none;
+    border: 1px solid #ccc;
+    page-break-inside: avoid;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .spinner {
+    animation: none;
+    border-left-color: transparent;
+  }
+}
+
+/* Focus visible for better keyboard navigation */
+.save-button:focus-visible,
+.back-button:focus-visible,
+.promo-button:focus-visible,
+.payment-button:focus-visible,
+.plan-card:focus-visible {
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .settings-content {
+    border: 2px solid #000;
+  }
+  
+  .plan-card {
+    border: 2px solid #000;
+  }
+  
+  .save-button,
+  .promo-button,
+  .payment-button {
+    border: 2px solid #000;
+  }
+}
+
+/* Utility classes for dynamic styling */
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Loading states for better UX */
+.settings-content.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.form-loading input,
+.form-loading select,
+.form-loading button {
+  cursor: wait;
+}
+
+/* Success state animations */
+.plan-card.success {
+  animation: successPulse 0.6s ease-out;
+}
+
+@keyframes successPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* Error state styling */
+.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1) !important;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-top: -16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Loading button states */
+.button-loading {
+  position: relative;
+  color: transparent !important;
+}
+
+.button-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-left: 2px solid #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Tooltip styles */
+.tooltip {
+  position: relative;
+  cursor: help;
+}
+
+.tooltip::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: 115%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1f2937;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.tooltip:hover::before,
+.tooltip:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Smooth scrolling for better UX */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar styling */
+.settings-page::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-page::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.settings-page::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.settings-page::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Form validation styles */
+.form-group {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.form-group.has-error input {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+}
+
+.form-group.has-success input {
+  border-color: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+/* Final responsive adjustments */
+@media (max-width: 320px) {
+  .settings-page {
+    padding: 10px 8px;
+  }
+  
+  .settings-content {
+    padding: 12px;
+  }
+  
+  input, select {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+  
+  .save-button,
+  .back-button,
+  .promo-button,
+  .payment-button {
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
+}
+</style>
+</style>
+  color: #374151;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+input, select {
+  width: 100%;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+  color: #1f2937;
   font-size: 1rem;
-  margin-bottom: 12px;
-  color: #334155;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
+  background: #ffffff;
+}
+
+input:disabled, select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f3f4f6;
+}
+
+/* Current Plan Section */
+.current-plan-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 24px;
+  border-radius: 16px;
+  margin-bottom: 32px;
+}
+
+.plan-info h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.plan-display {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .plan-badge {
-  padding: 6px 16px;
-  border-radius: 16px;
-  font-weight: bold;
-  margin-left: 10px;
-  font-size: 0.85rem;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.9rem;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .badge-free {
-  background-color: #d20000;
+  background-color: #ef4444;
   color: white;
 }
 
 .badge-start {
-  background-color: #ffcc00;
-  color: black;
+  background-color: #f59e0b;
+  color: white;
 }
 
 .badge-pro {
-  background-color: #005438;
+  background-color: #10b981;
   color: white;
 }
+
+.badge-premium {
+  background-color: #8b5cf6;
+  color: white;
+}
+
+.plan-details {
+  flex: 1;
+}
+
+.plan-description {
+  margin: 0 0 8px 0;
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+.plan-expiry {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+/* Payment Options */
+.payment-options h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 24px;
+}
+
+.promo-section,
+.plans-section {
+  margin-bottom: 32px;
+  padding: 24px;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.promo-section h4,
+.plans-section h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 16px;
+}
+
+.promo-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Plans Grid */
+.plans-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.plan-card {
+  border: 2px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  background: white;
+}
+
+.plan-card:hover:not(.disabled) {
+  border-color: #7c3aed;
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(124, 58, 237, 0.2);
+}
+
+.plan-card.active {
+  border-color: #7c3aed;
+  background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%);
+  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.2);
+}
+
+.plan-card.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f9fafb;
+}
+
+.plan-card.recommended {
+  border-color: #10b981;
+}
+
+.plan-card.recommended.active {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
+}
+
+.plan-card .plan-badge {
+  position: absolute;
+  top: -10px;
+  right: 16px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.plan-header h5 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.plan-price {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #7c3aed;
+  margin-bottom: 16px;
+}
+
+.plan-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.plan-features li {
+  padding: 4px 0;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.plan-status {
+  margin-top: 16px;
+  padding: 8px 16px;
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Buttons */
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  margin-top: 32px;
+}
+
+.save-button,
+.back-button,
+.promo-button,
+.payment-button {
+  flex: 1 1 45%;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
 </style>
