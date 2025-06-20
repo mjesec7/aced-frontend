@@ -207,7 +207,7 @@ const routes = [
     ],
   },
   
-  // ✅ ENHANCED: Payment Routes with validation and authentication
+  // ✅ PAYMENT ROUTE - Only one payment route needed
   {
     path: '/pay/:plan',
     name: 'PaymePayment',
@@ -240,39 +240,6 @@ const routes = [
         from: from.path
       });
       
-      next();
-    }
-  },
-  
-  // ✅ ENHANCED: Payment Success/Failure Routes
-  {
-    path: '/payment/success',
-    name: 'PaymentSuccess',
-    component: () => import('@/views/PaymentSuccess.vue'),
-    meta: { 
-      title: 'Оплата успешна',
-      requiresAuth: true 
-    },
-    beforeEnter: (to, from, next) => {
-      console.log('✅ Payment success page accessed');
-      // Check for payment status updates
-      if (store.getters['user/isAuthenticated']) {
-        store.dispatch('user/checkPendingPayments');
-      }
-      next();
-    }
-  },
-  
-  {
-    path: '/payment/cancelled',
-    name: 'PaymentCancelled',
-    component: () => import('@/views/PaymentCancelled.vue'),
-    meta: { 
-      title: 'Оплата отменена',
-      requiresAuth: true 
-    },
-    beforeEnter: (to, from, next) => {
-      console.log('❌ Payment cancelled page accessed');
       next();
     }
   },
@@ -478,7 +445,7 @@ router.beforeEach(async (to, from, next) => {
     });
   }
 
-  if (to.name && (to.name.includes('Payment') || to.name.includes('Payme'))) {
+  if (to.name && to.name.includes('Payme')) {
     console.log('💳 Payment route navigation:', {
       route: to.name,
       path: to.path,
@@ -519,7 +486,7 @@ router.afterEach((to, from) => {
       from: from.path
     });
   }
-  else if (to.name && (to.name.includes('Payment') || to.name.includes('Payme'))) {
+  else if (to.name && to.name.includes('Payme')) {
     console.log(`💳 Payment navigation completed:`, {
       route: to.name,
       path: to.path,
@@ -607,10 +574,8 @@ router.isReady().then(() => {
   console.log('    /profile/diary (DiaryPage)');
   console.log('    /profile/goal (StudyGoal)');
   
-  console.log('  💳 Payment routes:');
+  console.log('  💳 Payment route:');
   console.log('    /pay/:plan (PaymePayment - requires auth)');
-  console.log('    /payment/success (PaymentSuccess - requires auth)');
-  console.log('    /payment/cancelled (PaymentCancelled - requires auth)');
   
   console.log('  📚 Learning routes:');
   console.log('    /lesson/:id (LessonPage - requires auth)');

@@ -11,192 +11,222 @@
 
       <!-- Payment Form -->
       <div class="payment-box">
-        <!-- Plan Summary -->
-        <div class="plan-summary">
-          <div class="plan-info">
-            <h2>{{ planDetails.label }}</h2>
-            <div class="plan-price">{{ planDetails.formattedPrice }}</div>
-            <ul class="plan-features">
-              <li v-for="feature in planDetails.features" :key="feature">
-                ✓ {{ feature }}
-              </li>
+        <!-- Success State -->
+        <div v-if="paymentSuccess" class="success-state">
+          <div class="success-icon">🎉</div>
+          <h2>Платёж успешно завершён!</h2>
+          <p>Ваша подписка активирована. Доступ к премиум-контенту получен!</p>
+          <div class="success-actions">
+            <button @click="goToContent" class="primary-btn">
+              🎯 Перейти к курсам
+            </button>
+          </div>
+        </div>
+
+        <!-- Cancelled State -->
+        <div v-if="paymentCancelled" class="cancelled-state">
+          <div class="cancelled-icon">❌</div>
+          <h2>Платёж отменён</h2>
+          <p>Вы отменили процесс оплаты. Попробуйте еще раз, когда будете готовы.</p>
+          <div class="cancelled-actions">
+            <button @click="resetPayment" class="primary-btn">
+              🔄 Попробовать снова
+            </button>
+            <button @click="goBack" class="secondary-btn">
+              🏠 На главную
+            </button>
+          </div>
+        </div>
+
+        <!-- Regular Payment Form (hidden when success/cancelled) -->
+        <div v-if="!paymentSuccess && !paymentCancelled">
+          <!-- Plan Summary -->
+          <div class="plan-summary">
+            <div class="plan-info">
+              <h2>{{ planDetails.label }}</h2>
+              <div class="plan-price">{{ planDetails.formattedPrice }}</div>
+              <ul class="plan-features">
+                <li v-for="feature in planDetails.features" :key="feature">
+                  ✓ {{ feature }}
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Payment Steps -->
+          <div class="payment-steps">
+            <div class="step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
+              <div class="step-number">1</div>
+              <span>Проверка данных</span>
+            </div>
+            <div class="step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
+              <div class="step-number">2</div>
+              <span>Инициация платежа</span>
+            </div>
+            <div class="step" :class="{ active: currentStep >= 3 }">
+              <div class="step-number">3</div>
+              <span>Оплата</span>
+            </div>
+          </div>
+
+          <!-- Form -->
+          <form @submit.prevent="handlePayment" class="payment-form">
+            <!-- User Information -->
+            <div class="form-section">
+              <h3>Информация об аккаунте</h3>
+              <div class="form-group">
+                <label for="userId">ID пользователя</label>
+                <input
+                  id="userId"
+                  type="text"
+                  v-model="form.userId"
+                  placeholder="Ваш ID пользователя"
+                  required
+                  :disabled="loading"
+                />
+                <button 
+                  type="button" 
+                  class="validate-btn"
+                  @click="validateUser"
+                  :disabled="loading || !form.userId.trim()"
+                >
+                  {{ userValidation.loading ? '⏳' : userValidation.valid ? '✅' : '🔍' }}
+                  Проверить
+                </button>
+              </div>
+              
+              <div class="form-group">
+                <label for="name">Имя пользователя</label>
+                <input
+                  id="name"
+                  type="text"
+                  v-model="form.name"
+                  placeholder="Как указано при регистрации"
+                  required
+                  :disabled="loading"
+                />
+              </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="form-section">
+              <h3>Контактная информация</h3>
+              <div class="form-group">
+                <label for="phone">Номер телефона</label>
+                <input
+                  id="phone"
+                  type="tel"
+                  v-model="form.phone"
+                  placeholder="+998 90 123 45 67"
+                  required
+                  :disabled="loading"
+                  @input="formatPhone"
+                />
+              </div>
+            </div>
+
+            <!-- Promo Code -->
+            <div class="form-section">
+              <h3>Промокод (необязательно)</h3>
+              <div class="form-group promo-group">
+                <input
+                  type="text"
+                  v-model="form.promoCode"
+                  placeholder="Введите промокод"
+                  :disabled="loading"
+                  @keyup.enter="applyPromoCode"
+                />
+                <button 
+                  type="button"
+                  class="promo-apply-btn"
+                  @click="applyPromoCode"
+                  :disabled="loading || !form.promoCode.trim()"
+                >
+                  Применить
+                </button>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button 
+              type="submit" 
+              class="payment-submit-btn"
+              :disabled="loading || !isFormValid"
+            >
+              <span v-if="loading" class="loading-text">
+                <div class="spinner-small"></div>
+                {{ loadingText }}
+              </span>
+              <span v-else class="submit-text">
+                💳 Оплатить {{ planDetails.formattedPrice }}
+              </span>
+            </button>
+          </form>
+
+          <!-- Regular Messages -->
+          <div v-if="error && !paymentCancelled" class="message error-message">
+            <span class="message-icon">❌</span>
+            <div>
+              <strong>Ошибка:</strong>
+              <p>{{ error }}</p>
+            </div>
+          </div>
+
+          <div v-if="success && !paymentSuccess" class="message success-message">
+            <span class="message-icon">✅</span>
+            <div>
+              <strong>Успех:</strong>
+              <p>{{ success }}</p>
+            </div>
+          </div>
+
+          <div v-if="promoSuccess" class="message success-message">
+            <span class="message-icon">🎉</span>
+            <div>
+              <strong>Промокод применён!</strong>
+              <p>{{ promoSuccess }}</p>
+            </div>
+          </div>
+
+          <!-- Payment Info -->
+          <div class="payment-info">
+            <h4>💡 Информация об оплате</h4>
+            <ul>
+              <li>💳 Оплата через систему PayMe</li>
+              <li>🔒 Безопасная обработка платежей</li>
+              <li>⚡ Мгновенная активация после оплаты</li>
+              <li>🔄 Возможность возврата в течение 14 дней</li>
             </ul>
           </div>
-        </div>
 
-        <!-- Payment Steps -->
-        <div class="payment-steps">
-          <div class="step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
-            <div class="step-number">1</div>
-            <span>Проверка данных</span>
-          </div>
-          <div class="step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
-            <div class="step-number">2</div>
-            <span>Инициация платежа</span>
-          </div>
-          <div class="step" :class="{ active: currentStep >= 3 }">
-            <div class="step-number">3</div>
-            <span>Оплата</span>
-          </div>
-        </div>
-
-        <!-- Form -->
-        <form @submit.prevent="handlePayment" class="payment-form">
-          <!-- User Information -->
-          <div class="form-section">
-            <h3>Информация об аккаунте</h3>
-            <div class="form-group">
-              <label for="userId">ID пользователя</label>
-              <input
-                id="userId"
-                type="text"
-                v-model="form.userId"
-                placeholder="Ваш ID пользователя"
-                required
-                :disabled="loading"
-              />
-              <button 
-                type="button" 
-                class="validate-btn"
-                @click="validateUser"
-                :disabled="loading || !form.userId.trim()"
-              >
-                {{ userValidation.loading ? '⏳' : userValidation.valid ? '✅' : '🔍' }}
-                Проверить
-              </button>
+          <!-- Transaction Tracking -->
+          <div v-if="transaction" class="transaction-status">
+            <h4>📊 Статус транзакции</h4>
+            <div class="transaction-info">
+              <div class="transaction-row">
+                <span>ID транзакции:</span>
+                <code>{{ transaction.id }}</code>
+              </div>
+              <div class="transaction-row">
+                <span>Статус:</span>
+                <span class="status-badge" :class="getStatusClass(transaction.state)">
+                  {{ getStatusText(transaction.state) }}
+                </span>
+              </div>
+              <div class="transaction-row">
+                <span>Сумма:</span>
+                <span>{{ formatAmount(transaction.amount) }}</span>
+              </div>
             </div>
             
-            <div class="form-group">
-              <label for="name">Имя пользователя</label>
-              <input
-                id="name"
-                type="text"
-                v-model="form.name"
-                placeholder="Как указано при регистрации"
-                required
-                :disabled="loading"
-              />
-            </div>
+            <button 
+              class="check-status-btn"
+              @click="checkTransactionStatus"
+              :disabled="statusLoading"
+            >
+              {{ statusLoading ? '⏳ Проверка...' : '🔄 Обновить статус' }}
+            </button>
           </div>
-
-          <!-- Contact Information -->
-          <div class="form-section">
-            <h3>Контактная информация</h3>
-            <div class="form-group">
-              <label for="phone">Номер телефона</label>
-              <input
-                id="phone"
-                type="tel"
-                v-model="form.phone"
-                placeholder="+998 90 123 45 67"
-                required
-                :disabled="loading"
-                @input="formatPhone"
-              />
-            </div>
-          </div>
-
-          <!-- Promo Code -->
-          <div class="form-section">
-            <h3>Промокод (необязательно)</h3>
-            <div class="form-group promo-group">
-              <input
-                type="text"
-                v-model="form.promoCode"
-                placeholder="Введите промокод"
-                :disabled="loading"
-                @keyup.enter="applyPromoCode"
-              />
-              <button 
-                type="button"
-                class="promo-apply-btn"
-                @click="applyPromoCode"
-                :disabled="loading || !form.promoCode.trim()"
-              >
-                Применить
-              </button>
-            </div>
-          </div>
-
-          <!-- Submit Button -->
-          <button 
-            type="submit" 
-            class="payment-submit-btn"
-            :disabled="loading || !isFormValid"
-          >
-            <span v-if="loading" class="loading-text">
-              <div class="spinner-small"></div>
-              {{ loadingText }}
-            </span>
-            <span v-else class="submit-text">
-              💳 Оплатить {{ planDetails.formattedPrice }}
-            </span>
-          </button>
-        </form>
-
-        <!-- Messages -->
-        <div v-if="error" class="message error-message">
-          <span class="message-icon">❌</span>
-          <div>
-            <strong>Ошибка:</strong>
-            <p>{{ error }}</p>
-          </div>
-        </div>
-
-        <div v-if="success" class="message success-message">
-          <span class="message-icon">✅</span>
-          <div>
-            <strong>Успех:</strong>
-            <p>{{ success }}</p>
-          </div>
-        </div>
-
-        <div v-if="promoSuccess" class="message success-message">
-          <span class="message-icon">🎉</span>
-          <div>
-            <strong>Промокод применён!</strong>
-            <p>{{ promoSuccess }}</p>
-          </div>
-        </div>
-
-        <!-- Payment Info -->
-        <div class="payment-info">
-          <h4>💡 Информация об оплате</h4>
-          <ul>
-            <li>💳 Оплата через систему PayMe</li>
-            <li>🔒 Безопасная обработка платежей</li>
-            <li>⚡ Мгновенная активация после оплаты</li>
-            <li>🔄 Возможность возврата в течение 14 дней</li>
-          </ul>
-        </div>
-
-        <!-- Transaction Tracking -->
-        <div v-if="transaction" class="transaction-status">
-          <h4>📊 Статус транзакции</h4>
-          <div class="transaction-info">
-            <div class="transaction-row">
-              <span>ID транзакции:</span>
-              <code>{{ transaction.id }}</code>
-            </div>
-            <div class="transaction-row">
-              <span>Статус:</span>
-              <span class="status-badge" :class="getStatusClass(transaction.state)">
-                {{ getStatusText(transaction.state) }}
-              </span>
-            </div>
-            <div class="transaction-row">
-              <span>Сумма:</span>
-              <span>{{ formatAmount(transaction.amount) }}</span>
-            </div>
-          </div>
-          
-          <button 
-            class="check-status-btn"
-            @click="checkTransactionStatus"
-            :disabled="statusLoading"
-          >
-            {{ statusLoading ? '⏳ Проверка...' : '🔄 Обновить статус' }}
-          </button>
         </div>
       </div>
     </div>
@@ -229,7 +259,7 @@ import {
   formatPaymentAmount,
   getTransactionStateText,
   handlePaymentError
-} from '@/api/payments';
+} from '@/api';
 
 export default {
   name: 'PaymePayment',
@@ -252,6 +282,8 @@ export default {
       },
       loading: false,
       statusLoading: false,
+      paymentSuccess: false,
+      paymentCancelled: false,
       loadingText: 'Подготовка к оплате...',
       error: '',
       success: '',
@@ -416,15 +448,18 @@ export default {
         if (result.success) {
           this.promoSuccess = result.message;
           
-          // Redirect after successful promo application
+          // Show success state first, then redirect
           setTimeout(() => {
-            const returnTo = this.$route.query.returnTo;
-            if (returnTo) {
-              this.$router.push({ name: 'TopicOverview', params: { id: returnTo } });
-            } else {
-              this.$router.push({ name: 'MainPage' });
-            }
-          }, 3000);
+            this.paymentSuccess = true;
+            setTimeout(() => {
+              const returnTo = this.$route.query.returnTo;
+              if (returnTo) {
+                this.$router.push({ name: 'TopicOverview', params: { id: returnTo } });
+              } else {
+                this.$router.push({ name: 'MainPage' });
+              }
+            }, 3000);
+          }, 1000);
 
         } else {
           this.error = result.error;
@@ -513,9 +548,15 @@ export default {
           
           // Handle completed payment
           if (result.transaction.state === 2) {
+            this.paymentSuccess = true;
             this.success = 'Платёж успешно завершён! Доступ к курсам активирован.';
             
-            // Redirect after successful payment
+            // Update user status in store
+            if (this.$store.getters['user/isAuthenticated']) {
+              this.$store.dispatch('user/checkPendingPayments');
+            }
+            
+            // Show success state for a moment, then redirect
             setTimeout(() => {
               const returnTo = this.$route.query.returnTo;
               if (returnTo) {
@@ -523,7 +564,12 @@ export default {
               } else {
                 this.$router.push({ name: 'MainPage' });
               }
-            }, 3000);
+            }, 4000);
+          } else if (result.transaction.state === -1) {
+            this.paymentCancelled = true;
+            this.error = 'Платёж был отменён. Попробуйте еще раз.';
+          } else if (result.transaction.state === -2) {
+            this.error = 'Платёж был возвращён. Обратитесь в поддержку.';
           }
         } else {
           this.error = result.error;
@@ -560,6 +606,23 @@ export default {
     goBack() {
       if (this.loading) return;
       this.$router.go(-1);
+    },
+
+    goToContent() {
+      const returnTo = this.$route.query.returnTo;
+      if (returnTo) {
+        this.$router.push({ name: 'TopicOverview', params: { id: returnTo } });
+      } else {
+        this.$router.push({ name: 'MainPage' });
+      }
+    },
+
+    resetPayment() {
+      this.paymentCancelled = false;
+      this.paymentSuccess = false;
+      this.transaction = null;
+      this.currentStep = 1;
+      this.clearMessages();
     }
   }
 };
@@ -611,6 +674,96 @@ export default {
   border-radius: 20px;
   padding: 40px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+}
+
+/* Success and Cancelled States */
+.success-state,
+.cancelled-state {
+  background: white;
+  padding: 60px 40px;
+  border-radius: 20px;
+  text-align: center;
+  margin: 20px 0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+}
+
+.success-state {
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+  border: 2px solid #10b981;
+}
+
+.cancelled-state {
+  background: linear-gradient(135deg, #fef2f2 0%, #fef7f7 100%);
+  border: 2px solid #ef4444;
+}
+
+.success-icon,
+.cancelled-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.success-state h2 {
+  color: #065f46;
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.cancelled-state h2 {
+  color: #991b1b;
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.success-state p,
+.cancelled-state p {
+  color: #6b7280;
+  font-size: 1.1rem;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.success-actions,
+.cancelled-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.primary-btn,
+.secondary-btn {
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.primary-btn:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+}
+
+.secondary-btn {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.secondary-btn:hover {
+  background: #e5e7eb;
 }
 
 .plan-summary {
@@ -680,82 +833,11 @@ export default {
   background: #e5e7eb;
   color: #6b7280;
   font-size: 0.9rem;
-  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.3s ease;
 }
-
-.loading-step.active {
-  background: #dbeafe;
-  color: #1e40af;
-  font-weight: 600;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
-  .payme-payment {
-    padding: 10px;
-  }
-  
-  .payment-box {
-    padding: 24px;
-  }
-  
-  .payment-header {
-    flex-direction: column;
-    gap: 16px;
-    text-align: center;
-  }
-  
-  .payment-steps {
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  .payment-steps::before {
-    display: none;
-  }
-  
-  .form-group.promo-group {
-    flex-direction: column;
-  }
-  
-  .validate-btn {
-    position: static;
-    margin-top: 8px;
-    align-self: flex-start;
-  }
-  
-  .plan-features {
-    columns: 1;
-  }
-  
-  .transaction-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-}
-
-@media (max-width: 480px) {
-  .payment-header h1 {
-    font-size: 1.5rem;
-  }
-  
-  .plan-price {
-    font-size: 2rem;
-  }
-  
-  .payment-submit-btn {
-    font-size: 1rem;
-    padding: 16px 24px;
-  }
-}
-
 
 .step.active .step-number {
   background: #667eea;
@@ -772,6 +854,7 @@ export default {
   font-weight: 600;
   color: #6b7280;
   text-align: center;
+  margin-top: 8px;
 }
 
 .step.active span,
@@ -1084,5 +1167,97 @@ export default {
   background: #f3f4f6;
   border-radius: 8px;
   color: #6b7280;
+}
+
+.loading-step.active {
+  background: #dbeafe;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .payme-payment {
+    padding: 10px;
+  }
+  
+  .payment-box {
+    padding: 24px;
+  }
+  
+  .payment-header {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+  
+  .payment-steps {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .payment-steps::before {
+    display: none;
+  }
+  
+  .form-group.promo-group {
+    flex-direction: column;
+  }
+  
+  .validate-btn {
+    position: static;
+    margin-top: 8px;
+    align-self: flex-start;
+  }
+  
+  .plan-features {
+    columns: 1;
+  }
+  
+  .transaction-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .success-actions,
+  .cancelled-actions {
+    flex-direction: column;
+  }
+
+  .success-state,
+  .cancelled-state {
+    padding: 40px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .payment-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .plan-price {
+    font-size: 2rem;
+  }
+  
+  .payment-submit-btn {
+    font-size: 1rem;
+    padding: 16px 24px;
+  }
+
+  .success-state h2,
+  .cancelled-state h2 {
+    font-size: 1.5rem;
+  }
+
+  .success-icon,
+  .cancelled-icon {
+    font-size: 3rem;
+  }
 }
 </style>
