@@ -254,7 +254,6 @@ import {
   initiatePaymePayment, 
   applyPromoCode, 
   checkPaymentStatus, 
-  validateUser,
   getPaymentAmounts,
   formatPaymentAmount,
   getTransactionStateText,
@@ -389,6 +388,7 @@ export default {
       }
     },
 
+    // ✅ FIXED: Direct API call for user validation
     async validateUser() {
       if (!this.form.userId.trim()) {
         this.userValidation = { loading: false, valid: false, user: null };
@@ -399,20 +399,25 @@ export default {
       this.clearMessages();
 
       try {
-        const result = await validateUser(this.form.userId.trim());
+        console.log('🔍 Validating user:', this.form.userId.trim());
+        
+        // Direct API call to validation endpoint
+        const response = await this.$http.get(`/api/payments/validate-user/${this.form.userId.trim()}`);
+        
+        console.log('✅ Validation response:', response.data);
         
         this.userValidation = {
           loading: false,
-          valid: result.valid,
-          user: result.user
+          valid: response.data.valid,
+          user: response.data.user
         };
 
-        if (result.valid && result.user) {
+        if (response.data.valid && response.data.user) {
           // Auto-fill name if we got user data
-          if (result.user.name && !this.form.name) {
-            this.form.name = result.user.name;
+          if (response.data.user.name && !this.form.name) {
+            this.form.name = response.data.user.name;
           }
-          this.success = `✅ Пользователь найден: ${result.user.name}`;
+          this.success = `✅ Пользователь найден: ${response.data.user.name}`;
         } else {
           this.error = 'Пользователь не найден. Проверьте ID.';
         }
@@ -420,7 +425,15 @@ export default {
       } catch (err) {
         console.error('❌ User validation error:', err);
         this.userValidation = { loading: false, valid: false, user: null };
-        this.error = 'Ошибка проверки пользователя';
+        
+        // Better error handling
+        if (err.response?.status === 404) {
+          this.error = 'Пользователь не найден. Проверьте ID.';
+        } else if (err.response?.status >= 500) {
+          this.error = 'Ошибка сервера. Попробуйте позже.';
+        } else {
+          this.error = 'Ошибка проверки пользователя';
+        }
       }
     },
 
@@ -451,6 +464,12 @@ export default {
           // Show success state first, then redirect
           setTimeout(() => {
             this.paymentSuccess = true;
+            
+            // Update store if available
+            if (this.$store.getters['user/isAuthenticated']) {
+              this.$store.dispatch('user/checkPendingPayments');
+            }
+            
             setTimeout(() => {
               const returnTo = this.$route.query.returnTo;
               if (returnTo) {
@@ -627,7 +646,6 @@ export default {
   }
 };
 </script>
-
 <style scoped>
 .payme-payment {
   min-height: 100vh;
