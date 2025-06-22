@@ -259,6 +259,7 @@ import {
   getTransactionStateText,
   handlePaymentError
 } from '@/api';
+import api from '@/api'; // ✅ Import the API instance
 
 export default {
   name: 'PaymePayment',
@@ -307,6 +308,14 @@ export default {
       const amounts = getPaymentAmounts();
       const planData = amounts[this.plan];
       
+      console.log('💰 Plan details debug:', {
+        plan: this.plan,
+        amounts,
+        planData,
+        uzs: planData?.uzs,
+        tiyin: planData?.tiyin
+      });
+      
       const features = {
         start: [
           'Доступ к базовым курсам',
@@ -323,10 +332,44 @@ export default {
         ]
       };
 
+      // ✅ FIXED: Ensure correct amount formatting
+      let formattedPrice;
+      let actualPrice;
+      
+      if (planData) {
+        // Use UZS amount if available, otherwise convert from tiyin
+        actualPrice = planData.uzs || (planData.tiyin ? planData.tiyin / 100 : 0);
+        
+        try {
+          formattedPrice = formatPaymentAmount(actualPrice, 'UZS');
+        } catch (formatError) {
+          console.warn('⚠️ Format error, using fallback:', formatError);
+          // Fallback formatting
+          formattedPrice = new Intl.NumberFormat('uz-UZ', {
+            style: 'currency',
+            currency: 'UZS',
+            minimumFractionDigits: 0
+          }).format(actualPrice);
+        }
+      } else {
+        // Fallback amounts if getPaymentAmounts fails
+        const fallbackAmounts = {
+          start: 26000, // 26,000 UZS
+          pro: 45500    // 45,500 UZS
+        };
+        actualPrice = fallbackAmounts[this.plan] || 0;
+        formattedPrice = `${actualPrice.toLocaleString('uz-UZ')} сум`;
+      }
+      
+      console.log('💰 Final amount:', {
+        actualPrice,
+        formattedPrice
+      });
+
       return {
-        label: planData.label,
-        price: planData.uzs,
-        formattedPrice: formatPaymentAmount(planData.uzs, 'UZS'),
+        label: planData?.label || (this.plan === 'start' ? 'Start' : 'Pro'),
+        price: actualPrice,
+        formattedPrice: formattedPrice,
         features: features[this.plan] || []
       };
     },
@@ -401,8 +444,8 @@ export default {
       try {
         console.log('🔍 Validating user:', this.form.userId.trim());
         
-        // Direct API call to validation endpoint
-        const response = await this.$http.get(`/api/payments/validate-user/${this.form.userId.trim()}`);
+        // ✅ FIXED: Use api instance instead of this.$http
+        const response = await api.get(`/payments/validate-user/${this.form.userId.trim()}`);
         
         console.log('✅ Validation response:', response.data);
         

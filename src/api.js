@@ -338,28 +338,45 @@ export const clearSandboxTransactions = async () => {
   }
 };
 
-// ✅ PAYMENT UTILITY FUNCTIONS
+// ✅ FIXED: PAYMENT UTILITY FUNCTIONS WITH CORRECT AMOUNTS
 export const getPaymentAmounts = () => {
   return {
     start: {
-      tiyin: 260000,
-      uzs: 2600,
+      tiyin: 26000000,  // ✅ 260,000 UZS in tiyin (260000 * 100)
+      uzs: 260000,      // ✅ 260,000 UZS  
       label: 'Start'
     },
     pro: {
-      tiyin: 455000,
-      uzs: 4550,
+      tiyin: 45500000,  // ✅ 455,000 UZS in tiyin (455000 * 100)
+      uzs: 455000,      // ✅ 455,000 UZS
       label: 'Pro'
     }
   };
 };
 
+// ✅ ENHANCED: Format payment amount function with better error handling
 export const formatPaymentAmount = (amount, currency = 'UZS') => {
-  return new Intl.NumberFormat('uz-UZ', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 0
-  }).format(amount);
+  try {
+    // Ensure amount is a number
+    const numAmount = Number(amount);
+    
+    if (isNaN(numAmount)) {
+      console.warn('⚠️ Invalid amount for formatting:', amount);
+      return `${amount} сум`;
+    }
+    
+    return new Intl.NumberFormat('uz-UZ', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(numAmount);
+  } catch (error) {
+    console.warn('⚠️ Currency formatting failed, using fallback:', error);
+    // Fallback formatting
+    const numAmount = Number(amount) || 0;
+    return `${numAmount.toLocaleString('uz-UZ')} сум`;
+  }
 };
 
 export const getTransactionStateText = (state) => {
