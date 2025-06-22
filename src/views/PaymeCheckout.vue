@@ -49,7 +49,6 @@
                 required
               />
             </div>
-            <!-- CVV field removed for Humo/UzCard -->
           </div>
   
           <div class="form-group">
