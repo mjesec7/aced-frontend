@@ -4,7 +4,7 @@
         <!-- PayMe Logo and Header -->
         <div class="payme-header">
           <div class="payme-logo">
-            <img src="/payme-logo.png" alt="PayMe" class="logo" />
+            <img src="../assets/icons/payme_white.png" alt="PayMe" class="logo" />
             <h1>PayMe</h1>
           </div>
           <p class="secure-text">🔒 Secure Payment</p>
@@ -30,6 +30,10 @@
               :disabled="processing"
               required
             />
+            <div class="card-type" v-if="cardType">
+              <img :src="getCardTypeIcon()" :alt="cardType" class="card-icon" />
+              <span>{{ cardType }}</span>
+            </div>
           </div>
   
           <div class="form-row">
@@ -45,17 +49,7 @@
                 required
               />
             </div>
-            <div class="form-group">
-              <label>CVV</label>
-              <input
-                v-model="cvv"
-                type="text"
-                placeholder="123"
-                maxlength="3"
-                :disabled="processing"
-                required
-              />
-            </div>
+            <!-- CVV field removed for Humo/UzCard -->
           </div>
   
           <div class="form-group">
@@ -69,7 +63,7 @@
             />
           </div>
   
-          <!-- SMS Code (simulated) -->
+          <!-- SMS Code for verification -->
           <div v-if="showSmsCode" class="form-group">
             <label>SMS код подтверждения</label>
             <input
@@ -80,7 +74,7 @@
               :disabled="processing"
               required
             />
-            <p class="sms-note">Код отправлен на номер +998 ** *** **12</p>
+            <p class="sms-note">Код отправлен на номер {{ maskedPhoneNumber }}</p>
           </div>
   
           <!-- Submit Button -->
@@ -99,14 +93,18 @@
           </button>
         </form>
   
-        <!-- Test Cards Info -->
-        <div class="test-cards">
-          <h4>🧪 Тестовые карты для разработки:</h4>
-          <div class="test-card" @click="useTestCard('success')">
-            <strong>8600 1234 5678 9012</strong> - Успешная оплата
-          </div>
-          <div class="test-card" @click="useTestCard('fail')">
-            <strong>8600 0000 0000 0001</strong> - Неудачная оплата
+        <!-- Supported Cards Info -->
+        <div class="supported-cards">
+          <h4>💳 Поддерживаемые карты:</h4>
+          <div class="card-types">
+            <div class="card-type-item">
+              <img src="../assets/icons/humo.png" alt="Humo" class="card-logo" />
+              <span>Humo</span>
+            </div>
+            <div class="card-type-item">
+              <img src="../assets/icons/uzcard.png" alt="UzCard" class="card-logo" />
+              <span>UzCard</span>
+            </div>
           </div>
         </div>
   
@@ -114,6 +112,7 @@
         <div class="security-info">
           <p>🔒 Ваши данные защищены SSL шифрованием</p>
           <p>💳 PayMe - лицензированный платежный провайдер</p>
+          <p>🏦 Партнер банков Узбекистана</p>
         </div>
       </div>
     </div>
@@ -126,12 +125,12 @@
       return {
         cardNumber: '',
         expiryDate: '',
-        cvv: '',
         cardHolder: '',
         smsCode: '',
         showSmsCode: false,
         processing: false,
         processingText: 'Обработка платежа...',
+        maskedPhoneNumber: '',
         
         // From URL params
         transactionId: '',
@@ -146,12 +145,22 @@
       planName() {
         return this.plan === 'start' ? 'Start' : 'Pro';
       },
+      cardType() {
+        const cleanNumber = this.cardNumber.replace(/\s/g, '');
+        if (cleanNumber.startsWith('8600')) {
+          return 'Humo';
+        } else if (cleanNumber.startsWith('5614') || cleanNumber.startsWith('6262')) {
+          return 'UzCard';
+        }
+        return null;
+      },
       isFormValid() {
+        const cleanCardNumber = this.cardNumber.replace(/\s/g, '');
         return (
-          this.cardNumber.replace(/\s/g, '').length >= 16 &&
+          cleanCardNumber.length >= 16 &&
           this.expiryDate.length === 5 &&
-          this.cvv.length === 3 &&
           this.cardHolder.trim().length > 0 &&
+          this.cardType !== null &&
           (!this.showSmsCode || this.smsCode.length === 6)
         );
       }
@@ -200,18 +209,13 @@
         this.expiryDate = value;
       },
   
-      useTestCard(type) {
-        if (type === 'success') {
-          this.cardNumber = '8600 1234 5678 9012';
-          this.expiryDate = '12/25';
-          this.cvv = '123';
-          this.cardHolder = 'TEST USER';
-        } else {
-          this.cardNumber = '8600 0000 0000 0001';
-          this.expiryDate = '01/24';
-          this.cvv = '000';
-          this.cardHolder = 'FAIL TEST';
+      getCardTypeIcon() {
+        if (this.cardType === 'Humo') {
+          return '../assets/icons/humo.png';
+        } else if (this.cardType === 'UzCard') {
+          return '../assets/icons/uzcard.png';
         }
+        return '';
       },
   
       async processPayment() {
@@ -221,35 +225,41 @@
         this.processingText = 'Проверка карты...';
   
         try {
-          // Simulate payment processing
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          // Step 1: Initialize payment with PayMe API
+          const initResponse = await fetch('/api/payments/initialize', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              transactionId: this.transactionId,
+              cardNumber: this.cardNumber.replace(/\s/g, ''),
+              expiryDate: this.expiryDate,
+              cardHolder: this.cardHolder,
+              amount: this.amount,
+              userId: this.userId,
+              plan: this.plan
+            })
+          });
   
-          // Check if it's a success or fail test card
-          const isSuccessCard = this.cardNumber.includes('9012');
-          const isFailCard = this.cardNumber.includes('0001');
+          const initData = await initResponse.json();
   
-          if (isFailCard) {
-            throw new Error('Недостаточно средств на карте');
+          if (!initResponse.ok) {
+            throw new Error(initData.message || 'Ошибка инициализации платежа');
           }
   
-          if (!this.showSmsCode && isSuccessCard) {
+          // Step 2: Handle SMS verification if required
+          if (initData.requiresSms) {
             this.processingText = 'Отправка SMS кода...';
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            this.maskedPhoneNumber = initData.maskedPhone || '+998 ** *** **12';
             this.showSmsCode = true;
             this.processing = false;
             return;
           }
   
+          // Step 3: Complete payment if SMS verification
           if (this.showSmsCode) {
-            this.processingText = 'Подтверждение платежа...';
-            await new Promise(resolve => setTimeout(resolve, 2000));
-  
-            // Simulate successful payment
-            if (this.smsCode === '123456' || isSuccessCard) {
-              await this.completePayment();
-            } else {
-              throw new Error('Неверный SMS код');
-            }
+            await this.verifySmsAndComplete();
           }
   
         } catch (error) {
@@ -259,12 +269,43 @@
         }
       },
   
+      async verifySmsAndComplete() {
+        this.processing = true;
+        this.processingText = 'Подтверждение SMS кода...';
+  
+        try {
+          const verifyResponse = await fetch('/api/payments/verify-sms', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              transactionId: this.transactionId,
+              smsCode: this.smsCode
+            })
+          });
+  
+          const verifyData = await verifyResponse.json();
+  
+          if (!verifyResponse.ok) {
+            throw new Error(verifyData.message || 'Неверный SMS код');
+          }
+  
+          this.processingText = 'Завершение платежа...';
+          
+          // Complete the payment
+          await this.completePayment();
+  
+        } catch (error) {
+          console.error('❌ SMS verification error:', error);
+          alert(`❌ Ошибка: ${error.message}`);
+          this.processing = false;
+        }
+      },
+  
       async completePayment() {
         try {
-          this.processingText = 'Завершение платежа...';
-  
-          // Call your backend to complete the payment
-          const response = await fetch('/api/payments/complete-sandbox', {
+          const response = await fetch('/api/payments/complete', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -273,15 +314,18 @@
               transactionId: this.transactionId,
               userId: this.userId,
               plan: this.plan,
+              cardType: this.cardType,
               cardLast4: this.cardNumber.slice(-4)
             })
           });
   
-          if (response.ok) {
+          const data = await response.json();
+  
+          if (response.ok && data.success) {
             // Redirect to success page
             window.location.href = `https://aced.live/payment-success?transaction=${this.transactionId}&plan=${this.plan}`;
           } else {
-            throw new Error('Payment completion failed');
+            throw new Error(data.message || 'Payment completion failed');
           }
   
         } catch (error) {
@@ -376,7 +420,7 @@
   
   .form-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 15px;
   }
   
@@ -404,6 +448,21 @@
     border-color: #1e40af;
     outline: none;
     box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+  }
+  
+  .card-type {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 5px;
+    font-size: 0.9rem;
+    color: #059669;
+    font-weight: 600;
+  }
+  
+  .card-icon {
+    width: 24px;
+    height: 16px;
   }
   
   .sms-note {
@@ -453,32 +512,39 @@
     animation: spin 1s linear infinite;
   }
   
-  .test-cards {
+  .supported-cards {
     margin-top: 30px;
     padding: 20px;
-    background: #fef3c7;
+    background: #f0f9ff;
     border-radius: 12px;
   }
   
-  .test-cards h4 {
+  .supported-cards h4 {
     margin: 0 0 15px 0;
-    color: #92400e;
+    color: #1e40af;
     font-size: 0.9rem;
   }
   
-  .test-card {
-    padding: 10px;
-    background: white;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    transition: all 0.2s ease;
+  .card-types {
+    display: flex;
+    gap: 15px;
   }
   
-  .test-card:hover {
-    background: #f9fafb;
-    transform: translateY(-1px);
+  .card-type-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    background: white;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #374151;
+  }
+  
+  .card-logo {
+    width: 32px;
+    height: 20px;
   }
   
   .security-info {
@@ -503,8 +569,8 @@
       margin: 10px;
     }
     
-    .form-row {
-      grid-template-columns: 1fr;
+    .card-types {
+      flex-direction: column;
     }
   }
   </style>
