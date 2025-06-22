@@ -21,11 +21,15 @@ import VocabularyIn from '@/components/Profile/VocabularyIn.vue';
 
 // ✅ Payment Components
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
+import PaymentFailed from '@/components/Payments/PaymentFailed.vue';
 
 // ✅ Lazy-loaded Views
 const LessonPage = () => import('@/views/LessonPage.vue');
 const TopicFinished = () => import('@/views/TopicFinished.vue');
 const TopicOverview = () => import('@/views/TopicOverview.vue');
+
+// ✅ Payment Views (Lazy-loaded)
+const PaymeCheckout = () => import('@/views/PaymeCheckout.vue');
 
 const routes = [
   {
@@ -207,7 +211,7 @@ const routes = [
     ],
   },
   
-  // ✅ PAYMENT ROUTE - Only one payment route needed
+  // ✅ PAYMENT ROUTES
   {
     path: '/pay/:plan',
     name: 'PaymePayment',
@@ -241,6 +245,159 @@ const routes = [
       });
       
       next();
+    }
+  },
+
+  // ✅ PayMe Checkout Simulation (for development/testing)
+  {
+    path: '/payment/checkout',
+    name: 'PaymeCheckout',
+    component: PaymeCheckout,
+    meta: { 
+      title: 'PayMe Checkout',
+      description: 'Secure payment with PayMe'
+    },
+    beforeEnter: (to, from, next) => {
+      // Validate required query parameters
+      const requiredParams = ['transactionId', 'userId', 'amount', 'plan'];
+      const hasAllParams = requiredParams.every(param => to.query[param]);
+      
+      if (!hasAllParams) {
+        console.error('❌ Missing required payment parameters:', to.query);
+        return next({ 
+          name: 'SettingsPage',
+          query: { error: 'invalid_payment_data' }
+        });
+      }
+      
+      console.log('💳 Payment checkout accessed:', to.query);
+      next();
+    }
+  },
+
+  // ✅ Payment Success Page (shows modal)
+  {
+    path: '/payment-success',
+    name: 'PaymentSuccess',
+    beforeEnter: (to, from, next) => {
+      console.log('✅ Payment success redirect:', to.query);
+      
+      // Update user subscription status
+      if (store.getters['user/isAuthenticated']) {
+        store.dispatch('user/checkPendingPayments').catch(err => {
+          console.warn('⚠️ Failed to update user status:', err);
+        });
+      }
+      
+      // Redirect to main page and show success modal via store
+      store.dispatch('showPaymentSuccessModal', {
+        transactionId: to.query.transaction,
+        plan: to.query.plan,
+        source: to.query.source || 'payme'
+      });
+      
+      next({ name: 'MainPage' });
+    }
+  },
+
+  // ✅ Payment Failed Page
+  {
+    path: '/payment-failed',
+    name: 'PaymentFailed',
+    component: PaymentFailed,
+    meta: { 
+      title: 'Payment Failed'
+    },
+    beforeEnter: (to, from, next) => {
+      console.log('❌ Payment failed page accessed:', to.query);
+      next();
+    }
+  },
+
+  // ✅ PayMe Return URLs (these are what PayMe will redirect to)
+  {
+    path: '/payme/return/success',
+    name: 'PaymeReturnSuccess',
+    beforeEnter: (to, from, next) => {
+      console.log('🔄 PayMe success return:', to.query);
+      
+      // Extract transaction info from PayMe response
+      const transactionId = to.query.transaction || to.query.id;
+      const plan = to.query.plan;
+      
+      // Redirect to your success page with the transaction info
+      next({ 
+        name: 'PaymentSuccess',
+        query: { 
+          transaction: transactionId,
+          plan: plan,
+          source: 'payme'
+        }
+      });
+    }
+  },
+
+  {
+    path: '/payme/return/failure',
+    name: 'PaymeReturnFailure', 
+    beforeEnter: (to, from, next) => {
+      console.log('🔄 PayMe failure return:', to.query);
+      
+      // Extract error info from PayMe response
+      const transactionId = to.query.transaction || to.query.id;
+      const error = to.query.error || 'Payment failed';
+      
+      // Redirect to your failure page
+      next({ 
+        name: 'PaymentFailed',
+        query: { 
+          transaction: transactionId,
+          error: error,
+          source: 'payme'
+        }
+      });
+    }
+  },
+
+  // ✅ Payment Status Check (for webhooks/callbacks)
+  {
+    path: '/payment/status/:transactionId',
+    name: 'PaymentStatus',
+    beforeEnter: async (to, from, next) => {
+      const { transactionId } = to.params;
+      
+      try {
+        // Check payment status via API
+        const response = await fetch(`/api/payments/status/${transactionId}`);
+        const result = await response.json();
+        
+        if (result.success && result.transaction) {
+          if (result.transaction.state === 2) {
+            // Payment successful
+            next({ 
+              name: 'PaymentSuccess',
+              query: { 
+                transaction: transactionId,
+                plan: result.transaction.plan 
+              }
+            });
+          } else {
+            // Payment failed or pending
+            next({ 
+              name: 'PaymentFailed',
+              query: { 
+                transaction: transactionId,
+                error: 'Payment not completed'
+              }
+            });
+          }
+        } else {
+          next({ name: 'PaymentFailed' });
+        }
+      } catch (error) {
+        console.error('❌ Payment status check failed:', error);
+        next({ name: 'PaymentFailed' });
+      }
     }
   },
   
@@ -354,7 +511,7 @@ router.beforeEach(async (to, from, next) => {
   console.log(`🧭 Navigation: ${from.path || '/'} → ${to.path}`);
   
   // Public routes that don't require authentication
-  const publicRoutes = ['HomePage', 'NotFound'];
+  const publicRoutes = ['HomePage', 'NotFound', 'PaymentFailed', 'PaymeCheckout'];
   const isPublic = publicRoutes.includes(to.name);
   
   // Check if route requires authentication
@@ -445,7 +602,7 @@ router.beforeEach(async (to, from, next) => {
     });
   }
 
-  if (to.name && to.name.includes('Payme')) {
+  if (to.name && (to.name.includes('Payme') || to.name.includes('Payment'))) {
     console.log('💳 Payment route navigation:', {
       route: to.name,
       path: to.path,
@@ -486,7 +643,7 @@ router.afterEach((to, from) => {
       from: from.path
     });
   }
-  else if (to.name && to.name.includes('Payme')) {
+  else if (to.name && (to.name.includes('Payme') || to.name.includes('Payment'))) {
     console.log(`💳 Payment navigation completed:`, {
       route: to.name,
       path: to.path,
@@ -574,8 +731,14 @@ router.isReady().then(() => {
   console.log('    /profile/diary (DiaryPage)');
   console.log('    /profile/goal (StudyGoal)');
   
-  console.log('  💳 Payment route:');
+  console.log('  💳 Payment routes:');
   console.log('    /pay/:plan (PaymePayment - requires auth)');
+  console.log('    /payment/checkout (PaymeCheckout)');
+  console.log('    /payment-success (PaymentSuccess redirect)');
+  console.log('    /payment-failed (PaymentFailed)');
+  console.log('    /payme/return/success (PayMe success return)');
+  console.log('    /payme/return/failure (PayMe failure return)');
+  console.log('    /payment/status/:transactionId (Status check)');
   
   console.log('  📚 Learning routes:');
   console.log('    /lesson/:id (LessonPage - requires auth)');
