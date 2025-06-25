@@ -48,7 +48,7 @@
           <div class="plan-info">{{ planName }} Plan</div>
         </div>
   
-        <!-- Debug Info (remove in production) -->
+        <!-- Debug Info (only in development) -->
         <div class="debug-info" v-if="showDebug">
           <h4>Debug Info:</h4>
           <p>Card Number Length: {{ cardNumber.replace(/\s/g, '').length }}</p>
@@ -196,7 +196,7 @@
         processing: false,
         processingText: 'Обработка платежа...',
         maskedPhoneNumber: '',
-        showDebug: process.env.NODE_ENV === 'development', // Show debug info in development
+        showDebug: process.env.NODE_ENV === 'development',
         
         // From URL params
         transactionId: '',
@@ -224,8 +224,7 @@
         } 
         // UzCard prefixes
         else if (cleanNumber.startsWith('5614') || 
-                 cleanNumber.startsWith('6262') ||
-                 cleanNumber.startsWith('8600')) {
+                 cleanNumber.startsWith('6262')) {
           return 'UzCard';
         }
         
@@ -234,25 +233,11 @@
       isFormValid() {
         const cleanCardNumber = this.cardNumber.replace(/\s/g, '');
         
-        // Basic validation requirements
         const cardValid = cleanCardNumber.length >= 16;
         const expiryValid = this.expiryDate.length === 5 && this.expiryDate.includes('/');
         const holderValid = this.cardHolder.trim().length > 0;
         const typeValid = this.cardType !== null;
         const smsValid = !this.showSmsCode || this.smsCode.length === 6;
-        
-        console.log('Form validation:', {
-          cardValid,
-          expiryValid,
-          holderValid,
-          typeValid,
-          smsValid,
-          cardNumber: cleanCardNumber,
-          cardLength: cleanCardNumber.length,
-          expiryDate: this.expiryDate,
-          cardHolder: this.cardHolder,
-          cardType: this.cardType
-        });
         
         return cardValid && expiryValid && holderValid && typeValid && smsValid;
       }
@@ -292,15 +277,10 @@
       },
   
       formatCardNumber() {
-        // Remove all non-digits and limit to 16 digits
         let value = this.cardNumber.replace(/\D/g, '');
         value = value.substring(0, 16);
-        
-        // Add spaces every 4 digits
         value = value.replace(/(.{4})/g, '$1 ').trim();
         this.cardNumber = value;
-        
-        console.log('Card number formatted:', value, 'Length:', value.replace(/\s/g, '').length);
       },
   
       formatExpiryDate() {
@@ -309,8 +289,6 @@
           value = value.substring(0, 2) + '/' + value.substring(2, 4);
         }
         this.expiryDate = value;
-        
-        console.log('Expiry date formatted:', value);
       },
   
       getCardTypeIcon() {
@@ -332,8 +310,8 @@
         this.processingText = 'Проверка карты...';
   
         try {
-          // Step 1: Initialize payment with PayMe API
-          const initResponse = await fetch('/api/payments/initialize', {
+          // Step 1: Initialize payment with backend
+          const initResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/initialize`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -364,10 +342,8 @@
             return;
           }
   
-          // Step 3: Complete payment if SMS verification
-          if (this.showSmsCode) {
-            await this.verifySmsAndComplete();
-          }
+          // Step 3: Complete payment directly if no SMS needed
+          await this.completePayment();
   
         } catch (error) {
           console.error('❌ Payment error:', error);
@@ -381,7 +357,7 @@
         this.processingText = 'Подтверждение SMS кода...';
   
         try {
-          const verifyResponse = await fetch('/api/payments/verify-sms', {
+          const verifyResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/verify-sms`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -399,8 +375,6 @@
           }
   
           this.processingText = 'Завершение платежа...';
-          
-          // Complete the payment
           await this.completePayment();
   
         } catch (error) {
@@ -412,7 +386,9 @@
   
       async completePayment() {
         try {
-          const response = await fetch('/api/payments/complete', {
+          this.processingText = 'Обновление подписки...';
+          
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/complete`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -430,7 +406,15 @@
   
           if (response.ok && data.success) {
             // Redirect to success page
-            window.location.href = `https://aced.live/payment-success?transaction=${this.transactionId}&plan=${this.plan}`;
+            const successUrl = `https://aced.live/payment-success?` + new URLSearchParams({
+              transaction: this.transactionId,
+              plan: this.plan,
+              amount: this.amount,
+              userId: this.userId,
+              status: 'completed'
+            }).toString();
+            
+            window.location.href = successUrl;
           } else {
             throw new Error(data.message || 'Payment completion failed');
           }
@@ -446,7 +430,6 @@
   </script>
   
   <style scoped>
-  /* Previous styles remain the same... */
   .payme-checkout {
     min-height: 100vh;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -608,7 +591,6 @@
     font-weight: 600;
   }
   
-  /* Debug info styles */
   .debug-info {
     background: #fef3c7;
     padding: 15px;
@@ -627,7 +609,6 @@
     color: #78350f;
   }
   
-  /* Validation helper styles */
   .validation-helper {
     background: #fef2f2;
     padding: 15px;
@@ -824,6 +805,16 @@
     
     .card-types {
       flex-direction: column;
+    }
+  
+    .user-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+  
+    .user-row .value {
+      text-align: left;
     }
   }
   </style>
