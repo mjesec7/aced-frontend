@@ -10,6 +10,37 @@
           <p class="secure-text">🔒 Secure Payment</p>
         </div>
   
+        <!-- User Information Section -->
+        <div class="user-info-section">
+          <h3>👤 Информация о пользователе</h3>
+          <div class="user-details">
+            <div class="user-row">
+              <span class="label">Имя:</span>
+              <span class="value">{{ userName || 'Не указано' }}</span>
+            </div>
+            <div class="user-row">
+              <span class="label">ID пользователя:</span>
+              <span class="value user-id">{{ userId }}</span>
+            </div>
+            <div class="user-row">
+              <span class="label">Email:</span>
+              <span class="value">{{ userEmail || 'Не указан' }}</span>
+            </div>
+            <div class="user-row">
+              <span class="label">Текущий план:</span>
+              <span class="value current-plan">{{ currentPlan || 'Free' }}</span>
+            </div>
+            <div class="user-row upgrade-row">
+              <span class="label">Переход на план:</span>
+              <span class="value new-plan">{{ planName }} Plan</span>
+            </div>
+            <div class="user-row">
+              <span class="label">ID транзакции:</span>
+              <span class="value transaction-id">{{ transactionId }}</span>
+            </div>
+          </div>
+        </div>
+  
         <!-- Payment Details -->
         <div class="payment-details">
           <h2>Оплата подписки ACED</h2>
@@ -173,7 +204,8 @@
         amount: 0,
         plan: '',
         userName: '',
-        userEmail: ''
+        userEmail: '',
+        currentPlan: ''
       };
     },
     computed: {
@@ -237,11 +269,16 @@
         this.plan = params.get('plan') || '';
         this.userName = params.get('userName') || '';
         this.userEmail = params.get('userEmail') || '';
+        this.currentPlan = params.get('currentPlan') || 'Free';
         
         console.log('💳 Payment checkout loaded:', {
           transactionId: this.transactionId,
+          userId: this.userId,
           amount: this.amount,
-          plan: this.plan
+          plan: this.plan,
+          userName: this.userName,
+          userEmail: this.userEmail,
+          currentPlan: this.currentPlan
         });
       },
   
@@ -455,6 +492,94 @@
     color: #059669;
     font-weight: 600;
     margin: 0;
+  }
+  
+  /* User Information Section */
+  .user-info-section {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    padding: 24px;
+    border-radius: 16px;
+    margin-bottom: 25px;
+    border: 2px solid #0ea5e9;
+  }
+  
+  .user-info-section h3 {
+    color: #0c4a6e;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 16px 0;
+    text-align: center;
+  }
+  
+  .user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .user-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+  
+  .user-row .label {
+    font-weight: 600;
+    color: #1e40af;
+    min-width: 120px;
+  }
+  
+  .user-row .value {
+    color: #1f2937;
+    font-weight: 500;
+    text-align: right;
+    flex: 1;
+  }
+  
+  .user-id {
+    font-family: 'Courier New', monospace;
+    background: #f1f5f9;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+  }
+  
+  .transaction-id {
+    font-family: 'Courier New', monospace;
+    background: #fef3c7;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #92400e;
+  }
+  
+  .current-plan {
+    background: #fee2e2;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #991b1b;
+    font-weight: 600;
+  }
+  
+  .new-plan {
+    background: #d1fae5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #065f46;
+    font-weight: 600;
+  }
+  
+  .upgrade-row {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border: 1px solid #10b981;
+  }
+  
+  .upgrade-row .label {
+    color: #065f46;
   }
   
   .payment-details {
