@@ -17,6 +17,19 @@
           <div class="plan-info">{{ planName }} Plan</div>
         </div>
   
+        <!-- Debug Info (remove in production) -->
+        <div class="debug-info" v-if="showDebug">
+          <h4>Debug Info:</h4>
+          <p>Card Number Length: {{ cardNumber.replace(/\s/g, '').length }}</p>
+          <p>Expiry Date Length: {{ expiryDate.length }}</p>
+          <p>Card Holder Length: {{ cardHolder.trim().length }}</p>
+          <p>Card Type: {{ cardType }}</p>
+          <p>SMS Code Length: {{ smsCode.length }}</p>
+          <p>Show SMS Code: {{ showSmsCode }}</p>
+          <p>Is Form Valid: {{ isFormValid }}</p>
+          <p>Processing: {{ processing }}</p>
+        </div>
+  
         <!-- Card Form -->
         <form @submit.prevent="processPayment" class="card-form">
           <div class="form-group">
@@ -90,6 +103,28 @@
               💳 Оплатить {{ formatAmount(amount) }}
             </span>
           </button>
+  
+          <!-- Validation Helper -->
+          <div class="validation-helper" v-if="!isFormValid && !processing">
+            <p>Для активации кнопки заполните все поля:</p>
+            <ul>
+              <li :class="{ valid: cardNumber.replace(/\s/g, '').length >= 16 }">
+                Номер карты (минимум 16 цифр)
+              </li>
+              <li :class="{ valid: expiryDate.length === 5 }">
+                Дата истечения (MM/YY)
+              </li>
+              <li :class="{ valid: cardHolder.trim().length > 0 }">
+                Имя держателя карты
+              </li>
+              <li :class="{ valid: cardType !== null }">
+                Поддерживаемый тип карты (Humo/UzCard)
+              </li>
+              <li v-if="showSmsCode" :class="{ valid: smsCode.length === 6 }">
+                SMS код (6 цифр)
+              </li>
+            </ul>
+          </div>
         </form>
   
         <!-- Supported Cards Info -->
@@ -98,11 +133,11 @@
           <div class="card-types">
             <div class="card-type-item">
               <img src="../assets/icons/humo.png" alt="Humo" class="card-logo" />
-              <span>Humo</span>
+              <span>Humo (8600, 9860, 5440, 6440)</span>
             </div>
             <div class="card-type-item">
               <img src="../assets/icons/uzcard.png" alt="UzCard" class="card-logo" />
-              <span>UzCard</span>
+              <span>UzCard (5614, 6262)</span>
             </div>
           </div>
         </div>
@@ -130,6 +165,7 @@
         processing: false,
         processingText: 'Обработка платежа...',
         maskedPhoneNumber: '',
+        showDebug: process.env.NODE_ENV === 'development', // Show debug info in development
         
         // From URL params
         transactionId: '',
@@ -146,22 +182,47 @@
       },
       cardType() {
         const cleanNumber = this.cardNumber.replace(/\s/g, '');
-        if (cleanNumber.startsWith('8600')) {
+        
+        // Humo card prefixes - support all common Humo prefixes
+        if (cleanNumber.startsWith('8600') || 
+            cleanNumber.startsWith('9860') || 
+            cleanNumber.startsWith('5440') ||
+            cleanNumber.startsWith('6440')) {
           return 'Humo';
-        } else if (cleanNumber.startsWith('5614') || cleanNumber.startsWith('6262')) {
+        } 
+        // UzCard prefixes
+        else if (cleanNumber.startsWith('5614') || 
+                 cleanNumber.startsWith('6262') ||
+                 cleanNumber.startsWith('8600')) {
           return 'UzCard';
         }
+        
         return null;
       },
       isFormValid() {
         const cleanCardNumber = this.cardNumber.replace(/\s/g, '');
-        return (
-          cleanCardNumber.length >= 16 &&
-          this.expiryDate.length === 5 &&
-          this.cardHolder.trim().length > 0 &&
-          this.cardType !== null &&
-          (!this.showSmsCode || this.smsCode.length === 6)
-        );
+        
+        // Basic validation requirements
+        const cardValid = cleanCardNumber.length >= 16;
+        const expiryValid = this.expiryDate.length === 5 && this.expiryDate.includes('/');
+        const holderValid = this.cardHolder.trim().length > 0;
+        const typeValid = this.cardType !== null;
+        const smsValid = !this.showSmsCode || this.smsCode.length === 6;
+        
+        console.log('Form validation:', {
+          cardValid,
+          expiryValid,
+          holderValid,
+          typeValid,
+          smsValid,
+          cardNumber: cleanCardNumber,
+          cardLength: cleanCardNumber.length,
+          expiryDate: this.expiryDate,
+          cardHolder: this.cardHolder,
+          cardType: this.cardType
+        });
+        
+        return cardValid && expiryValid && holderValid && typeValid && smsValid;
       }
     },
     mounted() {
@@ -194,10 +255,15 @@
       },
   
       formatCardNumber() {
-        let value = this.cardNumber.replace(/\s/g, '').replace(/\D/g, '');
+        // Remove all non-digits and limit to 16 digits
+        let value = this.cardNumber.replace(/\D/g, '');
         value = value.substring(0, 16);
+        
+        // Add spaces every 4 digits
         value = value.replace(/(.{4})/g, '$1 ').trim();
         this.cardNumber = value;
+        
+        console.log('Card number formatted:', value, 'Length:', value.replace(/\s/g, '').length);
       },
   
       formatExpiryDate() {
@@ -206,6 +272,8 @@
           value = value.substring(0, 2) + '/' + value.substring(2, 4);
         }
         this.expiryDate = value;
+        
+        console.log('Expiry date formatted:', value);
       },
   
       getCardTypeIcon() {
@@ -218,7 +286,10 @@
       },
   
       async processPayment() {
-        if (!this.isFormValid) return;
+        if (!this.isFormValid) {
+          alert('Пожалуйста, заполните все поля корректно');
+          return;
+        }
   
         this.processing = true;
         this.processingText = 'Проверка карты...';
@@ -338,6 +409,7 @@
   </script>
   
   <style scoped>
+  /* Previous styles remain the same... */
   .payme-checkout {
     min-height: 100vh;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -409,6 +481,63 @@
   .plan-info {
     color: #6b7280;
     font-weight: 600;
+  }
+  
+  /* Debug info styles */
+  .debug-info {
+    background: #fef3c7;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+  }
+  
+  .debug-info h4 {
+    margin: 0 0 10px 0;
+    color: #92400e;
+  }
+  
+  .debug-info p {
+    margin: 5px 0;
+    color: #78350f;
+  }
+  
+  /* Validation helper styles */
+  .validation-helper {
+    background: #fef2f2;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+    font-size: 0.9rem;
+  }
+  
+  .validation-helper p {
+    color: #991b1b;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  
+  .validation-helper ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .validation-helper li {
+    padding: 5px 0;
+    color: #dc2626;
+  }
+  
+  .validation-helper li.valid {
+    color: #059669;
+  }
+  
+  .validation-helper li::before {
+    content: '❌ ';
+  }
+  
+  .validation-helper li.valid::before {
+    content: '✅ ';
   }
   
   .card-form {
