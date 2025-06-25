@@ -169,7 +169,6 @@ export const applyPromoCode = async (userId, plan, promoCode) => {
   }
 };
 
-// ✅ PAYME PAYMENT INITIATION
 export const initiatePaymePayment = async (userId, plan, additionalData = {}) => {
   try {
     const payload = {
@@ -180,6 +179,7 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
     
     console.log('🚀 Initiating PayMe payment:', payload);
     
+    // ✅ FIXED: Use POST method, not GET
     const response = await api.post('/payments/initiate-payme', payload);
     
     return {
@@ -195,6 +195,56 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
       success: false,
       error: error.response?.data?.message || error.message || 'Ошибка инициации платежа',
       details: error.response?.data
+    };
+  }
+};
+
+// ✅ FIXED: User validation function with correct HTTP method
+export const validateUser = async (userId) => {
+  try {
+    console.log('👤 Validating user for payment:', userId);
+    
+    // ✅ FIXED: Use GET method for validation
+    const response = await api.get(`/payments/validate-user/${userId}`);
+    
+    return {
+      success: true,
+      valid: response.data.valid,
+      user: response.data.user
+    };
+  } catch (error) {
+    console.error('❌ User validation error:', error);
+    return {
+      success: false,
+      valid: false,
+      error: error.response?.data?.message || error.message
+    };
+  }
+};
+
+// ✅ FIXED: Payment status check with correct HTTP method
+export const checkPaymentStatus = async (transactionId, userId = null) => {
+  try {
+    const url = userId 
+      ? `/payments/status/${transactionId}/${userId}`
+      : `/payments/status/${transactionId}`;
+    
+    console.log('🔍 Checking payment status:', { transactionId, userId, url });
+    
+    // ✅ Use GET method for status check
+    const response = await api.get(url);
+    
+    return {
+      success: true,
+      data: response.data,
+      transaction: response.data.transaction,
+      status: response.data.transaction?.state
+    };
+  } catch (error) {
+    console.error('❌ Payment status check error:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Ошибка проверки статуса платежа'
     };
   }
 };
@@ -338,7 +388,9 @@ export const clearSandboxTransactions = async () => {
   }
 };
 
-// ✅ FIXED: PAYMENT UTILITY FUNCTIONS WITH CORRECT AMOUNTS
+// Fix in your src/api.js - Replace the getPaymentAmounts function
+
+// ✅ FIXED: Payment amounts with correct tiyin values
 export const getPaymentAmounts = () => {
   return {
     start: {
@@ -352,6 +404,40 @@ export const getPaymentAmounts = () => {
       label: 'Pro'
     }
   };
+};
+
+// ✅ FIXED: Format payment amount function
+export const formatPaymentAmount = (amount, currency = 'UZS') => {
+  try {
+    // Ensure amount is a number
+    const numAmount = Number(amount);
+    
+    if (isNaN(numAmount)) {
+      console.warn('⚠️ Invalid amount for formatting:', amount);
+      return `${amount} сум`;
+    }
+    
+    // For UZS, format as currency
+    if (currency === 'UZS') {
+      return new Intl.NumberFormat('uz-UZ', {
+        style: 'decimal',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(numAmount) + ' сум';
+    }
+    
+    return new Intl.NumberFormat('uz-UZ', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(numAmount);
+  } catch (error) {
+    console.warn('⚠️ Currency formatting failed, using fallback:', error);
+    // Fallback formatting
+    const numAmount = Number(amount) || 0;
+    return `${numAmount.toLocaleString('uz-UZ')} сум`;
+  }
 };
 
 // ✅ ENHANCED: Format payment amount function with better error handling

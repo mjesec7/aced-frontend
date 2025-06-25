@@ -535,63 +535,67 @@ export default {
       }
     },
 
-    async handlePayment() {
-      if (!this.isFormValid) {
-        this.error = 'Пожалуйста, заполните все поля корректно';
-        return;
+    // In your PaymePayment.vue, fix the API call in the handlePayment method
+
+async handlePayment() {
+  if (!this.isFormValid) {
+    this.error = 'Пожалуйста, заполните все поля корректно';
+    return;
+  }
+
+  this.loading = true;
+  this.currentStep = 2;
+  this.currentLoadingStep = 0;
+  this.clearMessages();
+
+  try {
+    // Step 1: Validate data
+    this.loadingText = 'Проверка данных...';
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    this.currentLoadingStep = 1;
+
+    // Step 2: Create transaction - FIXED API CALL
+    this.loadingText = 'Создание транзакции...';
+    
+    // ✅ FIXED: Use correct HTTP method and API function
+    const result = await initiatePaymePayment(
+      this.form.userId.trim(),
+      this.plan,
+      {
+        name: this.form.name.trim(),
+        phone: this.form.phone.trim()
       }
+    );
 
-      this.loading = true;
-      this.currentStep = 2;
-      this.currentLoadingStep = 0;
-      this.clearMessages();
+    if (!result.success) {
+      throw new Error(result.error);
+    }
 
-      try {
-        // Step 1: Validate data
-        this.loadingText = 'Проверка данных...';
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        this.currentLoadingStep = 1;
+    this.transaction = result.transaction;
+    this.currentLoadingStep = 2;
 
-        // Step 2: Create transaction
-        this.loadingText = 'Создание транзакции...';
-        const result = await initiatePaymePayment(
-          this.form.userId.trim(),
-          this.plan,
-          {
-            name: this.form.name.trim(),
-            phone: this.form.phone.trim()
-          }
-        );
+    // Step 3: Redirect to PayMe
+    this.loadingText = 'Перенаправление в PayMe...';
+    this.currentStep = 3;
+    
+    if (result.paymentUrl) {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      this.currentLoadingStep = 3;
+      
+      // Redirect to PayMe
+      window.location.href = result.paymentUrl;
+    } else {
+      throw new Error('Не получена ссылка для оплаты');
+    }
 
-        if (!result.success) {
-          throw new Error(result.error);
-        }
-
-        this.transaction = result.transaction;
-        this.currentLoadingStep = 2;
-
-        // Step 3: Redirect to PayMe
-        this.loadingText = 'Перенаправление в PayMe...';
-        this.currentStep = 3;
-        
-        if (result.paymentUrl) {
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          this.currentLoadingStep = 3;
-          
-          // Redirect to PayMe
-          window.location.href = result.paymentUrl;
-        } else {
-          throw new Error('Не получена ссылка для оплаты');
-        }
-
-      } catch (err) {
-        console.error('❌ Payment initiation error:', err);
-        this.error = handlePaymentError(err, 'Инициация платежа');
-        this.currentStep = 1;
-      } finally {
-        this.loading = false;
-      }
-    },
+  } catch (err) {
+    console.error('❌ Payment initiation error:', err);
+    this.error = handlePaymentError(err, 'Инициация платежа');
+    this.currentStep = 1;
+  } finally {
+    this.loading = false;
+  }
+},
 
     async checkTransactionStatus() {
       if (!this.transaction?.id) return;
