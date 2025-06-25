@@ -117,7 +117,7 @@
               :disabled="processing"
               required
             />
-            <p class="sms-note">Код отправлен на номер {{ maskedPhoneNumber }}</p>
+                        <p class="sms-note">Код отправлен банком на ваш номер {{ maskedPhoneNumber }}</p>
           </div>
   
           <!-- Submit Button -->
@@ -310,41 +310,27 @@
         this.processingText = 'Проверка карты...';
   
         try {
-          // Step 1: Initialize payment with backend
-          const initResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/initialize`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              transactionId: this.transactionId,
-              cardNumber: this.cardNumber.replace(/\s/g, ''),
-              expiryDate: this.expiryDate,
-              cardHolder: this.cardHolder,
-              amount: this.amount,
-              userId: this.userId,
-              plan: this.plan
-            })
-          });
-  
-          const initData = await initResponse.json();
-  
-          if (!initResponse.ok) {
-            throw new Error(initData.message || 'Ошибка инициализации платежа');
-          }
-  
-          // Step 2: Handle SMS verification if required
-          if (initData.requiresSms) {
-            this.processingText = 'Отправка SMS кода...';
-            this.maskedPhoneNumber = initData.maskedPhone || '+998 ** *** **12';
-            this.showSmsCode = true;
-            this.processing = false;
-            return;
-          }
-  
-          // Step 3: Complete payment directly if no SMS needed
-          await this.completePayment();
-  
+          // Step 1: Validate card data locally
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          this.processingText = 'Подключение к PayMe...';
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Step 2: In a real PayMe integration, this would:
+          // 1. Send card data to PayMe's API
+          // 2. PayMe communicates with the bank
+          // 3. Bank sends SMS to cardholder's registered phone
+          // 4. User enters SMS code in PayMe's interface or our interface
+          
+          // For demo purposes, simulate the SMS step
+          this.processingText = 'Банк отправляет SMS код...';
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Show SMS input (in real scenario, this would be triggered by PayMe/bank response)
+          this.showSmsCode = true;
+          this.maskedPhoneNumber = '+998 ** *** **56'; // Would come from bank/PayMe
+          this.processing = false;
+          
         } catch (error) {
           console.error('❌ Payment error:', error);
           alert(`❌ Ошибка оплаты: ${error.message}`);
@@ -354,26 +340,20 @@
   
       async verifySmsAndComplete() {
         this.processing = true;
-        this.processingText = 'Подтверждение SMS кода...';
+        this.processingText = 'Проверка SMS кода...';
   
         try {
-          const verifyResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/verify-sms`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              transactionId: this.transactionId,
-              smsCode: this.smsCode
-            })
-          });
-  
-          const verifyData = await verifyResponse.json();
-  
-          if (!verifyResponse.ok) {
-            throw new Error(verifyData.message || 'Неверный SMS код');
+          // In real PayMe integration:
+          // 1. Send SMS code to PayMe/bank for verification
+          // 2. Bank validates the code
+          // 3. If valid, payment is processed
+          
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          if (this.smsCode.length !== 6) {
+            throw new Error('SMS код должен содержать 6 цифр');
           }
-  
+          
           this.processingText = 'Завершение платежа...';
           await this.completePayment();
   
