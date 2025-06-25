@@ -1,204 +1,113 @@
 <template>
     <div class="payme-checkout">
       <div class="checkout-container">
-        <!-- PayMe Logo and Header -->
-        <div class="payme-header">
+        <!-- Loading State -->
+        <div v-if="loading" class="loading-state">
           <div class="payme-logo">
             <img src="../assets/icons/payme_white.png" alt="PayMe" class="logo" />
             <h1>PayMe</h1>
           </div>
-          <p class="secure-text">🔒 Secure Payment</p>
-        </div>
-  
-        <!-- User Information Section -->
-        <div class="user-info-section">
-          <h3>👤 Информация о пользователе</h3>
-          <div class="user-details">
-            <div class="user-row">
-              <span class="label">Имя:</span>
-              <span class="value">{{ userName || 'Не указано' }}</span>
-            </div>
-            <div class="user-row">
-              <span class="label">ID пользователя:</span>
-              <span class="value user-id">{{ userId }}</span>
-            </div>
-            <div class="user-row">
-              <span class="label">Email:</span>
-              <span class="value">{{ userEmail || 'Не указан' }}</span>
-            </div>
-            <div class="user-row">
-              <span class="label">Текущий план:</span>
-              <span class="value current-plan">{{ currentPlan || 'Free' }}</span>
-            </div>
-            <div class="user-row upgrade-row">
-              <span class="label">Переход на план:</span>
-              <span class="value new-plan">{{ planName }} Plan</span>
-            </div>
-            <div class="user-row">
-              <span class="label">ID транзакции:</span>
-              <span class="value transaction-id">{{ transactionId }}</span>
-            </div>
+          <div class="spinner"></div>
+          <h2>Подготовка к оплате...</h2>
+          <p>Перенаправляем вас в PayMe для безопасной оплаты</p>
+          
+          <!-- User Info While Loading -->
+          <div class="user-info-loading" v-if="userName">
+            <p><strong>Пользователь:</strong> {{ userName }}</p>
+            <p><strong>План:</strong> {{ planName }} ({{ formatAmount(amount) }})</p>
           </div>
         </div>
   
-        <!-- Payment Details -->
-        <div class="payment-details">
-          <h2>Оплата подписки ACED</h2>
-          <div class="amount">{{ formatAmount(amount) }}</div>
-          <div class="plan-info">{{ planName }} Plan</div>
+        <!-- Error State -->
+        <div v-else-if="error" class="error-state">
+          <div class="error-icon">❌</div>
+          <h2>Ошибка инициации платежа</h2>
+          <p>{{ error }}</p>
+          <button @click="goBack" class="back-btn">Назад</button>
+          <button @click="retryPayment" class="retry-btn">Попробовать снова</button>
         </div>
   
-        <!-- Debug Info (only in development) -->
-        <div class="debug-info" v-if="showDebug">
-          <h4>Debug Info:</h4>
-          <p>Card Number Length: {{ cardNumber.replace(/\s/g, '').length }}</p>
-          <p>Expiry Date Length: {{ expiryDate.length }}</p>
-          <p>Card Holder Length: {{ cardHolder.trim().length }}</p>
-          <p>Card Type: {{ cardType }}</p>
-          <p>SMS Code Length: {{ smsCode.length }}</p>
-          <p>Show SMS Code: {{ showSmsCode }}</p>
-          <p>Is Form Valid: {{ isFormValid }}</p>
-          <p>Processing: {{ processing }}</p>
-        </div>
-  
-        <!-- Card Form -->
-        <form @submit.prevent="processPayment" class="card-form">
-          <div class="form-group">
-            <label>Номер карты</label>
-            <input
-              v-model="cardNumber"
-              type="text"
-              placeholder="8600 1234 5678 9012"
-              maxlength="19"
-              @input="formatCardNumber"
-              :disabled="processing"
-              required
-            />
-            <div class="card-type" v-if="cardType">
-              <img :src="getCardTypeIcon()" :alt="cardType" class="card-icon" />
-              <span>{{ cardType }}</span>
+        <!-- Success/Redirect State -->
+        <div v-else class="redirect-state">
+          <div class="payme-logo">
+            <img src="../assets/icons/payme_white.png" alt="PayMe" class="logo" />
+            <h1>PayMe</h1>
+          </div>
+          
+          <h2>Переход к оплате</h2>
+          <p>Вы будете перенаправлены на официальную страницу PayMe</p>
+          
+          <!-- User Information -->
+          <div class="user-info-section">
+            <h3>👤 Информация о платеже</h3>
+            <div class="user-details">
+              <div class="user-row">
+                <span class="label">Имя:</span>
+                <span class="value">{{ userName || 'Не указано' }}</span>
+              </div>
+              <div class="user-row">
+                <span class="label">ID пользователя:</span>
+                <span class="value user-id">{{ userId }}</span>
+              </div>
+              <div class="user-row">
+                <span class="label">Email:</span>
+                <span class="value">{{ userEmail || 'Не указан' }}</span>
+              </div>
+              <div class="user-row">
+                <span class="label">Текущий план:</span>
+                <span class="value current-plan">{{ currentPlan || 'Free' }}</span>
+              </div>
+              <div class="user-row upgrade-row">
+                <span class="label">Переход на план:</span>
+                <span class="value new-plan">{{ planName }}</span>
+              </div>
+              <div class="user-row">
+                <span class="label">Сумма к оплате:</span>
+                <span class="value amount">{{ formatAmount(amount) }}</span>
+              </div>
+              <div class="user-row">
+                <span class="label">ID транзакции:</span>
+                <span class="value transaction-id">{{ transactionId }}</span>
+              </div>
             </div>
           </div>
   
-          <div class="form-row">
-            <div class="form-group">
-              <label>MM/YY</label>
-              <input
-                v-model="expiryDate"
-                type="text"
-                placeholder="12/25"
-                maxlength="5"
-                @input="formatExpiryDate"
-                :disabled="processing"
-                required
-              />
-            </div>
-          </div>
-  
-          <div class="form-group">
-            <label>Имя держателя карты</label>
-            <input
-              v-model="cardHolder"
-              type="text"
-              placeholder="JOHN SMITH"
-              :disabled="processing"
-              required
-            />
-          </div>
-  
-          <!-- SMS Code for verification -->
-          <div v-if="showSmsCode" class="form-group">
-            <label>SMS код подтверждения</label>
-            <input
-              v-model="smsCode"
-              type="text"
-              placeholder="123456"
-              maxlength="6"
-              :disabled="processing"
-              required
-            />
-                        <p class="sms-note">Код отправлен банком на ваш номер {{ maskedPhoneNumber }}</p>
-          </div>
-  
-          <!-- Submit Button -->
-          <button 
-            type="submit" 
-            class="pay-button"
-            :disabled="processing || !isFormValid"
-          >
-            <span v-if="processing" class="loading">
-              <div class="spinner"></div>
-              {{ processingText }}
-            </span>
-            <span v-else>
-              💳 Оплатить {{ formatAmount(amount) }}
-            </span>
-          </button>
-  
-          <!-- Validation Helper -->
-          <div class="validation-helper" v-if="!isFormValid && !processing">
-            <p>Для активации кнопки заполните все поля:</p>
+          <!-- PayMe Info -->
+          <div class="payme-info">
+            <p>🔒 На сайте PayMe вы сможете:</p>
             <ul>
-              <li :class="{ valid: cardNumber.replace(/\s/g, '').length >= 16 }">
-                Номер карты (минимум 16 цифр)
-              </li>
-              <li :class="{ valid: expiryDate.length === 5 }">
-                Дата истечения (MM/YY)
-              </li>
-              <li :class="{ valid: cardHolder.trim().length > 0 }">
-                Имя держателя карты
-              </li>
-              <li :class="{ valid: cardType !== null }">
-                Поддерживаемый тип карты (Humo/UzCard)
-              </li>
-              <li v-if="showSmsCode" :class="{ valid: smsCode.length === 6 }">
-                SMS код (6 цифр)
-              </li>
+              <li>Безопасно ввести данные карты Humo или UzCard</li>
+              <li>Получить SMS код от вашего банка</li>
+              <li>Завершить платеж с полной защитой данных</li>
             </ul>
           </div>
-        </form>
   
-        <!-- Supported Cards Info -->
-        <div class="supported-cards">
-          <h4>💳 Поддерживаемые карты:</h4>
-          <div class="card-types">
-            <div class="card-type-item">
-              <img src="../assets/icons/humo.png" alt="Humo" class="card-logo" />
-              <span>Humo (8600, 9860, 5440, 6440)</span>
-            </div>
-            <div class="card-type-item">
-              <img src="../assets/icons/uzcard.png" alt="UzCard" class="card-logo" />
-              <span>UzCard (5614, 6262)</span>
-            </div>
+          <button @click="redirectToPayMe" class="payme-btn">
+            💳 Перейти к PayMe
+          </button>
+          
+          <div class="redirect-note">
+            <p><small>Автоматическое перенаправление через {{ countdown }} секунд...</small></p>
           </div>
-        </div>
-  
-        <!-- Security Info -->
-        <div class="security-info">
-          <p>🔒 Ваши данные защищены SSL шифрованием</p>
-          <p>💳 PayMe - лицензированный платежный провайдер</p>
-          <p>🏦 Партнер банков Узбекистана</p>
         </div>
       </div>
     </div>
   </template>
   
   <script>
+  import { initiatePaymePayment } from '@/api';
+  
   export default {
     name: 'PaymeCheckout',
     data() {
       return {
-        cardNumber: '',
-        expiryDate: '',
-        cardHolder: '',
-        smsCode: '',
-        showSmsCode: false,
-        processing: false,
-        processingText: 'Обработка платежа...',
-        maskedPhoneNumber: '',
-        showDebug: process.env.NODE_ENV === 'development',
+        loading: true,
+        error: '',
+        paymentUrl: '',
+        countdown: 5,
+        countdownInterval: null,
         
-        // From URL params
+        // Payment data
         transactionId: '',
         userId: '',
         amount: 0,
@@ -210,40 +119,17 @@
     },
     computed: {
       planName() {
-        return this.plan === 'start' ? 'Start' : 'Pro';
-      },
-      cardType() {
-        const cleanNumber = this.cardNumber.replace(/\s/g, '');
-        
-        // Humo card prefixes - support all common Humo prefixes
-        if (cleanNumber.startsWith('8600') || 
-            cleanNumber.startsWith('9860') || 
-            cleanNumber.startsWith('5440') ||
-            cleanNumber.startsWith('6440')) {
-          return 'Humo';
-        } 
-        // UzCard prefixes
-        else if (cleanNumber.startsWith('5614') || 
-                 cleanNumber.startsWith('6262')) {
-          return 'UzCard';
-        }
-        
-        return null;
-      },
-      isFormValid() {
-        const cleanCardNumber = this.cardNumber.replace(/\s/g, '');
-        
-        const cardValid = cleanCardNumber.length >= 16;
-        const expiryValid = this.expiryDate.length === 5 && this.expiryDate.includes('/');
-        const holderValid = this.cardHolder.trim().length > 0;
-        const typeValid = this.cardType !== null;
-        const smsValid = !this.showSmsCode || this.smsCode.length === 6;
-        
-        return cardValid && expiryValid && holderValid && typeValid && smsValid;
+        return this.plan === 'start' ? 'Start Plan' : 'Pro Plan';
       }
     },
-    mounted() {
+    async mounted() {
       this.loadPaymentData();
+      await this.initializePayment();
+    },
+    beforeUnmount() {
+      if (this.countdownInterval) {
+        clearInterval(this.countdownInterval);
+      }
     },
     methods: {
       loadPaymentData() {
@@ -256,15 +142,74 @@
         this.userEmail = params.get('userEmail') || '';
         this.currentPlan = params.get('currentPlan') || 'Free';
         
-        console.log('💳 Payment checkout loaded:', {
+        console.log('💳 Payment data loaded:', {
           transactionId: this.transactionId,
           userId: this.userId,
           amount: this.amount,
           plan: this.plan,
-          userName: this.userName,
-          userEmail: this.userEmail,
-          currentPlan: this.currentPlan
+          userName: this.userName
         });
+      },
+  
+      async initializePayment() {
+        try {
+          if (!this.userId || !this.plan) {
+            throw new Error('Missing user ID or plan information');
+          }
+  
+          console.log('🚀 Initializing PayMe payment redirect');
+  
+          // Call backend to get PayMe redirect URL
+          const result = await initiatePaymePayment(this.userId, this.plan, {
+            name: this.userName,
+            email: this.userEmail
+          });
+  
+          if (result.success) {
+            this.paymentUrl = result.paymentUrl;
+            this.transactionId = result.transaction?.id || this.transactionId;
+            this.loading = false;
+  
+            // Start countdown for auto-redirect
+            this.startCountdown();
+          } else {
+            throw new Error(result.error || 'Failed to initialize payment');
+          }
+  
+        } catch (error) {
+          console.error('❌ Payment initialization error:', error);
+          this.error = error.message || 'Failed to initialize payment';
+          this.loading = false;
+        }
+      },
+  
+      startCountdown() {
+        this.countdownInterval = setInterval(() => {
+          this.countdown--;
+          if (this.countdown <= 0) {
+            this.redirectToPayMe();
+          }
+        }, 1000);
+      },
+  
+      redirectToPayMe() {
+        if (this.countdownInterval) {
+          clearInterval(this.countdownInterval);
+        }
+  
+        if (this.paymentUrl) {
+          console.log('🔗 Redirecting to PayMe:', this.paymentUrl);
+          window.location.href = this.paymentUrl;
+        } else {
+          this.error = 'Payment URL not available';
+        }
+      },
+  
+      async retryPayment() {
+        this.error = '';
+        this.loading = true;
+        this.countdown = 5;
+        await this.initializePayment();
       },
   
       formatAmount(amount) {
@@ -276,134 +221,8 @@
         }).format(uzs);
       },
   
-      formatCardNumber() {
-        let value = this.cardNumber.replace(/\D/g, '');
-        value = value.substring(0, 16);
-        value = value.replace(/(.{4})/g, '$1 ').trim();
-        this.cardNumber = value;
-      },
-  
-      formatExpiryDate() {
-        let value = this.expiryDate.replace(/\D/g, '');
-        if (value.length >= 2) {
-          value = value.substring(0, 2) + '/' + value.substring(2, 4);
-        }
-        this.expiryDate = value;
-      },
-  
-      getCardTypeIcon() {
-        if (this.cardType === 'Humo') {
-          return '../assets/icons/humo.png';
-        } else if (this.cardType === 'UzCard') {
-          return '../assets/icons/uzcard.png';
-        }
-        return '';
-      },
-  
-      async processPayment() {
-        if (!this.isFormValid) {
-          alert('Пожалуйста, заполните все поля корректно');
-          return;
-        }
-  
-        this.processing = true;
-        this.processingText = 'Проверка карты...';
-  
-        try {
-          // Step 1: Validate card data locally
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          
-          this.processingText = 'Подключение к PayMe...';
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Step 2: In a real PayMe integration, this would:
-          // 1. Send card data to PayMe's API
-          // 2. PayMe communicates with the bank
-          // 3. Bank sends SMS to cardholder's registered phone
-          // 4. User enters SMS code in PayMe's interface or our interface
-          
-          // For demo purposes, simulate the SMS step
-          this.processingText = 'Банк отправляет SMS код...';
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          // Show SMS input (in real scenario, this would be triggered by PayMe/bank response)
-          this.showSmsCode = true;
-          this.maskedPhoneNumber = '+998 ** *** **56'; // Would come from bank/PayMe
-          this.processing = false;
-          
-        } catch (error) {
-          console.error('❌ Payment error:', error);
-          alert(`❌ Ошибка оплаты: ${error.message}`);
-          this.processing = false;
-        }
-      },
-  
-      async verifySmsAndComplete() {
-        this.processing = true;
-        this.processingText = 'Проверка SMS кода...';
-  
-        try {
-          // In real PayMe integration:
-          // 1. Send SMS code to PayMe/bank for verification
-          // 2. Bank validates the code
-          // 3. If valid, payment is processed
-          
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          if (this.smsCode.length !== 6) {
-            throw new Error('SMS код должен содержать 6 цифр');
-          }
-          
-          this.processingText = 'Завершение платежа...';
-          await this.completePayment();
-  
-        } catch (error) {
-          console.error('❌ SMS verification error:', error);
-          alert(`❌ Ошибка: ${error.message}`);
-          this.processing = false;
-        }
-      },
-  
-      async completePayment() {
-        try {
-          this.processingText = 'Обновление подписки...';
-          
-          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/complete`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              transactionId: this.transactionId,
-              userId: this.userId,
-              plan: this.plan,
-              cardType: this.cardType,
-              cardLast4: this.cardNumber.slice(-4)
-            })
-          });
-  
-          const data = await response.json();
-  
-          if (response.ok && data.success) {
-            // Redirect to success page
-            const successUrl = `https://aced.live/payment-success?` + new URLSearchParams({
-              transaction: this.transactionId,
-              plan: this.plan,
-              amount: this.amount,
-              userId: this.userId,
-              status: 'completed'
-            }).toString();
-            
-            window.location.href = successUrl;
-          } else {
-            throw new Error(data.message || 'Payment completion failed');
-          }
-  
-        } catch (error) {
-          console.error('❌ Payment completion error:', error);
-          alert('❌ Ошибка завершения платежа');
-          this.processing = false;
-        }
+      goBack() {
+        this.$router.go(-1);
       }
     }
   };
@@ -414,46 +233,72 @@
     min-height: 100vh;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-family: 'Inter', sans-serif;
   }
   
   .checkout-container {
-    max-width: 500px;
-    margin: 0 auto;
     background: white;
     border-radius: 20px;
     padding: 40px;
+    max-width: 600px;
+    text-align: center;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
   }
   
-  .payme-header {
-    text-align: center;
-    margin-bottom: 30px;
+  .loading-state, .error-state, .redirect-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
   }
   
   .payme-logo {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    margin-bottom: 10px;
+    gap: 15px;
+    margin-bottom: 20px;
   }
   
   .logo {
-    width: 40px;
-    height: 40px;
+    width: 50px;
+    height: 50px;
   }
   
   .payme-logo h1 {
     color: #1e40af;
-    font-size: 2rem;
+    font-size: 2.5rem;
     font-weight: 800;
     margin: 0;
   }
   
-  .secure-text {
-    color: #059669;
-    font-weight: 600;
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #e5e7eb;
+    border-left: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  .error-icon {
+    font-size: 4rem;
+  }
+  
+  h2 {
+    color: #1f2937;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  
+  p {
+    color: #6b7280;
+    font-size: 1.1rem;
+    line-height: 1.6;
     margin: 0;
   }
   
@@ -462,8 +307,9 @@
     background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
     padding: 24px;
     border-radius: 16px;
-    margin-bottom: 25px;
+    margin: 25px 0;
     border: 2px solid #0ea5e9;
+    text-align: left;
   }
   
   .user-info-section h3 {
@@ -493,7 +339,7 @@
   .user-row .label {
     font-weight: 600;
     color: #1e40af;
-    min-width: 120px;
+    min-width: 140px;
   }
   
   .user-row .value {
@@ -536,6 +382,15 @@
     font-weight: 600;
   }
   
+  .amount {
+    background: #dbeafe;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #1e40af;
+    font-weight: 700;
+    font-size: 1rem;
+  }
+  
   .upgrade-row {
     background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
     border: 1px solid #10b981;
@@ -545,231 +400,97 @@
     color: #065f46;
   }
   
-  .payment-details {
-    text-align: center;
-    margin-bottom: 30px;
-    padding: 20px;
-    background: #f8fafc;
+  .user-info-loading {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 16px;
     border-radius: 12px;
-  }
-  
-  .payment-details h2 {
-    font-size: 1.2rem;
     color: #374151;
-    margin-bottom: 10px;
   }
   
-  .amount {
-    font-size: 2rem;
-    font-weight: 800;
-    color: #1e40af;
-    margin-bottom: 5px;
+  .user-info-loading p {
+    margin: 8px 0;
+    color: #4b5563;
   }
   
-  .plan-info {
-    color: #6b7280;
+  .payme-info {
+    background: #f0f9ff;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: left;
+    margin: 20px 0;
+  }
+  
+  .payme-info p {
+    color: #0c4a6e;
     font-weight: 600;
+    margin-bottom: 12px;
   }
   
-  .debug-info {
-    background: #fef3c7;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    font-size: 0.85rem;
-  }
-  
-  .debug-info h4 {
-    margin: 0 0 10px 0;
-    color: #92400e;
-  }
-  
-  .debug-info p {
-    margin: 5px 0;
-    color: #78350f;
-  }
-  
-  .validation-helper {
-    background: #fef2f2;
-    padding: 15px;
-    border-radius: 8px;
-    margin-top: 15px;
-    font-size: 0.9rem;
-  }
-  
-  .validation-helper p {
-    color: #991b1b;
-    font-weight: 600;
-    margin-bottom: 10px;
-  }
-  
-  .validation-helper ul {
+  .payme-info ul {
     list-style: none;
     padding: 0;
     margin: 0;
   }
   
-  .validation-helper li {
-    padding: 5px 0;
-    color: #dc2626;
+  .payme-info li {
+    color: #075985;
+    padding: 4px 0;
+    position: relative;
+    padding-left: 20px;
   }
   
-  .validation-helper li.valid {
-    color: #059669;
+  .payme-info li::before {
+    content: '✓';
+    color: #0ea5e9;
+    font-weight: bold;
+    position: absolute;
+    left: 0;
   }
   
-  .validation-helper li::before {
-    content: '❌ ';
-  }
-  
-  .validation-helper li.valid::before {
-    content: '✅ ';
-  }
-  
-  .card-form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-  
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .form-group label {
-    font-weight: 600;
-    color: #374151;
-    font-size: 0.9rem;
-  }
-  
-  .form-group input {
-    padding: 14px 16px;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    font-size: 1rem;
-    transition: border-color 0.2s ease;
-  }
-  
-  .form-group input:focus {
-    border-color: #1e40af;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
-  }
-  
-  .card-type {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 5px;
-    font-size: 0.9rem;
-    color: #059669;
-    font-weight: 600;
-  }
-  
-  .card-icon {
-    width: 24px;
-    height: 16px;
-  }
-  
-  .sms-note {
-    font-size: 0.85rem;
-    color: #059669;
-    margin: 0;
-  }
-  
-  .pay-button {
-    padding: 18px 32px;
-    background: linear-gradient(135deg, #1e40af, #1e3a8a);
-    color: white;
+  .payme-btn, .back-btn, .retry-btn {
+    padding: 16px 32px;
     border: none;
     border-radius: 12px;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
-    margin-top: 20px;
+    transition: all 0.2s ease;
+    margin: 0 8px;
   }
   
-  .pay-button:hover:not(:disabled) {
+  .payme-btn {
+    background: linear-gradient(135deg, #1e40af, #1e3a8a);
+    color: white;
+  }
+  
+  .payme-btn:hover {
     background: linear-gradient(135deg, #1e3a8a, #1e40af);
     transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(30, 64, 175, 0.3);
+    box-shadow: 0 8px 25px rgba(30, 64, 175, 0.3);
   }
   
-  .pay-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
+  .retry-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
   }
   
-  .loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
+  .retry-btn:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-2px);
   }
   
-  .spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-left: 2px solid white;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-  
-  .supported-cards {
-    margin-top: 30px;
-    padding: 20px;
-    background: #f0f9ff;
-    border-radius: 12px;
-  }
-  
-  .supported-cards h4 {
-    margin: 0 0 15px 0;
-    color: #1e40af;
-    font-size: 0.9rem;
-  }
-  
-  .card-types {
-    display: flex;
-    gap: 15px;
-  }
-  
-  .card-type-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 15px;
-    background: white;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 600;
+  .back-btn {
+    background: #f3f4f6;
     color: #374151;
   }
   
-  .card-logo {
-    width: 32px;
-    height: 20px;
+  .back-btn:hover {
+    background: #e5e7eb;
   }
   
-  .security-info {
+  .redirect-note {
     margin-top: 20px;
-    text-align: center;
-  }
-  
-  .security-info p {
-    font-size: 0.85rem;
     color: #6b7280;
-    margin: 5px 0;
   }
   
   @keyframes spin {
@@ -783,8 +504,8 @@
       margin: 10px;
     }
     
-    .card-types {
-      flex-direction: column;
+    .payme-logo h1 {
+      font-size: 2rem;
     }
   
     .user-row {
@@ -795,6 +516,11 @@
   
     .user-row .value {
       text-align: left;
+    }
+  
+    .payme-btn, .back-btn, .retry-btn {
+      margin: 8px 0;
+      width: 100%;
     }
   }
   </style>

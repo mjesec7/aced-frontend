@@ -169,7 +169,7 @@ export const applyPromoCode = async (userId, plan, promoCode) => {
   }
 };
 
-// ✅ PAYME PAYMENT INITIATION
+// ✅ PAYME PAYMENT INITIATION - Updated for Direct PayMe Redirect
 export const initiatePaymePayment = async (userId, plan, additionalData = {}) => {
   try {
     const payload = {
@@ -178,17 +178,24 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
       ...additionalData
     };
     
-    console.log('🚀 Initiating PayMe payment:', payload);
+    console.log('🚀 Initiating PayMe payment redirect:', payload);
     
     const response = await api.post('/payments/initiate-payme', payload);
     
-    return {
-      success: true,
-      data: response.data,
-      paymentUrl: response.data.paymentUrl,
-      transaction: response.data.transaction,
-      metadata: response.data.metadata
-    };
+    if (response.data.success) {
+      return {
+        success: true,
+        data: response.data,
+        paymentUrl: response.data.paymentUrl, // This will be PayMe's official URL
+        transaction: response.data.transaction,
+        metadata: response.data.metadata
+      };
+    } else {
+      return {
+        success: false,
+        error: response.data.message || 'Payment initiation failed'
+      };
+    }
   } catch (error) {
     console.error('❌ Payment initiation error:', error);
     return {
