@@ -22,6 +22,8 @@ import VocabularyIn from '@/components/Profile/VocabularyIn.vue';
 // ✅ Payment Components
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
 import PaymentFailed from '@/components/Payments/PaymentFailed.vue';
+import PaymentSuccess from '@/components/Payments/PaymentSuccess.vue';
+import PaymentReturn from '@/components/Payments/PaymentReturn.vue';
 
 // ✅ Lazy-loaded Views
 const LessonPage = () => import('@/views/LessonPage.vue');
@@ -275,7 +277,7 @@ const routes = [
     }
   },
 
-  // ✅ Payment Success Page (shows modal)
+  // ✅ Payment Success Page (shows modal or page)
   {
     path: '/payment-success',
     name: 'PaymentSuccess',
@@ -289,14 +291,26 @@ const routes = [
         });
       }
       
-      // Redirect to main page and show success modal via store
-      store.dispatch('showPaymentSuccessModal', {
-        transactionId: to.query.transaction,
-        plan: to.query.plan,
-        source: to.query.source || 'payme'
-      });
-      
-      next({ name: 'MainPage' });
+      // Check if we should show modal or page
+      if (to.query.showModal === 'true' || !to.query.noModal) {
+        // Store transaction data for modal
+        store.dispatch('payment/showSuccessModal', {
+          transactionId: to.query.transaction || to.query.id,
+          plan: to.query.plan,
+          amount: to.query.amount,
+          source: to.query.source || 'payme'
+        });
+        
+        // Redirect to main page (modal will show there)
+        next({ name: 'MainPage' });
+      } else {
+        // Show full success page
+        next();
+      }
+    },
+    component: PaymentSuccess,
+    meta: { 
+      title: 'Платеж успешен'
     }
   },
 
@@ -314,6 +328,16 @@ const routes = [
     }
   },
 
+  // ✅ Payment Return Handler
+  {
+    path: '/payment/return',
+    name: 'PaymentReturn',
+    component: PaymentReturn,
+    meta: {
+      title: 'Обработка платежа'
+    }
+  },
+
   // ✅ PayMe Return URLs (these are what PayMe will redirect to)
   {
     path: '/payme/return/success',
@@ -325,14 +349,10 @@ const routes = [
       const transactionId = to.query.transaction || to.query.id;
       const plan = to.query.plan;
       
-      // Redirect to your success page with the transaction info
+      // Redirect to payment return handler
       next({ 
-        name: 'PaymentSuccess',
-        query: { 
-          transaction: transactionId,
-          plan: plan,
-          source: 'payme'
-        }
+        name: 'PaymentReturn',
+        query: to.query
       });
     }
   },
@@ -368,7 +388,7 @@ const routes = [
       
       try {
         // Check payment status via API
-        const response = await fetch(`/api/payments/status/${transactionId}`);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payments/status/${transactionId}`);
         const result = await response.json();
         
         if (result.success && result.transaction) {
@@ -511,7 +531,7 @@ router.beforeEach(async (to, from, next) => {
   console.log(`🧭 Navigation: ${from.path || '/'} → ${to.path}`);
   
   // Public routes that don't require authentication
-  const publicRoutes = ['HomePage', 'NotFound', 'PaymentFailed', 'PaymeCheckout'];
+  const publicRoutes = ['HomePage', 'NotFound', 'PaymentFailed', 'PaymeCheckout', 'PaymentSuccess', 'PaymentReturn'];
   const isPublic = publicRoutes.includes(to.name);
   
   // Check if route requires authentication
@@ -734,8 +754,9 @@ router.isReady().then(() => {
   console.log('  💳 Payment routes:');
   console.log('    /pay/:plan (PaymePayment - requires auth)');
   console.log('    /payment/checkout (PaymeCheckout)');
-  console.log('    /payment-success (PaymentSuccess redirect)');
+  console.log('    /payment-success (PaymentSuccess)');
   console.log('    /payment-failed (PaymentFailed)');
+  console.log('    /payment/return (PaymentReturn)');
   console.log('    /payme/return/success (PayMe success return)');
   console.log('    /payme/return/failure (PayMe failure return)');
   console.log('    /payment/status/:transactionId (Status check)');
