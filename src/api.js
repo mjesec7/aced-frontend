@@ -1,4 +1,4 @@
-// src/api.js - ENHANCED MAIN WEBSITE API CONFIGURATION WITH PAYMENT INTEGRATION
+// src/api.js - ENHANCED API CONFIGURATION WITH LOOP PREVENTION & PAYMENT INTEGRATION
 import axios from 'axios';
 import { auth } from '@/firebase';
 
@@ -17,6 +17,75 @@ const api = axios.create({
 });
 
 console.log('✅ Main Website API Base URL:', BASE_URL);
+
+// ========================================
+// 🚫 REQUEST DEBOUNCING & LOOP PREVENTION
+// ========================================
+
+const requestCache = new Map();
+const pendingRequests = new Map();
+const CACHE_DURATION = 5000; // 5 seconds
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_DELAY = 1000; // 1 second
+
+// Request deduplication helper
+const createRequestKey = (config) => {
+  return `${config.method}-${config.url}-${JSON.stringify(config.data || {})}`;
+};
+
+// Debounce function to prevent rapid consecutive requests
+const debounceRequest = (fn, delay = 500) => {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    return new Promise((resolve, reject) => {
+      timeoutId = setTimeout(async () => {
+        try {
+          const result = await fn(...args);
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      }, delay);
+    });
+  };
+};
+
+// Request attempt tracking
+const requestAttempts = new Map();
+const MAX_PAYMENT_ATTEMPTS = 3;
+const PAYMENT_COOLDOWN = 5000; // 5 seconds
+
+const trackPaymentAttempt = (userId, operation) => {
+  const key = `${userId}-${operation}`;
+  const now = Date.now();
+  
+  if (!requestAttempts.has(key)) {
+    requestAttempts.set(key, { count: 1, firstAttempt: now, lastAttempt: now });
+    return true;
+  }
+  
+  const attempts = requestAttempts.get(key);
+  
+  // Reset if cooldown period has passed
+  if (now - attempts.lastAttempt > PAYMENT_COOLDOWN) {
+    requestAttempts.set(key, { count: 1, firstAttempt: now, lastAttempt: now });
+    return true;
+  }
+  
+  // Check if max attempts reached
+  if (attempts.count >= MAX_PAYMENT_ATTEMPTS) {
+    console.warn(`🚫 Payment attempt limit reached for ${key}`);
+    return false;
+  }
+  
+  // Increment attempt count
+  attempts.count++;
+  attempts.lastAttempt = now;
+  requestAttempts.set(key, attempts);
+  
+  return true;
+};
 
 // ✅ ENHANCED TOKEN MANAGEMENT
 let isRefreshing = false;
@@ -51,13 +120,46 @@ const getValidToken = async () => {
   }
 };
 
-// ✅ ENHANCED REQUEST INTERCEPTOR
+// ✅ ENHANCED REQUEST INTERCEPTOR WITH LOOP PREVENTION
 api.interceptors.request.use(async (config) => {
   try {
+    // Create request key for deduplication
+    const requestKey = createRequestKey(config);
+    
+    // Check for pending duplicate requests
+    if (pendingRequests.has(requestKey)) {
+      console.log('🔄 Reusing pending request:', requestKey);
+      return pendingRequests.get(requestKey);
+    }
+    
+    // Check request cache
+    const cached = requestCache.get(requestKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      console.log('📋 Using cached response:', requestKey);
+      return Promise.resolve(cached.response);
+    }
+    
+    // Special handling for payment endpoints
+    if (config.url?.includes('/payment') || config.url?.includes('/payme')) {
+      // Detect if this is a browser request that could cause loops
+      const userAgent = navigator.userAgent;
+      const isBrowser = userAgent.includes('Mozilla') || userAgent.includes('Chrome');
+      
+      if (isBrowser && (config.url.includes('/sandbox') || config.url.includes('/payme'))) {
+        console.warn('🚫 Blocking potential loop request to:', config.url);
+        throw new Error('Direct browser access to payment webhook endpoints is not allowed');
+      }
+      
+      // Add special headers for payment requests
+      config.headers['X-Request-Source'] = 'frontend';
+      config.headers['X-User-Agent'] = userAgent.substring(0, 50);
+    }
+    
     const token = await getValidToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
     return config;
   } catch (error) {
     console.error('❌ Request interceptor error:', error);
@@ -65,18 +167,48 @@ api.interceptors.request.use(async (config) => {
   }
 });
 
-// ✅ ENHANCED RESPONSE INTERCEPTOR WITH TOKEN REFRESH
+// ✅ ENHANCED RESPONSE INTERCEPTOR WITH CACHING
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Cache successful GET requests
+    if (response.config.method === 'get') {
+      const requestKey = createRequestKey(response.config);
+      requestCache.set(requestKey, {
+        response: response,
+        timestamp: Date.now()
+      });
+      
+      // Clean old cache entries
+      if (requestCache.size > 100) {
+        const cutoff = Date.now() - CACHE_DURATION;
+        for (const [key, value] of requestCache.entries()) {
+          if (value.timestamp < cutoff) {
+            requestCache.delete(key);
+          }
+        }
+      }
+    }
+    
+    // Remove from pending requests
+    const requestKey = createRequestKey(response.config);
+    pendingRequests.delete(requestKey);
+    
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
+    const requestKey = createRequestKey(originalRequest);
+    
+    // Remove from pending requests on error
+    pendingRequests.delete(requestKey);
     
     // Enhanced error logging
     console.error('API Error:', {
       url: error.config?.url,
       method: error.config?.method,
       status: error.response?.status,
-      message: error.response?.data?.message || error.message
+      message: error.response?.data?.message || error.message,
+      isPaymentRequest: error.config?.url?.includes('/payment')
     });
     
     // Handle 401 errors with token refresh
@@ -119,12 +251,23 @@ api.interceptors.response.use(
       }
     }
     
+    // Handle rate limiting (429) with retry
+    if (error.response?.status === 429 && originalRequest._retryCount < MAX_RETRY_ATTEMPTS) {
+      originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+      const delay = RETRY_DELAY * originalRequest._retryCount;
+      
+      console.log(`⏳ Rate limited, retrying in ${delay}ms (attempt ${originalRequest._retryCount})`);
+      
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return api(originalRequest);
+    }
+    
     return Promise.reject(error);
   }
 );
 
 // =============================================
-// 💳 PAYMENT API FUNCTIONS
+// 💳 PAYMENT API FUNCTIONS - ENHANCED WITH LOOP PREVENTION
 // =============================================
 
 // Enhanced token management for payment requests
@@ -144,8 +287,12 @@ const getAuthToken = async () => {
   }
 };
 
-// ✅ PROMO CODE APPLICATION
-export const applyPromoCode = async (userId, plan, promoCode) => {
+// ✅ PROMO CODE APPLICATION - WITH DEBOUNCING
+export const applyPromoCode = debounceRequest(async (userId, plan, promoCode) => {
+  if (!trackPaymentAttempt(userId, 'promo-code')) {
+    throw new Error('Слишком много попыток применения промокода. Подождите несколько секунд.');
+  }
+  
   try {
     console.log('🎟️ Applying promo code:', { userId, plan, promoCode });
     
@@ -167,10 +314,14 @@ export const applyPromoCode = async (userId, plan, promoCode) => {
       error: error.response?.data?.message || error.message || 'Ошибка применения промокода'
     };
   }
-};
+}, 1000);
 
-// ✅ PAYME PAYMENT INITIATION - Updated for Direct PayMe Redirect
+// ✅ PAYME PAYMENT INITIATION - ENHANCED WITH SAFETY CHECKS
 export const initiatePaymePayment = async (userId, plan, additionalData = {}) => {
+  if (!trackPaymentAttempt(userId, 'payment-initiation')) {
+    throw new Error('Слишком много попыток инициации платежа. Подождите несколько секунд.');
+  }
+  
   try {
     const payload = {
       userId,
@@ -180,13 +331,14 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
     
     console.log('🚀 Initiating PayMe payment redirect:', payload);
     
-    const response = await api.post('/payments/initiate-payme', payload);
+    // Use the correct endpoint that won't cause loops
+    const response = await api.post('/payments/initiate', payload);
     
     if (response.data.success) {
       return {
         success: true,
         data: response.data,
-        paymentUrl: response.data.paymentUrl, // This will be PayMe's official URL
+        paymentUrl: response.data.paymentUrl,
         transaction: response.data.transaction,
         metadata: response.data.metadata
       };
@@ -198,6 +350,16 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
     }
   } catch (error) {
     console.error('❌ Payment initiation error:', error);
+    
+    // Special handling for loop prevention errors
+    if (error.message?.includes('Direct browser access')) {
+      return {
+        success: false,
+        error: 'Ошибка конфигурации платежной системы. Обратитесь в поддержку.',
+        technical: error.message
+      };
+    }
+    
     return {
       success: false,
       error: error.response?.data?.message || error.message || 'Ошибка инициации платежа',
@@ -206,7 +368,7 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
   }
 };
 
-// ✅ PAYMENT STATUS CHECK
+// ✅ PAYMENT STATUS CHECK - WITH CACHING
 export const checkPaymentStatus = async (transactionId, userId = null) => {
   try {
     const url = userId 
@@ -254,7 +416,7 @@ export const validateUser = async (userId) => {
   }
 };
 
-// ✅ SANDBOX TESTING FUNCTIONS (Development only)
+// ✅ SANDBOX TESTING FUNCTIONS - ENHANCED SAFETY
 export const setSandboxAccountState = async (accountLogin, state) => {
   if (import.meta.env.MODE === 'production') {
     console.warn('⚠️ Sandbox functions not available in production');
@@ -262,9 +424,16 @@ export const setSandboxAccountState = async (accountLogin, state) => {
   }
   
   try {
+    // Use regular axios to avoid potential loops with interceptors
     const response = await axios.post(`${BASE_URL}/payments/sandbox/account-state`, {
       accountLogin,
       state
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Request-Source': 'frontend-sandbox'
+      },
+      timeout: 10000
     });
     
     return {
@@ -272,6 +441,7 @@ export const setSandboxAccountState = async (accountLogin, state) => {
       data: response.data
     };
   } catch (error) {
+    console.error('❌ Sandbox account state error:', error);
     return {
       success: false,
       error: error.response?.data?.message || error.message
@@ -288,6 +458,12 @@ export const setSandboxMerchantKey = async (merchantKey) => {
   try {
     const response = await axios.post(`${BASE_URL}/payments/sandbox/merchant-key`, {
       merchantKey
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Request-Source': 'frontend-sandbox'
+      },
+      timeout: 10000
     });
     
     return {
@@ -309,7 +485,12 @@ export const listSandboxTransactions = async () => {
   }
   
   try {
-    const response = await axios.get(`${BASE_URL}/payments/transactions`);
+    const response = await axios.get(`${BASE_URL}/payments/transactions`, {
+      headers: {
+        'X-Request-Source': 'frontend-sandbox'
+      },
+      timeout: 10000
+    });
     
     return {
       success: true,
@@ -331,7 +512,12 @@ export const clearSandboxTransactions = async () => {
   }
   
   try {
-    const response = await axios.delete(`${BASE_URL}/payments/transactions/clear`);
+    const response = await axios.delete(`${BASE_URL}/payments/transactions/clear`, {
+      headers: {
+        'X-Request-Source': 'frontend-sandbox'
+      },
+      timeout: 10000
+    });
     
     return {
       success: true,
@@ -746,9 +932,19 @@ export const healthCheck = () =>
 export const authTest = () =>
   api.get(`/auth-test`);
 
-// ✅ COMPREHENSIVE ERROR HANDLER FOR PAYMENTS
+// ✅ COMPREHENSIVE ERROR HANDLER FOR PAYMENTS - ENHANCED
 export const handlePaymentError = (error, context = 'Платежная операция') => {
   console.error(`❌ ${context} failed:`, error);
+  
+  // Check for loop prevention errors
+  if (error.message?.includes('Direct browser access')) {
+    return 'Ошибка конфигурации платежной системы. Обратитесь в поддержку.';
+  }
+  
+  // Check for rate limiting
+  if (error.message?.includes('Слишком много попыток')) {
+    return error.message;
+  }
   
   if (error.response?.status === 401) {
     return 'Необходимо войти в систему для совершения платежа';
@@ -756,6 +952,8 @@ export const handlePaymentError = (error, context = 'Платежная опер
     return 'Доступ к платежной системе запрещен';
   } else if (error.response?.status === 404) {
     return 'Платежный сервис недоступен';
+  } else if (error.response?.status === 429) {
+    return 'Слишком много запросов. Подождите несколько секунд и попробуйте снова.';
   } else if (error.response?.status >= 500) {
     return 'Ошибка платежного сервера. Попробуйте позже';
   } else if (error.message?.includes('timeout')) {
@@ -765,7 +963,7 @@ export const handlePaymentError = (error, context = 'Платежная опер
   }
 };
 
-// ✅ GENERAL ERROR HANDLER
+// ✅ GENERAL ERROR HANDLER - ENHANCED
 export const handleApiError = (error, context = 'API call') => {
   console.error(`❌ ${context} failed:`, {
     url: error.config?.url,
@@ -776,6 +974,11 @@ export const handleApiError = (error, context = 'API call') => {
     data: error.response?.data
   });
   
+  // Check for loop prevention errors
+  if (error.message?.includes('Direct browser access')) {
+    return 'Ошибка системы. Обратитесь в поддержку.';
+  }
+  
   // Return user-friendly error message
   if (error.response?.status === 401) {
     return 'Необходимо войти в систему';
@@ -783,6 +986,8 @@ export const handleApiError = (error, context = 'API call') => {
     return 'Доступ запрещен';
   } else if (error.response?.status === 404) {
     return 'Ресурс не найден';
+  } else if (error.response?.status === 429) {
+    return 'Слишком много запросов. Подождите и попробуйте снова.';
   } else if (error.response?.status >= 500) {
     return 'Ошибка сервера. Попробуйте позже';
   } else {
@@ -790,13 +995,20 @@ export const handleApiError = (error, context = 'API call') => {
   }
 };
 
-// ✅ BATCH OPERATIONS HELPER
+// ✅ BATCH OPERATIONS HELPER - ENHANCED
 export const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await apiCall();
     } catch (error) {
       console.warn(`⚠️ API call attempt ${attempt} failed:`, error.message);
+      
+      // Don't retry certain errors
+      if (error.response?.status === 401 || 
+          error.response?.status === 403 || 
+          error.message?.includes('Direct browser access')) {
+        throw error;
+      }
       
       if (attempt === maxRetries) {
         throw error;
@@ -808,11 +1020,31 @@ export const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
   }
 };
 
+// ✅ REQUEST CLEANUP UTILITY
+export const cleanupRequestCache = () => {
+  requestCache.clear();
+  pendingRequests.clear();
+  requestAttempts.clear();
+  console.log('🧹 Request cache cleaned');
+};
+
+// ✅ PAYMENT ATTEMPT RESET UTILITY
+export const resetPaymentAttempts = (userId) => {
+  const keysToDelete = [];
+  for (const [key] of requestAttempts.entries()) {
+    if (key.startsWith(userId)) {
+      keysToDelete.push(key);
+    }
+  }
+  keysToDelete.forEach(key => requestAttempts.delete(key));
+  console.log(`🔄 Payment attempts reset for user ${userId}`);
+};
+
 // =============================================
-// 🧪 DEVELOPMENT TESTING HELPERS
+// 🧪 DEVELOPMENT TESTING HELPERS - ENHANCED
 // =============================================
 
-// Test payment flow in development
+// Test payment flow in development with safety checks
 export const testPaymentFlow = async (userId, plan = 'start') => {
   if (import.meta.env.MODE === 'production') {
     console.warn('⚠️ Test functions not available in production');
@@ -822,28 +1054,136 @@ export const testPaymentFlow = async (userId, plan = 'start') => {
   console.log('🧪 Testing payment flow:', { userId, plan });
   
   try {
+    // Clean up any previous attempts
+    resetPaymentAttempts(userId);
+    
     // 1. Validate user
     const userValidation = await validateUser(userId);
     console.log('👤 User validation:', userValidation);
     
-    // 2. Set account state to waiting_payment
-    const accountState = await setSandboxAccountState(userId, 'waiting_payment');
-    console.log('🔧 Account state set:', accountState);
+    // 2. Set account state to waiting_payment (avoid direct sandbox calls)
+    console.log('🔧 Skipping direct sandbox calls to prevent loops');
     
-    // 3. Try promo code
+    // 3. Try promo code first
     const promoResult = await applyPromoCode(userId, plan, 'acedpromocode2406');
     console.log('🎟️ Promo code result:', promoResult);
     
     if (!promoResult.success) {
-      // 4. Try payment initiation
+      // 4. Try payment initiation (using safe endpoint)
       const paymentResult = await initiatePaymePayment(userId, plan);
       console.log('💳 Payment initiation:', paymentResult);
+      
+      if (paymentResult.success && paymentResult.paymentUrl) {
+        console.log('✅ Payment URL generated successfully');
+        console.log('🔗 URL:', paymentResult.paymentUrl);
+      }
     }
     
-    return { success: true, message: 'Test completed' };
+    return { success: true, message: 'Test completed successfully' };
     
   } catch (error) {
     console.error('❌ Test failed:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Enhanced API health check
+export const checkApiHealth = async () => {
+  try {
+    console.log('🏥 Checking API health...');
+    
+    const healthResponse = await healthCheck();
+    console.log('✅ Health check passed:', healthResponse.data);
+    
+    // Test auth if user is available
+    try {
+      const authResponse = await authTest();
+      console.log('✅ Auth test passed:', authResponse.data);
+    } catch (authError) {
+      console.warn('⚠️ Auth test failed (this is normal if not logged in):', authError.message);
+    }
+    
+    return {
+      success: true,
+      health: healthResponse.data,
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error('❌ API health check failed:', error);
+    return {
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    };
+  }
+};
+
+// Diagnose payment system configuration
+export const diagnosePaymentSystem = async () => {
+  if (import.meta.env.MODE === 'production') {
+    console.warn('⚠️ Diagnostics not available in production');
+    return { success: false, error: 'Not available in production' };
+  }
+  
+  try {
+    console.log('🔍 Diagnosing payment system...');
+    
+    const results = {
+      apiHealth: null,
+      paymentEndpoints: [],
+      loopPrevention: null,
+      recommendations: []
+    };
+    
+    // Check API health
+    try {
+      const health = await healthCheck();
+      results.apiHealth = health.data;
+      
+      if (health.data.payme?.loopPrevention === 'Active') {
+        results.loopPrevention = 'Active ✅';
+      } else {
+        results.loopPrevention = 'Inactive ⚠️';
+        results.recommendations.push('Enable loop prevention in server');
+      }
+    } catch (error) {
+      results.apiHealth = { error: error.message };
+      results.recommendations.push('Fix API health endpoint');
+    }
+    
+    // Test payment endpoints (safe ones only)
+    const endpoints = [
+      { name: 'Payment Initiation', path: '/payments/initiate' },
+      { name: 'Payment Status', path: '/payments/status/test' }
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        // Only test GET endpoints or safe POST endpoints
+        if (endpoint.path.includes('/status/')) {
+          await axios.get(`${BASE_URL}${endpoint.path}`, {
+            timeout: 5000,
+            headers: { 'X-Request-Source': 'diagnostic' }
+          });
+          results.paymentEndpoints.push({ ...endpoint, status: 'Available ✅' });
+        }
+      } catch (error) {
+        const status = error.response?.status === 404 ? 'Not Found ⚠️' : `Error: ${error.message}`;
+        results.paymentEndpoints.push({ ...endpoint, status });
+      }
+    }
+    
+    // Add general recommendations
+    if (results.recommendations.length === 0) {
+      results.recommendations.push('System appears to be configured correctly');
+    }
+    
+    console.log('📊 Diagnosis complete:', results);
+    return { success: true, data: results };
+    
+  } catch (error) {
+    console.error('❌ Diagnosis failed:', error);
     return { success: false, error: error.message };
   }
 };
@@ -914,8 +1254,33 @@ export const getAvailableApiFunctions = () => {
       'authTest',
       'handleApiError',
       'handlePaymentError',
-      'retryApiCall'
+      'retryApiCall',
+      'cleanupRequestCache',
+      'resetPaymentAttempts'
+    ],
+    testing: [
+      'testPaymentFlow',
+      'checkApiHealth',
+      'diagnosePaymentSystem',
+      'getAvailableApiFunctions'
     ]
+  };
+};
+
+// ✅ DEBUGGING HELPER - Show current system status
+export const getSystemStatus = () => {
+  return {
+    environment: import.meta.env.MODE,
+    baseUrl: BASE_URL,
+    cacheSize: requestCache.size,
+    pendingRequests: pendingRequests.size,
+    trackedAttempts: requestAttempts.size,
+    auth: {
+      hasUser: !!auth.currentUser,
+      isRefreshing: isRefreshing,
+      queueSize: failedQueue.length
+    },
+    timestamp: new Date().toISOString()
   };
 };
 

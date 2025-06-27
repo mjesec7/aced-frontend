@@ -38,8 +38,23 @@
           </div>
         </div>
 
-        <!-- Regular Payment Form (hidden when success/cancelled) -->
-        <div v-if="!paymentSuccess && !paymentCancelled">
+        <!-- Error State -->
+        <div v-if="criticalError" class="error-state">
+          <div class="error-icon">⚠️</div>
+          <h2>Системная ошибка</h2>
+          <p>{{ criticalError }}</p>
+          <div class="error-actions">
+            <button @click="resetPayment" class="primary-btn">
+              🔄 Попробовать снова
+            </button>
+            <button @click="contactSupport" class="secondary-btn">
+              📞 Обратиться в поддержку
+            </button>
+          </div>
+        </div>
+
+        <!-- Regular Payment Form (hidden when success/cancelled/error) -->
+        <div v-if="!paymentSuccess && !paymentCancelled && !criticalError">
           <!-- Plan Summary -->
           <div class="plan-summary">
             <div class="plan-info">
@@ -69,6 +84,15 @@
             </div>
           </div>
 
+          <!-- Rate Limit Warning -->
+          <div v-if="showRateWarning" class="rate-warning">
+            <span class="warning-icon">⚠️</span>
+            <div>
+              <strong>Слишком много попыток</strong>
+              <p>Подождите {{ rateLimitCooldown }} секунд перед следующей попыткой</p>
+            </div>
+          </div>
+
           <!-- Form -->
           <form @submit.prevent="handlePayment" class="payment-form">
             <!-- User Information -->
@@ -82,13 +106,13 @@
                   v-model="form.userId"
                   placeholder="Ваш ID пользователя"
                   required
-                  :disabled="loading"
+                  :disabled="loading || showRateWarning"
                 />
                 <button 
                   type="button" 
                   class="validate-btn"
                   @click="validateUser"
-                  :disabled="loading || !form.userId.trim()"
+                  :disabled="loading || !form.userId.trim() || showRateWarning"
                 >
                   {{ userValidation.loading ? '⏳' : userValidation.valid ? '✅' : '🔍' }}
                   Проверить
@@ -103,7 +127,7 @@
                   v-model="form.name"
                   placeholder="Как указано при регистрации"
                   required
-                  :disabled="loading"
+                  :disabled="loading || showRateWarning"
                 />
               </div>
             </div>
@@ -119,7 +143,7 @@
                   v-model="form.phone"
                   placeholder="+998 90 123 45 67"
                   required
-                  :disabled="loading"
+                  :disabled="loading || showRateWarning"
                   @input="formatPhone"
                 />
               </div>
@@ -133,16 +157,16 @@
                   type="text"
                   v-model="form.promoCode"
                   placeholder="Введите промокод"
-                  :disabled="loading"
+                  :disabled="loading || showRateWarning"
                   @keyup.enter="applyPromoCode"
                 />
                 <button 
                   type="button"
                   class="promo-apply-btn"
                   @click="applyPromoCode"
-                  :disabled="loading || !form.promoCode.trim()"
+                  :disabled="loading || !form.promoCode.trim() || showRateWarning || promoAttemptLimited"
                 >
-                  Применить
+                  {{ promoAttemptLimited ? `⏳ ${promoTimeLeft}s` : 'Применить' }}
                 </button>
               </div>
             </div>
@@ -151,11 +175,14 @@
             <button 
               type="submit" 
               class="payment-submit-btn"
-              :disabled="loading || !isFormValid"
+              :disabled="loading || !isFormValid || showRateWarning || paymentAttemptLimited"
             >
               <span v-if="loading" class="loading-text">
                 <div class="spinner-small"></div>
                 {{ loadingText }}
+              </span>
+              <span v-else-if="paymentAttemptLimited" class="limited-text">
+                ⏳ Подождите {{ paymentTimeLeft }}s
               </span>
               <span v-else class="submit-text">
                 💳 Оплатить {{ planDetails.formattedPrice }}
@@ -164,7 +191,7 @@
           </form>
 
           <!-- Regular Messages -->
-          <div v-if="error && !paymentCancelled" class="message error-message">
+          <div v-if="error && !paymentCancelled && !criticalError" class="message error-message">
             <span class="message-icon">❌</span>
             <div>
               <strong>Ошибка:</strong>
@@ -196,6 +223,7 @@
               <li>🔒 Безопасная обработка платежей</li>
               <li>⚡ Мгновенная активация после оплаты</li>
               <li>🔄 Возможность возврата в течение 14 дней</li>
+              <li>🛡️ Защита от мошенничества</li>
             </ul>
           </div>
 
@@ -225,6 +253,30 @@
               :disabled="statusLoading"
             >
               {{ statusLoading ? '⏳ Проверка...' : '🔄 Обновить статус' }}
+            </button>
+          </div>
+
+          <!-- System Status -->
+          <div v-if="showSystemInfo" class="system-info">
+            <h4>🔧 Информация о системе</h4>
+            <div class="system-details">
+              <div class="system-row">
+                <span>Попыток оплаты:</span>
+                <span>{{ paymentAttempts }}/3</span>
+              </div>
+              <div class="system-row">
+                <span>Попыток промокода:</span>
+                <span>{{ promoAttempts }}/3</span>
+              </div>
+              <div class="system-row">
+                <span>Статус API:</span>
+                <span :class="apiStatus.connected ? 'status-online' : 'status-offline'">
+                  {{ apiStatus.connected ? '🟢 Онлайн' : '🔴 Офлайн' }}
+                </span>
+              </div>
+            </div>
+            <button @click="showSystemInfo = false" class="close-info-btn">
+              Скрыть
             </button>
           </div>
         </div>
@@ -257,9 +309,11 @@ import {
   getPaymentAmounts,
   formatPaymentAmount,
   getTransactionStateText,
-  handlePaymentError
+  handlePaymentError,
+  resetPaymentAttempts,
+  checkApiHealth
 } from '@/api';
-import api from '@/api'; // ✅ Import the API instance
+import api from '@/api';
 
 export default {
   name: 'PaymePayment',
@@ -284,6 +338,7 @@ export default {
       statusLoading: false,
       paymentSuccess: false,
       paymentCancelled: false,
+      criticalError: '',
       loadingText: 'Подготовка к оплате...',
       error: '',
       success: '',
@@ -300,7 +355,26 @@ export default {
         '🔧 Создание транзакции',
         '💳 Перенаправление в PayMe',
         '✅ Завершение'
-      ]
+      ],
+      // Rate limiting and attempt tracking
+      paymentAttempts: 0,
+      promoAttempts: 0,
+      paymentAttemptLimited: false,
+      promoAttemptLimited: false,
+      paymentTimeLeft: 0,
+      promoTimeLeft: 0,
+      showRateWarning: false,
+      rateLimitCooldown: 0,
+      cooldownInterval: null,
+      // System monitoring
+      apiStatus: {
+        connected: true,
+        lastCheck: Date.now()
+      },
+      showSystemInfo: false,
+      // Error recovery
+      retryCount: 0,
+      maxRetries: 3
     };
   },
   computed: {
@@ -332,39 +406,29 @@ export default {
         ]
       };
 
-      // ✅ FIXED: Ensure correct amount formatting
+      // Enhanced amount formatting with error handling
       let formattedPrice;
       let actualPrice;
       
-      if (planData) {
-        // Use UZS amount if available, otherwise convert from tiyin
-        actualPrice = planData.uzs || (planData.tiyin ? planData.tiyin / 100 : 0);
-        
-        try {
+      try {
+        if (planData) {
+          actualPrice = planData.uzs || (planData.tiyin ? planData.tiyin / 100 : 0);
           formattedPrice = formatPaymentAmount(actualPrice, 'UZS');
-        } catch (formatError) {
-          console.warn('⚠️ Format error, using fallback:', formatError);
-          // Fallback formatting
-          formattedPrice = new Intl.NumberFormat('uz-UZ', {
-            style: 'currency',
-            currency: 'UZS',
-            minimumFractionDigits: 0
-          }).format(actualPrice);
+        } else {
+          const fallbackAmounts = {
+            start: 260000, // 260,000 UZS
+            pro: 455000    // 455,000 UZS
+          };
+          actualPrice = fallbackAmounts[this.plan] || 0;
+          formattedPrice = `${actualPrice.toLocaleString('uz-UZ')} сум`;
         }
-      } else {
-        // Fallback amounts if getPaymentAmounts fails
-        const fallbackAmounts = {
-          start: 26000, // 26,000 UZS
-          pro: 45500    // 45,500 UZS
-        };
-        actualPrice = fallbackAmounts[this.plan] || 0;
+      } catch (formatError) {
+        console.warn('⚠️ Format error, using fallback:', formatError);
+        actualPrice = this.plan === 'start' ? 260000 : 455000;
         formattedPrice = `${actualPrice.toLocaleString('uz-UZ')} сум`;
       }
       
-      console.log('💰 Final amount:', {
-        actualPrice,
-        formattedPrice
-      });
+      console.log('💰 Final amount:', { actualPrice, formattedPrice });
 
       return {
         label: planData?.label || (this.plan === 'start' ? 'Start' : 'Pro'),
@@ -379,18 +443,19 @@ export default {
         this.form.userId.trim() &&
         this.form.name.trim() &&
         this.form.phone.trim() &&
-        this.userValidation.valid !== false
+        this.userValidation.valid !== false &&
+        !this.showRateWarning
       );
     }
   },
   async mounted() {
     await this.initializeForm();
+    await this.checkSystemHealth();
     this.validateUser();
+    this.setupErrorRecovery();
   },
   beforeUnmount() {
-    if (this.pollInterval) {
-      clearInterval(this.pollInterval);
-    }
+    this.cleanup();
   },
   methods: {
     async initializeForm() {
@@ -410,6 +475,36 @@ export default {
       if (user?.name) {
         this.form.name = user.name;
       }
+
+      // Reset payment attempts if this is a fresh session
+      const lastReset = localStorage.getItem('lastPaymentReset');
+      const now = Date.now();
+      if (!lastReset || now - parseInt(lastReset) > 300000) { // 5 minutes
+        resetPaymentAttempts(userId);
+        localStorage.setItem('lastPaymentReset', now.toString());
+      }
+    },
+
+    async checkSystemHealth() {
+      try {
+        const health = await checkApiHealth();
+        this.apiStatus.connected = health.success;
+        this.apiStatus.lastCheck = Date.now();
+        
+        if (!health.success) {
+          console.warn('⚠️ API health check failed:', health.error);
+        }
+      } catch (error) {
+        console.error('❌ System health check failed:', error);
+        this.apiStatus.connected = false;
+      }
+    },
+
+    setupErrorRecovery() {
+      // Check API status periodically
+      this.statusInterval = setInterval(() => {
+        this.checkSystemHealth();
+      }, 30000); // Every 30 seconds
     },
 
     formatPhone() {
@@ -431,7 +526,7 @@ export default {
       }
     },
 
-    // ✅ FIXED: Direct API call for user validation
+    // Enhanced user validation with rate limiting
     async validateUser() {
       if (!this.form.userId.trim()) {
         this.userValidation = { loading: false, valid: false, user: null };
@@ -444,7 +539,6 @@ export default {
       try {
         console.log('🔍 Validating user:', this.form.userId.trim());
         
-        // ✅ FIXED: Use api instance instead of this.$http
         const response = await api.get(`/payments/validate-user/${this.form.userId.trim()}`);
         
         console.log('✅ Validation response:', response.data);
@@ -456,7 +550,6 @@ export default {
         };
 
         if (response.data.valid && response.data.user) {
-          // Auto-fill name if we got user data
           if (response.data.user.name && !this.form.name) {
             this.form.name = response.data.user.name;
           }
@@ -469,9 +562,13 @@ export default {
         console.error('❌ User validation error:', err);
         this.userValidation = { loading: false, valid: false, user: null };
         
-        // Better error handling
-        if (err.response?.status === 404) {
+        // Enhanced error handling
+        if (err.message?.includes('Direct browser access')) {
+          this.criticalError = 'Ошибка конфигурации системы. Обратитесь в поддержку.';
+        } else if (err.response?.status === 404) {
           this.error = 'Пользователь не найден. Проверьте ID.';
+        } else if (err.response?.status === 429) {
+          this.handleRateLimit();
         } else if (err.response?.status >= 500) {
           this.error = 'Ошибка сервера. Попробуйте позже.';
         } else {
@@ -480,6 +577,7 @@ export default {
       }
     },
 
+    // Enhanced promo code application with rate limiting
     async applyPromoCode() {
       if (!this.form.promoCode.trim()) {
         this.error = 'Введите промокод';
@@ -491,7 +589,13 @@ export default {
         return;
       }
 
+      if (this.promoAttempts >= 3) {
+        this.handlePromoRateLimit();
+        return;
+      }
+
       this.loading = true;
+      this.promoAttempts++;
       this.clearMessages();
 
       try {
@@ -525,77 +629,133 @@ export default {
 
         } else {
           this.error = result.error;
+          
+          // Handle specific promo code errors
+          if (result.error?.includes('Слишком много попыток')) {
+            this.handlePromoRateLimit();
+          }
         }
 
       } catch (err) {
         console.error('❌ Promo code error:', err);
-        this.error = handlePaymentError(err, 'Применение промокода');
+        
+        if (err.message?.includes('Direct browser access')) {
+          this.criticalError = 'Ошибка конфигурации платежной системы. Обратитесь в поддержку.';
+        } else if (err.message?.includes('Слишком много попыток')) {
+          this.handlePromoRateLimit();
+        } else {
+          this.error = handlePaymentError(err, 'Применение промокода');
+        }
       } finally {
         this.loading = false;
       }
     },
 
-    // In your PaymePayment.vue, fix the API call in the handlePayment method
-
-async handlePayment() {
-  if (!this.isFormValid) {
-    this.error = 'Пожалуйста, заполните все поля корректно';
-    return;
-  }
-
-  this.loading = true;
-  this.currentStep = 2;
-  this.currentLoadingStep = 0;
-  this.clearMessages();
-
-  try {
-    // Step 1: Validate data
-    this.loadingText = 'Проверка данных...';
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    this.currentLoadingStep = 1;
-
-    // Step 2: Create transaction - FIXED API CALL
-    this.loadingText = 'Создание транзакции...';
-    
-    // ✅ FIXED: Use correct HTTP method and API function
-    const result = await initiatePaymePayment(
-      this.form.userId.trim(),
-      this.plan,
-      {
-        name: this.form.name.trim(),
-        phone: this.form.phone.trim()
+    // Enhanced payment handling with comprehensive error recovery
+    async handlePayment() {
+      if (!this.isFormValid) {
+        this.error = 'Пожалуйста, заполните все поля корректно';
+        return;
       }
-    );
 
-    if (!result.success) {
-      throw new Error(result.error);
-    }
+      if (this.paymentAttempts >= 3) {
+        this.handlePaymentRateLimit();
+        return;
+      }
 
-    this.transaction = result.transaction;
-    this.currentLoadingStep = 2;
+      this.loading = true;
+      this.currentStep = 2;
+      this.currentLoadingStep = 0;
+      this.paymentAttempts++;
+      this.clearMessages();
 
-    // Step 3: Redirect to PayMe
-    this.loadingText = 'Перенаправление в PayMe...';
-    this.currentStep = 3;
-    
-    if (result.paymentUrl) {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      this.currentLoadingStep = 3;
-      
-      // Redirect to PayMe
-      window.location.href = result.paymentUrl;
-    } else {
-      throw new Error('Не получена ссылка для оплаты');
-    }
+      try {
+        // Step 1: Validate data
+        this.loadingText = 'Проверка данных...';
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        this.currentLoadingStep = 1;
 
-  } catch (err) {
-    console.error('❌ Payment initiation error:', err);
-    this.error = handlePaymentError(err, 'Инициация платежа');
-    this.currentStep = 1;
-  } finally {
-    this.loading = false;
-  }
-},
+        // Step 2: Create transaction with enhanced error handling
+        this.loadingText = 'Создание транзакции...';
+        
+        const result = await initiatePaymePayment(
+          this.form.userId.trim(),
+          this.plan,
+          {
+            name: this.form.name.trim(),
+            phone: this.form.phone.trim()
+          }
+        );
+
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+
+        this.transaction = result.transaction;
+        this.currentLoadingStep = 2;
+
+        // Step 3: Redirect to PayMe
+        this.loadingText = 'Перенаправление в PayMe...';
+        this.currentStep = 3;
+        
+        if (result.paymentUrl) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          this.currentLoadingStep = 3;
+          
+          // Enhanced redirect with fallback
+          try {
+            window.location.href = result.paymentUrl;
+          } catch (redirectError) {
+            console.error('❌ Redirect failed:', redirectError);
+            this.error = 'Ошибка перенаправления. Попробуйте открыть ссылку вручную.';
+            
+            // Show manual link
+            const link = document.createElement('a');
+            link.href = result.paymentUrl;
+            link.target = '_blank';
+            link.textContent = 'Открыть ссылку для оплаты';
+            link.style.display = 'block';
+            link.style.margin = '10px 0';
+            link.style.color = '#667eea';
+            
+            const errorElement = document.querySelector('.error-message');
+            if (errorElement) {
+              errorElement.appendChild(link);
+            }
+          }
+        } else {
+          throw new Error('Не получена ссылка для оплаты');
+        }
+
+      } catch (err) {
+        console.error('❌ Payment initiation error:', err);
+        
+        // Enhanced error handling
+        if (err.message?.includes('Direct browser access')) {
+          this.criticalError = 'Ошибка конфигурации платежной системы. Обратитесь в поддержку.';
+        } else if (err.message?.includes('Слишком много попыток')) {
+          this.handlePaymentRateLimit();
+        } else if (err.response?.status === 429) {
+          this.handleRateLimit();
+        } else {
+          this.error = handlePaymentError(err, 'Инициация платежа');
+          
+          // Auto-retry for network errors
+          if (this.retryCount < this.maxRetries && 
+              (err.message?.includes('timeout') || err.message?.includes('network'))) {
+            this.retryCount++;
+            setTimeout(() => {
+              console.log(`🔄 Auto-retry attempt ${this.retryCount}`);
+              this.handlePayment();
+            }, 2000 * this.retryCount);
+          }
+        }
+        
+        this.currentStep = 1;
+      } finally {
+        this.loading = false;
+      }
+    },
 
     async checkTransactionStatus() {
       if (!this.transaction?.id) return;
@@ -649,6 +809,47 @@ async handlePayment() {
       }
     },
 
+    // Rate limiting handlers
+    handleRateLimit() {
+      this.showRateWarning = true;
+      this.rateLimitCooldown = 60; // 1 minute
+      
+      this.cooldownInterval = setInterval(() => {
+        this.rateLimitCooldown--;
+        if (this.rateLimitCooldown <= 0) {
+          this.showRateWarning = false;
+          clearInterval(this.cooldownInterval);
+        }
+      }, 1000);
+    },
+
+    handlePaymentRateLimit() {
+      this.paymentAttemptLimited = true;
+      this.paymentTimeLeft = 30; // 30 seconds
+      
+      const interval = setInterval(() => {
+        this.paymentTimeLeft--;
+        if (this.paymentTimeLeft <= 0) {
+          this.paymentAttemptLimited = false;
+          clearInterval(interval);
+        }
+      }, 1000);
+    },
+
+    handlePromoRateLimit() {
+      this.promoAttemptLimited = true;
+      this.promoTimeLeft = 20; // 20 seconds
+      
+      const interval = setInterval(() => {
+        this.promoTimeLeft--;
+        if (this.promoTimeLeft <= 0) {
+          this.promoAttemptLimited = false;
+          clearInterval(interval);
+        }
+      }, 1000);
+    },
+
+    // Utility methods
     getStatusClass(state) {
       const stateInfo = getTransactionStateText(state);
       return `status-${stateInfo.color}`;
@@ -660,15 +861,22 @@ async handlePayment() {
     },
 
     formatAmount(amount) {
-      return formatPaymentAmount(amount / 100, 'UZS');
+      try {
+        return formatPaymentAmount(amount / 100, 'UZS');
+      } catch (error) {
+        console.warn('⚠️ Amount formatting failed:', error);
+        return `${(amount / 100).toLocaleString('uz-UZ')} сум`;
+      }
     },
 
     clearMessages() {
       this.error = '';
       this.success = '';
       this.promoSuccess = '';
+      this.criticalError = '';
     },
 
+    // Navigation methods
     goBack() {
       if (this.loading) return;
       this.$router.go(-1);
@@ -686,13 +894,56 @@ async handlePayment() {
     resetPayment() {
       this.paymentCancelled = false;
       this.paymentSuccess = false;
+      this.criticalError = '';
       this.transaction = null;
       this.currentStep = 1;
+      this.paymentAttempts = 0;
+      this.promoAttempts = 0;
+      this.retryCount = 0;
       this.clearMessages();
+      
+      // Reset rate limiting
+      this.paymentAttemptLimited = false;
+      this.promoAttemptLimited = false;
+      this.showRateWarning = false;
+      
+      // Clear any running intervals
+      if (this.cooldownInterval) {
+        clearInterval(this.cooldownInterval);
+      }
+      
+      // Reset payment attempts in API
+      if (this.form.userId) {
+        resetPaymentAttempts(this.form.userId);
+      }
+    },
+
+    contactSupport() {
+      // Open support contact method
+      const supportUrl = 'https://t.me/aced_support'; // Replace with actual support URL
+      window.open(supportUrl, '_blank');
+    },
+
+    toggleSystemInfo() {
+      this.showSystemInfo = !this.showSystemInfo;
+    },
+
+    // Cleanup method
+    cleanup() {
+      if (this.pollInterval) {
+        clearInterval(this.pollInterval);
+      }
+      if (this.statusInterval) {
+        clearInterval(this.statusInterval);
+      }
+      if (this.cooldownInterval) {
+        clearInterval(this.cooldownInterval);
+      }
     }
   }
 };
 </script>
+
 <style scoped>
 .payme-payment {
   min-height: 100vh;
@@ -741,9 +992,10 @@ async handlePayment() {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
 }
 
-/* Success and Cancelled States */
+/* Success, Cancelled, and Error States */
 .success-state,
-.cancelled-state {
+.cancelled-state,
+.error-state {
   background: white;
   padding: 60px 40px;
   border-radius: 20px;
@@ -762,8 +1014,14 @@ async handlePayment() {
   border: 2px solid #ef4444;
 }
 
+.error-state {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 2px solid #f59e0b;
+}
+
 .success-icon,
-.cancelled-icon {
+.cancelled-icon,
+.error-icon {
   font-size: 4rem;
   margin-bottom: 20px;
   display: block;
@@ -783,8 +1041,16 @@ async handlePayment() {
   margin-bottom: 16px;
 }
 
+.error-state h2 {
+  color: #92400e;
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
 .success-state p,
-.cancelled-state p {
+.cancelled-state p,
+.error-state p {
   color: #6b7280;
   font-size: 1.1rem;
   margin-bottom: 32px;
@@ -792,7 +1058,8 @@ async handlePayment() {
 }
 
 .success-actions,
-.cancelled-actions {
+.cancelled-actions,
+.error-actions {
   display: flex;
   gap: 16px;
   justify-content: center;
@@ -829,6 +1096,36 @@ async handlePayment() {
 
 .secondary-btn:hover {
   background: #e5e7eb;
+}
+
+/* Rate Warning */
+.rate-warning {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.warning-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  color: #92400e;
+}
+
+.rate-warning strong {
+  color: #92400e;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.rate-warning p {
+  color: #78350f;
+  margin: 0;
+  font-size: 0.9rem;
 }
 
 .plan-summary {
@@ -978,6 +1275,12 @@ async handlePayment() {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+.form-group input:disabled {
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
 .validate-btn,
 .promo-apply-btn {
   padding: 12px 20px;
@@ -995,6 +1298,13 @@ async handlePayment() {
 .promo-apply-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, #059669, #047857);
   transform: translateY(-1px);
+}
+
+.validate-btn:disabled,
+.promo-apply-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .validate-btn {
@@ -1031,7 +1341,8 @@ async handlePayment() {
 }
 
 .loading-text,
-.submit-text {
+.submit-text,
+.limited-text {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1163,6 +1474,16 @@ async handlePayment() {
   color: #991b1b;
 }
 
+.status-online {
+  color: #059669;
+  font-weight: 600;
+}
+
+.status-offline {
+  color: #dc2626;
+  font-weight: 600;
+}
+
 .check-status-btn {
   background: linear-gradient(135deg, #3b82f6, #1d4ed8);
   color: white;
@@ -1177,6 +1498,62 @@ async handlePayment() {
 .check-status-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, #1d4ed8, #1e40af);
   transform: translateY(-1px);
+}
+
+.check-status-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* System Info */
+.system-info {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.system-info h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 16px;
+}
+
+.system-details {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.system-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9rem;
+}
+
+.system-row:last-child {
+  border-bottom: none;
+}
+
+.close-info-btn {
+  background: #e5e7eb;
+  color: #374151;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.close-info-btn:hover {
+  background: #d1d5db;
 }
 
 .loading-overlay {
@@ -1284,19 +1661,22 @@ async handlePayment() {
     columns: 1;
   }
   
-  .transaction-row {
+  .transaction-row,
+  .system-row {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
   }
 
   .success-actions,
-  .cancelled-actions {
+  .cancelled-actions,
+  .error-actions {
     flex-direction: column;
   }
 
   .success-state,
-  .cancelled-state {
+  .cancelled-state,
+  .error-state {
     padding: 40px 24px;
   }
 }
@@ -1316,13 +1696,20 @@ async handlePayment() {
   }
 
   .success-state h2,
-  .cancelled-state h2 {
+  .cancelled-state h2,
+  .error-state h2 {
     font-size: 1.5rem;
   }
 
   .success-icon,
-  .cancelled-icon {
+  .cancelled-icon,
+  .error-icon {
     font-size: 3rem;
+  }
+
+  .rate-warning {
+    flex-direction: column;
+    text-align: center;
   }
 }
 </style>
