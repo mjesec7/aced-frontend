@@ -28,8 +28,14 @@ const CACHE_DURATION = 5000; // 5 seconds
 const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAY = 1000; // 1 second
 
-// Request deduplication helper
+// Request deduplication helper - FIXED
 const createRequestKey = (config) => {
+  // Ensure config has required properties
+  if (!config || !config.method || !config.url) {
+    console.warn('⚠️ Invalid config object in createRequestKey:', config);
+    return `unknown-${Date.now()}`;
+  }
+  
   return `${config.method}-${config.url}-${JSON.stringify(config.data || {})}`;
 };
 
@@ -139,20 +145,38 @@ api.interceptors.request.use(async (config) => {
       return Promise.resolve(cached.response);
     }
     
-    // Special handling for payment endpoints
+    // Special handling for payment endpoints - FIXED
     if (config.url?.includes('/payment') || config.url?.includes('/payme')) {
-      // Detect if this is a browser request that could cause loops
-      const userAgent = navigator.userAgent;
-      const isBrowser = userAgent.includes('Mozilla') || userAgent.includes('Chrome');
+      // Only block specific webhook endpoints that cause loops
+      const webhookEndpoints = ['/sandbox', '/payme'];
+      const isWebhookEndpoint = webhookEndpoints.some(endpoint => config.url.includes(endpoint));
       
-      if (isBrowser && (config.url.includes('/sandbox') || config.url.includes('/payme'))) {
-        console.warn('🚫 Blocking potential loop request to:', config.url);
-        throw new Error('Direct browser access to payment webhook endpoints is not allowed');
+      // Allow legitimate API calls like /payments/validate-user, /payments/initiate, etc.
+      const legitimateEndpoints = [
+        '/payments/validate-user',
+        '/payments/initiate',
+        '/payments/status',
+        '/payments/promo-code',
+        '/payments/initialize',
+        '/payments/verify-sms',
+        '/payments/complete'
+      ];
+      
+      const isLegitimateEndpoint = legitimateEndpoints.some(endpoint => config.url.includes(endpoint));
+      
+      if (isWebhookEndpoint && !isLegitimateEndpoint) {
+        const userAgent = navigator.userAgent;
+        const isBrowser = userAgent.includes('Mozilla') || userAgent.includes('Chrome');
+        
+        if (isBrowser) {
+          console.warn('🚫 Blocking webhook request to:', config.url);
+          throw new Error('Direct browser access to payment webhook endpoints is not allowed');
+        }
       }
       
       // Add special headers for payment requests
       config.headers['X-Request-Source'] = 'frontend';
-      config.headers['X-User-Agent'] = userAgent.substring(0, 50);
+      config.headers['X-User-Agent'] = navigator.userAgent.substring(0, 50);
     }
     
     const token = await getValidToken();
@@ -167,40 +191,60 @@ api.interceptors.request.use(async (config) => {
   }
 });
 
-// ✅ ENHANCED RESPONSE INTERCEPTOR WITH CACHING
+// ✅ ENHANCED RESPONSE INTERCEPTOR WITH FIXED CACHING
 api.interceptors.response.use(
   (response) => {
-    // Cache successful GET requests
-    if (response.config.method === 'get') {
-      const requestKey = createRequestKey(response.config);
-      requestCache.set(requestKey, {
-        response: response,
-        timestamp: Date.now()
-      });
-      
-      // Clean old cache entries
-      if (requestCache.size > 100) {
-        const cutoff = Date.now() - CACHE_DURATION;
-        for (const [key, value] of requestCache.entries()) {
-          if (value.timestamp < cutoff) {
-            requestCache.delete(key);
+    // Cache successful GET requests only
+    if (response.config?.method?.toLowerCase() === 'get') {
+      try {
+        const requestKey = createRequestKey(response.config);
+        if (requestKey && requestKey !== `unknown-${Date.now()}`) {
+          requestCache.set(requestKey, {
+            response: response,
+            timestamp: Date.now()
+          });
+          
+          // Clean old cache entries
+          if (requestCache.size > 100) {
+            const cutoff = Date.now() - CACHE_DURATION;
+            for (const [key, value] of requestCache.entries()) {
+              if (value.timestamp < cutoff) {
+                requestCache.delete(key);
+              }
+            }
           }
         }
+      } catch (cacheError) {
+        console.warn('⚠️ Cache error:', cacheError);
       }
     }
     
     // Remove from pending requests
-    const requestKey = createRequestKey(response.config);
-    pendingRequests.delete(requestKey);
+    try {
+      const requestKey = createRequestKey(response.config);
+      if (requestKey && pendingRequests.has(requestKey)) {
+        pendingRequests.delete(requestKey);
+      }
+    } catch (pendingError) {
+      console.warn('⚠️ Pending request cleanup error:', pendingError);
+    }
     
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
-    const requestKey = createRequestKey(originalRequest);
     
-    // Remove from pending requests on error
-    pendingRequests.delete(requestKey);
+    // Remove from pending requests on error - with safety check
+    if (originalRequest) {
+      try {
+        const requestKey = createRequestKey(originalRequest);
+        if (requestKey && pendingRequests.has(requestKey)) {
+          pendingRequests.delete(requestKey);
+        }
+      } catch (cleanupError) {
+        console.warn('⚠️ Error cleanup failed:', cleanupError);
+      }
+    }
     
     // Enhanced error logging
     console.error('API Error:', {
