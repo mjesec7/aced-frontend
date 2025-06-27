@@ -732,7 +732,12 @@ export default {
         );
 
         if (!result.success) {
-          throw new Error(result.error);
+          // Handle different types of payment errors
+          if (result.technical === 'Payment endpoint not found') {
+            throw new Error('Платежный сервис временно недоступен. Попробуйте позже.');
+          } else {
+            throw new Error(result.error);
+          }
         }
 
         this.transaction = result.transaction;
@@ -779,6 +784,9 @@ export default {
           this.criticalError = 'Ошибка конфигурации платежной системы. Обратитесь в поддержку.';
         } else if (err.message?.includes('Слишком много попыток')) {
           this.handlePaymentRateLimit();
+        } else if (err.message?.includes('временно недоступен')) {
+          this.error = err.message;
+          // Don't auto-retry for service unavailable
         } else if (err.response?.status === 429) {
           this.handleRateLimit();
         } else {

@@ -375,7 +375,7 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
     
     console.log('🚀 Initiating PayMe payment redirect:', payload);
     
-    // Use the correct endpoint that won't cause loops
+    // Use the correct endpoint that matches the server
     const response = await api.post('/payments/initiate', payload);
     
     if (response.data.success) {
@@ -401,6 +401,16 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
         success: false,
         error: 'Ошибка конфигурации платежной системы. Обратитесь в поддержку.',
         technical: error.message
+      };
+    }
+    
+    // Handle 404 errors specifically
+    if (error.response?.status === 404) {
+      return {
+        success: false,
+        error: 'Платежный сервис недоступен. Попробуйте позже.',
+        technical: 'Payment endpoint not found',
+        details: error.response?.data
       };
     }
     
