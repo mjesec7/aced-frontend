@@ -374,7 +374,8 @@ export default {
       showSystemInfo: false,
       // Error recovery
       retryCount: 0,
-      maxRetries: 3
+      maxRetries: 3,
+      hasAutoRetried: false // Prevent infinite auto-retry loops
     };
   },
   computed: {
@@ -526,7 +527,7 @@ export default {
       }
     },
 
-    // Enhanced user validation with rate limiting
+    // Enhanced user validation with comprehensive error handling
     async validateUser() {
       if (!this.form.userId.trim()) {
         this.userValidation = { loading: false, valid: false, user: null };
@@ -553,7 +554,26 @@ export default {
           if (response.data.user.name && !this.form.name) {
             this.form.name = response.data.user.name;
           }
-          this.success = `✅ Пользователь найден: ${response.data.user.name}`;
+          
+          let message = `✅ Пользователь найден: ${response.data.user.name}`;
+          
+          // Show additional info based on validation source
+          if (response.data.source === 'database') {
+            message += ' (из базы данных)';
+          } else if (response.data.source === 'format_validation') {
+            message += ' (проверен по формату)';
+          } else if (response.data.source === 'development_fallback') {
+            message += ' (режим разработки)';
+          } else if (response.data.source === 'emergency_fallback') {
+            message += ' (аварийная проверка)';
+          }
+          
+          this.success = message;
+          
+          // Show note if present
+          if (response.data.note) {
+            console.log('ℹ️ Validation note:', response.data.note);
+          }
         } else {
           this.error = 'Пользователь не найден. Проверьте ID.';
         }
@@ -562,17 +582,41 @@ export default {
         console.error('❌ User validation error:', err);
         this.userValidation = { loading: false, valid: false, user: null };
         
-        // Enhanced error handling
-        if (err.message?.includes('Direct browser access')) {
+        // Parse error response
+        const errorData = err.response?.data;
+        const statusCode = err.response?.status;
+        
+        if (statusCode === 503) {
+          this.error = 'Сервис временно недоступен. Попробуйте через несколько секунд.';
+          
+          // Auto-retry after 3 seconds for 503 errors, but only once
+          if (!this.hasAutoRetried) {
+            this.hasAutoRetried = true;
+            setTimeout(() => {
+              if (this.form.userId.trim()) {
+                console.log('🔄 Auto-retrying user validation...');
+                this.validateUser();
+              }
+            }, 3000);
+          }
+          
+        } else if (statusCode === 404) {
+          this.error = errorData?.error || 'Пользователь не найден. Проверьте ID.';
+        } else if (statusCode === 400) {
+          this.error = errorData?.error || 'Неверный формат ID пользователя.';
+          
+          // Show expected format if provided
+          if (errorData?.expected) {
+            this.error += ` Ожидается: ${errorData.expected}`;
+          }
+        } else if (err.message?.includes('Direct browser access')) {
           this.criticalError = 'Ошибка конфигурации системы. Обратитесь в поддержку.';
-        } else if (err.response?.status === 404) {
-          this.error = 'Пользователь не найден. Проверьте ID.';
-        } else if (err.response?.status === 429) {
+        } else if (statusCode === 429) {
           this.handleRateLimit();
-        } else if (err.response?.status >= 500) {
+        } else if (statusCode >= 500) {
           this.error = 'Ошибка сервера. Попробуйте позже.';
         } else {
-          this.error = 'Ошибка проверки пользователя';
+          this.error = errorData?.error || 'Ошибка проверки пользователя. Попробуйте еще раз.';
         }
       }
     },
@@ -900,6 +944,7 @@ export default {
       this.paymentAttempts = 0;
       this.promoAttempts = 0;
       this.retryCount = 0;
+      this.hasAutoRetried = false; // Reset auto-retry flag
       this.clearMessages();
       
       // Reset rate limiting
