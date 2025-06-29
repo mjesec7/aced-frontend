@@ -1,110 +1,184 @@
 <template>
-    <div class="payment-return">
-      <div class="return-container">
-        <div v-if="loading" class="loading-state">
-          <div class="spinner"></div>
-          <h2>Проверка платежа...</h2>
-          <p>Пожалуйста, подождите</p>
+  <div class="payment-return">
+    <div class="return-container">
+      <div v-if="loading" class="loading-state">
+        <div class="spinner"></div>
+        <h2>Проверка платежа...</h2>
+        <p>Пожалуйста, подождите</p>
+        <div v-if="transactionId" class="transaction-info">
+          <p><small>ID транзакции: {{ transactionId }}</small></p>
         </div>
-        
-        <div v-else-if="error" class="error-state">
-          <div class="error-icon">❌</div>
-          <h2>Ошибка проверки платежа</h2>
-          <p>{{ error }}</p>
-          <div class="actions">
-            <button @click="retry" class="retry-btn">Попробовать снова</button>
-            <button @click="goHome" class="home-btn">На главную</button>
-          </div>
+      </div>
+      
+      <div v-else-if="error" class="error-state">
+        <div class="error-icon">❌</div>
+        <h2>Ошибка проверки платежа</h2>
+        <p>{{ error }}</p>
+        <div v-if="transactionId" class="transaction-details">
+          <p><strong>ID транзакции:</strong> {{ transactionId }}</p>
+        </div>
+        <div class="actions">
+          <button @click="retry" class="retry-btn">Попробовать снова</button>
+          <button @click="goHome" class="home-btn">На главную</button>
+          <button @click="contactSupport" class="support-btn">Поддержка</button>
+        </div>
+      </div>
+
+      <div v-else-if="pending" class="pending-state">
+        <div class="pending-icon">⏳</div>
+        <h2>Платеж в обработке</h2>
+        <p>Ваш платеж еще обрабатывается. Это может занять несколько минут.</p>
+        <div v-if="transactionId" class="transaction-details">
+          <p><strong>ID транзакции:</strong> {{ transactionId }}</p>
+        </div>
+        <div class="actions">
+          <button @click="retry" class="retry-btn">Проверить снова</button>
+          <button @click="goHome" class="home-btn">На главную</button>
         </div>
       </div>
     </div>
-  </template>
+  </div>
+</template>
+
+<script>
+// Import from the correct API file
+import { checkPaymentStatus } from '@/api/paymentApi'; // ← Fixed import
+
+export default {
+  name: 'PaymentReturn',
+  data() {
+    return {
+      loading: true,
+      error: null,
+      pending: false,
+      transactionId: null,
+      userId: null,
+      retryCount: 0,
+      maxRetries: 3
+    };
+  },
   
-  <script>
-  import { checkPaymentStatus } from '@/api';
+  async mounted() {
+    await this.processReturn();
+  },
   
-  export default {
-    name: 'PaymentReturn',
-    data() {
-      return {
-        loading: true,
-        error: null,
-        transactionId: null,
-        userId: null
-      };
+  methods: {
+    async processReturn() {
+      try {
+        this.loading = true;
+        this.error = null;
+        this.pending = false;
+
+        // Get params from URL and various sources
+        const params = new URLSearchParams(window.location.search);
+        
+        this.transactionId = 
+          params.get('id') || 
+          params.get('transaction') ||
+          params.get('orderId') ||
+          this.$route.query.transaction ||
+          this.$route.query.id;
+          
+        this.userId = 
+          params.get('userId') || 
+          this.$route.query.userId ||
+          this.$store.getters['user/getUserId'] ||
+          localStorage.getItem('userId');
+        
+        console.log('🔍 Processing payment return:', {
+          transactionId: this.transactionId,
+          userId: this.userId,
+          queryParams: Object.fromEntries(params.entries()),
+          routeQuery: this.$route.query
+        });
+        
+        if (!this.transactionId) {
+          this.error = 'ID транзакции не найден в URL параметрах';
+          this.loading = false;
+          return;
+        }
+        
+        // Check payment status
+        const result = await checkPaymentStatus(this.transactionId, this.userId);
+        
+        console.log('📊 Payment status result:', result);
+        
+        if (result.success && result.transaction) {
+          const state = result.transaction.state;
+          
+          if (state === 2) {
+            // Success - redirect to success page
+            console.log('✅ Payment successful, redirecting to success page');
+            this.$router.replace({
+              name: 'PaymentSuccess', // Make sure this route exists
+              query: {
+                transaction: this.transactionId,
+                plan: result.transaction.subscription_plan || result.transaction.plan,
+                amount: result.transaction.amount,
+                userId: this.userId
+              }
+            });
+          } else if (state === -1 || state === -2) {
+            // Failed/Cancelled - redirect to failed page
+            console.log('❌ Payment failed/cancelled, redirecting to failed page');
+            this.$router.replace({
+              name: 'PaymentFailed', // Make sure this route exists
+              query: {
+                transaction: this.transactionId,
+                error: state === -1 ? 'cancelled' : 'refunded',
+                userId: this.userId
+              }
+            });
+          } else if (state === 1) {
+            // Still pending
+            console.log('⏳ Payment still pending');
+            this.pending = true;
+            this.loading = false;
+          } else {
+            // Unknown state
+            this.error = `Неизвестное состояние транзакции: ${state}`;
+            this.loading = false;
+          }
+        } else {
+          this.error = result.error || 'Не удалось проверить статус платежа';
+          this.loading = false;
+        }
+        
+      } catch (error) {
+        console.error('❌ Payment return processing error:', error);
+        this.error = `Ошибка проверки статуса: ${error.message}`;
+        this.loading = false;
+      }
     },
     
-    async mounted() {
+    async retry() {
+      if (this.retryCount >= this.maxRetries) {
+        this.error = 'Превышено максимальное количество попыток. Обратитесь в поддержку.';
+        return;
+      }
+      
+      this.retryCount++;
+      console.log(`🔄 Retrying payment check (attempt ${this.retryCount})`);
+      
+      // Add a small delay before retry
+      await new Promise(resolve => setTimeout(resolve, 1000));
       await this.processReturn();
     },
     
-    methods: {
-      async processReturn() {
-        try {
-          // Get params from URL
-          const params = new URLSearchParams(window.location.search);
-          this.transactionId = params.get('id') || params.get('transaction');
-          this.userId = params.get('userId') || this.$store.getters['user/getUserId'];
-          
-          if (!this.transactionId) {
-            this.error = 'ID транзакции не найден';
-            this.loading = false;
-            return;
-          }
-          
-          // Check payment status
-          const result = await checkPaymentStatus(this.transactionId, this.userId);
-          
-          if (result.success && result.transaction) {
-            if (result.transaction.state === 2) {
-              // Success
-              this.$router.replace({
-                name: 'PaymentSuccess',
-                query: {
-                  transaction: this.transactionId,
-                  plan: result.transaction.plan,
-                  amount: result.transaction.amount
-                }
-              });
-            } else if (result.transaction.state < 0) {
-              // Failed
-              this.$router.replace({
-                name: 'PaymentFailed',
-                query: {
-                  transaction: this.transactionId,
-                  error: 'cancelled'
-                }
-              });
-            } else {
-              // Still pending
-              this.error = 'Платеж еще не завершен';
-              this.loading = false;
-            }
-          } else {
-            this.error = result.error || 'Не удалось проверить статус';
-            this.loading = false;
-          }
-          
-        } catch (error) {
-          console.error('Error:', error);
-          this.error = 'Ошибка проверки статуса';
-          this.loading = false;
-        }
-      },
-      
-      retry() {
-        this.loading = true;
-        this.error = null;
-        this.processReturn();
-      },
-      
-      goHome() {
-        this.$router.push({ name: 'HomePage' });
-      }
+    goHome() {
+      // Navigate to appropriate home page
+      const homePage = this.$route.query.returnTo || 'HomePage' || 'MainPage';
+      this.$router.push({ name: homePage });
+    },
+
+    contactSupport() {
+      // Open support contact
+      const supportUrl = 'https://t.me/aced_support'; // Replace with your support URL
+      window.open(supportUrl, '_blank');
     }
-  };
-  </script>
-  
+  }
+};
+</script>
   <style scoped>
   .payment-return {
     min-height: 100vh;

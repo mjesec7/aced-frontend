@@ -1,4 +1,4 @@
-// src/api.js - ENHANCED API CONFIGURATION WITH LOOP PREVENTION & PAYMENT INTEGRATION
+// src/api.js - UPDATED WITH CORRECT PAYMENT ENDPOINTS
 import axios from 'axios';
 import { auth } from '@/firebase';
 
@@ -311,7 +311,7 @@ api.interceptors.response.use(
 );
 
 // =============================================
-// 💳 PAYMENT API FUNCTIONS - ENHANCED WITH LOOP PREVENTION
+// 💳 PAYMENT API FUNCTIONS - CORRECTED ENDPOINTS
 // =============================================
 
 // Enhanced token management for payment requests
@@ -360,7 +360,7 @@ export const applyPromoCode = debounceRequest(async (userId, plan, promoCode) =>
   }
 }, 1000);
 
-// ✅ PAYME PAYMENT INITIATION - ENHANCED WITH SAFETY CHECKS
+// ✅ PAYME PAYMENT INITIATION - CORRECTED TO MATCH YOUR BACKEND
 export const initiatePaymePayment = async (userId, plan, additionalData = {}) => {
   if (!trackPaymentAttempt(userId, 'payment-initiation')) {
     throw new Error('Слишком много попыток инициации платежа. Подождите несколько секунд.');
@@ -373,9 +373,9 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
       ...additionalData
     };
     
-    console.log('🚀 Initiating PayMe payment redirect:', payload);
+    console.log('🚀 Initiating PayMe payment:', payload);
     
-    // Use the correct endpoint that matches the server
+    // ✅ FIXED: Use the correct endpoint that matches your backend
     const response = await api.post('/payments/initiate', payload);
     
     if (response.data.success) {
@@ -408,7 +408,7 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
     if (error.response?.status === 404) {
       return {
         success: false,
-        error: 'Платежный сервис недоступен. Попробуйте позже.',
+        error: 'Платежный сервис недоступен. Убедитесь, что сервер запущен.',
         technical: 'Payment endpoint not found',
         details: error.response?.data
       };
@@ -422,7 +422,7 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
   }
 };
 
-// ✅ PAYMENT STATUS CHECK - WITH CACHING
+// ✅ PAYMENT STATUS CHECK - CORRECTED TO MATCH YOUR BACKEND
 export const checkPaymentStatus = async (transactionId, userId = null) => {
   try {
     const url = userId 
@@ -448,24 +448,26 @@ export const checkPaymentStatus = async (transactionId, userId = null) => {
   }
 };
 
-// ✅ USER VALIDATION FOR PAYMENTS
+// ✅ USER VALIDATION FOR PAYMENTS - CORRECTED TO MATCH YOUR BACKEND
 export const validateUser = async (userId) => {
   try {
-    console.log('👤 Validating user for payment:', userId);
+    console.log('🔍 Validating user:', userId);
     
     const response = await api.get(`/payments/validate-user/${userId}`);
     
     return {
       success: true,
       valid: response.data.valid,
-      user: response.data.user
+      user: response.data.user,
+      source: response.data.source,
+      note: response.data.note
     };
   } catch (error) {
     console.error('❌ User validation error:', error);
     return {
       success: false,
       valid: false,
-      error: error.response?.data?.message || error.message
+      error: error.response?.data?.error || error.message
     };
   }
 };
@@ -648,6 +650,49 @@ export const getTransactionStateText = (state) => {
     default:
       return { text: 'Неизвестно', color: 'default', icon: '❓' };
   }
+};
+
+// ✅ COMPREHENSIVE ERROR HANDLER FOR PAYMENTS - ENHANCED
+export const handlePaymentError = (error, context = 'Платежная операция') => {
+  console.error(`❌ ${context} failed:`, error);
+  
+  // Check for loop prevention errors
+  if (error.message?.includes('Direct browser access')) {
+    return 'Ошибка конфигурации платежной системы. Обратитесь в поддержку.';
+  }
+  
+  // Check for rate limiting
+  if (error.message?.includes('Слишком много попыток')) {
+    return error.message;
+  }
+  
+  if (error.response?.status === 401) {
+    return 'Необходимо войти в систему для совершения платежа';
+  } else if (error.response?.status === 403) {
+    return 'Доступ к платежной системе запрещен';
+  } else if (error.response?.status === 404) {
+    return 'Платежный сервис недоступен. Убедитесь, что сервер запущен.';
+  } else if (error.response?.status === 429) {
+    return 'Слишком много запросов. Подождите несколько секунд и попробуйте снова.';
+  } else if (error.response?.status >= 500) {
+    return 'Ошибка платежного сервера. Попробуйте позже';
+  } else if (error.message?.includes('timeout')) {
+    return 'Превышено время ожидания. Проверьте интернет-соединение';
+  } else {
+    return error.response?.data?.message || error.message || 'Произошла ошибка при обработке платежа';
+  }
+};
+
+// ✅ PAYMENT ATTEMPT RESET UTILITY
+export const resetPaymentAttempts = (userId) => {
+  const keysToDelete = [];
+  for (const [key] of requestAttempts.entries()) {
+    if (key.startsWith(userId)) {
+      keysToDelete.push(key);
+    }
+  }
+  keysToDelete.forEach(key => requestAttempts.delete(key));
+  console.log(`🔄 Payment attempts reset for user ${userId}`);
 };
 
 // =============================================
@@ -986,37 +1031,6 @@ export const healthCheck = () =>
 export const authTest = () =>
   api.get(`/auth-test`);
 
-// ✅ COMPREHENSIVE ERROR HANDLER FOR PAYMENTS - ENHANCED
-export const handlePaymentError = (error, context = 'Платежная операция') => {
-  console.error(`❌ ${context} failed:`, error);
-  
-  // Check for loop prevention errors
-  if (error.message?.includes('Direct browser access')) {
-    return 'Ошибка конфигурации платежной системы. Обратитесь в поддержку.';
-  }
-  
-  // Check for rate limiting
-  if (error.message?.includes('Слишком много попыток')) {
-    return error.message;
-  }
-  
-  if (error.response?.status === 401) {
-    return 'Необходимо войти в систему для совершения платежа';
-  } else if (error.response?.status === 403) {
-    return 'Доступ к платежной системе запрещен';
-  } else if (error.response?.status === 404) {
-    return 'Платежный сервис недоступен';
-  } else if (error.response?.status === 429) {
-    return 'Слишком много запросов. Подождите несколько секунд и попробуйте снова.';
-  } else if (error.response?.status >= 500) {
-    return 'Ошибка платежного сервера. Попробуйте позже';
-  } else if (error.message?.includes('timeout')) {
-    return 'Превышено время ожидания. Проверьте интернет-соединение';
-  } else {
-    return error.response?.data?.message || error.message || 'Произошла ошибка при обработке платежа';
-  }
-};
-
 // ✅ GENERAL ERROR HANDLER - ENHANCED
 export const handleApiError = (error, context = 'API call') => {
   console.error(`❌ ${context} failed:`, {
@@ -1080,18 +1094,6 @@ export const cleanupRequestCache = () => {
   pendingRequests.clear();
   requestAttempts.clear();
   console.log('🧹 Request cache cleaned');
-};
-
-// ✅ PAYMENT ATTEMPT RESET UTILITY
-export const resetPaymentAttempts = (userId) => {
-  const keysToDelete = [];
-  for (const [key] of requestAttempts.entries()) {
-    if (key.startsWith(userId)) {
-      keysToDelete.push(key);
-    }
-  }
-  keysToDelete.forEach(key => requestAttempts.delete(key));
-  console.log(`🔄 Payment attempts reset for user ${userId}`);
 };
 
 // =============================================

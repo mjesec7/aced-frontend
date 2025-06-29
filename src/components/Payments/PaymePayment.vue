@@ -302,10 +302,12 @@
 </template>
 
 <script>
+// ✅ FIXED: Import from the main API file which now has all the correct payment functions
 import { 
   initiatePaymePayment, 
   applyPromoCode, 
   checkPaymentStatus, 
+  validateUser,
   getPaymentAmounts,
   formatPaymentAmount,
   getTransactionStateText,
@@ -313,7 +315,6 @@ import {
   resetPaymentAttempts,
   checkApiHealth
 } from '@/api';
-import api from '@/api';
 
 export default {
   name: 'PaymePayment',
@@ -540,39 +541,39 @@ export default {
       try {
         console.log('🔍 Validating user:', this.form.userId.trim());
         
-        const response = await api.get(`/payments/validate-user/${this.form.userId.trim()}`);
+        const response = await validateUser(this.form.userId.trim());
         
-        console.log('✅ Validation response:', response.data);
+        console.log('✅ Validation response:', response);
         
         this.userValidation = {
           loading: false,
-          valid: response.data.valid,
-          user: response.data.user
+          valid: response.valid,
+          user: response.user
         };
 
-        if (response.data.valid && response.data.user) {
-          if (response.data.user.name && !this.form.name) {
-            this.form.name = response.data.user.name;
+        if (response.valid && response.user) {
+          if (response.user.name && !this.form.name) {
+            this.form.name = response.user.name;
           }
           
-          let message = `✅ Пользователь найден: ${response.data.user.name}`;
+          let message = `✅ Пользователь найден: ${response.user.name}`;
           
           // Show additional info based on validation source
-          if (response.data.source === 'database') {
+          if (response.source === 'database') {
             message += ' (из базы данных)';
-          } else if (response.data.source === 'format_validation') {
+          } else if (response.source === 'format_validation') {
             message += ' (проверен по формату)';
-          } else if (response.data.source === 'development_fallback') {
+          } else if (response.source === 'development_fallback') {
             message += ' (режим разработки)';
-          } else if (response.data.source === 'emergency_fallback') {
+          } else if (response.source === 'emergency_fallback') {
             message += ' (аварийная проверка)';
           }
           
           this.success = message;
           
           // Show note if present
-          if (response.data.note) {
-            console.log('ℹ️ Validation note:', response.data.note);
+          if (response.note) {
+            console.log('ℹ️ Validation note:', response.note);
           }
         } else {
           this.error = 'Пользователь не найден. Проверьте ID.';
