@@ -322,9 +322,8 @@ export const formatUsageDisplay = (usage, plan) => {
   };
 };
 
-// Export all functions
+// Export helper functions that aren't already exported above
 export {
   getCurrentMonthKey,
-  checkUsageLimits,
-  formatUsageDisplay
+  checkUsageLimits
 };
