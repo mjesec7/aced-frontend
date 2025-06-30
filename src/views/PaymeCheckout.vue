@@ -323,7 +323,8 @@ export default {
           name: this.userName,
           email: this.userEmail,
           method: this.selectedMethod,
-          lang: this.selectedLanguage
+          lang: this.selectedLanguage,
+          amount: this.amount // Ensure amount is included
         });
 
         if (result.success) {
@@ -471,14 +472,16 @@ export default {
     formatAmount(amount) {
       if (!amount) return '';
       
-      // Convert from tiyin to UZS if needed
-      const uzs = amount > 10000 ? amount / 100 : amount;
+      // Convert from tiyin to UZS for display
+      // If amount is already in UZS (less than 10000), use as is
+      // If amount is in tiyin (more than 10000), convert to UZS
+      const uzs = amount > 10000 ? Math.floor(amount / 100) : amount;
       
       return new Intl.NumberFormat('uz-UZ', {
-        style: 'currency',
-        currency: 'UZS',
-        minimumFractionDigits: 0
-      }).format(uzs);
+        style: 'decimal',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(uzs) + ' сум';
     },
 
     goBack() {
@@ -487,6 +490,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 .payme-checkout {

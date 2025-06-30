@@ -538,24 +538,44 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
   }
   
   try {
+    // Calculate amount in tiyin based on plan
+    const amounts = getPaymentAmounts();
+    const planAmount = amounts[plan]?.tiyin;
+    
+    if (!planAmount) {
+      throw new Error(`Неизвестный план: ${plan}`);
+    }
+    
     const payload = {
       userId,
       plan,
-      method: additionalData.method || 'post', // Default to POST method
+      amount: planAmount, // Amount in tiyin
+      method: additionalData.method || 'post',
+      lang: additionalData.lang || 'ru',
       ...additionalData
     };
     
     console.log('🚀 Initiating PayMe payment:', payload);
     
-    // First try to generate the form if method is specified
-    if (payload.method !== 'direct') {
+    // For direct form generation, create the payment URL here
+    if (payload.method === 'get') {
+      return await generateDirectPaymeUrl(userId, plan, payload);
+    }
+    
+    // For POST method, generate form HTML
+    if (payload.method === 'post') {
+      return await generateDirectPaymeForm(userId, plan, payload);
+    }
+    
+    // For button and QR methods, try form generation first
+    if (payload.method === 'button' || payload.method === 'qr') {
       const formResult = await generatePaymeForm(userId, plan, payload.method, additionalData);
       if (formResult.success) {
         return formResult;
       }
     }
     
-    // Fallback to direct payment initiation
+    // Fallback to backend API call
     const response = await api.post('/payments/initiate', payload);
     
     if (response.data.success) {
@@ -598,6 +618,101 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
       success: false,
       error: error.response?.data?.message || error.message || 'Ошибка инициации платежа',
       details: error.response?.data
+    };
+  }
+};
+
+// ✅ DIRECT PAYME URL GENERATION (for GET method)
+const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
+  try {
+    const amounts = getPaymentAmounts();
+    const planAmount = amounts[plan]?.tiyin;
+    
+    if (!planAmount) {
+      throw new Error(`Неизвестный план: ${plan}`);
+    }
+    
+    // PayMe GET URL format: checkout.paycom.uz/base64(params)
+    // Parameters: m=merchant;ac.order_id=123;a=amount_in_tiyin;l=lang
+    
+    const params = [
+      `m=${import.meta.env.VITE_PAYME_MERCHANT_ID || 'demo_merchant'}`,
+      `ac.order_id=${userId}_${plan}_${Date.now()}`,
+      `a=${planAmount}`,
+      `l=${options.lang || 'ru'}`
+    ];
+    
+    if (options.callback) {
+      params.push(`c=${encodeURIComponent(options.callback)}`);
+    }
+    
+    const paramString = params.join(';');
+    const base64Params = btoa(paramString);
+    const paymentUrl = `https://checkout.paycom.uz/${base64Params}`;
+    
+    console.log('🔗 Generated PayMe URL:', paymentUrl);
+    
+    return {
+      success: true,
+      paymentUrl: paymentUrl,
+      method: 'get',
+      transaction: {
+        id: `${userId}_${plan}_${Date.now()}`,
+        amount: planAmount,
+        plan: plan
+      }
+    };
+  } catch (error) {
+    console.error('❌ Direct URL generation error:', error);
+    return {
+      success: false,
+      error: error.message || 'Ошибка генерации URL'
+    };
+  }
+};
+
+// ✅ DIRECT PAYME FORM GENERATION (for POST method)
+const generateDirectPaymeForm = async (userId, plan, options = {}) => {
+  try {
+    const amounts = getPaymentAmounts();
+    const planAmount = amounts[plan]?.tiyin;
+    
+    if (!planAmount) {
+      throw new Error(`Неизвестный план: ${plan}`);
+    }
+    
+    const orderId = `${userId}_${plan}_${Date.now()}`;
+    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID || 'demo_merchant';
+    
+    // Generate form HTML according to PayMe documentation
+    const formHtml = `
+      <form id="payme-form" method="POST" action="https://checkout.paycom.uz">
+        <input type="hidden" name="merchant" value="${merchantId}" />
+        <input type="hidden" name="amount" value="${planAmount}" />
+        <input type="hidden" name="account[order_id]" value="${orderId}" />
+        <input type="hidden" name="lang" value="${options.lang || 'ru'}" />
+        <input type="hidden" name="description" value="Оплата подписки ${plan}" />
+        ${options.callback ? `<input type="hidden" name="callback" value="${options.callback}" />` : ''}
+        ${options.callback_timeout ? `<input type="hidden" name="callback_timeout" value="${options.callback_timeout}" />` : ''}
+      </form>
+    `;
+    
+    return {
+      success: true,
+      method: 'post',
+      formHtml: formHtml,
+      paymentUrl: 'https://checkout.paycom.uz',
+      transaction: {
+        id: orderId,
+        amount: planAmount,
+        plan: plan
+      }
+    };
+  } catch (error) {
+    console.error('❌ Direct form generation error:', error);
+    return {
+      success: false,
+      error: error.message || 'Ошибка генерации формы'
     };
   }
 };
