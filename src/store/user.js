@@ -1,12 +1,27 @@
-// src/store/user.js - ENHANCED USER STORE WITH PAYMENT INTEGRATION
+// src/store/user.js - ENHANCED USER STORE WITH MONTHLY USAGE TRACKING
 import { checkPaymentStatus } from '@/api/payments';
+import { getUserUsage, resetMonthlyUsage } from '@/services/GPTService';
 
 const state = () => ({
   currentUser: null,
   userStatus: 'free', // 'free', 'start', 'pro', 'premium'
   subscriptionDetails: null,
   paymentHistory: [],
-  lastPaymentCheck: null
+  lastPaymentCheck: null,
+  
+  // Monthly usage tracking
+  currentMonthUsage: {
+    messages: 0,
+    images: 0,
+    lastUpdated: null
+  },
+  usageHistory: [], // Last 6 months
+  lastUsageCheck: null,
+  usageLimits: {
+    free: { messages: 50, images: 5 },
+    start: { messages: -1, images: 20 },
+    pro: { messages: -1, images: -1 }
+  }
 });
 
 const mutations = {
@@ -21,6 +36,9 @@ const mutations = {
     state.subscriptionDetails = null;
     state.paymentHistory = [];
     state.lastPaymentCheck = null;
+    state.currentMonthUsage = { messages: 0, images: 0, lastUpdated: null };
+    state.usageHistory = [];
+    state.lastUsageCheck = null;
     console.log('🧹 User cleared from store');
   },
   
@@ -53,6 +71,45 @@ const mutations = {
       state.currentUser = { ...state.currentUser, ...profileData };
       console.log('📝 User profile updated');
     }
+  },
+  
+  // Usage tracking mutations
+  setCurrentMonthUsage(state, usage) {
+    state.currentMonthUsage = {
+      ...usage,
+      lastUpdated: new Date().toISOString()
+    };
+    console.log('📊 Current month usage updated:', usage);
+  },
+  
+  incrementUsage(state, { messages = 0, images = 0 }) {
+    state.currentMonthUsage.messages += messages;
+    state.currentMonthUsage.images += images;
+    state.currentMonthUsage.lastUpdated = new Date().toISOString();
+    console.log('📈 Usage incremented:', { messages, images });
+  },
+  
+  resetCurrentMonthUsage(state) {
+    state.currentMonthUsage = {
+      messages: 0,
+      images: 0,
+      lastUpdated: new Date().toISOString()
+    };
+    console.log('🔄 Current month usage reset');
+  },
+  
+  setUsageHistory(state, history) {
+    state.usageHistory = history;
+    console.log('📈 Usage history updated');
+  },
+  
+  updateLastUsageCheck(state, timestamp) {
+    state.lastUsageCheck = timestamp;
+  },
+  
+  setUsageLimits(state, limits) {
+    state.usageLimits = { ...state.usageLimits, ...limits };
+    console.log('📏 Usage limits updated');
   }
 };
 
@@ -95,10 +152,11 @@ const actions = {
         localStorage.setItem('firebaseUserId', userId);
       }
       
-      // Load detailed subscription status
+      // Load detailed subscription status and usage data
       await dispatch('loadUserStatus');
+      await dispatch('loadCurrentMonthUsage');
       
-      console.log('✅ User saved and subscription status loaded');
+      console.log('✅ User saved and data loaded');
       return { success: true, user: savedUser };
 
     } catch (err) {
@@ -161,7 +219,175 @@ const actions = {
     }
   },
 
-  // ✅ NEW: Check for pending payments and update status
+  // ✅ NEW: Load current month usage data
+  async loadCurrentMonthUsage({ commit, state }) {
+    try {
+      const userId = 
+        state.currentUser?.firebaseId ||
+        state.currentUser?._id ||
+        localStorage.getItem('userId');
+
+      if (!userId) {
+        console.warn('⚠️ No userId for usage check');
+        return { success: false, error: 'No user ID' };
+      }
+
+      console.log('📊 Loading current month usage for:', userId);
+
+      const usageInfo = await getUserUsage();
+      
+      if (usageInfo.success) {
+        commit('setCurrentMonthUsage', usageInfo.usage);
+        commit('setUserStatus', usageInfo.plan);
+        
+        // Update limits based on current plan
+        if (usageInfo.limits) {
+          commit('setUsageLimits', { [usageInfo.plan]: usageInfo.limits });
+        }
+        
+        commit('updateLastUsageCheck', Date.now());
+        
+        console.log('✅ Usage data loaded:', {
+          usage: usageInfo.usage,
+          plan: usageInfo.plan,
+          limits: usageInfo.limits
+        });
+        
+        return { success: true, usage: usageInfo.usage };
+      } else {
+        console.warn('⚠️ Failed to load usage data:', usageInfo.error);
+        return { success: false, error: usageInfo.error };
+      }
+
+    } catch (err) {
+      console.error('❌ Failed to load current month usage:', err);
+      return { success: false, error: err.message };
+    }
+  },
+
+  // ✅ NEW: Check and perform monthly reset if needed
+  async checkMonthlyReset({ commit, dispatch, state }) {
+    try {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      // Check if we have stored the last reset check
+      const lastResetKey = `lastMonthlyReset_${state.currentUser?.firebaseId || localStorage.getItem('userId')}`;
+      const lastReset = localStorage.getItem(lastResetKey);
+      
+      let shouldReset = false;
+      
+      if (!lastReset) {
+        // First time user
+        shouldReset = false; // Don't reset on first visit
+        localStorage.setItem(lastResetKey, `${currentYear}-${currentMonth}`);
+      } else {
+        const [lastYear, lastMonth] = lastReset.split('-').map(Number);
+        
+        // Check if month changed
+        if (currentYear > lastYear || (currentYear === lastYear && currentMonth > lastMonth)) {
+          shouldReset = true;
+          localStorage.setItem(lastResetKey, `${currentYear}-${currentMonth}`);
+        }
+      }
+      
+      if (shouldReset) {
+        console.log('🔄 Monthly reset triggered - new month detected');
+        
+        // Reset local state
+        commit('resetCurrentMonthUsage');
+        
+        // Try to reset on backend (optional - backend should handle this automatically)
+        try {
+          await resetMonthlyUsage();
+          console.log('✅ Backend usage reset completed');
+        } catch (err) {
+          console.warn('⚠️ Backend reset failed (will be handled automatically):', err);
+        }
+        
+        // Reload current usage to sync with backend
+        await dispatch('loadCurrentMonthUsage');
+        
+        return { success: true, reset: true };
+      }
+      
+      return { success: true, reset: false };
+
+    } catch (err) {
+      console.error('❌ Failed to check monthly reset:', err);
+      return { success: false, error: err.message };
+    }
+  },
+
+  // ✅ NEW: Update usage after sending message
+  async updateUsageAfterMessage({ commit, state }, { hasImage = false }) {
+    try {
+      // Optimistically update local state
+      commit('incrementUsage', { 
+        messages: 1, 
+        images: hasImage ? 1 : 0 
+      });
+      
+      console.log('📈 Local usage updated:', {
+        messages: state.currentMonthUsage.messages,
+        images: state.currentMonthUsage.images
+      });
+      
+      return { success: true };
+
+    } catch (err) {
+      console.error('❌ Failed to update usage:', err);
+      return { success: false, error: err.message };
+    }
+  },
+
+  // ✅ NEW: Check usage limits before action
+  async checkUsageLimits({ state }, { action = 'message', hasImage = false }) {
+    try {
+      const plan = state.userStatus;
+      const limits = state.usageLimits[plan] || state.usageLimits.free;
+      const usage = state.currentMonthUsage;
+      
+      // Check message limit
+      if (action === 'message' && limits.messages !== -1 && usage.messages >= limits.messages) {
+        return {
+          allowed: false,
+          reason: 'message_limit_exceeded',
+          message: `Достигнут лимит сообщений (${limits.messages}) для плана "${plan}". Обновите план для продолжения.`,
+          usage,
+          limits
+        };
+      }
+      
+      // Check image limit
+      if (hasImage && limits.images !== -1 && usage.images >= limits.images) {
+        return {
+          allowed: false,
+          reason: 'image_limit_exceeded',
+          message: `Достигнут лимит изображений (${limits.images}) для плана "${plan}". Обновите план для продолжения.`,
+          usage,
+          limits
+        };
+      }
+      
+      return {
+        allowed: true,
+        remaining: {
+          messages: limits.messages === -1 ? '∞' : Math.max(0, limits.messages - usage.messages),
+          images: limits.images === -1 ? '∞' : Math.max(0, limits.images - usage.images)
+        },
+        usage,
+        limits
+      };
+
+    } catch (err) {
+      console.error('❌ Failed to check usage limits:', err);
+      return { allowed: false, error: err.message };
+    }
+  },
+
+  // ✅ ENHANCED: Check for pending payments and update status
   async checkPendingPayments({ commit, state, dispatch }) {
     try {
       const userId = 
@@ -241,9 +467,10 @@ const actions = {
       // Update last check timestamp
       commit('updateLastPaymentCheck', now);
 
-      // If status changed, reload full user status
+      // If status changed, reload full user status and usage limits
       if (statusChanged) {
         await dispatch('loadUserStatus');
+        await dispatch('loadCurrentMonthUsage');
       }
 
       return { 
@@ -296,6 +523,48 @@ const actions = {
     }
   },
 
+  // ✅ NEW: Get usage statistics and trends
+  async getUsageStatistics({ state }) {
+    try {
+      const userId = 
+        state.currentUser?.firebaseId ||
+        state.currentUser?._id ||
+        localStorage.getItem('userId');
+
+      if (!userId) {
+        return { success: false, error: 'No user ID' };
+      }
+
+      // This would call your backend API for detailed stats
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/${userId}/usage/stats?months=6`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const stats = await response.json();
+      
+      return {
+        success: true,
+        ...stats
+      };
+
+    } catch (err) {
+      console.error('❌ Failed to get usage statistics:', err);
+      
+      // Return local data as fallback
+      return {
+        success: false,
+        error: err.message,
+        localData: {
+          currentMonth: state.currentMonthUsage,
+          plan: state.userStatus,
+          limits: state.usageLimits[state.userStatus]
+        }
+      };
+    }
+  },
+
   // ✅ NEW: Update user profile
   async updateProfile({ commit, state }, profileData) {
     try {
@@ -333,7 +602,7 @@ const actions = {
     }
   },
 
-  // ✅ NEW: Initialize user on app start
+  // ✅ ENHANCED: Initialize user on app start
   async initializeUser({ commit, dispatch }) {
     try {
       console.log('🚀 Initializing user...');
@@ -353,9 +622,11 @@ const actions = {
         }
       }
       
-      // Load current status if we have a user ID
+      // Load current status and usage if we have a user ID
       if (storedUserId) {
         await dispatch('loadUserStatus');
+        await dispatch('loadCurrentMonthUsage');
+        await dispatch('checkMonthlyReset');
         await dispatch('checkPendingPayments');
       }
       
@@ -384,7 +655,7 @@ const actions = {
       // Clear pending payments for all users (optional)
       const keys = Object.keys(localStorage);
       keys.forEach(key => {
-        if (key.startsWith('pendingPayments_')) {
+        if (key.startsWith('pendingPayments_') || key.startsWith('lastMonthlyReset_')) {
           localStorage.removeItem(key);
         }
       });
@@ -419,6 +690,59 @@ const getters = {
     ['start', 'pro', 'premium'].includes(state.userStatus),
   isProUser: (state) => 
     ['pro', 'premium'].includes(state.userStatus),
+  
+  // Usage getters
+  currentMonthUsage: (state) => state.currentMonthUsage,
+  usageLimits: (state) => state.usageLimits[state.userStatus] || state.usageLimits.free,
+  
+  // Remaining usage calculations
+  remainingMessages: (state, getters) => {
+    const limits = getters.usageLimits;
+    if (limits.messages === -1) return '∞';
+    return Math.max(0, limits.messages - state.currentMonthUsage.messages);
+  },
+  
+  remainingImages: (state, getters) => {
+    const limits = getters.usageLimits;
+    if (limits.images === -1) return '∞';
+    return Math.max(0, limits.images - state.currentMonthUsage.images);
+  },
+  
+  // Usage percentage calculations
+  messageUsagePercentage: (state, getters) => {
+    const limits = getters.usageLimits;
+    if (limits.messages === -1) return 0;
+    return Math.min(100, (state.currentMonthUsage.messages / limits.messages) * 100);
+  },
+  
+  imageUsagePercentage: (state, getters) => {
+    const limits = getters.usageLimits;
+    if (limits.images === -1) return 0;
+    return Math.min(100, (state.currentMonthUsage.images / limits.images) * 100);
+  },
+  
+  // Limit status checks
+  isMessageLimitReached: (state, getters) => {
+    const limits = getters.usageLimits;
+    return limits.messages !== -1 && state.currentMonthUsage.messages >= limits.messages;
+  },
+  
+  isImageLimitReached: (state, getters) => {
+    const limits = getters.usageLimits;
+    return limits.images !== -1 && state.currentMonthUsage.images >= limits.images;
+  },
+  
+  isNearMessageLimit: (state, getters) => {
+    const limits = getters.usageLimits;
+    if (limits.messages === -1) return false;
+    return state.currentMonthUsage.messages >= (limits.messages * 0.8); // 80% threshold
+  },
+  
+  isNearImageLimit: (state, getters) => {
+    const limits = getters.usageLimits;
+    if (limits.images === -1) return false;
+    return state.currentMonthUsage.images >= (limits.images * 0.8); // 80% threshold
+  },
   
   // Payment history getters
   paymentHistory: (state) => state.paymentHistory,
@@ -464,6 +788,31 @@ const getters = {
     };
     
     return access[contentType]?.includes(state.userStatus) || false;
+  },
+  
+  // Usage summary for UI
+  usageSummary: (state, getters) => {
+    return {
+      plan: state.userStatus,
+      planDisplayName: getters.statusText,
+      messages: {
+        used: state.currentMonthUsage.messages,
+        limit: getters.usageLimits.messages,
+        remaining: getters.remainingMessages,
+        percentage: getters.messageUsagePercentage,
+        isNearLimit: getters.isNearMessageLimit,
+        isLimitReached: getters.isMessageLimitReached
+      },
+      images: {
+        used: state.currentMonthUsage.images,
+        limit: getters.usageLimits.images,
+        remaining: getters.remainingImages,
+        percentage: getters.imageUsagePercentage,
+        isNearLimit: getters.isNearImageLimit,
+        isLimitReached: getters.isImageLimitReached
+      },
+      lastUpdated: state.currentMonthUsage.lastUpdated
+    };
   }
 };
 
