@@ -1,4 +1,4 @@
-// src/api.js - COMPLETE UPDATED VERSION WITH PAYME INTEGRATION
+// src/api.js - CLEAN AND FIXED VERSION
 import axios from 'axios';
 import { auth } from '@/firebase';
 
@@ -28,9 +28,8 @@ const CACHE_DURATION = 5000; // 5 seconds
 const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAY = 1000; // 1 second
 
-// Request deduplication helper - FIXED
+// Request deduplication helper
 const createRequestKey = (config) => {
-  // Ensure config has required properties
   if (!config || !config.method || !config.url) {
     console.warn('⚠️ Invalid config object in createRequestKey:', config);
     return `unknown-${Date.now()}`;
@@ -126,10 +125,9 @@ const getValidToken = async () => {
   }
 };
 
-// ✅ ENHANCED REQUEST INTERCEPTOR WITH LOOP PREVENTION
+// ✅ REQUEST INTERCEPTOR
 api.interceptors.request.use(async (config) => {
   try {
-    // Create request key for deduplication
     const requestKey = createRequestKey(config);
     
     // Check for pending duplicate requests
@@ -145,37 +143,8 @@ api.interceptors.request.use(async (config) => {
       return Promise.resolve(cached.response);
     }
     
-    // Special handling for payment endpoints - FIXED
+    // Special handling for payment endpoints
     if (config.url?.includes('/payment') || config.url?.includes('/payme')) {
-      // Only block specific webhook endpoints that cause loops
-      const webhookEndpoints = ['/sandbox', '/payme'];
-      const isWebhookEndpoint = webhookEndpoints.some(endpoint => config.url.includes(endpoint));
-      
-      // Allow legitimate API calls like /payments/validate-user, /payments/initiate, etc.
-      const legitimateEndpoints = [
-        '/payments/validate-user',
-        '/payments/initiate',
-        '/payments/status',
-        '/payments/promo-code',
-        '/payments/initialize',
-        '/payments/verify-sms',
-        '/payments/complete',
-        '/payments/generate-form'
-      ];
-      
-      const isLegitimateEndpoint = legitimateEndpoints.some(endpoint => config.url.includes(endpoint));
-      
-      if (isWebhookEndpoint && !isLegitimateEndpoint) {
-        const userAgent = navigator.userAgent;
-        const isBrowser = userAgent.includes('Mozilla') || userAgent.includes('Chrome');
-        
-        if (isBrowser) {
-          console.warn('🚫 Blocking webhook request to:', config.url);
-          throw new Error('Direct browser access to payment webhook endpoints is not allowed');
-        }
-      }
-      
-      // Add special headers for payment requests
       config.headers['X-Request-Source'] = 'frontend';
       config.headers['X-User-Agent'] = navigator.userAgent.substring(0, 50);
     }
@@ -192,7 +161,7 @@ api.interceptors.request.use(async (config) => {
   }
 });
 
-// ✅ ENHANCED RESPONSE INTERCEPTOR WITH FIXED CACHING
+// ✅ RESPONSE INTERCEPTOR
 api.interceptors.response.use(
   (response) => {
     // Cache successful GET requests only
@@ -235,7 +204,7 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    // Remove from pending requests on error - with safety check
+    // Remove from pending requests on error
     if (originalRequest) {
       try {
         const requestKey = createRequestKey(originalRequest);
@@ -252,8 +221,7 @@ api.interceptors.response.use(
       url: error.config?.url,
       method: error.config?.method,
       status: error.response?.status,
-      message: error.response?.data?.message || error.message,
-      isPaymentRequest: error.config?.url?.includes('/payment')
+      message: error.response?.data?.message || error.message
     });
     
     // Handle 401 errors with token refresh
@@ -312,27 +280,10 @@ api.interceptors.response.use(
 );
 
 // =============================================
-// 💳 PAYME PAYMENT API FUNCTIONS - COMPLETE IMPLEMENTATION
+// 💳 PAYME PAYMENT API FUNCTIONS
 // =============================================
 
-// Enhanced token management for payment requests
-const getAuthToken = async () => {
-  try {
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      console.warn('⚠️ No Firebase user for payment request');
-      return null;
-    }
-    
-    const token = await currentUser.getIdToken(true);
-    return token;
-  } catch (error) {
-    console.error('❌ Failed to get auth token for payment:', error);
-    return null;
-  }
-};
-
-// ✅ PAYME ERROR CODES HANDLER (from documentation)
+// ✅ PAYME ERROR CODES HANDLER
 export const getPaymeErrorMessage = (errorCode) => {
   const errorMessages = {
     '-31601': 'Мерчант не найден или заблокирован',
@@ -347,55 +298,306 @@ export const getPaymeErrorMessage = (errorCode) => {
   return errorMessages[errorCode] || `Ошибка PayMe: ${errorCode}`;
 };
 
-// ✅ PAYMENT METHOD SELECTOR HELPER
-export const getOptimalPaymentMethod = (userAgent = navigator.userAgent, screenWidth = window.innerWidth) => {
-  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-  const isSmallScreen = screenWidth < 768;
-  
-  if (isMobile || isSmallScreen) {
-    return 'qr'; // QR codes work well on mobile
-  } else {
-    return 'button'; // Buttons work well on desktop
+// ✅ PAYMENT UTILITY FUNCTIONS WITH CORRECT AMOUNTS
+export const getPaymentAmounts = () => {
+  return {
+    start: {
+      tiyin: 26000000,  // 260,000 UZS in tiyin (260,000 * 100)
+      uzs: 260000,      // 260,000 UZS  
+      label: 'Start'
+    },
+    pro: {
+      tiyin: 45500000,  // 455,000 UZS in tiyin (455,000 * 100)
+      uzs: 455000,      // 455,000 UZS
+      label: 'Pro'
+    }
+  };
+};
+
+// ✅ FORMAT PAYMENT AMOUNT FUNCTION
+export const formatPaymentAmount = (amount, currency = 'UZS') => {
+  try {
+    const numAmount = Number(amount);
+    
+    if (isNaN(numAmount)) {
+      console.warn('⚠️ Invalid amount for formatting:', amount);
+      return `${amount} сум`;
+    }
+    
+    if (currency === 'UZS') {
+      return new Intl.NumberFormat('uz-UZ', {
+        style: 'decimal',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(numAmount) + ' сум';
+    }
+    
+    return new Intl.NumberFormat('uz-UZ', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(numAmount);
+  } catch (error) {
+    console.warn('⚠️ Currency formatting failed, using fallback:', error);
+    const numAmount = Number(amount) || 0;
+    return `${numAmount.toLocaleString('uz-UZ')} сум`;
   }
 };
 
-// ✅ PAYME FORM GENERATION FUNCTION (matches backend documentation)
+// ✅ DIRECT PAYME URL GENERATION (for GET method)
+const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
+  try {
+    const amounts = getPaymentAmounts();
+    const planAmount = amounts[plan]?.tiyin;
+    
+    if (!planAmount) {
+      throw new Error(`Неизвестный план: ${plan}`);
+    }
+    
+    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID || 'demo_merchant';
+    const orderId = `${userId}_${plan}_${Date.now()}`;
+    
+    // PayMe requires specific parameter format
+    const params = [
+      `m=${merchantId}`,
+      `ac.user_id=${userId}`,
+      `ac.plan=${plan}`,
+      `ac.order_id=${orderId}`,
+      `a=${planAmount}`,
+      `l=${options.lang || 'ru'}`
+    ];
+    
+    if (options.callback) {
+      params.push(`c=${encodeURIComponent(options.callback)}`);
+    }
+    
+    if (options.callback_timeout) {
+      params.push(`ct=${options.callback_timeout}`);
+    }
+    
+    params.push('cr=UZS');
+    
+    const paramString = params.join(';');
+    const base64Params = btoa(paramString);
+    
+    const checkoutUrl = import.meta.env.VITE_PAYME_TEST_MODE === 'true' 
+      ? 'https://test.paycom.uz' 
+      : 'https://checkout.paycom.uz';
+    
+    const paymentUrl = `${checkoutUrl}/${base64Params}`;
+    
+    console.log('🔗 Generated PayMe URL:', {
+      paramString,
+      base64Params,
+      paymentUrl
+    });
+    
+    return {
+      success: true,
+      paymentUrl: paymentUrl,
+      method: 'get',
+      transaction: {
+        id: orderId,
+        amount: planAmount,
+        plan: plan
+      }
+    };
+  } catch (error) {
+    console.error('❌ Direct URL generation error:', error);
+    return {
+      success: false,
+      error: error.message || 'Ошибка генерации URL'
+    };
+  }
+};
+
+// ✅ DIRECT PAYME FORM GENERATION (for POST method)
+const generateDirectPaymeForm = async (userId, plan, options = {}) => {
+  try {
+    const amounts = getPaymentAmounts();
+    const planAmount = amounts[plan]?.tiyin;
+    
+    if (!planAmount) {
+      throw new Error(`Неизвестный план: ${plan}`);
+    }
+    
+    const orderId = `${userId}_${plan}_${Date.now()}`;
+    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID || 'demo_merchant';
+    
+    const checkoutUrl = import.meta.env.VITE_PAYME_TEST_MODE === 'true' 
+      ? 'https://test.paycom.uz' 
+      : 'https://checkout.paycom.uz';
+    
+    // Generate form HTML according to PayMe documentation
+    const formHtml = `
+      <form id="payme-form" method="POST" action="${checkoutUrl}">
+        <input type="hidden" name="merchant" value="${merchantId}" />
+        <input type="hidden" name="amount" value="${planAmount}" />
+        <input type="hidden" name="account[user_id]" value="${userId}" />
+        <input type="hidden" name="account[plan]" value="${plan}" />
+        <input type="hidden" name="account[order_id]" value="${orderId}" />
+        <input type="hidden" name="lang" value="${options.lang || 'ru'}" />
+        <input type="hidden" name="description" value="Оплата подписки ${plan}" />
+        ${options.callback ? `<input type="hidden" name="callback" value="${options.callback}" />` : ''}
+        ${options.callback_timeout ? `<input type="hidden" name="callback_timeout" value="${options.callback_timeout}" />` : ''}
+        <button type="submit">Оплатить через PayMe</button>
+      </form>
+    `;
+    
+    return {
+      success: true,
+      method: 'post',
+      formHtml: formHtml,
+      paymentUrl: checkoutUrl,
+      transaction: {
+        id: orderId,
+        amount: planAmount,
+        plan: plan
+      }
+    };
+  } catch (error) {
+    console.error('❌ Direct form generation error:', error);
+    return {
+      success: false,
+      error: error.message || 'Ошибка генерации формы'
+    };
+  }
+};
+
+// ✅ PAYME PAYMENT INITIATION - MAIN FUNCTION
+export const initiatePaymePayment = async (userId, plan, additionalData = {}) => {
+  if (!trackPaymentAttempt(userId, 'payment-initiation')) {
+    throw new Error('Слишком много попыток инициации платежа. Подождите несколько секунд.');
+  }
+  
+  try {
+    const amounts = getPaymentAmounts();
+    const planAmount = amounts[plan]?.tiyin;
+    
+    if (!planAmount) {
+      throw new Error(`Неизвестный план: ${plan}`);
+    }
+    
+    const payload = {
+      userId,
+      plan,
+      amount: planAmount,
+      method: additionalData.method || 'post',
+      lang: additionalData.lang || 'ru',
+      name: additionalData.name || 'User',
+      email: additionalData.email || '',
+      callback: additionalData.callback || `${window.location.origin}/payment/success`,
+      callback_timeout: additionalData.callback_timeout || 15000,
+      ...additionalData
+    };
+    
+    console.log('🚀 Initiating PayMe payment:', payload);
+    
+    // For direct methods, use direct generation
+    if (payload.method === 'get') {
+      return await generateDirectPaymeUrl(userId, plan, payload);
+    }
+    
+    if (payload.method === 'post') {
+      return await generateDirectPaymeForm(userId, plan, payload);
+    }
+    
+    // Try backend API call for other methods
+    try {
+      const response = await api.post('/payments/initiate', payload);
+      
+      if (response.data.success) {
+        return {
+          success: true,
+          data: response.data,
+          paymentUrl: response.data.paymentUrl,
+          transaction: response.data.transaction,
+          metadata: response.data.metadata
+        };
+      } else {
+        throw new Error(response.data.message || 'Payment initiation failed');
+      }
+    } catch (backendError) {
+      // Fallback to direct generation
+      console.warn('⚠️ Backend payment initiation failed, using direct generation');
+      return await generateDirectPaymeUrl(userId, plan, payload);
+    }
+    
+  } catch (error) {
+    console.error('❌ Payment initiation error:', error);
+    
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Ошибка инициации платежа',
+      details: error.response?.data
+    };
+  }
+};
+
+// ✅ PAYME FORM GENERATION FUNCTION
 export const generatePaymeForm = async (userId, plan, method = 'post', options = {}) => {
   if (!trackPaymentAttempt(userId, 'form-generation')) {
     throw new Error('Слишком много попыток генерации формы. Подождите несколько секунд.');
   }
   
   try {
-    const payload = {
-      userId,
-      plan,
-      method, // 'post', 'get', 'button', 'qr'
-      lang: options.lang || 'ru',
-      style: options.style || 'colored', // 'colored' or 'white'
-      qrWidth: options.qrWidth || 250,
-      name: options.name,
-      phone: options.phone
-    };
-    
-    console.log('🎨 Generating PayMe form:', payload);
-    
-    const response = await api.post('/payments/generate-form', payload);
-    
-    if (response.data.success) {
+    // Use direct generation for better reliability
+    if (method === 'get') {
+      const result = await generateDirectPaymeUrl(userId, plan, { method, ...options });
       return {
-        success: true,
-        method: response.data.method,
-        formHtml: response.data.formHtml,
-        buttonHtml: response.data.buttonHtml,
-        qrHtml: response.data.qrHtml,
-        paymentUrl: response.data.paymentUrl,
-        transaction: response.data.transaction
+        success: result.success,
+        method: 'get',
+        paymentUrl: result.paymentUrl,
+        transaction: result.transaction,
+        error: result.error
       };
-    } else {
+    }
+    
+    if (method === 'post') {
+      const result = await generateDirectPaymeForm(userId, plan, { method, ...options });
       return {
-        success: false,
-        error: response.data.message || 'Form generation failed'
+        success: result.success,
+        method: 'post',
+        formHtml: result.formHtml,
+        paymentUrl: result.paymentUrl,
+        transaction: result.transaction,
+        error: result.error
       };
+    }
+    
+    // For other methods, try backend with fallback
+    try {
+      const payload = {
+        userId,
+        plan,
+        method,
+        lang: options.lang || 'ru',
+        style: options.style || 'colored',
+        qrWidth: options.qrWidth || 250,
+        name: options.name,
+        phone: options.phone
+      };
+      
+      const response = await api.post('/payments/generate-form', payload);
+      
+      if (response.data.success) {
+        return {
+          success: true,
+          method: response.data.method,
+          formHtml: response.data.formHtml,
+          buttonHtml: response.data.buttonHtml,
+          qrHtml: response.data.qrHtml,
+          paymentUrl: response.data.paymentUrl,
+          transaction: response.data.transaction
+        };
+      } else {
+        throw new Error(response.data.message || 'Form generation failed');
+      }
+    } catch (backendError) {
+      // Fallback to direct generation
+      console.warn('⚠️ Backend form generation failed, using direct generation');
+      return await generateDirectPaymeUrl(userId, plan, { method: 'get', ...options });
     }
   } catch (error) {
     console.error('❌ Form generation error:', error);
@@ -406,103 +608,7 @@ export const generatePaymeForm = async (userId, plan, method = 'post', options =
   }
 };
 
-// ✅ ALIAS FOR BACKWARDS COMPATIBILITY
-export const generatePaymentForm = generatePaymeForm;
-
-// ✅ PAYME BUTTON INTEGRATION FUNCTION
-export const createPaymeButton = async (userId, plan, containerId = 'payme-button-container', options = {}) => {
-  try {
-    const formResult = await generatePaymeForm(userId, plan, 'button', {
-      style: options.style || 'colored', // 'colored' or 'white'
-      lang: options.lang || 'ru',
-      ...options
-    });
-    
-    if (!formResult.success) {
-      throw new Error(formResult.error);
-    }
-    
-    // Insert the button HTML into the container
-    const container = document.getElementById(containerId);
-    if (container) {
-      container.innerHTML = formResult.buttonHtml;
-      
-      return {
-        success: true,
-        message: 'PayMe button created successfully',
-        transaction: formResult.transaction
-      };
-    } else {
-      throw new Error(`Container ${containerId} not found`);
-    }
-  } catch (error) {
-    console.error('❌ PayMe button creation error:', error);
-    return {
-      success: false,
-      error: handlePaymentError(error, 'Создание кнопки PayMe')
-    };
-  }
-};
-
-// ✅ PAYME QR CODE INTEGRATION FUNCTION
-export const createPaymeQR = async (userId, plan, containerId = 'payme-qr-container', width = 250, options = {}) => {
-  try {
-    const formResult = await generatePaymeForm(userId, plan, 'qr', {
-      qrWidth: width,
-      lang: options.lang || 'ru',
-      ...options
-    });
-    
-    if (!formResult.success) {
-      throw new Error(formResult.error);
-    }
-    
-    // Insert the QR HTML into the container
-    const container = document.getElementById(containerId);
-    if (container) {
-      container.innerHTML = formResult.qrHtml;
-      
-      return {
-        success: true,
-        message: 'PayMe QR code created successfully',
-        transaction: formResult.transaction
-      };
-    } else {
-      throw new Error(`Container ${containerId} not found`);
-    }
-  } catch (error) {
-    console.error('❌ PayMe QR creation error:', error);
-    return {
-      success: false,
-      error: handlePaymentError(error, 'Создание QR-кода PayMe')
-    };
-  }
-};
-
-// ✅ PAYME GET URL GENERATION
-export const generatePaymeUrl = async (userId, plan, options = {}) => {
-  try {
-    const formResult = await generatePaymeForm(userId, plan, 'get', options);
-    
-    if (!formResult.success) {
-      throw new Error(formResult.error);
-    }
-    
-    return {
-      success: true,
-      paymentUrl: formResult.paymentUrl,
-      transaction: formResult.transaction
-    };
-  } catch (error) {
-    console.error('❌ PayMe URL generation error:', error);
-    return {
-      success: false,
-      error: handlePaymentError(error, 'Генерация URL PayMe')
-    };
-  }
-};
-
-// ✅ PROMO CODE APPLICATION - WITH DEBOUNCING
+// ✅ PROMO CODE APPLICATION
 export const applyPromoCode = debounceRequest(async (userId, plan, promoCode) => {
   if (!trackPaymentAttempt(userId, 'promo-code')) {
     throw new Error('Слишком много попыток применения промокода. Подождите несколько секунд.');
@@ -531,192 +637,6 @@ export const applyPromoCode = debounceRequest(async (userId, plan, promoCode) =>
   }
 }, 1000);
 
-// ✅ ENHANCED PAYME PAYMENT INITIATION
-export const initiatePaymePayment = async (userId, plan, additionalData = {}) => {
-  if (!trackPaymentAttempt(userId, 'payment-initiation')) {
-    throw new Error('Слишком много попыток инициации платежа. Подождите несколько секунд.');
-  }
-  
-  try {
-    // Calculate amount in tiyin based on plan
-    const amounts = getPaymentAmounts();
-    const planAmount = amounts[plan]?.tiyin;
-    
-    if (!planAmount) {
-      throw new Error(`Неизвестный план: ${plan}`);
-    }
-    
-    const payload = {
-      userId,
-      plan,
-      amount: planAmount, // Amount in tiyin
-      method: additionalData.method || 'post',
-      lang: additionalData.lang || 'ru',
-      ...additionalData
-    };
-    
-    console.log('🚀 Initiating PayMe payment:', payload);
-    
-    // For direct form generation, create the payment URL here
-    if (payload.method === 'get') {
-      return await generateDirectPaymeUrl(userId, plan, payload);
-    }
-    
-    // For POST method, generate form HTML
-    if (payload.method === 'post') {
-      return await generateDirectPaymeForm(userId, plan, payload);
-    }
-    
-    // For button and QR methods, try form generation first
-    if (payload.method === 'button' || payload.method === 'qr') {
-      const formResult = await generatePaymeForm(userId, plan, payload.method, additionalData);
-      if (formResult.success) {
-        return formResult;
-      }
-    }
-    
-    // Fallback to backend API call
-    const response = await api.post('/payments/initiate', payload);
-    
-    if (response.data.success) {
-      return {
-        success: true,
-        data: response.data,
-        paymentUrl: response.data.paymentUrl,
-        transaction: response.data.transaction,
-        metadata: response.data.metadata
-      };
-    } else {
-      return {
-        success: false,
-        error: response.data.message || 'Payment initiation failed'
-      };
-    }
-  } catch (error) {
-    console.error('❌ Payment initiation error:', error);
-    
-    // Special handling for loop prevention errors
-    if (error.message?.includes('Direct browser access')) {
-      return {
-        success: false,
-        error: 'Ошибка конфигурации платежной системы. Обратитесь в поддержку.',
-        technical: error.message
-      };
-    }
-    
-    // Handle 404 errors specifically
-    if (error.response?.status === 404) {
-      return {
-        success: false,
-        error: 'Платежный сервис недоступен. Убедитесь, что сервер запущен.',
-        technical: 'Payment endpoint not found',
-        details: error.response?.data
-      };
-    }
-    
-    return {
-      success: false,
-      error: error.response?.data?.message || error.message || 'Ошибка инициации платежа',
-      details: error.response?.data
-    };
-  }
-};
-
-// ✅ DIRECT PAYME URL GENERATION (for GET method)
-const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
-  try {
-    const amounts = getPaymentAmounts();
-    const planAmount = amounts[plan]?.tiyin;
-    
-    if (!planAmount) {
-      throw new Error(`Неизвестный план: ${plan}`);
-    }
-    
-    // PayMe GET URL format: checkout.paycom.uz/base64(params)
-    // Parameters: m=merchant;ac.order_id=123;a=amount_in_tiyin;l=lang
-    
-    const params = [
-      `m=${import.meta.env.VITE_PAYME_MERCHANT_ID || 'demo_merchant'}`,
-      `ac.order_id=${userId}_${plan}_${Date.now()}`,
-      `a=${planAmount}`,
-      `l=${options.lang || 'ru'}`
-    ];
-    
-    if (options.callback) {
-      params.push(`c=${encodeURIComponent(options.callback)}`);
-    }
-    
-    const paramString = params.join(';');
-    const base64Params = btoa(paramString);
-    const paymentUrl = `https://checkout.paycom.uz/${base64Params}`;
-    
-    console.log('🔗 Generated PayMe URL:', paymentUrl);
-    
-    return {
-      success: true,
-      paymentUrl: paymentUrl,
-      method: 'get',
-      transaction: {
-        id: `${userId}_${plan}_${Date.now()}`,
-        amount: planAmount,
-        plan: plan
-      }
-    };
-  } catch (error) {
-    console.error('❌ Direct URL generation error:', error);
-    return {
-      success: false,
-      error: error.message || 'Ошибка генерации URL'
-    };
-  }
-};
-
-// ✅ DIRECT PAYME FORM GENERATION (for POST method)
-const generateDirectPaymeForm = async (userId, plan, options = {}) => {
-  try {
-    const amounts = getPaymentAmounts();
-    const planAmount = amounts[plan]?.tiyin;
-    
-    if (!planAmount) {
-      throw new Error(`Неизвестный план: ${plan}`);
-    }
-    
-    const orderId = `${userId}_${plan}_${Date.now()}`;
-    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID || 'demo_merchant';
-    
-    // Generate form HTML according to PayMe documentation
-    const formHtml = `
-      <form id="payme-form" method="POST" action="https://checkout.paycom.uz">
-        <input type="hidden" name="merchant" value="${merchantId}" />
-        <input type="hidden" name="amount" value="${planAmount}" />
-        <input type="hidden" name="account[order_id]" value="${orderId}" />
-        <input type="hidden" name="lang" value="${options.lang || 'ru'}" />
-        <input type="hidden" name="description" value="Оплата подписки ${plan}" />
-        ${options.callback ? `<input type="hidden" name="callback" value="${options.callback}" />` : ''}
-        ${options.callback_timeout ? `<input type="hidden" name="callback_timeout" value="${options.callback_timeout}" />` : ''}
-      </form>
-    `;
-    
-    return {
-      success: true,
-      method: 'post',
-      formHtml: formHtml,
-      paymentUrl: 'https://checkout.paycom.uz',
-      transaction: {
-        id: orderId,
-        amount: planAmount,
-        plan: plan
-      }
-    };
-  } catch (error) {
-    console.error('❌ Direct form generation error:', error);
-    return {
-      success: false,
-      error: error.message || 'Ошибка генерации формы'
-    };
-  }
-};
-
 // ✅ PAYMENT STATUS CHECK
 export const checkPaymentStatus = async (transactionId, userId = null) => {
   try {
@@ -724,7 +644,7 @@ export const checkPaymentStatus = async (transactionId, userId = null) => {
       ? `/payments/status/${transactionId}/${userId}`
       : `/payments/status/${transactionId}`;
     
-    console.log('🔍 Checking payment status:', { transactionId, userId, url });
+    console.log('🔍 Checking payment status:', { transactionId, userId });
     
     const response = await api.get(url);
     
@@ -741,62 +661,6 @@ export const checkPaymentStatus = async (transactionId, userId = null) => {
       error: error.response?.data?.message || error.message || 'Ошибка проверки статуса платежа'
     };
   }
-};
-
-// ✅ PAYMENT STATUS POLLING (useful for monitoring payments)
-export const pollPaymentStatus = async (transactionId, userId, options = {}) => {
-  const maxAttempts = options.maxAttempts || 30; // 5 minutes with 10s intervals
-  const interval = options.interval || 10000; // 10 seconds
-  let attempts = 0;
-  
-  return new Promise((resolve, reject) => {
-    const checkStatus = async () => {
-      try {
-        attempts++;
-        const result = await checkPaymentStatus(transactionId, userId);
-        
-        if (result.success && result.transaction) {
-          const state = result.transaction.state;
-          
-          if (state === 2) { // Paid
-            resolve({
-              success: true,
-              status: 'paid',
-              transaction: result.transaction
-            });
-            return;
-          } else if (state === -1 || state === -2) { // Cancelled or refunded
-            resolve({
-              success: false,
-              status: 'cancelled',
-              transaction: result.transaction
-            });
-            return;
-          }
-        }
-        
-        if (attempts >= maxAttempts) {
-          resolve({
-            success: false,
-            status: 'timeout',
-            message: 'Превышено время ожидания оплаты'
-          });
-          return;
-        }
-        
-        setTimeout(checkStatus, interval);
-        
-      } catch (error) {
-        if (attempts >= maxAttempts) {
-          reject(error);
-        } else {
-          setTimeout(checkStatus, interval);
-        }
-      }
-    };
-    
-    checkStatus();
-  });
 };
 
 // ✅ USER VALIDATION FOR PAYMENTS
@@ -823,222 +687,6 @@ export const validateUser = async (userId) => {
   }
 };
 
-// ✅ COMPLETE PAYMENT FLOW FUNCTION
-export const executePaymentFlow = async (userId, plan, options = {}) => {
-  try {
-    console.log('🔄 Starting complete payment flow:', { userId, plan, options });
-    
-    // 1. Validate user first
-    const userValidation = await validateUser(userId);
-    if (!userValidation.success || !userValidation.valid) {
-      throw new Error(userValidation.error || 'Пользователь не найден');
-    }
-    
-    // 2. Try promo code if provided
-    if (options.promoCode) {
-      const promoResult = await applyPromoCode(userId, plan, options.promoCode);
-      if (promoResult.success) {
-        return {
-          success: true,
-          method: 'promo',
-          message: 'Промокод успешно применён! Подписка активирована.',
-          data: promoResult.data
-        };
-      }
-    }
-    
-    // 3. Determine optimal payment method
-    const method = options.method || getOptimalPaymentMethod();
-    
-    // 4. Generate appropriate payment interface
-    switch (method) {
-      case 'button':
-        return await createPaymeButton(userId, plan, options.containerId, options);
-      case 'qr':
-        return await createPaymeQR(userId, plan, options.containerId, options.qrWidth, options);
-      case 'url':
-      case 'get':
-        return await generatePaymeUrl(userId, plan, options);
-      case 'form':
-      case 'post':
-      default:
-        return await generatePaymeForm(userId, plan, 'post', options);
-    }
-    
-  } catch (error) {
-    console.error('❌ Payment flow error:', error);
-    return {
-      success: false,
-      error: handlePaymentError(error, 'Процесс оплаты')
-    };
-  }
-};
-
-// ✅ SANDBOX TESTING FUNCTIONS - ENHANCED SAFETY
-export const setSandboxAccountState = async (accountLogin, state) => {
-  if (import.meta.env.MODE === 'production') {
-    console.warn('⚠️ Sandbox functions not available in production');
-    return { success: false, error: 'Not available in production' };
-  }
-  
-  try {
-    // Use regular axios to avoid potential loops with interceptors
-    const response = await axios.post(`${BASE_URL}/payments/sandbox/account-state`, {
-      accountLogin,
-      state
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Request-Source': 'frontend-sandbox'
-      },
-      timeout: 10000
-    });
-    
-    return {
-      success: true,
-      data: response.data
-    };
-  } catch (error) {
-    console.error('❌ Sandbox account state error:', error);
-    return {
-      success: false,
-      error: error.response?.data?.message || error.message
-    };
-  }
-};
-
-export const setSandboxMerchantKey = async (merchantKey) => {
-  if (import.meta.env.MODE === 'production') {
-    console.warn('⚠️ Sandbox functions not available in production');
-    return { success: false, error: 'Not available in production' };
-  }
-  
-  try {
-    const response = await axios.post(`${BASE_URL}/payments/sandbox/merchant-key`, {
-      merchantKey
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Request-Source': 'frontend-sandbox'
-      },
-      timeout: 10000
-    });
-    
-    return {
-      success: true,
-      data: response.data
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.response?.data?.message || error.message
-    };
-  }
-};
-
-export const listSandboxTransactions = async () => {
-  if (import.meta.env.MODE === 'production') {
-    console.warn('⚠️ Sandbox functions not available in production');
-    return { success: false, error: 'Not available in production' };
-  }
-  
-  try {
-    const response = await axios.get(`${BASE_URL}/payments/transactions`, {
-      headers: {
-        'X-Request-Source': 'frontend-sandbox'
-      },
-      timeout: 10000
-    });
-    
-    return {
-      success: true,
-      data: response.data,
-      transactions: response.data.transactions
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.response?.data?.message || error.message
-    };
-  }
-};
-
-export const clearSandboxTransactions = async () => {
-  if (import.meta.env.MODE === 'production') {
-    console.warn('⚠️ Sandbox functions not available in production');
-    return { success: false, error: 'Not available in production' };
-  }
-  
-  try {
-    const response = await axios.delete(`${BASE_URL}/payments/transactions/clear`, {
-      headers: {
-        'X-Request-Source': 'frontend-sandbox'
-      },
-      timeout: 10000
-    });
-    
-    return {
-      success: true,
-      data: response.data
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.response?.data?.message || error.message
-    };
-  }
-};
-
-// ✅ PAYMENT UTILITY FUNCTIONS WITH CORRECT AMOUNTS
-export const getPaymentAmounts = () => {
-  return {
-    start: {
-      tiyin: 26000000,  // ✅ 260,000 UZS in tiyin (260000 * 100)
-      uzs: 260000,      // ✅ 260,000 UZS  
-      label: 'Start'
-    },
-    pro: {
-      tiyin: 45500000,  // ✅ 455,000 UZS in tiyin (455000 * 100)
-      uzs: 455000,      // ✅ 455,000 UZS
-      label: 'Pro'
-    }
-  };
-};
-
-// ✅ FORMAT PAYMENT AMOUNT FUNCTION
-export const formatPaymentAmount = (amount, currency = 'UZS') => {
-  try {
-    // Ensure amount is a number
-    const numAmount = Number(amount);
-    
-    if (isNaN(numAmount)) {
-      console.warn('⚠️ Invalid amount for formatting:', amount);
-      return `${amount} сум`;
-    }
-    
-    // For UZS, format as decimal with "сум"
-    if (currency === 'UZS') {
-      return new Intl.NumberFormat('uz-UZ', {
-        style: 'decimal',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(numAmount) + ' сум';
-    }
-    
-    return new Intl.NumberFormat('uz-UZ', {
-      style: 'currency',
-      currency: currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(numAmount);
-  } catch (error) {
-    console.warn('⚠️ Currency formatting failed, using fallback:', error);
-    // Fallback formatting
-    const numAmount = Number(amount) || 0;
-    return `${numAmount.toLocaleString('uz-UZ')} сум`;
-  }
-};
-
 export const getTransactionStateText = (state) => {
   switch (state) {
     case 1:
@@ -1054,18 +702,13 @@ export const getTransactionStateText = (state) => {
   }
 };
 
-// ✅ COMPREHENSIVE ERROR HANDLER FOR PAYMENTS - ENHANCED
+// ✅ COMPREHENSIVE ERROR HANDLER FOR PAYMENTS
 export const handlePaymentError = (error, context = 'Платежная операция') => {
   console.error(`❌ ${context} failed:`, error);
   
   // Check for PayMe specific error codes
   if (error.response?.data?.code && error.response.data.code.toString().startsWith('-316')) {
     return getPaymeErrorMessage(error.response.data.code);
-  }
-  
-  // Check for loop prevention errors
-  if (error.message?.includes('Direct browser access')) {
-    return 'Ошибка конфигурации платежной системы. Обратитесь в поддержку.';
   }
   
   // Check for rate limiting
@@ -1078,7 +721,7 @@ export const handlePaymentError = (error, context = 'Платежная опер
   } else if (error.response?.status === 403) {
     return 'Доступ к платежной системе запрещен';
   } else if (error.response?.status === 404) {
-    return 'Платежный сервис недоступен. Убедитесь, что сервер запущен.';
+    return 'Платежный сервис недоступен. Используется прямая интеграция.';
   } else if (error.response?.status === 429) {
     return 'Слишком много запросов. Подождите несколько секунд и попробуйте снова.';
   } else if (error.response?.status >= 500) {
@@ -1116,17 +759,15 @@ export const getUserProgress = (userId) =>
   api.get(`/user-progress/user/${userId}`);
 
 // =============================================
-// 📝 TESTS API WITH MULTIPLE ENDPOINT SUPPORT
+// 📝 TESTS API
 // =============================================
 
 export const getAvailableTests = async (userId) => {
   try {
-    // Try user-specific endpoint first
     const { data } = await api.get(`/users/${userId}/tests`);
     return data;
   } catch (error) {
     console.warn('⚠️ User tests endpoint failed, trying direct:', error.message);
-    // Fallback to direct tests endpoint
     const { data } = await api.get(`/tests`);
     return { tests: Array.isArray(data) ? data.filter(test => test.isActive !== false) : [] };
   }
@@ -1134,12 +775,10 @@ export const getAvailableTests = async (userId) => {
 
 export const getTestById = async (userId, testId) => {
   try {
-    // Try user-specific endpoint first
     const { data } = await api.get(`/users/${userId}/tests/${testId}`);
     return data;
   } catch (error) {
     console.warn('⚠️ User test endpoint failed, trying direct:', error.message);
-    // Fallback to direct test endpoint
     const { data } = await api.get(`/tests/${testId}`);
     return { test: data };
   }
@@ -1147,12 +786,10 @@ export const getTestById = async (userId, testId) => {
 
 export const submitTestResult = async (userId, testId, answers) => {
   try {
-    // Try user-specific endpoint first
     const { data } = await api.post(`/users/${userId}/tests/${testId}/submit`, { answers });
     return data;
   } catch (error) {
     console.warn('⚠️ User test submit endpoint failed, trying direct:', error.message);
-    // Fallback to direct submit endpoint
     const { data } = await api.post(`/tests/${testId}/submit`, { userId, answers });
     return data;
   }
@@ -1160,12 +797,10 @@ export const submitTestResult = async (userId, testId, answers) => {
 
 export const getTestResult = async (userId, testId) => {
   try {
-    // Try user-specific endpoint first
     const { data } = await api.get(`/users/${userId}/tests/${testId}/result`);
     return data;
   } catch (error) {
     console.warn('⚠️ User test result endpoint failed:', error.message);
-    // Could implement fallback if needed
     throw error;
   }
 };
@@ -1181,19 +816,17 @@ export const getUserTestResults = async (userId) => {
 };
 
 // =============================================
-// 📚 HOMEWORK API WITH MULTIPLE ENDPOINT SUPPORT
+// 📚 HOMEWORK API
 // =============================================
 
 export const getHomeworkByLesson = async (userId, lessonId) => {
   try {
-    // Try user-specific lesson homework endpoint
     const { data } = await api.get(`/users/${userId}/homeworks/lesson/${lessonId}`);
     return data;
   } catch (error) {
     console.warn('⚠️ User homework endpoint failed, trying fallback:', error.message);
     
     try {
-      // Fallback to direct homework routes
       const { data } = await api.get(`/homeworks/user/${userId}/lesson/${lessonId}`);
       return data;
     } catch (fallbackError) {
@@ -1205,14 +838,12 @@ export const getHomeworkByLesson = async (userId, lessonId) => {
 
 export const getAllHomeworks = async (userId) => {
   try {
-    // Try enhanced user homeworks endpoint
     const { data } = await api.get(`/users/${userId}/homeworks`);
     return data;
   } catch (error) {
     console.warn('⚠️ Enhanced homework endpoint failed, trying legacy:', error.message);
     
     try {
-      // Fallback to legacy endpoint
       const { data } = await api.get(`/homeworks/user/${userId}`);
       return data;
     } catch (fallbackError) {
@@ -1224,7 +855,6 @@ export const getAllHomeworks = async (userId) => {
 
 export const saveHomework = async (userId, lessonId, answers) => {
   try {
-    // Try user-specific save endpoint
     const { data } = await api.post(`/users/${userId}/homeworks/save`, { 
       lessonId, 
       answers, 
@@ -1235,7 +865,6 @@ export const saveHomework = async (userId, lessonId, answers) => {
     console.warn('⚠️ User homework save endpoint failed, trying fallback:', error.message);
     
     try {
-      // Fallback to direct homework save
       const { data } = await api.post(`/homeworks/user/${userId}/save`, { 
         lessonId, 
         answers, 
@@ -1251,14 +880,12 @@ export const saveHomework = async (userId, lessonId, answers) => {
 
 export const submitHomework = async (userId, lessonId, answers) => {
   try {
-    // Try user-specific submit endpoint
     const { data } = await api.post(`/users/${userId}/homeworks/lesson/${lessonId}/submit`, { answers });
     return data;
   } catch (error) {
     console.warn('⚠️ User homework submit endpoint failed, trying fallback:', error.message);
     
     try {
-      // Fallback to direct homework submit
       const { data } = await api.post(`/homeworks/user/${userId}/lesson/${lessonId}/submit`, { answers });
       return data;
     } catch (fallbackError) {
@@ -1268,7 +895,6 @@ export const submitHomework = async (userId, lessonId, answers) => {
   }
 };
 
-// ✅ ENHANCED: Standalone Homework API (for admin panel created homework)
 export const getStandaloneHomework = async (userId, homeworkId) => {
   try {
     const { data } = await api.get(`/users/${userId}/homework/${homeworkId}`);
@@ -1381,19 +1007,17 @@ export const getDiaryEntries = (userId) =>
   api.get(`/users/${userId}/diary`);
 
 // =============================================
-// 📊 ANALYTICS WITH FALLBACK SUPPORT
+// 📊 ANALYTICS
 // =============================================
 
 export const getUserAnalytics = async (userId) => {
   try {
-    // Try user-specific analytics endpoint
     const { data } = await api.get(`/users/${userId}/analytics`);
     return data;
   } catch (error) {
     console.warn('⚠️ User analytics endpoint failed, trying fallback:', error.message);
     
     try {
-      // Fallback to general analytics endpoint
       const { data } = await api.get(`/analytics/${userId}`);
       return data;
     } catch (fallbackError) {
@@ -1438,7 +1062,7 @@ export const healthCheck = () =>
 export const authTest = () =>
   api.get(`/auth-test`);
 
-// ✅ GENERAL ERROR HANDLER - ENHANCED
+// ✅ GENERAL ERROR HANDLER
 export const handleApiError = (error, context = 'API call') => {
   console.error(`❌ ${context} failed:`, {
     url: error.config?.url,
@@ -1449,17 +1073,10 @@ export const handleApiError = (error, context = 'API call') => {
     data: error.response?.data
   });
   
-  // Check for PayMe specific error codes
   if (error.response?.data?.code && error.response.data.code.toString().startsWith('-316')) {
     return getPaymeErrorMessage(error.response.data.code);
   }
   
-  // Check for loop prevention errors
-  if (error.message?.includes('Direct browser access')) {
-    return 'Ошибка системы. Обратитесь в поддержку.';
-  }
-  
-  // Return user-friendly error message
   if (error.response?.status === 401) {
     return 'Необходимо войти в систему';
   } else if (error.response?.status === 403) {
@@ -1475,7 +1092,7 @@ export const handleApiError = (error, context = 'API call') => {
   }
 };
 
-// ✅ BATCH OPERATIONS HELPER - ENHANCED
+// ✅ BATCH OPERATIONS HELPER
 export const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -1483,10 +1100,8 @@ export const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
     } catch (error) {
       console.warn(`⚠️ API call attempt ${attempt} failed:`, error.message);
       
-      // Don't retry certain errors
       if (error.response?.status === 401 || 
-          error.response?.status === 403 || 
-          error.message?.includes('Direct browser access')) {
+          error.response?.status === 403) {
         throw error;
       }
       
@@ -1494,7 +1109,6 @@ export const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
         throw error;
       }
       
-      // Exponential backoff
       await new Promise(resolve => setTimeout(resolve, delay * attempt));
     }
   }
@@ -1509,10 +1123,9 @@ export const cleanupRequestCache = () => {
 };
 
 // =============================================
-// 🧪 DEVELOPMENT TESTING HELPERS - ENHANCED
+// 🧪 DEVELOPMENT TESTING HELPERS
 // =============================================
 
-// Test payment flow in development with safety checks
 export const testPaymentFlow = async (userId, plan = 'start') => {
   if (import.meta.env.MODE === 'production') {
     console.warn('⚠️ Test functions not available in production');
@@ -1522,22 +1135,15 @@ export const testPaymentFlow = async (userId, plan = 'start') => {
   console.log('🧪 Testing payment flow:', { userId, plan });
   
   try {
-    // Clean up any previous attempts
     resetPaymentAttempts(userId);
     
-    // 1. Validate user
     const userValidation = await validateUser(userId);
     console.log('👤 User validation:', userValidation);
     
-    // 2. Set account state to waiting_payment (avoid direct sandbox calls)
-    console.log('🔧 Skipping direct sandbox calls to prevent loops');
-    
-    // 3. Try promo code first
     const promoResult = await applyPromoCode(userId, plan, 'acedpromocode2406');
     console.log('🎟️ Promo code result:', promoResult);
     
     if (!promoResult.success) {
-      // 4. Try payment initiation (using safe endpoint)
       const paymentResult = await initiatePaymePayment(userId, plan);
       console.log('💳 Payment initiation:', paymentResult);
       
@@ -1555,7 +1161,6 @@ export const testPaymentFlow = async (userId, plan = 'start') => {
   }
 };
 
-// Enhanced API health check
 export const checkApiHealth = async () => {
   try {
     console.log('🏥 Checking API health...');
@@ -1563,7 +1168,6 @@ export const checkApiHealth = async () => {
     const healthResponse = await healthCheck();
     console.log('✅ Health check passed:', healthResponse.data);
     
-    // Test auth if user is available
     try {
       const authResponse = await authTest();
       console.log('✅ Auth test passed:', authResponse.data);
@@ -1587,165 +1191,6 @@ export const checkApiHealth = async () => {
   }
 };
 
-// Diagnose payment system configuration
-export const diagnosePaymentSystem = async () => {
-  if (import.meta.env.MODE === 'production') {
-    console.warn('⚠️ Diagnostics not available in production');
-    return { success: false, error: 'Not available in production' };
-  }
-  
-  try {
-    console.log('🔍 Diagnosing payment system...');
-    
-    const results = {
-      apiHealth: null,
-      paymentEndpoints: [],
-      loopPrevention: null,
-      recommendations: []
-    };
-    
-    // Check API health
-    try {
-      const health = await healthCheck();
-      results.apiHealth = health.data;
-      
-      if (health.data.payme?.loopPrevention === 'Active') {
-        results.loopPrevention = 'Active ✅';
-      } else {
-        results.loopPrevention = 'Inactive ⚠️';
-        results.recommendations.push('Enable loop prevention in server');
-      }
-    } catch (error) {
-      results.apiHealth = { error: error.message };
-      results.recommendations.push('Fix API health endpoint');
-    }
-    
-    // Test payment endpoints (safe ones only)
-    const endpoints = [
-      { name: 'Payment Initiation', path: '/payments/initiate' },
-      { name: 'Payment Status', path: '/payments/status/test' },
-      { name: 'Form Generation', path: '/payments/generate-form' }
-    ];
-    
-    for (const endpoint of endpoints) {
-      try {
-        // Only test GET endpoints or safe POST endpoints
-        if (endpoint.path.includes('/status/')) {
-          await axios.get(`${BASE_URL}${endpoint.path}`, {
-            timeout: 5000,
-            headers: { 'X-Request-Source': 'diagnostic' }
-          });
-          results.paymentEndpoints.push({ ...endpoint, status: 'Available ✅' });
-        }
-      } catch (error) {
-        const status = error.response?.status === 404 ? 'Not Found ⚠️' : `Error: ${error.message}`;
-        results.paymentEndpoints.push({ ...endpoint, status });
-      }
-    }
-    
-    // Add general recommendations
-    if (results.recommendations.length === 0) {
-      results.recommendations.push('System appears to be configured correctly');
-    }
-    
-    console.log('📊 Diagnosis complete:', results);
-    return { success: true, data: results };
-    
-  } catch (error) {
-    console.error('❌ Diagnosis failed:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-// List all available API functions for debugging
-export const getAvailableApiFunctions = () => {
-  return {
-    payment: [
-      'generatePaymeForm',
-      'generatePaymentForm', // alias
-      'createPaymeButton',
-      'createPaymeQR',
-      'generatePaymeUrl',
-      'applyPromoCode',
-      'initiatePaymePayment', 
-      'checkPaymentStatus',
-      'pollPaymentStatus',
-      'validateUser',
-      'executePaymentFlow',
-      'getPaymentAmounts',
-      'formatPaymentAmount',
-      'getTransactionStateText',
-      'getPaymeErrorMessage',
-      'getOptimalPaymentMethod'
-    ],
-    sandbox: [
-      'setSandboxAccountState',
-      'setSandboxMerchantKey', 
-      'listSandboxTransactions',
-      'clearSandboxTransactions'
-    ],
-    user: [
-      'getUserInfo',
-      'getUserStatus', 
-      'saveUser',
-      'updateUserProfile'
-    ],
-    content: [
-      'getLessonById',
-      'getAllLessons',
-      'getTopics',
-      'getTopicById',
-      'getSubjects'
-    ],
-    homework: [
-      'getHomeworkByLesson',
-      'getAllHomeworks',
-      'saveHomework',
-      'submitHomework',
-      'getStandaloneHomework',
-      'saveStandaloneHomework',
-      'submitStandaloneHomework'
-    ],
-    tests: [
-      'getAvailableTests',
-      'getTestById', 
-      'submitTestResult',
-      'getTestResult',
-      'getUserTestResults'
-    ],
-    progress: [
-      'submitProgress',
-      'getLessonProgress',
-      'getUserProgress',
-      'getUserProgressStats',
-      'getLessonProgressStats',
-      'getTopicsProgress',
-      'getUserPoints'
-    ],
-    analytics: [
-      'getUserAnalytics',
-      'getUserStats',
-      'getUserAchievements'
-    ],
-    utility: [
-      'healthCheck',
-      'authTest',
-      'handleApiError',
-      'handlePaymentError',
-      'retryApiCall',
-      'cleanupRequestCache',
-      'resetPaymentAttempts'
-    ],
-    testing: [
-      'testPaymentFlow',
-      'checkApiHealth',
-      'diagnosePaymentSystem',
-      'getAvailableApiFunctions'
-    ]
-  };
-};
-
-// ✅ DEBUGGING HELPER - Show current system status
 export const getSystemStatus = () => {
   return {
     environment: import.meta.env.MODE,
@@ -1761,5 +1206,9 @@ export const getSystemStatus = () => {
     timestamp: new Date().toISOString()
   };
 };
+
+// ✅ ALIASES FOR BACKWARDS COMPATIBILITY
+export const generatePaymentForm = generatePaymeForm;
+export const executePaymentFlow = initiatePaymePayment;
 
 export default api;

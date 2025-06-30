@@ -261,10 +261,34 @@ export default {
     
     finalPlan() {
       return this.plan || this.selectedPlan;
+    },
+
+    // ✅ FIX: Ensure amount is always in tiyin (multiply by 100 if needed)
+    amountInTiyin() {
+      let amount = parseInt(this.amount) || 0;
+      
+      // If amount seems to be in UZS (less than 10000), convert to tiyin
+      if (amount > 0 && amount < 10000) {
+        amount = amount * 100;
+      }
+      
+      return amount;
+    },
+
+    // ✅ FIX: Generate proper account object based on user data
+    accountObject() {
+      return {
+        user_id: String(this.userId),
+        plan: this.finalPlan,
+        email: this.userEmail || '',
+        name: this.userName || ''
+      };
     }
   },
   async mounted() {
     this.loadPaymentData();
+    this.validatePaymentData();
+    
     // Don't auto-initialize, let user choose method first unless URL has specific params
     if (this.userId && this.plan && this.$route.query.auto === 'true') {
       await this.initializePayment();
@@ -295,11 +319,35 @@ export default {
         transactionId: this.transactionId,
         userId: this.userId,
         amount: this.amount,
+        amountInTiyin: this.amountInTiyin,
         plan: this.plan,
         userName: this.userName,
         method: this.selectedMethod,
-        language: this.selectedLanguage
+        language: this.selectedLanguage,
+        accountObject: this.accountObject
       });
+    },
+
+    // ✅ FIX: Add validation for required PayMe parameters
+    validatePaymentData() {
+      const errors = [];
+
+      if (!this.userId) {
+        errors.push('User ID is required');
+      }
+
+      if (!this.finalPlan && !this.selectedPlan) {
+        errors.push('Plan selection is required');
+      }
+
+      if (!this.amountInTiyin || this.amountInTiyin <= 0) {
+        errors.push('Valid amount is required');
+      }
+
+      if (errors.length > 0) {
+        console.warn('⚠️ Payment data validation issues:', errors);
+        this.error = errors.join(', ');
+      }
     },
 
     async initializePayment() {
@@ -310,6 +358,10 @@ export default {
           throw new Error('Missing user ID or plan information');
         }
 
+        if (!this.amountInTiyin || this.amountInTiyin <= 0) {
+          throw new Error('Invalid payment amount');
+        }
+
         this.loading = true;
         this.error = '';
         this.paymentUrl = '';
@@ -318,19 +370,33 @@ export default {
         console.log('🚀 Initializing PayMe payment with method:', this.selectedMethod);
         this.loadingMessage = this.getLoadingMessage();
 
-        // Call backend to get PayMe redirect URL or content
-        const result = await initiatePaymePayment(this.userId, planToUse, {
-          name: this.userName,
-          email: this.userEmail,
+        // ✅ FIX: Ensure proper data structure for PayMe
+        const paymentData = {
+          name: this.userName || 'User',
+          email: this.userEmail || '',
           method: this.selectedMethod,
           lang: this.selectedLanguage,
-          amount: this.amount // Ensure amount is included
-        });
+          amount: this.amountInTiyin, // Always in tiyin
+          account: this.accountObject, // Proper account object
+          // Add callback URL for successful payments
+          callback: `${window.location.origin}/payment/success`,
+          callback_timeout: 15000 // 15 seconds timeout
+        };
+
+        console.log('📋 Payment data being sent:', paymentData);
+
+        // Call backend to get PayMe redirect URL or content
+        const result = await initiatePaymePayment(this.userId, planToUse, paymentData);
 
         if (result.success) {
           this.paymentUrl = result.paymentUrl;
           this.transactionId = result.transaction?.id || this.transactionId;
           
+          // ✅ FIX: Validate the payment URL before proceeding
+          if (!this.paymentUrl) {
+            throw new Error('Payment URL not received from server');
+          }
+
           // For button and QR methods, get additional content
           if (this.selectedMethod === 'button' || this.selectedMethod === 'qr' || this.selectedMethod === 'post') {
             await this.generateDynamicContent();
@@ -358,12 +424,19 @@ export default {
         if (this.selectedMethod === 'post' || this.selectedMethod === 'button' || this.selectedMethod === 'qr') {
           console.log('🎨 Generating dynamic content for method:', this.selectedMethod);
           
-          const result = await generatePaymeForm(this.userId, this.finalPlan, {
+          // ✅ FIX: Pass proper data structure for form generation
+          const formData = {
             method: this.selectedMethod,
             lang: this.selectedLanguage,
             style: 'colored', // for buttons
-            qrWidth: 250 // for QR codes
-          });
+            qrWidth: 250, // for QR codes
+            amount: this.amountInTiyin,
+            account: this.accountObject,
+            callback: `${window.location.origin}/payment/success`,
+            callback_timeout: 15000
+          };
+
+          const result = await generatePaymeForm(this.userId, this.finalPlan, formData);
           
           if (result.success) {
             this.dynamicContent = result;
@@ -386,10 +459,13 @@ export default {
 
     autoSubmitForm() {
       try {
-        const form = document.querySelector('#payme-form');
+        const form = document.querySelector('#payme-form') || document.querySelector('form');
         if (form) {
           console.log('📝 Auto-submitting PayMe form');
           form.submit();
+        } else {
+          console.warn('⚠️ Form not found, falling back to URL redirect');
+          this.redirectToPayMe();
         }
       } catch (error) {
         console.error('❌ Auto-submit failed:', error);
@@ -414,7 +490,16 @@ export default {
 
       if (this.paymentUrl) {
         console.log('🔗 Redirecting to PayMe:', this.paymentUrl);
-        window.location.href = this.paymentUrl;
+        
+        // ✅ FIX: Add validation before redirect
+        try {
+          // Validate URL format
+          new URL(this.paymentUrl);
+          window.location.href = this.paymentUrl;
+        } catch (urlError) {
+          console.error('❌ Invalid payment URL:', this.paymentUrl);
+          this.error = 'Invalid payment URL received';
+        }
       } else {
         this.error = 'Payment URL not available';
       }
@@ -426,7 +511,13 @@ export default {
       this.countdown = 5;
       this.paymentUrl = '';
       this.dynamicContent = null;
-      // Reset to method selection
+      
+      // Re-validate data before retry
+      this.validatePaymentData();
+      
+      if (!this.error) {
+        await this.initializePayment();
+      }
     },
 
     getMethodName(method) {
@@ -473,8 +564,6 @@ export default {
       if (!amount) return '';
       
       // Convert from tiyin to UZS for display
-      // If amount is already in UZS (less than 10000), use as is
-      // If amount is in tiyin (more than 10000), convert to UZS
       const uzs = amount > 10000 ? Math.floor(amount / 100) : amount;
       
       return new Intl.NumberFormat('uz-UZ', {
@@ -491,536 +580,342 @@ export default {
 };
 </script>
 
-
 <style scoped>
 .payme-checkout {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Inter', sans-serif;
+  padding: 20px;
 }
 
 .checkout-container {
   background: white;
   border-radius: 20px;
   padding: 40px;
-  max-width: 700px;
+  max-width: 600px;
   width: 100%;
-  text-align: center;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-}
-
-.loading-state, .error-state, .method-selection-state, .payment-ready-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
 }
 
 .payme-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-  margin-bottom: 20px;
+  text-align: center;
+  margin-bottom: 30px;
 }
 
-.logo {
-  width: 50px;
-  height: 50px;
+.payme-logo .logo {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 10px;
 }
 
 .payme-logo h1 {
-  color: #1e40af;
-  font-size: 2.5rem;
-  font-weight: 800;
+  color: #4A90E2;
   margin: 0;
+  font-size: 2.5rem;
+  font-weight: bold;
 }
 
 .spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid #e5e7eb;
-  border-left: 4px solid #667eea;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #4A90E2;
   border-radius: 50%;
+  width: 40px;
+  height: 40px;
   animation: spin 1s linear infinite;
+  margin: 20px auto;
 }
 
-.error-icon {
-  font-size: 4rem;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-h2 {
-  color: #1f2937;
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin: 0;
-}
-
-h3 {
-  color: #374151;
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin: 20px 0 10px 0;
-}
-
-p {
-  color: #6b7280;
-  font-size: 1.1rem;
-  line-height: 1.6;
-  margin: 0;
-}
-
-/* User Information Section */
 .user-info-section {
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-  padding: 24px;
-  border-radius: 16px;
-  margin: 25px 0;
-  border: 2px solid #0ea5e9;
-  text-align: left;
-  width: 100%;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
 }
 
 .user-info-section h3 {
-  color: #0c4a6e;
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0 0 16px 0;
-  text-align: center;
+  margin-top: 0;
+  color: #333;
+  font-size: 1.2rem;
 }
 
 .user-details {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .user-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 8px;
-  font-size: 0.9rem;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
 }
 
-.user-row .label {
+.user-row:last-child {
+  border-bottom: none;
+}
+
+.label {
   font-weight: 600;
-  color: #1e40af;
-  min-width: 140px;
+  color: #666;
 }
 
-.user-row .value {
-  color: #1f2937;
+.value {
   font-weight: 500;
-  text-align: right;
-  flex: 1;
-}
-
-.user-id {
-  font-family: 'Courier New', monospace;
-  background: #f1f5f9;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.8rem;
+  color: #333;
 }
 
 .current-plan {
-  background: #fee2e2;
+  background: #e3f2fd;
+  color: #1976d2;
   padding: 4px 8px;
-  border-radius: 4px;
-  color: #991b1b;
-  font-weight: 600;
+  border-radius: 6px;
+  font-size: 0.9rem;
 }
 
 .new-plan {
-  background: #d1fae5;
+  background: #e8f5e8;
+  color: #2e7d32;
   padding: 4px 8px;
-  border-radius: 4px;
-  color: #065f46;
-  font-weight: 600;
+  border-radius: 6px;
+  font-size: 0.9rem;
 }
 
 .amount {
-  background: #dbeafe;
+  background: #fff3e0;
+  color: #f57c00;
   padding: 4px 8px;
-  border-radius: 4px;
-  color: #1e40af;
-  font-weight: 700;
-  font-size: 1rem;
+  border-radius: 6px;
+  font-weight: bold;
 }
 
-.upgrade-row {
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-  border: 1px solid #10b981;
-}
-
-.upgrade-row .label {
-  color: #065f46;
-}
-
-/* Payment Method Selection */
 .payment-method-selection {
-  width: 100%;
-  margin: 20px 0;
+  margin-bottom: 25px;
+}
+
+.payment-method-selection h3 {
+  margin-bottom: 15px;
+  color: #333;
 }
 
 .method-options {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin: 15px 0;
 }
 
 .method-option {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
-  border: 2px solid #e5e7eb;
+  padding: 15px;
+  border: 2px solid #e0e0e0;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  background: #f9fafb;
+  transition: all 0.3s ease;
 }
 
 .method-option:hover {
-  border-color: #667eea;
-  background: #f0f4ff;
+  border-color: #4A90E2;
+  background: #f8f9fa;
 }
 
 .method-option.active {
-  border-color: #667eea;
-  background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+  border-color: #4A90E2;
+  background: #e3f2fd;
 }
 
 .method-option input[type="radio"] {
-  margin: 0;
+  display: none;
 }
 
 .method-icon {
   font-size: 1.5rem;
+  margin-right: 12px;
 }
 
 .method-text {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  flex: 1;
 }
 
 .method-text strong {
-  color: #1f2937;
-  font-size: 0.9rem;
+  color: #333;
+  margin-bottom: 4px;
 }
 
 .method-text small {
-  color: #6b7280;
-  font-size: 0.8rem;
+  color: #666;
+  font-size: 0.85rem;
 }
 
-/* Plan Selection */
 .plan-selection {
-  width: 100%;
-  margin: 20px 0;
+  margin-bottom: 25px;
 }
 
 .plan-options {
   display: flex;
-  gap: 16px;
-  justify-content: center;
-  flex-wrap: wrap;
+  gap: 15px;
 }
 
 .plan-option {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  border: 2px solid #e5e7eb;
+  padding: 20px;
+  border: 2px solid #e0e0e0;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  background: #f9fafb;
-  min-width: 200px;
+  transition: all 0.3s ease;
 }
 
 .plan-option:hover {
-  border-color: #10b981;
-  background: #f0fdf4;
+  border-color: #4A90E2;
 }
 
 .plan-option.active {
-  border-color: #10b981;
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #4A90E2;
+  background: #e3f2fd;
+}
+
+.plan-option input[type="radio"] {
+  display: none;
 }
 
 .plan-details {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  flex: 1;
-}
-
-.plan-details strong {
-  color: #1f2937;
-  font-size: 1rem;
+  width: 100%;
 }
 
 .plan-price {
-  color: #059669;
-  font-weight: 600;
-  font-size: 0.9rem;
+  color: #4A90E2;
+  font-weight: bold;
+  margin-top: 5px;
 }
 
-/* Language Selection */
 .language-selection {
-  width: 100%;
-  margin: 20px 0;
+  margin-bottom: 25px;
 }
 
 .language-select {
-  padding: 12px 16px;
-  border: 2px solid #e5e7eb;
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
   border-radius: 8px;
   font-size: 1rem;
   background: white;
-  min-width: 200px;
-}
-
-.language-select:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
-/* Payment Content */
-.payment-content {
-  width: 100%;
-  margin: 20px 0;
-}
-
-.form-content, .button-content, .qr-content {
-  margin: 20px 0;
-  padding: 20px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #f9fafb;
-}
-
-.url-content {
-  text-align: center;
-  margin: 20px 0;
-}
-
-.payment-link {
-  display: inline-block;
-  margin-top: 10px;
-  color: #1e40af;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.payment-link:hover {
-  text-decoration: underline;
-}
-
-/* Transaction Info */
-.transaction-info {
-  background: #fef3c7;
-  padding: 16px;
-  border-radius: 12px;
-  margin: 20px 0;
-  text-align: left;
-}
-
-.transaction-info h4 {
-  color: #92400e;
-  margin: 0 0 8px 0;
-  font-size: 1rem;
-}
-
-.transaction-info p {
-  color: #78350f;
-  margin: 4px 0;
-  font-size: 0.9rem;
-}
-
-/* PayMe Info */
-.payme-info {
-  background: #f0f9ff;
-  padding: 20px;
-  border-radius: 12px;
-  text-align: left;
-  margin: 20px 0;
-}
-
-.payme-info p {
-  color: #0c4a6e;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-
-.payme-info ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.payme-info li {
-  color: #075985;
-  padding: 4px 0;
-  position: relative;
-  padding-left: 20px;
-}
-
-.payme-info li::before {
-  content: '✓';
-  color: #0ea5e9;
-  font-weight: bold;
-  position: absolute;
-  left: 0;
-}
-
-/* Buttons */
-.payment-button, .payme-btn, .back-btn, .retry-btn {
-  padding: 16px 32px;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin: 8px;
 }
 
 .payment-button, .payme-btn {
-  background: linear-gradient(135deg, #1e40af, #1e3a8a);
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, #4A90E2, #357ABD);
   color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 15px;
 }
 
 .payment-button:hover, .payme-btn:hover {
-  background: linear-gradient(135deg, #1e3a8a, #1e40af);
+  background: linear-gradient(135deg, #357ABD, #2E6DA4);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(30, 64, 175, 0.3);
 }
 
 .payment-button:disabled {
-  background: #9ca3af;
+  background: #ccc;
   cursor: not-allowed;
   transform: none;
-  box-shadow: none;
 }
 
-.retry-btn {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
+.error-state {
+  text-align: center;
 }
 
-.retry-btn:hover {
-  background: linear-gradient(135deg, #059669, #047857);
-  transform: translateY(-2px);
+.error-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.back-btn, .retry-btn {
+  padding: 12px 24px;
+  margin: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
 }
 
 .back-btn {
-  background: #f3f4f6;
-  color: #374151;
+  background: #f5f5f5;
+  color: #333;
 }
 
-.back-btn:hover {
-  background: #e5e7eb;
+.retry-btn {
+  background: #4A90E2;
+  color: white;
+}
+
+.transaction-info {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.payment-content {
+  margin: 20px 0;
 }
 
 .redirect-note {
-  margin-top: 20px;
-  color: #6b7280;
+  text-align: center;
+  margin-top: 15px;
+  color: #666;
 }
 
-.user-info-loading {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 16px;
+.payme-info {
+  background: #e8f5e8;
+  padding: 20px;
   border-radius: 12px;
-  color: #374151;
+  margin-top: 20px;
 }
 
-.user-info-loading p {
-  margin: 8px 0;
-  color: #4b5563;
+.payme-info ul {
+  margin: 10px 0 0 20px;
+  color: #2e7d32;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.payme-info li {
+  margin-bottom: 5px;
 }
 
 @media (max-width: 768px) {
   .checkout-container {
-    padding: 24px;
+    padding: 20px;
     margin: 10px;
+  }
+  
+  .method-options {
+    grid-template-columns: 1fr;
+  }
+  
+  .plan-options {
+    flex-direction: column;
   }
   
   .payme-logo h1 {
     font-size: 2rem;
-  }
-
-  .method-options {
-    grid-template-columns: 1fr;
-  }
-
-  .plan-options {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .plan-option {
-    min-width: auto;
-    width: 100%;
-  }
-
-  .user-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-
-  .user-row .value {
-    text-align: left;
-  }
-
-  .payment-button, .payme-btn, .back-btn, .retry-btn {
-    margin: 8px 0;
-    width: 100%;
-  }
-
-  .language-select {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .checkout-container {
-    padding: 16px;
-  }
-
-  .method-option {
-    padding: 12px;
-  }
-
-  .method-text {
-    align-items: center;
-  }
-
-  h2 {
-    font-size: 1.5rem;
-  }
-
-  .payment-button, .payme-btn {
-    font-size: 1rem;
-    padding: 14px 24px;
   }
 }
 </style>
