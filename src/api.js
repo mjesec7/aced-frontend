@@ -1,4 +1,4 @@
-// src/api.js - UPDATED WITH CORRECT PAYMENT ENDPOINTS
+// src/api.js - COMPLETE UPDATED VERSION WITH PAYME INTEGRATION
 import axios from 'axios';
 import { auth } from '@/firebase';
 
@@ -159,7 +159,8 @@ api.interceptors.request.use(async (config) => {
         '/payments/promo-code',
         '/payments/initialize',
         '/payments/verify-sms',
-        '/payments/complete'
+        '/payments/complete',
+        '/payments/generate-form'
       ];
       
       const isLegitimateEndpoint = legitimateEndpoints.some(endpoint => config.url.includes(endpoint));
@@ -311,7 +312,7 @@ api.interceptors.response.use(
 );
 
 // =============================================
-// 💳 PAYMENT API FUNCTIONS - CORRECTED ENDPOINTS
+// 💳 PAYME PAYMENT API FUNCTIONS - COMPLETE IMPLEMENTATION
 // =============================================
 
 // Enhanced token management for payment requests
@@ -328,6 +329,173 @@ const getAuthToken = async () => {
   } catch (error) {
     console.error('❌ Failed to get auth token for payment:', error);
     return null;
+  }
+};
+
+// ✅ PAYME ERROR CODES HANDLER (from documentation)
+export const getPaymeErrorMessage = (errorCode) => {
+  const errorMessages = {
+    '-31601': 'Мерчант не найден или заблокирован',
+    '-31610': 'Введено неверное значение поля',
+    '-31611': 'Сумма платежа меньше допустимой',
+    '-31612': 'Сумма платежа больше допустимой',
+    '-31622': 'Сервис мерчанта недоступен',
+    '-31623': 'Сервис мерчанта работает некорректно',
+    '-31630': 'Ошибка оплаты: недостаточно средств, неверные данные карты или карта заблокирована'
+  };
+  
+  return errorMessages[errorCode] || `Ошибка PayMe: ${errorCode}`;
+};
+
+// ✅ PAYMENT METHOD SELECTOR HELPER
+export const getOptimalPaymentMethod = (userAgent = navigator.userAgent, screenWidth = window.innerWidth) => {
+  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  const isSmallScreen = screenWidth < 768;
+  
+  if (isMobile || isSmallScreen) {
+    return 'qr'; // QR codes work well on mobile
+  } else {
+    return 'button'; // Buttons work well on desktop
+  }
+};
+
+// ✅ PAYME FORM GENERATION FUNCTION (matches backend documentation)
+export const generatePaymeForm = async (userId, plan, method = 'post', options = {}) => {
+  if (!trackPaymentAttempt(userId, 'form-generation')) {
+    throw new Error('Слишком много попыток генерации формы. Подождите несколько секунд.');
+  }
+  
+  try {
+    const payload = {
+      userId,
+      plan,
+      method, // 'post', 'get', 'button', 'qr'
+      lang: options.lang || 'ru',
+      style: options.style || 'colored', // 'colored' or 'white'
+      qrWidth: options.qrWidth || 250,
+      name: options.name,
+      phone: options.phone
+    };
+    
+    console.log('🎨 Generating PayMe form:', payload);
+    
+    const response = await api.post('/payments/generate-form', payload);
+    
+    if (response.data.success) {
+      return {
+        success: true,
+        method: response.data.method,
+        formHtml: response.data.formHtml,
+        buttonHtml: response.data.buttonHtml,
+        qrHtml: response.data.qrHtml,
+        paymentUrl: response.data.paymentUrl,
+        transaction: response.data.transaction
+      };
+    } else {
+      return {
+        success: false,
+        error: response.data.message || 'Form generation failed'
+      };
+    }
+  } catch (error) {
+    console.error('❌ Form generation error:', error);
+    return {
+      success: false,
+      error: handlePaymentError(error, 'Генерация формы оплаты')
+    };
+  }
+};
+
+// ✅ PAYME BUTTON INTEGRATION FUNCTION
+export const createPaymeButton = async (userId, plan, containerId = 'payme-button-container', options = {}) => {
+  try {
+    const formResult = await generatePaymeForm(userId, plan, 'button', {
+      style: options.style || 'colored', // 'colored' or 'white'
+      lang: options.lang || 'ru',
+      ...options
+    });
+    
+    if (!formResult.success) {
+      throw new Error(formResult.error);
+    }
+    
+    // Insert the button HTML into the container
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.innerHTML = formResult.buttonHtml;
+      
+      return {
+        success: true,
+        message: 'PayMe button created successfully',
+        transaction: formResult.transaction
+      };
+    } else {
+      throw new Error(`Container ${containerId} not found`);
+    }
+  } catch (error) {
+    console.error('❌ PayMe button creation error:', error);
+    return {
+      success: false,
+      error: handlePaymentError(error, 'Создание кнопки PayMe')
+    };
+  }
+};
+
+// ✅ PAYME QR CODE INTEGRATION FUNCTION
+export const createPaymeQR = async (userId, plan, containerId = 'payme-qr-container', width = 250, options = {}) => {
+  try {
+    const formResult = await generatePaymeForm(userId, plan, 'qr', {
+      qrWidth: width,
+      lang: options.lang || 'ru',
+      ...options
+    });
+    
+    if (!formResult.success) {
+      throw new Error(formResult.error);
+    }
+    
+    // Insert the QR HTML into the container
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.innerHTML = formResult.qrHtml;
+      
+      return {
+        success: true,
+        message: 'PayMe QR code created successfully',
+        transaction: formResult.transaction
+      };
+    } else {
+      throw new Error(`Container ${containerId} not found`);
+    }
+  } catch (error) {
+    console.error('❌ PayMe QR creation error:', error);
+    return {
+      success: false,
+      error: handlePaymentError(error, 'Создание QR-кода PayMe')
+    };
+  }
+};
+
+// ✅ PAYME GET URL GENERATION
+export const generatePaymeUrl = async (userId, plan, options = {}) => {
+  try {
+    const formResult = await generatePaymeForm(userId, plan, 'get', options);
+    
+    if (!formResult.success) {
+      throw new Error(formResult.error);
+    }
+    
+    return {
+      success: true,
+      paymentUrl: formResult.paymentUrl,
+      transaction: formResult.transaction
+    };
+  } catch (error) {
+    console.error('❌ PayMe URL generation error:', error);
+    return {
+      success: false,
+      error: handlePaymentError(error, 'Генерация URL PayMe')
+    };
   }
 };
 
@@ -360,7 +528,7 @@ export const applyPromoCode = debounceRequest(async (userId, plan, promoCode) =>
   }
 }, 1000);
 
-// ✅ PAYME PAYMENT INITIATION - CORRECTED TO MATCH YOUR BACKEND
+// ✅ ENHANCED PAYME PAYMENT INITIATION
 export const initiatePaymePayment = async (userId, plan, additionalData = {}) => {
   if (!trackPaymentAttempt(userId, 'payment-initiation')) {
     throw new Error('Слишком много попыток инициации платежа. Подождите несколько секунд.');
@@ -370,12 +538,21 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
     const payload = {
       userId,
       plan,
+      method: additionalData.method || 'post', // Default to POST method
       ...additionalData
     };
     
     console.log('🚀 Initiating PayMe payment:', payload);
     
-    // ✅ FIXED: Use the correct endpoint that matches your backend
+    // First try to generate the form if method is specified
+    if (payload.method !== 'direct') {
+      const formResult = await generatePaymeForm(userId, plan, payload.method, additionalData);
+      if (formResult.success) {
+        return formResult;
+      }
+    }
+    
+    // Fallback to direct payment initiation
     const response = await api.post('/payments/initiate', payload);
     
     if (response.data.success) {
@@ -422,7 +599,7 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
   }
 };
 
-// ✅ PAYMENT STATUS CHECK - CORRECTED TO MATCH YOUR BACKEND
+// ✅ PAYMENT STATUS CHECK
 export const checkPaymentStatus = async (transactionId, userId = null) => {
   try {
     const url = userId 
@@ -448,7 +625,63 @@ export const checkPaymentStatus = async (transactionId, userId = null) => {
   }
 };
 
-// ✅ USER VALIDATION FOR PAYMENTS - CORRECTED TO MATCH YOUR BACKEND
+// ✅ PAYMENT STATUS POLLING (useful for monitoring payments)
+export const pollPaymentStatus = async (transactionId, userId, options = {}) => {
+  const maxAttempts = options.maxAttempts || 30; // 5 minutes with 10s intervals
+  const interval = options.interval || 10000; // 10 seconds
+  let attempts = 0;
+  
+  return new Promise((resolve, reject) => {
+    const checkStatus = async () => {
+      try {
+        attempts++;
+        const result = await checkPaymentStatus(transactionId, userId);
+        
+        if (result.success && result.transaction) {
+          const state = result.transaction.state;
+          
+          if (state === 2) { // Paid
+            resolve({
+              success: true,
+              status: 'paid',
+              transaction: result.transaction
+            });
+            return;
+          } else if (state === -1 || state === -2) { // Cancelled or refunded
+            resolve({
+              success: false,
+              status: 'cancelled',
+              transaction: result.transaction
+            });
+            return;
+          }
+        }
+        
+        if (attempts >= maxAttempts) {
+          resolve({
+            success: false,
+            status: 'timeout',
+            message: 'Превышено время ожидания оплаты'
+          });
+          return;
+        }
+        
+        setTimeout(checkStatus, interval);
+        
+      } catch (error) {
+        if (attempts >= maxAttempts) {
+          reject(error);
+        } else {
+          setTimeout(checkStatus, interval);
+        }
+      }
+    };
+    
+    checkStatus();
+  });
+};
+
+// ✅ USER VALIDATION FOR PAYMENTS
 export const validateUser = async (userId) => {
   try {
     console.log('🔍 Validating user:', userId);
@@ -468,6 +701,57 @@ export const validateUser = async (userId) => {
       success: false,
       valid: false,
       error: error.response?.data?.error || error.message
+    };
+  }
+};
+
+// ✅ COMPLETE PAYMENT FLOW FUNCTION
+export const executePaymentFlow = async (userId, plan, options = {}) => {
+  try {
+    console.log('🔄 Starting complete payment flow:', { userId, plan, options });
+    
+    // 1. Validate user first
+    const userValidation = await validateUser(userId);
+    if (!userValidation.success || !userValidation.valid) {
+      throw new Error(userValidation.error || 'Пользователь не найден');
+    }
+    
+    // 2. Try promo code if provided
+    if (options.promoCode) {
+      const promoResult = await applyPromoCode(userId, plan, options.promoCode);
+      if (promoResult.success) {
+        return {
+          success: true,
+          method: 'promo',
+          message: 'Промокод успешно применён! Подписка активирована.',
+          data: promoResult.data
+        };
+      }
+    }
+    
+    // 3. Determine optimal payment method
+    const method = options.method || getOptimalPaymentMethod();
+    
+    // 4. Generate appropriate payment interface
+    switch (method) {
+      case 'button':
+        return await createPaymeButton(userId, plan, options.containerId, options);
+      case 'qr':
+        return await createPaymeQR(userId, plan, options.containerId, options.qrWidth, options);
+      case 'url':
+      case 'get':
+        return await generatePaymeUrl(userId, plan, options);
+      case 'form':
+      case 'post':
+      default:
+        return await generatePaymeForm(userId, plan, 'post', options);
+    }
+    
+  } catch (error) {
+    console.error('❌ Payment flow error:', error);
+    return {
+      success: false,
+      error: handlePaymentError(error, 'Процесс оплаты')
     };
   }
 };
@@ -655,6 +939,11 @@ export const getTransactionStateText = (state) => {
 // ✅ COMPREHENSIVE ERROR HANDLER FOR PAYMENTS - ENHANCED
 export const handlePaymentError = (error, context = 'Платежная операция') => {
   console.error(`❌ ${context} failed:`, error);
+  
+  // Check for PayMe specific error codes
+  if (error.response?.data?.code && error.response.data.code.toString().startsWith('-316')) {
+    return getPaymeErrorMessage(error.response.data.code);
+  }
   
   // Check for loop prevention errors
   if (error.message?.includes('Direct browser access')) {
@@ -1042,6 +1331,11 @@ export const handleApiError = (error, context = 'API call') => {
     data: error.response?.data
   });
   
+  // Check for PayMe specific error codes
+  if (error.response?.data?.code && error.response.data.code.toString().startsWith('-316')) {
+    return getPaymeErrorMessage(error.response.data.code);
+  }
+  
   // Check for loop prevention errors
   if (error.message?.includes('Direct browser access')) {
     return 'Ошибка системы. Обратитесь в поддержку.';
@@ -1211,7 +1505,8 @@ export const diagnosePaymentSystem = async () => {
     // Test payment endpoints (safe ones only)
     const endpoints = [
       { name: 'Payment Initiation', path: '/payments/initiate' },
-      { name: 'Payment Status', path: '/payments/status/test' }
+      { name: 'Payment Status', path: '/payments/status/test' },
+      { name: 'Form Generation', path: '/payments/generate-form' }
     ];
     
     for (const endpoint of endpoints) {
@@ -1248,13 +1543,21 @@ export const diagnosePaymentSystem = async () => {
 export const getAvailableApiFunctions = () => {
   return {
     payment: [
+      'generatePaymeForm',
+      'createPaymeButton',
+      'createPaymeQR',
+      'generatePaymeUrl',
       'applyPromoCode',
       'initiatePaymePayment', 
       'checkPaymentStatus',
+      'pollPaymentStatus',
       'validateUser',
+      'executePaymentFlow',
       'getPaymentAmounts',
       'formatPaymentAmount',
-      'getTransactionStateText'
+      'getTransactionStateText',
+      'getPaymeErrorMessage',
+      'getOptimalPaymentMethod'
     ],
     sandbox: [
       'setSandboxAccountState',
