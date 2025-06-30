@@ -224,7 +224,7 @@
 
 <script>
 // ✅ Import from the main API file
-import { initiatePaymePayment, generatePaymentForm } from '@/api';
+import { initiatePaymePayment, generatePaymeForm } from '@/api';
 
 export default {
   name: 'PaymeCheckout',
@@ -357,7 +357,7 @@ export default {
         if (this.selectedMethod === 'post' || this.selectedMethod === 'button' || this.selectedMethod === 'qr') {
           console.log('🎨 Generating dynamic content for method:', this.selectedMethod);
           
-          const result = await generatePaymentForm(this.userId, this.finalPlan, {
+          const result = await generatePaymeForm(this.userId, this.finalPlan, {
             method: this.selectedMethod,
             lang: this.selectedLanguage,
             style: 'colored', // for buttons
