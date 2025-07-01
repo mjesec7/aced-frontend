@@ -290,13 +290,13 @@ export default {
   // Fix: Generate proper account object with order_id
   accountObject() {
     return {
-      order_id: String(Date.now()).substr(-9), // FIXED: Use order_id
+      order_id: this.userId, // ensure order_id is provided for PayMe; change if you need a different value
       user_id: String(this.userId),
       plan: this.finalPlan,
       email: this.userEmail || '',
       name: this.userName || ''
     };
-  }
+  },
 },
   async mounted() {
     this.loadPaymentData();
