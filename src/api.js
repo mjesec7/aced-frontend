@@ -351,24 +351,12 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   try {
     console.log('🚀 Generating PayMe URL with:', { userId, plan, options });
     
-    // ✅ CRITICAL FIX: Get merchant ID with multiple fallbacks
-    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID || 
-                       process.env.VITE_PAYME_MERCHANT_ID ||
-                       '68016cc1a5e04614247f7174'; // Your actual merchant ID as fallback
+    // ✅ CRITICAL FIX: Clean merchant ID
+    const merchantId = (import.meta.env.VITE_PAYME_MERCHANT_ID || '68016cc1a5e04614247f7174').trim();
     
-    console.log('🔍 Merchant ID check:', {
-      fromImportMeta: import.meta.env.VITE_PAYME_MERCHANT_ID,
-      fromProcess: process.env?.VITE_PAYME_MERCHANT_ID,
-      finalValue: merchantId,
-      isUndefined: merchantId === undefined,
-      isStringUndefined: merchantId === 'undefined'
-    });
-    
-    // ✅ VALIDATION: Check if merchant ID is valid
-    if (!merchantId || merchantId === 'undefined' || merchantId === 'null') {
-      console.error('❌ VITE_PAYME_MERCHANT_ID is not properly loaded');
-      console.error('Environment check:', import.meta.env);
-      throw new Error('PayMe Merchant ID is not configured. Check your .env file and restart the dev server.');
+    // ✅ VALIDATION: Check merchant ID
+    if (!merchantId || merchantId === 'undefined' || merchantId.length < 10) {
+      throw new Error('Invalid PayMe Merchant ID configuration');
     }
     
     const amounts = getPaymentAmounts();
@@ -378,54 +366,177 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
       throw new Error(`Unknown plan: ${plan}`);
     }
     
-    // ✅ FIXED: Generate unique order ID
-    const orderId = options.order_id || `aced_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // ✅ CRITICAL FIX: Generate CLEAN order ID (only alphanumeric)
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substr(2, 9);
+    const orderId = options.order_id || `aced${timestamp}${randomStr}`;
     
-    // ✅ FIXED: Build parameters according to PayMe documentation
+    // ✅ SANITIZE: Remove any special characters from order ID
+    const cleanOrderId = orderId.replace(/[^a-zA-Z0-9]/g, '');
+    
+    console.log('🧹 Clean order ID generated:', cleanOrderId);
+    
+    // ✅ FIXED: Build parameters with validation
     const params = [];
+    
+    // Merchant ID - CLEAN
     params.push(`m=${merchantId}`);
-    params.push(`ac.order_id=${orderId}`);
+    
+    // Account - CLEAN order ID only
+    params.push(`ac.order_id=${cleanOrderId}`);
+    
+    // Amount - CLEAN number only
     params.push(`a=${planAmount}`);
     
-    if (options.lang) {
+    // Optional clean parameters
+    if (options.lang && /^[a-z]{2}$/.test(options.lang)) {
       params.push(`l=${options.lang}`);
     }
+    
     if (options.callback) {
+      // URL encode the callback properly
       params.push(`c=${encodeURIComponent(options.callback)}`);
     }
-    if (options.callback_timeout) {
+    
+    if (options.callback_timeout && Number.isInteger(Number(options.callback_timeout))) {
       params.push(`ct=${options.callback_timeout}`);
     }
     
-    // ✅ CRITICAL: Join with semicolon
+    // Currency
+    params.push(`cr=UZS`);
+    
+    // ✅ CRITICAL FIX: Clean parameter string
     const paramString = params.join(';');
-    console.log('📝 Fixed param string:', paramString);
     
-    const base64Params = btoa(paramString);
-    const paymentUrl = `https://checkout.paycom.uz/${base64Params}`;
+    console.log('📝 Clean parameter string:', paramString);
     
-    // ✅ VERIFICATION: Check the URL is correct
-    const verification = atob(base64Params);
-    console.log('✅ Verification - decoded params:', verification);
-    
-    if (verification.includes('undefined')) {
-      throw new Error('Generated URL still contains "undefined". Check environment variables.');
+    // ✅ VALIDATION: Check for any problematic characters
+    if (paramString.includes('undefined') || paramString.includes('[object Object]')) {
+      throw new Error('Parameter string contains invalid values');
     }
     
-    console.log('🔗 Generated PayMe URL:', paymentUrl);
+    // ✅ CRITICAL FIX: Safe Base64 encoding
+    let base64Params;
+    try {
+      base64Params = btoa(unescape(encodeURIComponent(paramString)));
+    } catch (encodingError) {
+      console.error('❌ Base64 encoding failed:', encodingError);
+      throw new Error('Failed to encode payment parameters');
+    }
+    
+    const paymentUrl = `https://checkout.paycom.uz/${base64Params}`;
+    
+    // ✅ FINAL VERIFICATION: Decode and check
+    try {
+      const verification = atob(base64Params);
+      console.log('✅ Verification - decoded params:', verification);
+      
+      if (verification !== paramString) {
+        throw new Error('Parameter encoding/decoding mismatch');
+      }
+      
+      // Check for corruption
+      if (verification.includes('�') || verification.includes('\f') || verification.includes('\0')) {
+        throw new Error('Parameter string contains corrupted characters');
+      }
+      
+    } catch (verificationError) {
+      console.error('❌ Verification failed:', verificationError);
+      throw new Error('Generated URL failed verification');
+    }
+    
+    console.log('🔗 Generated clean PayMe URL:', paymentUrl);
     
     return {
       success: true,
       paymentUrl,
       method: 'GET',
       transaction: {
-        id: orderId,
+        id: cleanOrderId,
         amount: planAmount,
         plan
       }
     };
+    
   } catch (error) {
     console.error('❌ URL generation error:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// ✅ ADDITIONAL HELPER: Validate PayMe URL before redirect
+export const validatePaymeUrl = (url) => {
+  try {
+    // Extract base64 part
+    const base64Part = url.split('/').pop();
+    
+    // Decode and check
+    const decoded = atob(base64Part);
+    console.log('🔍 URL validation - decoded:', decoded);
+    
+    // Check for required parameters
+    const hasValidMerchant = decoded.includes('m=') && !decoded.includes('m=undefined');
+    const hasValidAmount = decoded.includes('a=') && /a=\d+/.test(decoded);
+    const hasValidOrderId = decoded.includes('ac.order_id=') && !decoded.includes('ac.order_id=undefined');
+    
+    // Check for corruption
+    const isCorrupted = decoded.includes('�') || 
+                       decoded.includes('\f') || 
+                       decoded.includes('\0') ||
+                       decoded.includes('[object Object]');
+    
+    const validation = {
+      isValid: hasValidMerchant && hasValidAmount && hasValidOrderId && !isCorrupted,
+      hasValidMerchant,
+      hasValidAmount,
+      hasValidOrderId,
+      isCorrupted,
+      decodedParams: decoded
+    };
+    
+    console.log('🔍 URL validation result:', validation);
+    
+    return validation;
+    
+  } catch (error) {
+    console.error('❌ URL validation failed:', error);
+    return {
+      isValid: false,
+      error: error.message
+    };
+  }
+};
+
+// ✅ SAFE URL GENERATION TEST
+export const testCleanUrlGeneration = async () => {
+  try {
+    console.log('🧪 Testing clean URL generation...');
+    
+    const testResult = await generateDirectPaymeUrl('testuser123', 'start', {
+      lang: 'ru',
+      callback: 'https://aced.live/payment/success'
+    });
+    
+    if (testResult.success) {
+      const validation = validatePaymeUrl(testResult.paymentUrl);
+      
+      console.log('✅ Test URL generated:', testResult.paymentUrl);
+      console.log('✅ Validation result:', validation);
+      
+      return {
+        success: validation.isValid,
+        url: testResult.paymentUrl,
+        validation
+      };
+    } else {
+      throw new Error(testResult.error);
+    }
+    
+  } catch (error) {
+    console.error('❌ Test failed:', error);
     return {
       success: false,
       error: error.message
