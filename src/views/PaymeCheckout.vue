@@ -367,17 +367,12 @@ export default {
       }
     },
 
-   // ✅ FIXED: Replace the initializePayment method in src/views/PaymeCheckout.vue around line 270
-async initializePayment() {
+    async initializePayment() {
   try {
     const planToUse = this.finalPlan;
     
     if (!this.userId || !planToUse) {
       throw new Error('Missing user ID or plan information');
-    }
-
-    if (!this.amountInTiyin || this.amountInTiyin <= 0) {
-      throw new Error('Invalid payment amount');
     }
 
     this.loading = true;
@@ -388,76 +383,89 @@ async initializePayment() {
     console.log('🚀 Initializing PayMe payment with method:', this.selectedMethod);
     this.loadingMessage = this.getLoadingMessage();
 
-    // ✅ CRITICAL FIX: Environment validation
+    // Environment check
     const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
     
-    console.log('🔍 Frontend environment check:', {
-      merchantId: merchantId ? merchantId.substring(0, 10) + '...' : 'MISSING',
-      hasValue: !!merchantId,
-      isUndefined: merchantId === undefined,
-      isStringUndefined: merchantId === 'undefined'
-    });
-    
     if (!merchantId || merchantId === 'undefined') {
-      console.error('❌ VITE_PAYME_MERCHANT_ID not set or undefined');
-      throw new Error('PayMe configuration error. Please restart the application and check environment variables.');
+      console.error('❌ VITE_PAYME_MERCHANT_ID not set');
+      throw new Error('PayMe configuration error. Check environment variables.');
     }
 
-    // ✅ FIXED: Proper data structure for PayMe
+    console.log('✅ Environment check passed');
+
+    // Prepare payment data
     const paymentData = {
       method: this.selectedMethod,
       lang: this.selectedLanguage,
       callback: `${window.location.origin}/payment/success`,
       callback_timeout: 15000,
-      order_id: this.userId // Ensure order_id is provided
+      order_id: this.userId,
+      style: 'colored', // for button method
+      qrWidth: 250 // for QR method
     };
 
-    console.log('📋 Payment data being sent:', {
-      userId: this.userId,
-      plan: planToUse,
-      amount: this.amountInTiyin,
-      data: paymentData
-    });
+    console.log('📋 Payment data:', JSON.stringify(paymentData, null, 2));
 
+    // Call the payment API
     const result = await initiatePaymePayment(this.userId, planToUse, paymentData);
 
-    console.log('💳 Payment result:', result);
+    console.log('💳 Payment result:', JSON.stringify(result, null, 2));
 
     if (result.success) {
-      // ✅ FIXED: Handle different response types
+      // Handle different response types
       if (result.paymentUrl) {
         this.paymentUrl = result.paymentUrl;
         
-        // ✅ VERIFICATION: Check the URL doesn't contain "undefined"
+        // Verify URL doesn't contain undefined
         if (this.paymentUrl.includes('undefined')) {
-          throw new Error('Generated payment URL contains "undefined". Environment configuration error.');
+          throw new Error('Generated payment URL contains undefined values');
         }
+        
+        console.log('✅ Payment URL generated:', this.paymentUrl);
       }
       
       if (result.formHtml) {
         this.dynamicContent = { formHtml: result.formHtml };
+        console.log('✅ POST form generated');
+      }
+      
+      if (result.buttonHtml) {
+        this.dynamicContent = { buttonHtml: result.buttonHtml };
+        console.log('✅ Button generated');
+      }
+      
+      if (result.qrHtml) {
+        this.dynamicContent = { qrHtml: result.qrHtml };
+        console.log('✅ QR code generated');
       }
       
       this.transactionId = result.transaction?.id || this.transactionId;
-      
       this.loading = false;
 
-      // Start countdown for auto-redirect
+      // Handle auto-redirect for GET method
       if (this.selectedMethod === 'get' && this.paymentUrl) {
         this.startCountdown();
-      } else if (this.selectedMethod === 'post' && this.dynamicContent?.formHtml) {
-        // Auto-submit form after a delay
-        setTimeout(() => {
-          this.autoSubmitForm();
-        }, 2000);
       }
+      
     } else {
       throw new Error(result.error || 'Failed to initialize payment');
     }
 
   } catch (error) {
     console.error('❌ Payment initialization error:', error);
-    this.error = error.message || 'Failed to initialize payment';
+    
+    // Proper error handling - no more [object Object]
+    let errorMessage = 'Failed to initialize payment';
+    
+    if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error && typeof error.message === 'string') {
+      errorMessage = error.message;
+    } else if (error && typeof error === 'object') {
+      errorMessage = JSON.stringify(error);
+    }
+    
+    this.error = errorMessage;
     this.loading = false;
   }
 },

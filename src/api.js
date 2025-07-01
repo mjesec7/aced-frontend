@@ -302,17 +302,16 @@ export const getPaymentAmounts = () => {
   return {
     start: {
       tiyin: 26000000,  // 260,000 UZS in tiyin
-      uzs: 260000,      // 260,000 UZS  
-      label: 'Start'
+      uzs: 260000,      // 260,000 UZS
+      label: 'Start Plan'
     },
     pro: {
       tiyin: 45500000,  // 455,000 UZS in tiyin
       uzs: 455000,      // 455,000 UZS
-      label: 'Pro'
+      label: 'Pro Plan'
     }
   };
 };
-
 
 
 // ✅ FORMAT PAYMENT AMOUNT FUNCTION
@@ -349,117 +348,92 @@ export const formatPaymentAmount = (amount, currency = 'UZS') => {
 // ✅ FIXED: Replace this function in src/api.js around line 297
 const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   try {
-    console.log('🚀 Generating PayMe URL with:', { userId, plan, options });
+    console.log('🔗 Generating PayMe GET URL - Method 1');
     
-    // ✅ CRITICAL FIX: Clean merchant ID
-    const merchantId = (import.meta.env.VITE_PAYME_MERCHANT_ID || '68016cc1a5e04614247f7174').trim();
+    // Get merchant ID with validation
+    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
     
-    // ✅ VALIDATION: Check merchant ID
-    if (!merchantId || merchantId === 'undefined' || merchantId.length < 10) {
-      throw new Error('Invalid PayMe Merchant ID configuration');
+    if (!merchantId || merchantId === 'undefined' || typeof merchantId !== 'string') {
+      console.error('❌ VITE_PAYME_MERCHANT_ID not loaded properly');
+      console.error('Current value:', merchantId, 'Type:', typeof merchantId);
+      throw new Error('PayMe Merchant ID not configured. Check your .env file.');
     }
+    
+    console.log('✅ Merchant ID loaded:', merchantId.substring(0, 10) + '...');
     
     const amounts = getPaymentAmounts();
     const planAmount = amounts[plan]?.tiyin;
     
     if (!planAmount) {
-      throw new Error(`Unknown plan: ${plan}`);
+      throw new Error(`Plan "${plan}" not found. Available: start, pro`);
     }
     
-    // ✅ CRITICAL FIX: Generate CLEAN order ID (only alphanumeric)
+    // Generate clean order ID (alphanumeric only)
     const timestamp = Date.now();
-    const randomStr = Math.random().toString(36).substr(2, 9);
-    const orderId = options.order_id || `aced${timestamp}${randomStr}`;
+    const randomPart = Math.random().toString(36).substr(2, 6);
+    const orderId = `aced${timestamp}${randomPart}`;
     
-    // ✅ SANITIZE: Remove any special characters from order ID
-    const cleanOrderId = orderId.replace(/[^a-zA-Z0-9]/g, '');
+    console.log('💰 Payment details:', {
+      plan,
+      orderId,
+      amountTiyin: planAmount,
+      amountUzs: amounts[plan].uzs
+    });
     
-    console.log('🧹 Clean order ID generated:', cleanOrderId);
-    
-    // ✅ FIXED: Build parameters with validation
+    // Build parameters according to GET documentation
     const params = [];
-    
-    // Merchant ID - CLEAN
     params.push(`m=${merchantId}`);
-    
-    // Account - CLEAN order ID only
-    params.push(`ac.order_id=${cleanOrderId}`);
-    
-    // Amount - CLEAN number only
+    params.push(`ac.order_id=${orderId}`);
     params.push(`a=${planAmount}`);
     
-    // Optional clean parameters
-    if (options.lang && /^[a-z]{2}$/.test(options.lang)) {
+    if (options.lang && ['ru', 'uz', 'en'].includes(options.lang)) {
       params.push(`l=${options.lang}`);
     }
     
     if (options.callback) {
-      // URL encode the callback properly
       params.push(`c=${encodeURIComponent(options.callback)}`);
     }
     
-    if (options.callback_timeout && Number.isInteger(Number(options.callback_timeout))) {
+    if (options.callback_timeout) {
       params.push(`ct=${options.callback_timeout}`);
     }
     
-    // Currency
-    params.push(`cr=UZS`);
-    
-    // ✅ CRITICAL FIX: Clean parameter string
+    // Join with semicolon as per documentation
     const paramString = params.join(';');
+    console.log('📝 Parameter string:', paramString);
     
-    console.log('📝 Clean parameter string:', paramString);
-    
-    // ✅ VALIDATION: Check for any problematic characters
-    if (paramString.includes('undefined') || paramString.includes('[object Object]')) {
-      throw new Error('Parameter string contains invalid values');
+    // Validate no undefined values
+    if (paramString.includes('undefined') || paramString.includes('null')) {
+      throw new Error('Parameter string contains invalid values: ' + paramString);
     }
     
-    // ✅ CRITICAL FIX: Safe Base64 encoding
-    let base64Params;
-    try {
-      base64Params = btoa(unescape(encodeURIComponent(paramString)));
-    } catch (encodingError) {
-      console.error('❌ Base64 encoding failed:', encodingError);
-      throw new Error('Failed to encode payment parameters');
-    }
-    
+    // Base64 encode
+    const base64Params = btoa(paramString);
     const paymentUrl = `https://checkout.paycom.uz/${base64Params}`;
     
-    // ✅ FINAL VERIFICATION: Decode and check
-    try {
-      const verification = atob(base64Params);
-      console.log('✅ Verification - decoded params:', verification);
-      
-      if (verification !== paramString) {
-        throw new Error('Parameter encoding/decoding mismatch');
-      }
-      
-      // Check for corruption
-      if (verification.includes('�') || verification.includes('\f') || verification.includes('\0')) {
-        throw new Error('Parameter string contains corrupted characters');
-      }
-      
-    } catch (verificationError) {
-      console.error('❌ Verification failed:', verificationError);
-      throw new Error('Generated URL failed verification');
+    // Final verification
+    const verification = atob(base64Params);
+    console.log('✅ Verification - decoded:', verification);
+    
+    if (verification !== paramString) {
+      throw new Error('URL encoding/decoding mismatch');
     }
     
-    console.log('🔗 Generated clean PayMe URL:', paymentUrl);
+    console.log('✅ PayMe GET URL generated successfully');
     
     return {
       success: true,
       paymentUrl,
       method: 'GET',
       transaction: {
-        id: cleanOrderId,
+        id: orderId,
         amount: planAmount,
         plan
       }
     };
     
   } catch (error) {
-    console.error('❌ URL generation error:', error);
+    console.error('❌ GET URL generation failed:', error);
     return {
       success: false,
       error: error.message
@@ -544,8 +518,19 @@ export const testCleanUrlGeneration = async () => {
   }
 };
 
+// ✅ FIXED: Generate POST Form (Method 2 from PayMe docs)
 const generateDirectPaymeForm = async (userId, plan, options = {}) => {
   try {
+    console.log('📝 Generating PayMe POST form - Method 2');
+    
+    // ✅ CRITICAL FIX: Clean merchant ID
+    const merchantId = (import.meta.env.VITE_PAYME_MERCHANT_ID || '68016cc1a5e04614247f7174').trim();
+    
+    // ✅ VALIDATION: Check merchant ID
+    if (!merchantId || merchantId === 'undefined' || merchantId.length < 10) {
+      throw new Error('Invalid PayMe Merchant ID configuration');
+    }
+    
     const amounts = getPaymentAmounts();
     const planAmount = amounts[plan]?.tiyin;
     
@@ -553,40 +538,240 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
       throw new Error(`Unknown plan: ${plan}`);
     }
     
-    const orderId = `aced_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID || 'test-merchant-id';
+    // ✅ CRITICAL FIX: Generate CLEAN order ID (only alphanumeric)
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substr(2, 9);
+    const orderId = options.order_id || `aced${timestamp}${randomStr}`;
     
-    // Create the form HTML with proper PayMe format
+    // ✅ SANITIZE: Remove any special characters from order ID
+    const cleanOrderId = orderId.replace(/[^a-zA-Z0-9]/g, '');
+    
+    console.log('🧹 Clean order ID generated:', cleanOrderId);
+    
+    // ✅ Create detail object as per PayMe documentation
+    const detail = {
+      receipt_type: 0,
+      items: [{
+        title: `ACED ${plan.toUpperCase()} Subscription`,
+        price: planAmount,
+        count: 1,
+        code: "10899002001000000", // IKPU code for digital services
+        vat_percent: 0,
+        package_code: "123456"
+      }]
+    };
+    
+    // ✅ Safe JSON encoding
+    let detailBase64;
+    try {
+      const detailJson = JSON.stringify(detail);
+      detailBase64 = btoa(unescape(encodeURIComponent(detailJson)));
+    } catch (encodingError) {
+      console.error('❌ Detail encoding failed:', encodingError);
+      detailBase64 = ''; // Fallback to empty detail
+    }
+    
+    // ✅ Generate clean callback URL
+    const callbackUrl = options.callback || `${window.location.origin}/payment/success`;
+    const cleanCallback = encodeURIComponent(callbackUrl);
+    
+    // ✅ Validate language parameter
+    const validLanguages = ['ru', 'uz', 'en'];
+    const language = validLanguages.includes(options.lang) ? options.lang : 'ru';
+    
+    // ✅ Validate timeout parameter
+    const callbackTimeout = options.callback_timeout && Number.isInteger(Number(options.callback_timeout)) 
+      ? options.callback_timeout 
+      : 15000;
+    
+    // ✅ Generate form HTML exactly as per POST documentation
     const formHtml = `
-      <form id="payme-form" method="POST" action="https://checkout.paycom.uz" style="display: none;">
-        <input type="hidden" name="merchant" value="${merchantId}" />
-        <input type="hidden" name="amount" value="${planAmount}" />
-        <input type="hidden" name="account[order_id]" value="${orderId}" />
-        <input type="hidden" name="lang" value="${options.lang || 'ru'}" />
-        <input type="hidden" name="description" value="ACED ${plan.toUpperCase()} subscription" />
-        <input type="hidden" name="callback" value="${options.callback || window.location.origin + '/payment/success'}" />
-        <input type="hidden" name="callback_timeout" value="15000" />
+    <form method="POST" action="https://checkout.paycom.uz/" id="payme-form" style="display: none;">
+      <!-- Required fields -->
+      <input type="hidden" name="merchant" value="${merchantId}"/>
+      <input type="hidden" name="amount" value="${planAmount}"/>
+      <input type="hidden" name="account[order_id]" value="${cleanOrderId}"/>
+      
+      <!-- Optional fields -->
+      <input type="hidden" name="lang" value="${language}"/>
+      <input type="hidden" name="callback" value="${cleanCallback}"/>
+      <input type="hidden" name="callback_timeout" value="${callbackTimeout}"/>
+      <input type="hidden" name="description" value="ACED ${plan.toUpperCase()} Plan Subscription"/>
+      ${detailBase64 ? `<input type="hidden" name="detail" value="${detailBase64}"/>` : ''}
+      
+      <!-- Submit button (hidden, auto-submit) -->
+      <button type="submit" style="display: none;">Pay with PayMe</button>
+    </form>
+    
+    <script>
+      console.log('📝 PayMe POST form auto-submitting...');
+      
+      // Wait for DOM to be ready
+      function submitPaymeForm() {
+        const form = document.getElementById('payme-form');
+        if (form) {
+          console.log('✅ Form found, submitting to PayMe...');
+          form.submit();
+        } else {
+          console.error('❌ PayMe form not found in DOM');
+        }
+      }
+      
+      // Auto-submit after short delay
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          setTimeout(submitPaymeForm, 1000);
+        });
+      } else {
+        setTimeout(submitPaymeForm, 1000);
+      }
+    </script>
+    `;
+    
+    console.log('✅ PayMe POST form generated successfully');
+    console.log('📋 Form details:', {
+      merchantId: merchantId.substring(0, 10) + '...',
+      orderId: cleanOrderId,
+      amount: planAmount,
+      plan: plan,
+      language: language,
+      callback: callbackUrl
+    });
+    
+    return {
+      success: true,
+      formHtml,
+      method: 'POST',
+      transaction: {
+        id: cleanOrderId,
+        amount: planAmount,
+        plan: plan,
+        merchantId: merchantId
+      }
+    };
+    
+  } catch (error) {
+    console.error('❌ POST form generation failed:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to generate PayMe POST form'
+    };
+  }
+};
+const generatePaymeButton = async (userId, plan, options = {}) => {
+  try {
+    console.log('🔘 Generating PayMe Button - Method 3');
+    
+    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
+    const amounts = getPaymentAmounts();
+    const planAmount = amounts[plan]?.tiyin;
+    const orderId = `aced${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
+    
+    // Button HTML exactly as per documentation
+    const buttonHtml = `
+    <div id="payme-button-container">
+      <form id="form-payme" method="POST" action="https://checkout.paycom.uz/">
+        <input type="hidden" name="merchant" value="${merchantId}">
+        <input type="hidden" name="account[order_id]" value="${orderId}">
+        <input type="hidden" name="amount" value="${planAmount}">
+        <input type="hidden" name="lang" value="${options.lang || 'ru'}">
+        <input type="hidden" name="button" data-type="svg" value="${options.style || 'colored'}">
+        <div id="button-container"></div>
       </form>
+      
+      <script src="https://cdn.paycom.uz/integration/js/checkout.min.js"></script>
+      
       <script>
-        console.log('📝 Auto-submitting PayMe form');
-        setTimeout(function() {
-          document.getElementById('payme-form').submit();
-        }, 1000);
+        // Wait for PayMe script to load
+        function initPaymeButton() {
+          if (typeof Paycom !== 'undefined') {
+            Paycom.Button('#form-payme', '#button-container');
+            console.log('✅ PayMe button generated');
+          } else {
+            console.warn('PayMe script not loaded, retrying...');
+            setTimeout(initPaymeButton, 500);
+          }
+        }
+        
+        setTimeout(initPaymeButton, 1000);
       </script>
+    </div>
     `;
     
     return {
       success: true,
-      method: 'POST',
-      formHtml: formHtml,
+      buttonHtml,
+      method: 'BUTTON',
       transaction: {
         id: orderId,
         amount: planAmount,
-        plan: plan
+        plan
       }
     };
+    
   } catch (error) {
-    console.error('❌ Form generation error:', error);
+    console.error('❌ Button generation failed:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// ✅ FIXED: Generate QR Code (Method 4 from docs)
+const generatePaymeQR = async (userId, plan, options = {}) => {
+  try {
+    console.log('📱 Generating PayMe QR - Method 4');
+    
+    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
+    const amounts = getPaymentAmounts();
+    const planAmount = amounts[plan]?.tiyin;
+    const orderId = `aced${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
+    
+    // QR HTML exactly as per documentation
+    const qrHtml = `
+    <div id="payme-qr-container">
+      <form id="form-payme-qr" method="POST" action="https://checkout.paycom.uz/">
+        <input type="hidden" name="merchant" value="${merchantId}">
+        <input type="hidden" name="account[order_id]" value="${orderId}">
+        <input type="hidden" name="amount" value="${planAmount}">
+        <input type="hidden" name="lang" value="${options.lang || 'ru'}">
+        <input type="hidden" name="qr" data-width="${options.qrWidth || 250}">
+        <div id="qr-container"></div>
+      </form>
+      
+      <script src="https://cdn.paycom.uz/integration/js/checkout.min.js"></script>
+      
+      <script>
+        // Wait for PayMe script to load
+        function initPaymeQR() {
+          if (typeof Paycom !== 'undefined') {
+            Paycom.QR('#form-payme-qr', '#qr-container');
+            console.log('✅ PayMe QR generated');
+          } else {
+            console.warn('PayMe script not loaded, retrying...');
+            setTimeout(initPaymeQR, 500);
+          }
+        }
+        
+        setTimeout(initPaymeQR, 1000);
+      </script>
+    </div>
+    `;
+    
+    return {
+      success: true,
+      qrHtml,
+      method: 'QR',
+      transaction: {
+        id: orderId,
+        amount: planAmount,
+        plan
+      }
+    };
+    
+  } catch (error) {
+    console.error('❌ QR generation failed:', error);
     return {
       success: false,
       error: error.message
