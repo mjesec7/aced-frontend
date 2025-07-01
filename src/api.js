@@ -301,17 +301,18 @@ export const getPaymeErrorMessage = (errorCode) => {
 export const getPaymentAmounts = () => {
   return {
     start: {
-      tiyin: 26000000,  // 260,000 UZS in tiyin (260,000 * 100)
+      tiyin: 26000000,  // 260,000 UZS in tiyin
       uzs: 260000,      // 260,000 UZS  
       label: 'Start'
     },
     pro: {
-      tiyin: 45500000,  // 455,000 UZS in tiyin (455,000 * 100)
+      tiyin: 45500000,  // 455,000 UZS in tiyin
       uzs: 455000,      // 455,000 UZS
       label: 'Pro'
     }
   };
 };
+
 
 // ✅ FORMAT PAYMENT AMOUNT FUNCTION
 export const formatPaymentAmount = (amount, currency = 'UZS') => {
@@ -353,7 +354,7 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     const planAmount = amounts[plan]?.tiyin;
     
     if (!planAmount) {
-      throw new Error(`Неизвестный план: ${plan}`);
+      throw new Error(`Unknown plan: ${plan}`);
     }
     
     const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
@@ -361,33 +362,56 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
       throw new Error('Merchant ID not configured');
     }
     
-    // Simple order ID
+    // Generate order ID
     const orderId = Date.now().toString().substr(-9);
     
-    // Build parameters EXACTLY as in documentation
+    // ✅ CRITICAL FIX: Build parameters EXACTLY as in documentation
     const params = [];
+    
+    // 1. Merchant ID (required)
     params.push(`m=${merchantId}`);
+    
+    // 2. Account object field (CORRECTED: use order_id as shown in docs)
     params.push(`ac.order_id=${orderId}`);
+    
+    // 3. Amount in tiyin (required)
     params.push(`a=${planAmount}`);
     
+    // 4. Optional parameters
     if (options.lang) {
       params.push(`l=${options.lang}`);
     }
     
-    const paramString = params.join(';');
-    console.log('📝 Frontend param string:', paramString);
+    if (options.callback) {
+      params.push(`c=${encodeURIComponent(options.callback)}`);
+    }
     
+    if (options.callback_timeout) {
+      params.push(`ct=${options.callback_timeout}`);
+    }
+    
+    if (options.currency) {
+      params.push(`cr=${options.currency}`);
+    }
+    
+    // ✅ CRITICAL FIX: Join with semicolon (as per documentation)
+    const paramString = params.join(';');
+    console.log('📝 Parameter string (CORRECTED):', paramString);
+    
+    // ✅ Base64 encode
     const base64Params = btoa(paramString);
+    
+    // ✅ Construct final URL as per documentation format
     const paymentUrl = `https://checkout.paycom.uz/${base64Params}`;
     
-    console.log('🔗 Generated PayMe URL:', {
+    console.log('🔗 Generated PayMe URL (CORRECTED):', {
       merchantId,
       orderId,
       amount: planAmount,
       paramString,
       base64Params,
       paymentUrl,
-      decoded: atob(base64Params)
+      decodedCheck: atob(base64Params) // Verify encoding
     });
     
     return {
@@ -404,7 +428,7 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     console.error('❌ Direct URL generation error:', error);
     return {
       success: false,
-      error: error.message || 'Ошибка генерации URL'
+      error: error.message || 'URL generation failed'
     };
   }
 };
@@ -416,20 +440,20 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
     const planAmount = amounts[plan]?.tiyin;
     
     if (!planAmount) {
-      throw new Error(`Неизвестный план: ${plan}`);
+      throw new Error(`Unknown plan: ${plan}`);
     }
     
     const orderId = Date.now().toString().substr(-9);
     const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
     
-    // Create detail object with IKPU
+    // ✅ CORRECTED: Detail object with YOUR IKPU
     const detail = {
       receipt_type: 0,
       items: [{
         title: `ACED ${plan.toUpperCase()} Subscription`,
         price: planAmount,
         count: 1,
-        code: "10899002001000000", // Your IKPU
+        code: "10899002001000000", // YOUR IKPU
         vat_percent: 0,
         package_code: "1"
       }]
@@ -473,57 +497,7 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
 };
 
 // ✅ DIRECT PAYME FORM GENERATION (for POST method)
-const generateDirectPaymeForm = async (userId, plan, options = {}) => {
-  try {
-    const amounts = getPaymentAmounts();
-    const planAmount = amounts[plan]?.tiyin;
-    
-    if (!planAmount) {
-      throw new Error(`Неизвестный план: ${plan}`);
-    }
-    
-    const orderId = `${userId}_${plan}_${Date.now()}`;
-    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID || 'demo_merchant';
-    
-    const checkoutUrl = import.meta.env.VITE_PAYME_TEST_MODE === 'true' 
-      ? 'https://test.paycom.uz' 
-      : 'https://checkout.paycom.uz';
-    
-    // Generate form HTML according to PayMe documentation
-    const formHtml = `
-      <form id="payme-form" method="POST" action="${checkoutUrl}">
-        <input type="hidden" name="merchant" value="${merchantId}" />
-        <input type="hidden" name="amount" value="${planAmount}" />
-        <input type="hidden" name="account[user_id]" value="${userId}" />
-        <input type="hidden" name="account[plan]" value="${plan}" />
-        <input type="hidden" name="account[order_id]" value="${orderId}" />
-        <input type="hidden" name="lang" value="${options.lang || 'ru'}" />
-        <input type="hidden" name="description" value="Оплата подписки ${plan}" />
-        ${options.callback ? `<input type="hidden" name="callback" value="${options.callback}" />` : ''}
-        ${options.callback_timeout ? `<input type="hidden" name="callback_timeout" value="${options.callback_timeout}" />` : ''}
-        <button type="submit">Оплатить через PayMe</button>
-      </form>
-    `;
-    
-    return {
-      success: true,
-      method: 'post',
-      formHtml: formHtml,
-      paymentUrl: checkoutUrl,
-      transaction: {
-        id: orderId,
-        amount: planAmount,
-        plan: plan
-      }
-    };
-  } catch (error) {
-    console.error('❌ Direct form generation error:', error);
-    return {
-      success: false,
-      error: error.message || 'Ошибка генерации формы'
-    };
-  }
-};
+
 
 // ✅ PAYME PAYMENT INITIATION - MAIN FUNCTION
 export const initiatePaymePayment = async (userId, plan, additionalData = {}) => {
