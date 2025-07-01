@@ -138,45 +138,53 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 60px;
-  padding: 80px;
+  gap: clamp(30px, 8vw, 60px);
+  padding: clamp(20px, 6vw, 80px);
   background: radial-gradient(ellipse at center, #0a001a, #1a002f);
   flex-wrap: wrap;
   color: white;
   z-index: 1;
+  min-height: 100vh;
 }
 
 .left-content {
   flex: 1;
-  max-width: 460px;
+  max-width: clamp(300px, 50vw, 460px);
+  min-width: 280px;
 }
 
 .headline {
-  font-size: 2.7rem;
+  font-size: clamp(1.8rem, 5vw, 2.7rem);
   font-family: 'Unbounded', sans-serif;
   background: linear-gradient(to right, #9333ea, #38bdf8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 20px;
+  margin-bottom: clamp(15px, 3vw, 20px);
+  line-height: 1.2;
 }
 
 .context-text {
-  font-size: 1rem;
+  font-size: clamp(0.9rem, 2.5vw, 1rem);
   font-family: 'Unbounded';
   color: #bfbfe5;
-  margin-bottom: 20px;
+  margin-bottom: clamp(15px, 3vw, 20px);
+  line-height: 1.4;
 }
 
 .start-login-btn {
-  padding: 12px 28px;
+  padding: clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 28px);
   font-family: 'Unbounded', sans-serif;
-  font-size: 1rem;
-  border-radius: 30px;
+  font-size: clamp(0.9rem, 2.2vw, 1rem);
+  border-radius: clamp(20px, 5vw, 30px);
   background: linear-gradient(90deg, #9333ea, #7f5af0);
   color: white;
   border: 2px solid transparent;
   cursor: pointer;
   transition: all 0.4s ease;
+  min-height: clamp(40px, 8vw, 50px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .start-login-btn:hover {
@@ -186,18 +194,29 @@ export default {
   transform: scale(1.03);
 }
 
+.start-login-btn:active {
+  transform: scale(0.98);
+}
+
 .subjects-abstract-layout {
   position: relative;
   flex: 1;
-  min-height: 480px;
+  min-height: clamp(400px, 60vh, 480px);
+  min-width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: clamp(25px, 5vw, 40px);
+  align-items: start;
+  padding: 20px;
 }
 
 .subject-card {
-  position: absolute;
-  width: 280px;
-  height: 180px;
-  padding: 25px;
-  border-radius: 25px;
+  position: relative;
+  width: 100%;
+  max-width: clamp(250px, 30vw, 280px);
+  height: clamp(140px, 20vw, 180px);
+  padding: clamp(15px, 4vw, 25px);
+  border-radius: clamp(15px, 4vw, 25px);
   text-align: center;
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(10px);
@@ -209,18 +228,20 @@ export default {
   cursor: pointer;
   pointer-events: auto;
   z-index: 2;
+  margin: 0 auto;
 }
 
 .subject-card h3 {
-  font-size: 1.3rem;
-  margin-top: 10px;
+  font-size: clamp(1rem, 2.5vw, 1.3rem);
+  margin-top: clamp(5px, 1.5vw, 10px);
   font-family: 'Unbounded', sans-serif;
+  line-height: 1.2;
 }
 
 .subject-icon {
-  width: 55px;
-  height: 55px;
-  margin-bottom: 8px;
+  width: clamp(40px, 8vw, 55px);
+  height: clamp(40px, 8vw, 55px);
+  margin-bottom: clamp(5px, 1.5vw, 8px);
 }
 
 /* Floating animation */
@@ -233,55 +254,49 @@ export default {
   50% { transform: translateY(-10px); }
 }
 
-/* Placement & glow */
+/* Subject card colors */
 .subject-history {
-  top: 0;
-  right: 0;
-  box-shadow: 0 0 30px rgba(255, 255, 0, 0.5);
+  box-shadow: 0 0 clamp(15px, 4vw, 30px) rgba(255, 255, 0, 0.5);
 }
 .subject-biology {
-  bottom: 30px;
-  left: 30px;
-  box-shadow: 0 0 30px rgba(0, 255, 120, 0.5);
+  box-shadow: 0 0 clamp(15px, 4vw, 30px) rgba(0, 255, 120, 0.5);
 }
 .subject-coding {
-  bottom: 0;
-  right: 70px;
-  box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 clamp(15px, 4vw, 30px) rgba(255, 255, 255, 0.5);
 }
 .subject-math {
-  top: 10px;
-  left: 100px;
-  box-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
+  box-shadow: 0 0 clamp(15px, 4vw, 30px) rgba(59, 130, 246, 0.6);
 }
 .subject-physics {
-  top: 120px;
-  right: 200px;
-  box-shadow: 0 0 30px rgba(255, 100, 255, 0.6);
+  box-shadow: 0 0 clamp(15px, 4vw, 30px) rgba(255, 100, 255, 0.6);
 }
 .subject-chemistry {
-  bottom: 150px;
-  left: 200px;
-  box-shadow: 0 0 30px rgba(255, 165, 0, 0.6);
+  box-shadow: 0 0 clamp(15px, 4vw, 30px) rgba(255, 165, 0, 0.6);
 }
 
 .subject-history:hover {
-  box-shadow: 0 0 45px rgba(255, 255, 0, 0.8);
+  box-shadow: 0 0 clamp(25px, 6vw, 45px) rgba(255, 255, 0, 0.8);
+  transform: translateY(-5px);
 }
 .subject-biology:hover {
-  box-shadow: 0 0 45px rgba(0, 255, 120, 0.8);
+  box-shadow: 0 0 clamp(25px, 6vw, 45px) rgba(0, 255, 120, 0.8);
+  transform: translateY(-5px);
 }
 .subject-coding:hover {
-  box-shadow: 0 0 45px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 clamp(25px, 6vw, 45px) rgba(255, 255, 255, 0.9);
+  transform: translateY(-5px);
 }
 .subject-math:hover {
-  box-shadow: 0 0 45px rgba(147, 197, 253, 1);
+  box-shadow: 0 0 clamp(25px, 6vw, 45px) rgba(147, 197, 253, 1);
+  transform: translateY(-5px);
 }
 .subject-physics:hover {
-  box-shadow: 0 0 45px rgba(255, 100, 255, 0.9);
+  box-shadow: 0 0 clamp(25px, 6vw, 45px) rgba(255, 100, 255, 0.9);
+  transform: translateY(-5px);
 }
 .subject-chemistry:hover {
-  box-shadow: 0 0 45px rgba(255, 165, 0, 0.9);
+  box-shadow: 0 0 clamp(25px, 6vw, 45px) rgba(255, 165, 0, 0.9);
+  transform: translateY(-5px);
 }
 
 /* Modal */
@@ -301,27 +316,43 @@ export default {
   pointer-events: auto;
   opacity: 1;
   visibility: visible;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .modal-content {
   background: #0f0025;
-  padding: 40px;
-  width: 600px;
-  max-width: 90%;
-  border-radius: 20px;
+  padding: clamp(25px, 6vw, 40px);
+  width: 100%;
+  max-width: clamp(350px, 90vw, 600px);
+  border-radius: clamp(15px, 4vw, 20px);
   color: white;
   text-align: center;
   z-index: 100000;
   box-shadow: 0 0 50px rgba(173, 100, 255, 0.6);
   position: relative;
+  overflow-y: auto;
+  max-height: 90vh;
+}
+
+.modal-content h2 {
+  font-size: clamp(1.2rem, 4vw, 1.5rem);
+  margin-bottom: clamp(10px, 2vw, 15px);
+  line-height: 1.3;
+}
+
+.modal-content p {
+  font-size: clamp(0.9rem, 2.5vw, 1rem);
+  line-height: 1.5;
+  margin-bottom: clamp(10px, 2vw, 15px);
 }
 
 .modal-icon {
-  width: 60px;
-  height: 60px;
+  width: clamp(45px, 10vw, 60px);
+  height: clamp(45px, 10vw, 60px);
   position: absolute;
-  top: -30px;
-  left: 20px;
+  top: clamp(-22px, -4vw, -30px);
+  left: clamp(15px, 3vw, 20px);
   transform: rotate(-15deg);
   animation: floatIcon 4s ease-in-out infinite;
   opacity: 0.9;
@@ -338,42 +369,158 @@ export default {
 }
 
 .modal-content {
-  position: relative;
-  padding-top: 60px; /* leave room for floating icon */
+  padding-top: clamp(50px, 10vw, 60px);
 }
 
 .fun-fact {
-  margin-top: 12px;
+  margin-top: clamp(8px, 2vw, 12px);
   color: #c084fc;
   font-style: italic;
 }
 
 .close-btn {
   position: absolute;
-  top: 15px;
-  right: 20px;
-  font-size: 1.5rem;
+  top: clamp(10px, 2vw, 15px);
+  right: clamp(15px, 3vw, 20px);
+  font-size: clamp(1.2rem, 4vw, 1.5rem);
   cursor: pointer;
   color: #fff;
-}
-
-.modal-learn-btn {
-  margin-top: 20px;
-  padding: 12px 28px;
-  font-family: 'Unbounded', sans-serif;
-  font-size: 1rem;
-  border-radius: 30px;
-  background: linear-gradient(90deg, #9333ea, #7f5af0);
-  color: white;
+  background: none;
   border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  padding: 5px;
+  line-height: 1;
 }
 
-.modal-learn-btn:hover {
-  background: black;
+.close-btn:hover {
   color: #c084fc;
-  box-shadow: 0 0 20px rgba(192, 132, 252, 0.6);
-  transform: scale(1.03);
 }
-</style>
+
+/* Mobile specific styles */
+@media (max-width: 768px) {
+  .aced-section {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+  }
+  
+  .left-content {
+    max-width: 100%;
+    margin-bottom: 30px;
+  }
+  
+  .subjects-abstract-layout {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    width: 100%;
+    padding: 15px;
+  }
+  
+  .subject-card {
+    height: 120px;
+    max-width: 100%;
+  }
+  
+  .floating {
+    animation: none;
+  }
+  
+  .modal-content {
+    margin: 10px;
+    max-height: 85vh;
+  }
+}
+
+/* Tablet specific styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .aced-section {
+    gap: 40px;
+    padding: 40px;
+  }
+  
+  .subjects-abstract-layout {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 30px;
+    padding: 25px;
+  }
+  
+  .subject-card {
+    height: 160px;
+  }
+}
+
+/* Large screen specific styles */
+@media (min-width: 1400px) {
+  .subjects-abstract-layout {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 45px;
+    padding: 30px;
+  }
+  
+  .subject-card {
+    max-width: 300px;
+    height: 200px;
+  }
+  
+  .modal-content {
+    max-width: 700px;
+    padding: 50px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .subject-card:hover {
+    transform: none;
+  }
+  
+  .subject-card:active {
+    transform: scale(0.95);
+  }
+  
+  .start-login-btn:hover {
+    transform: none;
+  }
+  
+  .start-login-btn:active {
+    transform: scale(0.95);
+  }
+  
+  .floating {
+    animation: none;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .floating,
+  .floatIcon {
+    animation: none;
+  }
+  
+  .subject-card,
+  .start-login-btn {
+    transition: none;
+  }
+  
+  .subject-card:hover,
+  .start-login-btn:hover {
+    transform: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .subject-card {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.8);
+  }
+  
+  .modal-content {
+    border: 2px solid rgba(255, 255, 255, 0.5);
+  }
+  
+  .start-login-btn {
+    border: 2px solid #9333ea;
+  }
+}</style>

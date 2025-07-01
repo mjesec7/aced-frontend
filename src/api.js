@@ -298,7 +298,6 @@ export const getPaymeErrorMessage = (errorCode) => {
   return errorMessages[errorCode] || `Ошибка PayMe: ${errorCode}`;
 };
 
-// ✅ PAYMENT UTILITY FUNCTIONS WITH CORRECT AMOUNTS
 export const getPaymentAmounts = () => {
   return {
     start: {
