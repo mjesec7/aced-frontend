@@ -345,6 +345,7 @@ export const formatPaymentAmount = (amount, currency = 'UZS') => {
 };
 
 // ✅ DIRECT PAYME URL GENERATION (for GET method)
+// ✅ FIX: Direct PayMe URL generation with proper format
 const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   try {
     const amounts = getPaymentAmounts();
@@ -355,16 +356,19 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     }
     
     const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID || 'demo_merchant';
-    const orderId = `${userId}_${plan}_${Date.now()}`;
     
-    // PayMe requires specific parameter format
+    // ✅ FIX: Generate simpler order ID format
+    const timestamp = Date.now();
+    const randomPart = Math.random().toString(36).substr(2, 6).toUpperCase();
+    const orderId = `${timestamp}${randomPart}`;
+    
+    // ✅ FIX: Build parameters with correct field names
     const params = [
       `m=${merchantId}`,
-      `ac.user_id=${userId}`,
-      `ac.plan=${plan}`,
-      `ac.order_id=${orderId}`,
-      `a=${planAmount}`,
-      `l=${options.lang || 'ru'}`
+      `ac.order_id=${orderId}`,  // Primary order identifier
+      `ac.user_id=${userId}`,     // User identifier
+      `a=${planAmount}`,          // Amount in tiyin
+      `l=${options.lang || 'ru'}` // Language
     ];
     
     if (options.callback) {
@@ -375,8 +379,7 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
       params.push(`ct=${options.callback_timeout}`);
     }
     
-    params.push('cr=UZS');
-    
+    // Join with semicolon
     const paramString = params.join(';');
     const base64Params = btoa(paramString);
     
@@ -387,6 +390,7 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     const paymentUrl = `${checkoutUrl}/${base64Params}`;
     
     console.log('🔗 Generated PayMe URL:', {
+      orderId,
       paramString,
       base64Params,
       paymentUrl
