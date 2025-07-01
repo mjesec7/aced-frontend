@@ -254,37 +254,29 @@ export default {
     };
   },
   computed: {
-    planName() {
-      const currentPlan = this.plan || this.selectedPlan;
-      return currentPlan === 'start' ? 'Start Plan' : currentPlan === 'pro' ? 'Pro Plan' : '';
-    },
+  // Fix: Ensure amount is always in tiyin
+  amountInTiyin() {
+    let amount = parseInt(this.amount) || 0;
     
-    finalPlan() {
-      return this.plan || this.selectedPlan;
-    },
-
-    // ✅ FIX: Ensure amount is always in tiyin (multiply by 100 if needed)
-    amountInTiyin() {
-      let amount = parseInt(this.amount) || 0;
-      
-      // If amount seems to be in UZS (less than 10000), convert to tiyin
-      if (amount > 0 && amount < 10000) {
-        amount = amount * 100;
-      }
-      
-      return amount;
-    },
-
-    // ✅ FIX: Generate proper account object based on user data
-    accountObject() {
-      return {
-        user_id: String(this.userId),
-        plan: this.finalPlan,
-        email: this.userEmail || '',
-        name: this.userName || ''
-      };
+    // If amount seems to be in UZS (less than 10000), convert to tiyin
+    if (amount > 0 && amount < 10000) {
+      amount = amount * 100;
     }
+    
+    return amount;
   },
+
+  // Fix: Generate proper account object with order_id
+  accountObject() {
+    return {
+      order_id: String(Date.now()).substr(-9), // FIXED: Use order_id
+      user_id: String(this.userId),
+      plan: this.finalPlan,
+      email: this.userEmail || '',
+      name: this.userName || ''
+    };
+  }
+},
   async mounted() {
     this.loadPaymentData();
     this.validatePaymentData();
@@ -351,73 +343,72 @@ export default {
     },
 
     async initializePayment() {
-      try {
-        const planToUse = this.finalPlan;
-        
-        if (!this.userId || !planToUse) {
-          throw new Error('Missing user ID or plan information');
-        }
+  try {
+    const planToUse = this.finalPlan;
+    
+    if (!this.userId || !planToUse) {
+      throw new Error('Missing user ID or plan information');
+    }
 
-        if (!this.amountInTiyin || this.amountInTiyin <= 0) {
-          throw new Error('Invalid payment amount');
-        }
+    if (!this.amountInTiyin || this.amountInTiyin <= 0) {
+      throw new Error('Invalid payment amount');
+    }
 
-        this.loading = true;
-        this.error = '';
-        this.paymentUrl = '';
-        this.dynamicContent = null;
+    this.loading = true;
+    this.error = '';
+    this.paymentUrl = '';
+    this.dynamicContent = null;
 
-        console.log('🚀 Initializing PayMe payment with method:', this.selectedMethod);
-        this.loadingMessage = this.getLoadingMessage();
+    console.log('🚀 Initializing PayMe payment with method:', this.selectedMethod);
+    this.loadingMessage = this.getLoadingMessage();
 
-        // ✅ FIX: Ensure proper data structure for PayMe
-        const paymentData = {
-          name: this.userName || 'User',
-          email: this.userEmail || '',
-          method: this.selectedMethod,
-          lang: this.selectedLanguage,
-          amount: this.amountInTiyin, // Always in tiyin
-          account: this.accountObject, // Proper account object
-          // Add callback URL for successful payments
-          callback: `${window.location.origin}/payment/success`,
-          callback_timeout: 15000 // 15 seconds timeout
-        };
+    // FIXED: Proper data structure for PayMe
+    const paymentData = {
+      name: this.userName || 'User',
+      email: this.userEmail || '',
+      method: this.selectedMethod,
+      lang: this.selectedLanguage,
+      amount: this.amountInTiyin,
+      account: this.accountObject, // FIXED: Use order_id account object
+      callback: `${window.location.origin}/payment/success`,
+      callback_timeout: 15000
+    };
 
-        console.log('📋 Payment data being sent:', paymentData);
+    console.log('📋 Payment data being sent:', paymentData);
 
-        // Call backend to get PayMe redirect URL or content
-        const result = await initiatePaymePayment(this.userId, planToUse, paymentData);
+    // Call backend to get PayMe redirect URL or content
+    const result = await initiatePaymePayment(this.userId, planToUse, paymentData);
 
-        if (result.success) {
-          this.paymentUrl = result.paymentUrl;
-          this.transactionId = result.transaction?.id || this.transactionId;
-          
-          // ✅ FIX: Validate the payment URL before proceeding
-          if (!this.paymentUrl) {
-            throw new Error('Payment URL not received from server');
-          }
-
-          // For button and QR methods, get additional content
-          if (this.selectedMethod === 'button' || this.selectedMethod === 'qr' || this.selectedMethod === 'post') {
-            await this.generateDynamicContent();
-          }
-          
-          this.loading = false;
-
-          // Start countdown for auto-redirect (only for POST and GET methods)
-          if (this.selectedMethod === 'post' || this.selectedMethod === 'get') {
-            this.startCountdown();
-          }
-        } else {
-          throw new Error(result.error || 'Failed to initialize payment');
-        }
-
-      } catch (error) {
-        console.error('❌ Payment initialization error:', error);
-        this.error = error.message || 'Failed to initialize payment';
-        this.loading = false;
+    if (result.success) {
+      this.paymentUrl = result.paymentUrl;
+      this.transactionId = result.transaction?.id || this.transactionId;
+      
+      // Validate the payment URL before proceeding
+      if (!this.paymentUrl) {
+        throw new Error('Payment URL not received from server');
       }
-    },
+
+      // For button and QR methods, get additional content
+      if (this.selectedMethod === 'button' || this.selectedMethod === 'qr' || this.selectedMethod === 'post') {
+        await this.generateDynamicContent();
+      }
+      
+      this.loading = false;
+
+      // Start countdown for auto-redirect
+      if (this.selectedMethod === 'post' || this.selectedMethod === 'get') {
+        this.startCountdown();
+      }
+    } else {
+      throw new Error(result.error || 'Failed to initialize payment');
+    }
+
+  } catch (error) {
+    console.error('❌ Payment initialization error:', error);
+    this.error = error.message || 'Failed to initialize payment';
+    this.loading = false;
+  }
+},
 
     async generateDynamicContent() {
       try {

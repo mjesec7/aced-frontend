@@ -314,6 +314,7 @@ export const getPaymentAmounts = () => {
 };
 
 
+
 // ✅ FORMAT PAYMENT AMOUNT FUNCTION
 export const formatPaymentAmount = (amount, currency = 'UZS') => {
   try {
@@ -362,57 +363,25 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
       throw new Error('Merchant ID not configured');
     }
     
-    // Generate order ID
+    // CRITICAL FIX: Use order_id (not login)
     const orderId = Date.now().toString().substr(-9);
     
-    // ✅ CRITICAL FIX: Build parameters EXACTLY as in documentation
+    // Build parameters with CORRECT format
     const params = [];
-    
-    // 1. Merchant ID (required)
     params.push(`m=${merchantId}`);
-    
-    // 2. Account object field (CORRECTED: use order_id as shown in docs)
-    params.push(`ac.order_id=${orderId}`);
-    
-    // 3. Amount in tiyin (required)
+    params.push(`ac.order_id=${orderId}`); // FIXED: order_id instead of login
     params.push(`a=${planAmount}`);
     
-    // 4. Optional parameters
     if (options.lang) {
       params.push(`l=${options.lang}`);
     }
     
-    if (options.callback) {
-      params.push(`c=${encodeURIComponent(options.callback)}`);
-    }
-    
-    if (options.callback_timeout) {
-      params.push(`ct=${options.callback_timeout}`);
-    }
-    
-    if (options.currency) {
-      params.push(`cr=${options.currency}`);
-    }
-    
-    // ✅ CRITICAL FIX: Join with semicolon (as per documentation)
+    // CRITICAL FIX: Use semicolon delimiter (not &)
     const paramString = params.join(';');
-    console.log('📝 Parameter string (CORRECTED):', paramString);
+    console.log('📝 Fixed param string:', paramString);
     
-    // ✅ Base64 encode
     const base64Params = btoa(paramString);
-    
-    // ✅ Construct final URL as per documentation format
     const paymentUrl = `https://checkout.paycom.uz/${base64Params}`;
-    
-    console.log('🔗 Generated PayMe URL (CORRECTED):', {
-      merchantId,
-      orderId,
-      amount: planAmount,
-      paramString,
-      base64Params,
-      paymentUrl,
-      decodedCheck: atob(base64Params) // Verify encoding
-    });
     
     return {
       success: true,
@@ -425,10 +394,10 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
       }
     };
   } catch (error) {
-    console.error('❌ Direct URL generation error:', error);
+    console.error('❌ URL generation error:', error);
     return {
       success: false,
-      error: error.message || 'URL generation failed'
+      error: error.message
     };
   }
 };
@@ -446,14 +415,14 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
     const orderId = Date.now().toString().substr(-9);
     const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
     
-    // ✅ CORRECTED: Detail object with YOUR IKPU
+    // FIXED: Proper detail object with YOUR IKPU
     const detail = {
       receipt_type: 0,
       items: [{
         title: `ACED ${plan.toUpperCase()} Subscription`,
         price: planAmount,
         count: 1,
-        code: "10899002001000000", // YOUR IKPU
+        code: "10899002001000000", // YOUR IKPU CODE
         vat_percent: 0,
         package_code: "1"
       }]
