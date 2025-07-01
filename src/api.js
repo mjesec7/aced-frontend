@@ -346,6 +346,7 @@ export const formatPaymentAmount = (amount, currency = 'UZS') => {
 
 // ✅ DIRECT PAYME URL GENERATION (for GET method)
 // ✅ FIX: Direct PayMe URL generation with proper format
+// ✅ CORRECTED Direct PayMe URL generation
 const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   try {
     const amounts = getPaymentAmounts();
@@ -355,45 +356,38 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
       throw new Error(`Неизвестный план: ${plan}`);
     }
     
-    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID || 'demo_merchant';
-    
-    // ✅ FIX: Generate simpler order ID format
-    const timestamp = Date.now();
-    const randomPart = Math.random().toString(36).substr(2, 6).toUpperCase();
-    const orderId = `${timestamp}${randomPart}`;
-    
-    // ✅ FIX: Build parameters with correct field names
-    const params = [
-      `m=${merchantId}`,
-      `ac.order_id=${orderId}`,  // Primary order identifier
-      `ac.user_id=${userId}`,     // User identifier
-      `a=${planAmount}`,          // Amount in tiyin
-      `l=${options.lang || 'ru'}` // Language
-    ];
-    
-    if (options.callback) {
-      params.push(`c=${encodeURIComponent(options.callback)}`);
+    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
+    if (!merchantId) {
+      throw new Error('Merchant ID not configured');
     }
     
-    if (options.callback_timeout) {
-      params.push(`ct=${options.callback_timeout}`);
+    // Simple order ID
+    const orderId = Date.now().toString().substr(-9);
+    
+    // Build parameters EXACTLY as in documentation
+    const params = [];
+    params.push(`m=${merchantId}`);
+    params.push(`ac.order_id=${orderId}`);
+    params.push(`a=${planAmount}`);
+    
+    if (options.lang) {
+      params.push(`l=${options.lang}`);
     }
     
-    // Join with semicolon
     const paramString = params.join(';');
+    console.log('📝 Frontend param string:', paramString);
+    
     const base64Params = btoa(paramString);
-    
-    const checkoutUrl = import.meta.env.VITE_PAYME_TEST_MODE === 'true' 
-      ? 'https://test.paycom.uz' 
-      : 'https://checkout.paycom.uz';
-    
-    const paymentUrl = `${checkoutUrl}/${base64Params}`;
+    const paymentUrl = `https://checkout.paycom.uz/${base64Params}`;
     
     console.log('🔗 Generated PayMe URL:', {
+      merchantId,
       orderId,
+      amount: planAmount,
       paramString,
       base64Params,
-      paymentUrl
+      paymentUrl,
+      decoded: atob(base64Params)
     });
     
     return {
@@ -411,6 +405,69 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     return {
       success: false,
       error: error.message || 'Ошибка генерации URL'
+    };
+  }
+};
+
+// ✅ Direct PayMe form generation with IKPU
+const generateDirectPaymeForm = async (userId, plan, options = {}) => {
+  try {
+    const amounts = getPaymentAmounts();
+    const planAmount = amounts[plan]?.tiyin;
+    
+    if (!planAmount) {
+      throw new Error(`Неизвестный план: ${plan}`);
+    }
+    
+    const orderId = Date.now().toString().substr(-9);
+    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
+    
+    // Create detail object with IKPU
+    const detail = {
+      receipt_type: 0,
+      items: [{
+        title: `ACED ${plan.toUpperCase()} Subscription`,
+        price: planAmount,
+        count: 1,
+        code: "10899002001000000", // Your IKPU
+        vat_percent: 0,
+        package_code: "1"
+      }]
+    };
+    
+    const detailBase64 = btoa(JSON.stringify(detail));
+    
+    const formHtml = `
+      <form id="payme-form" method="POST" action="https://checkout.paycom.uz">
+        <input type="hidden" name="merchant" value="${merchantId}" />
+        <input type="hidden" name="amount" value="${planAmount}" />
+        <input type="hidden" name="account[order_id]" value="${orderId}" />
+        <input type="hidden" name="lang" value="${options.lang || 'ru'}" />
+        <input type="hidden" name="description" value="ACED ${plan} subscription" />
+        <input type="hidden" name="detail" value="${detailBase64}" />
+        <input type="hidden" name="callback" value="${window.location.origin}/payment/success" />
+        <input type="hidden" name="callback_timeout" value="15000" />
+      </form>
+      <script>
+        document.getElementById('payme-form').submit();
+      </script>
+    `;
+    
+    return {
+      success: true,
+      method: 'post',
+      formHtml: formHtml,
+      transaction: {
+        id: orderId,
+        amount: planAmount,
+        plan: plan
+      }
+    };
+  } catch (error) {
+    console.error('❌ Form generation error:', error);
+    return {
+      success: false,
+      error: error.message
     };
   }
 };
