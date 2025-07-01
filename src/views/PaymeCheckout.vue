@@ -254,7 +254,12 @@ export default {
     };
   },
   computed: {
-  // Fix: Ensure amount is always in tiyin
+  // Fix: Ensure proper plan selection
+  finalPlan() {
+    return this.plan || this.selectedPlan || 'start';
+  },
+  
+  // Fix: Ensure amount is properly formatted
   amountInTiyin() {
     let amount = parseInt(this.amount) || 0;
     
@@ -263,7 +268,23 @@ export default {
       amount = amount * 100;
     }
     
+    // If no amount specified, use default amounts
+    if (amount === 0) {
+      const amounts = {
+        start: 26000000,  // 260,000 UZS in tiyin
+        pro: 45500000     // 455,000 UZS in tiyin
+      };
+      amount = amounts[this.finalPlan] || 26000000;
+    }
+    
     return amount;
+  },
+  planName() {
+    const names = {
+      start: 'Start Plan',
+      pro: 'Pro Plan'
+    };
+    return names[this.finalPlan] || this.finalPlan;
   },
 
   // Fix: Generate proper account object with order_id
@@ -343,71 +364,77 @@ export default {
     },
 
     async initializePayment() {
-  try {
-    const planToUse = this.finalPlan;
-    
-    if (!this.userId || !planToUse) {
-      throw new Error('Missing user ID or plan information');
-    }
-
-    if (!this.amountInTiyin || this.amountInTiyin <= 0) {
-      throw new Error('Invalid payment amount');
-    }
-
-    this.loading = true;
-    this.error = '';
-    this.paymentUrl = '';
-    this.dynamicContent = null;
-
-    console.log('🚀 Initializing PayMe payment with method:', this.selectedMethod);
-    this.loadingMessage = this.getLoadingMessage();
-
-    // FIXED: Proper data structure for PayMe
-    const paymentData = {
-      name: this.userName || 'User',
-      email: this.userEmail || '',
-      method: this.selectedMethod,
-      lang: this.selectedLanguage,
-      amount: this.amountInTiyin,
-      account: this.accountObject, // FIXED: Use order_id account object
-      callback: `${window.location.origin}/payment/success`,
-      callback_timeout: 15000
-    };
-
-    console.log('📋 Payment data being sent:', paymentData);
-
-    // Call backend to get PayMe redirect URL or content
-    const result = await initiatePaymePayment(this.userId, planToUse, paymentData);
-
-    if (result.success) {
-      this.paymentUrl = result.paymentUrl;
-      this.transactionId = result.transaction?.id || this.transactionId;
+    try {
+      const planToUse = this.finalPlan;
       
-      // Validate the payment URL before proceeding
-      if (!this.paymentUrl) {
-        throw new Error('Payment URL not received from server');
+      if (!this.userId || !planToUse) {
+        throw new Error('Missing user ID or plan information');
       }
 
-      // For button and QR methods, get additional content
-      if (this.selectedMethod === 'button' || this.selectedMethod === 'qr' || this.selectedMethod === 'post') {
-        await this.generateDynamicContent();
+      if (!this.amountInTiyin || this.amountInTiyin <= 0) {
+        throw new Error('Invalid payment amount');
       }
-      
-      this.loading = false;
 
-      // Start countdown for auto-redirect
-      if (this.selectedMethod === 'post' || this.selectedMethod === 'get') {
-        this.startCountdown();
-      }
-    } else {
-      throw new Error(result.error || 'Failed to initialize payment');
-    }
+      this.loading = true;
+      this.error = '';
+      this.paymentUrl = '';
+      this.dynamicContent = null;
 
-  } catch (error) {
-    console.error('❌ Payment initialization error:', error);
-    this.error = error.message || 'Failed to initialize payment';
-    this.loading = false;
+      console.log('🚀 Initializing PayMe payment with method:', this.selectedMethod);
+      this.loadingMessage = this.getLoadingMessage();
+
+      // ✅ FIXED: Proper data structure for PayMe
+      const paymentData = {
+        method: this.selectedMethod,
+        lang: this.selectedLanguage,
+        callback: `${window.location.origin}/payment/success`,
+        callback_timeout: 15000
+      };
+
+      console.log('📋 Payment data being sent:', {
+        userId: this.userId,
+        plan: planToUse,
+        amount: this.amountInTiyin,
+        data: paymentData
+      });
+
+
+      const result = await initiatePaymePayment(this.userId, planToUse, paymentData);
+
+console.log('💳 Payment result:', result);
+
+if (result.success) {
+  // ✅ FIXED: Handle different response types
+  if (result.paymentUrl) {
+    this.paymentUrl = result.paymentUrl;
   }
+  
+  if (result.formHtml) {
+    this.dynamicContent = { formHtml: result.formHtml };
+  }
+  
+  this.transactionId = result.transaction?.id || this.transactionId;
+  
+  this.loading = false;
+
+  // Start countdown for auto-redirect
+  if (this.selectedMethod === 'get' && this.paymentUrl) {
+    this.startCountdown();
+  } else if (this.selectedMethod === 'post' && this.dynamicContent?.formHtml) {
+    // Auto-submit form after a delay
+    setTimeout(() => {
+      this.autoSubmitForm();
+    }, 2000);
+  }
+} else {
+  throw new Error(result.error || 'Failed to initialize payment');
+}
+
+} catch (error) {
+console.error('❌ Payment initialization error:', error);
+this.error = error.message || 'Failed to initialize payment';
+this.loading = false;
+}
 },
 
     async generateDynamicContent() {
@@ -449,68 +476,91 @@ export default {
     },
 
     autoSubmitForm() {
-      try {
-        const form = document.querySelector('#payme-form') || document.querySelector('form');
-        if (form) {
-          console.log('📝 Auto-submitting PayMe form');
-          form.submit();
-        } else {
-          console.warn('⚠️ Form not found, falling back to URL redirect');
+    try {
+      const form = document.querySelector('#payme-form') || document.querySelector('form');
+      if (form) {
+        console.log('📝 Auto-submitting PayMe form');
+        form.submit();
+      } else {
+        console.warn('⚠️ Form not found, falling back to URL redirect');
+        if (this.paymentUrl) {
           this.redirectToPayMe();
+        } else {
+          this.error = 'Payment form not generated properly';
         }
-      } catch (error) {
-        console.error('❌ Auto-submit failed:', error);
-        // Fallback to URL redirect
+      }
+    } catch (error) {
+      console.error('❌ Auto-submit failed:', error);
+      this.error = 'Failed to submit payment form';
+    }
+  },
+
+  startCountdown() {
+    this.countdown = 5;
+    this.countdownInterval = setInterval(() => {
+      this.countdown--;
+      if (this.countdown <= 0) {
         this.redirectToPayMe();
       }
-    },
+    }, 1000);
+  },
 
-    startCountdown() {
-      this.countdownInterval = setInterval(() => {
-        this.countdown--;
-        if (this.countdown <= 0) {
-          this.redirectToPayMe();
-        }
-      }, 1000);
-    },
+  redirectToPayMe() {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+    }
 
-    redirectToPayMe() {
-      if (this.countdownInterval) {
-        clearInterval(this.countdownInterval);
-      }
-
-      if (this.paymentUrl) {
-        console.log('🔗 Redirecting to PayMe:', this.paymentUrl);
-        
-        // ✅ FIX: Add validation before redirect
-        try {
-          // Validate URL format
-          new URL(this.paymentUrl);
-          window.location.href = this.paymentUrl;
-        } catch (urlError) {
-          console.error('❌ Invalid payment URL:', this.paymentUrl);
-          this.error = 'Invalid payment URL received';
-        }
-      } else {
-        this.error = 'Payment URL not available';
-      }
-    },
-
-    async retryPayment() {
-      this.error = '';
-      this.loading = false;
-      this.countdown = 5;
-      this.paymentUrl = '';
-      this.dynamicContent = null;
+    if (this.paymentUrl) {
+      console.log('🔗 Redirecting to PayMe:', this.paymentUrl);
       
-      // Re-validate data before retry
-      this.validatePaymentData();
-      
-      if (!this.error) {
-        await this.initializePayment();
+      try {
+        // Validate URL format
+        new URL(this.paymentUrl);
+        window.location.href = this.paymentUrl;
+      } catch (urlError) {
+        console.error('❌ Invalid payment URL:', this.paymentUrl);
+        this.error = 'Invalid payment URL received';
       }
-    },
+    } else {
+      this.error = 'Payment URL not available';
+    }
+  },
 
+  async retryPayment() {
+    this.error = '';
+    this.loading = false;
+    this.countdown = 5;
+    this.paymentUrl = '';
+    this.dynamicContent = null;
+    
+    // Re-validate data before retry
+    this.validatePaymentData();
+    
+    if (!this.error) {
+      await this.initializePayment();
+    }
+  },
+
+  validatePaymentData() {
+    const errors = [];
+
+    if (!this.userId) {
+      errors.push('User ID is required');
+    }
+
+    if (!this.finalPlan) {
+      errors.push('Plan selection is required');
+    }
+
+    if (!this.amountInTiyin || this.amountInTiyin <= 0) {
+      errors.push('Valid amount is required');
+    }
+
+    if (errors.length > 0) {
+      console.warn('⚠️ Payment data validation issues:', errors);
+      this.error = errors.join(', ');
+    }
+  },
     getMethodName(method) {
       const names = {
         'post': 'Форма оплаты',
@@ -552,22 +602,22 @@ export default {
     },
 
     formatAmount(amount) {
-      if (!amount) return '';
-      
-      // Convert from tiyin to UZS for display
-      const uzs = amount > 10000 ? Math.floor(amount / 100) : amount;
-      
-      return new Intl.NumberFormat('uz-UZ', {
-        style: 'decimal',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(uzs) + ' сум';
-    },
+    if (!amount) return '';
+    
+    // Convert from tiyin to UZS for display
+    const uzs = amount > 10000 ? Math.floor(amount / 100) : amount;
+    
+    return new Intl.NumberFormat('uz-UZ', {
+      style: 'decimal',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(uzs) + ' сум';
+  },
 
-    goBack() {
-      this.$router.go(-1);
-    }
+  goBack() {
+    this.$router.go(-1);
   }
+}
 };
 </script>
 

@@ -346,9 +346,6 @@ export const formatPaymentAmount = (amount, currency = 'UZS') => {
   }
 };
 
-// ✅ DIRECT PAYME URL GENERATION (for GET method)
-// ✅ FIX: Direct PayMe URL generation with proper format
-// ✅ CORRECTED Direct PayMe URL generation
 const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   try {
     const amounts = getPaymentAmounts();
@@ -360,33 +357,43 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     
     const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
     if (!merchantId) {
-      throw new Error('Merchant ID not configured');
+      console.warn('⚠️ Merchant ID not configured, using test merchant ID');
+      // Using a test merchant ID for development
+      // In production, this should come from environment variables
     }
     
-    // CRITICAL FIX: Use order_id (not login)
-    const orderId = Date.now().toString().substr(-9);
+    // Generate a unique order ID
+    const orderId = `aced_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Build parameters with CORRECT format
+    // ✅ FIXED: Build parameters with CORRECT format according to PayMe docs
     const params = [];
-    params.push(`m=${merchantId}`);
-    params.push(`ac.order_id=${orderId}`); // FIXED: order_id instead of login
+    params.push(`m=${merchantId || 'test-merchant-id'}`);
+    params.push(`ac.order_id=${orderId}`); // Use order_id as account parameter
     params.push(`a=${planAmount}`);
     
+    // Optional parameters
     if (options.lang) {
       params.push(`l=${options.lang}`);
     }
     
-    // CRITICAL FIX: Use semicolon delimiter (not &)
+    if (options.callback) {
+      params.push(`c=${encodeURIComponent(options.callback)}`);
+    }
+    
+    // ✅ CRITICAL FIX: Use semicolon delimiter (not &)
     const paramString = params.join(';');
     console.log('📝 Fixed param string:', paramString);
     
+    // Base64 encode the parameters
     const base64Params = btoa(paramString);
     const paymentUrl = `https://checkout.paycom.uz/${base64Params}`;
+    
+    console.log('🔗 Generated PayMe URL:', paymentUrl);
     
     return {
       success: true,
       paymentUrl: paymentUrl,
-      method: 'get',
+      method: 'GET',
       transaction: {
         id: orderId,
         amount: planAmount,
@@ -402,7 +409,6 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   }
 };
 
-// ✅ Direct PayMe form generation with IKPU
 const generateDirectPaymeForm = async (userId, plan, options = {}) => {
   try {
     const amounts = getPaymentAmounts();
@@ -412,43 +418,31 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
       throw new Error(`Unknown plan: ${plan}`);
     }
     
-    const orderId = Date.now().toString().substr(-9);
-    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
+    const orderId = `aced_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID || 'test-merchant-id';
     
-    // FIXED: Proper detail object with YOUR IKPU
-    const detail = {
-      receipt_type: 0,
-      items: [{
-        title: `ACED ${plan.toUpperCase()} Subscription`,
-        price: planAmount,
-        count: 1,
-        code: "10899002001000000", // YOUR IKPU CODE
-        vat_percent: 0,
-        package_code: "1"
-      }]
-    };
-    
-    const detailBase64 = btoa(JSON.stringify(detail));
-    
+    // Create the form HTML with proper PayMe format
     const formHtml = `
-      <form id="payme-form" method="POST" action="https://checkout.paycom.uz">
+      <form id="payme-form" method="POST" action="https://checkout.paycom.uz" style="display: none;">
         <input type="hidden" name="merchant" value="${merchantId}" />
         <input type="hidden" name="amount" value="${planAmount}" />
         <input type="hidden" name="account[order_id]" value="${orderId}" />
         <input type="hidden" name="lang" value="${options.lang || 'ru'}" />
-        <input type="hidden" name="description" value="ACED ${plan} subscription" />
-        <input type="hidden" name="detail" value="${detailBase64}" />
-        <input type="hidden" name="callback" value="${window.location.origin}/payment/success" />
+        <input type="hidden" name="description" value="ACED ${plan.toUpperCase()} subscription" />
+        <input type="hidden" name="callback" value="${options.callback || window.location.origin + '/payment/success'}" />
         <input type="hidden" name="callback_timeout" value="15000" />
       </form>
       <script>
-        document.getElementById('payme-form').submit();
+        console.log('📝 Auto-submitting PayMe form');
+        setTimeout(function() {
+          document.getElementById('payme-form').submit();
+        }, 1000);
       </script>
     `;
     
     return {
       success: true,
-      method: 'post',
+      method: 'POST',
       formHtml: formHtml,
       transaction: {
         id: orderId,
@@ -468,13 +462,14 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
 // ✅ DIRECT PAYME FORM GENERATION (for POST method)
 
 
-// ✅ PAYME PAYMENT INITIATION - MAIN FUNCTION
 export const initiatePaymePayment = async (userId, plan, additionalData = {}) => {
   if (!trackPaymentAttempt(userId, 'payment-initiation')) {
     throw new Error('Слишком много попыток инициации платежа. Подождите несколько секунд.');
   }
   
   try {
+    console.log('🚀 Initiating PayMe payment:', { userId, plan, additionalData });
+    
     const amounts = getPaymentAmounts();
     const planAmount = amounts[plan]?.tiyin;
     
@@ -482,49 +477,51 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
       throw new Error(`Неизвестный план: ${plan}`);
     }
     
-    const payload = {
-      userId,
-      plan,
-      amount: planAmount,
-      method: additionalData.method || 'post',
-      lang: additionalData.lang || 'ru',
-      name: additionalData.name || 'User',
-      email: additionalData.email || '',
-      callback: additionalData.callback || `${window.location.origin}/payment/success`,
-      callback_timeout: additionalData.callback_timeout || 15000,
-      ...additionalData
-    };
+    // ✅ FIXED: Always use direct generation for better reliability
+    const method = additionalData.method || 'get';
     
-    console.log('🚀 Initiating PayMe payment:', payload);
-    
-    // For direct methods, use direct generation
-    if (payload.method === 'get') {
-      return await generateDirectPaymeUrl(userId, plan, payload);
-    }
-    
-    if (payload.method === 'post') {
-      return await generateDirectPaymeForm(userId, plan, payload);
-    }
-    
-    // Try backend API call for other methods
-    try {
-      const response = await api.post('/payments/initiate', payload);
-      
-      if (response.data.success) {
+    if (method === 'get') {
+      const result = await generateDirectPaymeUrl(userId, plan, additionalData);
+      if (result.success) {
         return {
           success: true,
-          data: response.data,
-          paymentUrl: response.data.paymentUrl,
-          transaction: response.data.transaction,
-          metadata: response.data.metadata
+          paymentUrl: result.paymentUrl,
+          transaction: result.transaction,
+          method: 'GET',
+          message: 'Payment URL generated successfully'
         };
       } else {
-        throw new Error(response.data.message || 'Payment initiation failed');
+        throw new Error(result.error);
       }
-    } catch (backendError) {
-      // Fallback to direct generation
-      console.warn('⚠️ Backend payment initiation failed, using direct generation');
-      return await generateDirectPaymeUrl(userId, plan, payload);
+    }
+    
+    if (method === 'post') {
+      const result = await generateDirectPaymeForm(userId, plan, additionalData);
+      if (result.success) {
+        return {
+          success: true,
+          formHtml: result.formHtml,
+          transaction: result.transaction,
+          method: 'POST',
+          message: 'Payment form generated successfully'
+        };
+      } else {
+        throw new Error(result.error);
+      }
+    }
+    
+    // Fallback to GET method
+    const result = await generateDirectPaymeUrl(userId, plan, additionalData);
+    if (result.success) {
+      return {
+        success: true,
+        paymentUrl: result.paymentUrl,
+        transaction: result.transaction,
+        method: 'GET',
+        message: 'Payment URL generated successfully (fallback)'
+      };
+    } else {
+      throw new Error(result.error);
     }
     
   } catch (error) {
@@ -532,8 +529,8 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
     
     return {
       success: false,
-      error: error.response?.data?.message || error.message || 'Ошибка инициации платежа',
-      details: error.response?.data
+      error: error.message || 'Ошибка инициации платежа',
+      details: error
     };
   }
 };
@@ -545,12 +542,14 @@ export const generatePaymeForm = async (userId, plan, method = 'post', options =
   }
   
   try {
-    // Use direct generation for better reliability
+    console.log('🎨 Generating PayMe form:', { userId, plan, method, options });
+    
+    // Always use direct generation for reliability
     if (method === 'get') {
       const result = await generateDirectPaymeUrl(userId, plan, { method, ...options });
       return {
         success: result.success,
-        method: 'get',
+        method: 'GET',
         paymentUrl: result.paymentUrl,
         transaction: result.transaction,
         error: result.error
@@ -561,47 +560,24 @@ export const generatePaymeForm = async (userId, plan, method = 'post', options =
       const result = await generateDirectPaymeForm(userId, plan, { method, ...options });
       return {
         success: result.success,
-        method: 'post',
+        method: 'POST',
         formHtml: result.formHtml,
-        paymentUrl: result.paymentUrl,
         transaction: result.transaction,
         error: result.error
       };
     }
     
-    // For other methods, try backend with fallback
-    try {
-      const payload = {
-        userId,
-        plan,
-        method,
-        lang: options.lang || 'ru',
-        style: options.style || 'colored',
-        qrWidth: options.qrWidth || 250,
-        name: options.name,
-        phone: options.phone
-      };
-      
-      const response = await api.post('/payments/generate-form', payload);
-      
-      if (response.data.success) {
-        return {
-          success: true,
-          method: response.data.method,
-          formHtml: response.data.formHtml,
-          buttonHtml: response.data.buttonHtml,
-          qrHtml: response.data.qrHtml,
-          paymentUrl: response.data.paymentUrl,
-          transaction: response.data.transaction
-        };
-      } else {
-        throw new Error(response.data.message || 'Form generation failed');
-      }
-    } catch (backendError) {
-      // Fallback to direct generation
-      console.warn('⚠️ Backend form generation failed, using direct generation');
-      return await generateDirectPaymeUrl(userId, plan, { method: 'get', ...options });
-    }
+    // For button and QR methods, fallback to GET for now
+    console.warn('⚠️ Button and QR methods not fully implemented, using GET method');
+    const result = await generateDirectPaymeUrl(userId, plan, { method: 'get', ...options });
+    return {
+      success: result.success,
+      method: 'GET',
+      paymentUrl: result.paymentUrl,
+      transaction: result.transaction,
+      error: result.error
+    };
+    
   } catch (error) {
     console.error('❌ Form generation error:', error);
     return {
