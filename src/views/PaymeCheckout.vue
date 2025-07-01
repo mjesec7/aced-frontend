@@ -367,78 +367,99 @@ export default {
       }
     },
 
-    async initializePayment() {
-    try {
-      const planToUse = this.finalPlan;
+   // ✅ FIXED: Replace the initializePayment method in src/views/PaymeCheckout.vue around line 270
+async initializePayment() {
+  try {
+    const planToUse = this.finalPlan;
+    
+    if (!this.userId || !planToUse) {
+      throw new Error('Missing user ID or plan information');
+    }
+
+    if (!this.amountInTiyin || this.amountInTiyin <= 0) {
+      throw new Error('Invalid payment amount');
+    }
+
+    this.loading = true;
+    this.error = '';
+    this.paymentUrl = '';
+    this.dynamicContent = null;
+
+    console.log('🚀 Initializing PayMe payment with method:', this.selectedMethod);
+    this.loadingMessage = this.getLoadingMessage();
+
+    // ✅ CRITICAL FIX: Environment validation
+    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
+    
+    console.log('🔍 Frontend environment check:', {
+      merchantId: merchantId ? merchantId.substring(0, 10) + '...' : 'MISSING',
+      hasValue: !!merchantId,
+      isUndefined: merchantId === undefined,
+      isStringUndefined: merchantId === 'undefined'
+    });
+    
+    if (!merchantId || merchantId === 'undefined') {
+      console.error('❌ VITE_PAYME_MERCHANT_ID not set or undefined');
+      throw new Error('PayMe configuration error. Please restart the application and check environment variables.');
+    }
+
+    // ✅ FIXED: Proper data structure for PayMe
+    const paymentData = {
+      method: this.selectedMethod,
+      lang: this.selectedLanguage,
+      callback: `${window.location.origin}/payment/success`,
+      callback_timeout: 15000,
+      order_id: this.userId // Ensure order_id is provided
+    };
+
+    console.log('📋 Payment data being sent:', {
+      userId: this.userId,
+      plan: planToUse,
+      amount: this.amountInTiyin,
+      data: paymentData
+    });
+
+    const result = await initiatePaymePayment(this.userId, planToUse, paymentData);
+
+    console.log('💳 Payment result:', result);
+
+    if (result.success) {
+      // ✅ FIXED: Handle different response types
+      if (result.paymentUrl) {
+        this.paymentUrl = result.paymentUrl;
+        
+        // ✅ VERIFICATION: Check the URL doesn't contain "undefined"
+        if (this.paymentUrl.includes('undefined')) {
+          throw new Error('Generated payment URL contains "undefined". Environment configuration error.');
+        }
+      }
       
-      if (!this.userId || !planToUse) {
-        throw new Error('Missing user ID or plan information');
+      if (result.formHtml) {
+        this.dynamicContent = { formHtml: result.formHtml };
       }
+      
+      this.transactionId = result.transaction?.id || this.transactionId;
+      
+      this.loading = false;
 
-      if (!this.amountInTiyin || this.amountInTiyin <= 0) {
-        throw new Error('Invalid payment amount');
+      // Start countdown for auto-redirect
+      if (this.selectedMethod === 'get' && this.paymentUrl) {
+        this.startCountdown();
+      } else if (this.selectedMethod === 'post' && this.dynamicContent?.formHtml) {
+        // Auto-submit form after a delay
+        setTimeout(() => {
+          this.autoSubmitForm();
+        }, 2000);
       }
+    } else {
+      throw new Error(result.error || 'Failed to initialize payment');
+    }
 
-      this.loading = true;
-      this.error = '';
-      this.paymentUrl = '';
-      this.dynamicContent = null;
-
-      console.log('🚀 Initializing PayMe payment with method:', this.selectedMethod);
-      this.loadingMessage = this.getLoadingMessage();
-
-      // ✅ FIXED: Proper data structure for PayMe
-      const paymentData = {
-        method: this.selectedMethod,
-        lang: this.selectedLanguage,
-        callback: `${window.location.origin}/payment/success`,
-        callback_timeout: 15000
-      };
-
-      console.log('📋 Payment data being sent:', {
-        userId: this.userId,
-        plan: planToUse,
-        amount: this.amountInTiyin,
-        data: paymentData
-      });
-
-
-      const result = await initiatePaymePayment(this.userId, planToUse, paymentData);
-
-console.log('💳 Payment result:', result);
-
-if (result.success) {
-  // ✅ FIXED: Handle different response types
-  if (result.paymentUrl) {
-    this.paymentUrl = result.paymentUrl;
+  } catch (error) {
+    console.error('❌ Payment initialization error:', error);
+    this.error = error.message || 'Failed to initialize payment';
+    this.loading = false;
   }
-  
-  if (result.formHtml) {
-    this.dynamicContent = { formHtml: result.formHtml };
-  }
-  
-  this.transactionId = result.transaction?.id || this.transactionId;
-  
-  this.loading = false;
-
-  // Start countdown for auto-redirect
-  if (this.selectedMethod === 'get' && this.paymentUrl) {
-    this.startCountdown();
-  } else if (this.selectedMethod === 'post' && this.dynamicContent?.formHtml) {
-    // Auto-submit form after a delay
-    setTimeout(() => {
-      this.autoSubmitForm();
-    }, 2000);
-  }
-} else {
-  throw new Error(result.error || 'Failed to initialize payment');
-}
-
-} catch (error) {
-console.error('❌ Payment initialization error:', error);
-this.error = error.message || 'Failed to initialize payment';
-this.loading = false;
-}
 },
 
     async generateDynamicContent() {

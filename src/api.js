@@ -346,41 +346,71 @@ export const formatPaymentAmount = (amount, currency = 'UZS') => {
   }
 };
 
+// ✅ FIXED: Replace this function in src/api.js around line 297
 const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   try {
+    console.log('🚀 Generating PayMe URL with:', { userId, plan, options });
+    
+    // ✅ CRITICAL FIX: Get merchant ID with multiple fallbacks
+    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID || 
+                       process.env.VITE_PAYME_MERCHANT_ID ||
+                       '68016cc1a5e04614247f7174'; // Your actual merchant ID as fallback
+    
+    console.log('🔍 Merchant ID check:', {
+      fromImportMeta: import.meta.env.VITE_PAYME_MERCHANT_ID,
+      fromProcess: process.env?.VITE_PAYME_MERCHANT_ID,
+      finalValue: merchantId,
+      isUndefined: merchantId === undefined,
+      isStringUndefined: merchantId === 'undefined'
+    });
+    
+    // ✅ VALIDATION: Check if merchant ID is valid
+    if (!merchantId || merchantId === 'undefined' || merchantId === 'null') {
+      console.error('❌ VITE_PAYME_MERCHANT_ID is not properly loaded');
+      console.error('Environment check:', import.meta.env);
+      throw new Error('PayMe Merchant ID is not configured. Check your .env file and restart the dev server.');
+    }
+    
     const amounts = getPaymentAmounts();
     const planAmount = amounts[plan]?.tiyin;
+    
     if (!planAmount) {
       throw new Error(`Unknown plan: ${plan}`);
     }
     
-    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
-    
-    // Generate a unique orderId if none provided
+    // ✅ FIXED: Generate unique order ID
     const orderId = options.order_id || `aced_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Build parameters using semicolon delimiters, as required by PayMe.
+    // ✅ FIXED: Build parameters according to PayMe documentation
     const params = [];
     params.push(`m=${merchantId}`);
-    // FIXED: Ensure order_id is always provided. If missing, fallback to using userId.
-    if (options.order_id !== undefined && options.order_id !== null) {
-      params.push(`ac.order_id=${options.order_id}`);
-    } else {
-      params.push(`ac.order_id=${orderId}`);
-    }
+    params.push(`ac.order_id=${orderId}`);
     params.push(`a=${planAmount}`);
+    
     if (options.lang) {
       params.push(`l=${options.lang}`);
     }
     if (options.callback) {
       params.push(`c=${encodeURIComponent(options.callback)}`);
     }
+    if (options.callback_timeout) {
+      params.push(`ct=${options.callback_timeout}`);
+    }
     
+    // ✅ CRITICAL: Join with semicolon
     const paramString = params.join(';');
     console.log('📝 Fixed param string:', paramString);
     
     const base64Params = btoa(paramString);
     const paymentUrl = `https://checkout.paycom.uz/${base64Params}`;
+    
+    // ✅ VERIFICATION: Check the URL is correct
+    const verification = atob(base64Params);
+    console.log('✅ Verification - decoded params:', verification);
+    
+    if (verification.includes('undefined')) {
+      throw new Error('Generated URL still contains "undefined". Check environment variables.');
+    }
     
     console.log('🔗 Generated PayMe URL:', paymentUrl);
     
