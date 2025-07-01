@@ -223,8 +223,8 @@
 </template>
 
 <script>
-// ✅ Import from the main API file
-import { initiatePaymePayment, generatePaymeForm } from '@/api';
+// ✅ Import from the main API file with safe error handling
+import { initiatePaymePayment, generatePaymeForm, safeErrorMessage } from '@/api';
 
 export default {
   name: 'PaymeCheckout',
@@ -250,58 +250,61 @@ export default {
       plan: '',
       userName: '',
       userEmail: '',
-      currentPlan: ''
+      currentPlan: '',
+      
+      // Debug mode
+      showDebugInfo: process.env.NODE_ENV === 'development'
     };
-  },
-  computed: {
-  // Fix: Ensure proper plan selection
-  finalPlan() {
-    return this.plan || this.selectedPlan || 'start';
   },
   
-  // Fix: Ensure amount is properly formatted
-  amountInTiyin() {
-    let amount = parseInt(this.amount) || 0;
+  computed: {
+    // ✅ FIXED: Ensure proper plan selection
+    finalPlan() {
+      return this.plan || this.selectedPlan || 'start';
+    },
     
-    // If amount seems to be in UZS (less than 10000), convert to tiyin
-    if (amount > 0 && amount < 10000) {
-      amount = amount * 100;
-    }
+    // ✅ FIXED: Ensure amount is properly formatted
+    amountInTiyin() {
+      let amount = parseInt(this.amount) || 0;
+      
+      // If amount seems to be in UZS (less than 10000), convert to tiyin
+      if (amount > 0 && amount < 10000) {
+        amount = amount * 100;
+      }
+      
+      // If no amount specified, use default amounts
+      if (amount === 0) {
+        const amounts = {
+          start: 26000000,  // 260,000 UZS in tiyin
+          pro: 45500000     // 455,000 UZS in tiyin
+        };
+        amount = amounts[this.finalPlan] || 26000000;
+      }
+      
+      return amount;
+    },
     
-    // If no amount specified, use default amounts
-    if (amount === 0) {
-      const amounts = {
-        start: 26000000,  // 260,000 UZS in tiyin
-        pro: 45500000     // 455,000 UZS in tiyin
+    planName() {
+      const currentPlan = this.plan || this.selectedPlan;
+      return currentPlan === 'start'
+        ? 'Start Plan'
+        : currentPlan === 'pro'
+        ? 'Pro Plan'
+        : '';
+    },
+    
+    // ✅ FIXED: Generate proper account object with order_id
+    accountObject() {
+      return {
+        order_id: this.userId,
+        user_id: String(this.userId),
+        plan: this.finalPlan,
+        email: this.userEmail || '',
+        name: this.userName || ''
       };
-      amount = amounts[this.finalPlan] || 26000000;
     }
-    
-    return amount;
   },
-  planName() {
-    const currentPlan = this.plan || this.selectedPlan;
-    return currentPlan === 'start'
-      ? 'Start Plan'
-      : currentPlan === 'pro'
-      ? 'Pro Plan'
-      : '';
-  },
-
-  finalPlan() {
-    return this.plan || this.selectedPlan;
-  },
-  // Fix: Generate proper account object with order_id
-  accountObject() {
-    return {
-      order_id: this.userId, // ensure order_id is provided for PayMe; change if you need a different value
-      user_id: String(this.userId),
-      plan: this.finalPlan,
-      email: this.userEmail || '',
-      name: this.userName || ''
-    };
-  },
-},
+  
   async mounted() {
     this.loadPaymentData();
     this.validatePaymentData();
@@ -311,12 +314,75 @@ export default {
       await this.initializePayment();
     }
   },
+  
   beforeUnmount() {
     if (this.countdownInterval) {
       clearInterval(this.countdownInterval);
     }
   },
+  
   methods: {
+    // ✅ FIXED: Safe error display method
+    safeDisplayError(error) {
+      if (typeof error === 'string') {
+        return error;
+      }
+      
+      if (error && typeof error === 'object') {
+        // Check for common error properties
+        if (error.message && typeof error.message === 'string') {
+          return error.message;
+        }
+        
+        if (error.error && typeof error.error === 'string') {
+          return error.error;
+        }
+        
+        if (error.details && typeof error.details === 'string') {
+          return error.details;
+        }
+        
+        // If it's a response object
+        if (error.response && error.response.data) {
+          if (typeof error.response.data.message === 'string') {
+            return error.response.data.message;
+          }
+          if (typeof error.response.data.error === 'string') {
+            return error.response.data.error;
+          }
+          if (typeof error.response.data === 'string') {
+            return error.response.data;
+          }
+        }
+        
+        // Last resort: stringify the object safely
+        try {
+          return JSON.stringify(error, null, 2);
+        } catch (stringifyError) {
+          return 'Произошла ошибка при обработке платежа';
+        }
+      }
+      
+      // Fallback for any other type
+      return error ? String(error) : 'Неизвестная ошибка';
+    },
+    
+    // ✅ FIXED: Debug error information
+    debugErrorInfo(error) {
+      if (!this.showDebugInfo) return '';
+      
+      try {
+        return JSON.stringify({
+          type: typeof error,
+          message: error?.message,
+          response: error?.response?.data,
+          stack: error?.stack?.split('\n').slice(0, 5)
+        }, null, 2);
+      } catch (e) {
+        return 'Debug info not available';
+      }
+    },
+    
     loadPaymentData() {
       const params = new URLSearchParams(window.location.search);
       this.transactionId = params.get('transactionId') || '';
@@ -345,7 +411,7 @@ export default {
       });
     },
 
-    // ✅ FIX: Add validation for required PayMe parameters
+    // ✅ FIXED: Validation for required PayMe parameters
     validatePaymentData() {
       const errors = [];
 
@@ -367,120 +433,113 @@ export default {
       }
     },
 
+    // ✅ FIXED: Complete payment initialization with safe error handling
     async initializePayment() {
-  try {
-    const planToUse = this.finalPlan;
-    
-    if (!this.userId || !planToUse) {
-      throw new Error('Missing user ID or plan information');
-    }
-
-    this.loading = true;
-    this.error = '';
-    this.paymentUrl = '';
-    this.dynamicContent = null;
-
-    console.log('🚀 Initializing PayMe payment with method:', this.selectedMethod);
-    this.loadingMessage = this.getLoadingMessage();
-
-    // Environment check
-    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
-    
-    if (!merchantId || merchantId === 'undefined') {
-      console.error('❌ VITE_PAYME_MERCHANT_ID not set');
-      throw new Error('PayMe configuration error. Check environment variables.');
-    }
-
-    console.log('✅ Environment check passed');
-
-    // Prepare payment data
-    const paymentData = {
-      method: this.selectedMethod,
-      lang: this.selectedLanguage,
-      callback: `${window.location.origin}/payment/success`,
-      callback_timeout: 15000,
-      order_id: this.userId,
-      style: 'colored', // for button method
-      qrWidth: 250 // for QR method
-    };
-
-    console.log('📋 Payment data:', JSON.stringify(paymentData, null, 2));
-
-    // Call the payment API
-    const result = await initiatePaymePayment(this.userId, planToUse, paymentData);
-
-    console.log('💳 Payment result:', JSON.stringify(result, null, 2));
-
-    if (result.success) {
-      // Handle different response types
-      if (result.paymentUrl) {
-        this.paymentUrl = result.paymentUrl;
+      try {
+        const planToUse = this.finalPlan;
         
-        // Verify URL doesn't contain undefined
-        if (this.paymentUrl.includes('undefined')) {
-          throw new Error('Generated payment URL contains undefined values');
+        if (!this.userId || !planToUse) {
+          throw new Error('Missing user ID or plan information');
         }
+
+        this.loading = true;
+        this.error = '';
+        this.paymentUrl = '';
+        this.dynamicContent = null;
+
+        console.log('🚀 Initializing PayMe payment with method:', this.selectedMethod);
+        this.loadingMessage = this.getLoadingMessage();
+
+        // Environment check
+        const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
         
-        console.log('✅ Payment URL generated:', this.paymentUrl);
-      }
-      
-      if (result.formHtml) {
-        this.dynamicContent = { formHtml: result.formHtml };
-        console.log('✅ POST form generated');
-      }
-      
-      if (result.buttonHtml) {
-        this.dynamicContent = { buttonHtml: result.buttonHtml };
-        console.log('✅ Button generated');
-      }
-      
-      if (result.qrHtml) {
-        this.dynamicContent = { qrHtml: result.qrHtml };
-        console.log('✅ QR code generated');
-      }
-      
-      this.transactionId = result.transaction?.id || this.transactionId;
-      this.loading = false;
+        if (!merchantId || merchantId === 'undefined') {
+          console.error('❌ VITE_PAYME_MERCHANT_ID not set');
+          throw new Error('PayMe configuration error. Check environment variables.');
+        }
 
-      // Handle auto-redirect for GET method
-      if (this.selectedMethod === 'get' && this.paymentUrl) {
-        this.startCountdown();
-      }
-      
-    } else {
-      throw new Error(result.error || 'Failed to initialize payment');
-    }
+        console.log('✅ Environment check passed');
 
-  } catch (error) {
-    console.error('❌ Payment initialization error:', error);
-    
-    // Proper error handling - no more [object Object]
-    let errorMessage = 'Failed to initialize payment';
-    
-    if (typeof error === 'string') {
-      errorMessage = error;
-    } else if (error && typeof error.message === 'string') {
-      errorMessage = error.message;
-    } else if (error && typeof error === 'object') {
-      errorMessage = JSON.stringify(error);
-    }
-    
-    this.error = errorMessage;
-    this.loading = false;
-  }
-},
+        // Prepare payment data
+        const paymentData = {
+          method: this.selectedMethod,
+          lang: this.selectedLanguage,
+          callback: `${window.location.origin}/payment/success`,
+          callback_timeout: 15000,
+          order_id: this.userId,
+          style: 'colored',
+          qrWidth: 250
+        };
+
+        console.log('📋 Payment data:', JSON.stringify(paymentData, null, 2));
+
+        // Call the payment API
+        const result = await initiatePaymePayment(this.userId, planToUse, paymentData);
+
+        console.log('💳 Payment result:', JSON.stringify(result, null, 2));
+
+        if (result && result.success) {
+          // Handle different response types
+          if (result.paymentUrl) {
+            this.paymentUrl = result.paymentUrl;
+            
+            // Verify URL doesn't contain undefined
+            if (this.paymentUrl.includes('undefined')) {
+              throw new Error('Generated payment URL contains undefined values');
+            }
+            
+            console.log('✅ Payment URL generated:', this.paymentUrl);
+          }
+          
+          if (result.formHtml) {
+            this.dynamicContent = { formHtml: result.formHtml };
+            console.log('✅ POST form generated');
+          }
+          
+          if (result.buttonHtml) {
+            this.dynamicContent = { buttonHtml: result.buttonHtml };
+            console.log('✅ Button generated');
+          }
+          
+          if (result.qrHtml) {
+            this.dynamicContent = { qrHtml: result.qrHtml };
+            console.log('✅ QR code generated');
+          }
+          
+          this.transactionId = result.transaction?.id || this.transactionId;
+          this.loading = false;
+
+          // Handle auto-redirect for GET method
+          if (this.selectedMethod === 'get' && this.paymentUrl) {
+            this.startCountdown();
+          }
+          
+        } else {
+          // ✅ FIXED: Safe error handling for failed results
+          const errorMsg = result?.error || result?.message || 'Failed to initialize payment';
+          throw new Error(this.safeDisplayError(errorMsg));
+        }
+
+      } catch (error) {
+        console.error('❌ Payment initialization error:', error);
+        
+        // ✅ FIXED: Safe error message assignment - NO MORE [object Object]
+        this.error = this.safeDisplayError(error);
+        this.loading = false;
+      }
+    },
 
     async generateDynamicContent() {
       try {
         if (this.selectedMethod === 'post' || this.selectedMethod === 'button' || this.selectedMethod === 'qr') {
           console.log('🎨 Generating dynamic content for method:', this.selectedMethod);
           
-          // ✅ FIX: Pass proper data structure for form generation
+          // ✅ FIXED: Pass proper data structure for form generation
           const formData = {
             method: this.selectedMethod,
             lang: this.selectedLanguage,
-            style: 'colored', // for buttons
-            qrWidth: 250, // for QR codes
+            style: 'colored',
+            qrWidth: 250,
             amount: this.amountInTiyin,
             account: this.accountObject,
             callback: `${window.location.origin}/payment/success`,
@@ -489,7 +548,7 @@ export default {
 
           const result = await generatePaymeForm(this.userId, this.finalPlan, formData);
           
-          if (result.success) {
+          if (result && result.success) {
             this.dynamicContent = result;
             
             // For POST method, auto-submit the form after a delay
@@ -499,7 +558,7 @@ export default {
               }, 2000);
             }
           } else {
-            console.warn('⚠️ Dynamic content generation failed:', result.error);
+            console.warn('⚠️ Dynamic content generation failed:', this.safeDisplayError(result?.error || result));
           }
         }
       } catch (error) {
@@ -509,91 +568,71 @@ export default {
     },
 
     autoSubmitForm() {
-    try {
-      const form = document.querySelector('#payme-form') || document.querySelector('form');
-      if (form) {
-        console.log('📝 Auto-submitting PayMe form');
-        form.submit();
-      } else {
-        console.warn('⚠️ Form not found, falling back to URL redirect');
-        if (this.paymentUrl) {
-          this.redirectToPayMe();
-        } else {
-          this.error = 'Payment form not generated properly';
-        }
-      }
-    } catch (error) {
-      console.error('❌ Auto-submit failed:', error);
-      this.error = 'Failed to submit payment form';
-    }
-  },
-
-  startCountdown() {
-    this.countdown = 5;
-    this.countdownInterval = setInterval(() => {
-      this.countdown--;
-      if (this.countdown <= 0) {
-        this.redirectToPayMe();
-      }
-    }, 1000);
-  },
-
-  redirectToPayMe() {
-    if (this.countdownInterval) {
-      clearInterval(this.countdownInterval);
-    }
-
-    if (this.paymentUrl) {
-      console.log('🔗 Redirecting to PayMe:', this.paymentUrl);
-      
       try {
-        // Validate URL format
-        new URL(this.paymentUrl);
-        window.location.href = this.paymentUrl;
-      } catch (urlError) {
-        console.error('❌ Invalid payment URL:', this.paymentUrl);
-        this.error = 'Invalid payment URL received';
+        const form = document.querySelector('#payme-form') || document.querySelector('form');
+        if (form) {
+          console.log('📝 Auto-submitting PayMe form');
+          form.submit();
+        } else {
+          console.warn('⚠️ Form not found, falling back to URL redirect');
+          if (this.paymentUrl) {
+            this.redirectToPayMe();
+          } else {
+            this.error = 'Payment form not generated properly';
+          }
+        }
+      } catch (error) {
+        console.error('❌ Auto-submit failed:', error);
+        this.error = this.safeDisplayError(error);
       }
-    } else {
-      this.error = 'Payment URL not available';
-    }
-  },
+    },
 
-  async retryPayment() {
-    this.error = '';
-    this.loading = false;
-    this.countdown = 5;
-    this.paymentUrl = '';
-    this.dynamicContent = null;
+    startCountdown() {
+      this.countdown = 5;
+      this.countdownInterval = setInterval(() => {
+        this.countdown--;
+        if (this.countdown <= 0) {
+          this.redirectToPayMe();
+        }
+      }, 1000);
+    },
+
+    redirectToPayMe() {
+      if (this.countdownInterval) {
+        clearInterval(this.countdownInterval);
+      }
+
+      if (this.paymentUrl) {
+        console.log('🔗 Redirecting to PayMe:', this.paymentUrl);
+        
+        try {
+          // Validate URL format
+          new URL(this.paymentUrl);
+          window.location.href = this.paymentUrl;
+        } catch (urlError) {
+          console.error('❌ Invalid payment URL:', this.paymentUrl);
+          this.error = 'Invalid payment URL received';
+        }
+      } else {
+        this.error = 'Payment URL not available';
+      }
+    },
+
+    async retryPayment() {
+      this.error = '';
+      this.loading = false;
+      this.countdown = 5;
+      this.paymentUrl = '';
+      this.dynamicContent = null;
+      
+      // Re-validate data before retry
+      this.validatePaymentData();
+      
+      if (!this.error) {
+        await this.initializePayment();
+      }
+    },
     
-    // Re-validate data before retry
-    this.validatePaymentData();
-    
-    if (!this.error) {
-      await this.initializePayment();
-    }
-  },
-
-  validatePaymentData() {
-    const errors = [];
-
-    if (!this.userId) {
-      errors.push('User ID is required');
-    }
-
-    if (!this.finalPlan) {
-      errors.push('Plan selection is required');
-    }
-
-    if (!this.amountInTiyin || this.amountInTiyin <= 0) {
-      errors.push('Valid amount is required');
-    }
-
-    if (errors.length > 0) {
-      console.warn('⚠️ Payment data validation issues:', errors);
-      this.error = errors.join(', ');
-    }
-  },
     getMethodName(method) {
       const names = {
         'post': 'Форма оплаты',
@@ -635,22 +674,26 @@ export default {
     },
 
     formatAmount(amount) {
-    if (!amount) return '';
-    
-    // Convert from tiyin to UZS for display
-    const uzs = amount > 10000 ? Math.floor(amount / 100) : amount;
-    
-    return new Intl.NumberFormat('uz-UZ', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(uzs) + ' сум';
-  },
+      if (!amount) return '';
+      
+      // Convert from tiyin to UZS for display
+      const uzs = amount > 10000 ? Math.floor(amount / 100) : amount;
+      
+      try {
+        return new Intl.NumberFormat('uz-UZ', {
+          style: 'decimal',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(uzs) + ' сум';
+      } catch (formatError) {
+        return `${uzs.toLocaleString()} сум`;
+      }
+    },
 
-  goBack() {
-    this.$router.go(-1);
+    goBack() {
+      this.$router.go(-1);
+    }
   }
-}
 };
 </script>
 
