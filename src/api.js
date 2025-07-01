@@ -350,41 +350,35 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   try {
     const amounts = getPaymentAmounts();
     const planAmount = amounts[plan]?.tiyin;
-    
     if (!planAmount) {
       throw new Error(`Unknown plan: ${plan}`);
     }
     
     const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
-    if (!merchantId) {
-      console.warn('⚠️ Merchant ID not configured, using test merchant ID');
-      // Using a test merchant ID for development
-      // In production, this should come from environment variables
-    }
     
-    // Generate a unique order ID
-    const orderId = `aced_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Generate a unique orderId if none provided
+    const orderId = options.order_id || `aced_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // ✅ FIXED: Build parameters with CORRECT format according to PayMe docs
+    // Build parameters using semicolon delimiters, as required by PayMe.
     const params = [];
-    params.push(`m=${merchantId || 'test-merchant-id'}`);
-    params.push(`ac.order_id=${orderId}`); // Use order_id as account parameter
+    params.push(`m=${merchantId}`);
+    // FIXED: Ensure order_id is always provided. If missing, fallback to using userId.
+    if (options.order_id !== undefined && options.order_id !== null) {
+      params.push(`ac.order_id=${options.order_id}`);
+    } else {
+      params.push(`ac.order_id=${orderId}`);
+    }
     params.push(`a=${planAmount}`);
-    
-    // Optional parameters
     if (options.lang) {
       params.push(`l=${options.lang}`);
     }
-    
     if (options.callback) {
       params.push(`c=${encodeURIComponent(options.callback)}`);
     }
     
-    // ✅ CRITICAL FIX: Use semicolon delimiter (not &)
     const paramString = params.join(';');
     console.log('📝 Fixed param string:', paramString);
     
-    // Base64 encode the parameters
     const base64Params = btoa(paramString);
     const paymentUrl = `https://checkout.paycom.uz/${base64Params}`;
     
@@ -392,12 +386,12 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     
     return {
       success: true,
-      paymentUrl: paymentUrl,
+      paymentUrl,
       method: 'GET',
       transaction: {
         id: orderId,
         amount: planAmount,
-        plan: plan
+        plan
       }
     };
   } catch (error) {
