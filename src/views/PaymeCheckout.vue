@@ -280,13 +280,17 @@ export default {
     return amount;
   },
   planName() {
-    const names = {
-      start: 'Start Plan',
-      pro: 'Pro Plan'
-    };
-    return names[this.finalPlan] || this.finalPlan;
+    const currentPlan = this.plan || this.selectedPlan;
+    return currentPlan === 'start'
+      ? 'Start Plan'
+      : currentPlan === 'pro'
+      ? 'Pro Plan'
+      : '';
   },
 
+  finalPlan() {
+    return this.plan || this.selectedPlan;
+  },
   // Fix: Generate proper account object with order_id
   accountObject() {
     return {
