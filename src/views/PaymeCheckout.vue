@@ -293,10 +293,10 @@ export default {
         : '';
     },
     
-    // ✅ FIXED: Generate proper account object with order_id
+    // ✅ FIXED: Generate proper account object with login
     accountObject() {
       return {
-        order_id: this.userId,
+        login: this.userId,
         user_id: String(this.userId),
         plan: this.finalPlan,
         email: this.userEmail || '',
@@ -466,7 +466,7 @@ export default {
           lang: this.selectedLanguage,
           callback: `${window.location.origin}/payment/success`,
           callback_timeout: 15000,
-          order_id: this.userId,
+          login: this.userId,
           style: 'colored',
           qrWidth: 250
         };
