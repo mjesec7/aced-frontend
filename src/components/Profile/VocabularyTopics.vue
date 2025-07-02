@@ -504,7 +504,7 @@
         }
       });
       
-      // Watch for user login/logout
+      // Watch for user Login/logout
       watch(currentUser, async (newUser, oldUser) => {
         if (newUser && !oldUser) {
           // User just logged in

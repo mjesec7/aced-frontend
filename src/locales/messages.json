@@ -184,7 +184,7 @@
         "en": "Register",
         "uz": "Рўйхатдан ўтиш"
       },
-      "login": {
+      "Login": {
         "ru": "Вход",
         "en": "Login",
         "uz": "Кириш"
@@ -249,17 +249,17 @@
         "en": "Already have an account? Log in",
         "uz": "Ҳисобингиз борми? Кириш"
       },
-      "loginTitle": {
+      "LoginTitle": {
         "ru": "Вход",
         "en": "Login",
         "uz": "Кириш"
       },
-      "loginButton": {
+      "LoginButton": {
         "ru": "Войти",
         "en": "Sign In",
         "uz": "Кириш"
       },
-      "loginGoogle": {
+      "LoginGoogle": {
         "ru": "Войти через Google",
         "en": "Login with Google",
         "uz": "Google орқали кириш"
@@ -543,7 +543,7 @@
         "en": "To start a conversation, log in.",
         "uz": "Суҳбатни бошлаш учун тизимга киринг."
       },
-      "login": {
+      "Login": {
         "ru": "Войти",
         "en": "Log in",
         "uz": "Кириш"

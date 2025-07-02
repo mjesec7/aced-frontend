@@ -53,7 +53,7 @@ export default {
 
       if (!user) {
         console.log("🛑 Not logged in. Triggering modal...");
-        window.dispatchEvent(new Event("open-login-modal"));
+        window.dispatchEvent(new Event("open-Login-modal"));
       } else {
         console.log(`✅ User is logged in. Redirecting to /pay/${plan}`);
         this.$router.push(`/pay/${plan}`);

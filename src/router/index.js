@@ -549,12 +549,12 @@ router.beforeEach(async (to, from, next) => {
 
   // ✅ AUTHENTICATION CHECKS
   if (requiresAuth && !isLoggedIn) {
-    console.warn('❌ Authentication required. Redirecting to home with login prompt.');
+    console.warn('❌ Authentication required. Redirecting to home with Login prompt.');
     return next({ 
       name: 'HomePage',
       query: { 
         redirect: to.fullPath,
-        loginRequired: 'true'
+        LoginRequired: 'true'
       }
     });
   }
@@ -567,7 +567,7 @@ router.beforeEach(async (to, from, next) => {
         name: 'HomePage',
         query: { 
           redirect: to.fullPath,
-          loginRequired: 'true',
+          LoginRequired: 'true',
           message: 'Для оплаты необходимо войти в систему'
         }
       });
@@ -598,7 +598,7 @@ router.beforeEach(async (to, from, next) => {
       name: 'HomePage',
       query: { 
         redirect: to.fullPath,
-        loginRequired: 'true'
+        LoginRequired: 'true'
       }
     });
   }

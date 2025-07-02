@@ -3,7 +3,7 @@
     <div class="left-content">
       <h1 class="headline">Начни своё обучение <br />уже сегодня</h1>
       <p class="context-text">Чтобы пройти курсы — войдите в систему</p>
-      <button class="start-login-btn" @click="triggerLogin">Начать обучение</button>
+      <button class="start-Login-btn" @click="triggerLogin">Начать обучение</button>
     </div>
 
     <div class="subjects-abstract-layout">
@@ -114,10 +114,10 @@ export default {
         if (hero) {
           hero.scrollIntoView({ behavior: "smooth" });
           setTimeout(() => {
-            window.dispatchEvent(new Event("open-login-modal"));
+            window.dispatchEvent(new Event("open-Login-modal"));
           }, 600);
         } else {
-          window.dispatchEvent(new Event("open-login-modal"));
+          window.dispatchEvent(new Event("open-Login-modal"));
         }
       }
     },
@@ -167,7 +167,7 @@ export default {
   margin-bottom: 20px;
 }
 
-.start-login-btn {
+.start-Login-btn {
   padding: 12px 28px;
   font-family: 'Unbounded', sans-serif;
   font-size: 1rem;
@@ -179,7 +179,7 @@ export default {
   transition: all 0.4s ease;
 }
 
-.start-login-btn:hover {
+.start-Login-btn:hover {
   background: black;
   color: #c084fc;
   box-shadow: 0 0 20px rgba(192, 132, 252, 0.6);

@@ -383,7 +383,7 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     // Build parameters according to GET documentation
     const params = [];
     params.push(`m=${merchantId}`);
-    params.push(`ac.login=${orderId}`);
+    params.push(`ac.Login=${orderId}`);
     params.push(`a=${planAmount}`);
     
     if (options.lang && ['ru', 'uz', 'en'].includes(options.lang)) {
@@ -454,7 +454,7 @@ export const validatePaymeUrl = (url) => {
     // Check for required parameters
     const hasValidMerchant = decoded.includes('m=') && !decoded.includes('m=undefined');
     const hasValidAmount = decoded.includes('a=') && /a=\d+/.test(decoded);
-    const hasValidOrderId = decoded.includes('ac.login=') && !decoded.includes('ac.login=undefined');
+    const hasValidOrderId = decoded.includes('ac.Login=') && !decoded.includes('ac.Login=undefined');
     
     // Check for corruption
     const isCorrupted = decoded.includes('�') || 
@@ -541,7 +541,7 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
     // ✅ CRITICAL FIX: Generate CLEAN order ID (only alphanumeric)
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substr(2, 9);
-    const orderId = options.login || `aced${timestamp}${randomStr}`;
+    const orderId = options.Login || `aced${timestamp}${randomStr}`;
     
     // ✅ SANITIZE: Remove any special characters from order ID
     const cleanOrderId = orderId.replace(/[^a-zA-Z0-9]/g, '');
@@ -590,7 +590,7 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
       <!-- Required fields -->
       <input type="hidden" name="merchant" value="${merchantId}"/>
       <input type="hidden" name="amount" value="${planAmount}"/>
-      <input type="hidden" name="account[login]" value="${cleanOrderId}"/>
+      <input type="hidden" name="account[Login]" value="${cleanOrderId}"/>
       
       <!-- Optional fields -->
       <input type="hidden" name="lang" value="${language}"/>
@@ -672,7 +672,7 @@ const generatePaymeButton = async (userId, plan, options = {}) => {
     <div id="payme-button-container">
       <form id="form-payme" method="POST" action="https://checkout.paycom.uz/">
         <input type="hidden" name="merchant" value="${merchantId}">
-        <input type="hidden" name="account[login]" value="${orderId}">
+        <input type="hidden" name="account[Login]" value="${orderId}">
         <input type="hidden" name="amount" value="${planAmount}">
         <input type="hidden" name="lang" value="${options.lang || 'ru'}">
         <input type="hidden" name="button" data-type="svg" value="${options.style || 'colored'}">
@@ -733,7 +733,7 @@ const generatePaymeQR = async (userId, plan, options = {}) => {
     <div id="payme-qr-container">
       <form id="form-payme-qr" method="POST" action="https://checkout.paycom.uz/">
         <input type="hidden" name="merchant" value="${merchantId}">
-        <input type="hidden" name="account[login]" value="${orderId}">
+        <input type="hidden" name="account[Login]" value="${orderId}">
         <input type="hidden" name="amount" value="${planAmount}">
         <input type="hidden" name="lang" value="${options.lang || 'ru'}">
         <input type="hidden" name="qr" data-width="${options.qrWidth || 250}">

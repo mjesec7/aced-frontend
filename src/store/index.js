@@ -49,7 +49,7 @@ export default createStore({
   },
 
   actions: {
-    async loginUser({ commit }, { userData, token }) {
+    async LoginUser({ commit }, { userData, token }) {
       try {
         console.log('✅ [Vuex] Logging in user via Firebase:', userData?.email);
 

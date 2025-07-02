@@ -288,7 +288,7 @@ export default {
     // ✅ FIXED: Double-check authentication before loading lesson
     if (!this.isAuthenticated && !auth.currentUser) {
       console.error('❌ User not authenticated after waiting');
-      return this.$router.push('/login');
+      return this.$router.push('/Login');
     }
     
     console.log('✅ Authentication confirmed, loading lesson...');
@@ -393,8 +393,8 @@ export default {
         
         // ✅ FIXED: Better access rules
         if (!auth.currentUser) {
-          console.log('❌ No Firebase user - redirecting to login');
-          return this.$router.push('/login');
+          console.log('❌ No Firebase user - redirecting to Login');
+          return this.$router.push('/Login');
         }
         
         if (lessonType === 'premium' && !userHasPremium) {
@@ -438,8 +438,8 @@ export default {
       } catch (err) {
         console.error('❌ Error loading lesson:', err);
         if (err.response?.status === 401) {
-          console.error('❌ Authentication error - redirecting to login');
-          return this.$router.push('/login');
+          console.error('❌ Authentication error - redirecting to Login');
+          return this.$router.push('/Login');
         }
         this.$router.push('/catalogue');
       }

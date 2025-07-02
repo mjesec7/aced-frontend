@@ -7,9 +7,9 @@
       </div>
       
       <div v-if="isOpen" class="chat-body">
-        <div v-if="!isLoggedIn" class="login-prompt">
+        <div v-if="!isLoggedIn" class="Login-prompt">
           <p>Чтобы начать разговор, войдите в систему.</p>
-          <button @click="login">Войти</button>
+          <button @click="Login">Войти</button>
         </div>
         
         <div v-else class="chat-content">
@@ -47,9 +47,9 @@
       toggleChat() {
         this.isOpen = !this.isOpen;
       },
-      login() {
+      Login() {
         // Trigger your global auth modal
-        window.dispatchEvent(new CustomEvent("open-login-modal"));
+        window.dispatchEvent(new CustomEvent("open-Login-modal"));
         // Scroll to top so the modal is visible
         window.scrollTo({ top: 0, behavior: "smooth" });
       },
@@ -168,7 +168,7 @@ button:hover {
   background: #dc2626;
 }
 
-.login-prompt {
+.Login-prompt {
   text-align: center;
   font-size: 0.95rem;
 }

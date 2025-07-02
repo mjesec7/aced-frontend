@@ -4,7 +4,7 @@
     <!-- 🔐 Auth buttons -->
     <div v-if="!currentUser" class="auth-buttons">
       <button class="auth-button" @click="openModal('register')">Регистрация</button>
-      <button class="auth-button" @click="openModal('login')">Вход</button>
+      <button class="auth-button" @click="openModal('Login')">Вход</button>
     </div>
 
     <!-- 👤 User Info with separate profile button -->
@@ -60,21 +60,21 @@
           <button class="auth-submit" @click="register" :disabled="isLoading">
             {{ isLoading ? 'Регистрация...' : 'Зарегистрироваться' }}
           </button>
-          <button class="google-auth" @click="loginWithGoogle" :disabled="isLoading">
+          <button class="google-auth" @click="LoginWithGoogle" :disabled="isLoading">
             {{ isLoading ? 'Загрузка...' : 'Регистрация через Google' }}
           </button>
-          <p class="switch-text">Уже есть аккаунт? <span @click="switchAuth('login')">Войти</span></p>
+          <p class="switch-text">Уже есть аккаунт? <span @click="switchAuth('Login')">Войти</span></p>
         </div>
 
         <!-- 🔐 Login Form -->
         <div v-else>
           <h2>Вход</h2>
-          <input v-model="login.email" type="email" placeholder="Email" :disabled="isLoading" />
-          <input v-model="login.password" type="password" placeholder="Пароль" :disabled="isLoading" />
+          <input v-model="Login.email" type="email" placeholder="Email" :disabled="isLoading" />
+          <input v-model="Login.password" type="password" placeholder="Пароль" :disabled="isLoading" />
           <button class="auth-submit" @click="handleEmailLogin" :disabled="isLoading">
             {{ isLoading ? 'Вход...' : 'Войти' }}
           </button>
-          <button class="google-auth" @click="loginWithGoogle" :disabled="isLoading">
+          <button class="google-auth" @click="LoginWithGoogle" :disabled="isLoading">
             {{ isLoading ? 'Загрузка...' : 'Войти через Google' }}
           </button>
           <p class="switch-text">Нет аккаунта? <span @click="switchAuth('register')">Зарегистрироваться</span></p>
@@ -117,7 +117,7 @@ export default {
       isLoading: false,
       errorMessage: '',
       user: { name: "", surname: "", email: "", password: "", confirmPassword: "" },
-      login: { email: "", password: "" },
+      Login: { email: "", password: "" },
     };
   },
 
@@ -141,8 +141,8 @@ export default {
     });
 
     // Listen for custom events
-    window.addEventListener("open-login-modal", () => {
-      this.openModal("login");
+    window.addEventListener("open-Login-modal", () => {
+      this.openModal("Login");
     });
 
     // Close dropdown when clicking outside
@@ -155,7 +155,7 @@ export default {
 
   methods: {
     ...mapMutations(["setUser", "setFirebaseUserId", "setToken"]),
-    ...mapActions(["loginUser", "logoutUser"]),
+    ...mapActions(["LoginUser", "logoutUser"]),
 
     openModal(mode) {
       this.authMode = mode;
@@ -277,7 +277,7 @@ getApiBase() {
         const userData = {
           token,
           name: additionalData.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-          login: firebaseUser.email,
+          Login: firebaseUser.email,
           email: firebaseUser.email,
           subscriptionPlan: additionalData.subscriptionPlan || 'free',
         };
@@ -292,7 +292,7 @@ getApiBase() {
       }
     },
 
-    async loginWithGoogle() {
+    async LoginWithGoogle() {
       if (this.isLoading) return;
       
       this.isLoading = true;
@@ -327,14 +327,14 @@ getApiBase() {
 
         this.setUserData(userData, firebaseUser.uid, token);
 
-        console.log('✅ Google login complete');
+        console.log('✅ Google Login complete');
         this.closeModal();
         
         // Navigate to profile
         this.$router.push("/profile");
 
       } catch (error) {
-        console.error("❌ Google login error:", error);
+        console.error("❌ Google Login error:", error);
         
         let errorMsg = "Ошибка входа через Google";
         if (error.code === 'auth/popup-closed-by-user') {
@@ -352,7 +352,7 @@ getApiBase() {
     },
 
     async handleEmailLogin() {
-      if (!this.login.email || !this.login.password) {
+      if (!this.Login.email || !this.Login.password) {
         this.showError("Введите email и пароль");
         return;
       }
@@ -361,8 +361,8 @@ getApiBase() {
       this.clearError();
 
       try {
-        console.log('🔄 Starting email login...');
-        const result = await signInWithEmailAndPassword(auth, this.login.email, this.login.password);
+        console.log('🔄 Starting email Login...');
+        const result = await signInWithEmailAndPassword(auth, this.Login.email, this.Login.password);
         const firebaseUser = result.user;
         const token = await firebaseUser.getIdToken(true);
         
@@ -395,11 +395,11 @@ getApiBase() {
 
         this.setUserData(userData, firebaseUser.uid, token);
         
-        console.log('✅ Email login complete');
+        console.log('✅ Email Login complete');
         this.closeModal();
 
       } catch (error) {
-        console.error("❌ Email login failed:", error);
+        console.error("❌ Email Login failed:", error);
         
         let errorMsg = "Ошибка входа";
         if (error.code === 'auth/user-not-found') {
@@ -510,7 +510,7 @@ getApiBase() {
 
     resetForms() {
       this.user = { name: "", surname: "", email: "", password: "", confirmPassword: "" };
-      this.login = { email: "", password: "" };
+      this.Login = { email: "", password: "" };
     },
   },
 };
