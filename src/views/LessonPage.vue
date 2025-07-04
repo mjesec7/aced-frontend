@@ -1,4 +1,3 @@
-
 <template>
   <div class="lesson-page">
     <!-- Paywall Modal -->
@@ -63,9 +62,35 @@
             <h3 v-if="currentStep.type === 'explanation'">📚 Объяснение</h3>
             <h3 v-else>💡 Пример</h3>
             <p class="explanation-text">{{ getLocalized(currentStep.data) }}</p>
+            
+            <!-- ✅ NEW: AI Help for Explanations -->
+            <div v-if="showExplanationHelp" class="explanation-help">
+              <h4>🤖 Нужна помощь с пониманием?</h4>
+              <div class="explanation-help-input">
+                <input 
+                  v-model="explanationQuestion" 
+                  placeholder="Задайте вопрос об этом объяснении..."
+                  @keyup.enter="askAboutExplanation"
+                />
+                <button @click="askAboutExplanation" :disabled="!explanationQuestion.trim()">
+                  Спросить AI
+                </button>
+              </div>
+              <div v-if="explanationAIResponse" class="ai-response">
+                <p>{{ explanationAIResponse }}</p>
+              </div>
+            </div>
+            
             <div class="navigation-area">
               <button v-if="currentIndex > 0" class="nav-btn prev-btn" @click="goPrevious">⬅️ Назад</button>
               <button class="nav-btn" @click="goNext">➡️ Далее</button>
+              <button 
+                class="help-btn" 
+                @click="showExplanationHelp = !showExplanationHelp"
+                :class="{ active: showExplanationHelp }"
+              >
+                🤖 {{ showExplanationHelp ? 'Скрыть помощь' : 'AI помощь' }}
+              </button>
             </div>
           </div>
 
@@ -95,6 +120,13 @@
             ❌ Ошибки: {{ mistakeCount }} | 
             🎯 Очки: {{ earnedPoints }}
           </p>
+          
+          <!-- ✅ NEW: AI Progress Insight -->
+          <div v-if="progressInsight" class="progress-insight">
+            <h4>🤖 Анализ прогресса</h4>
+            <p>{{ progressInsight }}</p>
+          </div>
+          
           <div class="completion-buttons">
             <button class="return-btn" @click="$router.push('/catalogue')">⬅️ Вернуться в каталог</button>
             <button class="share-btn" @click="shareResult">📤 Поделиться успехом</button>
@@ -142,6 +174,60 @@
             ></textarea>
           </div>
 
+          <!-- ✅ NEW: Smart Hint Display -->
+          <div v-if="smartHint" class="smart-hint">
+            <h4>💡 Подсказка от AI</h4>
+            <p>{{ smartHint }}</p>
+            <button @click="smartHint = ''" class="close-hint-btn">✕</button>
+          </div>
+
+          <!-- ✅ NEW: AI Help Section -->
+          <div class="ai-help-section">
+            <h4>🤖 AI Помощник</h4>
+            
+            <!-- Contextual suggestions -->
+            <div v-if="aiSuggestions.length" class="ai-suggestions">
+              <p><strong>Популярные вопросы:</strong></p>
+              <button 
+                v-for="suggestion in aiSuggestions" 
+                :key="suggestion"
+                @click="askAI(suggestion)"
+                class="suggestion-btn"
+              >
+                {{ suggestion }}
+              </button>
+            </div>
+            
+            <!-- Custom question input -->
+            <div class="ai-chat-input">
+              <input 
+                v-model="aiChatInput" 
+                @keyup.enter="sendAIMessage"
+                placeholder="Задайте вопрос об этом упражнении..."
+                :disabled="aiIsLoading"
+              />
+              <button 
+                @click="sendAIMessage" 
+                :disabled="!aiChatInput.trim() || aiIsLoading"
+              >
+                {{ aiIsLoading ? '⏳' : '📤' }}
+              </button>
+            </div>
+            
+            <!-- AI Chat History -->
+            <div v-if="aiChatHistory.length" class="ai-chat-history">
+              <div 
+                v-for="message in aiChatHistory.slice(-3)" 
+                :key="message.id"
+                :class="['chat-message', message.type]"
+              >
+                <strong v-if="message.type === 'user'">Вы:</strong>
+                <strong v-else>🤖 AI:</strong>
+                {{ message.content }}
+              </div>
+            </div>
+          </div>
+
           <div class="action-buttons">
             <button v-if="!answerWasCorrect" class="submit-btn" @click="handleSubmitOrNext" :disabled="!userAnswer.trim()">
               🔍 Проверить
@@ -150,6 +236,71 @@
           </div>
 
           <p v-if="confirmation" :class="['confirmation', answerWasCorrect ? 'correct' : 'incorrect']">{{ confirmation }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ NEW: Floating AI Assistant Toggle -->
+    <button 
+      v-if="started && !lessonCompleted" 
+      class="floating-ai-btn" 
+      @click="toggleFloatingAI"
+      :class="{ active: showFloatingAI }"
+    >
+      🤖
+    </button>
+
+    <!-- ✅ NEW: Floating AI Assistant -->
+    <div v-if="showFloatingAI && started && !lessonCompleted" class="floating-ai-assistant">
+      <div class="ai-header">
+        <h4>🤖 AI Помощник</h4>
+        <button @click="showFloatingAI = false" class="close-ai-btn">✕</button>
+      </div>
+      
+      <div class="ai-body">
+        <!-- Usage display -->
+        <div v-if="aiUsage" class="usage-display">
+          <p>📊 Использовано: {{ aiUsage.messages }}/{{ aiUsage.plan === 'free' ? '50' : '∞' }}</p>
+        </div>
+        
+        <!-- Quick suggestions -->
+        <div class="quick-suggestions">
+          <button 
+            v-for="suggestion in quickSuggestions" 
+            :key="suggestion"
+            @click="askAI(suggestion)"
+            class="quick-suggestion-btn"
+          >
+            {{ suggestion }}
+          </button>
+        </div>
+        
+        <!-- Chat area -->
+        <div class="ai-chat-area">
+          <div class="chat-messages">
+            <div 
+              v-for="message in aiChatHistory.slice(-5)" 
+              :key="message.id"
+              :class="['chat-message', message.type]"
+            >
+              {{ message.content }}
+            </div>
+          </div>
+          
+          <div class="chat-input">
+            <input 
+              v-model="floatingAIInput" 
+              @keyup.enter="sendFloatingAIMessage"
+              placeholder="Спросите о текущем шаге..."
+              :disabled="aiIsLoading"
+            />
+            <button 
+              @click="sendFloatingAIMessage" 
+              :disabled="!floatingAIInput.trim() || aiIsLoading"
+            >
+              {{ aiIsLoading ? '⏳' : '📤' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -164,6 +315,16 @@ import axios from 'axios';
 import confetti from 'canvas-confetti';
 import { auth } from '@/firebase';
 import { mapGetters, mapState } from 'vuex';
+// ✅ Import enhanced GPT service
+import { 
+  getLessonAIResponse, 
+  generateLessonSuggestions, 
+  generateSmartHint, 
+  generateProgressInsight,
+  getExplanationHelp,
+  getUserUsage,
+  formatUsageDisplay
+} from '@/services/GPTService';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -193,23 +354,36 @@ export default {
       mistakeLog: [],
       previousProgress: null,
       earnedPoints: 0,
-      hintsUsed: false
+      hintsUsed: false,
+      
+      // ✅ NEW: AI Integration Data
+      aiChatHistory: [],
+      aiChatInput: '',
+      aiSuggestions: [],
+      smartHint: '',
+      aiIsLoading: false,
+      showFloatingAI: false,
+      floatingAIInput: '',
+      quickSuggestions: [],
+      aiUsage: null,
+      progressInsight: '',
+      
+      // ✅ NEW: Explanation Help
+      showExplanationHelp: false,
+      explanationQuestion: '',
+      explanationAIResponse: ''
     };
   },
   computed: {
     ...mapState(['user']),
     ...mapGetters(['isAuthenticated']),
     
-    // ✅ FIXED: Enhanced user status checking
     userStatus() {
-      // Check multiple sources for user status
       const storeStatus = this.$store.state.user?.subscriptionPlan || 
                          this.$store.getters['user/userStatus'] || 
                          this.user?.subscriptionPlan;
       
       const localStatus = localStorage.getItem('subscriptionPlan');
-      
-      // Prefer store status, fallback to localStorage
       const status = storeStatus || localStatus || 'free';
       
       console.log('📊 User status sources:', {
@@ -222,7 +396,6 @@ export default {
       return status;
     },
     
-    // ✅ FIXED: More robust premium user checking
     isPremiumUser() {
       const status = this.userStatus;
       console.log('🔍 Premium access check:', {
@@ -231,15 +404,12 @@ export default {
         timestamp: new Date().toISOString()
       });
       
-      // Check multiple sources for premium status
       const premiumStatuses = ['premium', 'start', 'pro'];
       
-      // Check store status
       if (premiumStatuses.includes(status)) {
         return true;
       }
       
-      // Check localStorage as fallback
       const localStatus = localStorage.getItem('subscriptionPlan');
       if (premiumStatuses.includes(localStatus)) {
         return true;
@@ -273,10 +443,10 @@ export default {
       return this.lesson.type !== 'premium' || this.isPremiumUser;
     }
   },
+  
   async mounted() {
-    console.log('🔧 LessonPage mounted');
+    console.log('🔧 Enhanced LessonPage mounted');
     
-    // ✅ FIXED: Better authentication waiting
     await this.waitForAuth();
     
     this.userId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
@@ -285,7 +455,6 @@ export default {
       return this.$router.push('/');
     }
     
-    // ✅ FIXED: Double-check authentication before loading lesson
     if (!this.isAuthenticated && !auth.currentUser) {
       console.error('❌ User not authenticated after waiting');
       return this.$router.push('/Login');
@@ -294,34 +463,36 @@ export default {
     console.log('✅ Authentication confirmed, loading lesson...');
     await this.loadLesson();
     await this.loadPreviousProgress();
+    
+    // ✅ NEW: Load AI usage info
+    await this.loadAIUsage();
   },
+  
   beforeUnmount() {
     clearInterval(this.timerInterval);
     clearInterval(this.autosaveTimer);
-    // Save progress before leaving
     if (this.started && !this.lessonCompleted) {
       this.saveProgress(false);
     }
   },
+  
   methods: {
-    // ✅ NEW: Wait for authentication method
+    // ✅ Keep existing methods and add new AI methods
+    
     async waitForAuth() {
       console.log('⏳ Waiting for authentication...');
       
-      // Check if user is already authenticated
       if (auth.currentUser) {
         console.log('✅ User already authenticated:', auth.currentUser.email);
         return;
       }
       
-      // Wait for auth state to resolve
       return new Promise((resolve) => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
           console.log('🔐 Auth state changed:', user ? user.email : 'No user');
-          unsubscribe(); // Stop listening
+          unsubscribe();
           
           if (user) {
-            // Update store if needed
             if (this.$store.commit) {
               try {
                 this.$store.commit('user/setUser', {
@@ -341,7 +512,6 @@ export default {
           resolve();
         });
         
-        // Timeout after 5 seconds
         setTimeout(() => {
           console.warn('⚠️ Authentication wait timeout');
           unsubscribe();
@@ -350,6 +520,313 @@ export default {
       });
     },
 
+    // ✅ NEW: Load AI usage information
+    async loadAIUsage() {
+      try {
+        const usageInfo = await getUserUsage();
+        if (usageInfo.success) {
+          this.aiUsage = formatUsageDisplay(usageInfo.usage, usageInfo.plan);
+          console.log('📊 AI usage loaded:', this.aiUsage);
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not load AI usage:', error);
+      }
+    },
+
+    // ✅ NEW: Generate AI suggestions based on current step
+    generateAISuggestions() {
+      this.aiSuggestions = generateLessonSuggestions(this.currentStep, {
+        currentStep: this.currentIndex,
+        mistakes: this.mistakeCount,
+        completedSteps: Array.from({length: this.currentIndex}, (_, i) => i)
+      });
+      
+      // Update quick suggestions for floating AI
+      this.quickSuggestions = this.aiSuggestions.slice(0, 3);
+      
+      console.log('💡 Generated AI suggestions:', this.aiSuggestions);
+    },
+
+    // ✅ NEW: Send AI message with lesson context
+    async sendAIMessage() {
+      if (!this.aiChatInput.trim() || this.aiIsLoading) return;
+      
+      const userMessage = this.aiChatInput.trim();
+      this.aiChatInput = '';
+      this.aiIsLoading = true;
+      
+      // Add user message to chat
+      this.aiChatHistory.push({
+        id: Date.now(),
+        type: 'user',
+        content: userMessage
+      });
+      
+      try {
+        // Get lesson context
+        const lessonContext = {
+          lessonId: this.lesson._id,
+          lessonName: this.lesson.lessonName,
+          topic: this.lesson.topic,
+          totalSteps: this.steps.length
+        };
+        
+        const userProgress = {
+          currentStep: this.currentIndex,
+          completedSteps: Array.from({length: this.currentIndex}, (_, i) => i),
+          mistakes: this.mistakeCount,
+          stars: this.stars,
+          elapsedSeconds: this.elapsedSeconds
+        };
+        
+        const stepContext = {
+          type: this.currentStep?.type || 'unknown',
+          data: this.currentStep?.data
+        };
+        
+        // Call enhanced AI service
+        const aiResponse = await getLessonAIResponse(userMessage, lessonContext, userProgress, stepContext);
+        
+        // Add AI response to chat
+        this.aiChatHistory.push({
+          id: Date.now() + 1,
+          type: 'ai',
+          content: aiResponse
+        });
+        
+        // Generate new suggestions
+        this.generateAISuggestions();
+        
+        // Update usage
+        await this.loadAIUsage();
+        
+      } catch (error) {
+        console.error('❌ AI chat error:', error);
+        this.aiChatHistory.push({
+          id: Date.now() + 1,
+          type: 'ai',
+          content: 'Извините, возникла ошибка. Попробуйте снова.'
+        });
+      } finally {
+        this.aiIsLoading = false;
+      }
+    },
+
+    // ✅ NEW: Ask AI with predefined question
+    async askAI(question) {
+      this.aiChatInput = question;
+      await this.sendAIMessage();
+    },
+
+    // ✅ NEW: Floating AI message
+    async sendFloatingAIMessage() {
+      if (!this.floatingAIInput.trim() || this.aiIsLoading) return;
+      
+      this.aiChatInput = this.floatingAIInput;
+      this.floatingAIInput = '';
+      await this.sendAIMessage();
+    },
+
+    // ✅ NEW: Toggle floating AI
+    toggleFloatingAI() {
+      this.showFloatingAI = !this.showFloatingAI;
+      if (this.showFloatingAI) {
+        this.generateAISuggestions();
+      }
+    },
+
+    // ✅ NEW: Ask about explanation
+    async askAboutExplanation() {
+      if (!this.explanationQuestion.trim()) return;
+      
+      try {
+        const explanationText = this.getLocalized(this.currentStep.data);
+        const lessonContext = {
+          lessonId: this.lesson._id,
+          lessonName: this.lesson.lessonName,
+          topic: this.lesson.topic
+        };
+        
+        this.explanationAIResponse = await getExplanationHelp(
+          explanationText, 
+          this.explanationQuestion, 
+          lessonContext
+        );
+        
+        this.explanationQuestion = '';
+        
+      } catch (error) {
+        console.error('❌ Explanation help error:', error);
+        this.explanationAIResponse = 'Не удалось получить помощь. Попробуйте снова.';
+      }
+    },
+
+    // ✅ Enhanced: Handle submit with smart hints
+    async handleSubmitOrNext() {
+      const step = this.currentStep;
+      const correctAnswer = (step.data.correctAnswer || step.data.answer || '').toLowerCase().trim();
+      const userResponse = this.userAnswer.trim().toLowerCase();
+
+      if (!userResponse) {
+        this.confirmation = '⚠️ Введите ответ.';
+        return;
+      }
+
+      if (userResponse === correctAnswer) {
+        this.confirmation = '✅ Верно! Отличная работа!';
+        this.answerWasCorrect = true;
+        this.stars++;
+        this.earnedPoints += 10;
+        this.smartHint = ''; // Clear any existing hint
+      } else {
+        this.confirmation = '❌ Неверно. Попробуйте снова.';
+        this.mistakeCount++;
+        this.answerWasCorrect = false;
+        this.earnedPoints = Math.max(0, this.earnedPoints - 2);
+
+        // Log mistake for review
+        this.mistakeLog.push({
+          stepIndex: this.currentIndex,
+          question: this.getLocalized(step.data.question),
+          userAnswer: this.userAnswer,
+          correctAnswer: step.data.correctAnswer || step.data.answer,
+          hint: step.data.hint || null
+        });
+
+        // ✅ NEW: Generate smart hint after mistakes
+        if (this.mistakeCount >= 2) {
+          try {
+            const lessonContext = {
+              lessonId: this.lesson._id,
+              lessonName: this.lesson.lessonName,
+              topic: this.lesson.topic
+            };
+            
+            this.smartHint = await generateSmartHint(step.data, this.mistakeCount, lessonContext);
+            this.hintsUsed = true;
+          } catch (error) {
+            console.error('❌ Smart hint error:', error);
+          }
+        }
+      }
+    },
+
+    // ✅ Enhanced: Complete lesson with AI insight
+    async completeLesson() {
+      clearInterval(this.timerInterval);
+      clearInterval(this.autosaveTimer);
+      this.lessonCompleted = true;
+      this.showConfetti = true;
+
+      // Calculate final points
+      this.earnedPoints = Math.max(0, 100 - this.mistakeCount * 10 + this.stars * 5);
+
+      // Set medal based on performance
+      if (this.mistakeCount === 0) {
+        this.medalImage = '/images/medals/gold.png';
+        this.medalLabel = '🥇 Золотая медаль - Безупречно!';
+      } else if (this.mistakeCount <= 2) {
+        this.medalImage = '/images/medals/silver.png';
+        this.medalLabel = '🥈 Серебряная медаль - Отлично!';
+      } else {
+        this.medalImage = '/images/medals/bronze.png';
+        this.medalLabel = '🥉 Бронзовая медаль - Хорошо!';
+      }
+
+      // ✅ NEW: Generate AI progress insight
+      try {
+        const lessonContext = {
+          lessonId: this.lesson._id,
+          lessonName: this.lesson.lessonName,
+          topic: this.lesson.topic,
+          totalSteps: this.steps.length
+        };
+        
+        const userProgress = {
+          completedSteps: Array.from({length: this.steps.length}, (_, i) => i),
+          mistakes: this.mistakeCount,
+          stars: this.stars,
+          elapsedSeconds: this.elapsedSeconds
+        };
+        
+        this.progressInsight = await generateProgressInsight(userProgress, lessonContext);
+      } catch (error) {
+        console.error('❌ Progress insight error:', error);
+        this.progressInsight = 'Отличная работа! Вы успешно завершили урок! 🌟';
+      }
+
+      setTimeout(() => this.launchConfetti(), 200);
+
+      // Save final progress with retry logic
+      let progressSaved = false;
+      let retries = 3;
+      
+      while (!progressSaved && retries > 0) {
+        progressSaved = await this.saveProgress(true);
+        if (!progressSaved) {
+          retries--;
+          if (retries > 0) {
+            console.log(`🔄 Progress save failed, retrying... (${retries} attempts left)`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+      }
+
+      if (!progressSaved) {
+        alert('Не удалось сохранить прогресс. Проверьте соединение.');
+      }
+
+      await Promise.all([
+        this.saveAnalytics(),
+        this.saveDiary()
+      ]);
+    },
+
+    // ✅ Enhanced: Start lesson with AI setup
+    startLesson() {
+      this.started = true;
+      this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
+      this.autosaveTimer = setInterval(() => this.autosaveProgress(), 15000);
+      
+      // ✅ NEW: Initialize AI suggestions
+      this.generateAISuggestions();
+    },
+
+    // ✅ Enhanced: Go to next step with AI updates
+    goNext() {
+      this.userAnswer = '';
+      this.confirmation = '';
+      this.answerWasCorrect = false;
+      this.smartHint = ''; // Clear smart hint
+      this.explanationAIResponse = ''; // Clear explanation help
+      this.showExplanationHelp = false;
+
+      if (this.isLastStep) {
+        this.completeLesson();
+      } else {
+        this.currentIndex++;
+        // ✅ NEW: Generate new suggestions for next step
+        this.generateAISuggestions();
+      }
+    },
+
+    // ✅ Enhanced: Go to previous step
+    goPrevious() {
+      if (this.currentIndex > 0) {
+        this.currentIndex--;
+        this.userAnswer = '';
+        this.confirmation = '';
+        this.answerWasCorrect = false;
+        this.smartHint = '';
+        this.explanationAIResponse = '';
+        this.showExplanationHelp = false;
+        
+        // ✅ NEW: Generate suggestions for previous step
+        this.generateAISuggestions();
+      }
+    },
+
+    // Keep all existing methods from your original LessonPage.vue
     getLocalized(field) {
       return typeof field === 'string' ? field : (field?.en || '').replace(/^en:/i, '').trim();
     },
@@ -362,8 +839,8 @@ export default {
       this.$router.push(`/profile/homeworks/${this.lesson._id}`);
     },
     
-    // ✅ FIXED: Enhanced lesson loading with better access control
     async loadLesson() {
+      // Your existing loadLesson implementation
       try {
         const lessonId = this.$route.params.id;
         console.log('📚 Loading lesson:', lessonId);
@@ -377,7 +854,6 @@ export default {
 
         this.lesson = data;
         
-        // ✅ FIXED: Enhanced access control logic
         const lessonType = data.type || 'free';
         const userHasPremium = this.isPremiumUser;
         
@@ -391,7 +867,6 @@ export default {
           currentUser: auth.currentUser?.email
         });
         
-        // ✅ FIXED: Better access rules
         if (!auth.currentUser) {
           console.log('❌ No Firebase user - redirecting to Login');
           return this.$router.push('/Login');
@@ -445,6 +920,46 @@ export default {
       }
     },
 
+    // Include all your existing methods: loadPreviousProgress, saveProgress, etc.
+    // (Keep the same implementations but add AI enhancements where noted)
+    
+    continuePreviousProgress() {
+      if (this.previousProgress) {
+        this.currentIndex = Math.min(
+          this.previousProgress.completedSteps.length, 
+          this.steps.length - 1
+        );
+        this.stars = parseInt(this.previousProgress.stars) || 0;
+        this.mistakeCount = parseInt(this.previousProgress.mistakes) || 0;
+        this.elapsedSeconds = parseInt(this.previousProgress.durationSeconds) || 0;
+        this.hintsUsed = Boolean(this.previousProgress.usedHints);
+        this.earnedPoints = parseInt(this.previousProgress.pointsEarned) || 0;
+      }
+      this.startLesson();
+    },
+
+    retryStep(index) {
+      this.lessonCompleted = false;
+      this.showConfetti = false;
+      this.started = true;
+      this.currentIndex = Math.max(0, Math.min(index, this.steps.length - 1));
+      this.userAnswer = '';
+      this.confirmation = '';
+      this.answerWasCorrect = false;
+      this.smartHint = '';
+      this.aiChatHistory = [];
+      
+      // Restart timer if needed
+      if (!this.timerInterval) {
+        this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
+        this.autosaveTimer = setInterval(() => this.autosaveProgress(), 15000);
+      }
+      
+      // Generate new AI suggestions
+      this.generateAISuggestions();
+    },
+
+    // Keep all existing methods from original LessonPage.vue
     async loadPreviousProgress() {
       if (!this.lesson._id) return;
       
@@ -457,16 +972,14 @@ export default {
 
         console.log(`📋 Loading previous progress for lesson: ${this.lesson._id}`);
 
-        // ✅ FIXED: Try multiple endpoints with better error handling
         let progressData = null;
         
-        // First try the user lesson endpoint
         try {
           const response = await axios.get(`${BASE_URL}/user/${this.userId}/lesson/${this.lesson._id}`, {
             headers: { Authorization: `Bearer ${token}` },
             timeout: 10000,
             validateStatus: function (status) {
-              return status < 500; // Don't throw for 404
+              return status < 500;
             }
           });
           
@@ -478,7 +991,6 @@ export default {
           console.log('📋 No progress at /user endpoint, trying /progress endpoint...');
         }
         
-        // If no data, try the progress endpoint with query params
         if (!progressData) {
           try {
             const response = await axios.get(`${BASE_URL}/progress`, {
@@ -489,19 +1001,16 @@ export default {
               },
               timeout: 10000,
               validateStatus: function (status) {
-                return status < 500; // Don't throw for 404
+                return status < 500;
               }
             });
             
             if (response.status === 200 && response.data) {
-              // Handle different response formats
               if (response.data.data) {
                 progressData = response.data.data;
               } else if (response.data.message && response.data.data === null) {
-                // No progress found
                 progressData = null;
               } else if (Array.isArray(response.data)) {
-                // If it returns an array, find the matching lesson
                 progressData = response.data.find(p => p.lessonId === this.lesson._id);
               } else {
                 progressData = response.data;
@@ -516,7 +1025,6 @@ export default {
           }
         }
         
-        // If still no data, try the user progress endpoint
         if (!progressData) {
           try {
             const response = await axios.get(`${BASE_URL}/users/${this.userId}/progress`, {
@@ -528,7 +1036,6 @@ export default {
             });
             
             if (response.status === 200 && response.data) {
-              // Find progress for this specific lesson
               const allProgress = response.data.data || response.data || [];
               progressData = allProgress.find(p => 
                 (p.lessonId?._id || p.lessonId) === this.lesson._id
@@ -543,7 +1050,6 @@ export default {
           }
         }
         
-        // If we found progress data, use it
         if (progressData && progressData.completedSteps && progressData.completedSteps.length > 0) {
           this.previousProgress = {
             _id: progressData._id,
@@ -574,10 +1080,6 @@ export default {
           };
           
           console.log('✅ Previous progress loaded:', this.previousProgress);
-          console.log(`   - Completed steps: ${this.previousProgress.completedSteps.length}`);
-          console.log(`   - Stars: ${this.previousProgress.stars}`);
-          console.log(`   - Mistakes: ${this.previousProgress.mistakes}`);
-          console.log(`   - Duration: ${this.previousProgress.duration} seconds`);
         } else {
           console.log('ℹ️ No previous progress found for this lesson');
           this.previousProgress = null;
@@ -589,26 +1091,136 @@ export default {
       }
     },
 
-    continuePreviousProgress() {
-      if (this.previousProgress) {
-        // Ensure currentIndex doesn't exceed steps length
-        this.currentIndex = Math.min(
-          this.previousProgress.completedSteps.length, 
-          this.steps.length - 1
-        );
-        this.stars = parseInt(this.previousProgress.stars) || 0;
-        this.mistakeCount = parseInt(this.previousProgress.mistakes) || 0;
-        this.elapsedSeconds = parseInt(this.previousProgress.durationSeconds) || 0;
-        this.hintsUsed = Boolean(this.previousProgress.usedHints);
-        this.earnedPoints = parseInt(this.previousProgress.pointsEarned) || 0;
-      }
-      this.startLesson();
-    },
+    async saveProgress(completed = false) {
+      try {
+        if (!this.userId) {
+          console.error('❌ No userId available');
+          return false;
+        }
+        
+        if (!this.lesson._id) {
+          console.error('❌ No lesson ID available');
+          return false;
+        }
 
-    startLesson() {
-      this.started = true;
-      this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
-      this.autosaveTimer = setInterval(() => this.autosaveProgress(), 15000);
+        let token;
+        try {
+          if (!auth.currentUser) {
+            console.error('❌ No authenticated user');
+            return false;
+          }
+          token = await auth.currentUser.getIdToken(true);
+        } catch (authError) {
+          console.error('❌ Failed to get auth token:', authError);
+          return false;
+        }
+
+        const completedSteps = [];
+        if (this.started) {
+          const maxIndex = Math.min(this.currentIndex, this.steps.length - 1);
+          for (let i = 0; i <= maxIndex; i++) {
+            completedSteps.push(i);
+          }
+        }
+
+        const progressPercent = this.steps.length > 0 
+          ? Math.floor((completedSteps.length / this.steps.length) * 100) 
+          : 0;
+
+        const progressData = {
+          lessonId: String(this.lesson._id),
+          topicId: String(this.lesson.topicId || this.lesson._id),
+          completedSteps: completedSteps,
+          progressPercent: progressPercent,
+          completed: completed,
+          mistakes: this.mistakeCount,
+          medal: this.mistakeCount === 0 ? 'gold' : this.mistakeCount <= 2 ? 'silver' : 'bronze',
+          duration: this.elapsedSeconds,
+          stars: this.stars,
+          points: this.earnedPoints,
+          hintsUsed: this.hintsUsed ? 1 : 0,
+          submittedHomework: false
+        };
+
+        console.log('📤 Saving progress data:', progressData);
+
+        let response;
+        
+        try {
+          response = await axios.post(`${BASE_URL}/users/${this.userId}/progress/save`, progressData, {
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 15000
+          });
+          
+          if (response.status === 200 || response.status === 201) {
+            console.log('✅ Progress saved via EMERGENCY endpoint:', response.data);
+            return true;
+          }
+        } catch (emergencyError) {
+          console.warn('⚠️ Emergency endpoint failed:', emergencyError.response?.status, emergencyError.response?.data);
+        }
+        
+        try {
+          const originalData = { userId: this.userId, ...progressData };
+          
+          response = await axios.post(`${BASE_URL}/progress`, originalData, {
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 15000
+          });
+          
+          if (response.status === 200 || response.status === 201) {
+            console.log('✅ Progress saved via /api/progress:', response.data);
+            return true;
+          }
+        } catch (progressError) {
+          console.warn('⚠️ /api/progress failed:', progressError.response?.status);
+        }
+        
+        try {
+          response = await axios.post(`${BASE_URL}/users/${this.userId}/lesson/${this.lesson._id}`, progressData, {
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 15000
+          });
+          
+          if (response.status === 200 || response.status === 201) {
+            console.log('✅ Progress saved via /api/users/lesson:', response.data);
+            return true;
+          }
+        } catch (userLessonError) {
+          console.warn('⚠️ /api/users/lesson failed:', userLessonError.response?.status);
+        }
+        
+        console.error('❌ All progress endpoints failed');
+        
+        try {
+          const backupKey = `lesson_progress_${this.lesson._id}_${this.userId}`;
+          const backupData = {
+            ...progressData,
+            timestamp: Date.now(),
+            saved: false
+          };
+          localStorage.setItem(backupKey, JSON.stringify(backupData));
+          console.log('💾 Progress saved to localStorage as backup');
+          
+          return true;
+        } catch (localError) {
+          console.error('❌ Failed to save backup progress:', localError);
+          return false;
+        }
+        
+      } catch (err) {
+        console.error('❌ Progress save error:', err);
+        return false;
+      }
     },
 
     async autosaveProgress() {
@@ -623,416 +1235,136 @@ export default {
       }
     },
 
-    // ✅ REPLACE these 3 methods in LessonPage.vue script section
-
-// ✅ REPLACE the saveProgress method in LessonPage.vue
-
-async saveProgress(completed = false) {
-  try {
-    // Validation - Check required data
-    if (!this.userId) {
-      console.error('❌ No userId available');
-      return false;
-    }
-    
-    if (!this.lesson._id) {
-      console.error('❌ No lesson ID available');
-      return false;
-    }
-
-    // Get authentication token with better error handling
-    let token;
-    try {
-      if (!auth.currentUser) {
-        console.error('❌ No authenticated user');
-        return false;
-      }
-      token = await auth.currentUser.getIdToken(true); // Force refresh
-    } catch (authError) {
-      console.error('❌ Failed to get auth token:', authError);
-      return false;
-    }
-
-    // Build completed steps array safely
-    const completedSteps = [];
-    if (this.started) {
-      const maxIndex = Math.min(this.currentIndex, this.steps.length - 1);
-      for (let i = 0; i <= maxIndex; i++) {
-        completedSteps.push(i);
-      }
-    }
-
-    // Calculate progress percentage safely
-    const progressPercent = this.steps.length > 0 
-      ? Math.floor((completedSteps.length / this.steps.length) * 100) 
-      : 0;
-
-    // ✅ SIMPLIFIED: Cleaner data structure
-    const progressData = {
-      lessonId: String(this.lesson._id),
-      topicId: String(this.lesson.topicId || this.lesson._id),
-      completedSteps: completedSteps,
-      progressPercent: progressPercent,
-      completed: completed,
-      mistakes: this.mistakeCount,
-      medal: this.mistakeCount === 0 ? 'gold' : this.mistakeCount <= 2 ? 'silver' : 'bronze',
-      duration: this.elapsedSeconds,
-      stars: this.stars,
-      points: this.earnedPoints,
-      hintsUsed: this.hintsUsed ? 1 : 0,
-      submittedHomework: false
-    };
-
-    console.log('📤 Saving progress data:', progressData);
-
-    // ✅ FIXED: Try emergency endpoint first, then fallbacks
-    let response;
-    
-    // Try emergency endpoint first (most likely to work)
-    try {
-      response = await axios.post(`${BASE_URL}/users/${this.userId}/progress/save`, progressData, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 15000
-      });
-      
-      if (response.status === 200 || response.status === 201) {
-        console.log('✅ Progress saved via EMERGENCY endpoint:', response.data);
-        return true;
-      }
-    } catch (emergencyError) {
-      console.warn('⚠️ Emergency endpoint failed:', emergencyError.response?.status, emergencyError.response?.data);
-    }
-    
-    // Try the original progress endpoint
-    try {
-      // Add userId to the data for the original endpoint
-      const originalData = { userId: this.userId, ...progressData };
-      
-      response = await axios.post(`${BASE_URL}/progress`, originalData, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 15000
-      });
-      
-      if (response.status === 200 || response.status === 201) {
-        console.log('✅ Progress saved via /api/progress:', response.data);
-        return true;
-      }
-    } catch (progressError) {
-      console.warn('⚠️ /api/progress failed:', progressError.response?.status);
-    }
-    
-    // Try a simple POST to user lesson endpoint
-    try {
-      response = await axios.post(`${BASE_URL}/users/${this.userId}/lesson/${this.lesson._id}`, progressData, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 15000
-      });
-      
-      if (response.status === 200 || response.status === 201) {
-        console.log('✅ Progress saved via /api/users/lesson:', response.data);
-        return true;
-      }
-    } catch (userLessonError) {
-      console.warn('⚠️ /api/users/lesson failed:', userLessonError.response?.status);
-    }
-    
-    console.error('❌ All progress endpoints failed');
-    
-    // ✅ LAST RESORT: Save to localStorage as backup
-    try {
-      const backupKey = `lesson_progress_${this.lesson._id}_${this.userId}`;
-      const backupData = {
-        ...progressData,
-        timestamp: Date.now(),
-        saved: false
-      };
-      localStorage.setItem(backupKey, JSON.stringify(backupData));
-      console.log('💾 Progress saved to localStorage as backup');
-      
-      // Return true so lesson can complete, but mark as unsaved
-      return true;
-    } catch (localError) {
-      console.error('❌ Failed to save backup progress:', localError);
-      return false;
-    }
-    
-  } catch (err) {
-    console.error('❌ Progress save error:', err);
-    return false;
-  }
-},
-
-async saveAnalytics() {
-  try {
-    if (!this.userId || !this.lesson._id) return;
-
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) {
-      console.warn('⚠️ No auth token for analytics');
-      return;
-    }
-
-    const analyticsData = {
-      subject: this.lesson.subject || 'general',
-      topic: this.lesson.topic || this.lesson._id,
-      timeSpent: this.elapsedSeconds,
-      mistakes: this.mistakeCount,
-      completed: this.lessonCompleted,
-      stars: this.stars,
-      points: this.earnedPoints,
-      date: new Date().toISOString()
-    };
-
-    console.log('📊 Saving analytics:', analyticsData);
-
-    // ✅ FIXED: Try multiple analytics endpoints
-    let success = false;
-    
-    // Try endpoint 1: /api/users/{userId}/analytics
-    try {
-      await axios.post(`${BASE_URL}/users/${this.userId}/analytics`, analyticsData, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000
-      });
-      success = true;
-      console.log('✅ Analytics saved via /api/users/analytics');
-    } catch (usersError) {
-      console.warn('⚠️ /api/users/analytics failed:', usersError.response?.status);
-    }
-    
-    // Try endpoint 2: /api/user/{userId}/analytics (legacy)
-    if (!success) {
+    async saveAnalytics() {
       try {
-        await axios.post(`${BASE_URL}/user/${this.userId}/analytics`, analyticsData, {
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000
-        });
-        success = true;
-        console.log('✅ Analytics saved via /api/user/analytics');
-      } catch (userError) {
-        console.warn('⚠️ /api/user/analytics failed:', userError.response?.status);
-      }
-    }
-    
-    // Try endpoint 3: /api/analytics (general)
-    if (!success) {
-      try {
-        await axios.post(`${BASE_URL}/analytics`, { 
-          userId: this.userId, 
-          ...analyticsData 
-        }, {
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000
-        });
-        success = true;
-        console.log('✅ Analytics saved via /api/analytics');
-      } catch (generalError) {
-        console.warn('⚠️ /api/analytics failed:', generalError.response?.status);
-      }
-    }
-    
-    if (!success) {
-      console.warn('⚠️ All analytics endpoints failed, skipping analytics');
-    }
+        if (!this.userId || !this.lesson._id) return;
 
-  } catch (err) {
-    console.warn('⚠️ Analytics save error (non-critical):', err.message);
-  }
-},
-
-async saveDiary() {
-  try {
-    if (!this.userId || !this.lesson.lessonName) return;
-
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) {
-      console.warn('⚠️ No auth token for diary');
-      return;
-    }
-
-    const diaryData = {
-      lessonName: this.getLocalized(this.lesson.lessonName),
-      duration: this.elapsedSeconds,
-      date: new Date().toISOString(),
-      mistakes: this.mistakeCount,
-      stars: this.stars,
-      studyMinutes: Math.ceil(this.elapsedSeconds / 60),
-      completedTopics: 1,
-      averageGrade: this.stars * 20 // Convert stars to grade (0-100)
-    };
-
-    console.log('📔 Saving diary entry:', diaryData);
-
-    // ✅ FIXED: Try multiple diary endpoints
-    let success = false;
-    
-    // Try endpoint 1: /api/users/{userId}/diary
-    try {
-      await axios.post(`${BASE_URL}/users/${this.userId}/diary`, diaryData, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000
-      });
-      success = true;
-      console.log('✅ Diary saved via /api/users/diary');
-    } catch (usersError) {
-      console.warn('⚠️ /api/users/diary failed:', usersError.response?.status);
-    }
-    
-    // Try endpoint 2: /api/user/{userId}/diary (legacy)
-    if (!success) {
-      try {
-        await axios.post(`${BASE_URL}/user/${this.userId}/diary`, diaryData, {
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000
-        });
-        success = true;
-        console.log('✅ Diary saved via /api/user/diary');
-      } catch (userError) {
-        console.warn('⚠️ /api/user/diary failed:', userError.response?.status);
-      }
-    }
-    
-    if (!success) {
-      console.warn('⚠️ All diary endpoints failed, skipping diary entry');
-    }
-
-  } catch (err) {
-    console.warn('⚠️ Diary save error (non-critical):', err.message);
-  }
-},
-
-    handleSubmitOrNext() {
-      const step = this.currentStep;
-      const correctAnswer = (step.data.correctAnswer || step.data.answer || '').toLowerCase().trim();
-      const userResponse = this.userAnswer.trim().toLowerCase();
-
-      if (!userResponse) {
-        this.confirmation = '⚠️ Введите ответ.';
-        return;
-      }
-
-      if (userResponse === correctAnswer) {
-        this.confirmation = '✅ Верно! Отличная работа!';
-        this.answerWasCorrect = true;
-        this.stars++;
-        this.earnedPoints += 10;
-      } else {
-        this.confirmation = '❌ Неверно. Попробуйте снова.';
-        this.mistakeCount++;
-        this.answerWasCorrect = false;
-        this.earnedPoints = Math.max(0, this.earnedPoints - 2);
-
-        // Log mistake for review
-        this.mistakeLog.push({
-          stepIndex: this.currentIndex,
-          question: this.getLocalized(step.data.question),
-          userAnswer: this.userAnswer,
-          correctAnswer: step.data.correctAnswer || step.data.answer,
-          hint: step.data.hint || null
-        });
-
-        // Show hint after 3 mistakes
-        if (this.mistakeCount >= 3 && step.data.hint) {
-          this.hintsUsed = true;
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) {
+          console.warn('⚠️ No auth token for analytics');
+          return;
         }
-      }
-    },
 
-    goNext() {
-      this.userAnswer = '';
-      this.confirmation = '';
-      this.answerWasCorrect = false;
+        const analyticsData = {
+          subject: this.lesson.subject || 'general',
+          topic: this.lesson.topic || this.lesson._id,
+          timeSpent: this.elapsedSeconds,
+          mistakes: this.mistakeCount,
+          completed: this.lessonCompleted,
+          stars: this.stars,
+          points: this.earnedPoints,
+          date: new Date().toISOString()
+        };
 
-      // If this is the last step, complete the lesson
-      if (this.isLastStep) {
-        this.completeLesson();
-      } else {
-        // Go to next step
-        this.currentIndex++;
-      }
-    },
+        console.log('📊 Saving analytics:', analyticsData);
 
-    goPrevious() {
-      if (this.currentIndex > 0) {
-        this.currentIndex--;
-        this.userAnswer = '';
-        this.confirmation = '';
-        this.answerWasCorrect = false;
-      }
-    },
-
-    retryStep(index) {
-      this.lessonCompleted = false;
-      this.showConfetti = false;
-      this.started = true;
-      this.currentIndex = Math.max(0, Math.min(index, this.steps.length - 1));
-      this.userAnswer = '';
-      this.confirmation = '';
-      this.answerWasCorrect = false;
-      
-      // Restart timer if needed
-      if (!this.timerInterval) {
-        this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
-        this.autosaveTimer = setInterval(() => this.autosaveProgress(), 15000);
-      }
-    },
-
-    async completeLesson() {
-      clearInterval(this.timerInterval);
-      clearInterval(this.autosaveTimer);
-      this.lessonCompleted = true;
-      this.showConfetti = true;
-
-      // Calculate final points
-      this.earnedPoints = Math.max(0, 100 - this.mistakeCount * 10 + this.stars * 5);
-
-      // Set medal based on performance
-      if (this.mistakeCount === 0) {
-        this.medalImage = '/images/medals/gold.png';
-        this.medalLabel = '🥇 Золотая медаль - Безупречно!';
-      } else if (this.mistakeCount <= 2) {
-        this.medalImage = '/images/medals/silver.png';
-        this.medalLabel = '🥈 Серебряная медаль - Отлично!';
-      } else {
-        this.medalImage = '/images/medals/bronze.png';
-        this.medalLabel = '🥉 Бронзовая медаль - Хорошо!';
-      }
-
-      setTimeout(() => this.launchConfetti(), 200);
-
-      // Save final progress with retry logic
-      let progressSaved = false;
-      let retries = 3;
-      
-      while (!progressSaved && retries > 0) {
-        progressSaved = await this.saveProgress(true);
-        if (!progressSaved) {
-          retries--;
-          if (retries > 0) {
-            console.log(`🔄 Progress save failed, retrying... (${retries} attempts left)`);
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+        let success = false;
+        
+        try {
+          await axios.post(`${BASE_URL}/users/${this.userId}/analytics`, analyticsData, {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 10000
+          });
+          success = true;
+          console.log('✅ Analytics saved via /api/users/analytics');
+        } catch (usersError) {
+          console.warn('⚠️ /api/users/analytics failed:', usersError.response?.status);
+        }
+        
+        if (!success) {
+          try {
+            await axios.post(`${BASE_URL}/user/${this.userId}/analytics`, analyticsData, {
+              headers: { Authorization: `Bearer ${token}` },
+              timeout: 10000
+            });
+            success = true;
+            console.log('✅ Analytics saved via /api/user/analytics');
+          } catch (userError) {
+            console.warn('⚠️ /api/user/analytics failed:', userError.response?.status);
           }
         }
-      }
+        
+        if (!success) {
+          try {
+            await axios.post(`${BASE_URL}/analytics`, { 
+              userId: this.userId, 
+              ...analyticsData 
+            }, {
+              headers: { Authorization: `Bearer ${token}` },
+              timeout: 10000
+            });
+            success = true;
+            console.log('✅ Analytics saved via /api/analytics');
+          } catch (generalError) {
+            console.warn('⚠️ /api/analytics failed:', generalError.response?.status);
+          }
+        }
+        
+        if (!success) {
+          console.warn('⚠️ All analytics endpoints failed, skipping analytics');
+        }
 
-      if (!progressSaved) {
-        alert('Не удалось сохранить прогресс. Проверьте соединение.');
+      } catch (err) {
+        console.warn('⚠️ Analytics save error (non-critical):', err.message);
       }
+    },
 
-      // Save analytics and diary (non-critical, don't retry)
-      await Promise.all([
-        this.saveAnalytics(),
-        this.saveDiary()
-      ]);
+    async saveDiary() {
+      try {
+        if (!this.userId || !this.lesson.lessonName) return;
+
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) {
+          console.warn('⚠️ No auth token for diary');
+          return;
+        }
+
+        const diaryData = {
+          lessonName: this.getLocalized(this.lesson.lessonName),
+          duration: this.elapsedSeconds,
+          date: new Date().toISOString(),
+          mistakes: this.mistakeCount,
+          stars: this.stars,
+          studyMinutes: Math.ceil(this.elapsedSeconds / 60),
+          completedTopics: 1,
+          averageGrade: this.stars * 20
+        };
+
+        console.log('📔 Saving diary entry:', diaryData);
+
+        let success = false;
+        
+        try {
+          await axios.post(`${BASE_URL}/users/${this.userId}/diary`, diaryData, {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 10000
+          });
+          success = true;
+          console.log('✅ Diary saved via /api/users/diary');
+        } catch (usersError) {
+          console.warn('⚠️ /api/users/diary failed:', usersError.response?.status);
+        }
+        
+        if (!success) {
+          try {
+            await axios.post(`${BASE_URL}/user/${this.userId}/diary`, diaryData, {
+              headers: { Authorization: `Bearer ${token}` },
+              timeout: 10000
+            });
+            success = true;
+            console.log('✅ Diary saved via /api/user/diary');
+          } catch (userError) {
+            console.warn('⚠️ /api/user/diary failed:', userError.response?.status);
+          }
+        }
+        
+        if (!success) {
+          console.warn('⚠️ All diary endpoints failed, skipping diary entry');
+        }
+
+      } catch (err) {
+        console.warn('⚠️ Diary save error (non-critical):', err.message);
+      }
     },
 
     launchConfetti() {
@@ -1053,7 +1385,6 @@ async saveDiary() {
     },
 
     async exitLesson() {
-      // Save progress before exit
       if (this.started && !this.lessonCompleted) {
         await this.saveProgress(false);
       }

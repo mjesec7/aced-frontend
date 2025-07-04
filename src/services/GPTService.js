@@ -1,5 +1,6 @@
+// src/services/GPTService.js - FULLY ENHANCED VERSION
 import axios from 'axios';
-import { auth } from '@/firebase'; // ✅ Import Firebase auth
+import { auth } from '@/firebase';
 
 const baseURL = import.meta.env.VITE_API_BASE_URL;
 
@@ -62,9 +63,8 @@ export async function getUserUsage() {
     }
 
     const token = await user.getIdToken();
-    const monthKey = getCurrentMonthKey();
 
-    const response = await gptApi.get(`/users/${user.uid}/usage/${monthKey}`, {
+    const response = await gptApi.get('/chat/usage', {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -185,6 +185,214 @@ export async function getAIResponse(userInput, imageUrl = null, lessonId = null)
     const devMessage = error?.response?.data?.error || error.message || fallbackMessage;
 
     return process.env.NODE_ENV === 'development' ? devMessage : fallbackMessage;
+  }
+}
+
+// ✅ NEW: Enhanced lesson-context AI response
+export async function getLessonAIResponse(userInput, lessonContext, userProgress, stepContext) {
+  console.log('🎓 [GPTService] Lesson-context AI request:', { 
+    lessonId: lessonContext?.lessonId,
+    currentStep: userProgress?.currentStep,
+    stepType: stepContext?.type,
+    userInput: userInput?.substring(0, 50) + '...'
+  });
+
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('❌ Пользователь не авторизован для урока AI.');
+    }
+
+    if (!userInput) {
+      return '⚠️ Пожалуйста, задайте вопрос о текущем уроке.';
+    }
+
+    // Check usage limits first
+    const usageInfo = await getUserUsage();
+    if (!usageInfo.success) {
+      throw new Error('Не удалось проверить лимиты использования');
+    }
+
+    const limitCheck = checkUsageLimits(usageInfo.plan, usageInfo.usage, false);
+    if (!limitCheck.allowed) {
+      return `🚫 ${limitCheck.message}`;
+    }
+
+    const token = await user.getIdToken();
+
+    console.log('✅ [GPTService] Lesson context usage check passed');
+    
+    const response = await gptApi.post('/chat/lesson-context', {
+      userInput,
+      lessonContext,
+      userProgress,
+      stepContext,
+      trackUsage: true,
+      monthKey: getCurrentMonthKey()
+    }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      timeout: 30000
+    });
+
+    const reply = response.data?.reply || 'AI не смог предоставить ответ.';
+    
+    console.log('✅ [GPTService] Lesson AI response received successfully');
+    return reply;
+
+  } catch (error) {
+    console.error('❌ [GPTService] Lesson AI Error:', error);
+    
+    if (error.response?.status === 429) {
+      return '⏳ Слишком много запросов. Подождите немного и попробуйте снова.';
+    }
+    
+    if (error.response?.status === 403) {
+      return '🚫 Доступ ограничен. Проверьте свой план подписки.';
+    }
+    
+    return '❌ Извините, возникла ошибка. Попробуйте задать вопрос ещё раз.';
+  }
+}
+
+// ✅ NEW: Generate contextual suggestions based on lesson step
+export function generateLessonSuggestions(currentStep, userProgress) {
+  const suggestions = [];
+  
+  if (!currentStep) return suggestions;
+  
+  switch (currentStep.type) {
+    case 'explanation':
+      suggestions.push(
+        "Можешь объяснить это проще?",
+        "Какие ключевые моменты я должен запомнить?",
+        "Можешь привести пример из реальной жизни?"
+      );
+      break;
+      
+    case 'exercise':
+      if (userProgress?.mistakes > 0) {
+        suggestions.push(
+          "У меня проблемы с этим, можешь дать подсказку?",
+          "Какой подход мне использовать для решения?",
+          "Помоги понять, что я делаю неправильно?"
+        );
+      } else {
+        suggestions.push(
+          "Правильно ли мой подход?",
+          "На чём мне сосредоточиться в этом упражнении?",
+          "Можешь проверить моё понимание?"
+        );
+      }
+      break;
+      
+    case 'quiz':
+    case 'tryout':
+      suggestions.push(
+        "Я не уверен в этом вопросе, поможешь?",
+        "О чём мне думать при ответе на этот вопрос?",
+        "Можешь провести меня через это пошагово?"
+      );
+      break;
+      
+    case 'vocabulary':
+      suggestions.push(
+        "Поможешь запомнить это слово?",
+        "Как лучше использовать это слово?",
+        "Можешь дать больше примеров?"
+      );
+      break;
+      
+    default:
+      suggestions.push(
+        "Можешь помочь мне лучше понять это?",
+        "На чём мне здесь сосредоточиться?",
+        "Есть ли что-то важное, что я должен запомнить?"
+      );
+  }
+  
+  return suggestions;
+}
+
+// ✅ NEW: Smart hint generation for when students are struggling
+export async function generateSmartHint(exercise, mistakeCount, lessonContext) {
+  if (mistakeCount < 2) return null; // Only provide hints after 2+ mistakes
+  
+  try {
+    const user = auth.currentUser;
+    if (!user) return null;
+
+    const token = await user.getIdToken();
+    
+    const response = await gptApi.post('/chat/smart-hint', {
+      exercise,
+      mistakeCount,
+      lessonContext
+    }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      timeout: 15000
+    });
+
+    return response.data?.reply || "Не переживай! Потрать немного времени на размышления о ключевых концепциях из этого урока. У тебя получится! 💪";
+  } catch (error) {
+    console.error('❌ Error generating smart hint:', error);
+    return "Не переживай! Потрать немного времени на размышления о ключевых концепциях из этого урока. У тебя получится! 💪";
+  }
+}
+
+// ✅ NEW: Progress insights and encouragement
+export async function generateProgressInsight(userProgress, lessonContext) {
+  try {
+    const user = auth.currentUser;
+    if (!user) return null;
+
+    const token = await user.getIdToken();
+    
+    const response = await gptApi.post('/chat/progress-insight', {
+      userProgress,
+      lessonContext
+    }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      timeout: 15000
+    });
+
+    const completionPercent = Math.round((userProgress.completedSteps.length / lessonContext.totalSteps) * 100);
+    return response.data?.reply || `Отличный прогресс! Вы завершили ${completionPercent}% урока. Продолжайте в том же духе! 🌟`;
+  } catch (error) {
+    console.error('❌ Error generating progress insight:', error);
+    const completionPercent = Math.round((userProgress.completedSteps.length / lessonContext.totalSteps) * 100);
+    return `Отличный прогресс! Вы завершили ${completionPercent}% урока. Продолжайте в том же духе! 🌟`;
+  }
+}
+
+// ✅ NEW: Get help with explanations
+export async function getExplanationHelp(explanationText, userQuestion, lessonContext) {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Пользователь не авторизован');
+
+    const token = await user.getIdToken();
+    
+    const response = await gptApi.post('/chat/explanation-help', {
+      explanationText,
+      userQuestion,
+      lessonContext
+    }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      timeout: 30000
+    });
+
+    return response.data?.reply || 'Не удалось получить помощь с объяснением. Попробуйте переформулировать вопрос.';
+  } catch (error) {
+    console.error('❌ Error getting explanation help:', error);
+    return 'Не удалось получить помощь с объяснением. Попробуйте переформулировать вопрос.';
   }
 }
 
@@ -322,7 +530,7 @@ export const formatUsageDisplay = (usage, plan) => {
   };
 };
 
-// Export helper functions that aren't already exported above
+// Export helper functions
 export {
   getCurrentMonthKey,
   checkUsageLimits
