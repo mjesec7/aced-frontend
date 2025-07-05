@@ -1,8 +1,8 @@
-// src/api.js - CLEAN AND FIXED VERSION
+// src/api.js - COMPLETE FIXED VERSION FOR FRONTEND-BACKEND MATCHING
 import axios from 'axios';
 import { auth } from '@/firebase';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
 
 if (!BASE_URL) {
   console.warn('⚠️ VITE_API_BASE_URL is not defined in your .env file!');
@@ -116,7 +116,6 @@ const getValidToken = async () => {
     }
     
     const token = await currentUser.getIdToken(true);
-    localStorage.setItem('token', token);
     console.log('🔑 Fresh token obtained');
     return token;
   } catch (error) {
@@ -248,7 +247,6 @@ api.interceptors.response.use(
         }
         
         const freshToken = await currentUser.getIdToken(true);
-        localStorage.setItem('token', freshToken);
         
         originalRequest.headers.Authorization = `Bearer ${freshToken}`;
         processQueue(null, freshToken);
@@ -259,7 +257,6 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         isRefreshing = false;
-        localStorage.removeItem('token');
         return Promise.reject(refreshError);
       }
     }
@@ -313,7 +310,6 @@ export const getPaymentAmounts = () => {
   };
 };
 
-
 // ✅ FORMAT PAYMENT AMOUNT FUNCTION
 export const formatPaymentAmount = (amount, currency = 'UZS') => {
   try {
@@ -345,7 +341,7 @@ export const formatPaymentAmount = (amount, currency = 'UZS') => {
   }
 };
 
-// ✅ FIXED: Replace this function in src/api.js around line 297
+// ✅ DIRECT PAYME URL GENERATION (GET method)
 const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   try {
     console.log('🔗 Generating PayMe GET URL - Method 1');
@@ -441,84 +437,7 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   }
 };
 
-// ✅ ADDITIONAL HELPER: Validate PayMe URL before redirect
-export const validatePaymeUrl = (url) => {
-  try {
-    // Extract base64 part
-    const base64Part = url.split('/').pop();
-    
-    // Decode and check
-    const decoded = atob(base64Part);
-    console.log('🔍 URL validation - decoded:', decoded);
-    
-    // Check for required parameters
-    const hasValidMerchant = decoded.includes('m=') && !decoded.includes('m=undefined');
-    const hasValidAmount = decoded.includes('a=') && /a=\d+/.test(decoded);
-    const hasValidOrderId = decoded.includes('ac.Login=') && !decoded.includes('ac.Login=undefined');
-    
-    // Check for corruption
-    const isCorrupted = decoded.includes('�') || 
-                       decoded.includes('\f') || 
-                       decoded.includes('\0') ||
-                       decoded.includes('[object Object]');
-    
-    const validation = {
-      isValid: hasValidMerchant && hasValidAmount && hasValidOrderId && !isCorrupted,
-      hasValidMerchant,
-      hasValidAmount,
-      hasValidOrderId,
-      isCorrupted,
-      decodedParams: decoded
-    };
-    
-    console.log('🔍 URL validation result:', validation);
-    
-    return validation;
-    
-  } catch (error) {
-    console.error('❌ URL validation failed:', error);
-    return {
-      isValid: false,
-      error: error.message
-    };
-  }
-};
-
-// ✅ SAFE URL GENERATION TEST
-export const testCleanUrlGeneration = async () => {
-  try {
-    console.log('🧪 Testing clean URL generation...');
-    
-    const testResult = await generateDirectPaymeUrl('testuser123', 'start', {
-      lang: 'ru',
-      callback: 'https://aced.live/payment/success'
-    });
-    
-    if (testResult.success) {
-      const validation = validatePaymeUrl(testResult.paymentUrl);
-      
-      console.log('✅ Test URL generated:', testResult.paymentUrl);
-      console.log('✅ Validation result:', validation);
-      
-      return {
-        success: validation.isValid,
-        url: testResult.paymentUrl,
-        validation
-      };
-    } else {
-      throw new Error(testResult.error);
-    }
-    
-  } catch (error) {
-    console.error('❌ Test failed:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-};
-
-// ✅ FIXED: Generate POST Form (Method 2 from PayMe docs)
+// ✅ DIRECT PAYME FORM GENERATION (POST method)
 const generateDirectPaymeForm = async (userId, plan, options = {}) => {
   try {
     console.log('📝 Generating PayMe POST form - Method 2');
@@ -658,130 +577,8 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
     };
   }
 };
-const generatePaymeButton = async (userId, plan, options = {}) => {
-  try {
-    console.log('🔘 Generating PayMe Button - Method 3');
-    
-    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
-    const amounts = getPaymentAmounts();
-    const planAmount = amounts[plan]?.tiyin;
-    const orderId = `aced${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
-    
-    // Button HTML exactly as per documentation
-    const buttonHtml = `
-    <div id="payme-button-container">
-      <form id="form-payme" method="POST" action="https://checkout.paycom.uz/">
-        <input type="hidden" name="merchant" value="${merchantId}">
-        <input type="hidden" name="account[Login]" value="${orderId}">
-        <input type="hidden" name="amount" value="${planAmount}">
-        <input type="hidden" name="lang" value="${options.lang || 'ru'}">
-        <input type="hidden" name="button" data-type="svg" value="${options.style || 'colored'}">
-        <div id="button-container"></div>
-      </form>
-      
-      <script src="https://cdn.paycom.uz/integration/js/checkout.min.js"></script>
-      
-      <script>
-        // Wait for PayMe script to load
-        function initPaymeButton() {
-          if (typeof Paycom !== 'undefined') {
-            Paycom.Button('#form-payme', '#button-container');
-            console.log('✅ PayMe button generated');
-          } else {
-            console.warn('PayMe script not loaded, retrying...');
-            setTimeout(initPaymeButton, 500);
-          }
-        }
-        
-        setTimeout(initPaymeButton, 1000);
-      </script>
-    </div>
-    `;
-    
-    return {
-      success: true,
-      buttonHtml,
-      method: 'BUTTON',
-      transaction: {
-        id: orderId,
-        amount: planAmount,
-        plan
-      }
-    };
-    
-  } catch (error) {
-    console.error('❌ Button generation failed:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-};
 
-// ✅ FIXED: Generate QR Code (Method 4 from docs)
-const generatePaymeQR = async (userId, plan, options = {}) => {
-  try {
-    console.log('📱 Generating PayMe QR - Method 4');
-    
-    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
-    const amounts = getPaymentAmounts();
-    const planAmount = amounts[plan]?.tiyin;
-    const orderId = `aced${Date.now()}${Math.random().toString(36).substr(2, 6)}`;
-    
-    // QR HTML exactly as per documentation
-    const qrHtml = `
-    <div id="payme-qr-container">
-      <form id="form-payme-qr" method="POST" action="https://checkout.paycom.uz/">
-        <input type="hidden" name="merchant" value="${merchantId}">
-        <input type="hidden" name="account[Login]" value="${orderId}">
-        <input type="hidden" name="amount" value="${planAmount}">
-        <input type="hidden" name="lang" value="${options.lang || 'ru'}">
-        <input type="hidden" name="qr" data-width="${options.qrWidth || 250}">
-        <div id="qr-container"></div>
-      </form>
-      
-      <script src="https://cdn.paycom.uz/integration/js/checkout.min.js"></script>
-      
-      <script>
-        // Wait for PayMe script to load
-        function initPaymeQR() {
-          if (typeof Paycom !== 'undefined') {
-            Paycom.QR('#form-payme-qr', '#qr-container');
-            console.log('✅ PayMe QR generated');
-          } else {
-            console.warn('PayMe script not loaded, retrying...');
-            setTimeout(initPaymeQR, 500);
-          }
-        }
-        
-        setTimeout(initPaymeQR, 1000);
-      </script>
-    </div>
-    `;
-    
-    return {
-      success: true,
-      qrHtml,
-      method: 'QR',
-      transaction: {
-        id: orderId,
-        amount: planAmount,
-        plan
-      }
-    };
-    
-  } catch (error) {
-    console.error('❌ QR generation failed:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-};
-
-// ✅ DIRECT PAYME FORM GENERATION (for POST method)
-
-
+// ✅ PAYMENT INITIATION - ENHANCED VERSION
 export const initiatePaymePayment = async (userId, plan, additionalData = {}) => {
   if (!trackPaymentAttempt(userId, 'payment-initiation')) {
     throw new Error('Слишком много попыток инициации платежа. Подождите несколько секунд.');
@@ -797,7 +594,30 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
       throw new Error(`Неизвестный план: ${plan}`);
     }
     
-    // ✅ FIXED: Always use direct generation for better reliability
+    // Try backend endpoint first
+    try {
+      const response = await api.post('/payments/initiate', {
+        userId: userId,
+        plan: plan,
+        name: additionalData.name || 'User',
+        phone: additionalData.phone || '',
+        ...additionalData
+      });
+      
+      if (response.data.success) {
+        return {
+          success: true,
+          paymentUrl: response.data.paymentUrl,
+          transaction: response.data.transaction,
+          method: 'REDIRECT',
+          message: response.data.message
+        };
+      }
+    } catch (backendError) {
+      console.warn('⚠️ Backend payment endpoint failed, using direct generation:', backendError.message);
+    }
+    
+    // Fallback to direct generation
     const method = additionalData.method || 'get';
     
     if (method === 'get') {
@@ -830,7 +650,7 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
       }
     }
     
-    // Fallback to GET method
+    // Default fallback to GET method
     const result = await generateDirectPaymeUrl(userId, plan, additionalData);
     if (result.success) {
       return {
@@ -864,7 +684,36 @@ export const generatePaymeForm = async (userId, plan, method = 'post', options =
   try {
     console.log('🎨 Generating PayMe form:', { userId, plan, method, options });
     
-    // Always use direct generation for reliability
+    // Try backend endpoint first
+    try {
+      const response = await api.post('/payments/generate-form', {
+        userId: userId,
+        plan: plan,
+        method: method,
+        lang: options.lang || 'ru',
+        style: options.style || 'colored',
+        qrWidth: options.qrWidth || 250,
+        callback: options.callback,
+        ...options
+      });
+      
+      if (response.data.success) {
+        return {
+          success: true,
+          method: response.data.method,
+          formHtml: response.data.formHtml,
+          paymentUrl: response.data.paymentUrl,
+          buttonHtml: response.data.buttonHtml,
+          qrHtml: response.data.qrHtml,
+          transaction: response.data.transaction,
+          debug: response.data.debug
+        };
+      }
+    } catch (backendError) {
+      console.warn('⚠️ Backend form generation failed, using direct generation:', backendError.message);
+    }
+    
+    // Fallback to direct generation
     if (method === 'get') {
       const result = await generateDirectPaymeUrl(userId, plan, { method, ...options });
       return {
@@ -887,8 +736,7 @@ export const generatePaymeForm = async (userId, plan, method = 'post', options =
       };
     }
     
-    // For button and QR methods, fallback to GET for now
-    console.warn('⚠️ Button and QR methods not fully implemented, using GET method');
+    // Default fallback
     const result = await generateDirectPaymeUrl(userId, plan, { method: 'get', ...options });
     return {
       success: result.success,
@@ -1001,365 +849,1243 @@ export const getTransactionStateText = (state) => {
   }
 };
 
-// ✅ COMPREHENSIVE ERROR HANDLER FOR PAYMENTS
-export const handlePaymentError = (error, context = 'Платежная операция') => {
-  console.error(`❌ ${context} failed:`, error);
-  
-  // Check for PayMe specific error codes
-  if (error.response?.data?.code && error.response.data.code.toString().startsWith('-316')) {
-    return getPaymeErrorMessage(error.response.data.code);
-  }
-  
-  // Check for rate limiting
-  if (error.message?.includes('Слишком много попыток')) {
-    return error.message;
-  }
-  
-  if (error.response?.status === 401) {
-    return 'Необходимо войти в систему для совершения платежа';
-  } else if (error.response?.status === 403) {
-    return 'Доступ к платежной системе запрещен';
-  } else if (error.response?.status === 404) {
-    return 'Платежный сервис недоступен. Используется прямая интеграция.';
-  } else if (error.response?.status === 429) {
-    return 'Слишком много запросов. Подождите несколько секунд и попробуйте снова.';
-  } else if (error.response?.status >= 500) {
-    return 'Ошибка платежного сервера. Попробуйте позже';
-  } else if (error.message?.includes('timeout')) {
-    return 'Превышено время ожидания. Проверьте интернет-соединение';
-  } else {
-    return error.response?.data?.message || error.message || 'Произошла ошибка при обработке платежа';
-  }
-};
+// =============================================
+// 📚 LESSON AND TOPIC API FUNCTIONS - FIXED
+// =============================================
 
-// ✅ PAYMENT ATTEMPT RESET UTILITY
-export const resetPaymentAttempts = (userId) => {
-  const keysToDelete = [];
-  for (const [key] of requestAttempts.entries()) {
-    if (key.startsWith(userId)) {
-      keysToDelete.push(key);
+// ✅ FIXED: Get all topics with enhanced error handling
+export const getTopics = async (filters = {}) => {
+  try {
+    console.log('📚 Fetching topics with filters:', filters);
+    
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null) {
+        params.append(key, filters[key]);
+      }
+    });
+    
+    const queryString = params.toString();
+    const url = queryString ? `/topics?${queryString}` : '/topics';
+    
+    const { data } = await api.get(url);
+    
+    // Handle different response structures from backend
+    if (data && data.success) {
+      return {
+        success: true,
+        data: data.data || data.topics || []
+      };
+    } else if (Array.isArray(data)) {
+      return {
+        success: true,
+        data: data
+      };
+    } else {
+      return {
+        success: true,
+        data: []
+      };
     }
-  }
-  keysToDelete.forEach(key => requestAttempts.delete(key));
-  console.log(`🔄 Payment attempts reset for user ${userId}`);
-};
-
-// =============================================
-// 📊 USER PROGRESS
-// =============================================
-
-export const submitProgress = (userId, progressData) =>
-  api.post(`/user-progress`, { userId, ...progressData });
-
-export const getLessonProgress = (userId, lessonId) =>
-  api.get(`/user-progress/user/${userId}/lesson/${lessonId}`);
-
-export const getUserProgress = (userId) =>
-  api.get(`/user-progress/user/${userId}`);
-
-// =============================================
-// 📝 TESTS API
-// =============================================
-
-export const getAvailableTests = async (userId) => {
-  try {
-    const { data } = await api.get(`/users/${userId}/tests`);
-    return data;
   } catch (error) {
-    console.warn('⚠️ User tests endpoint failed, trying direct:', error.message);
-    const { data } = await api.get(`/tests`);
-    return { tests: Array.isArray(data) ? data.filter(test => test.isActive !== false) : [] };
+    console.error('❌ Failed to fetch topics:', error);
+    return {
+      success: false,
+      data: [],
+      error: error.message
+    };
   }
 };
 
-export const getTestById = async (userId, testId) => {
+// ✅ FIXED: Get topic by ID with multiple endpoint fallbacks
+export const getTopicById = async (topicId) => {
   try {
-    const { data } = await api.get(`/users/${userId}/tests/${testId}`);
-    return data;
+    console.log('📘 Fetching topic by ID:', topicId);
+    
+    const { data } = await api.get(`/topics/${topicId}`);
+    
+    // Handle different response structures from your backend
+    if (data && data.success) {
+      return {
+        success: true,
+        data: data.data,
+        message: data.message
+      };
+    } else if (data && (data._id || data.name)) {
+      return {
+        success: true,
+        data: data
+      };
+    } else {
+      throw new Error('Invalid topic data structure');
+    }
   } catch (error) {
-    console.warn('⚠️ User test endpoint failed, trying direct:', error.message);
-    const { data } = await api.get(`/tests/${testId}`);
-    return { test: data };
+    console.error('❌ Failed to fetch topic by ID:', error);
+    
+    // If 404, the topic doesn't exist
+    if (error.response?.status === 404) {
+      return {
+        success: false,
+        error: 'Topic not found',
+        code: 404
+      };
+    }
+    
+    return {
+      success: false,
+      error: error.message
+    };
   }
 };
 
-export const submitTestResult = async (userId, testId, answers) => {
+// ✅ FIXED: Get lessons by topic with enhanced fallback logic
+export const getLessonsByTopic = async (topicId) => {
   try {
-    const { data } = await api.post(`/users/${userId}/tests/${testId}/submit`, { answers });
-    return data;
+    console.log('📚 Fetching lessons for topic:', topicId);
+    
+    // Try the enhanced lessons endpoint first
+    try {
+      const { data } = await api.get(`/lessons/topic/${topicId}?includeStats=true&sortBy=createdAt&order=asc`);
+      
+      if (data && data.success) {
+        console.log('✅ Lessons loaded via enhanced endpoint:', data.lessons?.length || 0);
+        return {
+          success: true,
+          data: data.lessons || [],
+          stats: data.stats
+        };
+      }
+    } catch (enhancedError) {
+      console.warn('⚠️ Enhanced lessons endpoint failed:', enhancedError.message);
+    }
+    
+    // Fallback to topic-specific lessons endpoint
+    try {
+      const { data } = await api.get(`/topics/${topicId}/lessons`);
+      
+      if (data && data.success) {
+        return {
+          success: true,
+          data: data.data || data.lessons || []
+        };
+      } else if (Array.isArray(data)) {
+        return {
+          success: true,
+          data: data
+        };
+      }
+    } catch (fallbackError) {
+      console.warn('⚠️ Topic lessons endpoint failed:', fallbackError.message);
+    }
+    
+    // Final fallback - get all lessons and filter by topicId
+    try {
+      const { data } = await api.get('/lessons');
+      const allLessons = Array.isArray(data) ? data : [];
+      const filteredLessons = allLessons.filter(lesson => {
+        return lesson.topicId === topicId || 
+               lesson.topic === topicId ||
+               (lesson.topicId && lesson.topicId._id === topicId) ||
+               (lesson.topicId && lesson.topicId.toString() === topicId);
+      });
+      
+      console.log(`✅ Filtered ${filteredLessons.length} lessons for topic ${topicId}`);
+      
+      return {
+        success: true,
+        data: filteredLessons
+      };
+    } catch (finalError) {
+      console.error('❌ Final fallback failed:', finalError.message);
+    }
+    
+    return {
+      success: true,
+      data: []
+    };
+    
   } catch (error) {
-    console.warn('⚠️ User test submit endpoint failed, trying direct:', error.message);
-    const { data } = await api.post(`/tests/${testId}/submit`, { userId, answers });
-    return data;
+    console.error('❌ Failed to fetch lessons by topic:', error);
+    return {
+      success: false,
+      data: [],
+      error: error.message
+    };
   }
 };
 
-export const getTestResult = async (userId, testId) => {
+// ✅ FIXED: Get all lessons with enhanced filtering
+export const getAllLessons = async (filters = {}) => {
   try {
-    const { data } = await api.get(`/users/${userId}/tests/${testId}/result`);
-    return data;
+    console.log('📖 Fetching all lessons with filters:', filters);
+    
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null) {
+        params.append(key, filters[key]);
+      }
+    });
+    
+    const queryString = params.toString();
+    const url = queryString ? `/lessons?${queryString}` : '/lessons';
+    
+    const { data } = await api.get(url);
+    
+    return {
+      success: true,
+      data: Array.isArray(data) ? data : []
+    };
   } catch (error) {
-    console.warn('⚠️ User test result endpoint failed:', error.message);
+    console.error('❌ Failed to fetch all lessons:', error);
+    return {
+      success: false,
+      data: [],
+      error: error.message
+    };
+  }
+};
+
+// ✅ FIXED: Get lesson by ID with enhanced error handling
+export const getLessonById = async (lessonId) => {
+  try {
+    console.log('📖 Fetching lesson by ID:', lessonId);
+    
+    const { data } = await api.get(`/lessons/${lessonId}`);
+    
+    // Handle different response structures from your backend
+    if (data && data.success) {
+      return {
+        success: true,
+        data: data.lesson,
+        topic: data.topic,
+        stats: data.stats
+      };
+    } else if (data && (data._id || data.lessonName)) {
+      return {
+        success: true,
+        data: data
+      };
+    } else {
+      throw new Error('Invalid lesson data structure');
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch lesson by ID:', error);
+    
+    // Provide specific error handling
+    if (error.response?.status === 404) {
+      throw new Error('Lesson not found');
+    } else if (error.response?.status === 403) {
+      throw new Error('Access denied to this lesson');
+    } else if (error.response?.status === 401) {
+      throw new Error('Authentication required');
+    }
+    
+    throw error; // Re-throw for proper error handling in components
+  }
+};
+
+// =============================================
+// 📊 USER PROGRESS API FUNCTIONS - FIXED
+// =============================================
+
+// ✅ FIXED: Submit progress with multiple endpoint fallbacks
+export const submitProgress = async (userId, progressData) => {
+  try {
+    console.log('💾 Saving lesson progress:', { userId, lessonId: progressData.lessonId });
+    
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+    
+    // Enhanced progress data with all required fields
+    const enhancedData = {
+      userId: userId,
+      lessonId: progressData.lessonId,
+      topicId: progressData.topicId || progressData.lessonId,
+      completedSteps: progressData.completedSteps || [],
+      progressPercent: progressData.progressPercent || 0,
+      completed: progressData.completed || false,
+      mistakes: progressData.mistakes || 0,
+      stars: progressData.stars || 0,
+      points: progressData.points || 0,
+      duration: progressData.duration || progressData.durationSeconds || 0,
+      hintsUsed: progressData.hintsUsed || 0,
+      submittedHomework: progressData.submittedHomework || false,
+      homeworkScore: progressData.homeworkScore || 0,
+      medal: progressData.medal || 'none',
+      ...progressData
+    };
+    
+    // Try multiple endpoints based on your server.js emergency routes
+    const endpoints = [
+      `/users/${userId}/progress/save`,
+      `/progress`,
+      `/users/${userId}/lesson/${progressData.lessonId}`,
+      `/user-progress`
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`📤 Trying progress save via: ${endpoint}`);
+        
+        const dataToSend = endpoint.includes('/progress') && !endpoint.includes('users') 
+          ? enhancedData  // Include userId in data for general progress endpoint
+          : { ...enhancedData, userId: undefined }; // Remove userId from data for user-specific endpoints
+        
+        const { data } = await api.post(endpoint, dataToSend, { headers, timeout: 15000 });
+        
+        if (data && (data.success !== false)) {
+          console.log(`✅ Progress saved via: ${endpoint}`);
+          return {
+            success: true,
+            data: data.data || data,
+            endpoint: endpoint
+          };
+        }
+      } catch (endpointError) {
+        console.warn(`⚠️ Progress save failed via ${endpoint}:`, endpointError.response?.status, endpointError.message);
+        continue;
+      }
+    }
+    
+    throw new Error('All progress save endpoints failed');
+    
+  } catch (error) {
+    console.error('❌ Failed to save progress:', error);
     throw error;
   }
 };
 
+// ✅ FIXED: Get lesson progress with multiple endpoint support
+export const getLessonProgress = async (userId, lessonId) => {
+  try {
+    console.log('📊 Fetching lesson progress for user:', userId, 'lesson:', lessonId);
+    
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      console.warn('⚠️ No auth token available for progress');
+      return { success: false, data: null };
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    // Try multiple endpoints as per your backend structure
+    const endpoints = [
+      `/users/${userId}/progress/lesson/${lessonId}`,
+      `/user-progress/user/${userId}/lesson/${lessonId}`,
+      `/user/${userId}/lesson/${lessonId}`,
+      `/progress?userId=${userId}&lessonId=${lessonId}`
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        const { data } = await api.get(endpoint, { headers });
+        
+        if (data && (data.success !== false)) {
+          return {
+            success: true,
+            data: data.data || data
+          };
+        }
+      } catch (endpointError) {
+        console.warn(`⚠️ Endpoint ${endpoint} failed:`, endpointError.message);
+        continue;
+      }
+    }
+    
+    // If no endpoint worked, return null progress
+    return {
+      success: true,
+      data: null
+    };
+    
+  } catch (error) {
+    console.error('❌ Failed to fetch lesson progress:', error);
+    return {
+      success: false,
+      data: null,
+      error: error.message
+    };
+  }
+};
+
+// ✅ FIXED: Get user progress with enhanced support
+export const getUserProgress = async (userId) => {
+  try {
+    console.log('📊 Fetching user progress for:', userId);
+    
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    // Try multiple endpoints
+    const endpoints = [
+      `/users/${userId}/progress`,
+      `/user-progress/user/${userId}`,
+      `/progress?userId=${userId}`
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        const { data } = await api.get(endpoint, { headers });
+        
+        if (data && (data.success !== false)) {
+          return {
+            success: true,
+            data: data.data || data
+          };
+        }
+      } catch (endpointError) {
+        console.warn(`⚠️ Progress endpoint ${endpoint} failed:`, endpointError.message);
+        continue;
+      }
+    }
+    
+    return {
+      success: true,
+      data: []
+    };
+    
+  } catch (error) {
+    console.error('❌ Failed to fetch user progress:', error);
+    return {
+      success: false,
+      data: [],
+      error: error.message
+    };
+  }
+};
+
+// =============================================
+// 📝 TESTS API FUNCTIONS - FIXED
+// =============================================
+
+// ✅ FIXED: Get available tests with fallback support
+export const getAvailableTests = async (userId) => {
+  try {
+    console.log('📝 Fetching available tests for user:', userId);
+    
+    const token = await auth.currentUser?.getIdToken();
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
+    try {
+      const { data } = await api.get(`/users/${userId}/tests`, { headers });
+      return data;
+    } catch (error) {
+      console.warn('⚠️ User tests endpoint failed, trying direct:', error.message);
+      const { data } = await api.get(`/tests`, { headers });
+      return { tests: Array.isArray(data) ? data.filter(test => test.isActive !== false) : [] };
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch available tests:', error);
+    return { tests: [], error: error.message };
+  }
+};
+
+// ✅ FIXED: Get test by ID with fallback support
+export const getTestById = async (userId, testId) => {
+  try {
+    console.log('📝 Fetching test by ID:', testId, 'for user:', userId);
+    
+    const token = await auth.currentUser?.getIdToken();
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
+    try {
+      const { data } = await api.get(`/users/${userId}/tests/${testId}`, { headers });
+      return data;
+    } catch (error) {
+      console.warn('⚠️ User test endpoint failed, trying direct:', error.message);
+      const { data } = await api.get(`/tests/${testId}`, { headers });
+      return { test: data };
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch test by ID:', error);
+    throw error;
+  }
+};
+
+// ✅ FIXED: Submit test result with fallback support
+export const submitTestResult = async (userId, testId, answers) => {
+  try {
+    console.log('📝 Submitting test result:', { userId, testId, answersCount: answers.length });
+    
+    const token = await auth.currentUser?.getIdToken();
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
+    try {
+      const { data } = await api.post(`/users/${userId}/tests/${testId}/submit`, { answers }, { headers });
+      return data;
+    } catch (error) {
+      console.warn('⚠️ User test submit endpoint failed, trying direct:', error.message);
+      const { data } = await api.post(`/tests/${testId}/submit`, { userId, answers }, { headers });
+      return data;
+    }
+  } catch (error) {
+    console.error('❌ Failed to submit test result:', error);
+    throw error;
+  }
+};
+
+// ✅ FIXED: Get test result with enhanced error handling
+export const getTestResult = async (userId, testId) => {
+  try {
+    console.log('📝 Fetching test result:', { userId, testId });
+    
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    const { data } = await api.get(`/users/${userId}/tests/${testId}/result`, { headers });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to fetch test result:', error);
+    throw error;
+  }
+};
+
+// ✅ FIXED: Get user test results
 export const getUserTestResults = async (userId) => {
   try {
-    const { data } = await api.get(`/users/${userId}/tests/results`);
-    return data;
+    console.log('📝 Fetching user test results for:', userId);
+    
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    try {
+      const { data } = await api.get(`/users/${userId}/tests/results`, { headers });
+      return data;
+    } catch (error) {
+      console.warn('⚠️ User test results endpoint failed:', error.message);
+      return { success: false, data: [] };
+    }
   } catch (error) {
-    console.warn('⚠️ User test results endpoint failed:', error.message);
-    return { success: false, data: [] };
+    console.error('❌ Failed to fetch user test results:', error);
+    return { success: false, data: [], error: error.message };
   }
 };
 
 // =============================================
-// 📚 HOMEWORK API
+// 📚 HOMEWORK API FUNCTIONS - FIXED
 // =============================================
 
+// ✅ FIXED: Get homework by lesson with multiple endpoint support
 export const getHomeworkByLesson = async (userId, lessonId) => {
   try {
-    const { data } = await api.get(`/users/${userId}/homeworks/lesson/${lessonId}`);
-    return data;
-  } catch (error) {
-    console.warn('⚠️ User homework endpoint failed, trying fallback:', error.message);
+    console.log('📝 Fetching homework for user:', userId, 'lesson:', lessonId);
     
-    try {
-      const { data } = await api.get(`/homeworks/user/${userId}/lesson/${lessonId}`);
-      return data;
-    } catch (fallbackError) {
-      console.error('❌ All homework endpoints failed:', fallbackError.message);
-      throw fallbackError;
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
     }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    // Try the new enhanced endpoint first
+    try {
+      const { data } = await api.get(`/homeworks/user/${userId}/lesson/${lessonId}`, { headers });
+      
+      if (data && data.success) {
+        return {
+          success: true,
+          data: data.data
+        };
+      }
+    } catch (enhancedError) {
+      console.warn('⚠️ Enhanced homework endpoint failed:', enhancedError.message);
+    }
+    
+    // Fallback to legacy endpoint structure
+    try {
+      const { data } = await api.get(`/users/${userId}/homeworks/lesson/${lessonId}`, { headers });
+      return data;
+    } catch (legacyError) {
+      console.warn('⚠️ Legacy homework endpoint failed:', legacyError.message);
+    }
+    
+    // Final fallback
+    const { data } = await api.get(`/homeworks/user/${userId}/lesson/${lessonId}`, { headers });
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Failed to fetch homework by lesson:', error);
+    throw error;
   }
 };
 
+// ✅ FIXED: Get all homework with enhanced support
 export const getAllHomeworks = async (userId) => {
   try {
-    const { data } = await api.get(`/users/${userId}/homeworks`);
-    return data;
-  } catch (error) {
-    console.warn('⚠️ Enhanced homework endpoint failed, trying legacy:', error.message);
+    console.log('📝 Fetching all homework for user:', userId);
     
-    try {
-      const { data } = await api.get(`/homeworks/user/${userId}`);
-      return data;
-    } catch (fallbackError) {
-      console.error('❌ All homework endpoints failed:', fallbackError.message);
-      throw fallbackError;
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
     }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    // Try multiple endpoints
+    const endpoints = [
+      `/homeworks/user/${userId}`,
+      `/users/${userId}/homeworks`,
+      `/homeworks/user/${userId}`
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        const { data } = await api.get(endpoint, { headers });
+        
+        if (data && (data.success !== false)) {
+          return {
+            success: true,
+            data: data.data || data
+          };
+        }
+      } catch (endpointError) {
+        console.warn(`⚠️ Homework endpoint ${endpoint} failed:`, endpointError.message);
+        continue;
+      }
+    }
+    
+    return {
+      success: true,
+      data: []
+    };
+    
+  } catch (error) {
+    console.error('❌ Failed to fetch all homework:', error);
+    throw error;
   }
 };
 
+// ✅ FIXED: Save homework with multiple endpoint support
 export const saveHomework = async (userId, lessonId, answers) => {
   try {
-    const { data } = await api.post(`/users/${userId}/homeworks/save`, { 
+    console.log('💾 Saving homework:', { userId, lessonId, answersCount: answers.length });
+    
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    const requestData = { 
       lessonId, 
       answers, 
       completed: false 
-    });
-    return data;
-  } catch (error) {
-    console.warn('⚠️ User homework save endpoint failed, trying fallback:', error.message);
+    };
     
-    try {
-      const { data } = await api.post(`/homeworks/user/${userId}/save`, { 
-        lessonId, 
-        answers, 
-        completed: false 
-      });
-      return data;
-    } catch (fallbackError) {
-      console.error('❌ All homework save endpoints failed:', fallbackError.message);
-      throw fallbackError;
+    // Try multiple endpoints
+    const endpoints = [
+      `/homeworks/user/${userId}/save`,
+      `/users/${userId}/homeworks/save`,
+      `/homeworks/user/${userId}/save`
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        const { data } = await api.post(endpoint, requestData, { headers });
+        
+        if (data && (data.success !== false)) {
+          return {
+            success: true,
+            data: data.data || data
+          };
+        }
+      } catch (endpointError) {
+        console.warn(`⚠️ Homework save endpoint ${endpoint} failed:`, endpointError.message);
+        continue;
+      }
     }
+    
+    throw new Error('All homework save endpoints failed');
+    
+  } catch (error) {
+    console.error('❌ Failed to save homework:', error);
+    throw error;
   }
 };
 
+// ✅ FIXED: Submit homework with multiple endpoint support
 export const submitHomework = async (userId, lessonId, answers) => {
   try {
-    const { data } = await api.post(`/users/${userId}/homeworks/lesson/${lessonId}/submit`, { answers });
-    return data;
-  } catch (error) {
-    console.warn('⚠️ User homework submit endpoint failed, trying fallback:', error.message);
+    console.log('📤 Submitting homework:', { userId, lessonId, answersCount: answers.length });
     
-    try {
-      const { data } = await api.post(`/homeworks/user/${userId}/lesson/${lessonId}/submit`, { answers });
-      return data;
-    } catch (fallbackError) {
-      console.error('❌ All homework submit endpoints failed:', fallbackError.message);
-      throw fallbackError;
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
     }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    const requestData = { answers };
+    
+    // Try multiple endpoints
+    const endpoints = [
+      `/homeworks/user/${userId}/lesson/${lessonId}/submit`,
+      `/users/${userId}/homeworks/lesson/${lessonId}/submit`,
+      `/homeworks/user/${userId}/lesson/${lessonId}/submit`
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        const { data } = await api.post(endpoint, requestData, { headers });
+        
+        if (data && (data.success !== false)) {
+          return {
+            success: true,
+            data: data.data || data
+          };
+        }
+      } catch (endpointError) {
+        console.warn(`⚠️ Homework submit endpoint ${endpoint} failed:`, endpointError.message);
+        continue;
+      }
+    }
+    
+    throw new Error('All homework submit endpoints failed');
+    
+  } catch (error) {
+    console.error('❌ Failed to submit homework:', error);
+    throw error;
   }
 };
 
+// ✅ FIXED: Standalone homework functions
 export const getStandaloneHomework = async (userId, homeworkId) => {
   try {
-    const { data } = await api.get(`/users/${userId}/homework/${homeworkId}`);
+    console.log('📝 Fetching standalone homework:', { userId, homeworkId });
+    
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    const { data } = await api.get(`/homeworks/user/${userId}/homework/${homeworkId}`, { headers });
     return data;
   } catch (error) {
-    console.error('❌ Failed to get standalone homework:', error.message);
+    console.error('❌ Failed to get standalone homework:', error);
     throw error;
   }
 };
 
 export const saveStandaloneHomework = async (userId, homeworkId, answers) => {
   try {
-    const { data } = await api.post(`/users/${userId}/homework/${homeworkId}/save`, { answers });
+    console.log('💾 Saving standalone homework:', { userId, homeworkId });
+    
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    const { data } = await api.post(`/homeworks/user/${userId}/homework/${homeworkId}/save`, { answers }, { headers });
     return data;
   } catch (error) {
-    console.error('❌ Failed to save standalone homework:', error.message);
+    console.error('❌ Failed to save standalone homework:', error);
     throw error;
   }
 };
 
 export const submitStandaloneHomework = async (userId, homeworkId, answers) => {
   try {
-    const { data } = await api.post(`/users/${userId}/homework/${homeworkId}/submit`, { answers });
+    console.log('📤 Submitting standalone homework:', { userId, homeworkId });
+    
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    const { data } = await api.post(`/homeworks/user/${userId}/homework/${homeworkId}/submit`, { answers }, { headers });
     return data;
   } catch (error) {
-    console.error('❌ Failed to submit standalone homework:', error.message);
+    console.error('❌ Failed to submit standalone homework:', error);
     throw error;
   }
 };
 
 // =============================================
-// 👤 USER MANAGEMENT
+// 👤 USER MANAGEMENT API FUNCTIONS - FIXED
 // =============================================
 
-export const getUserInfo = (userId) =>
-  api.get(`/users/${userId}`);
+// ✅ FIXED: Get user info with multiple endpoint support
+export const getUserInfo = async (userId) => {
+  try {
+    console.log('👤 Fetching user info for:', userId);
+    
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
 
-export const getUserStatus = (userId) =>
-  api.get(`/users/${userId}/status`);
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    const { data } = await api.get(`/users/${userId}`, { headers });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to fetch user info:', error);
+    throw error;
+  }
+};
 
-export const saveUser = (userData) =>
-  api.post(`/users/save`, userData);
+// ✅ FIXED: Get user status with multiple endpoint support
+export const getUserStatus = async (userId) => {
+  try {
+    console.log('📊 Fetching user status for:', userId);
+    
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token');
+    }
 
-export const updateUserProfile = (userId, profileData) =>
-  api.put(`/users/${userId}/profile`, profileData);
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    // Try multiple endpoints for user status
+    const endpoints = [
+      `/users/${userId}/status`,
+      `/users/${userId}`,
+      `/user/${userId}/status`,
+      `/user/${userId}`
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        const { data } = await api.get(endpoint, { headers });
+        
+        if (data && (data.success !== false)) {
+          return {
+            success: true,
+            data: data.data || data,
+            status: data.status || data.subscriptionPlan || data.data?.subscriptionPlan || 'free'
+          };
+        }
+      } catch (endpointError) {
+        console.warn(`⚠️ Status endpoint ${endpoint} failed:`, endpointError.message);
+        continue;
+      }
+    }
+    
+    // If all fail, return default
+    return {
+      success: true,
+      data: { subscriptionPlan: 'free' },
+      status: 'free'
+    };
+    
+  } catch (error) {
+    console.error('❌ Failed to get user status:', error);
+    return {
+      success: false,
+      data: { subscriptionPlan: 'free' },
+      status: 'free',
+      error: error.message
+    };
+  }
+};
+
+// ✅ FIXED: Save user with enhanced error handling
+export const saveUser = async (userData) => {
+  try {
+    console.log('💾 Saving user data:', { email: userData.email, name: userData.name });
+    
+    // This uses the emergency user save route from server.js
+    const { data } = await api.post('/users/save', userData);
+    
+    return {
+      success: true,
+      data: data
+    };
+  } catch (error) {
+    console.error('❌ Failed to save user:', error);
+    throw error;
+  }
+};
+
+// ✅ FIXED: Update user profile
+export const updateUserProfile = async (userId, profileData) => {
+  try {
+    console.log('📝 Updating user profile:', { userId, profileData });
+    
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    const { data } = await api.put(`/users/${userId}/profile`, profileData, { headers });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to update user profile:', error);
+    throw error;
+  }
+};
 
 // =============================================
-// 📖 STUDY LIST MANAGEMENT
+// 📖 STUDY LIST MANAGEMENT - FIXED
 // =============================================
 
-export const getUserStudyList = (userId) =>
-  api.get(`/users/${userId}/study-list`);
+export const getUserStudyList = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/study-list`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get study list:', error);
+    throw error;
+  }
+};
 
-export const addToStudyList = (userId, topicData) =>
-  api.post(`/users/${userId}/study-list`, topicData);
+export const addToStudyList = async (userId, topicData) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.post(`/users/${userId}/study-list`, topicData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to add to study list:', error);
+    throw error;
+  }
+};
 
-export const removeFromStudyList = (userId, topicId) =>
-  api.delete(`/users/${userId}/study-list/${topicId}`);
+export const removeFromStudyList = async (userId, topicId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.delete(`/users/${userId}/study-list/${topicId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to remove from study list:', error);
+    throw error;
+  }
+};
 
-export const cleanupStudyList = (userId) =>
-  api.post(`/users/${userId}/study-list/cleanup`);
+export const cleanupStudyList = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.post(`/users/${userId}/study-list/cleanup`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to cleanup study list:', error);
+    throw error;
+  }
+};
 
 // =============================================
-// 🎯 RECOMMENDATIONS
+// 🎯 RECOMMENDATIONS AND ANALYTICS - FIXED
 // =============================================
 
-export const getRecommendations = (userId) =>
-  api.get(`/users/${userId}/recommendations`);
+export const getRecommendations = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/recommendations`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get recommendations:', error);
+    throw error;
+  }
+};
+
+export const getUserProgressStats = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/progress`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get progress stats:', error);
+    throw error;
+  }
+};
+
+export const getLessonProgressStats = async (userId, lessonId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/progress/lesson/${lessonId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get lesson progress stats:', error);
+    throw error;
+  }
+};
+
+export const getTopicsProgress = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/topics-progress`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get topics progress:', error);
+    throw error;
+  }
+};
+
+export const getUserPoints = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/points`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get user points:', error);
+    throw error;
+  }
+};
 
 // =============================================
-// 📈 PROGRESS TRACKING
+// 🎯 GOALS MANAGEMENT - FIXED
 // =============================================
 
-export const getUserProgressStats = (userId) =>
-  api.get(`/users/${userId}/progress`);
+export const getUserGoals = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/goals`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get user goals:', error);
+    throw error;
+  }
+};
 
-export const getLessonProgressStats = (userId, lessonId) =>
-  api.get(`/users/${userId}/progress/lesson/${lessonId}`);
+export const createUserGoal = async (userId, goalData) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.post(`/users/${userId}/goals`, goalData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to create user goal:', error);
+    throw error;
+  }
+};
 
-export const getTopicsProgress = (userId) =>
-  api.get(`/users/${userId}/topics-progress`);
+export const updateUserGoal = async (userId, goalId, goalData) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.put(`/users/${userId}/goals/${goalId}`, goalData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to update user goal:', error);
+    throw error;
+  }
+};
 
-export const getUserPoints = (userId) =>
-  api.get(`/users/${userId}/points`);
+export const deleteUserGoal = async (userId, goalId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.delete(`/users/${userId}/goals/${goalId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to delete user goal:', error);
+    throw error;
+  }
+};
 
 // =============================================
-// 🎯 GOALS MANAGEMENT
+// 📔 DIARY MANAGEMENT - FIXED
 // =============================================
 
-export const getUserGoals = (userId) =>
-  api.get(`/users/${userId}/goals`);
+export const saveDiaryEntry = async (userId, diaryData) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.post(`/users/${userId}/diary`, diaryData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to save diary entry:', error);
+    throw error;
+  }
+};
 
-export const createUserGoal = (userId, goalData) =>
-  api.post(`/users/${userId}/goals`, goalData);
-
-export const updateUserGoal = (userId, goalId, goalData) =>
-  api.put(`/users/${userId}/goals/${goalId}`, goalData);
-
-export const deleteUserGoal = (userId, goalId) =>
-  api.delete(`/users/${userId}/goals/${goalId}`);
+export const getDiaryEntries = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/diary`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get diary entries:', error);
+    throw error;
+  }
+};
 
 // =============================================
-// 📔 DIARY MANAGEMENT
-// =============================================
-
-export const saveDiaryEntry = (userId, diaryData) =>
-  api.post(`/users/${userId}/diary`, diaryData);
-
-export const getDiaryEntries = (userId) =>
-  api.get(`/users/${userId}/diary`);
-
-// =============================================
-// 📊 ANALYTICS
+// 📊 ANALYTICS - FIXED
 // =============================================
 
 export const getUserAnalytics = async (userId) => {
   try {
-    const { data } = await api.get(`/users/${userId}/analytics`);
-    return data;
-  } catch (error) {
-    console.warn('⚠️ User analytics endpoint failed, trying fallback:', error.message);
+    console.log('📊 Fetching user analytics for:', userId);
+    
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
     
     try {
-      const { data } = await api.get(`/analytics/${userId}`);
+      const { data } = await api.get(`/users/${userId}/analytics`, { headers });
       return data;
-    } catch (fallbackError) {
-      console.error('❌ All analytics endpoints failed:', fallbackError.message);
-      throw fallbackError;
+    } catch (error) {
+      console.warn('⚠️ User analytics endpoint failed, trying fallback:', error.message);
+      
+      try {
+        const { data } = await api.get(`/analytics/${userId}`, { headers });
+        return data;
+      } catch (fallbackError) {
+        console.error('❌ All analytics endpoints failed:', fallbackError.message);
+        throw fallbackError;
+      }
     }
+  } catch (error) {
+    console.error('❌ Failed to fetch user analytics:', error);
+    throw error;
   }
 };
 
-export const getUserStats = (userId) =>
-  api.get(`/users/${userId}/stats`);
+export const getUserStats = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/stats`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get user stats:', error);
+    throw error;
+  }
+};
 
-export const getUserAchievements = (userId) =>
-  api.get(`/users/${userId}/achievements`);
+export const getUserAchievements = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/achievements`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get user achievements:', error);
+    throw error;
+  }
+};
 
 // =============================================
-// 📚 LESSONS AND CONTENT
+// 📚 SUBJECTS AND CONTENT - FIXED
 // =============================================
 
-export const getLessonById = (lessonId) =>
-  api.get(`/lessons/${lessonId}`);
-
-export const getAllLessons = () =>
-  api.get(`/lessons`);
-
-export const getTopics = () =>
-  api.get(`/topics`);
-
-export const getTopicById = (topicId) =>
-  api.get(`/topics/${topicId}`);
-
-export const getSubjects = () =>
-  api.get(`/subjects`);
+export const getSubjects = async () => {
+  try {
+    const { data } = await api.get('/subjects');
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('❌ Failed to fetch subjects:', error);
+    return [];
+  }
+};
 
 // =============================================
-// 🔧 UTILITY FUNCTIONS
+// 🔧 UTILITY FUNCTIONS - FIXED
 // =============================================
 
-export const healthCheck = () =>
-  api.get(`/health`);
+export const healthCheck = async () => {
+  try {
+    const { data } = await api.get('/health');
+    return data;
+  } catch (error) {
+    console.error('❌ Health check failed:', error);
+    throw error;
+  }
+};
 
-export const authTest = () =>
-  api.get(`/auth-test`);
+export const authTest = async () => {
+  try {
+    const { data } = await api.get('/auth-test');
+    return data;
+  } catch (error) {
+    console.error('❌ Auth test failed:', error);
+    throw error;
+  }
+};
 
 // ✅ GENERAL ERROR HANDLER
 export const handleApiError = (error, context = 'API call') => {
@@ -1421,6 +2147,38 @@ export const cleanupRequestCache = () => {
   console.log('🧹 Request cache cleaned');
 };
 
+// ✅ ERROR HANDLING WRAPPER
+export const withErrorHandling = async (apiCall, context = 'API call') => {
+  try {
+    return await apiCall();
+  } catch (error) {
+    console.error(`❌ ${context} failed:`, error);
+    
+    // Handle different error types
+    if (error.response?.status === 401) {
+      // Try to refresh token
+      try {
+        if (auth.currentUser) {
+          await auth.currentUser.getIdToken(true);
+          console.log('🔄 Token refreshed, retrying...');
+          return await apiCall();
+        }
+      } catch (refreshError) {
+        console.error('❌ Token refresh failed:', refreshError);
+        throw new Error('Authentication failed. Please log in again.');
+      }
+    } else if (error.response?.status === 404) {
+      throw new Error('Resource not found');
+    } else if (error.response?.status >= 500) {
+      throw new Error('Server error. Please try again later.');
+    } else if (error.code === 'NETWORK_ERROR') {
+      throw new Error('Network error. Please check your connection.');
+    }
+    
+    throw error;
+  }
+};
+
 // =============================================
 // 🧪 DEVELOPMENT TESTING HELPERS
 // =============================================
@@ -1465,18 +2223,18 @@ export const checkApiHealth = async () => {
     console.log('🏥 Checking API health...');
     
     const healthResponse = await healthCheck();
-    console.log('✅ Health check passed:', healthResponse.data);
+    console.log('✅ Health check passed:', healthResponse);
     
     try {
       const authResponse = await authTest();
-      console.log('✅ Auth test passed:', authResponse.data);
+      console.log('✅ Auth test passed:', authResponse);
     } catch (authError) {
       console.warn('⚠️ Auth test failed (this is normal if not logged in):', authError.message);
     }
     
     return {
       success: true,
-      health: healthResponse.data,
+      health: healthResponse,
       timestamp: new Date().toISOString()
     };
     
@@ -1506,8 +2264,441 @@ export const getSystemStatus = () => {
   };
 };
 
+// ✅ PAYMENT ATTEMPT RESET UTILITY
+export const resetPaymentAttempts = (userId) => {
+  const keysToDelete = [];
+  for (const [key] of requestAttempts.entries()) {
+    if (key.startsWith(userId)) {
+      keysToDelete.push(key);
+    }
+  }
+  keysToDelete.forEach(key => requestAttempts.delete(key));
+  console.log(`🔄 Payment attempts reset for user ${userId}`);
+};
+
+// ✅ COMPREHENSIVE ERROR HANDLER FOR PAYMENTS
+export const handlePaymentError = (error, context = 'Платежная операция') => {
+  console.error(`❌ ${context} failed:`, error);
+  
+  // Check for PayMe specific error codes
+  if (error.response?.data?.code && error.response.data.code.toString().startsWith('-316')) {
+    return getPaymeErrorMessage(error.response.data.code);
+  }
+  
+  // Check for rate limiting
+  if (error.message?.includes('Слишком много попыток')) {
+    return error.message;
+  }
+  
+  if (error.response?.status === 401) {
+    return 'Необходимо войти в систему для совершения платежа';
+  } else if (error.response?.status === 403) {
+    return 'Доступ к платежной системе запрещен';
+  } else if (error.response?.status === 404) {
+    return 'Платежный сервис недоступен. Используется прямая интеграция.';
+  } else if (error.response?.status === 429) {
+    return 'Слишком много запросов. Подождите несколько секунд и попробуйте снова.';
+  } else if (error.response?.status >= 500) {
+    return 'Ошибка платежного сервера. Попробуйте позже';
+  } else if (error.message?.includes('timeout')) {
+    return 'Превышено время ожидания. Проверьте интернет-соединение';
+  } else {
+    return error.response?.data?.message || error.message || 'Произошла ошибка при обработке платежа';
+  }
+};
+
+// =============================================
+// 🔍 DIAGNOSTIC TOOLS FOR DEBUGGING
+// =============================================
+
+export const diagnosticTool = {
+  
+  // Test backend connectivity
+  async testBackendConnectivity() {
+    console.log('🔍 Testing backend connectivity...');
+    
+    try {
+      // Test basic health check
+      const healthResponse = await fetch(`${BASE_URL}/health`);
+      const healthData = await healthResponse.json();
+      
+      console.log('✅ Backend health check:', healthData);
+      
+      // Test API health
+      const apiHealthResponse = await fetch(`${BASE_URL}/api/health`);
+      const apiHealthData = await apiHealthResponse.json();
+      
+      console.log('✅ API health check:', apiHealthData);
+      
+      // Test routes endpoint
+      const routesResponse = await fetch(`${BASE_URL}/api/routes`);
+      const routesData = await routesResponse.json();
+      
+      console.log('✅ Available routes:', routesData);
+      
+      return {
+        success: true,
+        health: healthData,
+        apiHealth: apiHealthData,
+        routes: routesData
+      };
+      
+    } catch (error) {
+      console.error('❌ Backend connectivity test failed:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+  
+  // Test critical endpoints
+  async testCriticalEndpoints() {
+    console.log('🔍 Testing critical API endpoints...');
+    
+    const endpoints = [
+      { name: 'Topics List', url: '/api/topics', method: 'GET' },
+      { name: 'Lessons List', url: '/api/lessons', method: 'GET' },
+      { name: 'Topic by ID', url: '/api/topics/507f1f77bcf86cd799439011', method: 'GET' },
+      { name: 'Lesson by ID', url: '/api/lessons/507f1f77bcf86cd799439011', method: 'GET' },
+      { name: 'Topic Lessons', url: '/api/lessons/topic/507f1f77bcf86cd799439011', method: 'GET' },
+      { name: 'User Status', url: '/api/users/testuser/status', method: 'GET' },
+      { name: 'Payment Validation', url: '/api/payments/validate-user/testuser', method: 'GET' }
+    ];
+    
+    const results = {};
+    
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`🔍 Testing ${endpoint.name}...`);
+        
+        const response = await fetch(`${BASE_URL}${endpoint.url}`, {
+          method: endpoint.method,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const data = await response.json();
+        
+        results[endpoint.name] = {
+          status: response.status,
+          success: response.ok,
+          data: data,
+          url: endpoint.url
+        };
+        
+        if (response.ok) {
+          console.log(`✅ ${endpoint.name}: SUCCESS`);
+        } else {
+          console.warn(`⚠️ ${endpoint.name}: ${response.status} - ${data.error || data.message || 'Unknown error'}`);
+        }
+        
+      } catch (error) {
+        console.error(`❌ ${endpoint.name}: ${error.message}`);
+        results[endpoint.name] = {
+          status: 'ERROR',
+          success: false,
+          error: error.message,
+          url: endpoint.url
+        };
+      }
+    }
+    
+    return results;
+  },
+  
+  // Test authentication flow
+  async testAuthFlow() {
+    console.log('🔍 Testing authentication flow...');
+    
+    try {
+      const currentUser = auth.currentUser;
+      
+      console.log('🔐 Current user:', currentUser ? {
+        uid: currentUser.uid,
+        email: currentUser.email,
+        emailVerified: currentUser.emailVerified
+      } : 'Not authenticated');
+      
+      if (currentUser) {
+        // Test token retrieval
+        const token = await currentUser.getIdToken();
+        console.log('✅ Token retrieved:', token.substring(0, 50) + '...');
+        
+        // Test authenticated API call
+        const response = await fetch(`${BASE_URL}/api/auth-test`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const data = await response.json();
+        console.log('🔐 Auth test result:', data);
+        
+        return {
+          success: true,
+          user: {
+            uid: currentUser.uid,
+            email: currentUser.email
+          },
+          tokenValid: response.ok,
+          authTest: data
+        };
+      } else {
+        return {
+          success: false,
+          error: 'No authenticated user',
+          message: 'Please log in first'
+        };
+      }
+      
+    } catch (error) {
+      console.error('❌ Auth flow test failed:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+  
+  // Test specific component endpoints
+  async testComponentEndpoints(topicId, lessonId, userId) {
+    console.log('🔍 Testing component-specific endpoints...');
+    
+    const results = {};
+    
+    // Test topic loading (TopicOverview.vue)
+    if (topicId) {
+      try {
+        const topicResult = await getTopicById(topicId);
+        results.topicLoad = {
+          success: topicResult.success,
+          data: topicResult.data ? 'Data received' : 'No data',
+          error: topicResult.error
+        };
+        
+        if (topicResult.success) {
+          const lessonsResult = await getLessonsByTopic(topicId);
+          results.topicLessons = {
+            success: lessonsResult.success,
+            count: lessonsResult.data?.length || 0,
+            error: lessonsResult.error
+          };
+        }
+      } catch (error) {
+        results.topicLoad = {
+          success: false,
+          error: error.message
+        };
+      }
+    }
+    
+    // Test lesson loading (LessonPage.vue)
+    if (lessonId) {
+      try {
+        const lessonResult = await getLessonById(lessonId);
+        results.lessonLoad = {
+          success: true,
+          data: lessonResult.data ? 'Data received' : 'No data',
+          steps: lessonResult.data?.steps?.length || 0
+        };
+      } catch (error) {
+        results.lessonLoad = {
+          success: false,
+          error: error.message
+        };
+      }
+    }
+    
+    // Test user-specific endpoints
+    if (userId) {
+      try {
+        const userStatusResult = await getUserStatus(userId);
+        results.userStatus = {
+          success: userStatusResult.success,
+          status: userStatusResult.status,
+          error: userStatusResult.error
+        };
+        
+        if (lessonId) {
+          const progressResult = await getLessonProgress(userId, lessonId);
+          results.lessonProgress = {
+            success: progressResult.success,
+            hasProgress: !!progressResult.data,
+            error: progressResult.error
+          };
+        }
+      } catch (error) {
+        results.userEndpoints = {
+          success: false,
+          error: error.message
+        };
+      }
+    }
+    
+    return results;
+  }
+};
+
 // ✅ ALIASES FOR BACKWARDS COMPATIBILITY
 export const generatePaymentForm = generatePaymeForm;
 export const executePaymentFlow = initiatePaymePayment;
 
+// =============================================
+// 📱 MOBILE APP SUPPORT
+// =============================================
+
+// Detect if running in mobile app context
+export const isMobileApp = () => {
+  return typeof window !== 'undefined' && 
+         (window.navigator.userAgent.includes('ACED-Mobile') ||
+          window.cordova ||
+          window.PhoneGap ||
+          window.phonegap);
+};
+
+// Mobile-optimized API calls
+export const mobileApiCall = async (endpoint, options = {}) => {
+  if (isMobileApp()) {
+    // Add mobile-specific headers
+    options.headers = {
+      ...options.headers,
+      'X-Mobile-App': 'true',
+      'X-App-Version': window.ACED_APP_VERSION || '1.0.0'
+    };
+  }
+  
+  return api(endpoint, options);
+};
+
+// =============================================
+// 🔄 OFFLINE SUPPORT
+// =============================================
+
+// Check if online
+export const isOnline = () => {
+  return typeof navigator !== 'undefined' ? navigator.onLine : true;
+};
+
+// Queue offline requests
+const offlineQueue = [];
+
+export const queueOfflineRequest = (request) => {
+  if (!isOnline()) {
+    offlineQueue.push(request);
+    console.log('📱 Request queued for when online:', request);
+    return true;
+  }
+  return false;
+};
+
+// Process offline queue when back online
+export const processOfflineQueue = async () => {
+  if (isOnline() && offlineQueue.length > 0) {
+    console.log(`🔄 Processing ${offlineQueue.length} offline requests...`);
+    
+    const requests = [...offlineQueue];
+    offlineQueue.length = 0; // Clear queue
+    
+    for (const request of requests) {
+      try {
+        await request();
+        console.log('✅ Offline request processed successfully');
+      } catch (error) {
+        console.error('❌ Failed to process offline request:', error);
+        // Re-queue failed requests
+        offlineQueue.push(request);
+      }
+    }
+  }
+};
+
+// Listen for online/offline events
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', processOfflineQueue);
+  window.addEventListener('offline', () => {
+    console.log('📱 App went offline - requests will be queued');
+  });
+}
+
+// ✅ VALIDATION HELPERS
+export const validatePaymeUrl = (url) => {
+  try {
+    // Extract base64 part
+    const base64Part = url.split('/').pop();
+    
+    // Decode and check
+    const decoded = atob(base64Part);
+    console.log('🔍 URL validation - decoded:', decoded);
+    
+    // Check for required parameters
+    const hasValidMerchant = decoded.includes('m=') && !decoded.includes('m=undefined');
+    const hasValidAmount = decoded.includes('a=') && /a=\d+/.test(decoded);
+    const hasValidOrderId = decoded.includes('ac.Login=') && !decoded.includes('ac.Login=undefined');
+    
+    // Check for corruption
+    const isCorrupted = decoded.includes('�') || 
+                       decoded.includes('\f') || 
+                       decoded.includes('\0') ||
+                       decoded.includes('[object Object]');
+    
+    const validation = {
+      isValid: hasValidMerchant && hasValidAmount && hasValidOrderId && !isCorrupted,
+      hasValidMerchant,
+      hasValidAmount,
+      hasValidOrderId,
+      isCorrupted,
+      decodedParams: decoded
+    };
+    
+    console.log('🔍 URL validation result:', validation);
+    
+    return validation;
+    
+  } catch (error) {
+    console.error('❌ URL validation failed:', error);
+    return {
+      isValid: false,
+      error: error.message
+    };
+  }
+};
+
+// ✅ TEST FUNCTIONS
+export const testCleanUrlGeneration = async () => {
+  try {
+    console.log('🧪 Testing clean URL generation...');
+    
+    const testResult = await generateDirectPaymeUrl('testuser123', 'start', {
+      lang: 'ru',
+      callback: 'https://aced.live/payment/success'
+    });
+    
+    if (testResult.success) {
+      const validation = validatePaymeUrl(testResult.paymentUrl);
+      
+      console.log('✅ Test URL generated:', testResult.paymentUrl);
+      console.log('✅ Validation result:', validation);
+      
+      return {
+        success: validation.isValid,
+        url: testResult.paymentUrl,
+        validation
+      };
+    } else {
+      throw new Error(testResult.error);
+    }
+    
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+// ✅ FINAL EXPORT
 export default api;

@@ -1,69 +1,145 @@
 <template>
   <div class="lesson-page">
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-screen">
+      <div class="loading-spinner"></div>
+      <p>Загрузка урока...</p>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="error-screen">
+      <div class="error-icon">❌</div>
+      <h3>Ошибка загрузки урока</h3>
+      <p>{{ error }}</p>
+      <div class="error-actions">
+        <button @click="retryLoad" class="retry-btn">🔄 Попробовать снова</button>
+        <button @click="$router.push('/catalogue')" class="back-btn">⬅️ К каталогу</button>
+      </div>
+    </div>
+
     <!-- Paywall Modal -->
     <div v-if="showPaywallModal" class="modal">
       <div class="modal-content">
         <h3>🔒 Платный контент</h3>
         <p>Этот урок доступен только для подписчиков.</p>
-        <button @click="$router.push('/pay/start')">💳 Перейти к подписке</button>
-        <button @click="$router.push('/catalogue')">⬅️ Назад к каталогу</button>
+        <div class="modal-actions">
+          <button @click="$router.push('/pay/start')" class="premium-btn">💳 Получить подписку</button>
+          <button @click="$router.push('/catalogue')" class="cancel-btn">⬅️ Назад к каталогу</button>
+        </div>
       </div>
     </div>
 
-    <!-- Exit Modal -->
+    <!-- Exit Confirmation Modal -->
     <div v-if="showExitModal" class="modal">
       <div class="modal-content">
         <h3>Вы действительно хотите выйти?</h3>
         <p>Ваш прогресс будет сохранён автоматически.</p>
-        <button @click="exitLesson">Да, выйти</button>
-        <button @click="cancelExit">Нет, остаться</button>
+        <div class="modal-actions">
+          <button @click="exitLesson" class="confirm-btn">Да, выйти</button>
+          <button @click="cancelExit" class="cancel-btn">Нет, остаться</button>
+        </div>
       </div>
     </div>
 
     <!-- Intro Screen -->
-    <div v-if="!started && !showPaywallModal" class="intro-screen">
-      <button class="exit-btn" @click="confirmExit">❌</button>
-      <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) || 'Без названия' }}</h2>
-      <p>⏱️ Время прохождения: ~10 минут</p>
-      <p>📌 Что вы узнаете: {{ getLocalized(lesson.description) || 'описание недоступно' }}</p>
+    <div v-if="!started && !showPaywallModal && !loading && !error" class="intro-screen">
+      <button class="exit-btn" @click="confirmExit">✕</button>
       
-      <!-- Show previous progress if exists -->
-      <div v-if="previousProgress && previousProgress.completedSteps.length > 0" class="previous-progress">
-        <p>📈 Предыдущий прогресс: {{ previousProgress.completedSteps.length }}/{{ steps.length }} шагов</p>
-        <p>⭐ Звезды: {{ previousProgress.stars || 0 }}</p>
-        <p>⚠️ Ошибки: {{ previousProgress.mistakes || 0 }}</p>
-        <button @click="continuePreviousProgress" class="continue-btn">📖 Продолжить с места остановки</button>
+      <div class="intro-content">
+        <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) || 'Без названия' }}</h2>
+        <p class="lesson-description">{{ getLocalized(lesson.description) || 'Описание недоступно' }}</p>
+        
+        <div class="lesson-info">
+          <div class="info-item">
+            <span class="info-icon">⏱️</span>
+            <span>Время: ~{{ estimatedTime }} минут</span>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">📝</span>
+            <span>Шагов: {{ steps.length }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">🎯</span>
+            <span>Тип: {{ lesson.type === 'premium' ? 'Премиум' : 'Бесплатный' }}</span>
+          </div>
+        </div>
+        
+        <!-- Previous Progress Display -->
+        <div v-if="previousProgress && previousProgress.completedSteps.length > 0" class="previous-progress">
+          <h4>📈 Предыдущий прогресс</h4>
+          <div class="progress-stats">
+            <div class="stat">
+              <span class="stat-label">Прогресс:</span>
+              <span class="stat-value">{{ previousProgress.completedSteps.length }}/{{ steps.length }} шагов</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Звезды:</span>
+              <span class="stat-value">⭐ {{ previousProgress.stars || 0 }}</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Ошибки:</span>
+              <span class="stat-value">❌ {{ previousProgress.mistakes || 0 }}</span>
+            </div>
+          </div>
+          <button @click="continuePreviousProgress" class="continue-btn">
+            📖 Продолжить с места остановки
+          </button>
+        </div>
+        
+        <div class="intro-actions">
+          <button class="start-btn" @click="startLesson">
+            {{ previousProgress ? '🔄 Начать заново' : '🚀 Начать урок' }}
+          </button>
+        </div>
       </div>
-      
-      <button class="start-btn" @click="startLesson">{{ previousProgress ? 'Начать заново' : 'Начать урок' }}</button>
     </div>
 
-    <!-- Lesson Content -->
-    <div v-else-if="!showPaywallModal" :class="lessonCompleted ? 'lesson-complete-wrapper' : 'lesson-split'">
+    <!-- Main Lesson Content -->
+    <div v-else-if="started && !showPaywallModal && !loading && !error" 
+         :class="lessonCompleted ? 'lesson-complete-wrapper' : 'lesson-split'">
+      
+      <!-- Left Panel - Content -->
       <div :class="lessonCompleted ? 'lesson-complete-full' : 'lesson-left'">
-        <!-- Header -->
+        
+        <!-- Lesson Header -->
         <div v-if="!lessonCompleted" class="lesson-header">
-          <button class="exit-btn-small" @click="confirmExit">❌</button>
+          <button class="exit-btn-small" @click="confirmExit">✕</button>
           <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) }}</h2>
-          <div class="timer-display">⏱ {{ formattedTime }}</div>
+          <div class="lesson-meta">
+            <div class="timer-display">⏱ {{ formattedTime }}</div>
+            <div class="step-counter">{{ currentIndex + 1 }}/{{ steps.length }}</div>
+          </div>
         </div>
 
         <!-- Progress Bar -->
-        <div v-if="!lessonCompleted" class="progress-bar-wrapper">
-          <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
-          <span class="progress-label">Прогресс: {{ currentIndex + 1 }} / {{ steps.length }} ({{ progressPercentage }}%)</span>
-          <span class="stars-display">⭐ {{ stars }}</span>
+        <div v-if="!lessonCompleted" class="progress-section">
+          <div class="progress-bar-wrapper">
+            <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
+          </div>
+          <div class="progress-info">
+            <span class="progress-label">{{ progressPercentage }}% завершено</span>
+            <span class="stars-display">⭐ {{ stars }}</span>
+          </div>
         </div>
 
-        <!-- LEFT SIDE: Single step only -->
-        <div v-if="!lessonCompleted && currentStep">
-          <!-- Explanation or Example -->
-          <div v-if="['explanation', 'example'].includes(currentStep.type)">
-            <h3 v-if="currentStep.type === 'explanation'">📚 Объяснение</h3>
-            <h3 v-else>💡 Пример</h3>
-            <p class="explanation-text">{{ getLocalized(currentStep.data) }}</p>
+        <!-- Current Step Content -->
+        <div v-if="!lessonCompleted && currentStep" class="step-content">
+          
+          <!-- Explanation or Example Step -->
+          <div v-if="['explanation', 'example', 'reading'].includes(currentStep.type)" class="content-step">
+            <div class="step-header">
+              <h3 class="step-title">
+                <span v-if="currentStep.type === 'explanation'">📚 Объяснение</span>
+                <span v-else-if="currentStep.type === 'example'">💡 Пример</span>
+                <span v-else>📖 Чтение</span>
+              </h3>
+            </div>
             
-            <!-- ✅ NEW: AI Help for Explanations -->
+            <div class="step-body">
+              <p class="content-text">{{ getStepContent(currentStep) }}</p>
+            </div>
+
+            <!-- AI Help for Explanations -->
             <div v-if="showExplanationHelp" class="explanation-help">
               <h4>🤖 Нужна помощь с пониманием?</h4>
               <div class="explanation-help-input">
@@ -81,9 +157,9 @@
               </div>
             </div>
             
-            <div class="navigation-area">
+            <div class="step-navigation">
               <button v-if="currentIndex > 0" class="nav-btn prev-btn" @click="goPrevious">⬅️ Назад</button>
-              <button class="nav-btn" @click="goNext">➡️ Далее</button>
+              <button class="nav-btn next-btn" @click="goNext">➡️ Далее</button>
               <button 
                 class="help-btn" 
                 @click="showExplanationHelp = !showExplanationHelp"
@@ -94,153 +170,300 @@
             </div>
           </div>
 
-          <!-- Lock left side during interactive step -->
-          <div v-else-if="['exercise', 'tryout', 'quiz'].includes(currentStep.type)">
-            <div class="locked-overlay">📌 Практическая часть справа ⮕</div>
-            <div v-if="currentIndex > 0" class="navigation-area">
-              <button class="nav-btn prev-btn" @click="goPrevious">⬅️ Назад</button>
+          <!-- Interactive Step Placeholder (Exercise/Quiz) -->
+          <div v-else-if="['exercise', 'tryout', 'quiz'].includes(currentStep.type)" class="interactive-placeholder">
+            <div class="placeholder-content">
+              <h3>✏️ Интерактивная часть</h3>
+              <p>Практические задания отображаются в правой панели ➡️</p>
+            </div>
+            <div class="step-navigation">
+              <button v-if="currentIndex > 0" class="nav-btn prev-btn" @click="goPrevious">⬅️ Назад</button>
             </div>
           </div>
 
-          <!-- Fallback unknown step -->
-          <div v-else>
-            <div class="locked-overlay">❗ Неизвестный тип шага: {{ currentStep.type }}</div>
+          <!-- Unknown Step Type -->
+          <div v-else class="unknown-step">
+            <div class="unknown-content">
+              <h3>❓ Неизвестный тип шага</h3>
+              <p>Тип: {{ currentStep.type }}</p>
+              <pre>{{ JSON.stringify(currentStep.data, null, 2) }}</pre>
+            </div>
+            <div class="step-navigation">
+              <button v-if="currentIndex > 0" class="nav-btn prev-btn" @click="goPrevious">⬅️ Назад</button>
+              <button class="nav-btn next-btn" @click="goNext">➡️ Пропустить</button>
+            </div>
           </div>
         </div>
 
-        <!-- Completion block -->
-        <div v-else class="completion-content">
-          <h3 class="lesson-complete-title">🏆 Урок завершён!</h3>
-          <img :src="medalImage" alt="Медаль" class="medal-image" />
-          <p class="medal-label">{{ medalLabel }}</p>
-          <p class="completion-time">⏱ Вы прошли урок за {{ readableTime }}</p>
-          <p class="completion-motivation">🚀 Великолепно! Вы делаете прогресс, не останавливайтесь!</p>
-          <p class="completion-stats">
-            ⭐ Звезды: {{ stars }} | 
-            ❌ Ошибки: {{ mistakeCount }} | 
-            🎯 Очки: {{ earnedPoints }}
-          </p>
+        <!-- Lesson Completion Content -->
+        <div v-if="lessonCompleted" class="completion-content">
+          <div class="completion-header">
+            <h3 class="completion-title">🏆 Урок завершён!</h3>
+            <div class="medal-section">
+              <img :src="medalImage" alt="Медаль" class="medal-image" v-if="medalImage" />
+              <p class="medal-label">{{ medalLabel }}</p>
+            </div>
+          </div>
           
-          <!-- ✅ NEW: AI Progress Insight -->
+          <div class="completion-stats">
+            <div class="stat-card">
+              <div class="stat-icon">⏱️</div>
+              <div class="stat-info">
+                <div class="stat-value">{{ readableTime }}</div>
+                <div class="stat-label">Время прохождения</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">⭐</div>
+              <div class="stat-info">
+                <div class="stat-value">{{ stars }}</div>
+                <div class="stat-label">Звезды</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">❌</div>
+              <div class="stat-info">
+                <div class="stat-value">{{ mistakeCount }}</div>
+                <div class="stat-label">Ошибки</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">🎯</div>
+              <div class="stat-info">
+                <div class="stat-value">{{ earnedPoints }}</div>
+                <div class="stat-label">Очки</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- AI Progress Insight -->
           <div v-if="progressInsight" class="progress-insight">
             <h4>🤖 Анализ прогресса</h4>
             <p>{{ progressInsight }}</p>
           </div>
           
-          <div class="completion-buttons">
-            <button class="return-btn" @click="$router.push('/catalogue')">⬅️ Вернуться в каталог</button>
-            <button class="share-btn" @click="shareResult">📤 Поделиться успехом</button>
-            <button class="homework-btn" @click="goToHomework">➡️ К домашке</button>
+          <p class="completion-motivation">
+            🚀 Отличная работа! Вы успешно завершили урок. Продолжайте обучение!
+          </p>
+          
+          <div class="completion-actions">
+            <button class="action-btn primary" @click="$router.push('/catalogue')">📚 К каталогу</button>
+            <button class="action-btn secondary" @click="shareResult">📤 Поделиться</button>
+            <button class="action-btn secondary" @click="goToHomework">📝 Домашнее задание</button>
           </div>
 
-          <!-- Mistake review -->
+          <!-- Mistake Review Section -->
           <div v-if="mistakeLog?.length" class="mistake-review">
-            <h4>🛠 Ошибки для повторения</h4>
-            <ul>
-              <li v-for="(entry, idx) in mistakeLog" :key="idx">
-                ❌ <strong>Вопрос:</strong> {{ entry.question }}<br />
-                <strong>Ваш ответ:</strong> {{ entry.userAnswer }}<br />
-                <strong>Правильный ответ:</strong> {{ entry.correctAnswer }}<br />
-                <span v-if="entry.hint"><strong>Подсказка:</strong> {{ entry.hint }}</span><br />
-                <button @click="retryStep(entry.stepIndex)">🔁 Повторить</button>
-              </li>
-            </ul>
+            <h4>🔍 Анализ ошибок</h4>
+            <div class="mistake-list">
+              <div v-for="(mistake, index) in mistakeLog" :key="index" class="mistake-item">
+                <div class="mistake-question">
+                  <strong>Вопрос:</strong> {{ mistake.question }}
+                </div>
+                <div class="mistake-answers">
+                  <div class="user-answer">
+                    <span class="answer-label">Ваш ответ:</span>
+                    <span class="answer-value incorrect">{{ mistake.userAnswer }}</span>
+                  </div>
+                  <div class="correct-answer">
+                    <span class="answer-label">Правильный ответ:</span>
+                    <span class="answer-value correct">{{ mistake.correctAnswer }}</span>
+                  </div>
+                </div>
+                <button @click="retryStep(mistake.stepIndex)" class="retry-step-btn">
+                  🔁 Повторить этот шаг
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- RIGHT SIDE: Only for interactive steps -->
-      <div class="lesson-right" v-if="!lessonCompleted && ['exercise', 'tryout', 'quiz'].includes(currentStep?.type)">
-        <!-- Tryout / Exercise -->
-        <div v-if="['exercise', 'tryout'].includes(currentStep.type)">
-          <h3>✏️ {{ currentStep.type === 'tryout' ? 'Попробуйте' : 'Упражнение' }}</h3>
-          <p class="exercise-question">{{ getLocalized(currentStep.data.question) }}</p>
-          
-          <!-- Multiple choice options -->
-          <div v-if="Array.isArray(currentStep.data.options) && currentStep.data.options.length" class="options-container">
-            <label v-for="(opt, j) in currentStep.data.options" :key="j" class="option-label">
-              <input type="radio" :value="opt" v-model="userAnswer" class="option-radio" />
-              <span class="option-text">{{ opt }}</span>
-            </label>
+      <!-- Right Panel - Interactive Content -->
+      <div class="lesson-right" v-if="!lessonCompleted && currentStep && ['exercise', 'tryout', 'quiz'].includes(currentStep.type)">
+        
+        <!-- Exercise/Tryout Step -->
+        <div v-if="['exercise', 'tryout'].includes(currentStep.type)" class="exercise-step">
+          <div class="exercise-header">
+            <h3 class="exercise-title">
+              {{ currentStep.type === 'tryout' ? '🧪 Попробуйте' : '✏️ Упражнение' }}
+            </h3>
+            <div class="exercise-progress">
+              Шаг {{ currentIndex + 1 }} из {{ steps.length }}
+            </div>
           </div>
           
-          <!-- Text input -->
-          <div v-else class="text-input-container">
-            <textarea 
-              v-model="userAnswer" 
-              placeholder="Введите ваш ответ..."
-              class="answer-textarea"
-              @keyup.enter="handleSubmitOrNext"
-            ></textarea>
-          </div>
-
-          <!-- ✅ NEW: Smart Hint Display -->
-          <div v-if="smartHint" class="smart-hint">
-            <h4>💡 Подсказка от AI</h4>
-            <p>{{ smartHint }}</p>
-            <button @click="smartHint = ''" class="close-hint-btn">✕</button>
-          </div>
-
-          <!-- ✅ NEW: AI Help Section -->
-          <div class="ai-help-section">
-            <h4>🤖 AI Помощник</h4>
+          <div class="exercise-body">
+            <p class="exercise-question">{{ getExerciseQuestion(currentStep) }}</p>
             
-            <!-- Contextual suggestions -->
-            <div v-if="aiSuggestions.length" class="ai-suggestions">
-              <p><strong>Популярные вопросы:</strong></p>
-              <button 
-                v-for="suggestion in aiSuggestions" 
-                :key="suggestion"
-                @click="askAI(suggestion)"
-                class="suggestion-btn"
-              >
-                {{ suggestion }}
-              </button>
+            <!-- Multiple Choice Options -->
+            <div v-if="hasOptions(currentStep)" class="options-container">
+              <label v-for="(option, index) in getOptions(currentStep)" :key="index" class="option-label">
+                <input 
+                  type="radio" 
+                  :value="option" 
+                  v-model="userAnswer" 
+                  class="option-radio"
+                  :disabled="answerWasCorrect"
+                />
+                <span class="option-text">{{ option }}</span>
+              </label>
             </div>
             
-            <!-- Custom question input -->
-            <div class="ai-chat-input">
-              <input 
-                v-model="aiChatInput" 
-                @keyup.enter="sendAIMessage"
-                placeholder="Задайте вопрос об этом упражнении..."
-                :disabled="aiIsLoading"
-              />
-              <button 
-                @click="sendAIMessage" 
-                :disabled="!aiChatInput.trim() || aiIsLoading"
-              >
-                {{ aiIsLoading ? '⏳' : '📤' }}
-              </button>
+            <!-- Text Input -->
+            <div v-else class="text-input-container">
+              <textarea 
+                v-model="userAnswer" 
+                placeholder="Введите ваш ответ..."
+                class="answer-textarea"
+                :disabled="answerWasCorrect"
+                @keyup.enter="handleSubmitOrNext"
+              ></textarea>
             </div>
-            
-            <!-- AI Chat History -->
-            <div v-if="aiChatHistory.length" class="ai-chat-history">
-              <div 
-                v-for="message in aiChatHistory.slice(-3)" 
-                :key="message.id"
-                :class="['chat-message', message.type]"
-              >
-                <strong v-if="message.type === 'user'">Вы:</strong>
-                <strong v-else>🤖 AI:</strong>
-                {{ message.content }}
+
+            <!-- Smart Hint Display -->
+            <div v-if="smartHint" class="smart-hint">
+              <h4>💡 Подсказка от AI</h4>
+              <p>{{ smartHint }}</p>
+              <button @click="smartHint = ''" class="close-hint-btn">✕</button>
+            </div>
+
+            <!-- AI Help Section -->
+            <div class="ai-help-section">
+              <h4>🤖 AI Помощник</h4>
+              
+              <!-- Contextual suggestions -->
+              <div v-if="aiSuggestions.length" class="ai-suggestions">
+                <p><strong>Популярные вопросы:</strong></p>
+                <button 
+                  v-for="suggestion in aiSuggestions" 
+                  :key="suggestion"
+                  @click="askAI(suggestion)"
+                  class="suggestion-btn"
+                >
+                  {{ suggestion }}
+                </button>
+              </div>
+              
+              <!-- Custom question input -->
+              <div class="ai-chat-input">
+                <input 
+                  v-model="aiChatInput" 
+                  @keyup.enter="sendAIMessage"
+                  placeholder="Задайте вопрос об этом упражнении..."
+                  :disabled="aiIsLoading"
+                />
+                <button 
+                  @click="sendAIMessage" 
+                  :disabled="!aiChatInput.trim() || aiIsLoading"
+                >
+                  {{ aiIsLoading ? '⏳' : '📤' }}
+                </button>
+              </div>
+              
+              <!-- AI Chat History -->
+              <div v-if="aiChatHistory.length" class="ai-chat-history">
+                <div 
+                  v-for="message in aiChatHistory.slice(-3)" 
+                  :key="message.id"
+                  :class="['chat-message', message.type]"
+                >
+                  <strong v-if="message.type === 'user'">Вы:</strong>
+                  <strong v-else>🤖 AI:</strong>
+                  {{ message.content }}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="action-buttons">
-            <button v-if="!answerWasCorrect" class="submit-btn" @click="handleSubmitOrNext" :disabled="!userAnswer.trim()">
-              🔍 Проверить
-            </button>
-            <button v-else class="next-btn" @click="goNext">✅ Далее</button>
-          </div>
+            <!-- Answer Feedback -->
+            <div v-if="confirmation" :class="['confirmation', { 'correct': answerWasCorrect, 'incorrect': !answerWasCorrect }]">
+              {{ confirmation }}
+            </div>
 
-          <p v-if="confirmation" :class="['confirmation', answerWasCorrect ? 'correct' : 'incorrect']">{{ confirmation }}</p>
+            <!-- Action Buttons -->
+            <div class="exercise-actions">
+              <button 
+                v-if="!answerWasCorrect" 
+                class="submit-btn" 
+                @click="handleSubmitOrNext" 
+                :disabled="!userAnswer.trim()"
+              >
+                🔍 Проверить ответ
+              </button>
+              <button 
+                v-else 
+                class="next-btn" 
+                @click="goNext"
+              >
+                {{ isLastStep ? '🏁 Завершить' : '➡️ Далее' }}
+              </button>
+              
+              <button 
+                v-if="!answerWasCorrect && mistakeCount >= 2" 
+                class="hint-btn"
+                @click="showHint"
+              >
+                💡 Подсказка
+              </button>
+            </div>
+
+            <!-- Hint Display -->
+            <div v-if="currentHint" class="hint-display">
+              <div class="hint-header">💡 Подсказка</div>
+              <div class="hint-content">{{ currentHint }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quiz Step -->
+        <div v-else-if="currentStep.type === 'quiz'" class="quiz-step">
+          <div class="quiz-header">
+            <h3 class="quiz-title">🧩 Викторина</h3>
+          </div>
+          
+          <div class="quiz-body">
+            <p class="quiz-question">{{ getQuizQuestion(currentStep) }}</p>
+            
+            <div class="quiz-options">
+              <label v-for="(option, index) in getQuizOptions(currentStep)" :key="index" class="quiz-option">
+                <input 
+                  type="radio" 
+                  :value="option" 
+                  v-model="userAnswer" 
+                  class="quiz-radio"
+                  :disabled="answerWasCorrect"
+                />
+                <span class="quiz-option-text">{{ option }}</span>
+              </label>
+            </div>
+
+            <div v-if="confirmation" :class="['confirmation', { 'correct': answerWasCorrect, 'incorrect': !answerWasCorrect }]">
+              {{ confirmation }}
+            </div>
+
+            <div class="quiz-actions">
+              <button 
+                v-if="!answerWasCorrect" 
+                class="submit-btn" 
+                @click="handleSubmitOrNext" 
+                :disabled="!userAnswer"
+              >
+                🔍 Ответить
+              </button>
+              <button 
+                v-else 
+                class="next-btn" 
+                @click="goNext"
+              >
+                {{ isLastStep ? '🏁 Завершить' : '➡️ Далее' }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- ✅ NEW: Floating AI Assistant Toggle -->
+    <!-- Floating AI Assistant Toggle -->
     <button 
       v-if="started && !lessonCompleted" 
       class="floating-ai-btn" 
@@ -250,7 +473,7 @@
       🤖
     </button>
 
-    <!-- ✅ NEW: Floating AI Assistant -->
+    <!-- Floating AI Assistant -->
     <div v-if="showFloatingAI && started && !lessonCompleted" class="floating-ai-assistant">
       <div class="ai-header">
         <h4>🤖 AI Помощник</h4>
@@ -305,17 +528,24 @@
       </div>
     </div>
 
-    <!-- Confetti -->
+    <!-- Confetti Animation -->
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
 
 <script>
-import axios from 'axios';
 import confetti from 'canvas-confetti';
 import { auth } from '@/firebase';
 import { mapGetters, mapState } from 'vuex';
-// ✅ Import enhanced GPT service
+import { 
+  getLessonById, 
+  getLessonProgress, 
+  submitProgress,
+  getUserStatus,
+  withErrorHandling
+} from '@/api';
+
+// Enhanced GPT service imports
 import { 
   getLessonAIResponse, 
   generateLessonSuggestions, 
@@ -326,37 +556,52 @@ import {
   formatUsageDisplay
 } from '@/services/GPTService';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 export default {
   name: 'LessonPage',
   data() {
     return {
+      // Core lesson data
       lesson: {},
       steps: [],
       currentIndex: 0,
       started: false,
+      loading: true,
+      error: null,
+      retryCount: 0,
+      
+      // User interaction
       userAnswer: '',
       confirmation: '',
-      mistakeCount: 0,
       answerWasCorrect: false,
+      currentHint: '',
+      
+      // Progress tracking
+      mistakeCount: 0,
+      stars: 0,
+      earnedPoints: 0,
+      hintsUsed: false,
+      mistakeLog: [],
+      previousProgress: null,
+      
+      // Lesson state
       lessonCompleted: false,
       elapsedSeconds: 0,
+      timerInterval: null,
+      autosaveTimer: null,
+      
+      // UI state
       showConfetti: false,
       showPaywallModal: false,
       showExitModal: false,
-      timerInterval: null,
-      autosaveTimer: null,
-      userId: null,
+      
+      // Medal system
       medalImage: '',
       medalLabel: '',
-      stars: 0,
-      mistakeLog: [],
-      previousProgress: null,
-      earnedPoints: 0,
-      hintsUsed: false,
       
-      // ✅ NEW: AI Integration Data
+      // User identification
+      userId: null,
+      
+      // AI Integration
       aiChatHistory: [],
       aiChatInput: '',
       aiSuggestions: [],
@@ -368,117 +613,102 @@ export default {
       aiUsage: null,
       progressInsight: '',
       
-      // ✅ NEW: Explanation Help
+      // Explanation Help
       showExplanationHelp: false,
       explanationQuestion: '',
       explanationAIResponse: ''
     };
   },
+  
   computed: {
     ...mapState(['user']),
     ...mapGetters(['isAuthenticated']),
     
     userStatus() {
-      const storeStatus = this.$store.state.user?.subscriptionPlan || 
-                         this.$store.getters['user/userStatus'] || 
-                         this.user?.subscriptionPlan;
-      
-      const localStatus = localStorage.getItem('subscriptionPlan');
-      const status = storeStatus || localStatus || 'free';
-      
-      console.log('📊 User status sources:', {
-        store: storeStatus,
-        localStorage: localStatus,
-        final: status,
-        currentUser: auth.currentUser?.email
-      });
-      
-      return status;
+      return this.$store.state.user?.subscriptionPlan || 
+             this.$store.getters['user/userStatus'] || 
+             this.user?.subscriptionPlan || 
+             localStorage.getItem('subscriptionPlan') || 
+             'free';
     },
     
     isPremiumUser() {
       const status = this.userStatus;
-      console.log('🔍 Premium access check:', {
-        status,
-        currentUser: auth.currentUser?.email,
-        timestamp: new Date().toISOString()
-      });
-      
       const premiumStatuses = ['premium', 'start', 'pro'];
-      
-      if (premiumStatuses.includes(status)) {
-        return true;
-      }
-      
-      const localStatus = localStorage.getItem('subscriptionPlan');
-      if (premiumStatuses.includes(localStatus)) {
-        return true;
-      }
-      
-      return false;
+      return premiumStatuses.includes(status) || 
+             premiumStatuses.includes(localStorage.getItem('subscriptionPlan'));
     },
     
     currentStep() {
       return this.steps[this.currentIndex] || null;
     },
+    
     progressPercentage() {
       if (this.steps.length === 0) return 0;
       const completed = Math.min(this.currentIndex + 1, this.steps.length);
       return Math.floor((completed / this.steps.length) * 100);
     },
+    
     formattedTime() {
       const min = Math.floor(this.elapsedSeconds / 60);
       const sec = this.elapsedSeconds % 60;
       return `${min}:${sec < 10 ? '0' : ''}${sec}`;
     },
+    
     readableTime() {
       const min = Math.floor(this.elapsedSeconds / 60);
       const sec = this.elapsedSeconds % 60;
       return `${min} мин ${sec} сек`;
     },
+    
     isLastStep() {
       return this.currentIndex >= this.steps.length - 1;
     },
+    
     userHasAccess() {
       return this.lesson.type !== 'premium' || this.isPremiumUser;
+    },
+
+    estimatedTime() {
+      return this.lesson.metadata?.estimatedDuration || 
+             Math.max(5, this.steps.length * 2);
     }
   },
   
   async mounted() {
-    console.log('🔧 Enhanced LessonPage mounted');
+    console.log('🔧 LessonPage mounted');
     
     await this.waitForAuth();
     
-    this.userId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
+    this.userId = localStorage.getItem('firebaseUserId') || 
+                  localStorage.getItem('userId') || 
+                  auth.currentUser?.uid;
+    
     if (!this.userId) {
-      console.error('❌ No user ID found in localStorage');
+      console.error('❌ No user ID found');
       return this.$router.push('/');
     }
     
     if (!this.isAuthenticated && !auth.currentUser) {
-      console.error('❌ User not authenticated after waiting');
+      console.error('❌ User not authenticated');
       return this.$router.push('/Login');
     }
     
     console.log('✅ Authentication confirmed, loading lesson...');
     await this.loadLesson();
     await this.loadPreviousProgress();
-    
-    // ✅ NEW: Load AI usage info
     await this.loadAIUsage();
   },
   
   beforeUnmount() {
-    clearInterval(this.timerInterval);
-    clearInterval(this.autosaveTimer);
+    this.clearTimers();
     if (this.started && !this.lessonCompleted) {
       this.saveProgress(false);
     }
   },
   
   methods: {
-    // ✅ Keep existing methods and add new AI methods
-    
+    // Authentication
     async waitForAuth() {
       console.log('⏳ Waiting for authentication...');
       
@@ -492,21 +722,16 @@ export default {
           console.log('🔐 Auth state changed:', user ? user.email : 'No user');
           unsubscribe();
           
-          if (user) {
-            if (this.$store.commit) {
-              try {
-                this.$store.commit('user/setUser', {
-                  uid: user.uid,
-                  email: user.email,
-                  displayName: user.displayName
-                });
-              } catch (storeError) {
-                console.warn('⚠️ Could not update store:', storeError.message);
-              }
+          if (user && this.$store.commit) {
+            try {
+              this.$store.commit('user/setUser', {
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName
+              });
+            } catch (storeError) {
+              console.warn('⚠️ Could not update store:', storeError.message);
             }
-            console.log('✅ Authentication confirmed');
-          } else {
-            console.warn('⚠️ No authenticated user found');
           }
           
           resolve();
@@ -520,7 +745,167 @@ export default {
       });
     },
 
-    // ✅ NEW: Load AI usage information
+    // Lesson Loading
+    async loadLesson() {
+      try {
+        const lessonId = this.$route.params.id;
+        console.log('📚 Loading lesson:', lessonId);
+        
+        this.loading = true;
+        this.error = null;
+
+        const lessonResult = await withErrorHandling(
+          () => getLessonById(lessonId),
+          'Load lesson'
+        );
+
+        this.lesson = lessonResult.lesson || lessonResult.data || lessonResult;
+
+        if (!this.lesson || !this.lesson._id) {
+          throw new Error('Lesson data is invalid or missing');
+        }
+        
+        const lessonType = this.lesson.type || 'free';
+        const userHasPremium = this.isPremiumUser;
+        
+        console.log('🔐 Access Control Check:', {
+          lessonId: this.lesson._id,
+          lessonName: this.getLocalized(this.lesson.lessonName),
+          lessonType: lessonType,
+          userStatus: this.userStatus,
+          userHasPremium: userHasPremium,
+          isAuthenticated: this.isAuthenticated,
+          currentUser: auth.currentUser?.email
+        });
+        
+        if (!auth.currentUser) {
+          console.log('❌ No Firebase user - redirecting to Login');
+          throw new Error('Authentication required');
+        }
+        
+        if (lessonType === 'premium' && !userHasPremium) {
+          console.log('🔒 Premium lesson, user does not have premium access');
+          this.showPaywallModal = true;
+          this.loading = false;
+          return;
+        }
+        
+        console.log('✅ Access granted to lesson');
+
+        this.processLessonSteps();
+        
+        if (this.steps.length === 0) {
+          console.warn('⚠️ No steps found in lesson, creating default step');
+          this.steps = [{
+            type: 'explanation',
+            data: { content: this.lesson.description || 'Lesson content not available' }
+          }];
+        }
+        
+        console.log(`✅ Lesson loaded with ${this.steps.length} steps`);
+        
+      } catch (err) {
+        console.error('❌ Error loading lesson:', err);
+        
+        if (err.message === 'Lesson not found') {
+          this.error = 'Урок не найден';
+        } else if (err.message === 'Authentication required') {
+          this.$router.push('/Login');
+          return;
+        } else if (err.message === 'Access denied to this lesson') {
+          this.error = 'У вас нет доступа к этому уроку';
+        } else if (err.response?.status === 500) {
+          this.error = 'Ошибка сервера. Попробуйте позже.';
+        } else {
+          this.error = 'Произошла ошибка при загрузке урока';
+        }
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    processLessonSteps() {
+      this.steps = [];
+      
+      if (this.lesson.steps && Array.isArray(this.lesson.steps)) {
+        this.lesson.steps.forEach(step => {
+          if (['exercise', 'tryout'].includes(step.type) && Array.isArray(step.data)) {
+            this.steps.push(...step.data.map(ex => ({ type: step.type, data: ex })));
+          } else {
+            this.steps.push(step);
+          }
+        });
+      } else {
+        // Legacy format support
+        if (Array.isArray(this.lesson.explanations)) {
+          this.steps.push(...this.lesson.explanations.map(ex => ({ 
+            type: 'explanation', 
+            data: typeof ex === 'string' ? { content: ex } : ex 
+          })));
+        }
+        if (Array.isArray(this.lesson.examples)) {
+          this.steps.push(...this.lesson.examples.map(ex => ({ 
+            type: 'example', 
+            data: typeof ex === 'string' ? { content: ex } : ex 
+          })));
+        }
+        if (Array.isArray(this.lesson.exerciseGroups)) {
+          this.lesson.exerciseGroups.forEach(group => {
+            if (group.exercises) {
+              group.exercises.forEach(ex => this.steps.push({ type: 'exercise', data: ex }));
+            }
+          });
+        }
+        if (Array.isArray(this.lesson.quiz)) {
+          this.steps.push(...this.lesson.quiz.map(q => ({ type: 'quiz', data: q })));
+        }
+      }
+    },
+
+    async loadPreviousProgress() {
+      if (!this.lesson._id) return;
+      
+      try {
+        console.log(`📋 Loading previous progress for lesson: ${this.lesson._id}`);
+
+        const progressResult = await getLessonProgress(this.userId, this.lesson._id);
+        
+        if (progressResult.success && progressResult.data) {
+          const progressData = progressResult.data;
+          
+          if (progressData.completedSteps && progressData.completedSteps.length > 0) {
+            this.previousProgress = {
+              _id: progressData._id,
+              userId: progressData.userId,
+              lessonId: progressData.lessonId,
+              completedSteps: progressData.completedSteps || [],
+              accuracy: progressData.accuracy || 0,
+              completed: progressData.completed || false,
+              duration: progressData.duration || 0,
+              mistakes: progressData.mistakes || 0,
+              points: progressData.points || 0,
+              stars: progressData.stars || 0,
+              hintsUsed: progressData.hintsUsed || 0,
+              medal: progressData.medal || 'none'
+            };
+            
+            console.log('✅ Previous progress loaded:', this.previousProgress);
+          } else {
+            console.log('ℹ️ No significant previous progress found');
+            this.previousProgress = null;
+          }
+        } else {
+          console.log('ℹ️ No previous progress found for this lesson');
+          this.previousProgress = null;
+        }
+        
+      } catch (err) {
+        console.warn('⚠️ Failed to load previous progress:', err);
+        this.previousProgress = null;
+      }
+    },
+
+    // AI Methods
     async loadAIUsage() {
       try {
         const usageInfo = await getUserUsage();
@@ -533,7 +918,6 @@ export default {
       }
     },
 
-    // ✅ NEW: Generate AI suggestions based on current step
     generateAISuggestions() {
       this.aiSuggestions = generateLessonSuggestions(this.currentStep, {
         currentStep: this.currentIndex,
@@ -541,13 +925,10 @@ export default {
         completedSteps: Array.from({length: this.currentIndex}, (_, i) => i)
       });
       
-      // Update quick suggestions for floating AI
       this.quickSuggestions = this.aiSuggestions.slice(0, 3);
-      
       console.log('💡 Generated AI suggestions:', this.aiSuggestions);
     },
 
-    // ✅ NEW: Send AI message with lesson context
     async sendAIMessage() {
       if (!this.aiChatInput.trim() || this.aiIsLoading) return;
       
@@ -555,7 +936,6 @@ export default {
       this.aiChatInput = '';
       this.aiIsLoading = true;
       
-      // Add user message to chat
       this.aiChatHistory.push({
         id: Date.now(),
         type: 'user',
@@ -563,7 +943,6 @@ export default {
       });
       
       try {
-        // Get lesson context
         const lessonContext = {
           lessonId: this.lesson._id,
           lessonName: this.lesson.lessonName,
@@ -584,20 +963,15 @@ export default {
           data: this.currentStep?.data
         };
         
-        // Call enhanced AI service
         const aiResponse = await getLessonAIResponse(userMessage, lessonContext, userProgress, stepContext);
         
-        // Add AI response to chat
         this.aiChatHistory.push({
           id: Date.now() + 1,
           type: 'ai',
           content: aiResponse
         });
         
-        // Generate new suggestions
         this.generateAISuggestions();
-        
-        // Update usage
         await this.loadAIUsage();
         
       } catch (error) {
@@ -612,13 +986,11 @@ export default {
       }
     },
 
-    // ✅ NEW: Ask AI with predefined question
     async askAI(question) {
       this.aiChatInput = question;
       await this.sendAIMessage();
     },
 
-    // ✅ NEW: Floating AI message
     async sendFloatingAIMessage() {
       if (!this.floatingAIInput.trim() || this.aiIsLoading) return;
       
@@ -627,7 +999,6 @@ export default {
       await this.sendAIMessage();
     },
 
-    // ✅ NEW: Toggle floating AI
     toggleFloatingAI() {
       this.showFloatingAI = !this.showFloatingAI;
       if (this.showFloatingAI) {
@@ -635,7 +1006,6 @@ export default {
       }
     },
 
-    // ✅ NEW: Ask about explanation
     async askAboutExplanation() {
       if (!this.explanationQuestion.trim()) return;
       
@@ -661,457 +1031,11 @@ export default {
       }
     },
 
-    // ✅ Enhanced: Handle submit with smart hints
-    async handleSubmitOrNext() {
-      const step = this.currentStep;
-      const correctAnswer = (step.data.correctAnswer || step.data.answer || '').toLowerCase().trim();
-      const userResponse = this.userAnswer.trim().toLowerCase();
-
-      if (!userResponse) {
-        this.confirmation = '⚠️ Введите ответ.';
-        return;
-      }
-
-      if (userResponse === correctAnswer) {
-        this.confirmation = '✅ Верно! Отличная работа!';
-        this.answerWasCorrect = true;
-        this.stars++;
-        this.earnedPoints += 10;
-        this.smartHint = ''; // Clear any existing hint
-      } else {
-        this.confirmation = '❌ Неверно. Попробуйте снова.';
-        this.mistakeCount++;
-        this.answerWasCorrect = false;
-        this.earnedPoints = Math.max(0, this.earnedPoints - 2);
-
-        // Log mistake for review
-        this.mistakeLog.push({
-          stepIndex: this.currentIndex,
-          question: this.getLocalized(step.data.question),
-          userAnswer: this.userAnswer,
-          correctAnswer: step.data.correctAnswer || step.data.answer,
-          hint: step.data.hint || null
-        });
-
-        // ✅ NEW: Generate smart hint after mistakes
-        if (this.mistakeCount >= 2) {
-          try {
-            const lessonContext = {
-              lessonId: this.lesson._id,
-              lessonName: this.lesson.lessonName,
-              topic: this.lesson.topic
-            };
-            
-            this.smartHint = await generateSmartHint(step.data, this.mistakeCount, lessonContext);
-            this.hintsUsed = true;
-          } catch (error) {
-            console.error('❌ Smart hint error:', error);
-          }
-        }
-      }
-    },
-
-    // ✅ Enhanced: Complete lesson with AI insight
-    async completeLesson() {
-      clearInterval(this.timerInterval);
-      clearInterval(this.autosaveTimer);
-      this.lessonCompleted = true;
-      this.showConfetti = true;
-
-      // Calculate final points
-      this.earnedPoints = Math.max(0, 100 - this.mistakeCount * 10 + this.stars * 5);
-
-      // Set medal based on performance
-      if (this.mistakeCount === 0) {
-        this.medalImage = '/images/medals/gold.png';
-        this.medalLabel = '🥇 Золотая медаль - Безупречно!';
-      } else if (this.mistakeCount <= 2) {
-        this.medalImage = '/images/medals/silver.png';
-        this.medalLabel = '🥈 Серебряная медаль - Отлично!';
-      } else {
-        this.medalImage = '/images/medals/bronze.png';
-        this.medalLabel = '🥉 Бронзовая медаль - Хорошо!';
-      }
-
-      // ✅ NEW: Generate AI progress insight
-      try {
-        const lessonContext = {
-          lessonId: this.lesson._id,
-          lessonName: this.lesson.lessonName,
-          topic: this.lesson.topic,
-          totalSteps: this.steps.length
-        };
-        
-        const userProgress = {
-          completedSteps: Array.from({length: this.steps.length}, (_, i) => i),
-          mistakes: this.mistakeCount,
-          stars: this.stars,
-          elapsedSeconds: this.elapsedSeconds
-        };
-        
-        this.progressInsight = await generateProgressInsight(userProgress, lessonContext);
-      } catch (error) {
-        console.error('❌ Progress insight error:', error);
-        this.progressInsight = 'Отличная работа! Вы успешно завершили урок! 🌟';
-      }
-
-      setTimeout(() => this.launchConfetti(), 200);
-
-      // Save final progress with retry logic
-      let progressSaved = false;
-      let retries = 3;
-      
-      while (!progressSaved && retries > 0) {
-        progressSaved = await this.saveProgress(true);
-        if (!progressSaved) {
-          retries--;
-          if (retries > 0) {
-            console.log(`🔄 Progress save failed, retrying... (${retries} attempts left)`);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
-        }
-      }
-
-      if (!progressSaved) {
-        alert('Не удалось сохранить прогресс. Проверьте соединение.');
-      }
-
-      await Promise.all([
-        this.saveAnalytics(),
-        this.saveDiary()
-      ]);
-    },
-
-    // ✅ Enhanced: Start lesson with AI setup
-    startLesson() {
-      this.started = true;
-      this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
-      this.autosaveTimer = setInterval(() => this.autosaveProgress(), 15000);
-      
-      // ✅ NEW: Initialize AI suggestions
-      this.generateAISuggestions();
-    },
-
-    // ✅ Enhanced: Go to next step with AI updates
-    goNext() {
-      this.userAnswer = '';
-      this.confirmation = '';
-      this.answerWasCorrect = false;
-      this.smartHint = ''; // Clear smart hint
-      this.explanationAIResponse = ''; // Clear explanation help
-      this.showExplanationHelp = false;
-
-      if (this.isLastStep) {
-        this.completeLesson();
-      } else {
-        this.currentIndex++;
-        // ✅ NEW: Generate new suggestions for next step
-        this.generateAISuggestions();
-      }
-    },
-
-    // ✅ Enhanced: Go to previous step
-    goPrevious() {
-      if (this.currentIndex > 0) {
-        this.currentIndex--;
-        this.userAnswer = '';
-        this.confirmation = '';
-        this.answerWasCorrect = false;
-        this.smartHint = '';
-        this.explanationAIResponse = '';
-        this.showExplanationHelp = false;
-        
-        // ✅ NEW: Generate suggestions for previous step
-        this.generateAISuggestions();
-      }
-    },
-
-    // Keep all existing methods from your original LessonPage.vue
-    getLocalized(field) {
-      return typeof field === 'string' ? field : (field?.en || '').replace(/^en:/i, '').trim();
-    },
-    
-    goToCatalogue() {
-      this.$router.push({ name: 'CataloguePage' });
-    },
-    
-    goToHomework() {
-      this.$router.push(`/profile/homeworks/${this.lesson._id}`);
-    },
-    
-    async loadLesson() {
-      // Your existing loadLesson implementation
-      try {
-        const lessonId = this.$route.params.id;
-        console.log('📚 Loading lesson:', lessonId);
-        
-        const { data } = await axios.get(`${BASE_URL}/lessons/${lessonId}`);
-
-        if (!data || !data._id) {
-          console.error('❌ Lesson not found');
-          return this.$router.push('/catalogue');
-        }
-
-        this.lesson = data;
-        
-        const lessonType = data.type || 'free';
-        const userHasPremium = this.isPremiumUser;
-        
-        console.log('🔐 Access Control Check:', {
-          lessonId: data._id,
-          lessonName: this.getLocalized(data.lessonName),
-          lessonType: lessonType,
-          userStatus: this.userStatus,
-          userHasPremium: userHasPremium,
-          isAuthenticated: this.isAuthenticated,
-          currentUser: auth.currentUser?.email
-        });
-        
-        if (!auth.currentUser) {
-          console.log('❌ No Firebase user - redirecting to Login');
-          return this.$router.push('/Login');
-        }
-        
-        if (lessonType === 'premium' && !userHasPremium) {
-          console.log('🔒 Premium lesson, user does not have premium access');
-          this.showPaywallModal = true;
-          return;
-        }
-        
-        console.log('✅ Access granted to lesson');
-
-        // Process lesson steps
-        this.steps = [];
-        if (Array.isArray(data.steps)) {
-          data.steps.forEach(step => {
-            if (['exercise', 'tryout'].includes(step.type) && Array.isArray(step.data)) {
-              this.steps.push(...step.data.map(ex => ({ type: step.type, data: ex })));
-            } else {
-              this.steps.push(step);
-            }
-          });
-        } else {
-          // Legacy format support
-          if (Array.isArray(data.explanations)) {
-            this.steps.push(...data.explanations.map(ex => ({ type: 'explanation', data: ex })));
-          }
-          if (Array.isArray(data.examples)) {
-            this.steps.push(...data.examples.map(ex => ({ type: 'example', data: ex })));
-          }
-          if (Array.isArray(data.exerciseGroups)) {
-            data.exerciseGroups.forEach(group => {
-              group.exercises.forEach(ex => this.steps.push({ type: 'exercise', data: ex }));
-            });
-          }
-          if (Array.isArray(data.quiz)) {
-            this.steps.push(...data.quiz.map(q => ({ type: 'quiz', data: q })));
-          }
-        }
-        
-        console.log(`✅ Lesson loaded with ${this.steps.length} steps`);
-        
-      } catch (err) {
-        console.error('❌ Error loading lesson:', err);
-        if (err.response?.status === 401) {
-          console.error('❌ Authentication error - redirecting to Login');
-          return this.$router.push('/Login');
-        }
-        this.$router.push('/catalogue');
-      }
-    },
-
-    // Include all your existing methods: loadPreviousProgress, saveProgress, etc.
-    // (Keep the same implementations but add AI enhancements where noted)
-    
-    continuePreviousProgress() {
-      if (this.previousProgress) {
-        this.currentIndex = Math.min(
-          this.previousProgress.completedSteps.length, 
-          this.steps.length - 1
-        );
-        this.stars = parseInt(this.previousProgress.stars) || 0;
-        this.mistakeCount = parseInt(this.previousProgress.mistakes) || 0;
-        this.elapsedSeconds = parseInt(this.previousProgress.durationSeconds) || 0;
-        this.hintsUsed = Boolean(this.previousProgress.usedHints);
-        this.earnedPoints = parseInt(this.previousProgress.pointsEarned) || 0;
-      }
-      this.startLesson();
-    },
-
-    retryStep(index) {
-      this.lessonCompleted = false;
-      this.showConfetti = false;
-      this.started = true;
-      this.currentIndex = Math.max(0, Math.min(index, this.steps.length - 1));
-      this.userAnswer = '';
-      this.confirmation = '';
-      this.answerWasCorrect = false;
-      this.smartHint = '';
-      this.aiChatHistory = [];
-      
-      // Restart timer if needed
-      if (!this.timerInterval) {
-        this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
-        this.autosaveTimer = setInterval(() => this.autosaveProgress(), 15000);
-      }
-      
-      // Generate new AI suggestions
-      this.generateAISuggestions();
-    },
-
-    // Keep all existing methods from original LessonPage.vue
-    async loadPreviousProgress() {
-      if (!this.lesson._id) return;
-      
-      try {
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) {
-          console.warn('⚠️ No auth token available for loading progress');
-          return;
-        }
-
-        console.log(`📋 Loading previous progress for lesson: ${this.lesson._id}`);
-
-        let progressData = null;
-        
-        try {
-          const response = await axios.get(`${BASE_URL}/user/${this.userId}/lesson/${this.lesson._id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-            timeout: 10000,
-            validateStatus: function (status) {
-              return status < 500;
-            }
-          });
-          
-          if (response.status === 200 && response.data && Object.keys(response.data).length > 0) {
-            progressData = response.data;
-            console.log('✅ Found progress at /user/lesson endpoint');
-          }
-        } catch (err) {
-          console.log('📋 No progress at /user endpoint, trying /progress endpoint...');
-        }
-        
-        if (!progressData) {
-          try {
-            const response = await axios.get(`${BASE_URL}/progress`, {
-              headers: { Authorization: `Bearer ${token}` },
-              params: {
-                userId: this.userId,
-                lessonId: this.lesson._id
-              },
-              timeout: 10000,
-              validateStatus: function (status) {
-                return status < 500;
-              }
-            });
-            
-            if (response.status === 200 && response.data) {
-              if (response.data.data) {
-                progressData = response.data.data;
-              } else if (response.data.message && response.data.data === null) {
-                progressData = null;
-              } else if (Array.isArray(response.data)) {
-                progressData = response.data.find(p => p.lessonId === this.lesson._id);
-              } else {
-                progressData = response.data;
-              }
-              
-              if (progressData) {
-                console.log('✅ Found progress at /progress endpoint');
-              }
-            }
-          } catch (err) {
-            console.log('📋 No progress at /progress endpoint either');
-          }
-        }
-        
-        if (!progressData) {
-          try {
-            const response = await axios.get(`${BASE_URL}/users/${this.userId}/progress`, {
-              headers: { Authorization: `Bearer ${token}` },
-              timeout: 10000,
-              validateStatus: function (status) {
-                return status < 500;
-              }
-            });
-            
-            if (response.status === 200 && response.data) {
-              const allProgress = response.data.data || response.data || [];
-              progressData = allProgress.find(p => 
-                (p.lessonId?._id || p.lessonId) === this.lesson._id
-              );
-              
-              if (progressData) {
-                console.log('✅ Found progress at /users/progress endpoint');
-              }
-            }
-          } catch (err) {
-            console.log('📋 No progress at /users/progress endpoint');
-          }
-        }
-        
-        if (progressData && progressData.completedSteps && progressData.completedSteps.length > 0) {
-          this.previousProgress = {
-            _id: progressData._id,
-            userId: progressData.userId,
-            lessonId: progressData.lessonId,
-            completedSteps: progressData.completedSteps || [],
-            accuracy: progressData.accuracy || 0,
-            attemptsCount: progressData.attemptsCount || 1,
-            completed: progressData.completed || false,
-            completedAt: progressData.completedAt,
-            createdAt: progressData.createdAt,
-            currentStreak: progressData.currentStreak || 0,
-            duration: progressData.duration || 0,
-            durationSeconds: progressData.duration || 0,
-            hintsUsed: progressData.hintsUsed || 0,
-            homeworkScore: progressData.homeworkScore,
-            lastAccessedAt: progressData.lastAccessedAt,
-            medal: progressData.medal || 'none',
-            mistakes: progressData.mistakes || 0,
-            points: progressData.points || 0,
-            pointsEarned: progressData.points || 0,
-            progressPercent: progressData.progressPercent || 0,
-            stars: progressData.stars || 0,
-            submittedHomework: progressData.submittedHomework || false,
-            topicId: progressData.topicId,
-            updatedAt: progressData.updatedAt,
-            usedHints: progressData.hintsUsed > 0 || false
-          };
-          
-          console.log('✅ Previous progress loaded:', this.previousProgress);
-        } else {
-          console.log('ℹ️ No previous progress found for this lesson');
-          this.previousProgress = null;
-        }
-        
-      } catch (err) {
-        console.warn('⚠️ Failed to load previous progress:', err);
-        this.previousProgress = null;
-      }
-    },
-
+    // Progress Management
     async saveProgress(completed = false) {
       try {
-        if (!this.userId) {
-          console.error('❌ No userId available');
-          return false;
-        }
-        
-        if (!this.lesson._id) {
-          console.error('❌ No lesson ID available');
-          return false;
-        }
-
-        let token;
-        try {
-          if (!auth.currentUser) {
-            console.error('❌ No authenticated user');
-            return false;
-          }
-          token = await auth.currentUser.getIdToken(true);
-        } catch (authError) {
-          console.error('❌ Failed to get auth token:', authError);
+        if (!this.userId || !this.lesson._id) {
+          console.error('❌ Missing userId or lessonId for progress save');
           return false;
         }
 
@@ -1142,78 +1066,15 @@ export default {
           submittedHomework: false
         };
 
-        console.log('📤 Saving progress data:', progressData);
+        console.log('📤 Saving progress:', progressData);
 
-        let response;
+        const result = await submitProgress(this.userId, progressData);
         
-        try {
-          response = await axios.post(`${BASE_URL}/users/${this.userId}/progress/save`, progressData, {
-            headers: { 
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            timeout: 15000
-          });
-          
-          if (response.status === 200 || response.status === 201) {
-            console.log('✅ Progress saved via EMERGENCY endpoint:', response.data);
-            return true;
-          }
-        } catch (emergencyError) {
-          console.warn('⚠️ Emergency endpoint failed:', emergencyError.response?.status, emergencyError.response?.data);
-        }
-        
-        try {
-          const originalData = { userId: this.userId, ...progressData };
-          
-          response = await axios.post(`${BASE_URL}/progress`, originalData, {
-            headers: { 
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            timeout: 15000
-          });
-          
-          if (response.status === 200 || response.status === 201) {
-            console.log('✅ Progress saved via /api/progress:', response.data);
-            return true;
-          }
-        } catch (progressError) {
-          console.warn('⚠️ /api/progress failed:', progressError.response?.status);
-        }
-        
-        try {
-          response = await axios.post(`${BASE_URL}/users/${this.userId}/lesson/${this.lesson._id}`, progressData, {
-            headers: { 
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            timeout: 15000
-          });
-          
-          if (response.status === 200 || response.status === 201) {
-            console.log('✅ Progress saved via /api/users/lesson:', response.data);
-            return true;
-          }
-        } catch (userLessonError) {
-          console.warn('⚠️ /api/users/lesson failed:', userLessonError.response?.status);
-        }
-        
-        console.error('❌ All progress endpoints failed');
-        
-        try {
-          const backupKey = `lesson_progress_${this.lesson._id}_${this.userId}`;
-          const backupData = {
-            ...progressData,
-            timestamp: Date.now(),
-            saved: false
-          };
-          localStorage.setItem(backupKey, JSON.stringify(backupData));
-          console.log('💾 Progress saved to localStorage as backup');
-          
+        if (result.success) {
+          console.log('✅ Progress saved successfully');
           return true;
-        } catch (localError) {
-          console.error('❌ Failed to save backup progress:', localError);
+        } else {
+          console.warn('⚠️ Progress save returned success: false');
           return false;
         }
         
@@ -1235,136 +1096,182 @@ export default {
       }
     },
 
-    async saveAnalytics() {
-      try {
-        if (!this.userId || !this.lesson._id) return;
+    // Lesson Control
+    startLesson() {
+      this.started = true;
+      this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
+      this.autosaveTimer = setInterval(() => this.autosaveProgress(), 15000);
+      this.generateAISuggestions();
+      console.log('🚀 Lesson started');
+    },
 
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) {
-          console.warn('⚠️ No auth token for analytics');
-          return;
-        }
+    continuePreviousProgress() {
+      if (this.previousProgress) {
+        this.currentIndex = Math.min(
+          this.previousProgress.completedSteps.length, 
+          this.steps.length - 1
+        );
+        this.stars = parseInt(this.previousProgress.stars) || 0;
+        this.mistakeCount = parseInt(this.previousProgress.mistakes) || 0;
+        this.elapsedSeconds = parseInt(this.previousProgress.duration) || 0;
+        this.hintsUsed = Boolean(this.previousProgress.hintsUsed);
+        this.earnedPoints = parseInt(this.previousProgress.points) || 0;
+      }
+      this.startLesson();
+    },
 
-        const analyticsData = {
-          subject: this.lesson.subject || 'general',
-          topic: this.lesson.topic || this.lesson._id,
-          timeSpent: this.elapsedSeconds,
-          mistakes: this.mistakeCount,
-          completed: this.lessonCompleted,
-          stars: this.stars,
-          points: this.earnedPoints,
-          date: new Date().toISOString()
-        };
+    async retryLoad() {
+      this.retryCount++;
+      console.log(`🔄 Retrying lesson load attempt ${this.retryCount}`);
+      await this.loadLesson();
+    },
 
-        console.log('📊 Saving analytics:', analyticsData);
+    clearTimers() {
+      clearInterval(this.timerInterval);
+      clearInterval(this.autosaveTimer);
+    },
 
-        let success = false;
-        
-        try {
-          await axios.post(`${BASE_URL}/users/${this.userId}/analytics`, analyticsData, {
-            headers: { Authorization: `Bearer ${token}` },
-            timeout: 10000
-          });
-          success = true;
-          console.log('✅ Analytics saved via /api/users/analytics');
-        } catch (usersError) {
-          console.warn('⚠️ /api/users/analytics failed:', usersError.response?.status);
-        }
-        
-        if (!success) {
-          try {
-            await axios.post(`${BASE_URL}/user/${this.userId}/analytics`, analyticsData, {
-              headers: { Authorization: `Bearer ${token}` },
-              timeout: 10000
-            });
-            success = true;
-            console.log('✅ Analytics saved via /api/user/analytics');
-          } catch (userError) {
-            console.warn('⚠️ /api/user/analytics failed:', userError.response?.status);
-          }
-        }
-        
-        if (!success) {
-          try {
-            await axios.post(`${BASE_URL}/analytics`, { 
-              userId: this.userId, 
-              ...analyticsData 
-            }, {
-              headers: { Authorization: `Bearer ${token}` },
-              timeout: 10000
-            });
-            success = true;
-            console.log('✅ Analytics saved via /api/analytics');
-          } catch (generalError) {
-            console.warn('⚠️ /api/analytics failed:', generalError.response?.status);
-          }
-        }
-        
-        if (!success) {
-          console.warn('⚠️ All analytics endpoints failed, skipping analytics');
-        }
+    // Navigation
+    goNext() {
+      this.userAnswer = '';
+      this.confirmation = '';
+      this.answerWasCorrect = false;
+      this.currentHint = '';
+      this.smartHint = '';
+      this.explanationAIResponse = '';
+      this.showExplanationHelp = false;
 
-      } catch (err) {
-        console.warn('⚠️ Analytics save error (non-critical):', err.message);
+      if (this.isLastStep) {
+        this.completeLesson();
+      } else {
+        this.currentIndex++;
+        this.generateAISuggestions();
       }
     },
 
-    async saveDiary() {
-      try {
-        if (!this.userId || !this.lesson.lessonName) return;
+    goPrevious() {
+      if (this.currentIndex > 0) {
+        this.currentIndex--;
+        this.userAnswer = '';
+        this.confirmation = '';
+        this.answerWasCorrect = false;
+        this.currentHint = '';
+        this.smartHint = '';
+        this.explanationAIResponse = '';
+        this.showExplanationHelp = false;
+        this.generateAISuggestions();
+      }
+    },
 
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) {
-          console.warn('⚠️ No auth token for diary');
-          return;
-        }
+    // Answer Handling
+    async handleSubmitOrNext() {
+      const step = this.currentStep;
+      if (!step || !step.data) {
+        console.warn('⚠️ No current step data available');
+        return;
+      }
 
-        const diaryData = {
-          lessonName: this.getLocalized(this.lesson.lessonName),
-          duration: this.elapsedSeconds,
-          date: new Date().toISOString(),
-          mistakes: this.mistakeCount,
-          stars: this.stars,
-          studyMinutes: Math.ceil(this.elapsedSeconds / 60),
-          completedTopics: 1,
-          averageGrade: this.stars * 20
-        };
+      const correctAnswer = this.getCorrectAnswer(step);
+      const userResponse = this.userAnswer.trim().toLowerCase();
+      const correctResponseNormalized = correctAnswer.toLowerCase().trim();
 
-        console.log('📔 Saving diary entry:', diaryData);
+      if (!userResponse) {
+        this.confirmation = '⚠️ Введите ответ.';
+        return;
+      }
 
-        let success = false;
-        
-        try {
-          await axios.post(`${BASE_URL}/users/${this.userId}/diary`, diaryData, {
-            headers: { Authorization: `Bearer ${token}` },
-            timeout: 10000
-          });
-          success = true;
-          console.log('✅ Diary saved via /api/users/diary');
-        } catch (usersError) {
-          console.warn('⚠️ /api/users/diary failed:', usersError.response?.status);
-        }
-        
-        if (!success) {
+      if (userResponse === correctResponseNormalized) {
+        this.confirmation = '✅ Верно! Отличная работа!';
+        this.answerWasCorrect = true;
+        this.stars++;
+        this.earnedPoints += 10;
+        this.currentHint = '';
+        this.smartHint = '';
+      } else {
+        this.confirmation = '❌ Неверно. Попробуйте снова.';
+        this.mistakeCount++;
+        this.answerWasCorrect = false;
+        this.earnedPoints = Math.max(0, this.earnedPoints - 2);
+
+        this.mistakeLog.push({
+          stepIndex: this.currentIndex,
+          question: this.getExerciseQuestion(step),
+          userAnswer: this.userAnswer,
+          correctAnswer: correctAnswer,
+          hint: step.data.hint || null
+        });
+
+        // Generate smart hint after mistakes
+        if (this.mistakeCount >= 2) {
           try {
-            await axios.post(`${BASE_URL}/user/${this.userId}/diary`, diaryData, {
-              headers: { Authorization: `Bearer ${token}` },
-              timeout: 10000
-            });
-            success = true;
-            console.log('✅ Diary saved via /api/user/diary');
-          } catch (userError) {
-            console.warn('⚠️ /api/user/diary failed:', userError.response?.status);
+            const lessonContext = {
+              lessonId: this.lesson._id,
+              lessonName: this.lesson.lessonName,
+              topic: this.lesson.topic
+            };
+            
+            this.smartHint = await generateSmartHint(step.data, this.mistakeCount, lessonContext);
+            this.hintsUsed = true;
+          } catch (error) {
+            console.error('❌ Smart hint error:', error);
           }
         }
-        
-        if (!success) {
-          console.warn('⚠️ All diary endpoints failed, skipping diary entry');
-        }
-
-      } catch (err) {
-        console.warn('⚠️ Diary save error (non-critical):', err.message);
       }
+    },
+
+    showHint() {
+      const step = this.currentStep;
+      if (step && step.data && step.data.hint) {
+        this.currentHint = step.data.hint;
+        this.hintsUsed = true;
+      } else {
+        this.currentHint = 'Подсказка недоступна для этого задания.';
+      }
+    },
+
+    // Lesson Completion
+    async completeLesson() {
+      this.clearTimers();
+      this.lessonCompleted = true;
+      this.showConfetti = true;
+
+      this.earnedPoints = Math.max(0, 100 - this.mistakeCount * 10 + this.stars * 5);
+
+      if (this.mistakeCount === 0) {
+        this.medalImage = '/images/medals/gold.png';
+        this.medalLabel = '🥇 Золотая медаль - Безупречно!';
+      } else if (this.mistakeCount <= 2) {
+        this.medalImage = '/images/medals/silver.png';
+        this.medalLabel = '🥈 Серебряная медаль - Отлично!';
+      } else {
+        this.medalImage = '/images/medals/bronze.png';
+        this.medalLabel = '🥉 Бронзовая медаль - Хорошо!';
+      }
+
+      // Generate AI progress insight
+      try {
+        const lessonContext = {
+          lessonId: this.lesson._id,
+          lessonName: this.lesson.lessonName,
+          topic: this.lesson.topic,
+          totalSteps: this.steps.length
+        };
+        
+        const userProgress = {
+          completedSteps: Array.from({length: this.steps.length}, (_, i) => i),
+          mistakes: this.mistakeCount,
+          stars: this.stars,
+          elapsedSeconds: this.elapsedSeconds
+        };
+        
+        this.progressInsight = await generateProgressInsight(userProgress, lessonContext);
+      } catch (error) {
+        console.error('❌ Progress insight error:', error);
+        this.progressInsight = 'Отличная работа! Вы успешно завершили урок! 🌟';
+      }
+
+      setTimeout(() => this.launchConfetti(), 200);
+      await this.saveProgress(true);
     },
 
     launchConfetti() {
@@ -1376,6 +1283,27 @@ export default {
       }
     },
 
+    retryStep(stepIndex) {
+      this.lessonCompleted = false;
+      this.showConfetti = false;
+      this.started = true;
+      this.currentIndex = Math.max(0, Math.min(stepIndex, this.steps.length - 1));
+      this.userAnswer = '';
+      this.confirmation = '';
+      this.answerWasCorrect = false;
+      this.currentHint = '';
+      this.smartHint = '';
+      this.aiChatHistory = [];
+      
+      if (!this.timerInterval) {
+        this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
+        this.autosaveTimer = setInterval(() => this.autosaveProgress(), 15000);
+      }
+      
+      this.generateAISuggestions();
+    },
+
+    // Modal Handling
     confirmExit() {
       this.showExitModal = true;
     },
@@ -1389,9 +1317,10 @@ export default {
         await this.saveProgress(false);
       }
       this.showExitModal = false;
-      this.goToCatalogue();
+      this.$router.push('/catalogue');
     },
 
+    // Sharing
     shareResult() {
       const message = `🎉 Я только что завершил урок "${this.getLocalized(this.lesson.lessonName)}"! Получил ${this.stars} звезд и ${this.earnedPoints} очков! 🚀`;
       
@@ -1419,15 +1348,76 @@ export default {
       } else {
         alert('📤 ' + message);
       }
+    },
+
+    goToHomework() {
+      this.$router.push(`/profile/homeworks/${this.lesson._id}`);
+    },
+
+    // Helper Methods
+    getLocalized(field) {
+      if (typeof field === 'string') return field;
+      return (field?.en || field?.ru || field?.uz || '').replace(/^(en|ru|uz):/i, '').trim();
+    },
+
+    getStepContent(step) {
+      if (!step || !step.data) return 'Контент недоступен';
+      
+      if (typeof step.data === 'string') return step.data;
+      if (step.data.content) return this.getLocalized(step.data.content);
+      if (step.data.explanation) return this.getLocalized(step.data.explanation);
+      if (step.data.text) return this.getLocalized(step.data.text);
+      
+      return 'Контент недоступен';
+    },
+
+    getExerciseQuestion(step) {
+      if (!step || !step.data) return 'Вопрос недоступен';
+      
+      if (step.data.question) return this.getLocalized(step.data.question);
+      if (step.data.text) return this.getLocalized(step.data.text);
+      
+      return 'Вопрос недоступен';
+    },
+
+    getCorrectAnswer(step) {
+      if (!step || !step.data) return '';
+      
+      return step.data.correctAnswer || step.data.answer || '';
+    },
+
+    hasOptions(step) {
+      return step && step.data && Array.isArray(step.data.options) && step.data.options.length > 0;
+    },
+
+    getOptions(step) {
+      if (!this.hasOptions(step)) return [];
+      return step.data.options;
+    },
+
+    getQuizQuestion(step) {
+      if (!step || !step.data) return 'Вопрос недоступен';
+      return this.getLocalized(step.data.question || step.data.text || '');
+    },
+
+    getQuizOptions(step) {
+      if (!step || !step.data) return [];
+      
+      if (Array.isArray(step.data.options)) {
+        return step.data.options.map(opt => {
+          if (typeof opt === 'string') return opt;
+          return opt.text || opt.label || opt.value || '';
+        });
+      }
+      
+      return [];
     }
   }
 };
 </script>
 
-
-<style>
-@import '@/assets/css/LessonPage.css';
-
+<style scoped>
+/* Base Styles */
 .lesson-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
@@ -1436,7 +1426,85 @@ export default {
   position: relative;
 }
 
-/* ===== MODAL STYLES ===== */
+/* Loading & Error States */
+.loading-screen, .error-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #6366f1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.error-screen h3 {
+  font-size: 1.5rem;
+  color: #dc2626;
+  margin-bottom: 12px;
+}
+
+.error-screen p {
+  color: #6b7280;
+  margin-bottom: 24px;
+  max-width: 400px;
+}
+
+.error-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.retry-btn, .back-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-btn {
+  background: #6366f1;
+  color: white;
+}
+
+.retry-btn:hover {
+  background: #4f46e5;
+  transform: translateY(-2px);
+}
+
+.back-btn {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.back-btn:hover {
+  background: #e5e7eb;
+}
+
+/* Modal Styles */
 .modal {
   position: fixed;
   top: 0;
@@ -1455,10 +1523,10 @@ export default {
 
 .modal-content {
   background: white;
-  padding: clamp(20px, 4vw, 40px);
-  border-radius: clamp(12px, 2vw, 20px);
+  padding: 32px;
+  border-radius: 16px;
   text-align: center;
-  max-width: min(90vw, 400px);
+  max-width: 400px;
   width: 100%;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   animation: modal-appear 0.3s ease-out;
@@ -1477,60 +1545,81 @@ export default {
 
 .modal-content h3 {
   margin: 0 0 16px 0;
-  font-size: clamp(1.2rem, 3vw, 1.5rem);
+  font-size: 1.25rem;
   color: #1e293b;
 }
 
 .modal-content p {
   margin: 0 0 24px 0;
-  font-size: clamp(0.9rem, 2.5vw, 1rem);
   color: #64748b;
   line-height: 1.5;
 }
 
-.modal-content button {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: white;
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.modal-actions button {
+  padding: 12px 24px;
   border: none;
-  padding: clamp(10px, 2vw, 14px) clamp(16px, 3vw, 24px);
-  border-radius: clamp(8px, 1.5vw, 12px);
-  font-size: clamp(0.85rem, 2vw, 1rem);
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  margin: 0 8px 8px 0;
   transition: all 0.2s ease;
   min-width: 120px;
 }
 
-.modal-content button:hover {
+.premium-btn, .confirm-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+}
+
+.premium-btn:hover, .confirm-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
 }
 
-/* ===== INTRO SCREEN ===== */
+.cancel-btn {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.cancel-btn:hover {
+  background: #e2e8f0;
+}
+
+/* Intro Screen */
 .intro-screen {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: clamp(20px, 5vw, 40px);
+  padding: 40px 20px;
   text-align: center;
   position: relative;
 }
 
 .exit-btn {
   position: absolute;
-  top: clamp(20px, 4vw, 40px);
-  right: clamp(20px, 4vw, 40px);
+  top: 40px;
+  right: 40px;
   background: rgba(239, 68, 68, 0.1);
   border: none;
-  font-size: clamp(1.2rem, 3vw, 1.5rem);
+  font-size: 1.5rem;
   color: #ef4444;
   cursor: pointer;
-  padding: clamp(8px, 2vw, 12px);
-  border-radius: clamp(8px, 2vw, 12px);
+  padding: 12px;
+  border-radius: 12px;
   transition: all 0.2s ease;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .exit-btn:hover {
@@ -1538,52 +1627,127 @@ export default {
   transform: scale(1.1);
 }
 
-.lesson-title {
-  font-size: clamp(1.5rem, 5vw, 2.5rem);
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0 0 clamp(16px, 3vw, 24px) 0;
-  line-height: 1.2;
-  max-width: 90%;
+.intro-content {
+  max-width: 600px;
+  width: 100%;
 }
 
-.intro-screen p {
-  font-size: clamp(1rem, 2.5vw, 1.2rem);
+.lesson-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+  line-height: 1.2;
+}
+
+.lesson-description {
+  font-size: 1.1rem;
   color: #64748b;
-  margin: clamp(8px, 2vw, 12px) 0;
-  line-height: 1.5;
+  margin: 0 0 32px 0;
+  line-height: 1.6;
+}
+
+.lesson-info {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  color: #64748b;
+}
+
+.info-icon {
+  font-size: 1.1rem;
 }
 
 .previous-progress {
   background: rgba(59, 130, 246, 0.1);
-  padding: clamp(16px, 3vw, 24px);
-  border-radius: clamp(12px, 2vw, 16px);
-  margin: clamp(16px, 3vw, 24px) 0;
+  padding: 24px;
+  border-radius: 16px;
+  margin: 24px 0;
   border: 1px solid rgba(59, 130, 246, 0.2);
-  max-width: min(90vw, 400px);
-  width: 100%;
 }
 
-.continue-btn, .start-btn {
+.previous-progress h4 {
+  margin: 0 0 16px 0;
+  color: #1e293b;
+  font-size: 1.1rem;
+}
+
+.progress-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.continue-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.continue-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(245, 158, 11, 0.3);
+}
+
+.intro-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.start-btn {
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border: none;
-  padding: clamp(12px, 3vw, 16px) clamp(24px, 5vw, 32px);
-  border-radius: clamp(10px, 2vw, 14px);
-  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  padding: 16px 32px;
+  border-radius: 14px;
+  font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  margin: clamp(8px, 2vw, 12px);
   transition: all 0.3s ease;
-  min-width: clamp(140px, 30vw, 180px);
+  min-width: 180px;
 }
 
-.continue-btn:hover, .start-btn:hover {
+.start-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 12px 24px rgba(16, 185, 129, 0.3);
 }
 
-/* ===== LESSON LAYOUT ===== */
+/* Main Lesson Layout */
 .lesson-split {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1596,14 +1760,14 @@ export default {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: clamp(20px, 4vw, 40px);
+  padding: 40px;
 }
 
 .lesson-complete-full {
   background: white;
-  border-radius: clamp(16px, 3vw, 24px);
-  padding: clamp(32px, 6vw, 48px);
-  max-width: min(90vw, 600px);
+  border-radius: 24px;
+  padding: 48px;
+  max-width: 600px;
   width: 100%;
   text-align: center;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
@@ -1611,7 +1775,7 @@ export default {
 
 .lesson-left {
   background: white;
-  padding: clamp(20px, 4vw, 32px);
+  padding: 32px;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #e2e8f0;
@@ -1619,17 +1783,17 @@ export default {
 
 .lesson-right {
   background: #f8fafc;
-  padding: clamp(20px, 4vw, 32px);
+  padding: 32px;
   display: flex;
   flex-direction: column;
 }
 
-/* ===== LESSON HEADER ===== */
+/* Lesson Header */
 .lesson-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: clamp(16px, 3vw, 24px);
+  margin-bottom: 24px;
   flex-wrap: wrap;
   gap: 12px;
 }
@@ -1637,36 +1801,57 @@ export default {
 .exit-btn-small {
   background: rgba(239, 68, 68, 0.1);
   border: none;
-  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  font-size: 1.2rem;
   color: #ef4444;
   cursor: pointer;
-  padding: clamp(6px, 1.5vw, 8px);
-  border-radius: clamp(6px, 1.5vw, 8px);
+  padding: 8px;
+  border-radius: 8px;
   transition: all 0.2s ease;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+}
+
+.exit-btn-small:hover {
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .lesson-header .lesson-title {
-  font-size: clamp(1.2rem, 3vw, 1.5rem);
+  font-size: 1.25rem;
+  color: #1e293b;
+  margin: 0;
   flex-grow: 1;
-  margin: 0 12px;
-  min-width: 0; /* Allow text to shrink */
+  min-width: 0;
+  text-align: center;
 }
 
-.timer-display {
-  font-size: clamp(0.9rem, 2vw, 1rem);
-  color: #64748b;
-  font-weight: 600;
+.lesson-meta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
   flex-shrink: 0;
 }
 
-/* ===== PROGRESS BAR ===== */
+.timer-display, .step-counter {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* Progress Section */
+.progress-section {
+  margin-bottom: 24px;
+}
+
 .progress-bar-wrapper {
   position: relative;
   background: #e2e8f0;
-  height: clamp(8px, 2vw, 12px);
-  border-radius: clamp(4px, 1vw, 6px);
-  margin-bottom: clamp(16px, 3vw, 24px);
+  height: 8px;
+  border-radius: 4px;
+  margin-bottom: 12px;
   overflow: hidden;
 }
 
@@ -1677,92 +1862,227 @@ export default {
   transition: width 0.5s ease;
 }
 
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .progress-label {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  font-size: clamp(0.8rem, 2vw, 0.9rem);
+  font-size: 0.85rem;
   color: #64748b;
-  margin-top: 8px;
 }
 
 .stars-display {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  font-size: clamp(0.8rem, 2vw, 0.9rem);
+  font-size: 0.85rem;
   color: #f59e0b;
-  margin-top: 8px;
+  font-weight: 600;
 }
 
-/* ===== CONTENT AREAS ===== */
-.explanation-text {
-  font-size: clamp(1rem, 2.5vw, 1.1rem);
+/* Step Content */
+.step-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.content-step, .interactive-placeholder, .unknown-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.step-header {
+  margin-bottom: 20px;
+}
+
+.step-title {
+  font-size: 1.2rem;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-body {
+  flex: 1;
+  margin-bottom: 24px;
+}
+
+.content-text {
+  font-size: 1rem;
   line-height: 1.6;
   color: #374151;
-  margin-bottom: clamp(20px, 4vw, 32px);
+  margin: 0;
 }
 
-.locked-overlay {
+.interactive-placeholder, .unknown-step {
   background: rgba(148, 163, 184, 0.1);
-  padding: clamp(20px, 4vw, 32px);
-  border-radius: clamp(12px, 2vw, 16px);
-  text-align: center;
-  font-size: clamp(1rem, 2.5vw, 1.1rem);
-  color: #64748b;
   border: 2px dashed #cbd5e1;
-  margin-bottom: clamp(16px, 3vw, 24px);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
 }
 
-.exercise-question {
-  font-size: clamp(1rem, 2.5vw, 1.2rem);
+.placeholder-content h3, .unknown-content h3 {
+  margin: 0 0 12px 0;
+  color: #64748b;
+}
+
+.placeholder-content p, .unknown-content p {
+  margin: 0;
+  color: #9ca3af;
+}
+
+.unknown-content pre {
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  text-align: left;
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+/* Step Navigation */
+.step-navigation {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+
+.nav-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 120px;
+}
+
+.prev-btn {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.prev-btn:hover {
+  background: #e2e8f0;
+}
+
+.next-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+}
+
+.next-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+}
+
+.help-btn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  flex: 0 0 auto;
+  min-width: 140px;
+}
+
+.help-btn:hover, .help-btn.active {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  transform: translateY(-2px);
+}
+
+/* Exercise/Quiz Components */
+.exercise-step, .quiz-step {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.exercise-header, .quiz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.exercise-title, .quiz-title {
+  font-size: 1.2rem;
+  color: #1e293b;
+  margin: 0;
+}
+
+.exercise-progress {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.exercise-body, .quiz-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.exercise-question, .quiz-question {
+  font-size: 1.1rem;
   font-weight: 600;
   color: #1e293b;
-  margin-bottom: clamp(16px, 3vw, 24px);
+  margin: 0 0 24px 0;
   line-height: 1.5;
 }
 
-/* ===== OPTIONS AND INPUTS ===== */
-.options-container {
+/* Options Styling */
+.options-container, .quiz-options {
   display: flex;
   flex-direction: column;
-  gap: clamp(8px, 2vw, 12px);
-  margin-bottom: clamp(16px, 3vw, 24px);
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
-.option-label {
+.option-label, .quiz-option {
   display: flex;
   align-items: center;
-  padding: clamp(12px, 3vw, 16px);
+  padding: 16px;
   background: white;
   border: 2px solid #e2e8f0;
-  border-radius: clamp(8px, 2vw, 12px);
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: clamp(0.9rem, 2vw, 1rem);
 }
 
-.option-label:hover {
+.option-label:hover, .quiz-option:hover {
   border-color: #3b82f6;
   background: rgba(59, 130, 246, 0.05);
 }
 
-.option-radio {
-  margin-right: clamp(8px, 2vw, 12px);
-  transform: scale(clamp(1, 2vw, 1.2));
+.option-radio, .quiz-radio {
+  margin-right: 12px;
+  transform: scale(1.2);
 }
 
+.option-text, .quiz-option-text {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+/* Text Input */
 .text-input-container {
-  margin-bottom: clamp(16px, 3vw, 24px);
+  margin-bottom: 24px;
 }
 
 .answer-textarea {
   width: 100%;
-  min-height: clamp(80px, 15vw, 120px);
-  padding: clamp(12px, 3vw, 16px);
+  min-height: 120px;
+  padding: 16px;
   border: 2px solid #e2e8f0;
-  border-radius: clamp(8px, 2vw, 12px);
-  font-size: clamp(0.9rem, 2vw, 1rem);
+  border-radius: 12px;
+  font-size: 0.95rem;
   font-family: inherit;
   resize: vertical;
   transition: border-color 0.2s ease;
@@ -1775,64 +2095,354 @@ export default {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* ===== BUTTONS ===== */
-.navigation-area, .action-buttons {
+.answer-textarea:disabled {
+  background: #f8fafc;
+  color: #9ca3af;
+}
+
+/* AI Help Sections */
+.explanation-help {
+  background: rgba(139, 92, 246, 0.1);
+  padding: 20px;
+  border-radius: 12px;
+  margin: 16px 0;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.explanation-help h4 {
+  margin: 0 0 12px 0;
+  color: #6d28d9;
+}
+
+.explanation-help-input {
   display: flex;
-  gap: clamp(8px, 2vw, 12px);
-  margin-top: auto;
-  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
-.nav-btn, .submit-btn, .next-btn {
-  padding: clamp(10px, 2.5vw, 14px) clamp(16px, 3vw, 24px);
-  border: none;
-  border-radius: clamp(8px, 2vw, 12px);
-  font-size: clamp(0.9rem, 2vw, 1rem);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.explanation-help-input input {
   flex: 1;
-  min-width: clamp(100px, 20vw, 120px);
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
 }
 
-.prev-btn {
-  background: #f1f5f9;
+.explanation-help-input button {
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.explanation-help-input button:hover:not(:disabled) {
+  background: #7c3aed;
+}
+
+.explanation-help-input button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-response {
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.ai-help-section {
+  background: rgba(59, 130, 246, 0.05);
+  padding: 16px;
+  border-radius: 12px;
+  margin: 16px 0;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.ai-help-section h4 {
+  margin: 0 0 12px 0;
+  color: #1d4ed8;
+  font-size: 1rem;
+}
+
+.ai-suggestions {
+  margin-bottom: 12px;
+}
+
+.ai-suggestions p {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
   color: #64748b;
 }
 
-.prev-btn:hover {
-  background: #e2e8f0;
+.suggestion-btn, .quick-suggestion-btn {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  margin: 4px 4px 0 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.nav-btn:not(.prev-btn), .submit-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+.suggestion-btn:hover, .quick-suggestion-btn:hover {
+  background: #c7d2fe;
+  transform: translateY(-1px);
+}
+
+.ai-chat-input {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ai-chat-input input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.ai-chat-input button {
+  background: #3b82f6;
   color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
 }
 
-.next-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
+.ai-chat-input button:hover:not(:disabled) {
+  background: #2563eb;
 }
 
-.nav-btn:hover, .submit-btn:hover, .next-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-}
-
-.submit-btn:disabled {
+.ai-chat-input button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
 
-/* ===== CONFIRMATION MESSAGES ===== */
-.confirmation {
-  margin-top: clamp(12px, 2.5vw, 16px);
-  padding: clamp(10px, 2.5vw, 14px);
-  border-radius: clamp(8px, 2vw, 12px);
-  font-weight: 600;
-  font-size: clamp(0.9rem, 2vw, 1rem);
+.ai-chat-history {
+  max-height: 200px;
+  overflow-y: auto;
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.chat-message {
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.chat-message.user {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.chat-message.ai {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Smart Hint */
+.smart-hint {
+  background: rgba(245, 158, 11, 0.1);
+  padding: 16px;
+  border-radius: 12px;
+  margin: 16px 0;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  position: relative;
+}
+
+.smart-hint h4 {
+  margin: 0 0 8px 0;
+  color: #92400e;
+}
+
+.close-hint-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #92400e;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.close-hint-btn:hover {
+  background: rgba(245, 158, 11, 0.2);
+}
+
+/* Floating AI Assistant */
+.floating-ai-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.floating-ai-btn:hover, .floating-ai-btn.active {
+  transform: scale(1.1);
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.5);
+}
+
+.floating-ai-assistant {
+  position: fixed;
+  bottom: 90px;
+  right: 24px;
+  width: 320px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+  overflow: hidden;
+  max-height: 480px;
+  display: flex;
+  flex-direction: column;
+  animation: modal-appear 0.3s ease-out;
+}
+
+.ai-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ai-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #1e293b;
+}
+
+.close-ai-btn {
+  background: rgba(148, 163, 184, 0.1);
+  border: none;
+  font-size: 1.2rem;
+  color: #64748b;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.close-ai-btn:hover {
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.ai-body {
+  padding: 16px;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.usage-display {
+  background: #f8fafc;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #64748b;
   text-align: center;
+}
+
+.quick-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ai-chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-messages {
+  flex: 1;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.chat-input {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.chat-input button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.chat-input button:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+/* Confirmation Messages */
+.confirmation {
+  margin: 16px 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .confirmation.correct {
@@ -1847,108 +2457,285 @@ export default {
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-/* ===== COMPLETION STYLES ===== */
-.lesson-complete-title {
-  font-size: clamp(1.5rem, 4vw, 2rem);
-  color: #1e293b;
-  margin-bottom: clamp(16px, 3vw, 24px);
-}
-
-.medal-image {
-  width: clamp(80px, 15vw, 120px);
-  height: clamp(80px, 15vw, 120px);
-  margin: clamp(16px, 3vw, 24px) 0;
-}
-
-.medal-label {
-  font-size: clamp(1.1rem, 2.5vw, 1.3rem);
-  font-weight: 600;
-  color: #059669;
-  margin-bottom: clamp(8px, 2vw, 12px);
-}
-
-.completion-time, .completion-motivation, .completion-stats {
-  font-size: clamp(0.9rem, 2vw, 1rem);
-  margin: clamp(8px, 2vw, 12px) 0;
-  color: #64748b;
-}
-
-.completion-buttons {
+/* Action Buttons */
+.exercise-actions, .quiz-actions {
   display: flex;
+  gap: 12px;
+  margin-top: auto;
   flex-wrap: wrap;
-  gap: clamp(8px, 2vw, 12px);
-  justify-content: center;
-  margin: clamp(20px, 4vw, 32px) 0;
 }
 
-.return-btn, .share-btn, .homework-btn {
-  padding: clamp(10px, 2.5vw, 14px) clamp(16px, 3vw, 24px);
+.submit-btn, .next-btn, .hint-btn {
+  padding: 12px 24px;
   border: none;
-  border-radius: clamp(8px, 2vw, 12px);
-  font-size: clamp(0.9rem, 2vw, 1rem);
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   flex: 1;
-  min-width: clamp(120px, 25vw, 150px);
+  min-width: 120px;
 }
 
-.return-btn {
+.submit-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+}
+
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.next-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.next-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+}
+
+.hint-btn {
+  background: #f59e0b;
+  color: white;
+  flex: 0 0 auto;
+}
+
+.hint-btn:hover {
+  background: #d97706;
+  transform: translateY(-2px);
+}
+
+/* Hint Display */
+.hint-display {
+  margin-top: 16px;
+  padding: 16px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  animation: fadeIn 0.3s ease;
+}
+
+.hint-header {
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 8px;
+}
+
+.hint-content {
+  color: #78350f;
+  line-height: 1.5;
+}
+
+/* Completion Styles */
+.completion-header {
+  margin-bottom: 32px;
+}
+
+.completion-title {
+  font-size: 2rem;
+  color: #1e293b;
+  margin: 0 0 24px 0;
+}
+
+.medal-section {
+  margin-bottom: 24px;
+}
+
+.medal-image {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 16px;
+  display: block;
+}
+
+.medal-label {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #059669;
+}
+
+.completion-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.stat-icon {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.stat-card .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.stat-card .stat-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.progress-insight {
+  background: rgba(59, 130, 246, 0.1);
+  padding: 20px;
+  border-radius: 12px;
+  margin: 20px 0;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.progress-insight h4 {
+  margin: 0 0 12px 0;
+  color: #1d4ed8;
+}
+
+.completion-motivation {
+  font-size: 1.1rem;
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.completion-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+}
+
+.action-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 150px;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.action-btn.secondary {
   background: #f1f5f9;
   color: #64748b;
 }
 
-.share-btn {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
+.action-btn:hover {
+  transform: translateY(-2px);
 }
 
-.homework-btn {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
+.action-btn.primary:hover {
+  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
 }
 
-/* ===== MISTAKE REVIEW ===== */
+.action-btn.secondary:hover {
+  background: #e2e8f0;
+}
+
+/* Mistake Review */
 .mistake-review {
   background: rgba(239, 68, 68, 0.05);
-  padding: clamp(16px, 3vw, 24px);
-  border-radius: clamp(12px, 2vw, 16px);
-  margin-top: clamp(20px, 4vw, 32px);
+  padding: 24px;
+  border-radius: 16px;
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .mistake-review h4 {
-  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  font-size: 1.1rem;
   color: #991b1b;
-  margin-bottom: clamp(12px, 2.5vw, 16px);
+  margin: 0 0 20px 0;
 }
 
-.mistake-review ul {
-  list-style: none;
-  padding: 0;
+.mistake-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.mistake-review li {
+.mistake-item {
   background: white;
-  padding: clamp(12px, 3vw, 16px);
-  border-radius: clamp(8px, 2vw, 12px);
-  margin-bottom: clamp(8px, 2vw, 12px);
-  font-size: clamp(0.85rem, 2vw, 0.95rem);
-  line-height: 1.5;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #fecaca;
 }
 
-.mistake-review button {
+.mistake-question {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+
+.mistake-answers {
+  margin-bottom: 16px;
+}
+
+.user-answer, .correct-answer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.answer-label {
+  font-weight: 500;
+  color: #64748b;
+  min-width: 120px;
+}
+
+.answer-value {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.answer-value.incorrect {
+  background: rgba(239, 68, 68, 0.1);
+  color: #991b1b;
+}
+
+.answer-value.correct {
+  background: rgba(16, 185, 129, 0.1);
+  color: #065f46;
+}
+
+.retry-step-btn {
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
   border: none;
-  padding: clamp(6px, 1.5vw, 8px) clamp(12px, 2.5vw, 16px);
-  border-radius: clamp(6px, 1.5vw, 8px);
-  font-size: clamp(0.8rem, 1.8vw, 0.9rem);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
-  margin-top: 8px;
+  transition: all 0.2s ease;
 }
 
-/* ===== CONFETTI CANVAS ===== */
+/* Confetti Canvas */
 .confetti-canvas {
   position: fixed;
   top: 0;
@@ -1959,239 +2746,8 @@ export default {
   z-index: 999;
 }
 
-/* ===== AI ASSISTANT STYLES ===== */
-.floating-robot {
-  position: fixed;
-  bottom: clamp(16px, 3vw, 24px);
-  left: clamp(16px, 3vw, 24px);
-  width: clamp(100px, 20vw, 150px);
-  height: clamp(100px, 20vw, 150px);
-  z-index: 100;
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.1));
-  transition: transform 0.3s ease, filter 0.3s ease;
-  animation: gentle-float 3s ease-in-out infinite;
-}
-
-.floating-robot:hover {
-  transform: scale(1.05);
-  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.15));
-}
-
-@keyframes gentle-float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-}
-
-.ai-help-btn {
-  position: fixed;
-  bottom: clamp(16px, 3vw, 24px);
-  right: clamp(16px, 3vw, 24px);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #ffffff;
-  border: none;
-  font-size: clamp(0.9rem, 2vw, 1rem);
-  font-weight: 600;
-  padding: clamp(10px, 2.5vw, 14px) clamp(16px, 3vw, 20px);
-  border-radius: clamp(12px, 2.5vw, 16px);
-  box-shadow: 
-    0 8px 24px rgba(102, 126, 234, 0.4),
-    0 4px 8px rgba(0, 0, 0, 0.1);
-  z-index: 9998;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.ai-help-btn:hover {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 
-    0 12px 32px rgba(102, 126, 234, 0.5),
-    0 8px 16px rgba(0, 0, 0, 0.15);
-}
-
-.ai-chat-modal {
-  position: fixed;
-  bottom: clamp(80px, 15vw, 100px);
-  right: clamp(16px, 3vw, 24px);
-  width: clamp(300px, 80vw, 380px);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: clamp(16px, 3vw, 20px);
-  box-shadow: 
-    0 20px 40px rgba(0, 0, 0, 0.15),
-    0 8px 16px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  z-index: 9999;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  max-height: clamp(300px, 60vh, 520px);
-  animation: modal-slide-up 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes modal-slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.ai-chat-header {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  padding: clamp(12px, 3vw, 16px) clamp(16px, 3vw, 20px);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 700;
-  color: #1e293b;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-  font-size: clamp(0.9rem, 2vw, 1rem);
-}
-
-.ai-chat-body {
-  padding: clamp(16px, 3vw, 20px);
-  flex-grow: 1;
-  overflow-y: auto;
-  font-size: clamp(0.85rem, 2vw, 0.9rem);
-  background: linear-gradient(180deg, #fafafa 0%, #f1f5f9 100%);
-  display: flex;
-  flex-direction: column;
-  gap: clamp(8px, 2vw, 12px);
-}
-
-.chat-message {
-  padding: clamp(8px, 2vw, 12px) clamp(12px, 3vw, 16px);
-  border-radius: clamp(12px, 2.5vw, 16px);
-  line-height: 1.6;
-  max-width: 85%;
-  position: relative;
-  word-wrap: break-word;
-  animation: message-appear 0.3s ease-out;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  font-size: clamp(0.8rem, 2vw, 0.9rem);
-}
-
-.ai-close-btn {
-  background: rgba(148, 163, 184, 0.1);
-  border: none;
-  font-size: clamp(1rem, 2.5vw, 1.2rem);
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  width: clamp(24px, 5vw, 32px);
-  height: clamp(24px, 5vw, 32px);
-  border-radius: clamp(6px, 1.5vw, 8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ===== RESPONSIVE BREAKPOINTS ===== */
-
-/* Large Laptops (1440px+) */
-@media (min-width: 1440px) {
-  .lesson-page {
-    font-size: 18px;
-  }
-  
-  .lesson-split {
-    max-width: 1600px;
-    margin: 0 auto;
-  }
-  
-  .lesson-left, .lesson-right {
-    padding: 48px;
-  }
-}
-
-/* Standard Laptops (1024px - 1439px) */
-@media (min-width: 1024px) and (max-width: 1439px) {
-  .lesson-split {
-    grid-template-columns: 1fr 1fr;
-  }
-  
-  .lesson-left, .lesson-right {
-    padding: 32px;
-  }
-  
-  .floating-robot {
-    width: 130px;
-    height: 130px;
-  }
-}
-
-/* Small Laptops (768px - 1023px) */
-@media (min-width: 768px) and (max-width: 1023px) {
-  .lesson-split {
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-  }
-  
-  .lesson-left, .lesson-right {
-    padding: 24px;
-  }
-  
-  .lesson-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  
-  .lesson-header .lesson-title {
-    margin: 0;
-    text-align: left;
-  }
-  
-  .ai-chat-modal {
-    width: min(90vw, 350px);
-  }
-}
-
-/* iPad Pro (1024px+ in portrait) */
-@media (min-width: 834px) and (max-width: 1194px) and (orientation: portrait) {
-  .lesson-split {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-  }
-  
-  .lesson-left {
-    border-right: none;
-    border-bottom: 1px solid #e2e8f0;
-  }
-  
-  .lesson-right {
-    background: white;
-  }
-}
-
-/* iPad (768px - 1024px) */
-@media (min-width: 768px) and (max-width: 1024px) {
-  .options-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-  
-  .completion-buttons {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-  
-  .homework-btn {
-    grid-column: 1 / -1;
-  }
-}
-
-/* Large Phones & Small Tablets (480px - 767px) */
-@media (min-width: 480px) and (max-width: 767px) {
+/* Responsive Design */
+@media (max-width: 1024px) {
   .lesson-split {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
@@ -2207,286 +2763,214 @@ export default {
     background: white;
   }
   
-  .lesson-header {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .modal-content button {
-    display: block;
-    width: 100%;
-    margin: 8px 0;
-  }
-  
-  .ai-chat-modal {
+  .floating-ai-assistant {
     width: calc(100vw - 32px);
     right: 16px;
     left: 16px;
-    bottom: 90px;
-    max-height: 60vh;
-  }
-  
-  .floating-robot {
-    width: 100px;
-    height: 100px;
   }
 }
 
-/* Small Phones (320px - 479px) */
-@media (max-width: 479px) {
-  .lesson-split {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+@media (max-width: 768px) {
+  .lesson-page {
+    font-size: 14px;
   }
   
-  .lesson-left {
-    border-right: none;
-    border-bottom: 1px solid #e2e8f0;
-    padding: 16px;
-  }
-  
-  .lesson-right {
-    background: white;
-    padding: 16px;
-  }
-  
-  .lesson-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  
-  .exit-btn-small {
-    align-self: flex-end;
-  }
-  
-  .lesson-header .lesson-title {
-    font-size: 1.1rem;
-    margin: 0;
-    order: 2;
-  }
-  
-  .timer-display {
-    order: 3;
-    align-self: flex-start;
-  }
-  
-  .progress-label, .stars-display {
-    position: static;
-    display: block;
-    margin-top: 8px;
-  }
-  
-  .stars-display {
-    text-align: right;
-  }
-  
-  .options-container {
-    gap: 8px;
-  }
-  
-  .option-label {
-    padding: 10px;
-    font-size: 0.85rem;
-  }
-  
-  .navigation-area, .action-buttons {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .nav-btn, .submit-btn, .next-btn {
-    width: 100%;
-    min-width: auto;
-  }
-  
-  .completion-buttons {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .return-btn, .share-btn, .homework-btn {
-    width: 100%;
-    min-width: auto;
-  }
-  
-  .ai-chat-modal {
-    width: calc(100vw - 16px);
-    right: 8px;
-    left: 8px;
-    bottom: 80px;
-    max-height: 50vh;
-  }
-  
-  .ai-chat-header {
-    padding: 10px 12px;
-    font-size: 0.85rem;
-  }
-  
-  .ai-chat-body {
-    padding: 12px;
-  }
-  
-  .chat-message {
-    max-width: 95%;
-    padding: 8px 12px;
-    font-size: 0.8rem;
-  }
-  
-  .floating-robot {
-    width: 80px;
-    height: 80px;
-    bottom: 12px;
-    left: 12px;
-  }
-  
-  .ai-help-btn {
-    bottom: 12px;
-    right: 12px;
-    padding: 8px 12px;
-    font-size: 0.8rem;
-  }
-  
-  .modal {
-    padding: 16px;
-  }
-  
-  .modal-content {
-    padding: 20px;
+  .exit-btn {
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
   }
   
   .intro-screen {
     padding: 20px 16px;
   }
   
-  .exit-btn {
-    top: 16px;
-    right: 16px;
-  }
-}
-
-/* Extra Small Phones (below 320px) */
-@media (max-width: 319px) {
-  .lesson-page {
-    font-size: 14px;
-  }
-  
-  .lesson-left, .lesson-right {
-    padding: 12px;
-  }
-  
   .lesson-title {
-    font-size: 1rem !important;
+    font-size: 2rem;
   }
   
-  .explanation-text {
-    font-size: 0.9rem;
+  .lesson-info {
+    flex-direction: column;
+    gap: 12px;
   }
   
-  .exercise-question {
-    font-size: 0.95rem;
-  }
-  
-  .floating-robot {
-    width: 60px;
-    height: 60px;
-  }
-  
-  .ai-help-btn {
-    padding: 6px 10px;
-    font-size: 0.75rem;
-  }
-  
-  .ai-chat-modal {
-    max-height: 40vh;
-  }
-}
-
-/* ===== LANDSCAPE ORIENTATION ADJUSTMENTS ===== */
-@media (max-height: 500px) and (orientation: landscape) {
-  .intro-screen {
-    min-height: auto;
+  .previous-progress {
     padding: 20px;
   }
   
-  .lesson-split {
-    min-height: auto;
+  .progress-stats {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
   
-  .ai-chat-modal {
-    max-height: 80vh;
-    bottom: 60px;
+  .lesson-left, .lesson-right {
+    padding: 20px;
   }
   
-  .floating-robot {
-    width: 60px;
-    height: 60px;
+  .lesson-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .lesson-header .lesson-title {
+    font-size: 1.1rem;
+    text-align: left;
+    order: 2;
+  }
+  
+  .exit-btn-small {
+    align-self: flex-end;
+    order: 1;
+  }
+  
+  .lesson-meta {
+    order: 3;
+    align-self: flex-start;
+    gap: 12px;
+  }
+  
+  .completion-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .completion-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .action-btn {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .step-navigation, .exercise-actions, .quiz-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .nav-btn, .submit-btn, .next-btn, .hint-btn {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .options-container, .quiz-options {
+    gap: 8px;
+  }
+  
+  .option-label, .quiz-option {
+    padding: 12px;
   }
   
   .modal-content {
-    max-height: 80vh;
-    overflow-y: auto;
+    padding: 24px;
+    margin: 20px;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .modal-actions button {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .floating-ai-btn {
+    width: 48px;
+    height: 48px;
+    bottom: 16px;
+    right: 16px;
+  }
+  
+  .floating-ai-assistant {
+    bottom: 70px;
+    max-height: 60vh;
+  }
+  
+  .ai-help-section {
+    padding: 12px;
+  }
+  
+  .explanation-help {
+    padding: 16px;
   }
 }
 
-/* ===== HIGH DPI DISPLAYS ===== */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+@media (max-width: 480px) {
+  .lesson-title {
+    font-size: 1.5rem;
+  }
+  
+  .lesson-description {
+    font-size: 1rem;
+  }
+  
+  .lesson-left, .lesson-right {
+    padding: 16px;
+  }
+  
+  .lesson-complete-full {
+    padding: 32px 20px;
+  }
+  
+  .completion-title {
+    font-size: 1.5rem;
+  }
+  
   .medal-image {
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
+    width: 80px;
+    height: 80px;
   }
   
-  .floating-robot img {
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-  }
-}
-
-/* ===== TOUCH DEVICE OPTIMIZATIONS ===== */
-@media (hover: none) and (pointer: coarse) {
-  .option-label {
-    min-height: 44px; /* iOS recommended touch target */
+  .completion-stats {
+    grid-template-columns: 1fr;
   }
   
-  .nav-btn, .submit-btn, .next-btn {
-    min-height: 44px;
+  .stat-card {
+    padding: 16px;
   }
   
-  .exit-btn, .exit-btn-small {
-    min-width: 44px;
-    min-height: 44px;
+  .stat-card .stat-value {
+    font-size: 1.25rem;
   }
   
-  .ai-help-btn {
-    min-height: 44px;
-    min-width: 44px;
+  .mistake-review {
+    padding: 16px;
   }
   
-  .ai-close-btn {
-    min-width: 44px;
-    min-height: 44px;
-  }
-}
-
-/* ===== ACCESSIBILITY ENHANCEMENTS ===== */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  .mistake-item {
+    padding: 16px;
   }
   
-  .floating-robot {
-    animation: none;
+  .answer-label {
+    min-width: 100px;
+    font-size: 0.85rem;
   }
   
-  .gentle-float {
-    animation: none;
+  .floating-ai-assistant {
+    width: calc(100vw - 16px);
+    right: 8px;
+    left: 8px;
+    bottom: 60px;
+    max-height: 50vh;
   }
   
-  .modal-appear, .message-appear, .modal-slide-up {
-    animation: none;
+  .ai-header {
+    padding: 12px;
+  }
+  
+  .ai-body {
+    padding: 12px;
+  }
+  
+  .chat-message {
+    font-size: 0.8rem;
+    padding: 6px 8px;
   }
 }
 
@@ -2501,17 +2985,17 @@ export default {
     border: 2px solid #000000;
   }
   
-  .option-label {
+  .option-label, .quiz-option {
     border: 2px solid #000000;
     background: #ffffff;
   }
   
-  .option-label:hover {
+  .option-label:hover, .quiz-option:hover {
     background: #f0f0f0;
     border-color: #000000;
   }
   
-  .ai-chat-modal {
+  .floating-ai-assistant {
     border: 2px solid #000000;
     background: #ffffff;
   }
@@ -2529,25 +3013,124 @@ export default {
   }
 }
 
-/* ===== FOCUS MANAGEMENT ===== */
-.ai-help-btn:focus,
-.ai-close-btn:focus,
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .loading-spinner {
+    animation: none;
+  }
+  
+  .modal-appear, .fadeIn {
+    animation: none;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .lesson-page {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: #e2e8f0;
+  }
+  
+  .lesson-left, .lesson-right {
+    background: #334155;
+    border-color: #475569;
+  }
+  
+  .modal-content {
+    background: #334155;
+    color: #e2e8f0;
+  }
+  
+  .option-label, .quiz-option {
+    background: #475569;
+    border-color: #64748b;
+    color: #e2e8f0;
+  }
+  
+  .answer-textarea {
+    background: #475569;
+    border-color: #64748b;
+    color: #e2e8f0;
+  }
+  
+  .content-text, .exercise-question, .quiz-question {
+    color: #e2e8f0;
+  }
+  
+  .stat-card {
+    background: #475569;
+    border-color: #64748b;
+  }
+  
+  .mistake-review {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+  
+  .mistake-item {
+    background: #475569;
+    border-color: #ef4444;
+  }
+  
+  .floating-ai-assistant {
+    background: #334155;
+    color: #e2e8f0;
+  }
+  
+  .ai-header {
+    background: linear-gradient(135deg, #475569 0%, #334155 100%);
+    color: #e2e8f0;
+  }
+  
+  .ai-help-section {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+  
+  .explanation-help {
+    background: rgba(139, 92, 246, 0.1);
+    border-color: rgba(139, 92, 246, 0.3);
+  }
+  
+  .smart-hint {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+  
+  .progress-insight {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+}
+
+/* Focus Management */
 .nav-btn:focus,
 .submit-btn:focus,
 .next-btn:focus,
 .option-radio:focus,
-.answer-textarea:focus {
+.quiz-radio:focus,
+.answer-textarea:focus,
+.exit-btn:focus,
+.exit-btn-small:focus,
+.floating-ai-btn:focus,
+.close-ai-btn:focus {
   outline: 3px solid #4f46e5;
   outline-offset: 2px;
 }
 
-/* ===== PRINT STYLES ===== */
+/* Print Styles */
 @media print {
-  .floating-robot,
-  .ai-help-btn,
-  .ai-chat-modal,
   .exit-btn,
-  .exit-btn-small {
+  .exit-btn-small,
+  .modal,
+  .floating-ai-btn,
+  .floating-ai-assistant {
     display: none !important;
   }
   
@@ -2566,80 +3149,198 @@ export default {
   }
 }
 
-/* ===== LOADING STATES ===== */
-.chat-message.loading {
-  background: linear-gradient(90deg, #f1f5f9, #e2e8f0, #f1f5f9);
-  background-size: 200% 100%;
-  animation: loading-shimmer 1.5s infinite;
+/* Loading States for Interactive Elements */
+.submit-btn:disabled {
+  position: relative;
 }
 
-@keyframes loading-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+.submit-btn:disabled::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: auto;
+  border: 2px solid transparent;
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
-/* ===== SCROLLBAR STYLING ===== */
-.ai-chat-body::-webkit-scrollbar {
+/* Accessibility Enhancements */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Smooth Transitions */
+.lesson-page * {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced Button States */
+.nav-btn:active,
+.submit-btn:active,
+.next-btn:active,
+.action-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Custom Scrollbar */
+.step-content::-webkit-scrollbar,
+.exercise-body::-webkit-scrollbar,
+.quiz-body::-webkit-scrollbar,
+.ai-chat-history::-webkit-scrollbar,
+.ai-body::-webkit-scrollbar {
   width: 6px;
 }
 
-.ai-chat-body::-webkit-scrollbar-track {
+.step-content::-webkit-scrollbar-track,
+.exercise-body::-webkit-scrollbar-track,
+.quiz-body::-webkit-scrollbar-track,
+.ai-chat-history::-webkit-scrollbar-track,
+.ai-body::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.ai-chat-body::-webkit-scrollbar-thumb {
+.step-content::-webkit-scrollbar-thumb,
+.exercise-body::-webkit-scrollbar-thumb,
+.quiz-body::-webkit-scrollbar-thumb,
+.ai-chat-history::-webkit-scrollbar-thumb,
+.ai-body::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.4);
   border-radius: 3px;
 }
 
-.ai-chat-body::-webkit-scrollbar-thumb:hover {
+.step-content::-webkit-scrollbar-thumb:hover,
+.exercise-body::-webkit-scrollbar-thumb:hover,
+.quiz-body::-webkit-scrollbar-thumb:hover,
+.ai-chat-history::-webkit-scrollbar-thumb:hover,
+.ai-body::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.6);
 }
 
-/* ===== DARK MODE SUPPORT ===== */
-@media (prefers-color-scheme: dark) {
-  .lesson-page {
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    color: #e2e8f0;
+/* Animation for step transitions */
+.step-content {
+  animation: stepFadeIn 0.3s ease-out;
+}
+
+@keyframes stepFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Enhanced hover effects */
+.option-label:hover .option-text,
+.quiz-option:hover .quiz-option-text {
+  color: #1e293b;
+}
+
+/* Selection highlighting */
+::selection {
+  background: rgba(99, 102, 241, 0.2);
+  color: #1e293b;
+}
+
+/* Ensure proper stacking contexts */
+.modal {
+  isolation: isolate;
+}
+
+.confetti-canvas {
+  isolation: isolate;
+}
+
+.floating-ai-assistant {
+  isolation: isolate;
+}
+
+/* Performance optimizations */
+.lesson-page {
+  will-change: auto;
+  contain: layout style paint;
+}
+
+.progress-bar {
+  will-change: width;
+}
+
+.loading-spinner {
+  will-change: transform;
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .option-label,
+  .quiz-option {
+    min-height: 44px;
   }
   
-  .lesson-left, .lesson-right {
-    background: #334155;
-    border-color: #475569;
+  .nav-btn,
+  .submit-btn,
+  .next-btn,
+  .hint-btn {
+    min-height: 44px;
+  }
+  
+  .exit-btn,
+  .exit-btn-small {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .floating-ai-btn {
+    min-width: 56px;
+    min-height: 56px;
+  }
+  
+  .close-ai-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-height: 500px) and (orientation: landscape) {
+  .intro-screen {
+    min-height: auto;
+    padding: 20px;
+  }
+  
+  .lesson-split {
+    min-height: auto;
+  }
+  
+  .floating-ai-assistant {
+    max-height: 80vh;
+    bottom: 60px;
   }
   
   .modal-content {
-    background: #334155;
-    color: #e2e8f0;
+    max-height: 80vh;
+    overflow-y: auto;
   }
-  
-  .option-label {
-    background: #475569;
-    border-color: #64748b;
-    color: #e2e8f0;
-  }
-  
-  .answer-textarea {
-    background: #475569;
-    border-color: #64748b;
-    color: #e2e8f0;
-  }
-  
-  .explanation-text, .exercise-question {
-    color: #e2e8f0;
-  }
-  
-  .ai-chat-modal {
-    background: rgba(51, 65, 85, 0.95);
-  }
-  
-  .ai-chat-header {
-    background: linear-gradient(135deg, #475569 0%, #334155 100%);
-    color: #e2e8f0;
-  }
-  
-  .ai-chat-body {
-    background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+  .medal-image {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
   }
 }
 </style>
