@@ -6,55 +6,53 @@
       <p class="loading-text">Загрузка информации о курсе...</p>
     </div>
 
-    <!-- Error State -->
+    <!-- Error/Not Found State -->
     <div v-else-if="!topic" class="error-container">
       <div class="error-icon">❌</div>
       <h3 class="error-title">Тема не найдена</h3>
       <p class="error-message">Возможно, тема была удалена или у вас нет к ней доступа</p>
-      <button @click="$router.push('/catalogue')" class="btn btn-back">
+      <button @click="$router.push('/profile/catalogue')" class="btn-back">
         ⬅️ Назад к каталогу
       </button>
     </div>
 
     <!-- Main Content -->
     <div v-else class="topic-content">
-      <!-- Navigation Header -->
-      <div class="nav-header">
-        <button @click="$router.push('/catalogue')" class="back-button">
+      <!-- Header with Navigation -->
+      <div class="topic-header">
+        <button @click="$router.push('/profile/catalogue')" class="back-button">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
           Назад к каталогу
         </button>
-      </div>
-
-      <!-- Topic Header -->
-      <div class="topic-header">
+        
         <div class="topic-hero">
-          <div class="topic-icon">📘</div>
           <div class="topic-info">
-            <h1 class="topic-title">{{ getTopicName(topic) }}</h1>
+            <h1 class="topic-title">
+              📘 {{ getTopicName(topic) }}
+            </h1>
             <p class="topic-description">{{ getTopicDescription(topic) }}</p>
           </div>
-        </div>
-        
-        <!-- Topic Stats -->
-        <div class="topic-stats">
-          <div class="stat-card">
-            <div class="stat-number">{{ lessons.length }}</div>
-            <div class="stat-label">Всего уроков</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">{{ freeCount }}</div>
-            <div class="stat-label">Бесплатных</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">{{ premiumCount }}</div>
-            <div class="stat-label">Премиум</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">{{ availableCount }}</div>
-            <div class="stat-label">Доступных</div>
+          
+          <!-- Topic Stats -->
+          <div class="topic-stats">
+            <div class="stat-card">
+              <div class="stat-number">{{ lessons.length }}</div>
+              <div class="stat-label">Всего уроков</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">{{ freeCount }}</div>
+              <div class="stat-label">Бесплатных</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">{{ premiumCount }}</div>
+              <div class="stat-label">Премиум</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">{{ availableCount }}</div>
+              <div class="stat-label">Доступных</div>
+            </div>
           </div>
         </div>
       </div>
@@ -63,9 +61,10 @@
       <div class="lessons-section">
         <div class="section-header">
           <h2 class="section-title">
-            <span class="section-icon">📚</span>
-            Уроки курса
+            📚 Уроки курса
           </h2>
+          
+          <!-- Lesson Filters -->
           <div class="lesson-filters">
             <button 
               :class="['filter-btn', { active: filter === 'all' }]"
@@ -91,10 +90,8 @@
         <!-- No Lessons State -->
         <div v-if="filteredLessons.length === 0" class="no-lessons">
           <div class="no-lessons-icon">📭</div>
-          <h3 class="no-lessons-title">Уроки не найдены</h3>
-          <p class="no-lessons-text">
-            {{ filter !== 'all' ? 'Попробуйте изменить фильтр' : 'В этой теме пока нет уроков' }}
-          </p>
+          <h3>Уроки не найдены</h3>
+          <p>{{ filter !== 'all' ? 'Попробуйте изменить фильтр' : 'В этой теме пока нет уроков' }}</p>
         </div>
 
         <!-- Lessons Grid -->
@@ -107,7 +104,6 @@
               locked: lesson.type === 'premium' && userPlan === 'free',
               premium: lesson.type === 'premium'
             }"
-            @click="startLesson(lesson)"
           >
             <!-- Lesson Number -->
             <div class="lesson-number">{{ index + 1 }}</div>
@@ -115,16 +111,10 @@
             <!-- Lesson Type Badge -->
             <div class="lesson-badge" :class="lesson.type">
               <span v-if="lesson.type === 'premium'">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6 10V8C6 5.79086 7.79086 4 10 4H14C16.2091 4 18 5.79086 18 8V10H20V20H4V10H6ZM8 10H16V8C16 6.89543 15.1046 6 14 6H10C8.89543 6 8 6.89543 8 8V10Z"/>
-                </svg>
-                Премиум
+                🔒 Премиум
               </span>
               <span v-else>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"/>
-                </svg>
-                Бесплатно
+                ✅ Бесплатно
               </span>
             </div>
 
@@ -136,27 +126,13 @@
               <!-- Lesson Meta -->
               <div class="lesson-meta">
                 <span v-if="lesson.steps?.length" class="meta-item">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 11H15M9 15H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L19.7071 9.70711C19.8946 9.89464 20 10.149 20 10.4142V19C20 20.1046 19.1046 21 18 21H17Z"/>
-                  </svg>
-                  {{ lesson.steps.length }} шагов
+                  📝 {{ lesson.steps.length }} шагов
                 </span>
                 <span v-if="lesson.metadata?.estimatedDuration" class="meta-item">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="12,6 12,12 16,14"/>
-                  </svg>
-                  {{ lesson.metadata.estimatedDuration }} мин
+                  ⏱️ {{ lesson.metadata.estimatedDuration }} мин
                 </span>
                 <span v-if="lesson.homework?.totalExercises > 0" class="meta-item">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z"/>
-                    <polyline points="14,2 14,8 20,8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
-                    <polyline points="10,9 9,9 8,9"/>
-                  </svg>
-                  {{ lesson.homework.totalExercises }} заданий
+                  📚 {{ lesson.homework.totalExercises }} заданий
                 </span>
               </div>
             </div>
@@ -164,13 +140,13 @@
             <!-- Action Button -->
             <div class="lesson-action">
               <button 
+                @click="startLesson(lesson)"
+                :disabled="lesson.type === 'premium' && userPlan === 'free'"
                 class="action-btn"
                 :class="{ 
                   locked: lesson.type === 'premium' && userPlan === 'free',
                   premium: lesson.type === 'premium' && userPlan === 'free'
                 }"
-                :disabled="lesson.type === 'premium' && userPlan === 'free'"
-                @click.stop="startLesson(lesson)"
               >
                 <span v-if="lesson.type === 'premium' && userPlan === 'free'">
                   🔒 Требуется подписка
@@ -181,48 +157,38 @@
               </button>
             </div>
 
-            <!-- Lock Overlay -->
+            <!-- Lock Overlay for Premium -->
             <div v-if="lesson.type === 'premium' && userPlan === 'free'" class="lock-overlay">
-              <div class="lock-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6 10V8C6 5.79086 7.79086 4 10 4H14C16.2091 4 18 5.79086 18 8V10H20V20H4V10H6ZM8 10H16V8C16 6.89543 15.1046 6 14 6H10C8.89543 6 8 6.89543 8 8V10Z"/>
-                </svg>
-              </div>
+              <div class="lock-icon">🔒</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Action Section -->
-      <div class="action-section">
-        <div class="action-content">
-          <h3 class="action-title">Готовы начать обучение?</h3>
-          <p class="action-description">
+      <!-- Start Course Section -->
+      <div class="start-section">
+        <div class="start-content">
+          <h3 class="start-title">Готовы начать обучение?</h3>
+          <p class="start-description">
             {{ availableCount > 0 
               ? `У вас есть доступ к ${availableCount} урокам из ${lessons.length}` 
               : 'Оформите подписку для доступа ко всем урокам'
             }}
           </p>
-          <div class="action-buttons">
+          <div class="start-actions">
             <button 
               v-if="availableCount > 0"
               @click="startFirstLesson" 
-              class="btn btn-primary btn-start"
+              class="start-btn primary"
             >
               🚀 Начать первый урок
             </button>
             <button 
               v-else
               @click="handleSubscription" 
-              class="btn btn-premium btn-start"
+              class="start-btn premium"
             >
               ⭐ Оформить подписку
-            </button>
-            <button 
-              @click="$router.push('/catalogue')" 
-              class="btn btn-secondary"
-            >
-              📚 Другие курсы
             </button>
           </div>
         </div>
@@ -279,11 +245,12 @@ export default {
       const BASE_URL = import.meta.env.VITE_API_BASE_URL;
       
       console.log('🔍 TopicOverview mounted for topic:', topicId);
-      
+      console.log('🌐 API Base URL:', BASE_URL);
+
       try {
         this.loading = true;
         
-        // Load user plan
+        // Load user plan first
         await this.loadUserPlan();
         
         // Load topic data
@@ -327,28 +294,29 @@ export default {
     
     getTopicName(topic) {
       if (!topic) return 'Без названия';
-      return topic.name?.en || topic.name || 'Без названия';
+      return topic.name || 'Без названия';
     },
     
     getTopicDescription(topic) {
       if (!topic) return 'Нет описания для этой темы.';
-      return topic.description?.en || topic.description || 'Нет описания для этой темы.';
+      return topic.description || 'Нет описания для этой темы.';
     },
     
     getLessonName(lesson) {
       if (!lesson) return 'Без названия';
-      return lesson.lessonName?.en || lesson.lessonName || 'Без названия';
+      return lesson.lessonName || 'Без названия';
     },
     
     getLessonDescription(lesson) {
       if (!lesson) return '';
-      return lesson.description?.en || lesson.description || '';
+      return lesson.description || '';
     },
     
     startLesson(lesson) {
       console.log('➡️ Start lesson clicked:', lesson._id);
       
       if (lesson.type === 'premium' && this.userPlan === 'free') {
+        alert('❌ Урок доступен только подписчикам.');
         this.handleSubscription();
         return;
       }
@@ -365,6 +333,7 @@ export default {
         console.log('🚀 Starting first available lesson:', firstAvailable._id);
         this.startLesson(firstAvailable);
       } else {
+        alert('❌ Нет доступных бесплатных уроков.');
         this.handleSubscription();
       }
     },
@@ -372,10 +341,12 @@ export default {
     handleSubscription() {
       // Navigate to payment/subscription page
       this.$router.push({
-        name: 'PaymentPage',
+        name: 'PaymePayment',
+        params: { plan: 'start' },
         query: { 
+          returnTo: this.$route.fullPath,
           from: 'topic',
-          topicId: this.topic._id 
+          topicId: this.topic?._id 
         }
       });
     }
@@ -396,7 +367,7 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 60vh;
+  min-height: 70vh;
   color: white;
 }
 
@@ -425,7 +396,7 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 60vh;
+  min-height: 70vh;
   color: white;
   text-align: center;
   padding: 2rem;
@@ -448,19 +419,11 @@ export default {
   opacity: 0.9;
 }
 
-/* Navigation */
-.nav-header {
-  padding: 1.5rem 2rem 0;
-}
-
-.back-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+.btn-back {
   background: rgba(255, 255, 255, 0.1);
   color: white;
   border: none;
-  padding: 0.75rem 1.25rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -468,7 +431,7 @@ export default {
   backdrop-filter: blur(10px);
 }
 
-.back-button:hover {
+.btn-back:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: translateY(-1px);
 }
@@ -486,16 +449,32 @@ export default {
   color: white;
 }
 
-.topic-hero {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.5rem;
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
   margin-bottom: 2rem;
 }
 
-.topic-icon {
-  font-size: 4rem;
-  flex-shrink: 0;
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.topic-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
 }
 
 .topic-info {
@@ -503,14 +482,14 @@ export default {
 }
 
 .topic-title {
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: 800;
   margin: 0 0 1rem 0;
   line-height: 1.2;
 }
 
 .topic-description {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   opacity: 0.9;
   line-height: 1.6;
   margin: 0;
@@ -519,29 +498,29 @@ export default {
 /* Topic Stats */
 .topic-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
-  max-width: 600px;
+  min-width: 280px;
 }
 
 .stat-card {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 16px;
-  padding: 1.5rem 1rem;
+  padding: 1.25rem;
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .stat-number {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 800;
   line-height: 1;
   margin-bottom: 0.5rem;
 }
 
 .stat-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   opacity: 0.8;
   font-weight: 500;
 }
@@ -566,17 +545,10 @@ export default {
 }
 
 .section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
   font-size: 1.75rem;
   font-weight: 700;
   color: #1f2937;
   margin: 0;
-}
-
-.section-icon {
-  font-size: 1.5rem;
 }
 
 /* Lesson Filters */
@@ -622,13 +594,13 @@ export default {
   margin-bottom: 1rem;
 }
 
-.no-lessons-title {
+.no-lessons h3 {
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
 }
 
-.no-lessons-text {
+.no-lessons p {
   font-size: 1rem;
   margin: 0;
 }
@@ -647,25 +619,18 @@ export default {
   border: 2px solid #e5e7eb;
   border-radius: 16px;
   padding: 1.5rem;
-  cursor: pointer;
   transition: all 0.3s ease;
   overflow: hidden;
 }
 
-.lesson-card:hover {
+.lesson-card:hover:not(.locked) {
   border-color: #3b82f6;
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 .lesson-card.locked {
   opacity: 0.7;
-  cursor: default;
-}
-
-.lesson-card.locked:hover {
-  transform: none;
-  border-color: #e5e7eb;
 }
 
 .lesson-card.premium {
@@ -744,16 +709,9 @@ export default {
 }
 
 .meta-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   color: #6b7280;
   font-size: 0.85rem;
   font-weight: 500;
-}
-
-.meta-item svg {
-  opacity: 0.7;
 }
 
 /* Action Button */
@@ -784,7 +742,7 @@ export default {
   color: white;
 }
 
-.action-btn.premium:hover {
+.action-btn.premium:hover:not(:disabled) {
   background: #d97706;
 }
 
@@ -810,12 +768,12 @@ export default {
 }
 
 .lock-icon {
-  color: #6b7280;
+  font-size: 2rem;
   opacity: 0.7;
 }
 
-/* Action Section */
-.action-section {
+/* Start Section */
+.start-section {
   background: white;
   margin: 0 1rem;
   padding: 3rem 2rem;
@@ -824,92 +782,61 @@ export default {
   border-top: 1px solid #e5e7eb;
 }
 
-.action-content {
+.start-content {
   max-width: 600px;
   margin: 0 auto;
 }
 
-.action-title {
+.start-title {
   font-size: 1.75rem;
   font-weight: 700;
   color: #1f2937;
   margin: 0 0 0.75rem 0;
 }
 
-.action-description {
+.start-description {
   font-size: 1.1rem;
   color: #6b7280;
   margin: 0 0 2rem 0;
   line-height: 1.6;
 }
 
-.action-buttons {
+.start-actions {
   display: flex;
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
 }
 
-/* Buttons */
-.btn {
+.start-btn {
   padding: 1rem 2rem;
   border-radius: 12px;
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 2px solid transparent;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
+  border: none;
+  min-width: 200px;
 }
 
-.btn-primary {
+.start-btn.primary {
   background: #3b82f6;
   color: white;
 }
 
-.btn-primary:hover {
+.start-btn.primary:hover {
   background: #2563eb;
   transform: translateY(-2px);
 }
 
-.btn-premium {
+.start-btn.premium {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   color: white;
 }
 
-.btn-premium:hover {
+.start-btn.premium:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
-}
-
-.btn-secondary {
-  background: transparent;
-  color: #6b7280;
-  border-color: #d1d5db;
-}
-
-.btn-secondary:hover {
-  background: #f8fafc;
-  border-color: #9ca3af;
-  color: #374151;
-}
-
-.btn-back {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: none;
-  backdrop-filter: blur(10px);
-}
-
-.btn-back:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.btn-start {
-  min-width: 200px;
 }
 
 /* Responsive Design */
@@ -920,16 +847,12 @@ export default {
   
   .topic-hero {
     flex-direction: column;
-    text-align: center;
-    gap: 1rem;
-  }
-  
-  .topic-icon {
-    font-size: 3rem;
+    gap: 1.5rem;
   }
   
   .topic-stats {
     grid-template-columns: repeat(2, 1fr);
+    width: 100%;
   }
   
   .section-header {
@@ -949,14 +872,14 @@ export default {
     grid-template-columns: 1fr;
   }
   
-  .action-buttons {
+  .start-actions {
     flex-direction: column;
     align-items: center;
   }
   
-  .btn {
+  .start-btn {
     width: 100%;
-    max-width: 280px;
+    max-width: 300px;
   }
   
   .lessons-section {
@@ -964,13 +887,9 @@ export default {
     padding: 1.5rem;
   }
   
-  .action-section {
+  .start-section {
     margin: 0 0.5rem;
     padding: 2rem 1.5rem;
-  }
-  
-  .nav-header {
-    padding: 1rem;
   }
   
   .topic-header {
@@ -992,7 +911,7 @@ export default {
   }
   
   .stat-number {
-    font-size: 2rem;
+    font-size: 1.75rem;
   }
   
   .lesson-card {
@@ -1016,66 +935,13 @@ export default {
   }
 }
 
-/* Animation Classes */
-.fade-in {
-  animation: fadeIn 0.5s ease-in;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.slide-up {
-  animation: slideUp 0.6s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(40px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 /* Focus States for Accessibility */
 .back-button:focus,
 .action-btn:focus,
-.btn:focus,
-.filter-btn:focus {
+.start-btn:focus,
+.filter-btn:focus,
+.btn-back:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
-}
-
-/* Print Styles */
-@media print {
-  .topic-overview {
-    background: white !important;
-  }
-  
-  .back-button,
-  .action-section {
-    display: none;
-  }
-  
-  .lesson-card {
-    break-inside: avoid;
-    border: 1px solid #e5e7eb !important;
-    background: white !important;
-  }
-}
-
-/* Dark Mode Support (if needed later) */
-@media (prefers-color-scheme: dark) {
-  /* Dark mode styles can be added here */
 }
 </style>
