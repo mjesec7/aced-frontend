@@ -25,10 +25,12 @@ import PaymentFailed from '@/components/Payments/PaymentFailed.vue';
 import PaymentSuccess from '@/components/Payments/PaymentSuccess.vue';
 import PaymentReturn from '@/components/Payments/PaymentReturn.vue';
 
+// ✅ FIXED: Import TopicOverview from the correct location
+import TopicOverview from '@/components/Topics/TopicOverview.vue';
+
 // ✅ Lazy-loaded Views
 const LessonPage = () => import('@/views/LessonPage.vue');
 const TopicFinished = () => import('@/views/TopicFinished.vue');
-const TopicOverview = () => import('@/views/TopicOverview.vue');
 
 // ✅ Payment Views (Lazy-loaded)
 const PaymeCheckout = () => import('@/views/PaymeCheckout.vue');
@@ -443,6 +445,7 @@ const routes = [
     }
   },
   
+  // ✅ FIXED: TopicOverview route now uses the correct component
   {
     path: '/topic/:id/overview',
     name: 'TopicOverview',
@@ -763,7 +766,7 @@ router.isReady().then(() => {
   
   console.log('  📚 Learning routes:');
   console.log('    /lesson/:id (LessonPage - requires auth)');
-  console.log('    /topic/:id/overview (TopicOverview - requires auth)');
+  console.log('    /topic/:id/overview (TopicOverview - requires auth) ✅ FIXED');
   console.log('    /finished (TopicFinished - requires auth)');
   
   console.log('  🔄 Redirects:');
