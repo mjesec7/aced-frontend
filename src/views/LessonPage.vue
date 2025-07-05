@@ -18,7 +18,7 @@
     </div>
 
     <!-- Paywall Modal -->
-    <div v-if="showPaywallModal" class="modal">
+    <div v-if="showPaywallModal" class="modal-overlay">
       <div class="modal-content">
         <h3>🔒 Платный контент</h3>
         <p>Этот урок доступен только для подписчиков.</p>
@@ -30,7 +30,7 @@
     </div>
 
     <!-- Exit Confirmation Modal -->
-    <div v-if="showExitModal" class="modal">
+    <div v-if="showExitModal" class="modal-overlay">
       <div class="modal-content">
         <h3>Вы действительно хотите выйти?</h3>
         <p>Ваш прогресс будет сохранён автоматически.</p>
@@ -49,36 +49,45 @@
         <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) || 'Без названия' }}</h2>
         <p class="lesson-description">{{ getLocalized(lesson.description) || 'Описание недоступно' }}</p>
         
-        <div class="lesson-info">
-          <div class="info-item">
-            <span class="info-icon">⏱️</span>
-            <span>Время: ~{{ estimatedTime }} минут</span>
+        <div class="lesson-info-grid">
+          <div class="info-card">
+            <div class="info-icon">⏱️</div>
+            <div class="info-text">
+              <span class="info-label">Время</span>
+              <span class="info-value">~{{ estimatedTime }} мин</span>
+            </div>
           </div>
-          <div class="info-item">
-            <span class="info-icon">📝</span>
-            <span>Шагов: {{ steps.length }}</span>
+          <div class="info-card">
+            <div class="info-icon">📝</div>
+            <div class="info-text">
+              <span class="info-label">Шагов</span>
+              <span class="info-value">{{ steps.length }}</span>
+            </div>
           </div>
-          <div class="info-item">
-            <span class="info-icon">🎯</span>
-            <span>Тип: {{ lesson.type === 'premium' ? 'Премиум' : 'Бесплатный' }}</span>
+          <div class="info-card">
+            <div class="info-icon">🎯</div>
+            <div class="info-text">
+              <span class="info-label">Тип</span>
+              <span class="info-value">{{ lesson.type === 'premium' ? 'Премиум' : 'Бесплатный' }}</span>
+            </div>
           </div>
         </div>
         
         <!-- Previous Progress Display -->
         <div v-if="previousProgress && previousProgress.completedSteps.length > 0" class="previous-progress">
           <h4>📈 Предыдущий прогресс</h4>
-          <div class="progress-stats">
+          <div class="progress-stats-grid">
             <div class="stat">
-              <span class="stat-label">Прогресс:</span>
-              <span class="stat-value">{{ previousProgress.completedSteps.length }}/{{ steps.length }} шагов</span>
+              <span class="stat-value">{{ previousProgress.completedSteps.length }}/{{ steps.length }}</span>
+              <span class="stat-label">Прогресс</span>
             </div>
             <div class="stat">
-              <span class="stat-label">Звезды:</span>
               <span class="stat-value">⭐ {{ previousProgress.stars || 0 }}</span>
+              <span class="stat-label">Звезды</span>
             </div>
             <div class="stat">
-              <span class="stat-label">Ошибки:</span>
               <span class="stat-value">❌ {{ previousProgress.mistakes || 0 }}</span>
+              <span class="stat-label">Ошибки</span>
             </div>
           </div>
           <button @click="continuePreviousProgress" class="continue-btn">
@@ -94,371 +103,390 @@
       </div>
     </div>
 
-    <!-- Main Lesson Content -->
-    <div v-else-if="started && !showPaywallModal && !loading && !error" 
-         :class="lessonCompleted ? 'lesson-complete-wrapper' : 'lesson-split'">
+    <!-- Main Lesson Content - ALWAYS SPLIT SCREEN -->
+    <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
       
-      <!-- Left Panel - Content -->
-      <div :class="lessonCompleted ? 'lesson-complete-full' : 'lesson-left'">
+      <!-- Top Header -->
+      <div class="lesson-header">
+        <button class="exit-btn-small" @click="confirmExit">✕</button>
+        <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) }}</h2>
+        <div class="lesson-meta">
+          <div class="timer-display">⏱ {{ formattedTime }}</div>
+          <div class="step-counter">{{ currentIndex + 1 }}/{{ steps.length }}</div>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="progress-section">
+        <div class="progress-bar-wrapper">
+          <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
+        </div>
+        <div class="progress-info">
+          <span class="progress-label">{{ progressPercentage }}% завершено</span>
+          <span class="stars-display">⭐ {{ stars }}</span>
+        </div>
+      </div>
+
+      <!-- Split Screen Content -->
+      <div class="split-content">
         
-        <!-- Lesson Header -->
-        <div v-if="!lessonCompleted" class="lesson-header">
-          <button class="exit-btn-small" @click="confirmExit">✕</button>
-          <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) }}</h2>
-          <div class="lesson-meta">
-            <div class="timer-display">⏱ {{ formattedTime }}</div>
-            <div class="step-counter">{{ currentIndex + 1 }}/{{ steps.length }}</div>
+        <!-- Left Panel - Content Display -->
+        <div class="content-panel">
+          <div class="step-header">
+            <h3 class="step-title">
+              <span class="step-number">{{ currentIndex + 1 }}</span>
+              <span class="step-type-icon">{{ getStepIcon(currentStep?.type) }}</span>
+              <span class="step-type-text">{{ getStepTypeText(currentStep?.type) }}</span>
+            </h3>
           </div>
-        </div>
-
-        <!-- Progress Bar -->
-        <div v-if="!lessonCompleted" class="progress-section">
-          <div class="progress-bar-wrapper">
-            <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
-          </div>
-          <div class="progress-info">
-            <span class="progress-label">{{ progressPercentage }}% завершено</span>
-            <span class="stars-display">⭐ {{ stars }}</span>
-          </div>
-        </div>
-
-        <!-- Current Step Content -->
-        <div v-if="!lessonCompleted && currentStep" class="step-content">
           
-          <!-- Explanation or Example Step -->
-          <div v-if="['explanation', 'example', 'reading'].includes(currentStep.type)" class="content-step">
-            <div class="step-header">
-              <h3 class="step-title">
-                <span v-if="currentStep.type === 'explanation'">📚 Объяснение</span>
-                <span v-else-if="currentStep.type === 'example'">💡 Пример</span>
-                <span v-else>📖 Чтение</span>
+          <div class="step-content">
+            <!-- Explanation or Reading Step -->
+            <div v-if="['explanation', 'example', 'reading'].includes(currentStep?.type)" class="text-content">
+              <div class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
+              
+              <!-- AI Help for Explanations -->
+              <div v-if="showExplanationHelp" class="explanation-help">
+                <h4>🤖 Нужна помощь с пониманием?</h4>
+                <div class="explanation-help-input">
+                  <input 
+                    v-model="explanationQuestion" 
+                    placeholder="Задайте вопрос об этом объяснении..."
+                    @keyup.enter="askAboutExplanation"
+                  />
+                  <button @click="askAboutExplanation" :disabled="!explanationQuestion.trim()">
+                    Спросить AI
+                  </button>
+                </div>
+                <div v-if="explanationAIResponse" class="ai-response">
+                  <p>{{ explanationAIResponse }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Vocabulary Step -->
+            <div v-else-if="currentStep?.type === 'vocabulary'" class="vocabulary-content">
+              <div v-if="Array.isArray(currentStep.data)" class="vocabulary-list">
+                <div v-for="(vocab, index) in currentStep.data" :key="index" class="vocabulary-item">
+                  <div class="vocab-term">{{ vocab.term }}</div>
+                  <div class="vocab-definition">{{ vocab.definition }}</div>
+                  <div v-if="vocab.example" class="vocab-example">
+                    <strong>Пример:</strong> {{ vocab.example }}
+                  </div>
+                </div>
+              </div>
+              <div v-else class="single-vocabulary">
+                <div class="vocab-term">{{ currentStep.data.term || 'Термин' }}</div>
+                <div class="vocab-definition">{{ currentStep.data.definition || 'Определение' }}</div>
+                <div v-if="currentStep.data.example" class="vocab-example">
+                  <strong>Пример:</strong> {{ currentStep.data.example }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Video/Audio Step -->
+            <div v-else-if="['video', 'audio'].includes(currentStep?.type)" class="media-content">
+              <div class="media-placeholder">
+                <div class="media-icon">{{ currentStep.type === 'video' ? '🎬' : '🎵' }}</div>
+                <h4>{{ currentStep.type === 'video' ? 'Видео урок' : 'Аудио урок' }}</h4>
+                <p>{{ currentStep.data.description || 'Мультимедиа контент' }}</p>
+                <div class="media-url">{{ currentStep.data.url || 'URL недоступен' }}</div>
+              </div>
+            </div>
+
+            <!-- Default content for other step types -->
+            <div v-else class="default-content">
+              <div class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
+            </div>
+          </div>
+          
+          <!-- Content Navigation -->
+          <div class="content-navigation">
+            <button v-if="currentIndex > 0" class="nav-btn prev-btn" @click="goPrevious">
+              ⬅️ Назад
+            </button>
+            <button 
+              v-if="!isInteractiveStep" 
+              class="nav-btn next-btn" 
+              @click="goNext"
+            >
+              {{ isLastStep ? '🏁 Завершить' : '➡️ Далее' }}
+            </button>
+            <button 
+              v-if="['explanation', 'example', 'reading'].includes(currentStep?.type)"
+              class="help-btn" 
+              @click="showExplanationHelp = !showExplanationHelp"
+              :class="{ active: showExplanationHelp }"
+            >
+              🤖 {{ showExplanationHelp ? 'Скрыть помощь' : 'AI помощь' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Panel - Interactive Content -->
+        <div class="interactive-panel">
+          
+          <!-- Exercise/Practice Step -->
+          <div v-if="isInteractiveStep && ['exercise', 'practice'].includes(currentStep?.type)" class="exercise-container">
+            <div class="exercise-header">
+              <h3 class="exercise-title">
+                {{ currentStep.type === 'practice' ? '🧪 Практическое задание' : '✏️ Упражнение' }}
               </h3>
             </div>
             
-            <div class="step-body">
-              <p class="content-text">{{ getStepContent(currentStep) }}</p>
-            </div>
+            <div class="exercise-content">
+              <div class="exercise-question">
+                {{ getExerciseQuestion(currentStep) }}
+              </div>
+              
+              <!-- Multiple Choice Options -->
+              <div v-if="hasOptions(currentStep)" class="options-grid">
+                <label 
+                  v-for="(option, index) in getOptions(currentStep)" 
+                  :key="index" 
+                  class="option-card"
+                  :class="{ 
+                    selected: userAnswer === option,
+                    correct: answerWasCorrect && userAnswer === option,
+                    incorrect: !answerWasCorrect && userAnswer === option && confirmation
+                  }"
+                >
+                  <input 
+                    type="radio" 
+                    :value="option" 
+                    v-model="userAnswer" 
+                    class="option-radio"
+                    :disabled="answerWasCorrect"
+                  />
+                  <div class="option-content">
+                    <span class="option-letter">{{ String.fromCharCode(65 + index) }}</span>
+                    <span class="option-text">{{ option }}</span>
+                  </div>
+                </label>
+              </div>
+              
+              <!-- Text Input -->
+              <div v-else class="text-input-container">
+                <textarea 
+                  v-model="userAnswer" 
+                  placeholder="Введите ваш ответ..."
+                  class="answer-textarea"
+                  :disabled="answerWasCorrect"
+                  @keyup.enter="handleSubmitOrNext"
+                ></textarea>
+              </div>
 
-            <!-- AI Help for Explanations -->
-            <div v-if="showExplanationHelp" class="explanation-help">
-              <h4>🤖 Нужна помощь с пониманием?</h4>
-              <div class="explanation-help-input">
-                <input 
-                  v-model="explanationQuestion" 
-                  placeholder="Задайте вопрос об этом объяснении..."
-                  @keyup.enter="askAboutExplanation"
-                />
-                <button @click="askAboutExplanation" :disabled="!explanationQuestion.trim()">
-                  Спросить AI
+              <!-- Smart Hint Display -->
+              <div v-if="smartHint" class="smart-hint">
+                <div class="hint-header">💡 Подсказка от AI</div>
+                <div class="hint-content">{{ smartHint }}</div>
+                <button @click="smartHint = ''" class="close-hint-btn">✕</button>
+              </div>
+
+              <!-- Answer Feedback -->
+              <div v-if="confirmation" :class="['feedback', { 'correct': answerWasCorrect, 'incorrect': !answerWasCorrect }]">
+                <div class="feedback-icon">{{ answerWasCorrect ? '✅' : '❌' }}</div>
+                <div class="feedback-text">{{ confirmation }}</div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="exercise-actions">
+                <button 
+                  v-if="!answerWasCorrect" 
+                  class="submit-btn" 
+                  @click="handleSubmitOrNext" 
+                  :disabled="!userAnswer.trim()"
+                >
+                  🔍 Проверить ответ
+                </button>
+                <button 
+                  v-else 
+                  class="next-btn" 
+                  @click="goNext"
+                >
+                  {{ isLastStep ? '🏁 Завершить' : '➡️ Далее' }}
+                </button>
+                
+                <button 
+                  v-if="!answerWasCorrect && mistakeCount >= 2" 
+                  class="hint-btn"
+                  @click="showHint"
+                >
+                  💡 Подсказка
                 </button>
               </div>
-              <div v-if="explanationAIResponse" class="ai-response">
-                <p>{{ explanationAIResponse }}</p>
+
+              <!-- Regular Hint Display -->
+              <div v-if="currentHint" class="hint-display">
+                <div class="hint-header">💡 Подсказка</div>
+                <div class="hint-content">{{ currentHint }}</div>
               </div>
+            </div>
+          </div>
+
+          <!-- Quiz Step -->
+          <div v-else-if="isInteractiveStep && currentStep?.type === 'quiz'" class="quiz-container">
+            <div class="quiz-header">
+              <h3 class="quiz-title">🧩 Викторина</h3>
             </div>
             
-            <div class="step-navigation">
-              <button v-if="currentIndex > 0" class="nav-btn prev-btn" @click="goPrevious">⬅️ Назад</button>
-              <button class="nav-btn next-btn" @click="goNext">➡️ Далее</button>
-              <button 
-                class="help-btn" 
-                @click="showExplanationHelp = !showExplanationHelp"
-                :class="{ active: showExplanationHelp }"
-              >
-                🤖 {{ showExplanationHelp ? 'Скрыть помощь' : 'AI помощь' }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Interactive Step Placeholder (Exercise/Quiz) -->
-          <div v-else-if="['exercise', 'tryout', 'quiz'].includes(currentStep.type)" class="interactive-placeholder">
-            <div class="placeholder-content">
-              <h3>✏️ Интерактивная часть</h3>
-              <p>Практические задания отображаются в правой панели ➡️</p>
-            </div>
-            <div class="step-navigation">
-              <button v-if="currentIndex > 0" class="nav-btn prev-btn" @click="goPrevious">⬅️ Назад</button>
-            </div>
-          </div>
-
-          <!-- Unknown Step Type -->
-          <div v-else class="unknown-step">
-            <div class="unknown-content">
-              <h3>❓ Неизвестный тип шага</h3>
-              <p>Тип: {{ currentStep.type }}</p>
-              <pre>{{ JSON.stringify(currentStep.data, null, 2) }}</pre>
-            </div>
-            <div class="step-navigation">
-              <button v-if="currentIndex > 0" class="nav-btn prev-btn" @click="goPrevious">⬅️ Назад</button>
-              <button class="nav-btn next-btn" @click="goNext">➡️ Пропустить</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Lesson Completion Content -->
-        <div v-if="lessonCompleted" class="completion-content">
-          <div class="completion-header">
-            <h3 class="completion-title">🏆 Урок завершён!</h3>
-            <div class="medal-section">
-              <img :src="medalImage" alt="Медаль" class="medal-image" v-if="medalImage" />
-              <p class="medal-label">{{ medalLabel }}</p>
-            </div>
-          </div>
-          
-          <div class="completion-stats">
-            <div class="stat-card">
-              <div class="stat-icon">⏱️</div>
-              <div class="stat-info">
-                <div class="stat-value">{{ readableTime }}</div>
-                <div class="stat-label">Время прохождения</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">⭐</div>
-              <div class="stat-info">
-                <div class="stat-value">{{ stars }}</div>
-                <div class="stat-label">Звезды</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">❌</div>
-              <div class="stat-info">
-                <div class="stat-value">{{ mistakeCount }}</div>
-                <div class="stat-label">Ошибки</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">🎯</div>
-              <div class="stat-info">
-                <div class="stat-value">{{ earnedPoints }}</div>
-                <div class="stat-label">Очки</div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- AI Progress Insight -->
-          <div v-if="progressInsight" class="progress-insight">
-            <h4>🤖 Анализ прогресса</h4>
-            <p>{{ progressInsight }}</p>
-          </div>
-          
-          <p class="completion-motivation">
-            🚀 Отличная работа! Вы успешно завершили урок. Продолжайте обучение!
-          </p>
-          
-          <div class="completion-actions">
-            <button class="action-btn primary" @click="$router.push('/catalogue')">📚 К каталогу</button>
-            <button class="action-btn secondary" @click="shareResult">📤 Поделиться</button>
-            <button class="action-btn secondary" @click="goToHomework">📝 Домашнее задание</button>
-          </div>
-
-          <!-- Mistake Review Section -->
-          <div v-if="mistakeLog?.length" class="mistake-review">
-            <h4>🔍 Анализ ошибок</h4>
-            <div class="mistake-list">
-              <div v-for="(mistake, index) in mistakeLog" :key="index" class="mistake-item">
-                <div class="mistake-question">
-                  <strong>Вопрос:</strong> {{ mistake.question }}
-                </div>
-                <div class="mistake-answers">
-                  <div class="user-answer">
-                    <span class="answer-label">Ваш ответ:</span>
-                    <span class="answer-value incorrect">{{ mistake.userAnswer }}</span>
+            <div class="quiz-content">
+              <div class="quiz-question">{{ getQuizQuestion(currentStep) }}</div>
+              
+              <div class="quiz-options">
+                <label 
+                  v-for="(option, index) in getQuizOptions(currentStep)" 
+                  :key="index" 
+                  class="quiz-option-card"
+                  :class="{ 
+                    selected: userAnswer === option,
+                    correct: answerWasCorrect && userAnswer === option,
+                    incorrect: !answerWasCorrect && userAnswer === option && confirmation
+                  }"
+                >
+                  <input 
+                    type="radio" 
+                    :value="option" 
+                    v-model="userAnswer" 
+                    class="quiz-radio"
+                    :disabled="answerWasCorrect"
+                  />
+                  <div class="quiz-option-content">
+                    <span class="quiz-option-letter">{{ String.fromCharCode(65 + index) }}</span>
+                    <span class="quiz-option-text">{{ option }}</span>
                   </div>
-                  <div class="correct-answer">
-                    <span class="answer-label">Правильный ответ:</span>
-                    <span class="answer-value correct">{{ mistake.correctAnswer }}</span>
-                  </div>
-                </div>
-                <button @click="retryStep(mistake.stepIndex)" class="retry-step-btn">
-                  🔁 Повторить этот шаг
+                </label>
+              </div>
+
+              <div v-if="confirmation" :class="['feedback', { 'correct': answerWasCorrect, 'incorrect': !answerWasCorrect }]">
+                <div class="feedback-icon">{{ answerWasCorrect ? '✅' : '❌' }}</div>
+                <div class="feedback-text">{{ confirmation }}</div>
+              </div>
+
+              <div class="quiz-actions">
+                <button 
+                  v-if="!answerWasCorrect" 
+                  class="submit-btn" 
+                  @click="handleSubmitOrNext" 
+                  :disabled="!userAnswer"
+                >
+                  🔍 Ответить
+                </button>
+                <button 
+                  v-else 
+                  class="next-btn" 
+                  @click="goNext"
+                >
+                  {{ isLastStep ? '🏁 Завершить' : '➡️ Далее' }}
                 </button>
               </div>
+            </div>
+          </div>
+
+          <!-- AI Help Panel for Interactive Steps -->
+          <div v-else-if="isInteractiveStep" class="ai-help-panel">
+            <h4>🤖 AI Помощник</h4>
+            <p>Выберите ответ слева, и я помогу вам с объяснениями!</p>
+            
+            <!-- Quick suggestions -->
+            <div v-if="aiSuggestions.length" class="quick-suggestions">
+              <p><strong>Популярные вопросы:</strong></p>
+              <button 
+                v-for="suggestion in aiSuggestions" 
+                :key="suggestion"
+                @click="askAI(suggestion)"
+                class="suggestion-btn"
+              >
+                {{ suggestion }}
+              </button>
+            </div>
+            
+            <!-- Chat input -->
+            <div class="ai-chat-input">
+              <input 
+                v-model="aiChatInput" 
+                @keyup.enter="sendAIMessage"
+                placeholder="Спросите об этом упражнении..."
+                :disabled="aiIsLoading"
+              />
+              <button 
+                @click="sendAIMessage" 
+                :disabled="!aiChatInput.trim() || aiIsLoading"
+              >
+                {{ aiIsLoading ? '⏳' : '📤' }}
+              </button>
+            </div>
+            
+            <!-- Chat history -->
+            <div v-if="aiChatHistory.length" class="ai-chat-history">
+              <div 
+                v-for="message in aiChatHistory.slice(-3)" 
+                :key="message.id"
+                :class="['chat-message', message.type]"
+              >
+                <strong v-if="message.type === 'user'">Вы:</strong>
+                <strong v-else>🤖 AI:</strong>
+                {{ message.content }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Non-interactive step placeholder -->
+          <div v-else class="non-interactive-panel">
+            <div class="panel-placeholder">
+              <div class="placeholder-icon">📖</div>
+              <h4>Изучите материал слева</h4>
+              <p>Внимательно прочитайте объяснение и переходите к следующему шагу</p>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Right Panel - Interactive Content -->
-      <div class="lesson-right" v-if="!lessonCompleted && currentStep && ['exercise', 'tryout', 'quiz'].includes(currentStep.type)">
-        
-        <!-- Exercise/Tryout Step -->
-        <div v-if="['exercise', 'tryout'].includes(currentStep.type)" class="exercise-step">
-          <div class="exercise-header">
-            <h3 class="exercise-title">
-              {{ currentStep.type === 'tryout' ? '🧪 Попробуйте' : '✏️ Упражнение' }}
-            </h3>
-            <div class="exercise-progress">
-              Шаг {{ currentIndex + 1 }} из {{ steps.length }}
-            </div>
-          </div>
-          
-          <div class="exercise-body">
-            <p class="exercise-question">{{ getExerciseQuestion(currentStep) }}</p>
-            
-            <!-- Multiple Choice Options -->
-            <div v-if="hasOptions(currentStep)" class="options-container">
-              <label v-for="(option, index) in getOptions(currentStep)" :key="index" class="option-label">
-                <input 
-                  type="radio" 
-                  :value="option" 
-                  v-model="userAnswer" 
-                  class="option-radio"
-                  :disabled="answerWasCorrect"
-                />
-                <span class="option-text">{{ option }}</span>
-              </label>
-            </div>
-            
-            <!-- Text Input -->
-            <div v-else class="text-input-container">
-              <textarea 
-                v-model="userAnswer" 
-                placeholder="Введите ваш ответ..."
-                class="answer-textarea"
-                :disabled="answerWasCorrect"
-                @keyup.enter="handleSubmitOrNext"
-              ></textarea>
-            </div>
-
-            <!-- Smart Hint Display -->
-            <div v-if="smartHint" class="smart-hint">
-              <h4>💡 Подсказка от AI</h4>
-              <p>{{ smartHint }}</p>
-              <button @click="smartHint = ''" class="close-hint-btn">✕</button>
-            </div>
-
-            <!-- AI Help Section -->
-            <div class="ai-help-section">
-              <h4>🤖 AI Помощник</h4>
-              
-              <!-- Contextual suggestions -->
-              <div v-if="aiSuggestions.length" class="ai-suggestions">
-                <p><strong>Популярные вопросы:</strong></p>
-                <button 
-                  v-for="suggestion in aiSuggestions" 
-                  :key="suggestion"
-                  @click="askAI(suggestion)"
-                  class="suggestion-btn"
-                >
-                  {{ suggestion }}
-                </button>
-              </div>
-              
-              <!-- Custom question input -->
-              <div class="ai-chat-input">
-                <input 
-                  v-model="aiChatInput" 
-                  @keyup.enter="sendAIMessage"
-                  placeholder="Задайте вопрос об этом упражнении..."
-                  :disabled="aiIsLoading"
-                />
-                <button 
-                  @click="sendAIMessage" 
-                  :disabled="!aiChatInput.trim() || aiIsLoading"
-                >
-                  {{ aiIsLoading ? '⏳' : '📤' }}
-                </button>
-              </div>
-              
-              <!-- AI Chat History -->
-              <div v-if="aiChatHistory.length" class="ai-chat-history">
-                <div 
-                  v-for="message in aiChatHistory.slice(-3)" 
-                  :key="message.id"
-                  :class="['chat-message', message.type]"
-                >
-                  <strong v-if="message.type === 'user'">Вы:</strong>
-                  <strong v-else>🤖 AI:</strong>
-                  {{ message.content }}
-                </div>
-              </div>
-            </div>
-
-            <!-- Answer Feedback -->
-            <div v-if="confirmation" :class="['confirmation', { 'correct': answerWasCorrect, 'incorrect': !answerWasCorrect }]">
-              {{ confirmation }}
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="exercise-actions">
-              <button 
-                v-if="!answerWasCorrect" 
-                class="submit-btn" 
-                @click="handleSubmitOrNext" 
-                :disabled="!userAnswer.trim()"
-              >
-                🔍 Проверить ответ
-              </button>
-              <button 
-                v-else 
-                class="next-btn" 
-                @click="goNext"
-              >
-                {{ isLastStep ? '🏁 Завершить' : '➡️ Далее' }}
-              </button>
-              
-              <button 
-                v-if="!answerWasCorrect && mistakeCount >= 2" 
-                class="hint-btn"
-                @click="showHint"
-              >
-                💡 Подсказка
-              </button>
-            </div>
-
-            <!-- Hint Display -->
-            <div v-if="currentHint" class="hint-display">
-              <div class="hint-header">💡 Подсказка</div>
-              <div class="hint-content">{{ currentHint }}</div>
-            </div>
+    <!-- Lesson Completion Screen -->
+    <div v-if="lessonCompleted" class="completion-screen">
+      <div class="completion-content">
+        <div class="completion-header">
+          <h3 class="completion-title">🏆 Урок завершён!</h3>
+          <div class="medal-section">
+            <div class="medal-icon">{{ getMedalIcon() }}</div>
+            <p class="medal-label">{{ medalLabel }}</p>
           </div>
         </div>
-
-        <!-- Quiz Step -->
-        <div v-else-if="currentStep.type === 'quiz'" class="quiz-step">
-          <div class="quiz-header">
-            <h3 class="quiz-title">🧩 Викторина</h3>
+        
+        <div class="completion-stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-value">{{ readableTime }}</div>
+            <div class="stat-label">Время</div>
           </div>
-          
-          <div class="quiz-body">
-            <p class="quiz-question">{{ getQuizQuestion(currentStep) }}</p>
-            
-            <div class="quiz-options">
-              <label v-for="(option, index) in getQuizOptions(currentStep)" :key="index" class="quiz-option">
-                <input 
-                  type="radio" 
-                  :value="option" 
-                  v-model="userAnswer" 
-                  class="quiz-radio"
-                  :disabled="answerWasCorrect"
-                />
-                <span class="quiz-option-text">{{ option }}</span>
-              </label>
-            </div>
-
-            <div v-if="confirmation" :class="['confirmation', { 'correct': answerWasCorrect, 'incorrect': !answerWasCorrect }]">
-              {{ confirmation }}
-            </div>
-
-            <div class="quiz-actions">
-              <button 
-                v-if="!answerWasCorrect" 
-                class="submit-btn" 
-                @click="handleSubmitOrNext" 
-                :disabled="!userAnswer"
-              >
-                🔍 Ответить
-              </button>
-              <button 
-                v-else 
-                class="next-btn" 
-                @click="goNext"
-              >
-                {{ isLastStep ? '🏁 Завершить' : '➡️ Далее' }}
-              </button>
-            </div>
+          <div class="stat-card">
+            <div class="stat-icon">⭐</div>
+            <div class="stat-value">{{ stars }}</div>
+            <div class="stat-label">Звезды</div>
           </div>
+          <div class="stat-card">
+            <div class="stat-icon">❌</div>
+            <div class="stat-value">{{ mistakeCount }}</div>
+            <div class="stat-label">Ошибки</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-value">{{ earnedPoints }}</div>
+            <div class="stat-label">Очки</div>
+          </div>
+        </div>
+        
+        <!-- AI Progress Insight -->
+        <div v-if="progressInsight" class="progress-insight">
+          <h4>🤖 Анализ прогресса</h4>
+          <p>{{ progressInsight }}</p>
+        </div>
+        
+        <div class="completion-actions">
+          <button class="action-btn primary" @click="$router.push('/catalogue')">📚 К каталогу</button>
+          <button class="action-btn secondary" @click="shareResult">📤 Поделиться</button>
+          <button class="action-btn secondary" @click="goToHomework">📝 Домашнее задание</button>
         </div>
       </div>
     </div>
@@ -481,12 +509,10 @@
       </div>
       
       <div class="ai-body">
-        <!-- Usage display -->
         <div v-if="aiUsage" class="usage-display">
           <p>📊 Использовано: {{ aiUsage.messages }}/{{ aiUsage.plan === 'free' ? '50' : '∞' }}</p>
         </div>
         
-        <!-- Quick suggestions -->
         <div class="quick-suggestions">
           <button 
             v-for="suggestion in quickSuggestions" 
@@ -498,7 +524,6 @@
           </button>
         </div>
         
-        <!-- Chat area -->
         <div class="ai-chat-area">
           <div class="chat-messages">
             <div 
@@ -595,7 +620,6 @@ export default {
       showExitModal: false,
       
       // Medal system
-      medalImage: '',
       medalLabel: '',
       
       // User identification
@@ -641,6 +665,10 @@ export default {
     
     currentStep() {
       return this.steps[this.currentIndex] || null;
+    },
+    
+    isInteractiveStep() {
+      return this.currentStep && ['exercise', 'practice', 'quiz'].includes(this.currentStep.type);
     },
     
     progressPercentage() {
@@ -829,7 +857,7 @@ export default {
       
       if (this.lesson.steps && Array.isArray(this.lesson.steps)) {
         this.lesson.steps.forEach(step => {
-          if (['exercise', 'tryout'].includes(step.type) && Array.isArray(step.data)) {
+          if (['exercise', 'practice'].includes(step.type) && Array.isArray(step.data)) {
             this.steps.push(...step.data.map(ex => ({ type: step.type, data: ex })));
           } else {
             this.steps.push(step);
@@ -1031,104 +1059,106 @@ export default {
       }
     },
 
-    // Progress Management
-    async saveProgress(completed = false) {
-      try {
-        if (!this.userId || !this.lesson._id) {
-          console.error('❌ Missing userId or lessonId for progress save');
-          return false;
-        }
+    // Helper Methods
+    getStepIcon(stepType) {
+      const icons = {
+        explanation: '📚',
+        example: '💡',
+        reading: '📖',
+        exercise: '✏️',
+        practice: '🧪',
+        quiz: '🧩',
+        vocabulary: '📝',
+        video: '🎬',
+        audio: '🎵'
+      };
+      return icons[stepType] || '📄';
+    },
 
-        const completedSteps = [];
-        if (this.started) {
-          const maxIndex = Math.min(this.currentIndex, this.steps.length - 1);
-          for (let i = 0; i <= maxIndex; i++) {
-            completedSteps.push(i);
-          }
-        }
+    getStepTypeText(stepType) {
+      const texts = {
+        explanation: 'Объяснение',
+        example: 'Пример',
+        reading: 'Чтение',
+        exercise: 'Упражнение',
+        practice: 'Практика',
+        quiz: 'Викторина',
+        vocabulary: 'Словарь',
+        video: 'Видео',
+        audio: 'Аудио'
+      };
+      return texts[stepType] || 'Контент';
+    },
 
-        const progressPercent = this.steps.length > 0 
-          ? Math.floor((completedSteps.length / this.steps.length) * 100) 
-          : 0;
+    getMedalIcon() {
+      if (this.mistakeCount === 0) return '🥇';
+      if (this.mistakeCount <= 2) return '🥈';
+      return '🥉';
+    },
 
-        const progressData = {
-          lessonId: String(this.lesson._id),
-          topicId: String(this.lesson.topicId || this.lesson._id),
-          completedSteps: completedSteps,
-          progressPercent: progressPercent,
-          completed: completed,
-          mistakes: this.mistakeCount,
-          medal: this.mistakeCount === 0 ? 'gold' : this.mistakeCount <= 2 ? 'silver' : 'bronze',
-          duration: this.elapsedSeconds,
-          stars: this.stars,
-          points: this.earnedPoints,
-          hintsUsed: this.hintsUsed ? 1 : 0,
-          submittedHomework: false
-        };
+    formatContent(content) {
+      if (!content) return 'Контент недоступен';
+      
+      // Convert newlines to <br> tags for proper display
+      return content.replace(/\n/g, '<br>');
+    },
 
-        console.log('📤 Saving progress:', progressData);
+    getLocalized(field) {
+      if (typeof field === 'string') return field;
+      return (field?.en || field?.ru || field?.uz || '').replace(/^(en|ru|uz):/i, '').trim();
+    },
 
-        const result = await submitProgress(this.userId, progressData);
-        
-        if (result.success) {
-          console.log('✅ Progress saved successfully');
-          return true;
-        } else {
-          console.warn('⚠️ Progress save returned success: false');
-          return false;
-        }
-        
-      } catch (err) {
-        console.error('❌ Progress save error:', err);
-        return false;
+    getStepContent(step) {
+      if (!step || !step.data) return 'Контент недоступен';
+      
+      if (typeof step.data === 'string') return step.data;
+      if (step.data.content) return this.getLocalized(step.data.content);
+      if (step.data.explanation) return this.getLocalized(step.data.explanation);
+      if (step.data.text) return this.getLocalized(step.data.text);
+      
+      return 'Контент недоступен';
+    },
+
+    getExerciseQuestion(step) {
+      if (!step || !step.data) return 'Вопрос недоступен';
+      
+      if (step.data.question) return this.getLocalized(step.data.question);
+      if (step.data.text) return this.getLocalized(step.data.text);
+      
+      return 'Вопрос недоступен';
+    },
+
+    getCorrectAnswer(step) {
+      if (!step || !step.data) return '';
+      
+      return step.data.correctAnswer || step.data.answer || '';
+    },
+
+    hasOptions(step) {
+      return step && step.data && Array.isArray(step.data.options) && step.data.options.length > 0;
+    },
+
+    getOptions(step) {
+      if (!this.hasOptions(step)) return [];
+      return step.data.options;
+    },
+
+    getQuizQuestion(step) {
+      if (!step || !step.data) return 'Вопрос недоступен';
+      return this.getLocalized(step.data.question || step.data.text || '');
+    },
+
+    getQuizOptions(step) {
+      if (!step || !step.data) return [];
+      
+      if (Array.isArray(step.data.options)) {
+        return step.data.options.map(opt => {
+          if (typeof opt === 'string') return opt;
+          return opt.text || opt.label || opt.value || '';
+        });
       }
-    },
-
-    async autosaveProgress() {
-      try {
-        const success = await this.saveProgress(false);
-        if (!success) {
-          console.log('🔄 Autosave failed, will retry in 30 seconds');
-          setTimeout(() => this.autosaveProgress(), 30000);
-        }
-      } catch (error) {
-        console.error('❌ Autosave error:', error);
-      }
-    },
-
-    // Lesson Control
-    startLesson() {
-      this.started = true;
-      this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
-      this.autosaveTimer = setInterval(() => this.autosaveProgress(), 15000);
-      this.generateAISuggestions();
-      console.log('🚀 Lesson started');
-    },
-
-    continuePreviousProgress() {
-      if (this.previousProgress) {
-        this.currentIndex = Math.min(
-          this.previousProgress.completedSteps.length, 
-          this.steps.length - 1
-        );
-        this.stars = parseInt(this.previousProgress.stars) || 0;
-        this.mistakeCount = parseInt(this.previousProgress.mistakes) || 0;
-        this.elapsedSeconds = parseInt(this.previousProgress.duration) || 0;
-        this.hintsUsed = Boolean(this.previousProgress.hintsUsed);
-        this.earnedPoints = parseInt(this.previousProgress.points) || 0;
-      }
-      this.startLesson();
-    },
-
-    async retryLoad() {
-      this.retryCount++;
-      console.log(`🔄 Retrying lesson load attempt ${this.retryCount}`);
-      await this.loadLesson();
-    },
-
-    clearTimers() {
-      clearInterval(this.timerInterval);
-      clearInterval(this.autosaveTimer);
+      
+      return [];
     },
 
     // Navigation
@@ -1229,6 +1259,106 @@ export default {
       }
     },
 
+    // Progress Management
+    async saveProgress(completed = false) {
+      try {
+        if (!this.userId || !this.lesson._id) {
+          console.error('❌ Missing userId or lessonId for progress save');
+          return false;
+        }
+
+        const completedSteps = [];
+        if (this.started) {
+          const maxIndex = Math.min(this.currentIndex, this.steps.length - 1);
+          for (let i = 0; i <= maxIndex; i++) {
+            completedSteps.push(i);
+          }
+        }
+
+        const progressPercent = this.steps.length > 0 
+          ? Math.floor((completedSteps.length / this.steps.length) * 100) 
+          : 0;
+
+        const progressData = {
+          lessonId: String(this.lesson._id),
+          topicId: String(this.lesson.topicId || this.lesson._id),
+          completedSteps: completedSteps,
+          progressPercent: progressPercent,
+          completed: completed,
+          mistakes: this.mistakeCount,
+          medal: this.mistakeCount === 0 ? 'gold' : this.mistakeCount <= 2 ? 'silver' : 'bronze',
+          duration: this.elapsedSeconds,
+          stars: this.stars,
+          points: this.earnedPoints,
+          hintsUsed: this.hintsUsed ? 1 : 0,
+          submittedHomework: false
+        };
+
+        console.log('📤 Saving progress:', progressData);
+
+        const result = await submitProgress(this.userId, progressData);
+        
+        if (result.success) {
+          console.log('✅ Progress saved successfully');
+          return true;
+        } else {
+          console.warn('⚠️ Progress save returned success: false');
+          return false;
+        }
+        
+      } catch (err) {
+        console.error('❌ Progress save error:', err);
+        return false;
+      }
+    },
+
+    async autosaveProgress() {
+      try {
+        const success = await this.saveProgress(false);
+        if (!success) {
+          console.log('🔄 Autosave failed, will retry in 30 seconds');
+          setTimeout(() => this.autosaveProgress(), 30000);
+        }
+      } catch (error) {
+        console.error('❌ Autosave error:', error);
+      }
+    },
+
+    // Lesson Control
+    startLesson() {
+      this.started = true;
+      this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
+      this.autosaveTimer = setInterval(() => this.autosaveProgress(), 15000);
+      this.generateAISuggestions();
+      console.log('🚀 Lesson started');
+    },
+
+    continuePreviousProgress() {
+      if (this.previousProgress) {
+        this.currentIndex = Math.min(
+          this.previousProgress.completedSteps.length, 
+          this.steps.length - 1
+        );
+        this.stars = parseInt(this.previousProgress.stars) || 0;
+        this.mistakeCount = parseInt(this.previousProgress.mistakes) || 0;
+        this.elapsedSeconds = parseInt(this.previousProgress.duration) || 0;
+        this.hintsUsed = Boolean(this.previousProgress.hintsUsed);
+        this.earnedPoints = parseInt(this.previousProgress.points) || 0;
+      }
+      this.startLesson();
+    },
+
+    async retryLoad() {
+      this.retryCount++;
+      console.log(`🔄 Retrying lesson load attempt ${this.retryCount}`);
+      await this.loadLesson();
+    },
+
+    clearTimers() {
+      clearInterval(this.timerInterval);
+      clearInterval(this.autosaveTimer);
+    },
+
     // Lesson Completion
     async completeLesson() {
       this.clearTimers();
@@ -1238,13 +1368,10 @@ export default {
       this.earnedPoints = Math.max(0, 100 - this.mistakeCount * 10 + this.stars * 5);
 
       if (this.mistakeCount === 0) {
-        this.medalImage = '/images/medals/gold.png';
         this.medalLabel = '🥇 Золотая медаль - Безупречно!';
       } else if (this.mistakeCount <= 2) {
-        this.medalImage = '/images/medals/silver.png';
         this.medalLabel = '🥈 Серебряная медаль - Отлично!';
       } else {
-        this.medalImage = '/images/medals/bronze.png';
         this.medalLabel = '🥉 Бронзовая медаль - Хорошо!';
       }
 
@@ -1281,26 +1408,6 @@ export default {
         myConfetti({ particleCount: 150, spread: 180, origin: { y: 0.6 } });
         setTimeout(() => (this.showConfetti = false), 5000);
       }
-    },
-
-    retryStep(stepIndex) {
-      this.lessonCompleted = false;
-      this.showConfetti = false;
-      this.started = true;
-      this.currentIndex = Math.max(0, Math.min(stepIndex, this.steps.length - 1));
-      this.userAnswer = '';
-      this.confirmation = '';
-      this.answerWasCorrect = false;
-      this.currentHint = '';
-      this.smartHint = '';
-      this.aiChatHistory = [];
-      
-      if (!this.timerInterval) {
-        this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
-        this.autosaveTimer = setInterval(() => this.autosaveProgress(), 15000);
-      }
-      
-      this.generateAISuggestions();
     },
 
     // Modal Handling
@@ -1352,65 +1459,6 @@ export default {
 
     goToHomework() {
       this.$router.push(`/profile/homeworks/${this.lesson._id}`);
-    },
-
-    // Helper Methods
-    getLocalized(field) {
-      if (typeof field === 'string') return field;
-      return (field?.en || field?.ru || field?.uz || '').replace(/^(en|ru|uz):/i, '').trim();
-    },
-
-    getStepContent(step) {
-      if (!step || !step.data) return 'Контент недоступен';
-      
-      if (typeof step.data === 'string') return step.data;
-      if (step.data.content) return this.getLocalized(step.data.content);
-      if (step.data.explanation) return this.getLocalized(step.data.explanation);
-      if (step.data.text) return this.getLocalized(step.data.text);
-      
-      return 'Контент недоступен';
-    },
-
-    getExerciseQuestion(step) {
-      if (!step || !step.data) return 'Вопрос недоступен';
-      
-      if (step.data.question) return this.getLocalized(step.data.question);
-      if (step.data.text) return this.getLocalized(step.data.text);
-      
-      return 'Вопрос недоступен';
-    },
-
-    getCorrectAnswer(step) {
-      if (!step || !step.data) return '';
-      
-      return step.data.correctAnswer || step.data.answer || '';
-    },
-
-    hasOptions(step) {
-      return step && step.data && Array.isArray(step.data.options) && step.data.options.length > 0;
-    },
-
-    getOptions(step) {
-      if (!this.hasOptions(step)) return [];
-      return step.data.options;
-    },
-
-    getQuizQuestion(step) {
-      if (!step || !step.data) return 'Вопрос недоступен';
-      return this.getLocalized(step.data.question || step.data.text || '');
-    },
-
-    getQuizOptions(step) {
-      if (!step || !step.data) return [];
-      
-      if (Array.isArray(step.data.options)) {
-        return step.data.options.map(opt => {
-          if (typeof opt === 'string') return opt;
-          return opt.text || opt.label || opt.value || '';
-        });
-      }
-      
-      return [];
     }
   }
 };
@@ -1422,8 +1470,6 @@ export default {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  overflow-x: hidden;
-  position: relative;
 }
 
 /* Loading & Error States */
@@ -1505,7 +1551,7 @@ export default {
 }
 
 /* Modal Styles */
-.modal {
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -1518,7 +1564,6 @@ export default {
   align-items: center;
   z-index: 1000;
   padding: 20px;
-  box-sizing: border-box;
 }
 
 .modal-content {
@@ -1647,24 +1692,44 @@ export default {
   line-height: 1.6;
 }
 
-.lesson-info {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
+.lesson-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
   margin-bottom: 32px;
-  flex-wrap: wrap;
 }
 
-.info-item {
+.info-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.95rem;
-  color: #64748b;
+  gap: 12px;
 }
 
 .info-icon {
-  font-size: 1.1rem;
+  font-size: 1.5rem;
+  opacity: 0.8;
+}
+
+.info-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.info-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
 }
 
 .previous-progress {
@@ -1681,9 +1746,9 @@ export default {
   font-size: 1.1rem;
 }
 
-.progress-stats {
+.progress-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -1692,18 +1757,18 @@ export default {
   text-align: center;
 }
 
-.stat-label {
-  display: block;
-  font-size: 0.85rem;
-  color: #64748b;
-  margin-bottom: 4px;
-}
-
 .stat-value {
   display: block;
   font-size: 1.1rem;
   font-weight: 600;
   color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.85rem;
+  color: #64748b;
 }
 
 .continue-btn {
@@ -1715,6 +1780,7 @@ export default {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  width: 100%;
 }
 
 .continue-btn:hover {
@@ -1747,55 +1813,24 @@ export default {
   box-shadow: 0 12px 24px rgba(16, 185, 129, 0.3);
 }
 
-/* Main Lesson Layout */
-.lesson-split {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  min-height: 100vh;
-  gap: 0;
-}
-
-.lesson-complete-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 40px;
-}
-
-.lesson-complete-full {
-  background: white;
-  border-radius: 24px;
-  padding: 48px;
-  max-width: 600px;
-  width: 100%;
-  text-align: center;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-}
-
-.lesson-left {
-  background: white;
-  padding: 32px;
+/* Main Lesson Container */
+.lesson-container {
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #e2e8f0;
-}
-
-.lesson-right {
-  background: #f8fafc;
-  padding: 32px;
-  display: flex;
-  flex-direction: column;
+  min-height: 100vh;
 }
 
 /* Lesson Header */
 .lesson-header {
+  background: white;
+  padding: 16px 32px;
+  border-bottom: 1px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
   flex-wrap: wrap;
   gap: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .exit-btn-small {
@@ -1839,11 +1874,16 @@ export default {
   font-size: 0.9rem;
   color: #64748b;
   font-weight: 600;
+  background: #f8fafc;
+  padding: 6px 12px;
+  border-radius: 6px;
 }
 
 /* Progress Section */
 .progress-section {
-  margin-bottom: 24px;
+  background: white;
+  padding: 16px 32px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .progress-bar-wrapper {
@@ -1879,21 +1919,28 @@ export default {
   font-weight: 600;
 }
 
-/* Step Content */
-.step-content {
+/* Split Screen Content */
+.split-content {
   flex: 1;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 0;
 }
 
-.content-step, .interactive-placeholder, .unknown-step {
-  flex: 1;
+/* Content Panel (Left) */
+.content-panel {
+  background: white;
+  padding: 32px;
   display: flex;
   flex-direction: column;
+  border-right: 1px solid #e2e8f0;
+  overflow-y: auto;
 }
 
 .step-header {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .step-title {
@@ -1902,51 +1949,137 @@ export default {
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
-.step-body {
+.step-number {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.step-type-icon {
+  font-size: 1.3rem;
+}
+
+.step-type-text {
+  font-weight: 600;
+}
+
+.step-content {
   flex: 1;
   margin-bottom: 24px;
 }
 
+/* Text Content */
+.text-content {
+  line-height: 1.7;
+}
+
 .content-text {
   font-size: 1rem;
-  line-height: 1.6;
   color: #374151;
   margin: 0;
 }
 
-.interactive-placeholder, .unknown-step {
-  background: rgba(148, 163, 184, 0.1);
-  border: 2px dashed #cbd5e1;
-  border-radius: 16px;
-  padding: 32px;
-  text-align: center;
+/* Vocabulary Content */
+.vocabulary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.placeholder-content h3, .unknown-content h3 {
+.vocabulary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.vocabulary-item, .single-vocabulary {
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.vocab-term {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.vocab-definition {
+  font-size: 1rem;
+  color: #4b5563;
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+.vocab-example {
+  font-size: 0.9rem;
+  color: #6b7280;
+  font-style: italic;
+  padding: 8px 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Media Content */
+.media-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+}
+
+.media-placeholder {
+  background: #f8fafc;
+  padding: 40px;
+  border-radius: 16px;
+  border: 2px dashed #cbd5e1;
+  text-align: center;
+  max-width: 400px;
+}
+
+.media-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.media-placeholder h4 {
   margin: 0 0 12px 0;
+  color: #1e293b;
+  font-size: 1.1rem;
+}
+
+.media-placeholder p {
+  margin: 0 0 16px 0;
   color: #64748b;
 }
 
-.placeholder-content p, .unknown-content p {
-  margin: 0;
-  color: #9ca3af;
-}
-
-.unknown-content pre {
-  background: #f8fafc;
-  padding: 16px;
-  border-radius: 8px;
+.media-url {
   font-size: 0.85rem;
-  text-align: left;
-  overflow-x: auto;
-  margin: 16px 0;
+  color: #9ca3af;
+  font-family: monospace;
+  background: white;
+  padding: 8px;
+  border-radius: 4px;
 }
 
-/* Step Navigation */
-.step-navigation {
+/* Default Content */
+.default-content {
+  line-height: 1.7;
+}
+
+/* Content Navigation */
+.content-navigation {
   display: flex;
   gap: 12px;
   margin-top: auto;
@@ -1971,6 +2104,7 @@ export default {
 
 .prev-btn:hover {
   background: #e2e8f0;
+  transform: translateY(-1px);
 }
 
 .next-btn {
@@ -1995,17 +2129,23 @@ export default {
   transform: translateY(-2px);
 }
 
-/* Exercise/Quiz Components */
-.exercise-step, .quiz-step {
+/* Interactive Panel (Right) */
+.interactive-panel {
+  background: #f8fafc;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* Exercise Container */
+.exercise-container, .quiz-container {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
 .exercise-header, .quiz-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid #e2e8f0;
@@ -2017,13 +2157,7 @@ export default {
   margin: 0;
 }
 
-.exercise-progress {
-  font-size: 0.85rem;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.exercise-body, .quiz-body {
+.exercise-content, .quiz-content {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -2035,40 +2169,85 @@ export default {
   color: #1e293b;
   margin: 0 0 24px 0;
   line-height: 1.5;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
 }
 
-/* Options Styling */
-.options-container, .quiz-options {
+/* Options Grid */
+.options-grid, .quiz-options {
   display: flex;
   flex-direction: column;
   gap: 12px;
   margin-bottom: 24px;
 }
 
-.option-label, .quiz-option {
-  display: flex;
-  align-items: center;
-  padding: 16px;
+.option-card, .quiz-option-card {
   background: white;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
+  overflow: hidden;
 }
 
-.option-label:hover, .quiz-option:hover {
+.option-card:hover, .quiz-option-card:hover {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.1);
+}
+
+.option-card.selected, .quiz-option-card.selected {
   border-color: #3b82f6;
   background: rgba(59, 130, 246, 0.05);
 }
 
+.option-card.correct, .quiz-option-card.correct {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.option-card.incorrect, .quiz-option-card.incorrect {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
 .option-radio, .quiz-radio {
-  margin-right: 12px;
-  transform: scale(1.2);
+  display: none;
+}
+
+.option-content, .quiz-option-content {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.option-letter, .quiz-option-letter {
+  background: #e2e8f0;
+  color: #374151;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.option-card.selected .option-letter,
+.quiz-option-card.selected .quiz-option-letter {
+  background: #3b82f6;
+  color: white;
 }
 
 .option-text, .quiz-option-text {
   font-size: 0.95rem;
   line-height: 1.4;
+  flex: 1;
 }
 
 /* Text Input */
@@ -2087,6 +2266,7 @@ export default {
   resize: vertical;
   transition: border-color 0.2s ease;
   box-sizing: border-box;
+  background: white;
 }
 
 .answer-textarea:focus {
@@ -2100,7 +2280,311 @@ export default {
   color: #9ca3af;
 }
 
-/* AI Help Sections */
+/* Smart Hint */
+.smart-hint {
+  background: rgba(245, 158, 11, 0.1);
+  padding: 16px;
+  border-radius: 12px;
+  margin: 16px 0;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  position: relative;
+}
+
+.hint-header {
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 8px;
+}
+
+.hint-content {
+  color: #78350f;
+  line-height: 1.5;
+}
+
+.close-hint-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #92400e;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.close-hint-btn:hover {
+  background: rgba(245, 158, 11, 0.2);
+}
+
+/* Feedback */
+.feedback {
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.feedback.correct {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.feedback.incorrect {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.feedback-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.feedback-text {
+  font-weight: 600;
+  color: #1e293b;
+  flex: 1;
+}
+
+/* Action Buttons */
+.exercise-actions, .quiz-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+
+.submit-btn, .next-btn, .hint-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 120px;
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+}
+
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.next-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.next-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+}
+
+.hint-btn {
+  background: #f59e0b;
+  color: white;
+  flex: 0 0 auto;
+}
+
+.hint-btn:hover {
+  background: #d97706;
+  transform: translateY(-2px);
+}
+
+/* Hint Display */
+.hint-display {
+  margin-top: 16px;
+  padding: 16px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  animation: fadeIn 0.3s ease;
+}
+
+.hint-display .hint-header {
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 8px;
+}
+
+.hint-display .hint-content {
+  color: #78350f;
+  line-height: 1.5;
+}
+
+/* AI Help Panel */
+.ai-help-panel {
+  background: rgba(59, 130, 246, 0.05);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-help-panel h4 {
+  margin: 0 0 16px 0;
+  color: #1d4ed8;
+  font-size: 1.1rem;
+}
+
+.ai-help-panel p {
+  margin: 0 0 20px 0;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.quick-suggestions {
+  margin-bottom: 16px;
+}
+
+.quick-suggestions p {
+  margin: 0 0 12px 0;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.suggestion-btn, .quick-suggestion-btn {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  margin: 4px 4px 0 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.suggestion-btn:hover, .quick-suggestion-btn:hover {
+  background: #c7d2fe;
+  transform: translateY(-1px);
+}
+
+.ai-chat-input {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.ai-chat-input input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.ai-chat-input button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.ai-chat-input button:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.ai-chat-input button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-chat-history {
+  flex: 1;
+  max-height: 200px;
+  overflow-y: auto;
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.chat-message {
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.chat-message.user {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.chat-message.ai {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Non-interactive Panel */
+.non-interactive-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.panel-placeholder {
+  background: rgba(148, 163, 184, 0.1);
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  max-width: 300px;
+}
+
+.placeholder-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.panel-placeholder h4 {
+  margin: 0 0 12px 0;
+  color: #64748b;
+  font-size: 1.1rem;
+}
+
+.panel-placeholder p {
+  margin: 0;
+  color: #9ca3af;
+  line-height: 1.5;
+}
+
+/* Explanation Help */
 .explanation-help {
   background: rgba(139, 92, 246, 0.1);
   padding: 20px;
@@ -2155,142 +2639,144 @@ export default {
   border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
-.ai-help-section {
-  background: rgba(59, 130, 246, 0.05);
-  padding: 16px;
+/* Completion Screen */
+.completion-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.completion-content {
+  background: white;
+  border-radius: 24px;
+  padding: 48px;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: modal-appear 0.5s ease-out;
+}
+
+.completion-header {
+  margin-bottom: 32px;
+}
+
+.completion-title {
+  font-size: 2rem;
+  color: #1e293b;
+  margin: 0 0 24px 0;
+}
+
+.medal-section {
+  margin-bottom: 24px;
+}
+
+.medal-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+}
+
+.medal-label {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #059669;
+}
+
+.completion-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: #f8fafc;
+  padding: 20px;
   border-radius: 12px;
-  margin: 16px 0;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.stat-card .stat-icon {
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.stat-card .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.stat-card .stat-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.progress-insight {
+  background: rgba(59, 130, 246, 0.1);
+  padding: 20px;
+  border-radius: 12px;
+  margin: 20px 0;
   border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
-.ai-help-section h4 {
+.progress-insight h4 {
   margin: 0 0 12px 0;
   color: #1d4ed8;
-  font-size: 1rem;
 }
 
-.ai-suggestions {
-  margin-bottom: 12px;
+.completion-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
 }
 
-.ai-suggestions p {
-  margin: 0 0 8px 0;
-  font-size: 0.9rem;
+.action-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 150px;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.action-btn.secondary {
+  background: #f1f5f9;
   color: #64748b;
 }
 
-.suggestion-btn, .quick-suggestion-btn {
-  background: #e0e7ff;
-  color: #3730a3;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 0.8rem;
-  margin: 4px 4px 0 0;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.action-btn:hover {
+  transform: translateY(-2px);
 }
 
-.suggestion-btn:hover, .quick-suggestion-btn:hover {
-  background: #c7d2fe;
-  transform: translateY(-1px);
+.action-btn.primary:hover {
+  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
 }
 
-.ai-chat-input {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.ai-chat-input input {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.9rem;
-}
-
-.ai-chat-input button {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.ai-chat-input button:hover:not(:disabled) {
-  background: #2563eb;
-}
-
-.ai-chat-input button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.ai-chat-history {
-  max-height: 200px;
-  overflow-y: auto;
-  background: white;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(59, 130, 246, 0.2);
-}
-
-.chat-message {
-  margin-bottom: 8px;
-  font-size: 0.85rem;
-  line-height: 1.4;
-  padding: 8px;
-  border-radius: 6px;
-}
-
-.chat-message.user {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.chat-message.ai {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-/* Smart Hint */
-.smart-hint {
-  background: rgba(245, 158, 11, 0.1);
-  padding: 16px;
-  border-radius: 12px;
-  margin: 16px 0;
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  position: relative;
-}
-
-.smart-hint h4 {
-  margin: 0 0 8px 0;
-  color: #92400e;
-}
-
-.close-hint-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  color: #92400e;
-  cursor: pointer;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: background 0.2s ease;
-}
-
-.close-hint-btn:hover {
-  background: rgba(245, 158, 11, 0.2);
+.action-btn.secondary:hover {
+  background: #e2e8f0;
 }
 
 /* Floating AI Assistant */
@@ -2384,12 +2870,6 @@ export default {
   text-align: center;
 }
 
-.quick-suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
 .ai-chat-area {
   flex: 1;
   display: flex;
@@ -2430,311 +2910,6 @@ export default {
   background: #2563eb;
 }
 
-/* Confirmation Messages */
-.confirmation {
-  margin: 16px 0;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-weight: 600;
-  text-align: center;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.confirmation.correct {
-  background: rgba(16, 185, 129, 0.1);
-  color: #065f46;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.confirmation.incorrect {
-  background: rgba(239, 68, 68, 0.1);
-  color: #991b1b;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-/* Action Buttons */
-.exercise-actions, .quiz-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: auto;
-  flex-wrap: wrap;
-}
-
-.submit-btn, .next-btn, .hint-btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  flex: 1;
-  min-width: 120px;
-}
-
-.submit-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: white;
-}
-
-.submit-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
-}
-
-.submit-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.next-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-}
-
-.next-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
-}
-
-.hint-btn {
-  background: #f59e0b;
-  color: white;
-  flex: 0 0 auto;
-}
-
-.hint-btn:hover {
-  background: #d97706;
-  transform: translateY(-2px);
-}
-
-/* Hint Display */
-.hint-display {
-  margin-top: 16px;
-  padding: 16px;
-  background: #fef3c7;
-  border: 1px solid #f59e0b;
-  border-radius: 8px;
-  animation: fadeIn 0.3s ease;
-}
-
-.hint-header {
-  font-weight: 600;
-  color: #92400e;
-  margin-bottom: 8px;
-}
-
-.hint-content {
-  color: #78350f;
-  line-height: 1.5;
-}
-
-/* Completion Styles */
-.completion-header {
-  margin-bottom: 32px;
-}
-
-.completion-title {
-  font-size: 2rem;
-  color: #1e293b;
-  margin: 0 0 24px 0;
-}
-
-.medal-section {
-  margin-bottom: 24px;
-}
-
-.medal-image {
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 16px;
-  display: block;
-}
-
-.medal-label {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #059669;
-}
-
-.completion-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.stat-card {
-  background: #f8fafc;
-  padding: 20px;
-  border-radius: 12px;
-  text-align: center;
-  border: 1px solid #e2e8f0;
-}
-
-.stat-icon {
-  font-size: 1.5rem;
-  margin-bottom: 8px;
-}
-
-.stat-card .stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 4px;
-}
-
-.stat-card .stat-label {
-  font-size: 0.85rem;
-  color: #64748b;
-  text-transform: uppercase;
-  font-weight: 500;
-  letter-spacing: 0.05em;
-}
-
-.progress-insight {
-  background: rgba(59, 130, 246, 0.1);
-  padding: 20px;
-  border-radius: 12px;
-  margin: 20px 0;
-  border: 1px solid rgba(59, 130, 246, 0.2);
-}
-
-.progress-insight h4 {
-  margin: 0 0 12px 0;
-  color: #1d4ed8;
-}
-
-.completion-motivation {
-  font-size: 1.1rem;
-  color: #64748b;
-  line-height: 1.6;
-  margin-bottom: 32px;
-}
-
-.completion-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-bottom: 32px;
-}
-
-.action-btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 150px;
-}
-
-.action-btn.primary {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-}
-
-.action-btn.secondary {
-  background: #f1f5f9;
-  color: #64748b;
-}
-
-.action-btn:hover {
-  transform: translateY(-2px);
-}
-
-.action-btn.primary:hover {
-  box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
-}
-
-.action-btn.secondary:hover {
-  background: #e2e8f0;
-}
-
-/* Mistake Review */
-.mistake-review {
-  background: rgba(239, 68, 68, 0.05);
-  padding: 24px;
-  border-radius: 16px;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.mistake-review h4 {
-  font-size: 1.1rem;
-  color: #991b1b;
-  margin: 0 0 20px 0;
-}
-
-.mistake-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.mistake-item {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px solid #fecaca;
-}
-
-.mistake-question {
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 12px;
-}
-
-.mistake-answers {
-  margin-bottom: 16px;
-}
-
-.user-answer, .correct-answer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.answer-label {
-  font-weight: 500;
-  color: #64748b;
-  min-width: 120px;
-}
-
-.answer-value {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.answer-value.incorrect {
-  background: rgba(239, 68, 68, 0.1);
-  color: #991b1b;
-}
-
-.answer-value.correct {
-  background: rgba(16, 185, 129, 0.1);
-  color: #065f46;
-}
-
-.retry-step-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
 /* Confetti Canvas */
 .confetti-canvas {
   position: fixed;
@@ -2748,18 +2923,19 @@ export default {
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .lesson-split {
+  .split-content {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
   }
   
-  .lesson-left {
+  .content-panel {
     border-right: none;
     border-bottom: 1px solid #e2e8f0;
     min-height: auto;
+    max-height: 60vh;
   }
   
-  .lesson-right {
+  .interactive-panel {
     background: white;
   }
   
@@ -2771,45 +2947,8 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .lesson-page {
-    font-size: 14px;
-  }
-  
-  .exit-btn {
-    top: 20px;
-    right: 20px;
-    width: 40px;
-    height: 40px;
-    font-size: 1.2rem;
-  }
-  
-  .intro-screen {
-    padding: 20px 16px;
-  }
-  
-  .lesson-title {
-    font-size: 2rem;
-  }
-  
-  .lesson-info {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .previous-progress {
-    padding: 20px;
-  }
-  
-  .progress-stats {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  
-  .lesson-left, .lesson-right {
-    padding: 20px;
-  }
-  
   .lesson-header {
+    padding: 12px 16px;
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
@@ -2832,7 +2971,41 @@ export default {
     gap: 12px;
   }
   
-  .completion-stats {
+  .progress-section {
+    padding: 12px 16px;
+  }
+  
+  .content-panel, .interactive-panel {
+    padding: 20px 16px;
+  }
+  
+  .intro-screen {
+    padding: 20px 16px;
+  }
+  
+  .lesson-title {
+    font-size: 2rem;
+  }
+  
+  .lesson-info-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .progress-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  
+  .completion-content {
+    padding: 32px 20px;
+  }
+  
+  .completion-title {
+    font-size: 1.5rem;
+  }
+  
+  .completion-stats-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
@@ -2847,7 +3020,7 @@ export default {
     max-width: 300px;
   }
   
-  .step-navigation, .exercise-actions, .quiz-actions {
+  .content-navigation, .exercise-actions, .quiz-actions {
     flex-direction: column;
     gap: 8px;
   }
@@ -2857,11 +3030,11 @@ export default {
     min-width: auto;
   }
   
-  .options-container, .quiz-options {
+  .options-grid, .quiz-options {
     gap: 8px;
   }
   
-  .option-label, .quiz-option {
+  .option-card, .quiz-option-card {
     padding: 12px;
   }
   
@@ -2891,14 +3064,6 @@ export default {
     bottom: 70px;
     max-height: 60vh;
   }
-  
-  .ai-help-section {
-    padding: 12px;
-  }
-  
-  .explanation-help {
-    padding: 16px;
-  }
 }
 
 @media (max-width: 480px) {
@@ -2910,24 +3075,23 @@ export default {
     font-size: 1rem;
   }
   
-  .lesson-left, .lesson-right {
+  .content-panel, .interactive-panel {
     padding: 16px;
   }
   
-  .lesson-complete-full {
-    padding: 32px 20px;
+  .completion-content {
+    padding: 24px 16px;
   }
   
   .completion-title {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
   }
   
-  .medal-image {
-    width: 80px;
-    height: 80px;
+  .medal-icon {
+    font-size: 3rem;
   }
   
-  .completion-stats {
+  .completion-stats-grid {
     grid-template-columns: 1fr;
   }
   
@@ -2937,19 +3101,6 @@ export default {
   
   .stat-card .stat-value {
     font-size: 1.25rem;
-  }
-  
-  .mistake-review {
-    padding: 16px;
-  }
-  
-  .mistake-item {
-    padding: 16px;
-  }
-  
-  .answer-label {
-    min-width: 100px;
-    font-size: 0.85rem;
   }
   
   .floating-ai-assistant {
@@ -2974,62 +3125,6 @@ export default {
   }
 }
 
-/* High Contrast Mode */
-@media (prefers-contrast: high) {
-  .lesson-page {
-    background: #ffffff;
-  }
-  
-  .lesson-left, .lesson-right {
-    background: #ffffff;
-    border: 2px solid #000000;
-  }
-  
-  .option-label, .quiz-option {
-    border: 2px solid #000000;
-    background: #ffffff;
-  }
-  
-  .option-label:hover, .quiz-option:hover {
-    background: #f0f0f0;
-    border-color: #000000;
-  }
-  
-  .floating-ai-assistant {
-    border: 2px solid #000000;
-    background: #ffffff;
-  }
-  
-  .chat-message.ai {
-    background: #f0f0f0;
-    color: #000000;
-    border: 1px solid #000000;
-  }
-  
-  .chat-message.user {
-    background: #e0e0e0;
-    color: #000000;
-    border: 1px solid #000000;
-  }
-}
-
-/* Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  
-  .loading-spinner {
-    animation: none;
-  }
-  
-  .modal-appear, .fadeIn {
-    animation: none;
-  }
-}
-
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
   .lesson-page {
@@ -3037,17 +3132,17 @@ export default {
     color: #e2e8f0;
   }
   
-  .lesson-left, .lesson-right {
+  .content-panel, .interactive-panel, .lesson-header, .progress-section {
     background: #334155;
     border-color: #475569;
   }
   
-  .modal-content {
+  .modal-content, .completion-content {
     background: #334155;
     color: #e2e8f0;
   }
   
-  .option-label, .quiz-option {
+  .option-card, .quiz-option-card {
     background: #475569;
     border-color: #64748b;
     color: #e2e8f0;
@@ -3063,19 +3158,9 @@ export default {
     color: #e2e8f0;
   }
   
-  .stat-card {
+  .stat-card, .info-card {
     background: #475569;
     border-color: #64748b;
-  }
-  
-  .mistake-review {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.3);
-  }
-  
-  .mistake-item {
-    background: #475569;
-    border-color: #ef4444;
   }
   
   .floating-ai-assistant {
@@ -3088,24 +3173,38 @@ export default {
     color: #e2e8f0;
   }
   
-  .ai-help-section {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.3);
+  .vocab-term, .vocab-definition {
+    color: #e2e8f0;
   }
   
-  .explanation-help {
-    background: rgba(139, 92, 246, 0.1);
-    border-color: rgba(139, 92, 246, 0.3);
+  .vocabulary-item, .single-vocabulary {
+    background: #475569;
+    border-color: #64748b;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .exit-btn,
+  .exit-btn-small,
+  .modal-overlay,
+  .floating-ai-btn,
+  .floating-ai-assistant {
+    display: none !important;
   }
   
-  .smart-hint {
-    background: rgba(245, 158, 11, 0.1);
-    border-color: rgba(245, 158, 11, 0.3);
+  .split-content {
+    grid-template-columns: 1fr;
   }
   
-  .progress-insight {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.3);
+  .content-panel, .interactive-panel {
+    border: none;
+    box-shadow: none;
+  }
+  
+  * {
+    background: white !important;
+    color: black !important;
   }
 }
 
@@ -3122,48 +3221,6 @@ export default {
 .close-ai-btn:focus {
   outline: 3px solid #4f46e5;
   outline-offset: 2px;
-}
-
-/* Print Styles */
-@media print {
-  .exit-btn,
-  .exit-btn-small,
-  .modal,
-  .floating-ai-btn,
-  .floating-ai-assistant {
-    display: none !important;
-  }
-  
-  .lesson-split {
-    grid-template-columns: 1fr;
-  }
-  
-  .lesson-left, .lesson-right {
-    border: none;
-    box-shadow: none;
-  }
-  
-  * {
-    background: white !important;
-    color: black !important;
-  }
-}
-
-/* Loading States for Interactive Elements */
-.submit-btn:disabled {
-  position: relative;
-}
-
-.submit-btn:disabled::after {
-  content: '';
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  margin: auto;
-  border: 2px solid transparent;
-  border-top-color: #ffffff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
 }
 
 /* Accessibility Enhancements */
@@ -3196,24 +3253,24 @@ export default {
 
 /* Custom Scrollbar */
 .step-content::-webkit-scrollbar,
-.exercise-body::-webkit-scrollbar,
-.quiz-body::-webkit-scrollbar,
+.exercise-content::-webkit-scrollbar,
+.quiz-content::-webkit-scrollbar,
 .ai-chat-history::-webkit-scrollbar,
 .ai-body::-webkit-scrollbar {
   width: 6px;
 }
 
 .step-content::-webkit-scrollbar-track,
-.exercise-body::-webkit-scrollbar-track,
-.quiz-body::-webkit-scrollbar-track,
+.exercise-content::-webkit-scrollbar-track,
+.quiz-content::-webkit-scrollbar-track,
 .ai-chat-history::-webkit-scrollbar-track,
 .ai-body::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .step-content::-webkit-scrollbar-thumb,
-.exercise-body::-webkit-scrollbar-thumb,
-.quiz-body::-webkit-scrollbar-thumb,
+.exercise-content::-webkit-scrollbar-thumb,
+.quiz-content::-webkit-scrollbar-thumb,
 .ai-chat-history::-webkit-scrollbar-thumb,
 .ai-body::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.4);
@@ -3221,8 +3278,8 @@ export default {
 }
 
 .step-content::-webkit-scrollbar-thumb:hover,
-.exercise-body::-webkit-scrollbar-thumb:hover,
-.quiz-body::-webkit-scrollbar-thumb:hover,
+.exercise-content::-webkit-scrollbar-thumb:hover,
+.quiz-content::-webkit-scrollbar-thumb:hover,
 .ai-chat-history::-webkit-scrollbar-thumb:hover,
 .ai-body::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.6);
@@ -3244,49 +3301,10 @@ export default {
   }
 }
 
-/* Enhanced hover effects */
-.option-label:hover .option-text,
-.quiz-option:hover .quiz-option-text {
-  color: #1e293b;
-}
-
-/* Selection highlighting */
-::selection {
-  background: rgba(99, 102, 241, 0.2);
-  color: #1e293b;
-}
-
-/* Ensure proper stacking contexts */
-.modal {
-  isolation: isolate;
-}
-
-.confetti-canvas {
-  isolation: isolate;
-}
-
-.floating-ai-assistant {
-  isolation: isolate;
-}
-
-/* Performance optimizations */
-.lesson-page {
-  will-change: auto;
-  contain: layout style paint;
-}
-
-.progress-bar {
-  will-change: width;
-}
-
-.loading-spinner {
-  will-change: transform;
-}
-
 /* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
-  .option-label,
-  .quiz-option {
+  .option-card,
+  .quiz-option-card {
     min-height: 44px;
   }
   
@@ -3314,33 +3332,17 @@ export default {
   }
 }
 
-/* Landscape orientation adjustments */
-@media (max-height: 500px) and (orientation: landscape) {
-  .intro-screen {
-    min-height: auto;
-    padding: 20px;
-  }
-  
-  .lesson-split {
-    min-height: auto;
-  }
-  
-  .floating-ai-assistant {
-    max-height: 80vh;
-    bottom: 60px;
-  }
-  
-  .modal-content {
-    max-height: 80vh;
-    overflow-y: auto;
-  }
+/* Performance optimizations */
+.lesson-page {
+  will-change: auto;
+  contain: layout style paint;
 }
 
-/* High DPI displays */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
-  .medal-image {
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-  }
+.progress-bar {
+  will-change: width;
+}
+
+.loading-spinner {
+  will-change: transform;
 }
 </style>
