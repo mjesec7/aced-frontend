@@ -649,8 +649,8 @@ export default {
     ...mapGetters(['isAuthenticated']),
     
     userStatus() {
-      return this.$store.state.user?.subscriptionPlan || 
-             this.$store.getters['user/userStatus'] || 
+      return this.$store?.state?.user?.subscriptionPlan || 
+             this.$store?.getters?.userStatus || 
              this.user?.subscriptionPlan || 
              localStorage.getItem('subscriptionPlan') || 
              'free';
@@ -787,8 +787,21 @@ export default {
           'Load lesson'
         );
 
-        // FIXED: Extract lesson from response.lesson instead of response.data
-        this.lesson = response.lesson || response.data || response;
+        console.log('🔍 Lesson response received:', response);
+
+        // ✅ FIXED: Extract lesson from different response structures
+        if (response.success) {
+          // New API format with success wrapper
+          this.lesson = response.lesson || response.data;
+        } else if (response.lesson) {
+          // Response with lesson property
+          this.lesson = response.lesson;
+        } else if (response._id || response.lessonName) {
+          // Direct lesson object
+          this.lesson = response;
+        } else {
+          throw new Error('Invalid lesson response format');
+        }
 
         if (!this.lesson || !this.lesson._id) {
           throw new Error('Lesson data is invalid or missing');
@@ -857,9 +870,22 @@ export default {
       this.steps = [];
       
       if (this.lesson.steps && Array.isArray(this.lesson.steps)) {
+        // ✅ FIXED: Process steps with better exercise handling
         this.lesson.steps.forEach(step => {
-          if (['exercise', 'practice'].includes(step.type) && Array.isArray(step.data)) {
-            this.steps.push(...step.data.map(ex => ({ type: step.type, data: ex })));
+          if (['exercise', 'practice'].includes(step.type)) {
+            // Check if step.data is an array of exercises
+            if (Array.isArray(step.data)) {
+              // Each exercise becomes a separate step
+              step.data.forEach(exercise => {
+                this.steps.push({
+                  type: step.type,
+                  data: exercise
+                });
+              });
+            } else {
+              // Single exercise
+              this.steps.push(step);
+            }
           } else {
             this.steps.push(step);
           }
@@ -1260,7 +1286,7 @@ export default {
       }
     },
 
-    // Progress Management
+    // Progress Management - ✅ FIXED: Updated to use correct API endpoint
     async saveProgress(completed = false) {
       try {
         if (!this.userId || !this.lesson._id) {
@@ -1281,6 +1307,7 @@ export default {
           : 0;
 
         const progressData = {
+          userId: this.userId,
           lessonId: String(this.lesson._id),
           topicId: String(this.lesson.topicId || this.lesson._id),
           completedSteps: completedSteps,
@@ -1297,6 +1324,7 @@ export default {
 
         console.log('📤 Saving progress:', progressData);
 
+        // ✅ FIXED: Use the correct API endpoint
         const result = await submitProgress(this.userId, progressData);
         
         if (result.success) {

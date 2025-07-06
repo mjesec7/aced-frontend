@@ -7,10 +7,10 @@
     </div>
 
     <!-- Error/Not Found State -->
-    <div v-else-if="!topic" class="error-container">
+    <div v-else-if="error || !topic" class="error-container">
       <div class="error-icon">❌</div>
-      <h3 class="error-title">Тема не найдена</h3>
-      <p class="error-message">Возможно, тема была удалена или у вас нет к ней доступа</p>
+      <h3 class="error-title">{{ error ? 'Ошибка загрузки' : 'Тема не найдена' }}</h3>
+      <p class="error-message">{{ error || 'Возможно, тема была удалена или у вас нет к ней доступа' }}</p>
       <button @click="retryLoad" class="btn-retry">🔄 Попробовать снова</button>
       <button @click="$router.push('/profile/catalogue')" class="btn-back">
         ⬅️ Назад к каталогу
@@ -311,25 +311,62 @@ export default {
         // Load topic information
         const topicResult = await getTopicById(topicId);
         
-        if (!topicResult.success) {
+        console.log('🔍 Topic result received:', topicResult);
+        
+        if (!topicResult.success && !topicResult.data && !topicResult._id) {
           throw new Error(topicResult.error || 'Failed to load topic');
         }
         
-        // Handle different API response structures
-        this.topic = topicResult.topic || topicResult.data;
+        // ✅ FIXED: Handle different API response structures
+        if (topicResult.success) {
+          // New API format with success wrapper
+          this.topic = topicResult.data;
+        } else if (topicResult._id || topicResult.name) {
+          // Direct topic object
+          this.topic = topicResult;
+        } else {
+          throw new Error('Invalid topic response format');
+        }
+        
+        if (!this.topic) {
+          throw new Error('Topic data is null or undefined');
+        }
         
         console.log('✅ Topic loaded:', this.getTopicName(this.topic));
 
         // Load lessons for this topic
+        console.log('📚 Loading lessons for topic:', topicId);
         const lessonsResult = await getLessonsByTopic(topicId);
         
+        console.log('🔍 Lessons result received:', lessonsResult);
+        
         if (lessonsResult.success) {
-          this.lessons = Array.isArray(lessonsResult.data) ? lessonsResult.data : [];
-          console.log(`✅ Loaded ${this.lessons.length} lessons`);
+          // ✅ FIXED: Extract lessons from the correct nested structure
+          this.lessons = lessonsResult.data || lessonsResult.lessons || [];
+        } else if (Array.isArray(lessonsResult)) {
+          // Direct array response
+          this.lessons = lessonsResult;
+        } else if (lessonsResult.lessons) {
+          // Nested lessons property
+          this.lessons = lessonsResult.lessons;
+        } else if (lessonsResult.data) {
+          // Nested data property
+          this.lessons = lessonsResult.data;
         } else {
-          console.warn('⚠️ Failed to load lessons:', lessonsResult.error);
+          console.warn('⚠️ No lessons found in response:', lessonsResult);
           this.lessons = [];
         }
+        
+        console.log(`✅ Loaded ${this.lessons.length} lessons`);
+        
+        // Ensure lessons have proper structure
+        this.lessons = this.lessons.map(lesson => ({
+          ...lesson,
+          type: lesson.type || 'free',
+          _id: lesson._id || lesson.id,
+          lessonName: lesson.lessonName || lesson.title || lesson.name,
+          description: lesson.description || lesson.desc || ''
+        }));
         
       } catch (err) {
         console.error('❌ Error loading topic data:', err);
@@ -405,24 +442,47 @@ export default {
     
     getTopicName(topic) {
       if (!topic) return 'Без названия';
-      // Check new API properties first, then fallback to old ones
-      return topic.topicName || topic.name?.en || topic.name || topic.title || 'Без названия';
+      // ✅ FIXED: Check multiple possible name fields
+      return topic.topicName || 
+             topic.name?.en || 
+             topic.name?.ru || 
+             topic.name?.uz || 
+             topic.name || 
+             topic.title || 
+             'Без названия';
     },
     
     getTopicDescription(topic) {
       if (!topic) return 'Нет описания для этой темы.';
-      // Check new API properties first, then fallback to old ones
-      return topic.topicDescription || topic.description?.en || topic.description || topic.desc || 'Нет описания для этой темы.';
+      // ✅ FIXED: Check multiple possible description fields
+      return topic.topicDescription || 
+             topic.description?.en || 
+             topic.description?.ru || 
+             topic.description?.uz || 
+             topic.description || 
+             topic.desc || 
+             'Нет описания для этой темы.';
     },
     
     getLessonName(lesson) {
       if (!lesson) return 'Без названия';
-      return lesson.lessonName?.en || lesson.lessonName || lesson.title || lesson.name || 'Без названия';
+      return lesson.lessonName?.en || 
+             lesson.lessonName?.ru || 
+             lesson.lessonName?.uz || 
+             lesson.lessonName || 
+             lesson.title || 
+             lesson.name || 
+             'Без названия';
     },
     
     getLessonDescription(lesson) {
       if (!lesson) return '';
-      return lesson.description?.en || lesson.description || lesson.desc || '';
+      return lesson.description?.en || 
+             lesson.description?.ru || 
+             lesson.description?.uz || 
+             lesson.description || 
+             lesson.desc || 
+             '';
     },
     
     startLesson(lesson) {
