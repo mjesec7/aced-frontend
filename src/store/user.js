@@ -27,7 +27,6 @@ const state = () => ({
 const mutations = {
   setUser(state, user) {
     state.currentUser = user;
-    console.log('👤 User set in store:', user?.email || user?.name);
   },
   
   clearUser(state) {
@@ -39,18 +38,15 @@ const mutations = {
     state.currentMonthUsage = { messages: 0, images: 0, lastUpdated: null };
     state.usageHistory = [];
     state.lastUsageCheck = null;
-    console.log('🧹 User cleared from store');
   },
   
   setUserStatus(state, status) {
     const oldStatus = state.userStatus;
     state.userStatus = status;
-    console.log(`📊 User status updated: ${oldStatus} → ${status}`);
   },
   
   setSubscriptionDetails(state, details) {
     state.subscriptionDetails = details;
-    console.log('💳 Subscription details updated:', details);
   },
   
   addPaymentRecord(state, payment) {
@@ -59,7 +55,6 @@ const mutations = {
     if (state.paymentHistory.length > 10) {
       state.paymentHistory = state.paymentHistory.slice(0, 10);
     }
-    console.log('💰 Payment record added:', payment.id);
   },
   
   updateLastPaymentCheck(state, timestamp) {
@@ -69,7 +64,6 @@ const mutations = {
   updateUserProfile(state, profileData) {
     if (state.currentUser) {
       state.currentUser = { ...state.currentUser, ...profileData };
-      console.log('📝 User profile updated');
     }
   },
   
@@ -79,14 +73,12 @@ const mutations = {
       ...usage,
       lastUpdated: new Date().toISOString()
     };
-    console.log('📊 Current month usage updated:', usage);
   },
   
   incrementUsage(state, { messages = 0, images = 0 }) {
     state.currentMonthUsage.messages += messages;
     state.currentMonthUsage.images += images;
     state.currentMonthUsage.lastUpdated = new Date().toISOString();
-    console.log('📈 Usage incremented:', { messages, images });
   },
   
   resetCurrentMonthUsage(state) {
@@ -95,12 +87,10 @@ const mutations = {
       images: 0,
       lastUpdated: new Date().toISOString()
     };
-    console.log('🔄 Current month usage reset');
   },
   
   setUsageHistory(state, history) {
     state.usageHistory = history;
-    console.log('📈 Usage history updated');
   },
   
   updateLastUsageCheck(state, timestamp) {
@@ -109,7 +99,6 @@ const mutations = {
   
   setUsageLimits(state, limits) {
     state.usageLimits = { ...state.usageLimits, ...limits };
-    console.log('📏 Usage limits updated');
   }
 };
 
@@ -117,7 +106,6 @@ const actions = {
   // ✅ ENHANCED: Save user with better error handling and subscription sync
   async saveUserToBackend({ commit, dispatch }, { userData, token }) {
     try {
-      console.log('📤 Saving user to backend:', userData?.email || userData?.name);
 
       const payload = {
         token,
@@ -156,7 +144,6 @@ const actions = {
       await dispatch('loadUserStatus');
       await dispatch('loadCurrentMonthUsage');
       
-      console.log('✅ User saved and data loaded');
       return { success: true, user: savedUser };
 
     } catch (err) {
@@ -180,7 +167,6 @@ const actions = {
         return { success: false, error: 'No user ID' };
       }
 
-      console.log('🔍 Loading user status for:', userId);
 
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/${userId}/status`);
       
@@ -205,10 +191,7 @@ const actions = {
       // Update last check timestamp
       commit('updateLastPaymentCheck', Date.now());
       
-      console.log('✅ User status loaded:', {
-        status: data.status || data.subscriptionPlan,
-        hasDetails: !!data.subscriptionDetails
-      });
+     
 
       return { success: true, status: data.status || data.subscriptionPlan };
 
@@ -232,7 +215,6 @@ const actions = {
         return { success: false, error: 'No user ID' };
       }
 
-      console.log('📊 Loading current month usage for:', userId);
 
       const usageInfo = await getUserUsage();
       
@@ -247,11 +229,7 @@ const actions = {
         
         commit('updateLastUsageCheck', Date.now());
         
-        console.log('✅ Usage data loaded:', {
-          usage: usageInfo.usage,
-          plan: usageInfo.plan,
-          limits: usageInfo.limits
-        });
+      
         
         return { success: true, usage: usageInfo.usage };
       } else {
@@ -293,7 +271,6 @@ const actions = {
       }
       
       if (shouldReset) {
-        console.log('🔄 Monthly reset triggered - new month detected');
         
         // Reset local state
         commit('resetCurrentMonthUsage');
@@ -301,7 +278,6 @@ const actions = {
         // Try to reset on backend (optional - backend should handle this automatically)
         try {
           await resetMonthlyUsage();
-          console.log('✅ Backend usage reset completed');
         } catch (err) {
           console.warn('⚠️ Backend reset failed (will be handled automatically):', err);
         }
@@ -329,11 +305,7 @@ const actions = {
         images: hasImage ? 1 : 0 
       });
       
-      console.log('📈 Local usage updated:', {
-        messages: state.currentMonthUsage.messages,
-        images: state.currentMonthUsage.images
-      });
-      
+     
       return { success: true };
 
     } catch (err) {
@@ -406,11 +378,9 @@ const actions = {
       const fiveMinutes = 5 * 60 * 1000;
       
       if (lastCheck && (now - lastCheck) < fiveMinutes) {
-        console.log('⏰ Skipping payment check - checked recently');
         return { success: true, message: 'Recently checked' };
       }
 
-      console.log('🔍 Checking for pending payments for user:', userId);
 
       // Get recent transactions from local storage or API
       const pendingTransactionIds = JSON.parse(
@@ -438,7 +408,6 @@ const actions = {
 
             // If payment completed, update user status
             if (transaction.state === 2) { // Completed
-              console.log('✅ Payment completed for transaction:', transactionId);
               
               // Determine plan based on amount
               let newStatus = 'free';
@@ -451,7 +420,6 @@ const actions = {
               if (newStatus !== 'free' && newStatus !== state.userStatus) {
                 commit('setUserStatus', newStatus);
                 statusChanged = true;
-                console.log(`🎉 User status upgraded to: ${newStatus}`);
               }
               
               // Remove from pending list
@@ -507,12 +475,6 @@ const actions = {
         pendingPayments.push(transactionId);
         localStorage.setItem(`pendingPayments_${userId}`, JSON.stringify(pendingPayments));
         
-        console.log('📝 Added pending payment:', {
-          transactionId,
-          amount,
-          plan,
-          userId
-        });
       }
 
       return { success: true };
@@ -593,7 +555,6 @@ const actions = {
       const updatedUser = await res.json();
       commit('updateUserProfile', updatedUser);
       
-      console.log('✅ User profile updated');
       return { success: true, user: updatedUser };
 
     } catch (err) {
@@ -605,7 +566,6 @@ const actions = {
   // ✅ ENHANCED: Initialize user on app start
   async initializeUser({ commit, dispatch }) {
     try {
-      console.log('🚀 Initializing user...');
       
       // Check for stored user data
       const storedUserId = localStorage.getItem('userId');
@@ -615,7 +575,6 @@ const actions = {
         try {
           const userData = JSON.parse(storedUser);
           commit('setUser', userData);
-          console.log('📦 Restored user from localStorage');
         } catch (err) {
           console.warn('⚠️ Failed to parse stored user data');
           localStorage.removeItem('currentUser');
@@ -641,7 +600,6 @@ const actions = {
   // ✅ ENHANCED: Clear user data on logout
   async logout({ commit }) {
     try {
-      console.log('👋 Logging out user...');
       
       // Clear store
       commit('clearUser');
@@ -660,7 +618,6 @@ const actions = {
         }
       });
       
-      console.log('✅ User logged out and data cleared');
       return { success: true };
 
     } catch (err) {

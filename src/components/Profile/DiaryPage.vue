@@ -584,7 +584,6 @@ export default {
           mistakes: 0 // You can add mistake tracking if needed
         };
 
-        console.log('📔 Saving diary with data:', diaryData);
 
         const response = await axios.post(
           `${BASE_URL}/users/${userId}/diary`,
@@ -597,7 +596,6 @@ export default {
           }
         );
 
-        console.log('✅ Diary saved successfully:', response.data);
 
         this.diarySaved = true;
         this.saveMessage = 'Дневник сохранён успешно!';

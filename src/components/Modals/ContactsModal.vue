@@ -31,7 +31,6 @@
     },
     methods: {
       submitForm() {
-        console.log("🟣 Form Submitted", this.form);
         alert("Спасибо! Мы свяжемся с вами по Email.");
         this.$emit('close');
       }

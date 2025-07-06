@@ -16,7 +16,6 @@ const api = axios.create({
   timeout: 15000
 });
 
-console.log('✅ Main Website API Base URL:', BASE_URL);
 
 // ========================================
 // 🚫 REQUEST DEBOUNCING & LOOP PREVENTION
@@ -116,7 +115,6 @@ const getValidToken = async () => {
     }
     
     const token = await currentUser.getIdToken(true);
-    console.log('🔑 Fresh token obtained');
     return token;
   } catch (error) {
     console.error('❌ Failed to get valid token:', error);
@@ -131,14 +129,12 @@ api.interceptors.request.use(async (config) => {
     
     // Check for pending duplicate requests
     if (pendingRequests.has(requestKey)) {
-      console.log('🔄 Reusing pending request:', requestKey);
       return pendingRequests.get(requestKey);
     }
     
     // Check request cache
     const cached = requestCache.get(requestKey);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      console.log('📋 Using cached response:', requestKey);
       return Promise.resolve(cached.response);
     }
     
@@ -266,7 +262,6 @@ api.interceptors.response.use(
       originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
       const delay = RETRY_DELAY * originalRequest._retryCount;
       
-      console.log(`⏳ Rate limited, retrying in ${delay}ms (attempt ${originalRequest._retryCount})`);
       
       await new Promise(resolve => setTimeout(resolve, delay));
       return api(originalRequest);
@@ -344,7 +339,6 @@ export const formatPaymentAmount = (amount, currency = 'UZS') => {
 // ✅ DIRECT PAYME URL GENERATION (GET method)
 const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   try {
-    console.log('🔗 Generating PayMe GET URL - Method 1');
     
     // Get merchant ID with validation
     const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
@@ -355,7 +349,6 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
       throw new Error('PayMe Merchant ID not configured. Check your .env file.');
     }
     
-    console.log('✅ Merchant ID loaded:', merchantId.substring(0, 10) + '...');
     
     const amounts = getPaymentAmounts();
     const planAmount = amounts[plan]?.tiyin;
@@ -369,12 +362,7 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     const randomPart = Math.random().toString(36).substr(2, 6);
     const orderId = `aced${timestamp}${randomPart}`;
     
-    console.log('💰 Payment details:', {
-      plan,
-      orderId,
-      amountTiyin: planAmount,
-      amountUzs: amounts[plan].uzs
-    });
+  
     
     // Build parameters according to GET documentation
     const params = [];
@@ -396,7 +384,6 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     
     // Join with semicolon as per documentation
     const paramString = params.join(';');
-    console.log('📝 Parameter string:', paramString);
     
     // Validate no undefined values
     if (paramString.includes('undefined') || paramString.includes('null')) {
@@ -409,13 +396,12 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     
     // Final verification
     const verification = atob(base64Params);
-    console.log('✅ Verification - decoded:', verification);
+    ('✅ Verification - decoded:', verification);
     
     if (verification !== paramString) {
       throw new Error('URL encoding/decoding mismatch');
     }
     
-    console.log('✅ PayMe GET URL generated successfully');
     
     return {
       success: true,
@@ -440,7 +426,6 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
 // ✅ DIRECT PAYME FORM GENERATION (POST method)
 const generateDirectPaymeForm = async (userId, plan, options = {}) => {
   try {
-    console.log('📝 Generating PayMe POST form - Method 2');
     
     // ✅ CRITICAL FIX: Clean merchant ID
     const merchantId = (import.meta.env.VITE_PAYME_MERCHANT_ID || '68016cc1a5e04614247f7174').trim();
@@ -465,7 +450,6 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
     // ✅ SANITIZE: Remove any special characters from order ID
     const cleanOrderId = orderId.replace(/[^a-zA-Z0-9]/g, '');
     
-    console.log('🧹 Clean order ID generated:', cleanOrderId);
     
     // ✅ Create detail object as per PayMe documentation
     const detail = {
@@ -523,13 +507,11 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
     </form>
     
     <script>
-      console.log('📝 PayMe POST form auto-submitting...');
       
       // Wait for DOM to be ready
       function submitPaymeForm() {
         const form = document.getElementById('payme-form');
         if (form) {
-          console.log('✅ Form found, submitting to PayMe...');
           form.submit();
         } else {
           console.error('❌ PayMe form not found in DOM');
@@ -547,15 +529,7 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
     </script>
     `;
     
-    console.log('✅ PayMe POST form generated successfully');
-    console.log('📋 Form details:', {
-      merchantId: merchantId.substring(0, 10) + '...',
-      orderId: cleanOrderId,
-      amount: planAmount,
-      plan: plan,
-      language: language,
-      callback: callbackUrl
-    });
+    
     
     return {
       success: true,
@@ -585,7 +559,6 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
   }
   
   try {
-    console.log('🚀 Initiating PayMe payment:', { userId, plan, additionalData });
     
     const amounts = getPaymentAmounts();
     const planAmount = amounts[plan]?.tiyin;
@@ -682,7 +655,6 @@ export const generatePaymeForm = async (userId, plan, method = 'post', options =
   }
   
   try {
-    console.log('🎨 Generating PayMe form:', { userId, plan, method, options });
     
     // Try backend endpoint first
     try {
@@ -762,7 +734,7 @@ export const applyPromoCode = debounceRequest(async (userId, plan, promoCode) =>
   }
   
   try {
-    console.log('🎟️ Applying promo code:', { userId, plan, promoCode });
+    ('🎟️ Applying promo code:', { userId, plan, promoCode });
     
     const response = await api.post('/payments/promo-code', {
       userId,
@@ -791,7 +763,6 @@ export const checkPaymentStatus = async (transactionId, userId = null) => {
       ? `/payments/status/${transactionId}/${userId}`
       : `/payments/status/${transactionId}`;
     
-    console.log('🔍 Checking payment status:', { transactionId, userId });
     
     const response = await api.get(url);
     
@@ -813,7 +784,6 @@ export const checkPaymentStatus = async (transactionId, userId = null) => {
 // ✅ USER VALIDATION FOR PAYMENTS
 export const validateUser = async (userId) => {
   try {
-    console.log('🔍 Validating user:', userId);
     
     const response = await api.get(`/payments/validate-user/${userId}`);
     
@@ -856,7 +826,6 @@ export const getTransactionStateText = (state) => {
 // ✅ FIXED: Get all topics with enhanced error handling
 export const getTopics = async (filters = {}) => {
   try {
-    console.log('📚 Fetching topics with filters:', filters);
     
     const params = new URLSearchParams();
     Object.keys(filters).forEach(key => {
@@ -900,7 +869,6 @@ export const getTopics = async (filters = {}) => {
 // ✅ FIXED: Get topic by ID with multiple endpoint fallbacks
 export const getTopicById = async (topicId) => {
   try {
-    console.log('📘 Fetching topic by ID:', topicId);
     
     const { data } = await api.get(`/topics/${topicId}`);
     
@@ -941,14 +909,12 @@ export const getTopicById = async (topicId) => {
 // ✅ FIXED: Get lessons by topic with enhanced fallback logic
 export const getLessonsByTopic = async (topicId) => {
   try {
-    console.log('📚 Fetching lessons for topic:', topicId);
     
     // Try the enhanced lessons endpoint first
     try {
       const { data } = await api.get(`/lessons/topic/${topicId}?includeStats=true&sortBy=createdAt&order=asc`);
       
       if (data && data.success) {
-        console.log('✅ Lessons loaded via enhanced endpoint:', data.lessons?.length || 0);
         return {
           success: true,
           data: data.lessons || [],
@@ -989,7 +955,6 @@ export const getLessonsByTopic = async (topicId) => {
                (lesson.topicId && lesson.topicId.toString() === topicId);
       });
       
-      console.log(`✅ Filtered ${filteredLessons.length} lessons for topic ${topicId}`);
       
       return {
         success: true,
@@ -1017,7 +982,6 @@ export const getLessonsByTopic = async (topicId) => {
 // ✅ FIXED: Get all lessons with enhanced filtering
 export const getAllLessons = async (filters = {}) => {
   try {
-    console.log('📖 Fetching all lessons with filters:', filters);
     
     const params = new URLSearchParams();
     Object.keys(filters).forEach(key => {
@@ -1048,7 +1012,6 @@ export const getAllLessons = async (filters = {}) => {
 // ✅ FIXED: Get lesson by ID with enhanced error handling
 export const getLessonById = async (lessonId) => {
   try {
-    console.log('📖 Fetching lesson by ID:', lessonId);
     
     const { data } = await api.get(`/lessons/${lessonId}`);
     
@@ -1091,7 +1054,6 @@ export const getLessonById = async (lessonId) => {
 // ✅ FIXED: Submit progress with multiple endpoint fallbacks
 export const submitProgress = async (userId, progressData) => {
   try {
-    console.log('💾 Saving lesson progress:', { userId, lessonId: progressData.lessonId });
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1132,7 +1094,6 @@ export const submitProgress = async (userId, progressData) => {
     
     for (const endpoint of endpoints) {
       try {
-        console.log(`📤 Trying progress save via: ${endpoint}`);
         
         const dataToSend = endpoint.includes('/progress') && !endpoint.includes('users') 
           ? enhancedData  // Include userId in data for general progress endpoint
@@ -1141,7 +1102,6 @@ export const submitProgress = async (userId, progressData) => {
         const { data } = await api.post(endpoint, dataToSend, { headers, timeout: 15000 });
         
         if (data && (data.success !== false)) {
-          console.log(`✅ Progress saved via: ${endpoint}`);
           return {
             success: true,
             data: data.data || data,
@@ -1165,7 +1125,6 @@ export const submitProgress = async (userId, progressData) => {
 // ✅ FIXED: Get lesson progress with multiple endpoint support
 export const getLessonProgress = async (userId, lessonId) => {
   try {
-    console.log('📊 Fetching lesson progress for user:', userId, 'lesson:', lessonId);
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1218,7 +1177,6 @@ export const getLessonProgress = async (userId, lessonId) => {
 // ✅ FIXED: Get user progress with enhanced support
 export const getUserProgress = async (userId) => {
   try {
-    console.log('📊 Fetching user progress for:', userId);
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1272,7 +1230,6 @@ export const getUserProgress = async (userId) => {
 // ✅ FIXED: Get available tests with fallback support
 export const getAvailableTests = async (userId) => {
   try {
-    console.log('📝 Fetching available tests for user:', userId);
     
     const token = await auth.currentUser?.getIdToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -1294,7 +1251,6 @@ export const getAvailableTests = async (userId) => {
 // ✅ FIXED: Get test by ID with fallback support
 export const getTestById = async (userId, testId) => {
   try {
-    console.log('📝 Fetching test by ID:', testId, 'for user:', userId);
     
     const token = await auth.currentUser?.getIdToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -1316,7 +1272,6 @@ export const getTestById = async (userId, testId) => {
 // ✅ FIXED: Submit test result with fallback support
 export const submitTestResult = async (userId, testId, answers) => {
   try {
-    console.log('📝 Submitting test result:', { userId, testId, answersCount: answers.length });
     
     const token = await auth.currentUser?.getIdToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -1338,7 +1293,6 @@ export const submitTestResult = async (userId, testId, answers) => {
 // ✅ FIXED: Get test result with enhanced error handling
 export const getTestResult = async (userId, testId) => {
   try {
-    console.log('📝 Fetching test result:', { userId, testId });
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1358,7 +1312,6 @@ export const getTestResult = async (userId, testId) => {
 // ✅ FIXED: Get user test results
 export const getUserTestResults = async (userId) => {
   try {
-    console.log('📝 Fetching user test results for:', userId);
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1387,7 +1340,6 @@ export const getUserTestResults = async (userId) => {
 // ✅ FIXED: Get homework by lesson with multiple endpoint support
 export const getHomeworkByLesson = async (userId, lessonId) => {
   try {
-    console.log('📝 Fetching homework for user:', userId, 'lesson:', lessonId);
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1431,7 +1383,6 @@ export const getHomeworkByLesson = async (userId, lessonId) => {
 // ✅ FIXED: Get all homework with enhanced support
 export const getAllHomeworks = async (userId) => {
   try {
-    console.log('📝 Fetching all homework for user:', userId);
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1477,7 +1428,6 @@ export const getAllHomeworks = async (userId) => {
 // ✅ FIXED: Save homework with multiple endpoint support
 export const saveHomework = async (userId, lessonId, answers) => {
   try {
-    console.log('💾 Saving homework:', { userId, lessonId, answersCount: answers.length });
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1526,7 +1476,6 @@ export const saveHomework = async (userId, lessonId, answers) => {
 // ✅ FIXED: Submit homework with multiple endpoint support
 export const submitHomework = async (userId, lessonId, answers) => {
   try {
-    console.log('📤 Submitting homework:', { userId, lessonId, answersCount: answers.length });
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1571,7 +1520,6 @@ export const submitHomework = async (userId, lessonId, answers) => {
 // ✅ FIXED: Standalone homework functions
 export const getStandaloneHomework = async (userId, homeworkId) => {
   try {
-    console.log('📝 Fetching standalone homework:', { userId, homeworkId });
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1590,7 +1538,6 @@ export const getStandaloneHomework = async (userId, homeworkId) => {
 
 export const saveStandaloneHomework = async (userId, homeworkId, answers) => {
   try {
-    console.log('💾 Saving standalone homework:', { userId, homeworkId });
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1609,7 +1556,6 @@ export const saveStandaloneHomework = async (userId, homeworkId, answers) => {
 
 export const submitStandaloneHomework = async (userId, homeworkId, answers) => {
   try {
-    console.log('📤 Submitting standalone homework:', { userId, homeworkId });
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1633,7 +1579,6 @@ export const submitStandaloneHomework = async (userId, homeworkId, answers) => {
 // ✅ FIXED: Get user info with multiple endpoint support
 export const getUserInfo = async (userId) => {
   try {
-    console.log('👤 Fetching user info for:', userId);
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1653,7 +1598,6 @@ export const getUserInfo = async (userId) => {
 // ✅ FIXED: Get user status with multiple endpoint support
 export const getUserStatus = async (userId) => {
   try {
-    console.log('📊 Fetching user status for:', userId);
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1708,7 +1652,6 @@ export const getUserStatus = async (userId) => {
 // ✅ FIXED: Save user with enhanced error handling
 export const saveUser = async (userData) => {
   try {
-    console.log('💾 Saving user data:', { email: userData.email, name: userData.name });
     
     // This uses the emergency user save route from server.js
     const { data } = await api.post('/users/save', userData);
@@ -1726,7 +1669,6 @@ export const saveUser = async (userData) => {
 // ✅ FIXED: Update user profile
 export const updateUserProfile = async (userId, profileData) => {
   try {
-    console.log('📝 Updating user profile:', { userId, profileData });
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -1990,7 +1932,6 @@ export const getDiaryEntries = async (userId) => {
 
 export const getUserAnalytics = async (userId) => {
   try {
-    console.log('📊 Fetching user analytics for:', userId);
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
@@ -2144,7 +2085,6 @@ export const cleanupRequestCache = () => {
   requestCache.clear();
   pendingRequests.clear();
   requestAttempts.clear();
-  console.log('🧹 Request cache cleaned');
 };
 
 // ✅ ERROR HANDLING WRAPPER
@@ -2160,7 +2100,6 @@ export const withErrorHandling = async (apiCall, context = 'API call') => {
       try {
         if (auth.currentUser) {
           await auth.currentUser.getIdToken(true);
-          console.log('🔄 Token refreshed, retrying...');
           return await apiCall();
         }
       } catch (refreshError) {
@@ -2189,24 +2128,19 @@ export const testPaymentFlow = async (userId, plan = 'start') => {
     return;
   }
   
-  console.log('🧪 Testing payment flow:', { userId, plan });
   
   try {
     resetPaymentAttempts(userId);
     
     const userValidation = await validateUser(userId);
-    console.log('👤 User validation:', userValidation);
     
     const promoResult = await applyPromoCode(userId, plan, 'acedpromocode2406');
-    console.log('🎟️ Promo code result:', promoResult);
     
     if (!promoResult.success) {
       const paymentResult = await initiatePaymePayment(userId, plan);
-      console.log('💳 Payment initiation:', paymentResult);
       
       if (paymentResult.success && paymentResult.paymentUrl) {
-        console.log('✅ Payment URL generated successfully');
-        console.log('🔗 URL:', paymentResult.paymentUrl);
+       
       }
     }
     
@@ -2220,14 +2154,11 @@ export const testPaymentFlow = async (userId, plan = 'start') => {
 
 export const checkApiHealth = async () => {
   try {
-    console.log('🏥 Checking API health...');
     
     const healthResponse = await healthCheck();
-    console.log('✅ Health check passed:', healthResponse);
     
     try {
       const authResponse = await authTest();
-      console.log('✅ Auth test passed:', authResponse);
     } catch (authError) {
       console.warn('⚠️ Auth test failed (this is normal if not logged in):', authError.message);
     }
@@ -2273,7 +2204,6 @@ export const resetPaymentAttempts = (userId) => {
     }
   }
   keysToDelete.forEach(key => requestAttempts.delete(key));
-  console.log(`🔄 Payment attempts reset for user ${userId}`);
 };
 
 // ✅ COMPREHENSIVE ERROR HANDLER FOR PAYMENTS
@@ -2315,26 +2245,23 @@ export const diagnosticTool = {
   
   // Test backend connectivity
   async testBackendConnectivity() {
-    console.log('🔍 Testing backend connectivity...');
+    ('🔍 Testing backend connectivity...');
     
     try {
       // Test basic health check
       const healthResponse = await fetch(`${BASE_URL}/health`);
       const healthData = await healthResponse.json();
       
-      console.log('✅ Backend health check:', healthData);
       
       // Test API health
       const apiHealthResponse = await fetch(`${BASE_URL}/api/health`);
       const apiHealthData = await apiHealthResponse.json();
       
-      console.log('✅ API health check:', apiHealthData);
       
       // Test routes endpoint
       const routesResponse = await fetch(`${BASE_URL}/api/routes`);
       const routesData = await routesResponse.json();
       
-      console.log('✅ Available routes:', routesData);
       
       return {
         success: true,
@@ -2354,7 +2281,6 @@ export const diagnosticTool = {
   
   // Test critical endpoints
   async testCriticalEndpoints() {
-    console.log('🔍 Testing critical API endpoints...');
     
     const endpoints = [
       { name: 'Topics List', url: '/api/topics', method: 'GET' },
@@ -2370,7 +2296,6 @@ export const diagnosticTool = {
     
     for (const endpoint of endpoints) {
       try {
-        console.log(`🔍 Testing ${endpoint.name}...`);
         
         const response = await fetch(`${BASE_URL}${endpoint.url}`, {
           method: endpoint.method,
@@ -2389,7 +2314,6 @@ export const diagnosticTool = {
         };
         
         if (response.ok) {
-          console.log(`✅ ${endpoint.name}: SUCCESS`);
         } else {
           console.warn(`⚠️ ${endpoint.name}: ${response.status} - ${data.error || data.message || 'Unknown error'}`);
         }
@@ -2410,21 +2334,15 @@ export const diagnosticTool = {
   
   // Test authentication flow
   async testAuthFlow() {
-    console.log('🔍 Testing authentication flow...');
     
     try {
       const currentUser = auth.currentUser;
       
-      console.log('🔐 Current user:', currentUser ? {
-        uid: currentUser.uid,
-        email: currentUser.email,
-        emailVerified: currentUser.emailVerified
-      } : 'Not authenticated');
+    
       
       if (currentUser) {
         // Test token retrieval
         const token = await currentUser.getIdToken();
-        console.log('✅ Token retrieved:', token.substring(0, 50) + '...');
         
         // Test authenticated API call
         const response = await fetch(`${BASE_URL}/api/auth-test`, {
@@ -2435,7 +2353,6 @@ export const diagnosticTool = {
         });
         
         const data = await response.json();
-        console.log('🔐 Auth test result:', data);
         
         return {
           success: true,
@@ -2465,7 +2382,6 @@ export const diagnosticTool = {
   
   // Test specific component endpoints
   async testComponentEndpoints(topicId, lessonId, userId) {
-    console.log('🔍 Testing component-specific endpoints...');
     
     const results = {};
     
@@ -2588,7 +2504,6 @@ const offlineQueue = [];
 export const queueOfflineRequest = (request) => {
   if (!isOnline()) {
     offlineQueue.push(request);
-    console.log('📱 Request queued for when online:', request);
     return true;
   }
   return false;
@@ -2597,7 +2512,6 @@ export const queueOfflineRequest = (request) => {
 // Process offline queue when back online
 export const processOfflineQueue = async () => {
   if (isOnline() && offlineQueue.length > 0) {
-    console.log(`🔄 Processing ${offlineQueue.length} offline requests...`);
     
     const requests = [...offlineQueue];
     offlineQueue.length = 0; // Clear queue
@@ -2605,7 +2519,6 @@ export const processOfflineQueue = async () => {
     for (const request of requests) {
       try {
         await request();
-        console.log('✅ Offline request processed successfully');
       } catch (error) {
         console.error('❌ Failed to process offline request:', error);
         // Re-queue failed requests
@@ -2619,7 +2532,6 @@ export const processOfflineQueue = async () => {
 if (typeof window !== 'undefined') {
   window.addEventListener('online', processOfflineQueue);
   window.addEventListener('offline', () => {
-    console.log('📱 App went offline - requests will be queued');
   });
 }
 
@@ -2631,7 +2543,6 @@ export const validatePaymeUrl = (url) => {
     
     // Decode and check
     const decoded = atob(base64Part);
-    console.log('🔍 URL validation - decoded:', decoded);
     
     // Check for required parameters
     const hasValidMerchant = decoded.includes('m=') && !decoded.includes('m=undefined');
@@ -2653,7 +2564,6 @@ export const validatePaymeUrl = (url) => {
       decodedParams: decoded
     };
     
-    console.log('🔍 URL validation result:', validation);
     
     return validation;
     
@@ -2669,7 +2579,6 @@ export const validatePaymeUrl = (url) => {
 // ✅ TEST FUNCTIONS
 export const testCleanUrlGeneration = async () => {
   try {
-    console.log('🧪 Testing clean URL generation...');
     
     const testResult = await generateDirectPaymeUrl('testuser123', 'start', {
       lang: 'ru',
@@ -2679,8 +2588,6 @@ export const testCleanUrlGeneration = async () => {
     if (testResult.success) {
       const validation = validatePaymeUrl(testResult.paymentUrl);
       
-      console.log('✅ Test URL generated:', testResult.paymentUrl);
-      console.log('✅ Validation result:', validation);
       
       return {
         success: validation.isValid,

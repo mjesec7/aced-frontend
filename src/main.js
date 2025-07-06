@@ -48,12 +48,10 @@ onAuthStateChanged(auth, async (user) => {
       localStorage.setItem('firebaseUserId', savedUser.firebaseId);
       localStorage.setItem('token', token);
 
-      console.log('✅ User authenticated and synced with backend');
     } catch (error) {
       console.error('❌ Backend sync failed:', error.response?.data || error.message);
     }
   } else {
-    console.log('👋 No Firebase session. Logging out.');
     store.commit('logout');
   }
 

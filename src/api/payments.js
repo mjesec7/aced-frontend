@@ -4,7 +4,6 @@ import { auth } from '@/firebase';
 
 const PAYMENT_API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-console.log('💳 Payment API Base URL:', PAYMENT_API_BASE);
 
 // Create payment-specific axios instance
 const paymentApi = axios.create({
@@ -40,11 +39,7 @@ paymentApi.interceptors.request.use(async (config) => {
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    console.log('💳 Payment API Request:', {
-      url: config.url,
-      method: config.method.toUpperCase(),
-      hasAuth: !!token
-    });
+  
     
     return config;
   } catch (error) {
@@ -56,11 +51,7 @@ paymentApi.interceptors.request.use(async (config) => {
 // Response interceptor for payments
 paymentApi.interceptors.response.use(
   (response) => {
-    console.log('✅ Payment API Response:', {
-      url: response.config.url,
-      status: response.status,
-      success: response.data.success
-    });
+
     return response;
   },
   (error) => {
@@ -105,7 +96,6 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
       ...additionalData
     };
     
-    console.log('🚀 Initiating PayMe payment:', payload);
     
     const response = await paymentApi.post('/payments/initiate-payme', payload);
     

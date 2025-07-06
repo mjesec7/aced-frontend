@@ -201,11 +201,7 @@ export default {
       this.clearMessages();
 
       try {
-        console.log('🎟️ Applying promo code:', {
-          userId: this.userId,
-          plan: this.selectedPlan,
-          promoCode: this.promoCodeInput.trim()
-        });
+   
 
         const result = await applyPromoCode(
           this.userId,
@@ -256,11 +252,7 @@ export default {
       this.clearMessages();
 
       try {
-        console.log('💳 Proceeding to payment:', {
-          userId: this.userId,
-          plan: this.selectedPlan,
-          requestedTopicId: this.requestedTopicId
-        });
+     
 
         // Emit payment initiation event
         this.$emit('payment-initiated', {

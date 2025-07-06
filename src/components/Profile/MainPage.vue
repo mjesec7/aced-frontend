@@ -455,7 +455,6 @@ export default {
         this.recommendations = Array.isArray(data) ? data : [];
         this.extractSubjects(this.recommendations);
         
-        console.log(`✅ Loaded ${this.recommendations.length} recommendations`);
         
       } catch (err) {
         const errorInfo = this.handleApiError(err, 'fetch-recommendations');
@@ -485,7 +484,6 @@ export default {
         const headers = { Authorization: `Bearer ${token}` };
         
         const { data: studyListEntries } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
-        console.log(`📋 Raw study list data:`, studyListEntries);
         
         if (!Array.isArray(studyListEntries) || studyListEntries.length === 0) {
           this.studyList = [];
@@ -509,7 +507,6 @@ export default {
           }
           
           try {
-            console.log(`🔍 Processing topic: ${entry.topicId}`);
             
             const topicRes = await axios.get(`${BASE_URL}/topics/${entry.topicId}`, { 
               headers,
@@ -523,7 +520,6 @@ export default {
               return null;
             }
             
-            console.log(`✅ Topic found: ${this.getTopicName(topicData)}`);
             
             let lessons = [];
             
@@ -545,7 +541,6 @@ export default {
               }
             }
             
-            console.log(`✅ Found ${lessons.length} lessons for topic ${entry.topicId}`);
             
             let completedLessons = 0;
             let totalStars = 0;
@@ -606,7 +601,6 @@ export default {
         this.studyList = validTopics;
         this.extractSubjects(this.studyList);
         
-        console.log(`✅ Study list loaded: ${validTopics.length} valid topics`);
         
       } catch (err) {
         const errorInfo = this.handleApiError(err, 'fetch-study-list');
@@ -634,7 +628,6 @@ export default {
       }
       
       this.retryCount++;
-      console.log(`🔄 Retrying... (${this.retryCount}/${this.maxRetries})`);
       
       await Promise.allSettled([
         this.errors.recommendations ? this.fetchRecommendations() : Promise.resolve(),
@@ -662,7 +655,6 @@ export default {
         
         this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
         
-        console.log(`✅ Added topic to study list: ${this.getTopicName(topic)}`);
         
       } catch (err) {
         const errorInfo = this.handleApiError(err, 'add-topic');
@@ -696,7 +688,6 @@ export default {
         if (token) {
           const headers = { Authorization: `Bearer ${token}` };
           await axios.delete(`${BASE_URL}/users/${this.userId}/study-list/${id}`, { headers });
-          console.log(`✅ Removed topic ${id} from study list`);
         }
       } catch (error) {
         console.error('❌ Error removing study card:', error);

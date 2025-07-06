@@ -192,13 +192,11 @@ export default {
 
     async handleAuthStateChange(firebaseUser) {
   try {
-    console.log('🔄 Auth state changed for user:', firebaseUser.uid);
-    console.log('🌐 Frontend domain:', window.location.hostname);
+
     
     const token = await firebaseUser.getIdToken(true);
     const apiBase = this.getApiBase();
     
-    console.log('📡 Using API base:', apiBase);
 
     // ✅ Production-optimized API call
     const response = await axios.get(`${apiBase}/users/${firebaseUser.uid}`, {
@@ -217,18 +215,12 @@ export default {
         subscriptionPlan: response.data.subscriptionPlan || 'free',
       };
 
-      console.log('✅ User data loaded from api.aced.live:', userData);
       this.setUserData(userData, firebaseUser.uid, token);
     }
   } catch (error) {
-    console.log('⚠️ Could not load user from api.aced.live:', {
-      status: error.response?.status,
-      message: error.message,
-      url: error.config?.url
-    });
+   
     
     if (error.response?.status === 404) {
-      console.log('👤 User not found in backend - will be created on next action');
       const userData = {
         name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
         email: firebaseUser.email,
@@ -282,7 +274,6 @@ getApiBase() {
           subscriptionPlan: additionalData.subscriptionPlan || 'free',
         };
 
-        console.log('💾 Saving user to backend:', { ...userData, token: 'hidden' });
 
         const response = await axios.post(`${apiBase}/users/save`, userData);
         return response.data;
@@ -303,19 +294,15 @@ getApiBase() {
         provider.addScope('email');
         provider.addScope('profile');
         
-        console.log('🔄 Starting Google sign-in...');
         const result = await signInWithPopup(auth, provider);
         const firebaseUser = result.user;
         
-        console.log('✅ Firebase auth successful:', firebaseUser.uid);
         
         // Get fresh token
         const token = await firebaseUser.getIdToken(true);
-        console.log('🎫 Got fresh token');
 
         // Save user to backend
         const savedUser = await this.saveUserToBackend(firebaseUser, token);
-        console.log('💾 User saved to backend:', savedUser);
 
         // Set user data in frontend
         const userData = {
@@ -327,7 +314,6 @@ getApiBase() {
 
         this.setUserData(userData, firebaseUser.uid, token);
 
-        console.log('✅ Google Login complete');
         this.closeModal();
         
         // Navigate to profile
@@ -361,12 +347,10 @@ getApiBase() {
       this.clearError();
 
       try {
-        console.log('🔄 Starting email Login...');
         const result = await signInWithEmailAndPassword(auth, this.Login.email, this.Login.password);
         const firebaseUser = result.user;
         const token = await firebaseUser.getIdToken(true);
         
-        console.log('✅ Email auth successful:', firebaseUser.uid);
 
         const apiBase = this.getApiBase();
 
@@ -395,7 +379,6 @@ getApiBase() {
 
         this.setUserData(userData, firebaseUser.uid, token);
         
-        console.log('✅ Email Login complete');
         this.closeModal();
 
       } catch (error) {
@@ -438,12 +421,10 @@ getApiBase() {
       this.clearError();
 
       try {
-        console.log('🔄 Starting registration...');
         const result = await createUserWithEmailAndPassword(auth, this.user.email, this.user.password);
         const firebaseUser = result.user;
         const token = await firebaseUser.getIdToken(true);
         
-        console.log('✅ Firebase registration successful:', firebaseUser.uid);
 
         // Save user to backend with registration data
         const savedUser = await this.saveUserToBackend(firebaseUser, token, {
@@ -460,7 +441,6 @@ getApiBase() {
 
         this.setUserData(userData, firebaseUser.uid, token);
         
-        console.log('✅ Registration complete');
         this.showError("Вы успешно зарегистрированы!");
         
         setTimeout(() => {
@@ -497,7 +477,6 @@ getApiBase() {
         localStorage.removeItem("firebaseUserId");
         localStorage.removeItem("token");
         
-        console.log('✅ Logout successful');
         
         // Redirect to home if needed
         if (this.$route.path !== '/') {

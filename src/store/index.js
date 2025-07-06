@@ -51,7 +51,6 @@ export default createStore({
   actions: {
     async LoginUser({ commit }, { userData, token }) {
       try {
-        console.log('✅ [Vuex] Logging in user via Firebase:', userData?.email);
 
         const res = await axios.post(`${API_BASE_URL}/users/save`, {
           token,
@@ -70,20 +69,17 @@ export default createStore({
         localStorage.setItem('firebaseUserId', savedUser.firebaseId);
         localStorage.setItem('token', token);
 
-        console.log('✅ [Vuex] User saved and synced');
       } catch (err) {
         console.error('❌ [Vuex] Login error:', err.response?.data || err.message);
       }
     },
 
     logoutUser({ commit }) {
-      console.log('👋 [Vuex] Logging out user');
       commit('logout');
     },
 
     loadUserFromLocalStorage({ commit }) {
       try {
-        console.log('📦 [Vuex] Loading session...');
         const user = JSON.parse(localStorage.getItem('user'));
         const firebaseUserId = localStorage.getItem('firebaseUserId');
         const token = localStorage.getItem('token');
@@ -92,7 +88,6 @@ export default createStore({
 
         if (user) {
           commit('setUser', user);
-          console.log('✅ [Vuex] Loaded user:', user.email || user.name);
         }
         if (firebaseUserId) commit('setFirebaseUserId', firebaseUserId);
         if (token) commit('setToken', token);
@@ -120,13 +115,11 @@ export default createStore({
     updateProgress({ commit }, progress) {
       commit('setProgress', progress);
       localStorage.setItem('progress', JSON.stringify(progress));
-      console.log('📈 [Vuex] Progress updated');
     },
 
     updateDiaryLogs({ commit }, logs) {
       commit('setDiaryLogs', logs);
       localStorage.setItem('diaryLogs', JSON.stringify(logs));
-      console.log('📘 [Vuex] Diary logs updated');
     }
   },
 

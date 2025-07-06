@@ -151,16 +151,13 @@ export default {
         { name: 'url.path', value: this.extractIdFromPath() }
       ];
       
-      console.log('🔍 HomeworkId sources:', sources);
       
       for (const source of sources) {
         if (source.value && source.value !== 'null' && source.value !== 'undefined') {
-          console.log(`✅ Using homeworkId from ${source.name}:`, source.value);
           return source.value;
         }
       }
       
-      console.log('⚠️ No valid homeworkId found');
       return null;
     },
     
@@ -173,16 +170,13 @@ export default {
         { name: 'url.path', value: this.extractIdFromPath() }
       ];
       
-      console.log('🔍 LessonId sources:', sources);
       
       for (const source of sources) {
         if (source.value && source.value !== 'null' && source.value !== 'undefined') {
-          console.log(`✅ Using lessonId from ${source.name}:`, source.value);
           return source.value;
         }
       }
       
-      console.log('⚠️ No valid lessonId found');
       return null;
     },
     
@@ -195,16 +189,13 @@ export default {
         { name: 'url.path', value: this.extractTypeFromPath() }
       ];
       
-      console.log('🔍 HomeworkType sources:', sources);
       
       for (const source of sources) {
         if (source.value) {
-          console.log(`✅ Using homeworkType from ${source.name}:`, source.value);
           return source.value;
         }
       }
       
-      console.log('⚠️ No homework type found, defaulting to unknown');
       return 'unknown';
     },
     
@@ -213,34 +204,23 @@ export default {
       const lessonId = this.computedLessonId;
       const type = this.computedHomeworkType;
       
-      console.log('🎯 Computing primary ID:', { 
-        hwId, 
-        lessonId, 
-        type,
-        routeParams: this.$route.params,
-        routeQuery: this.$route.query,
-        routePath: this.$route.path
-      });
+     
       
       // Use type to determine priority
       if (type === 'standalone' && hwId) {
-        console.log('✅ Primary ID (standalone):', hwId);
         return hwId;
       }
       
       if (type === 'lesson' && lessonId) {
-        console.log('✅ Primary ID (lesson):', lessonId);
         return lessonId;
       }
       
       // Prefer homework ID over lesson ID
       if (hwId) {
-        console.log('✅ Primary ID (preferred hwId):', hwId);
         return hwId;
       }
       
       if (lessonId) {
-        console.log('✅ Primary ID (fallback lessonId):', lessonId);
         return lessonId;
       }
       
@@ -259,7 +239,6 @@ export default {
       const mongoIdPattern = /^[a-f0-9]{24}$/i;
       const possibleId = pathParts.find(part => mongoIdPattern.test(part));
       
-      console.log('🔍 Extracting ID from path:', { path, pathParts, possibleId });
       return possibleId || null;
     },
     
@@ -286,15 +265,7 @@ export default {
         const primaryId = this.primaryId;
         const suggestedType = this.computedHomeworkType;
         
-        console.log('📚 Fetching homework with details:', { 
-          homeworkId, 
-          lessonId, 
-          primaryId,
-          suggestedType,
-          routeParams: this.$route.params,
-          routeQuery: this.$route.query,
-          routePath: this.$route.path
-        });
+       
         
         if (!primaryId) {
           console.error('❌ No homework or lesson ID available');
@@ -314,7 +285,6 @@ export default {
         
         if (shouldTryStandalone && primaryId) {
           try {
-            console.log('🔍 Trying standalone homework approach with ID:', primaryId);
             
             // ✅ FIXED: Use direct API calls instead of missing functions
             let response;
@@ -327,7 +297,6 @@ export default {
                   'Content-Type': 'application/json'
                 }
               });
-              console.log('✅ User homework endpoint response:', response.data);
             } catch (userError) {
               console.warn('⚠️ User homework endpoint failed, trying direct:', userError.message);
               
@@ -339,7 +308,6 @@ export default {
                   'Content-Type': 'application/json'
                 }
               });
-              console.log('✅ Direct homework endpoint response:', response.data);
               
               // Transform the response to match expected format
               const homeworkData = response.data.data || response.data;
@@ -372,11 +340,7 @@ export default {
                   this.loadUserAnswers(userProgress.answers);
                 }
                 
-                console.log('✅ Loaded standalone homework:', {
-                  title: this.homeworkTitle,
-                  questionsCount: this.questions.length,
-                  hasProgress: !!userProgress
-                });
+              
                 
                 return; // Success - exit early
               }
@@ -386,7 +350,6 @@ export default {
             
             // Check if it's a 404 (homework not found) vs server error
             if (homeworkError.response?.status === 404) {
-              console.log('ℹ️ Homework not found as standalone, trying lesson approach...');
             } else {
               console.error('🚨 Server error in standalone homework:', homeworkError);
               // For server errors, don't continue to lesson approach
@@ -399,7 +362,6 @@ export default {
         }
 
         // ✅ STRATEGY 2: Try as lesson homework
-        console.log('🔍 Trying lesson homework approach with ID:', primaryId);
         try {
           // Try to get lesson data
           const lessonResponse = await api.get(`/lessons/${primaryId}`, {
@@ -411,7 +373,6 @@ export default {
           });
           
           const lesson = lessonResponse.data;
-          console.log('✅ Lesson data loaded:', lesson.lessonName || lesson.title);
           
           if (!lesson.homework || !Array.isArray(lesson.homework) || lesson.homework.length === 0) {
             console.warn('⚠️ No homework questions found in lesson');
@@ -435,20 +396,15 @@ export default {
               }
             });
             
-            console.log('✅ Loaded lesson homework progress:', progressResponse.data);
             const homeworkData = progressResponse.data?.data || progressResponse.data;
             
             if (homeworkData?.homework?.answers) {
               this.loadUserAnswers(homeworkData.homework.answers);
             }
           } catch (progressErr) {
-            console.log('ℹ️ No existing homework progress found for lesson');
           }
 
-          console.log('✅ Loaded lesson homework:', {
-            title: this.homeworkTitle,
-            questionsCount: this.questions.length
-          });
+        
 
           return; // Success
           
@@ -478,7 +434,6 @@ export default {
     },
 
     loadUserAnswers(answers) {
-      console.log('📝 Loading user answers:', answers);
       
       if (Array.isArray(answers)) {
         // Answers is an array of objects with questionIndex and answer
@@ -497,7 +452,6 @@ export default {
         });
       }
       
-      console.log('✅ User answers loaded:', this.userAnswers);
     },
 
     async saveHomework() {
@@ -515,12 +469,7 @@ export default {
           answer: ans
         }));
 
-        console.log('💾 Saving homework:', {
-          isStandalone: this.isStandalone,
-          primaryId: this.primaryId,
-          answersCount: answers.length
-        });
-
+       
         if (this.isStandalone) {
           // ✅ FIXED: Use direct API call for standalone homework
           await api.post(`/users/${userId}/homework/${this.primaryId}/save`, { answers }, {
@@ -581,12 +530,7 @@ export default {
           answer: ans
         }));
 
-        console.log('📤 Submitting homework:', {
-          isStandalone: this.isStandalone,
-          primaryId: this.primaryId,
-          answersCount: answers.length,
-          answers: answers
-        });
+       
 
         let result;
         
@@ -608,7 +552,6 @@ export default {
           });
         }
 
-        console.log('✅ Homework submission result:', result.data);
 
         const responseData = result.data?.data || result.data;
         const score = responseData?.score || 0;
@@ -669,18 +612,8 @@ export default {
   
   created() {
     console.group('🎯 HomeworkPage Created');
-    console.log('Props:', {
-      homeworkId: this.homeworkId,
-      lessonId: this.lessonId,
-      homeworkType: this.homeworkType,
-      title: this.title,
-      subject: this.subject
-    });
-    console.log('Route params:', this.$route.params);
-    console.log('Route query:', this.$route.query);
-    console.log('Route path:', this.$route.path);
-    console.log('Window location:', window.location.pathname);
-    console.groupEnd();
+  
+    
   },
 
   mounted() {
@@ -695,10 +628,7 @@ export default {
 
   watch: {
     '$route'(to, from) {
-      console.log('📍 Route changed in HomeworkPage:', { 
-        from: { params: from.params, path: from.path },
-        to: { params: to.params, path: to.path }
-      });
+  
       if (to.params !== from.params && this.primaryId) {
         this.fetchHomework();
       }

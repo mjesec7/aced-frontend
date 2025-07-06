@@ -90,11 +90,7 @@ export async function getUserUsage() {
 
 // Enhanced AI response function with usage tracking
 export async function getAIResponse(userInput, imageUrl = null, lessonId = null) {
-  console.log('🟣 [GPTService] Request:', { 
-    userInput: userInput?.substring(0, 50) + '...', 
-    hasImage: !!imageUrl, 
-    lessonId 
-  });
+ 
 
   try {
     const user = auth.currentUser;
@@ -121,11 +117,6 @@ export async function getAIResponse(userInput, imageUrl = null, lessonId = null)
       return `🚫 ${limitCheck.message}`;
     }
 
-    console.log('✅ [GPTService] Usage check passed:', {
-      plan: usageInfo.plan,
-      currentUsage: usageInfo.usage,
-      remaining: limitCheck.remaining
-    });
 
     // Make the AI request
     const response = await gptApi.post(
@@ -154,10 +145,8 @@ export async function getAIResponse(userInput, imageUrl = null, lessonId = null)
 
     // Log updated usage if provided
     if (response.data?.updatedUsage) {
-      console.log('📊 [GPTService] Usage updated:', response.data.updatedUsage);
     }
 
-    console.log('✅ [GPTService] AI Response received successfully');
     return reply;
 
   } catch (error) {
@@ -190,12 +179,7 @@ export async function getAIResponse(userInput, imageUrl = null, lessonId = null)
 
 // ✅ NEW: Enhanced lesson-context AI response
 export async function getLessonAIResponse(userInput, lessonContext, userProgress, stepContext) {
-  console.log('🎓 [GPTService] Lesson-context AI request:', { 
-    lessonId: lessonContext?.lessonId,
-    currentStep: userProgress?.currentStep,
-    stepType: stepContext?.type,
-    userInput: userInput?.substring(0, 50) + '...'
-  });
+   
 
   try {
     const user = auth.currentUser;
@@ -220,7 +204,6 @@ export async function getLessonAIResponse(userInput, lessonContext, userProgress
 
     const token = await user.getIdToken();
 
-    console.log('✅ [GPTService] Lesson context usage check passed');
     
     const response = await gptApi.post('/chat/lesson-context', {
       userInput,
@@ -238,7 +221,6 @@ export async function getLessonAIResponse(userInput, lessonContext, userProgress
 
     const reply = response.data?.reply || 'AI не смог предоставить ответ.';
     
-    console.log('✅ [GPTService] Lesson AI response received successfully');
     return reply;
 
   } catch (error) {
@@ -417,7 +399,6 @@ export async function resetMonthlyUsage() {
       }
     );
 
-    console.log('🔄 [GPTService] Monthly usage reset');
     return { success: true, data: response.data };
 
   } catch (error) {

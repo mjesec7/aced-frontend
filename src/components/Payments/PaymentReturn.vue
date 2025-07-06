@@ -85,12 +85,7 @@ export default {
           this.$store.getters['user/getUserId'] ||
           localStorage.getItem('userId');
         
-        console.log('🔍 Processing payment return:', {
-          transactionId: this.transactionId,
-          userId: this.userId,
-          queryParams: Object.fromEntries(params.entries()),
-          routeQuery: this.$route.query
-        });
+        
         
         if (!this.transactionId) {
           this.error = 'ID транзакции не найден в URL параметрах';
@@ -101,14 +96,12 @@ export default {
         // Check payment status using the corrected API function
         const result = await checkPaymentStatus(this.transactionId, this.userId);
         
-        console.log('📊 Payment status result:', result);
         
         if (result.success && result.transaction) {
           const state = result.transaction.state;
           
           if (state === 2) {
             // Success - redirect to success page
-            console.log('✅ Payment successful, redirecting to success page');
             this.$router.replace({
               name: 'PaymentSuccess', // Make sure this route exists
               query: {
@@ -120,7 +113,6 @@ export default {
             });
           } else if (state === -1 || state === -2) {
             // Failed/Cancelled - redirect to failed page
-            console.log('❌ Payment failed/cancelled, redirecting to failed page');
             this.$router.replace({
               name: 'PaymentFailed', // Make sure this route exists
               query: {
@@ -131,7 +123,6 @@ export default {
             });
           } else if (state === 1) {
             // Still pending
-            console.log('⏳ Payment still pending');
             this.pending = true;
             this.loading = false;
           } else {
@@ -158,7 +149,6 @@ export default {
       }
       
       this.retryCount++;
-      console.log(`🔄 Retrying payment check (attempt ${this.retryCount})`);
       
       // Add a small delay before retry
       await new Promise(resolve => setTimeout(resolve, 1000));

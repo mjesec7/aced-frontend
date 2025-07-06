@@ -42,7 +42,6 @@ export default {
         return;
       }
 
-      console.log('🚀 [TopicCard] Navigating to subject:', subject);
       this.$router.push({ name: 'LessonPage', params: { subject } });
     },
   },

@@ -374,7 +374,6 @@ export default {
           this.currentPlan = 'free';
         }
         
-        console.log('✅ Subscription status loaded:', this.currentPlan);
         
       } catch (err) {
         console.warn('⚠️ Failed to fetch subscription status:', err);
@@ -472,11 +471,7 @@ export default {
       this.loadingText = 'Применение промокода...';
       
       try {
-        console.log('🎟️ Applying promo code:', {
-          userId: this.userId,
-          plan: this.selectedPlan,
-          promoCode: this.promoCode.trim()
-        });
+     
         
         const result = await applyPromoCode(
           this.userId,
@@ -529,10 +524,7 @@ export default {
       }
       
       try {
-        console.log('💳 Redirecting to payment:', {
-          plan: this.paymentPlan,
-          userId: this.userId
-        });
+          
         
         // Navigate to payment page
         await this.$router.push({ 

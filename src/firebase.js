@@ -31,7 +31,6 @@ if (typeof window !== "undefined") {
   isAnalyticsSupported().then(supported => {
     if (supported) {
       analytics = getAnalytics(app);
-      console.log("📊 Firebase Analytics enabled");
     }
   });
 }

@@ -49,7 +49,6 @@ const routes = [
       requiresAuth: true 
     },
     beforeEnter: (to, from, next) => {
-      console.log('🔧 Accessing settings page');
       next();
     }
   },
@@ -114,7 +113,6 @@ const routes = [
             console.error('❌ Invalid homework/lesson ID:', to.params.id);
             next({ name: 'HomeworkList' });
           } else {
-            console.log('✅ Valid homework/lesson ID:', to.params.id, 'Type:', to.query.type);
             next();
           }
         }
@@ -136,7 +134,6 @@ const routes = [
             console.error('❌ Invalid lessonId:', to.params.lessonId);
             next({ name: 'HomeworkList' });
           } else {
-            console.log('✅ Valid lessonId:', to.params.lessonId);
             next();
           }
         }
@@ -158,7 +155,6 @@ const routes = [
             console.error('❌ Invalid homeworkId:', to.params.homeworkId);
             next({ name: 'HomeworkList' });
           } else {
-            console.log('✅ Valid homeworkId:', to.params.homeworkId);
             next();
           }
         }
@@ -205,7 +201,6 @@ const routes = [
             console.error('❌ Invalid language code:', to.params.languageCode);
             next({ name: 'VocabularyPage' });
           } else {
-            console.log('✅ Valid language code:', to.params.languageCode);
             next();
           }
         }
@@ -239,12 +234,6 @@ const routes = [
         });
       }
       
-      console.log('💳 Payment route accessed:', {
-        plan: to.params.plan,
-        userId: to.query.userId,
-        returnTo: to.query.returnTo,
-        from: from.path
-      });
       
       next();
     }
@@ -272,7 +261,6 @@ const routes = [
         });
       }
       
-      console.log('💳 Payment checkout accessed:', to.query);
       next();
     }
   },
@@ -282,7 +270,6 @@ const routes = [
     path: '/payment-success',
     name: 'PaymentSuccess',
     beforeEnter: (to, from, next) => {
-      console.log('✅ Payment success redirect:', to.query);
       
       // Update user subscription status
       if (store.getters['user/isAuthenticated']) {
@@ -323,7 +310,6 @@ const routes = [
       title: 'Payment Failed'
     },
     beforeEnter: (to, from, next) => {
-      console.log('❌ Payment failed page accessed:', to.query);
       next();
     }
   },
@@ -343,7 +329,6 @@ const routes = [
     path: '/payme/return/success',
     name: 'PaymeReturnSuccess',
     beforeEnter: (to, from, next) => {
-      console.log('🔄 PayMe success return:', to.query);
       
       // Extract transaction info from PayMe response
       const transactionId = to.query.transaction || to.query.id;
@@ -361,7 +346,6 @@ const routes = [
     path: '/payme/return/failure',
     name: 'PaymeReturnFailure', 
     beforeEnter: (to, from, next) => {
-      console.log('🔄 PayMe failure return:', to.query);
       
       // Extract error info from PayMe response
       const transactionId = to.query.transaction || to.query.id;
@@ -438,7 +422,6 @@ const routes = [
         return next({ name: 'CataloguePage' });
       }
       
-      console.log('📚 Lesson accessed:', to.params.id);
       next();
     }
   },
@@ -459,7 +442,6 @@ const routes = [
         return next({ name: 'CataloguePage' });
       }
       
-      console.log('📖 Topic overview accessed:', to.params.id);
       next();
     }
   },
@@ -528,7 +510,6 @@ const router = createRouter({
 
 // ✅ ENHANCED Route Guard with Payment Integration
 router.beforeEach(async (to, from, next) => {
-  console.log(`🧭 Navigation: ${from.path || '/'} → ${to.path}`);
   
   // Public routes that don't require authentication
   const publicRoutes = ['HomePage', 'NotFound', 'PaymentFailed', 'PaymeCheckout', 'PaymentSuccess', 'PaymentReturn'];
@@ -576,7 +557,6 @@ router.beforeEach(async (to, from, next) => {
     // Add userId to query if not present
     if (!to.query.userId && userId) {
       const newQuery = { ...to.query, userId };
-      console.log('💳 Adding userId to payment route:', userId);
       return next({ 
         path: to.path, 
         query: newQuery 
@@ -605,33 +585,15 @@ router.beforeEach(async (to, from, next) => {
 
   // ✅ ENHANCED LOGGING for specific route types
   if (to.name && to.name.includes('Homework') && to.params.id) {
-    console.log('📚 Homework route navigation:', {
-      route: to.name,
-      id: to.params.id || to.params.homeworkId || to.params.lessonId,
-      type: to.query.type,
-      from: from.path
-    });
+  
   }
 
   if (to.name && to.name.includes('Vocabulary')) {
-    console.log('📖 Vocabulary route navigation:', {
-      route: to.name,
-      path: to.path,
-      params: to.params,
-      from: from.path
-    });
+  
   }
 
   if (to.name && (to.name.includes('Payme') || to.name.includes('Payment'))) {
-    console.log('💳 Payment route navigation:', {
-      route: to.name,
-      path: to.path,
-      params: to.params,
-      query: to.query,
-      from: from.path,
-      isAuthenticated: isLoggedIn,
-      userId: userId
-    });
+  
   }
 
   // ✅ SUCCESS: Allow navigation
@@ -646,43 +608,22 @@ router.afterEach((to, from) => {
   
   // Enhanced logging for specific route types
   if (to.name && to.name.includes('Homework')) {
-    console.log(`📚 Homework navigation completed:`, {
-      route: to.name,
-      path: to.path,
-      params: to.params,
-      query: to.query,
-      from: from.path
-    });
+ 
   } 
   else if (to.name && to.name.includes('Vocabulary')) {
-    console.log(`📖 Vocabulary navigation completed:`, {
-      route: to.name,
-      path: to.path,
-      params: to.params,
-      query: to.query,
-      from: from.path
-    });
+  
   }
   else if (to.name && (to.name.includes('Payme') || to.name.includes('Payment'))) {
-    console.log(`💳 Payment navigation completed:`, {
-      route: to.name,
-      path: to.path,
-      params: to.params,
-      query: to.query,
-      from: from.path
-    });
+   
   } else {
-    console.log(`📍 Navigation completed: ${from.path} → ${to.path}`);
   }
   
   // Log params if any
   if (Object.keys(to.params).length > 0) {
-    console.log('📦 Route params:', to.params);
   }
   
   // Log query params if any
   if (Object.keys(to.query).length > 0) {
-    console.log('🔍 Query params:', to.query);
   }
   
   // ✅ AUTO-CHECK PAYMENTS on navigation (for authenticated users)
@@ -707,7 +648,6 @@ router.onError((err) => {
   // Handle chunk loading failures (common in production)
   if (err.message.includes('Failed to fetch dynamically imported module') || 
       err.message.includes('Loading chunk')) {
-    console.log('🔄 Reloading due to chunk loading error...');
     window.location.reload();
     return;
   }
@@ -729,54 +669,7 @@ router.onError((err) => {
   console.error('🔄 Navigation failed, attempting recovery...');
 });
 
-// ✅ ENHANCED Debug information when router is ready
-router.isReady().then(() => {
-  console.log('✅ ACED Router initialized successfully');
-  console.log('📋 Available route groups:');
-  console.log('  🏠 Public routes:');
-  console.log('    / (HomePage)');
-  console.log('    /settings (AcedSettings - requires auth)');
-  
-  console.log('  👤 Profile routes:');
-  console.log('    /profile/main (MainPage)');
-  console.log('    /profile/catalogue (CataloguePage)');
-  console.log('    /profile/analytics (UserAnalyticsPanel)');
-  console.log('    /profile/vocabulary (VocabularyPage)');
-  console.log('    /profile/vocabulary/:languageCode (VocabularyIn)');
-  console.log('    /profile/homeworks (HomeworkList)');
-  console.log('    /profile/homeworks/:id (HomeworkPage)');
-  console.log('    /profile/homework/lesson/:lessonId (LessonHomeworkPage)');
-  console.log('    /profile/homework/standalone/:homeworkId (StandaloneHomeworkPage)');
-  console.log('    /profile/tests (TestsPage)');
-  console.log('    /profile/diary (DiaryPage)');
-  console.log('    /profile/goal (StudyGoal)');
-  
-  console.log('  💳 Payment routes:');
-  console.log('    /pay/:plan (PaymePayment - requires auth)');
-  console.log('    /payment/checkout (PaymeCheckout)');
-  console.log('    /payment-success (PaymentSuccess)');
-  console.log('    /payment-failed (PaymentFailed)');
-  console.log('    /payment/return (PaymentReturn)');
-  console.log('    /payme/return/success (PayMe success return)');
-  console.log('    /payme/return/failure (PayMe failure return)');
-  console.log('    /payment/status/:transactionId (Status check)');
-  
-  console.log('  📚 Learning routes:');
-  console.log('    /lesson/:id (LessonPage - requires auth)');
-  console.log('    /topic/:id/overview (TopicOverview - requires auth)');
-  console.log('    /finished (TopicFinished - requires auth)');
-  
-  console.log('  🔄 Redirects:');
-  console.log('    /vocabulary → /profile/vocabulary');
-  console.log('    /vocabulary/:language → /profile/vocabulary/:language');
-  console.log('    /payment/:plan? → /pay/:plan');
-  
-  console.log('  🎯 Valid payment plans: start, pro');
-  console.log('  💰 Payment amounts: Start (260,000 сум), Pro (455,000 сум)');
-  
-}).catch(err => {
-  console.error('❌ Router initialization failed:', err);
-});
+
 
 // ✅ PAYMENT NAVIGATION HELPERS (can be imported and used in components)
 export const navigateToPayment = (plan = 'start', options = {}) => {
@@ -797,7 +690,6 @@ export const navigateToPayment = (plan = 'start', options = {}) => {
     ...(Object.keys(query).length > 0 && { query })
   };
   
-  console.log('🚀 Navigating to payment:', route);
   
   if (routerInstance) {
     return routerInstance.push(route);
@@ -814,7 +706,6 @@ export const navigateToSettings = (options = {}) => {
     ...(returnTo && { query: { returnTo } })
   };
   
-  console.log('⚙️ Navigating to settings:', route);
   
   if (routerInstance) {
     return routerInstance.push(route);

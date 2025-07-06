@@ -413,7 +413,6 @@ export default {
         const token = await user.getIdToken()
         const userId = user.uid
 
-        console.log('🔍 Loading tests for user:', userId)
 
         // Try user-specific tests endpoint first
         try {
@@ -423,7 +422,6 @@ export default {
           
           if (userTestsResponse?.tests && Array.isArray(userTestsResponse.tests)) {
             tests.value = userTestsResponse.tests
-            console.log('✅ Loaded tests from user endpoint:', tests.value.length)
             return
           }
         } catch (userTestsError) {
@@ -438,7 +436,6 @@ export default {
           
           const testsData = testsResponse?.data || testsResponse || []
           tests.value = Array.isArray(testsData) ? testsData.filter(test => test.isActive !== false) : []
-          console.log('✅ Loaded tests from direct endpoint:', tests.value.length)
         } catch (directTestsError) {
           console.error('❌ Failed to load tests:', directTestsError)
           showToast('Ошибка загрузки тестов', 'error')
@@ -467,7 +464,6 @@ export default {
         const token = await user.getIdToken()
         const userId = user.uid
 
-        console.log('🚀 Starting test:', test.title, 'ID:', test._id)
 
         // Try to get the full test with questions
         try {
@@ -502,9 +498,7 @@ export default {
 
         userAnswers.value = Array(activeTest.value.questions.length).fill('')
         currentQuestionIndex.value = 0
-        
-        console.log('✅ Test loaded successfully:', activeTest.value.title)
-        console.log('📊 Questions:', activeTest.value.questions.length)
+
         
       } catch (err) {
         console.error('❌ Ошибка загрузки теста:', err)
@@ -539,7 +533,6 @@ export default {
         const token = await user.getIdToken()
         const userId = user.uid
 
-        console.log('📤 Submitting test results...')
 
         const formattedAnswers = userAnswers.value.map((answer, index) => ({
           questionIndex: index,
@@ -553,7 +546,6 @@ export default {
             { headers: { Authorization: `Bearer ${token}` } }
           )
           
-          console.log('✅ Test results submitted successfully')
         } catch (submitError) {
           console.warn('⚠️ User-specific submit failed, trying direct route:', submitError.message)
           
@@ -637,7 +629,6 @@ export default {
       if (window.$toast) {
         window.$toast[type](message)
       } else {
-        console.log(`${type.toUpperCase()}: ${message}`)
       }
     }
 

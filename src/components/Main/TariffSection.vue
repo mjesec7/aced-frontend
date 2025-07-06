@@ -52,10 +52,8 @@ export default {
       const user = auth.currentUser;
 
       if (!user) {
-        console.log("🛑 Not logged in. Triggering modal...");
         window.dispatchEvent(new Event("open-Login-modal"));
       } else {
-        console.log(`✅ User is logged in. Redirecting to /pay/${plan}`);
         this.$router.push(`/pay/${plan}`);
       }
     }

@@ -704,7 +704,6 @@ export default {
   },
   
   async mounted() {
-    console.log('🔧 LessonPage mounted');
     
     await this.waitForAuth();
     
@@ -722,7 +721,6 @@ export default {
       return this.$router.push('/Login');
     }
     
-    console.log('✅ Authentication confirmed, loading lesson...');
     await this.loadLesson();
     await this.loadPreviousProgress();
     await this.loadAIUsage();
@@ -738,16 +736,13 @@ export default {
   methods: {
     // Authentication
     async waitForAuth() {
-      console.log('⏳ Waiting for authentication...');
       
       if (auth.currentUser) {
-        console.log('✅ User already authenticated:', auth.currentUser.email);
         return;
       }
       
       return new Promise((resolve) => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
-          console.log('🔐 Auth state changed:', user ? user.email : 'No user');
           unsubscribe();
           
           if (user && this.$store.commit) {
@@ -777,7 +772,6 @@ export default {
     async loadLesson() {
       try {
         const lessonId = this.$route.params.id;
-        console.log('📚 Loading lesson:', lessonId);
         
         this.loading = true;
         this.error = null;
@@ -787,7 +781,6 @@ export default {
           'Load lesson'
         );
 
-        console.log('🔍 Lesson response received:', response);
 
         // ✅ FIXED: Extract lesson from different response structures
         if (response.success) {
@@ -810,29 +803,18 @@ export default {
         const lessonType = this.lesson.type || 'free';
         const userHasPremium = this.isPremiumUser;
         
-        console.log('🔐 Access Control Check:', {
-          lessonId: this.lesson._id,
-          lessonName: this.getLocalized(this.lesson.lessonName),
-          lessonType: lessonType,
-          userStatus: this.userStatus,
-          userHasPremium: userHasPremium,
-          isAuthenticated: this.isAuthenticated,
-          currentUser: auth.currentUser?.email
-        });
+       
         
         if (!auth.currentUser) {
-          console.log('❌ No Firebase user - redirecting to Login');
           throw new Error('Authentication required');
         }
         
         if (lessonType === 'premium' && !userHasPremium) {
-          console.log('🔒 Premium lesson, user does not have premium access');
           this.showPaywallModal = true;
           this.loading = false;
           return;
         }
         
-        console.log('✅ Access granted to lesson');
 
         this.processLessonSteps();
         
@@ -844,7 +826,6 @@ export default {
           }];
         }
         
-        console.log(`✅ Lesson loaded with ${this.steps.length} steps`);
         
       } catch (err) {
         console.error('❌ Error loading lesson:', err);
@@ -921,7 +902,6 @@ export default {
       if (!this.lesson._id) return;
       
       try {
-        console.log(`📋 Loading previous progress for lesson: ${this.lesson._id}`);
 
         const progressResult = await getLessonProgress(this.userId, this.lesson._id);
         
@@ -944,13 +924,10 @@ export default {
               medal: progressData.medal || 'none'
             };
             
-            console.log('✅ Previous progress loaded:', this.previousProgress);
           } else {
-            console.log('ℹ️ No significant previous progress found');
             this.previousProgress = null;
           }
         } else {
-          console.log('ℹ️ No previous progress found for this lesson');
           this.previousProgress = null;
         }
         
@@ -966,7 +943,6 @@ export default {
         const usageInfo = await getUserUsage();
         if (usageInfo.success) {
           this.aiUsage = formatUsageDisplay(usageInfo.usage, usageInfo.plan);
-          console.log('📊 AI usage loaded:', this.aiUsage);
         }
       } catch (error) {
         console.warn('⚠️ Could not load AI usage:', error);
@@ -981,7 +957,6 @@ export default {
       });
       
       this.quickSuggestions = this.aiSuggestions.slice(0, 3);
-      console.log('💡 Generated AI suggestions:', this.aiSuggestions);
     },
 
     async sendAIMessage() {
@@ -1322,13 +1297,11 @@ export default {
           submittedHomework: false
         };
 
-        console.log('📤 Saving progress:', progressData);
 
         // ✅ FIXED: Use the correct API endpoint
         const result = await submitProgress(this.userId, progressData);
         
         if (result.success) {
-          console.log('✅ Progress saved successfully');
           return true;
         } else {
           console.warn('⚠️ Progress save returned success: false');
@@ -1345,7 +1318,6 @@ export default {
       try {
         const success = await this.saveProgress(false);
         if (!success) {
-          console.log('🔄 Autosave failed, will retry in 30 seconds');
           setTimeout(() => this.autosaveProgress(), 30000);
         }
       } catch (error) {
@@ -1359,7 +1331,6 @@ export default {
       this.timerInterval = setInterval(() => this.elapsedSeconds++, 1000);
       this.autosaveTimer = setInterval(() => this.autosaveProgress(), 15000);
       this.generateAISuggestions();
-      console.log('🚀 Lesson started');
     },
 
     continuePreviousProgress() {
@@ -1379,7 +1350,6 @@ export default {
 
     async retryLoad() {
       this.retryCount++;
-      console.log(`🔄 Retrying lesson load attempt ${this.retryCount}`);
       await this.loadLesson();
     },
 
@@ -1466,7 +1436,6 @@ export default {
           text: message,
           url: window.location.href
         }).catch(err => {
-          console.log('Share failed:', err);
           this.fallbackShare(message);
         });
       } else {

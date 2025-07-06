@@ -241,13 +241,11 @@ export default {
 
 async loadLessons() {
   try {
-    console.log('📚 Loading lessons...');
     
     // ✅ Use the lessons endpoint that exists
     const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/lessons`);
     this.lessons = Array.isArray(response.data) ? response.data : [];
     
-    console.log('📚 Lessons loaded:', this.lessons.length);
     this.processTopics();
   } catch (error) {
     console.error('❌ Error loading lessons:', error.response?.status, error.response?.data || error.message);
@@ -266,7 +264,6 @@ async loadUserProgress() {
     const token = await currentUser.getIdToken();
     if (!token) return;
 
-    console.log('📊 Loading user progress...');
 
     // ✅ Try the topics-progress endpoint first (most reliable)
     try {
@@ -275,7 +272,6 @@ async loadUserProgress() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log('📊 Topic progress loaded:', response.data);
       this.userProgress = response.data || {};
       return; // Exit early if successful
     } catch (topicProgressError) {
@@ -290,7 +286,6 @@ async loadUserProgress() {
       );
       
       const progressData = response.data?.data || response.data || [];
-      console.log('📊 Raw progress data loaded:', progressData.length, 'records');
       
       // Calculate topic progress from individual lesson progress
       await this.calculateTopicProgressFromLessons(progressData);
@@ -298,7 +293,6 @@ async loadUserProgress() {
       console.warn('⚠️ User progress endpoint failed:', userProgressError.response?.status);
       
       // Final fallback: empty progress
-      console.log('📊 Using empty progress data');
       this.userProgress = {};
     }
     
@@ -356,7 +350,6 @@ async calculateTopicProgressFromLessons(progressData) {
     }
   });
 
-  console.log('📊 Calculated topic progress:', topicProgressMap);
   this.userProgress = topicProgressMap;
 },
 
@@ -370,7 +363,6 @@ async loadLessonProgress() {
     const token = await currentUser.getIdToken();
     if (!token) return;
 
-    console.log('📚 Loading individual lesson progress...');
 
     // ✅ Use the user progress endpoint that exists
     try {
@@ -393,7 +385,6 @@ async loadLessonProgress() {
         });
       }
       
-      console.log('📚 Lesson progress loaded:', Object.keys(this.lessonProgress).length, 'lessons');
       
       // Reprocess topics with new lesson progress data
       this.processTopics();
@@ -429,7 +420,6 @@ async loadLessonProgress() {
           return '';
         }).filter(id => id);
         
-        console.log('📚 Study plan loaded:', this.studyPlanTopics);
       } catch (error) {
         console.error('❌ Ошибка при загрузке учебного плана:', error.response?.data || error.message);
         this.studyPlanTopics = [];
@@ -475,7 +465,6 @@ async loadLessonProgress() {
           }
         });
 
-        console.log('📚 Topics grouped:', topicsMap.size);
 
         // Add progress and study plan info
         this.originalTopics = [...topicsMap.values()].map(topic => {
@@ -507,7 +496,6 @@ async loadLessonProgress() {
             }
           }
           
-          console.log(`📊 Topic "${topic.name}" (${topic.topicId}) - Progress: ${progress}%`);
           
           return {
             ...topic,
@@ -516,7 +504,6 @@ async loadLessonProgress() {
           };
         }).filter(topic => topic !== null);
 
-        console.log('✅ Original topics processed:', this.originalTopics.length);
         this.applyFilters();
         this.loading = false;
       } catch (error) {
@@ -558,7 +545,6 @@ async loadLessonProgress() {
           }
         });
         
-        console.log('📚 Lesson progress loaded:', Object.keys(this.lessonProgress).length, 'lessons');
         
         // Reprocess topics after loading lesson progress
         this.processTopics();
@@ -604,7 +590,6 @@ async loadLessonProgress() {
           return matchesFilter && matchesSearch;
         });
         
-        console.log('🔍 Filtered topics:', this.groupedTopics.length);
       } catch (error) {
         console.error('❌ Ошибка при применении фильтров:', error);
         this.groupedTopics = [];
@@ -758,11 +743,7 @@ async loadLessonProgress() {
       type: this.selectedTopic.type || 'free'
     };
     
-    console.log('📤 Sending request to add topic to study plan:', {
-      url,
-      body,
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    
     
     const response = await axios.post(url, body, { 
       headers: { 
@@ -771,7 +752,6 @@ async loadLessonProgress() {
       } 
     });
     
-    console.log('✅ Successfully added to study plan:', response.data);
     
     // Update local state
     this.selectedTopic.inStudyPlan = true;
@@ -873,7 +853,6 @@ processTopics() {
       }
     });
 
-    console.log('📚 Topics grouped:', topicsMap.size);
 
     // Add progress and study plan info
     this.originalTopics = [...topicsMap.values()].map(topic => {
@@ -905,7 +884,6 @@ processTopics() {
         }
       }
       
-      console.log(`📊 Topic "${topic.name}" (${topic.topicId}) - Progress: ${progress}%`);
       
       return {
         ...topic,
@@ -915,7 +893,6 @@ processTopics() {
       };
     }).filter(topic => topic !== null);
 
-    console.log('✅ Original topics processed:', this.originalTopics.length);
     this.applyFilters();
     this.loading = false;
   } catch (error) {

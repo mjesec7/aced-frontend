@@ -249,7 +249,6 @@ export default {
   },
   
   async mounted() {
-    console.log('🔧 TopicOverview mounted');
     await this.initializeComponent();
   },
   
@@ -274,13 +273,11 @@ export default {
     
     async waitForAuth() {
       if (auth.currentUser) {
-        console.log('✅ User already authenticated');
         return;
       }
       
       return new Promise((resolve) => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
-          console.log('🔐 Auth state changed:', user ? user.email : 'No user');
           unsubscribe();
           resolve();
         });
@@ -306,12 +303,10 @@ export default {
         this.loading = true;
         this.error = null;
         
-        console.log('📚 Loading topic data for:', topicId);
         
         // Load topic information
         const topicResult = await getTopicById(topicId);
         
-        console.log('🔍 Topic result received:', topicResult);
         
         if (!topicResult.success && !topicResult.data && !topicResult._id) {
           throw new Error(topicResult.error || 'Failed to load topic');
@@ -332,13 +327,10 @@ export default {
           throw new Error('Topic data is null or undefined');
         }
         
-        console.log('✅ Topic loaded:', this.getTopicName(this.topic));
 
         // Load lessons for this topic
-        console.log('📚 Loading lessons for topic:', topicId);
         const lessonsResult = await getLessonsByTopic(topicId);
         
-        console.log('🔍 Lessons result received:', lessonsResult);
         
         if (lessonsResult.success) {
           // ✅ FIXED: Extract lessons from the correct nested structure
@@ -357,7 +349,6 @@ export default {
           this.lessons = [];
         }
         
-        console.log(`✅ Loaded ${this.lessons.length} lessons`);
         
         // Ensure lessons have proper structure
         this.lessons = this.lessons.map(lesson => ({
@@ -381,19 +372,16 @@ export default {
     async loadUserPlan() {
       try {
         if (!auth.currentUser) {
-          console.log('ℹ️ No authenticated user, using free plan');
           this.userPlan = 'free';
           return;
         }
 
         const userId = auth.currentUser.uid;
-        console.log('📊 Loading user subscription status for:', userId);
 
         const statusResult = await getUserStatus(userId);
         
         if (statusResult.success) {
           this.userPlan = statusResult.status || statusResult.data?.subscriptionPlan || 'free';
-          console.log('✅ User plan loaded:', this.userPlan);
         } else {
           console.warn('⚠️ Failed to load user status, defaulting to free');
           this.userPlan = 'free';
@@ -403,7 +391,6 @@ export default {
         const storedPlan = localStorage.getItem('subscriptionPlan');
         if (storedPlan && ['premium', 'start', 'pro'].includes(storedPlan)) {
           this.userPlan = storedPlan;
-          console.log('✅ Using stored subscription plan:', storedPlan);
         }
         
       } catch (err) {
@@ -436,7 +423,6 @@ export default {
 
     async retryLoad() {
       this.retryCount++;
-      console.log(`🔄 Retrying topic load (attempt ${this.retryCount})`);
       await this.loadTopicData();
     },
     
@@ -532,9 +518,7 @@ export default {
         
         if (checkAction && typeof checkAction.catch === 'function') {
           await checkAction;
-          console.log('✅ Payment status checked successfully');
         } else {
-          console.log('ℹ️ Payment check action not available');
         }
         
       } catch (error) {

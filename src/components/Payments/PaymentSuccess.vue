@@ -173,7 +173,6 @@ export default {
         if (this.$store.getters['user/isAuthenticated']) {
           await this.$store.dispatch('user/checkPendingPayments');
           await this.$store.dispatch('user/loadUserStatus');
-          console.log('✅ User status updated after successful payment');
         }
       } catch (error) {
         console.warn('⚠️ Failed to update user status:', error);

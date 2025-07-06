@@ -74,7 +74,6 @@ export const getVocabularyStats = async () => {
 
 export const getUserVocabularyProgress = async (userId, params = {}) => {
   try {
-    console.log('📈 Fetching user progress for:', userId, params);
     const response = await api.get(`/vocabulary/progress/${userId}`, { params });
     return response.data;
   } catch (error) {
@@ -85,7 +84,6 @@ export const getUserVocabularyProgress = async (userId, params = {}) => {
 
 export const updateWordProgress = async (userId, progressData) => {
   try {
-    console.log('📝 Updating word progress for user:', userId, progressData);
     const response = await api.post(`/vocabulary/progress/${userId}/update`, progressData);
     
     // 🔥 ANALYTICS INTEGRATION: Send vocabulary progress to analytics
@@ -154,7 +152,6 @@ export const getLanguageStats = async (language) => {
 
 export const generateVocabularyQuiz = async (userId, params = {}) => {
   try {
-    console.log('🎯 Generating quiz for user:', userId, params);
     const response = await api.get(`/vocabulary/game/quiz/${userId}`, { params });
     return response.data;
   } catch (error) {
@@ -165,7 +162,6 @@ export const generateVocabularyQuiz = async (userId, params = {}) => {
 
 export const submitQuizResults = async (userId, results) => {
   try {
-    console.log('📤 Submitting quiz results for user:', userId, results);
     const response = await api.post(`/vocabulary/game/submit/${userId}`, results);
     
     // 🔥 ANALYTICS INTEGRATION: Send quiz results to analytics
@@ -257,7 +253,6 @@ export const getStudyRecommendations = async (userId, params = {}) => {
 
 export const logVocabularyActivity = async (userId, activityData) => {
   try {
-    console.log('📊 Logging vocabulary activity for user:', userId, activityData);
     
     // Prepare analytics data
     const analyticsData = {
@@ -276,7 +271,6 @@ export const logVocabularyActivity = async (userId, activityData) => {
     try {
       // Send to user analytics endpoint
       await api.post(`/user/${userId}/analytics`, analyticsData);
-      console.log('✅ Analytics sent to user analytics endpoint');
     } catch (analyticsError) {
       console.warn('⚠️ Failed to send to analytics endpoint:', analyticsError.message);
       throw analyticsError;
@@ -293,7 +287,6 @@ export const logVocabularyActivity = async (userId, activityData) => {
         mistakes: analyticsData.mistakes,
         stars: analyticsData.stars
       });
-      console.log('✅ Analytics sent to diary endpoint');
     } catch (diaryError) {
       console.warn('⚠️ Failed to send to diary endpoint:', diaryError.message);
     }
@@ -307,7 +300,6 @@ export const logVocabularyActivity = async (userId, activityData) => {
 
 export const markWordAsLearned = async (userId, vocabularyId, wordData = {}) => {
   try {
-    console.log('✅ Marking word as learned:', { userId, vocabularyId });
     
     const progressData = {
       vocabularyId,
@@ -342,7 +334,6 @@ export const markWordAsLearned = async (userId, vocabularyId, wordData = {}) => 
 
 export const createVocabularyTest = async (userId, testConfig) => {
   try {
-    console.log('🎯 Creating vocabulary test for user:', userId, testConfig);
     
     const { language, topics, wordCount, type } = testConfig;
     
@@ -381,7 +372,6 @@ export const createVocabularyTest = async (userId, testConfig) => {
 
 export const submitVocabularyTest = async (userId, testData) => {
   try {
-    console.log('📤 Submitting vocabulary test for user:', userId);
     
     const { answers, testConfig, timeSpent } = testData;
     
@@ -426,7 +416,6 @@ export const submitVocabularyTest = async (userId, testData) => {
 
 export const quickWordLookup = async (word, language = 'english') => {
   try {
-    console.log('🔍 Quick lookup for word:', word, 'in', language);
     const response = await searchVocabulary({ 
       q: word, 
       language, 
@@ -441,7 +430,6 @@ export const quickWordLookup = async (word, language = 'english') => {
 
 export const getDailyGoalProgress = async (userId) => {
   try {
-    console.log('🎯 Fetching daily goal progress for user:', userId);
     const response = await getUserVocabularyProgress(userId, {
       timeframe: 'today'
     });
@@ -454,7 +442,6 @@ export const getDailyGoalProgress = async (userId) => {
 
 export const addVocabularyWord = async (wordData) => {
   try {
-    console.log('➕ User adding vocabulary word:', wordData);
     
     const enhancedData = {
       translationLanguage: 'russian',

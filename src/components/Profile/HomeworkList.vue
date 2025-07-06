@@ -286,7 +286,6 @@ export default {
     },
     
     goToHomework(hw) {
-      console.log('🚀 goToHomework called with:', hw);
       
       let routeName;
       let params;
@@ -300,21 +299,18 @@ export default {
         routeName = 'StandaloneHomeworkPage';
         params = { homeworkId: hw._id };
         query.type = 'standalone';
-        console.log('📝 Navigating to standalone homework:', hw._id);
       } 
       else if (hw.lessonId) {
         // Lesson-based homework
         routeName = 'LessonHomeworkPage';
         params = { lessonId: hw.lessonId };
         query.type = 'lesson';
-        console.log('📚 Navigating to lesson homework:', hw.lessonId);
       }
       else if (hw._id) {
         // Fallback: Try with flexible route
         routeName = 'HomeworkPage';
         params = { id: hw._id };
         query.type = 'standalone';
-        console.log('🔄 Fallback navigation for homework:', hw._id);
       }
       else {
         console.error('❌ No valid homework ID found:', hw);
@@ -322,7 +318,6 @@ export default {
         return;
       }
       
-      console.log('✅ Navigating to:', routeName, 'with params:', params);
       
       this.$router.push({
         name: routeName,
@@ -420,7 +415,6 @@ export default {
         const token = await user.getIdToken();
         const userId = user.uid;
 
-        console.log('🔍 Fetching homeworks for user:', userId);
 
         // ✅ Try the main enhanced user homework endpoint
         try {
@@ -429,7 +423,6 @@ export default {
           });
           
           const homeworkData = response.data || response || [];
-          console.log('✅ Enhanced homework data loaded:', homeworkData.length);
           
           if (Array.isArray(homeworkData) && homeworkData.length > 0) {
             // ✅ FIXED: Enhanced processing that preserves all progress info
@@ -460,17 +453,11 @@ export default {
                 }
               };
               
-              console.log('📝 Processed homework:', {
-                title: normalizedHw.title || normalizedHw.lessonName,
-                hasProgress: normalizedHw.hasProgress,
-                completed: normalizedHw.completed,
-                score: normalizedHw.score
-              });
+           
               
               return normalizedHw;
             });
             
-            console.log('✅ Final processed homework list:', this.homeworks.length, 'items');
             return;
           }
         } catch (error) {
@@ -478,12 +465,10 @@ export default {
         }
 
         // ✅ Fallback: Try to build from multiple sources
-        console.log('🔄 Building homework list from multiple sources...');
         
         const fallbackHomeworks = await this.buildHomeworkListFallback(token, userId);
         this.homeworks = fallbackHomeworks;
         
-        console.log('✅ Fallback homework list assembled:', this.homeworks.length, 'items');
 
       } catch (err) {
         console.error('❌ Error loading homeworks:', err);
@@ -539,7 +524,6 @@ export default {
           headers: { Authorization: `Bearer ${token}` }
         });
         allHomeworks = hwResponse.data || hwResponse || [];
-        console.log('✅ Admin homeworks loaded:', allHomeworks.length);
       } catch (hwError) {
         console.warn('⚠️ Could not fetch admin homeworks:', hwError.message);
       }
@@ -551,7 +535,6 @@ export default {
         lessonsWithHomework = allLessons.filter(lesson => 
           lesson.homework && Array.isArray(lesson.homework) && lesson.homework.length > 0
         );
-        console.log('✅ Lessons with homework loaded:', lessonsWithHomework.length);
       } catch (lessonsError) {
         console.warn('⚠️ Could not fetch lessons:', lessonsError.message);
       }
@@ -563,7 +546,6 @@ export default {
           headers: { Authorization: `Bearer ${token}` }
         });
         userProgress = progressResponse.data || progressResponse || [];
-        console.log('✅ User homework progress loaded:', userProgress.length);
       } catch (progressError) {
         console.warn('⚠️ Homework progress endpoint failed:', progressError.message);
         
@@ -573,7 +555,6 @@ export default {
             headers: { Authorization: `Bearer ${token}` }
           });
           userProgress = generalProgress.data || generalProgress || [];
-          console.log('✅ General user progress loaded:', userProgress.length);
         } catch (generalError) {
           console.warn('⚠️ General progress endpoint failed:', generalError.message);
         }

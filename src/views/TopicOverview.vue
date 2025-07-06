@@ -278,7 +278,6 @@ export default {
       const topicId = this.$route.params.id;
       const BASE_URL = import.meta.env.VITE_API_BASE_URL;
       
-      console.log('🔍 TopicOverview mounted for topic:', topicId);
       
       try {
         this.loading = true;
@@ -287,16 +286,12 @@ export default {
         await this.loadUserPlan();
         
         // Load topic data
-        console.log(`📡 Requesting topic data from /topics/${topicId}`);
         const topicRes = await axios.get(`${BASE_URL}/topics/${topicId}`);
         this.topic = topicRes.data;
-        console.log('📘 Topic loaded:', this.topic);
 
         // Load lessons
-        console.log(`📡 Requesting lessons for topic from /topics/${topicId}/lessons`);
         const lessonsRes = await axios.get(`${BASE_URL}/topics/${topicId}/lessons`);
         this.lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
-        console.log(`📚 Lessons loaded (${this.lessons.length}):`, this.lessons);
         
       } catch (err) {
         console.error('❌ Error loading topic or lessons:', err);
@@ -311,11 +306,9 @@ export default {
         const token = await auth.currentUser?.getIdToken();
         if (token) {
           const headers = { Authorization: `Bearer ${token}` };
-          console.log('🔑 Auth token retrieved');
 
           const statusRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/${auth.currentUser.uid}/status`, { headers });
           this.userPlan = statusRes.data?.status || 'free';
-          console.log('📦 User plan:', this.userPlan);
         } else {
           console.warn('⚠️ No token found — defaulting to free plan');
         }
@@ -346,7 +339,6 @@ export default {
     },
     
     startLesson(lesson) {
-      console.log('➡️ Start lesson clicked:', lesson._id);
       
       if (lesson.type === 'premium' && this.userPlan === 'free') {
         this.handleSubscription();
@@ -362,7 +354,6 @@ export default {
       );
       
       if (firstAvailable) {
-        console.log('🚀 Starting first available lesson:', firstAvailable._id);
         this.startLesson(firstAvailable);
       } else {
         this.handleSubscription();

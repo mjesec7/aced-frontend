@@ -244,13 +244,11 @@ export default {
   },
   
   async mounted() {
-    console.log('🔧 UserAnalyticsPanel mounted');
     await this.loadAnalytics();
   },
   
   methods: {
     async loadAnalytics() {
-      console.log('📊 Starting analytics loading...');
       this.loading = true;
       this.error = null;
       
@@ -258,7 +256,6 @@ export default {
         // Wait for auth to be ready
         let currentUser = auth.currentUser;
         if (!currentUser) {
-          console.log('⏳ Waiting for Firebase auth...');
           await new Promise(resolve => setTimeout(resolve, 2000));
           currentUser = auth.currentUser;
         }
@@ -270,13 +267,11 @@ export default {
         }
 
         const userId = currentUser.uid;
-        console.log('🔍 Using Firebase user ID:', userId);
         
         // FIX 2: Use the imported getUserAnalytics function from api.js
         try {
           const response = await getUserAnalytics(userId);
           
-          console.log('📊 Analytics response:', response);
 
           if (response.data) {
             if (response.data.success && response.data.data) {
@@ -290,7 +285,6 @@ export default {
               this.analytics = { ...this.analytics, ...response.data };
             }
             
-            console.log('✅ Analytics loaded successfully');
           }
 
         } catch (apiError) {

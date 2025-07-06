@@ -382,7 +382,6 @@
       };
       
       const selectTopic = (topic) => {
-        console.log('📖 Selecting topic:', topic.name, 'for language:', props.language);
         
         // For now, show a message since subtopics view isn't implemented yet
         showToast(`Selected: ${topic.name} (${topic.wordCount} words)`);
@@ -426,12 +425,10 @@
           loading.value = true;
           error.value = '';
           
-          console.log('📚 Fetching topics for language:', props.language);
           
           const response = await getVocabularyTopics(props.language);
           topics.value = response.data || [];
           
-          console.log('✅ Topics fetched:', topics.value.length, 'topics');
           
         } catch (err) {
           console.error('❌ Error fetching topics:', err);
@@ -444,10 +441,8 @@
       
       const fetchLanguageStats = async () => {
         try {
-          console.log('📊 Fetching language stats for:', props.language);
           const response = await getLanguageStats(props.language);
           languageStats.value = response.data || null;
-          console.log('✅ Language stats fetched:', languageStats.value);
         } catch (err) {
           console.error('❌ Error fetching language stats:', err);
           languageStats.value = null;
@@ -456,18 +451,15 @@
       
       const fetchUserProgress = async () => {
         if (!currentUser.value) {
-          console.log('⚠️ No user logged in, skipping progress fetch');
           return;
         }
         
         try {
-          console.log('📈 Fetching user progress for:', currentUser.value.uid, 'language:', props.language);
           const response = await getUserLanguageProgress(
             currentUser.value.uid,
             props.language
           );
           userProgress.value = response.data || null;
-          console.log('✅ User progress fetched:', userProgress.value);
         } catch (err) {
           console.error('❌ Error fetching user progress:', err);
           userProgress.value = null;
@@ -475,7 +467,6 @@
       };
       
       const fetchData = async () => {
-        console.log('🚀 Starting data fetch for language:', props.language);
         
         await Promise.all([
           fetchTopics(),
@@ -487,19 +478,16 @@
           await fetchUserProgress();
         }
         
-        console.log('✅ All data fetched for language:', props.language);
       };
       
       // Lifecycle
       onMounted(async () => {
-        console.log('🎯 VocabularyTopics mounted for language:', props.language);
         await fetchData();
       });
       
       // Watch for language changes
       watch(() => props.language, async (newLanguage, oldLanguage) => {
         if (newLanguage !== oldLanguage) {
-          console.log('🔄 Language changed from', oldLanguage, 'to', newLanguage);
           await fetchData();
         }
       });
@@ -508,11 +496,9 @@
       watch(currentUser, async (newUser, oldUser) => {
         if (newUser && !oldUser) {
           // User just logged in
-          console.log('👤 User logged in, fetching user progress...');
           await fetchUserProgress();
         } else if (!newUser && oldUser) {
           // User logged out
-          console.log('👋 User logged out, clearing user progress...');
           userProgress.value = null;
         }
       });

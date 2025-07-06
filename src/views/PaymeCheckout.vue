@@ -398,17 +398,7 @@ export default {
       this.selectedLanguage = params.get('lang') || 'ru';
       this.selectedPlan = this.plan || params.get('selectedPlan') || '';
       
-      console.log('💳 Payment data loaded:', {
-        transactionId: this.transactionId,
-        userId: this.userId,
-        amount: this.amount,
-        amountInTiyin: this.amountInTiyin,
-        plan: this.plan,
-        userName: this.userName,
-        method: this.selectedMethod,
-        language: this.selectedLanguage,
-        accountObject: this.accountObject
-      });
+    
     },
 
     // ✅ FIXED: Validation for required PayMe parameters
@@ -447,7 +437,6 @@ export default {
         this.paymentUrl = '';
         this.dynamicContent = null;
 
-        console.log('🚀 Initializing PayMe payment with method:', this.selectedMethod);
         this.loadingMessage = this.getLoadingMessage();
 
         // Environment check
@@ -458,7 +447,6 @@ export default {
           throw new Error('PayMe configuration error. Check environment variables.');
         }
 
-        console.log('✅ Environment check passed');
 
         // Prepare payment data
         const paymentData = {
@@ -471,12 +459,10 @@ export default {
           qrWidth: 250
         };
 
-        console.log('📋 Payment data:', JSON.stringify(paymentData, null, 2));
 
         // Call the payment API
         const result = await initiatePaymePayment(this.userId, planToUse, paymentData);
 
-        console.log('💳 Payment result:', JSON.stringify(result, null, 2));
 
         if (result && result.success) {
           // Handle different response types
@@ -488,22 +474,18 @@ export default {
               throw new Error('Generated payment URL contains undefined values');
             }
             
-            console.log('✅ Payment URL generated:', this.paymentUrl);
           }
           
           if (result.formHtml) {
             this.dynamicContent = { formHtml: result.formHtml };
-            console.log('✅ POST form generated');
           }
           
           if (result.buttonHtml) {
             this.dynamicContent = { buttonHtml: result.buttonHtml };
-            console.log('✅ Button generated');
           }
           
           if (result.qrHtml) {
             this.dynamicContent = { qrHtml: result.qrHtml };
-            console.log('✅ QR code generated');
           }
           
           this.transactionId = result.transaction?.id || this.transactionId;
@@ -532,7 +514,6 @@ export default {
     async generateDynamicContent() {
       try {
         if (this.selectedMethod === 'post' || this.selectedMethod === 'button' || this.selectedMethod === 'qr') {
-          console.log('🎨 Generating dynamic content for method:', this.selectedMethod);
           
           // ✅ FIXED: Pass proper data structure for form generation
           const formData = {
@@ -571,7 +552,6 @@ export default {
       try {
         const form = document.querySelector('#payme-form') || document.querySelector('form');
         if (form) {
-          console.log('📝 Auto-submitting PayMe form');
           form.submit();
         } else {
           console.warn('⚠️ Form not found, falling back to URL redirect');
@@ -603,7 +583,6 @@ export default {
       }
 
       if (this.paymentUrl) {
-        console.log('🔗 Redirecting to PayMe:', this.paymentUrl);
         
         try {
           // Validate URL format

@@ -384,13 +384,7 @@ export default {
       const amounts = getPaymentAmounts();
       const planData = amounts[this.plan];
       
-      console.log('💰 Plan details debug:', {
-        plan: this.plan,
-        amounts,
-        planData,
-        uzs: planData?.uzs,
-        tiyin: planData?.tiyin
-      });
+     
       
       const features = {
         start: [
@@ -430,7 +424,6 @@ export default {
         formattedPrice = `${actualPrice.toLocaleString('uz-UZ')} сум`;
       }
       
-      console.log('💰 Final amount:', { actualPrice, formattedPrice });
 
       return {
         label: planData?.label || (this.plan === 'start' ? 'Start' : 'Pro'),
@@ -539,11 +532,9 @@ export default {
       this.clearMessages();
 
       try {
-        console.log('🔍 Validating user:', this.form.userId.trim());
         
         const response = await validateUser(this.form.userId.trim());
         
-        console.log('✅ Validation response:', response);
         
         this.userValidation = {
           loading: false,
@@ -573,7 +564,6 @@ export default {
           
           // Show note if present
           if (response.note) {
-            console.log('ℹ️ Validation note:', response.note);
           }
         } else {
           this.error = 'Пользователь не найден. Проверьте ID.';
@@ -595,7 +585,6 @@ export default {
             this.hasAutoRetried = true;
             setTimeout(() => {
               if (this.form.userId.trim()) {
-                console.log('🔄 Auto-retrying user validation...');
                 this.validateUser();
               }
             }, 3000);
@@ -798,7 +787,6 @@ export default {
               (err.message?.includes('timeout') || err.message?.includes('network'))) {
             this.retryCount++;
             setTimeout(() => {
-              console.log(`🔄 Auto-retry attempt ${this.retryCount}`);
               this.handlePayment();
             }, 2000 * this.retryCount);
           }

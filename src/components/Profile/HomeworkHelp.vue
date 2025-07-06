@@ -285,12 +285,7 @@ methods: {
         // Check if we need to reset monthly usage
         await this.checkMonthlyReset();
         
-        console.log('📊 Homework Help initialized:', {
-          userId: this.userId,
-          plan: this.plan,
-          messageUsage: this.messageUsage,
-          imageUsage: this.imageUsage
-        });
+       
       }
     } catch (error) {
       console.error('❌ Failed to initialize component:', error);
@@ -316,11 +311,7 @@ methods: {
         this.imageUsage = monthlyData.images || 0;
         this.lastResetCheck = userData.lastResetCheck || null;
         
-        console.log('📈 Usage data loaded:', {
-          month: currentKey,
-          messages: this.messageUsage,
-          images: this.imageUsage
-        });
+        
       }
     } catch (error) {
       console.error('❌ Failed to load usage data:', error);
@@ -339,7 +330,6 @@ methods: {
       const lastYear = lastReset.getFullYear();
       
       if (currentYear > lastYear || currentMonth > lastMonth) {
-        console.log('🔄 Monthly reset triggered');
         await this.performMonthlyReset();
       }
     } else {
@@ -366,7 +356,6 @@ methods: {
         lastResetCheck: new Date().toISOString()
       });
       
-      console.log('✅ Monthly usage reset completed');
     } catch (error) {
       console.error('❌ Failed to perform monthly reset:', error);
     }
@@ -435,7 +424,6 @@ methods: {
       this.image = '';
       this.imageAdded = false;
       
-      console.log('✅ Message sent successfully, usage updated');
       
     } catch (error) {
       console.error('❌ Failed to send message:', error);
@@ -467,7 +455,6 @@ methods: {
         [`homeworkUsage.${currentKey}.lastUsed`]: new Date().toISOString()
       });
       
-      console.log('💾 Usage data saved');
     } catch (error) {
       console.error('❌ Failed to save usage data:', error);
     }
@@ -498,7 +485,6 @@ methods: {
         
         const data = await res.json();
         if (data?.data?.url) {
-          console.log('✅ ImgBB URL:', data.data.url);
           this.image = data.data.url;
           this.imageAdded = true;
           setTimeout(() => (this.imageAdded = false), 3000);
@@ -542,7 +528,6 @@ watch: {
   userStatus: {
     handler(newStatus) {
       if (newStatus && newStatus !== this.plan) {
-        console.log(`📊 Plan changed: ${this.plan} → ${newStatus}`);
         this.plan = newStatus;
       }
     },

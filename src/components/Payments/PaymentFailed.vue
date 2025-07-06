@@ -136,11 +136,7 @@
           this.source = this.source || params.get('source') || '';
         }
         
-        console.log('❌ Payment failed data:', {
-          transactionId: this.transactionId,
-          error: this.error,
-          source: this.source
-        });
+      
       },
   
       formatDate(date) {
