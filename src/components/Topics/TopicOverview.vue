@@ -315,7 +315,9 @@ export default {
           throw new Error(topicResult.error || 'Failed to load topic');
         }
         
-        this.topic = topicResult.data;
+        // Handle different API response structures
+        this.topic = topicResult.topic || topicResult.data;
+        
         console.log('✅ Topic loaded:', this.getTopicName(this.topic));
 
         // Load lessons for this topic
@@ -403,12 +405,14 @@ export default {
     
     getTopicName(topic) {
       if (!topic) return 'Без названия';
-      return topic.name?.en || topic.name || topic.title || 'Без названия';
+      // Check new API properties first, then fallback to old ones
+      return topic.topicName || topic.name?.en || topic.name || topic.title || 'Без названия';
     },
     
     getTopicDescription(topic) {
       if (!topic) return 'Нет описания для этой темы.';
-      return topic.description?.en || topic.description || topic.desc || 'Нет описания для этой темы.';
+      // Check new API properties first, then fallback to old ones
+      return topic.topicDescription || topic.description?.en || topic.description || topic.desc || 'Нет описания для этой темы.';
     },
     
     getLessonName(lesson) {

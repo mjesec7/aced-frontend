@@ -782,12 +782,13 @@ export default {
         this.loading = true;
         this.error = null;
 
-        const lessonResult = await withErrorHandling(
+        const response = await withErrorHandling(
           () => getLessonById(lessonId),
           'Load lesson'
         );
 
-        this.lesson = lessonResult.lesson || lessonResult.data || lessonResult;
+        // FIXED: Extract lesson from response.lesson instead of response.data
+        this.lesson = response.lesson || response.data || response;
 
         if (!this.lesson || !this.lesson._id) {
           throw new Error('Lesson data is invalid or missing');
