@@ -1,5 +1,17 @@
 <template>
   <div class="topic-overview">
+    <!-- Debug Info (remove in production) -->
+    <div v-if="showDebug" class="debug-info">
+      <h4>🔍 Debug Info:</h4>
+      <p><strong>Topic ID:</strong> {{ $route.params.id }}</p>
+      <p><strong>API Base URL:</strong> {{ BASE_URL }}</p>
+      <p><strong>Topic Data:</strong> {{ topic ? 'Loaded' : 'Not loaded' }}</p>
+      <p><strong>Lessons Count:</strong> {{ lessons.length }}</p>
+      <p><strong>User Plan:</strong> {{ userPlan }}</p>
+      <p><strong>Loading:</strong> {{ loading }}</p>
+      <p><strong>Last Error:</strong> {{ lastError }}</p>
+    </div>
+
     <!-- Loading State -->
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner"></div>
@@ -7,10 +19,11 @@
     </div>
 
     <!-- Error/Not Found State -->
-    <div v-else-if="!topic" class="error-container">
+    <div v-else-if="!topic && !loading" class="error-container">
       <div class="error-icon">❌</div>
       <h3 class="error-title">Тема не найдена</h3>
-      <p class="error-message">Возможно, тема была удалена или у вас нет к ней доступа</p>
+      <p class="error-message">{{ lastError || 'Возможно, тема была удалена или у вас нет к ней доступа' }}</p>
+      <button @click="retryLoad" class="btn-retry">🔄 Попробовать снова</button>
       <button @click="$router.push('/profile/catalogue')" class="btn-back">
         ⬅️ Назад к каталогу
       </button>
@@ -92,13 +105,16 @@
           <div class="no-lessons-icon">📭</div>
           <h3>Уроки не найдены</h3>
           <p>{{ filter !== 'all' ? 'Попробуйте изменить фильтр' : 'В этой теме пока нет уроков' }}</p>
+          <button @click="showDebug = !showDebug" class="debug-toggle">
+            {{ showDebug ? '🔍 Скрыть отладку' : '🔍 Показать отладку' }}
+          </button>
         </div>
 
         <!-- Lessons Grid -->
         <div v-else class="lessons-grid">
           <div
             v-for="(lesson, index) in filteredLessons"
-            :key="lesson._id"
+            :key="lesson._id || lesson.id || index"
             class="lesson-card"
             :class="{ 
               locked: lesson.type === 'premium' && userPlan === 'free',
@@ -109,7 +125,7 @@
             <div class="lesson-number">{{ index + 1 }}</div>
             
             <!-- Lesson Type Badge -->
-            <div class="lesson-badge" :class="lesson.type">
+            <div class="lesson-badge" :class="lesson.type || 'free'">
               <span v-if="lesson.type === 'premium'">
                 🔒 Премиум
               </span>
@@ -210,7 +226,10 @@ export default {
       loading: true,
       userPlan: 'free',
       lang: localStorage.getItem('lang') || 'en',
-      filter: 'all'
+      filter: 'all',
+      showDebug: false,
+      lastError: null,
+      BASE_URL: import.meta.env.VITE_API_BASE_URL
     };
   },
   
@@ -242,34 +261,122 @@ export default {
   methods: {
     async loadTopicData() {
       const topicId = this.$route.params.id;
-      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
       
       console.log('🔍 TopicOverview mounted for topic:', topicId);
-      console.log('🌐 API Base URL:', BASE_URL);
+      console.log('🌐 API Base URL:', this.BASE_URL);
+
+      if (!topicId) {
+        this.lastError = 'Не указан ID темы';
+        this.loading = false;
+        return;
+      }
 
       try {
         this.loading = true;
+        this.lastError = null;
         
         // Load user plan first
         await this.loadUserPlan();
         
-        // Load topic data
-        console.log(`📡 Requesting topic data from /topics/${topicId}`);
-        const topicRes = await axios.get(`${BASE_URL}/topics/${topicId}`);
-        this.topic = topicRes.data;
-        console.log('📘 Topic loaded:', this.topic);
-
-        // Load lessons
-        console.log(`📡 Requesting lessons for topic from /topics/${topicId}/lessons`);
-        const lessonsRes = await axios.get(`${BASE_URL}/topics/${topicId}/lessons`);
-        this.lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
-        console.log(`📚 Lessons loaded (${this.lessons.length}):`, this.lessons);
+        // Try different API endpoints to find the working one
+        await this.tryLoadTopicData(topicId);
         
       } catch (err) {
         console.error('❌ Error loading topic or lessons:', err);
+        this.lastError = err.message || 'Неизвестная ошибка при загрузке';
         this.topic = null;
       } finally {
         this.loading = false;
+      }
+    },
+
+    async tryLoadTopicData(topicId) {
+      // Define possible API endpoints based on your backend structure
+      const possibleEndpoints = [
+        // Most likely endpoints based on your backend
+        {
+          topic: `/topics/${topicId}`,
+          lessons: `/topics/${topicId}/lessons`
+        },
+        {
+          topic: `/api/topics/${topicId}`,
+          lessons: `/api/topics/${topicId}/lessons`
+        },
+        {
+          topic: `/lessons/topic/${topicId}`,
+          lessons: `/lessons/topic/${topicId}`
+        },
+        {
+          topic: `/api/lessons/topic/${topicId}`,
+          lessons: `/api/lessons/topic/${topicId}`
+        }
+      ];
+
+      let topicLoaded = false;
+      let lessonsLoaded = false;
+
+      for (const endpoints of possibleEndpoints) {
+        try {
+          // Try to load topic
+          if (!topicLoaded) {
+            console.log(`📡 Trying topic endpoint: ${endpoints.topic}`);
+            const topicRes = await axios.get(`${this.BASE_URL}${endpoints.topic}`);
+            
+            if (topicRes.data) {
+              // Handle different response formats
+              this.topic = topicRes.data.topic || topicRes.data.data || topicRes.data;
+              console.log('📘 Topic loaded:', this.topic);
+              topicLoaded = true;
+            }
+          }
+
+          // Try to load lessons
+          if (!lessonsLoaded) {
+            console.log(`📡 Trying lessons endpoint: ${endpoints.lessons}`);
+            const lessonsRes = await axios.get(`${this.BASE_URL}${endpoints.lessons}`);
+            
+            if (lessonsRes.data) {
+              // Handle different response formats
+              const lessonsData = lessonsRes.data.lessons || lessonsRes.data.data || lessonsRes.data;
+              this.lessons = Array.isArray(lessonsData) ? lessonsData : [];
+              console.log(`📚 Lessons loaded (${this.lessons.length}):`, this.lessons);
+              lessonsLoaded = true;
+            }
+          }
+
+          // If both loaded, break
+          if (topicLoaded && lessonsLoaded) {
+            break;
+          }
+
+        } catch (endpointError) {
+          console.warn(`⚠️ Endpoint ${endpoints.topic} failed:`, endpointError.message);
+          continue;
+        }
+      }
+
+      // If no topic loaded, try to create a fallback
+      if (!topicLoaded) {
+        // Maybe try to extract topic info from lessons
+        if (lessonsLoaded && this.lessons.length > 0) {
+          const firstLesson = this.lessons[0];
+          this.topic = {
+            _id: topicId,
+            name: firstLesson.topic || firstLesson.subject || 'Тема',
+            description: firstLesson.topicDescription || 'Описание не найдено'
+          };
+          console.log('📘 Created fallback topic from lesson data:', this.topic);
+          topicLoaded = true;
+        }
+      }
+
+      // Final check
+      if (!topicLoaded && !lessonsLoaded) {
+        throw new Error('Не удалось загрузить данные темы с ни одного из доступных API endpoints');
+      }
+
+      if (!topicLoaded) {
+        throw new Error('Не удалось загрузить информацию о теме');
       }
     },
     
@@ -280,40 +387,62 @@ export default {
           const headers = { Authorization: `Bearer ${token}` };
           console.log('🔑 Auth token retrieved');
 
-          const statusRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/${auth.currentUser.uid}/status`, { headers });
-          this.userPlan = statusRes.data?.status || 'free';
-          console.log('📦 User plan:', this.userPlan);
-        } else {
-          console.warn('⚠️ No token found — defaulting to free plan');
+          // Try different user status endpoints
+          const statusEndpoints = [
+            `/users/${auth.currentUser.uid}/status`,
+            `/api/users/${auth.currentUser.uid}/status`,
+            `/user/${auth.currentUser.uid}/status`,
+            `/api/user/${auth.currentUser.uid}/status`
+          ];
+
+          for (const endpoint of statusEndpoints) {
+            try {
+              const statusRes = await axios.get(`${this.BASE_URL}${endpoint}`, { headers });
+              this.userPlan = statusRes.data?.status || statusRes.data?.subscriptionPlan || 'free';
+              console.log('📦 User plan loaded:', this.userPlan);
+              return;
+            } catch (endpointError) {
+              console.warn(`⚠️ Status endpoint ${endpoint} failed:`, endpointError.message);
+              continue;
+            }
+          }
         }
+        
+        console.warn('⚠️ No token found or all status endpoints failed — defaulting to free plan');
+        this.userPlan = 'free';
       } catch (err) {
         console.warn('⚠️ Failed to fetch user plan — defaulting to free:', err.message);
         this.userPlan = 'free';
       }
     },
+
+    async retryLoad() {
+      console.log('🔄 Retrying to load topic data...');
+      await this.loadTopicData();
+    },
     
     getTopicName(topic) {
       if (!topic) return 'Без названия';
-      return topic.name || 'Без названия';
+      return topic.name?.en || topic.name || topic.title || 'Без названия';
     },
     
     getTopicDescription(topic) {
       if (!topic) return 'Нет описания для этой темы.';
-      return topic.description || 'Нет описания для этой темы.';
+      return topic.description?.en || topic.description || topic.desc || 'Нет описания для этой темы.';
     },
     
     getLessonName(lesson) {
       if (!lesson) return 'Без названия';
-      return lesson.lessonName || 'Без названия';
+      return lesson.lessonName?.en || lesson.lessonName || lesson.title || lesson.name || 'Без названия';
     },
     
     getLessonDescription(lesson) {
       if (!lesson) return '';
-      return lesson.description || '';
+      return lesson.description?.en || lesson.description || lesson.desc || '';
     },
     
     startLesson(lesson) {
-      console.log('➡️ Start lesson clicked:', lesson._id);
+      console.log('➡️ Start lesson clicked:', lesson._id || lesson.id);
       
       if (lesson.type === 'premium' && this.userPlan === 'free') {
         alert('❌ Урок доступен только подписчикам.');
@@ -321,7 +450,8 @@ export default {
         return;
       }
       
-      this.$router.push({ name: 'LessonPage', params: { id: lesson._id } });
+      const lessonId = lesson._id || lesson.id;
+      this.$router.push({ name: 'LessonPage', params: { id: lessonId } });
     },
     
     startFirstLesson() {
@@ -330,7 +460,7 @@ export default {
       );
       
       if (firstAvailable) {
-        console.log('🚀 Starting first available lesson:', firstAvailable._id);
+        console.log('🚀 Starting first available lesson:', firstAvailable._id || firstAvailable.id);
         this.startLesson(firstAvailable);
       } else {
         alert('❌ Нет доступных бесплатных уроков.');
@@ -346,7 +476,7 @@ export default {
         query: { 
           returnTo: this.$route.fullPath,
           from: 'topic',
-          topicId: this.topic?._id 
+          topicId: this.topic?._id || this.topic?.id
         }
       });
     }
@@ -355,6 +485,43 @@ export default {
 </script>
 
 <style scoped>
+/* Debug styles */
+.debug-info {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.debug-toggle {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.btn-retry {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-right: 1rem;
+  margin-bottom: 1rem;
+}
+
+.btn-retry:hover {
+  background: #0056b3;
+}
+
+/* All previous styles remain the same */
 .topic-overview {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -841,6 +1008,12 @@ export default {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .debug-info {
+    margin: 0.5rem;
+    padding: 0.75rem;
+    font-size: 0.8rem;
+  }
+  
   .topic-title {
     font-size: 2rem;
   }
@@ -940,7 +1113,9 @@ export default {
 .action-btn:focus,
 .start-btn:focus,
 .filter-btn:focus,
-.btn-back:focus {
+.btn-back:focus,
+.btn-retry:focus,
+.debug-toggle:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
