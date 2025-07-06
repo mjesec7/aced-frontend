@@ -103,7 +103,7 @@
             :key="lesson._id || lesson.id || index"
             class="lesson-card"
             :class="{ 
-              locked: lesson.type === 'premium' && userPlan === 'free',
+              locked: lesson.type === 'premium' && !isPremiumUser,
               premium: lesson.type === 'premium'
             }"
           >
@@ -143,14 +143,14 @@
             <div class="lesson-action">
               <button 
                 @click="startLesson(lesson)"
-                :disabled="lesson.type === 'premium' && userPlan === 'free'"
+                :disabled="lesson.type === 'premium' && !isPremiumUser"
                 class="action-btn"
                 :class="{ 
-                  locked: lesson.type === 'premium' && userPlan === 'free',
-                  premium: lesson.type === 'premium' && userPlan === 'free'
+                  locked: lesson.type === 'premium' && !isPremiumUser,
+                  premium: lesson.type === 'premium' && !isPremiumUser
                 }"
               >
-                <span v-if="lesson.type === 'premium' && userPlan === 'free'">
+                <span v-if="lesson.type === 'premium' && !isPremiumUser">
                   🔒 Требуется подписка
                 </span>
                 <span v-else>
@@ -160,7 +160,7 @@
             </div>
 
             <!-- Lock Overlay for Premium -->
-            <div v-if="lesson.type === 'premium' && userPlan === 'free'" class="lock-overlay">
+            <div v-if="lesson.type === 'premium' && !isPremiumUser" class="lock-overlay">
               <div class="lock-icon">🔒</div>
             </div>
           </div>
@@ -200,7 +200,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import { getTopicById, getLessonsByTopic, getUserStatus } from '@/api';
 import { auth } from '@/firebase';
 
 export default {
@@ -211,7 +211,9 @@ export default {
       lessons: [],
       loading: true,
       userPlan: 'free',
-      filter: 'all'
+      filter: 'all',
+      error: null,
+      retryCount: 0
     };
   },
   
@@ -231,76 +233,105 @@ export default {
     
     availableCount() {
       return this.lessons.filter(lesson => 
-        lesson.type !== 'premium' || this.userPlan !== 'free'
+        lesson.type !== 'premium' || this.isPremiumUser
       ).length;
+    },
+    
+    isPremiumUser() {
+      const premiumPlans = ['premium', 'start', 'pro'];
+      return premiumPlans.includes(this.userPlan) || 
+             premiumPlans.includes(this.getUserSubscription());
+    },
+    
+    currentUser() {
+      return auth.currentUser;
     }
   },
   
   async mounted() {
-    await this.loadTopicData();
+    console.log('🔧 TopicOverview mounted');
+    await this.initializeComponent();
   },
   
   methods: {
+    async initializeComponent() {
+      try {
+        // Wait for authentication if needed
+        await this.waitForAuth();
+        
+        // Load user subscription status
+        await this.loadUserPlan();
+        
+        // Load topic data
+        await this.loadTopicData();
+        
+      } catch (error) {
+        console.error('❌ Component initialization failed:', error);
+        this.error = 'Ошибка инициализации компонента';
+        this.loading = false;
+      }
+    },
+    
+    async waitForAuth() {
+      if (auth.currentUser) {
+        console.log('✅ User already authenticated');
+        return;
+      }
+      
+      return new Promise((resolve) => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          console.log('🔐 Auth state changed:', user ? user.email : 'No user');
+          unsubscribe();
+          resolve();
+        });
+        
+        // Timeout after 3 seconds
+        setTimeout(() => {
+          unsubscribe();
+          resolve();
+        }, 3000);
+      });
+    },
+    
     async loadTopicData() {
       const topicId = this.$route.params.id;
-      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
       if (!topicId) {
+        this.error = 'ID темы не указан';
         this.loading = false;
         return;
       }
 
       try {
         this.loading = true;
+        this.error = null;
         
-        // Load user plan first
-        await this.loadUserPlan();
+        console.log('📚 Loading topic data for:', topicId);
         
-        // Load topic data
-        const topicRes = await axios.get(`${BASE_URL}/topics/${topicId}`, {
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        });
+        // Load topic information
+        const topicResult = await getTopicById(topicId);
         
-        // Handle different response formats
-        this.topic = topicRes.data?.topic || topicRes.data?.data || topicRes.data;
-
-        // Load lessons with cache busting
-        const lessonsRes = await axios.get(`${BASE_URL}/topics/${topicId}/lessons`, {
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          },
-          params: {
-            // Add timestamp to bust cache
-            _t: Date.now()
-          }
-        });
-        
-        // Handle different response formats and extract lessons
-        let lessonsData = null;
-        
-        if (lessonsRes.data) {
-          // Try different possible response structures
-          lessonsData = lessonsRes.data.lessons || 
-                       lessonsRes.data.data || 
-                       lessonsRes.data.result ||
-                       lessonsRes.data;
+        if (!topicResult.success) {
+          throw new Error(topicResult.error || 'Failed to load topic');
         }
         
-        // Ensure we have an array
-        if (Array.isArray(lessonsData)) {
-          this.lessons = lessonsData;
-        } else if (lessonsData && typeof lessonsData === 'object') {
-          // If it's an object, maybe lessons are in a property
-          this.lessons = lessonsData.lessons || lessonsData.items || [];
+        this.topic = topicResult.data;
+        console.log('✅ Topic loaded:', this.getTopicName(this.topic));
+
+        // Load lessons for this topic
+        const lessonsResult = await getLessonsByTopic(topicId);
+        
+        if (lessonsResult.success) {
+          this.lessons = Array.isArray(lessonsResult.data) ? lessonsResult.data : [];
+          console.log(`✅ Loaded ${this.lessons.length} lessons`);
         } else {
+          console.warn('⚠️ Failed to load lessons:', lessonsResult.error);
           this.lessons = [];
         }
         
       } catch (err) {
+        console.error('❌ Error loading topic data:', err);
+        this.error = this.getErrorMessage(err);
         this.topic = null;
         this.lessons = [];
       } finally {
@@ -310,22 +341,63 @@ export default {
     
     async loadUserPlan() {
       try {
-        const token = await auth.currentUser?.getIdToken();
-        if (token) {
-          const headers = { 
-            Authorization: `Bearer ${token}`,
-            'Cache-Control': 'no-cache'
-          };
-
-          const statusRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/${auth.currentUser.uid}/status`, { headers });
-          this.userPlan = statusRes.data?.status || statusRes.data?.subscriptionPlan || 'free';
+        if (!auth.currentUser) {
+          console.log('ℹ️ No authenticated user, using free plan');
+          this.userPlan = 'free';
+          return;
         }
+
+        const userId = auth.currentUser.uid;
+        console.log('📊 Loading user subscription status for:', userId);
+
+        const statusResult = await getUserStatus(userId);
+        
+        if (statusResult.success) {
+          this.userPlan = statusResult.status || statusResult.data?.subscriptionPlan || 'free';
+          console.log('✅ User plan loaded:', this.userPlan);
+        } else {
+          console.warn('⚠️ Failed to load user status, defaulting to free');
+          this.userPlan = 'free';
+        }
+        
+        // Also check localStorage as fallback
+        const storedPlan = localStorage.getItem('subscriptionPlan');
+        if (storedPlan && ['premium', 'start', 'pro'].includes(storedPlan)) {
+          this.userPlan = storedPlan;
+          console.log('✅ Using stored subscription plan:', storedPlan);
+        }
+        
       } catch (err) {
+        console.warn('⚠️ Error loading user plan:', err.message);
         this.userPlan = 'free';
       }
     },
 
+    getUserSubscription() {
+      // Multiple sources for subscription status
+      return this.$store?.state?.user?.subscriptionPlan || 
+             this.$store?.getters?.userStatus || 
+             localStorage.getItem('subscriptionPlan') || 
+             'free';
+    },
+    
+    getErrorMessage(error) {
+      if (error.response?.status === 404) {
+        return 'Тема не найдена';
+      } else if (error.response?.status === 403) {
+        return 'У вас нет доступа к этой теме';
+      } else if (error.response?.status >= 500) {
+        return 'Ошибка сервера. Попробуйте позже.';
+      } else if (error.message) {
+        return error.message;
+      } else {
+        return 'Произошла неизвестная ошибка';
+      }
+    },
+
     async retryLoad() {
+      this.retryCount++;
+      console.log(`🔄 Retrying topic load (attempt ${this.retryCount})`);
       await this.loadTopicData();
     },
     
@@ -350,7 +422,7 @@ export default {
     },
     
     startLesson(lesson) {
-      if (lesson.type === 'premium' && this.userPlan === 'free') {
+      if (lesson.type === 'premium' && !this.isPremiumUser) {
         this.handleSubscription();
         return;
       }
@@ -361,7 +433,7 @@ export default {
     
     startFirstLesson() {
       const firstAvailable = this.lessons.find(
-        lesson => lesson.type !== 'premium' || this.userPlan !== 'free'
+        lesson => lesson.type !== 'premium' || this.isPremiumUser
       );
       
       if (firstAvailable) {
@@ -381,6 +453,48 @@ export default {
           topicId: this.topic?._id || this.topic?.id
         }
       });
+    },
+    
+    // Safe payment check method to avoid errors
+    async checkPaymentStatus() {
+      try {
+        // Only check if user is authenticated and we have store
+        if (!auth.currentUser || !this.$store) {
+          return;
+        }
+        
+        // Check if dispatch method exists and returns a promise
+        const checkAction = this.$store.dispatch('user/checkPendingPayments');
+        
+        if (checkAction && typeof checkAction.catch === 'function') {
+          await checkAction;
+          console.log('✅ Payment status checked successfully');
+        } else {
+          console.log('ℹ️ Payment check action not available');
+        }
+        
+      } catch (error) {
+        console.warn('⚠️ Payment status check failed:', error.message);
+        // Don't throw error, just log it
+      }
+    }
+  },
+  
+  // Lifecycle hook to check payment status periodically
+  async created() {
+    // Initial payment check
+    await this.checkPaymentStatus();
+    
+    // Set up periodic payment check (every 5 minutes)
+    this.paymentCheckInterval = setInterval(() => {
+      this.checkPaymentStatus();
+    }, 5 * 60 * 1000);
+  },
+  
+  beforeUnmount() {
+    // Clean up interval
+    if (this.paymentCheckInterval) {
+      clearInterval(this.paymentCheckInterval);
     }
   }
 };
@@ -978,5 +1092,81 @@ export default {
 .retry-btn:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
+}
+
+/* Error handling improvements */
+.error-container .error-message {
+  max-width: 500px;
+  line-height: 1.5;
+}
+
+/* Loading improvements */
+.loading-container {
+  background: rgba(102, 126, 234, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  margin: 2rem;
+  padding: 3rem;
+}
+
+/* Enhanced lesson card states */
+.lesson-card.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.lesson-card.error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+/* Improved accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: none;
+  }
+  
+  .lesson-card:hover,
+  .action-btn:hover,
+  .start-btn:hover,
+  .back-button:hover {
+    transform: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .lesson-card {
+    border-width: 3px;
+  }
+  
+  .action-btn,
+  .start-btn {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Print styles */
+@media print {
+  .topic-overview {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .back-button,
+  .start-actions,
+  .lesson-filters {
+    display: none;
+  }
+  
+  .topic-header {
+    color: black !important;
+  }
+  
+  .stat-card,
+  .lesson-card {
+    background: white !important;
+    border: 1px solid #ccc !important;
+  }
 }
 </style>
