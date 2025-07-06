@@ -1,17 +1,5 @@
 <template>
   <div class="topic-overview">
-    <!-- Debug Info (remove in production) -->
-    <div v-if="showDebug" class="debug-info">
-      <h4>🔍 Debug Info:</h4>
-      <p><strong>Topic ID:</strong> {{ $route.params.id }}</p>
-      <p><strong>API Base URL:</strong> {{ BASE_URL }}</p>
-      <p><strong>Topic Data:</strong> {{ topic ? 'Loaded' : 'Not loaded' }}</p>
-      <p><strong>Lessons Count:</strong> {{ lessons.length }}</p>
-      <p><strong>User Plan:</strong> {{ userPlan }}</p>
-      <p><strong>Loading:</strong> {{ loading }}</p>
-      <p><strong>Last Error:</strong> {{ lastError }}</p>
-    </div>
-
     <!-- Loading State -->
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner"></div>
@@ -19,10 +7,10 @@
     </div>
 
     <!-- Error/Not Found State -->
-    <div v-else-if="!topic && !loading" class="error-container">
+    <div v-else-if="!topic" class="error-container">
       <div class="error-icon">❌</div>
       <h3 class="error-title">Тема не найдена</h3>
-      <p class="error-message">{{ lastError || 'Возможно, тема была удалена или у вас нет к ней доступа' }}</p>
+      <p class="error-message">Возможно, тема была удалена или у вас нет к ней доступа</p>
       <button @click="retryLoad" class="btn-retry">🔄 Попробовать снова</button>
       <button @click="$router.push('/profile/catalogue')" class="btn-back">
         ⬅️ Назад к каталогу
@@ -105,9 +93,7 @@
           <div class="no-lessons-icon">📭</div>
           <h3>Уроки не найдены</h3>
           <p>{{ filter !== 'all' ? 'Попробуйте изменить фильтр' : 'В этой теме пока нет уроков' }}</p>
-          <button @click="showDebug = !showDebug" class="debug-toggle">
-            {{ showDebug ? '🔍 Скрыть отладку' : '🔍 Показать отладку' }}
-          </button>
+          <button @click="retryLoad" class="retry-btn">🔄 Обновить</button>
         </div>
 
         <!-- Lessons Grid -->
@@ -225,11 +211,7 @@ export default {
       lessons: [],
       loading: true,
       userPlan: 'free',
-      lang: localStorage.getItem('lang') || 'en',
-      filter: 'all',
-      showDebug: false,
-      lastError: null,
-      BASE_URL: import.meta.env.VITE_API_BASE_URL
+      filter: 'all'
     };
   },
   
@@ -261,122 +243,68 @@ export default {
   methods: {
     async loadTopicData() {
       const topicId = this.$route.params.id;
-      
-      console.log('🔍 TopicOverview mounted for topic:', topicId);
-      console.log('🌐 API Base URL:', this.BASE_URL);
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
       if (!topicId) {
-        this.lastError = 'Не указан ID темы';
         this.loading = false;
         return;
       }
 
       try {
         this.loading = true;
-        this.lastError = null;
         
         // Load user plan first
         await this.loadUserPlan();
         
-        // Try different API endpoints to find the working one
-        await this.tryLoadTopicData(topicId);
+        // Load topic data
+        const topicRes = await axios.get(`${BASE_URL}/topics/${topicId}`, {
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        
+        // Handle different response formats
+        this.topic = topicRes.data?.topic || topicRes.data?.data || topicRes.data;
+
+        // Load lessons with cache busting
+        const lessonsRes = await axios.get(`${BASE_URL}/topics/${topicId}/lessons`, {
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          },
+          params: {
+            // Add timestamp to bust cache
+            _t: Date.now()
+          }
+        });
+        
+        // Handle different response formats and extract lessons
+        let lessonsData = null;
+        
+        if (lessonsRes.data) {
+          // Try different possible response structures
+          lessonsData = lessonsRes.data.lessons || 
+                       lessonsRes.data.data || 
+                       lessonsRes.data.result ||
+                       lessonsRes.data;
+        }
+        
+        // Ensure we have an array
+        if (Array.isArray(lessonsData)) {
+          this.lessons = lessonsData;
+        } else if (lessonsData && typeof lessonsData === 'object') {
+          // If it's an object, maybe lessons are in a property
+          this.lessons = lessonsData.lessons || lessonsData.items || [];
+        } else {
+          this.lessons = [];
+        }
         
       } catch (err) {
-        console.error('❌ Error loading topic or lessons:', err);
-        this.lastError = err.message || 'Неизвестная ошибка при загрузке';
         this.topic = null;
+        this.lessons = [];
       } finally {
         this.loading = false;
-      }
-    },
-
-    async tryLoadTopicData(topicId) {
-      // Define possible API endpoints based on your backend structure
-      const possibleEndpoints = [
-        // Most likely endpoints based on your backend
-        {
-          topic: `/topics/${topicId}`,
-          lessons: `/topics/${topicId}/lessons`
-        },
-        {
-          topic: `/api/topics/${topicId}`,
-          lessons: `/api/topics/${topicId}/lessons`
-        },
-        {
-          topic: `/lessons/topic/${topicId}`,
-          lessons: `/lessons/topic/${topicId}`
-        },
-        {
-          topic: `/api/lessons/topic/${topicId}`,
-          lessons: `/api/lessons/topic/${topicId}`
-        }
-      ];
-
-      let topicLoaded = false;
-      let lessonsLoaded = false;
-
-      for (const endpoints of possibleEndpoints) {
-        try {
-          // Try to load topic
-          if (!topicLoaded) {
-            console.log(`📡 Trying topic endpoint: ${endpoints.topic}`);
-            const topicRes = await axios.get(`${this.BASE_URL}${endpoints.topic}`);
-            
-            if (topicRes.data) {
-              // Handle different response formats
-              this.topic = topicRes.data.topic || topicRes.data.data || topicRes.data;
-              console.log('📘 Topic loaded:', this.topic);
-              topicLoaded = true;
-            }
-          }
-
-          // Try to load lessons
-          if (!lessonsLoaded) {
-            console.log(`📡 Trying lessons endpoint: ${endpoints.lessons}`);
-            const lessonsRes = await axios.get(`${this.BASE_URL}${endpoints.lessons}`);
-            
-            if (lessonsRes.data) {
-              // Handle different response formats
-              const lessonsData = lessonsRes.data.lessons || lessonsRes.data.data || lessonsRes.data;
-              this.lessons = Array.isArray(lessonsData) ? lessonsData : [];
-              console.log(`📚 Lessons loaded (${this.lessons.length}):`, this.lessons);
-              lessonsLoaded = true;
-            }
-          }
-
-          // If both loaded, break
-          if (topicLoaded && lessonsLoaded) {
-            break;
-          }
-
-        } catch (endpointError) {
-          console.warn(`⚠️ Endpoint ${endpoints.topic} failed:`, endpointError.message);
-          continue;
-        }
-      }
-
-      // If no topic loaded, try to create a fallback
-      if (!topicLoaded) {
-        // Maybe try to extract topic info from lessons
-        if (lessonsLoaded && this.lessons.length > 0) {
-          const firstLesson = this.lessons[0];
-          this.topic = {
-            _id: topicId,
-            name: firstLesson.topic || firstLesson.subject || 'Тема',
-            description: firstLesson.topicDescription || 'Описание не найдено'
-          };
-          console.log('📘 Created fallback topic from lesson data:', this.topic);
-          topicLoaded = true;
-        }
-      }
-
-      // Final check
-      if (!topicLoaded && !lessonsLoaded) {
-        throw new Error('Не удалось загрузить данные темы с ни одного из доступных API endpoints');
-      }
-
-      if (!topicLoaded) {
-        throw new Error('Не удалось загрузить информацию о теме');
       }
     },
     
@@ -384,40 +312,20 @@ export default {
       try {
         const token = await auth.currentUser?.getIdToken();
         if (token) {
-          const headers = { Authorization: `Bearer ${token}` };
-          console.log('🔑 Auth token retrieved');
+          const headers = { 
+            Authorization: `Bearer ${token}`,
+            'Cache-Control': 'no-cache'
+          };
 
-          // Try different user status endpoints
-          const statusEndpoints = [
-            `/users/${auth.currentUser.uid}/status`,
-            `/api/users/${auth.currentUser.uid}/status`,
-            `/user/${auth.currentUser.uid}/status`,
-            `/api/user/${auth.currentUser.uid}/status`
-          ];
-
-          for (const endpoint of statusEndpoints) {
-            try {
-              const statusRes = await axios.get(`${this.BASE_URL}${endpoint}`, { headers });
-              this.userPlan = statusRes.data?.status || statusRes.data?.subscriptionPlan || 'free';
-              console.log('📦 User plan loaded:', this.userPlan);
-              return;
-            } catch (endpointError) {
-              console.warn(`⚠️ Status endpoint ${endpoint} failed:`, endpointError.message);
-              continue;
-            }
-          }
+          const statusRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/${auth.currentUser.uid}/status`, { headers });
+          this.userPlan = statusRes.data?.status || statusRes.data?.subscriptionPlan || 'free';
         }
-        
-        console.warn('⚠️ No token found or all status endpoints failed — defaulting to free plan');
-        this.userPlan = 'free';
       } catch (err) {
-        console.warn('⚠️ Failed to fetch user plan — defaulting to free:', err.message);
         this.userPlan = 'free';
       }
     },
 
     async retryLoad() {
-      console.log('🔄 Retrying to load topic data...');
       await this.loadTopicData();
     },
     
@@ -442,10 +350,7 @@ export default {
     },
     
     startLesson(lesson) {
-      console.log('➡️ Start lesson clicked:', lesson._id || lesson.id);
-      
       if (lesson.type === 'premium' && this.userPlan === 'free') {
-        alert('❌ Урок доступен только подписчикам.');
         this.handleSubscription();
         return;
       }
@@ -460,16 +365,13 @@ export default {
       );
       
       if (firstAvailable) {
-        console.log('🚀 Starting first available lesson:', firstAvailable._id || firstAvailable.id);
         this.startLesson(firstAvailable);
       } else {
-        alert('❌ Нет доступных бесплатных уроков.');
         this.handleSubscription();
       }
     },
     
     handleSubscription() {
-      // Navigate to payment/subscription page
       this.$router.push({
         name: 'PaymePayment',
         params: { plan: 'start' },
@@ -485,43 +387,6 @@ export default {
 </script>
 
 <style scoped>
-/* Debug styles */
-.debug-info {
-  background: #fff3cd;
-  border: 1px solid #ffeaa7;
-  border-radius: 8px;
-  padding: 1rem;
-  margin: 1rem;
-  font-family: monospace;
-  font-size: 0.9rem;
-}
-
-.debug-toggle {
-  background: #6c757d;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-top: 1rem;
-}
-
-.btn-retry {
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-right: 1rem;
-  margin-bottom: 1rem;
-}
-
-.btn-retry:hover {
-  background: #0056b3;
-}
-
-/* All previous styles remain the same */
 .topic-overview {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -586,7 +451,7 @@ export default {
   opacity: 0.9;
 }
 
-.btn-back {
+.btn-back, .btn-retry, .retry-btn {
   background: rgba(255, 255, 255, 0.1);
   color: white;
   border: none;
@@ -596,9 +461,10 @@ export default {
   cursor: pointer;
   transition: all 0.2s ease;
   backdrop-filter: blur(10px);
+  margin: 0.25rem;
 }
 
-.btn-back:hover {
+.btn-back:hover, .btn-retry:hover, .retry-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: translateY(-1px);
 }
@@ -769,7 +635,7 @@ export default {
 
 .no-lessons p {
   font-size: 1rem;
-  margin: 0;
+  margin: 0 0 1rem 0;
 }
 
 /* Lessons Grid */
@@ -1008,12 +874,6 @@ export default {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .debug-info {
-    margin: 0.5rem;
-    padding: 0.75rem;
-    font-size: 0.8rem;
-  }
-  
   .topic-title {
     font-size: 2rem;
   }
@@ -1115,7 +975,7 @@ export default {
 .filter-btn:focus,
 .btn-back:focus,
 .btn-retry:focus,
-.debug-toggle:focus {
+.retry-btn:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
