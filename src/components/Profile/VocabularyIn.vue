@@ -227,7 +227,17 @@
             </div>
           </div>
 
-          <div class="word-main">{{ currentWords[currentWordIndex]?.word }}</div>
+          <!-- Updated Word Main with Pronunciation -->
+          <div class="word-main-container">
+            <div class="word-main">{{ currentWords[currentWordIndex]?.word }}</div>
+            <button 
+              @click="pronounceWord(currentWords[currentWordIndex]?.word)"
+              class="pronunciation-btn"
+              title="Произношение (клавиша P)"
+            >
+              🔊
+            </button>
+          </div>
           
           <div class="word-details">
             <div class="translation-section">
@@ -238,14 +248,32 @@
               </button>
               
               <div v-if="showTranslation" class="word-translation">
-                <div class="translation-text">{{ currentWords[currentWordIndex]?.translation }}</div>
+                <div class="translation-text">
+                  {{ currentWords[currentWordIndex]?.translation }}
+                  <button 
+                    @click="pronounceWord(currentWords[currentWordIndex]?.translation, 'russian')"
+                    class="mini-pronunciation-btn"
+                    title="Произношение перевода"
+                  >
+                    🔊
+                  </button>
+                </div>
                 <div class="translation-glow"></div>
               </div>
             </div>
 
             <div v-if="showTranslation && currentWords[currentWordIndex]?.example" class="word-example">
               <div class="example-label">Пример:</div>
-              <div class="example-text">{{ currentWords[currentWordIndex].example }}</div>
+              <div class="example-text">
+                {{ currentWords[currentWordIndex].example }}
+                <button 
+                  @click="pronounceWord(currentWords[currentWordIndex].example)"
+                  class="mini-pronunciation-btn"
+                  title="Произношение примера"
+                >
+                  🔊
+                </button>
+              </div>
             </div>
           </div>
 
@@ -358,8 +386,16 @@
             <div class="question-number">{{ currentQuestionIndex + 1 }}</div>
             <h3>Как переводится это слово?</h3>
           </div>
+          <!-- Updated Test Word with Pronunciation -->
           <div class="test-word">
             <span class="word-text">{{ testQuestions[currentQuestionIndex]?.word }}</span>
+            <button 
+              @click="pronounceWord(testQuestions[currentQuestionIndex]?.word)"
+              class="word-pronunciation-btn"
+              title="Произношение"
+            >
+              🔊
+            </button>
             <div class="word-glow"></div>
           </div>
         </div>
@@ -401,7 +437,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
 import CreateTestModal from '../Modals/CreateTestModal.vue';
@@ -462,6 +498,20 @@ export default {
       korean: { name: 'Korean', nameRu: 'Корейский' },
       uzbek: { name: 'Uzbek', nameRu: 'Узбекский' },
       russian: { name: 'Russian', nameRu: 'Русский' }
+    };
+
+    // Language mapping for speech synthesis
+    const languageMap = {
+      english: 'en-US',
+      spanish: 'es-ES', 
+      french: 'fr-FR',
+      german: 'de-DE',
+      chinese: 'zh-CN',
+      arabic: 'ar-SA',
+      japanese: 'ja-JP',
+      korean: 'ko-KR',
+      uzbek: 'uz-UZ', // May fallback to en-US if not supported
+      russian: 'ru-RU'
     };
 
     // Computed properties
@@ -566,6 +616,55 @@ export default {
       if (score >= 70) return 'good';
       if (score >= 50) return 'average';
       return 'poor';
+    };
+
+    // Pronunciation method
+    const pronounceWord = async (text, language = languageCode.value) => {
+      if (!text || !text.trim()) {
+        showToast('Нет текста для произношения', 'error');
+        return;
+      }
+
+      if ('speechSynthesis' in window) {
+        try {
+          // Cancel any ongoing speech
+          speechSynthesis.cancel();
+          
+          const utterance = new SpeechSynthesisUtterance(text.trim());
+          
+          // Set language
+          utterance.lang = languageMap[language] || 'en-US';
+          utterance.rate = 0.8;
+          utterance.pitch = 1;
+          utterance.volume = 1;
+          
+          // Add event listeners
+          utterance.onstart = () => {
+            console.log('🔊 Speech started:', text);
+          };
+          
+          utterance.onend = () => {
+            console.log('🔊 Speech ended:', text);
+          };
+          
+          utterance.onerror = (event) => {
+            console.error('🔊 Speech error:', event.error);
+            showToast('Ошибка произношения', 'error');
+          };
+          
+          speechSynthesis.speak(utterance);
+          
+          // Show feedback toast
+          const languageName = languageNames[language]?.nameRu || language;
+          showToast(`🔊 ${text} (${languageName})`, 'info');
+          
+        } catch (error) {
+          console.warn('⚠️ Speech synthesis failed:', error);
+          showToast('Произношение недоступно', 'error');
+        }
+      } else {
+        showToast('Ваш браузер не поддерживает произношение', 'error');
+      }
     };
 
     // Action methods
@@ -882,6 +981,36 @@ export default {
             { _id: 'en_family_6', word: 'parents', translation: 'родители', example: 'My parents are proud.', partOfSpeech: 'noun' },
             { _id: 'en_family_7', word: 'family', translation: 'семья', example: 'Family is important.', partOfSpeech: 'noun' },
             { _id: 'en_family_8', word: 'grandmother', translation: 'бабушка', example: 'My grandmother tells stories.', partOfSpeech: 'noun' }
+          ],
+          'Business': [
+            { _id: 'en_business_1', word: 'meeting', translation: 'встреча', example: 'We have a meeting at 3 PM.', partOfSpeech: 'noun' },
+            { _id: 'en_business_2', word: 'office', translation: 'офис', example: 'I work in a modern office.', partOfSpeech: 'noun' },
+            { _id: 'en_business_3', word: 'manager', translation: 'менеджер', example: 'The manager is very supportive.', partOfSpeech: 'noun' },
+            { _id: 'en_business_4', word: 'contract', translation: 'контракт', example: 'Please sign the contract.', partOfSpeech: 'noun' },
+            { _id: 'en_business_5', word: 'profit', translation: 'прибыль', example: 'The company made a profit.', partOfSpeech: 'noun' },
+            { _id: 'en_business_6', word: 'client', translation: 'клиент', example: 'The client is satisfied.', partOfSpeech: 'noun' },
+            { _id: 'en_business_7', word: 'project', translation: 'проект', example: 'This project is important.', partOfSpeech: 'noun' },
+            { _id: 'en_business_8', word: 'deadline', translation: 'срок', example: 'The deadline is tomorrow.', partOfSpeech: 'noun' }
+          ],
+          'Technology': [
+            { _id: 'en_tech_1', word: 'computer', translation: 'компьютер', example: 'I use my computer daily.', partOfSpeech: 'noun' },
+            { _id: 'en_tech_2', word: 'internet', translation: 'интернет', example: 'The internet is fast here.', partOfSpeech: 'noun' },
+            { _id: 'en_tech_3', word: 'software', translation: 'программное обеспечение', example: 'This software is useful.', partOfSpeech: 'noun' },
+            { _id: 'en_tech_4', word: 'smartphone', translation: 'смартфон', example: 'My smartphone has good camera.', partOfSpeech: 'noun' },
+            { _id: 'en_tech_5', word: 'application', translation: 'приложение', example: 'Download this application.', partOfSpeech: 'noun' },
+            { _id: 'en_tech_6', word: 'website', translation: 'веб-сайт', example: 'The website is well-designed.', partOfSpeech: 'noun' },
+            { _id: 'en_tech_7', word: 'database', translation: 'база данных', example: 'The database is secure.', partOfSpeech: 'noun' },
+            { _id: 'en_tech_8', word: 'password', translation: 'пароль', example: 'Create a strong password.', partOfSpeech: 'noun' }
+          ],
+          'Health': [
+            { _id: 'en_health_1', word: 'doctor', translation: 'врач', example: 'The doctor is experienced.', partOfSpeech: 'noun' },
+            { _id: 'en_health_2', word: 'hospital', translation: 'больница', example: 'The hospital is nearby.', partOfSpeech: 'noun' },
+            { _id: 'en_health_3', word: 'medicine', translation: 'лекарство', example: 'Take your medicine regularly.', partOfSpeech: 'noun' },
+            { _id: 'en_health_4', word: 'exercise', translation: 'упражнение', example: 'Exercise is good for health.', partOfSpeech: 'noun' },
+            { _id: 'en_health_5', word: 'patient', translation: 'пациент', example: 'The patient is recovering.', partOfSpeech: 'noun' },
+            { _id: 'en_health_6', word: 'treatment', translation: 'лечение', example: 'The treatment is effective.', partOfSpeech: 'noun' },
+            { _id: 'en_health_7', word: 'symptom', translation: 'симптом', example: 'What are your symptoms?', partOfSpeech: 'noun' },
+            { _id: 'en_health_8', word: 'healthy', translation: 'здоровый', example: 'Eat healthy food.', partOfSpeech: 'adjective' }
           ]
         }
       };
@@ -889,9 +1018,55 @@ export default {
       return vocabularyData[lang]?.[topic] || [];
     };
 
+    // Keyboard shortcuts
+    const handleKeyPress = (event) => {
+      // Only handle keyboard shortcuts if not typing in input fields
+      if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      switch (event.key.toLowerCase()) {
+        case 'p':
+          event.preventDefault();
+          if (currentView.value === 'learning' && currentWords.value[currentWordIndex.value]) {
+            pronounceWord(currentWords.value[currentWordIndex.value].word);
+          } else if (currentView.value === 'test' && testQuestions.value[currentQuestionIndex.value]) {
+            pronounceWord(testQuestions.value[currentQuestionIndex.value].word);
+          }
+          break;
+        case 't':
+          event.preventDefault();
+          if (currentView.value === 'learning' && showTranslation.value && currentWords.value[currentWordIndex.value]) {
+            pronounceWord(currentWords.value[currentWordIndex.value].translation, 'russian');
+          }
+          break;
+        case 'arrowleft':
+          event.preventDefault();
+          if (currentView.value === 'learning') {
+            previousWord();
+          }
+          break;
+        case 'arrowright':
+          event.preventDefault();
+          if (currentView.value === 'learning') {
+            nextWord();
+          }
+          break;
+        case ' ':
+          event.preventDefault();
+          if (currentView.value === 'learning') {
+            toggleTranslation();
+          }
+          break;
+      }
+    };
+
     // Lifecycle
     onMounted(async () => {
       await fetchTopics();
+      
+      // Add keyboard event listener
+      document.addEventListener('keydown', handleKeyPress);
       
       // Check for test mode from query params
       if (route.query.mode === 'test') {
@@ -902,6 +1077,16 @@ export default {
         };
         
         createCustomTest(config);
+      }
+    });
+
+    onUnmounted(() => {
+      // Remove keyboard event listener
+      document.removeEventListener('keydown', handleKeyPress);
+      
+      // Cancel any ongoing speech
+      if ('speechSynthesis' in window) {
+        speechSynthesis.cancel();
       }
     });
 
@@ -946,6 +1131,7 @@ export default {
       isTopicCompleted,
       isTopicInProgress,
       getScoreClass,
+      pronounceWord,
       goBack,
       goBackToTopics,
       selectTopic,
@@ -1183,6 +1369,108 @@ export default {
 .create-test-btn:hover {
   transform: translateY(-2px) scale(1.05);
   box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+}
+
+/* ===== PRONUNCIATION BUTTONS ===== */
+.word-main-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.pronunciation-btn {
+  background: var(--gradient-primary);
+  color: var(--white);
+  border: none;
+  padding: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 20px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-normal);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.pronunciation-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left var(--transition-slow);
+}
+
+.pronunciation-btn:hover::before {
+  left: 100%;
+}
+
+.pronunciation-btn:hover {
+  transform: translateY(-2px) scale(1.1);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+}
+
+.pronunciation-btn:active {
+  transform: translateY(0) scale(0.95);
+}
+
+.word-pronunciation-btn {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: var(--gradient-primary);
+  color: var(--white);
+  border: none;
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-normal);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+  z-index: 10;
+}
+
+.word-pronunciation-btn:hover {
+  transform: scale(1.2);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
+
+.mini-pronunciation-btn {
+  background: var(--gradient-primary);
+  color: var(--white);
+  border: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 8px;
+  transition: all var(--transition-normal);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.mini-pronunciation-btn:hover {
+  background: var(--brand-purple-dark);
+  transform: scale(1.1);
 }
 
 /* ===== LOADING STATE ===== */
@@ -2018,7 +2306,6 @@ export default {
   font-size: 48px;
   font-weight: 800;
   color: var(--black);
-  margin-bottom: 32px;
   line-height: 1.2;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -2096,6 +2383,11 @@ export default {
   animation: translateAppear 0.4s ease;
   position: relative;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .translation-glow {
@@ -2130,6 +2422,10 @@ export default {
   font-style: italic;
   line-height: 1.6;
   font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .word-actions {
@@ -2576,6 +2872,12 @@ export default {
   color: #065f46;
 }
 
+.toast.info {
+  border-color: var(--brand-purple);
+  background: #f5f3ff;
+  color: #5b21b6;
+}
+
 .toast-icon {
   font-size: 18px;
   flex-shrink: 0;
@@ -2826,6 +3128,24 @@ export default {
     font-size: 36px;
   }
 
+  .word-main-container {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pronunciation-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  .word-pronunciation-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    padding: 6px;
+  }
+
   .word-actions {
     flex-direction: column;
     align-items: center;
@@ -2888,6 +3208,12 @@ export default {
     font-size: 28px;
   }
 
+  .pronunciation-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
   .complete-content h3 {
     font-size: 24px;
   }
@@ -2921,7 +3247,10 @@ export default {
 .topic-card:focus,
 .btn:focus,
 .option-btn:focus,
-.toggle-btn:focus {
+.toggle-btn:focus,
+.pronunciation-btn:focus,
+.word-pronunciation-btn:focus,
+.mini-pronunciation-btn:focus {
   outline: 3px solid var(--brand-purple);
   outline-offset: 2px;
 }
@@ -2933,6 +3262,12 @@ export default {
   .option-btn {
     border-width: 3px;
   }
+  
+  .pronunciation-btn,
+  .word-pronunciation-btn,
+  .mini-pronunciation-btn {
+    border: 2px solid var(--white);
+  }
 }
 
 /* Reduced motion */
@@ -2943,6 +3278,36 @@ export default {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===== KEYBOARD SHORTCUTS INDICATOR ===== */
+.vocabulary-in-page::after {
+  content: "Горячие клавиши: P - произношение, T - перевод, ← → - навигация, Пробел - показать/скрыть перевод";
+  position: fixed;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 1001;
+  max-width: 90vw;
+  text-align: center;
+}
+
+.vocabulary-in-page:hover::after {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .vocabulary-in-page::after {
+    display: none;
   }
 }
 </style>
