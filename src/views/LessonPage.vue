@@ -1038,128 +1038,412 @@ export default {
 
     // Lesson Loading
     async loadLesson() {
-      try {
-        const lessonId = this.$route.params.id;
-        
-        this.loading = true;
-        this.error = null;
+  try {
+    const lessonId = this.$route.params.id;
+    
+    this.loading = true;
+    this.error = null;
 
-        const response = await withErrorHandling(
-          () => getLessonById(lessonId),
-          'Load lesson'
-        );
+    console.log('🔍 Loading lesson:', lessonId);
 
-        // ✅ FIXED: Extract lesson from different response structures
-        if (response.success) {
-          // New API format with success wrapper
-          this.lesson = response.lesson || response.data;
-        } else if (response.lesson) {
-          // Response with lesson property
-          this.lesson = response.lesson;
-        } else if (response._id || response.lessonName) {
-          // Direct lesson object
-          this.lesson = response;
-        } else {
-          throw new Error('Invalid lesson response format');
-        }
+    const response = await withErrorHandling(
+      () => getLessonById(lessonId),
+      'Load lesson'
+    );
 
-        if (!this.lesson || !this.lesson._id) {
-          throw new Error('Lesson data is invalid or missing');
-        }
-        
-        const lessonType = this.lesson.type || 'free';
-        const userHasPremium = this.isPremiumUser;
-        
-        if (!auth.currentUser) {
-          throw new Error('Authentication required');
-        }
-        
-        if (lessonType === 'premium' && !userHasPremium) {
-          this.showPaywallModal = true;
-          this.loading = false;
-          return;
-        }
-        
-        this.processLessonSteps();
-        
-        if (this.steps.length === 0) {
-          console.warn('⚠️ No steps found in lesson, creating default step');
-          this.steps = [{
-            type: 'explanation',
-            data: { content: this.lesson.description || 'Lesson content not available' }
-          }];
-        }
-        
-      } catch (err) {
-        console.error('❌ Error loading lesson:', err);
-        
-        if (err.message === 'Lesson not found') {
-          this.error = 'Урок не найден';
-        } else if (err.message === 'Authentication required') {
-          this.$router.push('/Login');
-          return;
-        } else if (err.message === 'Access denied to this lesson') {
-          this.error = 'У вас нет доступа к этому уроку';
-        } else if (err.response?.status === 500) {
-          this.error = 'Ошибка сервера. Попробуйте позже.';
-        } else {
-          this.error = 'Произошла ошибка при загрузке урока';
-        }
-      } finally {
-        this.loading = false;
+    // ✅ CRITICAL FIX: Better response handling
+    let lessonData = null;
+    
+    if (response.success) {
+      lessonData = response.lesson || response.data;
+    } else if (response.lesson) {
+      lessonData = response.lesson;
+    } else if (response._id || response.lessonName) {
+      lessonData = response;
+    } else {
+      throw new Error('Invalid lesson response format');
+    }
+
+    if (!lessonData || !lessonData._id) {
+      throw new Error('Lesson data is invalid or missing');
+    }
+    
+    this.lesson = lessonData;
+    console.log('✅ Lesson loaded:', this.lesson.lessonName);
+    console.log('📊 Steps available:', this.lesson.steps?.length || 0);
+    
+    // ✅ CRITICAL FIX: Enhanced step processing
+    this.processLessonSteps();
+    
+    // Check access permissions
+    const lessonType = this.lesson.type || 'free';
+    const userHasPremium = this.isPremiumUser;
+    
+    if (!auth.currentUser) {
+      throw new Error('Authentication required');
+    }
+    
+    if (lessonType === 'premium' && !userHasPremium) {
+      this.showPaywallModal = true;
+      this.loading = false;
+      return;
+    }
+    
+    if (this.steps.length === 0) {
+      console.warn('⚠️ No steps found in lesson, creating default step');
+      this.steps = [{
+        type: 'explanation',
+        data: { content: this.lesson.description || 'Lesson content not available' }
+      }];
+    }
+    
+    // Log step details for debugging
+    this.steps.forEach((step, index) => {
+      console.log(`📝 Step ${index + 1}:`, {
+        type: step.type,
+        hasData: !!step.data,
+        dataType: typeof step.data,
+        isArray: Array.isArray(step.data),
+        dataKeys: step.data ? Object.keys(step.data) : [],
+        arrayLength: Array.isArray(step.data) ? step.data.length : 'N/A'
+      });
+    });
+    
+  } catch (err) {
+    console.error('❌ Error loading lesson:', err);
+    this.error = this.handleLessonError(err);
+  } finally {
+    this.loading = false;
+  }
+},
+   processLessonSteps() {
+  this.steps = [];
+  
+  if (!this.lesson.steps || !Array.isArray(this.lesson.steps)) {
+    console.warn('⚠️ No steps array found, trying legacy format');
+    this.processLegacyLessonFormat();
+    return;
+  }
+  
+  // ✅ CRITICAL FIX: Process each step with enhanced validation
+  this.lesson.steps.forEach((step, index) => {
+    console.log(`🔍 Processing step ${index + 1}:`, step);
+    
+    if (!step || typeof step !== 'object') {
+      console.warn(`⚠️ Step ${index + 1}: Invalid step object`);
+      return;
+    }
+    
+    if (!step.type) {
+      console.warn(`⚠️ Step ${index + 1}: Missing step type, defaulting to explanation`);
+      step.type = 'explanation';
+    }
+    
+    // ✅ CRITICAL FIX: Enhanced step processing based on type
+    let processedStep = { ...step };
+    
+    try {
+      switch (step.type) {
+        case 'exercise':
+          processedStep = this.processExerciseStep(step, index);
+          break;
+        case 'quiz':
+          processedStep = this.processQuizStep(step, index);
+          break;
+        case 'vocabulary':
+          processedStep = this.processVocabularyStep(step, index);
+          break;
+        default:
+          processedStep = this.processBasicStep(step, index);
       }
-    },
-
-    processLessonSteps() {
-      this.steps = [];
       
-      if (this.lesson.steps && Array.isArray(this.lesson.steps)) {
-        // ✅ FIXED: Process steps with better exercise handling
-        this.lesson.steps.forEach(step => {
-          if (['exercise', 'practice'].includes(step.type)) {
-            // Check if step.data is an array of exercises
-            if (Array.isArray(step.data)) {
-              // Each exercise becomes a separate step
-              step.data.forEach(exercise => {
-                this.steps.push({
-                  type: step.type,
-                  data: exercise
-                });
-              });
-            } else {
-              // Single exercise
-              this.steps.push(step);
-            }
-          } else {
-            this.steps.push(step);
-          }
+      this.steps.push(processedStep);
+      console.log(`✅ Step ${index + 1} processed successfully:`, processedStep.type);
+      
+    } catch (stepError) {
+      console.error(`❌ Error processing step ${index + 1}:`, stepError);
+      // Add error step instead of skipping
+      this.steps.push({
+        type: 'explanation',
+        data: { 
+          content: `Error loading ${step.type} step: ${stepError.message}`,
+          error: true
+        }
+      });
+    }
+  });
+  
+  console.log(`✅ Processed ${this.steps.length} total steps`);
+},
+processExerciseStep(step, index) {
+  console.log(`📝 Processing exercise step ${index + 1}:`, step);
+  
+  let exercises = [];
+  
+  // ✅ CRITICAL FIX: Handle multiple data structures
+  if (Array.isArray(step.data)) {
+    exercises = step.data;
+  } else if (step.data && Array.isArray(step.data.exercises)) {
+    exercises = step.data.exercises;
+  } else if (step.data && step.data.question) {
+    // Single exercise
+    exercises = [step.data];
+  } else if (step.exercises && Array.isArray(step.exercises)) {
+    exercises = step.exercises;
+  }
+  
+  // ✅ Validate and normalize exercises
+  const validExercises = exercises.filter(ex => {
+    const hasQuestion = ex.question && String(ex.question).trim();
+    const hasAnswer = (ex.answer || ex.correctAnswer) && 
+                     String(ex.answer || ex.correctAnswer).trim();
+    
+    if (!hasQuestion) {
+      console.warn(`⚠️ Exercise missing question:`, ex);
+      return false;
+    }
+    if (!hasAnswer) {
+      console.warn(`⚠️ Exercise missing answer:`, ex);
+      return false;
+    }
+    
+    return true;
+  }).map(ex => ({
+    ...ex,
+    question: String(ex.question).trim(),
+    answer: String(ex.answer || ex.correctAnswer || '').trim(),
+    correctAnswer: String(ex.correctAnswer || ex.answer || '').trim(),
+    type: ex.type || 'short-answer',
+    options: ex.options || [],
+    hint: ex.hint || '',
+    explanation: ex.explanation || ''
+  }));
+  
+  if (validExercises.length === 0) {
+    console.warn(`⚠️ No valid exercises found, creating default`);
+    validExercises.push({
+      question: "Sample exercise question",
+      answer: "Sample answer",
+      correctAnswer: "Sample answer",
+      type: 'short-answer',
+      options: [],
+      hint: 'Think about what we just learned',
+      explanation: 'This is a sample exercise'
+    });
+  }
+  
+  console.log(`✅ Processed ${validExercises.length} exercises`);
+  
+  return {
+    type: 'exercise',
+    data: validExercises
+  };
+},
+processQuizStep(step, index) {
+  console.log(`🧩 Processing quiz step ${index + 1}:`, step);
+  
+  let quizzes = [];
+  
+  // Handle multiple data structures
+  if (Array.isArray(step.data)) {
+    quizzes = step.data;
+  } else if (step.data && Array.isArray(step.data.quizzes)) {
+    quizzes = step.data.quizzes;
+  } else if (step.data && step.data.question) {
+    // Single quiz
+    quizzes = [step.data];
+  } else if (step.quizzes && Array.isArray(step.quizzes)) {
+    quizzes = step.quizzes;
+  }
+  
+  // ✅ Validate and normalize quizzes
+  const validQuizzes = quizzes.filter(quiz => {
+    const hasQuestion = quiz.question && String(quiz.question).trim();
+    const hasCorrectAnswer = quiz.correctAnswer !== undefined && quiz.correctAnswer !== null;
+    
+    if (!hasQuestion) {
+      console.warn(`⚠️ Quiz missing question:`, quiz);
+      return false;
+    }
+    if (!hasCorrectAnswer) {
+      console.warn(`⚠️ Quiz missing correct answer:`, quiz);
+      return false;
+    }
+    
+    return true;
+  }).map(quiz => {
+    const processedQuiz = {
+      ...quiz,
+      question: String(quiz.question).trim(),
+      type: quiz.type || 'multiple-choice',
+      correctAnswer: quiz.correctAnswer,
+      explanation: quiz.explanation || '',
+      options: []
+    };
+    
+    // Process options based on type
+    if (processedQuiz.type === 'multiple-choice') {
+      if (Array.isArray(quiz.options)) {
+        processedQuiz.options = quiz.options.map(opt => {
+          if (typeof opt === 'string') return opt;
+          if (opt && opt.text) return opt.text;
+          return String(opt);
         });
       } else {
-        // Legacy format support
-        if (Array.isArray(this.lesson.explanations)) {
-          this.steps.push(...this.lesson.explanations.map(ex => ({ 
-            type: 'explanation', 
-            data: typeof ex === 'string' ? { content: ex } : ex 
-          })));
-        }
-        if (Array.isArray(this.lesson.examples)) {
-          this.steps.push(...this.lesson.examples.map(ex => ({ 
-            type: 'example', 
-            data: typeof ex === 'string' ? { content: ex } : ex 
-          })));
-        }
-        if (Array.isArray(this.lesson.exerciseGroups)) {
-          this.lesson.exerciseGroups.forEach(group => {
-            if (group.exercises) {
-              group.exercises.forEach(ex => this.steps.push({ type: 'exercise', data: ex }));
-            }
-          });
-        }
-        if (Array.isArray(this.lesson.quiz)) {
-          this.steps.push(...this.lesson.quiz.map(q => ({ type: 'quiz', data: q })));
+        // Default options if missing
+        processedQuiz.options = ['Option A', 'Option B', 'Option C', 'Option D'];
+      }
+      
+      // Validate correct answer index
+      if (typeof processedQuiz.correctAnswer === 'number') {
+        if (processedQuiz.correctAnswer >= processedQuiz.options.length) {
+          console.warn(`⚠️ Correct answer index out of bounds, fixing`);
+          processedQuiz.correctAnswer = 0;
         }
       }
-    },
+    } else if (processedQuiz.type === 'true-false') {
+      processedQuiz.options = ['True', 'False'];
+    }
+    
+    return processedQuiz;
+  });
+  
+  if (validQuizzes.length === 0) {
+    console.warn(`⚠️ No valid quizzes found, creating default`);
+    validQuizzes.push({
+      question: "Sample quiz question?",
+      type: 'multiple-choice',
+      options: ['Option A', 'Option B', 'Option C'],
+      correctAnswer: 0,
+      explanation: 'This is a sample quiz question'
+    });
+  }
+  
+  console.log(`✅ Processed ${validQuizzes.length} quiz questions`);
+  
+  return {
+    type: 'quiz',
+    data: validQuizzes
+  };
+},
+
+// 5. ✅ NEW: Process vocabulary steps
+processVocabularyStep(step, index) {
+  console.log(`📚 Processing vocabulary step ${index + 1}:`, step);
+  
+  let vocabulary = [];
+  
+  if (Array.isArray(step.data)) {
+    vocabulary = step.data;
+  } else if (step.data && Array.isArray(step.data.vocabulary)) {
+    vocabulary = step.data.vocabulary;
+  } else if (step.vocabulary && Array.isArray(step.vocabulary)) {
+    vocabulary = step.vocabulary;
+  }
+  
+  const validVocabulary = vocabulary.filter(vocab => {
+    return vocab.term && vocab.term.trim() && vocab.definition && vocab.definition.trim();
+  }).map(vocab => ({
+    term: String(vocab.term).trim(),
+    definition: String(vocab.definition).trim(),
+    example: vocab.example ? String(vocab.example).trim() : '',
+    pronunciation: vocab.pronunciation || ''
+  }));
+  
+  if (validVocabulary.length === 0) {
+    validVocabulary.push({
+      term: "Sample Term",
+      definition: "Sample definition for this term",
+      example: "Example usage of the term",
+      pronunciation: ""
+    });
+  }
+  
+  console.log(`✅ Processed ${validVocabulary.length} vocabulary items`);
+  
+  return {
+    type: 'vocabulary',
+    data: validVocabulary
+  };
+},
+
+// 6. ✅ NEW: Process basic steps (explanation, example, etc.)
+processBasicStep(step, index) {
+  let content = '';
+  
+  if (typeof step.content === 'string') {
+    content = step.content;
+  } else if (step.data && typeof step.data.content === 'string') {
+    content = step.data.content;
+  } else if (step.data && typeof step.data === 'string') {
+    content = step.data;
+  } else if (typeof step.data === 'object' && step.data.text) {
+    content = step.data.text;
+  }
+  
+  if (!content.trim()) {
+    content = `Content for ${step.type} step ${index + 1}`;
+  }
+  
+  return {
+    type: step.type,
+    data: {
+      content: content,
+      questions: step.questions || step.data?.questions || []
+    }
+  };
+},
+
+// 7. ✅ NEW: Process legacy lesson format
+processLegacyLessonFormat() {
+  console.log('🔄 Processing legacy lesson format');
+  
+  // Add explanations
+  if (Array.isArray(this.lesson.explanations)) {
+    this.lesson.explanations.forEach(explanation => {
+      this.steps.push({
+        type: 'explanation',
+        data: {
+          content: typeof explanation === 'string' ? explanation : explanation.content || ''
+        }
+      });
+    });
+  }
+  
+  // Add examples
+  if (Array.isArray(this.lesson.examples)) {
+    this.lesson.examples.forEach(example => {
+      this.steps.push({
+        type: 'example',
+        data: {
+          content: typeof example === 'string' ? example : example.content || ''
+        }
+      });
+    });
+  }
+  
+  // Add exercises from exerciseGroups
+  if (Array.isArray(this.lesson.exerciseGroups)) {
+    this.lesson.exerciseGroups.forEach(group => {
+      if (group.exercises) {
+        this.steps.push({
+          type: 'exercise',
+          data: group.exercises
+        });
+      }
+    });
+  }
+  
+  // Add quiz
+  if (Array.isArray(this.lesson.quiz)) {
+    this.steps.push({
+      type: 'quiz',
+      data: this.lesson.quiz
+    });
+  }
+  
+  console.log(`✅ Processed ${this.steps.length} steps from legacy format`);
+},
 
     async loadPreviousProgress() {
       if (!this.lesson._id) return;
@@ -1916,13 +2200,138 @@ export default {
     },
 
     getExerciseQuestion(step) {
-      if (!step || !step.data) return 'Вопрос недоступен';
-      
-      if (step.data.question) return this.getLocalized(step.data.question);
-      if (step.data.text) return this.getLocalized(step.data.text);
-      
-      return 'Вопрос недоступен';
-    },
+  if (!step || !step.data) {
+    console.warn('⚠️ getExerciseQuestion: Invalid step data');
+    return 'Exercise question unavailable';
+  }
+  
+  // Handle array of exercises (get first one)
+  if (Array.isArray(step.data)) {
+    const firstExercise = step.data[0];
+    if (firstExercise && firstExercise.question) {
+      return this.getLocalized(firstExercise.question);
+    }
+  }
+  
+  // Handle single exercise object
+  if (step.data.question) {
+    return this.getLocalized(step.data.question);
+  }
+  
+  console.warn('⚠️ No exercise question found');
+  return 'Exercise question not available';
+},
+
+getCorrectAnswer(step) {
+  if (!step || !step.data) return '';
+  
+  // Handle array of exercises (get first one)
+  if (Array.isArray(step.data)) {
+    const firstExercise = step.data[0];
+    if (firstExercise) {
+      return String(firstExercise.correctAnswer || firstExercise.answer || '').trim();
+    }
+  }
+  
+  // Handle single exercise
+  const possibleFields = ['correctAnswer', 'answer', 'correct_answer', 'solution'];
+  for (const field of possibleFields) {
+    if (step.data[field] !== undefined && step.data[field] !== null) {
+      const answer = step.data[field];
+      if (Array.isArray(answer)) {
+        return answer.join(', ');
+      }
+      return String(answer).trim();
+    }
+  }
+  
+  // For multiple choice, get the correct option
+  if (step.data.options && Array.isArray(step.data.options) && 
+      typeof step.data.correctAnswer === 'number') {
+    const correctIndex = step.data.correctAnswer;
+    if (correctIndex >= 0 && correctIndex < step.data.options.length) {
+      return step.data.options[correctIndex];
+    }
+  }
+  
+  return '';
+},
+
+hasOptions(step) {
+  if (!step || !step.data) return false;
+  
+  // Handle array of exercises
+  if (Array.isArray(step.data)) {
+    const firstExercise = step.data[0];
+    return firstExercise && Array.isArray(firstExercise.options) && firstExercise.options.length > 0;
+  }
+  
+  // Handle single exercise
+  return Array.isArray(step.data.options) && step.data.options.length > 0;
+},
+
+getOptions(step) {
+  if (!this.hasOptions(step)) return [];
+  
+  let options = [];
+  
+  // Handle array of exercises
+  if (Array.isArray(step.data)) {
+    const firstExercise = step.data[0];
+    options = firstExercise?.options || [];
+  } else {
+    options = step.data.options || [];
+  }
+  
+  // Normalize options to strings
+  return options.map(option => {
+    if (typeof option === 'string') return option;
+    if (option && option.text) return option.text;
+    if (option && option.value) return String(option.value);
+    return String(option);
+  });
+},
+
+getQuizQuestion(step) {
+  if (!step || !step.data) return 'Quiz question unavailable';
+  
+  // Handle array of quiz questions
+  if (Array.isArray(step.data)) {
+    const firstQuiz = step.data[0];
+    if (firstQuiz && firstQuiz.question) {
+      return this.getLocalized(firstQuiz.question);
+    }
+  }
+  
+  // Handle single quiz object
+  if (step.data.question) {
+    return this.getLocalized(step.data.question);
+  }
+  
+  return 'Quiz question not available';
+},
+
+getQuizOptions(step) {
+  if (!step || !step.data) return [];
+  
+  let options = [];
+  
+  // Handle array of quiz questions
+  if (Array.isArray(step.data)) {
+    const firstQuiz = step.data[0];
+    options = firstQuiz?.options || [];
+  } else {
+    options = step.data.options || [];
+  }
+  
+  // Normalize options
+  return options.map(option => {
+    if (typeof option === 'string') return option;
+    if (option && option.text) return option.text;
+    if (option && option.value) return String(option.value);
+    return String(option);
+  });
+},
 
     /**
      * ✅ ENHANCED: Get correct answer with better field handling
