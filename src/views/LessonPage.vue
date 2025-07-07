@@ -41,6 +41,193 @@
       </div>
     </div>
 
+    <!-- ✅ NEW: Vocabulary Learning Modal -->
+    <div v-if="vocabularyModal.isVisible" class="vocabulary-modal-overlay">
+      <div class="vocabulary-modal-container">
+        
+        <!-- Modal Header -->
+        <div class="vocabulary-modal-header">
+          <div class="vocab-progress-section">
+            <div class="vocab-progress-bar">
+              <div class="vocab-progress-fill" :style="{ width: vocabProgress + '%' }"></div>
+            </div>
+            <div class="vocab-progress-text">
+              {{ vocabularyModal.currentIndex + 1 }} / {{ vocabularyModal.words.length }}
+            </div>
+          </div>
+          
+          <div class="vocab-header-actions">
+            <button @click="skipVocabularyModal" class="vocab-skip-btn" title="Пропустить и перейти к списку">
+              ⏭️ Пропустить
+            </button>
+            <button @click="confirmExit" class="vocab-close-btn" title="Выйти из урока">
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- Vocabulary Card Container -->
+        <div v-if="!vocabularyModal.isCompleted && !vocabularyModal.showingList" class="vocabulary-card-container">
+          
+          <!-- Main Vocabulary Card -->
+          <div class="vocabulary-card" 
+               :class="{ 
+                 'flipped': cardAnimation.showDefinition, 
+                 'flipping': cardAnimation.isFlipping,
+                 'learned': currentVocabWord?.learned
+               }">
+            
+            <!-- Front of Card (Term) -->
+            <div class="card-front" @click="showVocabDefinition">
+              <div class="card-content">
+                <div class="vocab-term-section">
+                  <h2 class="vocab-term">{{ currentVocabWord?.term || 'Loading...' }}</h2>
+                  
+                  <div v-if="currentVocabWord?.pronunciation" class="vocab-pronunciation">
+                    /{{ currentVocabWord.pronunciation }}/
+                  </div>
+                  
+                  <div v-if="currentVocabWord?.partOfSpeech" class="vocab-part-of-speech">
+                    {{ currentVocabWord.partOfSpeech }}
+                  </div>
+                </div>
+                
+                <div class="card-instruction">
+                  <div class="instruction-icon">👆</div>
+                  <p>Нажмите, чтобы увидеть определение</p>
+                </div>
+                
+                <!-- Pronunciation Button -->
+                <button 
+                  v-if="currentVocabWord?.term" 
+                  @click.stop="pronounceWord(currentVocabWord.term)"
+                  class="pronunciation-btn"
+                  title="Произношение"
+                >
+                  🔊
+                </button>
+              </div>
+            </div>
+
+            <!-- Back of Card (Definition) -->
+            <div class="card-back" @click="hideVocabDefinition">
+              <div class="card-content">
+                <div class="vocab-definition-section">
+                  <h3 class="vocab-term-small">{{ currentVocabWord?.term }}</h3>
+                  
+                  <div class="vocab-definition">
+                    {{ currentVocabWord?.definition || 'Определение не найдено' }}
+                  </div>
+                  
+                  <div v-if="currentVocabWord?.example" class="vocab-example">
+                    <strong>Пример:</strong><br>
+                    <em>{{ currentVocabWord.example }}</em>
+                  </div>
+                </div>
+                
+                <div class="card-instruction">
+                  <div class="instruction-icon">👆</div>
+                  <p>Нажмите, чтобы вернуться к термину</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card Actions -->
+          <div class="vocab-card-actions">
+            <button 
+              @click="previousVocabWord" 
+              :disabled="vocabularyModal.currentIndex === 0"
+              class="vocab-nav-btn vocab-prev-btn"
+              title="Предыдущее слово"
+            >
+              ⬅️ Назад
+            </button>
+            
+            <div class="vocab-main-actions">
+              <button 
+                @click="markWordAsLearned" 
+                class="vocab-learned-btn"
+                :class="{ active: currentVocabWord?.learned }"
+                title="Отметить как изученное"
+              >
+                {{ currentVocabWord?.learned ? '✅ Изучено' : '📚 Изучить' }}
+              </button>
+              
+              <button 
+                @click="nextVocabWord" 
+                class="vocab-next-btn"
+                title="Следующее слово"
+              >
+                {{ isLastVocabWord ? '🏁 Завершить' : '➡️ Далее' }}
+              </button>
+            </div>
+            
+            <button 
+              @click="restartVocabulary" 
+              class="vocab-restart-btn"
+              title="Начать заново"
+            >
+              🔄 Заново
+            </button>
+          </div>
+
+          <!-- Quick Navigation Dots -->
+          <div class="vocab-dots-navigation">
+            <button
+              v-for="(word, index) in vocabularyModal.words"
+              :key="word.id"
+              @click="vocabularyModal.currentIndex = index; cardAnimation.showDefinition = false;"
+              class="vocab-dot"
+              :class="{ 
+                active: index === vocabularyModal.currentIndex,
+                learned: word.learned 
+              }"
+              :title="word.term"
+            >
+            </button>
+          </div>
+        </div>
+
+        <!-- Completion Screen -->
+        <div v-else-if="vocabularyModal.isCompleted && !vocabularyModal.showingList" class="vocabulary-completion">
+          <div class="completion-animation">
+            <div class="completion-icon">🎉</div>
+            <h3>Отлично!</h3>
+            <p>Вы изучили {{ vocabularyModal.words.filter(w => w.learned).length }} из {{ vocabularyModal.words.length }} слов</p>
+            
+            <div class="completion-stats">
+              <div class="completion-stat">
+                <div class="stat-number">{{ vocabularyModal.words.filter(w => w.learned).length }}</div>
+                <div class="stat-label">Изучено</div>
+              </div>
+              <div class="completion-stat">
+                <div class="stat-number">{{ Math.round((vocabularyModal.words.filter(w => w.learned).length / vocabularyModal.words.length) * 100) }}%</div>
+                <div class="stat-label">Прогресс</div>
+              </div>
+            </div>
+            
+            <button @click="showVocabularyList" class="continue-btn">
+              📋 Перейти к списку слов
+            </button>
+          </div>
+        </div>
+
+        <!-- List Transition Screen -->
+        <div v-else-if="vocabularyModal.showingList" class="vocabulary-list-transition">
+          <div class="transition-animation">
+            <div class="transition-icon">📚</div>
+            <h3>Переход к списку слов...</h3>
+            <div class="loading-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Intro Screen -->
     <div v-if="!started && !showPaywallModal && !loading && !error" class="intro-screen">
       <button class="exit-btn" @click="confirmExit">✕</button>
@@ -164,22 +351,73 @@
               </div>
             </div>
 
-            <!-- Vocabulary Step -->
-            <div v-else-if="currentStep?.type === 'vocabulary'" class="vocabulary-content">
-              <div v-if="Array.isArray(currentStep.data)" class="vocabulary-list">
-                <div v-for="(vocab, index) in currentStep.data" :key="index" class="vocabulary-item">
-                  <div class="vocab-term">{{ vocab.term }}</div>
-                  <div class="vocab-definition">{{ vocab.definition }}</div>
-                  <div v-if="vocab.example" class="vocab-example">
-                    <strong>Пример:</strong> {{ vocab.example }}
-                  </div>
+            <!-- ✅ ENHANCED: Vocabulary Step -->
+            <div v-else-if="currentStep?.type === 'vocabulary'" class="vocabulary-content enhanced">
+              
+              <!-- Show modal trigger if not completed -->
+              <div v-if="!currentStep.data?.modalCompleted" class="vocabulary-modal-trigger">
+                <div class="trigger-card">
+                  <div class="trigger-icon">📚</div>
+                  <h3>Изучение словаря</h3>
+                  <p>{{ Array.isArray(currentStep.data) ? currentStep.data.length : 1 }} новых слов ждут вас!</p>
+                  <button @click="initializeVocabularyModal(currentStep)" class="start-vocabulary-btn">
+                    🚀 Начать изучение
+                  </button>
                 </div>
               </div>
-              <div v-else class="single-vocabulary">
-                <div class="vocab-term">{{ currentStep.data.term || 'Термин' }}</div>
-                <div class="vocab-definition">{{ currentStep.data.definition || 'Определение' }}</div>
-                <div v-if="currentStep.data.example" class="vocab-example">
-                  <strong>Пример:</strong> {{ currentStep.data.example }}
+
+              <!-- Show list view after modal completion -->
+              <div v-else class="vocabulary-list-view">
+                <div class="vocabulary-header">
+                  <h3>📖 Изученные слова</h3>
+                  <button @click="initializeVocabularyModal(currentStep)" class="review-btn">
+                    🔄 Повторить
+                  </button>
+                </div>
+                
+                <div class="vocabulary-list">
+                  <div 
+                    v-for="(vocab, index) in (currentStep.data?.allWords || currentStep.data || [])" 
+                    :key="vocab.id || index" 
+                    class="vocabulary-item enhanced"
+                    :class="{ learned: vocab.learned }"
+                  >
+                    <div class="vocab-item-header">
+                      <div class="vocab-term">
+                        {{ vocab.term }}
+                        <button 
+                          @click="pronounceWord(vocab.term)"
+                          class="mini-pronunciation-btn"
+                          title="Произношение"
+                        >
+                          🔊
+                        </button>
+                      </div>
+                      <div v-if="vocab.learned" class="learned-badge">✅</div>
+                    </div>
+                    
+                    <div class="vocab-definition">{{ vocab.definition }}</div>
+                    
+                    <div v-if="vocab.example" class="vocab-example">
+                      <strong>Пример:</strong> {{ vocab.example }}
+                    </div>
+                    
+                    <div v-if="vocab.pronunciation" class="vocab-pronunciation">
+                      Произношение: /{{ vocab.pronunciation }}/
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Summary Stats -->
+                <div class="vocabulary-summary">
+                  <div class="summary-stat">
+                    <span class="summary-number">{{ (currentStep.data?.allWords || []).filter(w => w.learned).length }}</span>
+                    <span class="summary-label">изучено</span>
+                  </div>
+                  <div class="summary-stat">
+                    <span class="summary-number">{{ (currentStep.data?.allWords || []).length }}</span>
+                    <span class="summary-label">всего</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -468,7 +706,6 @@
           <div class="stat-card">
             <div class="stat-icon">❌</div>
             <div class="stat-value">{{ mistakeCount }}</div>
-            <div class="stat-label">Ошибки</div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">🎯</div>
@@ -640,7 +877,10 @@ export default {
       // Explanation Help
       showExplanationHelp: false,
       explanationQuestion: '',
-      explanationAIResponse: ''
+      explanationAIResponse: '',
+      
+      // Debug mode
+      debugMode: process.env.NODE_ENV === 'development'
     };
   },
   
@@ -704,7 +944,6 @@ export default {
   },
   
   async mounted() {
-    
     await this.waitForAuth();
     
     this.userId = localStorage.getItem('firebaseUserId') || 
@@ -736,7 +975,6 @@ export default {
   methods: {
     // Authentication
     async waitForAuth() {
-      
       if (auth.currentUser) {
         return;
       }
@@ -781,7 +1019,6 @@ export default {
           'Load lesson'
         );
 
-
         // ✅ FIXED: Extract lesson from different response structures
         if (response.success) {
           // New API format with success wrapper
@@ -803,8 +1040,6 @@ export default {
         const lessonType = this.lesson.type || 'free';
         const userHasPremium = this.isPremiumUser;
         
-       
-        
         if (!auth.currentUser) {
           throw new Error('Authentication required');
         }
@@ -815,7 +1050,6 @@ export default {
           return;
         }
         
-
         this.processLessonSteps();
         
         if (this.steps.length === 0) {
@@ -825,7 +1059,6 @@ export default {
             data: { content: this.lesson.description || 'Lesson content not available' }
           }];
         }
-        
         
       } catch (err) {
         console.error('❌ Error loading lesson:', err);
@@ -902,7 +1135,6 @@ export default {
       if (!this.lesson._id) return;
       
       try {
-
         const progressResult = await getLessonProgress(this.userId, this.lesson._id);
         
         if (progressResult.success && progressResult.data) {
@@ -1061,6 +1293,273 @@ export default {
       }
     },
 
+    // ✅ ENHANCED: Answer validation methods
+    
+    /**
+     * Enhanced answer validation with flexible matching
+     */
+    validateAnswer(userAnswer, correctAnswer, stepType) {
+      if (!userAnswer || !correctAnswer) return false;
+
+      // Normalize function for text comparison
+      const normalize = (text) => {
+        return String(text)
+          .toLowerCase()
+          .trim()
+          // Remove extra spaces
+          .replace(/\s+/g, ' ')
+          // Remove common punctuation
+          .replace(/[.,;:!?'"()[\]{}]/g, '')
+          // Remove articles and common words that don't affect meaning
+          .replace(/\b(the|a|an|и|в|на|с|по|для|от|до|при|под|над|между|через|без|из)\b/gi, '')
+          .trim();
+      };
+
+      const normalizedUser = normalize(userAnswer);
+      const normalizedCorrect = normalize(correctAnswer);
+
+      if (this.debugMode) {
+        console.log('🔍 Answer validation:', {
+          user: userAnswer,
+          correct: correctAnswer,
+          normalizedUser,
+          normalizedCorrect,
+          stepType
+        });
+      }
+
+      // 1. Exact match after normalization
+      if (normalizedUser === normalizedCorrect) {
+        return true;
+      }
+
+      // 2. Check if user answer contains all key words from correct answer
+      const correctWords = normalizedCorrect.split(' ').filter(word => word.length > 2);
+      const userWords = normalizedUser.split(' ');
+      
+      if (correctWords.length > 0) {
+        const containsAllKeyWords = correctWords.every(word => 
+          userWords.some(userWord => 
+            userWord.includes(word) || word.includes(userWord) || 
+            this.calculateSimilarity(userWord, word) > 0.8
+          )
+        );
+        
+        if (containsAllKeyWords) {
+          console.log('✅ Answer accepted: contains all key words');
+          return true;
+        }
+      }
+
+      // 3. For list-type answers, check if user provided the main elements
+      if (correctAnswer.includes(',') || correctAnswer.includes(';')) {
+        return this.validateListAnswer(normalizedUser, normalizedCorrect);
+      }
+
+      // 4. Check for mathematical expressions
+      if (this.isMathAnswer(correctAnswer)) {
+        return this.validateMathAnswer(userAnswer, correctAnswer);
+      }
+
+      // 5. Check for numerical answers with tolerance
+      if (this.isNumericAnswer(correctAnswer)) {
+        return this.validateNumericAnswer(userAnswer, correctAnswer);
+      }
+
+      // 6. Fuzzy matching for single words or short phrases
+      if (correctWords.length <= 3) {
+        const similarity = this.calculateSimilarity(normalizedUser, normalizedCorrect);
+        if (similarity > 0.85) {
+          console.log('✅ Answer accepted: high similarity', similarity);
+          return true;
+        }
+      }
+
+      // 7. Check for partial credit scenarios
+      const partialScore = this.calculatePartialScore(normalizedUser, normalizedCorrect);
+      if (partialScore > 0.7) {
+        console.log('✅ Answer accepted: partial credit', partialScore);
+        return true;
+      }
+
+      return false;
+    },
+
+    /**
+     * Validate list-type answers (comma or semicolon separated)
+     */
+    validateListAnswer(userAnswer, correctAnswer) {
+      const userItems = userAnswer.split(/[,;]/).map(item => item.trim()).filter(item => item.length > 0);
+      const correctItems = correctAnswer.split(/[,;]/).map(item => item.trim()).filter(item => item.length > 0);
+      
+      if (userItems.length === 0) return false;
+      
+      // Check how many correct items the user mentioned
+      let matchedItems = 0;
+      
+      correctItems.forEach(correctItem => {
+        const isMatched = userItems.some(userItem => {
+          const similarity = this.calculateSimilarity(userItem, correctItem);
+          return similarity > 0.8 || userItem.includes(correctItem) || correctItem.includes(userItem);
+        });
+        
+        if (isMatched) matchedItems++;
+      });
+      
+      // Accept if user got at least 70% of the items
+      const accuracy = matchedItems / correctItems.length;
+      console.log('📝 List validation:', { matchedItems, totalItems: correctItems.length, accuracy });
+      
+      return accuracy >= 0.7;
+    },
+
+    /**
+     * Validate mathematical expressions
+     */
+    validateMathAnswer(userAnswer, correctAnswer) {
+      try {
+        // Remove spaces and normalize
+        const userMath = userAnswer.replace(/\s/g, '');
+        const correctMath = correctAnswer.replace(/\s/g, '');
+        
+        // Direct comparison
+        if (userMath === correctMath) return true;
+        
+        // Try to evaluate if they're mathematical expressions
+        if (this.isSafeExpression(userMath) && this.isSafeExpression(correctMath)) {
+          try {
+            const userResult = eval(userMath);
+            const correctResult = eval(correctMath);
+            return Math.abs(userResult - correctResult) < 0.001;
+          } catch (e) {
+            // If evaluation fails, fall back to string comparison
+            return userMath === correctMath;
+          }
+        }
+        
+        return false;
+      } catch (error) {
+        console.warn('⚠️ Math validation error:', error);
+        return userAnswer.trim() === correctAnswer.trim();
+      }
+    },
+
+    /**
+     * Validate numeric answers with tolerance
+     */
+    validateNumericAnswer(userAnswer, correctAnswer) {
+      const userNum = parseFloat(userAnswer.replace(/[^\d.-]/g, ''));
+      const correctNum = parseFloat(correctAnswer.replace(/[^\d.-]/g, ''));
+      
+      if (isNaN(userNum) || isNaN(correctNum)) {
+        return userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
+      }
+      
+      // Allow 1% tolerance for floating point numbers
+      const tolerance = Math.abs(correctNum) * 0.01;
+      return Math.abs(userNum - correctNum) <= tolerance;
+    },
+
+    /**
+     * Calculate string similarity using Levenshtein distance
+     */
+    calculateSimilarity(str1, str2) {
+      if (str1 === str2) return 1;
+      if (!str1 || !str2) return 0;
+      
+      const longer = str1.length > str2.length ? str1 : str2;
+      const shorter = str1.length > str2.length ? str2 : str1;
+      
+      if (longer.length === 0) return 1;
+      
+      const distance = this.levenshteinDistance(longer, shorter);
+      return (longer.length - distance) / longer.length;
+    },
+
+    /**
+     * Calculate Levenshtein distance between two strings
+     */
+    levenshteinDistance(str1, str2) {
+      const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+      
+      for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+      for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+      
+      for (let j = 1; j <= str2.length; j++) {
+        for (let i = 1; i <= str1.length; i++) {
+          const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+          matrix[j][i] = Math.min(
+            matrix[j][i - 1] + 1,     // deletion
+            matrix[j - 1][i] + 1,     // insertion
+            matrix[j - 1][i - 1] + cost // substitution
+          );
+        }
+      }
+      
+      return matrix[str2.length][str1.length];
+    },
+
+    /**
+     * Calculate partial score for an answer
+     */
+    calculatePartialScore(userAnswer, correctAnswer) {
+      const userWords = userAnswer.split(' ').filter(word => word.length > 2);
+      const correctWords = correctAnswer.split(' ').filter(word => word.length > 2);
+      
+      if (correctWords.length === 0) return 0;
+      
+      let matchedWords = 0;
+      correctWords.forEach(correctWord => {
+        const hasMatch = userWords.some(userWord => {
+          return this.calculateSimilarity(userWord, correctWord) > 0.8;
+        });
+        if (hasMatch) matchedWords++;
+      });
+      
+      return matchedWords / correctWords.length;
+    },
+
+    /**
+     * Check if answer is mathematical
+     */
+    isMathAnswer(answer) {
+      return /[\d+\-*/=().]/.test(answer) && !/[a-zA-Z]/.test(answer.replace(/[x]/g, ''));
+    },
+
+    /**
+     * Check if answer is numeric
+     */
+    isNumericAnswer(answer) {
+      return /^\s*-?\d+\.?\d*\s*$/.test(answer) || /^\s*-?\d*\.\d+\s*$/.test(answer);
+    },
+
+    /**
+     * Check if mathematical expression is safe to evaluate
+     */
+    isSafeExpression(expr) {
+      // Only allow numbers, basic operators, and parentheses
+      return /^[\d+\-*/().\s]+$/.test(expr) && !expr.includes('eval');
+    },
+
+    /**
+     * Generate helpful feedback for wrong answers
+     */
+    generateHelpfulFeedback(userAnswer, correctAnswer, stepType) {
+      // If it's a list answer, give specific guidance
+      if (correctAnswer.includes(',') || correctAnswer.includes(';')) {
+        const correctItems = correctAnswer.split(/[,;]/).map(item => item.trim());
+        return `Попробуйте еще раз. Подсказка: ответ должен содержать ${correctItems.length} элемента${correctItems.length > 1 ? 'а' : ''}.`;
+      }
+      
+      // If it's a short answer, give hint about length
+      if (correctAnswer.length < 20) {
+        return `Попробуйте еще раз. Подсказка: ответ содержит ${correctAnswer.split(' ').length} слов${correctAnswer.split(' ').length > 1 ? 'а' : 'о'}.`;
+      }
+      
+      // Generic feedback
+      return 'Попробуйте еще раз.';
+    },
+
     // Helper Methods
     getStepIcon(stepType) {
       const icons = {
@@ -1130,10 +1629,42 @@ export default {
       return 'Вопрос недоступен';
     },
 
+    /**
+     * ✅ ENHANCED: Get correct answer with better field handling
+     */
     getCorrectAnswer(step) {
       if (!step || !step.data) return '';
       
-      return step.data.correctAnswer || step.data.answer || '';
+      // Handle different answer field names
+      const possibleAnswerFields = [
+        'correctAnswer', 
+        'answer', 
+        'correct_answer',
+        'solution',
+        'result'
+      ];
+      
+      for (const field of possibleAnswerFields) {
+        if (step.data[field]) {
+          const answer = step.data[field];
+          // If it's an array, join with commas
+          if (Array.isArray(answer)) {
+            return answer.join(', ');
+          }
+          return String(answer).trim();
+        }
+      }
+      
+      // For multiple choice questions, get the correct option
+      if (step.data.options && Array.isArray(step.data.options) && 
+          typeof step.data.correctAnswer === 'number') {
+        const correctIndex = step.data.correctAnswer;
+        if (correctIndex >= 0 && correctIndex < step.data.options.length) {
+          return step.data.options[correctIndex];
+        }
+      }
+      
+      return '';
     },
 
     hasOptions(step) {
@@ -1195,7 +1726,7 @@ export default {
       }
     },
 
-    // Answer Handling
+    // ✅ ENHANCED: Answer Handling with Flexible Validation
     async handleSubmitOrNext() {
       const step = this.currentStep;
       if (!step || !step.data) {
@@ -1204,15 +1735,17 @@ export default {
       }
 
       const correctAnswer = this.getCorrectAnswer(step);
-      const userResponse = this.userAnswer.trim().toLowerCase();
-      const correctResponseNormalized = correctAnswer.toLowerCase().trim();
+      const userResponse = this.userAnswer.trim();
 
       if (!userResponse) {
         this.confirmation = '⚠️ Введите ответ.';
         return;
       }
 
-      if (userResponse === correctResponseNormalized) {
+      // ✅ ENHANCED: Flexible answer validation
+      const isCorrect = this.validateAnswer(userResponse, correctAnswer, step.type);
+
+      if (isCorrect) {
         this.confirmation = '✅ Верно! Отличная работа!';
         this.answerWasCorrect = true;
         this.stars++;
@@ -1220,7 +1753,7 @@ export default {
         this.currentHint = '';
         this.smartHint = '';
       } else {
-        this.confirmation = '❌ Неверно. Попробуйте снова.';
+        this.confirmation = `❌ Неверно. ${this.generateHelpfulFeedback(userResponse, correctAnswer, step.type)}`;
         this.mistakeCount++;
         this.answerWasCorrect = false;
         this.earnedPoints = Math.max(0, this.earnedPoints - 2);
@@ -1296,7 +1829,6 @@ export default {
           hintsUsed: this.hintsUsed ? 1 : 0,
           submittedHomework: false
         };
-
 
         // ✅ FIXED: Use the correct API endpoint
         const result = await submitProgress(this.userId, progressData);
@@ -1461,8 +1993,356 @@ export default {
   }
 };
 </script>
-
 <style scoped>
+/* Base Styles */
+/* ===========================================
+   VOCABULARY MODAL SYSTEM STYLES
+   =========================================== */
+
+/* Modal Overlay */
+.vocabulary-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  padding: 20px;
+  animation: vocabularyModalFadeIn 0.4s ease-out;
+}
+
+@keyframes vocabularyModalFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(12px);
+  }
+}
+
+/* Modal Container */
+.vocabulary-modal-container {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 24px;
+  padding: 32px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  position: relative;
+  animation: vocabularyModalSlideUp 0.4s ease-out;
+}
+
+@keyframes vocabularyModalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Modal Header */
+.vocabulary-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.vocab-progress-section {
+  flex: 1;
+  margin-right: 20px;
+}
+
+.vocab-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.vocab-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #34d399);
+  border-radius: inherit;
+  transition: width 0.5s ease;
+  position: relative;
+}
+
+.vocab-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: progressShimmer 2s infinite;
+}
+
+@keyframes progressShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.vocab-progress-text {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.vocab-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.vocab-skip-btn, .vocab-close-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.vocab-skip-btn {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.vocab-skip-btn:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+.vocab-close-btn {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.vocab-close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  transform: scale(1.1);
+}
+
+/* Vocabulary Card Container */
+.vocabulary-card-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+/* Main Vocabulary Card */
+.vocabulary-card {
+  width: 100%;
+  max-width: 500px;
+  height: 350px;
+  position: relative;
+  perspective: 1000px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.card-front, .card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.6s ease;
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.card-front {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  transform: rotateY(0deg);
+}
+
+.card-back {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  transform: rotateY(180deg);
+}
+
+.vocabulary-card.flipped .card-front {
+  transform: rotateY(-180deg);
+}
+
+.vocabulary-card.flipped .card-back {
+  transform: rotateY(0deg);
+}
+
+.vocabulary-card.flipping {
+  pointer-events: none;
+}
+
+.vocabulary-card.learned {
+  filter: brightness(1.1);
+}
+
+.vocabulary-card.learned::after {
+  content: '✅';
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-size: 1.5rem;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Card Content */
+.card-content {
+  padding: 40px;
+  text-align: center;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+}
+
+.vocab-term-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.vocab-term {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 16px 0;
+  line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.vocab-term-small {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+  opacity: 0.9;
+}
+
+.vocab-pronunciation {
+  font-size: 1.1rem;
+  opacity: 0.8;
+  font-style: italic;
+  margin-bottom: 8px;
+}
+
+.vocab-part-of-speech {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
+.vocab-definition {
+  font-size: 1.2rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.vocab-example {
+  font-size: 1rem;
+  opacity: 0.9;
+  font-style: italic;
+  margin-top: 16px;
+  line-height: 1.4;
+}
+
+/* Vocabulary Navigation */
+.vocab-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.vocab-nav-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.vocab-nav-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+}
+
+.vocab-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.vocab-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.vocab-counter {
+  background: #e2e8f0;
+  color: #374151;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+}
+
 /* Base Styles */
 .lesson-page {
   min-height: 100vh;
@@ -2942,6 +3822,16 @@ export default {
     right: 16px;
     left: 16px;
   }
+  
+  .vocabulary-modal-container {
+    max-width: 90vw;
+    padding: 24px;
+  }
+  
+  .vocabulary-card {
+    max-width: 400px;
+    height: 300px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -3062,6 +3952,32 @@ export default {
     bottom: 70px;
     max-height: 60vh;
   }
+  
+  .vocabulary-modal-container {
+    padding: 20px;
+    margin: 10px;
+  }
+  
+  .vocabulary-card {
+    height: 280px;
+  }
+  
+  .vocab-term {
+    font-size: 2rem;
+  }
+  
+  .vocab-definition {
+    font-size: 1.1rem;
+  }
+  
+  .vocab-navigation {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .vocab-nav-btn {
+    width: 100%;
+  }
 }
 
 @media (max-width: 480px) {
@@ -3121,6 +4037,27 @@ export default {
     font-size: 0.8rem;
     padding: 6px 8px;
   }
+  
+  .vocabulary-modal-container {
+    padding: 16px;
+    margin: 8px;
+  }
+  
+  .vocabulary-card {
+    height: 250px;
+  }
+  
+  .vocab-term {
+    font-size: 1.8rem;
+  }
+  
+  .vocab-definition {
+    font-size: 1rem;
+  }
+  
+  .card-content {
+    padding: 20px;
+  }
 }
 
 /* Dark Mode Support */
@@ -3179,6 +4116,24 @@ export default {
     background: #475569;
     border-color: #64748b;
   }
+  
+  .vocabulary-modal-container {
+    background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+    color: #e2e8f0;
+  }
+  
+  .vocabulary-modal-header {
+    border-color: #475569;
+  }
+  
+  .vocab-progress-bar {
+    background: #475569;
+  }
+  
+  .vocab-counter {
+    background: #475569;
+    color: #e2e8f0;
+  }
 }
 
 /* Print Styles */
@@ -3187,7 +4142,8 @@ export default {
   .exit-btn-small,
   .modal-overlay,
   .floating-ai-btn,
-  .floating-ai-assistant {
+  .floating-ai-assistant,
+  .vocabulary-modal-overlay {
     display: none !important;
   }
   
@@ -3216,7 +4172,10 @@ export default {
 .exit-btn:focus,
 .exit-btn-small:focus,
 .floating-ai-btn:focus,
-.close-ai-btn:focus {
+.close-ai-btn:focus,
+.vocab-nav-btn:focus,
+.vocab-close-btn:focus,
+.vocab-skip-btn:focus {
   outline: 3px solid #4f46e5;
   outline-offset: 2px;
 }
@@ -3245,7 +4204,9 @@ export default {
 .nav-btn:active,
 .submit-btn:active,
 .next-btn:active,
-.action-btn:active {
+.action-btn:active,
+.vocab-nav-btn:active,
+.vocab-skip-btn:active {
   transform: translateY(0) scale(0.98);
 }
 
@@ -3254,7 +4215,8 @@ export default {
 .exercise-content::-webkit-scrollbar,
 .quiz-content::-webkit-scrollbar,
 .ai-chat-history::-webkit-scrollbar,
-.ai-body::-webkit-scrollbar {
+.ai-body::-webkit-scrollbar,
+.vocabulary-modal-container::-webkit-scrollbar {
   width: 6px;
 }
 
@@ -3262,7 +4224,8 @@ export default {
 .exercise-content::-webkit-scrollbar-track,
 .quiz-content::-webkit-scrollbar-track,
 .ai-chat-history::-webkit-scrollbar-track,
-.ai-body::-webkit-scrollbar-track {
+.ai-body::-webkit-scrollbar-track,
+.vocabulary-modal-container::-webkit-scrollbar-track {
   background: transparent;
 }
 
@@ -3270,7 +4233,8 @@ export default {
 .exercise-content::-webkit-scrollbar-thumb,
 .quiz-content::-webkit-scrollbar-thumb,
 .ai-chat-history::-webkit-scrollbar-thumb,
-.ai-body::-webkit-scrollbar-thumb {
+.ai-body::-webkit-scrollbar-thumb,
+.vocabulary-modal-container::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.4);
   border-radius: 3px;
 }
@@ -3279,7 +4243,8 @@ export default {
 .exercise-content::-webkit-scrollbar-thumb:hover,
 .quiz-content::-webkit-scrollbar-thumb:hover,
 .ai-chat-history::-webkit-scrollbar-thumb:hover,
-.ai-body::-webkit-scrollbar-thumb:hover {
+.ai-body::-webkit-scrollbar-thumb:hover,
+.vocabulary-modal-container::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.6);
 }
 
@@ -3299,6 +4264,44 @@ export default {
   }
 }
 
+/* Vocabulary Card Animations */
+.vocabulary-card {
+  animation: cardAppear 0.5s ease-out;
+}
+
+@keyframes cardAppear {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Enhanced vocabulary card hover effects */
+.vocabulary-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.vocabulary-card:hover .card-front,
+.vocabulary-card:hover .card-back {
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+}
+
+/* Vocabulary Progress Animation */
+.vocab-progress-fill {
+  animation: progressGrow 0.8s ease-out;
+}
+
+@keyframes progressGrow {
+  from {
+    width: 0%;
+  }
+}
+
 /* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
   .option-card,
@@ -3309,7 +4312,8 @@ export default {
   .nav-btn,
   .submit-btn,
   .next-btn,
-  .hint-btn {
+  .hint-btn,
+  .vocab-nav-btn {
     min-height: 44px;
   }
   
@@ -3324,9 +4328,18 @@ export default {
     min-height: 56px;
   }
   
-  .close-ai-btn {
+  .close-ai-btn,
+  .vocab-close-btn {
     min-width: 44px;
     min-height: 44px;
+  }
+  
+  .vocabulary-card {
+    touch-action: manipulation;
+  }
+  
+  .vocabulary-card:hover {
+    transform: none;
   }
 }
 
@@ -3336,11 +4349,226 @@ export default {
   contain: layout style paint;
 }
 
-.progress-bar {
+.progress-bar,
+.vocab-progress-fill {
   will-change: width;
 }
 
 .loading-spinner {
   will-change: transform;
+}
+
+.vocabulary-card {
+  will-change: transform;
+}
+
+.card-front,
+.card-back {
+  will-change: transform;
+}
+
+/* Additional vocabulary modal responsive adjustments */
+@media (max-width: 600px) {
+  .vocabulary-modal-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .vocab-progress-section {
+    margin-right: 0;
+  }
+  
+  .vocab-header-actions {
+    justify-content: space-between;
+  }
+  
+  .vocab-skip-btn {
+    flex: 1;
+    margin-right: 8px;
+  }
+}
+
+/* Vocabulary card content truncation for long text */
+.vocab-definition {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.vocab-example {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Enhanced vocabulary modal backdrop */
+.vocabulary-modal-overlay {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Safari-specific fixes */
+@supports (-webkit-backdrop-filter: blur(12px)) {
+  .vocabulary-modal-overlay {
+    -webkit-backdrop-filter: blur(12px);
+  }
+  
+  .modal-overlay {
+    -webkit-backdrop-filter: blur(8px);
+  }
+  
+  .completion-screen {
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .vocabulary-card,
+  .option-card,
+  .quiz-option-card {
+    border: 3px solid;
+  }
+  
+  .vocab-progress-fill,
+  .progress-bar {
+    outline: 2px solid;
+  }
+  
+  .nav-btn,
+  .submit-btn,
+  .next-btn,
+  .vocab-nav-btn {
+    border: 2px solid;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .vocabulary-card {
+    transition: none;
+  }
+  
+  .card-front,
+  .card-back {
+    transition: none;
+  }
+  
+  .loading-spinner {
+    animation: none;
+    border: 4px solid #6366f1;
+  }
+}
+
+/* Enhanced focus indicators for better accessibility */
+.vocabulary-card:focus-within {
+  outline: 3px solid #4f46e5;
+  outline-offset: 4px;
+}
+
+.option-card:focus-within,
+.quiz-option-card:focus-within {
+  outline: 3px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* Vocabulary modal keyboard navigation */
+.vocabulary-modal-container:focus {
+  outline: none;
+}
+
+/* Color adjustments for better contrast */
+.vocab-progress-text,
+.progress-label {
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.vocab-counter {
+  background: #d1d5db;
+  color: #1f2937;
+  border: 1px solid #9ca3af;
+}
+
+/* Enhanced vocabulary card states */
+.vocabulary-card.correct {
+  animation: correctPulse 0.6s ease-out;
+}
+
+.vocabulary-card.incorrect {
+  animation: incorrectShake 0.5s ease-out;
+}
+
+@keyframes correctPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes incorrectShake {
+  0%, 20%, 40%, 60%, 80% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+}
+
+/* Loading state for vocabulary cards */
+.vocabulary-card.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.vocabulary-card.loading::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  z-index: 10;
+}
+
+/* Final responsive adjustments */
+@media (max-width: 320px) {
+  .vocabulary-modal-container {
+    padding: 12px;
+    margin: 4px;
+  }
+  
+  .vocabulary-card {
+    height: 220px;
+  }
+  
+  .vocab-term {
+    font-size: 1.5rem;
+  }
+  
+  .vocab-definition {
+    font-size: 0.9rem;
+  }
+  
+  .card-content {
+    padding: 16px;
+  }
+  
+  .vocab-nav-btn {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+  }
 }
 </style>
