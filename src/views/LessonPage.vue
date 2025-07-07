@@ -879,6 +879,21 @@ export default {
       explanationQuestion: '',
       explanationAIResponse: '',
       
+      // ✅ NEW: Vocabulary Modal System
+      vocabularyModal: {
+        isVisible: false,
+        currentIndex: 0,
+        words: [],
+        isCompleted: false,
+        showingList: false
+      },
+      
+      // Animation states
+      cardAnimation: {
+        isFlipping: false,
+        showDefinition: false
+      },
+      
       // Debug mode
       debugMode: process.env.NODE_ENV === 'development'
     };
@@ -940,6 +955,21 @@ export default {
     estimatedTime() {
       return this.lesson.metadata?.estimatedDuration || 
              Math.max(5, this.steps.length * 2);
+    },
+    
+    // ✅ NEW: Vocabulary computed properties
+    currentVocabWord() {
+      if (!this.vocabularyModal.words.length) return null;
+      return this.vocabularyModal.words[this.vocabularyModal.currentIndex];
+    },
+    
+    vocabProgress() {
+      if (!this.vocabularyModal.words.length) return 0;
+      return Math.round(((this.vocabularyModal.currentIndex + 1) / this.vocabularyModal.words.length) * 100);
+    },
+    
+    isLastVocabWord() {
+      return this.vocabularyModal.currentIndex >= this.vocabularyModal.words.length - 1;
     }
   },
   
@@ -1166,6 +1196,271 @@ export default {
       } catch (err) {
         console.warn('⚠️ Failed to load previous progress:', err);
         this.previousProgress = null;
+      }
+    },
+
+    // ✅ NEW: Vocabulary Methods
+    
+    /**
+     * Initialize vocabulary modal when vocabulary step is encountered
+     */
+    initializeVocabularyModal(step) {
+      if (!step || step.type !== 'vocabulary') return;
+      
+      let vocabularyItems = [];
+      
+      // Handle different data structures
+      if (Array.isArray(step.data)) {
+        vocabularyItems = step.data;
+      } else if (step.data && Array.isArray(step.data.vocabulary)) {
+        vocabularyItems = step.data.vocabulary;
+      } else if (step.data && step.data.term && step.data.definition) {
+        vocabularyItems = [step.data];
+      }
+      
+      // Filter and validate vocabulary items
+      vocabularyItems = vocabularyItems.filter(vocab => 
+        vocab.term && vocab.term.trim() && 
+        vocab.definition && vocab.definition.trim()
+      ).map((vocab, index) => ({
+        id: `vocab_${index}_${Date.now()}`,
+        term: vocab.term.trim(),
+        definition: vocab.definition.trim(),
+        example: vocab.example ? String(vocab.example).trim() : '',
+        pronunciation: vocab.pronunciation || '',
+        partOfSpeech: vocab.partOfSpeech || '',
+        difficulty: vocab.difficulty || 'medium',
+        learned: false
+      }));
+      
+      if (vocabularyItems.length > 0) {
+        this.vocabularyModal = {
+          isVisible: true,
+          currentIndex: 0,
+          words: vocabularyItems,
+          isCompleted: false,
+          showingList: false
+        };
+        
+        this.cardAnimation = {
+          isFlipping: false,
+          showDefinition: false
+        };
+        
+        // Track vocabulary step start
+        this.trackVocabularyEvent('vocabulary_started', {
+          wordCount: vocabularyItems.length,
+          stepIndex: this.currentIndex
+        });
+      }
+    },
+
+    /**
+     * Show definition of current vocabulary word (flip card effect)
+     */
+    showVocabDefinition() {
+      if (this.cardAnimation.isFlipping) return;
+      
+      this.cardAnimation.isFlipping = true;
+      
+      setTimeout(() => {
+        this.cardAnimation.showDefinition = true;
+        this.cardAnimation.isFlipping = false;
+        
+        // Track definition view
+        this.trackVocabularyEvent('definition_viewed', {
+          word: this.currentVocabWord?.term,
+          wordIndex: this.vocabularyModal.currentIndex
+        });
+      }, 150);
+    },
+
+    /**
+     * Hide definition (flip back to term)
+     */
+    hideVocabDefinition() {
+      if (this.cardAnimation.isFlipping) return;
+      
+      this.cardAnimation.isFlipping = true;
+      
+      setTimeout(() => {
+        this.cardAnimation.showDefinition = false;
+        this.cardAnimation.isFlipping = false;
+      }, 150);
+    },
+
+    /**
+     * Mark current word as learned and proceed
+     */
+    markWordAsLearned() {
+      if (this.currentVocabWord) {
+        this.currentVocabWord.learned = true;
+        
+        // Track word completion
+        this.trackVocabularyEvent('word_learned', {
+          word: this.currentVocabWord.term,
+          wordIndex: this.vocabularyModal.currentIndex,
+          timeSpent: this.getWordStudyTime()
+        });
+      }
+      
+      this.nextVocabWord();
+    },
+
+    /**
+     * Skip to next vocabulary word
+     */
+    nextVocabWord() {
+      if (this.isLastVocabWord) {
+        this.completeVocabularyModal();
+      } else {
+        // Reset card state
+        this.cardAnimation = {
+          isFlipping: false,
+          showDefinition: false
+        };
+        
+        // Move to next word with animation
+        setTimeout(() => {
+          this.vocabularyModal.currentIndex++;
+        }, 100);
+      }
+    },
+
+    /**
+     * Go back to previous vocabulary word
+     */
+    previousVocabWord() {
+      if (this.vocabularyModal.currentIndex > 0) {
+        // Reset card state
+        this.cardAnimation = {
+          isFlipping: false,
+          showDefinition: false
+        };
+        
+        // Move to previous word
+        setTimeout(() => {
+          this.vocabularyModal.currentIndex--;
+        }, 100);
+      }
+    },
+
+    /**
+     * Complete vocabulary modal and show summary
+     */
+    completeVocabularyModal() {
+      this.vocabularyModal.isCompleted = true;
+      
+      // Track completion
+      this.trackVocabularyEvent('vocabulary_completed', {
+        totalWords: this.vocabularyModal.words.length,
+        learnedWords: this.vocabularyModal.words.filter(w => w.learned).length,
+        completionRate: this.vocabularyModal.words.filter(w => w.learned).length / this.vocabularyModal.words.length
+      });
+      
+      // Show completion animation
+      setTimeout(() => {
+        this.showVocabularyList();
+      }, 2000);
+    },
+
+    /**
+     * Transition to list view
+     */
+    showVocabularyList() {
+      this.vocabularyModal.showingList = true;
+      
+      // After a short delay, hide modal and show list in content panel
+      setTimeout(() => {
+        this.vocabularyModal.isVisible = false;
+        this.vocabularyModal.showingList = false;
+        
+        // Continue to next step or update current step display
+        this.updateVocabularyStepDisplay();
+      }, 1500);
+    },
+
+    /**
+     * Update the vocabulary step to show list view
+     */
+    updateVocabularyStepDisplay() {
+      // Mark vocabulary as completed and show in left panel as list
+      if (this.currentStep && this.currentStep.type === 'vocabulary') {
+        // Add completed flag to step data
+        this.currentStep.data.modalCompleted = true;
+        this.currentStep.data.allWords = this.vocabularyModal.words;
+      }
+    },
+
+    /**
+     * Skip vocabulary modal and go directly to list
+     */
+    skipVocabularyModal() {
+      this.vocabularyModal.isVisible = false;
+      this.updateVocabularyStepDisplay();
+      
+      this.trackVocabularyEvent('vocabulary_skipped', {
+        skipAt: this.vocabularyModal.currentIndex,
+        totalWords: this.vocabularyModal.words.length
+      });
+    },
+
+    /**
+     * Restart vocabulary modal
+     */
+    restartVocabulary() {
+      this.vocabularyModal.currentIndex = 0;
+      this.vocabularyModal.isCompleted = false;
+      this.vocabularyModal.showingList = false;
+      this.vocabularyModal.words.forEach(word => word.learned = false);
+      
+      this.cardAnimation = {
+        isFlipping: false,
+        showDefinition: false
+      };
+      
+      this.trackVocabularyEvent('vocabulary_restarted');
+    },
+
+    /**
+     * Track vocabulary learning events
+     */
+    trackVocabularyEvent(eventType, data = {}) {
+      if (this.debugMode) {
+        console.log(`📚 Vocabulary Event: ${eventType}`, data);
+      }
+      
+      // You can send this to analytics service
+      // analytics.track(eventType, { lesson: this.lesson._id, ...data });
+    },
+
+    /**
+     * Get time spent studying current word (placeholder)
+     */
+    getWordStudyTime() {
+      // This would track time since word was shown
+      return Math.floor(Math.random() * 30) + 10; // Mock data
+    },
+
+    /**
+     * Pronunciation helper (text-to-speech)
+     */
+    async pronounceWord(text) {
+      if ('speechSynthesis' in window) {
+        try {
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = 'en-US'; // Adjust based on lesson language
+          utterance.rate = 0.8;
+          utterance.pitch = 1;
+          
+          speechSynthesis.speak(utterance);
+          
+          this.trackVocabularyEvent('pronunciation_used', {
+            word: text
+          });
+        } catch (error) {
+          console.warn('⚠️ Speech synthesis failed:', error);
+        }
       }
     },
 
@@ -1694,8 +1989,17 @@ export default {
       return [];
     },
 
-    // Navigation
+    // ✅ ENHANCED: Navigation Methods with vocabulary support
     goNext() {
+      // Check if current step is vocabulary and modal hasn't been shown
+      if (this.currentStep?.type === 'vocabulary' && 
+          !this.currentStep.data?.modalCompleted && 
+          !this.vocabularyModal.isVisible) {
+        this.initializeVocabularyModal(this.currentStep);
+        return; // Don't proceed to next step yet
+      }
+      
+      // Original goNext logic
       this.userAnswer = '';
       this.confirmation = '';
       this.answerWasCorrect = false;
@@ -1723,6 +2027,12 @@ export default {
         this.explanationAIResponse = '';
         this.showExplanationHelp = false;
         this.generateAISuggestions();
+        
+        // Check if we're going back to a vocabulary step
+        if (this.currentStep?.type === 'vocabulary' && this.currentStep.data?.modalCompleted) {
+          // Reset the vocabulary step so modal can be shown again if needed
+          this.currentStep.data.modalCompleted = false;
+        }
       }
     },
 
