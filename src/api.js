@@ -16,7 +16,6 @@ const api = axios.create({
   timeout: 15000
 });
 
-
 // ========================================
 // 🚫 REQUEST DEBOUNCING & LOOP PREVENTION
 // ========================================
@@ -262,7 +261,6 @@ api.interceptors.response.use(
       originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
       const delay = RETRY_DELAY * originalRequest._retryCount;
       
-      
       await new Promise(resolve => setTimeout(resolve, delay));
       return api(originalRequest);
     }
@@ -339,7 +337,6 @@ export const formatPaymentAmount = (amount, currency = 'UZS') => {
 // ✅ DIRECT PAYME URL GENERATION (GET method)
 const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   try {
-    
     // Get merchant ID with validation
     const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
     
@@ -348,7 +345,6 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
       console.error('Current value:', merchantId, 'Type:', typeof merchantId);
       throw new Error('PayMe Merchant ID not configured. Check your .env file.');
     }
-    
     
     const amounts = getPaymentAmounts();
     const planAmount = amounts[plan]?.tiyin;
@@ -361,8 +357,6 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     const timestamp = Date.now();
     const randomPart = Math.random().toString(36).substr(2, 6);
     const orderId = `aced${timestamp}${randomPart}`;
-    
-  
     
     // Build parameters according to GET documentation
     const params = [];
@@ -396,12 +390,10 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     
     // Final verification
     const verification = atob(base64Params);
-    ('✅ Verification - decoded:', verification);
     
     if (verification !== paramString) {
       throw new Error('URL encoding/decoding mismatch');
     }
-    
     
     return {
       success: true,
@@ -426,7 +418,6 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
 // ✅ DIRECT PAYME FORM GENERATION (POST method)
 const generateDirectPaymeForm = async (userId, plan, options = {}) => {
   try {
-    
     // ✅ CRITICAL FIX: Clean merchant ID
     const merchantId = (import.meta.env.VITE_PAYME_MERCHANT_ID || '68016cc1a5e04614247f7174').trim();
     
@@ -449,7 +440,6 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
     
     // ✅ SANITIZE: Remove any special characters from order ID
     const cleanOrderId = orderId.replace(/[^a-zA-Z0-9]/g, '');
-    
     
     // ✅ Create detail object as per PayMe documentation
     const detail = {
@@ -507,7 +497,6 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
     </form>
     
     <script>
-      
       // Wait for DOM to be ready
       function submitPaymeForm() {
         const form = document.getElementById('payme-form');
@@ -528,8 +517,6 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
       }
     </script>
     `;
-    
-    
     
     return {
       success: true,
@@ -559,7 +546,6 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
   }
   
   try {
-    
     const amounts = getPaymentAmounts();
     const planAmount = amounts[plan]?.tiyin;
     
@@ -655,7 +641,6 @@ export const generatePaymeForm = async (userId, plan, method = 'post', options =
   }
   
   try {
-    
     // Try backend endpoint first
     try {
       const response = await api.post('/payments/generate-form', {
@@ -734,8 +719,6 @@ export const applyPromoCode = debounceRequest(async (userId, plan, promoCode) =>
   }
   
   try {
-    ('🎟️ Applying promo code:', { userId, plan, promoCode });
-    
     const response = await api.post('/payments/promo-code', {
       userId,
       plan,
@@ -763,7 +746,6 @@ export const checkPaymentStatus = async (transactionId, userId = null) => {
       ? `/payments/status/${transactionId}/${userId}`
       : `/payments/status/${transactionId}`;
     
-    
     const response = await api.get(url);
     
     return {
@@ -784,7 +766,6 @@ export const checkPaymentStatus = async (transactionId, userId = null) => {
 // ✅ USER VALIDATION FOR PAYMENTS
 export const validateUser = async (userId) => {
   try {
-    
     const response = await api.get(`/payments/validate-user/${userId}`);
     
     return {
@@ -826,7 +807,6 @@ export const getTransactionStateText = (state) => {
 // ✅ FIXED: Get all topics with enhanced error handling
 export const getTopics = async (filters = {}) => {
   try {
-    
     const params = new URLSearchParams();
     Object.keys(filters).forEach(key => {
       if (filters[key] !== undefined && filters[key] !== null) {
@@ -869,7 +849,6 @@ export const getTopics = async (filters = {}) => {
 // ✅ FIXED: Get topic by ID with multiple endpoint fallbacks
 export const getTopicById = async (topicId) => {
   try {
-    
     const { data } = await api.get(`/topics/${topicId}`);
     
     // Handle different response structures from your backend
@@ -909,7 +888,6 @@ export const getTopicById = async (topicId) => {
 // ✅ FIXED: Get lessons by topic with enhanced fallback logic
 export const getLessonsByTopic = async (topicId) => {
   try {
-    
     // Try the enhanced lessons endpoint first
     try {
       const { data } = await api.get(`/lessons/topic/${topicId}?includeStats=true&sortBy=createdAt&order=asc`);
@@ -955,7 +933,6 @@ export const getLessonsByTopic = async (topicId) => {
                (lesson.topicId && lesson.topicId.toString() === topicId);
       });
       
-      
       return {
         success: true,
         data: filteredLessons
@@ -982,7 +959,6 @@ export const getLessonsByTopic = async (topicId) => {
 // ✅ FIXED: Get all lessons with enhanced filtering
 export const getAllLessons = async (filters = {}) => {
   try {
-    
     const params = new URLSearchParams();
     Object.keys(filters).forEach(key => {
       if (filters[key] !== undefined && filters[key] !== null) {
@@ -1012,7 +988,6 @@ export const getAllLessons = async (filters = {}) => {
 // ✅ FIXED: Get lesson by ID with enhanced error handling
 export const getLessonById = async (lessonId) => {
   try {
-    
     const { data } = await api.get(`/lessons/${lessonId}`);
     
     // Handle different response structures from your backend
@@ -1054,7 +1029,6 @@ export const getLessonById = async (lessonId) => {
 // ✅ FIXED: Submit progress with multiple endpoint fallbacks
 export const submitProgress = async (userId, progressData) => {
   try {
-    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
@@ -1094,7 +1068,6 @@ export const submitProgress = async (userId, progressData) => {
     
     for (const endpoint of endpoints) {
       try {
-        
         const dataToSend = endpoint.includes('/progress') && !endpoint.includes('users') 
           ? enhancedData  // Include userId in data for general progress endpoint
           : { ...enhancedData, userId: undefined }; // Remove userId from data for user-specific endpoints
@@ -1125,7 +1098,6 @@ export const submitProgress = async (userId, progressData) => {
 // ✅ FIXED: Get lesson progress with multiple endpoint support
 export const getLessonProgress = async (userId, lessonId) => {
   try {
-    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       console.warn('⚠️ No auth token available for progress');
@@ -1177,7 +1149,6 @@ export const getLessonProgress = async (userId, lessonId) => {
 // ✅ FIXED: Get user progress with enhanced support
 export const getUserProgress = async (userId) => {
   try {
-    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
@@ -1230,7 +1201,6 @@ export const getUserProgress = async (userId) => {
 // ✅ FIXED: Get available tests with fallback support
 export const getAvailableTests = async (userId) => {
   try {
-    
     const token = await auth.currentUser?.getIdToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     
@@ -1251,7 +1221,6 @@ export const getAvailableTests = async (userId) => {
 // ✅ FIXED: Get test by ID with fallback support
 export const getTestById = async (userId, testId) => {
   try {
-    
     const token = await auth.currentUser?.getIdToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     
@@ -1272,7 +1241,6 @@ export const getTestById = async (userId, testId) => {
 // ✅ FIXED: Submit test result with fallback support
 export const submitTestResult = async (userId, testId, answers) => {
   try {
-    
     const token = await auth.currentUser?.getIdToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     
@@ -1293,7 +1261,6 @@ export const submitTestResult = async (userId, testId, answers) => {
 // ✅ FIXED: Get test result with enhanced error handling
 export const getTestResult = async (userId, testId) => {
   try {
-    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('Authentication required');
@@ -1312,7 +1279,6 @@ export const getTestResult = async (userId, testId) => {
 // ✅ FIXED: Get user test results
 export const getUserTestResults = async (userId) => {
   try {
-    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('Authentication required');
@@ -1334,45 +1300,341 @@ export const getUserTestResults = async (userId) => {
 };
 
 // =============================================
-// 📚 HOMEWORK API FUNCTIONS - FIXED
+// 📚 HOMEWORK API FUNCTIONS - COMPLETELY FIXED
 // =============================================
 
-// ✅ FIXED: Get homework by lesson with multiple endpoint support
-export const getHomeworkByLesson = async (userId, lessonId) => {
+// ✅ HELPER: Build homework list from multiple sources
+const buildHomeworkListFallback = async (token, userId, headers) => {
+  let allHomeworks = [];
+  let lessonsWithHomework = [];
+  let userProgress = [];
+
+  // Get standalone homework
   try {
+    console.log('📚 Fetching standalone homework...');
+    const { data: hwResponse } = await api.get('/homeworks', { headers });
+    allHomeworks = hwResponse.data || hwResponse || [];
+    console.log(`📚 Found ${allHomeworks.length} standalone homework`);
+  } catch (hwError) {
+    console.warn('⚠️ Could not fetch standalone homework:', hwError.message);
+  }
+
+  // Get lessons with homework
+  try {
+    console.log('📖 Fetching lessons with homework...');
+    const { data: lessonsResponse } = await api.get('/lessons', { headers });
+    const allLessons = lessonsResponse.data || lessonsResponse || [];
+    lessonsWithHomework = allLessons.filter(lesson => 
+      lesson.homework && Array.isArray(lesson.homework) && lesson.homework.length > 0
+    );
+    console.log(`📖 Found ${lessonsWithHomework.length} lessons with homework`);
+  } catch (lessonsError) {
+    console.warn('⚠️ Could not fetch lessons:', lessonsError.message);
+  }
+
+  // Get user progress
+  try {
+    console.log('📊 Fetching user progress...');
+    
+    // Try multiple progress endpoints
+    const progressEndpoints = [
+      `/users/${userId}/progress`,
+      `/progress?userId=${userId}`,
+      `/user-progress/${userId}`
+    ];
+    
+    for (const endpoint of progressEndpoints) {
+      try {
+        const { data: progressResponse } = await api.get(endpoint, { headers });
+        userProgress = progressResponse.data || progressResponse || [];
+        
+        if (Array.isArray(userProgress)) {
+          console.log(`📊 Found ${userProgress.length} progress records from ${endpoint}`);
+          break;
+        }
+      } catch (progressError) {
+        console.warn(`⚠️ Progress endpoint ${endpoint} failed:`, progressError.message);
+        continue;
+      }
+    }
+  } catch (generalProgressError) {
+    console.warn('⚠️ Could not fetch user progress:', generalProgressError.message);
+  }
+
+  // Combine all sources
+  const combinedHomeworks = [];
+
+  // Add standalone homework with progress
+  allHomeworks.forEach(hw => {
+    const userHwProgress = userProgress.find(up => 
+      up.homeworkId === hw._id || 
+      (up.metadata && up.metadata.standaloneHomeworkId === hw._id)
+    );
+    
+    combinedHomeworks.push({
+      ...hw,
+      type: 'standalone',
+      hasProgress: !!userHwProgress,
+      completed: userHwProgress?.completed || false,
+      score: userHwProgress?.score || 0,
+      stars: userHwProgress?.stars || 0,
+      userProgress: userHwProgress,
+      exerciseCount: (hw.exercises || []).length,
+      metadata: {
+        type: 'standalone',
+        homeworkTitle: hw.title,
+        hasUserProgress: !!userHwProgress,
+        progressId: userHwProgress?._id,
+        source: 'fallback-standalone'
+      }
+    });
+  });
+
+  // Add lesson-based homework with progress
+  lessonsWithHomework.forEach(lesson => {
+    const userLessonProgress = userProgress.find(up => 
+      up.lessonId === lesson._id ||
+      (up.metadata && up.metadata.lessonId === lesson._id)
+    );
+    
+    combinedHomeworks.push({
+      lessonId: lesson._id,
+      lessonName: lesson.lessonName || lesson.title,
+      title: `Домашнее задание: ${lesson.lessonName || lesson.title}`,
+      subject: lesson.subject,
+      exercises: lesson.homework || [],
+      exerciseCount: (lesson.homework || []).length,
+      type: 'lesson',
+      hasProgress: !!userLessonProgress,
+      completed: userLessonProgress?.completed || false,
+      score: userLessonProgress?.score || 0,
+      stars: userLessonProgress?.stars || 0,
+      userProgress: userLessonProgress,
+      metadata: {
+        type: 'lesson',
+        lessonTitle: lesson.lessonName || lesson.title,
+        hasUserProgress: !!userLessonProgress,
+        progressId: userLessonProgress?._id,
+        source: 'fallback-lesson'
+      }
+    });
+  });
+
+  // Remove duplicates and sort
+  const uniqueHomeworks = combinedHomeworks.filter((hw, index, arr) => {
+    return index === arr.findIndex(h => 
+      (h._id && h._id === hw._id) || 
+      (h.lessonId && h.lessonId === hw.lessonId)
+    );
+  });
+
+  // Sort by priority: in-progress, pending, completed
+  uniqueHomeworks.sort((a, b) => {
+    const getStatus = (hw) => {
+      if (!hw.hasProgress) return 'pending';
+      if (!hw.completed) return 'in-progress';
+      return 'completed';
+    };
+    
+    const statusPriority = { 'in-progress': 0, 'pending': 1, 'completed': 2 };
+    const aStatus = getStatus(a);
+    const bStatus = getStatus(b);
+    
+    if (statusPriority[aStatus] !== statusPriority[bStatus]) {
+      return statusPriority[aStatus] - statusPriority[bStatus];
+    }
+    
+    return (a.title || a.lessonName || '').localeCompare(b.title || b.lessonName || '');
+  });
+
+  return uniqueHomeworks;
+};
+
+// ✅ FIXED: Get all homework with comprehensive endpoint support
+export const getAllHomeworks = async (userId) => {
+  try {
+    console.log('📥 Fetching all homework for user:', userId);
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
     }
 
-    const headers = { Authorization: `Bearer ${token}` };
+    const headers = { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
     
-    // Try the new enhanced endpoint first
+    // ✅ STRATEGY 1: Try the enhanced user homework endpoint
     try {
-      const { data } = await api.get(`/homeworks/user/${userId}/lesson/${lessonId}`, { headers });
+      console.log('🔄 Trying enhanced user homework endpoint...');
       
-      if (data && data.success) {
+      const { data } = await api.get(`/homeworks/user/${userId}`, { headers });
+      
+      if (data && data.success && Array.isArray(data.data)) {
+        console.log(`✅ Enhanced endpoint success: ${data.data.length} homework items`);
         return {
           success: true,
-          data: data.data
+          data: data.data,
+          stats: data.stats,
+          source: 'enhanced-endpoint'
         };
       }
     } catch (enhancedError) {
       console.warn('⚠️ Enhanced homework endpoint failed:', enhancedError.message);
+      
+      if (enhancedError.response?.status >= 500) {
+        // Server error - don't try fallbacks
+        throw new Error('Ошибка сервера при загрузке домашних заданий');
+      }
     }
     
-    // Fallback to legacy endpoint structure
+    // ✅ STRATEGY 2: Try alternative user endpoints
+    const alternativeEndpoints = [
+      `/users/${userId}/homeworks`,
+      `/homeworks/users/${userId}`,
+      `/user/${userId}/homework`
+    ];
+    
+    for (const endpoint of alternativeEndpoints) {
+      try {
+        console.log(`🔄 Trying alternative endpoint: ${endpoint}`);
+        
+        const { data } = await api.get(endpoint, { headers });
+        
+        if (data && (data.success !== false)) {
+          const homeworkData = data.data || data;
+          
+          if (Array.isArray(homeworkData) && homeworkData.length >= 0) {
+            console.log(`✅ Alternative endpoint success: ${homeworkData.length} homework items`);
+            return {
+              success: true,
+              data: homeworkData,
+              stats: data.stats,
+              source: `alternative-${endpoint}`
+            };
+          }
+        }
+      } catch (altError) {
+        console.warn(`⚠️ Alternative endpoint ${endpoint} failed:`, altError.message);
+        continue;
+      }
+    }
+    
+    // ✅ STRATEGY 3: Build homework list from multiple sources (fallback)
+    console.log('🔄 Building homework list from multiple sources...');
+    
+    const fallbackHomeworks = await buildHomeworkListFallback(token, userId, headers);
+    
+    if (fallbackHomeworks.length > 0) {
+      console.log(`✅ Fallback success: ${fallbackHomeworks.length} homework items`);
+      return {
+        success: true,
+        data: fallbackHomeworks,
+        source: 'fallback-aggregation'
+      };
+    }
+    
+    // ✅ STRATEGY 4: Return empty list if no errors (valid scenario)
+    console.log('ℹ️ No homework found - returning empty list');
+    return {
+      success: true,
+      data: [],
+      source: 'empty-result'
+    };
+    
+  } catch (error) {
+    console.error('❌ Failed to fetch all homework:', error);
+    return {
+      success: false,
+      data: [],
+      error: error.message || 'Ошибка загрузки домашних заданий'
+    };
+  }
+};
+
+// ✅ FIXED: Get homework by lesson with enhanced support
+export const getHomeworkByLesson = async (userId, lessonId) => {
+  try {
+    console.log('📥 Fetching homework for lesson:', { userId, lessonId });
+    
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+    
+    // ✅ Try the enhanced endpoint first
     try {
-      const { data } = await api.get(`/users/${userId}/homeworks/lesson/${lessonId}`, { headers });
-      return data;
-    } catch (legacyError) {
-      console.warn('⚠️ Legacy homework endpoint failed:', legacyError.message);
+      const { data } = await api.get(`/homeworks/user/${userId}/lesson/${lessonId}`, { headers });
+      
+      if (data && data.success) {
+        console.log('✅ Enhanced lesson homework endpoint success');
+        return {
+          success: true,
+          data: data.data,
+          message: data.message
+        };
+      }
+    } catch (enhancedError) {
+      console.warn('⚠️ Enhanced lesson homework endpoint failed:', enhancedError.message);
     }
     
-    // Final fallback
-    const { data } = await api.get(`/homeworks/user/${userId}/lesson/${lessonId}`, { headers });
-    return data;
+    // ✅ Fallback: Build from lesson data
+    try {
+      const { data: lessonData } = await api.get(`/lessons/${lessonId}`, { headers });
+      
+      if (!lessonData.homework || !Array.isArray(lessonData.homework) || lessonData.homework.length === 0) {
+        return {
+          success: false,
+          error: 'В этом уроке нет домашнего задания'
+        };
+      }
+      
+      // Try to get user progress
+      let userProgress = null;
+      try {
+        const progressEndpoints = [
+          `/users/${userId}/progress/lesson/${lessonId}`,
+          `/progress?userId=${userId}&lessonId=${lessonId}`,
+          `/user-progress/lesson/${lessonId}?userId=${userId}`
+        ];
+        
+        for (const endpoint of progressEndpoints) {
+          try {
+            const { data: progressData } = await api.get(endpoint, { headers });
+            userProgress = progressData.data || progressData;
+            break;
+          } catch (progressError) {
+            continue;
+          }
+        }
+      } catch (progressError) {
+        console.warn('⚠️ Could not fetch lesson progress:', progressError.message);
+      }
+      
+      return {
+        success: true,
+        data: {
+          homework: userProgress,
+          questions: lessonData.homework,
+          lessonInfo: {
+            id: lessonData._id,
+            name: lessonData.lessonName || lessonData.title,
+            subject: lessonData.subject,
+            instructions: lessonData.homeworkInstructions || ''
+          }
+        }
+      };
+      
+    } catch (lessonError) {
+      console.error('❌ Lesson fallback failed:', lessonError);
+      throw new Error('Урок не найден или недоступен');
+    }
     
   } catch (error) {
     console.error('❌ Failed to fetch homework by lesson:', error);
@@ -1380,47 +1642,85 @@ export const getHomeworkByLesson = async (userId, lessonId) => {
   }
 };
 
-// ✅ FIXED: Get all homework with enhanced support
-export const getAllHomeworks = async (userId) => {
+// ✅ FIXED: Get standalone homework
+export const getStandaloneHomework = async (userId, homeworkId) => {
   try {
+    console.log('📥 Fetching standalone homework:', { userId, homeworkId });
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
     }
 
-    const headers = { Authorization: `Bearer ${token}` };
-    
-    // Try multiple endpoints
-    const endpoints = [
-      `/homeworks/user/${userId}`,
-      `/users/${userId}/homeworks`,
-      `/homeworks/user/${userId}`
-    ];
-    
-    for (const endpoint of endpoints) {
-      try {
-        const { data } = await api.get(endpoint, { headers });
-        
-        if (data && (data.success !== false)) {
-          return {
-            success: true,
-            data: data.data || data
-          };
-        }
-      } catch (endpointError) {
-        console.warn(`⚠️ Homework endpoint ${endpoint} failed:`, endpointError.message);
-        continue;
-      }
-    }
-    
-    return {
-      success: true,
-      data: []
+    const headers = { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
     };
     
+    // ✅ Try the user-specific endpoint first
+    try {
+      const { data } = await api.get(`/homeworks/user/${userId}/homework/${homeworkId}`, { headers });
+      
+      if (data && data.success) {
+        console.log('✅ User-specific standalone homework endpoint success');
+        return {
+          success: true,
+          data: data.data,
+          message: data.message
+        };
+      }
+    } catch (userError) {
+      console.warn('⚠️ User-specific standalone homework endpoint failed:', userError.message);
+    }
+    
+    // ✅ Fallback: Get homework directly and combine with user progress
+    try {
+      const { data: homeworkData } = await api.get(`/homeworks/${homeworkId}`, { headers });
+      
+      if (!homeworkData || (!homeworkData.exercises && !homeworkData.data?.exercises)) {
+        throw new Error('Домашнее задание не содержит упражнений');
+      }
+      
+      const homework = homeworkData.data || homeworkData;
+      
+      // Try to get user progress
+      let userProgress = null;
+      try {
+        const progressEndpoints = [
+          `/users/${userId}/homework/${homeworkId}/progress`,
+          `/progress?userId=${userId}&homeworkId=${homeworkId}`,
+          `/user-progress/homework/${homeworkId}?userId=${userId}`
+        ];
+        
+        for (const endpoint of progressEndpoints) {
+          try {
+            const { data: progressData } = await api.get(endpoint, { headers });
+            userProgress = progressData.data || progressData;
+            break;
+          } catch (progressError) {
+            continue;
+          }
+        }
+      } catch (progressError) {
+        console.warn('⚠️ Could not fetch homework progress:', progressError.message);
+      }
+      
+      return {
+        success: true,
+        data: {
+          homework: homework,
+          userProgress: userProgress,
+          questions: homework.exercises || []
+        }
+      };
+      
+    } catch (homeworkError) {
+      console.error('❌ Homework fallback failed:', homeworkError);
+      throw new Error('Домашнее задание не найдено');
+    }
+    
   } catch (error) {
-    console.error('❌ Failed to fetch all homework:', error);
+    console.error('❌ Failed to fetch standalone homework:', error);
     throw error;
   }
 };
@@ -1428,13 +1728,17 @@ export const getAllHomeworks = async (userId) => {
 // ✅ FIXED: Save homework with multiple endpoint support
 export const saveHomework = async (userId, lessonId, answers) => {
   try {
+    console.log('💾 Saving homework:', { userId, lessonId, answerCount: answers.length });
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
     }
 
-    const headers = { Authorization: `Bearer ${token}` };
+    const headers = { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
     
     const requestData = { 
       lessonId, 
@@ -1445,8 +1749,8 @@ export const saveHomework = async (userId, lessonId, answers) => {
     // Try multiple endpoints
     const endpoints = [
       `/homeworks/user/${userId}/save`,
-      `/users/${userId}/homeworks/save`,
-      `/homeworks/user/${userId}/save`
+      `/users/${userId}/homework/save`,
+      `/homework/save`
     ];
     
     for (const endpoint of endpoints) {
@@ -1454,6 +1758,7 @@ export const saveHomework = async (userId, lessonId, answers) => {
         const { data } = await api.post(endpoint, requestData, { headers });
         
         if (data && (data.success !== false)) {
+          console.log(`✅ Homework saved via ${endpoint}`);
           return {
             success: true,
             data: data.data || data
@@ -1476,21 +1781,25 @@ export const saveHomework = async (userId, lessonId, answers) => {
 // ✅ FIXED: Submit homework with multiple endpoint support
 export const submitHomework = async (userId, lessonId, answers) => {
   try {
+    console.log('📤 Submitting homework:', { userId, lessonId, answerCount: answers.length });
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
     }
 
-    const headers = { Authorization: `Bearer ${token}` };
+    const headers = { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
     
     const requestData = { answers };
     
     // Try multiple endpoints
     const endpoints = [
       `/homeworks/user/${userId}/lesson/${lessonId}/submit`,
-      `/users/${userId}/homeworks/lesson/${lessonId}/submit`,
-      `/homeworks/user/${userId}/lesson/${lessonId}/submit`
+      `/users/${userId}/homework/lesson/${lessonId}/submit`,
+      `/homework/lesson/${lessonId}/submit`
     ];
     
     for (const endpoint of endpoints) {
@@ -1498,6 +1807,7 @@ export const submitHomework = async (userId, lessonId, answers) => {
         const { data } = await api.post(endpoint, requestData, { headers });
         
         if (data && (data.success !== false)) {
+          console.log(`✅ Homework submitted via ${endpoint}`);
           return {
             success: true,
             data: data.data || data
@@ -1518,36 +1828,48 @@ export const submitHomework = async (userId, lessonId, answers) => {
 };
 
 // ✅ FIXED: Standalone homework functions
-export const getStandaloneHomework = async (userId, homeworkId) => {
-  try {
-    
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) {
-      throw new Error('No authentication token available');
-    }
-
-    const headers = { Authorization: `Bearer ${token}` };
-    
-    const { data } = await api.get(`/homeworks/user/${userId}/homework/${homeworkId}`, { headers });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to get standalone homework:', error);
-    throw error;
-  }
-};
-
 export const saveStandaloneHomework = async (userId, homeworkId, answers) => {
   try {
+    console.log('💾 Saving standalone homework:', { userId, homeworkId, answerCount: answers.length });
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
     }
 
-    const headers = { Authorization: `Bearer ${token}` };
+    const headers = { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
     
-    const { data } = await api.post(`/homeworks/user/${userId}/homework/${homeworkId}/save`, { answers }, { headers });
-    return data;
+    const requestData = { answers };
+    
+    // Try multiple endpoints
+    const endpoints = [
+      `/homeworks/user/${userId}/homework/${homeworkId}/save`,
+      `/users/${userId}/homework/${homeworkId}/save`,
+      `/homework/${homeworkId}/save`
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        const { data } = await api.post(endpoint, requestData, { headers });
+        
+        if (data && (data.success !== false)) {
+          console.log(`✅ Standalone homework saved via ${endpoint}`);
+          return {
+            success: true,
+            data: data.data || data
+          };
+        }
+      } catch (endpointError) {
+        console.warn(`⚠️ Standalone homework save endpoint ${endpoint} failed:`, endpointError.message);
+        continue;
+      }
+    }
+    
+    throw new Error('All standalone homework save endpoints failed');
+    
   } catch (error) {
     console.error('❌ Failed to save standalone homework:', error);
     throw error;
@@ -1556,16 +1878,46 @@ export const saveStandaloneHomework = async (userId, homeworkId, answers) => {
 
 export const submitStandaloneHomework = async (userId, homeworkId, answers) => {
   try {
+    console.log('📤 Submitting standalone homework:', { userId, homeworkId, answerCount: answers.length });
     
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
     }
 
-    const headers = { Authorization: `Bearer ${token}` };
+    const headers = { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
     
-    const { data } = await api.post(`/homeworks/user/${userId}/homework/${homeworkId}/submit`, { answers }, { headers });
-    return data;
+    const requestData = { answers };
+    
+    // Try multiple endpoints
+    const endpoints = [
+      `/homeworks/user/${userId}/homework/${homeworkId}/submit`,
+      `/users/${userId}/homework/${homeworkId}/submit`,
+      `/homework/${homeworkId}/submit`
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        const { data } = await api.post(endpoint, requestData, { headers });
+        
+        if (data && (data.success !== false)) {
+          console.log(`✅ Standalone homework submitted via ${endpoint}`);
+          return {
+            success: true,
+            data: data.data || data
+          };
+        }
+      } catch (endpointError) {
+        console.warn(`⚠️ Standalone homework submit endpoint ${endpoint} failed:`, endpointError.message);
+        continue;
+      }
+    }
+    
+    throw new Error('All standalone homework submit endpoints failed');
+    
   } catch (error) {
     console.error('❌ Failed to submit standalone homework:', error);
     throw error;
@@ -1579,7 +1931,6 @@ export const submitStandaloneHomework = async (userId, homeworkId, answers) => {
 // ✅ FIXED: Get user info with multiple endpoint support
 export const getUserInfo = async (userId) => {
   try {
-    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
@@ -1598,7 +1949,6 @@ export const getUserInfo = async (userId) => {
 // ✅ FIXED: Get user status with multiple endpoint support
 export const getUserStatus = async (userId) => {
   try {
-    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token');
@@ -1652,7 +2002,6 @@ export const getUserStatus = async (userId) => {
 // ✅ FIXED: Save user with enhanced error handling
 export const saveUser = async (userData) => {
   try {
-    
     // This uses the emergency user save route from server.js
     const { data } = await api.post('/users/save', userData);
     
@@ -1669,7 +2018,6 @@ export const saveUser = async (userData) => {
 // ✅ FIXED: Update user profile
 export const updateUserProfile = async (userId, profileData) => {
   try {
-    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
@@ -1932,7 +2280,6 @@ export const getDiaryEntries = async (userId) => {
 
 export const getUserAnalytics = async (userId) => {
   try {
-    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
@@ -2128,7 +2475,6 @@ export const testPaymentFlow = async (userId, plan = 'start') => {
     return;
   }
   
-  
   try {
     resetPaymentAttempts(userId);
     
@@ -2140,7 +2486,7 @@ export const testPaymentFlow = async (userId, plan = 'start') => {
       const paymentResult = await initiatePaymePayment(userId, plan);
       
       if (paymentResult.success && paymentResult.paymentUrl) {
-       
+        console.log('✅ Payment URL generated successfully');
       }
     }
     
@@ -2154,7 +2500,6 @@ export const testPaymentFlow = async (userId, plan = 'start') => {
 
 export const checkApiHealth = async () => {
   try {
-    
     const healthResponse = await healthCheck();
     
     try {
@@ -2245,23 +2590,20 @@ export const diagnosticTool = {
   
   // Test backend connectivity
   async testBackendConnectivity() {
-    ('🔍 Testing backend connectivity...');
+    console.log('🔍 Testing backend connectivity...');
     
     try {
       // Test basic health check
       const healthResponse = await fetch(`${BASE_URL}/health`);
       const healthData = await healthResponse.json();
       
-      
       // Test API health
       const apiHealthResponse = await fetch(`${BASE_URL}/api/health`);
       const apiHealthData = await apiHealthResponse.json();
       
-      
       // Test routes endpoint
       const routesResponse = await fetch(`${BASE_URL}/api/routes`);
       const routesData = await routesResponse.json();
-      
       
       return {
         success: true,
@@ -2281,7 +2623,6 @@ export const diagnosticTool = {
   
   // Test critical endpoints
   async testCriticalEndpoints() {
-    
     const endpoints = [
       { name: 'Topics List', url: '/api/topics', method: 'GET' },
       { name: 'Lessons List', url: '/api/lessons', method: 'GET' },
@@ -2296,7 +2637,6 @@ export const diagnosticTool = {
     
     for (const endpoint of endpoints) {
       try {
-        
         const response = await fetch(`${BASE_URL}${endpoint.url}`, {
           method: endpoint.method,
           headers: {
@@ -2314,6 +2654,7 @@ export const diagnosticTool = {
         };
         
         if (response.ok) {
+          console.log(`✅ ${endpoint.name}: Working`);
         } else {
           console.warn(`⚠️ ${endpoint.name}: ${response.status} - ${data.error || data.message || 'Unknown error'}`);
         }
@@ -2334,11 +2675,8 @@ export const diagnosticTool = {
   
   // Test authentication flow
   async testAuthFlow() {
-    
     try {
       const currentUser = auth.currentUser;
-      
-    
       
       if (currentUser) {
         // Test token retrieval
@@ -2382,7 +2720,6 @@ export const diagnosticTool = {
   
   // Test specific component endpoints
   async testComponentEndpoints(topicId, lessonId, userId) {
-    
     const results = {};
     
     // Test topic loading (TopicOverview.vue)
@@ -2455,6 +2792,60 @@ export const diagnosticTool = {
     }
     
     return results;
+  },
+  
+  // Test homework endpoints specifically
+  async testHomeworkEndpoints(userId) {
+    console.log('🔍 Testing homework endpoints for user:', userId);
+    
+    const results = {};
+    
+    // Test homework list endpoint
+    try {
+      const homeworkListResult = await getAllHomeworks(userId);
+      results.homeworkList = {
+        success: homeworkListResult.success,
+        count: homeworkListResult.data?.length || 0,
+        source: homeworkListResult.source,
+        error: homeworkListResult.error
+      };
+    } catch (error) {
+      results.homeworkList = {
+        success: false,
+        error: error.message
+      };
+    }
+    
+    // Test individual homework fetching if we have some homework
+    if (results.homeworkList.success && results.homeworkList.count > 0) {
+      try {
+        const homeworkData = await getAllHomeworks(userId);
+        const firstHomework = homeworkData.data[0];
+        
+        if (firstHomework.type === 'lesson' && firstHomework.lessonId) {
+          const lessonHomeworkResult = await getHomeworkByLesson(userId, firstHomework.lessonId);
+          results.lessonHomework = {
+            success: lessonHomeworkResult.success,
+            hasQuestions: !!lessonHomeworkResult.data?.questions?.length,
+            error: lessonHomeworkResult.error
+          };
+        } else if (firstHomework.type === 'standalone' && firstHomework._id) {
+          const standaloneResult = await getStandaloneHomework(userId, firstHomework._id);
+          results.standaloneHomework = {
+            success: standaloneResult.success,
+            hasQuestions: !!standaloneResult.data?.questions?.length,
+            error: standaloneResult.error
+          };
+        }
+      } catch (error) {
+        results.individualHomework = {
+          success: false,
+          error: error.message
+        };
+      }
+    }
+    
+    return results;
   }
 };
 
@@ -2512,7 +2903,7 @@ export const queueOfflineRequest = (request) => {
 // Process offline queue when back online
 export const processOfflineQueue = async () => {
   if (isOnline() && offlineQueue.length > 0) {
-    
+    console.log(`📶 Processing ${offlineQueue.length} offline requests...`);
     const requests = [...offlineQueue];
     offlineQueue.length = 0; // Clear queue
     
@@ -2532,6 +2923,7 @@ export const processOfflineQueue = async () => {
 if (typeof window !== 'undefined') {
   window.addEventListener('online', processOfflineQueue);
   window.addEventListener('offline', () => {
+    console.log('📵 Device went offline');
   });
 }
 
@@ -2564,7 +2956,6 @@ export const validatePaymeUrl = (url) => {
       decodedParams: decoded
     };
     
-    
     return validation;
     
   } catch (error) {
@@ -2579,7 +2970,6 @@ export const validatePaymeUrl = (url) => {
 // ✅ TEST FUNCTIONS
 export const testCleanUrlGeneration = async () => {
   try {
-    
     const testResult = await generateDirectPaymeUrl('testuser123', 'start', {
       lang: 'ru',
       callback: 'https://aced.live/payment/success'
@@ -2587,7 +2977,6 @@ export const testCleanUrlGeneration = async () => {
     
     if (testResult.success) {
       const validation = validatePaymeUrl(testResult.paymentUrl);
-      
       
       return {
         success: validation.isValid,

@@ -1,4 +1,3 @@
-
 <template>
   <div class="homework-list-wrapper">
     <div class="header-section">
@@ -54,15 +53,24 @@
 
     <!-- Debug Info (remove in production) -->
     <div v-if="$route.query.debug" class="debug-info">
-      <h4>Debug Info:</h4>
+      <h4>🔧 Debug Info:</h4>
       <p>Total homeworks loaded: {{ homeworks.length }}</p>
       <p>Valid homeworks: {{ validHomeworks.length }}</p>
+      <p>API Response: {{ apiResponseStatus }}</p>
+      <p>Last fetch time: {{ lastFetchTime }}</p>
       <pre>{{ JSON.stringify(homeworks.slice(0, 2), null, 2) }}</pre>
     </div>
 
     <div v-if="loading" class="loading">
       <div class="spinner"></div>
       <p>Загрузка домашних заданий...</p>
+    </div>
+    
+    <div v-else-if="error" class="error">
+      <div class="error-icon">⚠️</div>
+      <h3>Ошибка загрузки</h3>
+      <p>{{ error }}</p>
+      <button @click="refreshHomeworks" class="refresh-btn">🔄 Попробовать снова</button>
     </div>
     
     <div v-else-if="displayableHomeworks.length === 0 && homeworks.length > 0" class="empty">
@@ -83,14 +91,15 @@
       <TransitionGroup name="card" tag="div" class="cards-container">
         <div 
           v-for="hw in displayableHomeworks" 
-          :key="hw.lessonId || hw._id || `temp-${Math.random()}`" 
+          :key="getHomeworkKey(hw)" 
           class="homework-card"
           :class="{ 'urgent': isUrgent(hw) }"
         >
           <div class="card-header">
             <div class="title-section">
-              <h3>{{ hw.title || hw.lessonName || 'Без названия' }}</h3>
+              <h3>{{ getHomeworkTitle(hw) }}</h3>
               <span v-if="hw.subject" class="subject-tag">{{ hw.subject }}</span>
+              <span class="type-tag" :class="hw.type">{{ getTypeLabel(hw.type) }}</span>
             </div>
             <span class="status-chip" :class="statusClass(hw)">
               {{ statusLabel(hw) }}
@@ -133,9 +142,9 @@
               </div>
             </div>
 
-            <div v-if="hw.exercises && hw.exercises.length > 0" class="exercises-info">
+            <div v-if="getExerciseCount(hw) > 0" class="exercises-info">
               <span class="exercises-label">📝 Упражнений:</span>
-              <span class="exercises-count">{{ hw.exercises.length }}</span>
+              <span class="exercises-count">{{ getExerciseCount(hw) }}</span>
             </div>
 
             <!-- Progress Details -->
@@ -148,6 +157,10 @@
                 <span class="progress-label">Лучший результат:</span>
                 <span class="progress-value">{{ getScore(hw) }}%</span>
               </div>
+              <div v-if="hw.stars > 0" class="progress-item">
+                <span class="progress-label">Звёзды:</span>
+                <span class="progress-value">{{ '⭐'.repeat(hw.stars) }}</span>
+              </div>
             </div>
           </div>
 
@@ -155,6 +168,9 @@
             <div class="footer-info">
               <span v-if="getLastAttempt(hw)" class="last-attempt">
                 Обновлено: {{ formatDate(getLastAttempt(hw)) }}
+              </span>
+              <span v-if="hw.type" class="homework-type">
+                {{ hw.type === 'standalone' ? 'Отдельное ДЗ' : 'Урок' }}
               </span>
             </div>
             <button @click="goToHomework(hw)" class="action-btn">
@@ -171,7 +187,7 @@
 </template>
 
 <script>
-import api from '@/api';
+import { getAllHomeworks } from '@/api';
 import { auth } from '@/firebase';
 
 export default {
@@ -180,9 +196,12 @@ export default {
     return {
       homeworks: [],
       loading: true,
+      error: null,
       selectedSubject: '',
       selectedStatus: '',
       searchQuery: '',
+      apiResponseStatus: 'none',
+      lastFetchTime: null,
     };
   },
   computed: {
@@ -191,7 +210,7 @@ export default {
       return subjects.sort();
     },
     
-    // ✅ FIXED: Simplified validation that works with both homework types
+    // ✅ FIXED: Enhanced validation that works with both homework types
     validHomeworks() {
       return this.homeworks.filter(hw => {
         if (!hw) return false;
@@ -215,7 +234,7 @@ export default {
         const matchesSubject = !this.selectedSubject || hw.subject === this.selectedSubject;
         const matchesStatus = !this.selectedStatus || this.getStatus(hw) === this.selectedStatus;
         const matchesSearch = !this.searchQuery || 
-          (hw.title || hw.lessonName || '').toLowerCase().includes(this.searchQuery.toLowerCase());
+          this.getHomeworkTitle(hw).toLowerCase().includes(this.searchQuery.toLowerCase());
         
         return matchesSubject && matchesStatus && matchesSearch;
       });
@@ -239,13 +258,38 @@ export default {
   },
   
   methods: {
+    // ✅ FIXED: Enhanced key generation for homework items
+    getHomeworkKey(hw) {
+      if (hw._id) return `hw-${hw._id}`;
+      if (hw.lessonId) return `lesson-${hw.lessonId}`;
+      return `temp-${Math.random().toString(36).substr(2, 9)}`;
+    },
+    
+    // ✅ FIXED: Enhanced title extraction
+    getHomeworkTitle(hw) {
+      return hw.title || hw.lessonName || `Домашнее задание ${hw.type || ''}` || 'Без названия';
+    },
+    
+    // ✅ FIXED: Exercise count extraction
+    getExerciseCount(hw) {
+      return hw.exerciseCount || (hw.exercises && hw.exercises.length) || 0;
+    },
+    
+    // ✅ FIXED: Type label generation
+    getTypeLabel(type) {
+      switch (type) {
+        case 'standalone': return 'Отдельное';
+        case 'lesson': return 'Урок';
+        default: return 'ДЗ';
+      }
+    },
+    
     // ✅ FIXED: Enhanced progress detection methods
     hasProgress(hw) {
-      // Check multiple possible progress indicators
       return !!(
+        hw.hasProgress ||
         hw.completed !== undefined ||
         hw.score !== undefined ||
-        hw.hasProgress ||
         hw.userProgress ||
         hw.progress ||
         hw.record ||
@@ -277,6 +321,7 @@ export default {
     getLastAttempt(hw) {
       return (
         hw.updatedAt ||
+        hw.submittedAt ||
         hw.userProgress?.updatedAt ||
         hw.progress?.updatedAt ||
         hw.record?.lastAttempt ||
@@ -285,32 +330,42 @@ export default {
       );
     },
     
+    // ✅ FIXED: Enhanced navigation with better error handling
     goToHomework(hw) {
+      console.log('🎯 Navigating to homework:', {
+        id: hw._id,
+        lessonId: hw.lessonId,
+        type: hw.type,
+        title: this.getHomeworkTitle(hw)
+      });
       
       let routeName;
       let params;
       let query = {
-        title: hw.title || hw.lessonName,
-        subject: hw.subject
+        title: this.getHomeworkTitle(hw),
+        subject: hw.subject || 'Unknown'
       };
       
-      if (hw._id && (hw.type === 'standalone' || (hw.exercises && hw.exercises.length > 0))) {
-        // Standalone homework from admin panel
-        routeName = 'StandaloneHomeworkPage';
-        params = { homeworkId: hw._id };
-        query.type = 'standalone';
-      } 
-      else if (hw.lessonId) {
-        // Lesson-based homework
-        routeName = 'LessonHomeworkPage';
-        params = { lessonId: hw.lessonId };
-        query.type = 'lesson';
-      }
-      else if (hw._id) {
-        // Fallback: Try with flexible route
+      // ✅ ENHANCED: Better route determination
+      if (hw.type === 'standalone' || (hw._id && !hw.lessonId)) {
+        // Standalone homework
         routeName = 'HomeworkPage';
         params = { id: hw._id };
         query.type = 'standalone';
+        query.homeworkId = hw._id;
+      } 
+      else if (hw.type === 'lesson' || hw.lessonId) {
+        // Lesson-based homework
+        routeName = 'HomeworkPage';
+        params = { id: hw.lessonId };
+        query.type = 'lesson';
+        query.lessonId = hw.lessonId;
+      }
+      else if (hw._id) {
+        // Fallback: Try with ID
+        routeName = 'HomeworkPage';
+        params = { id: hw._id };
+        query.type = hw.type || 'unknown';
       }
       else {
         console.error('❌ No valid homework ID found:', hw);
@@ -318,6 +373,7 @@ export default {
         return;
       }
       
+      console.log('📍 Navigation details:', { routeName, params, query });
       
       this.$router.push({
         name: routeName,
@@ -326,15 +382,19 @@ export default {
       }).catch(err => {
         console.error('❌ Navigation error:', err);
         
-        // Fallback navigation
+        // Enhanced fallback navigation
         const fallbackId = hw._id || hw.lessonId;
+        const fallbackType = hw.type || (hw.lessonId ? 'lesson' : 'standalone');
+        
+        console.log('🔄 Trying fallback navigation:', { fallbackId, fallbackType });
+        
         this.$router.push({
-          name: 'HomeworkPage',
-          params: { id: fallbackId },
+          path: `/homework/${fallbackId}`,
           query: { 
-            type: hw.type || (hw.lessonId ? 'lesson' : 'standalone'),
-            title: hw.title || hw.lessonName,
-            subject: hw.subject
+            type: fallbackType,
+            title: this.getHomeworkTitle(hw),
+            subject: hw.subject,
+            fallback: 'true'
           }
         }).catch(fallbackErr => {
           console.error('❌ Fallback navigation failed:', fallbackErr);
@@ -405,87 +465,122 @@ export default {
       return diffDays <= 3 && diffDays >= 0;
     },
     
-    // ✅ FIXED: Enhanced homework fetching with better progress handling
+    // ✅ FIXED: Enhanced homework fetching with comprehensive error handling
     async fetchHomeworks() {
       try {
         this.loading = true;
-        const user = auth.currentUser;
-        if (!user) throw new Error('Пользователь не авторизован');
+        this.error = null;
         
-        const token = await user.getIdToken();
+        const user = auth.currentUser;
+        if (!user) {
+          throw new Error('Пользователь не авторизован');
+        }
+        
         const userId = user.uid;
+        this.lastFetchTime = new Date().toISOString();
 
+        console.log('📥 Fetching homework for user:', userId);
 
-        // ✅ Try the main enhanced user homework endpoint
-        try {
-          const { data: response } = await api.get(`/users/${userId}/homeworks`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          
-          const homeworkData = response.data || response || [];
-          
-          if (Array.isArray(homeworkData) && homeworkData.length > 0) {
-            // ✅ FIXED: Enhanced processing that preserves all progress info
-            this.homeworks = homeworkData.map(hw => {
-              // Normalize the homework structure
-              const normalizedHw = {
-                ...hw,
-                // Ensure we have a proper ID
-                id: hw._id || hw.lessonId,
-                
-                // Extract progress info from multiple possible sources
-                completed: this.extractCompleted(hw),
-                score: this.extractScore(hw),
-                hasProgress: this.extractHasProgress(hw),
-                
-                // Preserve original progress data
-                userProgress: hw.userProgress,
-                progress: hw.progress,
-                record: hw.record,
-                
-                // Add metadata for tracking
-                metadata: {
-                  originalType: hw.type,
-                  hasProgress: this.extractHasProgress(hw),
-                  completed: this.extractCompleted(hw),
-                  score: this.extractScore(hw),
-                  lastAttempt: hw.updatedAt || hw.submittedAt
-                }
-              };
+        // ✅ ENHANCED: Use the fixed API function
+        const result = await getAllHomeworks(userId);
+        
+        console.log('📊 API Result:', {
+          success: result.success,
+          dataLength: result.data?.length || 0,
+          hasStats: !!result.stats
+        });
+
+        this.apiResponseStatus = result.success ? 'success' : 'failed';
+
+        if (result.success && result.data) {
+          // ✅ ENHANCED: Process the homework data with comprehensive validation
+          this.homeworks = result.data.map(hw => {
+            // Normalize the homework structure
+            const normalizedHw = {
+              // Preserve original data
+              ...hw,
               
-           
+              // Ensure we have proper IDs
+              id: hw._id || hw.lessonId,
               
-              return normalizedHw;
+              // Normalize progress tracking
+              hasProgress: this.extractHasProgress(hw),
+              completed: this.extractCompleted(hw),
+              score: this.extractScore(hw),
+              
+              // Ensure exercise count is available
+              exerciseCount: hw.exerciseCount || (hw.exercises && hw.exercises.length) || 0,
+              
+              // Enhanced metadata
+              metadata: {
+                ...hw.metadata,
+                originalType: hw.type,
+                hasValidId: !!(hw._id || hw.lessonId),
+                hasTitle: !!(hw.title || hw.lessonName),
+                processed: true,
+                processedAt: new Date().toISOString()
+              }
+            };
+            
+            console.log(`📝 Processed homework: ${normalizedHw.title || normalizedHw.lessonName}`, {
+              id: normalizedHw.id,
+              type: normalizedHw.type,
+              hasProgress: normalizedHw.hasProgress,
+              completed: normalizedHw.completed,
+              score: normalizedHw.score
             });
             
-            return;
+            return normalizedHw;
+          });
+          
+          console.log(`✅ Successfully loaded ${this.homeworks.length} homework items`);
+          
+          if (result.stats) {
+            console.log('📊 Homework stats:', result.stats);
           }
-        } catch (error) {
-          console.warn('⚠️ Enhanced homework endpoint failed:', error.message);
+        } else {
+          console.warn('⚠️ API returned unsuccessful result:', result);
+          this.error = result.error || 'Не удалось загрузить домашние задания';
+          this.homeworks = [];
         }
-
-        // ✅ Fallback: Try to build from multiple sources
-        
-        const fallbackHomeworks = await this.buildHomeworkListFallback(token, userId);
-        this.homeworks = fallbackHomeworks;
-        
 
       } catch (err) {
         console.error('❌ Error loading homeworks:', err);
-        this.$toast?.error(`Ошибка загрузки домашних заданий: ${err.message}`);
+        
+        // ✅ ENHANCED: Better error handling with specific messages
+        let errorMessage = 'Ошибка загрузки домашних заданий';
+        
+        if (err.message?.includes('авторизован')) {
+          errorMessage = 'Необходимо войти в систему';
+        } else if (err.response?.status === 404) {
+          errorMessage = 'Домашние задания не найдены';
+        } else if (err.response?.status === 403) {
+          errorMessage = 'Доступ запрещен';
+        } else if (err.response?.status >= 500) {
+          errorMessage = 'Ошибка сервера. Попробуйте позже';
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+        
+        this.error = errorMessage;
+        this.apiResponseStatus = 'error';
         this.homeworks = [];
+        
+        this.$toast?.error(`Ошибка загрузки: ${errorMessage}`);
       } finally {
         this.loading = false;
       }
     },
     
-    // ✅ Helper methods for extracting progress data
+    // ✅ Helper methods for extracting progress data from various sources
     extractCompleted(hw) {
       return !!(
         hw.completed ||
+        hw.hasProgress === true && hw.score >= 100 ||
         hw.userProgress?.completed ||
         hw.progress?.completed ||
-        hw.record?.completed
+        hw.record?.completed ||
+        (hw.metadata && hw.metadata.completed)
       );
     },
     
@@ -495,6 +590,7 @@ export default {
         hw.userProgress?.score ||
         hw.progress?.score ||
         hw.record?.score ||
+        (hw.metadata && hw.metadata.score) ||
         0
       );
     },
@@ -508,147 +604,39 @@ export default {
         hw.completed !== undefined ||
         hw.score !== undefined ||
         hw.submittedAt ||
-        hw.updatedAt
+        hw.updatedAt ||
+        (hw.metadata && hw.metadata.hasProgress)
       );
-    },
-    
-    // ✅ Fallback method for building homework list
-    async buildHomeworkListFallback(token, userId) {
-      let allHomeworks = [];
-      let lessonsWithHomework = [];
-      let userProgress = [];
-
-      // Get admin homework
-      try {
-        const { data: hwResponse } = await api.get('/homeworks', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        allHomeworks = hwResponse.data || hwResponse || [];
-      } catch (hwError) {
-        console.warn('⚠️ Could not fetch admin homeworks:', hwError.message);
-      }
-
-      // Get lessons with homework
-      try {
-        const { data: lessonsResponse } = await api.get('/lessons');
-        const allLessons = lessonsResponse.data || lessonsResponse || [];
-        lessonsWithHomework = allLessons.filter(lesson => 
-          lesson.homework && Array.isArray(lesson.homework) && lesson.homework.length > 0
-        );
-      } catch (lessonsError) {
-        console.warn('⚠️ Could not fetch lessons:', lessonsError.message);
-      }
-
-      // Get user progress from multiple endpoints
-      try {
-        // Try the dedicated homework progress endpoint
-        const { data: progressResponse } = await api.get(`/homeworks/user/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        userProgress = progressResponse.data || progressResponse || [];
-      } catch (progressError) {
-        console.warn('⚠️ Homework progress endpoint failed:', progressError.message);
-        
-        // Try general user progress
-        try {
-          const { data: generalProgress } = await api.get(`/users/${userId}/progress`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          userProgress = generalProgress.data || generalProgress || [];
-        } catch (generalError) {
-          console.warn('⚠️ General progress endpoint failed:', generalError.message);
-        }
-      }
-
-      // Combine all sources
-      const combinedHomeworks = [];
-
-      // Add standalone homework with progress
-      allHomeworks.forEach(hw => {
-        const userHwProgress = userProgress.find(up => 
-          up.homeworkId === hw._id || 
-          up.metadata?.standaloneHomeworkId === hw._id
-        );
-        
-        combinedHomeworks.push({
-          ...hw,
-          type: 'standalone',
-          hasProgress: !!userHwProgress,
-          completed: userHwProgress?.completed || false,
-          score: userHwProgress?.score || 0,
-          userProgress: userHwProgress,
-          metadata: {
-            hasProgress: !!userHwProgress,
-            completed: userHwProgress?.completed || false,
-            score: userHwProgress?.score || 0,
-            lastAttempt: userHwProgress?.updatedAt
-          }
-        });
-      });
-
-      // Add lesson-based homework with progress
-      lessonsWithHomework.forEach(lesson => {
-        const userLessonProgress = userProgress.find(up => up.lessonId === lesson._id);
-        
-        combinedHomeworks.push({
-          lessonId: lesson._id,
-          lessonName: lesson.lessonName || lesson.title,
-          title: `Домашнее задание: ${lesson.lessonName || lesson.title}`,
-          subject: lesson.subject,
-          exercises: lesson.homework,
-          type: 'lesson',
-          hasProgress: !!userLessonProgress,
-          completed: userLessonProgress?.completed || false,
-          score: userLessonProgress?.score || 0,
-          userProgress: userLessonProgress,
-          metadata: {
-            hasProgress: !!userLessonProgress,
-            completed: userLessonProgress?.completed || false,
-            score: userLessonProgress?.score || 0,
-            lastAttempt: userLessonProgress?.updatedAt
-          }
-        });
-      });
-
-      // Remove duplicates and sort
-      const uniqueHomeworks = combinedHomeworks.filter((hw, index, arr) => {
-        return index === arr.findIndex(h => 
-          (h._id && h._id === hw._id) || 
-          (h.lessonId && h.lessonId === hw.lessonId)
-        );
-      });
-
-      // Sort by priority: in-progress, pending, completed
-      uniqueHomeworks.sort((a, b) => {
-        const statusPriority = { 'in-progress': 0, 'pending': 1, 'completed': 2 };
-        const aStatus = this.getStatus(a);
-        const bStatus = this.getStatus(b);
-        
-        if (statusPriority[aStatus] !== statusPriority[bStatus]) {
-          return statusPriority[aStatus] - statusPriority[bStatus];
-        }
-        
-        return (a.title || a.lessonName || '').localeCompare(b.title || b.lessonName || '');
-      });
-
-      return uniqueHomeworks;
     }
   },
   
-  mounted() {
-    this.fetchHomeworks();
+  async mounted() {
+    console.log('🚀 HomeworkList component mounted');
+    await this.fetchHomeworks();
   },
   
   // ✅ Add component update hook to refresh when returning from homework
   activated() {
+    console.log('🔄 HomeworkList component activated');
     // Refresh homework list when component becomes active
     this.fetchHomeworks();
+  },
+  
+  // ✅ Handle route changes
+  watch: {
+    '$route'(to, from) {
+      // Refresh if returning to homework list from homework page
+      if (from.name?.includes('Homework') && to.name === 'HomeworkList') {
+        console.log('🔄 Returning from homework page, refreshing list');
+        this.fetchHomeworks();
+      }
+    }
   }
 };
 </script>
 
 <style scoped>
-/* Keep all existing styles */
+/* ✅ ENHANCED STYLES WITH BETTER VISUAL FEEDBACK */
 .homework-list-wrapper {
   max-width: 1200px;
   margin: auto;
@@ -683,6 +671,7 @@ h1 {
   border-radius: 12px;
   color: white;
   min-width: 100px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .stat-number {
@@ -737,6 +726,30 @@ h1 {
   box-shadow: 0 0 0 3px rgba(106, 90, 205, 0.1);
 }
 
+/* ✅ ENHANCED DEBUG STYLES */
+.debug-info {
+  background: #1f2937;
+  color: #f9fafb;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+.debug-info h4 {
+  color: #60a5fa;
+  margin: 0 0 0.5rem 0;
+}
+
+.debug-info pre {
+  background: #374151;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  overflow-x: auto;
+}
+
 .loading {
   text-align: center;
   padding: 3rem;
@@ -756,6 +769,43 @@ h1 {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.error {
+  text-align: center;
+  padding: 3rem;
+  color: #ef4444;
+}
+
+.error-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.error h3 {
+  margin: 1rem 0 0.5rem;
+  color: #dc2626;
+  font-size: 1.5rem;
+}
+
+.error p {
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+.refresh-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.refresh-btn:hover {
+  background: #dc2626;
 }
 
 .empty {
@@ -830,6 +880,10 @@ h1 {
   margin-bottom: 1rem;
 }
 
+.title-section {
+  flex: 1;
+}
+
 .title-section h3 {
   margin: 0 0 0.5rem;
   font-size: 1.25rem;
@@ -837,14 +891,34 @@ h1 {
   line-height: 1.3;
 }
 
-.subject-tag {
+.subject-tag,
+.type-tag {
   display: inline-block;
-  background: #e0e7ff;
-  color: #3730a3;
   padding: 0.25rem 0.75rem;
   border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 500;
+  margin-right: 0.5rem;
+}
+
+.subject-tag {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.type-tag {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.type-tag.standalone {
+  background: #ddd6fe;
+  color: #5b21b6;
+}
+
+.type-tag.lesson {
+  background: #d1fae5;
+  color: #065f46;
 }
 
 .status-chip {
@@ -933,12 +1007,37 @@ h1 {
   background: #d1d5db;
 }
 
-.due-date, .difficulty, .exercises-info {
+.due-date, .difficulty, .exercises-info, .progress-details {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
+}
+
+.progress-details {
+  flex-direction: column;
+  align-items: stretch;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.progress-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+}
+
+.progress-label {
+  color: #6b7280;
+}
+
+.progress-value {
+  font-weight: 600;
+  color: #374151;
 }
 
 .due-value.overdue {
@@ -980,6 +1079,14 @@ h1 {
 .footer-info {
   font-size: 0.8rem;
   color: #6b7280;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.homework-type {
+  font-weight: 500;
+  color: #9ca3af;
 }
 
 .action-btn {
@@ -1047,6 +1154,11 @@ h1 {
     flex-direction: column;
     gap: 0.75rem;
     align-items: stretch;
+  }
+  
+  .footer-info {
+    flex-direction: row;
+    justify-content: space-between;
   }
 }
 </style>
