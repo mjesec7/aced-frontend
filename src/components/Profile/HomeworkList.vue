@@ -51,14 +51,21 @@
       </div>
     </div>
 
-    <!-- Debug Info (remove in production) -->
-    <div v-if="$route.query.debug" class="debug-info">
+    <!-- Debug Info (visible in development) -->
+    <div v-if="showDebug" class="debug-info">
       <h4>🔧 Debug Info:</h4>
-      <p>Total homeworks loaded: {{ homeworks.length }}</p>
-      <p>Valid homeworks: {{ validHomeworks.length }}</p>
-      <p>API Response: {{ apiResponseStatus }}</p>
-      <p>Last fetch time: {{ lastFetchTime }}</p>
-      <pre>{{ JSON.stringify(homeworks.slice(0, 2), null, 2) }}</pre>
+      <div class="debug-grid">
+        <div><strong>Raw homeworks loaded:</strong> {{ homeworks.length }}</div>
+        <div><strong>Valid homeworks:</strong> {{ validHomeworks.length }}</div>
+        <div><strong>Displayable homeworks:</strong> {{ displayableHomeworks.length }}</div>
+        <div><strong>API Response:</strong> {{ apiResponseStatus }}</div>
+        <div><strong>Last fetch time:</strong> {{ lastFetchTime }}</div>
+        <div><strong>Filtered out count:</strong> {{ homeworks.length - validHomeworks.length }}</div>
+      </div>
+      <details>
+        <summary>Raw homework data (first 2 items)</summary>
+        <pre>{{ JSON.stringify(homeworks.slice(0, 2), null, 2) }}</pre>
+      </details>
     </div>
 
     <div v-if="loading" class="loading">
@@ -73,14 +80,14 @@
       <button @click="refreshHomeworks" class="refresh-btn">🔄 Попробовать снова</button>
     </div>
     
-    <div v-else-if="displayableHomeworks.length === 0 && homeworks.length > 0" class="empty">
+    <div v-else-if="displayableHomeworks.length === 0 && validHomeworks.length > 0" class="empty">
       <div class="empty-icon">🔍</div>
       <h3>Ничего не найдено</h3>
       <p>Попробуйте изменить фильтры поиска</p>
       <button @click="clearFilters" class="clear-filters-btn">Очистить фильтры</button>
     </div>
 
-    <div v-else-if="homeworks.length === 0" class="empty">
+    <div v-else-if="validHomeworks.length === 0" class="empty">
       <div class="empty-icon">📝</div>
       <h3>Нет домашних заданий</h3>
       <p>Домашние задания появятся после начала курса или завершения урока</p>
@@ -157,9 +164,9 @@
                 <span class="progress-label">Лучший результат:</span>
                 <span class="progress-value">{{ getScore(hw) }}%</span>
               </div>
-              <div v-if="hw.stars > 0" class="progress-item">
+              <div v-if="getStars(hw) > 0" class="progress-item">
                 <span class="progress-label">Звёзды:</span>
-                <span class="progress-value">{{ '⭐'.repeat(hw.stars) }}</span>
+                <span class="progress-value">{{ '⭐'.repeat(getStars(hw)) }}</span>
               </div>
             </div>
           </div>
@@ -202,18 +209,22 @@ export default {
       searchQuery: '',
       apiResponseStatus: 'none',
       lastFetchTime: null,
+      showDebug: false,
     };
   },
   computed: {
     subjects() {
-      const subjects = [...new Set(this.homeworks.map(hw => hw.subject).filter(Boolean))];
+      const subjects = [...new Set(this.validHomeworks.map(hw => hw.subject).filter(Boolean))];
       return subjects.sort();
     },
     
-    // ✅ FIXED: Enhanced validation that works with both homework types
+    // ✅ FIXED: Enhanced validation that properly filters out empty homework
     validHomeworks() {
       return this.homeworks.filter(hw => {
-        if (!hw) return false;
+        if (!hw) {
+          console.log('🚫 Filtered out: null/undefined homework');
+          return false;
+        }
         
         // Must have either an ID or lessonId
         const hasValidId = (hw._id || hw.lessonId) && 
@@ -222,10 +233,46 @@ export default {
                           hw._id !== 'undefined' && 
                           hw.lessonId !== 'undefined';
         
+        if (!hasValidId) {
+          console.log('🚫 Filtered out: Invalid ID', { _id: hw._id, lessonId: hw.lessonId });
+          return false;
+        }
+        
         // Must have a title/name
         const hasTitle = hw.title || hw.lessonName;
+        if (!hasTitle) {
+          console.log('🚫 Filtered out: No title', hw);
+          return false;
+        }
         
-        return hasValidId && hasTitle;
+        // ✅ CRITICAL FIX: Must have actual exercises/questions
+        const hasExercises = this.getExerciseCount(hw) > 0;
+        if (!hasExercises) {
+          console.log('🚫 Filtered out: No exercises/questions', { 
+            id: hw._id || hw.lessonId, 
+            title: hw.title || hw.lessonName,
+            exerciseCount: this.getExerciseCount(hw),
+            exercises: hw.exercises,
+            homework: hw.homework
+          });
+          return false;
+        }
+        
+        // ✅ ADDITIONAL VALIDATION: Check if it's a valid homework type
+        const isValidType = !hw.type || ['standalone', 'lesson'].includes(hw.type);
+        if (!isValidType) {
+          console.log('🚫 Filtered out: Invalid type', { type: hw.type });
+          return false;
+        }
+        
+        console.log('✅ Valid homework:', { 
+          id: hw._id || hw.lessonId, 
+          title: hw.title || hw.lessonName,
+          exerciseCount: this.getExerciseCount(hw),
+          type: hw.type
+        });
+        
+        return true;
       });
     },
     
@@ -270,9 +317,38 @@ export default {
       return hw.title || hw.lessonName || `Домашнее задание ${hw.type || ''}` || 'Без названия';
     },
     
-    // ✅ FIXED: Exercise count extraction
+    // ✅ FIXED: Enhanced exercise count extraction with better validation
     getExerciseCount(hw) {
-      return hw.exerciseCount || (hw.exercises && hw.exercises.length) || 0;
+      // Direct exercise count
+      if (hw.exerciseCount && hw.exerciseCount > 0) {
+        return hw.exerciseCount;
+      }
+      
+      // Count from exercises array
+      if (hw.exercises && Array.isArray(hw.exercises)) {
+        return hw.exercises.length;
+      }
+      
+      // Count from homework array (for lesson-based homework)
+      if (hw.homework && Array.isArray(hw.homework)) {
+        return hw.homework.length;
+      }
+      
+      // Count from questions array
+      if (hw.questions && Array.isArray(hw.questions)) {
+        return hw.questions.length;
+      }
+      
+      // Check nested data structures
+      if (hw.data && hw.data.exercises && Array.isArray(hw.data.exercises)) {
+        return hw.data.exercises.length;
+      }
+      
+      if (hw.data && hw.data.homework && Array.isArray(hw.data.homework)) {
+        return hw.data.homework.length;
+      }
+      
+      return 0;
     },
     
     // ✅ FIXED: Type label generation
@@ -318,6 +394,17 @@ export default {
       );
     },
     
+    getStars(hw) {
+      return (
+        hw.stars ||
+        hw.userProgress?.stars ||
+        hw.progress?.stars ||
+        hw.record?.stars ||
+        (hw.metadata && hw.metadata.stars) ||
+        0
+      );
+    },
+    
     getLastAttempt(hw) {
       return (
         hw.updatedAt ||
@@ -330,8 +417,8 @@ export default {
       );
     },
     
-    // ✅ FIXED: Enhanced navigation with better error handling
-    goToHomework(hw) {
+    // ✅ FIXED: Enhanced navigation with proper error handling and router checks
+    async goToHomework(hw) {
       console.log('🎯 Navigating to homework:', {
         id: hw._id,
         lessonId: hw.lessonId,
@@ -339,68 +426,94 @@ export default {
         title: this.getHomeworkTitle(hw)
       });
       
-      let routeName;
-      let params;
-      let query = {
-        title: this.getHomeworkTitle(hw),
-        subject: hw.subject || 'Unknown'
-      };
-      
-      // ✅ ENHANCED: Better route determination
-      if (hw.type === 'standalone' || (hw._id && !hw.lessonId)) {
-        // Standalone homework
-        routeName = 'HomeworkPage';
-        params = { id: hw._id };
-        query.type = 'standalone';
-        query.homeworkId = hw._id;
-      } 
-      else if (hw.type === 'lesson' || hw.lessonId) {
-        // Lesson-based homework
-        routeName = 'HomeworkPage';
-        params = { id: hw.lessonId };
-        query.type = 'lesson';
-        query.lessonId = hw.lessonId;
-      }
-      else if (hw._id) {
-        // Fallback: Try with ID
-        routeName = 'HomeworkPage';
-        params = { id: hw._id };
-        query.type = hw.type || 'unknown';
-      }
-      else {
-        console.error('❌ No valid homework ID found:', hw);
-        this.$toast?.error('Ошибка: Не удается найти домашнее задание');
-        return;
-      }
-      
-      console.log('📍 Navigation details:', { routeName, params, query });
-      
-      this.$router.push({
-        name: routeName,
-        params: params,
-        query: query
-      }).catch(err => {
+      try {
+        // ✅ SAFETY CHECK: Ensure router exists
+        if (!this.$router) {
+          console.error('❌ Router not available');
+          this.$toast?.error('Ошибка навигации: роутер недоступен');
+          return;
+        }
+        
+        let routeName;
+        let params;
+        let query = {
+          title: this.getHomeworkTitle(hw),
+          subject: hw.subject || 'Unknown'
+        };
+        
+        // ✅ ENHANCED: Better route determination
+        if (hw.type === 'standalone' || (hw._id && !hw.lessonId)) {
+          // Standalone homework
+          routeName = 'HomeworkPage';
+          params = { id: hw._id };
+          query.type = 'standalone';
+          query.homeworkId = hw._id;
+        } 
+        else if (hw.type === 'lesson' || hw.lessonId) {
+          // Lesson-based homework
+          routeName = 'HomeworkPage';
+          params = { id: hw.lessonId };
+          query.type = 'lesson';
+          query.lessonId = hw.lessonId;
+        }
+        else if (hw._id) {
+          // Fallback: Try with ID
+          routeName = 'HomeworkPage';
+          params = { id: hw._id };
+          query.type = hw.type || 'unknown';
+        }
+        else {
+          console.error('❌ No valid homework ID found:', hw);
+          this.$toast?.error('Ошибка: Не удается найти домашнее задание');
+          return;
+        }
+        
+        console.log('📍 Navigation details:', { routeName, params, query });
+        
+        // ✅ FIXED: Proper router navigation with async/await and error handling
+        const navigationPromise = this.$router.push({
+          name: routeName,
+          params: params,
+          query: query
+        });
+        
+        // Check if router.push returns a promise (Vue Router 4+)
+        if (navigationPromise && typeof navigationPromise.catch === 'function') {
+          await navigationPromise;
+        }
+        
+        console.log('✅ Navigation successful');
+        
+      } catch (err) {
         console.error('❌ Navigation error:', err);
         
-        // Enhanced fallback navigation
-        const fallbackId = hw._id || hw.lessonId;
-        const fallbackType = hw.type || (hw.lessonId ? 'lesson' : 'standalone');
-        
-        console.log('🔄 Trying fallback navigation:', { fallbackId, fallbackType });
-        
-        this.$router.push({
-          path: `/homework/${fallbackId}`,
-          query: { 
-            type: fallbackType,
-            title: this.getHomeworkTitle(hw),
-            subject: hw.subject,
-            fallback: 'true'
+        // ✅ ENHANCED: Better fallback navigation
+        try {
+          const fallbackId = hw._id || hw.lessonId;
+          const fallbackType = hw.type || (hw.lessonId ? 'lesson' : 'standalone');
+          
+          console.log('🔄 Trying fallback navigation:', { fallbackId, fallbackType });
+          
+          // Use programmatic navigation with window.location as last resort
+          const fallbackPath = `/homework/${fallbackId}?type=${fallbackType}&title=${encodeURIComponent(this.getHomeworkTitle(hw))}&subject=${encodeURIComponent(hw.subject || '')}&fallback=true`;
+          
+          if (this.$router && typeof this.$router.push === 'function') {
+            const fallbackPromise = this.$router.push(fallbackPath);
+            if (fallbackPromise && typeof fallbackPromise.catch === 'function') {
+              await fallbackPromise;
+            }
+          } else {
+            // Ultimate fallback - direct navigation
+            window.location.href = fallbackPath;
           }
-        }).catch(fallbackErr => {
+          
+          console.log('✅ Fallback navigation successful');
+          
+        } catch (fallbackErr) {
           console.error('❌ Fallback navigation failed:', fallbackErr);
-          this.$toast?.error('Ошибка навигации. Обратитесь к администратору.');
-        });
-      });
+          this.$toast?.error('Ошибка навигации. Попробуйте обновить страницу.');
+        }
+      }
     },
     
     statusLabel(hw) {
@@ -465,7 +578,7 @@ export default {
       return diffDays <= 3 && diffDays >= 0;
     },
     
-    // ✅ FIXED: Enhanced homework fetching with comprehensive error handling
+    // ✅ FIXED: Enhanced homework fetching with better filtering
     async fetchHomeworks() {
       try {
         this.loading = true;
@@ -493,10 +606,21 @@ export default {
         this.apiResponseStatus = result.success ? 'success' : 'failed';
 
         if (result.success && result.data) {
-          // ✅ ENHANCED: Process the homework data with comprehensive validation
-          this.homeworks = result.data.map(hw => {
-            // Normalize the homework structure
-            const normalizedHw = {
+          // ✅ ENHANCED: Process and validate homework data
+          const rawHomeworks = result.data;
+          console.log(`📦 Processing ${rawHomeworks.length} raw homework items...`);
+          
+          // First, normalize all homework data
+          const normalizedHomeworks = rawHomeworks.map((hw, index) => {
+            console.log(`📝 Processing homework ${index + 1}:`, {
+              id: hw._id,
+              lessonId: hw.lessonId,
+              title: hw.title || hw.lessonName,
+              type: hw.type,
+              exerciseCount: this.getExerciseCount(hw)
+            });
+            
+            return {
               // Preserve original data
               ...hw,
               
@@ -507,9 +631,10 @@ export default {
               hasProgress: this.extractHasProgress(hw),
               completed: this.extractCompleted(hw),
               score: this.extractScore(hw),
+              stars: this.extractStars(hw),
               
               // Ensure exercise count is available
-              exerciseCount: hw.exerciseCount || (hw.exercises && hw.exercises.length) || 0,
+              exerciseCount: this.getExerciseCount(hw),
               
               // Enhanced metadata
               metadata: {
@@ -517,27 +642,30 @@ export default {
                 originalType: hw.type,
                 hasValidId: !!(hw._id || hw.lessonId),
                 hasTitle: !!(hw.title || hw.lessonName),
+                hasExercises: this.getExerciseCount(hw) > 0,
                 processed: true,
                 processedAt: new Date().toISOString()
               }
             };
-            
-            console.log(`📝 Processed homework: ${normalizedHw.title || normalizedHw.lessonName}`, {
-              id: normalizedHw.id,
-              type: normalizedHw.type,
-              hasProgress: normalizedHw.hasProgress,
-              completed: normalizedHw.completed,
-              score: normalizedHw.score
-            });
-            
-            return normalizedHw;
           });
           
-          console.log(`✅ Successfully loaded ${this.homeworks.length} homework items`);
+          // Store all normalized homeworks (validation happens in computed property)
+          this.homeworks = normalizedHomeworks;
+          
+          console.log(`✅ Loaded ${this.homeworks.length} total homework items`);
+          console.log(`📊 Valid homework items: ${this.validHomeworks.length}`);
+          console.log(`🚫 Filtered out: ${this.homeworks.length - this.validHomeworks.length} items`);
           
           if (result.stats) {
             console.log('📊 Homework stats:', result.stats);
           }
+          
+          // ✅ ENHANCED: Show informative message if all homework was filtered out
+          if (this.homeworks.length > 0 && this.validHomeworks.length === 0) {
+            console.warn('⚠️ All homework items were filtered out (no exercises/questions found)');
+            this.$toast?.info('Найдены уроки без домашних заданий. Домашние задания появятся после их создания.');
+          }
+          
         } else {
           console.warn('⚠️ API returned unsuccessful result:', result);
           this.error = result.error || 'Не удалось загрузить домашние задания';
@@ -595,6 +723,17 @@ export default {
       );
     },
     
+    extractStars(hw) {
+      return (
+        hw.stars ||
+        hw.userProgress?.stars ||
+        hw.progress?.stars ||
+        hw.record?.stars ||
+        (hw.metadata && hw.metadata.stars) ||
+        0
+      );
+    },
+    
     extractHasProgress(hw) {
       return !!(
         hw.hasProgress ||
@@ -612,6 +751,10 @@ export default {
   
   async mounted() {
     console.log('🚀 HomeworkList component mounted');
+    
+    // Enable debug mode in development or with debug query param
+    this.showDebug = process.env.NODE_ENV === 'development' || this.$route.query.debug === 'true';
+    
     await this.fetchHomeworks();
   },
   
