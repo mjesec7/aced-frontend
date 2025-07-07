@@ -232,7 +232,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import { getTopicById, getLessonsByTopic, getUserStatus } from '@/api';
 import { auth } from '@/firebase';
 
 export default {
@@ -243,8 +243,9 @@ export default {
       lessons: [],
       loading: true,
       userPlan: 'free',
-      lang: localStorage.getItem('lang') || 'en',
-      filter: 'all'
+      filter: 'all',
+      error: null,
+      retryCount: 0
     };
   },
   
@@ -264,38 +265,166 @@ export default {
     
     availableCount() {
       return this.lessons.filter(lesson => 
-        lesson.type !== 'premium' || this.userPlan !== 'free'
+        lesson.type !== 'premium' || this.isPremiumUser
       ).length;
+    },
+    
+    isPremiumUser() {
+      const premiumPlans = ['premium', 'start', 'pro'];
+      return premiumPlans.includes(this.userPlan) || 
+             premiumPlans.includes(this.getUserSubscription());
+    },
+    
+    currentUser() {
+      return auth.currentUser;
     }
   },
   
   async mounted() {
-    await this.loadTopicData();
+    await this.initializeComponent();
   },
   
   methods: {
-    async loadTopicData() {
-      const topicId = this.$route.params.id;
-      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-      
-      
+    async initializeComponent() {
       try {
-        this.loading = true;
+        // Wait for authentication if needed
+        await this.waitForAuth();
         
-        // Load user plan
+        // Load user subscription status
         await this.loadUserPlan();
         
         // Load topic data
-        const topicRes = await axios.get(`${BASE_URL}/topics/${topicId}`);
-        this.topic = topicRes.data;
+        await this.loadTopicData();
+        
+      } catch (error) {
+        console.error('❌ Component initialization failed:', error);
+        this.error = 'Ошибка инициализации компонента';
+        this.loading = false;
+      }
+    },
+    
+    async waitForAuth() {
+      if (auth.currentUser) {
+        return;
+      }
+      
+      return new Promise((resolve) => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          unsubscribe();
+          resolve();
+        });
+        
+        // Timeout after 3 seconds
+        setTimeout(() => {
+          unsubscribe();
+          resolve();
+        }, 3000);
+      });
+    },
+    
+    async loadTopicData() {
+      const topicId = this.$route.params.id;
 
-        // Load lessons
-        const lessonsRes = await axios.get(`${BASE_URL}/topics/${topicId}/lessons`);
-        this.lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : [];
+      if (!topicId) {
+        this.error = 'ID темы не указан';
+        this.loading = false;
+        return;
+      }
+
+      try {
+        this.loading = true;
+        this.error = null;
+        
+        console.log('🔍 Loading topic with ID:', topicId);
+        
+        // Load topic information
+        const topicResult = await getTopicById(topicId);
+        
+        // ✅ DEBUG: Log the raw response
+        console.log('📦 Raw topic API response:', topicResult);
+        console.log('📊 Response type:', typeof topicResult);
+        console.log('📋 Response keys:', Object.keys(topicResult || {}));
+        
+        if (!topicResult.success && !topicResult.data && !topicResult._id) {
+          throw new Error(topicResult.error || 'Failed to load topic');
+        }
+        
+        // ✅ FIXED: Handle different API response structures
+        if (topicResult.success) {
+          // New API format with success wrapper
+          this.topic = topicResult.data;
+          console.log('✅ Using success wrapper, topic data:', this.topic);
+        } else if (topicResult._id || topicResult.name) {
+          // Direct topic object
+          this.topic = topicResult;
+          console.log('✅ Using direct topic object:', this.topic);
+        } else {
+          throw new Error('Invalid topic response format');
+        }
+        
+        if (!this.topic) {
+          throw new Error('Topic data is null or undefined');
+        }
+
+        // ✅ DEBUG: Log the final topic object structure
+        console.log('🎯 Final topic object:', this.topic);
+        console.log('📝 Topic name field:', this.topic.name);
+        console.log('📝 Topic name type:', typeof this.topic.name);
+        console.log('📝 Topic description field:', this.topic.description);
+        console.log('📝 Topic description type:', typeof this.topic.description);
+        
+        // ✅ DEBUG: Test the getTopicName function
+        const testName = this.getTopicName(this.topic);
+        console.log('🧪 getTopicName result:', testName);
+        
+        // ✅ DEBUG: Test the getTopicDescription function  
+        const testDesc = this.getTopicDescription(this.topic);
+        console.log('🧪 getTopicDescription result:', testDesc);
+
+        // Load lessons for this topic
+        const lessonsResult = await getLessonsByTopic(topicId);
+        
+        console.log('📚 Raw lessons API response:', lessonsResult);
+        
+        if (lessonsResult.success) {
+          // ✅ FIXED: Extract lessons from the correct nested structure
+          this.lessons = lessonsResult.data || lessonsResult.lessons || [];
+        } else if (Array.isArray(lessonsResult)) {
+          // Direct array response
+          this.lessons = lessonsResult;
+        } else if (lessonsResult.lessons) {
+          // Nested lessons property
+          this.lessons = lessonsResult.lessons;
+        } else if (lessonsResult.data) {
+          // Nested data property
+          this.lessons = lessonsResult.data;
+        } else {
+          console.warn('⚠️ No lessons found in response:', lessonsResult);
+          this.lessons = [];
+        }
+        
+        console.log('📚 Final lessons array:', this.lessons);
+        console.log('📊 Lessons count:', this.lessons.length);
+        
+        // Ensure lessons have proper structure
+        this.lessons = this.lessons.map(lesson => ({
+          ...lesson,
+          type: lesson.type || 'free',
+          _id: lesson._id || lesson.id,
+          lessonName: lesson.lessonName || lesson.title || lesson.name,
+          description: lesson.description || lesson.desc || ''
+        }));
         
       } catch (err) {
-        console.error('❌ Error loading topic or lessons:', err);
+        console.error('❌ Error loading topic data:', err);
+        console.error('❌ Error details:', {
+          name: err.name,
+          message: err.message,
+          stack: err.stack
+        });
+        this.error = this.getErrorMessage(err);
         this.topic = null;
+        this.lessons = [];
       } finally {
         this.loading = false;
       }
@@ -303,54 +432,192 @@ export default {
     
     async loadUserPlan() {
       try {
-        const token = await auth.currentUser?.getIdToken();
-        if (token) {
-          const headers = { Authorization: `Bearer ${token}` };
-
-          const statusRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/${auth.currentUser.uid}/status`, { headers });
-          this.userPlan = statusRes.data?.status || 'free';
-        } else {
-          console.warn('⚠️ No token found — defaulting to free plan');
+        if (!auth.currentUser) {
+          this.userPlan = 'free';
+          return;
         }
+
+        const userId = auth.currentUser.uid;
+
+        const statusResult = await getUserStatus(userId);
+        
+        if (statusResult.success) {
+          this.userPlan = statusResult.status || statusResult.data?.subscriptionPlan || 'free';
+        } else {
+          console.warn('⚠️ Failed to load user status, defaulting to free');
+          this.userPlan = 'free';
+        }
+        
+        // Also check localStorage as fallback
+        const storedPlan = localStorage.getItem('subscriptionPlan');
+        if (storedPlan && ['premium', 'start', 'pro'].includes(storedPlan)) {
+          this.userPlan = storedPlan;
+        }
+        
       } catch (err) {
-        console.warn('⚠️ Failed to fetch user plan — defaulting to free:', err.message);
+        console.warn('⚠️ Error loading user plan:', err.message);
         this.userPlan = 'free';
       }
     },
+
+    getUserSubscription() {
+      // Multiple sources for subscription status
+      return this.$store?.state?.user?.subscriptionPlan || 
+             this.$store?.getters?.userStatus || 
+             localStorage.getItem('subscriptionPlan') || 
+             'free';
+    },
     
+    getErrorMessage(error) {
+      if (error.response?.status === 404) {
+        return 'Тема не найдена';
+      } else if (error.response?.status === 403) {
+        return 'У вас нет доступа к этой теме';
+      } else if (error.response?.status >= 500) {
+        return 'Ошибка сервера. Попробуйте позже.';
+      } else if (error.message) {
+        return error.message;
+      } else {
+        return 'Произошла неизвестная ошибка';
+      }
+    },
+
+    async retryLoad() {
+      this.retryCount++;
+      await this.loadTopicData();
+    },
+    
+    // ✅ FIXED: Updated getTopicName function
     getTopicName(topic) {
       if (!topic) return 'Без названия';
-      return topic.name?.en || topic.name || 'Без названия';
+      
+      console.log('🔍 Topic object structure for name:', topic);
+      
+      // ✅ FIXED: Check for simple string name first (what your backend actually returns)
+      if (typeof topic.name === 'string' && topic.name.trim()) {
+        return topic.name.trim();
+      }
+      
+      // ✅ Then check for localized names (if you want to support this later)
+      if (topic.name && typeof topic.name === 'object') {
+        return topic.name.en || 
+               topic.name.ru || 
+               topic.name.uz || 
+               topic.name.default ||
+               Object.values(topic.name)[0] || // Get first available translation
+               'Без названия';
+      }
+      
+      // ✅ Check for other possible name fields
+      return topic.topicName || 
+             topic.title || 
+             topic.displayName ||
+             'Без названия';
     },
     
+    // ✅ FIXED: Updated getTopicDescription function
     getTopicDescription(topic) {
       if (!topic) return 'Нет описания для этой темы.';
-      return topic.description?.en || topic.description || 'Нет описания для этой темы.';
+      
+      console.log('🔍 Topic description structure:', topic.description);
+      
+      // ✅ FIXED: Check for simple string description first
+      if (typeof topic.description === 'string' && topic.description.trim()) {
+        return topic.description.trim();
+      }
+      
+      // ✅ Then check for localized descriptions
+      if (topic.description && typeof topic.description === 'object') {
+        return topic.description.en || 
+               topic.description.ru || 
+               topic.description.uz || 
+               topic.description.default ||
+               Object.values(topic.description)[0] || // Get first available translation
+               'Нет описания для этой темы.';
+      }
+      
+      // ✅ Check for other possible description fields
+      return topic.topicDescription || 
+             topic.desc || 
+             topic.summary ||
+             'Нет описания для этой темы.';
     },
     
+    // ✅ FIXED: Updated getLessonName function
     getLessonName(lesson) {
       if (!lesson) return 'Без названия';
-      return lesson.lessonName?.en || lesson.lessonName || 'Без названия';
+      
+      // ✅ Check for simple string first
+      if (typeof lesson.lessonName === 'string' && lesson.lessonName.trim()) {
+        return lesson.lessonName.trim();
+      }
+      
+      if (typeof lesson.title === 'string' && lesson.title.trim()) {
+        return lesson.title.trim();
+      }
+      
+      if (typeof lesson.name === 'string' && lesson.name.trim()) {
+        return lesson.name.trim();
+      }
+      
+      // ✅ Then check for localized names
+      if (lesson.lessonName && typeof lesson.lessonName === 'object') {
+        return lesson.lessonName.en || 
+               lesson.lessonName.ru || 
+               lesson.lessonName.uz || 
+               Object.values(lesson.lessonName)[0] ||
+               'Без названия';
+      }
+      
+      if (lesson.name && typeof lesson.name === 'object') {
+        return lesson.name.en || 
+               lesson.name.ru || 
+               lesson.name.uz || 
+               Object.values(lesson.name)[0] ||
+               'Без названия';
+      }
+      
+      return 'Без названия';
     },
     
+    // ✅ FIXED: Updated getLessonDescription function
     getLessonDescription(lesson) {
       if (!lesson) return '';
-      return lesson.description?.en || lesson.description || '';
+      
+      // ✅ Check for simple string first
+      if (typeof lesson.description === 'string' && lesson.description.trim()) {
+        return lesson.description.trim();
+      }
+      
+      if (typeof lesson.desc === 'string' && lesson.desc.trim()) {
+        return lesson.desc.trim();
+      }
+      
+      // ✅ Then check for localized descriptions
+      if (lesson.description && typeof lesson.description === 'object') {
+        return lesson.description.en || 
+               lesson.description.ru || 
+               lesson.description.uz || 
+               Object.values(lesson.description)[0] ||
+               '';
+      }
+      
+      return lesson.summary || '';
     },
     
     startLesson(lesson) {
-      
-      if (lesson.type === 'premium' && this.userPlan === 'free') {
+      if (lesson.type === 'premium' && !this.isPremiumUser) {
         this.handleSubscription();
         return;
       }
       
-      this.$router.push({ name: 'LessonPage', params: { id: lesson._id } });
+      const lessonId = lesson._id || lesson.id;
+      this.$router.push({ name: 'LessonPage', params: { id: lessonId } });
     },
     
     startFirstLesson() {
       const firstAvailable = this.lessons.find(
-        lesson => lesson.type !== 'premium' || this.userPlan !== 'free'
+        lesson => lesson.type !== 'premium' || this.isPremiumUser
       );
       
       if (firstAvailable) {
@@ -361,14 +628,56 @@ export default {
     },
     
     handleSubscription() {
-      // Navigate to payment/subscription page
       this.$router.push({
-        name: 'PaymentPage',
+        name: 'PaymePayment',
+        params: { plan: 'start' },
         query: { 
+          returnTo: this.$route.fullPath,
           from: 'topic',
-          topicId: this.topic._id 
+          topicId: this.topic?._id || this.topic?.id
         }
       });
+    },
+    
+    // Safe payment check method to avoid errors
+    async checkPaymentStatus() {
+      try {
+        // Only check if user is authenticated and we have store
+        if (!auth.currentUser || !this.$store) {
+          return;
+        }
+        
+        // Check if dispatch method exists and returns a promise
+        const checkAction = this.$store.dispatch('user/checkPendingPayments');
+        
+        if (checkAction && typeof checkAction.catch === 'function') {
+          await checkAction;
+        } else {
+          console.log('⚠️ Payment check action not available');
+        }
+        
+      } catch (error) {
+        console.warn('⚠️ Payment status check failed:', error.message);
+        // Don't throw error, just log it
+      }
+    }
+  },
+  
+  // Lifecycle hook to check payment status periodically
+  async created() {
+    // Initial payment check
+    await this.checkPaymentStatus();
+    
+    // Set up periodic payment check (every 5 minutes)
+    this.paymentCheckInterval = setInterval(() => {
+      this.checkPaymentStatus();
+    }, 5 * 60 * 1000);
+  },
+  
+  beforeUnmount() {
+    // Clean up interval
+    if (this.paymentCheckInterval) {
+      clearInterval(this.paymentCheckInterval);
     }
   }
 };
