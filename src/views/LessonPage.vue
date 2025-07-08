@@ -3876,4 +3876,4 @@ initializeStepData() {
 /* ===========================================
   BASE STYLES & RESET
   =========================================== */
-  @import "@/assets/css/LessonPage7.css";</style>
+  @import "@/assets/css/LessonPage.css";</style>
