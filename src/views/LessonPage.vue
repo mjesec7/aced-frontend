@@ -464,23 +464,42 @@
         <!-- Right Panel - Interactive Content -->
         <div class="interactive-panel">
           
-          <!-- Exercise/Practice Step -->
+          <!-- ✅ ENHANCED: All Exercise Types Support -->
           <div v-if="isInteractiveStep && ['exercise', 'practice'].includes(currentStep?.type)" class="exercise-container">
             <div class="exercise-header">
               <h3 class="exercise-title">
                 {{ currentStep.type === 'practice' ? '🧪 Практическое задание' : '✏️ Упражнение' }}
               </h3>
+              <div class="exercise-progress" v-if="getCurrentExercise()">
+                <span class="exercise-counter">{{ currentExerciseIndex + 1 }} / {{ getTotalExercises() }}</span>
+              </div>
             </div>
             
-            <div class="exercise-content">
+            <div class="exercise-content" v-if="getCurrentExercise()">
               <div class="exercise-question">
-                {{ getExerciseQuestion(currentStep) }}
+                {{ getCurrentExercise().question }}
               </div>
               
-              <!-- Multiple Choice Options -->
-              <div v-if="hasOptions(currentStep)" class="options-grid">
+              <div class="exercise-instruction" v-if="getCurrentExercise().instruction">
+                <div class="instruction-badge">💡 Инструкция</div>
+                <div class="instruction-text">{{ getCurrentExercise().instruction }}</div>
+              </div>
+              
+              <!-- ✅ SHORT ANSWER / TEXT INPUT -->
+              <div v-if="getCurrentExercise().type === 'short-answer'" class="short-answer-container">
+                <textarea 
+                  v-model="userAnswer" 
+                  placeholder="Введите ваш ответ..."
+                  class="answer-textarea"
+                  :disabled="answerWasCorrect"
+                  @keyup.enter="handleSubmitOrNext"
+                ></textarea>
+              </div>
+              
+              <!-- ✅ MULTIPLE CHOICE / ABC -->
+              <div v-else-if="['multiple-choice', 'abc'].includes(getCurrentExercise().type)" class="options-grid">
                 <label 
-                  v-for="(option, index) in getOptions(currentStep)" 
+                  v-for="(option, index) in getCurrentExercise().options" 
                   :key="index" 
                   class="option-card"
                   :class="{ 
@@ -503,15 +522,240 @@
                 </label>
               </div>
               
-              <!-- Text Input -->
-              <div v-else class="text-input-container">
-                <textarea 
-                  v-model="userAnswer" 
-                  placeholder="Введите ваш ответ..."
-                  class="answer-textarea"
-                  :disabled="answerWasCorrect"
-                  @keyup.enter="handleSubmitOrNext"
-                ></textarea>
+              <!-- ✅ TRUE/FALSE -->
+              <div v-else-if="getCurrentExercise().type === 'true-false'" class="true-false-container">
+                <div class="true-false-statement">
+                  {{ getCurrentExercise().statement || getCurrentExercise().question }}
+                </div>
+                <div class="true-false-options">
+                  <label 
+                    class="true-false-option"
+                    :class="{ 
+                      selected: userAnswer === 'true',
+                      correct: answerWasCorrect && userAnswer === 'true',
+                      incorrect: !answerWasCorrect && userAnswer === 'true' && confirmation
+                    }"
+                  >
+                    <input 
+                      type="radio" 
+                      value="true" 
+                      v-model="userAnswer" 
+                      :disabled="answerWasCorrect"
+                    />
+                    <div class="option-content">
+                      <span class="option-icon">✅</span>
+                      <span class="option-text">Правда</span>
+                    </div>
+                  </label>
+                  <label 
+                    class="true-false-option"
+                    :class="{ 
+                      selected: userAnswer === 'false',
+                      correct: answerWasCorrect && userAnswer === 'false',
+                      incorrect: !answerWasCorrect && userAnswer === 'false' && confirmation
+                    }"
+                  >
+                    <input 
+                      type="radio" 
+                      value="false" 
+                      v-model="userAnswer" 
+                      :disabled="answerWasCorrect"
+                    />
+                    <div class="option-content">
+                      <span class="option-icon">❌</span>
+                      <span class="option-text">Ложь</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              
+              <!-- ✅ FILL IN THE BLANKS -->
+              <div v-else-if="getCurrentExercise().type === 'fill-blank'" class="fill-blank-container">
+                <div class="fill-blank-template" v-html="getFillBlankTemplate()"></div>
+                <div class="blank-inputs">
+                  <div 
+                    v-for="(blank, index) in getCurrentExercise().blanks" 
+                    :key="index" 
+                    class="blank-input-group"
+                  >
+                    <label class="blank-label">Пропуск {{ index + 1 }}:</label>
+                    <input 
+                      v-model="fillBlankAnswers[index]" 
+                      type="text" 
+                      class="blank-input"
+                      :disabled="answerWasCorrect"
+                      :placeholder="`Введите слово для пропуска ${index + 1}`"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <!-- ✅ MATCHING PAIRS -->
+              <div v-else-if="getCurrentExercise().type === 'matching'" class="matching-container">
+                <div class="matching-grid">
+                  <div class="matching-column">
+                    <h4>Колонка A</h4>
+                    <div 
+                      v-for="(item, index) in getMatchingLeftItems()" 
+                      :key="'left-' + index" 
+                      class="matching-item left-item"
+                      :class="{ 
+                        selected: selectedMatchingItem?.side === 'left' && selectedMatchingItem.index === index,
+                        matched: isItemMatched('left', index)
+                      }"
+                      @click="selectMatchingItem('left', index)"
+                    >
+                      <span class="matching-item-letter">{{ String.fromCharCode(65 + index) }}</span>
+                      <span class="matching-item-text">{{ item }}</span>
+                    </div>
+                  </div>
+                  
+                  <div class="matching-column">
+                    <h4>Колонка B</h4>
+                    <div 
+                      v-for="(item, index) in getMatchingRightItems()" 
+                      :key="'right-' + index" 
+                      class="matching-item right-item"
+                      :class="{ 
+                        selected: selectedMatchingItem?.side === 'right' && selectedMatchingItem.index === index,
+                        matched: isItemMatched('right', index)
+                      }"
+                      @click="selectMatchingItem('right', index)"
+                    >
+                      <span class="matching-item-number">{{ index + 1 }}</span>
+                      <span class="matching-item-text">{{ item }}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="matching-pairs-display" v-if="matchingPairs.length > 0">
+                  <h4>Ваши пары:</h4>
+                  <div class="created-pairs">
+                    <div 
+                      v-for="(pair, index) in matchingPairs" 
+                      :key="index" 
+                      class="created-pair"
+                    >
+                      <span class="pair-left">{{ String.fromCharCode(65 + pair.leftIndex) }}: {{ pair.leftText }}</span>
+                      <span class="pair-connector">↔</span>
+                      <span class="pair-right">{{ pair.rightIndex + 1 }}: {{ pair.rightText }}</span>
+                      <button @click="removeMatchingPair(index)" class="remove-pair-btn" title="Удалить пару">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- ✅ ORDERING/SEQUENCING -->
+              <div v-else-if="getCurrentExercise().type === 'ordering'" class="ordering-container">
+                <div class="ordering-instructions">
+                  <p>Расположите элементы в правильном порядке (перетащите или используйте кнопки):</p>
+                </div>
+                <div class="ordering-items">
+                  <div 
+                    v-for="(item, index) in orderingItems" 
+                    :key="item.id" 
+                    class="ordering-item"
+                    :class="{ 
+                      dragging: draggedItem === index,
+                      'drop-target': dropTarget === index 
+                    }"
+                    draggable="true"
+                    @dragstart="startDrag($event, index)"
+                    @dragover.prevent="onDragOver($event, index)"
+                    @dragenter.prevent="onDragEnter(index)"
+                    @dragleave.prevent="onDragLeave"
+                    @drop.prevent="onDrop($event, index)"
+                  >
+                    <div class="ordering-item-content">
+                      <div class="ordering-item-handle">⋮⋮</div>
+                      <div class="ordering-item-text">{{ item.text }}</div>
+                      <div class="ordering-item-controls">
+                        <button 
+                          @click="moveOrderingItem(index, -1)" 
+                          :disabled="index === 0"
+                          class="ordering-move-btn"
+                          title="Переместить вверх"
+                        >
+                          ↑
+                        </button>
+                        <button 
+                          @click="moveOrderingItem(index, 1)" 
+                          :disabled="index === orderingItems.length - 1"
+                          class="ordering-move-btn"
+                          title="Переместить вниз"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="ordering-reset">
+                  <button @click="resetOrdering" class="reset-ordering-btn">🔄 Сбросить порядок</button>
+                </div>
+              </div>
+              
+              <!-- ✅ DRAG AND DROP -->
+              <div v-else-if="getCurrentExercise().type === 'drag-drop'" class="drag-drop-container">
+                <div class="drag-drop-instructions">
+                  <p>Перетащите элементы в правильные зоны:</p>
+                </div>
+                
+                <div class="drag-drop-layout">
+                  <!-- Draggable Items -->
+                  <div class="draggable-items-area">
+                    <h4>Элементы для перетаскивания:</h4>
+                    <div class="draggable-items">
+                      <div 
+                        v-for="(item, index) in getAvailableDragItems()" 
+                        :key="item.id" 
+                        class="draggable-item"
+                        :class="{ dragging: draggedDragItem === item.id }"
+                        draggable="true"
+                        @dragstart="startDragDrop($event, item)"
+                      >
+                        {{ item.text }}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Drop Zones -->
+                  <div class="drop-zones-area">
+                    <h4>Зоны для размещения:</h4>
+                    <div class="drop-zones">
+                      <div 
+                        v-for="(zone, index) in getCurrentExercise().dropZones" 
+                        :key="zone.id" 
+                        class="drop-zone"
+                        :class="{ 
+                          'drop-over': dropOverZone === zone.id,
+                          'has-items': getDropZoneItems(zone.id).length > 0 
+                        }"
+                        @dragover.prevent="onDropZoneOver(zone.id)"
+                        @dragenter.prevent="onDropZoneEnter(zone.id)"
+                        @dragleave.prevent="onDropZoneLeave"
+                        @drop.prevent="onDropZoneDrop($event, zone.id)"
+                      >
+                        <div class="drop-zone-label">{{ zone.label }}</div>
+                        <div class="dropped-items">
+                          <div 
+                            v-for="item in getDropZoneItems(zone.id)" 
+                            :key="item.id" 
+                            class="dropped-item"
+                            @dblclick="returnDragItem(item)"
+                            title="Двойной клик для возврата"
+                          >
+                            {{ item.text }}
+                            <button @click="returnDragItem(item)" class="remove-dropped-btn">✕</button>
+                          </div>
+                        </div>
+                        <div v-if="getDropZoneItems(zone.id).length === 0" class="drop-zone-placeholder">
+                          Перетащите элементы сюда
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <!-- Smart Hint Display -->
@@ -533,16 +777,16 @@
                   v-if="!answerWasCorrect" 
                   class="submit-btn" 
                   @click="handleSubmitOrNext" 
-                  :disabled="!userAnswer.trim()"
+                  :disabled="!canSubmitAnswer()"
                 >
                   🔍 Проверить ответ
                 </button>
                 <button 
                   v-else 
                   class="next-btn" 
-                  @click="goNext"
+                  @click="goToNextExercise"
                 >
-                  {{ isLastStep ? '🏁 Завершить' : '➡️ Далее' }}
+                  {{ isLastExercise() ? '➡️ Следующий шаг' : '➡️ Следующее упражнение' }}
                 </button>
                 
                 <button 
@@ -551,6 +795,15 @@
                   @click="showHint"
                 >
                   💡 Подсказка
+                </button>
+                
+                <button 
+                  v-if="getCurrentExercise().type === 'matching'"
+                  @click="clearMatchingPairs"
+                  class="clear-btn"
+                  :disabled="matchingPairs.length === 0"
+                >
+                  🗑️ Очистить пары
                 </button>
               </div>
 
@@ -566,14 +819,17 @@
           <div v-else-if="isInteractiveStep && currentStep?.type === 'quiz'" class="quiz-container">
             <div class="quiz-header">
               <h3 class="quiz-title">🧩 Викторина</h3>
+              <div class="quiz-progress" v-if="getCurrentQuiz()">
+                <span class="quiz-counter">{{ currentQuizIndex + 1 }} / {{ getTotalQuizzes() }}</span>
+              </div>
             </div>
             
-            <div class="quiz-content">
-              <div class="quiz-question">{{ getQuizQuestion(currentStep) }}</div>
+            <div class="quiz-content" v-if="getCurrentQuiz()">
+              <div class="quiz-question">{{ getCurrentQuiz().question }}</div>
               
               <div class="quiz-options">
                 <label 
-                  v-for="(option, index) in getQuizOptions(currentStep)" 
+                  v-for="(option, index) in getQuizOptions(getCurrentQuiz())" 
                   :key="index" 
                   class="quiz-option-card"
                   :class="{ 
@@ -613,9 +869,9 @@
                 <button 
                   v-else 
                   class="next-btn" 
-                  @click="goNext"
+                  @click="goToNextQuiz"
                 >
-                  {{ isLastStep ? '🏁 Завершить' : '➡️ Далее' }}
+                  {{ isLastQuiz() ? '➡️ Следующий шаг' : '➡️ Следующий вопрос' }}
                 </button>
               </div>
             </div>
@@ -706,6 +962,7 @@
           <div class="stat-card">
             <div class="stat-icon">❌</div>
             <div class="stat-value">{{ mistakeCount }}</div>
+            <div class="stat-label">Ошибки</div>
           </div>
           <div class="stat-card">
             <div class="stat-icon">🎯</div>
@@ -2103,120 +2360,128 @@ export default {
     // =============================================
 
     async handleSubmitOrNext() {
-      const step = this.currentStep;
-      if (!step || !step.data) {
-        console.warn('⚠️ No current step data available');
-        this.confirmation = '⚠️ Ошибка: нет данных о текущем шаге.';
-        return;
+  const step = this.currentStep;
+  if (!step || !step.data) {
+    console.warn('⚠️ No current step data available');
+    this.confirmation = '⚠️ Ошибка: нет данных о текущем шаге.';
+    return;
+  }
+
+  const userResponse = this.userAnswer?.trim?.() || this.userAnswer;
+
+  if (!userResponse && !Array.isArray(userResponse)) {
+    this.confirmation = '⚠️ Введите ответ.';
+    return;
+  }
+
+  console.log('🔍 Validating answer for step type:', step.type);
+  console.log('👤 User answer:', userResponse);
+
+  let isCorrect = false;
+  let correctAnswer = '';
+  let answerType = step.data?.type || step.type;
+
+  try {
+    if (step.type === 'quiz') {
+      isCorrect = this.validateQuizAnswer(userResponse, step);
+      correctAnswer = this.getQuizCorrectAnswer(step);
+
+      if (typeof correctAnswer === 'number') {
+        const options = this.getQuizOptions(step);
+        if (options.length > correctAnswer) {
+          correctAnswer = options[correctAnswer];
+        }
       }
 
-      const userResponse = this.userAnswer.trim();
+    } else if (['exercise', 'practice'].includes(step.type)) {
+      correctAnswer = this.getCorrectAnswer(step);
 
-      if (!userResponse) {
-        this.confirmation = '⚠️ Введите ответ.';
-        return;
-      }
+      // ✅ Handle new structured types
+      switch (answerType) {
+        case 'abc':
+        case 'multiple-choice':
+        case 'true-false':
+          isCorrect = userResponse === correctAnswer;
+          break;
 
-      console.log('🔍 Validating answer for step type:', step.type);
-      console.log('👤 User answer:', userResponse);
+        case 'drag-drop':
+          isCorrect = this.validateDragDropAnswer(userResponse, step.data);
+          break;
 
-      let isCorrect = false;
-      let correctAnswer = '';
+        case 'matching':
+          isCorrect = this.validateMatchingAnswer(userResponse, step.data);
+          break;
 
-      try {
-        // Handle different step types
-        if (step.type === 'quiz') {
-          isCorrect = this.validateQuizAnswer(userResponse, step);
-          correctAnswer = this.getQuizCorrectAnswer(step);
-          
-          // For multiple choice quizzes, show the correct option text
-          if (typeof correctAnswer === 'number') {
-            const options = this.getQuizOptions(step);
-            if (options.length > correctAnswer) {
-              correctAnswer = options[correctAnswer];
-            }
-          }
-          
-          console.log('🧩 Quiz validation result:', isCorrect);
-        } 
-        else if (step.type === 'exercise' || step.type === 'practice') {
-          correctAnswer = this.getCorrectAnswer(step);
+        case 'ordering':
+          isCorrect = this.validateOrderingAnswer(userResponse, step.data);
+          break;
+
+        case 'fill-blank':
+          isCorrect = this.validateFillBlankAnswer(userResponse, correctAnswer);
+          break;
+
+        default:
           isCorrect = this.validateAnswer(userResponse, correctAnswer, step.type);
-          
-          console.log('✏️ Exercise validation result:', isCorrect);
-          console.log('🎯 Correct answer was:', correctAnswer);
-        }
-        else {
-          // Fallback for other interactive steps
-          correctAnswer = this.getCorrectAnswer(step);
-          if (correctAnswer) {
-            isCorrect = this.validateAnswer(userResponse, correctAnswer, step.type);
-          } else {
-            // If no correct answer is defined, consider it correct (for open-ended questions)
-            isCorrect = true;
-            console.log('💭 No correct answer defined, accepting user response');
-          }
-        }
-
-        // Process the result
-        if (isCorrect) {
-          this.confirmation = '✅ Верно! Отличная работа!';
-          this.answerWasCorrect = true;
-          this.stars++;
-          this.earnedPoints += 10;
-          this.currentHint = '';
-          this.smartHint = '';
-          
-          console.log('🎉 Correct answer! Stars:', this.stars, 'Points:', this.earnedPoints);
-        } else {
-          this.mistakeCount++;
-          this.answerWasCorrect = false;
-          this.earnedPoints = Math.max(0, this.earnedPoints - 2);
-
-          // Generate helpful feedback
-          let feedback = this.generateHelpfulFeedback(userResponse, correctAnswer, step.type);
-          this.confirmation = `❌ Неверно. ${feedback}`;
-          
-          if (correctAnswer && correctAnswer.length > 0) {
-            this.confirmation += ` Правильный ответ: "${correctAnswer}"`;
-          }
-
-          // Log the mistake
-          this.mistakeLog.push({
-            stepIndex: this.currentIndex,
-            question: step.type === 'quiz' ? this.getQuizQuestion(step) : this.getExerciseQuestion(step),
-            userAnswer: userResponse,
-            correctAnswer: correctAnswer,
-            hint: step.data.hint || null
-          });
-
-          console.log('❌ Wrong answer. Mistakes:', this.mistakeCount, 'Points:', this.earnedPoints);
-
-          // Generate smart hint after multiple mistakes
-          if (this.mistakeCount >= 2) {
-            try {
-              const lessonContext = {
-                lessonId: this.lesson._id,
-                lessonName: this.lesson.lessonName,
-                topic: this.lesson.topic
-              };
-              
-              // Only generate smart hint if we have the AI service available
-              if (typeof generateSmartHint === 'function') {
-                this.smartHint = await generateSmartHint(step.data, this.mistakeCount, lessonContext);
-                this.hintsUsed = true;
-              }
-            } catch (error) {
-              console.error('❌ Smart hint error:', error);
-            }
-          }
-        }
-
-      } catch (error) {
-        console.error('❌ Error in handleSubmitOrNext:', error);
-        this.confirmation = '❌ Произошла ошибка при проверке ответа. Попробуйте еще раз.';
       }
-    },
+
+    } else {
+      correctAnswer = this.getCorrectAnswer(step);
+      if (correctAnswer) {
+        isCorrect = this.validateAnswer(userResponse, correctAnswer, step.type);
+      } else {
+        isCorrect = true;
+        console.log('💭 No correct answer defined, accepting user response');
+      }
+    }
+
+    if (isCorrect) {
+      this.confirmation = '✅ Верно! Отличная работа!';
+      this.answerWasCorrect = true;
+      this.stars++;
+      this.earnedPoints += 10;
+      this.currentHint = '';
+      this.smartHint = '';
+    } else {
+      this.mistakeCount++;
+      this.answerWasCorrect = false;
+      this.earnedPoints = Math.max(0, this.earnedPoints - 2);
+
+      let feedback = this.generateHelpfulFeedback(userResponse, correctAnswer, step.type);
+      this.confirmation = `❌ Неверно. ${feedback}`;
+      if (correctAnswer && correctAnswer.length > 0) {
+        this.confirmation += ` Правильный ответ: "${correctAnswer}"`;
+      }
+
+      this.mistakeLog.push({
+        stepIndex: this.currentIndex,
+        question: step.type === 'quiz' ? this.getQuizQuestion(step) : this.getExerciseQuestion(step),
+        userAnswer: userResponse,
+        correctAnswer: correctAnswer,
+        hint: step.data.hint || null
+      });
+
+      if (this.mistakeCount >= 2) {
+        try {
+          const lessonContext = {
+            lessonId: this.lesson._id,
+            lessonName: this.lesson.lessonName,
+            topic: this.lesson.topic
+          };
+          if (typeof generateSmartHint === 'function') {
+            this.smartHint = await generateSmartHint(step.data, this.mistakeCount, lessonContext);
+            this.hintsUsed = true;
+          }
+        } catch (error) {
+          console.error('❌ Smart hint error:', error);
+        }
+      }
+    }
+
+  } catch (error) {
+    console.error('❌ Error in handleSubmitOrNext:', error);
+    this.confirmation = '❌ Произошла ошибка при проверке ответа. Попробуйте еще раз.';
+  }
+},
 
     showHint() {
       const step = this.currentStep;
