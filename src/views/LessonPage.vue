@@ -317,7 +317,7 @@
       <!-- Split Screen Content -->
       <div class="split-content">
         
-        <!-- ✅ FIXED: Left Panel - Clean Content Display -->
+        <!-- ✅ COMPLETELY FIXED: Left Panel - Clean Content Display -->
         <div class="content-panel">
           <div class="step-header">
             <h3 class="step-title">
@@ -325,7 +325,7 @@
               <span class="step-type-icon">{{ getStepIcon(currentStep?.type) }}</span>
               <span class="step-type-text">{{ getStepTypeText(currentStep?.type) }}</span>
               
-              <!-- ✅ NEW: Show exercise/quiz counter for interactive steps -->
+              <!-- ✅ Exercise/quiz counter for interactive steps -->
               <span v-if="isInteractiveStep && ['exercise', 'practice'].includes(currentStep?.type)" class="exercise-counter">
                 ({{ currentExerciseIndex + 1 }}/{{ getTotalExercises() }})
               </span>
@@ -335,23 +335,24 @@
             </h3>
           </div>
           
+          <!-- ✅ CRITICAL FIX: Left panel content shows ONLY clean questions -->
           <div class="step-content">
-            <!-- ✅ FIXED: FOR INTERACTIVE STEPS - Show ONLY clean question -->
+            <!-- ✅ FOR INTERACTIVE STEPS: Show ONLY the question, no instructions -->
             <div v-if="isInteractiveStep" class="interactive-content">
               
-              <!-- Exercise Content - Clean Question Only -->
+              <!-- Exercise Content - ONLY the question -->
               <div v-if="['exercise', 'practice'].includes(currentStep?.type)" class="current-exercise-content">
                 <div class="exercise-question-display">
                   <div class="clean-question">{{ getStepContent(currentStep) }}</div>
                   
-                  <!-- Show exercise type info in a subtle way -->
+                  <!-- Show exercise type badge ONLY if not default type -->
                   <div v-if="getCurrentExercise()?.type && getCurrentExercise().type !== 'short-answer'" class="exercise-type-info">
                     <span class="type-badge">{{ getExerciseTypeName(getCurrentExercise()?.type) }}</span>
                   </div>
                 </div>
               </div>
               
-              <!-- Quiz Content - Clean Question Only -->
+              <!-- Quiz Content - ONLY the question -->
               <div v-else-if="currentStep?.type === 'quiz'" class="current-quiz-content">
                 <div class="quiz-question-display">
                   <div class="clean-question">{{ getStepContent(currentStep) }}</div>
@@ -359,7 +360,7 @@
               </div>
             </div>
 
-            <!-- FOR NON-INTERACTIVE STEPS: Show regular content -->
+            <!-- ✅ FOR NON-INTERACTIVE STEPS: Show regular content -->
             <div v-else-if="['explanation', 'example', 'reading'].includes(currentStep?.type)" class="text-content">
               <div class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
               
@@ -382,7 +383,7 @@
               </div>
             </div>
 
-            <!-- ✅ ENHANCED: Vocabulary Step -->
+            <!-- ✅ Vocabulary Step -->
             <div v-else-if="currentStep?.type === 'vocabulary'" class="vocabulary-content enhanced">
               
               <!-- Show modal trigger if not completed -->
@@ -495,7 +496,7 @@
         <!-- Right Panel - Interactive Content -->
         <div class="interactive-panel">
           
-          <!-- ✅ ENHANCED: All Exercise Types Support -->
+          <!-- ✅ All Exercise Types Support -->
           <div v-if="isInteractiveStep && ['exercise', 'practice'].includes(currentStep?.type)" class="exercise-container">
             <div class="exercise-header">
               <h3 class="exercise-title">
@@ -1082,7 +1083,6 @@
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
-
 <script>
 import confetti from 'canvas-confetti';
 import { auth } from '@/firebase';
@@ -1849,7 +1849,7 @@ export default {
   return 'Exercise question not available';
 },
 
-getCorrectAnswer(step) {
+ggetCorrectAnswer(step) {
   if (!step || !step.data) {
     return '';
   }
@@ -1857,24 +1857,21 @@ getCorrectAnswer(step) {
   try {
     let exercise = null;
     
-    // FOR EXERCISE/PRACTICE STEPS: Use current exercise index
     if (['exercise', 'practice'].includes(step.type)) {
       if (Array.isArray(step.data)) {
         exercise = step.data[this.currentExerciseIndex];
       } else if (step.data.exercises && Array.isArray(step.data.exercises)) {
         exercise = step.data.exercises[this.currentExerciseIndex];
       } else {
-        exercise = step.data; // Single exercise
+        exercise = step.data;
       }
-    }
-    // FOR QUIZ STEPS: Use current quiz index  
-    else if (step.type === 'quiz') {
+    } else if (step.type === 'quiz') {
       if (Array.isArray(step.data)) {
         exercise = step.data[this.currentQuizIndex];
       } else if (step.data.quizzes && Array.isArray(step.data.quizzes)) {
         exercise = step.data.quizzes[this.currentQuizIndex];
       } else {
-        exercise = step.data; // Single quiz
+        exercise = step.data;
       }
     }
     
@@ -1882,14 +1879,11 @@ getCorrectAnswer(step) {
       return '';
     }
     
-    // Get the correct answer from current exercise
     const answer = exercise.correctAnswer || exercise.answer;
     if (answer !== undefined && answer !== null) {
-      const result = Array.isArray(answer) ? answer.join(', ') : String(answer).trim();
-      return result;
+      return Array.isArray(answer) ? answer.join(', ') : String(answer).trim();
     }
     
-    // For multiple choice, get option by index
     if (exercise.options && Array.isArray(exercise.options)) {
       const correctIndex = exercise.correctAnswer;
       if (typeof correctIndex === 'number' && correctIndex >= 0 && correctIndex < exercise.options.length) {
@@ -2159,13 +2153,12 @@ getQuizOptions(quiz) {
   }
 },
 validateAnswer(userAnswer, correctAnswer, stepType) {
-  // ✅ CRITICAL FIX: Add type checking
-  if (!userAnswer && userAnswer !== 0 && userAnswer !== false) return false;
-  if (!correctAnswer && correctAnswer !== 0 && correctAnswer !== false) return false;
+  // ✅ CRITICAL: Ensure both values exist and convert safely
+  if (!this.hasValidUserResponse(userAnswer)) return false;
+  if (!this.hasValidUserResponse(correctAnswer)) return false;
 
   const normalize = (text) => {
-    // ✅ FIX: Ensure text is a string before calling string methods
-    return String(text || '')
+    return this.safeStringConvert(text)
       .toLowerCase()
       .trim()
       .replace(/\s+/g, ' ')
@@ -2197,17 +2190,18 @@ validateAnswer(userAnswer, correctAnswer, stepType) {
     }
   }
 
-  if (String(correctAnswer).includes(',') || String(correctAnswer).includes(';')) {
+  const correctStr = this.safeStringConvert(correctAnswer);
+  if (correctStr.includes(',') || correctStr.includes(';')) {
     return this.validateListAnswer(normalizedUser, normalizedCorrect);
   }
 
   // Check for mathematical expressions
-  if (this.isMathAnswer(String(correctAnswer))) {
+  if (this.isMathAnswer(correctStr)) {
     return this.validateMathAnswer(userAnswer, correctAnswer);
   }
 
   // Check for numerical answers with tolerance
-  if (this.isNumericAnswer(String(correctAnswer))) {
+  if (this.isNumericAnswer(correctStr)) {
     return this.validateNumericAnswer(userAnswer, correctAnswer);
   }
 
@@ -2231,9 +2225,11 @@ validateAnswer(userAnswer, correctAnswer, stepType) {
 // Replace validateMathAnswer with proper type checking
 validateMathAnswer(userAnswer, correctAnswer) {
   try {
-    // ✅ CRITICAL FIX: Ensure both are strings before calling string methods
-    const userStr = String(userAnswer || '');
-    const correctStr = String(correctAnswer || '');
+    // ✅ CRITICAL: Safe string conversion
+    const userStr = this.safeStringConvert(userAnswer);
+    const correctStr = this.safeStringConvert(correctAnswer);
+    
+    if (!userStr || !correctStr) return false;
     
     // Remove spaces and normalize
     const userMath = userStr.replace(/\s/g, '');
@@ -2249,15 +2245,13 @@ validateMathAnswer(userAnswer, correctAnswer) {
         const correctResult = eval(correctMath);
         return Math.abs(userResult - correctResult) < 0.001;
       } catch (e) {
-        // If evaluation fails, fall back to string comparison
         return userMath === correctMath;
       }
     }
     
     return false;
   } catch (error) {
-    // Remove warning log, just return fallback comparison
-    return String(userAnswer || '').trim() === String(correctAnswer || '').trim();
+    return this.safeStringConvert(userAnswer) === this.safeStringConvert(correctAnswer);
   }
 },
 
@@ -2315,22 +2309,22 @@ validateMathAnswer(userAnswer, correctAnswer) {
     },
 
     validateNumericAnswer(userAnswer, correctAnswer) {
-  // ✅ FIX: Ensure strings before regex operations
-  const userStr = String(userAnswer || '');
-  const correctStr = String(correctAnswer || '');
+  const userStr = this.safeStringConvert(userAnswer);
+  const correctStr = this.safeStringConvert(correctAnswer);
+  
+  if (!userStr || !correctStr) return false;
   
   const userNum = parseFloat(userStr.replace(/[^\d.-]/g, ''));
   const correctNum = parseFloat(correctStr.replace(/[^\d.-]/g, ''));
   
   if (isNaN(userNum) || isNaN(correctNum)) {
-    return userStr.trim().toLowerCase() === correctStr.trim().toLowerCase();
+    return userStr.toLowerCase() === correctStr.toLowerCase();
   }
   
   // Allow 1% tolerance for floating point numbers
   const tolerance = Math.abs(correctNum) * 0.01;
   return Math.abs(userNum - correctNum) <= tolerance;
 },
-
     calculateSimilarity(str1, str2) {
       if (str1 === str2) return 1;
       if (!str1 || !str2) return 0;
@@ -2396,36 +2390,10 @@ validateMathAnswer(userAnswer, correctAnswer) {
 
     generateHelpfulFeedback(userAnswer, correctAnswer, stepType) {
   try {
-    // ✅ CRITICAL FIX: Ensure both answers are strings before using string methods
-    const userStr = String(userAnswer || '').trim();
+    const userStr = this.safeStringConvert(userAnswer);
+    const correctStr = this.safeStringConvert(correctAnswer);
     
-    // ✅ ENHANCED FIX: Handle all possible correctAnswer types
-    let correctStr = '';
-    if (correctAnswer === null || correctAnswer === undefined) {
-      correctStr = '';
-    } else if (typeof correctAnswer === 'string') {
-      correctStr = correctAnswer.trim();
-    } else if (typeof correctAnswer === 'number') {
-      correctStr = String(correctAnswer);
-    } else if (typeof correctAnswer === 'boolean') {
-      correctStr = correctAnswer ? 'true' : 'false';
-    } else if (Array.isArray(correctAnswer)) {
-      correctStr = correctAnswer.join(', ');
-    } else if (typeof correctAnswer === 'object') {
-      correctStr = JSON.stringify(correctAnswer);
-    } else {
-      correctStr = String(correctAnswer);
-    }
-    
-    console.log('🔍 generateHelpfulFeedback:', { 
-      userStr, 
-      correctAnswer, 
-      correctAnswerType: typeof correctAnswer,
-      correctStr, 
-      stepType 
-    });
-    
-    if (!correctStr || correctStr === 'undefined' || correctStr === 'null') {
+    if (!correctStr) {
       return 'Попробуйте еще раз.';
     }
     
@@ -2446,15 +2414,13 @@ validateMathAnswer(userAnswer, correctAnswer) {
       return 'Неверный ответ. Внимательно прочитайте вопрос еще раз.';
     }
     
-    // Generic feedback
     return 'Попробуйте еще раз. Подумайте о том, что мы только что изучили.';
     
   } catch (error) {
-    console.error('❌ Error in generateHelpfulFeedback:', error);
-    console.error('❌ Error details:', { userAnswer, correctAnswer, stepType });
     return 'Попробуйте еще раз.';
   }
 },
+
 
 async handleSubmitOrNext() {
   const step = this.currentStep;
@@ -2463,26 +2429,18 @@ async handleSubmitOrNext() {
     return;
   }
 
-  let userResponse = this.userAnswer;
+  // ✅ CRITICAL FIX: Get userResponse based on exercise type
+  let userResponse = this.getUserResponseBasedOnType();
   
-  // ✅ FIX: Better type handling for userResponse
-  if (userResponse === null || userResponse === undefined) {
+  // ✅ CRITICAL FIX: Validate user response exists
+  if (!this.hasValidUserResponse(userResponse)) {
     this.confirmation = '⚠️ Введите ответ.';
     return;
-  }
-  
-  // Convert to string if needed, but preserve numbers and booleans for certain types
-  if (typeof userResponse === 'string') {
-    userResponse = userResponse.trim();
-    if (!userResponse) {
-      this.confirmation = '⚠️ Введите ответ.';
-      return;
-    }
   }
 
   let isCorrect = false;
   let correctAnswer = '';
-  let answerType = step.data?.type || step.type;
+  let answerType = this.getCurrentExerciseType();
 
   try {
     if (step.type === 'quiz') {
@@ -2499,28 +2457,28 @@ async handleSubmitOrNext() {
     } else if (['exercise', 'practice'].includes(step.type)) {
       correctAnswer = this.getCorrectAnswer(step);
 
-      // Handle new structured types
+      // Handle different exercise types
       switch (answerType) {
         case 'abc':
         case 'multiple-choice':
         case 'true-false':
-          isCorrect = userResponse === correctAnswer;
+          isCorrect = String(userResponse) === String(correctAnswer);
           break;
 
         case 'drag-drop':
-          isCorrect = this.validateDragDropAnswer(userResponse, step.data);
+          isCorrect = this.validateDragDropAnswer(this.dragDropPlacements, step.data);
           break;
 
         case 'matching':
-          isCorrect = this.validateMatchingAnswer(userResponse, step.data);
+          isCorrect = this.validateMatchingAnswer(this.matchingPairs, step.data);
           break;
 
         case 'ordering':
-          isCorrect = this.validateOrderingAnswer(userResponse, step.data);
+          isCorrect = this.validateOrderingAnswer(this.orderingItems, step.data);
           break;
 
         case 'fill-blank':
-          isCorrect = this.validateFillBlankAnswer(userResponse, correctAnswer);
+          isCorrect = this.validateFillBlankAnswer(this.fillBlankAnswers, correctAnswer);
           break;
 
         default:
@@ -2548,25 +2506,17 @@ async handleSubmitOrNext() {
       this.answerWasCorrect = false;
       this.earnedPoints = Math.max(0, this.earnedPoints - 2);
 
-      let feedback;
+      let feedback = 'Попробуйте еще раз.';
       try {
         feedback = this.generateHelpfulFeedback(userResponse, correctAnswer, answerType);
       } catch (error) {
-        feedback = 'Попробуйте еще раз.';
+        // Silent fallback
       }
       
       this.confirmation = `❌ Неверно. ${feedback}`;
       
-      // Safe string conversion for display
-      let correctAnswerDisplay = '';
-      try {
-        if (correctAnswer !== null && correctAnswer !== undefined) {
-          correctAnswerDisplay = String(correctAnswer).trim();
-        }
-      } catch (conversionError) {
-        correctAnswerDisplay = '';
-      }
-      
+      // Safe display of correct answer
+      const correctAnswerDisplay = this.safeStringConvert(correctAnswer);
       if (correctAnswerDisplay && correctAnswerDisplay !== 'undefined') {
         this.confirmation += ` Правильный ответ: "${correctAnswerDisplay}"`;
       }
@@ -2591,7 +2541,7 @@ async handleSubmitOrNext() {
             this.hintsUsed = true;
           }
         } catch (error) {
-          // Silently fail on hint generation
+          // Silent fail on hint generation
         }
       }
     }
@@ -3096,12 +3046,13 @@ async handleSubmitOrNext() {
     return 'Контент недоступен';
   }
   
-  // FOR INTERACTIVE STEPS: Show ONLY the current question, no instructions
+  // ✅ CRITICAL FIX: For interactive steps, show ONLY the question
   if (['exercise', 'practice'].includes(step.type)) {
     const currentExercise = this.getCurrentExercise();
     if (currentExercise && currentExercise.question) {
       return this.getLocalized(currentExercise.question);
     }
+    return 'Упражнение загружается...';
   }
   
   if (step.type === 'quiz') {
@@ -3109,16 +3060,15 @@ async handleSubmitOrNext() {
     if (currentQuiz && currentQuiz.question) {
       return this.getLocalized(currentQuiz.question);
     }
+    return 'Вопрос загружается...';
   }
   
-  // Handle different content structures for non-interactive steps
+  // For non-interactive steps, show content
   try {
-    // 1. Direct string content
     if (typeof step.data === 'string' && step.data.trim()) {
       return step.data.trim();
     }
     
-    // 2. Content field
     if (step.data.content) {
       const content = this.getLocalized(step.data.content);
       if (content && content.trim()) {
@@ -3126,7 +3076,6 @@ async handleSubmitOrNext() {
       }
     }
     
-    // 3. Text field
     if (step.data.text) {
       const text = this.getLocalized(step.data.text);
       if (text && text.trim()) {
@@ -3134,7 +3083,6 @@ async handleSubmitOrNext() {
       }
     }
     
-    // 4. Explanation field
     if (step.data.explanation) {
       const explanation = this.getLocalized(step.data.explanation);
       if (explanation && explanation.trim()) {
@@ -3142,7 +3090,6 @@ async handleSubmitOrNext() {
       }
     }
     
-    // 5. Description field
     if (step.data.description) {
       const description = this.getLocalized(step.data.description);
       if (description && description.trim()) {
@@ -3150,21 +3097,19 @@ async handleSubmitOrNext() {
       }
     }
     
-    // 6. For vocabulary steps
     if (step.type === 'vocabulary') {
       if (Array.isArray(step.data) && step.data.length > 0) {
         return `Изучение словаря: ${step.data.length} новых слов`;
       }
     }
     
-    return `Контент для шага "${step.type}" временно недоступен`;
+    return `Контент для шага "${step.type}"`;
     
   } catch (error) {
     console.error('❌ Error in getStepContent:', error);
     return 'Ошибка загрузки контента';
   }
 },
-
 
     handleLessonError(error) {
       if (error.message?.includes('not found')) {
@@ -3388,7 +3333,6 @@ getCurrentExercise() {
   let exercises = [];
   
   try {
-    // Handle different data structures
     if (Array.isArray(step.data)) {
       exercises = step.data;
     } else if (step.data && Array.isArray(step.data.exercises)) {
@@ -3401,7 +3345,6 @@ getCurrentExercise() {
       return null;
     }
     
-    // Ensure index is within bounds
     if (this.currentExerciseIndex >= exercises.length) {
       this.currentExerciseIndex = 0;
     }
