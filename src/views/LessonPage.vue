@@ -1964,105 +1964,100 @@ export default {
     },
 
     getQuizQuestion(step) {
-      console.log('🔍 getQuizQuestion called with step:', step);
-      
-      if (!step || !step.data) {
-        console.warn('⚠️ getQuizQuestion: Invalid step data');
-        return 'Quiz question unavailable';
+  console.log('🔍 getQuizQuestion called with step:', step);
+  
+  if (!step || !step.data) {
+    console.warn('⚠️ getQuizQuestion: Invalid step data');
+    return 'Quiz question unavailable';
+  }
+  
+  let question = '';
+  
+  try {
+    const quiz = this.getCurrentQuiz();
+    if (quiz && quiz.question) {
+      question = this.getLocalized(quiz.question);
+      console.log('✅ Found quiz question via getCurrentQuiz:', question.substring(0, 50) + '...');
+      return question;
+    }
+    
+    // Handle different data structures as fallback
+    if (Array.isArray(step.data) && step.data.length > 0) {
+      const firstQuiz = step.data[0];
+      if (firstQuiz && firstQuiz.question) {
+        question = this.getLocalized(firstQuiz.question);
+        console.log('✅ Found quiz question in step.data array:', question.substring(0, 50) + '...');
+        return question;
       }
-      
-      let question = '';
-      
-      try {
-        // Handle array of quiz questions (get first one)
-        if (Array.isArray(step.data)) {
-          console.log('📝 Quiz data is array, length:', step.data.length);
-          const firstQuiz = step.data[0];
-          if (firstQuiz && firstQuiz.question) {
-            question = this.getLocalized(firstQuiz.question);
-            console.log('✅ Found quiz question in array[0]:', question.substring(0, 50) + '...');
-            return question;
-          }
-        }
-        
-        // Handle single quiz object directly in step.data
-        if (step.data.question) {
-          question = this.getLocalized(step.data.question);
-          console.log('✅ Found quiz question in step.data:', question.substring(0, 50) + '...');
-          return question;
-        }
-        
-        // Handle quizzes nested in step.data.quizzes
-        if (step.data.quizzes && Array.isArray(step.data.quizzes) && step.data.quizzes.length > 0) {
-          const firstQuiz = step.data.quizzes[0];
-          if (firstQuiz && firstQuiz.question) {
-            question = this.getLocalized(firstQuiz.question);
-            console.log('✅ Found quiz question in quizzes array:', question.substring(0, 50) + '...');
-            return question;
-          }
-        }
-        
-        // Fallback: look for any text content
-        const fallbackFields = ['text', 'content', 'prompt'];
-        for (const field of fallbackFields) {
-          if (step.data[field]) {
-            question = this.getLocalized(step.data[field]);
-            console.log(`✅ Found quiz question in fallback field ${field}:`, question.substring(0, 50) + '...');
-            return question;
-          }
-        }
-        
-      } catch (error) {
-        console.error('❌ Error in getQuizQuestion:', error);
+    }
+    
+    if (step.data.question) {
+      question = this.getLocalized(step.data.question);
+      console.log('✅ Found quiz question in step.data:', question.substring(0, 50) + '...');
+      return question;
+    }
+    
+    if (step.data.quizzes && Array.isArray(step.data.quizzes) && step.data.quizzes.length > 0) {
+      const firstQuiz = step.data.quizzes[0];
+      if (firstQuiz && firstQuiz.question) {
+        question = this.getLocalized(firstQuiz.question);
+        console.log('✅ Found quiz question in step.data.quizzes:', question.substring(0, 50) + '...');
+        return question;
       }
-      
-      console.warn('⚠️ No quiz question found, using default');
-      return 'Quiz question not available - please check lesson content';
-    },
+    }
+    
+  } catch (error) {
+    console.error('❌ Error in getQuizQuestion:', error);
+  }
+  
+  console.warn('⚠️ No quiz question found, using default');
+  return 'Quiz question not available - please check lesson content';
+},
 
-    getQuizOptions(step) {
-      console.log('🔍 getQuizOptions called with step:', step);
-      
-      if (!step || !step.data) {
-        console.warn('⚠️ getQuizOptions: Invalid step data');
-        return [];
+getQuizOptions(quiz) {
+  console.log('🔍 getQuizOptions called with quiz:', quiz);
+  
+  if (!quiz) {
+    console.warn('⚠️ No quiz provided to getQuizOptions');
+    return [];
+  }
+  
+  let options = [];
+  
+  try {
+    // Handle different option structures
+    if (Array.isArray(quiz.options)) {
+      options = quiz.options;
+      console.log('✅ Found options in quiz.options:', options);
+    } else if (quiz.type === 'true-false') {
+      options = ['True', 'False'];
+      console.log('✅ Generated true/false options');
+    } else if (quiz.type === 'multiple-choice') {
+      // If no options but it's multiple choice, create defaults
+      options = ['Option A', 'Option B', 'Option C', 'Option D'];
+      console.warn('⚠️ No options found for multiple choice, using defaults');
+    } else {
+      console.warn('⚠️ No options found for quiz type:', quiz.type);
+      return [];
+    }
+    
+    // Normalize options to strings and filter out empty ones
+    const normalizedOptions = options.map(option => {
+      if (typeof option === 'string') return option;
+      if (option && typeof option === 'object') {
+        return option.text || option.label || option.value || String(option);
       }
-      
-      let options = [];
-      
-      try {
-        // Handle array of quiz questions (get first one)
-        if (Array.isArray(step.data)) {
-          const firstQuiz = step.data[0];
-          options = firstQuiz?.options || [];
-        }
-        // Handle nested quizzes
-        else if (step.data.quizzes && Array.isArray(step.data.quizzes) && step.data.quizzes.length > 0) {
-          const firstQuiz = step.data.quizzes[0];
-          options = firstQuiz?.options || [];
-        }
-        // Handle single quiz
-        else {
-          options = step.data.options || [];
-        }
-        
-        // Normalize options to strings
-        const normalizedOptions = options.map(option => {
-          if (typeof option === 'string') return option;
-          if (option && typeof option === 'object') {
-            return option.text || option.label || option.value || String(option);
-          }
-          return String(option);
-        }).filter(opt => opt && opt.trim());
-        
-        console.log('✅ Normalized quiz options:', normalizedOptions);
-        return normalizedOptions;
-        
-      } catch (error) {
-        console.error('❌ Error in getQuizOptions:', error);
-        return [];
-      }
-    },
+      return String(option);
+    }).filter(opt => opt && opt.trim());
+    
+    console.log('✅ Normalized quiz options:', normalizedOptions);
+    return normalizedOptions;
+    
+  } catch (error) {
+    console.error('❌ Error in getQuizOptions:', error);
+    return ['Option A', 'Option B']; // Fallback options
+  }
+},
 
     getQuizCorrectAnswer(step) {
       console.log('🔍 getQuizCorrectAnswer called with step:', step);
@@ -2100,53 +2095,71 @@ export default {
     },
 
     validateQuizAnswer(userAnswer, step) {
-      const correctAnswer = this.getQuizCorrectAnswer(step);
+  console.log('🔍 validateQuizAnswer called:', { userAnswer, stepType: step?.type });
+  
+  try {
+    const quiz = this.getCurrentQuiz();
+    if (!quiz) {
+      console.warn('⚠️ No current quiz found');
+      return false;
+    }
+    
+    const correctAnswer = quiz.correctAnswer;
+    console.log('🎯 Quiz correct answer:', correctAnswer, 'Type:', typeof correctAnswer);
+    
+    if (correctAnswer === null || correctAnswer === undefined) {
+      console.warn('⚠️ No correct answer available for quiz validation');
+      return false;
+    }
+    
+    // Handle multiple choice by index
+    if (typeof correctAnswer === 'number') {
+      const options = this.getQuizOptions(quiz);
+      console.log('📝 Quiz options for index validation:', options);
       
-      if (correctAnswer === null || correctAnswer === undefined) {
-        console.warn('⚠️ No correct answer available for quiz validation');
+      if (options.length > correctAnswer && correctAnswer >= 0) {
+        const correctOption = options[correctAnswer];
+        const isCorrect = userAnswer === correctOption;
+        console.log('✅ Index-based validation:', { userAnswer, correctOption, isCorrect });
+        return isCorrect;
+      } else {
+        console.warn('⚠️ Correct answer index out of bounds:', correctAnswer, 'Options length:', options.length);
         return false;
       }
-      
-      // Handle multiple choice by index
-      if (typeof correctAnswer === 'number') {
-        const options = this.getQuizOptions(step);
-        if (options.length > correctAnswer) {
-          const correctOption = options[correctAnswer];
-          return userAnswer === correctOption;
-        }
-      }
-      
-      // Handle direct string comparison
-      if (typeof correctAnswer === 'string') {
-        return userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
-      }
-      
-      // Handle boolean for true/false questions
-      if (typeof correctAnswer === 'boolean') {
-        const userBool = userAnswer.toLowerCase() === 'true' || userAnswer === 'True';
-        return userBool === correctAnswer;
-      }
-      
-      return false;
-    },
-
-    // =============================================
-    // ENHANCED ANSWER VALIDATION
-    // =============================================
-
+    }
+    
+    // Handle direct string comparison
+    if (typeof correctAnswer === 'string') {
+      const isCorrect = userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+      console.log('✅ String-based validation:', { userAnswer, correctAnswer, isCorrect });
+      return isCorrect;
+    }
+    
+    // Handle boolean for true/false questions
+    if (typeof correctAnswer === 'boolean') {
+      const userBool = userAnswer.toLowerCase() === 'true' || userAnswer === 'True';
+      const isCorrect = userBool === correctAnswer;
+      console.log('✅ Boolean-based validation:', { userAnswer, userBool, correctAnswer, isCorrect });
+      return isCorrect;
+    }
+    
+    console.warn('⚠️ Unknown correct answer type:', typeof correctAnswer);
+    return false;
+    
+  } catch (error) {
+    console.error('❌ Error in validateQuizAnswer:', error);
+    return false;
+  }
+},
     validateAnswer(userAnswer, correctAnswer, stepType) {
       if (!userAnswer || !correctAnswer) return false;
 
-      // Normalize function for text comparison
       const normalize = (text) => {
         return String(text)
           .toLowerCase()
           .trim()
-          // Remove extra spaces
           .replace(/\s+/g, ' ')
-          // Remove common punctuation
           .replace(/[.,;:!?'"()[\]{}]/g, '')
-          // Remove articles and common words that don't affect meaning
           .replace(/\b(the|a|an|и|в|на|с|по|для|от|до|при|под|над|между|через|без|из)\b/gi, '')
           .trim();
       };
@@ -2164,12 +2177,10 @@ export default {
         });
       }
 
-      // 1. Exact match after normalization
       if (normalizedUser === normalizedCorrect) {
         return true;
       }
 
-      // 2. Check if user answer contains all key words from correct answer
       const correctWords = normalizedCorrect.split(' ').filter(word => word.length > 2);
       const userWords = normalizedUser.split(' ');
       
@@ -2187,7 +2198,6 @@ export default {
         }
       }
 
-      // 3. For list-type answers, check if user provided the main elements
       if (correctAnswer.includes(',') || correctAnswer.includes(';')) {
         return this.validateListAnswer(normalizedUser, normalizedCorrect);
       }
@@ -2351,26 +2361,72 @@ export default {
     },
 
     generateHelpfulFeedback(userAnswer, correctAnswer, stepType) {
-      // If it's a list answer, give specific guidance
-      if (correctAnswer.includes(',') || correctAnswer.includes(';')) {
-        const correctItems = correctAnswer.split(/[,;]/).map(item => item.trim());
-        return `Попробуйте еще раз. Подсказка: ответ должен содержать ${correctItems.length} элемента${correctItems.length > 1 ? 'а' : ''}.`;
-      }
-      
-      // If it's a short answer, give hint about length
-      if (correctAnswer.length < 20) {
-        return `Попробуйте еще раз. Подсказка: ответ содержит ${correctAnswer.split(' ').length} слов${correctAnswer.split(' ').length > 1 ? 'а' : 'о'}.`;
-      }
-      
-      // Generic feedback
+  try {
+    // ✅ CRITICAL FIX: Ensure both answers are strings before using string methods
+    const userStr = String(userAnswer || '').trim();
+    
+    // ✅ ENHANCED FIX: Handle all possible correctAnswer types
+    let correctStr = '';
+    if (correctAnswer === null || correctAnswer === undefined) {
+      correctStr = '';
+    } else if (typeof correctAnswer === 'string') {
+      correctStr = correctAnswer.trim();
+    } else if (typeof correctAnswer === 'number') {
+      correctStr = String(correctAnswer);
+    } else if (typeof correctAnswer === 'boolean') {
+      correctStr = correctAnswer ? 'true' : 'false';
+    } else if (Array.isArray(correctAnswer)) {
+      correctStr = correctAnswer.join(', ');
+    } else if (typeof correctAnswer === 'object') {
+      correctStr = JSON.stringify(correctAnswer);
+    } else {
+      correctStr = String(correctAnswer);
+    }
+    
+    console.log('🔍 generateHelpfulFeedback:', { 
+      userStr, 
+      correctAnswer, 
+      correctAnswerType: typeof correctAnswer,
+      correctStr, 
+      stepType 
+    });
+    
+    if (!correctStr || correctStr === 'undefined' || correctStr === 'null') {
       return 'Попробуйте еще раз.';
-    },
+    }
+    
+    // If it's a list answer, give specific guidance
+    if (correctStr.includes(',') || correctStr.includes(';')) {
+      const correctItems = correctStr.split(/[,;]/).map(item => item.trim()).filter(item => item);
+      return `Попробуйте еще раз. Подсказка: ответ должен содержать ${correctItems.length} элемент${correctItems.length > 1 ? 'а' : ''}.`;
+    }
+    
+    // If it's a short answer, give hint about length
+    if (correctStr.length < 20) {
+      const wordCount = correctStr.split(' ').filter(word => word.trim()).length;
+      return `Попробуйте еще раз. Подсказка: ответ содержит ${wordCount} слов${wordCount > 1 ? 'а' : 'о'}.`;
+    }
+    
+    // For quiz questions, be more specific
+    if (stepType === 'quiz') {
+      return 'Неверный ответ. Внимательно прочитайте вопрос еще раз.';
+    }
+    
+    // Generic feedback
+    return 'Попробуйте еще раз. Подумайте о том, что мы только что изучили.';
+    
+  } catch (error) {
+    console.error('❌ Error in generateHelpfulFeedback:', error);
+    console.error('❌ Error details:', { userAnswer, correctAnswer, stepType });
+    return 'Попробуйте еще раз.';
+  }
+},
 
     // =============================================
-    // ENHANCED LESSON CONTROL METHODS
-    // =============================================
+// REPLACE YOUR EXISTING handleSubmitOrNext METHOD WITH THIS:
+// =============================================
 
-    async handleSubmitOrNext() {
+async handleSubmitOrNext() {
   const step = this.currentStep;
   if (!step || !step.data) {
     console.warn('⚠️ No current step data available');
@@ -2398,7 +2454,7 @@ export default {
       correctAnswer = this.getQuizCorrectAnswer(step);
 
       if (typeof correctAnswer === 'number') {
-        const options = this.getQuizOptions(step);
+        const options = this.getQuizOptions(this.getCurrentQuiz());
         if (options.length > correctAnswer) {
           correctAnswer = options[correctAnswer];
         }
@@ -2457,10 +2513,48 @@ export default {
       this.answerWasCorrect = false;
       this.earnedPoints = Math.max(0, this.earnedPoints - 2);
 
-      let feedback = this.generateHelpfulFeedback(userResponse, correctAnswer, step.type);
+      let feedback;
+      try {
+        // ✅ ENHANCED SAFETY: Additional validation before calling generateHelpfulFeedback
+        console.log('🔍 Before feedback generation:', { 
+          userResponse, 
+          correctAnswer, 
+          correctAnswerType: typeof correctAnswer,
+          answerType 
+        });
+        
+        feedback = this.generateHelpfulFeedback(userResponse, correctAnswer, answerType);
+      } catch (error) {
+        console.error('❌ Error generating feedback:', error);
+        console.error('❌ Feedback error details:', { userResponse, correctAnswer, answerType });
+        feedback = 'Попробуйте еще раз.';
+      }
+      
       this.confirmation = `❌ Неверно. ${feedback}`;
-      if (correctAnswer && correctAnswer.length > 0) {
-        this.confirmation += ` Правильный ответ: "${correctAnswer}"`;
+      
+      // ✅ ENHANCED SAFETY: Safe string conversion check
+      let correctAnswerDisplay = '';
+      try {
+        if (correctAnswer !== null && correctAnswer !== undefined) {
+          if (typeof correctAnswer === 'string') {
+            correctAnswerDisplay = correctAnswer.trim();
+          } else if (typeof correctAnswer === 'number') {
+            correctAnswerDisplay = String(correctAnswer);
+          } else if (typeof correctAnswer === 'boolean') {
+            correctAnswerDisplay = correctAnswer ? 'True' : 'False';
+          } else if (Array.isArray(correctAnswer)) {
+            correctAnswerDisplay = correctAnswer.join(', ');
+          } else {
+            correctAnswerDisplay = String(correctAnswer);
+          }
+        }
+      } catch (conversionError) {
+        console.error('❌ Error converting correct answer for display:', conversionError);
+        correctAnswerDisplay = '';
+      }
+      
+      if (correctAnswerDisplay && correctAnswerDisplay.length > 0 && correctAnswerDisplay !== 'undefined') {
+        this.confirmation += ` Правильный ответ: "${correctAnswerDisplay}"`;
       }
 
       this.mistakeLog.push({
@@ -2493,7 +2587,6 @@ export default {
     this.confirmation = '❌ Произошла ошибка при проверке ответа. Попробуйте еще раз.';
   }
 },
-
     showHint() {
       const step = this.currentStep;
       if (step && step.data && step.data.hint) {
