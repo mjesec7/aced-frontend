@@ -849,38 +849,134 @@ export const getTopics = async (filters = {}) => {
 // ✅ FIXED: Get topic by ID with multiple endpoint fallbacks
 export const getTopicById = async (topicId) => {
   try {
+    console.log('🔍 API: Fetching topic by ID:', topicId);
+    
+    if (!topicId) {
+      throw new Error('Topic ID is required');
+    }
+    
     const { data } = await api.get(`/topics/${topicId}`);
     
-    // Handle different response structures from your backend
-    if (data && data.success) {
-      return {
-        success: true,
-        data: data.data,
-        message: data.message
-      };
-    } else if (data && (data._id || data.name)) {
+    console.log('📘 API: Raw topic response:', data);
+    
+    // ✅ CRITICAL FIX: Handle all possible response structures from your backend
+    
+    // Case 1: Modern API response with success flag and data
+    if (data && data.success === true) {
+      if (data.data) {
+        console.log('✅ API: Using success+data wrapper format');
+        return {
+          success: true,
+          data: data.data,
+          message: data.message
+        };
+      } else {
+        console.warn('⚠️ API: Success=true but no data property');
+        return {
+          success: false,
+          error: 'No topic data in successful response'
+        };
+      }
+    }
+    
+    // Case 2: API response with exists flag (from your topicRoutes.js)
+    if (data && data.exists === true) {
+      if (data.data) {
+        console.log('✅ API: Using exists+data wrapper format');
+        return {
+          success: true,
+          exists: true,
+          data: data.data
+        };
+      }
+    }
+    
+    // Case 3: Direct topic object (legacy or simple response)
+    if (data && (data._id || data.name)) {
+      console.log('✅ API: Using direct topic object format');
       return {
         success: true,
         data: data
       };
-    } else {
-      throw new Error('Invalid topic data structure');
     }
-  } catch (error) {
-    console.error('❌ Failed to fetch topic by ID:', error);
     
-    // If 404, the topic doesn't exist
-    if (error.response?.status === 404) {
+    // Case 4: Topic properties present but no wrapper
+    if (data && (data.topicName || data.subject || data.level)) {
+      console.log('✅ API: Using topic with properties format');
       return {
-        success: false,
-        error: 'Topic not found',
-        code: 404
+        success: true,
+        data: data
       };
     }
     
+    // Case 5: Empty or invalid response
+    console.error('❌ API: Invalid topic response structure:', data);
     return {
       success: false,
-      error: error.message
+      error: 'Invalid topic response format',
+      rawResponse: data
+    };
+    
+  } catch (error) {
+    console.error('❌ API: Failed to fetch topic by ID:', error);
+    
+    // ✅ ENHANCED: Detailed error handling
+    
+    // Handle 404 specifically
+    if (error.response?.status === 404) {
+      console.log('📍 API: Topic not found (404)');
+      return {
+        success: false,
+        error: 'Topic not found',
+        code: 404,
+        details: 'The requested topic does not exist'
+      };
+    }
+    
+    // Handle 403 Forbidden
+    if (error.response?.status === 403) {
+      return {
+        success: false,
+        error: 'Access denied',
+        code: 403,
+        details: 'You do not have permission to access this topic'
+      };
+    }
+    
+    // Handle network errors
+    if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
+      return {
+        success: false,
+        error: 'Network error',
+        details: 'Unable to connect to the server'
+      };
+    }
+    
+    // Handle timeout errors
+    if (error.code === 'ECONNABORTED') {
+      return {
+        success: false,
+        error: 'Request timeout',
+        details: 'The request took too long to complete'
+      };
+    }
+    
+    // Handle server errors (5xx)
+    if (error.response?.status >= 500) {
+      return {
+        success: false,
+        error: 'Server error',
+        code: error.response.status,
+        details: 'Internal server error occurred'
+      };
+    }
+    
+    // Generic error handling
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to fetch topic',
+      code: error.response?.status,
+      details: error.response?.data || error
     };
   }
 };
