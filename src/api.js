@@ -846,7 +846,7 @@ export const getTopics = async (filters = {}) => {
   }
 };
 
-// ✅ FIXED: Get topic by ID with multiple endpoint fallbacks
+// ✅ COMPLETELY FIXED: Get topic by ID with lessons fallback
 export const getTopicById = async (topicId) => {
   try {
     console.log('🔍 API: Fetching topic by ID:', topicId);
@@ -855,74 +855,188 @@ export const getTopicById = async (topicId) => {
       throw new Error('Topic ID is required');
     }
     
-    const { data } = await api.get(`/topics/${topicId}`);
-    
-    console.log('📘 API: Raw topic response:', data);
-    
-    // ✅ CRITICAL FIX: Handle all possible response structures from your backend
-    
-    // Case 1: Modern API response with success flag and data
-    if (data && data.success === true) {
-      if (data.data) {
-        console.log('✅ API: Using success+data wrapper format');
+    // ✅ STRATEGY 1: Try the direct topics endpoint first
+    try {
+      const { data } = await api.get(`/topics/${topicId}`);
+      console.log('📘 API: Raw topic response from /topics:', data);
+      
+      // Handle all possible response structures from your backend
+      if (data && data.success === true) {
+        if (data.data) {
+          console.log('✅ API: Using success+data wrapper format');
+          return {
+            success: true,
+            data: data.data,
+            message: data.message,
+            source: 'topics-endpoint'
+          };
+        }
+      }
+      
+      if (data && data.exists === true) {
+        if (data.data) {
+          console.log('✅ API: Using exists+data wrapper format');
+          return {
+            success: true,
+            exists: true,
+            data: data.data,
+            source: 'topics-endpoint'
+          };
+        }
+      }
+      
+      if (data && (data._id || data.name)) {
+        console.log('✅ API: Using direct topic object format');
         return {
           success: true,
-          data: data.data,
-          message: data.message
+          data: data,
+          source: 'topics-endpoint'
         };
-      } else {
-        console.warn('⚠️ API: Success=true but no data property');
+      }
+      
+    } catch (topicsError) {
+      console.warn('⚠️ Topics endpoint failed:', topicsError.response?.status, topicsError.message);
+      
+      // If it's not a 404, throw the error
+      if (topicsError.response?.status !== 404) {
+        throw topicsError;
+      }
+      
+      // If it's 404, continue to fallback strategy
+      console.log('🔄 Topic not found in /topics, trying lessons fallback...');
+    }
+    
+    // ✅ STRATEGY 2: Fallback - Build topic from lessons (like CataloguePage does)
+    try {
+      console.log('🔄 Building topic from lessons data...');
+      
+      // Get all lessons
+      const { data: lessonsData } = await api.get('/lessons');
+      const allLessons = Array.isArray(lessonsData) ? lessonsData : [];
+      
+      console.log(`📚 Found ${allLessons.length} total lessons`);
+      
+      // Filter lessons for this topic
+      const topicLessons = allLessons.filter(lesson => {
+        if (!lesson) return false;
+        
+        // Handle different topicId structures
+        const lessonTopicId = lesson.topicId;
+        
+        if (typeof lessonTopicId === 'string') {
+          return lessonTopicId === topicId;
+        } else if (typeof lessonTopicId === 'object' && lessonTopicId !== null) {
+          return (lessonTopicId._id || lessonTopicId.id) === topicId;
+        }
+        
+        return false;
+      });
+      
+      console.log(`📚 Found ${topicLessons.length} lessons for topic ${topicId}`);
+      
+      if (topicLessons.length === 0) {
+        console.log('❌ No lessons found for this topicId');
         return {
           success: false,
-          error: 'No topic data in successful response'
+          error: 'Topic not found',
+          code: 404,
+          details: `No lessons found for topic ID: ${topicId}`,
+          source: 'lessons-fallback'
         };
       }
-    }
-    
-    // Case 2: API response with exists flag (from your topicRoutes.js)
-    if (data && data.exists === true) {
-      if (data.data) {
-        console.log('✅ API: Using exists+data wrapper format');
-        return {
-          success: true,
-          exists: true,
-          data: data.data
-        };
-      }
-    }
-    
-    // Case 3: Direct topic object (legacy or simple response)
-    if (data && (data._id || data.name)) {
-      console.log('✅ API: Using direct topic object format');
+      
+      // ✅ BUILD TOPIC DATA from lessons (same logic as CataloguePage)
+      const firstLesson = topicLessons[0];
+      
+      // Extract topic name (same logic as CataloguePage getTopicName)
+      const getTopicName = (lesson) => {
+        if (!lesson) return 'Без темы';
+        
+        try {
+          // Check different possible structures
+          if (typeof lesson.topic === 'string') {
+            return lesson.topic;
+          }
+          
+          const lang = localStorage.getItem('lang') || 'en';
+          
+          if (lesson.translations && lesson.translations[lang] && lesson.translations[lang].topic) {
+            return String(lesson.translations[lang].topic);
+          }
+          
+          if (lesson.topic && typeof lesson.topic === 'object') {
+            if (lesson.topic[lang]) {
+              return String(lesson.topic[lang]);
+            }
+            if (lesson.topic.en) {
+              return String(lesson.topic.en);
+            }
+          }
+          
+          return 'Без темы';
+        } catch (error) {
+          console.error('❌ Error getting topic name:', error);
+          return 'Без темы';
+        }
+      };
+      
+      const topicName = getTopicName(firstLesson);
+      
+      // Calculate total lessons and time
+      const totalLessons = topicLessons.length;
+      const estimatedTime = totalLessons * 10; // 10 min per lesson estimate
+      
+      // Build the topic object
+      const constructedTopic = {
+        _id: topicId,
+        id: topicId,
+        name: topicName,
+        topicName: topicName,
+        description: `Курс по теме "${topicName}" содержит ${totalLessons} уроков`,
+        topicDescription: `Курс по теме "${topicName}" содержит ${totalLessons} уроков`,
+        subject: firstLesson.subject || 'Общий',
+        level: firstLesson.level || 'Базовый',
+        lessonCount: totalLessons,
+        totalTime: estimatedTime,
+        lessons: topicLessons,
+        type: firstLesson.type || 'free',
+        isActive: true,
+        createdAt: firstLesson.createdAt,
+        updatedAt: new Date().toISOString(),
+        metadata: {
+          source: 'constructed-from-lessons',
+          constructedAt: new Date().toISOString(),
+          basedOnLessons: topicLessons.length,
+          firstLessonId: firstLesson._id
+        }
+      };
+      
+      console.log('✅ Successfully constructed topic from lessons:', constructedTopic);
+      
       return {
         success: true,
-        data: data
+        data: constructedTopic,
+        source: 'lessons-fallback',
+        message: `Topic constructed from ${totalLessons} lessons`
       };
-    }
-    
-    // Case 4: Topic properties present but no wrapper
-    if (data && (data.topicName || data.subject || data.level)) {
-      console.log('✅ API: Using topic with properties format');
+      
+    } catch (lessonsError) {
+      console.error('❌ Lessons fallback failed:', lessonsError);
+      
       return {
-        success: true,
-        data: data
+        success: false,
+        error: 'Topic not found and lessons fallback failed',
+        code: 404,
+        details: `Could not find topic ${topicId} in topics or lessons`,
+        lessonsError: lessonsError.message,
+        source: 'fallback-failed'
       };
     }
-    
-    // Case 5: Empty or invalid response
-    console.error('❌ API: Invalid topic response structure:', data);
-    return {
-      success: false,
-      error: 'Invalid topic response format',
-      rawResponse: data
-    };
     
   } catch (error) {
     console.error('❌ API: Failed to fetch topic by ID:', error);
     
     // ✅ ENHANCED: Detailed error handling
-    
-    // Handle 404 specifically
     if (error.response?.status === 404) {
       console.log('📍 API: Topic not found (404)');
       return {
@@ -933,7 +1047,6 @@ export const getTopicById = async (topicId) => {
       };
     }
     
-    // Handle 403 Forbidden
     if (error.response?.status === 403) {
       return {
         success: false,
@@ -943,7 +1056,6 @@ export const getTopicById = async (topicId) => {
       };
     }
     
-    // Handle network errors
     if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
       return {
         success: false,
@@ -952,7 +1064,6 @@ export const getTopicById = async (topicId) => {
       };
     }
     
-    // Handle timeout errors
     if (error.code === 'ECONNABORTED') {
       return {
         success: false,
@@ -961,7 +1072,6 @@ export const getTopicById = async (topicId) => {
       };
     }
     
-    // Handle server errors (5xx)
     if (error.response?.status >= 500) {
       return {
         success: false,
