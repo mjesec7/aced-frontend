@@ -37,7 +37,7 @@
             <p class="topic-description">{{ getTopicDescription(topic) }}</p>
           </div>
         </div>
-        
+
         <!-- Topic Stats -->
         <div class="topic-stats">
           <div class="stat-card">
@@ -111,7 +111,7 @@
           >
             <!-- Lesson Number -->
             <div class="lesson-number">{{ index + 1 }}</div>
-            
+
             <!-- Lesson Type Badge -->
             <div class="lesson-badge" :class="lesson.type">
               <span v-if="lesson.type === 'premium'">
@@ -132,7 +132,7 @@
             <div class="lesson-content">
               <h3 class="lesson-title">{{ getLessonName(lesson) }}</h3>
               <p class="lesson-description">{{ getLessonDescription(lesson) }}</p>
-              
+
               <!-- Lesson Meta -->
               <div class="lesson-meta">
                 <span v-if="lesson.steps?.length" class="meta-item">
@@ -230,6 +230,7 @@
     </div>
   </div>
 </template>
+
 
 <script>
 import { getTopicById, getLessonsByTopic, getUserStatus } from '@/api';
