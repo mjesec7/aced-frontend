@@ -243,10 +243,14 @@ export default {
       topic: null,
       lessons: [],
       loading: true,
+      lessonsLoading: false,
       userPlan: 'free',
       filter: 'all',
       error: null,
-      retryCount: 0
+      retryCount: 0,
+      showDebugInfo: false,
+      debugInfo: null,
+      lastApiResponse: null
     };
   },
   
@@ -278,6 +282,10 @@ export default {
     
     currentUser() {
       return auth.currentUser;
+    },
+    
+    isDevelopment() {
+      return import.meta.env.MODE === 'development';
     }
   },
   
@@ -286,189 +294,459 @@ export default {
   },
   
   methods: {
+    // ✅ COMPLETELY FIXED: Robust initialization with comprehensive error handling
     async initializeComponent() {
       try {
-        // Wait for authentication if needed
+        console.log('🚀 Initializing TopicOverview component...');
+        console.log('📍 Route params:', this.$route.params);
+        console.log('📍 Environment:', import.meta.env.MODE);
+        
+        // Step 1: Wait for authentication if needed
         await this.waitForAuth();
         
-        // Load user subscription status
+        // Step 2: Load user subscription status
         await this.loadUserPlan();
         
-        // Load topic data
+        // Step 3: Load topic data
         await this.loadTopicData();
+        
+        console.log('✅ Component initialization complete');
         
       } catch (error) {
         console.error('❌ Component initialization failed:', error);
-        this.error = 'Ошибка инициализации компонента';
+        this.error = this.handleError(error, 'инициализация компонента');
         this.loading = false;
+        
+        // Store debug info for development
+        if (this.isDevelopment) {
+          this.debugInfo = {
+            error: error.message,
+            stack: error.stack,
+            routeParams: this.$route.params,
+            timestamp: new Date().toISOString()
+          };
+        }
       }
     },
     
+    // ✅ FIXED: Enhanced authentication waiting with timeout
     async waitForAuth() {
       if (auth.currentUser) {
+        console.log('✅ User already authenticated:', auth.currentUser.uid);
         return;
       }
+      
+      console.log('⏳ Waiting for authentication...');
       
       return new Promise((resolve) => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
           unsubscribe();
+          if (user) {
+            console.log('✅ User authenticated:', user.uid);
+          } else {
+            console.log('ℹ️ No user authentication (continuing as guest)');
+          }
           resolve();
         });
         
         // Timeout after 3 seconds
         setTimeout(() => {
           unsubscribe();
+          console.log('⏰ Authentication wait timeout (continuing anyway)');
           resolve();
         }, 3000);
       });
     },
     
+    // ✅ COMPLETELY REWRITTEN: Robust topic data loading with comprehensive error handling
     async loadTopicData() {
-  const topicId = this.$route.params.id;
+      const topicId = this.$route.params.id;
 
-  if (!topicId) {
-    this.error = 'ID темы не указан';
-    this.loading = false;
-    return;
-  }
+      if (!topicId) {
+        this.error = 'ID темы не указан в URL';
+        this.loading = false;
+        return;
+      }
 
-  try {
-    this.loading = true;
-    this.error = null;
-    
-    console.log('🔍 Loading topic data for ID:', topicId);
-    
-    // ✅ FIXED: Load topic information with better error handling
-    const topicResult = await getTopicById(topicId);
-    
-    console.log('📘 Topic API Response:', topicResult);
-    
-    // ✅ CRITICAL FIX: Handle all possible API response structures
-    let topicData = null;
-    
-    if (topicResult) {
-      // Case 1: New API format with success wrapper
-      if (topicResult.success === true && topicResult.data) {
-        topicData = topicResult.data;
-        console.log('✅ Using success wrapper format');
-      }
-      // Case 2: New API format with exists flag  
-      else if (topicResult.exists === true && topicResult.data) {
-        topicData = topicResult.data;
-        console.log('✅ Using exists wrapper format');
-      }
-      // Case 3: Direct topic object (has MongoDB _id or name)
-      else if (topicResult._id || topicResult.name) {
-        topicData = topicResult;
-        console.log('✅ Using direct topic object');
-      }
-      // Case 4: Check if it has topic properties even without success flag
-      else if (topicResult.topicName || topicResult.subject || topicResult.level) {
-        topicData = topicResult;
-        console.log('✅ Using topic with topic properties');
-      }
-      // Case 5: Nested in data property without success flag
-      else if (topicResult.data && (topicResult.data._id || topicResult.data.name)) {
-        topicData = topicResult.data;
-        console.log('✅ Using nested data format');
-      }
-    }
-    
-    // ✅ FIXED: Check if we actually got topic data
-    if (!topicData) {
-      console.error('❌ No valid topic data found in response:', topicResult);
-      
-      // Check if it's a 404 or actual error
-      if (topicResult && topicResult.success === false) {
-        throw new Error(topicResult.message || topicResult.error || 'Topic not found');
-      } else {
-        throw new Error('Invalid topic response format');
-      }
-    }
-    
-    this.topic = topicData;
-    console.log('✅ Topic loaded successfully:', this.topic);
+      try {
+        this.loading = true;
+        this.error = null;
+        
+        console.log('🔍 Loading topic data for ID:', topicId);
+        
+        // ✅ ENHANCED: Load topic information with comprehensive error handling
+        const topicResult = await getTopicById(topicId);
+        
+        console.log('📘 Raw topic API response:', topicResult);
+        this.lastApiResponse = topicResult; // Store for debugging
+        
+        // ✅ CRITICAL FIX: Handle ALL possible API response structures
+        let topicData = null;
+        let responseFormat = 'unknown';
+        
+        if (topicResult) {
+          // Case 1: Modern API format with success wrapper
+          if (topicResult.success === true && topicResult.data) {
+            topicData = topicResult.data;
+            responseFormat = 'success_wrapper';
+            console.log('✅ Using success wrapper format');
+          }
+          // Case 2: API format with exists flag  
+          else if (topicResult.exists === true && topicResult.data) {
+            topicData = topicResult.data;
+            responseFormat = 'exists_wrapper';
+            console.log('✅ Using exists wrapper format');
+          }
+          // Case 3: Direct topic object (has MongoDB _id or name)
+          else if (topicResult._id || topicResult.name || topicResult.topicName) {
+            topicData = topicResult;
+            responseFormat = 'direct_object';
+            console.log('✅ Using direct topic object');
+          }
+          // Case 4: Check if it has topic properties even without success flag
+          else if (topicResult.subject || topicResult.level) {
+            topicData = topicResult;
+            responseFormat = 'topic_properties';
+            console.log('✅ Using topic with properties');
+          }
+          // Case 5: Nested in data property without success flag
+          else if (topicResult.data && (topicResult.data._id || topicResult.data.name || topicResult.data.topicName)) {
+            topicData = topicResult.data;
+            responseFormat = 'nested_data';
+            console.log('✅ Using nested data format');
+          }
+          // Case 6: Error response
+          else if (topicResult.success === false || topicResult.error) {
+            const errorMsg = topicResult.message || topicResult.error || 'Topic not found';
+            console.error('❌ API returned error:', errorMsg);
+            throw new Error(errorMsg);
+          }
+        }
+        
+        // ✅ VALIDATION: Check if we actually got valid topic data
+        if (!topicData) {
+          console.error('❌ No valid topic data found in response:', topicResult);
+          
+          // Enhanced error messaging for debugging
+          if (this.isDevelopment) {
+            this.debugInfo = {
+              message: 'No valid topic data found',
+              response: topicResult,
+              topicId: topicId,
+              responseFormat: responseFormat,
+              timestamp: new Date().toISOString()
+            };
+          }
+          
+          throw new Error('Invalid topic response format - no topic data found');
+        }
+        
+        // ✅ NORMALIZATION: Ensure consistent topic data structure
+        this.topic = this.normalizeTopicData(topicData);
+        
+        console.log('✅ Topic loaded and normalized:', this.topic);
 
-    // ✅ FIXED: Load lessons for this topic with better error handling
-    try {
-      const lessonsResult = await getLessonsByTopic(topicId);
-      console.log('📚 Lessons API Response:', lessonsResult);
+        // ✅ ENHANCED: Load lessons for this topic
+        await this.loadLessonsForTopic(topicId);
+        
+      } catch (err) {
+        console.error('❌ Error loading topic data:', err);
+        
+        // ✅ ENHANCED: Specific error handling with user-friendly messages
+        this.error = this.handleError(err, 'загрузка темы');
+        this.topic = null;
+        this.lessons = [];
+        
+        // Store debug info for development
+        if (this.isDevelopment) {
+          this.debugInfo = {
+            error: err.message,
+            response: this.lastApiResponse,
+            topicId: topicId,
+            stack: err.stack,
+            timestamp: new Date().toISOString()
+          };
+        }
+        
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // ✅ NEW: Separate method for loading lessons with comprehensive error handling
+    async loadLessonsForTopic(topicId) {
+      try {
+        this.lessonsLoading = true;
+        console.log('📚 Loading lessons for topic:', topicId);
+        
+        const lessonsResult = await getLessonsByTopic(topicId);
+        console.log('📚 Raw lessons API response:', lessonsResult);
+        
+        // ✅ ENHANCED: Handle different lesson response structures
+        let lessonsData = [];
+        let lessonsFormat = 'unknown';
+        
+        if (lessonsResult) {
+          if (lessonsResult.success === true && Array.isArray(lessonsResult.data)) {
+            lessonsData = lessonsResult.data;
+            lessonsFormat = 'success_array';
+          } else if (lessonsResult.success === true && Array.isArray(lessonsResult.lessons)) {
+            lessonsData = lessonsResult.lessons;
+            lessonsFormat = 'success_lessons';
+          } else if (Array.isArray(lessonsResult.data)) {
+            lessonsData = lessonsResult.data;
+            lessonsFormat = 'data_array';
+          } else if (Array.isArray(lessonsResult.lessons)) {
+            lessonsData = lessonsResult.lessons;
+            lessonsFormat = 'lessons_array';
+          } else if (Array.isArray(lessonsResult)) {
+            lessonsData = lessonsResult;
+            lessonsFormat = 'direct_array';
+          } else if (lessonsResult.success === false) {
+            console.warn('⚠️ Lessons API returned error:', lessonsResult.message || lessonsResult.error);
+            lessonsData = [];
+            lessonsFormat = 'error_response';
+          }
+        }
+        
+        console.log(`📚 Found ${lessonsData.length} lessons (format: ${lessonsFormat})`);
+        
+        // ✅ NORMALIZATION: Ensure lessons have proper structure
+        this.lessons = lessonsData.map((lesson, index) => this.normalizeLessonData(lesson, topicId, index));
+        
+        console.log('✅ Lessons loaded and normalized:', this.lessons.length);
+        
+      } catch (lessonError) {
+        console.error('❌ Error loading lessons:', lessonError);
+        
+        // Don't fail the whole component if lessons fail
+        this.lessons = [];
+        
+        // Show warning to user if possible
+        console.warn('⚠️ Lessons could not be loaded, but topic will still be shown');
+        
+        // Store lesson error for debugging
+        if (this.isDevelopment) {
+          this.debugInfo = {
+            ...this.debugInfo,
+            lessonError: lessonError.message,
+            lessonStack: lessonError.stack
+          };
+        }
+      } finally {
+        this.lessonsLoading = false;
+      }
+    },
+    
+    // ✅ NEW: Topic data normalization function
+    normalizeTopicData(rawData) {
+      if (!rawData) return null;
       
-      // Handle different lesson response structures
-      let lessonsData = [];
+      return {
+        // ✅ Ensure we have an ID
+        _id: rawData._id || rawData.id,
+        id: rawData._id || rawData.id,
+        
+        // ✅ Normalize name field
+        name: this.extractName(rawData),
+        topicName: this.extractName(rawData),
+        
+        // ✅ Normalize description
+        description: this.extractDescription(rawData),
+        topicDescription: this.extractDescription(rawData),
+        
+        // ✅ Standard fields
+        subject: rawData.subject || '',
+        level: rawData.level || 1,
+        
+        // ✅ Timestamps
+        createdAt: rawData.createdAt,
+        updatedAt: rawData.updatedAt,
+        
+        // ✅ Additional metadata
+        metadata: rawData.metadata || {},
+        isActive: rawData.isActive !== undefined ? rawData.isActive : true,
+        isDraft: rawData.isDraft || false,
+        
+        // ✅ Keep all original data for debugging
+        _raw: this.isDevelopment ? rawData : undefined
+      };
+    },
+    
+    // ✅ NEW: Lesson data normalization function
+    normalizeLessonData(rawLesson, topicId, index) {
+      if (!rawLesson) return null;
       
-      if (lessonsResult) {
-        if (lessonsResult.success === true && Array.isArray(lessonsResult.data)) {
-          lessonsData = lessonsResult.data;
-        } else if (lessonsResult.success === true && Array.isArray(lessonsResult.lessons)) {
-          lessonsData = lessonsResult.lessons;
-        } else if (Array.isArray(lessonsResult.data)) {
-          lessonsData = lessonsResult.data;
-        } else if (Array.isArray(lessonsResult.lessons)) {
-          lessonsData = lessonsResult.lessons;
-        } else if (Array.isArray(lessonsResult)) {
-          lessonsData = lessonsResult;
+      return {
+        // ✅ Ensure we have an ID
+        _id: rawLesson._id || rawLesson.id || `lesson_${index}`,
+        id: rawLesson._id || rawLesson.id || `lesson_${index}`,
+        
+        // ✅ Normalize lesson name
+        lessonName: this.extractLessonName(rawLesson),
+        title: this.extractLessonName(rawLesson),
+        name: this.extractLessonName(rawLesson),
+        
+        // ✅ Normalize description
+        description: this.extractLessonDescription(rawLesson),
+        desc: this.extractLessonDescription(rawLesson),
+        
+        // ✅ Ensure type is set
+        type: rawLesson.type || 'free',
+        
+        // ✅ Link to topic
+        topicId: rawLesson.topicId || topicId,
+        topic: rawLesson.topic || this.topic?.name,
+        
+        // ✅ Metadata and structure
+        steps: rawLesson.steps || [],
+        metadata: rawLesson.metadata || { estimatedDuration: 30 },
+        homework: rawLesson.homework || { totalExercises: 0 },
+        
+        // ✅ Status
+        isActive: rawLesson.isActive !== undefined ? rawLesson.isActive : true,
+        isDraft: rawLesson.isDraft || false,
+        
+        // ✅ Keep original for debugging
+        _raw: this.isDevelopment ? rawLesson : undefined
+      };
+    },
+    
+    // ✅ ENHANCED: Name extraction with fallbacks
+    extractName(data) {
+      if (!data) return 'Без названия';
+      
+      // Try string name first
+      if (typeof data.name === 'string' && data.name.trim()) {
+        return data.name.trim();
+      }
+      
+      // Try localized name object
+      if (typeof data.name === 'object' && data.name) {
+        const localized = data.name.en || data.name.ru || data.name.uz || data.name.default;
+        if (localized && typeof localized === 'string' && localized.trim()) {
+          return localized.trim();
+        }
+        
+        // Get first available translation
+        const values = Object.values(data.name);
+        for (const value of values) {
+          if (value && typeof value === 'string' && value.trim()) {
+            return value.trim();
+          }
         }
       }
       
-      console.log(`📚 Found ${lessonsData.length} lessons`);
+      // Try other possible name fields
+      const nameFields = ['topicName', 'title', 'displayName'];
+      for (const field of nameFields) {
+        if (data[field] && typeof data[field] === 'string' && data[field].trim()) {
+          return data[field].trim();
+        }
+      }
       
-      // ✅ Ensure lessons have proper structure
-      this.lessons = lessonsData.map(lesson => ({
-        ...lesson,
-        type: lesson.type || 'free',
-        _id: lesson._id || lesson.id,
-        lessonName: lesson.lessonName || lesson.title || lesson.name,
-        description: lesson.description || lesson.desc || ''
-      }));
+      return 'Без названия';
+    },
+    
+    // ✅ ENHANCED: Description extraction with fallbacks
+    extractDescription(data) {
+      if (!data) return 'Нет описания';
       
-    } catch (lessonError) {
-      console.warn('⚠️ Error loading lessons (non-fatal):', lessonError.message);
-      // Don't fail the whole component if lessons fail
-      this.lessons = [];
-    }
+      // Try string description first
+      if (typeof data.description === 'string' && data.description.trim()) {
+        return data.description.trim();
+      }
+      
+      // Try localized description object
+      if (typeof data.description === 'object' && data.description) {
+        const localized = data.description.en || data.description.ru || data.description.uz || data.description.default;
+        if (localized && typeof localized === 'string' && localized.trim()) {
+          return localized.trim();
+        }
+        
+        // Get first available translation
+        const values = Object.values(data.description);
+        for (const value of values) {
+          if (value && typeof value === 'string' && value.trim()) {
+            return value.trim();
+          }
+        }
+      }
+      
+      // Try other possible description fields
+      const descFields = ['topicDescription', 'desc', 'summary', 'info'];
+      for (const field of descFields) {
+        if (data[field] && typeof data[field] === 'string' && data[field].trim()) {
+          return data[field].trim();
+        }
+      }
+      
+      return 'Нет описания для этой темы.';
+    },
     
-  } catch (err) {
-    console.error('❌ Error loading topic data:', err);
+    // ✅ ENHANCED: Lesson name extraction
+    extractLessonName(lesson) {
+      if (!lesson) return 'Без названия';
+      
+      const nameFields = ['lessonName', 'title', 'name'];
+      
+      for (const field of nameFields) {
+        if (typeof lesson[field] === 'string' && lesson[field].trim()) {
+          return lesson[field].trim();
+        }
+        
+        if (typeof lesson[field] === 'object' && lesson[field]) {
+          const localized = lesson[field].en || lesson[field].ru || lesson[field].uz;
+          if (localized && typeof localized === 'string' && localized.trim()) {
+            return localized.trim();
+          }
+        }
+      }
+      
+      return 'Без названия';
+    },
     
-    // ✅ ENHANCED: Better error message based on error type
-    if (err.response?.status === 404) {
-      this.error = 'Тема не найдена';
-    } else if (err.response?.status === 403) {
-      this.error = 'У вас нет доступа к этой теме';
-    } else if (err.response?.status >= 500) {
-      this.error = 'Ошибка сервера. Попробуйте позже.';
-    } else if (err.message === 'Network Error') {
-      this.error = 'Ошибка сети. Проверьте подключение к интернету.';
-    } else if (err.message.includes('Topic not found')) {
-      this.error = 'Тема не найдена или была удалена';
-    } else {
-      this.error = err.message || 'Произошла неизвестная ошибка';
-    }
+    // ✅ ENHANCED: Lesson description extraction
+    extractLessonDescription(lesson) {
+      if (!lesson) return '';
+      
+      const descFields = ['description', 'desc', 'summary'];
+      
+      for (const field of descFields) {
+        if (typeof lesson[field] === 'string' && lesson[field].trim()) {
+          return lesson[field].trim();
+        }
+        
+        if (typeof lesson[field] === 'object' && lesson[field]) {
+          const localized = lesson[field].en || lesson[field].ru || lesson[field].uz;
+          if (localized && typeof localized === 'string' && localized.trim()) {
+            return localized.trim();
+          }
+        }
+      }
+      
+      return '';
+    },
     
-    this.topic = null;
-    this.lessons = [];
-    
-  } finally {
-    this.loading = false;
-  }
-},
-    
+    // ✅ FIXED: Enhanced user plan loading
     async loadUserPlan() {
       try {
         if (!auth.currentUser) {
           this.userPlan = 'free';
+          console.log('ℹ️ No authenticated user, defaulting to free plan');
           return;
         }
 
         const userId = auth.currentUser.uid;
+        console.log('👤 Loading user plan for:', userId);
 
         const statusResult = await getUserStatus(userId);
         
-        if (statusResult.success) {
+        if (statusResult && statusResult.success) {
           this.userPlan = statusResult.status || statusResult.data?.subscriptionPlan || 'free';
+          console.log('✅ User plan loaded from API:', this.userPlan);
         } else {
-          console.warn('⚠️ Failed to load user status, defaulting to free');
+          console.warn('⚠️ Failed to load user status from API, checking localStorage');
           this.userPlan = 'free';
         }
         
@@ -476,6 +754,7 @@ export default {
         const storedPlan = localStorage.getItem('subscriptionPlan');
         if (storedPlan && ['premium', 'start', 'pro'].includes(storedPlan)) {
           this.userPlan = storedPlan;
+          console.log('✅ User plan loaded from localStorage:', this.userPlan);
         }
         
       } catch (err) {
@@ -484,303 +763,178 @@ export default {
       }
     },
 
+    // ✅ ENHANCED: Get user subscription from multiple sources
     getUserSubscription() {
-      // Multiple sources for subscription status
-      return this.$store?.state?.user?.subscriptionPlan || 
-             this.$store?.getters?.userStatus || 
-             localStorage.getItem('subscriptionPlan') || 
-             'free';
+      const sources = [
+        this.$store?.state?.user?.subscriptionPlan,
+        this.$store?.getters?.userStatus,
+        localStorage.getItem('subscriptionPlan'),
+        this.userPlan
+      ];
+      
+      for (const source of sources) {
+        if (source && ['premium', 'start', 'pro', 'free'].includes(source)) {
+          return source;
+        }
+      }
+      
+      return 'free';
     },
     
-    getErrorMessage(error) {
-      try {
-        if (!error) return 'Произошла неизвестная ошибка';
-        
-        if (error.response?.status === 404) {
-          return 'Тема не найдена';
-        } else if (error.response?.status === 403) {
-          return 'У вас нет доступа к этой теме';
-        } else if (error.response?.status >= 500) {
-          return 'Ошибка сервера. Попробуйте позже.';
-        } else if (error.message && typeof error.message === 'string') {
-          return error.message;
-        } else if (typeof error === 'string') {
-          return error;
-        } else {
-          return 'Произошла неизвестная ошибка';
-        }
-      } catch (errorProcessingError) {
-        console.error('❌ Error processing error message:', errorProcessingError);
-        return 'Произошла неизвестная ошибка';
+    // ✅ COMPLETELY REWRITTEN: Comprehensive error handling
+    handleError(error, context = 'операция') {
+      console.error(`❌ ${context} failed:`, error);
+      
+      // Network errors
+      if (error.message === 'Network Error' || error.code === 'NETWORK_ERROR') {
+        return 'Ошибка сети. Проверьте подключение к интернету и попробуйте снова.';
       }
+      
+      // Timeout errors
+      if (error.message?.includes('timeout') || error.code === 'ECONNABORTED') {
+        return 'Превышено время ожидания. Попробуйте еще раз.';
+      }
+      
+      // HTTP status errors
+      if (error.response?.status === 404) {
+        return 'Тема не найдена. Возможно, она была удалена.';
+      } else if (error.response?.status === 403) {
+        return 'У вас нет доступа к этой теме.';
+      } else if (error.response?.status === 401) {
+        return 'Необходимо войти в систему.';
+      } else if (error.response?.status >= 500) {
+        return 'Ошибка сервера. Попробуйте позже.';
+      }
+      
+      // Topic not found errors
+      if (error.message?.includes('Topic not found') || error.message?.includes('TOPIC_NOT_FOUND')) {
+        return 'Тема не найдена или была удалена.';
+      }
+      
+      // Invalid response format
+      if (error.message?.includes('Invalid topic response format')) {
+        return 'Неверный формат ответа сервера. Обратитесь к администратору.';
+      }
+      
+      // Generic error message
+      return error.message || `Произошла ошибка при выполнении: ${context}`;
     },
-
+    
+    // ✅ ENHANCED: Better retry logic with exponential backoff
     async retryLoad() {
       this.retryCount++;
-      await this.loadTopicData();
-    },
-    
-    // ✅ FIXED: Updated getTopicName function with better error handling
-    getTopicName(topic) {
-      try {
-        if (!topic) {
-          console.warn('⚠️ getTopicName: topic is null/undefined');
-          return 'Без названия';
-        }
-        
-        console.log('🔍 Topic object structure for name:', topic);
-        
-        // ✅ SAFETY: Check for simple string name first (what your backend actually returns)
-        if (topic.name && typeof topic.name === 'string' && topic.name.trim()) {
-          return topic.name.trim();
-        }
-        
-        // ✅ SAFETY: Then check for localized names (if you want to support this later)
-        if (topic.name && typeof topic.name === 'object') {
-          const localizedName = topic.name.en || 
-                               topic.name.ru || 
-                               topic.name.uz || 
-                               topic.name.default;
-          
-          if (localizedName && typeof localizedName === 'string') {
-            return localizedName.trim();
-          }
-          
-          // Get first available translation
-          const values = Object.values(topic.name);
-          for (const value of values) {
-            if (value && typeof value === 'string' && value.trim()) {
-              return value.trim();
-            }
-          }
-        }
-        
-        // ✅ SAFETY: Check for other possible name fields
-        if (topic.topicName && typeof topic.topicName === 'string') {
-          return topic.topicName.trim();
-        }
-        
-        if (topic.title && typeof topic.title === 'string') {
-          return topic.title.trim();
-        }
-        
-        if (topic.displayName && typeof topic.displayName === 'string') {
-          return topic.displayName.trim();
-        }
-        
-        console.warn('⚠️ No valid name found in topic object');
-        return 'Без названия';
-        
-      } catch (error) {
-        console.error('❌ Error in getTopicName:', error);
-        return 'Без названия';
-      }
-    },
-    
-    // ✅ FIXED: Updated getTopicDescription function with better error handling
-    getTopicDescription(topic) {
-      try {
-        if (!topic) {
-          console.warn('⚠️ getTopicDescription: topic is null/undefined');
-          return 'Нет описания для этой темы.';
-        }
-        
-        console.log('🔍 Topic description structure:', topic.description);
-        
-        // ✅ SAFETY: Check for simple string description first
-        if (topic.description && typeof topic.description === 'string' && topic.description.trim()) {
-          return topic.description.trim();
-        }
-        
-        // ✅ SAFETY: Then check for localized descriptions
-        if (topic.description && typeof topic.description === 'object') {
-          const localizedDesc = topic.description.en || 
-                               topic.description.ru || 
-                               topic.description.uz || 
-                               topic.description.default;
-          
-          if (localizedDesc && typeof localizedDesc === 'string') {
-            return localizedDesc.trim();
-          }
-          
-          // Get first available translation
-          const values = Object.values(topic.description);
-          for (const value of values) {
-            if (value && typeof value === 'string' && value.trim()) {
-              return value.trim();
-            }
-          }
-        }
-        
-        // ✅ SAFETY: Check for other possible description fields
-        if (topic.topicDescription && typeof topic.topicDescription === 'string') {
-          return topic.topicDescription.trim();
-        }
-        
-        if (topic.desc && typeof topic.desc === 'string') {
-          return topic.desc.trim();
-        }
-        
-        if (topic.summary && typeof topic.summary === 'string') {
-          return topic.summary.trim();
-        }
-        
-        console.warn('⚠️ No valid description found in topic object');
-        return 'Нет описания для этой темы.';
-        
-      } catch (error) {
-        console.error('❌ Error in getTopicDescription:', error);
-        return 'Нет описания для этой темы.';
-      }
-    },
-    
-    // ✅ FIXED: Updated getLessonName function with better error handling
-    getLessonName(lesson) {
-      try {
-        if (!lesson) {
-          console.warn('⚠️ getLessonName: lesson is null/undefined');
-          return 'Без названия';
-        }
-        
-        // ✅ SAFETY: Check for simple string first
-        if (lesson.lessonName && typeof lesson.lessonName === 'string' && lesson.lessonName.trim()) {
-          return lesson.lessonName.trim();
-        }
-        
-        if (lesson.title && typeof lesson.title === 'string' && lesson.title.trim()) {
-          return lesson.title.trim();
-        }
-        
-        if (lesson.name && typeof lesson.name === 'string' && lesson.name.trim()) {
-          return lesson.name.trim();
-        }
-        
-        // ✅ SAFETY: Then check for localized names
-        if (lesson.lessonName && typeof lesson.lessonName === 'object') {
-          const localizedName = lesson.lessonName.en || 
-                               lesson.lessonName.ru || 
-                               lesson.lessonName.uz;
-          
-          if (localizedName && typeof localizedName === 'string') {
-            return localizedName.trim();
-          }
-          
-          const values = Object.values(lesson.lessonName);
-          for (const value of values) {
-            if (value && typeof value === 'string' && value.trim()) {
-              return value.trim();
-            }
-          }
-        }
-        
-        if (lesson.name && typeof lesson.name === 'object') {
-          const localizedName = lesson.name.en || 
-                               lesson.name.ru || 
-                               lesson.name.uz;
-          
-          if (localizedName && typeof localizedName === 'string') {
-            return localizedName.trim();
-          }
-          
-          const values = Object.values(lesson.name);
-          for (const value of values) {
-            if (value && typeof value === 'string' && value.trim()) {
-              return value.trim();
-            }
-          }
-        }
-        
-        console.warn('⚠️ No valid lesson name found');
-        return 'Без названия';
-        
-      } catch (error) {
-        console.error('❌ Error in getLessonName:', error);
-        return 'Без названия';
-      }
-    },
-    
-    // ✅ FIXED: Updated getLessonDescription function with better error handling
-    getLessonDescription(lesson) {
-      try {
-        if (!lesson) {
-          console.warn('⚠️ getLessonDescription: lesson is null/undefined');
-          return '';
-        }
-        
-        // ✅ SAFETY: Check for simple string first
-        if (lesson.description && typeof lesson.description === 'string' && lesson.description.trim()) {
-          return lesson.description.trim();
-        }
-        
-        if (lesson.desc && typeof lesson.desc === 'string' && lesson.desc.trim()) {
-          return lesson.desc.trim();
-        }
-        
-        // ✅ SAFETY: Then check for localized descriptions
-        if (lesson.description && typeof lesson.description === 'object') {
-          const localizedDesc = lesson.description.en || 
-                               lesson.description.ru || 
-                               lesson.description.uz;
-          
-          if (localizedDesc && typeof localizedDesc === 'string') {
-            return localizedDesc.trim();
-          }
-          
-          const values = Object.values(lesson.description);
-          for (const value of values) {
-            if (value && typeof value === 'string' && value.trim()) {
-              return value.trim();
-            }
-          }
-        }
-        
-        if (lesson.summary && typeof lesson.summary === 'string') {
-          return lesson.summary.trim();
-        }
-        
-        return '';
-        
-      } catch (error) {
-        console.error('❌ Error in getLessonDescription:', error);
-        return '';
-      }
-    },
-    
-    startLesson(lesson) {
-      if (lesson.type === 'premium' && !this.isPremiumUser) {
-        this.handleSubscription();
+      
+      if (this.retryCount > 3) {
+        this.error = 'Слишком много попыток. Пожалуйста, перезагрузите страницу.';
         return;
       }
       
-      const lessonId = lesson._id || lesson.id;
-      this.$router.push({ name: 'LessonPage', params: { id: lessonId } });
+      // Exponential backoff: wait longer between retries
+      const delay = Math.pow(2, this.retryCount - 1) * 1000; // 1s, 2s, 4s
+      
+      console.log(`⏱️ Retrying in ${delay}ms (attempt ${this.retryCount})`);
+      
+      setTimeout(async () => {
+        await this.loadTopicData();
+      }, delay);
     },
     
-    startFirstLesson() {
-      const firstAvailable = this.lessons.find(
-        lesson => lesson.type !== 'premium' || this.isPremiumUser
-      );
-      
-      if (firstAvailable) {
-        this.startLesson(firstAvailable);
-      } else {
-        this.handleSubscription();
+    // ✅ FIXED: Better topic name getter
+    getTopicName(topic) {
+      if (!topic) return 'Без названия';
+      return this.extractName(topic);
+    },
+    
+    // ✅ FIXED: Better topic description getter
+    getTopicDescription(topic) {
+      if (!topic) return 'Нет описания для этой темы.';
+      return this.extractDescription(topic);
+    },
+    
+    // ✅ FIXED: Better lesson name getter
+    getLessonName(lesson) {
+      if (!lesson) return 'Без названия';
+      return this.extractLessonName(lesson);
+    },
+    
+    // ✅ FIXED: Better lesson description getter
+    getLessonDescription(lesson) {
+      if (!lesson) return '';
+      return this.extractLessonDescription(lesson);
+    },
+    
+    // ✅ ENHANCED: Start lesson with better error handling
+    startLesson(lesson) {
+      try {
+        if (!lesson) {
+          console.error('❌ Cannot start lesson: lesson is null');
+          return;
+        }
+        
+        if (lesson.type === 'premium' && !this.isPremiumUser) {
+          console.log('🔒 Premium lesson requires subscription');
+          this.handleSubscription();
+          return;
+        }
+        
+        const lessonId = lesson._id || lesson.id;
+        if (!lessonId) {
+          console.error('❌ Cannot start lesson: no lesson ID found');
+          this.error = 'Ошибка: не найден ID урока';
+          return;
+        }
+        
+        console.log('🚀 Starting lesson:', lessonId);
+        this.$router.push({ name: 'LessonPage', params: { id: lessonId } });
+        
+      } catch (error) {
+        console.error('❌ Error starting lesson:', error);
+        this.error = 'Ошибка при запуске урока';
       }
     },
     
-    handleSubscription() {
-      this.$router.push({
-        name: 'PaymePayment',
-        params: { plan: 'start' },
-        query: { 
-          returnTo: this.$route.fullPath,
-          from: 'topic',
-          topicId: this.topic?._id || this.topic?.id
+    // ✅ ENHANCED: Start first lesson with better logic
+    startFirstLesson() {
+      try {
+        const firstAvailable = this.lessons.find(
+          lesson => lesson && (lesson.type !== 'premium' || this.isPremiumUser)
+        );
+        
+        if (firstAvailable) {
+          console.log('🚀 Starting first available lesson:', firstAvailable.lessonName);
+          this.startLesson(firstAvailable);
+        } else {
+          console.log('🔒 No available lessons, redirecting to subscription');
+          this.handleSubscription();
         }
-      });
+      } catch (error) {
+        console.error('❌ Error starting first lesson:', error);
+        this.error = 'Ошибка при запуске первого урока';
+      }
     },
     
-    // Safe payment check method to avoid errors
+    // ✅ ENHANCED: Handle subscription with better error handling
+    handleSubscription() {
+      try {
+        console.log('💳 Redirecting to subscription page');
+        
+        this.$router.push({
+          name: 'PaymePayment',
+          params: { plan: 'start' },
+          query: { 
+            returnTo: this.$route.fullPath,
+            from: 'topic',
+            topicId: this.topic?._id || this.topic?.id
+          }
+        });
+      } catch (error) {
+        console.error('❌ Error redirecting to subscription:', error);
+        // Fallback to direct URL
+        window.location.href = '/payment/start';
+      }
+    },
+    
+    // ✅ ENHANCED: Safe payment check method
     async checkPaymentStatus() {
       try {
         // Only check if user is authenticated and we have store
@@ -789,12 +943,14 @@ export default {
         }
         
         // Check if dispatch method exists and returns a promise
-        const checkAction = this.$store.dispatch('user/checkPendingPayments');
-        
-        if (checkAction && typeof checkAction.catch === 'function') {
-          await checkAction;
-        } else {
-          console.log('⚠️ Payment check action not available');
+        if (typeof this.$store.dispatch === 'function') {
+          const checkAction = this.$store.dispatch('user/checkPendingPayments');
+          
+          if (checkAction && typeof checkAction.catch === 'function') {
+            await checkAction;
+          } else {
+            console.log('ℹ️ Payment check action not available');
+          }
         }
         
       } catch (error) {
@@ -804,26 +960,53 @@ export default {
     }
   },
   
-  // Lifecycle hook to check payment status periodically
+  // ✅ ENHANCED: Lifecycle hooks with better error handling
   async created() {
-    // Initial payment check
-    await this.checkPaymentStatus();
-    
-    // Set up periodic payment check (every 5 minutes)
-    this.paymentCheckInterval = setInterval(() => {
-      this.checkPaymentStatus();
-    }, 5 * 60 * 1000);
+    try {
+      // Initial payment check
+      await this.checkPaymentStatus();
+      
+      // Set up periodic payment check (every 5 minutes)
+      this.paymentCheckInterval = setInterval(() => {
+        this.checkPaymentStatus();
+      }, 5 * 60 * 1000);
+    } catch (error) {
+      console.warn('⚠️ Error in created hook:', error.message);
+    }
   },
   
   beforeUnmount() {
-    // Clean up interval
-    if (this.paymentCheckInterval) {
-      clearInterval(this.paymentCheckInterval);
+    try {
+      // Clean up interval
+      if (this.paymentCheckInterval) {
+        clearInterval(this.paymentCheckInterval);
+        this.paymentCheckInterval = null;
+      }
+    } catch (error) {
+      console.warn('⚠️ Error in beforeUnmount hook:', error.message);
     }
+  },
+  
+  // ✅ NEW: Error boundary for template errors
+  errorCaptured(err, vm, info) {
+    console.error('❌ Component error captured:', err);
+    console.error('Error info:', info);
+    
+    // Store error for debugging
+    if (this.isDevelopment) {
+      this.debugInfo = {
+        ...this.debugInfo,
+        templateError: err.message,
+        errorInfo: info,
+        timestamp: new Date().toISOString()
+      };
+    }
+    
+    // Don't propagate error up
+    return false;
   }
 };
 </script>
-
 <style scoped>
 .topic-overview {
   min-height: 100vh;
