@@ -317,7 +317,7 @@
       <!-- Split Screen Content -->
       <div class="split-content">
         
-        <!-- ✅ FIXED: Left Panel - Content Display -->
+        <!-- ✅ FIXED: Left Panel - Clean Content Display -->
         <div class="content-panel">
           <div class="step-header">
             <h3 class="step-title">
@@ -336,36 +336,25 @@
           </div>
           
           <div class="step-content">
-            <!-- ✅ FIXED: FOR INTERACTIVE STEPS - Show current question/exercise -->
+            <!-- ✅ FIXED: FOR INTERACTIVE STEPS - Show ONLY clean question -->
             <div v-if="isInteractiveStep" class="interactive-content">
               
-              <!-- Exercise Content -->
+              <!-- Exercise Content - Clean Question Only -->
               <div v-if="['exercise', 'practice'].includes(currentStep?.type)" class="current-exercise-content">
                 <div class="exercise-question-display">
-                  <h4>{{ getExerciseQuestion(currentStep) }}</h4>
+                  <div class="clean-question">{{ getStepContent(currentStep) }}</div>
                   
-                  <!-- Show exercise instruction if available -->
-                  <div v-if="getCurrentExercise()?.instruction" class="exercise-instruction">
-                    <div class="instruction-badge">💡 Инструкция</div>
-                    <p>{{ getCurrentExercise().instruction }}</p>
-                  </div>
-                  
-                  <!-- Show exercise type info -->
-                  <div class="exercise-type-info">
+                  <!-- Show exercise type info in a subtle way -->
+                  <div v-if="getCurrentExercise()?.type && getCurrentExercise().type !== 'short-answer'" class="exercise-type-info">
                     <span class="type-badge">{{ getExerciseTypeName(getCurrentExercise()?.type) }}</span>
                   </div>
                 </div>
               </div>
               
-              <!-- Quiz Content -->
+              <!-- Quiz Content - Clean Question Only -->
               <div v-else-if="currentStep?.type === 'quiz'" class="current-quiz-content">
                 <div class="quiz-question-display">
-                  <h4>{{ getQuizQuestion(currentStep) }}</h4>
-                  
-                  <!-- Show quiz explanation if available -->
-                  <div v-if="getCurrentQuiz()?.explanation" class="quiz-explanation">
-                    <p>{{ getCurrentQuiz().explanation }}</p>
-                  </div>
+                  <div class="clean-question">{{ getStepContent(currentStep) }}</div>
                 </div>
               </div>
             </div>
@@ -1860,11 +1849,8 @@ export default {
   return 'Exercise question not available';
 },
 
-    getCorrectAnswer(step) {
-  console.log('🔍 getCorrectAnswer called with step:', step);
-  
+getCorrectAnswer(step) {
   if (!step || !step.data) {
-    console.warn('⚠️ getCorrectAnswer: Invalid step data');
     return '';
   }
   
@@ -1893,7 +1879,6 @@ export default {
     }
     
     if (!exercise) {
-      console.warn('⚠️ No exercise found at current index');
       return '';
     }
     
@@ -1901,7 +1886,6 @@ export default {
     const answer = exercise.correctAnswer || exercise.answer;
     if (answer !== undefined && answer !== null) {
       const result = Array.isArray(answer) ? answer.join(', ') : String(answer).trim();
-      console.log(`✅ Found answer for current exercise:`, result);
       return result;
     }
     
@@ -1909,9 +1893,7 @@ export default {
     if (exercise.options && Array.isArray(exercise.options)) {
       const correctIndex = exercise.correctAnswer;
       if (typeof correctIndex === 'number' && correctIndex >= 0 && correctIndex < exercise.options.length) {
-        const result = exercise.options[correctIndex];
-        console.log('✅ Found answer by index:', result);
-        return result;
+        return exercise.options[correctIndex];
       }
     }
     
@@ -1919,7 +1901,6 @@ export default {
     console.error('❌ Error in getCorrectAnswer:', error);
   }
   
-  console.warn('⚠️ No correct answer found');
   return '';
 },
     hasOptions(step) {
@@ -2177,85 +2158,108 @@ getQuizOptions(quiz) {
     return false;
   }
 },
-    validateAnswer(userAnswer, correctAnswer, stepType) {
-      if (!userAnswer || !correctAnswer) return false;
+validateAnswer(userAnswer, correctAnswer, stepType) {
+  // ✅ CRITICAL FIX: Add type checking
+  if (!userAnswer && userAnswer !== 0 && userAnswer !== false) return false;
+  if (!correctAnswer && correctAnswer !== 0 && correctAnswer !== false) return false;
 
-      const normalize = (text) => {
-        return String(text)
-          .toLowerCase()
-          .trim()
-          .replace(/\s+/g, ' ')
-          .replace(/[.,;:!?'"()[\]{}]/g, '')
-          .replace(/\b(the|a|an|и|в|на|с|по|для|от|до|при|под|над|между|через|без|из)\b/gi, '')
-          .trim();
-      };
+  const normalize = (text) => {
+    // ✅ FIX: Ensure text is a string before calling string methods
+    return String(text || '')
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, ' ')
+      .replace(/[.,;:!?'"()[\]{}]/g, '')
+      .replace(/\b(the|a|an|и|в|на|с|по|для|от|до|при|под|над|между|через|без|из)\b/gi, '')
+      .trim();
+  };
 
-      const normalizedUser = normalize(userAnswer);
-      const normalizedCorrect = normalize(correctAnswer);
+  const normalizedUser = normalize(userAnswer);
+  const normalizedCorrect = normalize(correctAnswer);
 
-      if (this.debugMode) {
-        console.log('🔍 Answer validation:', {
-          user: userAnswer,
-          correct: correctAnswer,
-          normalizedUser,
-          normalizedCorrect,
-          stepType
-        });
+  if (normalizedUser === normalizedCorrect) {
+    return true;
+  }
+
+  const correctWords = normalizedCorrect.split(' ').filter(word => word.length > 2);
+  const userWords = normalizedUser.split(' ');
+  
+  if (correctWords.length > 0) {
+    const containsAllKeyWords = correctWords.every(word => 
+      userWords.some(userWord => 
+        userWord.includes(word) || word.includes(userWord) || 
+        this.calculateSimilarity(userWord, word) > 0.8
+      )
+    );
+    
+    if (containsAllKeyWords) {
+      return true;
+    }
+  }
+
+  if (String(correctAnswer).includes(',') || String(correctAnswer).includes(';')) {
+    return this.validateListAnswer(normalizedUser, normalizedCorrect);
+  }
+
+  // Check for mathematical expressions
+  if (this.isMathAnswer(String(correctAnswer))) {
+    return this.validateMathAnswer(userAnswer, correctAnswer);
+  }
+
+  // Check for numerical answers with tolerance
+  if (this.isNumericAnswer(String(correctAnswer))) {
+    return this.validateNumericAnswer(userAnswer, correctAnswer);
+  }
+
+  // Fuzzy matching for single words or short phrases
+  if (correctWords.length <= 3) {
+    const similarity = this.calculateSimilarity(normalizedUser, normalizedCorrect);
+    if (similarity > 0.85) {
+      return true;
+    }
+  }
+
+  // Check for partial credit scenarios
+  const partialScore = this.calculatePartialScore(normalizedUser, normalizedCorrect);
+  if (partialScore > 0.7) {
+    return true;
+  }
+
+  return false;
+},
+
+// Replace validateMathAnswer with proper type checking
+validateMathAnswer(userAnswer, correctAnswer) {
+  try {
+    // ✅ CRITICAL FIX: Ensure both are strings before calling string methods
+    const userStr = String(userAnswer || '');
+    const correctStr = String(correctAnswer || '');
+    
+    // Remove spaces and normalize
+    const userMath = userStr.replace(/\s/g, '');
+    const correctMath = correctStr.replace(/\s/g, '');
+    
+    // Direct comparison
+    if (userMath === correctMath) return true;
+    
+    // Try to evaluate if they're mathematical expressions
+    if (this.isSafeExpression(userMath) && this.isSafeExpression(correctMath)) {
+      try {
+        const userResult = eval(userMath);
+        const correctResult = eval(correctMath);
+        return Math.abs(userResult - correctResult) < 0.001;
+      } catch (e) {
+        // If evaluation fails, fall back to string comparison
+        return userMath === correctMath;
       }
-
-      if (normalizedUser === normalizedCorrect) {
-        return true;
-      }
-
-      const correctWords = normalizedCorrect.split(' ').filter(word => word.length > 2);
-      const userWords = normalizedUser.split(' ');
-      
-      if (correctWords.length > 0) {
-        const containsAllKeyWords = correctWords.every(word => 
-          userWords.some(userWord => 
-            userWord.includes(word) || word.includes(userWord) || 
-            this.calculateSimilarity(userWord, word) > 0.8
-          )
-        );
-        
-        if (containsAllKeyWords) {
-          console.log('✅ Answer accepted: contains all key words');
-          return true;
-        }
-      }
-
-      if (correctAnswer.includes(',') || correctAnswer.includes(';')) {
-        return this.validateListAnswer(normalizedUser, normalizedCorrect);
-      }
-
-      // 4. Check for mathematical expressions
-      if (this.isMathAnswer(correctAnswer)) {
-        return this.validateMathAnswer(userAnswer, correctAnswer);
-      }
-
-      // 5. Check for numerical answers with tolerance
-      if (this.isNumericAnswer(correctAnswer)) {
-        return this.validateNumericAnswer(userAnswer, correctAnswer);
-      }
-
-      // 6. Fuzzy matching for single words or short phrases
-      if (correctWords.length <= 3) {
-        const similarity = this.calculateSimilarity(normalizedUser, normalizedCorrect);
-        if (similarity > 0.85) {
-          console.log('✅ Answer accepted: high similarity', similarity);
-          return true;
-        }
-      }
-
-      // 7. Check for partial credit scenarios
-      const partialScore = this.calculatePartialScore(normalizedUser, normalizedCorrect);
-      if (partialScore > 0.7) {
-        console.log('✅ Answer accepted: partial credit', partialScore);
-        return true;
-      }
-
-      return false;
-    },
+    }
+    
+    return false;
+  } catch (error) {
+    // Remove warning log, just return fallback comparison
+    return String(userAnswer || '').trim() === String(correctAnswer || '').trim();
+  }
+},
 
     validateListAnswer(userAnswer, correctAnswer) {
       const userItems = userAnswer.split(/[,;]/).map(item => item.trim()).filter(item => item.length > 0);
@@ -2311,17 +2315,21 @@ getQuizOptions(quiz) {
     },
 
     validateNumericAnswer(userAnswer, correctAnswer) {
-      const userNum = parseFloat(userAnswer.replace(/[^\d.-]/g, ''));
-      const correctNum = parseFloat(correctAnswer.replace(/[^\d.-]/g, ''));
-      
-      if (isNaN(userNum) || isNaN(correctNum)) {
-        return userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase();
-      }
-      
-      // Allow 1% tolerance for floating point numbers
-      const tolerance = Math.abs(correctNum) * 0.01;
-      return Math.abs(userNum - correctNum) <= tolerance;
-    },
+  // ✅ FIX: Ensure strings before regex operations
+  const userStr = String(userAnswer || '');
+  const correctStr = String(correctAnswer || '');
+  
+  const userNum = parseFloat(userStr.replace(/[^\d.-]/g, ''));
+  const correctNum = parseFloat(correctStr.replace(/[^\d.-]/g, ''));
+  
+  if (isNaN(userNum) || isNaN(correctNum)) {
+    return userStr.trim().toLowerCase() === correctStr.trim().toLowerCase();
+  }
+  
+  // Allow 1% tolerance for floating point numbers
+  const tolerance = Math.abs(correctNum) * 0.01;
+  return Math.abs(userNum - correctNum) <= tolerance;
+},
 
     calculateSimilarity(str1, str2) {
       if (str1 === str2) return 1;
@@ -2448,27 +2456,29 @@ getQuizOptions(quiz) {
   }
 },
 
-    // =============================================
-// REPLACE YOUR EXISTING handleSubmitOrNext METHOD WITH THIS:
-// =============================================
-
 async handleSubmitOrNext() {
   const step = this.currentStep;
   if (!step || !step.data) {
-    console.warn('⚠️ No current step data available');
     this.confirmation = '⚠️ Ошибка: нет данных о текущем шаге.';
     return;
   }
 
-  const userResponse = this.userAnswer?.trim?.() || this.userAnswer;
-
-  if (!userResponse && !Array.isArray(userResponse)) {
+  let userResponse = this.userAnswer;
+  
+  // ✅ FIX: Better type handling for userResponse
+  if (userResponse === null || userResponse === undefined) {
     this.confirmation = '⚠️ Введите ответ.';
     return;
   }
-
-  console.log('🔍 Validating answer for step type:', step.type);
-  console.log('👤 User answer:', userResponse);
+  
+  // Convert to string if needed, but preserve numbers and booleans for certain types
+  if (typeof userResponse === 'string') {
+    userResponse = userResponse.trim();
+    if (!userResponse) {
+      this.confirmation = '⚠️ Введите ответ.';
+      return;
+    }
+  }
 
   let isCorrect = false;
   let correctAnswer = '';
@@ -2489,7 +2499,7 @@ async handleSubmitOrNext() {
     } else if (['exercise', 'practice'].includes(step.type)) {
       correctAnswer = this.getCorrectAnswer(step);
 
-      // ✅ Handle new structured types
+      // Handle new structured types
       switch (answerType) {
         case 'abc':
         case 'multiple-choice':
@@ -2523,7 +2533,6 @@ async handleSubmitOrNext() {
         isCorrect = this.validateAnswer(userResponse, correctAnswer, step.type);
       } else {
         isCorrect = true;
-        console.log('💭 No correct answer defined, accepting user response');
       }
     }
 
@@ -2541,45 +2550,24 @@ async handleSubmitOrNext() {
 
       let feedback;
       try {
-        // ✅ ENHANCED SAFETY: Additional validation before calling generateHelpfulFeedback
-        console.log('🔍 Before feedback generation:', { 
-          userResponse, 
-          correctAnswer, 
-          correctAnswerType: typeof correctAnswer,
-          answerType 
-        });
-        
         feedback = this.generateHelpfulFeedback(userResponse, correctAnswer, answerType);
       } catch (error) {
-        console.error('❌ Error generating feedback:', error);
-        console.error('❌ Feedback error details:', { userResponse, correctAnswer, answerType });
         feedback = 'Попробуйте еще раз.';
       }
       
       this.confirmation = `❌ Неверно. ${feedback}`;
       
-      // ✅ ENHANCED SAFETY: Safe string conversion check
+      // Safe string conversion for display
       let correctAnswerDisplay = '';
       try {
         if (correctAnswer !== null && correctAnswer !== undefined) {
-          if (typeof correctAnswer === 'string') {
-            correctAnswerDisplay = correctAnswer.trim();
-          } else if (typeof correctAnswer === 'number') {
-            correctAnswerDisplay = String(correctAnswer);
-          } else if (typeof correctAnswer === 'boolean') {
-            correctAnswerDisplay = correctAnswer ? 'True' : 'False';
-          } else if (Array.isArray(correctAnswer)) {
-            correctAnswerDisplay = correctAnswer.join(', ');
-          } else {
-            correctAnswerDisplay = String(correctAnswer);
-          }
+          correctAnswerDisplay = String(correctAnswer).trim();
         }
       } catch (conversionError) {
-        console.error('❌ Error converting correct answer for display:', conversionError);
         correctAnswerDisplay = '';
       }
       
-      if (correctAnswerDisplay && correctAnswerDisplay.length > 0 && correctAnswerDisplay !== 'undefined') {
+      if (correctAnswerDisplay && correctAnswerDisplay !== 'undefined') {
         this.confirmation += ` Правильный ответ: "${correctAnswerDisplay}"`;
       }
 
@@ -2603,7 +2591,7 @@ async handleSubmitOrNext() {
             this.hintsUsed = true;
           }
         } catch (error) {
-          console.error('❌ Smart hint error:', error);
+          // Silently fail on hint generation
         }
       }
     }
@@ -3100,23 +3088,19 @@ async handleSubmitOrNext() {
       return (field?.en || field?.ru || field?.uz || '').replace(/^(en|ru|uz):/i, '').trim();
     },
     getStepContent(step) {
-  console.log('🔍 getStepContent called with step:', step);
-  
   if (!step) {
-    console.warn('⚠️ No step provided to getStepContent');
     return 'Контент недоступен';
   }
   
   if (!step.data) {
-    console.warn('⚠️ No step.data found');
     return 'Контент недоступен';
   }
   
-  // FOR INTERACTIVE STEPS: Show current question
+  // FOR INTERACTIVE STEPS: Show ONLY the current question, no instructions
   if (['exercise', 'practice'].includes(step.type)) {
-    const currentQuestion = this.getExerciseQuestion(step);
-    if (currentQuestion && currentQuestion !== 'Exercise question not available') {
-      return currentQuestion;
+    const currentExercise = this.getCurrentExercise();
+    if (currentExercise && currentExercise.question) {
+      return this.getLocalized(currentExercise.question);
     }
   }
   
@@ -3131,7 +3115,6 @@ async handleSubmitOrNext() {
   try {
     // 1. Direct string content
     if (typeof step.data === 'string' && step.data.trim()) {
-      console.log('✅ Found direct string content');
       return step.data.trim();
     }
     
@@ -3139,7 +3122,6 @@ async handleSubmitOrNext() {
     if (step.data.content) {
       const content = this.getLocalized(step.data.content);
       if (content && content.trim()) {
-        console.log('✅ Found content in step.data.content');
         return content.trim();
       }
     }
@@ -3148,7 +3130,6 @@ async handleSubmitOrNext() {
     if (step.data.text) {
       const text = this.getLocalized(step.data.text);
       if (text && text.trim()) {
-        console.log('✅ Found content in step.data.text');
         return text.trim();
       }
     }
@@ -3157,7 +3138,6 @@ async handleSubmitOrNext() {
     if (step.data.explanation) {
       const explanation = this.getLocalized(step.data.explanation);
       if (explanation && explanation.trim()) {
-        console.log('✅ Found content in step.data.explanation');
         return explanation.trim();
       }
     }
@@ -3166,7 +3146,6 @@ async handleSubmitOrNext() {
     if (step.data.description) {
       const description = this.getLocalized(step.data.description);
       if (description && description.trim()) {
-        console.log('✅ Found content in step.data.description');
         return description.trim();
       }
     }
@@ -3174,12 +3153,10 @@ async handleSubmitOrNext() {
     // 6. For vocabulary steps
     if (step.type === 'vocabulary') {
       if (Array.isArray(step.data) && step.data.length > 0) {
-        console.log('✅ Found vocabulary content');
         return `Изучение словаря: ${step.data.length} новых слов`;
       }
     }
     
-    console.warn('⚠️ No recognizable content found in step:', step);
     return `Контент для шага "${step.type}" временно недоступен`;
     
   } catch (error) {
@@ -3403,42 +3380,39 @@ currentQuizIndex: 0,
 
 // Exercise navigation methods
 getCurrentExercise() {
-    const step = this.currentStep;
-    if (!step || !['exercise', 'practice'].includes(step.type)) {
+  const step = this.currentStep;
+  if (!step || !['exercise', 'practice'].includes(step.type)) {
+    return null;
+  }
+  
+  let exercises = [];
+  
+  try {
+    // Handle different data structures
+    if (Array.isArray(step.data)) {
+      exercises = step.data;
+    } else if (step.data && Array.isArray(step.data.exercises)) {
+      exercises = step.data.exercises;
+    } else if (step.data && step.data.question) {
+      exercises = [step.data];
+    }
+    
+    if (exercises.length === 0) {
       return null;
     }
     
-    let exercises = [];
-    
-    try {
-      // Handle different data structures
-      if (Array.isArray(step.data)) {
-        exercises = step.data;
-      } else if (step.data && Array.isArray(step.data.exercises)) {
-        exercises = step.data.exercises;
-      } else if (step.data && step.data.question) {
-        exercises = [step.data];
-      }
-      
-      if (exercises.length === 0) {
-        console.warn('⚠️ No exercises found in current step');
-        return null;
-      }
-      
-      // Ensure index is within bounds
-      if (this.currentExerciseIndex >= exercises.length) {
-        this.currentExerciseIndex = 0;
-      }
-      
-      const exercise = exercises[this.currentExerciseIndex];
-      console.log('✅ Current exercise:', exercise);
-      return exercise;
-      
-    } catch (error) {
-      console.error('❌ Error in getCurrentExercise:', error);
-      return null;
+    // Ensure index is within bounds
+    if (this.currentExerciseIndex >= exercises.length) {
+      this.currentExerciseIndex = 0;
     }
-  },
+    
+    return exercises[this.currentExerciseIndex];
+    
+  } catch (error) {
+    console.error('❌ Error in getCurrentExercise:', error);
+    return null;
+  }
+},
 
 
   getCurrentQuiz() {
