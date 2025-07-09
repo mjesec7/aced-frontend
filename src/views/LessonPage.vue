@@ -317,19 +317,61 @@
       <!-- Split Screen Content -->
       <div class="split-content">
         
-        <!-- Left Panel - Content Display -->
+        <!-- ✅ FIXED: Left Panel - Content Display -->
         <div class="content-panel">
           <div class="step-header">
             <h3 class="step-title">
               <span class="step-number">{{ currentIndex + 1 }}</span>
               <span class="step-type-icon">{{ getStepIcon(currentStep?.type) }}</span>
               <span class="step-type-text">{{ getStepTypeText(currentStep?.type) }}</span>
+              
+              <!-- ✅ NEW: Show exercise/quiz counter for interactive steps -->
+              <span v-if="isInteractiveStep && ['exercise', 'practice'].includes(currentStep?.type)" class="exercise-counter">
+                ({{ currentExerciseIndex + 1 }}/{{ getTotalExercises() }})
+              </span>
+              <span v-else-if="isInteractiveStep && currentStep?.type === 'quiz'" class="quiz-counter">
+                ({{ currentQuizIndex + 1 }}/{{ getTotalQuizzes() }})
+              </span>
             </h3>
           </div>
           
           <div class="step-content">
-            <!-- Explanation or Reading Step -->
-            <div v-if="['explanation', 'example', 'reading'].includes(currentStep?.type)" class="text-content">
+            <!-- ✅ FIXED: FOR INTERACTIVE STEPS - Show current question/exercise -->
+            <div v-if="isInteractiveStep" class="interactive-content">
+              
+              <!-- Exercise Content -->
+              <div v-if="['exercise', 'practice'].includes(currentStep?.type)" class="current-exercise-content">
+                <div class="exercise-question-display">
+                  <h4>{{ getExerciseQuestion(currentStep) }}</h4>
+                  
+                  <!-- Show exercise instruction if available -->
+                  <div v-if="getCurrentExercise()?.instruction" class="exercise-instruction">
+                    <div class="instruction-badge">💡 Инструкция</div>
+                    <p>{{ getCurrentExercise().instruction }}</p>
+                  </div>
+                  
+                  <!-- Show exercise type info -->
+                  <div class="exercise-type-info">
+                    <span class="type-badge">{{ getExerciseTypeName(getCurrentExercise()?.type) }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Quiz Content -->
+              <div v-else-if="currentStep?.type === 'quiz'" class="current-quiz-content">
+                <div class="quiz-question-display">
+                  <h4>{{ getQuizQuestion(currentStep) }}</h4>
+                  
+                  <!-- Show quiz explanation if available -->
+                  <div v-if="getCurrentQuiz()?.explanation" class="quiz-explanation">
+                    <p>{{ getCurrentQuiz().explanation }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- FOR NON-INTERACTIVE STEPS: Show regular content -->
+            <div v-else-if="['explanation', 'example', 'reading'].includes(currentStep?.type)" class="text-content">
               <div class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
               
               <!-- AI Help for Explanations -->
@@ -1785,140 +1827,101 @@ export default {
     // =============================================
 
     getExerciseQuestion(step) {
-      console.log('🔍 getExerciseQuestion called with step:', step);
-      
-      if (!step || !step.data) {
-        console.warn('⚠️ getExerciseQuestion: Invalid step data');
-        return 'Exercise question unavailable';
-      }
-      
-      let question = '';
-      
-      try {
-        // Handle array of exercises (get first one)
-        if (Array.isArray(step.data)) {
-          console.log('📝 Step data is array, length:', step.data.length);
-          const firstExercise = step.data[0];
-          if (firstExercise && firstExercise.question) {
-            question = this.getLocalized(firstExercise.question);
-            console.log('✅ Found question in array[0]:', question.substring(0, 50) + '...');
-            return question;
-          }
-        }
-        
-        // Handle single exercise object directly in step.data
-        if (step.data.question) {
-          question = this.getLocalized(step.data.question);
-          console.log('✅ Found question in step.data:', question.substring(0, 50) + '...');
-          return question;
-        }
-        
-        // Handle exercises nested in step.data.exercises
-        if (step.data.exercises && Array.isArray(step.data.exercises) && step.data.exercises.length > 0) {
-          const firstExercise = step.data.exercises[0];
-          if (firstExercise && firstExercise.question) {
-            question = this.getLocalized(firstExercise.question);
-            console.log('✅ Found question in exercises array:', question.substring(0, 50) + '...');
-            return question;
-          }
-        }
-        
-        // Handle practice step instructions
-        if (step.type === 'practice') {
-          if (step.data.instructions) {
-            question = this.getLocalized(step.data.instructions);
-            console.log('✅ Found practice instructions:', question.substring(0, 50) + '...');
-            return question;
-          }
-          if (typeof step.data === 'string') {
-            question = step.data;
-            console.log('✅ Found practice data as string:', question.substring(0, 50) + '...');
-            return question;
-          }
-        }
-        
-        // Fallback: look for any text content
-        const fallbackFields = ['text', 'content', 'description', 'prompt'];
-        for (const field of fallbackFields) {
-          if (step.data[field]) {
-            question = this.getLocalized(step.data[field]);
-            console.log(`✅ Found question in fallback field ${field}:`, question.substring(0, 50) + '...');
-            return question;
-          }
-        }
-        
-      } catch (error) {
-        console.error('❌ Error in getExerciseQuestion:', error);
-      }
-      
-      console.warn('⚠️ No exercise question found, using default');
-      return 'Exercise question not available - please check lesson content';
-    },
+  console.log('🔍 getExerciseQuestion called with step:', step);
+  
+  if (!step || !step.data) {
+    console.warn('⚠️ getExerciseQuestion: Invalid step data');
+    return 'Exercise question unavailable';
+  }
+  
+  try {
+    let exercise = null;
+    
+    // Get current exercise based on index
+    if (Array.isArray(step.data)) {
+      exercise = step.data[this.currentExerciseIndex] || step.data[0];
+    } else if (step.data.exercises && Array.isArray(step.data.exercises)) {
+      exercise = step.data.exercises[this.currentExerciseIndex] || step.data.exercises[0];
+    } else {
+      exercise = step.data; // Single exercise
+    }
+    
+    if (exercise && exercise.question) {
+      const question = this.getLocalized(exercise.question);
+      console.log('✅ Found current exercise question:', question.substring(0, 50) + '...');
+      return question;
+    }
+    
+  } catch (error) {
+    console.error('❌ Error in getExerciseQuestion:', error);
+  }
+  
+  console.warn('⚠️ No exercise question found');
+  return 'Exercise question not available';
+},
 
     getCorrectAnswer(step) {
-      console.log('🔍 getCorrectAnswer called with step:', step);
-      
-      if (!step || !step.data) {
-        console.warn('⚠️ getCorrectAnswer: Invalid step data');
-        return '';
+  console.log('🔍 getCorrectAnswer called with step:', step);
+  
+  if (!step || !step.data) {
+    console.warn('⚠️ getCorrectAnswer: Invalid step data');
+    return '';
+  }
+  
+  try {
+    let exercise = null;
+    
+    // FOR EXERCISE/PRACTICE STEPS: Use current exercise index
+    if (['exercise', 'practice'].includes(step.type)) {
+      if (Array.isArray(step.data)) {
+        exercise = step.data[this.currentExerciseIndex];
+      } else if (step.data.exercises && Array.isArray(step.data.exercises)) {
+        exercise = step.data.exercises[this.currentExerciseIndex];
+      } else {
+        exercise = step.data; // Single exercise
       }
-      
-      try {
-        // Handle array of exercises (get first one)
-        if (Array.isArray(step.data)) {
-          const firstExercise = step.data[0];
-          if (firstExercise) {
-            const answer = firstExercise.correctAnswer || firstExercise.answer;
-            if (answer !== undefined && answer !== null) {
-              const result = Array.isArray(answer) ? answer.join(', ') : String(answer).trim();
-              console.log('✅ Found answer in array[0]:', result);
-              return result;
-            }
-          }
-        }
-        
-        // Handle single exercise
-        const possibleFields = ['correctAnswer', 'answer', 'correct_answer', 'solution', 'result'];
-        for (const field of possibleFields) {
-          if (step.data[field] !== undefined && step.data[field] !== null) {
-            const answer = step.data[field];
-            const result = Array.isArray(answer) ? answer.join(', ') : String(answer).trim();
-            console.log(`✅ Found answer in field ${field}:`, result);
-            return result;
-          }
-        }
-        
-        // Handle exercises in nested structure
-        if (step.data.exercises && Array.isArray(step.data.exercises) && step.data.exercises.length > 0) {
-          const firstExercise = step.data.exercises[0];
-          if (firstExercise) {
-            const answer = firstExercise.correctAnswer || firstExercise.answer;
-            if (answer !== undefined && answer !== null) {
-              const result = Array.isArray(answer) ? answer.join(', ') : String(answer).trim();
-              console.log('✅ Found answer in exercises array:', result);
-              return result;
-            }
-          }
-        }
-        
-        // For multiple choice, get the correct option by index
-        if (step.data.options && Array.isArray(step.data.options)) {
-          const correctIndex = step.data.correctAnswer;
-          if (typeof correctIndex === 'number' && correctIndex >= 0 && correctIndex < step.data.options.length) {
-            const result = step.data.options[correctIndex];
-            console.log('✅ Found answer by index:', result);
-            return result;
-          }
-        }
-        
-      } catch (error) {
-        console.error('❌ Error in getCorrectAnswer:', error);
+    }
+    // FOR QUIZ STEPS: Use current quiz index  
+    else if (step.type === 'quiz') {
+      if (Array.isArray(step.data)) {
+        exercise = step.data[this.currentQuizIndex];
+      } else if (step.data.quizzes && Array.isArray(step.data.quizzes)) {
+        exercise = step.data.quizzes[this.currentQuizIndex];
+      } else {
+        exercise = step.data; // Single quiz
       }
-      
-      console.warn('⚠️ No correct answer found');
+    }
+    
+    if (!exercise) {
+      console.warn('⚠️ No exercise found at current index');
       return '';
-    },
-
+    }
+    
+    // Get the correct answer from current exercise
+    const answer = exercise.correctAnswer || exercise.answer;
+    if (answer !== undefined && answer !== null) {
+      const result = Array.isArray(answer) ? answer.join(', ') : String(answer).trim();
+      console.log(`✅ Found answer for current exercise:`, result);
+      return result;
+    }
+    
+    // For multiple choice, get option by index
+    if (exercise.options && Array.isArray(exercise.options)) {
+      const correctIndex = exercise.correctAnswer;
+      if (typeof correctIndex === 'number' && correctIndex >= 0 && correctIndex < exercise.options.length) {
+        const result = exercise.options[correctIndex];
+        console.log('✅ Found answer by index:', result);
+        return result;
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ Error in getCorrectAnswer:', error);
+  }
+  
+  console.warn('⚠️ No correct answer found');
+  return '';
+},
     hasOptions(step) {
       if (!step || !step.data) return false;
       
@@ -3109,7 +3112,22 @@ async handleSubmitOrNext() {
     return 'Контент недоступен';
   }
   
-  // Handle different content structures
+  // FOR INTERACTIVE STEPS: Show current question
+  if (['exercise', 'practice'].includes(step.type)) {
+    const currentQuestion = this.getExerciseQuestion(step);
+    if (currentQuestion && currentQuestion !== 'Exercise question not available') {
+      return currentQuestion;
+    }
+  }
+  
+  if (step.type === 'quiz') {
+    const currentQuiz = this.getCurrentQuiz();
+    if (currentQuiz && currentQuiz.question) {
+      return this.getLocalized(currentQuiz.question);
+    }
+  }
+  
+  // Handle different content structures for non-interactive steps
   try {
     // 1. Direct string content
     if (typeof step.data === 'string' && step.data.trim()) {
@@ -3153,31 +3171,7 @@ async handleSubmitOrNext() {
       }
     }
     
-    // 6. For quiz steps, show the first question
-    if (step.type === 'quiz' && Array.isArray(step.data)) {
-      const firstQuiz = step.data[0];
-      if (firstQuiz && firstQuiz.question) {
-        console.log('✅ Found quiz question as content');
-        return `Викторина: ${this.getLocalized(firstQuiz.question)}`;
-      }
-    }
-    
-    // 7. For exercise steps, show instructions or first question
-    if (['exercise', 'practice'].includes(step.type)) {
-      if (Array.isArray(step.data)) {
-        const firstExercise = step.data[0];
-        if (firstExercise && firstExercise.question) {
-          console.log('✅ Found exercise question as content');
-          return `Упражнение: ${this.getLocalized(firstExercise.question)}`;
-        }
-        if (firstExercise && firstExercise.instructions) {
-          console.log('✅ Found exercise instructions as content');
-          return this.getLocalized(firstExercise.instructions);
-        }
-      }
-    }
-    
-    // 8. For vocabulary steps
+    // 6. For vocabulary steps
     if (step.type === 'vocabulary') {
       if (Array.isArray(step.data) && step.data.length > 0) {
         console.log('✅ Found vocabulary content');
@@ -3193,6 +3187,7 @@ async handleSubmitOrNext() {
     return 'Ошибка загрузки контента';
   }
 },
+
 
     handleLessonError(error) {
       if (error.message?.includes('not found')) {
@@ -3564,14 +3559,61 @@ goToNextExercise() {
   } else {
     // Move to next exercise in current step
     this.currentExerciseIndex++;
-    this.userAnswer = '';
-    this.confirmation = '';
-    this.answerWasCorrect = false;
-    this.currentHint = '';
-    this.smartHint = '';
+    
+    // CRITICAL: Reset all answer-related state
+    this.resetExerciseState();
+    
+    console.log(`✅ Moved to exercise ${this.currentExerciseIndex + 1} of ${totalExercises}`);
   }
 },
-
+resetExerciseState() {
+  this.userAnswer = '';
+  this.confirmation = '';
+  this.answerWasCorrect = false;
+  this.currentHint = '';
+  this.smartHint = '';
+  
+  // Reset specific exercise type data
+  this.fillBlankAnswers = [];
+  this.matchingPairs = [];
+  this.selectedMatchingItem = null;
+  
+  // Re-initialize current exercise data if needed
+  this.initializeCurrentExerciseData();
+},
+initializeCurrentExerciseData() {
+  const exercise = this.getCurrentExercise();
+  if (!exercise) return;
+  
+  switch (exercise.type) {
+    case 'fill-blank':
+      this.fillBlankAnswers = new Array(exercise.blanks?.length || 0).fill('');
+      break;
+    case 'ordering':
+      this.initializeOrderingItems();
+      break;
+    case 'drag-drop':
+      this.initializeDragDropItems();
+      break;
+    case 'matching':
+      this.matchingPairs = [];
+      this.selectedMatchingItem = null;
+      break;
+  }
+},
+getExerciseTypeName(type) {
+  const typeNames = {
+    'short-answer': 'Короткий ответ',
+    'multiple-choice': 'Множественный выбор',
+    'abc': 'Выбор варианта',
+    'true-false': 'Верно/Неверно',
+    'fill-blank': 'Заполните пропуски',
+    'matching': 'Сопоставление',
+    'ordering': 'Упорядочивание',
+    'drag-drop': 'Перетащите и отпустите'
+  };
+  return typeNames[type] || 'Упражнение';
+},
   goToNextQuiz() {
     if (this.isLastQuiz()) {
       // Move to next step
