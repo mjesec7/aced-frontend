@@ -1473,7 +1473,7 @@ export default {
       }
     });
   }
-}
+},
     processExerciseStep(step, index) {
       console.log(`📝 Processing exercise step ${index + 1}:`, step);
       
