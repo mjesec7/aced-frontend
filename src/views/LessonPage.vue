@@ -2221,21 +2221,24 @@ getQuizOptions(quiz) {
     return false;
   }
 },
-// Add this method temporarily for debugging
-debugQuizValidation() {
-  const quiz = this.getCurrentQuiz();
-  console.log('🐛 DEBUG - Current Quiz:', quiz);
-  console.log('🐛 DEBUG - Quiz Options Raw:', quiz?.options);
-  console.log('🐛 DEBUG - Quiz Correct Answer:', quiz?.correctAnswer);
+debugABCExercise() {
+  const exercise = this.getCurrentExercise();
+  console.log('🐛 ABC DEBUG - Current Exercise:', exercise);
+  console.log('🐛 ABC DEBUG - Exercise Type:', exercise?.type);
+  console.log('🐛 ABC DEBUG - Options:', exercise?.options);
+  console.log('🐛 ABC DEBUG - Correct Answer (raw):', exercise?.correctAnswer);
+  console.log('🐛 ABC DEBUG - Correct Answer (parsed):', parseInt(exercise?.correctAnswer));
+  console.log('🐛 ABC DEBUG - User Selected:', this.userAnswer);
   
-  const processedOptions = this.getQuizOptions(quiz);
-  console.log('🐛 DEBUG - Processed Options:', processedOptions);
-  
-  if (typeof quiz?.correctAnswer === 'number') {
-    console.log('🐛 DEBUG - Correct Option Text:', processedOptions[quiz.correctAnswer]);
+  if (exercise?.options) {
+    exercise.options.forEach((option, index) => {
+      const optionText = typeof option === 'string' ? option : option.text;
+      console.log(`🐛 ABC DEBUG - Option ${index}: "${optionText}"`);
+    });
   }
   
-  console.log('🐛 DEBUG - User Answer:', this.userAnswer);
+  const userIndex = this.findOptionIndex(this.userAnswer, exercise?.options);
+  console.log('🐛 ABC DEBUG - User Selected Index:', userIndex);
 },
 
 // ✅ ADD this new helper method
