@@ -2221,6 +2221,22 @@ getQuizOptions(quiz) {
     return false;
   }
 },
+// Add this method temporarily for debugging
+debugQuizValidation() {
+  const quiz = this.getCurrentQuiz();
+  console.log('🐛 DEBUG - Current Quiz:', quiz);
+  console.log('🐛 DEBUG - Quiz Options Raw:', quiz?.options);
+  console.log('🐛 DEBUG - Quiz Correct Answer:', quiz?.correctAnswer);
+  
+  const processedOptions = this.getQuizOptions(quiz);
+  console.log('🐛 DEBUG - Processed Options:', processedOptions);
+  
+  if (typeof quiz?.correctAnswer === 'number') {
+    console.log('🐛 DEBUG - Correct Option Text:', processedOptions[quiz.correctAnswer]);
+  }
+  
+  console.log('🐛 DEBUG - User Answer:', this.userAnswer);
+},
 
 // ✅ ADD this new helper method
 normalizeText(text) {
