@@ -2524,10 +2524,10 @@ async handleSubmitOrNext() {
     return;
   }
 
-  // ✅ CRITICAL FIX: Get userResponse based on exercise type
+  // ✅ Get user response based on exercise type
   let userResponse = this.getUserResponseBasedOnType();
   
-  // ✅ CRITICAL FIX: Validate user response exists
+  // ✅ Validate user response exists
   if (!this.hasValidUserResponse(userResponse)) {
     this.confirmation = '⚠️ Введите ответ.';
     return;
@@ -2537,57 +2537,212 @@ async handleSubmitOrNext() {
   let correctAnswer = '';
   let answerType = this.getCurrentExerciseType();
 
-  try {
-    if (step.type === 'quiz') {
-      isCorrect = this.validateQuizAnswer(userResponse, step);
-      correctAnswer = this.getQuizCorrectAnswer(step);
+  console.log('🔍 handleSubmitOrNext - Starting validation:', {
+    stepType: step.type,
+    answerType,
+    userResponse,
+    exerciseIndex: this.currentExerciseIndex,
+    quizIndex: this.currentQuizIndex
+  });
 
-      if (typeof correctAnswer === 'number') {
-        const options = this.getQuizOptions(this.getCurrentQuiz());
-        if (options.length > correctAnswer) {
-          correctAnswer = options[correctAnswer];
-        }
+  try {
+    // ============================================
+    // QUIZ VALIDATION
+    // ============================================
+    if (step.type === 'quiz') {
+      const currentQuiz = this.getCurrentQuiz();
+      console.log('🧩 Quiz validation:', { currentQuiz, userResponse });
+      
+      if (!currentQuiz) {
+        this.confirmation = '⚠️ Ошибка: данные викторины недоступны.';
+        return;
       }
 
+      isCorrect = this.validateQuizAnswer(userResponse, currentQuiz);
+      
+      // Get correct answer for display
+      const rawCorrectAnswer = currentQuiz.correctAnswer;
+      if (typeof rawCorrectAnswer === 'number') {
+        const options = this.getQuizOptions(currentQuiz);
+        if (options.length > rawCorrectAnswer && rawCorrectAnswer >= 0) {
+          correctAnswer = options[rawCorrectAnswer];
+        } else {
+          correctAnswer = `Option ${rawCorrectAnswer + 1}`;
+        }
+      } else {
+        correctAnswer = String(rawCorrectAnswer);
+      }
+
+    // ============================================
+    // EXERCISE VALIDATION
+    // ============================================
     } else if (['exercise', 'practice'].includes(step.type)) {
-      correctAnswer = this.getCorrectAnswer(step);
+      const currentExercise = this.getCurrentExercise();
+      console.log('✏️ Exercise validation:', { currentExercise, userResponse, answerType });
+      
+      if (!currentExercise) {
+        this.confirmation = '⚠️ Ошибка: данные упражнения недоступны.';
+        return;
+      }
 
       // Handle different exercise types
       switch (answerType) {
         case 'abc':
-        case 'multiple-choice':
-        case 'true-false':
-          isCorrect = String(userResponse) === String(correctAnswer);
-          break;
+        case 'multiple-choice': {
+          console.log('🔤 ABC/Multiple Choice validation');
+          
+          if (!currentExercise.options || !Array.isArray(currentExercise.options)) {
+            console.error('❌ No options found for ABC exercise');
+            this.confirmation = '⚠️ Ошибка: варианты ответов недоступны.';
+            return;
+          }
 
-        case 'drag-drop':
-          isCorrect = this.validateDragDropAnswer(this.dragDropPlacements, step.data);
+          // Get correct answer index
+          const correctIndex = this.parseAnswerIndex(currentExercise.correctAnswer || currentExercise.answer);
+          
+          // Find user selected index
+          const userSelectedIndex = this.findOptionIndex(userResponse, currentExercise.options);
+          
+          console.log('🔍 ABC Comparison:', {
+            correctIndex,
+            userSelectedIndex,
+            userResponse,
+            options: currentExercise.options
+          });
+          
+          if (correctIndex === -1) {
+            console.error('❌ Invalid correct answer index:', currentExercise.correctAnswer);
+            this.confirmation = '⚠️ Ошибка: некорректные данные правильного ответа.';
+            return;
+          }
+          
+          if (userSelectedIndex === -1) {
+            console.error('❌ Could not find user selected option:', userResponse);
+            this.confirmation = '⚠️ Ошибка: не удалось определить выбранный вариант.';
+            return;
+          }
+          
+          isCorrect = correctIndex === userSelectedIndex;
+          
+          // Set correct answer text for display
+          if (correctIndex >= 0 && correctIndex < currentExercise.options.length) {
+            const correctOption = currentExercise.options[correctIndex];
+            correctAnswer = this.extractOptionText(correctOption);
+          }
           break;
+        }
 
-        case 'matching':
-          isCorrect = this.validateMatchingAnswer(this.matchingPairs, step.data);
+        case 'true-false': {
+          console.log('✅❌ True/False validation');
+          
+          const correctValue = String(currentExercise.correctAnswer || currentExercise.answer).toLowerCase();
+          const userValue = String(userResponse).toLowerCase();
+          
+          console.log('🔍 True/False Comparison:', { correctValue, userValue });
+          
+          // Handle different true/false formats
+          const normalizeBoolean = (value) => {
+            const val = value.toLowerCase().trim();
+            if (['true', 'правда', 'верно', 'да', '1'].includes(val)) return 'true';
+            if (['false', 'ложь', 'неверно', 'нет', '0'].includes(val)) return 'false';
+            return val;
+          };
+          
+          isCorrect = normalizeBoolean(correctValue) === normalizeBoolean(userValue);
+          correctAnswer = correctValue === 'true' ? 'Правда' : 'Ложь';
           break;
+        }
 
-        case 'ordering':
-          isCorrect = this.validateOrderingAnswer(this.orderingItems, step.data);
+        case 'fill-blank': {
+          console.log('📝 Fill-blank validation');
+          
+          if (!Array.isArray(this.fillBlankAnswers)) {
+            this.confirmation = '⚠️ Ошибка: ответы для пропусков недоступны.';
+            return;
+          }
+          
+          const expectedAnswers = currentExercise.blanks || [];
+          isCorrect = this.validateFillBlankAnswer(this.fillBlankAnswers, expectedAnswers);
+          correctAnswer = expectedAnswers.map(blank => blank.answer || blank).join(', ');
           break;
+        }
 
-        case 'fill-blank':
-          isCorrect = this.validateFillBlankAnswer(this.fillBlankAnswers, correctAnswer);
+        case 'matching': {
+          console.log('🔗 Matching validation');
+          
+          if (!Array.isArray(this.matchingPairs)) {
+            this.confirmation = '⚠️ Ошибка: пары для сопоставления недоступны.';
+            return;
+          }
+          
+          isCorrect = this.validateMatchingAnswer(this.matchingPairs, currentExercise);
+          correctAnswer = 'Проверьте правильность сопоставления';
           break;
+        }
 
-        default:
-          isCorrect = this.validateAnswer(userResponse, correctAnswer, step.type);
+        case 'ordering': {
+          console.log('📋 Ordering validation');
+          
+          if (!Array.isArray(this.orderingItems)) {
+            this.confirmation = '⚠️ Ошибка: элементы для упорядочивания недоступны.';
+            return;
+          }
+          
+          isCorrect = this.validateOrderingAnswer(this.orderingItems, currentExercise);
+          correctAnswer = 'Проверьте правильность порядка';
+          break;
+        }
+
+        case 'drag-drop': {
+          console.log('🖱️ Drag-drop validation');
+          
+          if (!this.dragDropPlacements || typeof this.dragDropPlacements !== 'object') {
+            this.confirmation = '⚠️ Ошибка: размещение элементов недоступно.';
+            return;
+          }
+          
+          isCorrect = this.validateDragDropAnswer(this.dragDropPlacements, currentExercise);
+          correctAnswer = 'Проверьте правильность размещения';
+          break;
+        }
+
+        case 'short-answer':
+        default: {
+          console.log('📝 Short answer validation');
+          
+          const expectedAnswer = currentExercise.correctAnswer || currentExercise.answer;
+          if (!expectedAnswer) {
+            console.error('❌ No expected answer found for short answer exercise');
+            this.confirmation = '⚠️ Ошибка: правильный ответ недоступен.';
+            return;
+          }
+          
+          isCorrect = this.validateAnswer(userResponse, expectedAnswer, step.type);
+          correctAnswer = String(expectedAnswer);
+          break;
+        }
       }
 
+    // ============================================
+    // OTHER STEP TYPES
+    // ============================================
     } else {
-      correctAnswer = this.getCorrectAnswer(step);
-      if (correctAnswer) {
-        isCorrect = this.validateAnswer(userResponse, correctAnswer, step.type);
+      console.log('📚 Other step type validation');
+      
+      const expectedAnswer = this.getCorrectAnswer(step);
+      if (expectedAnswer) {
+        isCorrect = this.validateAnswer(userResponse, expectedAnswer, step.type);
+        correctAnswer = String(expectedAnswer);
       } else {
+        // No validation needed for some step types (like explanation)
         isCorrect = true;
       }
     }
+
+    // ============================================
+    // PROCESS VALIDATION RESULT
+    // ============================================
+    console.log('🎯 Validation result:', { isCorrect, correctAnswer });
 
     if (isCorrect) {
       this.confirmation = '✅ Верно! Отличная работа!';
@@ -2596,34 +2751,45 @@ async handleSubmitOrNext() {
       this.earnedPoints += 10;
       this.currentHint = '';
       this.smartHint = '';
+      
+      console.log('🌟 Correct answer! Stars:', this.stars, 'Points:', this.earnedPoints);
+
     } else {
       this.mistakeCount++;
       this.answerWasCorrect = false;
       this.earnedPoints = Math.max(0, this.earnedPoints - 2);
 
+      // Generate helpful feedback
       let feedback = 'Попробуйте еще раз.';
       try {
         feedback = this.generateHelpfulFeedback(userResponse, correctAnswer, answerType);
       } catch (error) {
-        // Silent fallback
+        console.warn('⚠️ Error generating feedback:', error);
       }
       
       this.confirmation = `❌ Неверно. ${feedback}`;
       
-      // Safe display of correct answer
+      // Show correct answer if available
       const correctAnswerDisplay = this.safeStringConvert(correctAnswer);
-      if (correctAnswerDisplay && correctAnswerDisplay !== 'undefined') {
+      if (correctAnswerDisplay && correctAnswerDisplay !== 'undefined' && correctAnswerDisplay !== '') {
         this.confirmation += ` Правильный ответ: "${correctAnswerDisplay}"`;
       }
 
+      // Log mistake for analytics
       this.mistakeLog.push({
         stepIndex: this.currentIndex,
-        question: step.type === 'quiz' ? this.getQuizQuestion(step) : this.getExerciseQuestion(step),
+        exerciseIndex: this.currentExerciseIndex,
+        quizIndex: this.currentQuizIndex,
+        question: this.getCurrentQuestionText(),
         userAnswer: userResponse,
         correctAnswer: correctAnswer,
-        hint: step.data.hint || null
+        exerciseType: answerType,
+        hint: currentExercise?.hint || null
       });
 
+      console.log('❌ Wrong answer! Mistakes:', this.mistakeCount, 'Points:', this.earnedPoints);
+
+      // Generate smart hint after 2+ mistakes
       if (this.mistakeCount >= 2) {
         try {
           const lessonContext = {
@@ -2631,20 +2797,138 @@ async handleSubmitOrNext() {
             lessonName: this.lesson.lessonName,
             topic: this.lesson.topic
           };
+          
           if (typeof generateSmartHint === 'function') {
-            this.smartHint = await generateSmartHint(step.data, this.mistakeCount, lessonContext);
+            const hintData = step.type === 'quiz' ? this.getCurrentQuiz() : this.getCurrentExercise();
+            this.smartHint = await generateSmartHint(hintData, this.mistakeCount, lessonContext);
             this.hintsUsed = true;
           }
         } catch (error) {
-          // Silent fail on hint generation
+          console.warn('⚠️ Error generating smart hint:', error);
         }
       }
     }
 
   } catch (error) {
-    console.error('❌ Error in handleSubmitOrNext:', error);
-    this.confirmation = '❌ Произошла ошибка при проверке ответа. Попробуйте еще раз.';
+    console.error('❌ Critical error in handleSubmitOrNext:', error);
+    console.error('❌ Error stack:', error.stack);
+    
+    this.confirmation = '❌ Произошла критическая ошибка при проверке ответа. Попробуйте еще раз.';
+    
+    // Log error details for debugging
+    console.error('❌ Error context:', {
+      stepType: step.type,
+      answerType,
+      userResponse,
+      currentExercise: this.getCurrentExercise(),
+      currentQuiz: this.getCurrentQuiz()
+    });
   }
+},
+
+// ============================================
+// HELPER METHODS
+// ============================================
+
+parseAnswerIndex(answer) {
+  if (typeof answer === 'number') return answer;
+  if (typeof answer === 'string') {
+    const parsed = parseInt(answer);
+    return isNaN(parsed) ? -1 : parsed;
+  }
+  if (answer && typeof answer === 'object' && answer.$numberInt) {
+    const parsed = parseInt(answer.$numberInt);
+    return isNaN(parsed) ? -1 : parsed;
+  }
+  return -1;
+},
+
+findOptionIndex(selectedText, options) {
+  if (!Array.isArray(options) || !selectedText) return -1;
+  
+  const normalizedSelected = this.normalizeText(selectedText);
+  
+  return options.findIndex(option => {
+    const optionText = this.extractOptionText(option);
+    const normalizedOption = this.normalizeText(optionText);
+    return normalizedOption === normalizedSelected;
+  });
+},
+
+extractOptionText(option) {
+  if (typeof option === 'string') return option;
+  if (option && typeof option === 'object') {
+    return option.text || option.label || option.value || String(option);
+  }
+  return String(option);
+},
+
+normalizeText(text) {
+  if (!text) return '';
+  return String(text).trim().toLowerCase();
+},
+
+getCurrentQuestionText() {
+  const step = this.currentStep;
+  if (!step) return 'Unknown question';
+  
+  if (step.type === 'quiz') {
+    const quiz = this.getCurrentQuiz();
+    return quiz?.question || 'Quiz question unavailable';
+  } else if (['exercise', 'practice'].includes(step.type)) {
+    const exercise = this.getCurrentExercise();
+    return exercise?.question || 'Exercise question unavailable';
+  }
+  
+  return 'Question unavailable';
+},
+
+validateQuizAnswer(userAnswer, quiz) {
+  console.log('🔍 validateQuizAnswer:', { userAnswer, quiz });
+  
+  if (!quiz || !quiz.question) {
+    console.warn('⚠️ Invalid quiz data');
+    return false;
+  }
+  
+  const correctAnswer = quiz.correctAnswer;
+  
+  if (correctAnswer === null || correctAnswer === undefined) {
+    console.warn('⚠️ No correct answer available');
+    return false;
+  }
+  
+  // Handle index-based answers (multiple choice)
+  if (typeof correctAnswer === 'number') {
+    const options = this.getQuizOptions(quiz);
+    if (options.length > correctAnswer && correctAnswer >= 0) {
+      const correctOption = options[correctAnswer];
+      const normalizedUser = this.normalizeText(userAnswer);
+      const normalizedCorrect = this.normalizeText(correctOption);
+      
+      console.log('🎯 Quiz index validation:', {
+        correctIndex: correctAnswer,
+        correctOption,
+        normalizedUser,
+        normalizedCorrect,
+        match: normalizedUser === normalizedCorrect
+      });
+      
+      return normalizedUser === normalizedCorrect;
+    }
+  }
+  
+  // Handle direct string/boolean comparison
+  const normalizedUser = this.normalizeText(userAnswer);
+  const normalizedCorrect = this.normalizeText(String(correctAnswer));
+  
+  console.log('🎯 Quiz direct validation:', {
+    normalizedUser,
+    normalizedCorrect,
+    match: normalizedUser === normalizedCorrect
+  });
+  
+  return normalizedUser === normalizedCorrect;
 },
     showHint() {
       const step = this.currentStep;
