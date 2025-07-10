@@ -41,7 +41,7 @@
       </div>
     </div>
 
-    <!-- ✅ NEW: Vocabulary Learning Modal -->
+    <!-- ✅ VOCABULARY LEARNING MODAL -->
     <div v-if="vocabularyModal.isVisible" class="vocabulary-modal-overlay">
       <div class="vocabulary-modal-container">
         
@@ -175,7 +175,7 @@
           <!-- Quick Navigation Dots -->
           <div class="vocab-dots-navigation">
             <button
-              v-for="(word, wordIndex) in vocabularyModal.words"
+              v-for="(word, wordIndex) in (vocabularyModal.words || [])"
               :key="word.id || wordIndex"
               @click="vocabularyModal.currentIndex = wordIndex; cardAnimation.showDefinition = false;"
               class="vocab-dot"
@@ -194,15 +194,15 @@
           <div class="completion-animation">
             <div class="completion-icon">🎉</div>
             <h3>Отлично!</h3>
-            <p>Вы изучили {{ vocabularyModal.words.filter(w => w.learned).length }} из {{ vocabularyModal.words.length }} слов</p>
+            <p>Вы изучили {{ (vocabularyModal.words || []).filter(w => w.learned).length }} из {{ (vocabularyModal.words || []).length }} слов</p>
             
             <div class="completion-stats">
               <div class="completion-stat">
-                <div class="stat-number">{{ vocabularyModal.words.filter(w => w.learned).length }}</div>
+                <div class="stat-number">{{ (vocabularyModal.words || []).filter(w => w.learned).length }}</div>
                 <div class="stat-label">Изучено</div>
               </div>
               <div class="completion-stat">
-                <div class="stat-number">{{ Math.round((vocabularyModal.words.filter(w => w.learned).length / vocabularyModal.words.length) * 100) }}%</div>
+                <div class="stat-number">{{ Math.round(((vocabularyModal.words || []).filter(w => w.learned).length / Math.max((vocabularyModal.words || []).length, 1)) * 100) }}%</div>
                 <div class="stat-label">Прогресс</div>
               </div>
             </div>
@@ -248,7 +248,7 @@
             <div class="info-icon">📝</div>
             <div class="info-text">
               <span class="info-label">Шагов</span>
-              <span class="info-value">{{ steps.length }}</span>
+              <span class="info-value">{{ (steps || []).length }}</span>
             </div>
           </div>
           <div class="info-card">
@@ -261,11 +261,11 @@
         </div>
         
         <!-- Previous Progress Display -->
-        <div v-if="previousProgress && previousProgress.completedSteps.length > 0" class="previous-progress">
+        <div v-if="previousProgress && (previousProgress.completedSteps || []).length > 0" class="previous-progress">
           <h4>📈 Предыдущий прогресс</h4>
           <div class="progress-stats-grid">
             <div class="stat">
-              <span class="stat-value">{{ previousProgress.completedSteps.length }}/{{ steps.length }}</span>
+              <span class="stat-value">{{ (previousProgress.completedSteps || []).length }}/{{ (steps || []).length }}</span>
               <span class="stat-label">Прогресс</span>
             </div>
             <div class="stat">
@@ -299,7 +299,7 @@
         <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) }}</h2>
         <div class="lesson-meta">
           <div class="timer-display">⏱ {{ formattedTime }}</div>
-          <div class="step-counter">{{ currentIndex + 1 }}/{{ steps.length }}</div>
+          <div class="step-counter">{{ currentIndex + 1 }}/{{ (steps || []).length }}</div>
         </div>
       </div>
 
@@ -317,7 +317,7 @@
       <!-- Split Screen Content -->
       <div class="split-content">
         
-        <!-- ✅ COMPLETELY FIXED: Left Panel - Clean Content Display -->
+        <!-- ✅ Left Panel - Clean Content Display -->
         <div class="content-panel">
           <div class="step-header">
             <h3 class="step-title">
@@ -335,7 +335,7 @@
             </h3>
           </div>
           
-          <!-- ✅ CRITICAL FIX: Left panel content shows ONLY clean questions -->
+          <!-- ✅ Left panel content shows ONLY clean questions -->
           <div class="step-content">
             <!-- ✅ FOR INTERACTIVE STEPS: Show ONLY the question, no instructions -->
             <div v-if="isInteractiveStep" class="interactive-content">
@@ -459,8 +459,8 @@
               <div class="media-placeholder">
                 <div class="media-icon">{{ currentStep.type === 'video' ? '🎬' : '🎵' }}</div>
                 <h4>{{ currentStep.type === 'video' ? 'Видео урок' : 'Аудио урок' }}</h4>
-                <p>{{ currentStep.data.description || 'Мультимедиа контент' }}</p>
-                <div class="media-url">{{ currentStep.data.url || 'URL недоступен' }}</div>
+                <p>{{ currentStep.data?.description || 'Мультимедиа контент' }}</p>
+                <div class="media-url">{{ currentStep.data?.url || 'URL недоступен' }}</div>
               </div>
             </div>
 
@@ -496,7 +496,7 @@
         <!-- Right Panel - Interactive Content -->
         <div class="interactive-panel">
           
-          <!-- ✅ All Exercise Types Support -->
+          <!-- ✅ COMPLETELY FIXED: All Exercise Types Support -->
           <div v-if="isInteractiveStep && ['exercise', 'practice'].includes(currentStep?.type)" class="exercise-container">
             <div class="exercise-header">
               <h3 class="exercise-title">
@@ -507,6 +507,7 @@
               </div>
             </div>
             
+            <!-- ✅ SAFETY CHECK: Only show content if exercise exists -->
             <div class="exercise-content" v-if="getCurrentExercise()">
               <div class="exercise-question">
                 {{ getCurrentExercise().question }}
@@ -528,28 +529,28 @@
                 ></textarea>
               </div>
               
-              <!-- ✅ MULTIPLE CHOICE / ABC -->
+              <!-- ✅ MULTIPLE CHOICE / ABC - COMPLETELY FIXED -->
               <div v-else-if="['multiple-choice', 'abc'].includes(getCurrentExercise().type)" class="options-grid">
                 <label 
-                  v-for="(option, optionIndex) in getCurrentExercise().options" 
+                  v-for="(option, optionIndex) in (getCurrentExercise()?.options || [])" 
                   :key="optionIndex" 
                   class="option-card"
                   :class="{ 
-                    selected: userAnswer === option,
-                    correct: answerWasCorrect && userAnswer === option,
-                    incorrect: !answerWasCorrect && userAnswer === option && confirmation
+                    selected: userAnswer === (typeof option === 'string' ? option : option.text),
+                    correct: answerWasCorrect && userAnswer === (typeof option === 'string' ? option : option.text),
+                    incorrect: !answerWasCorrect && userAnswer === (typeof option === 'string' ? option : option.text) && confirmation
                   }"
                 >
                   <input 
                     type="radio" 
-                    :value="option" 
+                    :value="typeof option === 'string' ? option : option.text" 
                     v-model="userAnswer" 
                     class="option-radio"
                     :disabled="answerWasCorrect"
                   />
                   <div class="option-content">
                     <span class="option-letter">{{ String.fromCharCode(65 + optionIndex) }}</span>
-                    <span class="option-text">{{ option }}</span>
+                    <span class="option-text">{{ typeof option === 'string' ? option : option.text }}</span>
                   </div>
                 </label>
               </div>
@@ -601,12 +602,12 @@
                 </div>
               </div>
               
-              <!-- ✅ FILL IN THE BLANKS -->
+              <!-- ✅ FILL IN THE BLANKS - COMPLETELY FIXED -->
               <div v-else-if="getCurrentExercise().type === 'fill-blank'" class="fill-blank-container">
                 <div class="fill-blank-template" v-html="getFillBlankTemplate()"></div>
                 <div class="blank-inputs">
                   <div 
-                    v-for="(blank, blankIndex) in getCurrentExercise().blanks" 
+                    v-for="(blank, blankIndex) in (getCurrentExercise()?.blanks || [])" 
                     :key="blankIndex" 
                     class="blank-input-group"
                   >
@@ -622,13 +623,13 @@
                 </div>
               </div>
               
-              <!-- ✅ MATCHING PAIRS -->
+              <!-- ✅ MATCHING PAIRS - COMPLETELY FIXED -->
               <div v-else-if="getCurrentExercise().type === 'matching'" class="matching-container">
                 <div class="matching-grid">
                   <div class="matching-column">
                     <h4>Колонка A</h4>
                     <div 
-                      v-for="(item, leftIndex) in getMatchingLeftItems()" 
+                      v-for="(item, leftIndex) in (getMatchingLeftItems() || [])" 
                       :key="'left-' + leftIndex" 
                       class="matching-item left-item"
                       :class="{ 
@@ -645,7 +646,7 @@
                   <div class="matching-column">
                     <h4>Колонка B</h4>
                     <div 
-                      v-for="(item, rightIndex) in getMatchingRightItems()" 
+                      v-for="(item, rightIndex) in (getMatchingRightItems() || [])" 
                       :key="'right-' + rightIndex" 
                       class="matching-item right-item"
                       :class="{ 
@@ -660,11 +661,11 @@
                   </div>
                 </div>
                 
-                <div class="matching-pairs-display" v-if="matchingPairs.length > 0">
+                <div class="matching-pairs-display" v-if="(matchingPairs || []).length > 0">
                   <h4>Ваши пары:</h4>
                   <div class="created-pairs">
                     <div 
-                      v-for="(pair, pairIndex) in matchingPairs" 
+                      v-for="(pair, pairIndex) in (matchingPairs || [])" 
                       :key="pairIndex" 
                       class="created-pair"
                     >
@@ -677,15 +678,15 @@
                 </div>
               </div>
               
-              <!-- ✅ ORDERING/SEQUENCING -->
+              <!-- ✅ ORDERING/SEQUENCING - COMPLETELY FIXED -->
               <div v-else-if="getCurrentExercise().type === 'ordering'" class="ordering-container">
                 <div class="ordering-instructions">
                   <p>Расположите элементы в правильном порядке (перетащите или используйте кнопки):</p>
                 </div>
                 <div class="ordering-items">
                   <div 
-                    v-for="(item, itemIndex) in orderingItems" 
-                    :key="item.id" 
+                    v-for="(item, itemIndex) in (orderingItems || [])" 
+                    :key="item.id || itemIndex" 
                     class="ordering-item"
                     :class="{ 
                       dragging: draggedItem === itemIndex,
@@ -700,7 +701,7 @@
                   >
                     <div class="ordering-item-content">
                       <div class="ordering-item-handle">⋮⋮</div>
-                      <div class="ordering-item-text">{{ item.text }}</div>
+                      <div class="ordering-item-text">{{ item?.text || item }}</div>
                       <div class="ordering-item-controls">
                         <button 
                           @click="moveOrderingItem(itemIndex, -1)" 
@@ -712,7 +713,7 @@
                         </button>
                         <button 
                           @click="moveOrderingItem(itemIndex, 1)" 
-                          :disabled="itemIndex === orderingItems.length - 1"
+                          :disabled="itemIndex === (orderingItems || []).length - 1"
                           class="ordering-move-btn"
                           title="Переместить вниз"
                         >
@@ -727,7 +728,7 @@
                 </div>
               </div>
               
-              <!-- ✅ DRAG AND DROP -->
+              <!-- ✅ DRAG AND DROP - COMPLETELY FIXED -->
               <div v-else-if="getCurrentExercise().type === 'drag-drop'" class="drag-drop-container">
                 <div class="drag-drop-instructions">
                   <p>Перетащите элементы в правильные зоны:</p>
@@ -739,14 +740,14 @@
                     <h4>Элементы для перетаскивания:</h4>
                     <div class="draggable-items">
                       <div 
-                        v-for="item in getAvailableDragItems()" 
-                        :key="item.id" 
+                        v-for="item in (getAvailableDragItems() || [])" 
+                        :key="item.id || item" 
                         class="draggable-item"
-                        :class="{ dragging: draggedDragItem === item.id }"
+                        :class="{ dragging: draggedDragItem === (item.id || item) }"
                         draggable="true"
                         @dragstart="startDragDrop($event, item)"
                       >
-                        {{ item.text }}
+                        {{ item?.text || item }}
                       </div>
                     </div>
                   </div>
@@ -756,32 +757,32 @@
                     <h4>Зоны для размещения:</h4>
                     <div class="drop-zones">
                       <div 
-                        v-for="zone in getCurrentExercise().dropZones" 
-                        :key="zone.id" 
+                        v-for="zone in (getCurrentExercise()?.dropZones || [])" 
+                        :key="zone.id || zone" 
                         class="drop-zone"
                         :class="{ 
-                          'drop-over': dropOverZone === zone.id,
-                          'has-items': getDropZoneItems(zone.id).length > 0 
+                          'drop-over': dropOverZone === (zone.id || zone),
+                          'has-items': (getDropZoneItems(zone.id || zone) || []).length > 0 
                         }"
-                        @dragover.prevent="onDropZoneOver(zone.id)"
-                        @dragenter.prevent="onDropZoneEnter(zone.id)"
+                        @dragover.prevent="onDropZoneOver(zone.id || zone)"
+                        @dragenter.prevent="onDropZoneEnter(zone.id || zone)"
                         @dragleave.prevent="onDropZoneLeave"
-                        @drop.prevent="onDropZoneDrop($event, zone.id)"
+                        @drop.prevent="onDropZoneDrop($event, zone.id || zone)"
                       >
-                        <div class="drop-zone-label">{{ zone.label }}</div>
+                        <div class="drop-zone-label">{{ zone?.label || 'Zone' }}</div>
                         <div class="dropped-items">
                           <div 
-                            v-for="droppedItem in getDropZoneItems(zone.id)" 
-                            :key="droppedItem.id" 
+                            v-for="droppedItem in (getDropZoneItems(zone.id || zone) || [])" 
+                            :key="droppedItem.id || droppedItem" 
                             class="dropped-item"
                             @dblclick="returnDragItem(droppedItem)"
                             title="Двойной клик для возврата"
                           >
-                            {{ droppedItem.text }}
+                            {{ droppedItem?.text || droppedItem }}
                             <button @click="returnDragItem(droppedItem)" class="remove-dropped-btn">✕</button>
                           </div>
                         </div>
-                        <div v-if="getDropZoneItems(zone.id).length === 0" class="drop-zone-placeholder">
+                        <div v-if="(getDropZoneItems(zone.id || zone) || []).length === 0" class="drop-zone-placeholder">
                           Перетащите элементы сюда
                         </div>
                       </div>
@@ -830,10 +831,10 @@
                 </button>
                 
                 <button 
-                  v-if="getCurrentExercise().type === 'matching'"
+                  v-if="getCurrentExercise()?.type === 'matching'"
                   @click="clearMatchingPairs"
                   class="clear-btn"
-                  :disabled="matchingPairs.length === 0"
+                  :disabled="(matchingPairs || []).length === 0"
                 >
                   🗑️ Очистить пары
                 </button>
@@ -845,9 +846,19 @@
                 <div class="hint-content">{{ currentHint }}</div>
               </div>
             </div>
+            
+            <!-- ✅ SAFETY: Fallback if no exercise exists -->
+            <div v-else class="exercise-error">
+              <div class="error-message">
+                <div class="error-icon">⚠️</div>
+                <h4>Упражнение недоступно</h4>
+                <p>Данные упражнения не загружены. Попробуйте перезагрузить страницу.</p>
+                <button @click="goNext" class="skip-btn">Пропустить ➡️</button>
+              </div>
+            </div>
           </div>
 
-          <!-- Quiz Step -->
+          <!-- ✅ QUIZ STEP - COMPLETELY FIXED -->
           <div v-else-if="isInteractiveStep && currentStep?.type === 'quiz'" class="quiz-container">
             <div class="quiz-header">
               <h3 class="quiz-title">🧩 Викторина</h3>
@@ -861,7 +872,7 @@
               
               <div class="quiz-options">
                 <label 
-                  v-for="(option, quizOptionIndex) in getQuizOptions(getCurrentQuiz())" 
+                  v-for="(option, quizOptionIndex) in (getQuizOptions(getCurrentQuiz()) || [])" 
                   :key="quizOptionIndex" 
                   class="quiz-option-card"
                   :class="{ 
@@ -907,6 +918,16 @@
                 </button>
               </div>
             </div>
+            
+            <!-- ✅ SAFETY: Fallback if no quiz exists -->
+            <div v-else class="quiz-error">
+              <div class="error-message">
+                <div class="error-icon">⚠️</div>
+                <h4>Вопрос недоступен</h4>
+                <p>Данные викторины не загружены. Попробуйте перезагрузить страницу.</p>
+                <button @click="goNext" class="skip-btn">Пропустить ➡️</button>
+              </div>
+            </div>
           </div>
 
           <!-- AI Help Panel for Interactive Steps -->
@@ -915,10 +936,10 @@
             <p>Выберите ответ слева, и я помогу вам с объяснениями!</p>
             
             <!-- Quick suggestions -->
-            <div v-if="aiSuggestions.length" class="quick-suggestions">
+            <div v-if="(aiSuggestions || []).length" class="quick-suggestions">
               <p><strong>Популярные вопросы:</strong></p>
               <button 
-                v-for="suggestion in aiSuggestions" 
+                v-for="suggestion in (aiSuggestions || [])" 
                 :key="suggestion"
                 @click="askAI(suggestion)"
                 class="suggestion-btn"
@@ -944,9 +965,9 @@
             </div>
             
             <!-- Chat history -->
-            <div v-if="aiChatHistory.length" class="ai-chat-history">
+            <div v-if="(aiChatHistory || []).length" class="ai-chat-history">
               <div 
-                v-for="message in aiChatHistory.slice(-3)" 
+                v-for="message in (aiChatHistory || []).slice(-3)" 
                 :key="message.id"
                 :class="['chat-message', message.type]"
               >
@@ -1041,7 +1062,7 @@
         
         <div class="quick-suggestions">
           <button 
-            v-for="suggestion in quickSuggestions" 
+            v-for="suggestion in (quickSuggestions || [])" 
             :key="suggestion"
             @click="askAI(suggestion)"
             class="quick-suggestion-btn"
@@ -1053,7 +1074,7 @@
         <div class="ai-chat-area">
           <div class="chat-messages">
             <div 
-              v-for="message in aiChatHistory.slice(-5)" 
+              v-for="message in (aiChatHistory || []).slice(-5)" 
               :key="message.id"
               :class="['chat-message', message.type]"
             >
@@ -3944,26 +3965,7 @@ resetExerciseState() {
   // Re-initialize current exercise data if needed
   this.initializeCurrentExerciseData();
 },
-initializeCurrentExerciseData() {
-  const exercise = this.getCurrentExercise();
-  if (!exercise) return;
-  
-  switch (exercise.type) {
-    case 'fill-blank':
-      this.fillBlankAnswers = new Array(exercise.blanks?.length || 0).fill('');
-      break;
-    case 'ordering':
-      this.initializeOrderingItems();
-      break;
-    case 'drag-drop':
-      this.initializeDragDropItems();
-      break;
-    case 'matching':
-      this.matchingPairs = [];
-      this.selectedMatchingItem = null;
-      break;
-  }
-},
+
 getExerciseTypeName(type) {
   const typeNames = {
     'short-answer': 'Короткий ответ',
@@ -4043,6 +4045,45 @@ canSubmitAnswer() {
 // Fill in the blanks
 fillBlankAnswers: [],
 
+// ✅ ENHANCED: Safe array access helpers
+safeArrayAccess(array, index, defaultValue = null) {
+  if (!Array.isArray(array) || index < 0 || index >= array.length) {
+    return defaultValue;
+  }
+  return array[index];
+},
+
+// ✅ ENHANCED: Safe options getter with better validation
+getSafeOptions(exercise) {
+  if (!exercise || !exercise.options) {
+    return [];
+  }
+  if (!Array.isArray(exercise.options)) {
+    return [];
+  }
+  return exercise.options.map(option => {
+    if (typeof option === 'string') return option;
+    if (option && typeof option === 'object') {
+      return option.text || option.label || option.value || String(option);
+    }
+    return String(option);
+  }).filter(opt => opt && opt.trim());
+},
+
+// ✅ ENHANCED: Safe fillBlankAnswers initialization
+initializeFillBlankAnswers(exercise) {
+  if (!exercise || !exercise.blanks) {
+    this.fillBlankAnswers = [];
+    return;
+  }
+  
+  const blankCount = Array.isArray(exercise.blanks) ? exercise.blanks.length : 0;
+  this.fillBlankAnswers = new Array(blankCount).fill('');
+  
+  console.log('✅ Initialized fill-blank answers:', this.fillBlankAnswers);
+},
+
+// ✅ ENHANCED: Safe getFillBlankTemplate
 getFillBlankTemplate() {
   const exercise = this.getCurrentExercise();
   if (!exercise || exercise.type !== 'fill-blank') return '';
@@ -4058,6 +4099,116 @@ getFillBlankTemplate() {
   });
 },
 
+// ✅ ENHANCED: Safe matching methods
+getMatchingLeftItems() {
+  const exercise = this.getCurrentExercise();
+  if (!exercise || exercise.type !== 'matching' || !exercise.pairs) return [];
+  
+  const pairs = Array.isArray(exercise.pairs) ? exercise.pairs : [];
+  return pairs.map(pair => {
+    if (Array.isArray(pair)) return pair[0] || '';
+    if (pair && typeof pair === 'object') return pair.left || '';
+    return String(pair);
+  }).filter(item => item);
+},
+
+getMatchingRightItems() {
+  const exercise = this.getCurrentExercise();
+  if (!exercise || exercise.type !== 'matching' || !exercise.pairs) return [];
+  
+  const pairs = Array.isArray(exercise.pairs) ? exercise.pairs : [];
+  return pairs.map(pair => {
+    if (Array.isArray(pair)) return pair[1] || '';
+    if (pair && typeof pair === 'object') return pair.right || '';
+    return String(pair);
+  }).filter(item => item);
+},
+
+// ✅ ENHANCED: Safe drag-drop methods
+getAvailableDragItems() {
+  const exercise = this.getCurrentExercise();
+  if (!exercise || exercise.type !== 'drag-drop' || !exercise.dragItems) return [];
+  
+  const allItems = Array.isArray(exercise.dragItems) ? exercise.dragItems : [];
+  const placedItems = Object.values(this.dragDropPlacements || {}).flat();
+  
+  return allItems.filter(item => 
+    !placedItems.some(placedItem => (placedItem?.id || placedItem) === (item?.id || item))
+  );
+},
+
+getDropZoneItems(zoneId) {
+  if (!this.dragDropPlacements || !zoneId) return [];
+  return this.dragDropPlacements[zoneId] || [];
+},
+
+// ✅ ENHANCED: Initialize exercise data safely
+initializeCurrentExerciseData() {
+  const exercise = this.getCurrentExercise();
+  if (!exercise) return;
+  
+  console.log('🔧 Initializing exercise data for type:', exercise.type);
+  
+  switch (exercise.type) {
+    case 'fill-blank':
+      this.initializeFillBlankAnswers(exercise);
+      break;
+    case 'ordering':
+      this.initializeOrderingItems();
+      break;
+    case 'drag-drop':
+      this.initializeDragDropItems();
+      break;
+    case 'matching':
+      this.matchingPairs = [];
+      this.selectedMatchingItem = null;
+      break;
+    case 'abc':
+    case 'multiple-choice':
+      // Ensure options exist
+      if (!exercise.options || !Array.isArray(exercise.options)) {
+        console.warn('⚠️ Exercise options missing, setting defaults');
+        exercise.options = ['Option A', 'Option B', 'Option C'];
+      }
+      break;
+    default:
+      // Reset general exercise data
+      this.userAnswer = '';
+      break;
+  }
+},
+
+// ✅ ENHANCED: Safe ordering initialization
+initializeOrderingItems() {
+  const exercise = this.getCurrentExercise();
+  if (!exercise || exercise.type !== 'ordering' || !exercise.items) {
+    this.orderingItems = [];
+    return;
+  }
+  
+  const items = Array.isArray(exercise.items) ? exercise.items : [];
+  this.orderingItems = items.map((item, index) => ({
+    id: `item_${index}_${Date.now()}`,
+    text: typeof item === 'string' ? item : (item?.text || String(item)),
+    originalIndex: index
+  }));
+  
+  // Shuffle items
+  this.shuffleArray(this.orderingItems);
+  console.log('✅ Initialized ordering items:', this.orderingItems.length);
+},
+
+// ✅ ENHANCED: Safe drag-drop initialization
+initializeDragDropItems() {
+  const exercise = this.getCurrentExercise();
+  if (!exercise || exercise.type !== 'drag-drop') {
+    this.dragDropPlacements = {};
+    return;
+  }
+  
+  this.dragDropPlacements = {};
+  console.log('✅ Initialized drag-drop placements');
+},
 validateFillBlankAnswer(userAnswers, correctAnswers) {
   if (!Array.isArray(userAnswers) || !Array.isArray(correctAnswers)) {
     return false;
@@ -4143,21 +4294,7 @@ clearMatchingPairs() {
   this.selectedMatchingItem = null;
 },
 
-getMatchingLeftItems() {
-  const exercise = this.getCurrentExercise();
-  if (!exercise || exercise.type !== 'matching') return [];
-  
-  const pairs = exercise.pairs || [];
-  return pairs.map(pair => pair.left || pair[0] || '');
-},
 
-getMatchingRightItems() {
-  const exercise = this.getCurrentExercise();
-  if (!exercise || exercise.type !== 'matching') return [];
-  
-  const pairs = exercise.pairs || [];
-  return pairs.map(pair => pair.right || pair[1] || '');
-},
 
 isItemMatched(side, index) {
   if (side === 'left') {
@@ -4193,20 +4330,7 @@ orderingItems: [],
 draggedItem: null,
 dropTarget: null,
 
-initializeOrderingItems() {
-  const exercise = this.getCurrentExercise();
-  if (!exercise || exercise.type !== 'ordering') return;
-  
-  const items = exercise.items || [];
-  this.orderingItems = items.map((item, index) => ({
-    id: `item_${index}`,
-    text: typeof item === 'string' ? item : item.text || '',
-    originalIndex: index
-  }));
-  
-  // Shuffle items
-  this.shuffleArray(this.orderingItems);
-},
+
 
 shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
@@ -4288,28 +4412,8 @@ dragDropPlacements: {},
 draggedDragItem: null,
 dropOverZone: null,
 
-initializeDragDropItems() {
-  const exercise = this.getCurrentExercise();
-  if (!exercise || exercise.type !== 'drag-drop') return;
-  
-  this.dragDropPlacements = {};
-},
 
-getAvailableDragItems() {
-  const exercise = this.getCurrentExercise();
-  if (!exercise || exercise.type !== 'drag-drop') return [];
-  
-  const allItems = exercise.dragItems || [];
-  const placedItems = Object.values(this.dragDropPlacements).flat();
-  
-  return allItems.filter(item => 
-    !placedItems.some(placedItem => placedItem.id === item.id)
-  );
-},
 
-getDropZoneItems(zoneId) {
-  return this.dragDropPlacements[zoneId] || [];
-},
 
 startDragDrop(event, item) {
   this.draggedDragItem = item;
