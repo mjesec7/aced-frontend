@@ -2597,6 +2597,15 @@ async handleSubmitOrNext() {
             return;
           }
 
+          // Debug the user response
+          console.log('🔍 DEBUG userResponse:', {
+            userResponse,
+            type: typeof userResponse,
+            keys: Object.keys(userResponse || {}),
+            stringValue: String(userResponse),
+            JSONstringify: JSON.stringify(userResponse)
+          });
+
           // Get correct answer index
           const correctIndex = this.parseAnswerIndex(currentExercise.correctAnswer || currentExercise.answer);
           
@@ -2843,16 +2852,40 @@ parseAnswerIndex(answer) {
   return -1;
 },
 
-findOptionIndex(selectedText, options) {
-  if (!Array.isArray(options) || !selectedText) return -1;
+findOptionIndex(selectedValue, options) {
+  if (!Array.isArray(options)) return -1;
+  
+  console.log('🔍 findOptionIndex input:', { selectedValue, selectedValueType: typeof selectedValue, options });
+  
+  // Handle different types of selectedValue
+  let selectedText = '';
+  
+  if (typeof selectedValue === 'string') {
+    selectedText = selectedValue;
+  } else if (selectedValue && typeof selectedValue === 'object') {
+    // Handle proxy objects and option objects
+    selectedText = selectedValue.text || selectedValue.label || selectedValue.value || String(selectedValue);
+  } else {
+    selectedText = String(selectedValue);
+  }
+  
+  console.log('🔍 Extracted selectedText:', selectedText);
+  
+  if (!selectedText) return -1;
   
   const normalizedSelected = this.normalizeText(selectedText);
   
-  return options.findIndex(option => {
+  const foundIndex = options.findIndex((option, index) => {
     const optionText = this.extractOptionText(option);
     const normalizedOption = this.normalizeText(optionText);
+    
+    console.log(`🔍 Option ${index}: "${optionText}" → "${normalizedOption}" vs "${normalizedSelected}"`);
+    
     return normalizedOption === normalizedSelected;
   });
+  
+  console.log('🔍 findOptionIndex result:', foundIndex);
+  return foundIndex;
 },
 
 extractOptionText(option) {
