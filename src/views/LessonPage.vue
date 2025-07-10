@@ -2963,6 +2963,40 @@ validateQuizAnswer(userAnswer, quiz) {
   
   return normalizedUser === normalizedCorrect;
 },
+// Add this method to debug template errors
+debugTemplateState() {
+  console.log('🐛 TEMPLATE DEBUG STATE:');
+  console.log('📊 currentStep:', this.currentStep);
+  console.log('📊 currentIndex:', this.currentIndex);
+  console.log('📊 steps.length:', this.steps?.length || 0);
+  console.log('📊 getCurrentExercise():', this.getCurrentExercise());
+  console.log('📊 getCurrentQuiz():', this.getCurrentQuiz());
+  console.log('📊 fillBlankAnswers:', this.fillBlankAnswers);
+  console.log('📊 currentExerciseIndex:', this.currentExerciseIndex);
+  console.log('📊 currentQuizIndex:', this.currentQuizIndex);
+  
+  // Check specific problematic areas
+  const exercise = this.getCurrentExercise();
+  if (exercise) {
+    console.log('📊 exercise.options:', exercise.options);
+    console.log('📊 exercise.options type:', typeof exercise.options);
+    console.log('📊 exercise.options isArray:', Array.isArray(exercise.options));
+  }
+  
+  const quiz = this.getCurrentQuiz();
+  if (quiz) {
+    console.log('📊 quiz.options:', quiz.options);
+    console.log('📊 quiz.options type:', typeof quiz.options);
+    console.log('📊 quiz.options isArray:', Array.isArray(quiz.options));
+  }
+  
+  console.log('📊 Template safety checks:');
+  console.log('- steps exists:', !!this.steps);
+  console.log('- currentStep exists:', !!this.currentStep);
+  console.log('- getCurrentExercise() exists:', !!this.getCurrentExercise());
+  console.log('- getCurrentQuiz() exists:', !!this.getCurrentQuiz());
+  console.log('- fillBlankAnswers is array:', Array.isArray(this.fillBlankAnswers));
+},
     showHint() {
       const step = this.currentStep;
       if (step && step.data && step.data.hint) {
