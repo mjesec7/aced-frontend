@@ -1892,7 +1892,7 @@ export default {
   return 'Exercise question not available';
 },
 
-ggetCorrectAnswer(step) {
+getCorrectAnswer(step) {
   if (!step || !step.data) {
     return '';
   }
