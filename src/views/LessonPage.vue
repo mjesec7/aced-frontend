@@ -2076,7 +2076,7 @@ getQuizOptions(quiz) {
     } else if (quiz.type === 'true-false') {
       options = ['True', 'False'];
       console.log('✅ Generated true/false options');
-    } else if (quiz.type === 'multiple-choice') {
+    } else if (quiz.type === 'multiple-choice' || quiz.type === 'abc') {
       // If no options but it's multiple choice, create defaults
       options = ['Option A', 'Option B', 'Option C', 'Option D'];
       console.warn('⚠️ No options found for multiple choice, using defaults');
@@ -2085,16 +2085,27 @@ getQuizOptions(quiz) {
       return [];
     }
     
-    // Normalize options to strings and filter out empty ones
-    const normalizedOptions = options.map(option => {
-      if (typeof option === 'string') return option;
-      if (option && typeof option === 'object') {
-        return option.text || option.label || option.value || String(option);
+    // ✅ CRITICAL FIX: Better option normalization
+    const normalizedOptions = options.map((option, index) => {
+      let text = '';
+      
+      if (typeof option === 'string') {
+        text = option;
+      } else if (option && typeof option === 'object') {
+        // Handle MongoDB objects like {"text": "Nice to meet you!"}
+        text = option.text || option.label || option.value || String(option);
+      } else {
+        text = String(option);
       }
-      return String(option);
-    }).filter(opt => opt && opt.trim());
+      
+      // Clean up the text
+      text = text.trim();
+      
+      console.log(`📝 Option ${index}: ${JSON.stringify(option)} → "${text}"`);
+      return text;
+    }).filter(opt => opt && opt.length > 0);
     
-    console.log('✅ Normalized quiz options:', normalizedOptions);
+    console.log('✅ Final normalized quiz options:', normalizedOptions);
     return normalizedOptions;
     
   } catch (error) {
@@ -2156,15 +2167,28 @@ getQuizOptions(quiz) {
       return false;
     }
     
+    // ✅ CRITICAL FIX: Get processed options
+    const options = this.getQuizOptions(quiz);
+    console.log('📝 Processed quiz options:', options);
+    console.log('👤 User selected:', userAnswer);
+    
     // Handle multiple choice by index
     if (typeof correctAnswer === 'number') {
-      const options = this.getQuizOptions(quiz);
-      console.log('📝 Quiz options for index validation:', options);
-      
       if (options.length > correctAnswer && correctAnswer >= 0) {
         const correctOption = options[correctAnswer];
-        const isCorrect = userAnswer === correctOption;
-        console.log('✅ Index-based validation:', { userAnswer, correctOption, isCorrect });
+        console.log('✅ Correct option text:', correctOption);
+        
+        // ✅ FIXED: Normalize both strings for comparison
+        const normalizedUserAnswer = this.normalizeText(userAnswer);
+        const normalizedCorrectOption = this.normalizeText(correctOption);
+        
+        const isCorrect = normalizedUserAnswer === normalizedCorrectOption;
+        console.log('🔍 Comparison details:', { 
+          normalizedUserAnswer, 
+          normalizedCorrectOption, 
+          isCorrect 
+        });
+        
         return isCorrect;
       } else {
         console.warn('⚠️ Correct answer index out of bounds:', correctAnswer, 'Options length:', options.length);
@@ -2174,7 +2198,9 @@ getQuizOptions(quiz) {
     
     // Handle direct string comparison
     if (typeof correctAnswer === 'string') {
-      const isCorrect = userAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
+      const normalizedUserAnswer = this.normalizeText(userAnswer);
+      const normalizedCorrectAnswer = this.normalizeText(correctAnswer);
+      const isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
       console.log('✅ String-based validation:', { userAnswer, correctAnswer, isCorrect });
       return isCorrect;
     }
@@ -2195,6 +2221,13 @@ getQuizOptions(quiz) {
     return false;
   }
 },
+
+// ✅ ADD this new helper method
+normalizeText(text) {
+  if (!text) return '';
+  return String(text).trim().toLowerCase();
+},
+
 validateAnswer(userAnswer, correctAnswer, stepType) {
   // ✅ CRITICAL: Ensure both values exist and convert safely
   if (!this.hasValidUserResponse(userAnswer)) return false;
