@@ -3965,7 +3965,6 @@ goToNextExercise() {
 
 resetExerciseState() {
   // ✅ FIXED: Only clear userAnswer if we're actually changing exercises
-  // Don't clear it if we're just resetting other state
   const shouldPreserveAnswer = this.answerWasCorrect || this.currentStep?.type === 'vocabulary';
   
   if (!shouldPreserveAnswer) {
@@ -3977,10 +3976,19 @@ resetExerciseState() {
   this.currentHint = '';
   this.smartHint = '';
   
-  // Reset specific exercise type data
-  this.fillBlankAnswers = [];
-  this.matchingPairs = [];
-  this.selectedMatchingItem = null;
+  // ✅ CRITICAL FIX: Don't reset fill-blank answers when moving between exercises of same type
+  const currentExercise = this.getCurrentExercise();
+  const isStillFillBlank = currentExercise?.type === 'fill-blank';
+  
+  if (!isStillFillBlank) {
+    this.fillBlankAnswers = [];
+  }
+  
+  // Reset other exercise type data only when needed
+  if (currentExercise?.type !== 'matching') {
+    this.matchingPairs = [];
+    this.selectedMatchingItem = null;
+  }
   
   // Re-initialize current exercise data if needed
   this.initializeCurrentExerciseData();
@@ -4106,17 +4114,17 @@ initializeFillBlankAnswers(exercise) {
     return;
   }
   
-  try {
-    const blankCount = Array.isArray(exercise.blanks) ? exercise.blanks.length : 0;
-    // ✅ FIX: Only initialize if array is empty or wrong length
-    if (!Array.isArray(this.fillBlankAnswers) || this.fillBlankAnswers.length !== blankCount) {
-      this.fillBlankAnswers = new Array(blankCount).fill('');
-    }
-    console.log('✅ Initialized fill-blank answers:', this.fillBlankAnswers);
-  } catch (error) {
-    console.error('❌ Error initializing fill-blank answers:', error);
-    this.fillBlankAnswers = [];
+  const blankCount = Array.isArray(exercise.blanks) ? exercise.blanks.length : 0;
+  
+  // ✅ CRITICAL FIX: Preserve existing answers if array is correct size
+  if (Array.isArray(this.fillBlankAnswers) && this.fillBlankAnswers.length === blankCount) {
+    console.log('✅ Preserving existing fill-blank answers:', this.fillBlankAnswers);
+    return; // Don't reinitialize if already correct
   }
+  
+  // Initialize new array only if needed
+  this.fillBlankAnswers = new Array(blankCount).fill('');
+  console.log('✅ Initialized new fill-blank answers array:', this.fillBlankAnswers);
 },
 
 // ✅ ENHANCED: Safe getFillBlankTemplate
@@ -4247,17 +4255,30 @@ initializeCurrentExerciseData() {
   
   switch (exercise.type) {
     case 'fill-blank':
-      this.initializeFillBlankAnswers(exercise);
+      // ✅ CRITICAL FIX: Only initialize if array doesn't exist or is wrong size
+      const expectedLength = exercise.blanks ? exercise.blanks.length : 0;
+      if (!Array.isArray(this.fillBlankAnswers) || this.fillBlankAnswers.length !== expectedLength) {
+        this.initializeFillBlankAnswers(exercise);
+      }
       break;
     case 'ordering':
-      this.initializeOrderingItems();
+      // Only initialize if not already set
+      if (!Array.isArray(this.orderingItems) || this.orderingItems.length === 0) {
+        this.initializeOrderingItems();
+      }
       break;
     case 'drag-drop':
-      this.initializeDragDropItems();
+      // Only initialize if not already set
+      if (!this.dragDropPlacements || Object.keys(this.dragDropPlacements).length === 0) {
+        this.initializeDragDropItems();
+      }
       break;
     case 'matching':
-      this.matchingPairs = [];
-      this.selectedMatchingItem = null;
+      // Only reset if not already working on pairs
+      if (!Array.isArray(this.matchingPairs)) {
+        this.matchingPairs = [];
+        this.selectedMatchingItem = null;
+      }
       break;
     case 'abc':
     case 'multiple-choice':
@@ -4268,8 +4289,7 @@ initializeCurrentExerciseData() {
       }
       break;
     default:
-      // Reset general exercise data
-      this.userAnswer = '';
+      // Don't reset userAnswer here
       break;
   }
 },
