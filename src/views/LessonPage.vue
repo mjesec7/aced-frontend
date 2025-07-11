@@ -121,48 +121,49 @@
           @previous="goPrevious"
         />
 
-        <!-- Right Panel - Interactive Content -->
-        <InteractivePanel
-          v-if="isInteractiveStep"
-          :current-step="currentStep"
-          :current-exercise="getCurrentExercise()"
-          :current-quiz="getCurrentQuiz()"
-          :exercise-index="currentExerciseIndex"
-          :quiz-index="currentQuizIndex"
-          :total-exercises="getTotalExercises()"
-          :total-quizzes="getTotalQuizzes()"
-          :user-answer="userAnswer"
-          :confirmation="confirmation"
-          :answer-was-correct="answerWasCorrect"
-          :current-hint="currentHint"
-          :smart-hint="smartHint"
-          :mistake-count="mistakeCount"
-          :fill-blank-answers="fillBlankAnswers"
-          :matching-pairs="matchingPairs"
-          :selected-matching-item="selectedMatchingItem"
-          :ordering-items="orderingItems"
-          :drag-drop-placements="dragDropPlacements"
-          @answer-changed="userAnswer = $event"
-          @fill-blank-updated="updateFillBlankAnswer"
-          @submit="handleSubmitOrNext"
-          @next-exercise="goToNextExercise"
-          @next-quiz="goToNextQuiz"
-          @show-hint="showHint"
-          @clear-hint="clearSmartHint"
-        />
-
-        <!-- AI Help Panel for Interactive Steps -->
-        <AIHelpPanel
-          v-else-if="isInteractiveStep"
-          :ai-suggestions="aiSuggestions"
-          :ai-chat-input="aiChatInput"
-          :ai-chat-history="aiChatHistory"
-          :ai-is-loading="aiIsLoading"
-          :ai-usage="aiUsage"
-          @send-message="sendAIMessage"
-          @ask-ai="askAI"
-          @clear-chat="clearAIChat"
-        />
+        <!-- Right Panel - Interactive Content OR AI Help -->
+        <div v-if="isInteractiveStep" class="interactive-panel-container">
+          <!-- Interactive Panel (Exercises/Quizzes) -->
+          <InteractivePanel
+            :current-step="currentStep"
+            :current-exercise="getCurrentExercise()"
+            :current-quiz="getCurrentQuiz()"
+            :exercise-index="currentExerciseIndex"
+            :quiz-index="currentQuizIndex"
+            :total-exercises="getTotalExercises()"
+            :total-quizzes="getTotalQuizzes()"
+            :user-answer="userAnswer"
+            :confirmation="confirmation"
+            :answer-was-correct="answerWasCorrect"
+            :current-hint="currentHint"
+            :smart-hint="smartHint"
+            :mistake-count="mistakeCount"
+            :fill-blank-answers="fillBlankAnswers"
+            :matching-pairs="matchingPairs"
+            :selected-matching-item="selectedMatchingItem"
+            :ordering-items="orderingItems"
+            :drag-drop-placements="dragDropPlacements"
+            @answer-changed="userAnswer = $event"
+            @fill-blank-updated="updateFillBlankAnswer"
+            @submit="handleSubmitOrNext"
+            @next-exercise="goToNextExercise"
+            @next-quiz="goToNextQuiz"
+            @show-hint="showHint"
+            @clear-hint="clearSmartHint"
+          />
+          
+          <!-- AI Help Panel (shown below or alongside interactive content) -->
+          <AIHelpPanel
+            :ai-suggestions="aiSuggestions"
+            :ai-chat-input="aiChatInput"
+            :ai-chat-history="aiChatHistory"
+            :ai-is-loading="aiIsLoading"
+            :ai-usage="aiUsage"
+            @send-message="sendAIMessage"
+            @ask-ai="askAI"
+            @clear-chat="clearAIChat"
+          />
+        </div>
 
         <!-- Non-interactive step placeholder -->
         <div v-else class="non-interactive-panel">
@@ -453,4 +454,22 @@ export default {
 
 <style scoped>
 @import "@/assets/css/LessonPage.css";
+
+/* Interactive panel container for exercises with AI help */
+.interactive-panel-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+@media (max-width: 1024px) {
+  .interactive-panel-container {
+    padding: 16px;
+    gap: 12px;
+  }
+}
 </style>
