@@ -1,4 +1,4 @@
-// src/composables/useExercises.js
+// src/composables/useExercises.js - FIXED VERSION
 import { ref, reactive, computed } from 'vue'
 
 export function useExercises() {
@@ -164,7 +164,7 @@ export function useExercises() {
     }
   }
   
-  // ✅ Exercise initialization
+  // ✅ Exercise initialization - FIXED
   const initializeCurrentExerciseData = (exercise) => {
     if (!exercise) return
     
@@ -175,24 +175,18 @@ export function useExercises() {
         initializeFillBlankAnswers(exercise)
         break
       case 'ordering':
-        if (!orderingItems.value.length) {
-          initializeOrderingItems(exercise)
-        }
+        initializeOrderingItems(exercise)
         break
       case 'drag-drop':
-        if (!Object.keys(dragDropPlacements).length) {
-          initializeDragDropItems()
-        }
+        initializeDragDropItems()
         break
       case 'matching':
-        if (!matchingPairs.value.length) {
-          matchingPairs.value = []
-          selectedMatchingItem.value = null
-        }
+        initializeMatchingItems()
         break
     }
   }
   
+  // ✅ FIXED - Fill blank initialization
   const initializeFillBlankAnswers = (exercise) => {
     if (!exercise) {
       fillBlankAnswers.value = []
@@ -201,21 +195,35 @@ export function useExercises() {
     
     let blankCount = 0
     
+    // Check for explicit blanks array first
     if (exercise.blanks && Array.isArray(exercise.blanks)) {
       blankCount = exercise.blanks.length
+      console.log('📝 Found explicit blanks array:', blankCount)
     } else {
+      // Parse template/question for blanks
       const template = exercise.template || exercise.question || ''
+      console.log('📝 Parsing template for blanks:', template)
+      
+      // Count different blank patterns
       const underscoreMatches = template.match(/_+/g) || []
       const blankMatches = template.match(/\[blank\]/gi) || []
-      blankCount = Math.max(underscoreMatches.length, blankMatches.length)
+      const curlyBraceMatches = template.match(/\{[^}]*\}/g) || []
+      
+      blankCount = Math.max(
+        underscoreMatches.length, 
+        blankMatches.length, 
+        curlyBraceMatches.length
+      )
+      
+      console.log('📝 Found blanks - underscores:', underscoreMatches.length, 'blank tags:', blankMatches.length, 'curly braces:', curlyBraceMatches.length)
     }
     
-    if (!Array.isArray(fillBlankAnswers.value) || fillBlankAnswers.value.length !== blankCount) {
-      fillBlankAnswers.value = new Array(blankCount).fill('')
-      console.log(`✅ Initialized ${blankCount} fill-blank answers`)
-    }
+    // Always reinitialize the array to ensure proper reactivity
+    fillBlankAnswers.value = new Array(Math.max(1, blankCount)).fill('')
+    console.log(`✅ Initialized ${fillBlankAnswers.value.length} fill-blank answers`)
   }
   
+  // ✅ FIXED - Ordering initialization
   const initializeOrderingItems = (exercise) => {
     if (!exercise || exercise.type !== 'ordering' || !exercise.items) {
       orderingItems.value = []
@@ -233,14 +241,23 @@ export function useExercises() {
     console.log('✅ Initialized ordering items:', orderingItems.value.length)
   }
   
+  // ✅ FIXED - Drag drop initialization
   const initializeDragDropItems = () => {
+    // Clear existing placements
     Object.keys(dragDropPlacements).forEach(key => {
       delete dragDropPlacements[key]
     })
     console.log('✅ Initialized drag-drop placements')
   }
   
-  // ✅ Answer validation helpers
+  // ✅ FIXED - Matching initialization
+  const initializeMatchingItems = () => {
+    matchingPairs.value = []
+    selectedMatchingItem.value = null
+    console.log('✅ Initialized matching items')
+  }
+  
+  // ✅ FIXED - Answer validation
   const canSubmitAnswer = (exercise) => {
     if (!exercise) {
       return userAnswer.value && userAnswer.value.trim().length > 0
@@ -251,23 +268,59 @@ export function useExercises() {
     switch (exerciseType) {
       case 'short-answer':
         return userAnswer.value && userAnswer.value.trim().length > 0
+        
       case 'multiple-choice':
       case 'abc':
       case 'true-false':
         return userAnswer.value !== null && userAnswer.value !== undefined && userAnswer.value !== ''
+        
       case 'fill-blank':
-        return fillBlankAnswers.value && 
-               fillBlankAnswers.value.length > 0 &&
-               fillBlankAnswers.value.some(answer => answer && answer.trim())
+        // Check if we have answers and at least one is filled
+        const hasAnswers = Array.isArray(fillBlankAnswers.value) && fillBlankAnswers.value.length > 0
+        const hasFilledAnswers = hasAnswers && fillBlankAnswers.value.some(answer => 
+          answer && typeof answer === 'string' && answer.trim().length > 0
+        )
+        console.log('🔍 Fill-blank validation:', {
+          hasAnswers,
+          hasFilledAnswers,
+          answers: fillBlankAnswers.value,
+          exerciseType
+        })
+        return hasFilledAnswers
+        
       case 'matching':
-        return matchingPairs.value && matchingPairs.value.length > 0
+        return Array.isArray(matchingPairs.value) && matchingPairs.value.length > 0
+        
       case 'ordering':
-        return orderingItems.value && orderingItems.value.length > 0
+        return Array.isArray(orderingItems.value) && orderingItems.value.length > 0
+        
       case 'drag-drop':
         return Object.keys(dragDropPlacements).length > 0
+        
       default:
         return userAnswer.value && userAnswer.value.trim().length > 0
     }
+  }
+  
+  // ✅ FIXED - Fill blank answer updating
+  const updateFillBlankAnswer = (index, value) => {
+    // Ensure we have an array
+    if (!Array.isArray(fillBlankAnswers.value)) {
+      fillBlankAnswers.value = []
+    }
+    
+    // Extend array if needed
+    while (fillBlankAnswers.value.length <= index) {
+      fillBlankAnswers.value.push('')
+    }
+    
+    // Handle both event objects and direct values
+    const newValue = typeof value === 'object' && value?.target ? value.target.value : value
+    
+    // Update the specific index
+    fillBlankAnswers.value[index] = newValue || ''
+    
+    console.log(`📝 Updated blank ${index + 1}:`, newValue, 'All answers:', fillBlankAnswers.value)
   }
   
   // ✅ Reset functions
@@ -291,6 +344,8 @@ export function useExercises() {
     matchingPairs.value = []
     selectedMatchingItem.value = null
     orderingItems.value = []
+    
+    // Clear drag-drop placements
     Object.keys(dragDropPlacements).forEach(key => {
       delete dragDropPlacements[key]
     })
@@ -304,21 +359,53 @@ export function useExercises() {
     }
   }
   
-  const updateFillBlankAnswer = (index, event) => {
-    if (!Array.isArray(fillBlankAnswers.value)) {
-      fillBlankAnswers.value = []
-    }
-    
-    while (fillBlankAnswers.value.length <= index) {
-      fillBlankAnswers.value.push('')
-    }
-    
-    fillBlankAnswers.value[index] = event.target.value
-    console.log(`📝 Updated blank ${index + 1}:`, event.target.value)
-  }
-  
   const getCurrentExerciseType = (exercise) => {
     return exercise?.type || 'short-answer'
+  }
+  
+  // ✅ ADDED - Get formatted fill-blank template
+  const getFormattedFillBlankTemplate = (exercise) => {
+    if (!exercise || exercise.type !== 'fill-blank') {
+      return ''
+    }
+    
+    const template = exercise.template || exercise.question || ''
+    let blankIndex = 0
+    
+    // Replace different blank patterns with input fields
+    return template
+      .replace(/\[blank\]/gi, () => `<input data-blank-index="${blankIndex++}">`)
+      .replace(/_+/g, () => `<input data-blank-index="${blankIndex++}">`)
+      .replace(/\{[^}]*\}/g, () => `<input data-blank-index="${blankIndex++}">`)
+  }
+  
+  // ✅ ADDED - Validate fill-blank answers
+  const validateFillBlankAnswers = (exercise) => {
+    if (!exercise || exercise.type !== 'fill-blank') {
+      return false
+    }
+    
+    const correctAnswers = exercise.correctAnswers || exercise.answers || []
+    if (!Array.isArray(correctAnswers)) {
+      return false
+    }
+    
+    // Check if all answers are correct
+    return fillBlankAnswers.value.every((userAnswer, index) => {
+      const correctAnswer = correctAnswers[index]
+      if (!correctAnswer) return false
+      
+      const userAnswerTrimmed = (userAnswer || '').trim().toLowerCase()
+      
+      // Handle multiple correct answers
+      if (Array.isArray(correctAnswer)) {
+        return correctAnswer.some(answer => 
+          answer.toLowerCase().trim() === userAnswerTrimmed
+        )
+      }
+      
+      return correctAnswer.toLowerCase().trim() === userAnswerTrimmed
+    })
   }
   
   return {
@@ -353,11 +440,14 @@ export function useExercises() {
     initializeFillBlankAnswers,
     initializeOrderingItems,
     initializeDragDropItems,
+    initializeMatchingItems,
     canSubmitAnswer,
     resetExerciseState,
     resetExerciseAnswers,
     resetExerciseData,
     updateFillBlankAnswer,
-    getCurrentExerciseType
+    getCurrentExerciseType,
+    getFormattedFillBlankTemplate,
+    validateFillBlankAnswers
   }
 }
