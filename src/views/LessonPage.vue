@@ -42,7 +42,7 @@
     </div>
 
     <!-- ✅ VOCABULARY LEARNING MODAL -->
-    <div v-if="vocabularyModal.isVisible" class="vocabulary-modal-overlay">
+    <div v-if="vocabularyModal?.isVisible" class="vocabulary-modal-overlay">
       <div class="vocabulary-modal-container">
         
         <!-- Modal Header -->
@@ -52,7 +52,7 @@
               <div class="vocab-progress-fill" :style="{ width: vocabProgress + '%' }"></div>
             </div>
             <div class="vocab-progress-text">
-              {{ vocabularyModal.currentIndex + 1 }} / {{ vocabularyModal.words.length }}
+              {{ (vocabularyModal?.currentIndex || 0) + 1 }} / {{ (vocabularyModal?.words || []).length || 1 }}
             </div>
           </div>
           
@@ -67,13 +67,13 @@
         </div>
 
         <!-- Vocabulary Card Container -->
-        <div v-if="!vocabularyModal.isCompleted && !vocabularyModal.showingList" class="vocabulary-card-container">
+        <div v-if="!vocabularyModal?.isCompleted && !vocabularyModal?.showingList" class="vocabulary-card-container">
           
           <!-- Main Vocabulary Card -->
           <div class="vocabulary-card" 
                :class="{ 
-                 'flipped': cardAnimation.showDefinition, 
-                 'flipping': cardAnimation.isFlipping,
+                 'flipped': cardAnimation?.showDefinition, 
+                 'flipping': cardAnimation?.isFlipping,
                  'learned': currentVocabWord?.learned
                }">
             
@@ -113,7 +113,7 @@
             <div class="card-back" @click="hideVocabDefinition">
               <div class="card-content">
                 <div class="vocab-definition-section">
-                  <h3 class="vocab-term-small">{{ currentVocabWord?.term }}</h3>
+                  <h3 class="vocab-term-small">{{ currentVocabWord?.term || '' }}</h3>
                   
                   <div class="vocab-definition">
                     {{ currentVocabWord?.definition || 'Определение не найдено' }}
@@ -137,7 +137,7 @@
           <div class="vocab-card-actions">
             <button 
               @click="previousVocabWord" 
-              :disabled="vocabularyModal.currentIndex === 0"
+              :disabled="(vocabularyModal?.currentIndex || 0) === 0"
               class="vocab-nav-btn vocab-prev-btn"
               title="Предыдущее слово"
             >
@@ -175,34 +175,34 @@
           <!-- Quick Navigation Dots -->
           <div class="vocab-dots-navigation">
             <button
-              v-for="(word, wordIndex) in (vocabularyModal.words || [])"
-              :key="word.id || wordIndex"
+              v-for="(word, wordIndex) in (vocabularyModal?.words || [])"
+              :key="word?.id || `vocab-dot-${wordIndex}`"
               @click="vocabularyModal.currentIndex = wordIndex; cardAnimation.showDefinition = false;"
               class="vocab-dot"
               :class="{ 
-                active: wordIndex === vocabularyModal.currentIndex,
-                learned: word.learned 
+                active: wordIndex === (vocabularyModal?.currentIndex || 0),
+                learned: word?.learned 
               }"
-              :title="word.term"
+              :title="word?.term || 'Word'"
             >
             </button>
           </div>
         </div>
 
         <!-- Completion Screen -->
-        <div v-else-if="vocabularyModal.isCompleted && !vocabularyModal.showingList" class="vocabulary-completion">
+        <div v-else-if="vocabularyModal?.isCompleted && !vocabularyModal?.showingList" class="vocabulary-completion">
           <div class="completion-animation">
             <div class="completion-icon">🎉</div>
             <h3>Отлично!</h3>
-            <p>Вы изучили {{ (vocabularyModal.words || []).filter(w => w.learned).length }} из {{ (vocabularyModal.words || []).length }} слов</p>
+            <p>Вы изучили {{ ((vocabularyModal?.words || []).filter(w => w?.learned) || []).length }} из {{ (vocabularyModal?.words || []).length }} слов</p>
             
             <div class="completion-stats">
               <div class="completion-stat">
-                <div class="stat-number">{{ (vocabularyModal.words || []).filter(w => w.learned).length }}</div>
+                <div class="stat-number">{{ ((vocabularyModal?.words || []).filter(w => w?.learned) || []).length }}</div>
                 <div class="stat-label">Изучено</div>
               </div>
               <div class="completion-stat">
-                <div class="stat-number">{{ Math.round(((vocabularyModal.words || []).filter(w => w.learned).length / Math.max((vocabularyModal.words || []).length, 1)) * 100) }}%</div>
+                <div class="stat-number">{{ Math.round((((vocabularyModal?.words || []).filter(w => w?.learned) || []).length / Math.max((vocabularyModal?.words || []).length, 1)) * 100) }}%</div>
                 <div class="stat-label">Прогресс</div>
               </div>
             </div>
@@ -214,7 +214,7 @@
         </div>
 
         <!-- List Transition Screen -->
-        <div v-else-if="vocabularyModal.showingList" class="vocabulary-list-transition">
+        <div v-else-if="vocabularyModal?.showingList" class="vocabulary-list-transition">
           <div class="transition-animation">
             <div class="transition-icon">📚</div>
             <h3>Переход к списку слов...</h3>
@@ -233,8 +233,8 @@
       <button class="exit-btn" @click="confirmExit">✕</button>
       
       <div class="intro-content">
-        <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) || 'Без названия' }}</h2>
-        <p class="lesson-description">{{ getLocalized(lesson.description) || 'Описание недоступно' }}</p>
+        <h2 class="lesson-title">{{ getLocalized(lesson?.lessonName) || 'Без названия' }}</h2>
+        <p class="lesson-description">{{ getLocalized(lesson?.description) || 'Описание недоступно' }}</p>
         
         <div class="lesson-info-grid">
           <div class="info-card">
@@ -255,25 +255,25 @@
             <div class="info-icon">🎯</div>
             <div class="info-text">
               <span class="info-label">Тип</span>
-              <span class="info-value">{{ lesson.type === 'premium' ? 'Премиум' : 'Бесплатный' }}</span>
+              <span class="info-value">{{ lesson?.type === 'premium' ? 'Премиум' : 'Бесплатный' }}</span>
             </div>
           </div>
         </div>
         
         <!-- Previous Progress Display -->
-        <div v-if="previousProgress && (previousProgress.completedSteps || []).length > 0" class="previous-progress">
+        <div v-if="previousProgress && (previousProgress?.completedSteps || []).length > 0" class="previous-progress">
           <h4>📈 Предыдущий прогресс</h4>
           <div class="progress-stats-grid">
             <div class="stat">
-              <span class="stat-value">{{ (previousProgress.completedSteps || []).length }}/{{ (steps || []).length }}</span>
+              <span class="stat-value">{{ (previousProgress?.completedSteps || []).length }}/{{ (steps || []).length }}</span>
               <span class="stat-label">Прогресс</span>
             </div>
             <div class="stat">
-              <span class="stat-value">⭐ {{ previousProgress.stars || 0 }}</span>
+              <span class="stat-value">⭐ {{ previousProgress?.stars || 0 }}</span>
               <span class="stat-label">Звезды</span>
             </div>
             <div class="stat">
-              <span class="stat-value">❌ {{ previousProgress.mistakes || 0 }}</span>
+              <span class="stat-value">❌ {{ previousProgress?.mistakes || 0 }}</span>
               <span class="stat-label">Ошибки</span>
             </div>
           </div>
@@ -296,10 +296,10 @@
       <!-- Top Header -->
       <div class="lesson-header">
         <button class="exit-btn-small" @click="confirmExit">✕</button>
-        <h2 class="lesson-title">{{ getLocalized(lesson.lessonName) }}</h2>
+        <h2 class="lesson-title">{{ getLocalized(lesson?.lessonName) || 'Урок' }}</h2>
         <div class="lesson-meta">
           <div class="timer-display">⏱ {{ formattedTime }}</div>
-          <div class="step-counter">{{ currentIndex + 1 }}/{{ (steps || []).length }}</div>
+          <div class="step-counter">{{ currentIndex + 1 }}/{{ (steps || []).length || 1 }}</div>
         </div>
       </div>
 
@@ -327,10 +327,10 @@
               
               <!-- ✅ Exercise/quiz counter for interactive steps -->
               <span v-if="isInteractiveStep && ['exercise', 'practice'].includes(currentStep?.type)" class="exercise-counter">
-                ({{ currentExerciseIndex + 1 }}/{{ getTotalExercises() }})
+                ({{ currentExerciseIndex + 1 }}/{{ getTotalExercises() || 1 }})
               </span>
               <span v-else-if="isInteractiveStep && currentStep?.type === 'quiz'" class="quiz-counter">
-                ({{ currentQuizIndex + 1 }}/{{ getTotalQuizzes() }})
+                ({{ currentQuizIndex + 1 }}/{{ getTotalQuizzes() || 1 }})
               </span>
             </h3>
           </div>
@@ -373,7 +373,7 @@
                     placeholder="Задайте вопрос об этом объяснении..."
                     @keyup.enter="askAboutExplanation"
                   />
-                  <button @click="askAboutExplanation" :disabled="!explanationQuestion.trim()">
+                  <button @click="askAboutExplanation" :disabled="!explanationQuestion?.trim()">
                     Спросить AI
                   </button>
                 </div>
@@ -387,11 +387,11 @@
             <div v-else-if="currentStep?.type === 'vocabulary'" class="vocabulary-content enhanced">
               
               <!-- Show modal trigger if not completed -->
-              <div v-if="!currentStep.data?.modalCompleted" class="vocabulary-modal-trigger">
+              <div v-if="!currentStep?.data?.modalCompleted" class="vocabulary-modal-trigger">
                 <div class="trigger-card">
                   <div class="trigger-icon">📚</div>
                   <h3>Изучение словаря</h3>
-                  <p>{{ Array.isArray(currentStep.data) ? currentStep.data.length : 1 }} новых слов ждут вас!</p>
+                  <p>{{ Array.isArray(currentStep?.data) ? currentStep.data.length : 1 }} новых слов ждут вас!</p>
                   <button @click="initializeVocabularyModal(currentStep)" class="start-vocabulary-btn">
                     🚀 Начать изучение
                   </button>
@@ -409,15 +409,16 @@
                 
                 <div class="vocabulary-list">
                   <div 
-                    v-for="(vocab, vocabIndex) in (currentStep.data?.allWords || currentStep.data || [])" 
-                    :key="vocab.id || vocabIndex" 
+                    v-for="(vocab, vocabIndex) in (currentStep?.data?.allWords || currentStep?.data || [])" 
+                    :key="vocab?.id || `vocab-list-${vocabIndex}`" 
                     class="vocabulary-item enhanced"
-                    :class="{ learned: vocab.learned }"
+                    :class="{ learned: vocab?.learned }"
                   >
                     <div class="vocab-item-header">
                       <div class="vocab-term">
-                        {{ vocab.term }}
+                        {{ vocab?.term || 'Term' }}
                         <button 
+                          v-if="vocab?.term"
                           @click="pronounceWord(vocab.term)"
                           class="mini-pronunciation-btn"
                           title="Произношение"
@@ -425,16 +426,16 @@
                           🔊
                         </button>
                       </div>
-                      <div v-if="vocab.learned" class="learned-badge">✅</div>
+                      <div v-if="vocab?.learned" class="learned-badge">✅</div>
                     </div>
                     
-                    <div class="vocab-definition">{{ vocab.definition }}</div>
+                    <div class="vocab-definition">{{ vocab?.definition || 'Definition' }}</div>
                     
-                    <div v-if="vocab.example" class="vocab-example">
+                    <div v-if="vocab?.example" class="vocab-example">
                       <strong>Пример:</strong> {{ vocab.example }}
                     </div>
                     
-                    <div v-if="vocab.pronunciation" class="vocab-pronunciation">
+                    <div v-if="vocab?.pronunciation" class="vocab-pronunciation">
                       Произношение: /{{ vocab.pronunciation }}/
                     </div>
                   </div>
@@ -443,11 +444,11 @@
                 <!-- Summary Stats -->
                 <div class="vocabulary-summary">
                   <div class="summary-stat">
-                    <span class="summary-number">{{ (currentStep.data?.allWords || []).filter(w => w.learned).length }}</span>
+                    <span class="summary-number">{{ ((currentStep?.data?.allWords || []).filter(w => w?.learned) || []).length }}</span>
                     <span class="summary-label">изучено</span>
                   </div>
                   <div class="summary-stat">
-                    <span class="summary-number">{{ (currentStep.data?.allWords || []).length }}</span>
+                    <span class="summary-number">{{ (currentStep?.data?.allWords || []).length }}</span>
                     <span class="summary-label">всего</span>
                   </div>
                 </div>
@@ -457,10 +458,10 @@
             <!-- Video/Audio Step -->
             <div v-else-if="['video', 'audio'].includes(currentStep?.type)" class="media-content">
               <div class="media-placeholder">
-                <div class="media-icon">{{ currentStep.type === 'video' ? '🎬' : '🎵' }}</div>
-                <h4>{{ currentStep.type === 'video' ? 'Видео урок' : 'Аудио урок' }}</h4>
-                <p>{{ currentStep.data?.description || 'Мультимедиа контент' }}</p>
-                <div class="media-url">{{ currentStep.data?.url || 'URL недоступен' }}</div>
+                <div class="media-icon">{{ currentStep?.type === 'video' ? '🎬' : '🎵' }}</div>
+                <h4>{{ currentStep?.type === 'video' ? 'Видео урок' : 'Аудио урок' }}</h4>
+                <p>{{ currentStep?.data?.description || 'Мультимедиа контент' }}</p>
+                <div class="media-url">{{ currentStep?.data?.url || 'URL недоступен' }}</div>
               </div>
             </div>
 
@@ -500,26 +501,26 @@
           <div v-if="isInteractiveStep && ['exercise', 'practice'].includes(currentStep?.type)" class="exercise-container">
             <div class="exercise-header">
               <h3 class="exercise-title">
-                {{ currentStep.type === 'practice' ? '🧪 Практическое задание' : '✏️ Упражнение' }}
+                {{ currentStep?.type === 'practice' ? '🧪 Практическое задание' : '✏️ Упражнение' }}
               </h3>
               <div class="exercise-progress" v-if="getCurrentExercise()">
-                <span class="exercise-counter">{{ currentExerciseIndex + 1 }} / {{ getTotalExercises() }}</span>
+                <span class="exercise-counter">{{ currentExerciseIndex + 1 }} / {{ getTotalExercises() || 1 }}</span>
               </div>
             </div>
             
             <!-- ✅ SAFETY CHECK: Only show content if exercise exists -->
             <div class="exercise-content" v-if="getCurrentExercise()">
               <div class="exercise-question">
-                {{ getCurrentExercise().question }}
+                {{ getCurrentExercise()?.question || 'Question not available' }}
               </div>
               
-              <div class="exercise-instruction" v-if="getCurrentExercise().instruction">
+              <div class="exercise-instruction" v-if="getCurrentExercise()?.instruction">
                 <div class="instruction-badge">💡 Инструкция</div>
                 <div class="instruction-text">{{ getCurrentExercise().instruction }}</div>
               </div>
               
               <!-- ✅ SHORT ANSWER / TEXT INPUT -->
-              <div v-if="getCurrentExercise().type === 'short-answer'" class="short-answer-container">
+              <div v-if="getCurrentExercise()?.type === 'short-answer'" class="short-answer-container">
                 <textarea 
                   v-model="userAnswer" 
                   placeholder="Введите ваш ответ..."
@@ -530,35 +531,35 @@
               </div>
               
               <!-- ✅ MULTIPLE CHOICE / ABC - COMPLETELY FIXED -->
-              <div v-else-if="['multiple-choice', 'abc'].includes(getCurrentExercise().type)" class="options-grid">
+              <div v-else-if="['multiple-choice', 'abc'].includes(getCurrentExercise()?.type)" class="options-grid">
                 <label 
-                  v-for="(option, optionIndex) in (getCurrentExercise()?.options || [])" 
-                  :key="optionIndex" 
+                  v-for="(option, optionIndex) in (getSafeOptions(getCurrentExercise()) || [])" 
+                  :key="`option-${optionIndex}`" 
                   class="option-card"
                   :class="{ 
-                    selected: userAnswer === (typeof option === 'string' ? option : option.text),
-                    correct: answerWasCorrect && userAnswer === (typeof option === 'string' ? option : option.text),
-                    incorrect: !answerWasCorrect && userAnswer === (typeof option === 'string' ? option : option.text) && confirmation
+                    selected: userAnswer === (typeof option === 'string' ? option : option?.text),
+                    correct: answerWasCorrect && userAnswer === (typeof option === 'string' ? option : option?.text),
+                    incorrect: !answerWasCorrect && userAnswer === (typeof option === 'string' ? option : option?.text) && confirmation
                   }"
                 >
                   <input 
                     type="radio" 
-                    :value="typeof option === 'string' ? option : option.text" 
+                    :value="typeof option === 'string' ? option : option?.text" 
                     v-model="userAnswer" 
                     class="option-radio"
                     :disabled="answerWasCorrect"
                   />
                   <div class="option-content">
                     <span class="option-letter">{{ String.fromCharCode(65 + optionIndex) }}</span>
-                    <span class="option-text">{{ typeof option === 'string' ? option : option.text }}</span>
+                    <span class="option-text">{{ typeof option === 'string' ? option : option?.text }}</span>
                   </div>
                 </label>
               </div>
               
               <!-- ✅ TRUE/FALSE -->
-              <div v-else-if="getCurrentExercise().type === 'true-false'" class="true-false-container">
+              <div v-else-if="getCurrentExercise()?.type === 'true-false'" class="true-false-container">
                 <div class="true-false-statement">
-                  {{ getCurrentExercise().statement || getCurrentExercise().question }}
+                  {{ getCurrentExercise()?.statement || getCurrentExercise()?.question }}
                 </div>
                 <div class="true-false-options">
                   <label 
@@ -603,17 +604,17 @@
               </div>
               
               <!-- ✅ FILL IN THE BLANKS - COMPLETELY FIXED -->
-              <div v-else-if="getCurrentExercise().type === 'fill-blank'" class="fill-blank-container">
+              <div v-else-if="getCurrentExercise()?.type === 'fill-blank'" class="fill-blank-container">
                 <div class="fill-blank-template" v-html="getFillBlankTemplate()"></div>
                 <div class="blank-inputs">
                   <div 
                     v-for="(blank, blankIndex) in (getCurrentExercise()?.blanks || [])" 
-                    :key="blankIndex" 
+                    :key="`blank-${blankIndex}`" 
                     class="blank-input-group"
                   >
                     <label class="blank-label">Пропуск {{ blankIndex + 1 }}:</label>
                     <input 
-                      v-model="fillBlankAnswers[blankIndex]" 
+                      v-model="(fillBlankAnswers || [])[blankIndex]" 
                       type="text" 
                       class="blank-input"
                       :disabled="answerWasCorrect"
@@ -624,16 +625,16 @@
               </div>
               
               <!-- ✅ MATCHING PAIRS - COMPLETELY FIXED -->
-              <div v-else-if="getCurrentExercise().type === 'matching'" class="matching-container">
+              <div v-else-if="getCurrentExercise()?.type === 'matching'" class="matching-container">
                 <div class="matching-grid">
                   <div class="matching-column">
                     <h4>Колонка A</h4>
                     <div 
                       v-for="(item, leftIndex) in (getMatchingLeftItems() || [])" 
-                      :key="'left-' + leftIndex" 
+                      :key="`left-${leftIndex}`" 
                       class="matching-item left-item"
                       :class="{ 
-                        selected: selectedMatchingItem?.side === 'left' && selectedMatchingItem.index === leftIndex,
+                        selected: selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === leftIndex,
                         matched: isItemMatched('left', leftIndex)
                       }"
                       @click="selectMatchingItem('left', leftIndex)"
@@ -647,10 +648,10 @@
                     <h4>Колонка B</h4>
                     <div 
                       v-for="(item, rightIndex) in (getMatchingRightItems() || [])" 
-                      :key="'right-' + rightIndex" 
+                      :key="`right-${rightIndex}`" 
                       class="matching-item right-item"
                       :class="{ 
-                        selected: selectedMatchingItem?.side === 'right' && selectedMatchingItem.index === rightIndex,
+                        selected: selectedMatchingItem?.side === 'right' && selectedMatchingItem?.index === rightIndex,
                         matched: isItemMatched('right', rightIndex)
                       }"
                       @click="selectMatchingItem('right', rightIndex)"
@@ -666,12 +667,12 @@
                   <div class="created-pairs">
                     <div 
                       v-for="(pair, pairIndex) in (matchingPairs || [])" 
-                      :key="pairIndex" 
+                      :key="`pair-${pairIndex}`" 
                       class="created-pair"
                     >
-                      <span class="pair-left">{{ String.fromCharCode(65 + pair.leftIndex) }}: {{ pair.leftText }}</span>
+                      <span class="pair-left">{{ String.fromCharCode(65 + (pair?.leftIndex || 0)) }}: {{ pair?.leftText || '' }}</span>
                       <span class="pair-connector">↔</span>
-                      <span class="pair-right">{{ pair.rightIndex + 1 }}: {{ pair.rightText }}</span>
+                      <span class="pair-right">{{ (pair?.rightIndex || 0) + 1 }}: {{ pair?.rightText || '' }}</span>
                       <button @click="removeMatchingPair(pairIndex)" class="remove-pair-btn" title="Удалить пару">✕</button>
                     </div>
                   </div>
@@ -679,14 +680,14 @@
               </div>
               
               <!-- ✅ ORDERING/SEQUENCING - COMPLETELY FIXED -->
-              <div v-else-if="getCurrentExercise().type === 'ordering'" class="ordering-container">
+              <div v-else-if="getCurrentExercise()?.type === 'ordering'" class="ordering-container">
                 <div class="ordering-instructions">
                   <p>Расположите элементы в правильном порядке (перетащите или используйте кнопки):</p>
                 </div>
                 <div class="ordering-items">
                   <div 
                     v-for="(item, itemIndex) in (orderingItems || [])" 
-                    :key="item.id || itemIndex" 
+                    :key="item?.id || `order-${itemIndex}`" 
                     class="ordering-item"
                     :class="{ 
                       dragging: draggedItem === itemIndex,
@@ -701,7 +702,7 @@
                   >
                     <div class="ordering-item-content">
                       <div class="ordering-item-handle">⋮⋮</div>
-                      <div class="ordering-item-text">{{ item?.text || item }}</div>
+                      <div class="ordering-item-text">{{ item?.text || item || 'Item' }}</div>
                       <div class="ordering-item-controls">
                         <button 
                           @click="moveOrderingItem(itemIndex, -1)" 
@@ -729,7 +730,7 @@
               </div>
               
               <!-- ✅ DRAG AND DROP - COMPLETELY FIXED -->
-              <div v-else-if="getCurrentExercise().type === 'drag-drop'" class="drag-drop-container">
+              <div v-else-if="getCurrentExercise()?.type === 'drag-drop'" class="drag-drop-container">
                 <div class="drag-drop-instructions">
                   <p>Перетащите элементы в правильные зоны:</p>
                 </div>
@@ -741,9 +742,9 @@
                     <div class="draggable-items">
                       <div 
                         v-for="item in (getAvailableDragItems() || [])" 
-                        :key="item.id || item" 
+                        :key="item?.id || item" 
                         class="draggable-item"
-                        :class="{ dragging: draggedDragItem === (item.id || item) }"
+                        :class="{ dragging: draggedDragItem === (item?.id || item) }"
                         draggable="true"
                         @dragstart="startDragDrop($event, item)"
                       >
@@ -758,22 +759,22 @@
                     <div class="drop-zones">
                       <div 
                         v-for="zone in (getCurrentExercise()?.dropZones || [])" 
-                        :key="zone.id || zone" 
+                        :key="zone?.id || zone" 
                         class="drop-zone"
                         :class="{ 
-                          'drop-over': dropOverZone === (zone.id || zone),
-                          'has-items': (getDropZoneItems(zone.id || zone) || []).length > 0 
+                          'drop-over': dropOverZone === (zone?.id || zone),
+                          'has-items': (getDropZoneItems(zone?.id || zone) || []).length > 0 
                         }"
-                        @dragover.prevent="onDropZoneOver(zone.id || zone)"
-                        @dragenter.prevent="onDropZoneEnter(zone.id || zone)"
+                        @dragover.prevent="onDropZoneOver(zone?.id || zone)"
+                        @dragenter.prevent="onDropZoneEnter(zone?.id || zone)"
                         @dragleave.prevent="onDropZoneLeave"
-                        @drop.prevent="onDropZoneDrop($event, zone.id || zone)"
+                        @drop.prevent="onDropZoneDrop($event, zone?.id || zone)"
                       >
                         <div class="drop-zone-label">{{ zone?.label || 'Zone' }}</div>
                         <div class="dropped-items">
                           <div 
-                            v-for="droppedItem in (getDropZoneItems(zone.id || zone) || [])" 
-                            :key="droppedItem.id || droppedItem" 
+                            v-for="droppedItem in (getDropZoneItems(zone?.id || zone) || [])" 
+                            :key="droppedItem?.id || droppedItem" 
                             class="dropped-item"
                             @dblclick="returnDragItem(droppedItem)"
                             title="Двойной клик для возврата"
@@ -782,7 +783,7 @@
                             <button @click="returnDragItem(droppedItem)" class="remove-dropped-btn">✕</button>
                           </div>
                         </div>
-                        <div v-if="(getDropZoneItems(zone.id || zone) || []).length === 0" class="drop-zone-placeholder">
+                        <div v-if="(getDropZoneItems(zone?.id || zone) || []).length === 0" class="drop-zone-placeholder">
                           Перетащите элементы сюда
                         </div>
                       </div>
@@ -863,17 +864,17 @@
             <div class="quiz-header">
               <h3 class="quiz-title">🧩 Викторина</h3>
               <div class="quiz-progress" v-if="getCurrentQuiz()">
-                <span class="quiz-counter">{{ currentQuizIndex + 1 }} / {{ getTotalQuizzes() }}</span>
+                <span class="quiz-counter">{{ currentQuizIndex + 1 }} / {{ getTotalQuizzes() || 1 }}</span>
               </div>
             </div>
             
             <div class="quiz-content" v-if="getCurrentQuiz()">
-              <div class="quiz-question">{{ getCurrentQuiz().question }}</div>
+              <div class="quiz-question">{{ getCurrentQuiz()?.question || 'Question not available' }}</div>
               
               <div class="quiz-options">
                 <label 
                   v-for="(option, quizOptionIndex) in (getQuizOptions(getCurrentQuiz()) || [])" 
-                  :key="quizOptionIndex" 
+                  :key="`quiz-option-${quizOptionIndex}`" 
                   class="quiz-option-card"
                   :class="{ 
                     selected: userAnswer === option,
@@ -939,8 +940,8 @@
             <div v-if="(aiSuggestions || []).length" class="quick-suggestions">
               <p><strong>Популярные вопросы:</strong></p>
               <button 
-                v-for="suggestion in (aiSuggestions || [])" 
-                :key="suggestion"
+                v-for="(suggestion, suggestionIndex) in (aiSuggestions || [])" 
+                :key="`suggestion-${suggestionIndex}`"
                 @click="askAI(suggestion)"
                 class="suggestion-btn"
               >
@@ -958,7 +959,7 @@
               />
               <button 
                 @click="sendAIMessage" 
-                :disabled="!aiChatInput.trim() || aiIsLoading"
+                :disabled="!aiChatInput?.trim() || aiIsLoading"
               >
                 {{ aiIsLoading ? '⏳' : '📤' }}
               </button>
@@ -968,12 +969,12 @@
             <div v-if="(aiChatHistory || []).length" class="ai-chat-history">
               <div 
                 v-for="message in (aiChatHistory || []).slice(-3)" 
-                :key="message.id"
-                :class="['chat-message', message.type]"
+                :key="message?.id || `ai-msg-${Math.random()}`"
+                :class="['chat-message', message?.type || 'unknown']"
               >
-                <strong v-if="message.type === 'user'">Вы:</strong>
+                <strong v-if="message?.type === 'user'">Вы:</strong>
                 <strong v-else>🤖 AI:</strong>
-                {{ message.content }}
+                {{ message?.content || 'No content' }}
               </div>
             </div>
           </div>
@@ -1057,13 +1058,13 @@
       
       <div class="ai-body">
         <div v-if="aiUsage" class="usage-display">
-          <p>📊 Использовано: {{ aiUsage.messages }}/{{ aiUsage.plan === 'free' ? '50' : '∞' }}</p>
+          <p>📊 Использовано: {{ aiUsage?.messages || 0 }}/{{ aiUsage?.plan === 'free' ? '50' : '∞' }}</p>
         </div>
         
         <div class="quick-suggestions">
           <button 
-            v-for="suggestion in (quickSuggestions || [])" 
-            :key="suggestion"
+            v-for="(suggestion, quickIndex) in (quickSuggestions || [])" 
+            :key="`quick-${quickIndex}`"
             @click="askAI(suggestion)"
             class="quick-suggestion-btn"
           >
@@ -1075,10 +1076,10 @@
           <div class="chat-messages">
             <div 
               v-for="message in (aiChatHistory || []).slice(-5)" 
-              :key="message.id"
-              :class="['chat-message', message.type]"
+              :key="message?.id || `float-msg-${Math.random()}`"
+              :class="['chat-message', message?.type || 'unknown']"
             >
-              {{ message.content }}
+              {{ message?.content || 'No content' }}
             </div>
           </div>
           
@@ -1091,7 +1092,7 @@
             />
             <button 
               @click="sendFloatingAIMessage" 
-              :disabled="!floatingAIInput.trim() || aiIsLoading"
+              :disabled="!floatingAIInput?.trim() || aiIsLoading"
             >
               {{ aiIsLoading ? '⏳' : '📤' }}
             </button>
