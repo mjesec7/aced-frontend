@@ -1684,22 +1684,22 @@ export default {
         data: validQuizzes
       };
     },
-  getUserResponseBasedOnType() {
-      const exerciseType = this.getCurrentExerciseType();
-      
-      switch (exerciseType) {
-        case 'fill-blank':
-          return this.fillBlankAnswers;
-        case 'matching':
-          return this.matchingPairs;
-        case 'ordering':
-          return this.orderingItems;
-        case 'drag-drop':
-          return this.dragDropPlacements;
-        default:
-          return this.userAnswer;
-      }
-    },
+    getUserResponseBasedOnType() {
+  const exerciseType = this.getCurrentExerciseType();
+  
+  switch (exerciseType) {
+    case 'fill-blank':
+      return this.fillBlankAnswers || [];
+    case 'matching':
+      return this.matchingPairs || [];
+    case 'ordering':
+      return this.orderingItems || [];
+    case 'drag-drop':
+      return this.dragDropPlacements || {};
+    default:
+      return this.userAnswer || '';
+  }
+},
 
     getCurrentExercise() {
   const step = this.currentStep;
@@ -1734,27 +1734,26 @@ export default {
     return null;
   }
 },
-    hasValidUserResponse(response) {
-      if (response === null || response === undefined) return false;
-      
-      if (Array.isArray(response)) {
-        return response.length > 0 && response.some(item => 
-          item !== null && item !== undefined && String(item).trim() !== ''
-        );
-      }
-      
-      if (typeof response === 'object') {
-        return Object.keys(response).length > 0;
-      }
-      
-      return String(response).trim() !== '';
-    },
-
-    safeStringConvert(value) {
-      if (value === null || value === undefined) return '';
-      if (Array.isArray(value)) return value.join(', ');
-      return String(value).trim();
-    },
+hasValidUserResponse(response) {
+  if (response === null || response === undefined) return false;
+  
+  if (Array.isArray(response)) {
+    return response.length > 0 && response.some(item => 
+      item !== null && item !== undefined && String(item).trim() !== ''
+    );
+  }
+  
+  if (typeof response === 'object') {
+    return Object.keys(response).length > 0;
+  }
+  
+  return String(response).trim() !== '';
+},
+safeStringConvert(value) {
+  if (value === null || value === undefined) return '';
+  if (Array.isArray(value)) return value.join(', ');
+  return String(value).trim();
+},
 
     processVocabularyStep(step, index) {
       console.log(`📚 Processing vocabulary step ${index + 1}:`, step);
@@ -4226,6 +4225,10 @@ initializeCurrentExerciseData() {
       this.userAnswer = '';
       break;
   }
+},
+getCurrentExerciseType() {
+  const exercise = this.getCurrentExercise();
+  return exercise?.type || 'short-answer';
 },
 
 // ✅ ENHANCED: Safe ordering initialization
