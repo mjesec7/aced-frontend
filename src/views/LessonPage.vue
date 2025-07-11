@@ -2849,6 +2849,8 @@ async handleSubmitOrNext() {
     this.confirmation = '⚠️ Ошибка: нет данных о текущем шаге.';
     return;
   }
+  const currentExercise = step?.data;
+
 
   // ✅ Get user response based on exercise type
   let userResponse = this.getUserResponseBasedOnType();
