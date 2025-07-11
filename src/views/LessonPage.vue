@@ -1131,80 +1131,84 @@ import {
 export default {
   name: 'LessonPage',
   data() {
-    return {
-      // Core lesson data
-      lesson: {},
-      steps: [],
+  return {
+    // Core lesson data
+    lesson: {},
+    steps: [],
+    currentIndex: 0,
+    started: false,
+    loading: true,
+    error: null,
+    retryCount: 0,
+    
+    // User interaction
+    userAnswer: '',
+    confirmation: '',
+    answerWasCorrect: false,
+    currentHint: '',
+    
+    // Progress tracking
+    mistakeCount: 0,
+    stars: 0,
+    earnedPoints: 0,
+    hintsUsed: false,
+    mistakeLog: [],
+    previousProgress: null,
+    
+    // Lesson state
+    lessonCompleted: false,
+    elapsedSeconds: 0,
+    timerInterval: null,
+    autosaveTimer: null,
+    
+    // UI state
+    showConfetti: false,
+    showPaywallModal: false,
+    showExitModal: false,
+    
+    // Medal system
+    medalLabel: '',
+    
+    // User identification
+    userId: null,
+    
+    // ✅ FIXED: AI Integration - All arrays properly initialized
+    aiChatHistory: [],
+    aiChatInput: '',
+    aiSuggestions: [],
+    smartHint: '',
+    aiIsLoading: false,
+    showFloatingAI: false,
+    floatingAIInput: '',
+    quickSuggestions: [],
+    aiUsage: null,
+    progressInsight: '',
+    
+    // Explanation Help
+    showExplanationHelp: false,
+    explanationQuestion: '',
+    explanationAIResponse: '',
+    
+    // ✅ FIXED: Vocabulary Modal System - Properly initialized
+    vocabularyModal: {
+      isVisible: false,
       currentIndex: 0,
-      started: false,
-      loading: true,
-      error: null,
-      retryCount: 0,
-      
-      // User interaction
-      userAnswer: '',
-      confirmation: '',
-      answerWasCorrect: false,
-      currentHint: '',
-      
-      // Progress tracking
-      mistakeCount: 0,
-      stars: 0,
-      earnedPoints: 0,
-      hintsUsed: false,
-      mistakeLog: [],
-      previousProgress: null,
-      
-      // Lesson state
-      lessonCompleted: false,
-      elapsedSeconds: 0,
-      timerInterval: null,
-      autosaveTimer: null,
-      
-      // UI state
-      showConfetti: false,
-      showPaywallModal: false,
-      showExitModal: false,
-      
-      // Medal system
-      medalLabel: '',
-      
-      // User identification
-      userId: null,
-      
-      // AI Integration
-      aiChatHistory: [],
-      aiChatInput: '',
-      aiSuggestions: [],
-      smartHint: '',
-      aiIsLoading: false,
-      showFloatingAI: false,
-      floatingAIInput: '',
-      quickSuggestions: [],
-      aiUsage: null,
-      progressInsight: '',
-      
-      // Explanation Help
-      showExplanationHelp: false,
-      explanationQuestion: '',
-      explanationAIResponse: '',
-      
-      // ✅ NEW: Vocabulary Modal System
-      vocabularyModal: {
-        isVisible: false,
-        currentIndex: 0,
-        words: [],
-        isCompleted: false,
-        showingList: false
-      },
-      
-      // Animation states
-      cardAnimation: {
-        isFlipping: false,
-        showDefinition: false
-      },
-      currentExerciseIndex: 0,
+      words: [], // ✅ CRITICAL: Always array
+      isCompleted: false,
+      showingList: false
+    },
+    
+    // ✅ FIXED: Animation states - Properly initialized
+    cardAnimation: {
+      isFlipping: false,
+      showDefinition: false
+    },
+    
+    // ✅ FIXED: Exercise tracking - All properly initialized
+    currentExerciseIndex: 0,
     currentQuizIndex: 0,
+    
+    // ✅ CRITICAL: Exercise type data - All arrays/objects initialized
     fillBlankAnswers: [],
     matchingPairs: [],
     selectedMatchingItem: null,
@@ -1214,11 +1218,11 @@ export default {
     dropOverZone: null,
     draggedItem: null,
     dropTarget: null,
-      
-      // Debug mode
-      debugMode: process.env.NODE_ENV === 'development'
-    };
-  },
+    
+    // Debug mode
+    debugMode: process.env.NODE_ENV === 'development'
+  };
+},
   
   computed: {
     ...mapState(['user']),
@@ -1295,6 +1299,7 @@ export default {
   },
   
   async mounted() {
+    this.initializeAllDataStructures();
     await this.waitForAuth();
     
     this.userId = localStorage.getItem('firebaseUserId') || 
@@ -1696,11 +1701,39 @@ export default {
       }
     },
 
-    getCurrentExerciseType() {
-      const exercise = this.getCurrentExercise();
-      return exercise?.type || 'short-answer';
-    },
-
+    getCurrentExercise() {
+  const step = this.currentStep;
+  if (!step || !['exercise', 'practice'].includes(step.type)) {
+    return null;
+  }
+  
+  let exercises = [];
+  
+  try {
+    if (Array.isArray(step.data)) {
+      exercises = step.data;
+    } else if (step.data && Array.isArray(step.data.exercises)) {
+      exercises = step.data.exercises;
+    } else if (step.data && step.data.question) {
+      exercises = [step.data];
+    }
+    
+    if (exercises.length === 0) {
+      return null;
+    }
+    
+    // ✅ SAFETY: Ensure index is within bounds
+    if (this.currentExerciseIndex >= exercises.length) {
+      this.currentExerciseIndex = 0;
+    }
+    
+    return exercises[this.currentExerciseIndex] || null;
+    
+  } catch (error) {
+    console.error('❌ Error in getCurrentExercise:', error);
+    return null;
+  }
+},
     hasValidUserResponse(response) {
       if (response === null || response === undefined) return false;
       
@@ -2079,60 +2112,34 @@ getCorrectAnswer(step) {
   console.warn('⚠️ No quiz question found, using default');
   return 'Quiz question not available - please check lesson content';
 },
-
 getQuizOptions(quiz) {
-  console.log('🔍 getQuizOptions called with quiz:', quiz);
-  
   if (!quiz) {
-    console.warn('⚠️ No quiz provided to getQuizOptions');
     return [];
   }
   
   let options = [];
   
   try {
-    // Handle different option structures
     if (Array.isArray(quiz.options)) {
       options = quiz.options;
-      console.log('✅ Found options in quiz.options:', options);
     } else if (quiz.type === 'true-false') {
       options = ['True', 'False'];
-      console.log('✅ Generated true/false options');
-    } else if (quiz.type === 'multiple-choice' || quiz.type === 'abc') {
-      // If no options but it's multiple choice, create defaults
-      options = ['Option A', 'Option B', 'Option C', 'Option D'];
-      console.warn('⚠️ No options found for multiple choice, using defaults');
     } else {
-      console.warn('⚠️ No options found for quiz type:', quiz.type);
       return [];
     }
     
-    // ✅ CRITICAL FIX: Better option normalization
-    const normalizedOptions = options.map((option, index) => {
-      let text = '';
-      
-      if (typeof option === 'string') {
-        text = option;
-      } else if (option && typeof option === 'object') {
-        // Handle MongoDB objects like {"text": "Nice to meet you!"}
-        text = option.text || option.label || option.value || String(option);
-      } else {
-        text = String(option);
+    // ✅ SAFETY: Normalize options to strings
+    return options.map(option => {
+      if (typeof option === 'string') return option;
+      if (option && typeof option === 'object') {
+        return option.text || option.label || option.value || String(option);
       }
-      
-      // Clean up the text
-      text = text.trim();
-      
-      console.log(`📝 Option ${index}: ${JSON.stringify(option)} → "${text}"`);
-      return text;
-    }).filter(opt => opt && opt.length > 0);
-    
-    console.log('✅ Final normalized quiz options:', normalizedOptions);
-    return normalizedOptions;
+      return String(option);
+    }).filter(opt => opt && opt.trim());
     
   } catch (error) {
     console.error('❌ Error in getQuizOptions:', error);
-    return ['Option A', 'Option B']; // Fallback options
+    return [];
   }
 },
 
@@ -3826,50 +3833,46 @@ getCurrentExercise() {
 },
 
 
-  getCurrentQuiz() {
-    const step = this.currentStep;
-    if (!step || step.type !== 'quiz') {
+getCurrentQuiz() {
+  const step = this.currentStep;
+  if (!step || step.type !== 'quiz') {
+    return null;
+  }
+  
+  let quizzes = [];
+  
+  try {
+    if (Array.isArray(step.data)) {
+      quizzes = step.data;
+    } else if (step.data && Array.isArray(step.data.quizzes)) {
+      quizzes = step.data.quizzes;
+    } else if (step.data && step.data.question) {
+      quizzes = [step.data];
+    }
+    
+    if (quizzes.length === 0) {
       return null;
     }
     
-    let quizzes = [];
-    
-    try {
-      // Handle different data structures
-      if (Array.isArray(step.data)) {
-        quizzes = step.data;
-      } else if (step.data && Array.isArray(step.data.quizzes)) {
-        quizzes = step.data.quizzes;
-      } else if (step.data && step.data.question) {
-        quizzes = [step.data];
-      }
-      
-      if (quizzes.length === 0) {
-        console.warn('⚠️ No quiz questions found');
-        return null;
-      }
-      
-      // Ensure index is within bounds
-      if (this.currentQuizIndex >= quizzes.length) {
-        this.currentQuizIndex = 0;
-      }
-      
-      const quiz = quizzes[this.currentQuizIndex];
-      console.log('✅ Current quiz:', quiz);
-      return quiz;
-      
-    } catch (error) {
-      console.error('❌ Error in getCurrentQuiz:', error);
-      return null;
-    }
-  },
-
-  getTotalExercises() {
-    const step = this.currentStep;
-    if (!step || !['exercise', 'practice'].includes(step.type)) {
-      return 0;
+    // ✅ SAFETY: Ensure index is within bounds
+    if (this.currentQuizIndex >= quizzes.length) {
+      this.currentQuizIndex = 0;
     }
     
+    return quizzes[this.currentQuizIndex] || null;
+    
+  } catch (error) {
+    console.error('❌ Error in getCurrentQuiz:', error);
+    return null;
+  }
+},
+getTotalExercises() {
+  const step = this.currentStep;
+  if (!step || !['exercise', 'practice'].includes(step.type)) {
+    return 0;
+  }
+  
+  try {
     let exercises = [];
     
     if (Array.isArray(step.data)) {
@@ -3881,15 +3884,19 @@ getCurrentExercise() {
     }
     
     return exercises.length;
-  },
+  } catch (error) {
+    console.error('❌ Error in getTotalExercises:', error);
+    return 0;
+  }
+},
 
-
-  getTotalQuizzes() {
-    const step = this.currentStep;
-    if (!step || step.type !== 'quiz') {
-      return 0;
-    }
-    
+getTotalQuizzes() {
+  const step = this.currentStep;
+  if (!step || step.type !== 'quiz') {
+    return 0;
+  }
+  
+  try {
     let quizzes = [];
     
     if (Array.isArray(step.data)) {
@@ -3901,7 +3908,11 @@ getCurrentExercise() {
     }
     
     return quizzes.length;
-  },
+  } catch (error) {
+    console.error('❌ Error in getTotalQuizzes:', error);
+    return 0;
+  }
+},
 getQuizCounter() {
   const totalQuizzes = this.getTotalQuizzes();
   if (totalQuizzes === 0) {
@@ -3910,29 +3921,7 @@ getQuizCounter() {
   return `${this.currentQuizIndex + 1} / ${totalQuizzes}`;
 },
 // Quiz option processing
-getQuizOptions(quiz) {
-  if (!quiz) return [];
-  
-  let options = [];
-  
-  if (Array.isArray(quiz.options)) {
-    options = quiz.options;
-  } else if (quiz.type === 'true-false') {
-    options = ['True', 'False'];
-  } else {
-    console.warn('⚠️ No options found for quiz');
-    return [];
-  }
-  
-  // Normalize options to strings
-  return options.map(option => {
-    if (typeof option === 'string') return option;
-    if (option && typeof option === 'object') {
-      return option.text || option.label || option.value || String(option);
-    }
-    return String(option);
-  }).filter(opt => opt && opt.trim());
-},
+
 
 // Exercise navigation
 goToNextExercise() {
@@ -4089,15 +4078,19 @@ getFillBlankTemplate() {
   const exercise = this.getCurrentExercise();
   if (!exercise || exercise.type !== 'fill-blank') return '';
   
-  let template = exercise.template || exercise.question || '';
-  
-  // Replace blanks with input placeholders
-  const blankPattern = /\[blank\]/gi;
-  let blankIndex = 0;
-  
-  return template.replace(blankPattern, () => {
-    return `<span class="fill-blank-placeholder">[Пропуск ${blankIndex++ + 1}]</span>`;
-  });
+  try {
+    let template = exercise.template || exercise.question || '';
+    
+    const blankPattern = /\[blank\]/gi;
+    let blankIndex = 0;
+    
+    return template.replace(blankPattern, () => {
+      return `<span class="fill-blank-placeholder">[Пропуск ${blankIndex++ + 1}]</span>`;
+    });
+  } catch (error) {
+    console.error('❌ Error in getFillBlankTemplate:', error);
+    return '';
+  }
 },
 
 // ✅ ENHANCED: Safe matching methods
@@ -4105,24 +4098,33 @@ getMatchingLeftItems() {
   const exercise = this.getCurrentExercise();
   if (!exercise || exercise.type !== 'matching' || !exercise.pairs) return [];
   
-  const pairs = Array.isArray(exercise.pairs) ? exercise.pairs : [];
-  return pairs.map(pair => {
-    if (Array.isArray(pair)) return pair[0] || '';
-    if (pair && typeof pair === 'object') return pair.left || '';
-    return String(pair);
-  }).filter(item => item);
+  try {
+    const pairs = Array.isArray(exercise.pairs) ? exercise.pairs : [];
+    return pairs.map(pair => {
+      if (Array.isArray(pair)) return pair[0] || '';
+      if (pair && typeof pair === 'object') return pair.left || '';
+      return String(pair);
+    }).filter(item => item);
+  } catch (error) {
+    console.error('❌ Error in getMatchingLeftItems:', error);
+    return [];
+  }
 },
-
 getMatchingRightItems() {
   const exercise = this.getCurrentExercise();
   if (!exercise || exercise.type !== 'matching' || !exercise.pairs) return [];
   
-  const pairs = Array.isArray(exercise.pairs) ? exercise.pairs : [];
-  return pairs.map(pair => {
-    if (Array.isArray(pair)) return pair[1] || '';
-    if (pair && typeof pair === 'object') return pair.right || '';
-    return String(pair);
-  }).filter(item => item);
+  try {
+    const pairs = Array.isArray(exercise.pairs) ? exercise.pairs : [];
+    return pairs.map(pair => {
+      if (Array.isArray(pair)) return pair[1] || '';
+      if (pair && typeof pair === 'object') return pair.right || '';
+      return String(pair);
+    }).filter(item => item);
+  } catch (error) {
+    console.error('❌ Error in getMatchingRightItems:', error);
+    return [];
+  }
 },
 
 // ✅ ENHANCED: Safe drag-drop methods
@@ -4130,17 +4132,64 @@ getAvailableDragItems() {
   const exercise = this.getCurrentExercise();
   if (!exercise || exercise.type !== 'drag-drop' || !exercise.dragItems) return [];
   
-  const allItems = Array.isArray(exercise.dragItems) ? exercise.dragItems : [];
-  const placedItems = Object.values(this.dragDropPlacements || {}).flat();
-  
-  return allItems.filter(item => 
-    !placedItems.some(placedItem => (placedItem?.id || placedItem) === (item?.id || item))
-  );
+  try {
+    const allItems = Array.isArray(exercise.dragItems) ? exercise.dragItems : [];
+    const placedItems = Object.values(this.dragDropPlacements || {}).flat();
+    
+    return allItems.filter(item => 
+      !placedItems.some(placedItem => (placedItem?.id || placedItem) === (item?.id || item))
+    );
+  } catch (error) {
+    console.error('❌ Error in getAvailableDragItems:', error);
+    return [];
+  }
 },
 
 getDropZoneItems(zoneId) {
   if (!this.dragDropPlacements || !zoneId) return [];
   return this.dragDropPlacements[zoneId] || [];
+},
+getSafeOptions(exercise) {
+  if (!exercise || !exercise.options) {
+    return [];
+  }
+  if (!Array.isArray(exercise.options)) {
+    return [];
+  }
+  return exercise.options.map(option => {
+    if (typeof option === 'string') return option;
+    if (option && typeof option === 'object') {
+      return option.text || option.label || option.value || String(option);
+    }
+    return String(option);
+  }).filter(opt => opt && opt.trim());
+},
+initializeAllDataStructures() {
+  // Ensure all arrays are initialized
+  this.steps = Array.isArray(this.steps) ? this.steps : [];
+  this.fillBlankAnswers = Array.isArray(this.fillBlankAnswers) ? this.fillBlankAnswers : [];
+  this.matchingPairs = Array.isArray(this.matchingPairs) ? this.matchingPairs : [];
+  this.orderingItems = Array.isArray(this.orderingItems) ? this.orderingItems : [];
+  this.aiChatHistory = Array.isArray(this.aiChatHistory) ? this.aiChatHistory : [];
+  this.aiSuggestions = Array.isArray(this.aiSuggestions) ? this.aiSuggestions : [];
+  this.quickSuggestions = Array.isArray(this.quickSuggestions) ? this.quickSuggestions : [];
+  
+  // Ensure vocabulary modal is properly initialized
+  if (!this.vocabularyModal || typeof this.vocabularyModal !== 'object') {
+    this.vocabularyModal = {
+      isVisible: false,
+      currentIndex: 0,
+      words: [],
+      isCompleted: false,
+      showingList: false
+    };
+  } else {
+    this.vocabularyModal.words = Array.isArray(this.vocabularyModal.words) ? this.vocabularyModal.words : [];
+  }
+  
+  // Ensure objects are initialized
+  this.dragDropPlacements = this.dragDropPlacements && typeof this.dragDropPlacements === 'object' 
+    ? this.dragDropPlacements : {};
 },
 
 // ✅ ENHANCED: Initialize exercise data safely
