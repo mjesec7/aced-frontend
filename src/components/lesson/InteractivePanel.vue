@@ -381,8 +381,6 @@
       dragDropPlacements: { type: Object, default: () => ({}) },
       draggedItem: Number,
       dropTarget: Number,
-      draggedDragItem: [String, Object],
-      dropOverZone: String,
       availableDragItems: { type: Array, default: () => [] },
       dropZones: { type: Array, default: () => [] }
     },
@@ -393,13 +391,23 @@
       'next-exercise',
       'next-quiz',
       'show-hint',
-      'clear-hint'
+      'clear-hint',
+      'matching-item-selected',
+      'remove-matching-pair',
+      'drag-start',
+      'drag-drop',
+      'drag-item-start',
+      'drag-over-zone',
+      'drag-leave-zone',
+      'drop-in-zone'
     ],
     setup(props, { emit }) {
       // Local reactive state
       const localUserAnswer = ref('')
       const localFillBlankAnswers = ref([])
-
+      const draggedDragItem = ref(null)
+      const dropOverZone = ref(null)
+  
       // Computed properties
       const isExerciseStep = computed(() => {
         return ['exercise', 'practice'].includes(props.currentStep?.type)
@@ -493,7 +501,7 @@
         
         return false
       })
-
+  
       // Methods
       const getBlankCount = () => {
         if (!props.currentExercise) return 0
@@ -508,7 +516,7 @@
         
         return Math.max(underscoreMatches.length, blankMatches.length, 1)
       }
-
+  
       const renderFillBlankTemplate = () => {
         if (!props.currentExercise?.template) return ''
         
@@ -527,7 +535,7 @@
         
         return template
       }
-
+  
       const updateFillBlank = (index, event) => {
         while (localFillBlankAnswers.value.length <= index) {
           localFillBlankAnswers.value.push('')
@@ -535,74 +543,81 @@
         localFillBlankAnswers.value[index] = event.target.value
         emit('fill-blank-updated', index, event)
       }
-
+  
       const selectOption = (option) => {
         localUserAnswer.value = option
         emit('answer-changed', option)
       }
-
+  
       const selectQuizOption = (option) => {
         localUserAnswer.value = option
         emit('answer-changed', option)
       }
-
+  
       const selectTrueFalse = (value) => {
         localUserAnswer.value = value
         emit('answer-changed', value)
       }
-
+  
       const selectMatchingItem = (side, index) => {
         emit('matching-item-selected', { side, index })
       }
-
+  
       const isItemMatched = (side, index) => {
         if (side === 'left') {
           return props.matchingPairs.some(pair => pair.leftIndex === index)
         }
         return props.matchingPairs.some(pair => pair.rightIndex === index)
       }
-
+  
       const removeMatchingPair = (pairIndex) => {
         emit('remove-matching-pair', pairIndex)
       }
-
+  
       const startDrag = (index) => {
         emit('drag-start', index)
       }
-
+  
       const handleDrop = (index) => {
         emit('drag-drop', index)
       }
-
+  
       const startDragItem = (item) => {
+        draggedDragItem.value = item
         emit('drag-item-start', item)
       }
-
+  
       const dragOverZone = (zoneId) => {
+        dropOverZone.value = zoneId
         emit('drag-over-zone', zoneId)
       }
-
+  
       const dragLeaveZone = () => {
+        dropOverZone.value = null
         emit('drag-leave-zone')
       }
-
+  
       const dropInZone = (zoneId) => {
-        emit('drop-in-zone', zoneId)
+        if (draggedDragItem.value) {
+          emit('drop-in-zone', { zoneId, item: draggedDragItem.value })
+          draggedDragItem.value = null
+          dropOverZone.value = null
+        }
       }
-
+  
       const getDropZoneItems = (zoneId) => {
         return props.dragDropPlacements[zoneId] || []
       }
-
+  
       // Watch for prop changes to sync local state
       watch(() => props.userAnswer, (newValue) => {
         localUserAnswer.value = newValue || ''
       }, { immediate: true })
-
+  
       watch(() => props.fillBlankAnswers, (newValue) => {
         localFillBlankAnswers.value = Array.isArray(newValue) ? [...newValue] : []
       }, { immediate: true })
-
+  
       // Initialize local state
       onMounted(() => {
         localUserAnswer.value = props.userAnswer || ''
@@ -616,10 +631,12 @@
           }
         }
       })
-
+  
       return {
         localUserAnswer,
         localFillBlankAnswers,
+        draggedDragItem,
+        dropOverZone,
         isExerciseStep,
         isQuizStep,
         exerciseType,
