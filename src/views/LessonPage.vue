@@ -3927,20 +3927,51 @@ goToNextExercise() {
   const totalExercises = this.getTotalExercises();
   
   if (this.isLastExercise()) {
-    // Move to next step
+    // Move to next step - clear everything including userAnswer
+    this.userAnswer = '';
     this.goNext();
   } else {
-    // Move to next exercise in current step
+    // Move to next exercise in current step - preserve userAnswer state better
     this.currentExerciseIndex++;
     
-    // CRITICAL: Reset all answer-related state
-    this.resetExerciseState();
+    // Only reset states that should be reset between exercises
+    this.confirmation = '';
+    this.answerWasCorrect = false;
+    this.currentHint = '';
+    this.smartHint = '';
+    
+    // Clear userAnswer only for specific exercise types that need it
+    const nextExercise = this.getCurrentExercise();
+    if (nextExercise) {
+      const exerciseType = nextExercise.type || 'short-answer';
+      
+      // Clear userAnswer for new exercise types, but preserve for some types
+      if (!['vocabulary', 'reading'].includes(exerciseType)) {
+        this.userAnswer = '';
+      }
+      
+      // Reset specific exercise type data
+      this.fillBlankAnswers = [];
+      this.matchingPairs = [];
+      this.selectedMatchingItem = null;
+      
+      // Re-initialize current exercise data
+      this.initializeCurrentExerciseData();
+    }
     
     console.log(`✅ Moved to exercise ${this.currentExerciseIndex + 1} of ${totalExercises}`);
   }
 },
+
 resetExerciseState() {
-  this.userAnswer = '';
+  // ✅ FIXED: Only clear userAnswer if we're actually changing exercises
+  // Don't clear it if we're just resetting other state
+  const shouldPreserveAnswer = this.answerWasCorrect || this.currentStep?.type === 'vocabulary';
+  
+  if (!shouldPreserveAnswer) {
+    this.userAnswer = '';
+  }
+  
   this.confirmation = '';
   this.answerWasCorrect = false;
   this.currentHint = '';
@@ -3968,16 +3999,25 @@ getExerciseTypeName(type) {
   };
   return typeNames[type] || 'Упражнение';
 },
-  goToNextQuiz() {
-    if (this.isLastQuiz()) {
-      // Move to next step
-      this.goNext();
-    } else {
-      // Move to next quiz in current step
-      this.currentQuizIndex++;
-      this.resetExerciseState();
-    }
-  },
+goToNextQuiz() {
+  if (this.isLastQuiz()) {
+    // Move to next step - clear everything
+    this.userAnswer = '';
+    this.goNext();
+  } else {
+    // Move to next quiz in current step
+    this.currentQuizIndex++;
+    
+    // Only reset what needs to be reset
+    this.confirmation = '';
+    this.answerWasCorrect = false;
+    this.currentHint = '';
+    this.smartHint = '';
+    
+    // Clear userAnswer for new quiz
+    this.userAnswer = '';
+  }
+},
 isLastExercise() {
     const totalExercises = this.getTotalExercises();
     return this.currentExerciseIndex >= totalExercises - 1;
@@ -4066,10 +4106,17 @@ initializeFillBlankAnswers(exercise) {
     return;
   }
   
-  const blankCount = Array.isArray(exercise.blanks) ? exercise.blanks.length : 0;
-  this.fillBlankAnswers = new Array(blankCount).fill('');
-  
-  console.log('✅ Initialized fill-blank answers:', this.fillBlankAnswers);
+  try {
+    const blankCount = Array.isArray(exercise.blanks) ? exercise.blanks.length : 0;
+    // ✅ FIX: Only initialize if array is empty or wrong length
+    if (!Array.isArray(this.fillBlankAnswers) || this.fillBlankAnswers.length !== blankCount) {
+      this.fillBlankAnswers = new Array(blankCount).fill('');
+    }
+    console.log('✅ Initialized fill-blank answers:', this.fillBlankAnswers);
+  } catch (error) {
+    console.error('❌ Error initializing fill-blank answers:', error);
+    this.fillBlankAnswers = [];
+  }
 },
 
 // ✅ ENHANCED: Safe getFillBlankTemplate
