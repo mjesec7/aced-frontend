@@ -2275,74 +2275,372 @@ normalizeText(text) {
   return String(text).trim().toLowerCase();
 },
 
+// In LessonPage.vue - Replace validateAnswer method with this enhanced version
+
 validateAnswer(userAnswer, correctAnswer, stepType) {
-  // ✅ CRITICAL: Ensure both values exist and convert safely
   if (!this.hasValidUserResponse(userAnswer)) return false;
   if (!this.hasValidUserResponse(correctAnswer)) return false;
 
+  const exerciseType = this.getCurrentExerciseType();
+  
+  // For multiple choice, true/false, etc - always strict
+  if (['multiple-choice', 'abc', 'true-false', 'drag-drop'].includes(exerciseType)) {
+    return this.strictValidation(userAnswer, correctAnswer);
+  }
+  
+  // For fill-in-the-blank - strict but case-insensitive
+  if (exerciseType === 'fill-blank') {
+    return this.fillBlankValidation(userAnswer, correctAnswer);
+  }
+  
+  // For short answers - use smart validation based on answer characteristics
+  return this.smartShortAnswerValidation(userAnswer, correctAnswer);
+},
+
+// Strict validation for exact matches
+strictValidation(userAnswer, correctAnswer) {
+  const normalizedUser = String(userAnswer).trim().toLowerCase();
+  const normalizedCorrect = String(correctAnswer).trim().toLowerCase();
+  return normalizedUser === normalizedCorrect;
+},
+
+// Fill-blank validation - exact but flexible with case/punctuation
+fillBlankValidation(userAnswer, correctAnswer) {
   const normalize = (text) => {
-    return this.safeStringConvert(text)
+    return String(text)
+      .trim()
+      .toLowerCase()
+      .replace(/[.,;:!?'"()[\]{}]/g, '') // Remove punctuation
+      .replace(/\s+/g, ' '); // Normalize spaces
+  };
+  
+  return normalize(userAnswer) === normalize(correctAnswer);
+},
+
+// Smart validation for short answers based on answer type
+smartShortAnswerValidation(userAnswer, correctAnswer) {
+  const userStr = String(userAnswer).trim();
+  const correctStr = String(correctAnswer).trim();
+  
+  // Detect answer type and apply appropriate validation
+  const answerType = this.detectAnswerType(correctStr);
+  
+  switch (answerType) {
+    case 'name':
+      return this.validateName(userStr, correctStr);
+    
+    case 'phrase':
+      return this.validatePhrase(userStr, correctStr);
+    
+    case 'number':
+      return this.validateNumber(userStr, correctStr);
+    
+    case 'date':
+      return this.validateDate(userStr, correctStr);
+    
+    case 'list':
+      return this.validateList(userStr, correctStr);
+    
+    case 'sentence':
+      return this.validateSentence(userStr, correctStr);
+    
+    default:
+      // Default to strict for safety
+      return this.strictValidation(userStr, correctStr);
+  }
+},
+
+// Detect the type of answer based on patterns
+detectAnswerType(answer) {
+  const trimmed = answer.trim();
+  
+  // Check for numbers
+  if (/^\d+(\.\d+)?$/.test(trimmed)) {
+    return 'number';
+  }
+  
+  // Check for dates (various formats)
+  if (/\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/.test(trimmed) || 
+      /\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}/.test(trimmed)) {
+    return 'date';
+  }
+  
+  // Check for lists (contains commas or semicolons)
+  if (trimmed.includes(',') || trimmed.includes(';')) {
+    return 'list';
+  }
+  
+  // Check for names (short, typically 1-3 words, often capitalized)
+  if (trimmed.split(' ').length <= 3 && /^[A-Z]/.test(trimmed)) {
+    return 'name';
+  }
+  
+  // Check for common phrases (2-5 words)
+  const wordCount = trimmed.split(' ').filter(w => w).length;
+  if (wordCount >= 2 && wordCount <= 5) {
+    return 'phrase';
+  }
+  
+  // Longer text is likely a sentence
+  if (wordCount > 5) {
+    return 'sentence';
+  }
+  
+  return 'unknown';
+},
+
+// Validate names (e.g., "Anna", "John Smith")
+validateName(userAnswer, correctAnswer) {
+  const normalize = (name) => {
+    return name
       .toLowerCase()
       .trim()
-      .replace(/\s+/g, ' ')
-      .replace(/[.,;:!?'"()[\]{}]/g, '')
-      .replace(/\b(the|a|an|и|в|на|с|по|для|от|до|при|под|над|между|через|без|из)\b/gi, '')
-      .trim();
+      .replace(/[.,;:!?'"()[\]{}]/g, '') // Remove punctuation
+      .replace(/\s+/g, ' '); // Normalize spaces
   };
-
-  const normalizedUser = normalize(userAnswer);
-  const normalizedCorrect = normalize(correctAnswer);
-
-  if (normalizedUser === normalizedCorrect) {
-    return true;
-  }
-
-  const correctWords = normalizedCorrect.split(' ').filter(word => word.length > 2);
-  const userWords = normalizedUser.split(' ');
   
-  if (correctWords.length > 0) {
-    const containsAllKeyWords = correctWords.every(word => 
-      userWords.some(userWord => 
-        userWord.includes(word) || word.includes(userWord) || 
-        this.calculateSimilarity(userWord, word) > 0.8
-      )
-    );
+  const userNorm = normalize(userAnswer);
+  const correctNorm = normalize(correctAnswer);
+  
+  // Exact match after normalization
+  if (userNorm === correctNorm) return true;
+  
+  // Check if all parts of the name are present (for full names)
+  const correctParts = correctNorm.split(' ');
+  const userParts = userNorm.split(' ');
+  
+  // All parts of correct answer must be in user answer
+  return correctParts.every(part => 
+    userParts.some(userPart => userPart === part)
+  );
+},
+
+// Validate phrases (e.g., "My name is Anna")
+validatePhrase(userAnswer, correctAnswer) {
+  const normalize = (phrase) => {
+    return phrase
+      .toLowerCase()
+      .trim()
+      .replace(/[.,;:!?'"()[\]{}]/g, '') // Remove punctuation
+      .replace(/\s+/g, ' ') // Normalize spaces
+      .replace(/\b(the|a|an|is|are|am)\b/g, ''); // Remove articles and common verbs
+  };
+  
+  const userNorm = normalize(userAnswer);
+  const correctNorm = normalize(correctAnswer);
+  
+  // Exact match after normalization
+  if (userNorm === correctNorm) return true;
+  
+  // Check for acceptable variations
+  const acceptableVariations = this.generatePhraseVariations(correctAnswer);
+  return acceptableVariations.some(variation => 
+    normalize(variation) === userNorm
+  );
+},
+
+// Generate common variations for phrases
+generatePhraseVariations(phrase) {
+  const variations = [phrase];
+  
+  // Common contractions
+  const contractions = {
+    "I am": "I'm",
+    "You are": "You're",
+    "He is": "He's",
+    "She is": "She's",
+    "It is": "It's",
+    "We are": "We're",
+    "They are": "They're",
+    "is not": "isn't",
+    "are not": "aren't",
+    "cannot": "can't",
+    "will not": "won't"
+  };
+  
+  // Add contraction variations
+  Object.entries(contractions).forEach(([full, short]) => {
+    if (phrase.includes(full)) {
+      variations.push(phrase.replace(full, short));
+    }
+    if (phrase.includes(short)) {
+      variations.push(phrase.replace(short, full));
+    }
+  });
+  
+  return variations;
+},
+
+// Validate numbers with tolerance
+validateNumber(userAnswer, correctAnswer) {
+  const userNum = parseFloat(userAnswer);
+  const correctNum = parseFloat(correctAnswer);
+  
+  if (isNaN(userNum) || isNaN(correctNum)) {
+    return false;
+  }
+  
+  // For integers, require exact match
+  if (Number.isInteger(correctNum) && Math.abs(correctNum) < 1000000) {
+    return userNum === correctNum;
+  }
+  
+  // For decimals, allow small tolerance
+  const tolerance = Math.abs(correctNum) * 0.01; // 1% tolerance
+  return Math.abs(userNum - correctNum) <= tolerance;
+},
+
+// Validate dates (flexible format)
+validateDate(userAnswer, correctAnswer) {
+  try {
+    // Parse dates in various formats
+    const parseDate = (dateStr) => {
+      // Try different date formats
+      const formats = [
+        /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/, // DD/MM/YYYY
+        /(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/, // YYYY/MM/DD
+        /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})/, // DD/MM/YY
+      ];
+      
+      for (const format of formats) {
+        const match = dateStr.match(format);
+        if (match) {
+          return new Date(dateStr);
+        }
+      }
+      
+      return new Date(dateStr); // Fallback to native parsing
+    };
     
-    if (containsAllKeyWords) {
-      return true;
-    }
+    const userDate = parseDate(userAnswer);
+    const correctDate = parseDate(correctAnswer);
+    
+    // Compare dates (ignore time)
+    return userDate.toDateString() === correctDate.toDateString();
+    
+  } catch (error) {
+    // If date parsing fails, do string comparison
+    return this.strictValidation(userAnswer, correctAnswer);
   }
+},
 
-  const correctStr = this.safeStringConvert(correctAnswer);
-  if (correctStr.includes(',') || correctStr.includes(';')) {
-    return this.validateListAnswer(normalizedUser, normalizedCorrect);
+// Validate lists (order doesn't matter)
+validateList(userAnswer, correctAnswer) {
+  const parseList = (listStr) => {
+    return listStr
+      .split(/[,;]/)
+      .map(item => item.trim().toLowerCase())
+      .filter(item => item.length > 0)
+      .sort(); // Sort for order-independent comparison
+  };
+  
+  const userItems = parseList(userAnswer);
+  const correctItems = parseList(correctAnswer);
+  
+  // Must have same number of items
+  if (userItems.length !== correctItems.length) {
+    return false;
   }
+  
+  // All items must match (order independent)
+  return userItems.every((item, index) => item === correctItems[index]);
+},
 
-  // Check for mathematical expressions
-  if (this.isMathAnswer(correctStr)) {
-    return this.validateMathAnswer(userAnswer, correctAnswer);
+// Validate sentences (more flexible)
+validateSentence(userAnswer, correctAnswer) {
+  // For sentences, we'll be more strict to avoid accepting wrong answers
+  // But still handle common variations
+  
+  const normalize = (sentence) => {
+    return sentence
+      .toLowerCase()
+      .trim()
+      .replace(/[.,;:!?'"()[\]{}]/g, '') // Remove punctuation
+      .replace(/\s+/g, ' '); // Normalize spaces
+  };
+  
+  const userNorm = normalize(userAnswer);
+  const correctNorm = normalize(correctAnswer);
+  
+  // Check exact match first
+  if (userNorm === correctNorm) return true;
+  
+  // Check if it's a translation exercise by looking for key terms
+  const correctWords = correctNorm.split(' ');
+  const userWords = userNorm.split(' ');
+  
+  // For longer sentences, require high similarity
+  if (correctWords.length > 10) {
+    // Calculate word overlap
+    const overlap = correctWords.filter(word => userWords.includes(word)).length;
+    const similarity = overlap / correctWords.length;
+    
+    // Require at least 90% word overlap
+    return similarity >= 0.9;
   }
-
-  // Check for numerical answers with tolerance
-  if (this.isNumericAnswer(correctStr)) {
-    return this.validateNumericAnswer(userAnswer, correctAnswer);
-  }
-
-  // Fuzzy matching for single words or short phrases
-  if (correctWords.length <= 3) {
-    const similarity = this.calculateSimilarity(normalizedUser, normalizedCorrect);
-    if (similarity > 0.85) {
-      return true;
-    }
-  }
-
-  // Check for partial credit scenarios
-  const partialScore = this.calculatePartialScore(normalizedUser, normalizedCorrect);
-  if (partialScore > 0.7) {
-    return true;
-  }
-
+  
+  // For shorter sentences, be more strict
   return false;
+},
+
+// Override for fill-in-the-blank exercises
+getFillBlankTemplate() {
+  const exercise = this.getCurrentExercise();
+  if (!exercise || exercise.type !== 'fill-blank') return '';
+  
+  try {
+    let template = exercise.template || exercise.question || '';
+    
+    // Handle both [blank] and underscore formats
+    let blankIndex = 0;
+    
+    // First replace underscores with indexed markers
+    template = template.replace(/_+/g, () => {
+      return `[blank${blankIndex++}]`;
+    });
+    
+    // Then replace [blank] patterns with visual placeholders
+    blankIndex = 0;
+    return template.replace(/\[blank\d*\]/gi, () => {
+      return `<span class="fill-blank-placeholder">[${++blankIndex}]</span>`;
+    });
+  } catch (error) {
+    console.error('❌ Error in getFillBlankTemplate:', error);
+    return '';
+  }
+},
+
+// Enhanced fill-blank validation
+validateFillBlankAnswer(userAnswers, expectedAnswers) {
+  if (!Array.isArray(userAnswers) || !Array.isArray(expectedAnswers)) {
+    return false;
+  }
+  
+  if (userAnswers.length !== expectedAnswers.length) {
+    return false;
+  }
+  
+  let correctCount = 0;
+  
+  for (let i = 0; i < userAnswers.length; i++) {
+    const userAnswer = (userAnswers[i] || '').trim();
+    
+    // Handle different answer formats
+    let correctAnswer = '';
+    if (typeof expectedAnswers[i] === 'string') {
+      correctAnswer = expectedAnswers[i].trim();
+    } else if (expectedAnswers[i] && expectedAnswers[i].answer) {
+      correctAnswer = expectedAnswers[i].answer.trim();
+    }
+    
+    // Use fill-blank validation (case-insensitive, punctuation-flexible)
+    if (this.fillBlankValidation(userAnswer, correctAnswer)) {
+      correctCount++;
+    }
+  }
+  
+  // Require 100% accuracy for fill-in-the-blank
+  return correctCount === expectedAnswers.length;
 },
 
 // Replace validateMathAnswer with proper type checking
@@ -4135,17 +4433,25 @@ getFillBlankTemplate() {
   try {
     let template = exercise.template || exercise.question || '';
     
-    const blankPattern = /\[blank\]/gi;
+    // Handle both [blank] and underscore formats
     let blankIndex = 0;
     
-    return template.replace(blankPattern, () => {
-      return `<span class="fill-blank-placeholder">[Пропуск ${blankIndex++ + 1}]</span>`;
+    // First replace underscores with [blank] markers
+    template = template.replace(/_+/g, () => {
+      return `[blank${blankIndex++}]`;
+    });
+    
+    // Then replace [blank] patterns with visual placeholders
+    blankIndex = 0;
+    return template.replace(/\[blank\d*\]/gi, () => {
+      return `<span class="fill-blank-placeholder">[Пропуск ${++blankIndex}]</span>`;
     });
   } catch (error) {
     console.error('❌ Error in getFillBlankTemplate:', error);
     return '';
   }
 },
+
 
 // ✅ ENHANCED: Safe matching methods
 getMatchingLeftItems() {
@@ -4255,11 +4561,14 @@ initializeCurrentExerciseData() {
   
   switch (exercise.type) {
     case 'fill-blank':
-      // ✅ CRITICAL FIX: Only initialize if array doesn't exist or is wrong size
-      const expectedLength = exercise.blanks ? exercise.blanks.length : 0;
-      if (!Array.isArray(this.fillBlankAnswers) || this.fillBlankAnswers.length !== expectedLength) {
-        this.initializeFillBlankAnswers(exercise);
-      }
+      // Count the number of blanks in the template
+      const template = exercise.template || exercise.question || '';
+      const blankCount = (template.match(/_+/g) || []).length || 
+                        (template.match(/\[blank\]/gi) || []).length ||
+                        (exercise.blanks ? exercise.blanks.length : 0);
+      
+      this.fillBlankAnswers = new Array(blankCount).fill('');
+      console.log(`✅ Initialized ${blankCount} fill-blank answers`);
       break;
     case 'ordering':
       // Only initialize if not already set
@@ -4329,12 +4638,12 @@ initializeDragDropItems() {
   this.dragDropPlacements = {};
   console.log('✅ Initialized drag-drop placements');
 },
-validateFillBlankAnswer(userAnswers, correctAnswers) {
-  if (!Array.isArray(userAnswers) || !Array.isArray(correctAnswers)) {
+validateFillBlankAnswer(userAnswers, expectedAnswers) {
+  if (!Array.isArray(userAnswers) || !Array.isArray(expectedAnswers)) {
     return false;
   }
   
-  if (userAnswers.length !== correctAnswers.length) {
+  if (userAnswers.length !== expectedAnswers.length) {
     return false;
   }
   
@@ -4342,17 +4651,25 @@ validateFillBlankAnswer(userAnswers, correctAnswers) {
   
   for (let i = 0; i < userAnswers.length; i++) {
     const userAnswer = (userAnswers[i] || '').toLowerCase().trim();
-    const correctAnswer = (correctAnswers[i] || '').toLowerCase().trim();
     
-    if (this.validateAnswer(userAnswer, correctAnswer, 'fill-blank')) {
+    // Handle different answer formats
+    let correctAnswer = '';
+    if (typeof expectedAnswers[i] === 'string') {
+      correctAnswer = expectedAnswers[i].toLowerCase().trim();
+    } else if (expectedAnswers[i] && expectedAnswers[i].answer) {
+      correctAnswer = expectedAnswers[i].answer.toLowerCase().trim();
+    }
+    
+    // Strict matching for fill-in-the-blank
+    if (userAnswer === correctAnswer) {
       correctCount++;
     }
   }
   
-  // Accept if at least 70% of blanks are correct
-  const accuracy = correctCount / correctAnswers.length;
-  return accuracy >= 0.7;
+  // For fill-in-the-blank, require 100% accuracy
+  return correctCount === expectedAnswers.length;
 },
+
 
 // Matching exercises
 matchingPairs: [],
