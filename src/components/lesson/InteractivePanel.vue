@@ -9,251 +9,253 @@
           </div>
         </div>
   
-        <!-- Short Answer Exercise -->
-        <div v-if="exerciseType === 'short-answer'" class="exercise-type short-answer">
-          <div class="question-text">
-            {{ currentExercise?.question }}
+        <div class="exercise-body">
+          <!-- Short Answer Exercise -->
+          <div v-if="exerciseType === 'short-answer'" class="exercise-type short-answer">
+            <div class="question-text">
+              {{ currentExercise?.question }}
+            </div>
+            <div class="answer-input">
+              <textarea
+                v-model="localUserAnswer"
+                @input="$emit('answer-changed', $event.target.value)"
+                placeholder="Введите ваш ответ здесь..."
+                rows="3"
+                class="answer-textarea"
+              ></textarea>
+            </div>
           </div>
-          <div class="answer-input">
-            <textarea
-              v-model="localUserAnswer"
-              @input="$emit('answer-changed', $event.target.value)"
-              placeholder="Введите ваш ответ здесь..."
-              rows="3"
-              class="answer-textarea"
-            ></textarea>
+    
+          <!-- Multiple Choice Exercise -->
+          <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc'" class="exercise-type multiple-choice">
+            <div class="question-text">
+              {{ currentExercise?.question }}
+            </div>
+            <div class="options-list">
+              <div 
+                v-for="(option, index) in exerciseOptions" 
+                :key="index"
+                class="option-item"
+                :class="{ selected: localUserAnswer === option }"
+                @click="selectOption(option)"
+              >
+                <div class="option-radio">
+                  <input 
+                    type="radio" 
+                    :name="'exercise-' + exerciseIndex"
+                    :value="option"
+                    v-model="localUserAnswer"
+                    @change="$emit('answer-changed', option)"
+                  />
+                </div>
+                <div class="option-text">{{ option }}</div>
+              </div>
+            </div>
           </div>
-        </div>
-  
-        <!-- Multiple Choice Exercise -->
-        <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc'" class="exercise-type multiple-choice">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div class="options-list">
-            <div 
-              v-for="(option, index) in exerciseOptions" 
-              :key="index"
-              class="option-item"
-              :class="{ selected: localUserAnswer === option }"
-              @click="selectOption(option)"
-            >
-              <div class="option-radio">
-                <input 
-                  type="radio" 
-                  :name="'exercise-' + exerciseIndex"
-                  :value="option"
-                  v-model="localUserAnswer"
-                  @change="$emit('answer-changed', option)"
+    
+          <!-- Fill in the Blanks Exercise -->
+          <div v-else-if="exerciseType === 'fill-blank'" class="exercise-type fill-blank">
+            <div class="question-text">
+              {{ currentExercise?.question }}
+            </div>
+            <div class="fill-blank-template">
+              <div v-html="renderFillBlankTemplate()"></div>
+            </div>
+            <div class="fill-blank-inputs">
+              <div 
+                v-for="(blank, index) in getBlankCount()" 
+                :key="index"
+                class="blank-input-group"
+              >
+                <label class="blank-label">Пропуск {{ index + 1 }}:</label>
+                <input
+                  type="text"
+                  v-model="localFillBlankAnswers[index]"
+                  @input="updateFillBlank(index, $event)"
+                  class="blank-input"
+                  :placeholder="`Ответ ${index + 1}`"
                 />
               </div>
-              <div class="option-text">{{ option }}</div>
             </div>
           </div>
-        </div>
-  
-        <!-- Fill in the Blanks Exercise -->
-        <div v-else-if="exerciseType === 'fill-blank'" class="exercise-type fill-blank">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div class="fill-blank-template">
-            <div v-html="renderFillBlankTemplate()"></div>
-          </div>
-          <div class="fill-blank-inputs">
-            <div 
-              v-for="(blank, index) in getBlankCount()" 
-              :key="index"
-              class="blank-input-group"
-            >
-              <label class="blank-label">Пропуск {{ index + 1 }}:</label>
-              <input
-                type="text"
-                v-model="localFillBlankAnswers[index]"
-                @input="updateFillBlank(index, $event)"
-                class="blank-input"
-                :placeholder="`Ответ ${index + 1}`"
-              />
+    
+          <!-- Matching Exercise -->
+          <div v-else-if="exerciseType === 'matching'" class="exercise-type matching">
+            <div class="question-text">
+              {{ currentExercise?.question }}
             </div>
-          </div>
-        </div>
-  
-        <!-- Matching Exercise -->
-        <div v-else-if="exerciseType === 'matching'" class="exercise-type matching">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div class="matching-container">
-            <div class="matching-side left-side">
-              <h4>Соедините:</h4>
-              <div 
-                v-for="(item, index) in leftItems" 
-                :key="'left-' + index"
-                class="matching-item"
-                :class="{ 
-                  selected: selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === index,
-                  matched: isItemMatched('left', index)
-                }"
-                @click="selectMatchingItem('left', index)"
-              >
-                {{ item }}
+            <div class="matching-container">
+              <div class="matching-side left-side">
+                <h4>Соедините:</h4>
+                <div 
+                  v-for="(item, index) in leftItems" 
+                  :key="'left-' + index"
+                  class="matching-item"
+                  :class="{ 
+                    selected: selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === index,
+                    matched: isItemMatched('left', index)
+                  }"
+                  @click="selectMatchingItem('left', index)"
+                >
+                  {{ item }}
+                </div>
+              </div>
+              <div class="matching-side right-side">
+                <h4>С:</h4>
+                <div 
+                  v-for="(item, index) in rightItems" 
+                  :key="'right-' + index"
+                  class="matching-item"
+                  :class="{ 
+                    selected: selectedMatchingItem?.side === 'right' && selectedMatchingItem?.index === index,
+                    matched: isItemMatched('right', index)
+                  }"
+                  @click="selectMatchingItem('right', index)"
+                >
+                  {{ item }}
+                </div>
               </div>
             </div>
-            <div class="matching-side right-side">
-              <h4>С:</h4>
+            <div v-if="matchingPairs.length > 0" class="matching-pairs">
+              <h4>Соединения:</h4>
               <div 
-                v-for="(item, index) in rightItems" 
-                :key="'right-' + index"
-                class="matching-item"
-                :class="{ 
-                  selected: selectedMatchingItem?.side === 'right' && selectedMatchingItem?.index === index,
-                  matched: isItemMatched('right', index)
-                }"
-                @click="selectMatchingItem('right', index)"
-              >
-                {{ item }}
-              </div>
-            </div>
-          </div>
-          <div v-if="matchingPairs.length > 0" class="matching-pairs">
-            <h4>Соединения:</h4>
-            <div 
-              v-for="(pair, index) in matchingPairs" 
-              :key="index"
-              class="pair-item"
-            >
-              <span>{{ leftItems[pair.leftIndex] }} ↔ {{ rightItems[pair.rightIndex] }}</span>
-              <button @click="removeMatchingPair(index)" class="remove-pair">×</button>
-            </div>
-          </div>
-        </div>
-  
-        <!-- True/False Exercise -->
-        <div v-else-if="exerciseType === 'true-false'" class="exercise-type true-false">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div class="true-false-options">
-            <div 
-              class="tf-option"
-              :class="{ selected: localUserAnswer === 'true' }"
-              @click="selectTrueFalse('true')"
-            >
-              <input 
-                type="radio" 
-                name="true-false"
-                value="true"
-                v-model="localUserAnswer"
-                @change="$emit('answer-changed', 'true')"
-              />
-              <span>Правда</span>
-            </div>
-            <div 
-              class="tf-option"
-              :class="{ selected: localUserAnswer === 'false' }"
-              @click="selectTrueFalse('false')"
-            >
-              <input 
-                type="radio" 
-                name="true-false"
-                value="false"
-                v-model="localUserAnswer"
-                @change="$emit('answer-changed', 'false')"
-              />
-              <span>Ложь</span>
-            </div>
-          </div>
-        </div>
-  
-        <!-- Ordering Exercise -->
-        <div v-else-if="exerciseType === 'ordering'" class="exercise-type ordering">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div class="ordering-instructions">
-            Перетащите элементы в правильном порядке:
-          </div>
-          <div class="ordering-container">
-            <div 
-              v-for="(item, index) in orderingItems" 
-              :key="item.id"
-              class="ordering-item"
-              :class="{ dragging: draggedItem === index }"
-              draggable="true"
-              @dragstart="startDrag(index)"
-              @dragover.prevent
-              @drop="handleDrop(index)"
-            >
-              <div class="drag-handle">≡</div>
-              <div class="item-text">{{ item.text }}</div>
-              <div class="item-number">{{ index + 1 }}</div>
-            </div>
-          </div>
-        </div>
-  
-        <!-- Drag and Drop Exercise -->
-        <div v-else-if="exerciseType === 'drag-drop'" class="exercise-type drag-drop">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div class="drag-drop-container">
-            <div class="drag-items">
-              <h4>Перетащите элементы:</h4>
-              <div 
-                v-for="(item, index) in availableDragItems" 
+                v-for="(pair, index) in matchingPairs" 
                 :key="index"
-                class="drag-item"
-                :class="{ dragging: draggedDragItem === item }"
+                class="pair-item"
+              >
+                <span>{{ leftItems[pair.leftIndex] }} ↔ {{ rightItems[pair.rightIndex] }}</span>
+                <button @click="removeMatchingPair(index)" class="remove-pair">×</button>
+              </div>
+            </div>
+          </div>
+    
+          <!-- True/False Exercise -->
+          <div v-else-if="exerciseType === 'true-false'" class="exercise-type true-false">
+            <div class="question-text">
+              {{ currentExercise?.question }}
+            </div>
+            <div class="true-false-options">
+              <div 
+                class="tf-option"
+                :class="{ selected: localUserAnswer === 'true' }"
+                @click="selectTrueFalse('true')"
+              >
+                <input 
+                  type="radio" 
+                  name="true-false"
+                  value="true"
+                  v-model="localUserAnswer"
+                  @change="$emit('answer-changed', 'true')"
+                />
+                <span>Правда</span>
+              </div>
+              <div 
+                class="tf-option"
+                :class="{ selected: localUserAnswer === 'false' }"
+                @click="selectTrueFalse('false')"
+              >
+                <input 
+                  type="radio" 
+                  name="true-false"
+                  value="false"
+                  v-model="localUserAnswer"
+                  @change="$emit('answer-changed', 'false')"
+                />
+                <span>Ложь</span>
+              </div>
+            </div>
+          </div>
+    
+          <!-- Ordering Exercise -->
+          <div v-else-if="exerciseType === 'ordering'" class="exercise-type ordering">
+            <div class="question-text">
+              {{ currentExercise?.question }}
+            </div>
+            <div class="ordering-instructions">
+              Перетащите элементы в правильном порядке:
+            </div>
+            <div class="ordering-container">
+              <div 
+                v-for="(item, index) in orderingItems" 
+                :key="item.id"
+                class="ordering-item"
+                :class="{ dragging: draggedItem === index }"
                 draggable="true"
-                @dragstart="startDragItem(item)"
+                @dragstart="startDrag(index)"
+                @dragover.prevent
+                @drop="handleDrop(index)"
               >
-                {{ item.text || item }}
+                <div class="drag-handle">≡</div>
+                <div class="item-text">{{ item.text }}</div>
+                <div class="item-number">{{ index + 1 }}</div>
               </div>
             </div>
-            <div class="drop-zones">
-              <div 
-                v-for="(zone, index) in dropZones" 
-                :key="index"
-                class="drop-zone"
-                :class="{ 'drag-over': dropOverZone === zone.id }"
-                @dragover.prevent="dragOverZone(zone.id)"
-                @dragleave="dragLeaveZone"
-                @drop="dropInZone(zone.id)"
-              >
-                <div class="zone-label">{{ zone.label }}</div>
-                <div class="zone-items">
-                  <div 
-                    v-for="(item, itemIndex) in getDropZoneItems(zone.id)" 
-                    :key="itemIndex"
-                    class="dropped-item"
-                  >
-                    {{ item.text || item }}
+          </div>
+    
+          <!-- Drag and Drop Exercise -->
+          <div v-else-if="exerciseType === 'drag-drop'" class="exercise-type drag-drop">
+            <div class="question-text">
+              {{ currentExercise?.question }}
+            </div>
+            <div class="drag-drop-container">
+              <div class="drag-items">
+                <h4>Перетащите элементы:</h4>
+                <div 
+                  v-for="(item, index) in availableDragItems" 
+                  :key="index"
+                  class="drag-item"
+                  :class="{ dragging: draggedDragItem === item }"
+                  draggable="true"
+                  @dragstart="startDragItem(item)"
+                >
+                  {{ item.text || item }}
+                </div>
+              </div>
+              <div class="drop-zones">
+                <div 
+                  v-for="(zone, index) in dropZones" 
+                  :key="index"
+                  class="drop-zone"
+                  :class="{ 'drag-over': dropOverZone === zone.id }"
+                  @dragover.prevent="dragOverZone(zone.id)"
+                  @dragleave="dragLeaveZone"
+                  @drop="dropInZone(zone.id)"
+                >
+                  <div class="zone-label">{{ zone.label }}</div>
+                  <div class="zone-items">
+                    <div 
+                      v-for="(item, itemIndex) in getDropZoneItems(zone.id)" 
+                      :key="itemIndex"
+                      class="dropped-item"
+                    >
+                      {{ item.text || item }}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-  
-        <!-- Hints and Feedback -->
-        <div v-if="currentHint || smartHint" class="hints-section">
-          <div v-if="currentHint" class="hint basic-hint">
-            <div class="hint-icon">💡</div>
-            <div class="hint-text">{{ currentHint }}</div>
+    
+          <!-- Hints and Feedback -->
+          <div v-if="currentHint || smartHint" class="hints-section">
+            <div v-if="currentHint" class="hint basic-hint">
+              <div class="hint-icon">💡</div>
+              <div class="hint-text">{{ currentHint }}</div>
+            </div>
+            <div v-if="smartHint" class="hint smart-hint">
+              <div class="hint-icon">🤖</div>
+              <div class="hint-text">{{ smartHint }}</div>
+              <button @click="$emit('clear-hint')" class="clear-hint-btn">×</button>
+            </div>
           </div>
-          <div v-if="smartHint" class="hint smart-hint">
-            <div class="hint-icon">🤖</div>
-            <div class="hint-text">{{ smartHint }}</div>
-            <button @click="$emit('clear-hint')" class="clear-hint-btn">×</button>
+    
+          <!-- Confirmation Message -->
+          <div v-if="confirmation" class="confirmation-message" :class="{ correct: answerWasCorrect, incorrect: !answerWasCorrect }">
+            {{ confirmation }}
           </div>
         </div>
-  
-        <!-- Confirmation Message -->
-        <div v-if="confirmation" class="confirmation-message" :class="{ correct: answerWasCorrect, incorrect: !answerWasCorrect }">
-          {{ confirmation }}
-        </div>
-  
-        <!-- Exercise Actions -->
+
+        <!-- Exercise Actions - Fixed positioning -->
         <div class="exercise-actions">
           <button 
             v-if="!confirmation"
@@ -282,7 +284,7 @@
           </button>
         </div>
       </div>
-  
+
       <!-- Quiz Content -->
       <div v-else-if="isQuizStep" class="quiz-content">
         <div class="quiz-header">
@@ -291,36 +293,38 @@
             {{ quizIndex + 1 }} из {{ totalQuizzes }}
           </div>
         </div>
-  
-        <div class="quiz-question">
-          {{ currentQuiz?.question }}
-        </div>
-  
-        <div class="quiz-options">
-          <div 
-            v-for="(option, index) in quizOptions" 
-            :key="index"
-            class="quiz-option"
-            :class="{ selected: localUserAnswer === option }"
-            @click="selectQuizOption(option)"
-          >
-            <div class="option-radio">
-              <input 
-                type="radio" 
-                :name="'quiz-' + quizIndex"
-                :value="option"
-                v-model="localUserAnswer"
-                @change="$emit('answer-changed', option)"
-              />
+
+        <div class="quiz-body">
+          <div class="quiz-question">
+            {{ currentQuiz?.question }}
+          </div>
+
+          <div class="quiz-options">
+            <div 
+              v-for="(option, index) in quizOptions" 
+              :key="index"
+              class="quiz-option"
+              :class="{ selected: localUserAnswer === option }"
+              @click="selectQuizOption(option)"
+            >
+              <div class="option-radio">
+                <input 
+                  type="radio" 
+                  :name="'quiz-' + quizIndex"
+                  :value="option"
+                  v-model="localUserAnswer"
+                  @change="$emit('answer-changed', option)"
+                />
+              </div>
+              <div class="option-text">{{ option }}</div>
             </div>
-            <div class="option-text">{{ option }}</div>
+          </div>
+
+          <div v-if="confirmation" class="confirmation-message" :class="{ correct: answerWasCorrect, incorrect: !answerWasCorrect }">
+            {{ confirmation }}
           </div>
         </div>
-  
-        <div v-if="confirmation" class="confirmation-message" :class="{ correct: answerWasCorrect, incorrect: !answerWasCorrect }">
-          {{ confirmation }}
-        </div>
-  
+
         <div class="quiz-actions">
           <button 
             v-if="!confirmation"
@@ -341,7 +345,7 @@
           </button>
         </div>
       </div>
-  
+
       <!-- No Content State -->
       <div v-else class="no-content">
         <div class="no-content-icon">📝</div>
@@ -395,7 +399,7 @@
       // Local reactive state
       const localUserAnswer = ref('')
       const localFillBlankAnswers = ref([])
-  
+
       // Computed properties
       const isExerciseStep = computed(() => {
         return ['exercise', 'practice'].includes(props.currentStep?.type)
@@ -449,22 +453,47 @@
         return props.quizIndex >= props.totalQuizzes - 1
       })
       
+      // FIXED: Improved validation logic
       const canSubmitAnswer = computed(() => {
-        if (exerciseType.value === 'fill-blank') {
-          return localFillBlankAnswers.value.some(answer => answer && answer.trim())
+        // For multiple choice, true/false - must have selected an option
+        if (exerciseType.value === 'multiple-choice' || 
+            exerciseType.value === 'abc' || 
+            exerciseType.value === 'true-false') {
+          return localUserAnswer.value && String(localUserAnswer.value).trim()
         }
+        
+        // For short answer - must have meaningful content (at least 2 characters)
+        if (exerciseType.value === 'short-answer') {
+          const answer = String(localUserAnswer.value || '').trim()
+          return answer.length >= 2
+        }
+        
+        // For fill-in-the-blank - at least one blank must be filled with meaningful content
+        if (exerciseType.value === 'fill-blank') {
+          return localFillBlankAnswers.value.some(answer => {
+            const trimmed = String(answer || '').trim()
+            return trimmed.length >= 1
+          })
+        }
+        
+        // For matching - must have at least one pair
         if (exerciseType.value === 'matching') {
           return props.matchingPairs.length > 0
         }
+        
+        // For ordering - must have items
         if (exerciseType.value === 'ordering') {
           return props.orderingItems.length > 0
         }
+        
+        // For drag-drop - must have at least one placement
         if (exerciseType.value === 'drag-drop') {
           return Object.keys(props.dragDropPlacements).length > 0
         }
-        return localUserAnswer.value && String(localUserAnswer.value).trim()
+        
+        return false
       })
-  
+
       // Methods
       const getBlankCount = () => {
         if (!props.currentExercise) return 0
@@ -479,7 +508,7 @@
         
         return Math.max(underscoreMatches.length, blankMatches.length, 1)
       }
-  
+
       const renderFillBlankTemplate = () => {
         if (!props.currentExercise?.template) return ''
         
@@ -498,7 +527,7 @@
         
         return template
       }
-  
+
       const updateFillBlank = (index, event) => {
         while (localFillBlankAnswers.value.length <= index) {
           localFillBlankAnswers.value.push('')
@@ -506,76 +535,74 @@
         localFillBlankAnswers.value[index] = event.target.value
         emit('fill-blank-updated', index, event)
       }
-  
+
       const selectOption = (option) => {
         localUserAnswer.value = option
         emit('answer-changed', option)
       }
-  
+
       const selectQuizOption = (option) => {
         localUserAnswer.value = option
         emit('answer-changed', option)
       }
-  
+
       const selectTrueFalse = (value) => {
         localUserAnswer.value = value
         emit('answer-changed', value)
       }
-  
+
       const selectMatchingItem = (side, index) => {
-        // This would be handled by the parent component
-        // For now, just emit an event
         emit('matching-item-selected', { side, index })
       }
-  
+
       const isItemMatched = (side, index) => {
         if (side === 'left') {
           return props.matchingPairs.some(pair => pair.leftIndex === index)
         }
         return props.matchingPairs.some(pair => pair.rightIndex === index)
       }
-  
+
       const removeMatchingPair = (pairIndex) => {
         emit('remove-matching-pair', pairIndex)
       }
-  
+
       const startDrag = (index) => {
         emit('drag-start', index)
       }
-  
+
       const handleDrop = (index) => {
         emit('drag-drop', index)
       }
-  
+
       const startDragItem = (item) => {
         emit('drag-item-start', item)
       }
-  
+
       const dragOverZone = (zoneId) => {
         emit('drag-over-zone', zoneId)
       }
-  
+
       const dragLeaveZone = () => {
         emit('drag-leave-zone')
       }
-  
+
       const dropInZone = (zoneId) => {
         emit('drop-in-zone', zoneId)
       }
-  
+
       const getDropZoneItems = (zoneId) => {
         return props.dragDropPlacements[zoneId] || []
       }
-  
+
       // Watch for prop changes to sync local state
       watch(() => props.userAnswer, (newValue) => {
         localUserAnswer.value = newValue || ''
       }, { immediate: true })
-  
+
       watch(() => props.fillBlankAnswers, (newValue) => {
         localFillBlankAnswers.value = Array.isArray(newValue) ? [...newValue] : []
       }, { immediate: true })
-  
+
       // Initialize local state
       onMounted(() => {
         localUserAnswer.value = props.userAnswer || ''
@@ -589,7 +616,7 @@
           }
         }
       })
-  
+
       return {
         localUserAnswer,
         localFillBlankAnswers,
@@ -630,12 +657,12 @@
     padding: 32px;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
-    min-height: 100%;
+    height: 100vh;
+    overflow: hidden;
   }
   
-  .exercise-container,
-  .quiz-container {
+  .exercise-content,
+  .quiz-content {
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -649,18 +676,19 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
   }
   
-  .exercise-title,
-  .quiz-title {
+  .exercise-header h3,
+  .quiz-header h3 {
     font-size: 1.2rem;
     color: #4c1d95;
     margin: 0;
     font-weight: 700;
   }
   
-  .exercise-progress,
-  .quiz-progress {
+  .exercise-counter,
+  .quiz-counter {
     font-size: 0.9rem;
     color: #6b46c1;
     font-weight: 600;
@@ -669,14 +697,24 @@
     border-radius: 12px;
   }
   
-  .exercise-content,
-  .quiz-content {
+  .exercise-body,
+  .quiz-body {
     flex: 1;
-    display: flex;
-    flex-direction: column;
+    overflow-y: auto;
+    margin-bottom: 16px;
   }
   
-  .exercise-question,
+  .exercise-actions,
+  .quiz-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .question-text,
   .quiz-question {
     font-size: 1.1rem;
     font-weight: 600;
@@ -690,29 +728,8 @@
     box-shadow: 0 2px 8px rgba(107, 70, 193, 0.1);
   }
   
-  .exercise-instruction {
-    margin-bottom: 20px;
-  }
-  
-  .instruction-badge {
-    display: inline-block;
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-    color: white;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-  
-  .instruction-text {
-    font-size: 0.95rem;
-    color: #64748b;
-    line-height: 1.5;
-  }
-  
   /* Form Controls with Purple Theme */
-  .short-answer-container {
+  .answer-input {
     margin-bottom: 24px;
   }
   
@@ -727,6 +744,7 @@
     resize: vertical;
     transition: all 0.2s ease;
     background: white;
+    box-sizing: border-box;
   }
   
   .answer-textarea:focus {
@@ -741,7 +759,7 @@
   }
   
   /* Options Grid with Purple Theme */
-  .options-grid,
+  .options-list,
   .quiz-options {
     display: flex;
     flex-direction: column;
@@ -749,8 +767,8 @@
     margin-bottom: 24px;
   }
   
-  .option-card,
-  .quiz-option-card {
+  .option-item,
+  .quiz-option {
     background: white;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
@@ -758,70 +776,30 @@
     transition: all 0.2s ease;
     overflow: hidden;
     min-height: 50px;
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    gap: 12px;
   }
   
-  .option-card:hover,
-  .quiz-option-card:hover {
+  .option-item:hover,
+  .quiz-option:hover {
     border-color: #8b5cf6;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
   }
   
-  .option-card.selected,
-  .quiz-option-card.selected {
+  .option-item.selected,
+  .quiz-option.selected {
     border-color: #8b5cf6;
     background: rgba(139, 92, 246, 0.05);
   }
   
-  .option-card.correct,
-  .quiz-option-card.correct {
-    border-color: #7c3aed;
-    background: rgba(124, 58, 237, 0.1);
-  }
-  
-  .option-card.incorrect,
-  .quiz-option-card.incorrect {
-    border-color: #ef4444;
-    background: rgba(239, 68, 68, 0.1);
-  }
-  
-  .option-radio,
-  .quiz-radio {
+  .option-radio {
     display: none;
   }
   
-  .option-content,
-  .quiz-option-content {
-    padding: 16px 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .option-letter,
-  .quiz-option-letter {
-    background: #f1f5f9;
-    color: #64748b;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 0.9rem;
-    flex-shrink: 0;
-    transition: all 0.2s ease;
-  }
-  
-  .option-card.selected .option-letter,
-  .quiz-option-card.selected .quiz-option-letter {
-    background: #8b5cf6;
-    color: white;
-  }
-  
-  .option-text,
-  .quiz-option-text {
+  .option-text {
     font-size: 0.95rem;
     line-height: 1.4;
     flex: 1;
@@ -829,28 +807,14 @@
   }
   
   /* True/False Styling */
-  .true-false-container {
-    margin-bottom: 24px;
-  }
-  
-  .true-false-statement {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 20px;
-    padding: 20px;
-    background: white;
-    border-radius: 12px;
-    border: 2px solid #ddd6fe;
-  }
-  
   .true-false-options {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
+    margin-bottom: 24px;
   }
   
-  .true-false-option {
+  .tf-option {
     background: white;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
@@ -858,39 +822,32 @@
     transition: all 0.2s ease;
     padding: 20px;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
   }
   
-  .true-false-option:hover {
+  .tf-option:hover {
     border-color: #8b5cf6;
     transform: translateY(-1px);
   }
   
-  .true-false-option.selected {
+  .tf-option.selected {
     border-color: #8b5cf6;
     background: rgba(139, 92, 246, 0.05);
   }
   
-  .true-false-option .option-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
+  .tf-option input {
+    display: none;
   }
   
-  .true-false-option .option-icon {
-    font-size: 2rem;
-  }
-  
-  .true-false-option .option-text {
+  .tf-option span {
     font-weight: 600;
     color: #374151;
   }
   
   /* Fill Blank Styling */
-  .fill-blank-container {
-    margin-bottom: 24px;
-  }
-  
   .fill-blank-template {
     background: white;
     padding: 20px;
@@ -901,7 +858,7 @@
     font-size: 1rem;
   }
   
-  .fill-blank-placeholder {
+  .blank-indicator {
     background: #8b5cf6;
     color: white;
     padding: 4px 8px;
@@ -910,652 +867,593 @@
     font-size: 0.85rem;
   }
   
-  .blank-inputs {
+  .fill-blank-inputs {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    margin-bottom: 24px;
   }
   
-  .blank-input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  
-  .blank-label {
-    font-weight: 600;
-    color: #4c1d95;
-    font-size: 0.9rem;
-  }
-  
-  .blank-input {
-    padding: 12px;
-    border: 2px solid #ddd6fe;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    transition: all 0.2s ease;
-  }
-  
-  .blank-input:focus {
-    outline: none;
-    border-color: #8b5cf6;
-    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-  }
-  
-  /* Feedback Styling */
-  .feedback {
-    margin: 16px 0;
+  /* Continuing from .blank-input-group */
+.blank-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.blank-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4c1d95;
+  margin-bottom: 4px;
+}
+
+.blank-input {
+  padding: 12px 16px;
+  border: 2px solid #ddd6fe;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.blank-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* Matching Exercise Styling */
+.matching-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.matching-side {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.matching-side h4 {
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+  color: #4c1d95;
+  text-align: center;
+}
+
+.matching-item {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.matching-item:hover {
+  border-color: #8b5cf6;
+  transform: translateY(-1px);
+}
+
+.matching-item.selected {
+  border-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+  color: #4c1d95;
+  font-weight: 600;
+}
+
+.matching-item.matched {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  color: #047857;
+  opacity: 0.7;
+}
+
+.matching-pairs {
+  background: white;
+  border: 2px solid #ddd6fe;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.matching-pairs h4 {
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+  color: #4c1d95;
+}
+
+.pair-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(139, 92, 246, 0.05);
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.remove-pair {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.remove-pair:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+/* Ordering Exercise Styling */
+.ordering-instructions {
+  background: rgba(139, 92, 246, 0.1);
+  border: 2px solid #ddd6fe;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  color: #4c1d95;
+  text-align: center;
+  font-weight: 600;
+}
+
+.ordering-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.ordering-item {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  cursor: move;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ordering-item:hover {
+  border-color: #8b5cf6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
+}
+
+.ordering-item.dragging {
+  opacity: 0.5;
+  transform: rotate(2deg);
+}
+
+.drag-handle {
+  color: #9ca3af;
+  font-size: 1.2rem;
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.item-text {
+  flex: 1;
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.item-number {
+  background: #8b5cf6;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Drag and Drop Exercise Styling */
+.drag-drop-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.drag-items {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.drag-items h4 {
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+  color: #4c1d95;
+  text-align: center;
+}
+
+.drag-item {
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  cursor: move;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.drag-item:hover {
+  border-color: #8b5cf6;
+  transform: translateY(-1px);
+}
+
+.drag-item.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+
+.drop-zones {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.drop-zone {
+  background: white;
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 80px;
+  transition: all 0.2s ease;
+}
+
+.drop-zone.drag-over {
+  border-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.zone-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4c1d95;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.zone-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dropped-item {
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid #ddd6fe;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: #4c1d95;
+  text-align: center;
+}
+
+/* Hints and Feedback */
+.hints-section {
+  margin-bottom: 24px;
+}
+
+.hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.basic-hint {
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px solid #bfdbfe;
+  color: #1e40af;
+}
+
+.smart-hint {
+  background: rgba(139, 92, 246, 0.1);
+  border: 2px solid #ddd6fe;
+  color: #4c1d95;
+  position: relative;
+}
+
+.hint-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.hint-text {
+  flex: 1;
+}
+
+.clear-hint-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 8px;
+  transition: color 0.2s ease;
+}
+
+.clear-hint-btn:hover {
+  color: #ef4444;
+}
+
+/* Confirmation Messages */
+.confirmation-message {
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  font-weight: 600;
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.confirmation-message.correct {
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid #a7f3d0;
+  color: #047857;
+}
+
+.confirmation-message.incorrect {
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px solid #fecaca;
+  color: #dc2626;
+}
+
+/* Buttons */
+.hint-btn,
+.submit-btn,
+.next-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hint-btn {
+  background: rgba(59, 130, 246, 0.1);
+  color: #1e40af;
+  border: 2px solid #bfdbfe;
+}
+
+.hint-btn:hover {
+  background: rgba(59, 130, 246, 0.15);
+  transform: translateY(-1px);
+}
+
+.submit-btn {
+  background: #8b5cf6;
+  color: white;
+  border: 2px solid #8b5cf6;
+}
+
+.submit-btn:hover:not(.disabled) {
+  background: #7c3aed;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.submit-btn.disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+  border-color: #d1d5db;
+}
+
+.next-btn {
+  background: #10b981;
+  color: white;
+  border: 2px solid #10b981;
+}
+
+.next-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* No Content State */
+.no-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: #6b7280;
+}
+
+.no-content-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.7;
+}
+
+.no-content h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  color: #4b5563;
+}
+
+.no-content p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .interactive-panel {
     padding: 16px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    animation: fadeIn 0.3s ease;
   }
   
-  .feedback.correct {
-    background: rgba(124, 58, 237, 0.1);
-    border: 2px solid rgba(124, 58, 237, 0.3);
+  .matching-container,
+  .drag-drop-container {
+    grid-template-columns: 1fr;
   }
   
-  .feedback.incorrect {
-    background: rgba(239, 68, 68, 0.1);
-    border: 2px solid rgba(239, 68, 68, 0.3);
+  .true-false-options {
+    grid-template-columns: 1fr;
   }
   
-  .feedback-icon {
-    font-size: 1.5rem;
-    flex-shrink: 0;
-  }
-  
-  .feedback-text {
-    font-weight: 600;
-    color: #1e293b;
-    flex: 1;
-  }
-  
-  /* Action Buttons with Purple Theme */
   .exercise-actions,
   .quiz-actions {
-    display: flex;
+    flex-direction: column;
+  }
+  
+  .exercise-header,
+  .quiz-header {
+    flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
-    margin-top: auto;
-    flex-wrap: wrap;
   }
   
-  .submit-btn,
-  .next-btn,
-  .hint-btn,
-  .clear-btn,
-  .skip-btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    flex: 1;
-    min-width: 120px;
-    min-height: 44px;
-    font-size: 0.95rem;
-  }
-  
-  .submit-btn {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-    color: white;
-  }
-  
-  .submit-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(139, 92, 246, 0.3);
-  }
-  
-  .submit-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
-  
-  .next-btn {
-    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-    color: white;
-  }
-  
-  .next-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(124, 58, 237, 0.3);
-  }
-  
-  .hint-btn {
-    background: #f59e0b;
-    color: white;
-    flex: 0 0 auto;
-  }
-  
-  .hint-btn:hover {
-    background: #d97706;
-    transform: translateY(-2px);
-  }
-  
-  .clear-btn,
-  .skip-btn {
-    background: #64748b;
-    color: white;
-    flex: 0 0 auto;
-  }
-  
-  .clear-btn:hover,
-  .skip-btn:hover {
-    background: #475569;
-    transform: translateY(-2px);
-  }
-  
-  /* Smart Hint */
-  .smart-hint {
-    background: rgba(245, 158, 11, 0.1);
+  .question-text,
+  .quiz-question {
+    font-size: 1rem;
     padding: 16px;
-    border-radius: 12px;
-    margin: 16px 0;
-    border: 2px solid rgba(245, 158, 11, 0.3);
-    position: relative;
+  }
+}
+
+@media (max-width: 480px) {
+  .interactive-panel {
+    padding: 12px;
   }
   
-  .hint-header {
-    font-weight: 600;
-    color: #92400e;
-    margin-bottom: 8px;
-  }
-  
-  .hint-content {
-    color: #78350f;
-    line-height: 1.5;
-  }
-  
-  .close-hint-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: none;
-    border: none;
-    font-size: 1.2rem;
-    color: #92400e;
-    cursor: pointer;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    transition: background 0.2s ease;
-  }
-  
-  .close-hint-btn:hover {
-    background: rgba(245, 158, 11, 0.2);
-  }
-  
-  /* Error States */
-  .exercise-error,
-  .quiz-error {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    text-align: center;
-  }
-  
-  .error-message {
-    background: white;
-    padding: 40px;
-    border-radius: 16px;
-    border: 2px solid #f3f4f6;
-    max-width: 400px;
-  }
-  
-  .error-icon {
-    font-size: 3rem;
-    margin-bottom: 16px;
-  }
-  
-  .error-message h4 {
-    color: #1e293b;
-    margin: 0 0 12px 0;
+  .exercise-header h3,
+  .quiz-header h3 {
     font-size: 1.1rem;
   }
   
-  .error-message p {
-    color: #64748b;
-    margin: 0 0 20px 0;
-    line-height: 1.5;
-  }
-  
-  /* Matching Exercises */
-  .matching-container {
-    margin-bottom: 24px;
-  }
-  
-  .matching-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    margin-bottom: 20px;
-  }
-  
-  .matching-column h4 {
-    color: #4c1d95;
-    margin-bottom: 12px;
-    font-size: 1rem;
-    text-align: center;
-  }
-  
-  .matching-item {
-    background: white;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .matching-item:hover {
-    border-color: #8b5cf6;
-    transform: translateY(-1px);
-  }
-  
-  .matching-item.selected {
-    border-color: #8b5cf6;
-    background: rgba(139, 92, 246, 0.1);
-  }
-  
-  .matching-item.matched {
-    border-color: #7c3aed;
-    background: rgba(124, 58, 237, 0.1);
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-  
-  .matching-item-letter,
-  .matching-item-number {
-    background: #f1f5f9;
-    color: #64748b;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 0.8rem;
-    flex-shrink: 0;
-  }
-  
-  .matching-item.selected .matching-item-letter,
-  .matching-item.selected .matching-item-number {
-    background: #8b5cf6;
-    color: white;
-  }
-  
-  .matching-item-text {
-    flex: 1;
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
-  
-  .matching-pairs-display {
-    margin-top: 20px;
-    background: white;
-    padding: 16px;
-    border-radius: 12px;
-    border: 2px solid #ddd6fe;
-  }
-  
-  .matching-pairs-display h4 {
-    color: #4c1d95;
-    margin: 0 0 12px 0;
-    font-size: 1rem;
-  }
-  
-  .created-pairs {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .created-pair {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
-    background: #f8fafc;
-    border-radius: 8px;
-    font-size: 0.85rem;
-  }
-  
-  .pair-left,
-  .pair-right {
-    flex: 1;
-  }
-  
-  .pair-connector {
-    color: #8b5cf6;
-    font-weight: bold;
-  }
-  
-  .remove-pair-btn {
-    background: #ef4444;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-    font-size: 0.7rem;
-    transition: all 0.2s ease;
-  }
-  
-  .remove-pair-btn:hover {
-    background: #dc2626;
-    transform: scale(1.1);
-  }
-  
-  /* Ordering Exercises */
-  .ordering-container {
-    margin-bottom: 24px;
-  }
-  
-  .ordering-instructions {
-    margin-bottom: 16px;
-    color: #64748b;
+  .question-text,
+  .quiz-question {
     font-size: 0.95rem;
+    padding: 12px;
   }
   
-  .ordering-items {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 16px;
+  .option-item,
+  .quiz-option {
+    padding: 12px 16px;
   }
   
-  .ordering-item {
-    background: white;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    cursor: move;
-    transition: all 0.2s ease;
+  .tf-option {
+    padding: 16px;
+  }
+}
+
+/* Scrollbar Styling */
+.exercise-body::-webkit-scrollbar,
+.quiz-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.exercise-body::-webkit-scrollbar-track,
+.quiz-body::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.exercise-body::-webkit-scrollbar-thumb,
+.quiz-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.exercise-body::-webkit-scrollbar-thumb:hover,
+.quiz-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Animation Classes */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Focus Management */
+.interactive-panel *:focus {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .option-item,
+  .quiz-option,
+  .tf-option,
+  .matching-item,
+  .ordering-item,
+  .drag-item {
+    border-width: 3px;
   }
   
-  .ordering-item:hover {
-    border-color: #8b5cf6;
-    transform: translateY(-1px);
+  .confirmation-message {
+    border-width: 3px;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
   
   .ordering-item.dragging {
-    opacity: 0.5;
-    transform: rotate(2deg);
+    transform: none;
   }
   
-  .ordering-item.drop-target {
-    border-color: #7c3aed;
-    background: rgba(124, 58, 237, 0.1);
+  .drag-item.dragging {
+    transform: none;
   }
-  
-  .ordering-item-content {
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .ordering-item-handle {
-    color: #94a3b8;
-    cursor: grab;
-    font-weight: bold;
-  }
-  
-  .ordering-item-handle:active {
-    cursor: grabbing;
-  }
-  
-  .ordering-item-text {
-    flex: 1;
-    font-size: 0.95rem;
-  }
-  
-  .ordering-item-controls {
-    display: flex;
-    gap: 4px;
-  }
-  
-  .ordering-move-btn {
-    background: #f1f5f9;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    transition: all 0.2s ease;
-  }
-  
-  .ordering-move-btn:hover:not(:disabled) {
-    background: #8b5cf6;
-    color: white;
-    border-color: #8b5cf6;
-  }
-  
-  .ordering-move-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  .ordering-reset {
-    text-align: center;
-  }
-  
-  .reset-ordering-btn {
-    background: #64748b;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    transition: all 0.2s ease;
-  }
-  
-  .reset-ordering-btn:hover {
-    background: #475569;
-    transform: translateY(-1px);
-  }
-  
-  /* Drag and Drop */
-  .drag-drop-container {
-    margin-bottom: 24px;
-  }
-  
-  .drag-drop-instructions {
-    margin-bottom: 16px;
-    color: #64748b;
-    font-size: 0.95rem;
-  }
-  
-  .drag-drop-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-  }
-  
-  .draggable-items-area h4,
-  .drop-zones-area h4 {
-    color: #4c1d95;
-    margin-bottom: 12px;
-    font-size: 1rem;
-  }
-  
-  .draggable-items {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  
-  .draggable-item {
-    background: white;
-    border: 2px solid #ddd6fe;
-    border-radius: 8px;
-    padding: 8px 12px;
-    cursor: grab;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-  }
-  
-  .draggable-item:hover {
-    border-color: #8b5cf6;
-    transform: translateY(-1px);
-  }
-  
-  .draggable-item.dragging {
-    opacity: 0.5;
-    cursor: grabbing;
-  }
-  
-  .drop-zones {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .drop-zone {
-    background: #f8fafc;
-    border: 2px dashed #cbd5e1;
-    border-radius: 8px;
-    padding: 16px;
-    min-height: 80px;
-    transition: all 0.2s ease;
-  }
-  
-  .drop-zone.drop-over {
-    border-color: #8b5cf6;
-    background: rgba(139, 92, 246, 0.1);
-  }
-  
-  .drop-zone.has-items {
-    border-style: solid;
-    border-color: #7c3aed;
-    background: rgba(124, 58, 237, 0.05);
-  }
-  
-  .drop-zone-label {
-    font-weight: 600;
-    color: #4c1d95;
-    margin-bottom: 8px;
-    font-size: 0.9rem;
-  }
-  
-  .dropped-items {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  
-  .dropped-item {
-    background: #8b5cf6;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    cursor: pointer;
-  }
-  
-  .remove-dropped-btn {
-    background: rgba(255, 255, 255, 0.3);
-    border: none;
-    border-radius: 50%;
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-    font-size: 0.7rem;
-    color: white;
-    transition: all 0.2s ease;
-  }
-  
-  .remove-dropped-btn:hover {
-    background: rgba(255, 255, 255, 0.5);
-  }
-  
-  .drop-zone-placeholder {
-    color: #94a3b8;
-    font-style: italic;
-    text-align: center;
-    font-size: 0.9rem;
-  }
-  
-  /* Hint Display */
-  .hint-display {
-    margin-top: 16px;
-    padding: 16px;
-    background: #fef3c7;
-    border: 2px solid #f59e0b;
-    border-radius: 8px;
-    animation: fadeIn 0.3s ease;
-  }
-  
-  .hint-display .hint-header {
-    font-weight: 600;
-    color: #92400e;
-    margin-bottom: 8px;
-  }
-  
-  .hint-display .hint-content {
-    color: #78350f;
-    line-height: 1.5;
-  }
-  
-  @keyframes fadeIn {
-    from { 
-      opacity: 0; 
-      transform: translateY(-10px); 
-    }
-    to { 
-      opacity: 1; 
-      transform: translateY(0); 
-    }
-  }
-  
-  /* Responsive Design */
-  @media (max-width: 768px) {
-    .interactive-panel {
-      padding: 20px 16px;
-    }
-    
-    .matching-grid,
-    .drag-drop-layout {
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-    
-    .true-false-options {
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-    
-    .exercise-actions,
-    .quiz-actions {
-      flex-direction: column;
-      gap: 8px;
-    }
-    
-    .submit-btn,
-    .next-btn,
-    .hint-btn,
-    .clear-btn {
-      width: 100%;
-      min-width: auto;
-    }
-  }
-  </style>
+}
+</style>
