@@ -534,7 +534,7 @@
               <div v-else-if="['multiple-choice', 'abc'].includes(getCurrentExercise()?.type)" class="options-grid">
                 <label 
                   v-for="(option, optionIndex) in (getSafeOptions(getCurrentExercise()) || [])" 
-                  :key="`option-${optionIndex}`" 
+                  :key="`option-${currentExerciseIndex}-${optionIndex}`" 
                   class="option-card"
                   :class="{ 
                     selected: userAnswer === (typeof option === 'string' ? option : option?.text),
@@ -609,12 +609,13 @@
                 <div class="blank-inputs">
                   <div 
                     v-for="(blank, blankIndex) in (getCurrentExercise()?.blanks || [])" 
-                    :key="`blank-${blankIndex}`" 
+                    :key="`blank-${currentExerciseIndex}-${blankIndex}-${currentIndex}`" 
                     class="blank-input-group"
                   >
                     <label class="blank-label">Пропуск {{ blankIndex + 1 }}:</label>
                     <input 
-                      v-model="(fillBlankAnswers || [])[blankIndex]" 
+                      :value="safeFillBlankAnswers[blankIndex] || ''"
+                      @input="updateFillBlankAnswer(blankIndex, $event)"
                       type="text" 
                       class="blank-input"
                       :disabled="answerWasCorrect"
@@ -2206,16 +2207,34 @@ getQuizOptions(quiz) {
         const correctOption = options[correctAnswer];
         console.log('✅ Correct option text:', correctOption);
         
-        // ✅ FIXED: Normalize both strings for comparison
-        const normalizedUserAnswer = this.normalizeText(userAnswer);
-        const normalizedCorrectOption = this.normalizeText(correctOption);
+    
         
-        const isCorrect = normalizedUserAnswer === normalizedCorrectOption;
-        console.log('🔍 Comparison details:', { 
-          normalizedUserAnswer, 
-          normalizedCorrectOption, 
-          isCorrect 
-        });
+        const normalize = (str) => {
+    return str
+      .toLowerCase()
+      .replace(/\bwhat's\b/g, 'what is')
+      .replace(/\bwho's\b/g, 'who is')
+      .replace(/\bit's\b/g, 'it is')
+      .replace(/\bthat's\b/g, 'that is')
+      .replace(/\bthere's\b/g, 'there is')
+      .replace(/\bwhere's\b/g, 'where is')
+      .replace(/\bhow's\b/g, 'how is')
+      .replace(/\bhas got\b/g, 'has')
+      .replace(/\bhe's got\b/g, 'he has got')
+      .replace(/\bshe's got\b/g, 'she has got')
+      .replace(/\bit's got\b/g, 'it has got')
+      .replace(/\b've\b/g, ' have')
+      .replace(/\bI'm\b/g, 'I am')
+      .replace(/[^a-z\s]/g, '') // remove punctuation
+      .trim();
+  };
+
+  const normalizedUserAnswer = normalize(userAnswer);
+  const isCorrect = correctAnswers.some(ans => normalize(ans) === normalizedUserAnswer);
+
+  this.answerWasCorrect = isCorrect;
+  this.confirmation = isCorrect ? '✅ Верно!' : '❌ Неверно. Попробуйте ещё раз.';
+  this.saveProgress();
         
         return isCorrect;
       } else {
@@ -2850,7 +2869,38 @@ async handleSubmitOrNext() {
     return;
   }
   const currentExercise = step?.data;
+  const userAnswer = this.userAnswer?.trim() || "";
 
+const correctAnswers = Array.isArray(currentExercise.correctAnswers)
+  ? currentExercise.correctAnswers
+  : [currentExercise.correctAnswers];
+
+const normalize = (str) => {
+  return str
+    .toLowerCase()
+    .replace(/\bwhat's\b/g, 'what is')
+    .replace(/\bwho's\b/g, 'who is')
+    .replace(/\bit's\b/g, 'it is')
+    .replace(/\bthat's\b/g, 'that is')
+    .replace(/\bthere's\b/g, 'there is')
+    .replace(/\bwhere's\b/g, 'where is')
+    .replace(/\bhow's\b/g, 'how is')
+    .replace(/\bhas got\b/g, 'has')
+    .replace(/\bhe's got\b/g, 'he has got')
+    .replace(/\bshe's got\b/g, 'she has got')
+    .replace(/\bit's got\b/g, 'it has got')
+    .replace(/\b've\b/g, ' have')
+    .replace(/\bI'm\b/g, 'I am')
+    .replace(/[^a-z\s]/g, '') // remove punctuation
+    .trim();
+};
+
+const normalizedUserAnswer = normalize(userAnswer);
+const isCorrect = correctAnswers.some(ans => normalize(ans) === normalizedUserAnswer);
+
+this.answerWasCorrect = isCorrect;
+this.confirmation = isCorrect ? '✅ Верно!' : '❌ Неверно. Попробуйте ещё раз.';
+this.saveProgress();
 
   // ✅ Get user response based on exercise type
   let userResponse = this.getUserResponseBasedOnType();
@@ -4227,39 +4277,25 @@ goToNextExercise() {
   const totalExercises = this.getTotalExercises();
   
   if (this.isLastExercise()) {
-    // Move to next step - clear everything including userAnswer
+    // Move to next step
     this.userAnswer = '';
+    this.fillBlankAnswers = []; // Clear when moving to next step
     this.goNext();
   } else {
-    // Move to next exercise in current step - preserve userAnswer state better
+    // Move to next exercise in current step
     this.currentExerciseIndex++;
     
-    // Only reset states that should be reset between exercises
+    // Reset states
     this.confirmation = '';
     this.answerWasCorrect = false;
     this.currentHint = '';
     this.smartHint = '';
     
-    // Clear userAnswer only for specific exercise types that need it
-    const nextExercise = this.getCurrentExercise();
-    if (nextExercise) {
-      const exerciseType = nextExercise.type || 'short-answer';
-      
-      // Clear userAnswer for new exercise types, but preserve for some types
-      if (!['vocabulary', 'reading'].includes(exerciseType)) {
-        this.userAnswer = '';
-      }
-      
-      // Reset specific exercise type data
-      this.fillBlankAnswers = [];
-      this.matchingPairs = [];
-      this.selectedMatchingItem = null;
-      
-      // Re-initialize current exercise data
-      this.initializeCurrentExerciseData();
-    }
+    // ✅ CRITICAL: Clear fill-blank answers when changing exercises
+    this.fillBlankAnswers = [];
     
-    console.log(`✅ Moved to exercise ${this.currentExerciseIndex + 1} of ${totalExercises}`);
+    // Re-initialize for new exercise
+    this.initializeCurrentExerciseData();
   }
 },
 
@@ -4409,24 +4445,47 @@ getSafeOptions(exercise) {
 
 // ✅ ENHANCED: Safe fillBlankAnswers initialization
 initializeFillBlankAnswers(exercise) {
-  if (!exercise || !exercise.blanks) {
+  if (!exercise) {
     this.fillBlankAnswers = [];
     return;
   }
   
-  const blankCount = Array.isArray(exercise.blanks) ? exercise.blanks.length : 0;
+  // Count blanks in the template
+  let blankCount = 0;
   
-  // ✅ CRITICAL FIX: Preserve existing answers if array is correct size
-  if (Array.isArray(this.fillBlankAnswers) && this.fillBlankAnswers.length === blankCount) {
-    console.log('✅ Preserving existing fill-blank answers:', this.fillBlankAnswers);
-    return; // Don't reinitialize if already correct
+  if (exercise.blanks && Array.isArray(exercise.blanks)) {
+    blankCount = exercise.blanks.length;
+  } else {
+    // Count underscores or [blank] patterns in template
+    const template = exercise.template || exercise.question || '';
+    const underscoreMatches = template.match(/_+/g) || [];
+    const blankMatches = template.match(/\[blank\]/gi) || [];
+    blankCount = Math.max(underscoreMatches.length, blankMatches.length);
   }
   
-  // Initialize new array only if needed
-  this.fillBlankAnswers = new Array(blankCount).fill('');
-  console.log('✅ Initialized new fill-blank answers array:', this.fillBlankAnswers);
+  // ✅ CRITICAL: Only reinitialize if array size is wrong
+  if (!Array.isArray(this.fillBlankAnswers) || this.fillBlankAnswers.length !== blankCount) {
+    // Create new array with empty strings
+    this.fillBlankAnswers = new Array(blankCount).fill('');
+    console.log(`✅ Initialized ${blankCount} fill-blank answers`);
+  } else {
+    console.log(`✅ Keeping existing fill-blank answers:`, this.fillBlankAnswers);
+  }
 },
-
+updateFillBlankAnswer(index, event) {
+  if (!Array.isArray(this.fillBlankAnswers)) {
+    this.fillBlankAnswers = [];
+  }
+  
+  // Ensure array is big enough
+  while (this.fillBlankAnswers.length <= index) {
+    this.fillBlankAnswers.push('');
+  }
+  
+  // Update the specific index
+  this.$set(this.fillBlankAnswers, index, event.target.value);
+  console.log(`📝 Updated blank ${index + 1}:`, event.target.value);
+},
 // ✅ ENHANCED: Safe getFillBlankTemplate
 getFillBlankTemplate() {
   const exercise = this.getCurrentExercise();
