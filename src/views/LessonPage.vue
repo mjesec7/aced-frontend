@@ -41,7 +41,7 @@
       </div>
     </div>
 
-    <!-- ✅ VOCABULARY LEARNING MODAL -->
+    <!-- Vocabulary Learning Modal -->
     <VocabularyModal 
       v-if="vocabularyModal.isVisible"
       :vocabulary-data="vocabularyModal"
@@ -89,6 +89,8 @@
       <ProgressBar
         :progress-percentage="progressPercentage"
         :stars="stars"
+        :current-step="currentIndex"
+        :total-steps="steps.length"
       />
 
       <!-- Split Screen Content -->
@@ -98,12 +100,21 @@
         <ContentPanel
           :current-step="currentStep"
           :current-index="currentIndex"
+          :is-interactive-step="isInteractiveStep"
+          :current-exercise="getCurrentExercise()"
+          :current-quiz="getCurrentQuiz()"
+          :exercise-index="currentExerciseIndex"
+          :quiz-index="currentQuizIndex"
+          :total-exercises="getTotalExercises()"
+          :total-quizzes="getTotalQuizzes()"
           :show-explanation-help="showExplanationHelp"
           :explanation-question="explanationQuestion"
           :explanation-ai-response="explanationAIResponse"
           :is-loading-explanation="isLoadingExplanation"
+          :is-last-step="isLastStep"
           @toggle-explanation-help="toggleExplanationHelp"
-          @ask-explanation="(question) => askAboutExplanation(getStepContent(currentStep), lesson)"
+          @update:explanation-question="explanationQuestion = $event"
+          @ask-explanation="askAboutExplanation"
           @init-vocabulary="initializeVocabularyModal"
           @pronounce="pronounceWord"
           @next="goNext"
@@ -114,12 +125,12 @@
         <InteractivePanel
           v-if="isInteractiveStep"
           :current-step="currentStep"
-          :current-exercise="getCurrentExercise(currentStep)"
-          :current-quiz="getCurrentQuiz(currentStep)"
+          :current-exercise="getCurrentExercise()"
+          :current-quiz="getCurrentQuiz()"
           :exercise-index="currentExerciseIndex"
           :quiz-index="currentQuizIndex"
-          :total-exercises="getTotalExercises(currentStep)"
-          :total-quizzes="getTotalQuizzes(currentStep)"
+          :total-exercises="getTotalExercises()"
+          :total-quizzes="getTotalQuizzes()"
           :user-answer="userAnswer"
           :confirmation="confirmation"
           :answer-was-correct="answerWasCorrect"
@@ -134,8 +145,8 @@
           @answer-changed="userAnswer = $event"
           @fill-blank-updated="updateFillBlankAnswer"
           @submit="handleSubmitOrNext"
-          @next-exercise="goToNextExercise(currentStep, goNext)"
-          @next-quiz="goToNextQuiz(currentStep, goNext)"
+          @next-exercise="goToNextExercise"
+          @next-quiz="goToNextQuiz"
           @show-hint="showHint"
           @clear-hint="clearSmartHint"
         />
@@ -148,8 +159,9 @@
           :ai-chat-history="aiChatHistory"
           :ai-is-loading="aiIsLoading"
           :ai-usage="aiUsage"
-          @send-message="sendAIMessage(lesson, getUserProgress(), currentStep)"
-          @ask-ai="(question) => askAI(question, lesson, getUserProgress(), currentStep)"
+          @send-message="sendAIMessage"
+          @ask-ai="askAI"
+          @clear-chat="clearAIChat"
         />
 
         <!-- Non-interactive step placeholder -->
@@ -174,6 +186,7 @@
       :medal-label="medalLabel"
       :medal-icon="getMedalIcon()"
       :progress-insight="progressInsight"
+      :total-steps="steps.length"
       @return-to-catalogue="$router.push('/catalogue')"
       @share="shareResult"
       @homework="goToHomework"
@@ -198,8 +211,9 @@
       :floating-ai-input="floatingAIInput"
       :ai-is-loading="aiIsLoading"
       @close="closeFloatingAI"
-      @send-message="sendFloatingAIMessage(lesson, getUserProgress(), currentStep)"
-      @ask-ai="(question) => askAI(question, lesson, getUserProgress(), currentStep)"
+      @send-message="sendFloatingAIMessage"
+      @ask-ai="askAI"
+      @clear-chat="clearAIChat"
     />
 
     <!-- Confetti Animation -->
@@ -210,7 +224,7 @@
 <script>
 import { computed } from 'vue'
 
-// ✅ Import all our extracted composables
+// Import composables
 import { useVocabulary } from '@/composables/useVocabulary'
 import { useExercises } from '@/composables/useExercises'
 import { usePaymentValidation } from '@/composables/usePaymentValidation'
@@ -218,7 +232,7 @@ import { useSound } from '@/composables/useSound'
 import { useExplanation } from '@/composables/useExplanation'
 import { useLessonOrchestrator } from '@/composables/useLessonOrchestrator'
 
-// ✅ Import components (these would need to be created)
+// Import components
 import VocabularyModal from '@/components/lesson/VocabularyModal.vue'
 import LessonIntro from '@/components/lesson/LessonIntro.vue'
 import LessonHeader from '@/components/lesson/LessonHeader.vue'
@@ -244,7 +258,7 @@ export default {
   },
   
   setup() {
-    // ✅ Use all our composables
+    // Use all composables
     const lessonOrchestrator = useLessonOrchestrator()
     const vocabulary = useVocabulary()
     const exercises = useExercises()
@@ -252,11 +266,11 @@ export default {
     const sound = useSound()
     const explanation = useExplanation()
     
-    // ✅ Initialize services
+    // Initialize services
     sound.initializeSpeech()
     explanation.initializeAI()
     
-    // ✅ Additional computed properties that combine multiple composables
+    // Additional computed properties
     const getUserProgress = computed(() => ({
       currentStep: lessonOrchestrator.currentIndex.value,
       completedSteps: Array.from({length: lessonOrchestrator.currentIndex.value}, (_, i) => i),
@@ -264,14 +278,15 @@ export default {
       stars: lessonOrchestrator.stars.value,
       elapsedSeconds: lessonOrchestrator.elapsedSeconds.value
     }))
+
+    const isLastStep = computed(() => {
+      return lessonOrchestrator.currentIndex.value >= lessonOrchestrator.steps.value.length - 1
+    })
     
-    // ✅ Combined methods that use multiple composables
+    // Methods
     const handleSubmitOrNext = async () => {
       const currentExercise = exercises.getCurrentExercise(lessonOrchestrator.currentStep.value)
       const currentQuiz = exercises.getCurrentQuiz(lessonOrchestrator.currentStep.value)
-      
-      // Validation logic would go here, using exercise validation methods
-      // This would be extracted to a separate validation composable
       
       const isCorrect = validateUserAnswer(
         exercises.userAnswer.value,
@@ -290,7 +305,6 @@ export default {
         lessonOrchestrator.earnedPoints.value = Math.max(0, lessonOrchestrator.earnedPoints.value - 2)
         exercises.confirmation.value = '❌ Неверно. Попробуйте еще раз.'
         
-        // Generate smart hint if needed
         if (lessonOrchestrator.mistakeCount.value >= 2) {
           await explanation.generateSmartHintForMistakes(
             currentExercise || currentQuiz,
@@ -304,11 +318,66 @@ export default {
     }
     
     const validateUserAnswer = (userAnswer, exercise, stepType) => {
-      // This would use the exercise validation logic
-      // For now, just a placeholder
-      return Math.random() > 0.3 // 70% success rate for demo
+      // Use your exercise validation logic here
+      return Math.random() > 0.3 // Placeholder
     }
-    
+
+    const getCurrentExercise = () => {
+      return exercises.getCurrentExercise(lessonOrchestrator.currentStep.value)
+    }
+
+    const getCurrentQuiz = () => {
+      return exercises.getCurrentQuiz(lessonOrchestrator.currentStep.value)
+    }
+
+    const getTotalExercises = () => {
+      return exercises.getTotalExercises(lessonOrchestrator.currentStep.value)
+    }
+
+    const getTotalQuizzes = () => {
+      return exercises.getTotalQuizzes(lessonOrchestrator.currentStep.value)
+    }
+
+    const goToNextExercise = () => {
+      exercises.goToNextExercise(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+    }
+
+    const goToNextQuiz = () => {
+      exercises.goToNextQuiz(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+    }
+
+    const askAboutExplanation = (question) => {
+      const explanationText = lessonOrchestrator.getStepContent(lessonOrchestrator.currentStep.value)
+      explanation.askAboutExplanation(explanationText, question, {
+        lessonId: lessonOrchestrator.lesson.value._id,
+        lessonName: lessonOrchestrator.lesson.value.lessonName
+      })
+    }
+
+    const sendAIMessage = (message) => {
+      explanation.sendAIMessage(message, lessonOrchestrator.lesson.value, getUserProgress.value, lessonOrchestrator.currentStep.value)
+    }
+
+    const sendFloatingAIMessage = (message) => {
+      explanation.sendFloatingAIMessage(message, lessonOrchestrator.lesson.value, getUserProgress.value, lessonOrchestrator.currentStep.value)
+    }
+
+    const askAI = (question) => {
+      explanation.askAI(question, lessonOrchestrator.lesson.value, getUserProgress.value, lessonOrchestrator.currentStep.value)
+    }
+
+    const clearAIChat = () => {
+      explanation.clearAIChat()
+    }
+
+    const toggleFloatingAI = () => {
+      explanation.toggleFloatingAI()
+    }
+
+    const closeFloatingAI = () => {
+      explanation.closeFloatingAI()
+    }
+
     const shareResult = () => {
       const message = `🎉 Я только что завершил урок "${lessonOrchestrator.getLocalized(lessonOrchestrator.lesson.value.lessonName)}"! Получил ${lessonOrchestrator.stars.value} звезд и ${lessonOrchestrator.earnedPoints.value} очков! 🚀`
       
@@ -340,41 +409,15 @@ export default {
     const goToHomework = () => {
       lessonOrchestrator.router.push(`/profile/homeworks/${lessonOrchestrator.lesson.value._id}`)
     }
-    
-    const getStepContent = (step) => {
-      if (!step || !step.data) return 'Контент недоступен'
-      
-      // For interactive steps, show only the question
-      if (['exercise', 'practice'].includes(step.type)) {
-        const currentExercise = exercises.getCurrentExercise(step)
-        if (currentExercise && currentExercise.question) {
-          return lessonOrchestrator.getLocalized(currentExercise.question)
-        }
-        return 'Упражнение загружается...'
-      }
-      
-      if (step.type === 'quiz') {
-        const currentQuiz = exercises.getCurrentQuiz(step)
-        if (currentQuiz && currentQuiz.question) {
-          return lessonOrchestrator.getLocalized(currentQuiz.question)
-        }
-        return 'Вопрос загружается...'
-      }
-      
-      // For non-interactive steps, show content
-      if (typeof step.data === 'string' && step.data.trim()) {
-        return step.data.trim()
-      }
-      
-      if (step.data.content) {
-        return lessonOrchestrator.getLocalized(step.data.content).trim()
-      }
-      
-      return `Контент для шага "${step.type}"`
+
+    const getMedalIcon = () => {
+      if (lessonOrchestrator.mistakeCount.value === 0) return '🥇'
+      if (lessonOrchestrator.mistakeCount.value <= 2) return '🥈'
+      return '🥉'
     }
     
     return {
-      // ✅ Expose everything from composables
+      // Expose everything from composables
       ...lessonOrchestrator,
       ...vocabulary,
       ...exercises,
@@ -382,92 +425,32 @@ export default {
       ...sound,
       ...explanation,
       
-      // ✅ Additional computed and methods
+      // Additional computed and methods
       getUserProgress,
+      isLastStep,
       handleSubmitOrNext,
+      validateUserAnswer,
+      getCurrentExercise,
+      getCurrentQuiz,
+      getTotalExercises,
+      getTotalQuizzes,
+      goToNextExercise,
+      goToNextQuiz,
+      askAboutExplanation,
+      sendAIMessage,
+      sendFloatingAIMessage,
+      askAI,
+      clearAIChat,
+      toggleFloatingAI,
+      closeFloatingAI,
       shareResult,
       goToHomework,
-      getStepContent,
-      validateUserAnswer
+      getMedalIcon
     }
   }
 }
 </script>
 
 <style scoped>
-/* ✅ Import the existing CSS file to maintain styling */
 @import "@/assets/css/LessonPage.css";
-
-/* ✅ Additional styles for new components can be added here */
-.split-content {
-  display: flex;
-  gap: 20px;
-  height: calc(100vh - 200px);
-}
-
-.content-panel,
-.interactive-panel {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.non-interactive-panel {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f8f9fa;
-  border-radius: 8px;
-  text-align: center;
-  color: #6c757d;
-}
-
-.panel-placeholder {
-  padding: 40px;
-}
-
-.placeholder-icon {
-  font-size: 3rem;
-  margin-bottom: 16px;
-}
-
-.floating-ai-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: #007bff;
-  color: white;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,123,255,0.3);
-  transition: all 0.3s ease;
-  z-index: 1000;
-}
-
-.floating-ai-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 16px rgba(0,123,255,0.4);
-}
-
-.floating-ai-btn.active {
-  background: #28a745;
-}
-
-.confetti-canvas {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 9999;
-}
 </style>

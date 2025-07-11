@@ -50,11 +50,12 @@
             <h4>🤖 Нужна помощь с пониманием?</h4>
             <div class="explanation-help-input">
               <input 
-                v-model="explanationQuestion" 
+                :value="explanationQuestion"
+                @input="updateExplanationQuestion"
                 placeholder="Задайте вопрос об этом объяснении..."
-                @keyup.enter="$emit('ask-explanation', explanationQuestion)"
+                @keyup.enter="askExplanation"
               />
-              <button @click="$emit('ask-explanation', explanationQuestion)" :disabled="!explanationQuestion?.trim()">
+              <button @click="askExplanation" :disabled="!explanationQuestion?.trim()">
                 Спросить AI
               </button>
             </div>
@@ -243,7 +244,8 @@
       'init-vocabulary',
       'pronounce',
       'next',
-      'previous'
+      'previous',
+      'update:explanation-question'
     ],
     methods: {
       getStepIcon(stepType) {
@@ -347,6 +349,16 @@
       formatContent(content) {
         if (!content) return 'Контент недоступен';
         return content.replace(/\n/g, '<br>');
+      },
+  
+      updateExplanationQuestion(event) {
+        this.$emit('update:explanation-question', event.target.value);
+      },
+  
+      askExplanation() {
+        if (this.explanationQuestion?.trim()) {
+          this.$emit('ask-explanation', this.explanationQuestion);
+        }
       },
   
       getLocalized(field) {
