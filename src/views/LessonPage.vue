@@ -125,32 +125,47 @@
         <div v-if="isInteractiveStep" class="interactive-panel-container">
           <!-- Interactive Panel (Exercises/Quizzes) -->
           <InteractivePanel
-            :current-step="currentStep"
-            :current-exercise="getCurrentExercise()"
-            :current-quiz="getCurrentQuiz()"
-            :exercise-index="currentExerciseIndex"
-            :quiz-index="currentQuizIndex"
-            :total-exercises="getTotalExercises()"
-            :total-quizzes="getTotalQuizzes()"
-            :user-answer="userAnswer"
-            :confirmation="confirmation"
-            :answer-was-correct="answerWasCorrect"
-            :current-hint="currentHint"
-            :smart-hint="smartHint"
-            :mistake-count="mistakeCount"
-            :fill-blank-answers="fillBlankAnswers"
-            :matching-pairs="matchingPairs"
-            :selected-matching-item="selectedMatchingItem"
-            :ordering-items="orderingItems"
-            :drag-drop-placements="dragDropPlacements"
-            @answer-changed="userAnswer = $event"
-            @fill-blank-updated="updateFillBlankAnswer"
-            @submit="handleSubmitOrNext"
-            @next-exercise="goToNextExercise"
-            @next-quiz="goToNextQuiz"
-            @show-hint="showHint"
-            @clear-hint="clearSmartHint"
-          />
+  :current-step="currentStep"
+  :current-exercise="getCurrentExercise()"
+  :current-quiz="getCurrentQuiz()"
+  :exercise-index="currentExerciseIndex"
+  :quiz-index="currentQuizIndex"
+  :total-exercises="getTotalExercises()"
+  :total-quizzes="getTotalQuizzes()"
+  :user-answer="userAnswer"
+  :confirmation="confirmation"
+  :answer-was-correct="answerWasCorrect"
+  :current-hint="currentHint"
+  :smart-hint="smartHint"
+  :mistake-count="mistakeCount"
+  :fill-blank-answers="fillBlankAnswers"
+  :matching-pairs="matchingPairs"
+  :selected-matching-item="selectedMatchingItem"
+  :ordering-items="orderingItems"
+  :drag-drop-placements="dragDropPlacements"
+  :available-drag-items="availableDragItems"
+  :drop-zones="dropZones"
+    :attempt-count="attemptCount"
+  :max-attempts="maxAttempts"
+  :is-on-second-chance="isOnSecondChance"
+  :show-correct-answer="showCorrectAnswer"
+  :correct-answer-text="correctAnswerText"
+  
+  @answer-changed="userAnswer = $event"
+  @fill-blank-updated="updateFillBlankAnswer"
+  @submit="handleSubmitOrNext"
+  @next-exercise="goToNextExercise"
+  @next-quiz="goToNextQuiz"
+  @show-hint="showHint"
+  @clear-hint="clearSmartHint"
+  @matching-item-selected="handleMatchingItemSelected"
+  @remove-matching-pair="handleRemoveMatchingPair"
+  @drag-item-start="handleDragItemStart"
+  @drag-over-zone="handleDragOverZone"
+  @drag-leave-zone="handleDragLeaveZone"
+  @drop-in-zone="handleDropInZone"
+  @remove-dropped-item="handleRemoveDroppedItem"
+/>
           
           <!-- AI Help Panel (shown below or alongside interactive content) -->
           <AIHelpPanel
@@ -223,8 +238,7 @@
 </template>
 
 <script>
-// Replace the entire script section in your LessonPage.vue with this:
-
+// Complete LessonPage.vue <script> section
 import { computed, ref } from 'vue'
 
 // Import composables
@@ -273,7 +287,14 @@ export default {
     sound.initializeSpeech?.()
     explanation.initializeAI?.()
 
-    // ✅ VALIDATION FUNCTIONS - INLINE (REPLACES THE PLACEHOLDER!)
+    // ✅ NEW: Second chance system state
+    const attemptCount = ref(0)
+    const maxAttempts = ref(2) // Allow 2 attempts per question
+    const showCorrectAnswer = ref(false)
+    const correctAnswerText = ref('')
+    const isOnSecondChance = ref(false)
+
+    // ✅ VALIDATION FUNCTIONS - INLINE
     
     const validateShortAnswer = (userAnswer, exercise) => {
       if (!userAnswer || typeof userAnswer !== 'string') {
@@ -724,13 +745,89 @@ export default {
       }
     }
 
-    // ✅ FIXED: Proper validation logic - REPLACES THE PLACEHOLDER!
+    // ✅ Reset attempts when moving to new exercise/quiz
+    const resetAttempts = () => {
+      attemptCount.value = 0
+      isOnSecondChance.value = false
+      showCorrectAnswer.value = false
+      correctAnswerText.value = ''
+      exercises.confirmation.value = ''
+    }
+
+    // ✅ Get formatted correct answer for display
+    const getCorrectAnswerDisplay = (exercise) => {
+      if (!exercise) return ''
+
+      const exerciseType = exercise.type || 'short-answer'
+      
+      switch (exerciseType) {
+        case 'multiple-choice':
+        case 'abc':
+          if (typeof exercise.correctAnswer === 'number' && exercise.options) {
+            const correctOption = exercise.options[exercise.correctAnswer]
+            return typeof correctOption === 'string' ? correctOption : (correctOption?.text || String(correctOption))
+          }
+          return String(exercise.correctAnswer || '')
+
+        case 'true-false':
+          if (typeof exercise.correctAnswer === 'boolean') {
+            return exercise.correctAnswer ? 'Правда' : 'Ложь'
+          }
+          if (typeof exercise.correctAnswer === 'number') {
+            return exercise.correctAnswer === 0 ? 'Правда' : 'Ложь'
+          }
+          return String(exercise.correctAnswer || '')
+
+        case 'fill-blank':
+          const correctAnswers = exercise.correctAnswers || exercise.answers || exercise.blanks || []
+          return Array.isArray(correctAnswers) ? correctAnswers.join(', ') : String(correctAnswers)
+
+        case 'matching':
+          if (exercise.pairs && Array.isArray(exercise.pairs)) {
+            return exercise.pairs.map((pair, index) => {
+              if (Array.isArray(pair)) {
+                return `${pair[0]} ↔ ${pair[1]}`
+              }
+              return `${pair.left || ''} ↔ ${pair.right || ''}`
+            }).join('; ')
+          }
+          return 'Правильные соответствия показаны выше'
+
+        case 'ordering':
+          if (exercise.items && Array.isArray(exercise.items)) {
+            return exercise.items.map((item, index) => 
+              `${index + 1}. ${typeof item === 'string' ? item : (item?.text || String(item))}`
+            ).join('; ')
+          }
+          return 'Правильный порядок показан выше'
+
+        case 'drag-drop':
+          if (exercise.dropZones && Array.isArray(exercise.dropZones)) {
+            return exercise.dropZones.map(zone => {
+              const items = zone.correctItems || zone.items || []
+              return `${zone.label}: ${items.join(', ')}`
+            }).join('; ')
+          }
+          return 'Правильное размещение показано выше'
+
+        default:
+          return String(exercise.correctAnswer || exercise.answer || '')
+      }
+    }
+
+    // ✅ ENHANCED: handleSubmitOrNext with second chance system
     const handleSubmitOrNext = async () => {
-      console.log('🎯 Submit/Next triggered')
+      console.log('🎯 Submit/Next triggered, attempt:', attemptCount.value + 1)
       
       const currentStep = lessonOrchestrator.currentStep.value
       if (!currentStep) {
         console.warn('❌ No current step available')
+        return
+      }
+
+      // If showing correct answer, move to next step
+      if (showCorrectAnswer.value) {
+        moveToNextStep()
         return
       }
 
@@ -749,7 +846,9 @@ export default {
             userAnswer: exercises.userAnswer.value,
             fillBlanks: exercises.fillBlankAnswers.value,
             matching: exercises.matchingPairs.value,
-            dragDrop: exercises.dragDropPlacements
+            dragDrop: exercises.dragDropPlacements,
+            attempt: attemptCount.value + 1,
+            maxAttempts: maxAttempts.value
           })
 
           // Use the proper validation function based on exercise type
@@ -783,45 +882,79 @@ export default {
             type: exerciseOrQuiz.type,
             question: exerciseOrQuiz.question,
             correctAnswer: exerciseOrQuiz.correctAnswer,
-            userAnswer: exercises.userAnswer.value
+            userAnswer: exercises.userAnswer.value,
+            attempt: attemptCount.value + 1,
+            maxAttempts: maxAttempts.value
           })
           
           isCorrect = validateQuizAnswer(exercises.userAnswer.value, exerciseOrQuiz)
         }
       }
 
-      // Process the result
+      // Increment attempt count
+      attemptCount.value++
+
+      // Process the result based on correctness and attempt number
       if (isCorrect) {
+        // ✅ CORRECT ANSWER
         exercises.answerWasCorrect.value = true
         exercises.confirmation.value = getRandomSuccessMessage()
         lessonOrchestrator.stars.value++
         lessonOrchestrator.earnedPoints.value += 10
         
+        // Bonus points for getting it right on first try
+        if (attemptCount.value === 1) {
+          lessonOrchestrator.earnedPoints.value += 5
+          exercises.confirmation.value += ' 🌟 Бонус за первую попытку!'
+        }
+        
         // Play success sound
         sound.playSuccessSound?.()
         
-        console.log('✅ Answer correct!')
+        console.log('✅ Answer correct on attempt', attemptCount.value)
+        
       } else {
-        lessonOrchestrator.mistakeCount.value++
+        // ❌ INCORRECT ANSWER
         exercises.answerWasCorrect.value = false
-        lessonOrchestrator.earnedPoints.value = Math.max(0, lessonOrchestrator.earnedPoints.value - 2)
-        exercises.confirmation.value = getRandomErrorMessage(exerciseOrQuiz)
         
-        // Play error sound
-        sound.playErrorSound?.()
-        
-        console.log('❌ Answer incorrect!')
-        
-        // Generate smart hint after 2+ mistakes
-        if (lessonOrchestrator.mistakeCount.value >= 2) {
-          await explanation.generateSmartHintForMistakes?.(
-            exerciseOrQuiz,
-            lessonOrchestrator.mistakeCount.value,
-            { 
-              lessonId: lessonOrchestrator.lesson.value._id,
-              userAnswer: exercises.userAnswer.value || exercises.fillBlankAnswers.value || exercises.matchingPairs.value
-            }
-          )
+        if (attemptCount.value < maxAttempts.value) {
+          // 🔄 FIRST ATTEMPT FAILED - Give second chance
+          isOnSecondChance.value = true
+          exercises.confirmation.value = getSecondChanceMessage(exerciseOrQuiz)
+          
+          // Play gentle error sound
+          sound.playErrorSound?.()
+          
+          console.log('❌ Answer incorrect on first attempt - giving second chance')
+          
+          // Don't count as mistake yet, don't move on
+          
+        } else {
+          // 💥 SECOND ATTEMPT FAILED - Show correct answer and move on
+          lessonOrchestrator.mistakeCount.value++
+          lessonOrchestrator.earnedPoints.value = Math.max(0, lessonOrchestrator.earnedPoints.value - 2)
+          
+          showCorrectAnswer.value = true
+          correctAnswerText.value = getCorrectAnswerDisplay(exerciseOrQuiz)
+          exercises.confirmation.value = getFinalFailureMessage(exerciseOrQuiz, correctAnswerText.value)
+          
+          // Play failure sound
+          sound.playErrorSound?.()
+          
+          console.log('❌ Answer incorrect on second attempt - showing correct answer')
+          
+          // Generate smart hint for persistent mistakes
+          if (lessonOrchestrator.mistakeCount.value >= 2) {
+            await explanation.generateSmartHintForMistakes?.(
+              exerciseOrQuiz,
+              lessonOrchestrator.mistakeCount.value,
+              { 
+                lessonId: lessonOrchestrator.lesson.value._id,
+                userAnswer: exercises.userAnswer.value || exercises.fillBlankAnswers.value || exercises.matchingPairs.value,
+                correctAnswer: correctAnswerText.value
+              }
+            )
+          }
         }
       }
       
@@ -829,7 +962,74 @@ export default {
       await lessonOrchestrator.saveProgress()
     }
 
-    // Helper functions for better UX
+    // ✅ Move to next step and reset
+    const moveToNextStep = () => {
+      resetAttempts()
+      
+      // Handle exercise/quiz navigation
+      if (exercises.isLastExercise?.(lessonOrchestrator.currentStep.value) || 
+          exercises.isLastQuiz?.(lessonOrchestrator.currentStep.value)) {
+        lessonOrchestrator.goNext()
+      } else {
+        // Move to next exercise/quiz within the same step
+        if (lessonOrchestrator.currentStep.value.type === 'exercise' || 
+            lessonOrchestrator.currentStep.value.type === 'practice') {
+          exercises.goToNextExercise(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+        } else if (lessonOrchestrator.currentStep.value.type === 'quiz') {
+          exercises.goToNextQuiz(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+        }
+      }
+    }
+
+    // ✅ Enhanced messaging functions
+    const getSecondChanceMessage = (exercise) => {
+      const messages = [
+        '🤔 Не совсем правильно. У вас есть ещё одна попытка!',
+        '💭 Подумайте ещё немного. Попробуйте снова!',
+        '🎯 Почти попали! Ещё одна попытка!',
+        '🔍 Внимательнее! У вас есть вторая попытка!',
+        '📚 Перечитайте материал и попробуйте ещё раз!',
+        '⚡ Не сдавайтесь! Попробуйте другой вариант!'
+      ]
+      
+      let message = messages[Math.floor(Math.random() * messages.length)]
+      
+      // Add type-specific hints
+      if (exercise) {
+        switch (exercise.type) {
+          case 'fill-blank':
+            message += ' Проверьте правописание и попробуйте синонимы.'
+            break
+          case 'matching':
+            message += ' Подумайте о логических связях.'
+            break
+          case 'multiple-choice':
+            message += ' Внимательно прочитайте все варианты.'
+            break
+          case 'drag-drop':
+            message += ' Попробуйте другое размещение элементов.'
+            break
+          case 'true-false':
+            message += ' Подумайте о правильности утверждения.'
+            break
+        }
+      }
+      
+      return message
+    }
+
+    const getFinalFailureMessage = (exercise, correctAnswer) => {
+      const messages = [
+        '📚 Не беспокойтесь! Правильный ответ:',
+        '💡 Вот правильный ответ:',
+        '🎯 Правильный ответ:',
+        '✅ Запомните правильный ответ:'
+      ]
+      
+      const message = messages[Math.floor(Math.random() * messages.length)]
+      return `${message} ${correctAnswer}`
+    }
+
     const getRandomSuccessMessage = () => {
       const messages = [
         '✅ Отлично! Правильный ответ!',
@@ -840,39 +1040,6 @@ export default {
         '🏆 Превосходно! Идём дальше!'
       ]
       return messages[Math.floor(Math.random() * messages.length)]
-    }
-
-    const getRandomErrorMessage = (exercise) => {
-      const messages = [
-        '❌ Не совсем правильно. Попробуйте ещё раз!',
-        '🤔 Подумайте ещё немного...',
-        '💭 Близко, но не то. Попробуйте снова!',
-        '🎯 Почти попали! Ещё одна попытка!',
-        '📚 Перечитайте материал и попробуйте снова',
-        '🔍 Внимательнее! У вас получится!'
-      ]
-      
-      let message = messages[Math.floor(Math.random() * messages.length)]
-      
-      // Add type-specific hints
-      if (exercise) {
-        switch (exercise.type) {
-          case 'fill-blank':
-            message += ' Проверьте правописание.'
-            break
-          case 'matching':
-            message += ' Проверьте соответствия.'
-            break
-          case 'multiple-choice':
-            message += ' Внимательно прочитайте варианты.'
-            break
-          case 'drag-drop':
-            message += ' Проверьте размещение элементов.'
-            break
-        }
-      }
-      
-      return message
     }
 
     // Additional computed properties
@@ -887,6 +1054,28 @@ export default {
     const isLastStep = computed(() => {
       return lessonOrchestrator.currentIndex.value >= lessonOrchestrator.steps.value.length - 1
     })
+
+    // ✅ Enhanced exercise navigation with reset
+    const goToNextExercise = () => {
+      resetAttempts()
+      exercises.goToNextExercise(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+    }
+
+    const goToNextQuiz = () => {
+      resetAttempts()
+      exercises.goToNextQuiz(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+    }
+
+    // ✅ Override existing step navigation to reset attempts
+    const goNext = () => {
+      resetAttempts()
+      lessonOrchestrator.goNext()
+    }
+
+    const goPrevious = () => {
+      resetAttempts()
+      lessonOrchestrator.goPrevious()
+    }
 
     // Exercise methods
     const getCurrentExercise = () => {
@@ -905,12 +1094,75 @@ export default {
       return exercises.getTotalQuizzes(lessonOrchestrator.currentStep.value)
     }
 
-    const goToNextExercise = () => {
-      exercises.goToNextExercise(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+    // ✅ Enhanced event handlers for matching and drag-drop
+    const handleMatchingItemSelected = (selection) => {
+      exercises.selectedMatchingItem.value = selection
+      console.log('🔗 Matching item selected:', selection)
     }
 
-    const goToNextQuiz = () => {
-      exercises.goToNextQuiz(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+    const handleRemoveMatchingPair = (pairIndex) => {
+      const updatedPairs = exercises.matchingPairs.value.filter((_, index) => index !== pairIndex)
+      exercises.matchingPairs.value = updatedPairs
+      console.log('🗑️ Matching pair removed:', pairIndex)
+    }
+
+    const handleDragItemStart = (item) => {
+      exercises.draggedDragItem.value = item
+      console.log('🎯 Drag started:', item)
+    }
+
+    const handleDragOverZone = (zoneId) => {
+      exercises.dropOverZone.value = zoneId
+    }
+
+    const handleDragLeaveZone = () => {
+      exercises.dropOverZone.value = null
+    }
+
+    const handleDropInZone = ({ zoneId, item }) => {
+      // Update the drag-drop placements
+      const updatedPlacements = { ...exercises.dragDropPlacements }
+      
+      if (!updatedPlacements[zoneId]) {
+        updatedPlacements[zoneId] = []
+      }
+      
+      // Remove item from other zones
+      Object.keys(updatedPlacements).forEach(otherZoneId => {
+        if (otherZoneId !== zoneId) {
+          updatedPlacements[otherZoneId] = updatedPlacements[otherZoneId].filter(placedItem => {
+            const placedText = typeof placedItem === 'string' ? placedItem : (placedItem?.text || String(placedItem))
+            const itemText = typeof item === 'string' ? item : (item?.text || String(item))
+            return placedText !== itemText
+          })
+        }
+      })
+      
+      // Add to target zone if not already there
+      const itemText = typeof item === 'string' ? item : (item?.text || String(item))
+      const isAlreadyThere = updatedPlacements[zoneId].some(placedItem => {
+        const placedText = typeof placedItem === 'string' ? placedItem : (placedItem?.text || String(placedItem))
+        return placedText === itemText
+      })
+      
+      if (!isAlreadyThere) {
+        updatedPlacements[zoneId].push(item)
+      }
+      
+      // Update reactive state
+      Object.keys(exercises.dragDropPlacements).forEach(key => {
+        delete exercises.dragDropPlacements[key]
+      })
+      Object.assign(exercises.dragDropPlacements, updatedPlacements)
+      
+      console.log('📍 Item dropped:', { zoneId, item, updatedPlacements })
+    }
+
+    const handleRemoveDroppedItem = ({ zoneId, itemIndex }) => {
+      if (exercises.dragDropPlacements[zoneId] && exercises.dragDropPlacements[zoneId][itemIndex]) {
+        exercises.dragDropPlacements[zoneId].splice(itemIndex, 1)
+        console.log('🗑️ Dropped item removed:', { zoneId, itemIndex })
+      }
     }
 
     // Other utility methods
@@ -993,16 +1245,42 @@ export default {
       ...sound,
       ...explanation,
       
-      // Methods with proper validation
+      // ✅ NEW: Second chance system
+      attemptCount,
+      maxAttempts,
+      isOnSecondChance,
+      showCorrectAnswer,
+      correctAnswerText,
+      
+      // Methods with proper validation and second chance
       getUserProgress,
       isLastStep,
-      handleSubmitOrNext, // NOW USES REAL VALIDATION!
+      handleSubmitOrNext, // NOW USES REAL VALIDATION + SECOND CHANCE!
       getCurrentExercise,
       getCurrentQuiz,
       getTotalExercises,
       getTotalQuizzes,
-      goToNextExercise,
-      goToNextQuiz,
+      goToNextExercise,   // Now resets attempts
+      goToNextQuiz,       // Now resets attempts
+      goNext,             // Now resets attempts
+      goPrevious,         // Now resets attempts
+      resetAttempts,
+      moveToNextStep,
+      getCorrectAnswerDisplay,
+      getSecondChanceMessage,
+      getFinalFailureMessage,
+      getRandomSuccessMessage,
+      
+      // Enhanced event handlers
+      handleMatchingItemSelected,
+      handleRemoveMatchingPair,
+      handleDragItemStart,
+      handleDragOverZone,
+      handleDragLeaveZone,
+      handleDropInZone,
+      handleRemoveDroppedItem,
+      
+      // Other methods
       askAboutExplanation,
       sendAIMessage,
       sendFloatingAIMessage,
@@ -1012,9 +1290,7 @@ export default {
       closeFloatingAI,
       shareResult,
       goToHomework,
-      getMedalIcon,
-      getRandomSuccessMessage,
-      getRandomErrorMessage
+      getMedalIcon
     }
   }
 }
