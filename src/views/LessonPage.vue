@@ -238,7 +238,7 @@
 </template>
 
 <script>
-// Complete LessonPage.vue <script> section
+// Complete LessonPage.vue <script> section - FIXED VERSION
 import { computed, ref } from 'vue'
 
 // Import composables
@@ -287,14 +287,14 @@ export default {
     sound.initializeSpeech?.()
     explanation.initializeAI?.()
 
-    // ✅ NEW: Second chance system state
+    // ✅ Second chance system state
     const attemptCount = ref(0)
-    const maxAttempts = ref(2) // Allow 2 attempts per question
+    const maxAttempts = ref(2)
     const showCorrectAnswer = ref(false)
     const correctAnswerText = ref('')
     const isOnSecondChance = ref(false)
 
-    // ✅ VALIDATION FUNCTIONS - INLINE
+    // ✅ VALIDATION FUNCTIONS
     
     const validateShortAnswer = (userAnswer, exercise) => {
       if (!userAnswer || typeof userAnswer !== 'string') {
@@ -317,10 +317,10 @@ export default {
           return true
         }
         
-        // Fuzzy match for typos (allowing 1-2 character differences for longer answers)
+        // Fuzzy match for typos
         if (correctAnswerTrimmed.length > 3) {
           const similarity = calculateSimilarity(userAnswerTrimmed, correctAnswerTrimmed)
-          return similarity > 0.8 // 80% similarity threshold
+          return similarity > 0.8
         }
         
         return false
@@ -331,13 +331,11 @@ export default {
       const correctAnswer = exercise.correctAnswer
       console.log('🔍 MC Validation:', { userAnswer, correctAnswer, type: typeof correctAnswer, options: exercise.options })
 
-      // Handle index-based answers (0, 1, 2, etc.)
       if (typeof correctAnswer === 'number') {
         if (typeof userAnswer === 'number') {
           return userAnswer === correctAnswer
         }
         
-        // Convert option text to index
         if (exercise.options && Array.isArray(exercise.options)) {
           const userIndex = exercise.options.findIndex(option => {
             const optionText = typeof option === 'string' ? option : (option?.text || String(option))
@@ -347,13 +345,11 @@ export default {
         }
       }
 
-      // Handle text-based answers
       if (typeof correctAnswer === 'string') {
         if (typeof userAnswer === 'string') {
           return userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase()
         }
         
-        // Convert index to option text
         if (typeof userAnswer === 'number' && exercise.options) {
           const selectedOption = exercise.options[userAnswer]
           const selectedText = typeof selectedOption === 'string' ? selectedOption : (selectedOption?.text || String(selectedOption))
@@ -368,7 +364,6 @@ export default {
       const correctAnswer = exercise.correctAnswer
       console.log('🔍 T/F Validation:', { userAnswer, correctAnswer })
 
-      // Handle boolean correctAnswer
       if (typeof correctAnswer === 'boolean') {
         if (typeof userAnswer === 'boolean') {
           return userAnswer === correctAnswer
@@ -378,13 +373,11 @@ export default {
           return userBool === correctAnswer
         }
         if (typeof userAnswer === 'number') {
-          // 0 = true, 1 = false (typical quiz format)
           const userBool = userAnswer === 0
           return userBool === correctAnswer
         }
       }
 
-      // Handle numeric correctAnswer (0 or 1)
       if (typeof correctAnswer === 'number') {
         if (typeof userAnswer === 'number') {
           return userAnswer === correctAnswer
@@ -399,7 +392,6 @@ export default {
         }
       }
 
-      // Handle string correctAnswer
       if (typeof correctAnswer === 'string') {
         if (typeof userAnswer === 'string') {
           return userAnswer.toLowerCase() === correctAnswer.toLowerCase()
@@ -429,14 +421,12 @@ export default {
         correctLength: correctAnswers.length
       })
 
-      // Check if we have the right number of answers
       const requiredAnswers = correctAnswers.length
       if (userAnswers.length < requiredAnswers) {
         console.warn('❌ Not enough user answers provided')
         return false
       }
 
-      // Validate each blank
       let correctCount = 0
       for (let i = 0; i < requiredAnswers; i++) {
         const userAnswer = String(userAnswers[i] || '').trim().toLowerCase()
@@ -449,7 +439,6 @@ export default {
 
         let isCorrect = false
 
-        // Handle multiple possible answers
         if (Array.isArray(correctAnswer)) {
           isCorrect = correctAnswer.some(answer => 
             String(answer).trim().toLowerCase() === userAnswer
@@ -458,7 +447,6 @@ export default {
           const correctText = String(correctAnswer).trim().toLowerCase()
           isCorrect = userAnswer === correctText
           
-          // Allow fuzzy matching for longer answers
           if (!isCorrect && correctText.length > 3) {
             const similarity = calculateSimilarity(userAnswer, correctText)
             isCorrect = similarity > 0.85
@@ -497,19 +485,14 @@ export default {
         correctLength: correctPairs.length
       })
 
-      // Check if user has made enough pairs
       if (userPairs.length < correctPairs.length) {
         console.warn('❌ Not enough pairs matched')
         return false
       }
 
-      // For matching exercises, leftIndex should equal rightIndex for correct pairs
-      // This means the first left item matches with the first right item, etc.
       let correctCount = 0
       for (const userPair of userPairs) {
         const { leftIndex, rightIndex } = userPair
-
-        // Check if this is a correct pairing
         const isCorrect = leftIndex === rightIndex
 
         if (isCorrect) {
@@ -544,13 +527,11 @@ export default {
         correctLength: correctItems.length
       })
 
-      // Check if we have the right number of items
       if (userItems.length !== correctItems.length) {
         console.warn('❌ Item count mismatch')
         return false
       }
 
-      // Check if items are in correct order
       let correctCount = 0
       for (let i = 0; i < correctItems.length; i++) {
         const userItem = userItems[i]
@@ -607,7 +588,6 @@ export default {
           correctCount: correctItems.length
         })
 
-        // Check each correct item is in the zone
         for (const correctItem of correctItems) {
           const isItemPresent = userItems.some(userItem => {
             const userText = typeof userItem === 'string' ? userItem : (userItem?.text || String(userItem))
@@ -684,7 +664,6 @@ export default {
       return matrix[str2.length][str1.length]
     }
 
-    // Main validation function that routes to specific validators
     const validateUserAnswer = (userAnswer, exercise, stepType) => {
       if (!exercise) {
         console.warn('❌ No exercise provided for validation')
@@ -745,13 +724,16 @@ export default {
       }
     }
 
-    // ✅ Reset attempts when moving to new exercise/quiz
+    // ✅ FIXED: Reset attempts function
     const resetAttempts = () => {
       attemptCount.value = 0
       isOnSecondChance.value = false
       showCorrectAnswer.value = false
       correctAnswerText.value = ''
       exercises.confirmation.value = ''
+      exercises.answerWasCorrect.value = false
+      
+      console.log('🔄 Reset attempts for new exercise/quiz')
     }
 
     // ✅ Get formatted correct answer for display
@@ -815,7 +797,7 @@ export default {
       }
     }
 
-    // ✅ ENHANCED: handleSubmitOrNext with second chance system
+    // ✅ FIXED: Main submission handler with proper second chance logic
     const handleSubmitOrNext = async () => {
       console.log('🎯 Submit/Next triggered, attempt:', attemptCount.value + 1)
       
@@ -851,7 +833,6 @@ export default {
             maxAttempts: maxAttempts.value
           })
 
-          // Use the proper validation function based on exercise type
           switch (exerciseOrQuiz.type) {
             case 'fill-blank':
               isCorrect = validateFillBlank(exercises.fillBlankAnswers.value, exerciseOrQuiz)
@@ -894,24 +875,29 @@ export default {
       // Increment attempt count
       attemptCount.value++
 
-      // Process the result based on correctness and attempt number
+      // ✅ FIXED: Process the result based on correctness and attempt number
       if (isCorrect) {
-        // ✅ CORRECT ANSWER
+        // ✅ CORRECT ANSWER (works for both first and second attempts)
         exercises.answerWasCorrect.value = true
-        exercises.confirmation.value = getRandomSuccessMessage()
         lessonOrchestrator.stars.value++
         lessonOrchestrator.earnedPoints.value += 10
         
         // Bonus points for getting it right on first try
         if (attemptCount.value === 1) {
           lessonOrchestrator.earnedPoints.value += 5
-          exercises.confirmation.value += ' 🌟 Бонус за первую попытку!'
+          exercises.confirmation.value = getRandomSuccessMessage() + ' 🌟 Бонус за первую попытку!'
+        } else {
+          // Success on second attempt
+          exercises.confirmation.value = getRandomSuccessMessage() + ' 💪 Отлично, со второй попытки!'
         }
         
         // Play success sound
         sound.playSuccessSound?.()
         
         console.log('✅ Answer correct on attempt', attemptCount.value)
+        
+        // Reset second chance indicators since we got it right
+        isOnSecondChance.value = false
         
       } else {
         // ❌ INCORRECT ANSWER
@@ -927,16 +913,20 @@ export default {
           
           console.log('❌ Answer incorrect on first attempt - giving second chance')
           
-          // Don't count as mistake yet, don't move on
+          // Don't count as mistake yet, don't move on, allow user to try again
+          return // ✅ CRITICAL: Return here to allow second attempt
           
         } else {
-          // 💥 SECOND ATTEMPT FAILED - Show correct answer and move on
+          // 💥 SECOND ATTEMPT ALSO FAILED - Show correct answer and move on
           lessonOrchestrator.mistakeCount.value++
           lessonOrchestrator.earnedPoints.value = Math.max(0, lessonOrchestrator.earnedPoints.value - 2)
           
           showCorrectAnswer.value = true
           correctAnswerText.value = getCorrectAnswerDisplay(exerciseOrQuiz)
           exercises.confirmation.value = getFinalFailureMessage(exerciseOrQuiz, correctAnswerText.value)
+          
+          // Reset second chance state
+          isOnSecondChance.value = false
           
           // Play failure sound
           sound.playErrorSound?.()
@@ -966,12 +956,10 @@ export default {
     const moveToNextStep = () => {
       resetAttempts()
       
-      // Handle exercise/quiz navigation
       if (exercises.isLastExercise?.(lessonOrchestrator.currentStep.value) || 
           exercises.isLastQuiz?.(lessonOrchestrator.currentStep.value)) {
         lessonOrchestrator.goNext()
       } else {
-        // Move to next exercise/quiz within the same step
         if (lessonOrchestrator.currentStep.value.type === 'exercise' || 
             lessonOrchestrator.currentStep.value.type === 'practice') {
           exercises.goToNextExercise(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
@@ -994,7 +982,6 @@ export default {
       
       let message = messages[Math.floor(Math.random() * messages.length)]
       
-      // Add type-specific hints
       if (exercise) {
         switch (exercise.type) {
           case 'fill-blank':
@@ -1165,6 +1152,18 @@ export default {
       }
     }
 
+    const updateFillBlankAnswer = (index, event) => {
+      exercises.updateFillBlankAnswer?.(index, event)
+    }
+
+    const showHint = () => {
+      exercises.currentHint.value = "Внимательно прочитайте вопрос и подумайте о правильном ответе."
+    }
+
+    const clearSmartHint = () => {
+      exercises.smartHint.value = ''
+    }
+
     // Other utility methods
     const askAboutExplanation = (question) => {
       const explanationText = lessonOrchestrator.formatContent?.(lessonOrchestrator.currentStep.value?.data?.content) || ''
@@ -1235,6 +1234,14 @@ export default {
       if (lessonOrchestrator.mistakeCount.value <= 2) return '🥈'
       return '🥉'
     }
+
+    const initializeVocabularyModal = () => {
+      vocabulary.initializeVocabularyModal?.()
+    }
+
+    const pronounceWord = (word) => {
+      sound.pronounceWord?.(word)
+    }
     
     return {
       // Expose everything from composables
@@ -1245,7 +1252,7 @@ export default {
       ...sound,
       ...explanation,
       
-      // ✅ NEW: Second chance system
+      // ✅ Second chance system
       attemptCount,
       maxAttempts,
       isOnSecondChance,
@@ -1255,15 +1262,15 @@ export default {
       // Methods with proper validation and second chance
       getUserProgress,
       isLastStep,
-      handleSubmitOrNext, // NOW USES REAL VALIDATION + SECOND CHANCE!
+      handleSubmitOrNext,
       getCurrentExercise,
       getCurrentQuiz,
       getTotalExercises,
       getTotalQuizzes,
-      goToNextExercise,   // Now resets attempts
-      goToNextQuiz,       // Now resets attempts
-      goNext,             // Now resets attempts
-      goPrevious,         // Now resets attempts
+      goToNextExercise,
+      goToNextQuiz,
+      goNext,
+      goPrevious,
       resetAttempts,
       moveToNextStep,
       getCorrectAnswerDisplay,
@@ -1279,6 +1286,9 @@ export default {
       handleDragLeaveZone,
       handleDropInZone,
       handleRemoveDroppedItem,
+      updateFillBlankAnswer,
+      showHint,
+      clearSmartHint,
       
       // Other methods
       askAboutExplanation,
@@ -1290,7 +1300,9 @@ export default {
       closeFloatingAI,
       shareResult,
       goToHomework,
-      getMedalIcon
+      getMedalIcon,
+      initializeVocabularyModal,
+      pronounceWord
     }
   }
 }
