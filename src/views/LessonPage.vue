@@ -223,7 +223,9 @@
 </template>
 
 <script>
-import { computed } from 'vue'
+// Replace the entire script section in your LessonPage.vue with this:
+
+import { computed, ref } from 'vue'
 
 // Import composables
 import { useVocabulary } from '@/composables/useVocabulary'
@@ -268,9 +270,611 @@ export default {
     const explanation = useExplanation()
     
     // Initialize services
-    sound.initializeSpeech()
-    explanation.initializeAI()
+    sound.initializeSpeech?.()
+    explanation.initializeAI?.()
+
+    // ✅ VALIDATION FUNCTIONS - INLINE (REPLACES THE PLACEHOLDER!)
     
+    const validateShortAnswer = (userAnswer, exercise) => {
+      if (!userAnswer || typeof userAnswer !== 'string') {
+        return false
+      }
+
+      const correctAnswers = getCorrectAnswersArray(exercise)
+      const userAnswerTrimmed = userAnswer.trim().toLowerCase()
+
+      console.log('🔍 Short answer validation:', {
+        userAnswer: userAnswerTrimmed,
+        correctAnswers
+      })
+
+      return correctAnswers.some(answer => {
+        const correctAnswerTrimmed = String(answer).trim().toLowerCase()
+        
+        // Exact match
+        if (userAnswerTrimmed === correctAnswerTrimmed) {
+          return true
+        }
+        
+        // Fuzzy match for typos (allowing 1-2 character differences for longer answers)
+        if (correctAnswerTrimmed.length > 3) {
+          const similarity = calculateSimilarity(userAnswerTrimmed, correctAnswerTrimmed)
+          return similarity > 0.8 // 80% similarity threshold
+        }
+        
+        return false
+      })
+    }
+
+    const validateMultipleChoice = (userAnswer, exercise) => {
+      const correctAnswer = exercise.correctAnswer
+      console.log('🔍 MC Validation:', { userAnswer, correctAnswer, type: typeof correctAnswer, options: exercise.options })
+
+      // Handle index-based answers (0, 1, 2, etc.)
+      if (typeof correctAnswer === 'number') {
+        if (typeof userAnswer === 'number') {
+          return userAnswer === correctAnswer
+        }
+        
+        // Convert option text to index
+        if (exercise.options && Array.isArray(exercise.options)) {
+          const userIndex = exercise.options.findIndex(option => {
+            const optionText = typeof option === 'string' ? option : (option?.text || String(option))
+            return optionText === userAnswer
+          })
+          return userIndex === correctAnswer
+        }
+      }
+
+      // Handle text-based answers
+      if (typeof correctAnswer === 'string') {
+        if (typeof userAnswer === 'string') {
+          return userAnswer.trim().toLowerCase() === correctAnswer.trim().toLowerCase()
+        }
+        
+        // Convert index to option text
+        if (typeof userAnswer === 'number' && exercise.options) {
+          const selectedOption = exercise.options[userAnswer]
+          const selectedText = typeof selectedOption === 'string' ? selectedOption : (selectedOption?.text || String(selectedOption))
+          return selectedText.trim().toLowerCase() === correctAnswer.trim().toLowerCase()
+        }
+      }
+
+      return false
+    }
+
+    const validateTrueFalse = (userAnswer, exercise) => {
+      const correctAnswer = exercise.correctAnswer
+      console.log('🔍 T/F Validation:', { userAnswer, correctAnswer })
+
+      // Handle boolean correctAnswer
+      if (typeof correctAnswer === 'boolean') {
+        if (typeof userAnswer === 'boolean') {
+          return userAnswer === correctAnswer
+        }
+        if (typeof userAnswer === 'string') {
+          const userBool = userAnswer.toLowerCase() === 'true'
+          return userBool === correctAnswer
+        }
+        if (typeof userAnswer === 'number') {
+          // 0 = true, 1 = false (typical quiz format)
+          const userBool = userAnswer === 0
+          return userBool === correctAnswer
+        }
+      }
+
+      // Handle numeric correctAnswer (0 or 1)
+      if (typeof correctAnswer === 'number') {
+        if (typeof userAnswer === 'number') {
+          return userAnswer === correctAnswer
+        }
+        if (typeof userAnswer === 'string') {
+          if (userAnswer.toLowerCase() === 'true') {
+            return correctAnswer === 0
+          }
+          if (userAnswer.toLowerCase() === 'false') {
+            return correctAnswer === 1
+          }
+        }
+      }
+
+      // Handle string correctAnswer
+      if (typeof correctAnswer === 'string') {
+        if (typeof userAnswer === 'string') {
+          return userAnswer.toLowerCase() === correctAnswer.toLowerCase()
+        }
+      }
+
+      return false
+    }
+
+    const validateFillBlank = (userAnswers, exercise) => {
+      if (!Array.isArray(userAnswers)) {
+        console.warn('❌ User answers is not an array')
+        return false
+      }
+
+      const correctAnswers = exercise.correctAnswers || exercise.answers || exercise.blanks || []
+      
+      if (!Array.isArray(correctAnswers)) {
+        console.warn('❌ Correct answers is not an array')
+        return false
+      }
+
+      console.log('🔍 Fill-blank validation:', {
+        userAnswers,
+        correctAnswers,
+        userLength: userAnswers.length,
+        correctLength: correctAnswers.length
+      })
+
+      // Check if we have the right number of answers
+      const requiredAnswers = correctAnswers.length
+      if (userAnswers.length < requiredAnswers) {
+        console.warn('❌ Not enough user answers provided')
+        return false
+      }
+
+      // Validate each blank
+      let correctCount = 0
+      for (let i = 0; i < requiredAnswers; i++) {
+        const userAnswer = String(userAnswers[i] || '').trim().toLowerCase()
+        const correctAnswer = correctAnswers[i]
+
+        if (!userAnswer) {
+          console.log(`❌ Blank ${i + 1}: Empty answer`)
+          continue
+        }
+
+        let isCorrect = false
+
+        // Handle multiple possible answers
+        if (Array.isArray(correctAnswer)) {
+          isCorrect = correctAnswer.some(answer => 
+            String(answer).trim().toLowerCase() === userAnswer
+          )
+        } else {
+          const correctText = String(correctAnswer).trim().toLowerCase()
+          isCorrect = userAnswer === correctText
+          
+          // Allow fuzzy matching for longer answers
+          if (!isCorrect && correctText.length > 3) {
+            const similarity = calculateSimilarity(userAnswer, correctText)
+            isCorrect = similarity > 0.85
+          }
+        }
+
+        if (isCorrect) {
+          correctCount++
+          console.log(`✅ Blank ${i + 1}: Correct`)
+        } else {
+          console.log(`❌ Blank ${i + 1}: "${userAnswer}" vs "${correctAnswer}"`)
+        }
+      }
+
+      const success = correctCount === requiredAnswers
+      console.log(`🎯 Fill-blank result: ${correctCount}/${requiredAnswers} correct = ${success}`)
+      return success
+    }
+
+    const validateMatching = (userPairs, exercise) => {
+      if (!Array.isArray(userPairs) || userPairs.length === 0) {
+        console.warn('❌ No matching pairs provided')
+        return false
+      }
+
+      const correctPairs = exercise.pairs || []
+      if (!Array.isArray(correctPairs) || correctPairs.length === 0) {
+        console.warn('❌ No correct pairs defined')
+        return false
+      }
+
+      console.log('🔍 Matching validation:', {
+        userPairs,
+        correctPairs,
+        userLength: userPairs.length,
+        correctLength: correctPairs.length
+      })
+
+      // Check if user has made enough pairs
+      if (userPairs.length < correctPairs.length) {
+        console.warn('❌ Not enough pairs matched')
+        return false
+      }
+
+      // For matching exercises, leftIndex should equal rightIndex for correct pairs
+      // This means the first left item matches with the first right item, etc.
+      let correctCount = 0
+      for (const userPair of userPairs) {
+        const { leftIndex, rightIndex } = userPair
+
+        // Check if this is a correct pairing
+        const isCorrect = leftIndex === rightIndex
+
+        if (isCorrect) {
+          correctCount++
+          console.log(`✅ Matching pair ${leftIndex}-${rightIndex}: Correct`)
+        } else {
+          console.log(`❌ Matching pair ${leftIndex}-${rightIndex}: Incorrect`)
+        }
+      }
+
+      const success = correctCount === correctPairs.length
+      console.log(`🎯 Matching result: ${correctCount}/${correctPairs.length} correct = ${success}`)
+      return success
+    }
+
+    const validateOrdering = (userItems, exercise) => {
+      if (!Array.isArray(userItems) || userItems.length === 0) {
+        console.warn('❌ No ordering items provided')
+        return false
+      }
+
+      const correctItems = exercise.items || []
+      if (!Array.isArray(correctItems) || correctItems.length === 0) {
+        console.warn('❌ No correct order defined')
+        return false
+      }
+
+      console.log('🔍 Ordering validation:', {
+        userItems: userItems.map(item => item.text || item),
+        correctItems,
+        userLength: userItems.length,
+        correctLength: correctItems.length
+      })
+
+      // Check if we have the right number of items
+      if (userItems.length !== correctItems.length) {
+        console.warn('❌ Item count mismatch')
+        return false
+      }
+
+      // Check if items are in correct order
+      let correctCount = 0
+      for (let i = 0; i < correctItems.length; i++) {
+        const userItem = userItems[i]
+        const correctItem = correctItems[i]
+        
+        const userText = typeof userItem === 'string' ? userItem : (userItem?.text || String(userItem))
+        const correctText = typeof correctItem === 'string' ? correctItem : (correctItem?.text || String(correctItem))
+        
+        if (userText.trim().toLowerCase() === correctText.trim().toLowerCase()) {
+          correctCount++
+          console.log(`✅ Position ${i + 1}: "${userText}" correct`)
+        } else {
+          console.log(`❌ Position ${i + 1}: "${userText}" vs "${correctText}"`)
+        }
+      }
+
+      const success = correctCount === correctItems.length
+      console.log(`🎯 Ordering result: ${correctCount}/${correctItems.length} correct = ${success}`)
+      return success
+    }
+
+    const validateDragDrop = (userPlacements, exercise) => {
+      if (!userPlacements || typeof userPlacements !== 'object') {
+        console.warn('❌ No drag-drop placements provided')
+        return false
+      }
+
+      const dropZones = exercise.dropZones || []
+      if (!Array.isArray(dropZones) || dropZones.length === 0) {
+        console.warn('❌ No drop zones defined')
+        return false
+      }
+
+      console.log('🔍 Drag-drop validation:', {
+        userPlacements,
+        dropZones,
+        placementCount: Object.keys(userPlacements).length
+      })
+
+      let correctCount = 0
+      let totalRequired = 0
+
+      for (const zone of dropZones) {
+        const zoneId = zone.id || zone.label
+        const userItems = userPlacements[zoneId] || []
+        const correctItems = zone.correctItems || zone.items || []
+
+        totalRequired += correctItems.length
+
+        console.log(`🔍 Zone "${zoneId}":`, {
+          userItems: userItems.map(item => item.text || item),
+          correctItems,
+          userCount: userItems.length,
+          correctCount: correctItems.length
+        })
+
+        // Check each correct item is in the zone
+        for (const correctItem of correctItems) {
+          const isItemPresent = userItems.some(userItem => {
+            const userText = typeof userItem === 'string' ? userItem : (userItem?.text || String(userItem))
+            const correctText = typeof correctItem === 'string' ? correctItem : (correctItem?.text || String(correctItem))
+            return userText.trim().toLowerCase() === correctText.trim().toLowerCase()
+          })
+
+          if (isItemPresent) {
+            correctCount++
+            console.log(`✅ "${correctItem}" correctly placed in "${zoneId}"`)
+          } else {
+            console.log(`❌ "${correctItem}" missing from "${zoneId}"`)
+          }
+        }
+      }
+
+      const success = correctCount === totalRequired && totalRequired > 0
+      console.log(`🎯 Drag-drop result: ${correctCount}/${totalRequired} correct = ${success}`)
+      return success
+    }
+
+    // Helper functions
+    const getCorrectAnswersArray = (exercise) => {
+      const correctAnswer = exercise.correctAnswer || exercise.answer
+      
+      if (Array.isArray(correctAnswer)) {
+        return correctAnswer
+      }
+      
+      if (typeof correctAnswer === 'string' && correctAnswer.includes(',')) {
+        return correctAnswer.split(',').map(answer => answer.trim())
+      }
+      
+      return [correctAnswer].filter(Boolean)
+    }
+
+    const calculateSimilarity = (str1, str2) => {
+      if (str1 === str2) return 1
+      
+      const longer = str1.length > str2.length ? str1 : str2
+      const shorter = str1.length > str2.length ? str2 : str1
+      
+      if (longer.length === 0) return 1
+      
+      const distance = levenshteinDistance(longer, shorter)
+      return (longer.length - distance) / longer.length
+    }
+
+    const levenshteinDistance = (str1, str2) => {
+      const matrix = []
+      
+      for (let i = 0; i <= str2.length; i++) {
+        matrix[i] = [i]
+      }
+      
+      for (let j = 0; j <= str1.length; j++) {
+        matrix[0][j] = j
+      }
+      
+      for (let i = 1; i <= str2.length; i++) {
+        for (let j = 1; j <= str1.length; j++) {
+          if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1]
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1,
+              matrix[i][j - 1] + 1,
+              matrix[i - 1][j] + 1
+            )
+          }
+        }
+      }
+      
+      return matrix[str2.length][str1.length]
+    }
+
+    // Main validation function that routes to specific validators
+    const validateUserAnswer = (userAnswer, exercise, stepType) => {
+      if (!exercise) {
+        console.warn('❌ No exercise provided for validation')
+        return false
+      }
+
+      const exerciseType = exercise.type || 'short-answer'
+      console.log('🔍 Validating answer:', {
+        exerciseType,
+        userAnswer,
+        correctAnswer: exercise.correctAnswer || exercise.answer,
+        exercise: exercise
+      })
+
+      switch (exerciseType) {
+        case 'short-answer':
+          return validateShortAnswer(userAnswer, exercise)
+        
+        case 'multiple-choice':
+        case 'abc':
+          return validateMultipleChoice(userAnswer, exercise)
+        
+        case 'true-false':
+          return validateTrueFalse(userAnswer, exercise)
+        
+        default:
+          console.warn(`⚠️ Unknown exercise type: ${exerciseType}, trying short answer`)
+          return validateShortAnswer(userAnswer, exercise)
+      }
+    }
+
+    const validateQuizAnswer = (userAnswer, quiz) => {
+      if (!quiz) {
+        console.warn('❌ No quiz provided for validation')
+        return false
+      }
+
+      const quizType = quiz.type || 'multiple-choice'
+      console.log('🔍 Quiz validation:', {
+        quizType,
+        userAnswer,
+        correctAnswer: quiz.correctAnswer,
+        options: quiz.options
+      })
+
+      switch (quizType) {
+        case 'multiple-choice':
+          return validateMultipleChoice(userAnswer, quiz)
+        
+        case 'true-false':
+          return validateTrueFalse(userAnswer, quiz)
+        
+        case 'short-answer':
+          return validateShortAnswer(userAnswer, quiz)
+        
+        default:
+          return validateMultipleChoice(userAnswer, quiz)
+      }
+    }
+
+    // ✅ FIXED: Proper validation logic - REPLACES THE PLACEHOLDER!
+    const handleSubmitOrNext = async () => {
+      console.log('🎯 Submit/Next triggered')
+      
+      const currentStep = lessonOrchestrator.currentStep.value
+      if (!currentStep) {
+        console.warn('❌ No current step available')
+        return
+      }
+
+      let isCorrect = false
+      let exerciseOrQuiz = null
+
+      // Determine if this is an exercise or quiz step
+      if (currentStep.type === 'exercise' || currentStep.type === 'practice') {
+        exerciseOrQuiz = exercises.getCurrentExercise(currentStep)
+        
+        if (exerciseOrQuiz) {
+          console.log('🔍 Validating exercise:', {
+            type: exerciseOrQuiz.type,
+            question: exerciseOrQuiz.question,
+            correctAnswer: exerciseOrQuiz.correctAnswer,
+            userAnswer: exercises.userAnswer.value,
+            fillBlanks: exercises.fillBlankAnswers.value,
+            matching: exercises.matchingPairs.value,
+            dragDrop: exercises.dragDropPlacements
+          })
+
+          // Use the proper validation function based on exercise type
+          switch (exerciseOrQuiz.type) {
+            case 'fill-blank':
+              isCorrect = validateFillBlank(exercises.fillBlankAnswers.value, exerciseOrQuiz)
+              break
+            case 'matching':
+              isCorrect = validateMatching(exercises.matchingPairs.value, exerciseOrQuiz)
+              break
+            case 'ordering':
+              isCorrect = validateOrdering(exercises.orderingItems.value, exerciseOrQuiz)
+              break
+            case 'drag-drop':
+              isCorrect = validateDragDrop(exercises.dragDropPlacements, exerciseOrQuiz)
+              break
+            case 'multiple-choice':
+            case 'abc':
+            case 'true-false':
+            case 'short-answer':
+            default:
+              isCorrect = validateUserAnswer(exercises.userAnswer.value, exerciseOrQuiz, currentStep.type)
+              break
+          }
+        }
+      } else if (currentStep.type === 'quiz') {
+        exerciseOrQuiz = exercises.getCurrentQuiz(currentStep)
+        
+        if (exerciseOrQuiz) {
+          console.log('🔍 Validating quiz:', {
+            type: exerciseOrQuiz.type,
+            question: exerciseOrQuiz.question,
+            correctAnswer: exerciseOrQuiz.correctAnswer,
+            userAnswer: exercises.userAnswer.value
+          })
+          
+          isCorrect = validateQuizAnswer(exercises.userAnswer.value, exerciseOrQuiz)
+        }
+      }
+
+      // Process the result
+      if (isCorrect) {
+        exercises.answerWasCorrect.value = true
+        exercises.confirmation.value = getRandomSuccessMessage()
+        lessonOrchestrator.stars.value++
+        lessonOrchestrator.earnedPoints.value += 10
+        
+        // Play success sound
+        sound.playSuccessSound?.()
+        
+        console.log('✅ Answer correct!')
+      } else {
+        lessonOrchestrator.mistakeCount.value++
+        exercises.answerWasCorrect.value = false
+        lessonOrchestrator.earnedPoints.value = Math.max(0, lessonOrchestrator.earnedPoints.value - 2)
+        exercises.confirmation.value = getRandomErrorMessage(exerciseOrQuiz)
+        
+        // Play error sound
+        sound.playErrorSound?.()
+        
+        console.log('❌ Answer incorrect!')
+        
+        // Generate smart hint after 2+ mistakes
+        if (lessonOrchestrator.mistakeCount.value >= 2) {
+          await explanation.generateSmartHintForMistakes?.(
+            exerciseOrQuiz,
+            lessonOrchestrator.mistakeCount.value,
+            { 
+              lessonId: lessonOrchestrator.lesson.value._id,
+              userAnswer: exercises.userAnswer.value || exercises.fillBlankAnswers.value || exercises.matchingPairs.value
+            }
+          )
+        }
+      }
+      
+      // Save progress
+      await lessonOrchestrator.saveProgress()
+    }
+
+    // Helper functions for better UX
+    const getRandomSuccessMessage = () => {
+      const messages = [
+        '✅ Отлично! Правильный ответ!',
+        '🎉 Верно! Так держать!',
+        '⭐ Великолепно! Продолжайте!',
+        '🚀 Правильно! Вы молодец!',
+        '💯 Точно в цель! Отличная работа!',
+        '🏆 Превосходно! Идём дальше!'
+      ]
+      return messages[Math.floor(Math.random() * messages.length)]
+    }
+
+    const getRandomErrorMessage = (exercise) => {
+      const messages = [
+        '❌ Не совсем правильно. Попробуйте ещё раз!',
+        '🤔 Подумайте ещё немного...',
+        '💭 Близко, но не то. Попробуйте снова!',
+        '🎯 Почти попали! Ещё одна попытка!',
+        '📚 Перечитайте материал и попробуйте снова',
+        '🔍 Внимательнее! У вас получится!'
+      ]
+      
+      let message = messages[Math.floor(Math.random() * messages.length)]
+      
+      // Add type-specific hints
+      if (exercise) {
+        switch (exercise.type) {
+          case 'fill-blank':
+            message += ' Проверьте правописание.'
+            break
+          case 'matching':
+            message += ' Проверьте соответствия.'
+            break
+          case 'multiple-choice':
+            message += ' Внимательно прочитайте варианты.'
+            break
+          case 'drag-drop':
+            message += ' Проверьте размещение элементов.'
+            break
+        }
+      }
+      
+      return message
+    }
+
     // Additional computed properties
     const getUserProgress = computed(() => ({
       currentStep: lessonOrchestrator.currentIndex.value,
@@ -283,46 +887,8 @@ export default {
     const isLastStep = computed(() => {
       return lessonOrchestrator.currentIndex.value >= lessonOrchestrator.steps.value.length - 1
     })
-    
-    // Methods
-    const handleSubmitOrNext = async () => {
-      const currentExercise = exercises.getCurrentExercise(lessonOrchestrator.currentStep.value)
-      const currentQuiz = exercises.getCurrentQuiz(lessonOrchestrator.currentStep.value)
-      
-      const isCorrect = validateUserAnswer(
-        exercises.userAnswer.value,
-        currentExercise || currentQuiz,
-        lessonOrchestrator.currentStep.value?.type
-      )
-      
-      if (isCorrect) {
-        exercises.answerWasCorrect.value = true
-        exercises.confirmation.value = '✅ Верно! Отличная работа!'
-        lessonOrchestrator.stars.value++
-        lessonOrchestrator.earnedPoints.value += 10
-      } else {
-        lessonOrchestrator.mistakeCount.value++
-        exercises.answerWasCorrect.value = false
-        lessonOrchestrator.earnedPoints.value = Math.max(0, lessonOrchestrator.earnedPoints.value - 2)
-        exercises.confirmation.value = '❌ Неверно. Попробуйте еще раз.'
-        
-        if (lessonOrchestrator.mistakeCount.value >= 2) {
-          await explanation.generateSmartHintForMistakes(
-            currentExercise || currentQuiz,
-            lessonOrchestrator.mistakeCount.value,
-            { lessonId: lessonOrchestrator.lesson.value._id }
-          )
-        }
-      }
-      
-      await lessonOrchestrator.saveProgress()
-    }
-    
-    const validateUserAnswer = (userAnswer, exercise, stepType) => {
-      // Use your exercise validation logic here
-      return Math.random() > 0.3 // Placeholder
-    }
 
+    // Exercise methods
     const getCurrentExercise = () => {
       return exercises.getCurrentExercise(lessonOrchestrator.currentStep.value)
     }
@@ -347,40 +913,41 @@ export default {
       exercises.goToNextQuiz(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
     }
 
+    // Other utility methods
     const askAboutExplanation = (question) => {
-      const explanationText = lessonOrchestrator.getStepContent(lessonOrchestrator.currentStep.value)
-      explanation.askAboutExplanation(explanationText, question, {
+      const explanationText = lessonOrchestrator.formatContent?.(lessonOrchestrator.currentStep.value?.data?.content) || ''
+      explanation.askAboutExplanation?.(explanationText, question, {
         lessonId: lessonOrchestrator.lesson.value._id,
         lessonName: lessonOrchestrator.lesson.value.lessonName
       })
     }
 
     const sendAIMessage = (message) => {
-      explanation.sendAIMessage(message, lessonOrchestrator.lesson.value, getUserProgress.value, lessonOrchestrator.currentStep.value)
+      explanation.sendAIMessage?.(message, lessonOrchestrator.lesson.value, getUserProgress.value, lessonOrchestrator.currentStep.value)
     }
 
     const sendFloatingAIMessage = (message) => {
-      explanation.sendFloatingAIMessage(message, lessonOrchestrator.lesson.value, getUserProgress.value, lessonOrchestrator.currentStep.value)
+      explanation.sendFloatingAIMessage?.(message, lessonOrchestrator.lesson.value, getUserProgress.value, lessonOrchestrator.currentStep.value)
     }
 
     const askAI = (question) => {
-      explanation.askAI(question, lessonOrchestrator.lesson.value, getUserProgress.value, lessonOrchestrator.currentStep.value)
+      explanation.askAI?.(question, lessonOrchestrator.lesson.value, getUserProgress.value, lessonOrchestrator.currentStep.value)
     }
 
     const clearAIChat = () => {
-      explanation.clearAIChat()
+      explanation.clearAIChat?.()
     }
 
     const toggleFloatingAI = () => {
-      explanation.toggleFloatingAI()
+      explanation.toggleFloatingAI?.()
     }
 
     const closeFloatingAI = () => {
-      explanation.closeFloatingAI()
+      explanation.closeFloatingAI?.()
     }
 
     const shareResult = () => {
-      const message = `🎉 Я только что завершил урок "${lessonOrchestrator.getLocalized(lessonOrchestrator.lesson.value.lessonName)}"! Получил ${lessonOrchestrator.stars.value} звезд и ${lessonOrchestrator.earnedPoints.value} очков! 🚀`
+      const message = `🎉 Я только что завершил урок "${lessonOrchestrator.lesson.value.lessonName}"! Получил ${lessonOrchestrator.stars.value} звезд и ${lessonOrchestrator.earnedPoints.value} очков! 🚀`
       
       if (navigator.share) {
         navigator.share({
@@ -408,7 +975,7 @@ export default {
     }
     
     const goToHomework = () => {
-      lessonOrchestrator.router.push(`/profile/homeworks/${lessonOrchestrator.lesson.value._id}`)
+      lessonOrchestrator.router?.push(`/profile/homeworks/${lessonOrchestrator.lesson.value._id}`)
     }
 
     const getMedalIcon = () => {
@@ -426,11 +993,10 @@ export default {
       ...sound,
       ...explanation,
       
-      // Additional computed and methods
+      // Methods with proper validation
       getUserProgress,
       isLastStep,
-      handleSubmitOrNext,
-      validateUserAnswer,
+      handleSubmitOrNext, // NOW USES REAL VALIDATION!
       getCurrentExercise,
       getCurrentQuiz,
       getTotalExercises,
@@ -446,7 +1012,9 @@ export default {
       closeFloatingAI,
       shareResult,
       goToHomework,
-      getMedalIcon
+      getMedalIcon,
+      getRandomSuccessMessage,
+      getRandomErrorMessage
     }
   }
 }

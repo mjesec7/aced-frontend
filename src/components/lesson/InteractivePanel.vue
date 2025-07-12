@@ -354,7 +354,6 @@
       </div>
     </div>
   </template>
-  
   <script>
   import { ref, computed, watch, onMounted } from 'vue'
   
@@ -399,7 +398,8 @@
       'drag-item-start',
       'drag-over-zone',
       'drag-leave-zone',
-      'drop-in-zone'
+      'drop-in-zone',
+      'remove-dropped-item'
     ],
     setup(props, { emit }) {
       // Local reactive state
@@ -461,7 +461,7 @@
         return props.quizIndex >= props.totalQuizzes - 1
       })
       
-      // FIXED: Improved validation logic
+      // ✅ FIXED: Improved validation logic
       const canSubmitAnswer = computed(() => {
         // For multiple choice, true/false - must have selected an option
         if (exerciseType.value === 'multiple-choice' || 
@@ -470,10 +470,10 @@
           return localUserAnswer.value && String(localUserAnswer.value).trim()
         }
         
-        // For short answer - must have meaningful content (at least 2 characters)
+        // For short answer - must have meaningful content (at least 1 character)
         if (exerciseType.value === 'short-answer') {
           const answer = String(localUserAnswer.value || '').trim()
-          return answer.length >= 2
+          return answer.length >= 1
         }
         
         // For fill-in-the-blank - at least one blank must be filled with meaningful content
@@ -502,7 +502,7 @@
         return false
       })
   
-      // Methods
+      // ✅ METHODS
       const getBlankCount = () => {
         if (!props.currentExercise) return 0
         
@@ -559,57 +559,211 @@
         emit('answer-changed', value)
       }
   
+      // ✅ FIXED: Matching Methods
       const selectMatchingItem = (side, index) => {
-        emit('matching-item-selected', { side, index })
+        console.log('🔍 Selecting matching item:', { side, index })
+        
+        const currentSelection = props.selectedMatchingItem
+        
+        // If no previous selection, select this item
+        if (!currentSelection) {
+          emit('matching-item-selected', { side, index })
+          return
+        }
+        
+        // If clicking the same item, deselect
+        if (currentSelection.side === side && currentSelection.index === index) {
+          emit('matching-item-selected', null)
+          return
+        }
+        
+        // If selecting from the same side, change selection
+        if (currentSelection.side === side) {
+          emit('matching-item-selected', { side, index })
+          return
+        }
+        
+        // If selecting from opposite side, create a pair
+        const newPair = {
+          leftIndex: side === 'left' ? index : currentSelection.index,
+          rightIndex: side === 'right' ? index : currentSelection.index
+        }
+        
+        // Check if this pair already exists
+        const pairExists = props.matchingPairs.some(pair => 
+          pair.leftIndex === newPair.leftIndex && pair.rightIndex === newPair.rightIndex
+        )
+        
+        if (!pairExists) {
+          // ✅ CRITICAL: Emit the updated pairs array to parent
+          const updatedPairs = [...props.matchingPairs, newPair]
+          console.log('✅ Created new matching pair:', newPair, 'Total pairs:', updatedPairs)
+          emit('answer-changed', updatedPairs)
+        }
+        
+        // Clear selection
+        emit('matching-item-selected', null)
       }
-  
+      
       const isItemMatched = (side, index) => {
         if (side === 'left') {
           return props.matchingPairs.some(pair => pair.leftIndex === index)
         }
         return props.matchingPairs.some(pair => pair.rightIndex === index)
       }
-  
+      
       const removeMatchingPair = (pairIndex) => {
+        const updatedPairs = props.matchingPairs.filter((_, index) => index !== pairIndex)
+        console.log('🗑️ Removed matching pair:', pairIndex, 'Remaining pairs:', updatedPairs)
+        emit('answer-changed', updatedPairs)
         emit('remove-matching-pair', pairIndex)
       }
   
+      // ✅ FIXED: Ordering Methods
       const startDrag = (index) => {
+        console.log('🎯 Starting drag for ordering item:', index)
         emit('drag-start', index)
       }
   
       const handleDrop = (index) => {
+        console.log('🎯 Handling drop for ordering at index:', index)
         emit('drag-drop', index)
       }
   
-      const startDragItem = (item) => {
+      // ✅ FIXED: Drag and Drop Methods
+      const getDragItemText = (item) => {
+        if (typeof item === 'string') return item
+        return item?.text || item?.label || String(item)
+      }
+      
+      const getZoneId = (zone) => {
+        return zone?.id || zone?.label || String(zone)
+      }
+      
+      const startDragItem = (item, event) => {
+        console.log('🎯 Starting drag:', item)
         draggedDragItem.value = item
+        if (event && event.dataTransfer) {
+          event.dataTransfer.effectAllowed = 'move'
+          event.dataTransfer.setData('text/plain', JSON.stringify(item))
+        }
         emit('drag-item-start', item)
       }
-  
-      const dragOverZone = (zoneId) => {
+      
+      const endDragItem = () => {
+        console.log('🎯 Ending drag')
+        draggedDragItem.value = null
+      }
+      
+      const dragOverZone = (zoneId, event) => {
+        if (event) {
+          event.preventDefault()
+          event.dataTransfer.dropEffect = 'move'
+        }
         dropOverZone.value = zoneId
         emit('drag-over-zone', zoneId)
       }
-  
-      const dragLeaveZone = () => {
-        dropOverZone.value = null
-        emit('drag-leave-zone')
-      }
-  
-      const dropInZone = (zoneId) => {
-        if (draggedDragItem.value) {
-          emit('drop-in-zone', { zoneId, item: draggedDragItem.value })
-          draggedDragItem.value = null
+      
+      const dragLeaveZone = (event) => {
+        // Only clear if we're actually leaving the zone (not entering a child element)
+        if (!event || !event.currentTarget.contains(event.relatedTarget)) {
           dropOverZone.value = null
+          emit('drag-leave-zone')
         }
       }
-  
+      
+      const dropInZone = (zoneId, event) => {
+        if (event) {
+          event.preventDefault()
+        }
+        
+        let draggedItem
+        try {
+          // Try to get item from dataTransfer first
+          if (event && event.dataTransfer) {
+            const transferData = event.dataTransfer.getData('text/plain')
+            if (transferData) {
+              draggedItem = JSON.parse(transferData)
+            }
+          }
+        } catch (e) {
+          console.warn('Could not parse transfer data, using local state')
+        }
+        
+        // Fallback to local state
+        if (!draggedItem && draggedDragItem.value) {
+          draggedItem = draggedDragItem.value
+        }
+        
+        if (!draggedItem) {
+          console.warn('❌ No item to drop')
+          return
+        }
+        
+        console.log('🎯 Dropping item:', draggedItem, 'in zone:', zoneId)
+        
+        // Create updated placements
+        const updatedPlacements = { ...props.dragDropPlacements }
+        
+        // Initialize zone if it doesn't exist
+        if (!updatedPlacements[zoneId]) {
+          updatedPlacements[zoneId] = []
+        }
+        
+        // Check if item is already in this zone
+        const isAlreadyInZone = updatedPlacements[zoneId].some(placedItem => {
+          const placedText = getDragItemText(placedItem)
+          const draggedText = getDragItemText(draggedItem)
+          return placedText === draggedText
+        })
+        
+        if (!isAlreadyInZone) {
+          // Remove item from other zones first
+          Object.keys(updatedPlacements).forEach(otherZoneId => {
+            if (otherZoneId !== zoneId) {
+              updatedPlacements[otherZoneId] = updatedPlacements[otherZoneId].filter(placedItem => {
+                const placedText = getDragItemText(placedItem)
+                const draggedText = getDragItemText(draggedItem)
+                return placedText !== draggedText
+              })
+            }
+          })
+          
+          // Add to target zone
+          updatedPlacements[zoneId].push(draggedItem)
+          
+          console.log('✅ Updated placements:', updatedPlacements)
+          
+          // ✅ CRITICAL: Emit the updated placements to parent
+          emit('answer-changed', updatedPlacements)
+          emit('drop-in-zone', { zoneId, item: draggedItem })
+        }
+        
+        // Clean up
+        draggedDragItem.value = null
+        dropOverZone.value = null
+      }
+      
       const getDropZoneItems = (zoneId) => {
         return props.dragDropPlacements[zoneId] || []
       }
+      
+      const removeDroppedItem = (zoneId, itemIndex) => {
+        const updatedPlacements = { ...props.dragDropPlacements }
+        
+        if (updatedPlacements[zoneId] && updatedPlacements[zoneId][itemIndex]) {
+          const removedItem = updatedPlacements[zoneId][itemIndex]
+          updatedPlacements[zoneId].splice(itemIndex, 1)
+          
+          console.log('🗑️ Removed item from zone:', removedItem, 'from', zoneId)
+          
+          // ✅ CRITICAL: Emit the updated placements to parent
+          emit('answer-changed', updatedPlacements)
+          emit('remove-dropped-item', { zoneId, itemIndex, item: removedItem })
+        }
+      }
   
-      // Watch for prop changes to sync local state
+      // ✅ Watch for prop changes to sync local state
       watch(() => props.userAnswer, (newValue) => {
         localUserAnswer.value = newValue || ''
       }, { immediate: true })
@@ -618,7 +772,7 @@
         localFillBlankAnswers.value = Array.isArray(newValue) ? [...newValue] : []
       }, { immediate: true })
   
-      // Initialize local state
+      // ✅ Initialize local state
       onMounted(() => {
         localUserAnswer.value = props.userAnswer || ''
         localFillBlankAnswers.value = Array.isArray(props.fillBlankAnswers) ? [...props.fillBlankAnswers] : []
@@ -658,11 +812,15 @@
         removeMatchingPair,
         startDrag,
         handleDrop,
+        getDragItemText,
+        getZoneId,
         startDragItem,
+        endDragItem,
         dragOverZone,
         dragLeaveZone,
         dropInZone,
-        getDropZoneItems
+        getDropZoneItems,
+        removeDroppedItem
       }
     }
   }
