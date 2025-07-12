@@ -239,7 +239,7 @@
 
 <script>
 // Complete LessonPage.vue <script> section - FULLY FIXED VERSION
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 // Import composables
 import { useVocabulary } from '@/composables/useVocabulary'
@@ -424,8 +424,14 @@ export default {
         )
       }
       
-      // Initialize fill blank answers array
+      // ✅ CRITICAL: Force reactive update of fill blank answers array
+      if (exercises.fillBlankAnswers.value) {
+        exercises.fillBlankAnswers.value.length = 0 // Clear existing
+      }
       exercises.fillBlankAnswers.value = new Array(blankCount).fill('')
+      
+      // ✅ FORCE: Trigger reactivity manually
+      exercises.fillBlankAnswers.value = [...exercises.fillBlankAnswers.value]
       
       console.log(`✅ Fill-blank initialized with ${blankCount} blanks:`, exercises.fillBlankAnswers.value)
     }
@@ -962,17 +968,19 @@ export default {
       
       // ✅ CRITICAL: Reinitialize exercise types for the current exercise
       const currentExercise = getCurrentExercise()
-      if (currentExercise && currentExercise.type === 'drag-drop') {
-        setTimeout(() => {
-          initializeDragDropForExercise(currentExercise)
-        }, 50)
-      } else if (currentExercise && currentExercise.type === 'fill-blank') {
-        setTimeout(() => {
-          initializeFillBlankForExercise(currentExercise)
-        }, 50)
+      if (currentExercise) {
+        if (currentExercise.type === 'fill-blank') {
+          setTimeout(() => {
+            initializeFillBlankForExercise(currentExercise)
+          }, 10)
+        } else if (currentExercise.type === 'drag-drop') {
+          setTimeout(() => {
+            initializeDragDropForExercise(currentExercise)
+          }, 10)
+        }
       }
       
-      console.log('🔄 Reset attempts for new exercise/quiz')
+      console.log('🔄 Reset attempts and re-initialized exercise')
     }
 
     // ✅ ENHANCED: Update the getCurrentExercise method to initialize exercises
@@ -980,15 +988,17 @@ export default {
       const exercise = exercises.getCurrentExercise(lessonOrchestrator.currentStep.value)
       
       // ✅ CRITICAL: Initialize specific exercise types when exercise loads
-      if (exercise && exercise.type === 'drag-drop') {
-        // Small delay to ensure reactive system is ready
-        setTimeout(() => {
-          initializeDragDropForExercise(exercise)
-        }, 100)
-      } else if (exercise && exercise.type === 'fill-blank') {
-        setTimeout(() => {
-          initializeFillBlankForExercise(exercise)
-        }, 100)
+      if (exercise) {
+        if (exercise.type === 'fill-blank') {
+          // Force re-initialization each time
+          setTimeout(() => {
+            initializeFillBlankForExercise(exercise)
+          }, 10)
+        } else if (exercise.type === 'drag-drop') {
+          setTimeout(() => {
+            initializeDragDropForExercise(exercise)
+          }, 10)
+        }
       }
       
       return exercise
@@ -1320,6 +1330,31 @@ export default {
       console.log('✅ Item removed, updated placements:', exercises.dragDropPlacements)
     }
 
+    // ✅ CRITICAL: Enhanced fill-blank update handler
+    const updateFillBlankAnswer = (index, event) => {
+      console.log('📝 Updating fill-blank answer:', { index, value: event.target.value })
+      
+      // Ensure the array exists and has enough elements
+      if (!exercises.fillBlankAnswers.value || !Array.isArray(exercises.fillBlankAnswers.value)) {
+        console.warn('❌ Fill-blank answers array not initialized, creating...')
+        exercises.fillBlankAnswers.value = []
+      }
+      
+      // Extend array if needed
+      while (exercises.fillBlankAnswers.value.length <= index) {
+        exercises.fillBlankAnswers.value.push('')
+      }
+      
+      // ✅ CRITICAL: Update the specific index
+      const newValue = event.target ? event.target.value : event
+      exercises.fillBlankAnswers.value[index] = newValue
+      
+      // ✅ FORCE: Trigger reactivity by creating new array reference
+      exercises.fillBlankAnswers.value = [...exercises.fillBlankAnswers.value]
+      
+      console.log('✅ Fill-blank answers updated:', exercises.fillBlankAnswers.value)
+    }
+
     // Additional computed properties
     const getUserProgress = computed(() => ({
       currentStep: lessonOrchestrator.currentIndex.value,
@@ -1392,10 +1427,6 @@ export default {
       exercises.dropOverZone.value = null
     }
 
-    const updateFillBlankAnswer = (index, event) => {
-      exercises.updateFillBlankAnswer?.(index, event)
-    }
-
     const showHint = () => {
       exercises.currentHint.value = "Внимательно прочитайте вопрос и подумайте о правильном ответе."
     }
@@ -1403,6 +1434,19 @@ export default {
     const clearSmartHint = () => {
       exercises.smartHint.value = ''
     }
+
+    // ✅ WATCH: Add watchers to monitor exercise changes and init fill-blank
+    watch(() => lessonOrchestrator.currentStep.value, (newStep) => {
+      if (newStep && newStep.type === 'exercise') {
+        const exercise = getCurrentExercise()
+        if (exercise && exercise.type === 'fill-blank') {
+          console.log('🔄 Exercise changed to fill-blank, initializing...')
+          setTimeout(() => {
+            initializeFillBlankForExercise(exercise)
+          }, 50)
+        }
+      }
+    }, { immediate: true })
 
     // Other utility methods
     const askAboutExplanation = (question) => {

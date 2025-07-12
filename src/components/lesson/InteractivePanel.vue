@@ -58,30 +58,51 @@
             </div>
           </div>
     
-          <!-- Fill in the Blanks Exercise -->
+          <!-- ✅ FIXED: Fill in the Blanks Exercise -->
           <div v-else-if="exerciseType === 'fill-blank'" class="exercise-type fill-blank">
             <div class="question-text">
               {{ currentExercise?.question }}
             </div>
-            <div class="fill-blank-template">
+            <div v-if="currentExercise?.template" class="fill-blank-template">
               <div v-html="renderFillBlankTemplate()"></div>
             </div>
+            
+            <!-- ✅ CRITICAL: Fixed fill-blank inputs -->
             <div class="fill-blank-inputs">
               <div 
-                v-for="(blank, index) in getBlankCount()" 
-                :key="index"
+                v-for="(blank, index) in blankCount" 
+                :key="`blank-${index}-${exerciseIndex}`"
                 class="blank-input-group"
               >
-                <label class="blank-label">Пропуск {{ index + 1 }}:</label>
+                <label :for="`blank-input-${index}`" class="blank-label">
+                  Пропуск {{ index + 1 }}:
+                </label>
                 <input
+                  :id="`blank-input-${index}`"
                   type="text"
-                  v-model="localFillBlankAnswers[index]"
-                  @input="updateFillBlank(index, $event)"
                   class="blank-input"
-                  :placeholder="`Ответ ${index + 1}`"
+                  :value="getFillBlankValue(index)"
+                  @input="handleFillBlankInput(index, $event)"
+                  @keyup="handleFillBlankInput(index, $event)"
+                  @change="handleFillBlankInput(index, $event)"
+                  :placeholder="`Введите ответ ${index + 1}`"
+                  autocomplete="off"
                   :disabled="showCorrectAnswer"
                 />
+                <!-- ✅ DEBUG: Show current value -->
+                <div v-if="getFillBlankValue(index)" class="input-preview">
+                  Введено: "{{ getFillBlankValue(index) }}"
+                </div>
               </div>
+            </div>
+            
+            <!-- ✅ DEBUG: Show state (remove in production) -->
+            <div v-if="showDebugInfo" class="debug-section">
+              <h4>Debug Info:</h4>
+              <p>fillBlankAnswers prop: {{ JSON.stringify(fillBlankAnswers) }}</p>
+              <p>localFillBlankAnswers: {{ JSON.stringify(localFillBlankAnswers) }}</p>
+              <p>blankCount: {{ blankCount }}</p>
+              <button @click="debugFillBlank" class="debug-btn">Debug</button>
             </div>
           </div>
     
@@ -474,7 +495,7 @@
   </template>
   
   <script>
-  import { ref, computed, watch, onMounted } from 'vue'
+  import { ref, computed, watch, onMounted, nextTick } from 'vue'
   
   export default {
     name: 'InteractivePanel',
@@ -532,8 +553,9 @@
       const localFillBlankAnswers = ref([])
       const draggedDragItem = ref(null)
       const dropOverZone = ref(null)
+      const showDebugInfo = ref(true) // Set to false in production
   
-      // Computed properties
+      // ✅ FIXED: Computed properties
       const isExerciseStep = computed(() => {
         return ['exercise', 'practice'].includes(props.currentStep?.type)
       })
@@ -585,6 +607,37 @@
       const isLastQuiz = computed(() => {
         return props.quizIndex >= props.totalQuizzes - 1
       })
+  
+      // ✅ FIXED: Blank count computation
+      const blankCount = computed(() => {
+        if (!props.currentExercise) return 0
+        
+        // Check for explicit blanks array
+        if (props.currentExercise.blanks && Array.isArray(props.currentExercise.blanks)) {
+          return props.currentExercise.blanks.length
+        }
+        
+        if (props.currentExercise.correctAnswers && Array.isArray(props.currentExercise.correctAnswers)) {
+          return props.currentExercise.correctAnswers.length
+        }
+        
+        if (props.currentExercise.answers && Array.isArray(props.currentExercise.answers)) {
+          return props.currentExercise.answers.length
+        }
+        
+        // Parse template/question for blanks
+        const template = props.currentExercise.template || props.currentExercise.question || ''
+        const underscoreMatches = template.match(/_+/g) || []
+        const blankMatches = template.match(/\[blank\]/gi) || []
+        const curlyBraceMatches = template.match(/\{[^}]*\}/g) || []
+        
+        return Math.max(
+          underscoreMatches.length, 
+          blankMatches.length, 
+          curlyBraceMatches.length,
+          1
+        )
+      })
       
       // ✅ FIXED: Improved validation logic
       const canSubmitAnswer = computed(() => {
@@ -603,7 +656,18 @@
         
         // For fill-in-the-blank - at least one blank must be filled with meaningful content
         if (exerciseType.value === 'fill-blank') {
-          return localFillBlankAnswers.value.some(answer => {
+          console.log('🔍 Checking fill-blank submit capability:', {
+            localFillBlankAnswers: localFillBlankAnswers.value,
+            fillBlankAnswers: props.fillBlankAnswers,
+            blankCount: blankCount.value
+          })
+          
+          // Check both local and prop arrays
+          const answersToCheck = localFillBlankAnswers.value.length > 0 
+            ? localFillBlankAnswers.value 
+            : props.fillBlankAnswers
+            
+          return answersToCheck.some(answer => {
             const trimmed = String(answer || '').trim()
             return trimmed.length >= 1
           })
@@ -621,27 +685,53 @@
         
         // For drag-drop - must have at least one placement
         if (exerciseType.value === 'drag-drop') {
-          return Object.keys(props.dragDropPlacements).length > 0
+          const placements = Object.values(props.dragDropPlacements || {})
+          return placements.some(items => Array.isArray(items) && items.length > 0)
         }
         
         return false
       })
   
-      // ✅ METHODS
-      const getBlankCount = () => {
-        if (!props.currentExercise) return 0
-        
-        if (props.currentExercise.blanks && Array.isArray(props.currentExercise.blanks)) {
-          return props.currentExercise.blanks.length
+      // ✅ CRITICAL: Methods for fill-blank handling
+      const getFillBlankValue = (index) => {
+        // Try local first, then prop
+        if (localFillBlankAnswers.value[index] !== undefined) {
+          return localFillBlankAnswers.value[index]
         }
-        
-        const template = props.currentExercise.template || props.currentExercise.question || ''
-        const underscoreMatches = template.match(/_+/g) || []
-        const blankMatches = template.match(/\[blank\]/gi) || []
-        
-        return Math.max(underscoreMatches.length, blankMatches.length, 1)
+        return props.fillBlankAnswers[index] || ''
       }
   
+      const handleFillBlankInput = (index, event) => {
+        const value = event.target.value
+        console.log('📝 Fill-blank input:', { index, value })
+        
+        // Update local array
+        while (localFillBlankAnswers.value.length <= index) {
+          localFillBlankAnswers.value.push('')
+        }
+        localFillBlankAnswers.value[index] = value
+        
+        // Force reactivity
+        localFillBlankAnswers.value = [...localFillBlankAnswers.value]
+        
+        // Emit to parent
+        emit('fill-blank-updated', index, event)
+        
+        console.log('✅ Updated local fill-blank answers:', localFillBlankAnswers.value)
+      }
+  
+      const debugFillBlank = () => {
+        console.log('🔍 Fill-blank debug:', {
+          exerciseType: exerciseType.value,
+          currentExercise: props.currentExercise,
+          blankCount: blankCount.value,
+          localFillBlankAnswers: localFillBlankAnswers.value,
+          fillBlankAnswers: props.fillBlankAnswers,
+          canSubmit: canSubmitAnswer.value
+        })
+      }
+  
+      // ✅ FIXED: Template rendering
       const renderFillBlankTemplate = () => {
         if (!props.currentExercise?.template) return ''
         
@@ -661,14 +751,7 @@
         return template
       }
   
-      const updateFillBlank = (index, event) => {
-        while (localFillBlankAnswers.value.length <= index) {
-          localFillBlankAnswers.value.push('')
-        }
-        localFillBlankAnswers.value[index] = event.target.value
-        emit('fill-blank-updated', index, event)
-      }
-  
+      // ✅ OTHER METHODS
       const selectOption = (option) => {
         localUserAnswer.value = option
         emit('answer-changed', option)
@@ -888,27 +971,68 @@
         }
       }
   
+      // ✅ CRITICAL: Initialize fill-blank answers when exercise changes
+      const initializeFillBlankAnswers = () => {
+        if (exerciseType.value === 'fill-blank') {
+          const count = blankCount.value
+          console.log('🔄 Initializing fill-blank answers, count:', count)
+          
+          // Initialize local array
+          localFillBlankAnswers.value = new Array(count).fill('')
+          
+          // Copy from props if available
+          if (props.fillBlankAnswers && Array.isArray(props.fillBlankAnswers)) {
+            for (let i = 0; i < Math.min(count, props.fillBlankAnswers.length); i++) {
+              localFillBlankAnswers.value[i] = props.fillBlankAnswers[i] || ''
+            }
+          }
+          
+          console.log('✅ Fill-blank answers initialized:', localFillBlankAnswers.value)
+        }
+      }
+  
       // ✅ Watch for prop changes to sync local state
       watch(() => props.userAnswer, (newValue) => {
-        localUserAnswer.value = newValue || ''
+        if (exerciseType.value !== 'fill-blank') {
+          localUserAnswer.value = newValue || ''
+        }
       }, { immediate: true })
   
       watch(() => props.fillBlankAnswers, (newValue) => {
-        localFillBlankAnswers.value = Array.isArray(newValue) ? [...newValue] : []
+        if (Array.isArray(newValue)) {
+          // Only update if local array is empty or exercise changed
+          if (localFillBlankAnswers.value.length === 0 || 
+              localFillBlankAnswers.value.every(answer => !answer || answer.trim() === '')) {
+            localFillBlankAnswers.value = [...newValue]
+            console.log('📝 Synced fill-blank answers from props:', localFillBlankAnswers.value)
+          }
+        }
+      }, { immediate: true, deep: true })
+  
+      // ✅ Watch for exercise changes
+      watch(() => props.currentExercise, (newExercise) => {
+        if (newExercise) {
+          console.log('🔄 Exercise changed:', newExercise.type)
+          
+          // Reset local state
+          localUserAnswer.value = props.userAnswer || ''
+          
+          // Initialize fill-blank if needed
+          if (newExercise.type === 'fill-blank') {
+            nextTick(() => {
+              initializeFillBlankAnswers()
+            })
+          }
+        }
       }, { immediate: true })
   
       // ✅ Initialize local state
       onMounted(() => {
+        console.log('🚀 InteractivePanel mounted')
         localUserAnswer.value = props.userAnswer || ''
-        localFillBlankAnswers.value = Array.isArray(props.fillBlankAnswers) ? [...props.fillBlankAnswers] : []
         
-        // Initialize fill blank answers if needed
-        if (exerciseType.value === 'fill-blank') {
-          const blankCount = getBlankCount()
-          while (localFillBlankAnswers.value.length < blankCount) {
-            localFillBlankAnswers.value.push('')
-          }
-        }
+        // Initialize fill-blank answers
+        initializeFillBlankAnswers()
       })
   
       return {
@@ -916,6 +1040,7 @@
         localFillBlankAnswers,
         draggedDragItem,
         dropOverZone,
+        showDebugInfo,
         isExerciseStep,
         isQuizStep,
         exerciseType,
@@ -925,10 +1050,12 @@
         rightItems,
         isLastExercise,
         isLastQuiz,
+        blankCount,
         canSubmitAnswer,
-        getBlankCount,
+        getFillBlankValue,
+        handleFillBlankInput,
+        debugFillBlank,
         renderFillBlankTemplate,
-        updateFillBlank,
         selectOption,
         selectQuizOption,
         selectTrueFalse,
@@ -945,13 +1072,12 @@
         dragLeaveZone,
         dropInZone,
         getDropZoneItems,
-        removeDroppedItem
+        removeDroppedItem,
+        initializeFillBlankAnswers
       }
     }
   }
   </script>
-  
- 
   
   <style scoped>
   .interactive-panel {
@@ -1149,7 +1275,7 @@
     color: #374151;
   }
   
-  /* Fill Blank Styling */
+  /* ✅ ENHANCED: Fill Blank Styling */
   .fill-blank-template {
     background: white;
     padding: 20px;
@@ -1172,590 +1298,786 @@
   .fill-blank-inputs {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     margin-bottom: 24px;
   }
   
-  /* Continuing from .blank-input-group */
-.blank-input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.blank-label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #4c1d95;
-  margin-bottom: 4px;
-}
-
-.blank-input {
-  padding: 12px 16px;
-  border: 2px solid #ddd6fe;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
-  background: white;
-}
-
-.blank-input:focus {
-  outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-}
-
-/* Matching Exercise Styling */
-.matching-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-bottom: 24px;
-}
-
-.matching-side {
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.matching-side h4 {
-  margin: 0 0 16px 0;
-  font-size: 1rem;
-  color: #4c1d95;
-  text-align: center;
-}
-
-.matching-item {
-  background: #f8fafc;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.9rem;
-  text-align: center;
-}
-
-.matching-item:hover {
-  border-color: #8b5cf6;
-  transform: translateY(-1px);
-}
-
-.matching-item.selected {
-  border-color: #8b5cf6;
-  background: rgba(139, 92, 246, 0.1);
-  color: #4c1d95;
-  font-weight: 600;
-}
-
-.matching-item.matched {
-  border-color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
-  color: #047857;
-  opacity: 0.7;
-}
-
-.matching-pairs {
-  background: white;
-  border: 2px solid #ddd6fe;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 24px;
-}
-
-.matching-pairs h4 {
-  margin: 0 0 16px 0;
-  font-size: 1rem;
-  color: #4c1d95;
-}
-
-.pair-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(139, 92, 246, 0.05);
-  border: 1px solid #ddd6fe;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
-}
-
-.remove-pair {
-  background: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  transition: all 0.2s ease;
-}
-
-.remove-pair:hover {
-  background: #dc2626;
-  transform: scale(1.1);
-}
-
-/* Ordering Exercise Styling */
-.ordering-instructions {
-  background: rgba(139, 92, 246, 0.1);
-  border: 2px solid #ddd6fe;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  font-size: 0.9rem;
-  color: #4c1d95;
-  text-align: center;
-  font-weight: 600;
-}
-
-.ordering-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 24px;
-}
-
-.ordering-item {
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 12px 16px;
-  cursor: move;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.ordering-item:hover {
-  border-color: #8b5cf6;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
-}
-
-.ordering-item.dragging {
-  opacity: 0.5;
-  transform: rotate(2deg);
-}
-
-.drag-handle {
-  color: #9ca3af;
-  font-size: 1.2rem;
-  cursor: grab;
-}
-
-.drag-handle:active {
-  cursor: grabbing;
-}
-
-.item-text {
-  flex: 1;
-  font-size: 0.95rem;
-  color: #374151;
-}
-
-.item-number {
-  background: #8b5cf6;
-  color: white;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-/* Drag and Drop Exercise Styling */
-.drag-drop-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-bottom: 24px;
-}
-
-.drag-items {
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.drag-items h4 {
-  margin: 0 0 16px 0;
-  font-size: 1rem;
-  color: #4c1d95;
-  text-align: center;
-}
-
-.drag-item {
-  background: #f8fafc;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 8px;
-  cursor: move;
-  transition: all 0.2s ease;
-  font-size: 0.9rem;
-  text-align: center;
-}
-
-.drag-item:hover {
-  border-color: #8b5cf6;
-  transform: translateY(-1px);
-}
-
-.drag-item.dragging {
-  opacity: 0.5;
-  transform: scale(0.95);
-}
-
-.drop-zones {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.drop-zone {
-  background: white;
-  border: 2px dashed #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
-  min-height: 80px;
-  transition: all 0.2s ease;
-}
-
-.drop-zone.drag-over {
-  border-color: #8b5cf6;
-  background: rgba(139, 92, 246, 0.05);
-}
-
-.zone-label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #4c1d95;
-  margin-bottom: 8px;
-  text-align: center;
-}
-
-.zone-items {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.dropped-item {
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid #ddd6fe;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 0.85rem;
-  color: #4c1d95;
-  text-align: center;
-}
-
-/* Hints and Feedback */
-.hints-section {
-  margin-bottom: 24px;
-}
-
-.hint {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 12px;
-  margin-bottom: 12px;
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.basic-hint {
-  background: rgba(59, 130, 246, 0.1);
-  border: 2px solid #bfdbfe;
-  color: #1e40af;
-}
-
-.smart-hint {
-  background: rgba(139, 92, 246, 0.1);
-  border: 2px solid #ddd6fe;
-  color: #4c1d95;
-  position: relative;
-}
-
-.hint-icon {
-  font-size: 1.2rem;
-  flex-shrink: 0;
-}
-
-.hint-text {
-  flex: 1;
-}
-
-.clear-hint-btn {
-  background: none;
-  border: none;
-  color: #6b7280;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 0;
-  margin-left: 8px;
-  transition: color 0.2s ease;
-}
-
-.clear-hint-btn:hover {
-  color: #ef4444;
-}
-
-/* Confirmation Messages */
-.confirmation-message {
-  padding: 16px 20px;
-  border-radius: 12px;
-  margin-bottom: 24px;
-  font-weight: 600;
-  text-align: center;
-  font-size: 0.95rem;
-}
-
-.confirmation-message.correct {
-  background: rgba(16, 185, 129, 0.1);
-  border: 2px solid #a7f3d0;
-  color: #047857;
-}
-
-.confirmation-message.incorrect {
-  background: rgba(239, 68, 68, 0.1);
-  border: 2px solid #fecaca;
-  color: #dc2626;
-}
-
-/* Buttons */
-.hint-btn,
-.submit-btn,
-.next-btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.hint-btn {
-  background: rgba(59, 130, 246, 0.1);
-  color: #1e40af;
-  border: 2px solid #bfdbfe;
-}
-
-.hint-btn:hover {
-  background: rgba(59, 130, 246, 0.15);
-  transform: translateY(-1px);
-}
-
-.submit-btn {
-  background: #8b5cf6;
-  color: white;
-  border: 2px solid #8b5cf6;
-}
-
-.submit-btn:hover:not(.disabled) {
-  background: #7c3aed;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-}
-
-.submit-btn.disabled {
-  background: #d1d5db;
-  color: #9ca3af;
-  cursor: not-allowed;
-  border-color: #d1d5db;
-}
-
-.next-btn {
-  background: #10b981;
-  color: white;
-  border: 2px solid #10b981;
-}
-
-.next-btn:hover {
-  background: #059669;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-/* No Content State */
-.no-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  text-align: center;
-  color: #6b7280;
-}
-
-.no-content-icon {
-  font-size: 3rem;
-  margin-bottom: 16px;
-  opacity: 0.7;
-}
-
-.no-content h4 {
-  margin: 0 0 8px 0;
-  font-size: 1.1rem;
-  color: #4b5563;
-}
-
-.no-content p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: #6b7280;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .interactive-panel {
+  .blank-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     padding: 16px;
+    background: white;
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    transition: all 0.2s ease;
   }
   
-  .matching-container,
-  .drag-drop-container {
-    grid-template-columns: 1fr;
+  .blank-input-group:hover {
+    border-color: #ddd6fe;
   }
   
-  .true-false-options {
-    grid-template-columns: 1fr;
+  .blank-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4c1d95;
+    margin-bottom: 4px;
   }
   
-  .exercise-actions,
-  .quiz-actions {
-    flex-direction: column;
+  .blank-input {
+    padding: 12px 16px;
+    border: 2px solid #ddd6fe;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    background: white;
+    width: 100%;
+    box-sizing: border-box;
   }
   
-  .exercise-header,
-  .quiz-header {
-    flex-direction: column;
-    align-items: flex-start;
+  .blank-input:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  }
+  
+  .blank-input:disabled {
+    background: #f8fafc;
+    color: #9ca3af;
+    border-color: #e2e8f0;
+  }
+  
+  /* ✅ NEW: Input preview styling */
+  .input-preview {
+    font-size: 0.8rem;
+    color: #6b46c1;
+    font-style: italic;
+    padding: 4px 0;
+  }
+  
+  /* ✅ NEW: Debug section styling */
+  .debug-section {
+    background: rgba(239, 68, 68, 0.1);
+    border: 2px solid #fecaca;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 16px 0;
+    font-size: 0.8rem;
+  }
+  
+  .debug-section h4 {
+    margin: 0 0 8px 0;
+    color: #dc2626;
+  }
+  
+  .debug-section p {
+    margin: 4px 0;
+    color: #7f1d1d;
+  }
+  
+  .debug-btn {
+    background: #dc2626;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  
+  /* ✅ NEW: Second chance indicators */
+  .second-chance-indicator {
+    background: rgba(251, 191, 36, 0.1);
+    border: 2px solid #fcd34d;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+  }
+  
+  .attempt-counter {
+    display: flex;
+    align-items: center;
     gap: 12px;
   }
   
-  .question-text,
-  .quiz-question {
-    font-size: 1rem;
+  .attempt-text {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #92400e;
+  }
+  
+  .attempt-dots {
+    display: flex;
+    gap: 4px;
+  }
+  
+  .attempt-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    transition: all 0.2s ease;
+  }
+  
+  .attempt-dot.filled {
+    background: #f59e0b;
+  }
+  
+  .attempt-dot.current {
+    background: #8b5cf6;
+    transform: scale(1.2);
+  }
+  
+  .correct-answer-display {
+    background: rgba(16, 185, 129, 0.1);
+    border: 2px solid #a7f3d0;
+    border-radius: 8px;
     padding: 16px;
-  }
-}
-
-@media (max-width: 480px) {
-  .interactive-panel {
-    padding: 12px;
+    margin-top: 12px;
   }
   
-  .exercise-header h3,
-  .quiz-header h3 {
-    font-size: 1.1rem;
+  .correct-answer-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #047857;
+    margin-bottom: 8px;
   }
   
-  .question-text,
-  .quiz-question {
+  .correct-answer-text {
     font-size: 0.95rem;
-    padding: 12px;
+    color: #065f46;
+    font-weight: 500;
   }
   
-  .option-item,
-  .quiz-option {
+  /* Enhanced Submit Button for Second Chance */
+  .submit-btn.second-chance {
+    background: #f59e0b;
+    border-color: #f59e0b;
+  }
+  
+  .submit-btn.second-chance:hover:not(.disabled) {
+    background: #d97706;
+    border-color: #d97706;
+  }
+  
+  .second-chance-icon {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  /* Continue with existing styles... */
+  /* Matching Exercise Styling */
+  .matching-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  
+  .matching-side {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  
+  .matching-side h4 {
+    margin: 0 0 16px 0;
+    font-size: 1rem;
+    color: #4c1d95;
+    text-align: center;
+  }
+  
+  .matching-item {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
     padding: 12px 16px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    text-align: center;
   }
   
-  .tf-option {
-    padding: 16px;
-  }
-}
-
-/* Scrollbar Styling */
-.exercise-body::-webkit-scrollbar,
-.quiz-body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.exercise-body::-webkit-scrollbar-track,
-.quiz-body::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 3px;
-}
-
-.exercise-body::-webkit-scrollbar-thumb,
-.quiz-body::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.exercise-body::-webkit-scrollbar-thumb:hover,
-.quiz-body::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* Animation Classes */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-/* Focus Management */
-.interactive-panel *:focus {
-  outline: 2px solid #8b5cf6;
-  outline-offset: 2px;
-}
-
-/* High Contrast Mode Support */
-@media (prefers-contrast: high) {
-  .option-item,
-  .quiz-option,
-  .tf-option,
-  .matching-item,
-  .ordering-item,
-  .drag-item {
-    border-width: 3px;
+  .matching-item:hover {
+    border-color: #8b5cf6;
+    transform: translateY(-1px);
   }
   
-  .confirmation-message {
-    border-width: 3px;
+  .matching-item.selected {
+    border-color: #8b5cf6;
+    background: rgba(139, 92, 246, 0.1);
+    color: #4c1d95;
+    font-weight: 600;
   }
-}
-
-/* Reduced Motion Support */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  
+  .matching-item.matched {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    color: #047857;
+    opacity: 0.7;
+  }
+  
+  .matching-pairs {
+    background: white;
+    border: 2px solid #ddd6fe;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  
+  .matching-pairs h4 {
+    margin: 0 0 16px 0;
+    font-size: 1rem;
+    color: #4c1d95;
+  }
+  
+  .pair-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(139, 92, 246, 0.05);
+    border: 1px solid #ddd6fe;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+  }
+  
+  .remove-pair {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.2s ease;
+  }
+  
+  .remove-pair:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+  }
+  
+  /* Ordering Exercise Styling */
+  .ordering-instructions {
+    background: rgba(139, 92, 246, 0.1);
+    border: 2px solid #ddd6fe;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    color: #4c1d95;
+    text-align: center;
+    font-weight: 600;
+  }
+  
+  .ordering-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  
+  .ordering-item {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    cursor: move;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .ordering-item:hover {
+    border-color: #8b5cf6;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
   }
   
   .ordering-item.dragging {
-    transform: none;
+    opacity: 0.5;
+    transform: rotate(2deg);
+  }
+  
+  .drag-handle {
+    color: #9ca3af;
+    font-size: 1.2rem;
+    cursor: grab;
+  }
+  
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+  
+  .item-text {
+    flex: 1;
+    font-size: 0.95rem;
+    color: #374151;
+  }
+  
+  .item-number {
+    background: #8b5cf6;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  
+  /* Drag and Drop Exercise Styling */
+  .drag-drop-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  
+  .drag-items {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  
+  .drag-items h4 {
+    margin: 0 0 16px 0;
+    font-size: 1rem;
+    color: #4c1d95;
+    text-align: center;
+  }
+  
+  .drag-item {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    cursor: move;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+  
+  .drag-item:hover {
+    border-color: #8b5cf6;
+    transform: translateY(-1px);
   }
   
   .drag-item.dragging {
-    transform: none;
+    opacity: 0.5;
+    transform: scale(0.95);
   }
-}
-</style>
+  
+  .drop-zones {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .drop-zone {
+    background: white;
+    border: 2px dashed #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    min-height: 80px;
+    transition: all 0.2s ease;
+  }
+  
+  .drop-zone.drag-over {
+    border-color: #8b5cf6;
+    background: rgba(139, 92, 246, 0.05);
+  }
+  
+  .zone-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4c1d95;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  
+  .zone-items {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .dropped-item {
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid #ddd6fe;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    color: #4c1d95;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+  }
+  
+  .remove-dropped {
+    color: #ef4444;
+    font-weight: bold;
+    margin-left: 8px;
+  }
+  
+  /* Hints and Feedback */
+  .hints-section {
+    margin-bottom: 24px;
+  }
+  
+  .hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  
+  .basic-hint {
+    background: rgba(59, 130, 246, 0.1);
+    border: 2px solid #bfdbfe;
+    color: #1e40af;
+  }
+  
+  .smart-hint {
+    background: rgba(139, 92, 246, 0.1);
+    border: 2px solid #ddd6fe;
+    color: #4c1d95;
+    position: relative;
+  }
+  
+  .hint-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+  
+  .hint-text {
+    flex: 1;
+  }
+  
+  .clear-hint-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 8px;
+    transition: color 0.2s ease;
+  }
+  
+  .clear-hint-btn:hover {
+    color: #ef4444;
+  }
+  
+  /* Confirmation Messages */
+  .confirmation-message {
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    font-weight: 600;
+    text-align: center;
+    font-size: 0.95rem;
+  }
+  
+  .confirmation-message.correct {
+    background: rgba(16, 185, 129, 0.1);
+    border: 2px solid #a7f3d0;
+    color: #047857;
+  }
+  
+  .confirmation-message.incorrect {
+    background: rgba(239, 68, 68, 0.1);
+    border: 2px solid #fecaca;
+    color: #dc2626;
+  }
+  
+  .confirmation-message.show-answer {
+    background: rgba(59, 130, 246, 0.1);
+    border: 2px solid #bfdbfe;
+    color: #1e40af;
+  }
+  
+  /* Buttons */
+  .hint-btn,
+  .submit-btn,
+  .next-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+  
+  .hint-btn {
+    background: rgba(59, 130, 246, 0.1);
+    color: #1e40af;
+    border: 2px solid #bfdbfe;
+  }
+  
+  .hint-btn:hover {
+    background: rgba(59, 130, 246, 0.15);
+    transform: translateY(-1px);
+  }
+  
+  .submit-btn {
+    background: #8b5cf6;
+    color: white;
+    border: 2px solid #8b5cf6;
+  }
+  
+  .submit-btn:hover:not(.disabled) {
+    background: #7c3aed;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  }
+  
+  .submit-btn.disabled {
+    background: #d1d5db;
+    color: #9ca3af;
+    cursor: not-allowed;
+    border-color: #d1d5db;
+  }
+  
+  .next-btn {
+    background: #10b981;
+    color: white;
+    border: 2px solid #10b981;
+  }
+  
+  .next-btn:hover {
+    background: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  }
+  
+  .next-icon {
+    font-size: 1.1rem;
+  }
+  
+  /* No Content State */
+  .no-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    color: #6b7280;
+  }
+  
+  .no-content-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    opacity: 0.7;
+  }
+  
+  .no-content h4 {
+    margin: 0 0 8px 0;
+    font-size: 1.1rem;
+    color: #4b5563;
+  }
+  
+  .no-content p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #6b7280;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .interactive-panel {
+      padding: 16px;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      grid-template-columns: 1fr;
+    }
+    
+    .true-false-options {
+      grid-template-columns: 1fr;
+    }
+    
+    .exercise-actions,
+    .quiz-actions {
+      flex-direction: column;
+    }
+    
+    .exercise-header,
+    .quiz-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    
+    .question-text,
+    .quiz-question {
+      font-size: 1rem;
+      padding: 16px;
+    }
+  
+    .blank-input-group {
+      padding: 12px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .interactive-panel {
+      padding: 12px;
+    }
+    
+    .exercise-header h3,
+    .quiz-header h3 {
+      font-size: 1.1rem;
+    }
+    
+    .question-text,
+    .quiz-question {
+      font-size: 0.95rem;
+      padding: 12px;
+    }
+    
+    .option-item,
+    .quiz-option {
+      padding: 12px 16px;
+    }
+    
+    .tf-option {
+      padding: 16px;
+    }
+  
+    .blank-input-group {
+      padding: 8px;
+    }
+  
+    .blank-input {
+      padding: 10px 12px;
+      font-size: 0.9rem;
+    }
+  }
+  
+  /* Scrollbar Styling */
+  .exercise-body::-webkit-scrollbar,
+  .quiz-body::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .exercise-body::-webkit-scrollbar-track,
+  .quiz-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+  }
+  
+  .exercise-body::-webkit-scrollbar-thumb,
+  .quiz-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+  
+  .exercise-body::-webkit-scrollbar-thumb:hover,
+  .quiz-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+  
+  /* Animation Classes */
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity 0.3s ease;
+  }
+  
+  .fade-enter-from,
+  .fade-leave-to {
+    opacity: 0;
+  }
+  
+  /* Focus Management */
+  .interactive-panel *:focus {
+    outline: 2px solid #8b5cf6;
+    outline-offset: 2px;
+  }
+  
+  /* High Contrast Mode Support */
+  @media (prefers-contrast: high) {
+    .option-item,
+    .quiz-option,
+    .tf-option,
+    .matching-item,
+    .ordering-item,
+    .drag-item,
+    .blank-input {
+      border-width: 3px;
+    }
+    
+    .confirmation-message {
+      border-width: 3px;
+    }
+  }
+  
+  /* Reduced Motion Support */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    
+    .ordering-item.dragging {
+      transform: none;
+    }
+    
+    .drag-item.dragging {
+      transform: none;
+    }
+  
+    .second-chance-icon {
+      animation: none;
+    }
+  }
+  
+  /* Print Styles */
+  @media print {
+    .interactive-panel {
+      padding: 0;
+      background: white;
+    }
+    
+    .exercise-actions,
+    .quiz-actions,
+    .debug-section {
+      display: none;
+    }
+    
+    .option-item,
+    .quiz-option {
+      border: 1px solid #000;
+      break-inside: avoid;
+    }
+  }
+  </style>
