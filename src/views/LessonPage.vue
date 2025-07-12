@@ -238,8 +238,8 @@
 </template>
 
 <script>
-// Complete LessonPage.vue <script> section - FULLY FIXED VERSION
-import { computed, ref, watch } from 'vue'
+// Complete LessonPage.vue <script> section - FINAL FIXED VERSION
+import { computed, ref, watch, nextTick } from 'vue'
 
 // Import composables
 import { useVocabulary } from '@/composables/useVocabulary'
@@ -293,6 +293,13 @@ export default {
     const showCorrectAnswer = ref(false)
     const correctAnswerText = ref('')
     const isOnSecondChance = ref(false)
+
+    // ✅ CRITICAL: Prevent over-initialization
+    const initializationTracker = ref({
+      currentExerciseId: null,
+      fillBlankInitialized: false,
+      dragDropInitialized: false
+    })
 
     // ✅ HELPER FUNCTIONS
     
@@ -350,13 +357,26 @@ export default {
       return [correctAnswer].filter(Boolean)
     }
 
-    // ✅ FIXED: Enhanced drag-drop initialization
+    // ✅ FIXED: Enhanced drag-drop initialization with proper data handling
     const initializeDragDropForExercise = (exercise) => {
-      console.log('🎯 Initializing drag-drop for exercise:', exercise)
-      
       if (!exercise || exercise.type !== 'drag-drop') {
         return
       }
+
+      const exerciseId = exercise.id || `${exercise.type}_${exercise.question?.substring(0, 20)}`
+      
+      // ✅ PREVENT over-initialization
+      if (initializationTracker.value.currentExerciseId === exerciseId && 
+          initializationTracker.value.dragDropInitialized) {
+        console.log('🔄 Drag-drop already initialized for this exercise, skipping...')
+        return
+      }
+      
+      console.log('🎯 Initializing drag-drop for exercise:', {
+        id: exerciseId,
+        dragItems: exercise.dragItems,
+        dropZones: exercise.dropZones
+      })
       
       // Clear existing placements
       if (exercises.dragDropPlacements) {
@@ -367,21 +387,68 @@ export default {
         exercises.dragDropPlacements = {}
       }
       
+      // ✅ CRITICAL: Handle MongoDB data structure
+      let dragItems = []
+      let dropZones = []
+      
+      if (Array.isArray(exercise.dragItems)) {
+        dragItems = exercise.dragItems
+      } else if (exercise.dragItems && typeof exercise.dragItems === 'object') {
+        // Handle MongoDB ObjectId or object structure
+        dragItems = Object.values(exercise.dragItems).filter(item => 
+          typeof item === 'string' || (item && item.text)
+        )
+      }
+      
+      if (Array.isArray(exercise.dropZones)) {
+        dropZones = exercise.dropZones
+      } else if (exercise.dropZones && typeof exercise.dropZones === 'object') {
+        // Handle MongoDB ObjectId or object structure
+        dropZones = Object.values(exercise.dropZones).filter(zone => 
+          zone && (zone.label || zone.id)
+        )
+      }
+      
+      console.log('🔍 Processed drag-drop data:', { dragItems, dropZones })
+      
       // Initialize available drag items
-      if (exercise.dragItems && Array.isArray(exercise.dragItems)) {
-        exercises.availableDragItems.value = [...exercise.dragItems]
+      if (dragItems.length > 0) {
+        exercises.availableDragItems.value = dragItems.map(item => {
+          if (typeof item === 'string') {
+            return { text: item, id: item }
+          } else if (item && item.text) {
+            return item
+          } else {
+            return { text: String(item), id: String(item) }
+          }
+        })
       }
       
       // Initialize drop zones
-      if (exercise.dropZones && Array.isArray(exercise.dropZones)) {
-        exercises.dropZones.value = [...exercise.dropZones]
+      if (dropZones.length > 0) {
+        exercises.dropZones.value = dropZones.map(zone => {
+          if (typeof zone === 'string') {
+            return { label: zone, id: zone, correctItems: [] }
+          } else if (zone && zone.label) {
+            return {
+              label: zone.label,
+              id: zone.id || zone.label,
+              correctItems: zone.correctItems || zone.items || []
+            }
+          } else {
+            return { label: String(zone), id: String(zone), correctItems: [] }
+          }
+        })
         
         // Initialize empty arrays for each zone
-        exercise.dropZones.forEach(zone => {
-          const zoneId = zone.id || zone.label
-          exercises.dragDropPlacements[zoneId] = []
+        exercises.dropZones.value.forEach(zone => {
+          exercises.dragDropPlacements[zone.id] = []
         })
       }
+      
+      // ✅ CRITICAL: Mark as initialized
+      initializationTracker.value.currentExerciseId = exerciseId
+      initializationTracker.value.dragDropInitialized = true
       
       console.log('✅ Drag-drop initialized:', {
         dragItems: exercises.availableDragItems.value,
@@ -390,18 +457,32 @@ export default {
       })
     }
 
-    // ✅ FIXED: Enhanced fill-blank initialization
+    // ✅ FIXED: Enhanced fill-blank initialization with proper blank detection
     const initializeFillBlankForExercise = (exercise) => {
       if (!exercise || exercise.type !== 'fill-blank') {
         return
       }
+
+      const exerciseId = exercise.id || `${exercise.type}_${exercise.question?.substring(0, 20)}`
       
-      console.log('📝 Initializing fill-blank for exercise:', exercise)
+      // ✅ PREVENT over-initialization
+      if (initializationTracker.value.currentExerciseId === exerciseId && 
+          initializationTracker.value.fillBlankInitialized) {
+        console.log('🔄 Fill-blank already initialized for this exercise, skipping...')
+        return
+      }
+      
+      console.log('📝 Initializing fill-blank for exercise:', {
+        id: exerciseId,
+        template: exercise.template,
+        blanks: exercise.blanks,
+        correctAnswers: exercise.correctAnswers
+      })
       
       // Determine number of blanks needed
       let blankCount = 0
       
-      // Check for explicit blanks array first
+      // ✅ CRITICAL: Handle MongoDB data structure for blanks
       if (exercise.blanks && Array.isArray(exercise.blanks)) {
         blankCount = exercise.blanks.length
       } else if (exercise.correctAnswers && Array.isArray(exercise.correctAnswers)) {
@@ -409,19 +490,31 @@ export default {
       } else if (exercise.answers && Array.isArray(exercise.answers)) {
         blankCount = exercise.answers.length
       } else {
-        // Parse template/question for blanks
+        // ✅ ENHANCED: Parse template for different blank formats
         const template = exercise.template || exercise.question || ''
         
+        // MongoDB data uses * for blanks
+        const asteriskMatches = template.match(/\*/g) || []
         const underscoreMatches = template.match(/_+/g) || []
         const blankMatches = template.match(/\[blank\]/gi) || []
         const curlyBraceMatches = template.match(/\{[^}]*\}/g) || []
         
         blankCount = Math.max(
+          asteriskMatches.length,
           underscoreMatches.length, 
           blankMatches.length, 
           curlyBraceMatches.length,
           1
         )
+        
+        console.log('🔍 Template parsing:', {
+          template,
+          asteriskMatches: asteriskMatches.length,
+          underscoreMatches: underscoreMatches.length,
+          blankMatches: blankMatches.length,
+          curlyBraceMatches: curlyBraceMatches.length,
+          finalCount: blankCount
+        })
       }
       
       // ✅ CRITICAL: Force reactive update of fill blank answers array
@@ -432,6 +525,10 @@ export default {
       
       // ✅ FORCE: Trigger reactivity manually
       exercises.fillBlankAnswers.value = [...exercises.fillBlankAnswers.value]
+      
+      // ✅ CRITICAL: Mark as initialized
+      initializationTracker.value.currentExerciseId = exerciseId
+      initializationTracker.value.fillBlankInitialized = true
       
       console.log(`✅ Fill-blank initialized with ${blankCount} blanks:`, exercises.fillBlankAnswers.value)
     }
@@ -543,7 +640,7 @@ export default {
       return false
     }
 
-    // ✅ FIXED: Fill-blank validation with proper object handling
+    // ✅ FIXED: Fill-blank validation with proper object handling and MongoDB structure
     const validateFillBlank = (userAnswers, exercise) => {
       console.log('🔍 Fill-blank validation start:', {
         userAnswers,
@@ -557,12 +654,34 @@ export default {
         return false
       }
 
-      // ✅ FIXED: Get correct answers from multiple possible locations with better object handling
-      const correctAnswers = exercise.correctAnswers || 
-                            exercise.answers || 
-                            exercise.blanks || 
-                            exercise.correctAnswer ||
-                            []
+      // ✅ FIXED: Handle MongoDB structure for correct answers
+      let correctAnswers = []
+      
+      if (exercise.blanks && Array.isArray(exercise.blanks)) {
+        correctAnswers = exercise.blanks.map(blank => {
+          if (typeof blank === 'string') {
+            return blank
+          } else if (blank && blank.answer) {
+            return blank.answer
+          } else if (blank && blank.text) {
+            return blank.text
+          } else {
+            return String(blank)
+          }
+        })
+      } else if (exercise.correctAnswers && Array.isArray(exercise.correctAnswers)) {
+        correctAnswers = exercise.correctAnswers
+      } else if (exercise.answers && Array.isArray(exercise.answers)) {
+        correctAnswers = exercise.answers
+      } else {
+        // Fallback to extracting from hint
+        const hint = exercise.hint || ''
+        if (hint.includes(',')) {
+          correctAnswers = hint.split(',').map(h => h.trim())
+        } else {
+          correctAnswers = [hint]
+        }
+      }
       
       console.log('🔍 Raw correct answers:', correctAnswers)
 
@@ -756,7 +875,7 @@ export default {
       return success
     }
 
-    // ✅ FIXED: Enhanced drag-drop validation with better debugging
+    // ✅ FIXED: Enhanced drag-drop validation with MongoDB structure support
     const validateDragDrop = (userPlacements, exercise) => {
       console.log('🔍 Drag-drop validation start:', {
         userPlacements,
@@ -770,8 +889,16 @@ export default {
         return false
       }
 
-      const dropZones = exercise.dropZones || []
-      if (!Array.isArray(dropZones) || dropZones.length === 0) {
+      // ✅ CRITICAL: Handle MongoDB structure for drop zones
+      let dropZones = []
+      
+      if (Array.isArray(exercise.dropZones)) {
+        dropZones = exercise.dropZones
+      } else if (exercise.dropZones && typeof exercise.dropZones === 'object') {
+        dropZones = Object.values(exercise.dropZones).filter(zone => 
+          zone && (zone.label || zone.id)
+        )
+      } else {
         console.warn('❌ No drop zones defined')
         return false
       }
@@ -782,9 +909,24 @@ export default {
       let totalRequired = 0
 
       for (const zone of dropZones) {
-        const zoneId = zone.id || zone.label
+        const zoneId = zone.id || zone.label || String(zone)
         const userItems = userPlacements[zoneId] || []
-        const correctItems = zone.correctItems || zone.items || []
+        
+        // ✅ CRITICAL: Handle MongoDB structure for correct items
+        let correctItems = []
+        if (Array.isArray(zone.correctItems)) {
+          correctItems = zone.correctItems
+        } else if (Array.isArray(zone.items)) {
+          correctItems = zone.items
+        } else if (zone.correctItem !== undefined) {
+          // Handle single correct item (MongoDB structure)
+          if (typeof zone.correctItem === 'number' && exercise.dragItems) {
+            const dragItems = Array.isArray(exercise.dragItems) ? exercise.dragItems : Object.values(exercise.dragItems)
+            correctItems = [dragItems[zone.correctItem]]
+          } else {
+            correctItems = [zone.correctItem]
+          }
+        }
 
         totalRequired += correctItems.length
 
@@ -880,7 +1022,7 @@ export default {
       }
     }
 
-    // ✅ FIXED: Enhanced getCorrectAnswerDisplay to handle objects properly
+    // ✅ FIXED: Enhanced getCorrectAnswerDisplay to handle MongoDB objects properly
     const getCorrectAnswerDisplay = (exercise) => {
       if (!exercise) return ''
 
@@ -905,24 +1047,41 @@ export default {
           return String(exercise.correctAnswer || '')
 
         case 'fill-blank':
-          // ✅ FIXED: Handle object answers in display
-          const correctAnswers = exercise.correctAnswers || exercise.answers || exercise.blanks || []
+          // ✅ FIXED: Handle MongoDB object answers in display
+          let correctAnswers = []
           
-          if (Array.isArray(correctAnswers)) {
-            const displayAnswers = correctAnswers.map(answer => {
-              if (typeof answer === 'string') {
-                return answer.trim()
-              } else if (typeof answer === 'object' && answer !== null) {
-                return answer.answer || answer.text || answer.value || answer.correct || String(answer)
+          if (exercise.blanks && Array.isArray(exercise.blanks)) {
+            correctAnswers = exercise.blanks.map(blank => {
+              if (typeof blank === 'string') {
+                return blank
+              } else if (blank && blank.answer) {
+                return blank.answer
+              } else if (blank && blank.text) {
+                return blank.text
               } else {
-                return String(answer || '').trim()
+                return String(blank)
               }
-            }).filter(answer => answer && answer.trim())
-            
-            return displayAnswers.join(', ')
+            })
+          } else if (exercise.correctAnswers && Array.isArray(exercise.correctAnswers)) {
+            correctAnswers = exercise.correctAnswers
+          } else if (exercise.answers && Array.isArray(exercise.answers)) {
+            correctAnswers = exercise.answers
+          } else if (exercise.hint) {
+            // Fallback to hint
+            correctAnswers = exercise.hint.split(',').map(h => h.trim())
           }
           
-          return String(correctAnswers)
+          const displayAnswers = correctAnswers.map(answer => {
+            if (typeof answer === 'string') {
+              return answer.trim()
+            } else if (typeof answer === 'object' && answer !== null) {
+              return answer.answer || answer.text || answer.value || answer.correct || String(answer)
+            } else {
+              return String(answer || '').trim()
+            }
+          }).filter(answer => answer && answer.trim())
+          
+          return displayAnswers.join(', ')
 
         case 'matching':
           if (exercise.pairs && Array.isArray(exercise.pairs)) {
@@ -944,20 +1103,42 @@ export default {
           return 'Правильный порядок показан выше'
 
         case 'drag-drop':
-          if (exercise.dropZones && Array.isArray(exercise.dropZones)) {
-            return exercise.dropZones.map(zone => {
-              const items = zone.correctItems || zone.items || []
-              return `${zone.label}: ${items.join(', ')}`
-            }).join('; ')
+          // ✅ FIXED: Handle MongoDB structure for drag-drop display
+          let dropZones = []
+          if (Array.isArray(exercise.dropZones)) {
+            dropZones = exercise.dropZones
+          } else if (exercise.dropZones && typeof exercise.dropZones === 'object') {
+            dropZones = Object.values(exercise.dropZones)
           }
-          return 'Правильное размещение показано выше'
+          
+          return dropZones.map(zone => {
+            let items = []
+            if (Array.isArray(zone.correctItems)) {
+              items = zone.correctItems
+            } else if (Array.isArray(zone.items)) {
+              items = zone.items
+            } else if (zone.correctItem !== undefined) {
+              if (typeof zone.correctItem === 'number' && exercise.dragItems) {
+                const dragItems = Array.isArray(exercise.dragItems) ? exercise.dragItems : Object.values(exercise.dragItems)
+                items = [dragItems[zone.correctItem]]
+              } else {
+                items = [zone.correctItem]
+              }
+            }
+            
+            const itemTexts = items.map(item => 
+              typeof item === 'string' ? item : (item?.text || String(item))
+            )
+            
+            return `${zone.label || zone.id}: ${itemTexts.join(', ')}`
+          }).join('; ')
 
         default:
           return String(exercise.correctAnswer || exercise.answer || '')
       }
     }
 
-    // ✅ FIXED: Reset attempts function
+    // ✅ FIXED: Reset attempts function with proper state management
     const resetAttempts = () => {
       attemptCount.value = 0
       isOnSecondChance.value = false
@@ -966,38 +1147,42 @@ export default {
       exercises.confirmation.value = ''
       exercises.answerWasCorrect.value = false
       
-      // ✅ CRITICAL: Reinitialize exercise types for the current exercise
-      const currentExercise = getCurrentExercise()
-      if (currentExercise) {
-        if (currentExercise.type === 'fill-blank') {
-          setTimeout(() => {
-            initializeFillBlankForExercise(currentExercise)
-          }, 10)
-        } else if (currentExercise.type === 'drag-drop') {
-          setTimeout(() => {
-            initializeDragDropForExercise(currentExercise)
-          }, 10)
-        }
+      // ✅ CRITICAL: Reset initialization tracker
+      initializationTracker.value = {
+        currentExerciseId: null,
+        fillBlankInitialized: false,
+        dragDropInitialized: false
       }
       
-      console.log('🔄 Reset attempts and re-initialized exercise')
+      console.log('🔄 Reset attempts and initialization tracker')
     }
 
-    // ✅ ENHANCED: Update the getCurrentExercise method to initialize exercises
+    // ✅ ENHANCED: Update the getCurrentExercise method with controlled initialization
     const getCurrentExercise = () => {
       const exercise = exercises.getCurrentExercise(lessonOrchestrator.currentStep.value)
       
-      // ✅ CRITICAL: Initialize specific exercise types when exercise loads
+      // ✅ CRITICAL: Only initialize if exercise has changed
       if (exercise) {
-        if (exercise.type === 'fill-blank') {
-          // Force re-initialization each time
-          setTimeout(() => {
-            initializeFillBlankForExercise(exercise)
-          }, 10)
-        } else if (exercise.type === 'drag-drop') {
-          setTimeout(() => {
-            initializeDragDropForExercise(exercise)
-          }, 10)
+        const exerciseId = exercise.id || `${exercise.type}_${exercise.question?.substring(0, 20)}`
+        
+        if (initializationTracker.value.currentExerciseId !== exerciseId) {
+          // Reset tracker for new exercise
+          initializationTracker.value = {
+            currentExerciseId: exerciseId,
+            fillBlankInitialized: false,
+            dragDropInitialized: false
+          }
+          
+          // Initialize based on type
+          if (exercise.type === 'fill-blank') {
+            nextTick(() => {
+              initializeFillBlankForExercise(exercise)
+            })
+          } else if (exercise.type === 'drag-drop') {
+            nextTick(() => {
+              initializeDragDropForExercise(exercise)
+            })
+          }
         }
       }
       
@@ -1085,16 +1270,9 @@ export default {
 
       // ✅ CRITICAL: Get current exercise and ensure it's properly initialized
       if (currentStep.type === 'exercise' || currentStep.type === 'practice') {
-        exerciseOrQuiz = getCurrentExercise() // This now includes initialization
+        exerciseOrQuiz = getCurrentExercise() // This now includes controlled initialization
         
         if (exerciseOrQuiz) {
-          // ✅ ENSURE: Exercise-specific data is initialized
-          if (exerciseOrQuiz.type === 'fill-blank') {
-            initializeFillBlankForExercise(exerciseOrQuiz)
-          } else if (exerciseOrQuiz.type === 'drag-drop') {
-            initializeDragDropForExercise(exerciseOrQuiz)
-          }
-          
           console.log('🔍 Validating exercise:', {
             type: exerciseOrQuiz.type,
             question: exerciseOrQuiz.question,
@@ -1435,18 +1613,20 @@ export default {
       exercises.smartHint.value = ''
     }
 
-    // ✅ WATCH: Add watchers to monitor exercise changes and init fill-blank
-    watch(() => lessonOrchestrator.currentStep.value, (newStep) => {
-      if (newStep && newStep.type === 'exercise') {
-        const exercise = getCurrentExercise()
-        if (exercise && exercise.type === 'fill-blank') {
-          console.log('🔄 Exercise changed to fill-blank, initializing...')
-          setTimeout(() => {
-            initializeFillBlankForExercise(exercise)
-          }, 50)
+    // ✅ WATCH: Add watcher to monitor exercise changes and prevent over-initialization
+    watch(() => lessonOrchestrator.currentStep.value, (newStep, oldStep) => {
+      if (newStep && newStep !== oldStep && newStep.type === 'exercise') {
+        // Reset initialization tracker when step changes
+        initializationTracker.value = {
+          currentExerciseId: null,
+          fillBlankInitialized: false,
+          dragDropInitialized: false
         }
+        
+        const exercise = getCurrentExercise()
+        console.log('🔄 Step changed to exercise:', exercise?.type)
       }
-    }, { immediate: true })
+    }, { immediate: false })
 
     // Other utility methods
     const askAboutExplanation = (question) => {
