@@ -11,12 +11,14 @@ export function useExercises() {
   const currentHint = ref('')
   const smartHint = ref('')
   
-  // ✅ Exercise type data
+  // ✅ Exercise type data - FIXED: Added missing properties
   const fillBlankAnswers = ref([])
   const matchingPairs = ref([])
   const selectedMatchingItem = ref(null)
   const orderingItems = ref([])
   const dragDropPlacements = reactive({})
+  const availableDragItems = ref([])
+  const dropZones = ref([])
   
   // ✅ Drag and drop state
   const draggedDragItem = ref(null)
@@ -178,7 +180,7 @@ export function useExercises() {
         initializeOrderingItems(exercise)
         break
       case 'drag-drop':
-        initializeDragDropItems()
+        initializeDragDropItems(exercise)
         break
       case 'matching':
         initializeMatchingItems()
@@ -242,12 +244,60 @@ export function useExercises() {
   }
   
   // ✅ FIXED - Drag drop initialization
-  const initializeDragDropItems = () => {
+  const initializeDragDropItems = (exercise) => {
     // Clear existing placements
     Object.keys(dragDropPlacements).forEach(key => {
       delete dragDropPlacements[key]
     })
-    console.log('✅ Initialized drag-drop placements')
+    
+    // Clear reactive arrays
+    availableDragItems.value = []
+    dropZones.value = []
+    
+    if (!exercise || exercise.type !== 'drag-drop') {
+      console.log('✅ Initialized empty drag-drop items')
+      return
+    }
+    
+    // Initialize drag items
+    if (exercise.dragItems && Array.isArray(exercise.dragItems)) {
+      availableDragItems.value = exercise.dragItems.map(item => {
+        if (typeof item === 'string') {
+          return { text: item, id: item }
+        } else if (item && item.text) {
+          return item
+        } else {
+          return { text: String(item), id: String(item) }
+        }
+      })
+    }
+    
+    // Initialize drop zones
+    if (exercise.dropZones && Array.isArray(exercise.dropZones)) {
+      dropZones.value = exercise.dropZones.map(zone => {
+        if (typeof zone === 'string') {
+          return { label: zone, id: zone, correctItems: [] }
+        } else if (zone && zone.label) {
+          return {
+            label: zone.label,
+            id: zone.id || zone.label,
+            correctItems: zone.correctItems || zone.items || []
+          }
+        } else {
+          return { label: String(zone), id: String(zone), correctItems: [] }
+        }
+      })
+      
+      // Initialize empty arrays for each zone
+      dropZones.value.forEach(zone => {
+        dragDropPlacements[zone.id] = []
+      })
+    }
+    
+    console.log('✅ Initialized drag-drop items:', {
+      dragItems: availableDragItems.value.length,
+      dropZones: dropZones.value.length
+    })
   }
   
   // ✅ FIXED - Matching initialization
@@ -344,6 +394,8 @@ export function useExercises() {
     matchingPairs.value = []
     selectedMatchingItem.value = null
     orderingItems.value = []
+    availableDragItems.value = []
+    dropZones.value = []
     
     // Clear drag-drop placements
     Object.keys(dragDropPlacements).forEach(key => {
@@ -422,6 +474,8 @@ export function useExercises() {
     selectedMatchingItem,
     orderingItems,
     dragDropPlacements,
+    availableDragItems,
+    dropZones,
     draggedDragItem,
     dropOverZone,
     draggedItem,

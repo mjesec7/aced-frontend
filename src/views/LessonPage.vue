@@ -237,6 +237,7 @@
   </div>
 </template>
 
+
 <script>
 // Complete LessonPage.vue <script> section - FINAL FIXED VERSION
 import { computed, ref, watch, nextTick } from 'vue'
@@ -357,7 +358,7 @@ export default {
       return [correctAnswer].filter(Boolean)
     }
 
-    // ✅ FIXED: Enhanced drag-drop initialization with proper data handling
+    // ✅ SIMPLIFIED: Use the composable's own initialization
     const initializeDragDropForExercise = (exercise) => {
       if (!exercise || exercise.type !== 'drag-drop') {
         return
@@ -378,81 +379,16 @@ export default {
         dropZones: exercise.dropZones
       })
       
-      // Clear existing placements
-      if (exercises.dragDropPlacements) {
-        Object.keys(exercises.dragDropPlacements).forEach(key => {
-          delete exercises.dragDropPlacements[key]
-        })
-      } else {
-        exercises.dragDropPlacements = {}
-      }
-      
-      // ✅ CRITICAL: Handle MongoDB data structure
-      let dragItems = []
-      let dropZones = []
-      
-      if (Array.isArray(exercise.dragItems)) {
-        dragItems = exercise.dragItems
-      } else if (exercise.dragItems && typeof exercise.dragItems === 'object') {
-        // Handle MongoDB ObjectId or object structure
-        dragItems = Object.values(exercise.dragItems).filter(item => 
-          typeof item === 'string' || (item && item.text)
-        )
-      }
-      
-      if (Array.isArray(exercise.dropZones)) {
-        dropZones = exercise.dropZones
-      } else if (exercise.dropZones && typeof exercise.dropZones === 'object') {
-        // Handle MongoDB ObjectId or object structure
-        dropZones = Object.values(exercise.dropZones).filter(zone => 
-          zone && (zone.label || zone.id)
-        )
-      }
-      
-      console.log('🔍 Processed drag-drop data:', { dragItems, dropZones })
-      
-      // Initialize available drag items
-      if (dragItems.length > 0) {
-        exercises.availableDragItems.value = dragItems.map(item => {
-          if (typeof item === 'string') {
-            return { text: item, id: item }
-          } else if (item && item.text) {
-            return item
-          } else {
-            return { text: String(item), id: String(item) }
-          }
-        })
-      }
-      
-      // Initialize drop zones
-      if (dropZones.length > 0) {
-        exercises.dropZones.value = dropZones.map(zone => {
-          if (typeof zone === 'string') {
-            return { label: zone, id: zone, correctItems: [] }
-          } else if (zone && zone.label) {
-            return {
-              label: zone.label,
-              id: zone.id || zone.label,
-              correctItems: zone.correctItems || zone.items || []
-            }
-          } else {
-            return { label: String(zone), id: String(zone), correctItems: [] }
-          }
-        })
-        
-        // Initialize empty arrays for each zone
-        exercises.dropZones.value.forEach(zone => {
-          exercises.dragDropPlacements[zone.id] = []
-        })
-      }
+      // ✅ FIXED: Use the composable's own initialization method
+      exercises.initializeDragDropItems(exercise)
       
       // ✅ CRITICAL: Mark as initialized
       initializationTracker.value.currentExerciseId = exerciseId
       initializationTracker.value.dragDropInitialized = true
       
-      console.log('✅ Drag-drop initialized:', {
-        dragItems: exercises.availableDragItems.value,
-        dropZones: exercises.dropZones.value,
+      console.log('✅ Drag-drop initialized via composable:', {
+        dragItems: exercises.availableDragItems?.value || [],
+        dropZones: exercises.dropZones?.value || [],
         placements: exercises.dragDropPlacements
       })
     }
@@ -479,58 +415,14 @@ export default {
         correctAnswers: exercise.correctAnswers
       })
       
-      // Determine number of blanks needed
-      let blankCount = 0
-      
-      // ✅ CRITICAL: Handle MongoDB data structure for blanks
-      if (exercise.blanks && Array.isArray(exercise.blanks)) {
-        blankCount = exercise.blanks.length
-      } else if (exercise.correctAnswers && Array.isArray(exercise.correctAnswers)) {
-        blankCount = exercise.correctAnswers.length
-      } else if (exercise.answers && Array.isArray(exercise.answers)) {
-        blankCount = exercise.answers.length
-      } else {
-        // ✅ ENHANCED: Parse template for different blank formats
-        const template = exercise.template || exercise.question || ''
-        
-        // MongoDB data uses * for blanks
-        const asteriskMatches = template.match(/\*/g) || []
-        const underscoreMatches = template.match(/_+/g) || []
-        const blankMatches = template.match(/\[blank\]/gi) || []
-        const curlyBraceMatches = template.match(/\{[^}]*\}/g) || []
-        
-        blankCount = Math.max(
-          asteriskMatches.length,
-          underscoreMatches.length, 
-          blankMatches.length, 
-          curlyBraceMatches.length,
-          1
-        )
-        
-        console.log('🔍 Template parsing:', {
-          template,
-          asteriskMatches: asteriskMatches.length,
-          underscoreMatches: underscoreMatches.length,
-          blankMatches: blankMatches.length,
-          curlyBraceMatches: curlyBraceMatches.length,
-          finalCount: blankCount
-        })
-      }
-      
-      // ✅ CRITICAL: Force reactive update of fill blank answers array
-      if (exercises.fillBlankAnswers.value) {
-        exercises.fillBlankAnswers.value.length = 0 // Clear existing
-      }
-      exercises.fillBlankAnswers.value = new Array(blankCount).fill('')
-      
-      // ✅ FORCE: Trigger reactivity manually
-      exercises.fillBlankAnswers.value = [...exercises.fillBlankAnswers.value]
+      // ✅ FIXED: Use the composable's own initialization method
+      exercises.initializeFillBlankAnswers(exercise)
       
       // ✅ CRITICAL: Mark as initialized
       initializationTracker.value.currentExerciseId = exerciseId
       initializationTracker.value.fillBlankInitialized = true
       
-      console.log(`✅ Fill-blank initialized with ${blankCount} blanks:`, exercises.fillBlankAnswers.value)
+      console.log(`✅ Fill-blank initialized via composable:`, exercises.fillBlankAnswers.value)
     }
 
     // ✅ VALIDATION FUNCTIONS - ALL FIXED
@@ -1766,11 +1658,15 @@ export default {
       goToHomework,
       getMedalIcon,
       initializeVocabularyModal,
-      pronounceWord
+      pronounceWord,
+      
+      // Add missing drag-drop properties
+      availableDragItems: exercises.availableDragItems,
+      dropZones: exercises.dropZones
     }
   }
 }
-</script>
+</script> 
 
 <style scoped>
 @import "@/assets/css/LessonPage.css";
