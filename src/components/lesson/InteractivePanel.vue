@@ -110,70 +110,88 @@
           <!-- Debug info for matching -->
           <div v-if="showDebugInfo" class="debug-section">
             <h4>Matching Debug:</h4>
-            <p>Left items: {{ leftItems }}</p>
-            <p>Right items: {{ rightItems }}</p>
-            <p>Current pairs: {{ matchingPairs }}</p>
-            <p>Selected item: {{ selectedMatchingItem }}</p>
-            <p>Exercise pairs: {{ currentExercise?.pairs }}</p>
+            <p>Left items: {{ JSON.stringify(leftItems) }}</p>
+            <p>Right items: {{ JSON.stringify(rightItems) }}</p>
+            <p>Current pairs: {{ JSON.stringify(matchingPairs) }}</p>
+            <p>Selected item: {{ JSON.stringify(selectedMatchingItem) }}</p>
+            <p>Exercise pairs: {{ JSON.stringify(currentExercise?.pairs) }}</p>
+            <p>Can submit: {{ canSubmitAnswer }}</p>
             <button @click="debugMatching" class="debug-btn">Debug Matching</button>
           </div>
           
           <div class="matching-container">
+            <!-- Left Side -->
             <div class="matching-side left-side">
               <h4>Соедините:</h4>
               <div 
                 v-for="(item, index) in leftItems" 
-                :key="'left-' + index"
+                :key="`left-${index}`"
                 class="matching-item"
                 :class="{ 
                   selected: selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === index,
                   matched: isItemMatched('left', index),
                   disabled: showCorrectAnswer
                 }"
-                @click="!showCorrectAnswer && selectMatchingItem('left', index)"
+                @click="handleMatchingItemClick('left', index)"
+                :data-side="'left'"
+                :data-index="index"
               >
                 {{ item }}
+                <!-- Visual indicator for selected item -->
+                <span v-if="selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === index" class="selection-indicator">👆</span>
               </div>
             </div>
             
+            <!-- Right Side -->
             <div class="matching-side right-side">
               <h4>С:</h4>
               <div 
                 v-for="(item, index) in rightItems" 
-                :key="'right-' + index"
+                :key="`right-${index}`"
                 class="matching-item"
                 :class="{ 
                   selected: selectedMatchingItem?.side === 'right' && selectedMatchingItem?.index === index,
                   matched: isItemMatched('right', index),
                   disabled: showCorrectAnswer
                 }"
-                @click="!showCorrectAnswer && selectMatchingItem('right', index)"
+                @click="handleMatchingItemClick('right', index)"
+                :data-side="'right'"
+                :data-index="index"
               >
                 {{ item }}
+                <!-- Visual indicator for selected item -->
+                <span v-if="selectedMatchingItem?.side === 'right' && selectedMatchingItem?.index === index" class="selection-indicator">👆</span>
               </div>
             </div>
           </div>
           
           <!-- Matching Pairs Display -->
-          <div v-if="matchingPairs.length > 0" class="matching-pairs">
+          <div v-if="matchingPairs && matchingPairs.length > 0" class="matching-pairs">
             <h4>Соединения:</h4>
             <div 
               v-for="(pair, index) in matchingPairs" 
-              :key="index"
+              :key="`pair-${index}`"
               class="pair-item"
             >
-              <span>{{ getLeftItemText(pair.leftIndex) }} ↔ {{ getRightItemText(pair.rightIndex) }}</span>
+              <span class="pair-text">
+                {{ getLeftItemText(pair.leftIndex) }} ↔ {{ getRightItemText(pair.rightIndex) }}
+              </span>
               <button 
                 v-if="!showCorrectAnswer"
-                @click="removeMatchingPair(index)" 
+                @click="handleRemovePair(index)" 
                 class="remove-pair"
+                type="button"
               >×</button>
             </div>
           </div>
           
           <!-- Instructions -->
           <div class="matching-instructions">
-            <p>💡 Инструкция: Нажмите на элемент слева, затем на соответствующий элемент справа для создания связи.</p>
+            <p>💡 <strong>Инструкция:</strong> Нажмите на элемент слева, затем на соответствующий элемент справа для создания связи.</p>
+            <p v-if="selectedMatchingItem" class="current-selection">
+              🎯 Выбран элемент: <strong>{{ selectedMatchingItem.side === 'left' ? 'слева' : 'справа' }}</strong> - 
+              "{{ selectedMatchingItem.side === 'left' ? leftItems[selectedMatchingItem.index] : rightItems[selectedMatchingItem.index] }}"
+            </p>
           </div>
         </div>
 
@@ -863,10 +881,41 @@ export default {
     // ==========================================
     // MATCHING METHODS - ENHANCED
     // ==========================================
+
+    const handleMatchingItemClick = (side, index) => {
+      console.log('🖱️ Matching item clicked:', { side, index, disabled: props.showCorrectAnswer })
+      
+      if (props.showCorrectAnswer) {
+        console.log('⚠️ Exercise is disabled, ignoring click')
+        return
+      }
+      
+      // Call the selectMatchingItem method
+      selectMatchingItem(side, index)
+    }
+
+    const handleRemovePair = (pairIndex) => {
+      console.log('🗑️ Remove pair clicked:', pairIndex)
+      
+      if (props.showCorrectAnswer) {
+        console.log('⚠️ Exercise is disabled, ignoring remove')
+        return
+      }
+      
+      // Call the removeMatchingPair method
+      removeMatchingPair(pairIndex)
+    }
     
-    // ✅ ENHANCED: selectMatchingItem with better logic
+    // ✅ ENHANCED: selectMatchingItem with proper emit calls
     const selectMatchingItem = (side, index) => {
-      console.log('🔗 Selecting matching item:', { side, index, current: props.selectedMatchingItem })
+      console.log('🔗 selectMatchingItem called:', { 
+        side, 
+        index, 
+        currentSelection: props.selectedMatchingItem,
+        leftItems: leftItems.value,
+        rightItems: rightItems.value,
+        currentPairs: props.matchingPairs
+      })
       
       const currentSelection = props.selectedMatchingItem
       
@@ -898,35 +947,29 @@ export default {
         rightIndex: side === 'right' ? index : currentSelection.index
       }
       
-      console.log('  📝 New pair:', newPair)
+      console.log('  📝 New pair to create:', newPair)
       
       // Check if this exact pair already exists
-      const pairExists = props.matchingPairs.some(pair => 
+      const currentPairs = props.matchingPairs || []
+      const pairExists = currentPairs.some(pair => 
         pair.leftIndex === newPair.leftIndex && pair.rightIndex === newPair.rightIndex
       )
       
       if (!pairExists) {
-        // Check if either item is already used in another pair
-        const leftUsed = props.matchingPairs.some(pair => pair.leftIndex === newPair.leftIndex)
-        const rightUsed = props.matchingPairs.some(pair => pair.rightIndex === newPair.rightIndex)
+        console.log('  ✅ Creating new pair')
         
-        if (leftUsed || rightUsed) {
-          console.log('  ⚠️ One of the items is already paired, removing old pairs')
-          // Remove existing pairs that use these items
-          const updatedPairs = props.matchingPairs.filter(pair => 
-            pair.leftIndex !== newPair.leftIndex && pair.rightIndex !== newPair.rightIndex
-          )
-          
-          // Add the new pair
-          updatedPairs.push(newPair)
-          emit('answer-changed', updatedPairs)
-        } else {
-          // Neither item is used, just add the new pair
-          const updatedPairs = [...props.matchingPairs, newPair]
-          emit('answer-changed', updatedPairs)
-        }
+        // Remove any existing pairs that use these items
+        const updatedPairs = currentPairs.filter(pair => 
+          pair.leftIndex !== newPair.leftIndex && pair.rightIndex !== newPair.rightIndex
+        )
         
-        console.log('  ✅ Pair created successfully')
+        // Add the new pair
+        updatedPairs.push(newPair)
+        
+        console.log('  📋 Updated pairs:', updatedPairs)
+        
+        // Emit the change - this is the key fix!
+        emit('answer-changed', updatedPairs)
       } else {
         console.log('  ⚠️ Pair already exists')
       }
@@ -935,30 +978,40 @@ export default {
       emit('matching-item-selected', null)
     }
     
-    // ✅ Enhanced isItemMatched function
-    const isItemMatched = (side, index) => {
-      if (!props.matchingPairs || props.matchingPairs.length === 0) {
-        return false
-      }
-      
-      if (side === 'left') {
-        return props.matchingPairs.some(pair => pair.leftIndex === index)
-      } else {
-        return props.matchingPairs.some(pair => pair.rightIndex === index)
-      }
-    }
-    
-    // ✅ Enhanced removeMatchingPair function
+    // ✅ ENHANCED: removeMatchingPair with proper emit calls
     const removeMatchingPair = (pairIndex) => {
-      console.log('🗑️ Removing matching pair at index:', pairIndex)
+      console.log('🗑️ removeMatchingPair called:', { 
+        pairIndex, 
+        currentPairs: props.matchingPairs,
+        pairToRemove: props.matchingPairs?.[pairIndex]
+      })
       
-      if (pairIndex >= 0 && pairIndex < props.matchingPairs.length) {
-        const updatedPairs = props.matchingPairs.filter((_, index) => index !== pairIndex)
-        console.log('  ✅ Updated pairs:', updatedPairs)
+      const currentPairs = props.matchingPairs || []
+      
+      if (pairIndex >= 0 && pairIndex < currentPairs.length) {
+        const updatedPairs = currentPairs.filter((_, index) => index !== pairIndex)
+        console.log('  ✅ Updated pairs after removal:', updatedPairs)
+        
+        // Emit the change - this is the key fix!
         emit('answer-changed', updatedPairs)
         emit('remove-matching-pair', pairIndex)
       } else {
         console.warn('  ⚠️ Invalid pair index:', pairIndex)
+      }
+    }
+    
+    // ✅ Enhanced isItemMatched function
+    const isItemMatched = (side, index) => {
+      const currentPairs = props.matchingPairs || []
+      
+      if (currentPairs.length === 0) {
+        return false
+      }
+      
+      if (side === 'left') {
+        return currentPairs.some(pair => pair.leftIndex === index)
+      } else {
+        return currentPairs.some(pair => pair.rightIndex === index)
       }
     }
     
@@ -979,15 +1032,38 @@ export default {
 
     // ✅ Debug function for matching
     const debugMatching = () => {
-      console.log('🔍 MATCHING DEBUG:', {
-        exercise: props.currentExercise,
-        pairs: props.currentExercise?.pairs,
+      console.log('🔍 MATCHING DEBUG FULL STATE:', {
+        currentExercise: props.currentExercise,
+        exercisePairs: props.currentExercise?.pairs,
         leftItems: leftItems.value,
         rightItems: rightItems.value,
         userPairs: props.matchingPairs,
         selectedItem: props.selectedMatchingItem,
-        canSubmit: canSubmitAnswer.value
+        canSubmit: canSubmitAnswer.value,
+        showCorrectAnswer: props.showCorrectAnswer
       })
+      
+      // Also log the computed properties
+      console.log('🔍 COMPUTED PROPERTIES:', {
+        exerciseType: exerciseType.value,
+        isExerciseStep: isExerciseStep.value,
+        leftItemsComputed: leftItems.value,
+        rightItemsComputed: rightItems.value
+      })
+      
+      // Test pair creation manually
+      if (leftItems.value.length > 0 && rightItems.value.length > 0) {
+        console.log('🧪 TESTING: Creating test pair...')
+        const testPair = {
+          leftIndex: 0,
+          rightIndex: 0
+        }
+        console.log('Test pair would be:', {
+          leftText: getLeftItemText(0),
+          rightText: getRightItemText(0),
+          pair: testPair
+        })
+      }
     }
 
     // ==========================================
@@ -1209,9 +1285,11 @@ export default {
       selectTrueFalse,
       
       // Matching methods - ENHANCED
+      handleMatchingItemClick,
+      handleRemovePair,
       selectMatchingItem,
-      isItemMatched,
       removeMatchingPair,
+      isItemMatched,
       getLeftItemText,
       getRightItemText,
       debugMatching,
@@ -1234,8 +1312,8 @@ export default {
   }
 }
 </script>
-  
-  <style scoped>
+
+<style scoped>
 /* ==========================================
    BASE LAYOUT
    ========================================== */
@@ -1536,7 +1614,7 @@ export default {
 }
 
 /* ==========================================
-   MATCHING STYLING
+   MATCHING STYLING - ENHANCED
    ========================================== */
 .matching-container {
   display: grid;
@@ -1560,47 +1638,70 @@ export default {
 }
 
 .matching-item {
+  position: relative;
   background: #f8fafc;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   font-size: 0.9rem;
   text-align: center;
+  user-select: none;
 }
 
-.matching-item:hover {
+.matching-item:hover:not(.disabled) {
   border-color: #8b5cf6;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
 }
 
 .matching-item.selected {
-  border-color: #8b5cf6;
-  background: rgba(139, 92, 246, 0.1);
-  color: #4c1d95;
-  font-weight: 600;
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  color: white;
+  font-weight: bold;
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
 }
 
 .matching-item.matched {
-  border-color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
-  color: #047857;
-  opacity: 0.7;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  opacity: 0.8;
 }
 
 .matching-item.disabled {
+  opacity: 0.5;
   cursor: not-allowed;
-  opacity: 0.6;
+}
+
+.selection-indicator {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  font-size: 1.2rem;
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
 }
 
 .matching-pairs {
-  background: white;
-  border: 2px solid #ddd6fe;
-  border-radius: 12px;
+  margin-top: 20px;
   padding: 20px;
-  margin-bottom: 24px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
 }
 
 .matching-pairs h4 {
@@ -1613,12 +1714,16 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(139, 92, 246, 0.05);
-  border: 1px solid #ddd6fe;
-  border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 8px;
-  font-size: 0.9rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #ddd6fe;
+}
+
+.pair-text {
+  font-weight: 600;
+  color: #4c1d95;
 }
 
 .remove-pair {
@@ -1629,16 +1734,27 @@ export default {
   width: 24px;
   height: 24px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
+  font-weight: bold;
   transition: all 0.2s ease;
 }
 
 .remove-pair:hover {
   background: #dc2626;
   transform: scale(1.1);
+}
+
+.matching-instructions {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.current-selection {
+  margin-top: 8px;
+  font-style: italic;
+  color: #1e40af;
 }
 
 /* ==========================================
@@ -2076,12 +2192,12 @@ export default {
    DEBUG STYLING
    ========================================== */
 .debug-section {
-  background: rgba(239, 68, 68, 0.1);
-  border: 2px solid #fecaca;
-  border-radius: 8px;
-  padding: 12px;
   margin: 16px 0;
-  font-size: 0.8rem;
+  padding: 12px;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  font-size: 0.85rem;
 }
 
 .debug-section h4 {
@@ -2101,8 +2217,8 @@ export default {
   border: none;
   padding: 4px 8px;
   border-radius: 4px;
-  font-size: 0.8rem;
   cursor: pointer;
+  margin-top: 8px;
 }
 
 /* ==========================================
@@ -2295,18 +2411,5 @@ export default {
     border: 1px solid #000;
     break-inside: avoid;
   }
-}
-
-/* ==========================================
-   ANIMATION CLASSES
-   ========================================== */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
 }
 </style>

@@ -123,49 +123,49 @@
 
         <!-- Right Panel - Interactive Content OR AI Help -->
         <div v-if="isInteractiveStep" class="interactive-panel-container">
-          <!-- Interactive Panel (Exercises/Quizzes) -->
+          <!-- Interactive Panel (Exercises/Quizzes) - ENHANCED -->
           <InteractivePanel
-  :current-step="currentStep"
-  :current-exercise="getCurrentExercise()"
-  :current-quiz="getCurrentQuiz()"
-  :exercise-index="currentExerciseIndex"
-  :quiz-index="currentQuizIndex"
-  :total-exercises="getTotalExercises()"
-  :total-quizzes="getTotalQuizzes()"
-  :user-answer="userAnswer"
-  :confirmation="confirmation"
-  :answer-was-correct="answerWasCorrect"
-  :current-hint="currentHint"
-  :smart-hint="smartHint"
-  :mistake-count="mistakeCount"
-  :fill-blank-answers="fillBlankAnswers"
-  :matching-pairs="matchingPairs"
-  :selected-matching-item="selectedMatchingItem"
-  :ordering-items="orderingItems"
-  :drag-drop-placements="dragDropPlacements"
-  :available-drag-items="availableDragItems"
-  :drop-zones="dropZones"
-    :attempt-count="attemptCount"
-  :max-attempts="maxAttempts"
-  :is-on-second-chance="isOnSecondChance"
-  :show-correct-answer="showCorrectAnswer"
-  :correct-answer-text="correctAnswerText"
-  
-  @answer-changed="userAnswer = $event"
-  @fill-blank-updated="updateFillBlankAnswer"
-  @submit="handleSubmitOrNext"
-  @next-exercise="goToNextExercise"
-  @next-quiz="goToNextQuiz"
-  @show-hint="showHint"
-  @clear-hint="clearSmartHint"
-  @matching-item-selected="handleMatchingItemSelected"
-  @remove-matching-pair="handleRemoveMatchingPair"
-  @drag-item-start="handleDragItemStart"
-  @drag-over-zone="handleDragOverZone"
-  @drag-leave-zone="handleDragLeaveZone"
-  @drop-in-zone="handleDropInZone"
-  @remove-dropped-item="handleRemoveDroppedItem"
-/>
+            :current-step="currentStep"
+            :current-exercise="getCurrentExercise()"
+            :current-quiz="getCurrentQuiz()"
+            :exercise-index="currentExerciseIndex"
+            :quiz-index="currentQuizIndex"
+            :total-exercises="getTotalExercises()"
+            :total-quizzes="getTotalQuizzes()"
+            :user-answer="userAnswer"
+            :confirmation="confirmation"
+            :answer-was-correct="answerWasCorrect"
+            :current-hint="currentHint"
+            :smart-hint="smartHint"
+            :mistake-count="mistakeCount"
+            :fill-blank-answers="fillBlankAnswers"
+            :matching-pairs="matchingPairs"
+            :selected-matching-item="selectedMatchingItem"
+            :ordering-items="orderingItems"
+            :drag-drop-placements="dragDropPlacements"
+            :available-drag-items="availableDragItems"
+            :drop-zones="dropZones"
+            :attempt-count="attemptCount"
+            :max-attempts="maxAttempts"
+            :is-on-second-chance="isOnSecondChance"
+            :show-correct-answer="showCorrectAnswer"
+            :correct-answer-text="correctAnswerText"
+            
+            @answer-changed="handleAnswerChanged"
+            @fill-blank-updated="updateFillBlankAnswer"
+            @submit="handleSubmitOrNext"
+            @next-exercise="goToNextExercise"
+            @next-quiz="goToNextQuiz"
+            @show-hint="showHint"
+            @clear-hint="clearSmartHint"
+            @matching-item-selected="handleMatchingItemSelected"
+            @remove-matching-pair="handleRemoveMatchingPair"
+            @drag-item-start="handleDragItemStart"
+            @drag-over-zone="handleDragOverZone"
+            @drag-leave-zone="handleDragLeaveZone"
+            @drop-in-zone="handleDropInZone"
+            @remove-dropped-item="handleRemoveDroppedItem"
+          />
           
           <!-- AI Help Panel (shown below or alongside interactive content) -->
           <AIHelpPanel
@@ -237,9 +237,8 @@
   </div>
 </template>
 
-
 <script>
-// Complete LessonPage.vue - Clean and Well-Organized Script
+// Complete LessonPage.vue - Enhanced with FIXED Matching Exercise Support
 import { computed, ref, watch, nextTick } from 'vue'
 
 // Import composables
@@ -923,6 +922,61 @@ export default {
     }
 
     // ==========================================
+    // ENHANCED EVENT HANDLERS - CRITICAL FIX
+    // ==========================================
+
+    const handleAnswerChanged = (newAnswer) => {
+      console.log('📝 Answer changed:', newAnswer)
+      
+      // Get current exercise to determine type
+      const currentExercise = getCurrentExercise()
+      
+      if (currentExercise?.type === 'matching') {
+        // For matching exercises, newAnswer is the pairs array
+        exercises.matchingPairs.value = newAnswer || []
+        exercises.userAnswer.value = newAnswer || []
+        
+        console.log('🔗 Updated matching pairs:', exercises.matchingPairs.value)
+      } else {
+        // For other exercise types
+        exercises.userAnswer.value = newAnswer
+      }
+    }
+
+    const handleMatchingItemSelected = (selection) => {
+      console.log('🔗 Handling matching item selection:', selection)
+      exercises.selectedMatchingItem.value = selection
+    }
+
+    const handleRemoveMatchingPair = (pairIndex) => {
+      console.log('🗑️ Handling remove matching pair:', pairIndex)
+      
+      if (pairIndex >= 0 && pairIndex < exercises.matchingPairs.value.length) {
+        const updatedPairs = exercises.matchingPairs.value.filter((_, index) => index !== pairIndex)
+        exercises.matchingPairs.value = updatedPairs
+        exercises.userAnswer.value = updatedPairs
+        
+        console.log('  ✅ Pair removed, updated pairs:', updatedPairs)
+      } else {
+        console.warn('  ⚠️ Invalid pair index for removal:', pairIndex)
+      }
+    }
+
+    // ==========================================
+    // DEBUG HELPER
+    // ==========================================
+
+    const debugMatchingState = () => {
+      console.log('🔍 LESSON PAGE MATCHING STATE:', {
+        currentExercise: getCurrentExercise(),
+        matchingPairs: exercises.matchingPairs.value,
+        selectedItem: exercises.selectedMatchingItem.value,
+        userAnswer: exercises.userAnswer.value,
+        canSubmit: exercises.canSubmitAnswer?.(getCurrentExercise())
+      })
+    }
+
+    // ==========================================
     // MAIN SUBMISSION HANDLER
     // ==========================================
     
@@ -1109,21 +1163,9 @@ export default {
     }
 
     // ==========================================
-    // EVENT HANDLERS
+    // DRAG AND DROP EVENT HANDLERS
     // ==========================================
     
-    const handleMatchingItemSelected = (selection) => {
-      exercises.selectedMatchingItem.value = selection
-    }
-
-    const handleRemoveMatchingPair = (pairIndex) => {
-      if (pairIndex >= 0 && pairIndex < exercises.matchingPairs.value.length) {
-        const updatedPairs = exercises.matchingPairs.value.filter((_, index) => index !== pairIndex)
-        exercises.matchingPairs.value = updatedPairs
-        exercises.userAnswer.value = updatedPairs
-      }
-    }
-
     const handleDragItemStart = (item) => {
       exercises.draggedDragItem.value = item
     }
@@ -1330,7 +1372,7 @@ export default {
           
           // Special handling for matching exercises
           if (exercise?.type === 'matching') {
-            exercises.initializeMatchingItems(exercise)
+            exercises.initializeMatchingItems?.(exercise)
           }
         }
       }
@@ -1348,7 +1390,7 @@ export default {
           pairs: currentExercise.pairs,
           userPairs: exercises.matchingPairs.value,
           selectedItem: exercises.selectedMatchingItem.value,
-          canSubmit: exercises.canSubmitAnswer(currentExercise)
+          canSubmit: exercises.canSubmitAnswer?.(currentExercise)
         })
       }
     }
@@ -1356,12 +1398,16 @@ export default {
     // Enable debug mode for development
     if (process.env.NODE_ENV === 'development') {
       window.debugMatchingExercise = debugMatchingExercise
+      window.debugMatchingState = debugMatchingState
       window.lessonState = {
         exercises,
         lessonOrchestrator,
         getCurrentExercise,
         attemptCount,
-        showCorrectAnswer
+        showCorrectAnswer,
+        handleAnswerChanged,
+        handleMatchingItemSelected,
+        handleRemoveMatchingPair
       }
     }
 
@@ -1408,9 +1454,13 @@ export default {
       getFinalFailureMessage,
       getRandomSuccessMessage,
       
-      // Event handlers
+      // ENHANCED Event handlers - CRITICAL FIX
+      handleAnswerChanged,
       handleMatchingItemSelected,
       handleRemoveMatchingPair,
+      debugMatchingState,
+      
+      // Other event handlers
       handleDragItemStart,
       handleDragOverZone,
       handleDragLeaveZone,
