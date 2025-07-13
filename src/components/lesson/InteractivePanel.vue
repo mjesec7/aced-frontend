@@ -671,9 +671,9 @@ export default {
       return []
     })
     
-    // ✅ ENHANCED: Right items processing with multiple data structure support
+    // ✅ FIXED: Right items are now SHUFFLED for challenging gameplay
     const rightItems = computed(() => {
-      console.log('🔍 Computing right items for matching exercise:', {
+      console.log('🔍 Computing right items for matching exercise (will be shuffled):', {
         exercise: props.currentExercise,
         pairs: props.currentExercise?.pairs
       })
@@ -702,11 +702,38 @@ export default {
           }
         }).filter(item => item.trim() !== '')
         
-        console.log('✅ Computed right items:', rightItems)
-        return rightItems
+        // 🔀 SHUFFLE THE RIGHT ITEMS SO THEY'RE NOT IN CORRECT ORDER
+        const shuffledRightItems = [...rightItems].sort(() => Math.random() - 0.5)
+        
+        console.log('✅ Original right items:', rightItems)
+        console.log('🔀 Shuffled right items:', shuffledRightItems)
+        return shuffledRightItems
       }
       
       console.warn('⚠️ Pairs is not an array:', pairs)
+      return []
+    })
+
+    // ✅ Helper to get original right items in correct order (for validation)
+    const getOriginalRightItems = computed(() => {
+      if (!props.currentExercise?.pairs) {
+        return []
+      }
+      
+      const pairs = props.currentExercise.pairs
+      
+      if (Array.isArray(pairs)) {
+        return pairs.map((pair, index) => {
+          if (Array.isArray(pair)) {
+            return String(pair[1] || '')
+          } else if (pair && typeof pair === 'object') {
+            return String(pair.right || pair[1] || pair.answer || pair.definition || '')
+          } else {
+            return String(pair || '')
+          }
+        }).filter(item => item.trim() !== '')
+      }
+      
       return []
     })
     
@@ -879,8 +906,23 @@ export default {
     }
 
     // ==========================================
-    // MATCHING METHODS - ENHANCED
+    // MATCHING METHODS - ENHANCED WITH SHUFFLING SUPPORT
     // ==========================================
+
+    // ✅ Helper function to get the ACTUAL right index (mapping shuffled back to original)
+    const getActualRightIndex = (shuffledIndex) => {
+      const shuffledItem = rightItems.value[shuffledIndex]
+      const originalItems = getOriginalRightItems.value
+      
+      // Find the original index of this item
+      const actualIndex = originalItems.findIndex(item => 
+        item.toLowerCase().trim() === shuffledItem.toLowerCase().trim()
+      )
+      
+      console.log(`🔍 Mapping shuffled index ${shuffledIndex} ("${shuffledItem}") to actual index ${actualIndex}`)
+      
+      return actualIndex
+    }
 
     const handleMatchingItemClick = (side, index) => {
       console.log('🖱️ Matching item clicked:', { side, index, disabled: props.showCorrectAnswer })
@@ -906,7 +948,7 @@ export default {
       removeMatchingPair(pairIndex)
     }
     
-    // ✅ ENHANCED: selectMatchingItem with proper emit calls
+    // ✅ ENHANCED: selectMatchingItem with proper index mapping for shuffled items
     const selectMatchingItem = (side, index) => {
       console.log('🔗 selectMatchingItem called:', { 
         side, 
@@ -942,12 +984,20 @@ export default {
       
       // If selecting from different side, create a pair
       console.log('  ➡️ Creating pair between different sides')
-      const newPair = {
-        leftIndex: side === 'left' ? index : currentSelection.index,
-        rightIndex: side === 'right' ? index : currentSelection.index
+      
+      let leftIndex, rightIndex
+      
+      if (side === 'left') {
+        leftIndex = index
+        rightIndex = getActualRightIndex(currentSelection.index) // Map shuffled to actual
+      } else {
+        leftIndex = currentSelection.index
+        rightIndex = getActualRightIndex(index) // Map shuffled to actual
       }
       
-      console.log('  📝 New pair to create:', newPair)
+      const newPair = { leftIndex, rightIndex }
+      
+      console.log('  📝 New pair to create (with actual indices):', newPair)
       
       // Check if this exact pair already exists
       const currentPairs = props.matchingPairs || []
@@ -1011,7 +1061,9 @@ export default {
       if (side === 'left') {
         return currentPairs.some(pair => pair.leftIndex === index)
       } else {
-        return currentPairs.some(pair => pair.rightIndex === index)
+        // For right side, we need to check if the actual index is matched
+        const actualIndex = getActualRightIndex(index)
+        return currentPairs.some(pair => pair.rightIndex === actualIndex)
       }
     }
     
@@ -1024,24 +1076,36 @@ export default {
     }
     
     const getRightItemText = (index) => {
-      if (index >= 0 && index < rightItems.value.length) {
-        return rightItems.value[index]
+      // This should return the original right item text, not shuffled
+      const originalItems = getOriginalRightItems.value
+      if (index >= 0 && index < originalItems.length) {
+        return originalItems[index]
       }
       return `Right Item ${index + 1}`
     }
 
-    // ✅ Debug function for matching
+    // ✅ Enhanced debug function with shuffling info
     const debugMatching = () => {
       console.log('🔍 MATCHING DEBUG FULL STATE:', {
         currentExercise: props.currentExercise,
         exercisePairs: props.currentExercise?.pairs,
         leftItems: leftItems.value,
         rightItems: rightItems.value,
+        originalRightItems: getOriginalRightItems.value,
         userPairs: props.matchingPairs,
         selectedItem: props.selectedMatchingItem,
         canSubmit: canSubmitAnswer.value,
         showCorrectAnswer: props.showCorrectAnswer
       })
+      
+      // Test index mapping
+      if (rightItems.value.length > 0) {
+        console.log('🧪 Testing index mapping:')
+        rightItems.value.forEach((item, shuffledIndex) => {
+          const actualIndex = getActualRightIndex(shuffledIndex)
+          console.log(`  Shuffled[${shuffledIndex}]: "${item}" → Actual[${actualIndex}]: "${getOriginalRightItems.value[actualIndex]}"`)
+        })
+      }
       
       // Also log the computed properties
       console.log('🔍 COMPUTED PROPERTIES:', {
@@ -1267,6 +1331,7 @@ export default {
       quizOptions,
       leftItems,
       rightItems,
+      getOriginalRightItems,
       isLastExercise,
       isLastQuiz,
       blankCount,
@@ -1284,7 +1349,7 @@ export default {
       selectQuizOption,
       selectTrueFalse,
       
-      // Matching methods - ENHANCED
+      // Enhanced matching methods with shuffling support
       handleMatchingItemClick,
       handleRemovePair,
       selectMatchingItem,
@@ -1293,6 +1358,7 @@ export default {
       getLeftItemText,
       getRightItemText,
       debugMatching,
+      getActualRightIndex,
       
       // Ordering methods
       startDrag,

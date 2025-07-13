@@ -594,9 +594,57 @@ export default {
       return correctCount === finalCorrectAnswers.length
     }
 
+    // FIXED MATCHING VALIDATION - Simple index comparison
     const validateMatching = (userPairs, exercise) => {
-      // Use the composable's enhanced validation method
-      return exercises.validateMatchingAnswers(userPairs, exercise)
+      console.log('🔗 Validating matching exercise with simple index comparison')
+      
+      if (!Array.isArray(userPairs) || userPairs.length === 0) {
+        console.log('❌ No user pairs provided')
+        return false
+      }
+
+      // Get exercise pairs
+      const exercisePairs = exercise.pairs || []
+      if (!Array.isArray(exercisePairs) || exercisePairs.length === 0) {
+        console.log('❌ No exercise pairs found')
+        return false
+      }
+
+      // Check if user completed all pairs
+      if (userPairs.length !== exercisePairs.length) {
+        console.log(`❌ Incomplete: ${userPairs.length}/${exercisePairs.length} pairs`)
+        return false
+      }
+
+      // Simple index-based validation
+      let correctCount = 0
+      
+      for (let i = 0; i < userPairs.length; i++) {
+        const userPair = userPairs[i]
+        
+        if (!userPair || typeof userPair !== 'object') {
+          console.log(`❌ Invalid pair at index ${i}:`, userPair)
+          continue
+        }
+
+        const leftIndex = userPair.leftIndex
+        const rightIndex = userPair.rightIndex
+
+        console.log(`🔍 Checking pair ${i}: leftIndex=${leftIndex}, rightIndex=${rightIndex}`)
+
+        // SIMPLIFIED LOGIC: Check if left and right indices match
+        if (leftIndex === rightIndex) {
+          correctCount++
+          console.log(`✅ CORRECT: Index ${leftIndex} matches ${rightIndex}`)
+        } else {
+          console.log(`❌ WRONG: Index ${leftIndex} does not match ${rightIndex}`)
+        }
+      }
+
+      const isValid = correctCount === exercisePairs.length
+      console.log(`🎯 Validation result: ${correctCount}/${exercisePairs.length} correct = ${isValid}`)
+      
+      return isValid
     }
 
     const validateOrdering = (userItems, exercise) => {
@@ -931,8 +979,8 @@ export default {
       // Get current exercise to determine type
       const currentExercise = getCurrentExercise()
       
+      // MAKE SURE this handles matching specifically:
       if (currentExercise?.type === 'matching') {
-        // For matching exercises, newAnswer is the pairs array
         exercises.matchingPairs.value = newAnswer || []
         exercises.userAnswer.value = newAnswer || []
         
