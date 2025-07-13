@@ -41,7 +41,7 @@
       </div>
     </div>
 
-    <!-- Vocabulary Learning Modal -->
+    <!-- ✅ FIXED: Vocabulary Learning Modal with proper event handlers -->
     <VocabularyModal 
       v-if="vocabularyModal.isVisible"
       :vocabulary-data="vocabularyModal"
@@ -58,6 +58,7 @@
       @restart="restartVocabulary"
       @close="confirmExit"
       @pronounce="pronounceWord"
+      @jump-to-word="jumpToVocabWord"
     />
 
     <!-- Intro Screen -->
@@ -238,7 +239,7 @@
 </template>
 
 <script>
-// Complete LessonPage.vue - Enhanced with FIXED Matching Exercise Support
+// Complete LessonPage.vue - Enhanced with FIXED Vocabulary Support
 import { computed, ref, watch, nextTick } from 'vue'
 
 // Import composables
@@ -321,6 +322,103 @@ export default {
     const isLastStep = computed(() => {
       return lessonOrchestrator.currentIndex.value >= lessonOrchestrator.steps.value.length - 1
     })
+
+    // ==========================================
+    // ✅ VOCABULARY METHODS - FIXED
+    // ==========================================
+    
+    const initializeVocabularyModal = (step) => {
+      console.log('📚 Initializing vocabulary modal from LessonPage:', step)
+      vocabulary.initializeVocabularyModal(step)
+    }
+
+    // ✅ CRITICAL FIX: Add missing jumpToVocabWord method
+    const jumpToVocabWord = (index) => {
+      console.log('🎯 Jumping to vocabulary word:', index)
+      
+      if (index >= 0 && index < vocabulary.vocabularyModal.words.length) {
+        // Reset card animation state first
+        vocabulary.cardAnimation.isFlipping = false
+        vocabulary.cardAnimation.showDefinition = false
+        
+        // Update index with small delay for smooth transition
+        setTimeout(() => {
+          vocabulary.vocabularyModal.currentIndex = index
+          console.log(`✅ Jumped to word ${index + 1}/${vocabulary.vocabularyModal.words.length}`)
+        }, 50)
+      } else {
+        console.warn('⚠️ Invalid vocabulary word index:', index)
+      }
+    }
+
+    // ✅ Enhanced vocabulary methods with better error handling
+    const showVocabDefinition = () => {
+      console.log('🔄 Showing vocabulary definition')
+      vocabulary.showVocabDefinition()
+    }
+
+    const hideVocabDefinition = () => {
+      console.log('🔄 Hiding vocabulary definition') 
+      vocabulary.hideVocabDefinition()
+    }
+
+    const markWordAsLearned = () => {
+      console.log('📚 Marking word as learned')
+      vocabulary.markWordAsLearned()
+    }
+
+    const nextVocabWord = () => {
+      console.log('➡️ Going to next vocabulary word')
+      vocabulary.nextVocabWord()
+    }
+
+    const previousVocabWord = () => {
+      console.log('⬅️ Going to previous vocabulary word')
+      vocabulary.previousVocabWord()
+    }
+
+    const skipVocabularyModal = () => {
+      console.log('⏭️ Skipping vocabulary modal')
+      vocabulary.skipVocabularyModal()
+    }
+
+    const restartVocabulary = () => {
+      console.log('🔄 Restarting vocabulary')
+      vocabulary.restartVocabulary()
+    }
+
+    // ✅ Enhanced pronunciation with better error handling
+    const pronounceWord = (word) => {
+      console.log('🔊 Pronouncing word:', word)
+      
+      if (!word || typeof word !== 'string') {
+        console.warn('⚠️ Invalid word for pronunciation:', word)
+        return
+      }
+      
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel()
+          
+          const utterance = new SpeechSynthesisUtterance(word.trim())
+          utterance.lang = 'en-US'
+          utterance.rate = 0.8
+          utterance.pitch = 1
+          
+          utterance.onstart = () => console.log('🎵 Started pronouncing:', word)
+          utterance.onend = () => console.log('✅ Finished pronouncing:', word)
+          utterance.onerror = (event) => console.error('❌ Pronunciation error:', event.error)
+          
+          window.speechSynthesis.speak(utterance)
+        } else {
+          console.warn('⚠️ Speech synthesis not supported')
+          sound.pronounceWord?.(word)
+        }
+      } catch (error) {
+        console.error('❌ Error pronouncing word:', error)
+        sound.pronounceWord?.(word)
+      }
+    }
 
     // ==========================================
     // HELPER FUNCTIONS
@@ -1037,20 +1135,6 @@ export default {
     }
 
     // ==========================================
-    // DEBUG HELPER
-    // ==========================================
-
-    const debugMatchingState = () => {
-      console.log('🔍 LESSON PAGE MATCHING STATE:', {
-        currentExercise: getCurrentExercise(),
-        matchingPairs: exercises.matchingPairs.value,
-        selectedItem: exercises.selectedMatchingItem.value,
-        userAnswer: exercises.userAnswer.value,
-        canSubmit: exercises.canSubmitAnswer?.(getCurrentExercise())
-      })
-    }
-
-    // ==========================================
     // MAIN SUBMISSION HANDLER
     // ==========================================
     
@@ -1424,14 +1508,6 @@ export default {
       return '🥉'
     }
 
-    const initializeVocabularyModal = () => {
-      vocabulary.initializeVocabularyModal?.()
-    }
-
-    const pronounceWord = (word) => {
-      sound.pronounceWord?.(word)
-    }
-
     // ==========================================
     // WATCHERS
     // ==========================================
@@ -1459,24 +1535,27 @@ export default {
     // DEBUG FUNCTIONS (Development only)
     // ==========================================
     
-    const debugMatchingExercise = () => {
-      const currentExercise = getCurrentExercise()
-      if (currentExercise?.type === 'matching') {
-        console.log('🔍 MATCHING DEBUG:', {
-          exercise: currentExercise,
-          pairs: currentExercise.pairs,
-          userPairs: exercises.matchingPairs.value,
-          selectedItem: exercises.selectedMatchingItem.value,
-          canSubmit: exercises.canSubmitAnswer?.(currentExercise)
-        })
-      }
+    const debugVocabularyState = () => {
+      console.log('🔍 VOCABULARY DEBUG STATE:', {
+        modalVisible: vocabulary.vocabularyModal.isVisible,
+        currentIndex: vocabulary.vocabularyModal.currentIndex,
+        totalWords: vocabulary.vocabularyModal.words.length,
+        currentWord: vocabulary.currentVocabWord.value,
+        cardAnimationState: {
+          isFlipping: vocabulary.cardAnimation.isFlipping,
+          showDefinition: vocabulary.cardAnimation.showDefinition
+        },
+        progress: vocabulary.vocabProgress.value,
+        isLastWord: vocabulary.isLastVocabWord.value,
+        wordsLearned: vocabulary.vocabularyModal.words.filter(w => w.learned).length
+      })
     }
 
     // Enable debug mode for development
     if (process.env.NODE_ENV === 'development') {
-      window.debugMatchingExercise = debugMatchingExercise
-      window.debugMatchingState = debugMatchingState
+      window.debugVocabularyState = debugVocabularyState
       window.lessonState = {
+        vocabulary,
         exercises,
         lessonOrchestrator,
         getCurrentExercise,
@@ -1484,7 +1563,8 @@ export default {
         showCorrectAnswer,
         handleAnswerChanged,
         handleMatchingItemSelected,
-        handleRemoveMatchingPair
+        handleRemoveMatchingPair,
+        jumpToVocabWord
       }
     }
 
@@ -1531,11 +1611,23 @@ export default {
       getFinalFailureMessage,
       getRandomSuccessMessage,
       
+      // ✅ VOCABULARY METHODS - FIXED
+      initializeVocabularyModal,
+      jumpToVocabWord,
+      showVocabDefinition,
+      hideVocabDefinition,
+      markWordAsLearned,
+      nextVocabWord,
+      previousVocabWord,
+      skipVocabularyModal,
+      restartVocabulary,
+      pronounceWord,
+      
       // ENHANCED Event handlers - CRITICAL FIX
       handleAnswerChanged,
       handleMatchingItemSelected,
       handleRemoveMatchingPair,
-      debugMatchingState,
+      debugVocabularyState,
       
       // Other event handlers
       handleDragItemStart,
@@ -1560,11 +1652,6 @@ export default {
       shareResult,
       goToHomework,
       getMedalIcon,
-      initializeVocabularyModal,
-      pronounceWord,
-      
-      // Debug (development only)
-      debugMatchingExercise,
       
       // Additional properties
       availableDragItems: exercises.availableDragItems,
@@ -1573,6 +1660,7 @@ export default {
   }
 }
 </script>
+
 <style scoped>
 @import "@/assets/css/LessonPage.css";
 
@@ -1591,6 +1679,149 @@ export default {
   .interactive-panel-container {
     padding: 16px;
     gap: 12px;
+  }
+}
+
+/* ✅ VOCABULARY MODAL SPECIFIC FIXES */
+.vocabulary-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3000; /* Higher than other modals */
+  padding: 20px;
+  animation: modalFadeIn 0.4s ease-out;
+}
+
+/* ✅ IMPROVED CARD ANIMATION */
+.vocabulary-card {
+  width: 100%;
+  max-width: 500px;
+  height: 350px;
+  position: relative;
+  perspective: 1200px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  animation: cardAppear 0.6s ease-out;
+  transform-style: preserve-3d;
+}
+
+.vocabulary-card:hover {
+  transform: scale(1.02) translateY(-2px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-front,
+.card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.1),
+    0 3px 10px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  will-change: transform;
+}
+
+.card-front {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  transform: rotateY(0deg);
+  z-index: 2;
+}
+
+.card-back {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  transform: rotateY(-180deg);
+  z-index: 1;
+}
+
+/* ✅ CRITICAL: Fixed flip animation */
+.vocabulary-card.flipped .card-front {
+  transform: rotateY(180deg);
+  z-index: 1;
+}
+
+.vocabulary-card.flipped .card-back {
+  transform: rotateY(0deg);
+  z-index: 2;
+}
+
+.vocabulary-card.flipping {
+  pointer-events: none;
+}
+
+.vocabulary-card.flipping .card-front,
+.vocabulary-card.flipping .card-back {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ✅ ENHANCED BUTTON STATES */
+.vocab-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.vocab-learned-btn.active {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* ✅ DEBUG STYLES (Development only) */
+.debug-vocabulary {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  z-index: 9999;
+  max-width: 300px;
+}
+
+/* ✅ ACCESSIBILITY IMPROVEMENTS */
+@media (prefers-reduced-motion: reduce) {
+  .vocabulary-card,
+  .card-front,
+  .card-back {
+    transition: none;
+    animation: none;
+  }
+  
+  .vocabulary-card:hover {
+    transform: none;
+  }
+}
+
+/* ✅ HIGH CONTRAST MODE */
+@media (prefers-contrast: high) {
+  .card-front {
+    background: #000080;
+    border: 2px solid white;
+  }
+  
+  .card-back {
+    background: #800080;
+    border: 2px solid white;
   }
 }
 </style>
