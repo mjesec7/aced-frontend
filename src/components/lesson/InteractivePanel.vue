@@ -240,32 +240,61 @@
           </div>
         </div>
 
-        <!-- Ordering Exercise -->
+        <!-- FIXED: Ordering Exercise with proper drag and drop implementation -->
         <div v-else-if="exerciseType === 'ordering'" class="exercise-type ordering">
           <div class="question-text">
             {{ currentExercise?.question }}
           </div>
           <div class="ordering-instructions">
-            Перетащите элементы в правильном порядке:
+            💡 <strong>Инструкция:</strong> Перетащите элементы в правильном порядке или используйте кнопки ↑↓ для перемещения
           </div>
           <div class="ordering-container">
             <div 
-              v-for="(item, index) in orderingItems" 
-              :key="item.id"
+              v-for="(item, index) in localOrderingItems" 
+              :key="`ordering-${item.id || item.text || index}`"
               class="ordering-item"
               :class="{ 
-                dragging: draggedItem === index,
-                disabled: showCorrectAnswer
+                dragging: draggedOrderingItem === index,
+                disabled: showCorrectAnswer,
+                'drop-target': dropTargetIndex === index && draggedOrderingItem !== index
               }"
               :draggable="!showCorrectAnswer"
-              @dragstart="!showCorrectAnswer && startDrag(index)"
-              @dragover.prevent
-              @drop="!showCorrectAnswer && handleDrop(index)"
+              @dragstart="startOrderingDrag($event, index)"
+              @dragend="endOrderingDrag"
+              @dragover.prevent="handleOrderingDragOver($event, index)"
+              @dragenter.prevent="handleOrderingDragEnter(index)"
+              @dragleave="handleOrderingDragLeave"
+              @drop.prevent="handleOrderingDrop($event, index)"
             >
-              <div class="drag-handle">≡</div>
-              <div class="item-text">{{ item.text }}</div>
-              <div class="item-number">{{ index + 1 }}</div>
+              <div class="ordering-item-content">
+                <div class="drag-handle" :class="{ disabled: showCorrectAnswer }">≡</div>
+                <div class="item-text">{{ getOrderingItemText(item) }}</div>
+                <div class="item-number">{{ index + 1 }}</div>
+                <div v-if="!showCorrectAnswer" class="ordering-controls">
+                  <button 
+                    v-if="index > 0"
+                    @click="moveOrderingItem(index, index - 1)"
+                    class="move-btn move-up"
+                    title="Переместить вверх"
+                  >↑</button>
+                  <button 
+                    v-if="index < localOrderingItems.length - 1"
+                    @click="moveOrderingItem(index, index + 1)"
+                    class="move-btn move-down"
+                    title="Переместить вниз"
+                  >↓</button>
+                </div>
+              </div>
             </div>
+          </div>
+          
+          <!-- Debug for ordering -->
+          <div v-if="showDebugInfo" class="debug-section">
+            <h4>Ordering Debug:</h4>
+            <p>Original items: {{ JSON.stringify(currentExercise?.items) }}</p>
+            <p>Local ordering items: {{ JSON.stringify(localOrderingItems) }}</p>
+            <p>Dragged item: {{ draggedOrderingItem }}</p>
+            <button @click="debugOrdering" class="debug-btn">Debug Ordering</button>
           </div>
         </div>
 
@@ -597,6 +626,11 @@ export default {
     const dropOverZone = ref(null)
     const showDebugInfo = ref(false)
 
+    // FIXED: Ordering exercise state
+    const localOrderingItems = ref([])
+    const draggedOrderingItem = ref(null)
+    const dropTargetIndex = ref(null)
+
     // ==========================================
     // COMPUTED PROPERTIES
     // ==========================================
@@ -805,7 +839,11 @@ export default {
           return props.matchingPairs.length > 0
           
         case 'ordering':
-          return props.orderingItems.length > 0
+          console.log('🔍 Checking ordering submission readiness:', {
+            localItemsCount: localOrderingItems.value.length,
+            originalItemsCount: props.currentExercise?.items?.length || 0
+          })
+          return localOrderingItems.value.length > 0
           
         case 'drag-drop':
           const placements = Object.values(props.dragDropPlacements || {})
@@ -1106,39 +1144,122 @@ export default {
           console.log(`  Shuffled[${shuffledIndex}]: "${item}" → Actual[${actualIndex}]: "${getOriginalRightItems.value[actualIndex]}"`)
         })
       }
+    }
+
+    // ==========================================
+    // FIXED: ORDERING METHODS - COMPLETE IMPLEMENTATION
+    // ==========================================
+    
+    const initializeOrderingItems = () => {
+      console.log('🔄 Initializing ordering items:', props.currentExercise?.items)
       
-      // Also log the computed properties
-      console.log('🔍 COMPUTED PROPERTIES:', {
-        exerciseType: exerciseType.value,
-        isExerciseStep: isExerciseStep.value,
-        leftItemsComputed: leftItems.value,
-        rightItemsComputed: rightItems.value
-      })
-      
-      // Test pair creation manually
-      if (leftItems.value.length > 0 && rightItems.value.length > 0) {
-        console.log('🧪 TESTING: Creating test pair...')
-        const testPair = {
-          leftIndex: 0,
-          rightIndex: 0
-        }
-        console.log('Test pair would be:', {
-          leftText: getLeftItemText(0),
-          rightText: getRightItemText(0),
-          pair: testPair
+      if (props.currentExercise?.items && Array.isArray(props.currentExercise.items)) {
+        // Create a shuffled version of the items for the exercise
+        const items = props.currentExercise.items.map((item, index) => ({
+          id: item.id || `item_${index}`,
+          text: typeof item === 'string' ? item : (item.text || String(item)),
+          originalIndex: index
+        }))
+        
+        // Shuffle the items so they're not in correct order
+        const shuffledItems = [...items].sort(() => Math.random() - 0.5)
+        localOrderingItems.value = shuffledItems
+        
+        console.log('✅ Ordering items initialized:', {
+          original: items,
+          shuffled: shuffledItems
         })
+        
+        // Emit the initial shuffled order
+        emit('answer-changed', localOrderingItems.value)
       }
     }
 
-    // ==========================================
-    // ORDERING METHODS
-    // ==========================================
-    const startDrag = (index) => {
-      emit('drag-start', index)
+    const getOrderingItemText = (item) => {
+      if (typeof item === 'string') return item
+      if (item && item.text) return item.text
+      return String(item || '')
     }
 
-    const handleDrop = (index) => {
-      emit('drag-drop', index)
+    const moveOrderingItem = (fromIndex, toIndex) => {
+      console.log(`🔄 Moving item from ${fromIndex} to ${toIndex}`)
+      
+      if (fromIndex === toIndex || 
+          fromIndex < 0 || fromIndex >= localOrderingItems.value.length ||
+          toIndex < 0 || toIndex >= localOrderingItems.value.length) {
+        return
+      }
+      
+      const newItems = [...localOrderingItems.value]
+      const [movedItem] = newItems.splice(fromIndex, 1)
+      newItems.splice(toIndex, 0, movedItem)
+      
+      localOrderingItems.value = newItems
+      
+      console.log('✅ Items reordered:', newItems.map(item => item.text))
+      
+      // Emit the updated order
+      emit('answer-changed', localOrderingItems.value)
+    }
+
+    // ✅ FIXED: Drag and drop methods for ordering
+    const startOrderingDrag = (event, index) => {
+      console.log('🖱️ Starting drag for ordering item:', index)
+      draggedOrderingItem.value = index
+      
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move'
+        event.dataTransfer.setData('text/plain', index.toString())
+      }
+    }
+
+    const endOrderingDrag = () => {
+      console.log('🖱️ Ending drag for ordering')
+      draggedOrderingItem.value = null
+      dropTargetIndex.value = null
+    }
+
+    const handleOrderingDragOver = (event, index) => {
+      if (draggedOrderingItem.value !== null && draggedOrderingItem.value !== index) {
+        event.preventDefault()
+        dropTargetIndex.value = index
+      }
+    }
+
+    const handleOrderingDragEnter = (index) => {
+      if (draggedOrderingItem.value !== null && draggedOrderingItem.value !== index) {
+        dropTargetIndex.value = index
+      }
+    }
+
+    const handleOrderingDragLeave = () => {
+      // Only clear if we're leaving the container
+      // dropTargetIndex.value = null
+    }
+
+    const handleOrderingDrop = (event, dropIndex) => {
+      event.preventDefault()
+      
+      const dragIndex = draggedOrderingItem.value
+      
+      console.log(`🎯 Dropping item from ${dragIndex} to ${dropIndex}`)
+      
+      if (dragIndex !== null && dragIndex !== dropIndex) {
+        moveOrderingItem(dragIndex, dropIndex)
+      }
+      
+      endOrderingDrag()
+    }
+
+    const debugOrdering = () => {
+      console.log('🔍 ORDERING DEBUG:', {
+        currentExercise: props.currentExercise,
+        originalItems: props.currentExercise?.items,
+        localOrderingItems: localOrderingItems.value,
+        draggedItem: draggedOrderingItem.value,
+        dropTarget: dropTargetIndex.value,
+        canSubmit: canSubmitAnswer.value
+      })
     }
 
     // ==========================================
@@ -1265,7 +1386,7 @@ export default {
     // WATCHERS
     // ==========================================
     watch(() => props.userAnswer, (newValue) => {
-      if (exerciseType.value !== 'fill-blank') {
+      if (exerciseType.value !== 'fill-blank' && exerciseType.value !== 'ordering') {
         localUserAnswer.value = newValue || ''
       }
     }, { immediate: true })
@@ -1279,6 +1400,13 @@ export default {
       }
     }, { immediate: true, deep: true })
 
+    // ✅ FIXED: Watch for ordering items changes
+    watch(() => props.orderingItems, (newValue) => {
+      if (Array.isArray(newValue) && newValue.length > 0) {
+        localOrderingItems.value = [...newValue]
+      }
+    }, { immediate: true, deep: true })
+
     watch(() => props.currentExercise, (newExercise, oldExercise) => {
       if (newExercise && newExercise !== oldExercise) {
         localUserAnswer.value = props.userAnswer || ''
@@ -1286,6 +1414,13 @@ export default {
         if (newExercise.type === 'fill-blank') {
           nextTick(() => {
             initializeFillBlankAnswers()
+          })
+        }
+        
+        // ✅ FIXED: Initialize ordering items when exercise changes
+        if (newExercise.type === 'ordering') {
+          nextTick(() => {
+            initializeOrderingItems()
           })
         }
         
@@ -1310,6 +1445,11 @@ export default {
     onMounted(() => {
       localUserAnswer.value = props.userAnswer || ''
       initializeFillBlankAnswers()
+      
+      // ✅ FIXED: Initialize ordering items on mount
+      if (props.currentExercise?.type === 'ordering') {
+        initializeOrderingItems()
+      }
     })
 
     // ==========================================
@@ -1322,6 +1462,11 @@ export default {
       draggedDragItem,
       dropOverZone,
       showDebugInfo,
+      
+      // ✅ FIXED: Ordering state
+      localOrderingItems,
+      draggedOrderingItem,
+      dropTargetIndex,
       
       // Computed
       isExerciseStep,
@@ -1360,9 +1505,17 @@ export default {
       debugMatching,
       getActualRightIndex,
       
-      // Ordering methods
-      startDrag,
-      handleDrop,
+      // ✅ FIXED: Ordering methods
+      initializeOrderingItems,
+      getOrderingItemText,
+      moveOrderingItem,
+      startOrderingDrag,
+      endOrderingDrag,
+      handleOrderingDragOver,
+      handleOrderingDragEnter,
+      handleOrderingDragLeave,
+      handleOrderingDrop,
+      debugOrdering,
       
       // Drag and drop methods
       getDragItemText,
@@ -1824,7 +1977,7 @@ export default {
 }
 
 /* ==========================================
-   ORDERING STYLING
+   FIXED: ORDERING STYLING - COMPLETE IMPLEMENTATION
    ========================================== */
 .ordering-instructions {
   background: rgba(139, 92, 246, 0.1);
@@ -1843,29 +1996,40 @@ export default {
   flex-direction: column;
   gap: 8px;
   margin-bottom: 24px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
 }
 
 .ordering-item {
   background: white;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
-  padding: 12px 16px;
   cursor: move;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  transition: all 0.3s ease;
+  user-select: none;
+  position: relative;
 }
 
-.ordering-item:hover {
+.ordering-item:hover:not(.disabled) {
   border-color: #8b5cf6;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
 }
 
 .ordering-item.dragging {
-  opacity: 0.5;
-  transform: rotate(2deg);
+  opacity: 0.7;
+  transform: rotate(3deg) scale(1.05);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+  z-index: 1000;
+}
+
+.ordering-item.drop-target {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+  border-style: dashed;
+  border-width: 3px;
 }
 
 .ordering-item.disabled {
@@ -1873,33 +2037,94 @@ export default {
   opacity: 0.6;
 }
 
+.ordering-item-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
 .drag-handle {
-  color: #9ca3af;
-  font-size: 1.2rem;
+  color: #8b5cf6;
+  font-size: 1.4rem;
   cursor: grab;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  min-width: 20px;
+  text-align: center;
 }
 
 .drag-handle:active {
   cursor: grabbing;
 }
 
+.drag-handle.disabled {
+  cursor: not-allowed;
+  color: #9ca3af;
+}
+
 .item-text {
   flex: 1;
   font-size: 0.95rem;
   color: #374151;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .item-number {
-  background: #8b5cf6;
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
   color: white;
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+}
+
+.ordering-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.move-btn {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  width: 32px;
+  height: 24px;
+  cursor: pointer;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: bold;
+  color: #6b7280;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.move-btn:hover {
+  background: #8b5cf6;
+  color: white;
+  border-color: #8b5cf6;
+  transform: scale(1.1);
+}
+
+.move-btn:active {
+  transform: scale(0.95);
+}
+
+.move-up {
+  border-radius: 6px 6px 2px 2px;
+}
+
+.move-down {
+  border-radius: 2px 2px 6px 6px;
 }
 
 /* ==========================================
@@ -2381,6 +2606,38 @@ export default {
   .blank-input-group {
     padding: 12px;
   }
+
+  /* ✅ FIXED: Mobile ordering styles */
+  .ordering-container {
+    padding: 12px;
+  }
+
+  .ordering-item-content {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .ordering-controls {
+    flex-direction: row;
+    gap: 4px;
+  }
+
+  .move-btn {
+    width: 28px;
+    height: 20px;
+    font-size: 0.7rem;
+  }
+
+  .drag-handle {
+    font-size: 1.2rem;
+    min-width: 16px;
+  }
+
+  .item-number {
+    width: 24px;
+    height: 24px;
+    font-size: 0.8rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -2416,6 +2673,30 @@ export default {
     padding: 10px 12px;
     font-size: 0.9rem;
   }
+
+  /* ✅ FIXED: Extra small mobile ordering styles */
+  .ordering-instructions {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  .ordering-container {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .ordering-item-content {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .item-text {
+    font-size: 0.85rem;
+  }
+
+  .ordering-controls {
+    display: none; /* Hide buttons on very small screens, rely on drag only */
+  }
 }
 
 /* ==========================================
@@ -2431,7 +2712,8 @@ export default {
   .quiz-option,
   .tf-option,
   .blank-input,
-  .drag-item {
+  .drag-item,
+  .ordering-item {
     border-width: 3px;
   }
   
@@ -2452,7 +2734,8 @@ export default {
     transform: none;
   }
 
-  .second-chance-icon {
+  .second-chance-icon,
+  .selection-indicator {
     animation: none;
   }
 }
@@ -2468,14 +2751,76 @@ export default {
   
   .exercise-actions,
   .quiz-actions,
-  .debug-section {
+  .debug-section,
+  .ordering-controls {
     display: none;
   }
   
   .option-item,
-  .quiz-option {
+  .quiz-option,
+  .ordering-item {
     border: 1px solid #000;
     break-inside: avoid;
   }
+}
+
+/* ==========================================
+   DRAG AND DROP VISUAL ENHANCEMENTS
+   ========================================== */
+.ordering-item[draggable="true"]:hover .drag-handle {
+  color: #6366f1;
+  transform: scale(1.1);
+}
+
+.ordering-item.dragging .drag-handle {
+  color: #8b5cf6;
+  transform: scale(1.2);
+}
+
+/* ==========================================
+   ANIMATION KEYFRAMES
+   ========================================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Apply animations to new items */
+.ordering-item {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.pair-item {
+  animation: slideIn 0.3s ease-out;
+}
+
+.confirmation-message.correct {
+  animation: pulse 0.5s ease-out;
 }
 </style>

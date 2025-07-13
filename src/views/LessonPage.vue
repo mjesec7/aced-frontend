@@ -648,33 +648,55 @@ export default {
     }
 
     const validateOrdering = (userItems, exercise) => {
+      console.log('🔄 Validating ordering exercise:', {
+        userItems: userItems,
+        exerciseItems: exercise.items,
+        userItemsCount: Array.isArray(userItems) ? userItems.length : 0,
+        exerciseItemsCount: Array.isArray(exercise.items) ? exercise.items.length : 0
+      })
+      
       if (!Array.isArray(userItems) || userItems.length === 0) {
+        console.log('❌ No user items provided')
         return false
       }
 
       const correctItems = exercise.items || []
       if (!Array.isArray(correctItems) || correctItems.length === 0) {
+        console.log('❌ No correct items found in exercise')
         return false
       }
 
       if (userItems.length !== correctItems.length) {
+        console.log(`❌ Length mismatch: user=${userItems.length}, correct=${correctItems.length}`)
         return false
       }
 
+      // ✅ FIXED: Compare the order of items
       let correctCount = 0
       for (let i = 0; i < correctItems.length; i++) {
         const userItem = userItems[i]
         const correctItem = correctItems[i]
         
-        const userText = typeof userItem === 'string' ? userItem : (userItem?.text || String(userItem))
-        const correctText = typeof correctItem === 'string' ? correctItem : (correctItem?.text || String(correctItem))
+        // Extract text for comparison
+        const userText = typeof userItem === 'string' ? userItem : 
+                        (userItem?.text || userItem?.id || String(userItem))
+        const correctText = typeof correctItem === 'string' ? correctItem : 
+                           (correctItem?.text || correctItem?.id || String(correctItem))
+        
+        console.log(`  Comparing position ${i}: "${userText}" vs "${correctText}"`)
         
         if (userText.trim().toLowerCase() === correctText.trim().toLowerCase()) {
           correctCount++
+          console.log(`    ✅ Match at position ${i}`)
+        } else {
+          console.log(`    ❌ No match at position ${i}`)
         }
       }
 
-      return correctCount === correctItems.length
+      const isValid = correctCount === correctItems.length
+      console.log(`🎯 Ordering validation result: ${correctCount}/${correctItems.length} correct = ${isValid}`)
+      
+      return isValid
     }
 
     const validateDragDrop = (userPlacements, exercise) => {
@@ -985,6 +1007,10 @@ export default {
         exercises.userAnswer.value = newAnswer || []
         
         console.log('🔗 Updated matching pairs:', exercises.matchingPairs.value)
+      } else if (currentExercise?.type === 'ordering') {
+        // ✅ FIXED: Handle ordering exercises
+        exercises.userAnswer.value = newAnswer || []
+        console.log('🔄 Updated ordering items:', exercises.userAnswer.value)
       } else {
         // For other exercise types
         exercises.userAnswer.value = newAnswer
@@ -1059,7 +1085,10 @@ export default {
               isCorrect = validateMatching(exercises.matchingPairs.value, exerciseOrQuiz)
               break
             case 'ordering':
-              isCorrect = validateOrdering(exercises.orderingItems.value, exerciseOrQuiz)
+              // ✅ FIXED: Use the userAnswer for ordering validation
+              const orderingItems = exercises.userAnswer.value || []
+              console.log('🔄 Validating ordering with items:', orderingItems)
+              isCorrect = validateOrdering(orderingItems, exerciseOrQuiz)
               break
             case 'drag-drop':
               isCorrect = validateDragDrop(exercises.dragDropPlacements, exerciseOrQuiz)
@@ -1544,7 +1573,6 @@ export default {
   }
 }
 </script>
-
 <style scoped>
 @import "@/assets/css/LessonPage.css";
 
