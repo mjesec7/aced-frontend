@@ -239,7 +239,7 @@
 
 
 <script>
-// Complete LessonPage.vue <script> section - FINAL FIXED VERSION
+// Complete LessonPage.vue - Clean and Well-Organized Script
 import { computed, ref, watch, nextTick } from 'vue'
 
 // Import composables
@@ -276,7 +276,9 @@ export default {
   },
   
   setup() {
-    // Use all composables
+    // ==========================================
+    // COMPOSABLES INITIALIZATION
+    // ==========================================
     const lessonOrchestrator = useLessonOrchestrator()
     const vocabulary = useVocabulary()
     const exercises = useExercises()
@@ -288,21 +290,42 @@ export default {
     sound.initializeSpeech?.()
     explanation.initializeAI?.()
 
-    // ✅ Second chance system state
+    // ==========================================
+    // REACTIVE STATE
+    // ==========================================
+    
+    // Second chance system
     const attemptCount = ref(0)
     const maxAttempts = ref(2)
     const showCorrectAnswer = ref(false)
     const correctAnswerText = ref('')
     const isOnSecondChance = ref(false)
 
-    // ✅ CRITICAL: Prevent over-initialization
+    // Exercise initialization tracking
     const initializationTracker = ref({
       currentExerciseId: null,
-      fillBlankInitialized: false,
-      dragDropInitialized: false
+      initialized: false
     })
 
-    // ✅ HELPER FUNCTIONS
+    // ==========================================
+    // COMPUTED PROPERTIES
+    // ==========================================
+    
+    const getUserProgress = computed(() => ({
+      currentStep: lessonOrchestrator.currentIndex.value,
+      completedSteps: Array.from({length: lessonOrchestrator.currentIndex.value}, (_, i) => i),
+      mistakes: lessonOrchestrator.mistakeCount.value,
+      stars: lessonOrchestrator.stars.value,
+      elapsedSeconds: lessonOrchestrator.elapsedSeconds.value
+    }))
+
+    const isLastStep = computed(() => {
+      return lessonOrchestrator.currentIndex.value >= lessonOrchestrator.steps.value.length - 1
+    })
+
+    // ==========================================
+    // HELPER FUNCTIONS
+    // ==========================================
     
     const calculateSimilarity = (str1, str2) => {
       if (str1 === str2) return 1
@@ -358,74 +381,37 @@ export default {
       return [correctAnswer].filter(Boolean)
     }
 
-    // ✅ SIMPLIFIED: Use the composable's own initialization
-    const initializeDragDropForExercise = (exercise) => {
-      if (!exercise || exercise.type !== 'drag-drop') {
-        return
+    // ==========================================
+    // EXERCISE INITIALIZATION
+    // ==========================================
+    
+    const getCurrentExercise = () => {
+      const exercise = exercises.getCurrentExercise(lessonOrchestrator.currentStep.value)
+      
+      if (exercise) {
+        const exerciseId = exercise.id || `${exercise.type}_${exercise.question?.substring(0, 20)}`
+        
+        // Only initialize if exercise has changed
+        if (initializationTracker.value.currentExerciseId !== exerciseId) {
+          initializationTracker.value = {
+            currentExerciseId: exerciseId,
+            initialized: false
+          }
+          
+          // Initialize based on type
+          nextTick(() => {
+            exercises.initializeCurrentExerciseData(exercise)
+            initializationTracker.value.initialized = true
+          })
+        }
       }
-
-      const exerciseId = exercise.id || `${exercise.type}_${exercise.question?.substring(0, 20)}`
       
-      // ✅ PREVENT over-initialization
-      if (initializationTracker.value.currentExerciseId === exerciseId && 
-          initializationTracker.value.dragDropInitialized) {
-        console.log('🔄 Drag-drop already initialized for this exercise, skipping...')
-        return
-      }
-      
-      console.log('🎯 Initializing drag-drop for exercise:', {
-        id: exerciseId,
-        dragItems: exercise.dragItems,
-        dropZones: exercise.dropZones
-      })
-      
-      // ✅ FIXED: Use the composable's own initialization method
-      exercises.initializeDragDropItems(exercise)
-      
-      // ✅ CRITICAL: Mark as initialized
-      initializationTracker.value.currentExerciseId = exerciseId
-      initializationTracker.value.dragDropInitialized = true
-      
-      console.log('✅ Drag-drop initialized via composable:', {
-        dragItems: exercises.availableDragItems?.value || [],
-        dropZones: exercises.dropZones?.value || [],
-        placements: exercises.dragDropPlacements
-      })
+      return exercise
     }
 
-    // ✅ FIXED: Enhanced fill-blank initialization with proper blank detection
-    const initializeFillBlankForExercise = (exercise) => {
-      if (!exercise || exercise.type !== 'fill-blank') {
-        return
-      }
-
-      const exerciseId = exercise.id || `${exercise.type}_${exercise.question?.substring(0, 20)}`
-      
-      // ✅ PREVENT over-initialization
-      if (initializationTracker.value.currentExerciseId === exerciseId && 
-          initializationTracker.value.fillBlankInitialized) {
-        console.log('🔄 Fill-blank already initialized for this exercise, skipping...')
-        return
-      }
-      
-      console.log('📝 Initializing fill-blank for exercise:', {
-        id: exerciseId,
-        template: exercise.template,
-        blanks: exercise.blanks,
-        correctAnswers: exercise.correctAnswers
-      })
-      
-      // ✅ FIXED: Use the composable's own initialization method
-      exercises.initializeFillBlankAnswers(exercise)
-      
-      // ✅ CRITICAL: Mark as initialized
-      initializationTracker.value.currentExerciseId = exerciseId
-      initializationTracker.value.fillBlankInitialized = true
-      
-      console.log(`✅ Fill-blank initialized via composable:`, exercises.fillBlankAnswers.value)
-    }
-
-    // ✅ VALIDATION FUNCTIONS - ALL FIXED
+    // ==========================================
+    // VALIDATION FUNCTIONS
+    // ==========================================
     
     const validateShortAnswer = (userAnswer, exercise) => {
       if (!userAnswer || typeof userAnswer !== 'string') {
@@ -434,11 +420,6 @@ export default {
 
       const correctAnswers = getCorrectAnswersArray(exercise)
       const userAnswerTrimmed = userAnswer.trim().toLowerCase()
-
-      console.log('🔍 Short answer validation:', {
-        userAnswer: userAnswerTrimmed,
-        correctAnswers
-      })
 
       return correctAnswers.some(answer => {
         const correctAnswerTrimmed = String(answer).trim().toLowerCase()
@@ -460,7 +441,6 @@ export default {
 
     const validateMultipleChoice = (userAnswer, exercise) => {
       const correctAnswer = exercise.correctAnswer
-      console.log('🔍 MC Validation:', { userAnswer, correctAnswer, type: typeof correctAnswer, options: exercise.options })
 
       if (typeof correctAnswer === 'number') {
         if (typeof userAnswer === 'number') {
@@ -493,7 +473,6 @@ export default {
 
     const validateTrueFalse = (userAnswer, exercise) => {
       const correctAnswer = exercise.correctAnswer
-      console.log('🔍 T/F Validation:', { userAnswer, correctAnswer })
 
       if (typeof correctAnswer === 'boolean') {
         if (typeof userAnswer === 'boolean') {
@@ -532,21 +511,12 @@ export default {
       return false
     }
 
-    // ✅ FIXED: Fill-blank validation with proper object handling and MongoDB structure
     const validateFillBlank = (userAnswers, exercise) => {
-      console.log('🔍 Fill-blank validation start:', {
-        userAnswers,
-        userAnswersType: typeof userAnswers,
-        isArray: Array.isArray(userAnswers),
-        exercise: exercise
-      })
-
       if (!Array.isArray(userAnswers)) {
-        console.warn('❌ User answers is not an array:', userAnswers)
         return false
       }
 
-      // ✅ FIXED: Handle MongoDB structure for correct answers
+      // Get correct answers from multiple possible sources
       let correctAnswers = []
       
       if (exercise.blanks && Array.isArray(exercise.blanks)) {
@@ -566,7 +536,6 @@ export default {
       } else if (exercise.answers && Array.isArray(exercise.answers)) {
         correctAnswers = exercise.answers
       } else {
-        // Fallback to extracting from hint
         const hint = exercise.hint || ''
         if (hint.includes(',')) {
           correctAnswers = hint.split(',').map(h => h.trim())
@@ -575,174 +544,73 @@ export default {
         }
       }
       
-      console.log('🔍 Raw correct answers:', correctAnswers)
-
-      let finalCorrectAnswers = []
-      
-      if (Array.isArray(correctAnswers)) {
-        // ✅ FIXED: Handle objects in the array
-        finalCorrectAnswers = correctAnswers.map(answer => {
-          if (typeof answer === 'string') {
-            return answer.trim()
-          } else if (typeof answer === 'object' && answer !== null) {
-            // Handle different object structures
-            return answer.answer || answer.text || answer.value || answer.correct || String(answer)
-          } else {
-            return String(answer || '').trim()
-          }
-        })
-      } else if (typeof correctAnswers === 'string') {
-        // Handle comma-separated answers
-        finalCorrectAnswers = correctAnswers.split(',').map(answer => answer.trim())
-      } else if (typeof correctAnswers === 'object' && correctAnswers !== null) {
-        // ✅ FIXED: Handle single object answer
-        const singleAnswer = correctAnswers.answer || correctAnswers.text || correctAnswers.value || correctAnswers.correct || String(correctAnswers)
-        finalCorrectAnswers = [singleAnswer]
-      } else {
-        // Try to convert whatever it is to string
-        finalCorrectAnswers = [String(correctAnswers || '').trim()]
-      }
-
-      // ✅ FIXED: Filter out empty answers and log the final structure
-      finalCorrectAnswers = finalCorrectAnswers.filter(answer => answer && answer.trim())
-      
-      console.log('🔍 Processed correct answers:', {
-        finalCorrectAnswers,
-        count: finalCorrectAnswers.length
-      })
+      // Process correct answers
+      const finalCorrectAnswers = correctAnswers.map(answer => {
+        if (typeof answer === 'string') {
+          return answer.trim()
+        } else if (typeof answer === 'object' && answer !== null) {
+          return answer.answer || answer.text || answer.value || answer.correct || String(answer)
+        } else {
+          return String(answer || '').trim()
+        }
+      }).filter(answer => answer && answer.trim())
 
       if (finalCorrectAnswers.length === 0) {
-        console.warn('❌ No correct answers defined after processing')
         return false
       }
 
-      // Check if we have enough user answers
-      const requiredAnswers = finalCorrectAnswers.length
-      if (userAnswers.length < requiredAnswers) {
-        console.warn('❌ Not enough user answers provided')
-        return false
-      }
-
-      // ✅ FIXED: Validate each blank with better logging
+      // Validate each blank
       let correctCount = 0
-      for (let i = 0; i < requiredAnswers; i++) {
+      for (let i = 0; i < finalCorrectAnswers.length; i++) {
         const userAnswer = String(userAnswers[i] || '').trim().toLowerCase()
         const correctAnswer = finalCorrectAnswers[i]
 
-        console.log(`🔍 Checking blank ${i + 1}:`, {
-          userAnswer: `"${userAnswer}"`,
-          correctAnswer: `"${correctAnswer}"`,
-          correctAnswerType: typeof correctAnswer
-        })
-
-        if (!userAnswer) {
-          console.log(`❌ Blank ${i + 1}: Empty user answer`)
-          continue
-        }
-
-        if (!correctAnswer) {
-          console.log(`❌ Blank ${i + 1}: Empty correct answer`)
+        if (!userAnswer || !correctAnswer) {
           continue
         }
 
         let isCorrect = false
 
-        // ✅ FIXED: Handle multiple possible answers for this blank
         if (Array.isArray(correctAnswer)) {
           isCorrect = correctAnswer.some(answer => {
             const answerText = String(answer || '').trim().toLowerCase()
-            console.log(`  - Checking against array item: "${answerText}"`)
             return answerText === userAnswer
           })
         } else {
           const correctText = String(correctAnswer || '').trim().toLowerCase()
-          console.log(`  - Checking against: "${correctText}"`)
           isCorrect = userAnswer === correctText
           
           // Allow fuzzy matching for longer answers
           if (!isCorrect && correctText.length > 3) {
             const similarity = calculateSimilarity(userAnswer, correctText)
-            console.log(`  - Similarity: ${similarity}`)
             isCorrect = similarity > 0.85
           }
         }
 
         if (isCorrect) {
           correctCount++
-          console.log(`✅ Blank ${i + 1}: Correct`)
-        } else {
-          console.log(`❌ Blank ${i + 1}: "${userAnswer}" vs "${correctAnswer}"`)
         }
       }
 
-      const success = correctCount === requiredAnswers
-      console.log(`🎯 Fill-blank final result: ${correctCount}/${requiredAnswers} correct = ${success}`)
-      return success
+      return correctCount === finalCorrectAnswers.length
     }
 
     const validateMatching = (userPairs, exercise) => {
-      if (!Array.isArray(userPairs) || userPairs.length === 0) {
-        console.warn('❌ No matching pairs provided')
-        return false
-      }
-
-      const correctPairs = exercise.pairs || []
-      if (!Array.isArray(correctPairs) || correctPairs.length === 0) {
-        console.warn('❌ No correct pairs defined')
-        return false
-      }
-
-      console.log('🔍 Matching validation:', {
-        userPairs,
-        correctPairs,
-        userLength: userPairs.length,
-        correctLength: correctPairs.length
-      })
-
-      if (userPairs.length < correctPairs.length) {
-        console.warn('❌ Not enough pairs matched')
-        return false
-      }
-
-      let correctCount = 0
-      for (const userPair of userPairs) {
-        const { leftIndex, rightIndex } = userPair
-        const isCorrect = leftIndex === rightIndex
-
-        if (isCorrect) {
-          correctCount++
-          console.log(`✅ Matching pair ${leftIndex}-${rightIndex}: Correct`)
-        } else {
-          console.log(`❌ Matching pair ${leftIndex}-${rightIndex}: Incorrect`)
-        }
-      }
-
-      const success = correctCount === correctPairs.length
-      console.log(`🎯 Matching result: ${correctCount}/${correctPairs.length} correct = ${success}`)
-      return success
+      // Use the composable's enhanced validation method
+      return exercises.validateMatchingAnswers(userPairs, exercise)
     }
 
     const validateOrdering = (userItems, exercise) => {
       if (!Array.isArray(userItems) || userItems.length === 0) {
-        console.warn('❌ No ordering items provided')
         return false
       }
 
       const correctItems = exercise.items || []
       if (!Array.isArray(correctItems) || correctItems.length === 0) {
-        console.warn('❌ No correct order defined')
         return false
       }
 
-      console.log('🔍 Ordering validation:', {
-        userItems: userItems.map(item => item.text || item),
-        correctItems,
-        userLength: userItems.length,
-        correctLength: correctItems.length
-      })
-
       if (userItems.length !== correctItems.length) {
-        console.warn('❌ Item count mismatch')
         return false
       }
 
@@ -756,32 +624,18 @@ export default {
         
         if (userText.trim().toLowerCase() === correctText.trim().toLowerCase()) {
           correctCount++
-          console.log(`✅ Position ${i + 1}: "${userText}" correct`)
-        } else {
-          console.log(`❌ Position ${i + 1}: "${userText}" vs "${correctText}"`)
         }
       }
 
-      const success = correctCount === correctItems.length
-      console.log(`🎯 Ordering result: ${correctCount}/${correctItems.length} correct = ${success}`)
-      return success
+      return correctCount === correctItems.length
     }
 
-    // ✅ FIXED: Enhanced drag-drop validation with MongoDB structure support
     const validateDragDrop = (userPlacements, exercise) => {
-      console.log('🔍 Drag-drop validation start:', {
-        userPlacements,
-        userPlacementsType: typeof userPlacements,
-        placementKeys: Object.keys(userPlacements || {}),
-        exercise: exercise
-      })
-
       if (!userPlacements || typeof userPlacements !== 'object') {
-        console.warn('❌ No drag-drop placements provided or not an object')
         return false
       }
 
-      // ✅ CRITICAL: Handle MongoDB structure for drop zones
+      // Handle MongoDB structure for drop zones
       let dropZones = []
       
       if (Array.isArray(exercise.dropZones)) {
@@ -791,11 +645,8 @@ export default {
           zone && (zone.label || zone.id)
         )
       } else {
-        console.warn('❌ No drop zones defined')
         return false
       }
-
-      console.log('🔍 Drop zones:', dropZones)
 
       let correctCount = 0
       let totalRequired = 0
@@ -804,14 +655,13 @@ export default {
         const zoneId = zone.id || zone.label || String(zone)
         const userItems = userPlacements[zoneId] || []
         
-        // ✅ CRITICAL: Handle MongoDB structure for correct items
+        // Handle MongoDB structure for correct items
         let correctItems = []
         if (Array.isArray(zone.correctItems)) {
           correctItems = zone.correctItems
         } else if (Array.isArray(zone.items)) {
           correctItems = zone.items
         } else if (zone.correctItem !== undefined) {
-          // Handle single correct item (MongoDB structure)
           if (typeof zone.correctItem === 'number' && exercise.dragItems) {
             const dragItems = Array.isArray(exercise.dragItems) ? exercise.dragItems : Object.values(exercise.dragItems)
             correctItems = [dragItems[zone.correctItem]]
@@ -822,99 +672,67 @@ export default {
 
         totalRequired += correctItems.length
 
-        console.log(`🔍 Zone "${zoneId}":`, {
-          userItems: userItems.map(item => typeof item === 'string' ? item : (item?.text || item?.label || String(item))),
-          correctItems,
-          userCount: userItems.length,
-          correctCount: correctItems.length
-        })
-
         // Check each correct item is in the zone
         for (const correctItem of correctItems) {
           const correctText = typeof correctItem === 'string' ? correctItem : (correctItem?.text || correctItem?.label || String(correctItem))
           
           const isItemPresent = userItems.some(userItem => {
             const userText = typeof userItem === 'string' ? userItem : (userItem?.text || userItem?.label || String(userItem))
-            const match = userText.trim().toLowerCase() === correctText.trim().toLowerCase()
-            console.log(`  - Comparing "${userText}" with "${correctText}": ${match}`)
-            return match
+            return userText.trim().toLowerCase() === correctText.trim().toLowerCase()
           })
 
           if (isItemPresent) {
             correctCount++
-            console.log(`✅ "${correctText}" correctly placed in "${zoneId}"`)
-          } else {
-            console.log(`❌ "${correctText}" missing from "${zoneId}"`)
           }
         }
       }
 
-      const success = correctCount === totalRequired && totalRequired > 0
-      console.log(`🎯 Drag-drop result: ${correctCount}/${totalRequired} correct = ${success}`)
-      return success
+      return correctCount === totalRequired && totalRequired > 0
     }
 
     const validateUserAnswer = (userAnswer, exercise, stepType) => {
       if (!exercise) {
-        console.warn('❌ No exercise provided for validation')
         return false
       }
 
       const exerciseType = exercise.type || 'short-answer'
-      console.log('🔍 Validating answer:', {
-        exerciseType,
-        userAnswer,
-        correctAnswer: exercise.correctAnswer || exercise.answer,
-        exercise: exercise
-      })
 
       switch (exerciseType) {
         case 'short-answer':
           return validateShortAnswer(userAnswer, exercise)
-        
         case 'multiple-choice':
         case 'abc':
           return validateMultipleChoice(userAnswer, exercise)
-        
         case 'true-false':
           return validateTrueFalse(userAnswer, exercise)
-        
         default:
-          console.warn(`⚠️ Unknown exercise type: ${exerciseType}, trying short answer`)
           return validateShortAnswer(userAnswer, exercise)
       }
     }
 
     const validateQuizAnswer = (userAnswer, quiz) => {
       if (!quiz) {
-        console.warn('❌ No quiz provided for validation')
         return false
       }
 
       const quizType = quiz.type || 'multiple-choice'
-      console.log('🔍 Quiz validation:', {
-        quizType,
-        userAnswer,
-        correctAnswer: quiz.correctAnswer,
-        options: quiz.options
-      })
 
       switch (quizType) {
         case 'multiple-choice':
           return validateMultipleChoice(userAnswer, quiz)
-        
         case 'true-false':
           return validateTrueFalse(userAnswer, quiz)
-        
         case 'short-answer':
           return validateShortAnswer(userAnswer, quiz)
-        
         default:
           return validateMultipleChoice(userAnswer, quiz)
       }
     }
 
-    // ✅ FIXED: Enhanced getCorrectAnswerDisplay to handle MongoDB objects properly
+    // ==========================================
+    // CORRECT ANSWER DISPLAY
+    // ==========================================
+    
     const getCorrectAnswerDisplay = (exercise) => {
       if (!exercise) return ''
 
@@ -939,7 +757,6 @@ export default {
           return String(exercise.correctAnswer || '')
 
         case 'fill-blank':
-          // ✅ FIXED: Handle MongoDB object answers in display
           let correctAnswers = []
           
           if (exercise.blanks && Array.isArray(exercise.blanks)) {
@@ -959,7 +776,6 @@ export default {
           } else if (exercise.answers && Array.isArray(exercise.answers)) {
             correctAnswers = exercise.answers
           } else if (exercise.hint) {
-            // Fallback to hint
             correctAnswers = exercise.hint.split(',').map(h => h.trim())
           }
           
@@ -978,13 +794,24 @@ export default {
         case 'matching':
           if (exercise.pairs && Array.isArray(exercise.pairs)) {
             return exercise.pairs.map((pair, index) => {
+              let leftItem = ''
+              let rightItem = ''
+              
               if (Array.isArray(pair)) {
-                return `${pair[0]} ↔ ${pair[1]}`
+                leftItem = String(pair[0] || '')
+                rightItem = String(pair[1] || '')
+              } else if (pair && typeof pair === 'object') {
+                leftItem = String(pair.left || pair[0] || pair.question || pair.term || '')
+                rightItem = String(pair.right || pair[1] || pair.answer || pair.definition || '')
+              } else {
+                leftItem = String(pair || '')
+                rightItem = String(pair || '')
               }
-              return `${pair.left || ''} ↔ ${pair.right || ''}`
+              
+              return `${leftItem} ↔ ${rightItem}`
             }).join('; ')
           }
-          return 'Правильные соответствия: каждый левый элемент соединяется с соответствующим правым элементом'
+          return 'Правильные соответствия: каждый левый элемент соединяется с соответствующим правым элементом по порядку'
 
         case 'ordering':
           if (exercise.items && Array.isArray(exercise.items)) {
@@ -995,7 +822,6 @@ export default {
           return 'Правильный порядок показан выше'
 
         case 'drag-drop':
-          // ✅ FIXED: Handle MongoDB structure for drag-drop display
           let dropZones = []
           if (Array.isArray(exercise.dropZones)) {
             dropZones = exercise.dropZones
@@ -1030,58 +856,10 @@ export default {
       }
     }
 
-    // ✅ FIXED: Reset attempts function with proper state management
-    const resetAttempts = () => {
-      attemptCount.value = 0
-      isOnSecondChance.value = false
-      showCorrectAnswer.value = false
-      correctAnswerText.value = ''
-      exercises.confirmation.value = ''
-      exercises.answerWasCorrect.value = false
-      
-      // ✅ CRITICAL: Reset initialization tracker
-      initializationTracker.value = {
-        currentExerciseId: null,
-        fillBlankInitialized: false,
-        dragDropInitialized: false
-      }
-      
-      console.log('🔄 Reset attempts and initialization tracker')
-    }
-
-    // ✅ ENHANCED: Update the getCurrentExercise method with controlled initialization
-    const getCurrentExercise = () => {
-      const exercise = exercises.getCurrentExercise(lessonOrchestrator.currentStep.value)
-      
-      // ✅ CRITICAL: Only initialize if exercise has changed
-      if (exercise) {
-        const exerciseId = exercise.id || `${exercise.type}_${exercise.question?.substring(0, 20)}`
-        
-        if (initializationTracker.value.currentExerciseId !== exerciseId) {
-          // Reset tracker for new exercise
-          initializationTracker.value = {
-            currentExerciseId: exerciseId,
-            fillBlankInitialized: false,
-            dragDropInitialized: false
-          }
-          
-          // Initialize based on type
-          if (exercise.type === 'fill-blank') {
-            nextTick(() => {
-              initializeFillBlankForExercise(exercise)
-            })
-          } else if (exercise.type === 'drag-drop') {
-            nextTick(() => {
-              initializeDragDropForExercise(exercise)
-            })
-          }
-        }
-      }
-      
-      return exercise
-    }
-
-    // ✅ Enhanced messaging functions
+    // ==========================================
+    // MESSAGE FUNCTIONS
+    // ==========================================
+    
     const getSecondChanceMessage = (exercise) => {
       const messages = [
         '🤔 Не совсем правильно. У вас есть ещё одна попытка!',
@@ -1100,7 +878,7 @@ export default {
             message += ' Проверьте правописание и попробуйте синонимы.'
             break
           case 'matching':
-            message += ' Подумайте о логических связях.'
+            message += ' Подумайте о логических связях между элементами.'
             break
           case 'multiple-choice':
             message += ' Внимательно прочитайте все варианты.'
@@ -1110,6 +888,9 @@ export default {
             break
           case 'true-false':
             message += ' Подумайте о правильности утверждения.'
+            break
+          case 'ordering':
+            message += ' Проверьте правильность последовательности.'
             break
         }
       }
@@ -1141,7 +922,10 @@ export default {
       return messages[Math.floor(Math.random() * messages.length)]
     }
 
-    // ✅ FIXED: Main submission handler with proper second chance logic and initialization
+    // ==========================================
+    // MAIN SUBMISSION HANDLER
+    // ==========================================
+    
     const handleSubmitOrNext = async () => {
       console.log('🎯 Submit/Next triggered, attempt:', attemptCount.value + 1)
       
@@ -1160,23 +944,11 @@ export default {
       let isCorrect = false
       let exerciseOrQuiz = null
 
-      // ✅ CRITICAL: Get current exercise and ensure it's properly initialized
+      // Get current exercise and validate
       if (currentStep.type === 'exercise' || currentStep.type === 'practice') {
-        exerciseOrQuiz = getCurrentExercise() // This now includes controlled initialization
+        exerciseOrQuiz = getCurrentExercise()
         
         if (exerciseOrQuiz) {
-          console.log('🔍 Validating exercise:', {
-            type: exerciseOrQuiz.type,
-            question: exerciseOrQuiz.question,
-            correctAnswer: exerciseOrQuiz.correctAnswer,
-            userAnswer: exercises.userAnswer.value,
-            fillBlanks: exercises.fillBlankAnswers.value,
-            matching: exercises.matchingPairs.value,
-            dragDrop: exercises.dragDropPlacements,
-            attempt: attemptCount.value + 1,
-            maxAttempts: maxAttempts.value
-          })
-
           switch (exerciseOrQuiz.type) {
             case 'fill-blank':
               isCorrect = validateFillBlank(exercises.fillBlankAnswers.value, exerciseOrQuiz)
@@ -1190,10 +962,6 @@ export default {
             case 'drag-drop':
               isCorrect = validateDragDrop(exercises.dragDropPlacements, exerciseOrQuiz)
               break
-            case 'multiple-choice':
-            case 'abc':
-            case 'true-false':
-            case 'short-answer':
             default:
               isCorrect = validateUserAnswer(exercises.userAnswer.value, exerciseOrQuiz, currentStep.type)
               break
@@ -1203,15 +971,6 @@ export default {
         exerciseOrQuiz = exercises.getCurrentQuiz(currentStep)
         
         if (exerciseOrQuiz) {
-          console.log('🔍 Validating quiz:', {
-            type: exerciseOrQuiz.type,
-            question: exerciseOrQuiz.question,
-            correctAnswer: exerciseOrQuiz.correctAnswer,
-            userAnswer: exercises.userAnswer.value,
-            attempt: attemptCount.value + 1,
-            maxAttempts: maxAttempts.value
-          })
-          
           isCorrect = validateQuizAnswer(exercises.userAnswer.value, exerciseOrQuiz)
         }
       }
@@ -1219,49 +978,37 @@ export default {
       // Increment attempt count
       attemptCount.value++
 
-      // ✅ FIXED: Process the result based on correctness and attempt number
+      // Process the result
       if (isCorrect) {
-        // ✅ CORRECT ANSWER (works for both first and second attempts)
+        // Correct answer
         exercises.answerWasCorrect.value = true
         lessonOrchestrator.stars.value++
         lessonOrchestrator.earnedPoints.value += 10
         
-        // Bonus points for getting it right on first try
         if (attemptCount.value === 1) {
           lessonOrchestrator.earnedPoints.value += 5
           exercises.confirmation.value = getRandomSuccessMessage() + ' 🌟 Бонус за первую попытку!'
         } else {
-          // Success on second attempt
           exercises.confirmation.value = getRandomSuccessMessage() + ' 💪 Отлично, со второй попытки!'
         }
         
-        // Play success sound
         sound.playSuccessSound?.()
-        
-        console.log('✅ Answer correct on attempt', attemptCount.value)
-        
-        // Reset second chance indicators since we got it right
         isOnSecondChance.value = false
         
       } else {
-        // ❌ INCORRECT ANSWER
+        // Incorrect answer
         exercises.answerWasCorrect.value = false
         
         if (attemptCount.value < maxAttempts.value) {
-          // 🔄 FIRST ATTEMPT FAILED - Give second chance
+          // First attempt failed - give second chance
           isOnSecondChance.value = true
           exercises.confirmation.value = getSecondChanceMessage(exerciseOrQuiz)
-          
-          // Play gentle error sound
           sound.playErrorSound?.()
           
-          console.log('❌ Answer incorrect on first attempt - giving second chance')
-          
-          // Don't count as mistake yet, don't move on, allow user to try again
-          return // ✅ CRITICAL: Return here to allow second attempt
+          return // Allow second attempt
           
         } else {
-          // 💥 SECOND ATTEMPT ALSO FAILED - Show correct answer and move on
+          // Second attempt also failed
           lessonOrchestrator.mistakeCount.value++
           lessonOrchestrator.earnedPoints.value = Math.max(0, lessonOrchestrator.earnedPoints.value - 2)
           
@@ -1269,13 +1016,8 @@ export default {
           correctAnswerText.value = getCorrectAnswerDisplay(exerciseOrQuiz)
           exercises.confirmation.value = getFinalFailureMessage(exerciseOrQuiz, correctAnswerText.value)
           
-          // Reset second chance state
           isOnSecondChance.value = false
-          
-          // Play failure sound
           sound.playErrorSound?.()
-          
-          console.log('❌ Answer incorrect on second attempt - showing correct answer')
           
           // Generate smart hint for persistent mistakes
           if (lessonOrchestrator.mistakeCount.value >= 2) {
@@ -1296,7 +1038,24 @@ export default {
       await lessonOrchestrator.saveProgress()
     }
 
-    // ✅ Move to next step and reset
+    // ==========================================
+    // NAVIGATION FUNCTIONS
+    // ==========================================
+    
+    const resetAttempts = () => {
+      attemptCount.value = 0
+      isOnSecondChance.value = false
+      showCorrectAnswer.value = false
+      correctAnswerText.value = ''
+      exercises.confirmation.value = ''
+      exercises.answerWasCorrect.value = false
+      
+      initializationTracker.value = {
+        currentExerciseId: null,
+        initialized: false
+      }
+    }
+
     const moveToNextStep = () => {
       resetAttempts()
       
@@ -1313,20 +1072,79 @@ export default {
       }
     }
 
-    // ✅ FIXED: Enhanced drop handler with reactive updates
+    const goToNextExercise = () => {
+      resetAttempts()
+      exercises.goToNextExercise(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+    }
+
+    const goToNextQuiz = () => {
+      resetAttempts()
+      exercises.goToNextQuiz(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+    }
+
+    const goNext = () => {
+      resetAttempts()
+      lessonOrchestrator.goNext()
+    }
+
+    const goPrevious = () => {
+      resetAttempts()
+      lessonOrchestrator.goPrevious()
+    }
+
+    // ==========================================
+    // EXERCISE METHODS
+    // ==========================================
+    
+    const getCurrentQuiz = () => {
+      return exercises.getCurrentQuiz(lessonOrchestrator.currentStep.value)
+    }
+
+    const getTotalExercises = () => {
+      return exercises.getTotalExercises(lessonOrchestrator.currentStep.value)
+    }
+
+    const getTotalQuizzes = () => {
+      return exercises.getTotalQuizzes(lessonOrchestrator.currentStep.value)
+    }
+
+    // ==========================================
+    // EVENT HANDLERS
+    // ==========================================
+    
+    const handleMatchingItemSelected = (selection) => {
+      exercises.selectedMatchingItem.value = selection
+    }
+
+    const handleRemoveMatchingPair = (pairIndex) => {
+      if (pairIndex >= 0 && pairIndex < exercises.matchingPairs.value.length) {
+        const updatedPairs = exercises.matchingPairs.value.filter((_, index) => index !== pairIndex)
+        exercises.matchingPairs.value = updatedPairs
+        exercises.userAnswer.value = updatedPairs
+      }
+    }
+
+    const handleDragItemStart = (item) => {
+      exercises.draggedDragItem.value = item
+    }
+
+    const handleDragOverZone = (zoneId) => {
+      exercises.dropOverZone.value = zoneId
+    }
+
+    const handleDragLeaveZone = () => {
+      exercises.dropOverZone.value = null
+    }
+
     const handleDropInZone = ({ zoneId, item }) => {
-      console.log('🎯 Handling drop in zone:', { zoneId, item })
-      
       if (!exercises.dragDropPlacements) {
         exercises.dragDropPlacements = {}
       }
       
-      // Initialize zone if it doesn't exist
       if (!exercises.dragDropPlacements[zoneId]) {
         exercises.dragDropPlacements[zoneId] = []
       }
       
-      // Get item text for comparison
       const itemText = typeof item === 'string' ? item : (item?.text || item?.label || String(item))
       
       // Remove item from other zones first
@@ -1350,151 +1168,55 @@ export default {
         exercises.dragDropPlacements[zoneId].push(item)
       }
       
-      // ✅ CRITICAL: Force complete reactivity update
+      // Force reactivity update
       const updatedPlacements = {}
       Object.keys(exercises.dragDropPlacements).forEach(key => {
         updatedPlacements[key] = [...exercises.dragDropPlacements[key]]
       })
       
-      // Clear and reassign
       Object.keys(exercises.dragDropPlacements).forEach(key => {
         delete exercises.dragDropPlacements[key]
       })
       
       Object.assign(exercises.dragDropPlacements, updatedPlacements)
-      
-      console.log('✅ Drag-drop placements updated:', {
-        zoneId,
-        itemAdded: itemText,
-        allPlacements: exercises.dragDropPlacements
-      })
     }
 
-    // ✅ FIXED: Enhanced remove handler
     const handleRemoveDroppedItem = ({ zoneId, itemIndex, item }) => {
-      console.log('🗑️ Removing dropped item:', { zoneId, itemIndex, item })
-      
       if (!exercises.dragDropPlacements || 
           !exercises.dragDropPlacements[zoneId] || 
           !exercises.dragDropPlacements[zoneId][itemIndex]) {
-        console.warn('❌ Cannot remove item - invalid zone or index')
         return
       }
       
-      // Remove the item at the specified index
       exercises.dragDropPlacements[zoneId].splice(itemIndex, 1)
       
-      // ✅ CRITICAL: Force reactivity update
+      // Force reactivity update
       const updatedPlacements = {}
       Object.keys(exercises.dragDropPlacements).forEach(key => {
         updatedPlacements[key] = [...exercises.dragDropPlacements[key]]
       })
       
-      // Clear and reassign
       Object.keys(exercises.dragDropPlacements).forEach(key => {
         delete exercises.dragDropPlacements[key]
       })
       
       Object.assign(exercises.dragDropPlacements, updatedPlacements)
-      
-      console.log('✅ Item removed, updated placements:', exercises.dragDropPlacements)
     }
 
-    // ✅ CRITICAL: Enhanced fill-blank update handler
     const updateFillBlankAnswer = (index, event) => {
-      console.log('📝 Updating fill-blank answer:', { index, value: event.target.value })
-      
-      // Ensure the array exists and has enough elements
       if (!exercises.fillBlankAnswers.value || !Array.isArray(exercises.fillBlankAnswers.value)) {
-        console.warn('❌ Fill-blank answers array not initialized, creating...')
         exercises.fillBlankAnswers.value = []
       }
       
-      // Extend array if needed
       while (exercises.fillBlankAnswers.value.length <= index) {
         exercises.fillBlankAnswers.value.push('')
       }
       
-      // ✅ CRITICAL: Update the specific index
       const newValue = event.target ? event.target.value : event
       exercises.fillBlankAnswers.value[index] = newValue
       
-      // ✅ FORCE: Trigger reactivity by creating new array reference
+      // Force reactivity
       exercises.fillBlankAnswers.value = [...exercises.fillBlankAnswers.value]
-      
-      console.log('✅ Fill-blank answers updated:', exercises.fillBlankAnswers.value)
-    }
-
-    // Additional computed properties
-    const getUserProgress = computed(() => ({
-      currentStep: lessonOrchestrator.currentIndex.value,
-      completedSteps: Array.from({length: lessonOrchestrator.currentIndex.value}, (_, i) => i),
-      mistakes: lessonOrchestrator.mistakeCount.value,
-      stars: lessonOrchestrator.stars.value,
-      elapsedSeconds: lessonOrchestrator.elapsedSeconds.value
-    }))
-
-    const isLastStep = computed(() => {
-      return lessonOrchestrator.currentIndex.value >= lessonOrchestrator.steps.value.length - 1
-    })
-
-    // ✅ Enhanced exercise navigation with reset
-    const goToNextExercise = () => {
-      resetAttempts()
-      exercises.goToNextExercise(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
-    }
-
-    const goToNextQuiz = () => {
-      resetAttempts()
-      exercises.goToNextQuiz(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
-    }
-
-    // ✅ Override existing step navigation to reset attempts
-    const goNext = () => {
-      resetAttempts()
-      lessonOrchestrator.goNext()
-    }
-
-    const goPrevious = () => {
-      resetAttempts()
-      lessonOrchestrator.goPrevious()
-    }
-
-    const getCurrentQuiz = () => {
-      return exercises.getCurrentQuiz(lessonOrchestrator.currentStep.value)
-    }
-
-    const getTotalExercises = () => {
-      return exercises.getTotalExercises(lessonOrchestrator.currentStep.value)
-    }
-
-    const getTotalQuizzes = () => {
-      return exercises.getTotalQuizzes(lessonOrchestrator.currentStep.value)
-    }
-
-    // ✅ Enhanced event handlers for matching and drag-drop
-    const handleMatchingItemSelected = (selection) => {
-      exercises.selectedMatchingItem.value = selection
-      console.log('🔗 Matching item selected:', selection)
-    }
-
-    const handleRemoveMatchingPair = (pairIndex) => {
-      const updatedPairs = exercises.matchingPairs.value.filter((_, index) => index !== pairIndex)
-      exercises.matchingPairs.value = updatedPairs
-      console.log('🗑️ Matching pair removed:', pairIndex)
-    }
-
-    const handleDragItemStart = (item) => {
-      exercises.draggedDragItem.value = item
-      console.log('🎯 Drag started:', item)
-    }
-
-    const handleDragOverZone = (zoneId) => {
-      exercises.dropOverZone.value = zoneId
-    }
-
-    const handleDragLeaveZone = () => {
-      exercises.dropOverZone.value = null
     }
 
     const showHint = () => {
@@ -1505,22 +1227,10 @@ export default {
       exercises.smartHint.value = ''
     }
 
-    // ✅ WATCH: Add watcher to monitor exercise changes and prevent over-initialization
-    watch(() => lessonOrchestrator.currentStep.value, (newStep, oldStep) => {
-      if (newStep && newStep !== oldStep && newStep.type === 'exercise') {
-        // Reset initialization tracker when step changes
-        initializationTracker.value = {
-          currentExerciseId: null,
-          fillBlankInitialized: false,
-          dragDropInitialized: false
-        }
-        
-        const exercise = getCurrentExercise()
-        console.log('🔄 Step changed to exercise:', exercise?.type)
-      }
-    }, { immediate: false })
-
-    // Other utility methods
+    // ==========================================
+    // AI AND EXPLANATION METHODS
+    // ==========================================
+    
     const askAboutExplanation = (question) => {
       const explanationText = lessonOrchestrator.formatContent?.(lessonOrchestrator.currentStep.value?.data?.content) || ''
       explanation.askAboutExplanation?.(explanationText, question, {
@@ -1553,6 +1263,10 @@ export default {
       explanation.closeFloatingAI?.()
     }
 
+    // ==========================================
+    // UTILITY METHODS
+    // ==========================================
+    
     const shareResult = () => {
       const message = `🎉 Я только что завершил урок "${lessonOrchestrator.lesson.value.lessonName}"! Получил ${lessonOrchestrator.stars.value} звезд и ${lessonOrchestrator.earnedPoints.value} очков! 🚀`
       
@@ -1598,6 +1312,62 @@ export default {
     const pronounceWord = (word) => {
       sound.pronounceWord?.(word)
     }
+
+    // ==========================================
+    // WATCHERS
+    // ==========================================
+    
+    watch(() => lessonOrchestrator.currentStep.value, (newStep, oldStep) => {
+      if (newStep && newStep !== oldStep) {
+        // Reset initialization tracker when step changes
+        initializationTracker.value = {
+          currentExerciseId: null,
+          initialized: false
+        }
+        
+        if (newStep.type === 'exercise' || newStep.type === 'practice') {
+          const exercise = getCurrentExercise()
+          
+          // Special handling for matching exercises
+          if (exercise?.type === 'matching') {
+            exercises.initializeMatchingItems(exercise)
+          }
+        }
+      }
+    }, { immediate: false })
+
+    // ==========================================
+    // DEBUG FUNCTIONS (Development only)
+    // ==========================================
+    
+    const debugMatchingExercise = () => {
+      const currentExercise = getCurrentExercise()
+      if (currentExercise?.type === 'matching') {
+        console.log('🔍 MATCHING DEBUG:', {
+          exercise: currentExercise,
+          pairs: currentExercise.pairs,
+          userPairs: exercises.matchingPairs.value,
+          selectedItem: exercises.selectedMatchingItem.value,
+          canSubmit: exercises.canSubmitAnswer(currentExercise)
+        })
+      }
+    }
+
+    // Enable debug mode for development
+    if (process.env.NODE_ENV === 'development') {
+      window.debugMatchingExercise = debugMatchingExercise
+      window.lessonState = {
+        exercises,
+        lessonOrchestrator,
+        getCurrentExercise,
+        attemptCount,
+        showCorrectAnswer
+      }
+    }
+
+    // ==========================================
+    // RETURN STATEMENT
+    // ==========================================
     
     return {
       // Expose everything from composables
@@ -1608,14 +1378,14 @@ export default {
       ...sound,
       ...explanation,
       
-      // ✅ Second chance system
+      // Second chance system
       attemptCount,
       maxAttempts,
       isOnSecondChance,
       showCorrectAnswer,
       correctAnswerText,
       
-      // Methods with proper validation and second chance
+      // Core methods
       getUserProgress,
       isLastStep,
       handleSubmitOrNext,
@@ -1623,18 +1393,22 @@ export default {
       getCurrentQuiz,
       getTotalExercises,
       getTotalQuizzes,
+      
+      // Navigation
       goToNextExercise,
       goToNextQuiz,
       goNext,
       goPrevious,
       resetAttempts,
       moveToNextStep,
+      
+      // Display methods
       getCorrectAnswerDisplay,
       getSecondChanceMessage,
       getFinalFailureMessage,
       getRandomSuccessMessage,
       
-      // Enhanced event handlers
+      // Event handlers
       handleMatchingItemSelected,
       handleRemoveMatchingPair,
       handleDragItemStart,
@@ -1646,7 +1420,7 @@ export default {
       showHint,
       clearSmartHint,
       
-      // Other methods
+      // AI and explanation methods
       askAboutExplanation,
       sendAIMessage,
       sendFloatingAIMessage,
@@ -1654,19 +1428,24 @@ export default {
       clearAIChat,
       toggleFloatingAI,
       closeFloatingAI,
+      
+      // Utility methods
       shareResult,
       goToHomework,
       getMedalIcon,
       initializeVocabularyModal,
       pronounceWord,
       
-      // Add missing drag-drop properties
+      // Debug (development only)
+      debugMatchingExercise,
+      
+      // Additional properties
       availableDragItems: exercises.availableDragItems,
       dropZones: exercises.dropZones
     }
   }
 }
-</script> 
+</script>
 
 <style scoped>
 @import "@/assets/css/LessonPage.css";
