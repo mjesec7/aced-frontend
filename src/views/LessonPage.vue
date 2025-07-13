@@ -41,7 +41,7 @@
       </div>
     </div>
 
-    <!-- ✅ FIXED: Vocabulary Learning Modal with proper event handlers -->
+    <!-- Vocabulary Learning Modal -->
     <VocabularyModal 
       v-if="vocabularyModal.isVisible"
       :vocabulary-data="vocabularyModal"
@@ -124,7 +124,7 @@
 
         <!-- Right Panel - Interactive Content OR AI Help -->
         <div v-if="isInteractiveStep" class="interactive-panel-container">
-          <!-- Interactive Panel (Exercises/Quizzes) - ENHANCED -->
+          <!-- Interactive Panel (Exercises/Quizzes) -->
           <InteractivePanel
             :current-step="currentStep"
             :current-exercise="getCurrentExercise()"
@@ -168,7 +168,7 @@
             @remove-dropped-item="handleRemoveDroppedItem"
           />
           
-          <!-- AI Help Panel (shown below or alongside interactive content) -->
+          <!-- AI Help Panel -->
           <AIHelpPanel
             :ai-suggestions="aiSuggestions"
             :ai-chat-input="aiChatInput"
@@ -239,7 +239,6 @@
 </template>
 
 <script>
-// Complete LessonPage.vue - Enhanced with FIXED Vocabulary Support
 import { computed, ref, watch, nextTick } from 'vue'
 
 // Import composables
@@ -263,6 +262,7 @@ import FloatingAIAssistant from '@/components/lesson/FloatingAIAssistant.vue'
 
 export default {
   name: 'LessonPage',
+  
   components: {
     VocabularyModal,
     LessonIntro,
@@ -324,24 +324,47 @@ export default {
     })
 
     // ==========================================
-    // ✅ VOCABULARY METHODS - FIXED
+    // VOCABULARY METHODS
     // ==========================================
     
     const initializeVocabularyModal = (step) => {
       console.log('📚 Initializing vocabulary modal from LessonPage:', step)
-      vocabulary.initializeVocabularyModal(step)
+      
+      let vocabularyStep = step
+      
+      if (!vocabularyStep) {
+        console.warn('⚠️ No step provided to initializeVocabularyModal, using current step')
+        vocabularyStep = lessonOrchestrator.currentStep.value
+      }
+      
+      if (!vocabularyStep) {
+        console.error('❌ No vocabulary step available for initialization')
+        return
+      }
+      
+      if (vocabularyStep.type !== 'vocabulary') {
+        console.error('❌ Step is not a vocabulary type:', vocabularyStep.type)
+        
+        const vocabularySteps = lessonOrchestrator.steps.value?.filter(s => s.type === 'vocabulary')
+        if (vocabularySteps && vocabularySteps.length > 0) {
+          console.log('✅ Found vocabulary step in lesson, using first one:', vocabularySteps[0])
+          vocabularyStep = vocabularySteps[0]
+        } else {
+          console.error('❌ No vocabulary steps found in entire lesson')
+          return
+        }
+      }
+      
+      vocabulary.initializeVocabularyModal(vocabularyStep)
     }
 
-    // ✅ CRITICAL FIX: Add missing jumpToVocabWord method
     const jumpToVocabWord = (index) => {
       console.log('🎯 Jumping to vocabulary word:', index)
       
       if (index >= 0 && index < vocabulary.vocabularyModal.words.length) {
-        // Reset card animation state first
         vocabulary.cardAnimation.isFlipping = false
         vocabulary.cardAnimation.showDefinition = false
         
-        // Update index with small delay for smooth transition
         setTimeout(() => {
           vocabulary.vocabularyModal.currentIndex = index
           console.log(`✅ Jumped to word ${index + 1}/${vocabulary.vocabularyModal.words.length}`)
@@ -351,7 +374,6 @@ export default {
       }
     }
 
-    // ✅ Enhanced vocabulary methods with better error handling
     const showVocabDefinition = () => {
       console.log('🔄 Showing vocabulary definition')
       vocabulary.showVocabDefinition()
@@ -387,7 +409,6 @@ export default {
       vocabulary.restartVocabulary()
     }
 
-    // ✅ Enhanced pronunciation with better error handling
     const pronounceWord = (word) => {
       console.log('🔊 Pronouncing word:', word)
       
@@ -488,14 +509,12 @@ export default {
       if (exercise) {
         const exerciseId = exercise.id || `${exercise.type}_${exercise.question?.substring(0, 20)}`
         
-        // Only initialize if exercise has changed
         if (initializationTracker.value.currentExerciseId !== exerciseId) {
           initializationTracker.value = {
             currentExerciseId: exerciseId,
             initialized: false
           }
           
-          // Initialize based on type
           nextTick(() => {
             exercises.initializeCurrentExerciseData(exercise)
             initializationTracker.value.initialized = true
@@ -521,12 +540,10 @@ export default {
       return correctAnswers.some(answer => {
         const correctAnswerTrimmed = String(answer).trim().toLowerCase()
         
-        // Exact match
         if (userAnswerTrimmed === correctAnswerTrimmed) {
           return true
         }
         
-        // Fuzzy match for typos
         if (correctAnswerTrimmed.length > 3) {
           const similarity = calculateSimilarity(userAnswerTrimmed, correctAnswerTrimmed)
           return similarity > 0.8
@@ -613,7 +630,6 @@ export default {
         return false
       }
 
-      // Get correct answers from multiple possible sources
       let correctAnswers = []
       
       if (exercise.blanks && Array.isArray(exercise.blanks)) {
@@ -641,7 +657,6 @@ export default {
         }
       }
       
-      // Process correct answers
       const finalCorrectAnswers = correctAnswers.map(answer => {
         if (typeof answer === 'string') {
           return answer.trim()
@@ -656,7 +671,6 @@ export default {
         return false
       }
 
-      // Validate each blank
       let correctCount = 0
       for (let i = 0; i < finalCorrectAnswers.length; i++) {
         const userAnswer = String(userAnswers[i] || '').trim().toLowerCase()
@@ -677,7 +691,6 @@ export default {
           const correctText = String(correctAnswer || '').trim().toLowerCase()
           isCorrect = userAnswer === correctText
           
-          // Allow fuzzy matching for longer answers
           if (!isCorrect && correctText.length > 3) {
             const similarity = calculateSimilarity(userAnswer, correctText)
             isCorrect = similarity > 0.85
@@ -692,29 +705,25 @@ export default {
       return correctCount === finalCorrectAnswers.length
     }
 
-    // FIXED MATCHING VALIDATION - Simple index comparison
     const validateMatching = (userPairs, exercise) => {
-      console.log('🔗 Validating matching exercise with simple index comparison')
+      console.log('🔗 Validating matching exercise')
       
       if (!Array.isArray(userPairs) || userPairs.length === 0) {
         console.log('❌ No user pairs provided')
         return false
       }
 
-      // Get exercise pairs
       const exercisePairs = exercise.pairs || []
       if (!Array.isArray(exercisePairs) || exercisePairs.length === 0) {
         console.log('❌ No exercise pairs found')
         return false
       }
 
-      // Check if user completed all pairs
       if (userPairs.length !== exercisePairs.length) {
         console.log(`❌ Incomplete: ${userPairs.length}/${exercisePairs.length} pairs`)
         return false
       }
 
-      // Simple index-based validation
       let correctCount = 0
       
       for (let i = 0; i < userPairs.length; i++) {
@@ -730,7 +739,6 @@ export default {
 
         console.log(`🔍 Checking pair ${i}: leftIndex=${leftIndex}, rightIndex=${rightIndex}`)
 
-        // SIMPLIFIED LOGIC: Check if left and right indices match
         if (leftIndex === rightIndex) {
           correctCount++
           console.log(`✅ CORRECT: Index ${leftIndex} matches ${rightIndex}`)
@@ -769,13 +777,11 @@ export default {
         return false
       }
 
-      // ✅ FIXED: Compare the order of items
       let correctCount = 0
       for (let i = 0; i < correctItems.length; i++) {
         const userItem = userItems[i]
         const correctItem = correctItems[i]
         
-        // Extract text for comparison
         const userText = typeof userItem === 'string' ? userItem : 
                         (userItem?.text || userItem?.id || String(userItem))
         const correctText = typeof correctItem === 'string' ? correctItem : 
@@ -802,7 +808,6 @@ export default {
         return false
       }
 
-      // Handle MongoDB structure for drop zones
       let dropZones = []
       
       if (Array.isArray(exercise.dropZones)) {
@@ -822,7 +827,6 @@ export default {
         const zoneId = zone.id || zone.label || String(zone)
         const userItems = userPlacements[zoneId] || []
         
-        // Handle MongoDB structure for correct items
         let correctItems = []
         if (Array.isArray(zone.correctItems)) {
           correctItems = zone.correctItems
@@ -839,7 +843,6 @@ export default {
 
         totalRequired += correctItems.length
 
-        // Check each correct item is in the zone
         for (const correctItem of correctItems) {
           const correctText = typeof correctItem === 'string' ? correctItem : (correctItem?.text || correctItem?.label || String(correctItem))
           
@@ -1090,27 +1093,23 @@ export default {
     }
 
     // ==========================================
-    // ENHANCED EVENT HANDLERS - CRITICAL FIX
+    // EVENT HANDLERS
     // ==========================================
 
     const handleAnswerChanged = (newAnswer) => {
       console.log('📝 Answer changed:', newAnswer)
       
-      // Get current exercise to determine type
       const currentExercise = getCurrentExercise()
       
-      // MAKE SURE this handles matching specifically:
       if (currentExercise?.type === 'matching') {
         exercises.matchingPairs.value = newAnswer || []
         exercises.userAnswer.value = newAnswer || []
         
         console.log('🔗 Updated matching pairs:', exercises.matchingPairs.value)
       } else if (currentExercise?.type === 'ordering') {
-        // ✅ FIXED: Handle ordering exercises
         exercises.userAnswer.value = newAnswer || []
         console.log('🔄 Updated ordering items:', exercises.userAnswer.value)
       } else {
-        // For other exercise types
         exercises.userAnswer.value = newAnswer
       }
     }
@@ -1147,7 +1146,6 @@ export default {
         return
       }
 
-      // If showing correct answer, move to next step
       if (showCorrectAnswer.value) {
         moveToNextStep()
         return
@@ -1156,7 +1154,6 @@ export default {
       let isCorrect = false
       let exerciseOrQuiz = null
 
-      // Get current exercise and validate
       if (currentStep.type === 'exercise' || currentStep.type === 'practice') {
         exerciseOrQuiz = getCurrentExercise()
         
@@ -1169,7 +1166,6 @@ export default {
               isCorrect = validateMatching(exercises.matchingPairs.value, exerciseOrQuiz)
               break
             case 'ordering':
-              // ✅ FIXED: Use the userAnswer for ordering validation
               const orderingItems = exercises.userAnswer.value || []
               console.log('🔄 Validating ordering with items:', orderingItems)
               isCorrect = validateOrdering(orderingItems, exerciseOrQuiz)
@@ -1190,12 +1186,9 @@ export default {
         }
       }
 
-      // Increment attempt count
       attemptCount.value++
 
-      // Process the result
       if (isCorrect) {
-        // Correct answer
         exercises.answerWasCorrect.value = true
         lessonOrchestrator.stars.value++
         lessonOrchestrator.earnedPoints.value += 10
@@ -1211,19 +1204,16 @@ export default {
         isOnSecondChance.value = false
         
       } else {
-        // Incorrect answer
         exercises.answerWasCorrect.value = false
         
         if (attemptCount.value < maxAttempts.value) {
-          // First attempt failed - give second chance
           isOnSecondChance.value = true
           exercises.confirmation.value = getSecondChanceMessage(exerciseOrQuiz)
           sound.playErrorSound?.()
           
-          return // Allow second attempt
+          return
           
         } else {
-          // Second attempt also failed
           lessonOrchestrator.mistakeCount.value++
           lessonOrchestrator.earnedPoints.value = Math.max(0, lessonOrchestrator.earnedPoints.value - 2)
           
@@ -1234,7 +1224,6 @@ export default {
           isOnSecondChance.value = false
           sound.playErrorSound?.()
           
-          // Generate smart hint for persistent mistakes
           if (lessonOrchestrator.mistakeCount.value >= 2) {
             await explanation.generateSmartHintForMistakes?.(
               exerciseOrQuiz,
@@ -1249,7 +1238,6 @@ export default {
         }
       }
       
-      // Save progress
       await lessonOrchestrator.saveProgress()
     }
 
@@ -1350,7 +1338,6 @@ export default {
       
       const itemText = typeof item === 'string' ? item : (item?.text || item?.label || String(item))
       
-      // Remove item from other zones first
       Object.keys(exercises.dragDropPlacements).forEach(otherZoneId => {
         if (otherZoneId !== zoneId && Array.isArray(exercises.dragDropPlacements[otherZoneId])) {
           exercises.dragDropPlacements[otherZoneId] = exercises.dragDropPlacements[otherZoneId].filter(placedItem => {
@@ -1360,18 +1347,15 @@ export default {
         }
       })
       
-      // Check if item is already in target zone
       const isAlreadyInZone = exercises.dragDropPlacements[zoneId].some(placedItem => {
         const placedText = typeof placedItem === 'string' ? placedItem : (placedItem?.text || placedItem?.label || String(placedItem))
         return placedText === itemText
       })
       
-      // Add to target zone if not already there
       if (!isAlreadyInZone) {
         exercises.dragDropPlacements[zoneId].push(item)
       }
       
-      // Force reactivity update
       const updatedPlacements = {}
       Object.keys(exercises.dragDropPlacements).forEach(key => {
         updatedPlacements[key] = [...exercises.dragDropPlacements[key]]
@@ -1393,7 +1377,6 @@ export default {
       
       exercises.dragDropPlacements[zoneId].splice(itemIndex, 1)
       
-      // Force reactivity update
       const updatedPlacements = {}
       Object.keys(exercises.dragDropPlacements).forEach(key => {
         updatedPlacements[key] = [...exercises.dragDropPlacements[key]]
@@ -1418,7 +1401,6 @@ export default {
       const newValue = event.target ? event.target.value : event
       exercises.fillBlankAnswers.value[index] = newValue
       
-      // Force reactivity
       exercises.fillBlankAnswers.value = [...exercises.fillBlankAnswers.value]
     }
 
@@ -1514,7 +1496,6 @@ export default {
     
     watch(() => lessonOrchestrator.currentStep.value, (newStep, oldStep) => {
       if (newStep && newStep !== oldStep) {
-        // Reset initialization tracker when step changes
         initializationTracker.value = {
           currentExerciseId: null,
           initialized: false
@@ -1523,50 +1504,12 @@ export default {
         if (newStep.type === 'exercise' || newStep.type === 'practice') {
           const exercise = getCurrentExercise()
           
-          // Special handling for matching exercises
           if (exercise?.type === 'matching') {
             exercises.initializeMatchingItems?.(exercise)
           }
         }
       }
     }, { immediate: false })
-
-    // ==========================================
-    // DEBUG FUNCTIONS (Development only)
-    // ==========================================
-    
-    const debugVocabularyState = () => {
-      console.log('🔍 VOCABULARY DEBUG STATE:', {
-        modalVisible: vocabulary.vocabularyModal.isVisible,
-        currentIndex: vocabulary.vocabularyModal.currentIndex,
-        totalWords: vocabulary.vocabularyModal.words.length,
-        currentWord: vocabulary.currentVocabWord.value,
-        cardAnimationState: {
-          isFlipping: vocabulary.cardAnimation.isFlipping,
-          showDefinition: vocabulary.cardAnimation.showDefinition
-        },
-        progress: vocabulary.vocabProgress.value,
-        isLastWord: vocabulary.isLastVocabWord.value,
-        wordsLearned: vocabulary.vocabularyModal.words.filter(w => w.learned).length
-      })
-    }
-
-    // Enable debug mode for development
-    if (process.env.NODE_ENV === 'development') {
-      window.debugVocabularyState = debugVocabularyState
-      window.lessonState = {
-        vocabulary,
-        exercises,
-        lessonOrchestrator,
-        getCurrentExercise,
-        attemptCount,
-        showCorrectAnswer,
-        handleAnswerChanged,
-        handleMatchingItemSelected,
-        handleRemoveMatchingPair,
-        jumpToVocabWord
-      }
-    }
 
     // ==========================================
     // RETURN STATEMENT
@@ -1611,7 +1554,7 @@ export default {
       getFinalFailureMessage,
       getRandomSuccessMessage,
       
-      // ✅ VOCABULARY METHODS - FIXED
+      // Vocabulary methods
       initializeVocabularyModal,
       jumpToVocabWord,
       showVocabDefinition,
@@ -1623,11 +1566,10 @@ export default {
       restartVocabulary,
       pronounceWord,
       
-      // ENHANCED Event handlers - CRITICAL FIX
+      // Event handlers
       handleAnswerChanged,
       handleMatchingItemSelected,
       handleRemoveMatchingPair,
-      debugVocabularyState,
       
       // Other event handlers
       handleDragItemStart,
@@ -1660,168 +1602,6 @@ export default {
   }
 }
 </script>
-
 <style scoped>
 @import "@/assets/css/LessonPage.css";
-
-/* Interactive panel container for exercises with AI help */
-.interactive-panel-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  overflow-y: auto;
-  padding: 20px;
-  background: #f8fafc;
-  border-radius: 8px;
-}
-
-@media (max-width: 1024px) {
-  .interactive-panel-container {
-    padding: 16px;
-    gap: 12px;
-  }
-}
-
-/* ✅ VOCABULARY MODAL SPECIFIC FIXES */
-.vocabulary-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(12px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 3000; /* Higher than other modals */
-  padding: 20px;
-  animation: modalFadeIn 0.4s ease-out;
-}
-
-/* ✅ IMPROVED CARD ANIMATION */
-.vocabulary-card {
-  width: 100%;
-  max-width: 500px;
-  height: 350px;
-  position: relative;
-  perspective: 1200px;
-  cursor: pointer;
-  margin-bottom: 20px;
-  animation: cardAppear 0.6s ease-out;
-  transform-style: preserve-3d;
-}
-
-.vocabulary-card:hover {
-  transform: scale(1.02) translateY(-2px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.card-front,
-.card-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 
-    0 15px 35px rgba(0, 0, 0, 0.1),
-    0 3px 10px rgba(0, 0, 0, 0.08),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
-  will-change: transform;
-}
-
-.card-front {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  transform: rotateY(0deg);
-  z-index: 2;
-}
-
-.card-back {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-  transform: rotateY(-180deg);
-  z-index: 1;
-}
-
-/* ✅ CRITICAL: Fixed flip animation */
-.vocabulary-card.flipped .card-front {
-  transform: rotateY(180deg);
-  z-index: 1;
-}
-
-.vocabulary-card.flipped .card-back {
-  transform: rotateY(0deg);
-  z-index: 2;
-}
-
-.vocabulary-card.flipping {
-  pointer-events: none;
-}
-
-.vocabulary-card.flipping .card-front,
-.vocabulary-card.flipping .card-back {
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ✅ ENHANCED BUTTON STATES */
-.vocab-nav-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-.vocab-learned-btn.active {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-/* ✅ DEBUG STYLES (Development only) */
-.debug-vocabulary {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 12px;
-  z-index: 9999;
-  max-width: 300px;
-}
-
-/* ✅ ACCESSIBILITY IMPROVEMENTS */
-@media (prefers-reduced-motion: reduce) {
-  .vocabulary-card,
-  .card-front,
-  .card-back {
-    transition: none;
-    animation: none;
-  }
-  
-  .vocabulary-card:hover {
-    transform: none;
-  }
-}
-
-/* ✅ HIGH CONTRAST MODE */
-@media (prefers-contrast: high) {
-  .card-front {
-    background: #000080;
-    border: 2px solid white;
-  }
-  
-  .card-back {
-    background: #800080;
-    border: 2px solid white;
-  }
-}
 </style>
