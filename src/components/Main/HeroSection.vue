@@ -22,7 +22,7 @@
         Разблокируйте будущее образования вместе с ACED
       </h1>
       <div class="hero-buttons">
-        <button class="hero-btn">Узнать больше</button>
+        <button class="hero-btn" @click="goToAboutUs">Узнать больше</button>
       </div>
     </div>
   </div>
@@ -50,9 +50,13 @@ export default {
       const maxScroll = window.innerHeight;
       this.heroOpacity = Math.max(1 - scrollTop / maxScroll, 0);
     },
-  },
+    goToAboutUs() {
+      this.$router.push({ name: 'AboutUsPage' });
+    }
+  }
 };
 </script>
+
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Unbounded&display=swap');

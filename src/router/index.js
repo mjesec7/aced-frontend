@@ -41,6 +41,13 @@ const routes = [
     meta: { title: 'Главная' }
   },
   {
+    path: '/about-us',
+    name: 'AboutUsPage',
+    component: () => import('@/components/Profile/AboutUs.vue'),
+    meta: { title: 'О нас' }
+  },
+  
+  {
     path: '/settings',
     name: 'SettingsPage',
     component: AcedSettings,
