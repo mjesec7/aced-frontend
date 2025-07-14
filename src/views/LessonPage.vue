@@ -192,7 +192,7 @@
       </div>
     </div>
 
-    <!-- Lesson Completion Screen -->
+    <!-- Enhanced Lesson Completion Screen -->
     <CompletionScreen
       v-if="lessonCompleted"
       :lesson="lesson"
@@ -204,10 +204,30 @@
       :medal-icon="getMedalIcon()"
       :progress-insight="progressInsight"
       :total-steps="steps.length"
+      :extraction-results="extractionResults"
       @return-to-catalogue="$router.push('/profile/catalogue')"   
-         @share="shareResult"
+      @share="shareResult"
       @homework="goToHomework"
+      @vocabulary="goToVocabulary"
     />
+
+    <!-- Migration Panel (Admin/User) -->
+    <div v-if="showMigrationPanel" class="migration-panel">
+      <div class="migration-content">
+        <h3>🔄 Обновление контента</h3>
+        <p>Хотите создать задания и словарь из уже пройденных уроков?</p>
+        <div class="migration-actions">
+          <button 
+            @click="migrateLessonContent" 
+            :disabled="migrationLoading"
+            class="migrate-btn"
+          >
+            {{ migrationLoading ? '⏳ Обработка...' : '🚀 Обновить контент' }}
+          </button>
+          <button @click="closeMigrationPanel" class="cancel-btn">❌ Закрыть</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Floating AI Assistant Toggle -->
     <button 
@@ -307,6 +327,11 @@ export default {
       initialized: false
     })
 
+    // NEW: Lesson completion and extraction state
+    const extractionResults = ref(null)
+    const migrationLoading = ref(false)
+    const showMigrationPanel = ref(false)
+
     // ==========================================
     // COMPUTED PROPERTIES
     // ==========================================
@@ -322,6 +347,175 @@ export default {
     const isLastStep = computed(() => {
       return lessonOrchestrator.currentIndex.value >= lessonOrchestrator.steps.value.length - 1
     })
+
+    // NEW: Get user token for API calls
+    const userToken = computed(() => {
+      // Get this from your auth system
+      return lessonOrchestrator.currentUser?.value?.token || localStorage.getItem('authToken')
+    })
+
+    // ==========================================
+    // NEW: LESSON COMPLETION WITH EXTRACTION
+    // ==========================================
+    
+    const completeLessonWithExtraction = async () => {
+      try {
+        console.log('🏁 Starting enhanced lesson completion with extraction')
+        
+        // Your existing lesson completion logic
+        const completionResult = await lessonOrchestrator.completeLesson?.()
+        
+        if (completionResult?.success || lessonOrchestrator.lessonCompleted.value) {
+          console.log('✅ Lesson completed, triggering content extraction')
+          
+          // 🔥 NEW: Trigger content extraction
+          const extractionResult = await extractLessonContent()
+          
+          if (extractionResult?.success) {
+            console.log('🎉 Content extraction successful:', extractionResult)
+            showCompletionMessage(extractionResult)
+          } else {
+            console.warn('⚠️ Content extraction failed, but lesson still completed')
+            // Still show completion, just without extraction results
+            lessonOrchestrator.lessonCompleted.value = true
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error completing lesson with extraction:', error)
+        // Fallback to regular completion
+        lessonOrchestrator.lessonCompleted.value = true
+      }
+    }
+
+    const extractLessonContent = async () => {
+      try {
+        console.log('📤 Extracting lesson content...')
+        
+        if (!lessonOrchestrator.currentUser?.value?.uid || !lessonOrchestrator.lesson.value?._id) {
+          console.error('❌ Missing required data for extraction')
+          return { success: false, error: 'Missing user or lesson data' }
+        }
+
+        const response = await fetch('/api/lessons/complete-and-extract', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${userToken.value}`
+          },
+          body: JSON.stringify({
+            userId: lessonOrchestrator.currentUser.value.uid,
+            lessonId: lessonOrchestrator.lesson.value._id,
+            progress: getUserProgress.value
+          })
+        })
+        
+        const result = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to extract content')
+        }
+        
+        console.log('✅ Content extraction response:', result)
+        return result
+        
+      } catch (error) {
+        console.error('❌ Error extracting lesson content:', error)
+        return { success: false, error: error.message }
+      }
+    }
+
+    const showCompletionMessage = (extractionResult) => {
+      console.log('🎊 Showing enhanced completion message')
+      
+      let message = '🎉 Урок успешно завершён!'
+      
+      if (extractionResult.homeworkCreated) {
+        message += '\n📝 Новое домашнее задание создано и доступно в разделе заданий!'
+      }
+      
+      if (extractionResult.vocabularyAdded) {
+        message += `\n📚 ${extractionResult.vocabularyCount} новых слов добавлено в вашу коллекцию словаря!`
+      }
+      
+      // Show toast notification if you have a toast system
+      if (lessonOrchestrator.showToast) {
+        lessonOrchestrator.showToast(message, 'success')
+      } else {
+        console.log('📢 Completion message:', message)
+      }
+      
+      // Set completion state and extraction results
+      lessonOrchestrator.lessonCompleted.value = true
+      extractionResults.value = extractionResult
+    }
+
+    // ==========================================
+    // NEW: MIGRATION FUNCTIONALITY
+    // ==========================================
+    
+    const migrateLessonContent = async () => {
+      try {
+        migrationLoading.value = true
+        console.log('🔄 Starting lesson content migration')
+        
+        if (!lessonOrchestrator.currentUser?.value?.uid) {
+          throw new Error('User not found')
+        }
+        
+        const response = await fetch(`/api/homework/migrate-from-lessons/${lessonOrchestrator.currentUser.value.uid}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${userToken.value}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        const result = await response.json()
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Migration failed')
+        }
+        
+        if (result.success) {
+          const message = `✅ Миграция завершена! Создано ${result.data?.homeworkCreated || 0} заданий и добавлено ${result.data?.vocabularyAdded || 0} слов в словарь.`
+          
+          if (lessonOrchestrator.showToast) {
+            lessonOrchestrator.showToast(message, 'success')
+          } else {
+            alert(message)
+          }
+          
+          // Close migration panel
+          showMigrationPanel.value = false
+          
+          // Optionally refresh homework and vocabulary lists
+          // await fetchHomework()
+          // await fetchVocabulary()
+        } else {
+          throw new Error(result.error || 'Migration failed')
+        }
+        
+      } catch (error) {
+        console.error('❌ Migration error:', error)
+        const errorMessage = '❌ Ошибка миграции: ' + error.message
+        
+        if (lessonOrchestrator.showToast) {
+          lessonOrchestrator.showToast(errorMessage, 'error')
+        } else {
+          alert(errorMessage)
+        }
+      } finally {
+        migrationLoading.value = false
+      }
+    }
+
+    const showMigrationPanelModal = () => {
+      showMigrationPanel.value = true
+    }
+
+    const closeMigrationPanel = () => {
+      showMigrationPanel.value = false
+    }
 
     // ==========================================
     // VOCABULARY METHODS
@@ -1449,6 +1643,18 @@ export default {
     }
 
     // ==========================================
+    // NEW: NAVIGATION METHODS FOR COMPLETION SCREEN
+    // ==========================================
+    
+    const goToHomework = () => {
+      lessonOrchestrator.router?.push(`/profile/homeworks/${lessonOrchestrator.lesson.value._id}`)
+    }
+
+    const goToVocabulary = () => {
+      lessonOrchestrator.router?.push('/profile/vocabulary')
+    }
+
+    // ==========================================
     // UTILITY METHODS
     // ==========================================
     
@@ -1479,10 +1685,6 @@ export default {
         alert('📤 ' + message)
       }
     }
-    
-    const goToHomework = () => {
-      lessonOrchestrator.router?.push(`/profile/homeworks/${lessonOrchestrator.lesson.value._id}`)
-    }
 
     const getMedalIcon = () => {
       if (lessonOrchestrator.mistakeCount.value === 0) return '🥇'
@@ -1511,6 +1713,22 @@ export default {
       }
     }, { immediate: false })
 
+    // NEW: Watch for lesson completion to trigger enhanced completion
+    watch(() => lessonOrchestrator.lessonCompleted.value, (isCompleted) => {
+      if (isCompleted && !extractionResults.value) {
+        console.log('🎯 Lesson completed detected, triggering extraction')
+        completeLessonWithExtraction()
+      }
+    })
+
+    // ==========================================
+    // OVERRIDE LESSON COMPLETION METHOD
+    // ==========================================
+    
+    // Override the default completion method to use our enhanced version
+    const originalCompleteLesson = lessonOrchestrator.completeLesson
+    lessonOrchestrator.completeLesson = completeLessonWithExtraction
+
     // ==========================================
     // RETURN STATEMENT
     // ==========================================
@@ -1531,6 +1749,12 @@ export default {
       showCorrectAnswer,
       correctAnswerText,
       
+      // NEW: Extraction and migration state
+      extractionResults,
+      migrationLoading,
+      showMigrationPanel,
+      userToken,
+      
       // Core methods
       getUserProgress,
       isLastStep,
@@ -1539,6 +1763,16 @@ export default {
       getCurrentQuiz,
       getTotalExercises,
       getTotalQuizzes,
+      
+      // NEW: Enhanced completion methods
+      completeLessonWithExtraction,
+      extractLessonContent,
+      showCompletionMessage,
+      
+      // NEW: Migration methods
+      migrateLessonContent,
+      showMigrationPanelModal,
+      closeMigrationPanel,
       
       // Navigation
       goToNextExercise,
@@ -1593,6 +1827,7 @@ export default {
       // Utility methods
       shareResult,
       goToHomework,
+      goToVocabulary,
       getMedalIcon,
       
       // Additional properties
@@ -1602,6 +1837,150 @@ export default {
   }
 }
 </script>
+
 <style scoped>
 @import "@/assets/css/LessonPage.css";
+
+/* NEW: Additional styles for extraction features */
+.extraction-results {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 24px;
+  margin: 20px 0;
+  color: white;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+}
+
+.extraction-results h3 {
+  margin: 0 0 20px 0;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.extraction-item {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.extraction-icon {
+  font-size: 2rem;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+.extraction-content {
+  flex: 1;
+}
+
+.extraction-content h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.2rem;
+}
+
+.extraction-content p {
+  margin: 0 0 12px 0;
+  opacity: 0.9;
+}
+
+.extraction-content button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.extraction-content button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Migration panel styles */
+.migration-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.migration-content {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.migration-content h3 {
+  margin: 0 0 16px 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.migration-content p {
+  margin: 0 0 24px 0;
+  color: #666;
+  line-height: 1.6;
+}
+
+.migration-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.migrate-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.migrate-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+
+.migrate-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.cancel-btn {
+  background: #f1f3f4;
+  color: #5f6368;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+  background: #e8eaed;
+  transform: translateY(-1px);
+}
 </style>
