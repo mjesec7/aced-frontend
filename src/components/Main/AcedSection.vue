@@ -27,10 +27,6 @@
         <img src="@/assets/icons/physics1.png" class="subject-icon" />
         <h3>Физика</h3>
       </div>
-      <div class="subject-card subject-chemistry floating" @click="showInfo('chemistry')">
-        <img src="@/assets/icons/chemistry1.png" class="subject-icon" />
-        <h3>Химия</h3>
-      </div>
     </div>
 
     <!-- Modal -->
@@ -91,13 +87,6 @@ export default {
           description: "Познай законы природы: от микрочастиц до звёзд и галактик.",
           funFact: "Одна чайная ложка нейтронной звезды весит как Эверест.",
           audience: "Тем, кто хочет понять, как работает Вселенная."
-        },
-        chemistry: {
-          label: "Химия",
-          image: new URL('@/assets/icons/chemistry2.png', import.meta.url).href,
-          description: "Изучи взаимодействие атомов и молекул, создавай новые вещества.",
-          funFact: "Алмаз и графит состоят из одного элемента — углерода.",
-          audience: "Тем, кто интересуется превращениями веществ и экспериментами."
         }
       }
     };
@@ -138,39 +127,42 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 60px;
-  padding: 80px;
+  gap: clamp(40px, 8vw, 60px);
+  padding: clamp(40px, 8vw, 80px) clamp(20px, 5vw, 80px);
   background: radial-gradient(ellipse at center, #0a001a, #1a002f);
   flex-wrap: wrap;
   color: white;
   z-index: 1;
+  min-height: 100vh;
 }
 
 .left-content {
   flex: 1;
-  max-width: 460px;
+  max-width: clamp(300px, 45vw, 460px);
+  min-width: 280px;
 }
 
 .headline {
-  font-size: 2.7rem;
+  font-size: clamp(2rem, 5vw, 2.7rem);
   font-family: 'Unbounded', sans-serif;
   background: linear-gradient(to right, #9333ea, #38bdf8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 20px;
+  margin-bottom: clamp(15px, 3vw, 20px);
+  line-height: 1.2;
 }
 
 .context-text {
-  font-size: 1rem;
+  font-size: clamp(0.9rem, 2.5vw, 1rem);
   font-family: 'Unbounded';
   color: #bfbfe5;
-  margin-bottom: 20px;
+  margin-bottom: clamp(15px, 3vw, 20px);
 }
 
 .start-Login-btn {
-  padding: 12px 28px;
+  padding: clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 28px);
   font-family: 'Unbounded', sans-serif;
-  font-size: 1rem;
+  font-size: clamp(0.9rem, 2.2vw, 1rem);
   border-radius: 30px;
   background: linear-gradient(90deg, #9333ea, #7f5af0);
   color: white;
@@ -189,15 +181,16 @@ export default {
 .subjects-abstract-layout {
   position: relative;
   flex: 1;
-  min-height: 480px;
+  min-height: clamp(400px, 50vh, 480px);
+  min-width: 300px;
 }
 
 .subject-card {
   position: absolute;
-  width: 280px;
-  height: 180px;
-  padding: 25px;
-  border-radius: 25px;
+  width: clamp(200px, 25vw, 280px);
+  height: clamp(140px, 18vw, 180px);
+  padding: clamp(15px, 3vw, 25px);
+  border-radius: clamp(15px, 3vw, 25px);
   text-align: center;
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(10px);
@@ -212,15 +205,15 @@ export default {
 }
 
 .subject-card h3 {
-  font-size: 1.3rem;
-  margin-top: 10px;
+  font-size: clamp(1rem, 2.5vw, 1.3rem);
+  margin-top: clamp(8px, 2vw, 10px);
   font-family: 'Unbounded', sans-serif;
 }
 
 .subject-icon {
-  width: 55px;
-  height: 55px;
-  margin-bottom: 8px;
+  width: clamp(40px, 8vw, 55px);
+  height: clamp(40px, 8vw, 55px);
+  margin-bottom: clamp(5px, 1.5vw, 8px);
 }
 
 /* Floating animation */
@@ -233,7 +226,7 @@ export default {
   50% { transform: translateY(-10px); }
 }
 
-/* Placement & glow */
+/* Placement & glow - optimized for 5 subjects */
 .subject-history {
   top: 0;
   right: 0;
@@ -246,23 +239,18 @@ export default {
 }
 .subject-coding {
   bottom: 0;
-  right: 70px;
+  right: clamp(50px, 15vw, 70px);
   box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
 }
 .subject-math {
   top: 10px;
-  left: 100px;
+  left: clamp(60px, 15vw, 100px);
   box-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
 }
 .subject-physics {
-  top: 120px;
-  right: 200px;
+  top: clamp(100px, 25vh, 120px);
+  right: clamp(150px, 35vw, 200px);
   box-shadow: 0 0 30px rgba(255, 100, 255, 0.6);
-}
-.subject-chemistry {
-  bottom: 150px;
-  left: 200px;
-  box-shadow: 0 0 30px rgba(255, 165, 0, 0.6);
 }
 
 .subject-history:hover {
@@ -279,9 +267,6 @@ export default {
 }
 .subject-physics:hover {
   box-shadow: 0 0 45px rgba(255, 100, 255, 0.9);
-}
-.subject-chemistry:hover {
-  box-shadow: 0 0 45px rgba(255, 165, 0, 0.9);
 }
 
 /* Modal */
@@ -305,10 +290,10 @@ export default {
 
 .modal-content {
   background: #0f0025;
-  padding: 40px;
-  width: 600px;
+  padding: clamp(25px, 5vw, 40px);
+  width: clamp(300px, 85vw, 600px);
   max-width: 90%;
-  border-radius: 20px;
+  border-radius: clamp(15px, 3vw, 20px);
   color: white;
   text-align: center;
   z-index: 100000;
@@ -317,11 +302,11 @@ export default {
 }
 
 .modal-icon {
-  width: 60px;
-  height: 60px;
+  width: clamp(45px, 10vw, 60px);
+  height: clamp(45px, 10vw, 60px);
   position: absolute;
-  top: -30px;
-  left: 20px;
+  top: clamp(-20px, -5vw, -30px);
+  left: clamp(15px, 4vw, 20px);
   transform: rotate(-15deg);
   animation: floatIcon 4s ease-in-out infinite;
   opacity: 0.9;
@@ -339,41 +324,231 @@ export default {
 
 .modal-content {
   position: relative;
-  padding-top: 60px; /* leave room for floating icon */
+  padding-top: clamp(45px, 10vw, 60px);
+}
+
+.modal-content h2 {
+  font-size: clamp(1.3rem, 4vw, 1.8rem);
+  margin-bottom: clamp(15px, 3vw, 20px);
+}
+
+.modal-content p {
+  font-size: clamp(0.9rem, 2.5vw, 1rem);
+  line-height: 1.6;
+  margin-bottom: clamp(10px, 2vw, 15px);
 }
 
 .fun-fact {
-  margin-top: 12px;
+  margin-top: clamp(10px, 2.5vw, 12px);
   color: #c084fc;
   font-style: italic;
 }
 
 .close-btn {
   position: absolute;
-  top: 15px;
-  right: 20px;
-  font-size: 1.5rem;
+  top: clamp(10px, 2.5vw, 15px);
+  right: clamp(15px, 4vw, 20px);
+  font-size: clamp(1.3rem, 3vw, 1.5rem);
   cursor: pointer;
   color: #fff;
 }
 
-.modal-learn-btn {
-  margin-top: 20px;
-  padding: 12px 28px;
-  font-family: 'Unbounded', sans-serif;
-  font-size: 1rem;
-  border-radius: 30px;
-  background: linear-gradient(90deg, #9333ea, #7f5af0);
-  color: white;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
+/* Mobile specific styles */
+@media (max-width: 768px) {
+  .aced-section {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 40px 20px;
+    gap: 30px;
+  }
+  
+  .left-content {
+    max-width: 100%;
+    margin-bottom: 20px;
+  }
+  
+  .subjects-abstract-layout {
+    width: 100%;
+    min-height: 350px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 15px;
+    position: relative;
+  }
+  
+  .subject-card {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100%;
+    height: 120px;
+    margin: 0;
+  }
+  
+  .subject-history {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  
+  .subject-biology {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  
+  .subject-coding {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  
+  .subject-math {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  
+  .subject-physics {
+    grid-column: 1 / span 2;
+    grid-row: 3;
+  }
 }
 
-.modal-learn-btn:hover {
-  background: black;
-  color: #c084fc;
-  box-shadow: 0 0 20px rgba(192, 132, 252, 0.6);
-  transform: scale(1.03);
+/* Small mobile styles */
+@media (max-width: 480px) {
+  .aced-section {
+    padding: 30px 15px;
+  }
+  
+  .subjects-abstract-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(5, 1fr);
+    gap: 12px;
+    min-height: 420px;
+  }
+  
+  .subject-card {
+    height: 100px;
+  }
+  
+  .subject-history {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  
+  .subject-biology {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  
+  .subject-coding {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  
+  .subject-math {
+    grid-column: 1;
+    grid-row: 4;
+  }
+  
+  .subject-physics {
+    grid-column: 1;
+    grid-row: 5;
+  }
 }
-</style>
+
+/* Tablet styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .aced-section {
+    padding: 60px 40px;
+  }
+  
+  .subjects-abstract-layout {
+    min-height: 450px;
+  }
+  
+  .subject-card {
+    width: 240px;
+    height: 160px;
+  }
+}
+
+/* Large screen styles */
+@media (min-width: 1400px) {
+  .aced-section {
+    padding: 100px 80px;
+    gap: 80px;
+  }
+  
+  .headline {
+    font-size: 3rem;
+  }
+  
+  .subjects-abstract-layout {
+    min-height: 520px;
+  }
+  
+  .subject-card {
+    width: 300px;
+    height: 200px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .subject-card:hover {
+    transform: none;
+    box-shadow: 0 0 30px rgba(147, 51, 234, 0.5);
+  }
+  
+  .subject-card:active {
+    transform: scale(0.95);
+  }
+  
+  .start-Login-btn:hover {
+    transform: none;
+  }
+  
+  .start-Login-btn:active {
+    transform: scale(0.95);
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .floating {
+    animation: none;
+  }
+  
+  .subject-card,
+  .start-Login-btn {
+    transition: none;
+  }
+  
+  .subject-card:hover,
+  .subject-card:active {
+    transform: none;
+  }
+  
+  .start-Login-btn:hover,
+  .start-Login-btn:active {
+    transform: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .aced-section {
+    background: #000;
+  }
+  
+  .subject-card {
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    background: rgba(0, 0, 0, 0.8);
+  }
+  
+  .headline {
+    -webkit-text-fill-color: #9333ea;
+  }
+}

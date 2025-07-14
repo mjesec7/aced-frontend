@@ -10,8 +10,6 @@
 
     <!-- Background -->
     <div class="video-container">
-     
-
       <spline-viewer
         class="spline-bg"
         url="https://prod.spline.design/zoavmG9WcCYRE1gQ/scene.splinecode"
@@ -86,7 +84,7 @@ body {
   width: 100%;
   height: 100px;
   display: flex;
-  justify-content: center; /* center content horizontally */
+  justify-content: center;
   padding: 0;
   z-index: 3;
   align-items: center;
@@ -104,6 +102,7 @@ body {
 
 .aced-logo {
   height: 80px;
+  width: auto;
 }
 
 .auth-buttons {
@@ -119,6 +118,8 @@ body {
   cursor: pointer;
   transition: 0.3s;
   max-height: 50px;
+  font-family: 'Unbounded', sans-serif;
+  padding: 8px 16px;
 }
 
 .auth-button:hover {
@@ -162,12 +163,16 @@ body {
 .hero-title {
   font-size: 42px;
   margin-bottom: 20px;
+  font-family: 'Unbounded', sans-serif;
+  font-weight: bold;
+  line-height: 1.2;
 }
 
 .hero-buttons {
   display: flex;
   justify-content: center;
   gap: 20px;
+  flex-wrap: wrap;
 }
 
 .hero-btn {
@@ -180,11 +185,153 @@ body {
   cursor: pointer;
   transition: 0.3s;
   border-radius: 10px;
+  font-weight: 600;
 }
 
 .hero-btn:hover {
   color: white;
   background: black;
-  border: 0;
+  border-color: black;
 }
-</style> 
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .hero-title {
+    font-size: 36px;
+  }
+  
+  .nav-inner {
+    padding: 0 15px;
+  }
+  
+  .aced-logo {
+    height: 70px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-container {
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
+  }
+  
+  .top-nav {
+    height: 80px;
+  }
+  
+  .nav-inner {
+    padding: 0 10px;
+  }
+  
+  .aced-logo {
+    height: 60px;
+  }
+  
+  .hero-text {
+    padding: 0 15px;
+  }
+  
+  .hero-title {
+    font-size: 28px;
+    margin-bottom: 15px;
+  }
+  
+  .hero-btn {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+  
+  .auth-button {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-container {
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+  }
+  
+  .top-nav {
+    height: 70px;
+  }
+  
+  .nav-inner {
+    padding: 0 10px;
+  }
+  
+  .aced-logo {
+    height: 50px;
+  }
+  
+  .hero-text {
+    padding: 0 10px;
+  }
+  
+  .hero-title {
+    font-size: 22px;
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+  
+  .hero-buttons {
+    gap: 10px;
+  }
+  
+  .hero-btn {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+  
+  .auth-buttons {
+    gap: 8px;
+  }
+  
+  .auth-button {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 320px) {
+  .hero-title {
+    font-size: 18px;
+  }
+  
+  .hero-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+  
+  .aced-logo {
+    height: 40px;
+  }
+  
+  .auth-button {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+}
+
+/* Landscape orientation for mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hero-title {
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+  
+  .hero-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .top-nav {
+    height: 60px;
+  }
+  
+  .aced-logo {
+    height: 40px;
+  }
+}
+</style>

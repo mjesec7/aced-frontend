@@ -25,14 +25,8 @@
       </div>
 
       <div class="promo-card card-3">
-        <span class="icon">🌍</span>
-        <h3>Доступность</h3>
-        <p>Из любой точки мира, в любое время</p>
-      </div>
-
-      <div class="promo-card card-4">
-        <span class="icon">💎</span>
-        <h3>200+ курсов</h3>
+        <span class="icon">🎓</span>
+        <h3>150+ курсов</h3>
         <p>История, биология, кодинг и многое другое</p>
       </div>
     </div>
@@ -85,7 +79,7 @@ export default {
 
 .floating-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 28px;
   max-width: 1000px;
   width: 100%;
@@ -126,5 +120,69 @@ export default {
 .icon {
   font-size: 2rem;
   display: block;
+}
+
+/* Tablet styles */
+@media (max-width: 768px) {
+  .promo-container {
+    padding: 60px 15px;
+  }
+  
+  .text-section h2 {
+    font-size: 2.2rem;
+  }
+  
+  .text-section p {
+    font-size: 1rem;
+  }
+  
+  .floating-cards {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+  }
+  
+  .promo-card {
+    padding: 25px 15px;
+  }
+  
+  .promo-card h3 {
+    font-size: 1.2rem;
+  }
+}
+
+/* Mobile styles */
+@media (max-width: 480px) {
+  .promo-container {
+    padding: 40px 10px;
+  }
+  
+  .text-section h2 {
+    font-size: 1.8rem;
+  }
+  
+  .text-section p {
+    font-size: 0.9rem;
+  }
+  
+  .floating-cards {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .promo-card {
+    padding: 20px 15px;
+  }
+  
+  .promo-card h3 {
+    font-size: 1.1rem;
+  }
+  
+  .promo-card p {
+    font-size: 0.85rem;
+  }
+  
+  .icon {
+    font-size: 1.8rem;
+  }
 }
 </style>

@@ -21,7 +21,7 @@
           <span class="stat-label">Год основания</span>
         </div>
         <div class="stat-item">
-          <span class="stat-number">6+</span>
+          <span class="stat-number">5+</span>
           <span class="stat-label">Предметов доступно</span>
         </div>
         <div class="stat-item">
@@ -59,6 +59,8 @@ name: 'AboutUs',
 setup() {
   onMounted(() => {
     const canvas = document.getElementById('impactChart');
+    if (!canvas) return;
+    
     const ctx = canvas.getContext('2d');
 
     // Gradient
@@ -70,39 +72,39 @@ setup() {
     const icons = [happy, confidence, motivation, freedom, world];
 
     const loadImages = (sources) => {
-return Promise.all(
-  sources.map((src) => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.src = src;
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-    });
-  })
-);
-};
+      return Promise.all(
+        sources.map((src) => {
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = src;
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+          });
+        })
+      );
+    };
 
     // Wait for all icons to load before creating the chart
     loadImages(icons).then((images) => {
       const iconPlugin = {
         id: 'icons',
         afterDatasetsDraw(chart) {
-const { ctx, scales: { y } } = chart;
-ctx.save();
+          const { ctx, scales: { y } } = chart;
+          ctx.save();
 
-ctx.shadowColor = '#a855f7';
-ctx.shadowBlur = 9;
-ctx.shadowOffsetX = 3;
-ctx.shadowOffsetY = 0;
+          ctx.shadowColor = '#a855f7';
+          ctx.shadowBlur = 9;
+          ctx.shadowOffsetX = 3;
+          ctx.shadowOffsetY = 0;
 
-images.forEach((img, index) => {
-  const yPos = y.getPixelForTick(index);
-  const iconSize = 28;
-  ctx.drawImage(img, 5, yPos - iconSize / 2, iconSize, iconSize);
-});
+          images.forEach((img, index) => {
+            const yPos = y.getPixelForTick(index);
+            const iconSize = 28;
+            ctx.drawImage(img, 5, yPos - iconSize / 2, iconSize, iconSize);
+          });
 
-ctx.restore();
-}
+          ctx.restore();
+        }
       };
 
       // Create the chart after icons are ready
@@ -187,13 +189,13 @@ ctx.restore();
 
 .about-content {
   flex: 1;
-  max-width: clamp(400px, 50vw, 500px);
-  min-width: 300px;
+  max-width: clamp(350px, 50vw, 500px);
+  min-width: 280px;
 }
 
 .title {
   font-family: 'Unbounded', sans-serif;
-  font-size: clamp(2rem, 5vw, 2.8rem);
+  font-size: clamp(1.8rem, 5vw, 2.8rem);
   margin-bottom: clamp(20px, 4vw, 1.5rem);
   background: linear-gradient(to right, #a855f7, #3b82f6);
   -webkit-background-clip: text;
@@ -203,7 +205,7 @@ ctx.restore();
 
 .description {
   font-family: 'Unbounded', sans-serif;
-  font-size: clamp(0.95rem, 2.5vw, 1.1rem);
+  font-size: clamp(0.9rem, 2.5vw, 1.1rem);
   line-height: 1.8;
   color: #d1d5db;
   margin-bottom: clamp(15px, 3vw, 1rem);
@@ -211,25 +213,27 @@ ctx.restore();
 
 .achievement-stats {
   display: flex;
-  gap: clamp(20px, 4vw, 30px);
+  gap: clamp(15px, 4vw, 30px);
   margin-top: clamp(30px, 5vw, 40px);
   flex-wrap: wrap;
+  justify-content: space-between;
 }
 
 .stat-item {
   text-align: center;
   background: rgba(255, 255, 255, 0.05);
-  padding: clamp(15px, 3vw, 20px);
+  padding: clamp(12px, 3vw, 20px);
   border-radius: clamp(10px, 2vw, 15px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(168, 85, 247, 0.2);
   flex: 1;
-  min-width: 120px;
+  min-width: 100px;
+  max-width: 140px;
 }
 
 .stat-number {
   display: block;
-  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-size: clamp(1.3rem, 4vw, 2rem);
   font-weight: 700;
   color: #a855f7;
   margin-bottom: clamp(5px, 1vw, 8px);
@@ -237,7 +241,7 @@ ctx.restore();
 }
 
 .stat-label {
-  font-size: clamp(0.8rem, 2vw, 0.9rem);
+  font-size: clamp(0.75rem, 2vw, 0.9rem);
   color: #cbd5e1;
   font-family: 'Unbounded', sans-serif;
   line-height: 1.2;
@@ -245,7 +249,7 @@ ctx.restore();
 
 .chart-wrapper {
   flex: 1;
-  max-width: clamp(500px, 60vw, 700px);
+  max-width: clamp(400px, 60vw, 700px);
   min-width: 300px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255,255,255,0.08);
@@ -258,7 +262,7 @@ ctx.restore();
 
 .chart-title {
   font-family: 'Unbounded', sans-serif;
-  font-size: clamp(1.2rem, 3vw, 1.5rem);
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
   text-align: center;
   margin-bottom: clamp(20px, 3vw, 1.5rem);
   color: #ffffff;
@@ -267,13 +271,13 @@ ctx.restore();
 
 .chart-container {
   width: 100%;
-  height: clamp(250px, 40vw, 320px);
+  height: clamp(220px, 35vw, 320px);
   position: relative;
 }
 
 .chart-subtitle {
   font-family: 'Unbounded', sans-serif;
-  font-size: clamp(0.8rem, 2vw, 0.9rem);
+  font-size: clamp(0.75rem, 2vw, 0.9rem);
   text-align: center;
   margin-top: clamp(15px, 3vw, 20px);
   color: #9ca3af;
@@ -287,15 +291,42 @@ ctx.restore();
     align-items: center;
     text-align: center;
     padding: 30px 15px;
+    gap: 25px;
   }
   
   .about-content {
     max-width: 100%;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
   }
   
   .achievement-stats {
     justify-content: center;
+    gap: 10px;
+  }
+  
+  .stat-item {
+    min-width: 90px;
+    max-width: 120px;
+  }
+  
+  .chart-wrapper {
+    width: 100%;
+    max-width: 100%;
+    padding: 20px 15px;
+  }
+  
+  .chart-container {
+    height: 250px;
+  }
+}
+
+/* Small mobile (320px and below) */
+@media (max-width: 320px) {
+  .about-container {
+    padding: 20px 10px;
+  }
+  
+  .achievement-stats {
     flex-direction: column;
     align-items: center;
   }
@@ -306,12 +337,7 @@ ctx.restore();
   }
   
   .chart-wrapper {
-    width: 100%;
-    max-width: 100%;
-  }
-  
-  .chart-container {
-    height: 280px;
+    padding: 15px 10px;
   }
 }
 
@@ -328,7 +354,7 @@ ctx.restore();
   }
   
   .chart-container {
-    height: 300px;
+    height: 280px;
   }
 }
 
@@ -349,6 +375,26 @@ ctx.restore();
   
   .chart-container {
     height: 360px;
+  }
+}
+
+/* Extra large screens */
+@media (min-width: 1920px) {
+  .about-container {
+    padding: 140px 100px;
+    gap: 100px;
+  }
+  
+  .title {
+    font-size: 3.5rem;
+  }
+  
+  .description {
+    font-size: 1.3rem;
+  }
+  
+  .chart-container {
+    height: 400px;
   }
 }
 
@@ -389,5 +435,29 @@ ctx.restore();
   
   .title {
     -webkit-text-fill-color: #a855f7;
+  }
+}
+
+/* Portrait orientation adjustments */
+@media (orientation: portrait) and (max-width: 768px) {
+  .about-container {
+    min-height: auto;
+    padding: 40px 20px;
+  }
+  
+  .chart-container {
+    height: 220px;
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (orientation: landscape) and (max-height: 600px) {
+  .about-container {
+    padding: 30px 40px;
+    min-height: auto;
+  }
+  
+  .chart-container {
+    height: 200px;
   }
 }</style>

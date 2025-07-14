@@ -227,4 +227,150 @@ export default {
   cursor: pointer;
   color: #ccc;
 }
+
+/* Tablet styles */
+@media (max-width: 768px) {
+  .main-footer {
+    padding: 60px 20px 30px;
+  }
+  
+  .footer-grid {
+    flex-direction: column;
+    gap: 30px;
+    text-align: center;
+  }
+  
+  .footer-brand {
+    min-width: auto;
+  }
+  
+  .footer-brand h2 {
+    font-size: 1.8rem;
+  }
+  
+  .footer-section {
+    min-width: auto;
+  }
+  
+  .footer-section h4 {
+    font-size: 1.1rem;
+  }
+  
+  .footer-bottom {
+    margin-top: 40px;
+    font-size: 0.85rem;
+  }
+  
+  .modal-content {
+    padding: 25px;
+    max-width: 350px;
+  }
+  
+  .modal-content h3 {
+    font-size: 1.3rem;
+  }
+  
+  .modal-content p {
+    font-size: 0.9rem;
+  }
+}
+
+/* Mobile styles */
+@media (max-width: 480px) {
+  .main-footer {
+    padding: 40px 15px 20px;
+  }
+  
+  .footer-grid {
+    gap: 25px;
+  }
+  
+  .footer-brand h2 {
+    font-size: 1.6rem;
+  }
+  
+  .footer-brand p {
+    font-size: 0.9rem;
+  }
+  
+  .footer-section h4 {
+    font-size: 1rem;
+  }
+  
+  .footer-section li {
+    margin-bottom: 8px;
+  }
+  
+  .footer-section a {
+    font-size: 0.9rem;
+  }
+  
+  .footer-bottom {
+    margin-top: 30px;
+    font-size: 0.8rem;
+  }
+  
+  .modal-content {
+    padding: 20px;
+    max-width: 300px;
+  }
+  
+  .modal-content h3 {
+    font-size: 1.2rem;
+  }
+  
+  .modal-content p {
+    font-size: 0.85rem;
+  }
+  
+  .modal-button {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 320px) {
+  .main-footer {
+    padding: 30px 10px 15px;
+  }
+  
+  .footer-brand h2 {
+    font-size: 1.4rem;
+  }
+  
+  .footer-brand p {
+    font-size: 0.8rem;
+  }
+  
+  .footer-section h4 {
+    font-size: 0.9rem;
+  }
+  
+  .footer-section a {
+    font-size: 0.8rem;
+  }
+  
+  .footer-bottom {
+    font-size: 0.75rem;
+  }
+  
+  .modal-content {
+    padding: 15px;
+    max-width: 280px;
+  }
+  
+  .modal-content h3 {
+    font-size: 1.1rem;
+  }
+  
+  .modal-content p {
+    font-size: 0.8rem;
+  }
+  
+  .modal-button {
+    padding: 6px 14px;
+    font-size: 0.8rem;
+  }
+}
 </style>
