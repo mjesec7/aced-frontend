@@ -34,7 +34,7 @@
     <div class="chart-wrapper">
       <h3 class="chart-title">Потенциал влияния ACED на жизнь студентов</h3>
       <div class="chart-container">
-        <canvas id="impactChart" width="600" height="320"></canvas>
+        <canvas id="impactChart" width="600" height="360"></canvas>
       </div>
       <p class="chart-subtitle">
         Прогнозируемые результаты на основе исследований эффективности современных образовательных платформ
@@ -93,14 +93,15 @@ setup() {
           ctx.save();
 
           ctx.shadowColor = '#a855f7';
-          ctx.shadowBlur = 9;
-          ctx.shadowOffsetX = 3;
+          ctx.shadowBlur = 6;
+          ctx.shadowOffsetX = 2;
           ctx.shadowOffsetY = 0;
 
           images.forEach((img, index) => {
             const yPos = y.getPixelForTick(index);
-            const iconSize = 28;
-            ctx.drawImage(img, 5, yPos - iconSize / 2, iconSize, iconSize);
+            const iconSize = 24;
+            // Position icons further to the left to avoid overlap
+            ctx.drawImage(img, -45, yPos - iconSize / 2, iconSize, iconSize);
           });
 
           ctx.restore();
@@ -113,7 +114,7 @@ setup() {
         data: {
           labels: [
             'Уровень счастья',
-            'Уверенность в себе',
+            'Уверенность в себе', 
             'Мотивация учиться',
             'Чувство свободы',
             'Готовность менять мир'
@@ -122,7 +123,8 @@ setup() {
             label: 'ACED Impact',
             data: [92, 88, 95, 85, 90],
             backgroundColor: gradient,
-            borderRadius: 15
+            borderRadius: 8,
+            barThickness: 25
           }]
         },
         options: {
@@ -131,25 +133,111 @@ setup() {
           maintainAspectRatio: false,
           layout: {
             padding: {
-              left: 100,
-              right: 100
+              left: 60,  // Reduced padding
+              right: 40,
+              top: 20,
+              bottom: 20
             }
           },
           scales: {
             x: {
+              beginAtZero: true,
+              max: 100,  // Set maximum to 100%
+              grid: { 
+                display: false 
+              },
+              ticks: {
+                color: '#cbd5e1',
+                callback: val => val + '%',
+                font: { 
+                  family: 'Unbounded',
+                  size: 11
+                }
+              }
+            },
+            y: {
+              grid: { 
+                display: false 
+              },
+              ticks: {
+                padding: 15,  // Reduced padding
+                color: '#ffffff',
+                font: { 
+                  family: 'Unbounded', 
+                  size: 11  // Smaller font size
+                }
+              }
+            }
+          },
+          plugins: {
+            legend: { 
+              display: false 
+            },
+            tooltip: {
+              backgroundColor: '#1e1b4b',
+              titleColor: '#fff',
+              bodyColor: '#d1d5db',
+              callbacks: {
+                label: function(context) {
+                  return context.parsed.x + '%';
+                }
+              }
+            }
+          }
+        },
+        plugins: [iconPlugin]
+      });
+    }).catch((err) => {
+      console.error('Failed to load one or more icons:', err);
+      
+      // Fallback chart without icons
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: [
+            'Уровень счастья',
+            'Уверенность в себе',
+            'Мотивация учиться', 
+            'Чувство свободы',
+            'Готовность менять мир'
+          ],
+          datasets: [{
+            label: 'ACED Impact',
+            data: [92, 88, 95, 85, 90],
+            backgroundColor: gradient,
+            borderRadius: 8,
+            barThickness: 25
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: {
+            padding: {
+              left: 20,
+              right: 40,
+              top: 20,
+              bottom: 20
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              max: 100,
               grid: { display: false },
               ticks: {
                 color: '#cbd5e1',
                 callback: val => val + '%',
-                font: { family: 'Unbounded' }
+                font: { family: 'Unbounded', size: 11 }
               }
             },
             y: {
               grid: { display: false },
               ticks: {
-                padding: 20,
+                padding: 15,
                 color: '#ffffff',
-                font: { family: 'Unbounded', size: 14 }
+                font: { family: 'Unbounded', size: 11 }
               }
             }
           },
@@ -158,14 +246,16 @@ setup() {
             tooltip: {
               backgroundColor: '#1e1b4b',
               titleColor: '#fff',
-              bodyColor: '#d1d5db'
+              bodyColor: '#d1d5db',
+              callbacks: {
+                label: function(context) {
+                  return context.parsed.x + '%';
+                }
+              }
             }
           }
-        },
-        plugins: [iconPlugin]
+        }
       });
-    }).catch((err) => {
-      console.error('Failed to load one or more icons:', err);
     });
   });
 }
@@ -249,12 +339,12 @@ setup() {
 
 .chart-wrapper {
   flex: 1;
-  max-width: clamp(400px, 60vw, 700px);
-  min-width: 300px;
+  max-width: clamp(450px, 60vw, 750px);  /* Slightly larger */
+  min-width: 350px;  /* Increased minimum width */
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: clamp(15px, 3vw, 20px);
-  padding: clamp(20px, 4vw, 3rem);
+  padding: clamp(25px, 4vw, 40px);  /* Increased padding */
   box-shadow: 0 10px 40px rgba(0,0,0,0.5);
   backdrop-filter: blur(20px);
   position: relative;
@@ -271,8 +361,9 @@ setup() {
 
 .chart-container {
   width: 100%;
-  height: clamp(220px, 35vw, 320px);
+  height: clamp(280px, 35vw, 360px);  /* Increased minimum height */
   position: relative;
+  overflow: visible;  /* Allow icons to show outside container */
 }
 
 .chart-subtitle {
@@ -313,10 +404,11 @@ setup() {
     width: 100%;
     max-width: 100%;
     padding: 20px 15px;
+    min-width: 300px;
   }
   
   .chart-container {
-    height: 250px;
+    height: 300px;  /* Increased mobile height */
   }
 }
 
@@ -339,6 +431,10 @@ setup() {
   .chart-wrapper {
     padding: 15px 10px;
   }
+  
+  .chart-container {
+    height: 320px;
+  }
 }
 
 /* Tablet specific styles */
@@ -354,7 +450,7 @@ setup() {
   }
   
   .chart-container {
-    height: 280px;
+    height: 320px;
   }
 }
 
@@ -374,7 +470,7 @@ setup() {
   }
   
   .chart-container {
-    height: 360px;
+    height: 400px;
   }
 }
 
@@ -394,7 +490,7 @@ setup() {
   }
   
   .chart-container {
-    height: 400px;
+    height: 440px;
   }
 }
 
@@ -446,7 +542,7 @@ setup() {
   }
   
   .chart-container {
-    height: 220px;
+    height: 280px;
   }
 }
 
@@ -458,6 +554,7 @@ setup() {
   }
   
   .chart-container {
-    height: 200px;
+    height: 240px;
   }
-}</style>
+}
+</style>

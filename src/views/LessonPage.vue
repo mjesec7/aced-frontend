@@ -204,8 +204,8 @@
       :medal-icon="getMedalIcon()"
       :progress-insight="progressInsight"
       :total-steps="steps.length"
-      @return-to-catalogue="$router.push('/catalogue')"
-      @share="shareResult"
+      @return-to-catalogue="$router.push('/profile/catalogue')"   
+         @share="shareResult"
       @homework="goToHomework"
     />
 

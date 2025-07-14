@@ -51,8 +51,21 @@ export default {
       this.heroOpacity = Math.max(1 - scrollTop / maxScroll, 0);
     },
     goToAboutUs() {
-      this.$router.push({ name: 'AboutUsPage' });
-    }
+  // Scroll to the About Us section on the same page
+  const aboutSection = document.querySelector('.about-container');
+  if (aboutSection) {
+    aboutSection.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'start'
+    });
+  } else {
+    // Fallback: scroll down by viewport height if section not found
+    window.scrollTo({
+      top: window.innerHeight,
+      behavior: 'smooth'
+    });
+  }
+}
   }
 };
 </script>
