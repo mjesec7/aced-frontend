@@ -552,3 +552,4 @@ export default {
     -webkit-text-fill-color: #9333ea;
   }
 }
+</style>
