@@ -1534,15 +1534,16 @@ export default {
 
 <style scoped>
 /* ==========================================
-   BASE LAYOUT
+   COMPACT BASE LAYOUT - REDUCED PADDING & MARGINS
    ========================================== */
-.interactive-panel {
+   .interactive-panel {
   background: #f8fafc;
-  padding: 32px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  gap: 12px;
 }
 
 .exercise-content,
@@ -1550,22 +1551,25 @@ export default {
   display: flex;
   flex-direction: column;
   height: 100%;
+  gap: 12px;
 }
 
 .exercise-header,
 .quiz-header {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+  padding: 12px 16px;
   border-bottom: 2px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-shrink: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .exercise-header h3,
 .quiz-header h3 {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   color: #4c1d95;
   margin: 0;
   font-weight: 700;
@@ -1573,62 +1577,66 @@ export default {
 
 .exercise-counter,
 .quiz-counter {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #6b46c1;
   font-weight: 600;
   background: rgba(107, 70, 193, 0.1);
-  padding: 6px 12px;
-  border-radius: 12px;
+  padding: 4px 10px;
+  border-radius: 10px;
 }
 
 .exercise-body,
 .quiz-body {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .exercise-actions,
 .quiz-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
   flex-shrink: 0;
-  padding-top: 16px;
-  border-top: 1px solid #e2e8f0;
+  padding: 12px 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* ==========================================
-   QUESTION STYLING
+   COMPACT QUESTION STYLING
    ========================================== */
 .question-text,
 .quiz-question {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #1e293b;
-  margin: 0 0 24px 0;
-  line-height: 1.5;
+  margin: 0;
+  line-height: 1.4;
   background: white;
-  padding: 20px;
-  border-radius: 12px;
+  padding: 16px;
+  border-radius: 8px;
   border: 2px solid #ddd6fe;
-  box-shadow: 0 2px 8px rgba(107, 70, 193, 0.1);
+  box-shadow: 0 1px 3px rgba(107, 70, 193, 0.1);
 }
 
 /* ==========================================
-   FORM CONTROLS
+   COMPACT FORM CONTROLS
    ========================================== */
 .answer-input {
-  margin-bottom: 24px;
+  margin: 0;
 }
 
 .answer-textarea {
   width: 100%;
-  min-height: 120px;
-  padding: 16px;
+  min-height: 100px;
+  padding: 12px;
   border: 2px solid #ddd6fe;
-  border-radius: 12px;
-  font-size: 0.95rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
   font-family: inherit;
   resize: vertical;
   transition: all 0.2s ease;
@@ -1639,7 +1647,7 @@ export default {
 .answer-textarea:focus {
   outline: none;
   border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
 }
 
 .answer-textarea:disabled {
@@ -1648,36 +1656,36 @@ export default {
 }
 
 /* ==========================================
-   OPTIONS STYLING
+   COMPACT OPTIONS STYLING
    ========================================== */
 .options-list,
 .quiz-options {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 8px;
+  margin: 0;
 }
 
 .option-item,
 .quiz-option {
   background: white;
   border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   overflow: hidden;
-  min-height: 50px;
+  min-height: 44px;
   display: flex;
   align-items: center;
-  padding: 16px 20px;
-  gap: 12px;
+  padding: 12px 16px;
+  gap: 10px;
 }
 
 .option-item:hover,
 .quiz-option:hover {
   border-color: #8b5cf6;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
 }
 
 .option-item.selected,
@@ -1697,34 +1705,35 @@ export default {
 }
 
 .option-text {
-  font-size: 0.95rem;
-  line-height: 1.4;
+  font-size: 0.9rem;
+  line-height: 1.3;
   flex: 1;
   color: #374151;
 }
 
 /* ==========================================
-   TRUE/FALSE STYLING
+   COMPACT TRUE/FALSE STYLING
    ========================================== */
 .true-false-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin: 0;
 }
 
 .tf-option {
   background: white;
   border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 20px;
+  transition: all 0.15s ease;
+  padding: 16px;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  min-height: 50px;
 }
 
 .tf-option:hover {
@@ -1752,43 +1761,43 @@ export default {
 }
 
 /* ==========================================
-   FILL BLANK STYLING
+   COMPACT FILL BLANK STYLING
    ========================================== */
 .fill-blank-template {
   background: white;
-  padding: 20px;
-  border-radius: 12px;
+  padding: 16px;
+  border-radius: 8px;
   border: 2px solid #ddd6fe;
-  margin-bottom: 20px;
-  line-height: 1.6;
-  font-size: 1rem;
+  margin: 0;
+  line-height: 1.5;
+  font-size: 0.95rem;
 }
 
 .blank-indicator {
   background: #8b5cf6;
   color: white;
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .fill-blank-inputs {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin: 0;
 }
 
 .blank-input-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 16px;
+  gap: 6px;
+  padding: 12px;
   background: white;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 2px solid #e2e8f0;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .blank-input-group:hover {
@@ -1796,18 +1805,18 @@ export default {
 }
 
 .blank-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #4c1d95;
-  margin-bottom: 4px;
+  margin: 0;
 }
 
 .blank-input {
-  padding: 12px 16px;
+  padding: 10px 12px;
   border: 2px solid #ddd6fe;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: all 0.15s ease;
   background: white;
   width: 100%;
   box-sizing: border-box;
@@ -1816,7 +1825,7 @@ export default {
 .blank-input:focus {
   outline: none;
   border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
 }
 
 .blank-input:disabled {
@@ -1826,32 +1835,32 @@ export default {
 }
 
 .input-preview {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #6b46c1;
   font-style: italic;
-  padding: 4px 0;
+  padding: 2px 0;
 }
 
 /* ==========================================
-   MATCHING STYLING - ENHANCED
+   COMPACT MATCHING STYLING
    ========================================== */
 .matching-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-bottom: 24px;
+  gap: 16px;
+  margin: 0;
 }
 
 .matching-side {
   background: white;
   border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 8px;
+  padding: 12px;
 }
 
 .matching-side h4 {
-  margin: 0 0 16px 0;
-  font-size: 1rem;
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
   color: #4c1d95;
   text-align: center;
 }
@@ -1860,28 +1869,28 @@ export default {
   position: relative;
   background: #f8fafc;
   border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 8px;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
   text-align: center;
   user-select: none;
 }
 
 .matching-item:hover:not(.disabled) {
   border-color: #8b5cf6;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(139, 92, 246, 0.2);
 }
 
 .matching-item.selected {
   background: linear-gradient(135deg, #8b5cf6, #a855f7);
   color: white;
   font-weight: bold;
-  transform: scale(1.05);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
 }
 
 .matching-item.matched {
@@ -1897,9 +1906,9 @@ export default {
 
 .selection-indicator {
   position: absolute;
-  top: -10px;
-  right: -10px;
-  font-size: 1.2rem;
+  top: -8px;
+  right: -8px;
+  font-size: 1rem;
   animation: bounce 1s infinite;
 }
 
@@ -1908,24 +1917,24 @@ export default {
     transform: translateY(0);
   }
   40% {
-    transform: translateY(-10px);
+    transform: translateY(-8px);
   }
   60% {
-    transform: translateY(-5px);
+    transform: translateY(-4px);
   }
 }
 
 .matching-pairs {
-  margin-top: 20px;
-  padding: 20px;
+  margin: 0;
+  padding: 12px;
   background: #f8fafc;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 2px solid #e2e8f0;
 }
 
 .matching-pairs h4 {
-  margin: 0 0 16px 0;
-  font-size: 1rem;
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
   color: #4c1d95;
 }
 
@@ -1933,15 +1942,16 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  margin-bottom: 8px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
   background: white;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid #ddd6fe;
 }
 
 .pair-text {
   font-weight: 600;
+  font-size: 0.85rem;
   color: #4c1d95;
 }
 
@@ -1950,11 +1960,12 @@ export default {
   color: white;
   border: none;
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   cursor: pointer;
   font-weight: bold;
-  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  transition: all 0.15s ease;
 }
 
 .remove-pair:hover {
@@ -1963,29 +1974,31 @@ export default {
 }
 
 .matching-instructions {
-  margin-top: 16px;
-  padding: 16px;
+  margin: 0;
+  padding: 12px;
   background: rgba(59, 130, 246, 0.1);
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid rgba(59, 130, 246, 0.2);
+  font-size: 0.85rem;
 }
 
 .current-selection {
-  margin-top: 8px;
+  margin-top: 6px;
   font-style: italic;
   color: #1e40af;
+  font-size: 0.8rem;
 }
 
 /* ==========================================
-   FIXED: ORDERING STYLING - COMPLETE IMPLEMENTATION
+   COMPACT ORDERING STYLING
    ========================================== */
 .ordering-instructions {
   background: rgba(139, 92, 246, 0.1);
   border: 2px solid #ddd6fe;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  font-size: 0.9rem;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 0;
+  font-size: 0.85rem;
   color: #4c1d95;
   text-align: center;
   font-weight: 600;
@@ -1994,34 +2007,34 @@ export default {
 .ordering-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: 6px;
+  margin: 0;
   background: white;
   border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 8px;
+  padding: 12px;
 }
 
 .ordering-item {
   background: white;
   border: 2px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: move;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   user-select: none;
   position: relative;
 }
 
 .ordering-item:hover:not(.disabled) {
   border-color: #8b5cf6;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(139, 92, 246, 0.15);
 }
 
 .ordering-item.dragging {
   opacity: 0.7;
-  transform: rotate(3deg) scale(1.05);
-  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+  transform: rotate(2deg) scale(1.02);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
   z-index: 1000;
 }
 
@@ -2029,7 +2042,7 @@ export default {
   border-color: #10b981;
   background: rgba(16, 185, 129, 0.05);
   border-style: dashed;
-  border-width: 3px;
+  border-width: 2px;
 }
 
 .ordering-item.disabled {
@@ -2040,17 +2053,17 @@ export default {
 .ordering-item-content {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 10px;
+  padding: 10px 12px;
 }
 
 .drag-handle {
   color: #8b5cf6;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   cursor: grab;
   font-weight: bold;
-  transition: all 0.2s ease;
-  min-width: 20px;
+  transition: all 0.15s ease;
+  min-width: 16px;
   text-align: center;
 }
 
@@ -2065,22 +2078,22 @@ export default {
 
 .item-text {
   flex: 1;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: #374151;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.3;
 }
 
 .item-number {
   background: linear-gradient(135deg, #8b5cf6, #a855f7);
   color: white;
   border-radius: 50%;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
   box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
 }
@@ -2088,21 +2101,21 @@ export default {
 .ordering-controls {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   margin-left: auto;
 }
 
 .move-btn {
   background: #f3f4f6;
   border: 1px solid #d1d5db;
-  border-radius: 6px;
-  width: 32px;
-  height: 24px;
+  border-radius: 4px;
+  width: 28px;
+  height: 20px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: bold;
   color: #6b7280;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2112,41 +2125,33 @@ export default {
   background: #8b5cf6;
   color: white;
   border-color: #8b5cf6;
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .move-btn:active {
   transform: scale(0.95);
 }
 
-.move-up {
-  border-radius: 6px 6px 2px 2px;
-}
-
-.move-down {
-  border-radius: 2px 2px 6px 6px;
-}
-
 /* ==========================================
-   DRAG AND DROP STYLING
+   COMPACT DRAG AND DROP STYLING
    ========================================== */
 .drag-drop-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-bottom: 24px;
+  gap: 16px;
+  margin: 0;
 }
 
 .drag-items {
   background: white;
   border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 8px;
+  padding: 12px;
 }
 
 .drag-items h4 {
-  margin: 0 0 16px 0;
-  font-size: 1rem;
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
   color: #4c1d95;
   text-align: center;
 }
@@ -2154,12 +2159,12 @@ export default {
 .drag-item {
   background: #f8fafc;
   border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 8px;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
   cursor: move;
-  transition: all 0.2s ease;
-  font-size: 0.9rem;
+  transition: all 0.15s ease;
+  font-size: 0.85rem;
   text-align: center;
 }
 
@@ -2181,16 +2186,16 @@ export default {
 .drop-zones {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .drop-zone {
   background: white;
   border: 2px dashed #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
-  min-height: 80px;
-  transition: all 0.2s ease;
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 60px;
+  transition: all 0.15s ease;
 }
 
 .drop-zone.drag-over {
@@ -2203,25 +2208,25 @@ export default {
 }
 
 .zone-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #4c1d95;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   text-align: center;
 }
 
 .zone-items {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .dropped-item {
   background: rgba(139, 92, 246, 0.1);
   border: 1px solid #ddd6fe;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 0.85rem;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
   color: #4c1d95;
   text-align: center;
   cursor: pointer;
@@ -2231,56 +2236,56 @@ export default {
 .remove-dropped {
   color: #ef4444;
   font-weight: bold;
-  margin-left: 8px;
+  margin-left: 6px;
 }
 
 .no-dragdrop-data {
   background: rgba(251, 191, 36, 0.1);
   border: 2px solid #fcd34d;
   border-radius: 8px;
-  padding: 20px;
+  padding: 16px;
   text-align: center;
   color: #92400e;
 }
 
 /* ==========================================
-   CONFIRMATION AND FEEDBACK
+   COMPACT CONFIRMATION AND FEEDBACK
    ========================================== */
 .confirmation-section {
-  margin-bottom: 24px;
+  margin: 0;
 }
 
 .second-chance-indicator {
   background: rgba(251, 191, 36, 0.1);
   border: 2px solid #fcd34d;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 12px;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
 }
 
 .attempt-counter {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .attempt-text {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #92400e;
 }
 
 .attempt-dots {
   display: flex;
-  gap: 4px;
+  gap: 3px;
 }
 
 .attempt-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #e5e7eb;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .attempt-dot.filled {
@@ -2293,12 +2298,12 @@ export default {
 }
 
 .confirmation-message {
-  padding: 16px 20px;
-  border-radius: 12px;
-  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 12px;
   font-weight: 600;
   text-align: center;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .confirmation-message.correct {
@@ -2322,40 +2327,40 @@ export default {
 .correct-answer-display {
   background: rgba(16, 185, 129, 0.1);
   border: 2px solid #a7f3d0;
-  border-radius: 8px;
-  padding: 16px;
-  margin-top: 12px;
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 8px;
 }
 
 .correct-answer-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #047857;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .correct-answer-text {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: #065f46;
   font-weight: 500;
 }
 
 /* ==========================================
-   HINTS STYLING
+   COMPACT HINTS STYLING
    ========================================== */
 .hints-section {
-  margin-bottom: 24px;
+  margin: 0;
 }
 
 .hint {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 12px;
-  margin-bottom: 12px;
-  font-size: 0.9rem;
-  line-height: 1.4;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  line-height: 1.3;
 }
 
 .basic-hint {
@@ -2372,7 +2377,7 @@ export default {
 }
 
 .hint-icon {
-  font-size: 1.2rem;
+  font-size: 1rem;
   flex-shrink: 0;
 }
 
@@ -2384,11 +2389,11 @@ export default {
   background: none;
   border: none;
   color: #6b7280;
-  font-size: 1.2rem;
+  font-size: 1rem;
   cursor: pointer;
   padding: 0;
-  margin-left: 8px;
-  transition: color 0.2s ease;
+  margin-left: 6px;
+  transition: color 0.15s ease;
 }
 
 .clear-hint-btn:hover {
@@ -2396,21 +2401,21 @@ export default {
 }
 
 /* ==========================================
-   BUTTONS
+   COMPACT BUTTONS
    ========================================== */
 .hint-btn,
 .submit-btn,
 .next-btn {
-  padding: 12px 24px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   text-decoration: none;
 }
 
@@ -2434,7 +2439,7 @@ export default {
 .submit-btn:hover:not(.disabled) {
   background: #7c3aed;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 3px 8px rgba(139, 92, 246, 0.3);
 }
 
 .submit-btn.disabled {
@@ -2463,11 +2468,11 @@ export default {
 .next-btn:hover {
   background: #059669;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 3px 8px rgba(16, 185, 129, 0.3);
 }
 
 .next-icon {
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .second-chance-icon {
@@ -2480,24 +2485,24 @@ export default {
 }
 
 /* ==========================================
-   DEBUG STYLING
+   COMPACT DEBUG STYLING
    ========================================== */
 .debug-section {
-  margin: 16px 0;
-  padding: 12px;
+  margin: 12px 0;
+  padding: 8px;
   background: #fee2e2;
   border: 1px solid #fca5a5;
-  border-radius: 8px;
-  font-size: 0.85rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
 }
 
 .debug-section h4 {
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
   color: #dc2626;
 }
 
 .debug-section p {
-  margin: 4px 0;
+  margin: 2px 0;
   color: #7f1d1d;
   word-break: break-all;
 }
@@ -2506,14 +2511,15 @@ export default {
   background: #dc2626;
   color: white;
   border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 3px 6px;
+  border-radius: 3px;
   cursor: pointer;
-  margin-top: 8px;
+  margin-top: 6px;
+  font-size: 0.75rem;
 }
 
 /* ==========================================
-   NO CONTENT STATE
+   COMPACT NO CONTENT STATE
    ========================================== */
 .no-content {
   display: flex;
@@ -2526,41 +2532,41 @@ export default {
 }
 
 .no-content-icon {
-  font-size: 3rem;
-  margin-bottom: 16px;
+  font-size: 2.5rem;
+  margin-bottom: 12px;
   opacity: 0.7;
 }
 
 .no-content h4 {
-  margin: 0 0 8px 0;
-  font-size: 1.1rem;
+  margin: 0 0 6px 0;
+  font-size: 1rem;
   color: #4b5563;
 }
 
 .no-content p {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #6b7280;
 }
 
 /* ==========================================
-   SCROLLBAR STYLING
+   COMPACT SCROLLBAR STYLING
    ========================================== */
 .exercise-body::-webkit-scrollbar,
 .quiz-body::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 .exercise-body::-webkit-scrollbar-track,
 .quiz-body::-webkit-scrollbar-track {
   background: #f1f5f9;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .exercise-body::-webkit-scrollbar-thumb,
 .quiz-body::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .exercise-body::-webkit-scrollbar-thumb:hover,
@@ -2569,85 +2575,37 @@ export default {
 }
 
 /* ==========================================
-   RESPONSIVE DESIGN
+   IMPROVED RESPONSIVE DESIGN
    ========================================== */
 @media (max-width: 768px) {
   .interactive-panel {
-    padding: 16px;
+    padding: 12px;
+    gap: 10px;
   }
   
   .drag-drop-container,
   .matching-container {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
   
   .true-false-options {
     grid-template-columns: 1fr;
+    gap: 8px;
   }
   
   .exercise-actions,
   .quiz-actions {
     flex-direction: column;
+    gap: 8px;
   }
   
   .exercise-header,
   .quiz-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
-  }
-  
-  .question-text,
-  .quiz-question {
-    font-size: 1rem;
-    padding: 16px;
-  }
-
-  .blank-input-group {
-    padding: 12px;
-  }
-
-  /* ✅ FIXED: Mobile ordering styles */
-  .ordering-container {
-    padding: 12px;
-  }
-
-  .ordering-item-content {
-    padding: 10px 12px;
     gap: 8px;
-  }
-
-  .ordering-controls {
-    flex-direction: row;
-    gap: 4px;
-  }
-
-  .move-btn {
-    width: 28px;
-    height: 20px;
-    font-size: 0.7rem;
-  }
-
-  .drag-handle {
-    font-size: 1.2rem;
-    min-width: 16px;
-  }
-
-  .item-number {
-    width: 24px;
-    height: 24px;
-    font-size: 0.8rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .interactive-panel {
-    padding: 12px;
-  }
-  
-  .exercise-header h3,
-  .quiz-header h3 {
-    font-size: 1.1rem;
+    padding: 10px 12px;
   }
   
   .question-text,
@@ -2655,14 +2613,93 @@ export default {
     font-size: 0.95rem;
     padding: 12px;
   }
+
+  .blank-input-group {
+    padding: 10px;
+  }
+
+  .ordering-container {
+    padding: 10px;
+  }
+
+  .ordering-item-content {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .ordering-controls {
+    flex-direction: row;
+    gap: 3px;
+  }
+
+  .move-btn {
+    width: 24px;
+    height: 18px;
+    font-size: 0.7rem;
+  }
+
+  .drag-handle {
+    font-size: 1rem;
+    min-width: 14px;
+  }
+
+  .item-number {
+    width: 20px;
+    height: 20px;
+    font-size: 0.75rem;
+  }
+
+  .matching-side {
+    padding: 10px;
+  }
+
+  .matching-item {
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    font-size: 0.8rem;
+  }
+
+  .pair-item {
+    padding: 6px 10px;
+    margin-bottom: 4px;
+  }
+
+  .pair-text {
+    font-size: 0.8rem;
+  }
+
+  .remove-pair {
+    width: 18px;
+    height: 18px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .interactive-panel {
+    padding: 8px;
+    gap: 8px;
+  }
+  
+  .exercise-header h3,
+  .quiz-header h3 {
+    font-size: 1rem;
+  }
+  
+  .question-text,
+  .quiz-question {
+    font-size: 0.9rem;
+    padding: 10px;
+  }
   
   .option-item,
   .quiz-option {
-    padding: 12px 16px;
+    padding: 10px 12px;
+    min-height: 40px;
   }
   
   .tf-option {
-    padding: 16px;
+    padding: 12px;
   }
 
   .blank-input-group {
@@ -2670,41 +2707,82 @@ export default {
   }
 
   .blank-input {
-    padding: 10px 12px;
-    font-size: 0.9rem;
+    padding: 8px 10px;
+    font-size: 0.85rem;
   }
 
-  /* ✅ FIXED: Extra small mobile ordering styles */
   .ordering-instructions {
-    padding: 8px 12px;
+    padding: 6px 10px;
     font-size: 0.8rem;
   }
 
   .ordering-container {
     padding: 8px;
-    gap: 6px;
+    gap: 4px;
   }
 
   .ordering-item-content {
-    padding: 8px 10px;
+    padding: 6px 8px;
     gap: 6px;
   }
 
   .item-text {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
   }
 
   .ordering-controls {
     display: none; /* Hide buttons on very small screens, rely on drag only */
   }
+
+  .drag-handle {
+    font-size: 0.9rem;
+  }
+
+  .item-number {
+    width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+  }
+
+  .matching-container {
+    gap: 8px;
+  }
+
+  .matching-side {
+    padding: 8px;
+  }
+
+  .matching-item {
+    padding: 6px 8px;
+    font-size: 0.75rem;
+  }
+
+  .drag-drop-container {
+    gap: 8px;
+  }
+
+  .drag-items,
+  .drop-zones {
+    padding: 8px;
+  }
+
+  .drag-item {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+
+  .drop-zone {
+    padding: 8px;
+    min-height: 50px;
+  }
 }
 
 /* ==========================================
-   ACCESSIBILITY
+   IMPROVED ACCESSIBILITY
    ========================================== */
 .interactive-panel *:focus {
   outline: 2px solid #8b5cf6;
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 
 @media (prefers-contrast: high) {
@@ -2741,7 +2819,7 @@ export default {
 }
 
 /* ==========================================
-   PRINT STYLES
+   IMPROVED PRINT STYLES
    ========================================== */
 @media print {
   .interactive-panel {
@@ -2765,62 +2843,187 @@ export default {
 }
 
 /* ==========================================
-   DRAG AND DROP VISUAL ENHANCEMENTS
+   ENHANCED VISUAL FEEDBACK
    ========================================== */
 .ordering-item[draggable="true"]:hover .drag-handle {
   color: #6366f1;
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .ordering-item.dragging .drag-handle {
   color: #8b5cf6;
-  transform: scale(1.2);
+  transform: scale(1.1);
 }
 
 /* ==========================================
-   ANIMATION KEYFRAMES
+   IMPROVED LAYOUT FOR BETTER SPACE USAGE
    ========================================== */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+
+/* Stack elements more efficiently on smaller screens */
+@media (max-width: 1024px) {
+  .matching-container {
+    grid-template-columns: 1fr;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  
+  .matching-side {
+    margin-bottom: 8px;
+  }
+  
+  .drag-drop-container {
+    grid-template-columns: 1fr;
   }
 }
 
-@keyframes slideIn {
-  from {
-    transform: translateX(-20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+/* Optimize button layouts */
+.exercise-actions,
+.quiz-actions {
+  justify-content: flex-start;
+  align-items: center;
 }
 
-@keyframes pulse {
-  0%, 100% {
+.exercise-actions > *,
+.quiz-actions > * {
+  flex: 0 0 auto;
+}
+
+/* Better text wrapping */
+.option-text,
+.item-text,
+.pair-text {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Improved focus management */
+.matching-item:focus,
+.ordering-item:focus,
+.drag-item:focus {
+  outline: 3px solid #8b5cf6;
+  outline-offset: 2px;
+  z-index: 10;
+}
+
+/* Better visual hierarchy */
+.exercise-body > *:not(:last-child),
+.quiz-body > *:not(:last-child) {
+  margin-bottom: 0; /* Reset margins, use gap instead */
+}
+
+/* Ensure consistent spacing */
+.fill-blank-inputs .blank-input-group:last-child,
+.options-list .option-item:last-child,
+.quiz-options .quiz-option:last-child {
+  margin-bottom: 0;
+}
+
+/* Improved drag and drop visual feedback */
+.drag-item:active {
+  transform: scale(0.98);
+}
+
+.drop-zone.drag-over::before {
+  content: "Отпустите здесь";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.8rem;
+  color: #8b5cf6;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 8px;
+  border-radius: 4px;
+  z-index: 5;
+}
+
+.drop-zone {
+  position: relative;
+}
+
+/* Better loading states */
+.option-item.loading,
+.quiz-option.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Enhanced success animations */
+.confirmation-message.correct {
+  animation: successPulse 0.6s ease-out;
+}
+
+@keyframes successPulse {
+  0% {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.05);
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
-/* Apply animations to new items */
-.ordering-item {
-  animation: fadeIn 0.3s ease-out;
+/* Improved error state styling */
+.confirmation-message.incorrect {
+  animation: errorShake 0.5s ease-out;
 }
 
-.pair-item {
-  animation: slideIn 0.3s ease-out;
+@keyframes errorShake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
 }
 
-.confirmation-message.correct {
-  animation: pulse 0.5s ease-out;
+/* Better spacing for touch interfaces */
+@media (pointer: coarse) {
+  .option-item,
+  .quiz-option,
+  .tf-option,
+  .matching-item,
+  .ordering-item,
+  .drag-item {
+    min-height: 48px; /* Minimum touch target size */
+  }
+  
+  .move-btn,
+  .remove-pair,
+  .clear-hint-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Optimize for very wide screens */
+@media (min-width: 1200px) {
+  .interactive-panel {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  
+  .matching-container,
+  .drag-drop-container {
+    gap: 24px;
+  }
+}
+
+/* Ensure proper stacking context */
+.ordering-item.dragging {
+  z-index: 1000;
+}
+
+.matching-item.selected {
+  z-index: 10;
+}
+
+.drop-zone.drag-over {
+  z-index: 5;
 }
 </style>
