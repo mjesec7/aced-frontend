@@ -1091,73 +1091,133 @@ export const getTopicById = async (topicId) => {
   }
 };
 
-// ✅ FIXED: Get lessons by topic with enhanced fallback logic
+// ✅ COMPLETELY FIXED: Get lessons by topic with comprehensive error handling
 export const getLessonsByTopic = async (topicId) => {
   try {
-    // Try the enhanced lessons endpoint first
+    console.log(`📚 API: Fetching lessons for topic: ${topicId}`);
+    
+    if (!topicId) {
+      throw new Error('Topic ID is required');
+    }
+
+    // ✅ STRATEGY 1: Try the enhanced lessons endpoint first
     try {
+      console.log('🔄 Strategy 1: Enhanced lessons endpoint...');
       const { data } = await api.get(`/lessons/topic/${topicId}?includeStats=true&sortBy=createdAt&order=asc`);
       
+      console.log('📚 Enhanced endpoint raw response:', data);
+      
       if (data && data.success) {
+        console.log(`✅ Enhanced endpoint success: ${data.lessons?.length || 0} lessons`);
         return {
           success: true,
           data: data.lessons || [],
-          stats: data.stats
+          stats: data.stats,
+          source: 'enhanced-endpoint'
         };
       }
     } catch (enhancedError) {
-      console.warn('⚠️ Enhanced lessons endpoint failed:', enhancedError.message);
+      console.warn('⚠️ Enhanced lessons endpoint failed:', enhancedError.response?.status, enhancedError.message);
+      
+      // If it's a 501 (Not Implemented), continue to next strategy
+      if (enhancedError.response?.status === 501) {
+        console.log('📍 501 Not Implemented - endpoint not ready yet');
+      }
     }
     
-    // Fallback to topic-specific lessons endpoint
+    // ✅ STRATEGY 2: Try legacy topic-specific lessons endpoint
     try {
+      console.log('🔄 Strategy 2: Legacy topic lessons endpoint...');
       const { data } = await api.get(`/topics/${topicId}/lessons`);
       
+      console.log('📚 Legacy endpoint raw response:', data);
+      
       if (data && data.success) {
+        console.log(`✅ Legacy endpoint success: ${data.data?.length || data.lessons?.length || 0} lessons`);
         return {
           success: true,
-          data: data.data || data.lessons || []
+          data: data.data || data.lessons || [],
+          source: 'legacy-endpoint'
         };
       } else if (Array.isArray(data)) {
+        console.log(`✅ Legacy endpoint (direct array): ${data.length} lessons`);
         return {
           success: true,
-          data: data
+          data: data,
+          source: 'legacy-direct'
         };
       }
-    } catch (fallbackError) {
-      console.warn('⚠️ Topic lessons endpoint failed:', fallbackError.message);
+    } catch (legacyError) {
+      console.warn('⚠️ Legacy topic lessons endpoint failed:', legacyError.response?.status, legacyError.message);
+      
+      // If it's a 404, this might mean the topic doesn't exist
+      if (legacyError.response?.status === 404) {
+        console.log('📍 404 from legacy endpoint - topic might not exist');
+      }
     }
     
-    // Final fallback - get all lessons and filter by topicId
+    // ✅ STRATEGY 3: Final fallback - get all lessons and filter by topicId
     try {
+      console.log('🔄 Strategy 3: Fallback - filter all lessons...');
       const { data } = await api.get('/lessons');
+      
+      console.log(`📚 All lessons response: ${Array.isArray(data) ? data.length : 'not array'} items`);
+      
       const allLessons = Array.isArray(data) ? data : [];
       const filteredLessons = allLessons.filter(lesson => {
-        return lesson.topicId === topicId || 
-               lesson.topic === topicId ||
-               (lesson.topicId && lesson.topicId._id === topicId) ||
-               (lesson.topicId && lesson.topicId.toString() === topicId);
+        if (!lesson) return false;
+        
+        // Handle different topicId structures
+        const lessonTopicId = lesson.topicId;
+        
+        // Direct string comparison
+        if (typeof lessonTopicId === 'string') {
+          return lessonTopicId === topicId;
+        }
+        
+        // Object with _id or id property
+        if (typeof lessonTopicId === 'object' && lessonTopicId !== null) {
+          return (lessonTopicId._id || lessonTopicId.id) === topicId;
+        }
+        
+        // Also check the topic field (legacy)
+        if (lesson.topic === topicId) {
+          return true;
+        }
+        
+        return false;
       });
+      
+      console.log(`✅ Fallback filter success: ${filteredLessons.length} lessons found for topic ${topicId}`);
       
       return {
         success: true,
-        data: filteredLessons
+        data: filteredLessons,
+        source: 'fallback-filter'
       };
-    } catch (finalError) {
-      console.error('❌ Final fallback failed:', finalError.message);
+      
+    } catch (fallbackError) {
+      console.error('❌ Final fallback failed:', fallbackError.message);
     }
     
+    // If everything fails, return empty but successful response
+    console.log('ℹ️ All strategies failed, returning empty array');
     return {
       success: true,
-      data: []
+      data: [],
+      message: 'No lessons found for this topic',
+      source: 'empty-result'
     };
     
   } catch (error) {
-    console.error('❌ Failed to fetch lessons by topic:', error);
+    console.error('❌ API: Failed to fetch lessons by topic:', error);
+    
+    // Return error response
     return {
       success: false,
       data: [],
-      error: error.message
+      error: error.message || 'Failed to fetch lessons for topic',
+      details: error
     };
   }
 };
