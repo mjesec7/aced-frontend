@@ -43,7 +43,7 @@ const routes = [
   {
     path: '/about-us',
     name: 'AboutUsPage',
-    component: () => import('@/components/Profile/AboutUs.vue'),
+    component: () => import('@/components/Main/AboutUs.vue'),
     meta: { title: 'О нас' }
   },
   
