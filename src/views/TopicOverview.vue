@@ -11,7 +11,7 @@
       <div class="error-icon">❌</div>
       <h3 class="error-title">Тема не найдена</h3>
       <p class="error-message">Возможно, тема была удалена или у вас нет к ней доступа</p>
-      <button @click="$router.push('/views/catalogue')" class="btn btn-back">
+      <button @click="navigateToProfile" class="btn btn-back">
         ⬅️ Назад к каталогу
       </button>
     </div>
@@ -20,7 +20,7 @@
     <div v-else class="topic-content">
       <!-- Navigation Header -->
       <div class="nav-header">
-        <button @click="$router.push('/catalogue')" class="back-button">
+        <button @click="navigateToProfile" class="back-button">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
@@ -219,7 +219,7 @@
               ⭐ Оформить подписку
             </button>
             <button 
-              @click="$router.push('/catalogue')" 
+              @click="navigateToProfile" 
               class="btn btn-secondary"
             >
               📚 Другие курсы
@@ -294,6 +294,18 @@ export default {
   },
   
   methods: {
+    // ✅ NEW: Navigate to profile catalogue method
+    navigateToProfile() {
+      try {
+        console.log('🔄 Navigating to profile catalogue');
+        this.$router.push({ name: 'CataloguePage' });
+      } catch (error) {
+        console.error('❌ Error navigating to profile:', error);
+        // Fallback to direct URL
+        this.$router.push('/profile/catalogue');
+      }
+    },
+
     // ✅ COMPLETELY FIXED: Robust initialization with comprehensive error handling
     async initializeComponent() {
       try {
