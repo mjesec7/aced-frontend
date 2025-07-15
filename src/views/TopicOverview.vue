@@ -11,7 +11,7 @@
       <div class="error-icon">❌</div>
       <h3 class="error-title">Тема не найдена</h3>
       <p class="error-message">Возможно, тема была удалена или у вас нет к ней доступа</p>
-      <button @click="$router.push('/profile/catalogue')" class="btn btn-back">
+      <button @click="$router.push('/views/catalogue')" class="btn btn-back">
         ⬅️ Назад к каталогу
       </button>
     </div>
