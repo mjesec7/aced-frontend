@@ -25,7 +25,7 @@
           >
             <div class="plan-header">
               <h5>Start</h5>
-              <div class="plan-price">2,600 сум</div>
+              <div class="plan-price">260,000 сум</div>
             </div>
             <ul class="plan-features">
               <li>✅ Базовые курсы</li>
@@ -42,7 +42,7 @@
             <div class="plan-badge">Рекомендуем</div>
             <div class="plan-header">
               <h5>Pro</h5>
-              <div class="plan-price">4,550 сум</div>
+              <div class="plan-price">450,000 сум</div>
             </div>
             <ul class="plan-features">
               <li>✅ Все курсы Start</li>
@@ -180,8 +180,8 @@ export default {
 
     getPlanLabel(plan) {
       const labels = {
-        start: 'Start (2,600 сум)',
-        pro: 'Pro (4,550 сум)'
+        start: 'Start (260,000 сум)',
+        pro: 'Pro (450,000 сум)'
       };
       return labels[plan] || plan;
     },
