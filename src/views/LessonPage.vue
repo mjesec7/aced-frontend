@@ -13,7 +13,7 @@
       <p>{{ error }}</p>
       <div class="error-actions">
         <button @click="retryLoad" class="retry-btn">🔄 Попробовать снова</button>
-        <button @click="$router.push('/catalogue')" class="back-btn">⬅️ К каталогу</button>
+        <button @click="handleReturnToCatalogue" class="back-btn">⬅️ К каталогу</button>
       </div>
     </div>
 
@@ -24,7 +24,7 @@
         <p>Этот урок доступен только для подписчиков.</p>
         <div class="modal-actions">
           <button @click="$router.push('/pay/start')" class="premium-btn">💳 Получить подписку</button>
-          <button @click="$router.push('/catalogue')" class="cancel-btn">⬅️ Назад к каталогу</button>
+          <button @click="handleReturnToCatalogue" class="cancel-btn">⬅️ Назад к каталогу</button>
         </div>
       </div>
     </div>
@@ -42,7 +42,7 @@
     </div>
 
     <!-- Vocabulary Learning Modal -->
-    <VocabularyModal 
+    <VocabularyModal
       v-if="vocabularyModal.isVisible"
       :vocabulary-data="vocabularyModal"
       :card-animation="cardAnimation"
@@ -75,7 +75,7 @@
 
     <!-- Main Lesson Content -->
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
-      
+
       <!-- Top Header -->
       <LessonHeader
         :lesson="lesson"
@@ -96,7 +96,7 @@
 
       <!-- Split Screen Content -->
       <div class="split-content">
-        
+
         <!-- Left Panel - Clean Content Display -->
         <ContentPanel
           :current-step="currentStep"
@@ -151,7 +151,7 @@
             :is-on-second-chance="isOnSecondChance"
             :show-correct-answer="showCorrectAnswer"
             :correct-answer-text="correctAnswerText"
-            
+
             @answer-changed="handleAnswerChanged"
             @fill-blank-updated="updateFillBlankAnswer"
             @submit="handleSubmitOrNext"
@@ -167,14 +167,14 @@
             @drop-in-zone="handleDropInZone"
             @remove-dropped-item="handleRemoveDroppedItem"
           />
-          
+
           <!-- AI Help Panel -->
           <AIHelpPanel
             :ai-suggestions="aiSuggestions"
             :ai-chat-input="aiChatInput"
             :ai-chat-history="aiChatHistory"
             :ai-is-loading="aiIsLoading"
-            :ai-usage="aiUsage"
+            :ai-usage="ai-usage"
             @send-message="sendAIMessage"
             @ask-ai="askAI"
             @clear-chat="clearAIChat"
@@ -205,11 +205,38 @@
       :progress-insight="progressInsight"
       :total-steps="steps.length"
       :extraction-results="extractionResults"
-      @return-to-catalogue="$router.push('/profile/catalogue')"   
+      @return-to-catalogue="handleReturnToCatalogue"
       @share="shareResult"
-      @homework="goToHomework"
+      @homework="handleGoToHomework"
       @vocabulary="goToVocabulary"
-    />
+    >
+      <!-- Slot for additional buttons/content in CompletionScreen -->
+      <template #extra-actions>
+        <button @click="reportLessonProblem" class="btn-secondary">
+          ⚠️ Сообщить о проблеме с уроком
+        </button>
+      </template>
+    </CompletionScreen>
+
+    <!-- Problem Report Modal -->
+    <div v-if="showProblemReportModal" class="modal-overlay">
+      <div class="modal-content">
+        <h3>Сообщить о проблеме с уроком</h3>
+        <p>Пожалуйста, прикрепите скриншот (если есть) и подробно объясните, что пошло не так.</p>
+        <div class="form-group">
+          <label for="problemDescription">Описание проблемы:</label>
+          <textarea id="problemDescription" v-model="problemDescription" rows="5" placeholder="Опишите проблему здесь..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="screenshotUrl">Ссылка на скриншот (необязательно):</label>
+          <input type="text" id="screenshotUrl" v-model="screenshotUrl" placeholder="Вставьте ссылку на изображение...">
+        </div>
+        <div class="modal-actions">
+          <button @click="submitProblemReport" class="confirm-btn">Отправить отчет</button>
+          <button @click="closeProblemReportModal" class="cancel-btn">Отмена</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Migration Panel (Admin/User) -->
     <div v-if="showMigrationPanel" class="migration-panel">
@@ -217,8 +244,8 @@
         <h3>🔄 Обновление контента</h3>
         <p>Хотите создать задания и словарь из уже пройденных уроков?</p>
         <div class="migration-actions">
-          <button 
-            @click="migrateLessonContent" 
+          <button
+            @click="migrateLessonContent"
             :disabled="migrationLoading"
             class="migrate-btn"
           >
@@ -230,9 +257,9 @@
     </div>
 
     <!-- Floating AI Assistant Toggle -->
-    <button 
-      v-if="started && !lessonCompleted" 
-      class="floating-ai-btn" 
+    <button
+      v-if="started && !lessonCompleted"
+      class="floating-ai-btn"
       @click="toggleFloatingAI"
       :class="{ active: showFloatingAI }"
     >
@@ -261,6 +288,7 @@
 <script>
 // ✅ FULLY CLEANED LessonPage.vue <script> - Exercise logic moved to composable
 import { computed, ref, watch, nextTick } from 'vue'
+import { useRouter } from 'vue-router'; // Import useRouter
 
 // Import composables
 import { useVocabulary } from '@/composables/useVocabulary'
@@ -283,7 +311,7 @@ import FloatingAIAssistant from '@/components/lesson/FloatingAIAssistant.vue'
 
 export default {
   name: 'LessonPage',
-  
+
   components: {
     VocabularyModal,
     LessonIntro,
@@ -295,8 +323,9 @@ export default {
     CompletionScreen,
     FloatingAIAssistant
   },
-  
+
   setup() {
+    const router = useRouter(); // Initialize router
     // ==========================================
     // COMPOSABLES INITIALIZATION
     // ==========================================
@@ -306,7 +335,7 @@ export default {
     const paymentValidation = usePaymentValidation()
     const sound = useSound()
     const explanation = useExplanation()
-    
+
     // Initialize services
     sound.initializeSpeech?.()
     explanation.initializeAI?.()
@@ -314,7 +343,7 @@ export default {
     // ==========================================
     // REACTIVE STATE (Lesson-specific only)
     // ==========================================
-    
+
     // Second chance system
     const attemptCount = ref(0)
     const maxAttempts = ref(2)
@@ -336,7 +365,7 @@ export default {
     // ==========================================
     // COMPUTED PROPERTIES
     // ==========================================
-    
+
     const getUserProgress = computed(() => ({
       currentStep: lessonOrchestrator.currentIndex.value,
       completedSteps: Array.from({length: lessonOrchestrator.currentIndex.value}, (_, i) => i),
@@ -356,18 +385,18 @@ export default {
     // ==========================================
     // LESSON COMPLETION WITH EXTRACTION
     // ==========================================
-    
+
     const completeLessonWithExtraction = async () => {
       try {
         console.log('🏁 Starting enhanced lesson completion with extraction')
-        
+
         const completionResult = await lessonOrchestrator.completeLesson?.()
-        
+
         if (completionResult?.success || lessonOrchestrator.lessonCompleted.value) {
           console.log('✅ Lesson completed, triggering content extraction')
-          
+
           const extractionResult = await extractLessonContent()
-          
+
           if (extractionResult?.success) {
             console.log('🎉 Content extraction successful:', extractionResult)
             showCompletionMessage(extractionResult)
@@ -385,7 +414,7 @@ export default {
     const extractLessonContent = async () => {
       try {
         console.log('📤 Extracting lesson content...')
-        
+
         if (!lessonOrchestrator.currentUser?.value?.uid || !lessonOrchestrator.lesson.value?._id) {
           console.error('❌ Missing required data for extraction')
           return { success: false, error: 'Missing user or lesson data' }
@@ -403,16 +432,16 @@ export default {
             progress: getUserProgress.value
           })
         })
-        
+
         const result = await response.json()
-        
+
         if (!response.ok) {
           throw new Error(result.error || 'Failed to extract content')
         }
-        
+
         console.log('✅ Content extraction response:', result)
         return result
-        
+
       } catch (error) {
         console.error('❌ Error extracting lesson content:', error)
         return { success: false, error: error.message }
@@ -421,23 +450,23 @@ export default {
 
     const showCompletionMessage = (extractionResult) => {
       console.log('🎊 Showing enhanced completion message')
-      
+
       let message = '🎉 Урок успешно завершён!'
-      
+
       if (extractionResult.homeworkCreated) {
         message += '\n📝 Новое домашнее задание создано и доступно в разделе заданий!'
       }
-      
+
       if (extractionResult.vocabularyAdded) {
         message += `\n📚 ${extractionResult.vocabularyCount} новых слов добавлено в вашу коллекцию словаря!`
       }
-      
+
       if (lessonOrchestrator.showToast) {
         lessonOrchestrator.showToast(message, 'success')
       } else {
         console.log('📢 Completion message:', message)
       }
-      
+
       lessonOrchestrator.lessonCompleted.value = true
       extractionResults.value = extractionResult
     }
@@ -445,16 +474,16 @@ export default {
     // ==========================================
     // MIGRATION FUNCTIONALITY
     // ==========================================
-    
+
     const migrateLessonContent = async () => {
       try {
         migrationLoading.value = true
         console.log('🔄 Starting lesson content migration')
-        
+
         if (!lessonOrchestrator.currentUser?.value?.uid) {
           throw new Error('User not found')
         }
-        
+
         const response = await fetch(`/api/homework/migrate-from-lessons/${lessonOrchestrator.currentUser.value.uid}`, {
           method: 'POST',
           headers: {
@@ -462,31 +491,31 @@ export default {
             'Content-Type': 'application/json'
           }
         })
-        
+
         const result = await response.json()
-        
+
         if (!response.ok) {
           throw new Error(result.error || 'Migration failed')
         }
-        
+
         if (result.success) {
           const message = `✅ Миграция завершена! Создано ${result.data?.homeworkCreated || 0} заданий и добавлено ${result.data?.vocabularyAdded || 0} слов в словарь.`
-          
+
           if (lessonOrchestrator.showToast) {
             lessonOrchestrator.showToast(message, 'success')
           } else {
             alert(message)
           }
-          
+
           showMigrationPanel.value = false
         } else {
           throw new Error(result.error || 'Migration failed')
         }
-        
+
       } catch (error) {
         console.error('❌ Migration error:', error)
         const errorMessage = '❌ Ошибка миграции: ' + error.message
-        
+
         if (lessonOrchestrator.showToast) {
           lessonOrchestrator.showToast(errorMessage, 'error')
         } else {
@@ -508,25 +537,25 @@ export default {
     // ==========================================
     // VOCABULARY METHODS
     // ==========================================
-    
+
     const initializeVocabularyModal = (step) => {
       console.log('📚 Initializing vocabulary modal from LessonPage:', step)
-      
+
       let vocabularyStep = step
-      
+
       if (!vocabularyStep) {
         console.warn('⚠️ No step provided to initializeVocabularyModal, using current step')
         vocabularyStep = lessonOrchestrator.currentStep.value
       }
-      
+
       if (!vocabularyStep) {
         console.error('❌ No vocabulary step available for initialization')
         return
       }
-      
+
       if (vocabularyStep.type !== 'vocabulary') {
         console.error('❌ Step is not a vocabulary type:', vocabularyStep.type)
-        
+
         const vocabularySteps = lessonOrchestrator.steps.value?.filter(s => s.type === 'vocabulary')
         if (vocabularySteps && vocabularySteps.length > 0) {
           console.log('✅ Found vocabulary step in lesson, using first one:', vocabularySteps[0])
@@ -536,17 +565,17 @@ export default {
           return
         }
       }
-      
+
       vocabulary.initializeVocabularyModal(vocabularyStep)
     }
 
     const jumpToVocabWord = (index) => {
       console.log('🎯 Jumping to vocabulary word:', index)
-      
+
       if (index >= 0 && index < vocabulary.vocabularyModal.words.length) {
         vocabulary.cardAnimation.isFlipping = false
         vocabulary.cardAnimation.showDefinition = false
-        
+
         setTimeout(() => {
           vocabulary.vocabularyModal.currentIndex = index
           console.log(`✅ Jumped to word ${index + 1}/${vocabulary.vocabularyModal.words.length}`)
@@ -562,7 +591,7 @@ export default {
     }
 
     const hideVocabDefinition = () => {
-      console.log('🔄 Hiding vocabulary definition') 
+      console.log('🔄 Hiding vocabulary definition')
       vocabulary.hideVocabDefinition()
     }
 
@@ -593,25 +622,20 @@ export default {
 
     const pronounceWord = (word) => {
       console.log('🔊 Pronouncing word:', word)
-      
       if (!word || typeof word !== 'string') {
         console.warn('⚠️ Invalid word for pronunciation:', word)
         return
       }
-      
       try {
         if ('speechSynthesis' in window) {
           window.speechSynthesis.cancel()
-          
           const utterance = new SpeechSynthesisUtterance(word.trim())
           utterance.lang = 'en-US'
           utterance.rate = 0.8
           utterance.pitch = 1
-          
           utterance.onstart = () => console.log('🎵 Started pronouncing:', word)
           utterance.onend = () => console.log('✅ Finished pronouncing:', word)
           utterance.onerror = (event) => console.error('❌ Pronunciation error:', event.error)
-          
           window.speechSynthesis.speak(utterance)
         } else {
           console.warn('⚠️ Speech synthesis not supported')
@@ -622,205 +646,23 @@ export default {
         sound.pronounceWord?.(word)
       }
     }
-
     // ==========================================
     // EXERCISE INITIALIZATION (Simplified)
     // ==========================================
-    
     const getCurrentExercise = () => {
       const exercise = exercises.getCurrentExercise(lessonOrchestrator.currentStep.value)
-      
       if (exercise) {
         const exerciseId = exercise.id || `${exercise.type}_${exercise.question?.substring(0, 20)}`
-        
         if (initializationTracker.value.currentExerciseId !== exerciseId) {
-          initializationTracker.value = {
-            currentExerciseId: exerciseId,
-            initialized: false
-          }
-          
+          initializationTracker.value = { currentExerciseId: exerciseId, initialized: false }
           nextTick(() => {
             exercises.initializeCurrentExerciseData(exercise)
             initializationTracker.value.initialized = true
           })
         }
       }
-      
       return exercise
     }
-
-    // ==========================================
-    // SIMPLIFIED EVENT HANDLERS (Delegate to composable)
-    // ==========================================
-
-    const handleAnswerChanged = (newAnswer) => {
-      console.log('📝 Answer changed:', newAnswer)
-      exercises.updateUserAnswer(newAnswer, getCurrentExercise())
-    }
-
-    const handleMatchingItemSelected = (selection) => {
-      console.log('🔗 Handling matching item selection:', selection)
-      exercises.handleMatchingSelection(selection)
-    }
-
-    const handleRemoveMatchingPair = (pairIndex) => {
-      console.log('🗑️ Handling remove matching pair:', pairIndex)
-      exercises.removeMatchingPair(pairIndex)
-    }
-
-    // ==========================================
-    // SIMPLIFIED SUBMISSION HANDLER
-    // ==========================================
-    
-    const handleSubmitOrNext = async () => {
-      console.log('🎯 Submit/Next triggered, attempt:', attemptCount.value + 1)
-      
-      const currentStep = lessonOrchestrator.currentStep.value
-      if (!currentStep) {
-        console.warn('❌ No current step available')
-        return
-      }
-
-      if (showCorrectAnswer.value) {
-        moveToNextStep()
-        return
-      }
-
-      // ✅ SIMPLIFIED: Delegate to exercises composable
-      const currentExercise = getCurrentExercise()
-      const currentQuiz = getCurrentQuiz()
-      
-      let isCorrect = false
-      let exerciseOrQuiz = null
-
-      if (currentStep.type === 'exercise' || currentStep.type === 'practice') {
-        exerciseOrQuiz = currentExercise
-        if (exerciseOrQuiz) {
-          // ✅ Use composable validation method
-          isCorrect = exercises.validateCurrentAnswer(exerciseOrQuiz)
-        }
-      } else if (currentStep.type === 'quiz') {
-        exerciseOrQuiz = currentQuiz
-        if (exerciseOrQuiz) {
-          // ✅ Use composable validation method  
-          isCorrect = exercises.validateQuizAnswer(exerciseOrQuiz)
-        }
-      }
-
-      attemptCount.value++
-
-      if (isCorrect) {
-        exercises.answerWasCorrect.value = true
-        lessonOrchestrator.stars.value++
-        lessonOrchestrator.earnedPoints.value += 10
-        
-        if (attemptCount.value === 1) {
-          lessonOrchestrator.earnedPoints.value += 5
-          // ✅ Use composable message method
-          exercises.confirmation.value = exercises.getRandomSuccessMessage() + ' 🌟 Бонус за первую попытку!'
-        } else {
-          exercises.confirmation.value = exercises.getRandomSuccessMessage() + ' 💪 Отлично, со второй попытки!'
-        }
-        
-        sound.playSuccessSound?.()
-        isOnSecondChance.value = false
-        
-      } else {
-        exercises.answerWasCorrect.value = false
-        
-        if (attemptCount.value < maxAttempts.value) {
-          isOnSecondChance.value = true
-          // ✅ Use composable message method
-          exercises.confirmation.value = exercises.getSecondChanceMessage(exerciseOrQuiz)
-          sound.playErrorSound?.()
-          return
-        } else {
-          lessonOrchestrator.mistakeCount.value++
-          lessonOrchestrator.earnedPoints.value = Math.max(0, lessonOrchestrator.earnedPoints.value - 2)
-          
-          showCorrectAnswer.value = true
-          // ✅ Use composable display method
-          correctAnswerText.value = exercises.getCorrectAnswerDisplay(exerciseOrQuiz)
-          exercises.confirmation.value = exercises.getFinalFailureMessage(exerciseOrQuiz, correctAnswerText.value)
-          
-          isOnSecondChance.value = false
-          sound.playErrorSound?.()
-          
-          if (lessonOrchestrator.mistakeCount.value >= 2) {
-            await explanation.generateSmartHintForMistakes?.(
-              exerciseOrQuiz,
-              lessonOrchestrator.mistakeCount.value,
-              { 
-                lessonId: lessonOrchestrator.lesson.value._id,
-                userAnswer: exercises.getCurrentUserAnswer(),
-                correctAnswer: correctAnswerText.value
-              }
-            )
-          }
-        }
-      }
-      
-      await lessonOrchestrator.saveProgress()
-    }
-
-    // ==========================================
-    // NAVIGATION FUNCTIONS
-    // ==========================================
-    
-    const resetAttempts = () => {
-      attemptCount.value = 0
-      isOnSecondChance.value = false
-      showCorrectAnswer.value = false
-      correctAnswerText.value = ''
-      exercises.confirmation.value = ''
-      exercises.answerWasCorrect.value = false
-      
-      initializationTracker.value = {
-        currentExerciseId: null,
-        initialized: false
-      }
-    }
-
-    const moveToNextStep = () => {
-      resetAttempts()
-      
-      if (exercises.isLastExercise?.(lessonOrchestrator.currentStep.value) || 
-          exercises.isLastQuiz?.(lessonOrchestrator.currentStep.value)) {
-        lessonOrchestrator.goNext()
-      } else {
-        if (lessonOrchestrator.currentStep.value.type === 'exercise' || 
-            lessonOrchestrator.currentStep.value.type === 'practice') {
-          exercises.goToNextExercise(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
-        } else if (lessonOrchestrator.currentStep.value.type === 'quiz') {
-          exercises.goToNextQuiz(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
-        }
-      }
-    }
-
-    const goToNextExercise = () => {
-      resetAttempts()
-      exercises.goToNextExercise(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
-    }
-
-    const goToNextQuiz = () => {
-      resetAttempts()
-      exercises.goToNextQuiz(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
-    }
-
-    const goNext = () => {
-      resetAttempts()
-      lessonOrchestrator.goNext()
-    }
-
-    const goPrevious = () => {
-      resetAttempts()
-      lessonOrchestrator.goPrevious()
-    }
-
-    // ==========================================
-    // SIMPLIFIED EXERCISE METHODS (Delegate to composable)
-    // ==========================================
-    
     const getCurrentQuiz = () => {
       return exercises.getCurrentQuiz(lessonOrchestrator.currentStep.value)
     }
@@ -834,217 +676,387 @@ export default {
     }
 
     // ==========================================
-    // SIMPLIFIED DRAG AND DROP EVENT HANDLERS (Delegate to composable)
+    // SIMPLIFIED EVENT HANDLERS (Delegate to composable)
     // ==========================================
-    
-    const handleDragItemStart = (item) => {
-      exercises.startDragItem(item)
+    const handleAnswerChanged = (newAnswer) => {
+      console.log('📝 Answer changed:', newAnswer)
+      exercises.updateUserAnswer(newAnswer, getCurrentExercise())
+    }
+    const updateFillBlankAnswer = ({ index, value }) => {
+      exercises.updateFillBlankAnswer(index, value)
+    }
+    const handleMatchingItemSelected = (selection) => {
+      console.log('🔗 Handling matching item selection:', selection)
+      exercises.handleMatchingSelection(selection)
+    }
+    const handleRemoveMatchingPair = (pairIndex) => {
+      console.log('🗑️ Handling remove matching pair:', pairIndex)
+      exercises.removeMatchingPair(pairIndex)
+    }
+    const handleDragItemStart = ({ item, type }) => {
+      exercises.handleDragItemStart({ item, type });
     }
 
     const handleDragOverZone = (zoneId) => {
-      exercises.dragOverZone(zoneId)
+      exercises.handleDragOverZone(zoneId);
     }
 
-    const handleDragLeaveZone = () => {
-      exercises.dragLeaveZone()
+    const handleDragLeaveZone = (zoneId) => {
+      exercises.handleDragLeaveZone(zoneId);
     }
 
-    const handleDropInZone = ({ zoneId, item }) => {
-      exercises.dropInZone(zoneId, item)
+    const handleDropInZone = ({ zoneId, item, type }) => {
+      exercises.handleDropInZone({ zoneId, item, type });
     }
 
-    const handleRemoveDroppedItem = ({ zoneId, itemIndex, item }) => {
-      exercises.removeDroppedItem(zoneId, itemIndex, item)
-    }
-
-    const updateFillBlankAnswer = (index, event) => {
-      exercises.updateFillBlankAnswer(index, event)
-    }
-
-    const showHint = () => {
-      exercises.showHint()
-    }
-
-    const clearSmartHint = () => {
-      exercises.clearSmartHint()
+    const handleRemoveDroppedItem = (item) => {
+      exercises.handleRemoveDroppedItem(item);
     }
 
     // ==========================================
-    // AI AND EXPLANATION METHODS
+    // SIMPLIFIED SUBMISSION HANDLER
     // ==========================================
-    
-    const askAboutExplanation = (question) => {
-      const explanationText = lessonOrchestrator.formatContent?.(lessonOrchestrator.currentStep.value?.data?.content) || ''
-      explanation.askAboutExplanation?.(explanationText, question, {
-        lessonId: lessonOrchestrator.lesson.value._id,
-        lessonName: lessonOrchestrator.lesson.value.lessonName
-      })
-    }
-
-    const sendAIMessage = (message) => {
-      explanation.sendAIMessage?.(message, lessonOrchestrator.lesson.value, getUserProgress.value, lessonOrchestrator.currentStep.value)
-    }
-
-    const sendFloatingAIMessage = (message) => {
-      explanation.sendFloatingAIMessage?.(message, lessonOrchestrator.lesson.value, getUserProgress.value, lessonOrchestrator.currentStep.value)
-    }
-
-    const askAI = (question) => {
-      explanation.askAI?.(question, lessonOrchestrator.lesson.value, getUserProgress.value, lessonOrchestrator.currentStep.value)
-    }
-
-    const clearAIChat = () => {
-      explanation.clearAIChat?.()
-    }
-
-    const toggleFloatingAI = () => {
-      explanation.toggleFloatingAI?.()
-    }
-
-    const closeFloatingAI = () => {
-      explanation.closeFloatingAI?.()
-    }
-
-    // ==========================================
-    // NAVIGATION METHODS FOR COMPLETION SCREEN
-    // ==========================================
-    
-    const goToHomework = () => {
-      lessonOrchestrator.router?.push(`/profile/homeworks/${lessonOrchestrator.lesson.value._id}`)
-    }
-
-    const goToVocabulary = () => {
-      lessonOrchestrator.router?.push('/profile/vocabulary')
-    }
-
-    // ==========================================
-    // UTILITY METHODS
-    // ==========================================
-    
-    const shareResult = () => {
-      const message = `🎉 Я только что завершил урок "${lessonOrchestrator.lesson.value.lessonName}"! Получил ${lessonOrchestrator.stars.value} звезд и ${lessonOrchestrator.earnedPoints.value} очков! 🚀`
-      
-      if (navigator.share) {
-        navigator.share({
-          title: 'Мой успех в обучении!',
-          text: message,
-          url: window.location.href
-        }).catch(() => {
-          fallbackShare(message)
-        })
+    const handleSubmitOrNext = async () => {
+      console.log('🎯 Submit/Next triggered, attempt:', attemptCount.value + 1)
+      const currentStep = lessonOrchestrator.currentStep.value
+      if (!currentStep) {
+        console.warn('❌ No current step available')
+        return
+      }
+      if (showCorrectAnswer.value) {
+        moveToNextStep()
+        return
+      }
+      // ✅ SIMPLIFIED: Delegate to exercises composable
+      const currentExercise = getCurrentExercise()
+      const currentQuiz = getCurrentQuiz()
+      let isCorrect = false
+      let exerciseOrQuiz = null
+      if (currentStep.type === 'exercise' || currentStep.type === 'practice') {
+        exerciseOrQuiz = currentExercise
+        if (exerciseOrQuiz) {
+          // ✅ Use composable validation method
+          isCorrect = exercises.validateCurrentAnswer(exerciseOrQuiz)
+        }
+      } else if (currentStep.type === 'quiz') {
+        exerciseOrQuiz = currentQuiz
+        if (exerciseOrQuiz) {
+          // ✅ Use composable validation method
+          isCorrect = exercises.validateQuizAnswer(exerciseOrQuiz)
+        }
+      }
+      attemptCount.value++
+      if (isCorrect) {
+        exercises.answerWasCorrect.value = true
+        lessonOrchestrator.stars.value++
+        lessonOrchestrator.earnedPoints.value += 10
+        if (attemptCount.value === 1) {
+          lessonOrchestrator.earnedPoints.value += 5 // ✅ Use composable message method
+          exercises.confirmation.value = exercises.getRandomSuccessMessage() + ' 🌟 Бонус за первую попытку!'
+        } else {
+          exercises.confirmation.value = exercises.getRandomSuccessMessage() + ' 💪 Отлично, со второй попытки!'
+        }
+        sound.playSuccessSound?.()
+        isOnSecondChance.value = false
       } else {
-        fallbackShare(message)
+        exercises.answerWasCorrect.value = false
+        if (attemptCount.value < maxAttempts.value) {
+          isOnSecondChance.value = true // ✅ Use composable message method
+          exercises.confirmation.value = exercises.getSecondChanceMessage(exerciseOrQuiz)
+          sound.playErrorSound?.()
+          return
+        } else {
+          lessonOrchestrator.mistakeCount.value++
+          lessonOrchestrator.earnedPoints.value = Math.max(0, lessonOrchestrator.earnedPoints.value - 2)
+          showCorrectAnswer.value = true // ✅ Use composable display method
+          correctAnswerText.value = exercises.getCorrectAnswerDisplay(exerciseOrQuiz)
+          exercises.confirmation.value = exercises.getFinalFailureMessage(exerciseOrQuiz, correctAnswerText.value)
+          isOnSecondChance.value = false
+          sound.playErrorSound?.()
+          if (lessonOrchestrator.mistakeCount.value >= 2) {
+            await explanation.generateSmartHintForMistakes?.(
+              exerciseOrQuiz,
+              lessonOrchestrator.mistakeCount.value,
+              { lessonId: lessonOrchestrator.lesson.value._id, userAnswer: exercises.getCurrentUserAnswer(), correctAnswer: correctAnswerText.value }
+            )
+          }
+        }
+      }
+      await lessonOrchestrator.saveProgress()
+    }
+    // ==========================================
+    // NAVIGATION FUNCTIONS
+    // ==========================================
+    const resetAttempts = () => {
+      attemptCount.value = 0
+      isOnSecondChance.value = false
+      showCorrectAnswer.value = false
+      correctAnswerText.value = ''
+      exercises.confirmation.value = ''
+      exercises.answerWasCorrect.value = false
+      initializationTracker.value = { currentExerciseId: null, initialized: false }
+    }
+    const moveToNextStep = () => {
+      resetAttempts()
+      if (exercises.isLastExercise?.(lessonOrchestrator.currentStep.value) || exercises.isLastQuiz?.(lessonOrchestrator.currentStep.value)) {
+        lessonOrchestrator.goNext()
+      } else {
+        if (lessonOrchestrator.currentStep.value.type === 'exercise' || lessonOrchestrator.currentStep.value.type === 'practice') {
+          exercises.goToNextExercise(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+        } else if (lessonOrchestrator.currentStep.value.type === 'quiz') {
+          exercises.goToNextQuiz(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+        }
       }
     }
-    
-    const fallbackShare = (message) => {
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(message).then(() => {
-          alert('📋 Результат скопирован в буфер обмена!')
-        }).catch(() => {
-          alert('📤 ' + message)
-        })
-      } else {
-        alert('📤 ' + message)
-      }
+    const goToNextExercise = () => {
+      resetAttempts()
+      exercises.goToNextExercise(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+    }
+    const goToNextQuiz = () => {
+      resetAttempts()
+      exercises.goToNextQuiz(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
+    }
+    const goNext = () => {
+      resetAttempts()
+      lessonOrchestrator.goNext()
+    }
+    const goPrevious = () => {
+      resetAttempts()
+      lessonOrchestrator.goPrevious()
     }
 
-    const getMedalIcon = () => {
-      if (lessonOrchestrator.mistakeCount.value === 0) return '🥇'
-      if (lessonOrchestrator.mistakeCount.value <= 2) return '🥈'
-      return '🥉'
-    }
+    // ==========================================
+    // NAVIGATION FUNCTIONS FOR COMPLETION SCREEN
+    // ==========================================
+    const handleReturnToCatalogue = () => {
+      router.push({ name: 'CataloguePage' }); // Correctly uses the named route for CataloguePage
+    };
+
+    const handleGoToHomework = () => {
+      if (lessonOrchestrator.lesson.value?._id) {
+        router.push({
+          name: 'LessonHomeworkPage', // Uses the named route for lesson-specific homework
+          params: { lessonId: lessonOrchestrator.lesson.value._id },
+          query: {
+            title: lessonOrchestrator.lesson.value.title, // Pass title for context
+            subject: lessonOrchestrator.lesson.value.subject // Pass subject for context
+          }
+        });
+      } else {
+        console.error('❌ Cannot navigate to homework: Lesson ID is missing.');
+        // Fallback to the generic homework list page if lesson ID is not available
+        router.push({ name: 'HomeworkList' });
+      }
+    };
+
+    // ==========================================
+    // NEW: PROBLEM REPORTING FUNCTIONALITY
+    // ==========================================
+    const showProblemReportModal = ref(false);
+    const problemDescription = ref('');
+    const screenshotUrl = ref('');
+
+    const reportLessonProblem = () => {
+      showProblemReportModal.value = true;
+    };
+
+    const closeProblemReportModal = () => {
+      showProblemReportModal.value = false;
+      problemDescription.value = '';
+      screenshotUrl.value = '';
+    };
+
+    const submitProblemReport = () => {
+      const lessonName = lessonOrchestrator.lesson.value?.lessonName || 'Неизвестный урок';
+      const lessonId = lessonOrchestrator.lesson.value?._id || 'N/A';
+      let message = `Здравствуйте, у меня проблема с уроком "${lessonName}" (ID: ${lessonId}).\n\n`;
+
+      if (problemDescription.value) {
+        message += `Описание: ${problemDescription.value}\n`;
+      } else {
+        message += `Описание: Пользователь не предоставил подробного описания.\n`;
+      }
+
+      if (screenshotUrl.value) {
+        message += `Скриншот: ${screenshotUrl.value}\n`;
+      } else {
+        message += `Скриншот: Не прикреплен.\n`;
+      }
+
+      const encodedMessage = encodeURIComponent(message);
+      const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`;
+
+      window.open(telegramLink, '_blank');
+      console.log(`⚠️ User redirected to Telegram to report problem with Lesson: ${lessonName} (ID: ${lessonId})`);
+
+      closeProblemReportModal(); // Close modal after redirecting
+    };
+
+
+    // ==========================================
+    // SIMPLIFIED EXERCISE METHODS (Delegate to composable)
+    // ==========================================
+    const showHint = (exercise) => exercises.showHint(exercise);
+    const clearSmartHint = () => exercises.clearSmartHint();
+
+    // ==========================================
+    // AI HELP PANEL METHODS
+    // ==========================================
+    const toggleExplanationHelp = explanation.toggleExplanationHelp;
+    const askAboutExplanation = explanation.askAboutExplanation;
+    const sendAIMessage = explanation.sendAIMessage;
+    const askAI = explanation.askAI;
+    const clearAIChat = explanation.clearAIChat;
+
+    // ==========================================
+    // FLOATING AI ASSISTANT METHODS
+    // ==========================================
+    const toggleFloatingAI = explanation.toggleFloatingAI;
+    const closeFloatingAI = explanation.closeFloatingAI;
+    const sendFloatingAIMessage = explanation.sendFloatingAIMessage;
+
+    // ==========================================
+    // CONFETTI ANIMATION
+    // ==========================================
+    const confettiCanvas = ref(null);
+    const showConfetti = ref(false);
+
+    const startConfetti = () => {
+      showConfetti.value = true;
+      nextTick(() => {
+        // Implement your confetti logic here using confettiCanvas.value
+        // For example: confetti({ canvas: confettiCanvas.value, ... });
+        // This part would depend on your confetti library.
+        console.log('Starting confetti animation...');
+        setTimeout(() => {
+          showConfetti.value = false;
+        }, 5000); // Stop confetti after 5 seconds
+      });
+    };
 
     // ==========================================
     // WATCHERS
     // ==========================================
-    
-    watch(() => lessonOrchestrator.currentStep.value, (newStep, oldStep) => {
-      if (newStep && newStep !== oldStep) {
-        initializationTracker.value = {
-          currentExerciseId: null,
-          initialized: false
-        }
-        
-        if (newStep.type === 'exercise' || newStep.type === 'practice') {
-          const exercise = getCurrentExercise()
-          
-          if (exercise?.type === 'matching') {
-            exercises.initializeMatchingItems?.(exercise)
-          }
-        }
+    watch(() => lessonOrchestrator.lessonCompleted.value, (newVal) => {
+      if (newVal) {
+        console.log('Lesson completed watcher triggered!');
+        startConfetti();
       }
-    }, { immediate: false })
-
-    // Watch for lesson completion to trigger enhanced completion
-    watch(() => lessonOrchestrator.lessonCompleted.value, (isCompleted) => {
-      if (isCompleted && !extractionResults.value) {
-        console.log('🎯 Lesson completed detected, triggering extraction')
-        completeLessonWithExtraction()
-      }
-    })
+    });
 
     // ==========================================
-    // OVERRIDE LESSON COMPLETION METHOD
+    // SHARED PROPS AND METHODS
     // ==========================================
-    
-    // Override the default completion method to use our enhanced version
-    const originalCompleteLesson = lessonOrchestrator.completeLesson
-    lessonOrchestrator.completeLesson = completeLessonWithExtraction
 
-    // ==========================================
-    // RETURN STATEMENT (Much cleaner now!)
-    // ==========================================
-    
     return {
-      // Expose everything from composables
-      ...lessonOrchestrator,
-      ...vocabulary,
-      ...exercises,
-      ...paymentValidation,
-      ...sound,
-      ...explanation,
-      
-      // Second chance system
+      // Data and state from lessonOrchestrator
+      loading: lessonOrchestrator.loading,
+      error: lessonOrchestrator.error,
+      lesson: lessonOrchestrator.lesson,
+      started: lessonOrchestrator.started,
+      currentIndex: lessonOrchestrator.currentIndex,
+      steps: lessonOrchestrator.steps,
+      progressPercentage: lessonOrchestrator.progressPercentage,
+      currentStep: lessonOrchestrator.currentStep,
+      isInteractiveStep: lessonOrchestrator.isInteractiveStep,
+      showPaywallModal: paymentValidation.showPaywallModal,
+      showExitModal: lessonOrchestrator.showExitModal,
+      lessonCompleted: lessonOrchestrator.lessonCompleted,
+      readableTime: lessonOrchestrator.readableTime,
+      stars: lessonOrchestrator.stars,
+      mistakeCount: lessonOrchestrator.mistakeCount,
+      earnedPoints: lessonOrchestrator.earnedPoints,
+      medalLabel: lessonOrchestrator.medalLabel,
+      getMedalIcon: lessonOrchestrator.getMedalIcon,
+      progressInsight: lessonOrchestrator.progressInsight,
+      estimatedTime: lessonOrchestrator.estimatedTime,
+      previousProgress: lessonOrchestrator.previousProgress,
+      userAnswer: exercises.userAnswer,
+      confirmation: exercises.confirmation,
+      answerWasCorrect: exercises.answerWasCorrect,
+      currentHint: exercises.currentHint,
+      smartHint: explanation.smartHint,
+      fillBlankAnswers: exercises.fillBlankAnswers,
+      matchingPairs: exercises.matchingPairs,
+      selectedMatchingItem: exercises.selectedMatchingItem,
+      orderingItems: exercises.orderingItems,
+      dragDropPlacements: exercises.dragDropPlacements,
+      availableDragItems: exercises.availableDragItems,
+      dropZones: exercises.dropZones,
       attemptCount,
       maxAttempts,
-      isOnSecondChance,
       showCorrectAnswer,
       correctAnswerText,
-      
-      // Extraction and migration state
-      extractionResults,
-      migrationLoading,
+      isOnSecondChance,
       showMigrationPanel,
-      userToken,
-      
-      // Core methods
-      getUserProgress,
-      isLastStep,
-      handleSubmitOrNext,
+      migrationLoading,
+      extractionResults,
+
+      // AI Explanation and Chat
+      showExplanationHelp: explanation.showExplanationHelp,
+      explanationQuestion: explanation.explanationQuestion,
+      explanationAIResponse: explanation.explanationAIResponse,
+      isLoadingExplanation: explanation.isLoadingExplanation,
+      aiSuggestions: explanation.aiSuggestions,
+      aiChatInput: explanation.aiChatInput,
+      aiChatHistory: explanation.aiChatHistory,
+      aiIsLoading: explanation.aiIsLoading,
+      aiUsage: explanation.aiUsage,
+      showFloatingAI: explanation.showFloatingAI,
+      floatingAIInput: explanation.floatingAIInput,
+
+      // Vocabulary Modal
+      vocabularyModal: vocabulary.vocabularyModal,
+      cardAnimation: vocabulary.cardAnimation,
+      currentVocabWord: vocabulary.currentWord,
+      vocabProgress: vocabulary.progress,
+      isLastVocabWord: vocabulary.isLastWord,
+
+      // Methods
+      retryLoad: lessonOrchestrator.retryLoad,
+      startLesson: lessonOrchestrator.startLesson,
+      continuePreviousProgress: lessonOrchestrator.continuePreviousProgress,
+      confirmExit: lessonOrchestrator.confirmExit,
+      exitLesson: lessonOrchestrator.exitLesson,
+      cancelExit: lessonOrchestrator.cancelExit,
+      shareResult: lessonOrchestrator.shareResult,
+      goToVocabulary: lessonOrchestrator.goToVocabulary, // Assuming this exists or should be handled
+      getLessonProgress: lessonOrchestrator.getLessonProgress,
+
+      // Exercise methods
       getCurrentExercise,
       getCurrentQuiz,
       getTotalExercises,
       getTotalQuizzes,
-      
-      // Enhanced completion methods
-      completeLessonWithExtraction,
-      extractLessonContent,
-      showCompletionMessage,
-      
-      // Migration methods
-      migrateLessonContent,
-      showMigrationPanelModal,
-      closeMigrationPanel,
-      
-      // Navigation
+      handleAnswerChanged,
+      updateFillBlankAnswer,
+      handleSubmitOrNext,
       goToNextExercise,
       goToNextQuiz,
       goNext,
       goPrevious,
-      resetAttempts,
-      moveToNextStep,
-      
+      showHint,
+      clearSmartHint,
+      handleMatchingItemSelected,
+      handleRemoveMatchingPair,
+      handleDragItemStart,
+      handleDragOverZone,
+      handleDragLeaveZone,
+      handleDropInZone,
+      handleRemoveDroppedItem,
+
+      // AI Help Panel Methods
+      toggleExplanationHelp,
+      askAboutExplanation,
+      sendAIMessage,
+      askAI,
+      clearAIChat,
+
+      // Floating AI Assistant Methods
+      toggleFloatingAI,
+      closeFloatingAI,
+      sendFloatingAIMessage,
+
       // Vocabulary methods
       initializeVocabularyModal,
       jumpToVocabWord,
@@ -1056,44 +1068,34 @@ export default {
       skipVocabularyModal,
       restartVocabulary,
       pronounceWord,
-      
-      // Simplified event handlers (delegates to composables)
-      handleAnswerChanged,
-      handleMatchingItemSelected,
-      handleRemoveMatchingPair,
-      handleDragItemStart,
-      handleDragOverZone,
-      handleDragLeaveZone,
-      handleDropInZone,
-      handleRemoveDroppedItem,
-      updateFillBlankAnswer,
-      showHint,
-      clearSmartHint,
-      
-      // AI and explanation methods
-      askAboutExplanation,
-      sendAIMessage,
-      sendFloatingAIMessage,
-      askAI,
-      clearAIChat,
-      toggleFloatingAI,
-      closeFloatingAI,
-      
-      // Utility methods
-      shareResult,
-      goToHomework,
-      goToVocabulary,
-      getMedalIcon,
-      
-      // Additional properties from composables
-      availableDragItems: exercises.availableDragItems,
-      dropZones: exercises.dropZones
+
+      // Migration
+      migrateLessonContent,
+      showMigrationPanelModal,
+      closeMigrationPanel,
+
+      // Confetti
+      confettiCanvas,
+      showConfetti,
+
+      // Corrected Navigation
+      handleReturnToCatalogue,
+      handleGoToHomework,
+
+      // New: Problem Reporting
+      showProblemReportModal,
+      problemDescription,
+      screenshotUrl,
+      reportLessonProblem,
+      closeProblemReportModal,
+      submitProblemReport,
     }
   }
 }
 </script>
 
 <style scoped>
+/* Existing styles from LessonPage.css are imported */
 @import "@/assets/css/LessonPage.css";
 
 /* NEW: Additional styles for extraction features */
@@ -1235,6 +1237,111 @@ export default {
 }
 
 .cancel-btn:hover {
+  background: #e8eaed;
+  transform: translateY(-1px);
+}
+
+/* NEW: Styles for the problem report modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.modal-content h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.modal-content p {
+  margin: 0;
+  color: #666;
+  line-height: 1.6;
+}
+
+.form-group {
+  text-align: left;
+  width: 100%;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.form-group input[type="text"],
+.form-group textarea {
+  width: calc(100% - 20px); /* Adjust for padding */
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  box-sizing: border-box; /* Include padding in width */
+}
+
+.form-group textarea {
+  resize: vertical; /* Allow vertical resizing */
+  min-height: 80px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.confirm-btn {
+  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%); /* Green gradient for confirm */
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.confirm-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(76, 175, 80, 0.4);
+}
+
+.btn-secondary {
+  background: #f1f3f4;
+  color: #5f6368;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
   background: #e8eaed;
   transform: translateY(-1px);
 }
