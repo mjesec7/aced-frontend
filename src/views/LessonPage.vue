@@ -41,6 +41,100 @@
       </div>
     </div>
 
+    <!-- Enhanced Problem Report Modal -->
+    <div v-if="showProblemReportModal" class="modal-overlay" @click.self="closeProblemReportModal">
+      <div class="problem-report-modal">
+        <div class="modal-header">
+          <h3>⚠️ Сообщить о проблеме с уроком</h3>
+          <button @click="closeProblemReportModal" class="close-btn">✕</button>
+        </div>
+        
+        <div class="modal-body">
+          <p class="modal-description">
+            Помогите нам улучшить урок! Опишите проблему подробно и приложите скриншот, если это возможно.
+          </p>
+          
+          <div class="form-group">
+            <label for="problemType">Тип проблемы:</label>
+            <select id="problemType" v-model="problemType" class="form-select">
+              <option value="">Выберите тип проблемы</option>
+              <option value="content">Ошибка в содержании</option>
+              <option value="technical">Техническая проблема</option>
+              <option value="interface">Проблема с интерфейсом</option>
+              <option value="exercise">Ошибка в упражнении</option>
+              <option value="audio">Проблема со звуком</option>
+              <option value="other">Другое</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="problemDescription">Подробное описание проблемы: <span class="required">*</span></label>
+            <textarea 
+              id="problemDescription" 
+              v-model="problemDescription" 
+              rows="4" 
+              placeholder="Опишите проблему как можно подробнее: что произошло, на каком шаге, что вы ожидали увидеть..."
+              class="form-textarea"
+              :class="{ 'error': showValidationError && !problemDescription.trim() }"
+            ></textarea>
+            <div v-if="showValidationError && !problemDescription.trim()" class="error-message">
+              Пожалуйста, опишите проблему
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="screenshotUrl">Ссылка на скриншот или фото (необязательно):</label>
+            <input 
+              type="url" 
+              id="screenshotUrl" 
+              v-model="screenshotUrl" 
+              placeholder="https://example.com/screenshot.png или вставьте ссылку с облачного хранилища"
+              class="form-input"
+            >
+            <div class="help-text">
+              💡 Совет: Сделайте скриншот и загрузите его на imgbb.com, imgur.com или Google Drive, затем вставьте ссылку сюда
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="contactInfo">Ваш контакт для обратной связи (необязательно):</label>
+            <input 
+              type="text" 
+              id="contactInfo" 
+              v-model="contactInfo" 
+              placeholder="Telegram @username, email или телефон"
+              class="form-input"
+            >
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button @click="closeProblemReportModal" class="cancel-btn">
+            Отмена
+          </button>
+          <button 
+            @click="submitProblemReport" 
+            class="submit-btn"
+            :disabled="isSubmitting"
+          >
+            {{ isSubmitting ? '📤 Отправка...' : '📤 Отправить отчет' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success notification -->
+    <div v-if="showSuccessMessage" class="success-notification">
+      <div class="success-content">
+        <div class="success-icon">✅</div>
+        <div class="success-text">
+          <h4>Спасибо за отчет!</h4>
+          <p>Мы получили вашу информацию и рассмотрим проблему в ближайшее время.</p>
+        </div>
+        <button @click="closeSuccessMessage" class="close-success">✕</button>
+      </div>
+    </div>
+
     <!-- Vocabulary Learning Modal -->
     <VocabularyModal
       v-if="vocabularyModal.isVisible"
@@ -76,7 +170,7 @@
     <!-- Main Lesson Content -->
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
 
-      <!-- Top Header -->
+      <!-- Top Header with Problem Report Button -->
       <LessonHeader
         :lesson="lesson"
         :current-step="currentIndex + 1"
@@ -84,6 +178,7 @@
         :formatted-time="formattedTime"
         :stars="stars"
         @exit="confirmExit"
+        @report-problem="openProblemReportModal"
       />
 
       <!-- Progress Bar -->
@@ -174,7 +269,7 @@
             :ai-chat-input="aiChatInput"
             :ai-chat-history="aiChatHistory"
             :ai-is-loading="aiIsLoading"
-            :ai-usage="ai-usage"
+            :ai-usage="aiUsage"
             @send-message="sendAIMessage"
             @ask-ai="askAI"
             @clear-chat="clearAIChat"
@@ -212,31 +307,11 @@
     >
       <!-- Slot for additional buttons/content in CompletionScreen -->
       <template #extra-actions>
-        <button @click="reportLessonProblem" class="btn-secondary">
+        <button @click="openProblemReportModal" class="btn-secondary">
           ⚠️ Сообщить о проблеме с уроком
         </button>
       </template>
     </CompletionScreen>
-
-    <!-- Problem Report Modal -->
-    <div v-if="showProblemReportModal" class="modal-overlay">
-      <div class="modal-content">
-        <h3>Сообщить о проблеме с уроком</h3>
-        <p>Пожалуйста, прикрепите скриншот (если есть) и подробно объясните, что пошло не так.</p>
-        <div class="form-group">
-          <label for="problemDescription">Описание проблемы:</label>
-          <textarea id="problemDescription" v-model="problemDescription" rows="5" placeholder="Опишите проблему здесь..."></textarea>
-        </div>
-        <div class="form-group">
-          <label for="screenshotUrl">Ссылка на скриншот (необязательно):</label>
-          <input type="text" id="screenshotUrl" v-model="screenshotUrl" placeholder="Вставьте ссылку на изображение...">
-        </div>
-        <div class="modal-actions">
-          <button @click="submitProblemReport" class="confirm-btn">Отправить отчет</button>
-          <button @click="closeProblemReportModal" class="cancel-btn">Отмена</button>
-        </div>
-      </div>
-    </div>
 
     <!-- Migration Panel (Admin/User) -->
     <div v-if="showMigrationPanel" class="migration-panel">
@@ -286,8 +361,8 @@
 </template>
 
 <script>
-// ✅ FULLY CLEANED LessonPage.vue <script> - Exercise logic moved to composable
-import { computed, ref, watch, nextTick } from 'vue'
+// ✅ FULLY UPDATED LessonPage.vue <script> with Problem Reporting Integration
+import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'; // Import useRouter
 
 // Import composables
@@ -326,6 +401,7 @@ export default {
 
   setup() {
     const router = useRouter(); // Initialize router
+    
     // ==========================================
     // COMPOSABLES INITIALIZATION
     // ==========================================
@@ -363,6 +439,18 @@ export default {
     const showMigrationPanel = ref(false)
 
     // ==========================================
+    // PROBLEM REPORTING STATE
+    // ==========================================
+    const showProblemReportModal = ref(false);
+    const problemDescription = ref('');
+    const problemType = ref('');
+    const screenshotUrl = ref('');
+    const contactInfo = ref('');
+    const isSubmitting = ref(false);
+    const showValidationError = ref(false);
+    const showSuccessMessage = ref(false);
+
+    // ==========================================
     // COMPUTED PROPERTIES
     // ==========================================
 
@@ -381,6 +469,181 @@ export default {
     const userToken = computed(() => {
       return lessonOrchestrator.currentUser?.value?.token || localStorage.getItem('authToken')
     })
+
+    // ==========================================
+    // PROBLEM REPORTING METHODS
+    // ==========================================
+    const openProblemReportModal = () => {
+      showProblemReportModal.value = true;
+      resetProblemForm();
+    };
+
+    const closeProblemReportModal = () => {
+      showProblemReportModal.value = false;
+      resetProblemForm();
+    };
+
+    const resetProblemForm = () => {
+      problemDescription.value = '';
+      problemType.value = '';
+      screenshotUrl.value = '';
+      contactInfo.value = '';
+      isSubmitting.value = false;
+      showValidationError.value = false;
+    };
+
+    const validateForm = () => {
+      const isValid = problemDescription.value.trim().length > 0;
+      showValidationError.value = !isValid;
+      return isValid;
+    };
+
+    const getCurrentLessonInfo = () => {
+      return {
+        lessonName: lessonOrchestrator.lesson.value?.lessonName || 'Неизвестный урок',
+        lessonId: lessonOrchestrator.lesson.value?._id || 'N/A',
+        currentStep: lessonOrchestrator.currentIndex.value + 1,
+        totalSteps: lessonOrchestrator.steps.value?.length || 0,
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toLocaleString('ru-RU'),
+        url: window.location.href
+      };
+    };
+
+    const formatProblemReport = () => {
+      const lessonInfo = getCurrentLessonInfo();
+      
+      let message = `🚨 ОТЧЕТ О ПРОБЛЕМЕ В УРОКЕ\n\n`;
+      
+      // Lesson Information
+      message += `📚 Урок: ${lessonInfo.lessonName}\n`;
+      message += `🆔 ID урока: ${lessonInfo.lessonId}\n`;
+      message += `📍 Текущий шаг: ${lessonInfo.currentStep}/${lessonInfo.totalSteps}\n`;
+      message += `🕐 Время: ${lessonInfo.timestamp}\n\n`;
+      
+      // Problem Details
+      if (problemType.value) {
+        const typeLabels = {
+          content: 'Ошибка в содержании',
+          technical: 'Техническая проблема',
+          interface: 'Проблема с интерфейсом',
+          exercise: 'Ошибка в упражнении',
+          audio: 'Проблема со звуком',
+          other: 'Другое'
+        };
+        message += `⚠️ Тип проблемы: ${typeLabels[problemType.value]}\n\n`;
+      }
+      
+      message += `📝 Описание проблемы:\n${problemDescription.value}\n\n`;
+      
+      if (screenshotUrl.value) {
+        message += `📸 Скриншот: ${screenshotUrl.value}\n\n`;
+      }
+      
+      if (contactInfo.value) {
+        message += `📞 Контакт: ${contactInfo.value}\n\n`;
+      }
+      
+      // Technical Information
+      message += `🔧 ТЕХНИЧЕСКАЯ ИНФОРМАЦИЯ:\n`;
+      message += `🌐 URL: ${lessonInfo.url}\n`;
+      message += `💻 Браузер: ${lessonInfo.userAgent}\n`;
+      
+      return message;
+    };
+
+    const submitProblemReport = async () => {
+      if (!validateForm()) {
+        return;
+      }
+      
+      try {
+        isSubmitting.value = true;
+        
+        const reportMessage = formatProblemReport();
+        const encodedMessage = encodeURIComponent(reportMessage);
+        const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`;
+        
+        // Log the report for analytics (optional)
+        console.log('📊 Problem Report Submitted:', {
+          lessonId: getCurrentLessonInfo().lessonId,
+          problemType: problemType.value,
+          hasScreenshot: !!screenshotUrl.value,
+          hasContact: !!contactInfo.value,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Optional: Send to your analytics API
+        try {
+          await fetch('/api/analytics/problem-report', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${userToken.value}`
+            },
+            body: JSON.stringify({
+              lessonId: getCurrentLessonInfo().lessonId,
+              problemType: problemType.value,
+              description: problemDescription.value,
+              hasScreenshot: !!screenshotUrl.value,
+              hasContact: !!contactInfo.value,
+              userAgent: navigator.userAgent,
+              timestamp: new Date().toISOString()
+            })
+          });
+        } catch (analyticsError) {
+          console.warn('Analytics logging failed:', analyticsError);
+          // Don't block the main flow if analytics fails
+        }
+        
+        // Open Telegram with the formatted message
+        window.open(telegramLink, '_blank');
+        
+        // Show success message
+        closeProblemReportModal();
+        showSuccessMessage.value = true;
+        
+        // Auto-hide success message after 5 seconds
+        setTimeout(() => {
+          showSuccessMessage.value = false;
+        }, 5000);
+        
+      } catch (error) {
+        console.error('❌ Error submitting problem report:', error);
+        
+        // Show error toast if available
+        if (lessonOrchestrator.showToast) {
+          lessonOrchestrator.showToast('Ошибка при отправке отчета. Попробуйте еще раз.', 'error');
+        } else {
+          alert('Ошибка при отправке отчета. Попробуйте еще раз.');
+        }
+      } finally {
+        isSubmitting.value = false;
+      }
+    };
+
+    const closeSuccessMessage = () => {
+      showSuccessMessage.value = false;
+    };
+
+    // Alternative method: Direct problem report without modal (for quick access)
+    const quickProblemReport = (issueType = 'technical') => {
+      const lessonInfo = getCurrentLessonInfo();
+      const message = `🚨 Быстрый отчет о проблеме в уроке "${lessonInfo.lessonName}" (Шаг ${lessonInfo.currentStep}/${lessonInfo.totalSteps}). Тип: ${issueType}. Время: ${lessonInfo.timestamp}`;
+      const encodedMessage = encodeURIComponent(message);
+      const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`;
+      window.open(telegramLink, '_blank');
+    };
+
+    // Keyboard shortcut support (Ctrl+Shift+R to report problem)
+    const handleKeyboardShortcuts = (event) => {
+      if (event.ctrlKey && event.shiftKey && event.key === 'R') {
+        event.preventDefault();
+        if (!showProblemReportModal.value && lessonOrchestrator.started.value && !lessonOrchestrator.lessonCompleted.value) {
+          openProblemReportModal();
+        }
+      }
+    };
 
     // ==========================================
     // LESSON COMPLETION WITH EXTRACTION
@@ -646,6 +909,7 @@ export default {
         sound.pronounceWord?.(word)
       }
     }
+
     // ==========================================
     // EXERCISE INITIALIZATION (Simplified)
     // ==========================================
@@ -663,6 +927,7 @@ export default {
       }
       return exercise
     }
+    
     const getCurrentQuiz = () => {
       return exercises.getCurrentQuiz(lessonOrchestrator.currentStep.value)
     }
@@ -682,17 +947,21 @@ export default {
       console.log('📝 Answer changed:', newAnswer)
       exercises.updateUserAnswer(newAnswer, getCurrentExercise())
     }
+    
     const updateFillBlankAnswer = ({ index, value }) => {
       exercises.updateFillBlankAnswer(index, value)
     }
+    
     const handleMatchingItemSelected = (selection) => {
       console.log('🔗 Handling matching item selection:', selection)
       exercises.handleMatchingSelection(selection)
     }
+    
     const handleRemoveMatchingPair = (pairIndex) => {
       console.log('🗑️ Handling remove matching pair:', pairIndex)
       exercises.removeMatchingPair(pairIndex)
     }
+    
     const handleDragItemStart = ({ item, type }) => {
       exercises.handleDragItemStart({ item, type });
     }
@@ -784,6 +1053,7 @@ export default {
       }
       await lessonOrchestrator.saveProgress()
     }
+
     // ==========================================
     // NAVIGATION FUNCTIONS
     // ==========================================
@@ -796,6 +1066,7 @@ export default {
       exercises.answerWasCorrect.value = false
       initializationTracker.value = { currentExerciseId: null, initialized: false }
     }
+    
     const moveToNextStep = () => {
       resetAttempts()
       if (exercises.isLastExercise?.(lessonOrchestrator.currentStep.value) || exercises.isLastQuiz?.(lessonOrchestrator.currentStep.value)) {
@@ -808,18 +1079,22 @@ export default {
         }
       }
     }
+    
     const goToNextExercise = () => {
       resetAttempts()
       exercises.goToNextExercise(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
     }
+    
     const goToNextQuiz = () => {
       resetAttempts()
       exercises.goToNextQuiz(lessonOrchestrator.currentStep.value, lessonOrchestrator.goNext)
     }
+    
     const goNext = () => {
       resetAttempts()
       lessonOrchestrator.goNext()
     }
+    
     const goPrevious = () => {
       resetAttempts()
       lessonOrchestrator.goPrevious()
@@ -848,50 +1123,6 @@ export default {
         router.push({ name: 'HomeworkList' });
       }
     };
-
-    // ==========================================
-    // NEW: PROBLEM REPORTING FUNCTIONALITY
-    // ==========================================
-    const showProblemReportModal = ref(false);
-    const problemDescription = ref('');
-    const screenshotUrl = ref('');
-
-    const reportLessonProblem = () => {
-      showProblemReportModal.value = true;
-    };
-
-    const closeProblemReportModal = () => {
-      showProblemReportModal.value = false;
-      problemDescription.value = '';
-      screenshotUrl.value = '';
-    };
-
-    const submitProblemReport = () => {
-      const lessonName = lessonOrchestrator.lesson.value?.lessonName || 'Неизвестный урок';
-      const lessonId = lessonOrchestrator.lesson.value?._id || 'N/A';
-      let message = `Здравствуйте, у меня проблема с уроком "${lessonName}" (ID: ${lessonId}).\n\n`;
-
-      if (problemDescription.value) {
-        message += `Описание: ${problemDescription.value}\n`;
-      } else {
-        message += `Описание: Пользователь не предоставил подробного описания.\n`;
-      }
-
-      if (screenshotUrl.value) {
-        message += `Скриншот: ${screenshotUrl.value}\n`;
-      } else {
-        message += `Скриншот: Не прикреплен.\n`;
-      }
-
-      const encodedMessage = encodeURIComponent(message);
-      const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`;
-
-      window.open(telegramLink, '_blank');
-      console.log(`⚠️ User redirected to Telegram to report problem with Lesson: ${lessonName} (ID: ${lessonId})`);
-
-      closeProblemReportModal(); // Close modal after redirecting
-    };
-
 
     // ==========================================
     // SIMPLIFIED EXERCISE METHODS (Delegate to composable)
@@ -935,6 +1166,20 @@ export default {
     };
 
     // ==========================================
+    // LIFECYCLE HOOKS
+    // ==========================================
+    
+    // Add keyboard event listener when component is mounted
+    onMounted(() => {
+      document.addEventListener('keydown', handleKeyboardShortcuts);
+    });
+
+    // Remove keyboard event listener when component is unmounted
+    onUnmounted(() => {
+      document.removeEventListener('keydown', handleKeyboardShortcuts);
+    });
+
+    // ==========================================
     // WATCHERS
     // ==========================================
     watch(() => lessonOrchestrator.lessonCompleted.value, (newVal) => {
@@ -945,7 +1190,7 @@ export default {
     });
 
     // ==========================================
-    // SHARED PROPS AND METHODS
+    // RETURN ALL PROPS AND METHODS
     // ==========================================
 
     return {
@@ -971,6 +1216,9 @@ export default {
       progressInsight: lessonOrchestrator.progressInsight,
       estimatedTime: lessonOrchestrator.estimatedTime,
       previousProgress: lessonOrchestrator.previousProgress,
+      formattedTime: lessonOrchestrator.formattedTime,
+
+      // Exercise state
       userAnswer: exercises.userAnswer,
       confirmation: exercises.confirmation,
       answerWasCorrect: exercises.answerWasCorrect,
@@ -983,6 +1231,10 @@ export default {
       dragDropPlacements: exercises.dragDropPlacements,
       availableDragItems: exercises.availableDragItems,
       dropZones: exercises.dropZones,
+      currentExerciseIndex: exercises.currentExerciseIndex,
+      currentQuizIndex: exercises.currentQuizIndex,
+
+      // Local lesson state
       attemptCount,
       maxAttempts,
       showCorrectAnswer,
@@ -1004,6 +1256,7 @@ export default {
       aiUsage: explanation.aiUsage,
       showFloatingAI: explanation.showFloatingAI,
       floatingAIInput: explanation.floatingAIInput,
+      quickSuggestions: explanation.quickSuggestions,
 
       // Vocabulary Modal
       vocabularyModal: vocabulary.vocabularyModal,
@@ -1012,7 +1265,21 @@ export default {
       vocabProgress: vocabulary.progress,
       isLastVocabWord: vocabulary.isLastWord,
 
-      // Methods
+      // Problem Reporting
+      showProblemReportModal,
+      problemDescription,
+      problemType,
+      screenshotUrl,
+      contactInfo,
+      isSubmitting,
+      showValidationError,
+      showSuccessMessage,
+
+      // Confetti
+      confettiCanvas,
+      showConfetti,
+
+      // Lesson orchestrator methods
       retryLoad: lessonOrchestrator.retryLoad,
       startLesson: lessonOrchestrator.startLesson,
       continuePreviousProgress: lessonOrchestrator.continuePreviousProgress,
@@ -1020,7 +1287,7 @@ export default {
       exitLesson: lessonOrchestrator.exitLesson,
       cancelExit: lessonOrchestrator.cancelExit,
       shareResult: lessonOrchestrator.shareResult,
-      goToVocabulary: lessonOrchestrator.goToVocabulary, // Assuming this exists or should be handled
+      goToVocabulary: lessonOrchestrator.goToVocabulary,
       getLessonProgress: lessonOrchestrator.getLessonProgress,
 
       // Exercise methods
@@ -1069,26 +1336,21 @@ export default {
       restartVocabulary,
       pronounceWord,
 
-      // Migration
+      // Migration methods
       migrateLessonContent,
       showMigrationPanelModal,
       closeMigrationPanel,
 
-      // Confetti
-      confettiCanvas,
-      showConfetti,
-
-      // Corrected Navigation
+      // Navigation methods
       handleReturnToCatalogue,
       handleGoToHomework,
 
-      // New: Problem Reporting
-      showProblemReportModal,
-      problemDescription,
-      screenshotUrl,
-      reportLessonProblem,
+      // Problem Reporting methods
+      openProblemReportModal,
       closeProblemReportModal,
       submitProblemReport,
+      closeSuccessMessage,
+      quickProblemReport
     }
   }
 }
