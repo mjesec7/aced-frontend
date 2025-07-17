@@ -177,12 +177,19 @@
 
 <script>
 import { mapGetters } from 'vuex';
-import axios from 'axios';
+import { 
+  getTopics, 
+  getTopicById, 
+  getAllLessons, 
+  getLessonsByTopic,
+  getUserProgress,
+  getUserStudyList,
+  addToStudyList,
+  removeFromStudyList 
+} from '@/api';
 import { auth } from '@/firebase';
 import StudyCard from '@/components/Profile/StudyCard.vue';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
-
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default {
   name: 'MainPage',
@@ -197,7 +204,7 @@ export default {
       loadingStudyList: true,
       searchQuery: '',
       filterSubject: '',
-      filterType: '', // New filter for free/premium/pro
+      filterType: '',
       showPaywall: false,
       requestedTopicId: null,
       lang: localStorage.getItem('lang') || 'en',
@@ -272,14 +279,12 @@ export default {
   methods: {
     // ✅ ENHANCED: Topic type detection methods
     getTopicType(topic) {
-      // Check various possible fields for topic type
       const type = topic.type || topic.accessType || topic.pricing || topic.plan;
       
       if (!type || type === 'free' || type === 'public') return 'free';
       if (type === 'premium' || type === 'paid' || type === 'start') return 'premium';
       if (type === 'pro' || type === 'professional') return 'pro';
       
-      // Fallback: if no explicit type, assume free
       return 'free';
     },
     
@@ -315,26 +320,6 @@ export default {
       if (hasAccess) return 'accessible';
       if (topicType === 'free') return 'accessible';
       return 'restricted';
-    },
-    
-    getAccessIcon(topic) {
-      const status = this.getAccessStatus(topic);
-      switch (status) {
-        case 'accessible': return '✅';
-        case 'restricted': return '🔒';
-        default: return '✅';
-      }
-    },
-    
-    getAccessText(topic) {
-      const status = this.getAccessStatus(topic);
-      const topicType = this.getTopicType(topic);
-      
-      if (status === 'accessible') {
-        return topicType === 'free' ? 'Бесплатный доступ' : 'У вас есть доступ';
-      }
-      
-      return `Требуется ${this.getTopicTypeLabel(topic)}`;
     },
     
     hasTopicAccess(topic) {
@@ -394,11 +379,11 @@ export default {
     },
     
     getTopicName(topic) {
-      return topic.name?.[this.lang] || topic.name?.en || topic.name || 'Без названия';
+      return topic.name?.[this.lang] || topic.name?.en || topic.name || topic.topicName || 'Без названия';
     },
     
     getTopicDescription(topic) {
-      return topic.description?.[this.lang] || topic.description?.en || topic.description || 'Описание отсутствует';
+      return topic.description?.[this.lang] || topic.description?.en || topic.description || topic.topicDescription || 'Описание отсутствует';
     },
 
     // Enhanced error handling method
@@ -437,111 +422,235 @@ export default {
       return { message: errorMessage, originalError: error };
     },
 
+    // ✅ FIXED: Get recommendations using proper API
     async fetchRecommendations() {
       try {
         this.loadingRecommendations = true;
         this.errors.recommendations = null;
         
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) {
-          throw new Error('No authentication token available');
+        console.log('🔍 Fetching recommendations...');
+        
+        // Strategy 1: Try to get actual topics with lessons
+        const topicsResult = await getTopics({ includeStats: true });
+        
+        if (topicsResult.success && topicsResult.data.length > 0) {
+          console.log(`📚 Found ${topicsResult.data.length} topics`);
+          
+          // Get lessons for each topic to build complete topic data
+          const topicsWithLessons = await Promise.allSettled(
+            topicsResult.data.map(async (topic) => {
+              try {
+                // Get lessons for this topic
+                const lessonsResult = await getLessonsByTopic(topic._id);
+                
+                if (lessonsResult.success && lessonsResult.data.length > 0) {
+                  return {
+                    ...topic,
+                    lessons: lessonsResult.data,
+                    lessonCount: lessonsResult.data.length,
+                    totalTime: lessonsResult.data.length * 10, // 10 min per lesson
+                    hasLessons: true
+                  };
+                }
+                
+                return null;
+              } catch (error) {
+                console.warn(`⚠️ Failed to get lessons for topic ${topic._id}:`, error.message);
+                return null;
+              }
+            })
+          );
+          
+          // Filter successful results
+          const validTopics = topicsWithLessons
+            .filter(result => result.status === 'fulfilled' && result.value !== null)
+            .map(result => result.value);
+          
+          if (validTopics.length > 0) {
+            this.recommendations = validTopics;
+            this.extractSubjects(this.recommendations);
+            console.log(`✅ Successfully loaded ${validTopics.length} recommendations with lessons`);
+            return;
+          }
         }
         
-        const headers = { Authorization: `Bearer ${token}` };
+        // Strategy 2: Fallback - build topics from lessons (like CataloguePage)
+        console.log('🔄 Fallback: Building topics from lessons...');
         
-        const response = await axios.get(`${BASE_URL}/users/${this.userId}/recommendations`, { headers });
-        const data = response.data;
+        const lessonsResult = await getAllLessons();
+        if (lessonsResult.success && lessonsResult.data.length > 0) {
+          const allLessons = lessonsResult.data;
+          console.log(`📚 Got ${allLessons.length} lessons for topic building`);
+          
+          // Group lessons by topicId and build topic objects
+          const topicsMap = new Map();
+          
+          allLessons.forEach(lesson => {
+            if (!lesson || !lesson.topicId) return;
+            
+            let topicId = lesson.topicId;
+            if (typeof topicId === 'object' && topicId !== null) {
+              topicId = topicId._id || topicId.id || String(topicId);
+            } else if (topicId) {
+              topicId = String(topicId);
+            } else {
+              return;
+            }
+            
+            const topicName = this.getTopicNameFromLesson(lesson);
+            if (!topicId || !topicName) return;
+
+            if (!topicsMap.has(topicId)) {
+              topicsMap.set(topicId, {
+                _id: topicId,
+                id: topicId,
+                name: topicName,
+                topicName: topicName,
+                subject: lesson.subject || 'General',
+                level: lesson.level || 1,
+                description: `Курс по теме "${topicName}"`,
+                type: lesson.type || 'free',
+                lessons: [lesson],
+                lessonCount: 1,
+                totalTime: 10,
+                isActive: true,
+                hasLessons: true
+              });
+            } else {
+              const topic = topicsMap.get(topicId);
+              topic.lessons.push(lesson);
+              topic.lessonCount++;
+              topic.totalTime += 10;
+            }
+          });
+          
+          const builtTopics = Array.from(topicsMap.values())
+            .filter(topic => topic.lessons.length > 0)
+            .slice(0, 20); // Limit recommendations
+          
+          this.recommendations = builtTopics;
+          this.extractSubjects(this.recommendations);
+          console.log(`✅ Built ${builtTopics.length} topic recommendations from lessons`);
+          return;
+        }
         
-        this.recommendations = Array.isArray(data) ? data : [];
-        this.extractSubjects(this.recommendations);
-        
+        // No data available
+        console.log('ℹ️ No topics or lessons available');
+        this.recommendations = [];
         
       } catch (err) {
         const errorInfo = this.handleApiError(err, 'fetch-recommendations');
         this.errors.recommendations = errorInfo.message;
-        
         this.recommendations = [];
         
         if (err.response?.status === 404) {
           this.errors.recommendations = null;
         }
+        
+        console.error('❌ Failed to fetch recommendations:', err);
       } finally {
         this.loadingRecommendations = false;
       }
     },
 
+    // ✅ COMPLETELY FIXED: Fetch study list using proper API methods
     async fetchStudyList() {
       try {
         this.loadingStudyList = true;
         this.errors.studyList = null;
         this.invalidTopicsCleanedUp = 0;
         
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) {
-          throw new Error('No authentication token available');
-        }
+        console.log('🔍 Fetching study list...');
         
-        const headers = { Authorization: `Bearer ${token}` };
+        // Get user's study list
+        const studyListResult = await getUserStudyList(this.userId);
         
-        const { data: studyListEntries } = await axios.get(`${BASE_URL}/users/${this.userId}/study-list`, { headers });
-        
-        if (!Array.isArray(studyListEntries) || studyListEntries.length === 0) {
+        if (!studyListResult.success || !Array.isArray(studyListResult.data) || studyListResult.data.length === 0) {
+          console.log('ℹ️ No study list entries found');
           this.studyList = [];
           return;
         }
         
+        console.log(`📚 Found ${studyListResult.data.length} study list entries`);
+        
+        // Get user progress for calculating completion
         let userProgressData = [];
         try {
-          const progressResponse = await axios.get(`${BASE_URL}/users/${this.userId}/progress`, { headers });
-          userProgressData = progressResponse.data?.data || progressResponse.data || [];
+          const progressResult = await getUserProgress(this.userId);
+          if (progressResult.success) {
+            userProgressData = progressResult.data || [];
+            console.log(`📊 Loaded ${userProgressData.length} progress records`);
+          }
         } catch (progressError) {
           console.warn('⚠️ Failed to load progress data:', progressError.message);
         }
         
+        // Process each study list entry to build complete topic data
         const validTopics = [];
         
-        const topicPromises = studyListEntries.map(async (entry) => {
+        const topicPromises = studyListResult.data.map(async (entry) => {
           if (!entry.topicId) {
             console.warn('⚠️ Study list entry missing topicId:', entry);
             return null;
           }
           
           try {
+            console.log(`🔍 Processing topic: ${entry.topicId}`);
             
-            const topicRes = await axios.get(`${BASE_URL}/topics/${entry.topicId}`, { 
-              headers,
-              timeout: 10000
-            });
+            // ✅ Strategy 1: Try to get the topic directly
+            let topicData = null;
+            try {
+              const topicResult = await getTopicById(entry.topicId);
+              if (topicResult.success && topicResult.data) {
+                topicData = topicResult.data;
+                console.log(`✅ Got topic data: ${topicData.name || topicData.topicName}`);
+              }
+            } catch (topicError) {
+              console.warn(`⚠️ Failed to get topic ${entry.topicId} directly:`, topicError.message);
+            }
             
-            const topicData = topicRes.data?.data || topicRes.data;
+            // ✅ Strategy 2: Get lessons for this topic
+            let lessons = [];
+            try {
+              const lessonsResult = await getLessonsByTopic(entry.topicId);
+              if (lessonsResult.success && Array.isArray(lessonsResult.data)) {
+                lessons = lessonsResult.data;
+                console.log(`📚 Got ${lessons.length} lessons for topic ${entry.topicId}`);
+              }
+            } catch (lessonsError) {
+              console.warn(`⚠️ Failed to get lessons for topic ${entry.topicId}:`, lessonsError.message);
+            }
             
-            if (!topicData || !topicData._id) {
-              console.warn(`⚠️ Invalid topic data structure for ${entry.topicId}`);
+            // If no topic data and no lessons, skip this entry
+            if (!topicData && lessons.length === 0) {
+              console.warn(`⚠️ No data found for topic ${entry.topicId}, skipping`);
+              this.invalidTopicsCleanedUp++;
               return null;
             }
             
-            
-            let lessons = [];
-            
-            if (topicData.lessons && Array.isArray(topicData.lessons) && topicData.lessons.length > 0) {
-              lessons = topicData.lessons;
-            } else {
-              try {
-                const lessonsRes = await axios.get(`${BASE_URL}/lessons/topic/${entry.topicId}`, { 
-                  headers,
-                  timeout: 10000
-                });
-                
-                if (lessonsRes.status === 200) {
-                  lessons = Array.isArray(lessonsRes.data) ? lessonsRes.data : 
-                           Array.isArray(lessonsRes.data?.data) ? lessonsRes.data.data : [];
+            // ✅ Build/enhance topic data
+            if (!topicData && lessons.length > 0) {
+              // Build topic from lessons (like CataloguePage does)
+              const firstLesson = lessons[0];
+              topicData = {
+                _id: entry.topicId,
+                id: entry.topicId,
+                name: this.getTopicNameFromLesson(firstLesson),
+                topicName: this.getTopicNameFromLesson(firstLesson),
+                description: `Курс по теме "${this.getTopicNameFromLesson(firstLesson)}" содержит ${lessons.length} уроков`,
+                subject: firstLesson.subject || 'General',
+                level: firstLesson.level || 1,
+                type: firstLesson.type || 'free',
+                isActive: true,
+                metadata: {
+                  source: 'constructed-from-lessons',
+                  constructedAt: new Date().toISOString()
                 }
-              } catch (lessonsError) {
-                console.warn(`⚠️ Failed to fetch lessons for topic ${entry.topicId}:`, lessonsError.message);
-              }
+              };
+              console.log(`🏗️ Built topic data from lessons: ${topicData.name}`);
             }
             
-            
+            // ✅ Calculate progress from user progress data
             let completedLessons = 0;
             let totalStars = 0;
             let totalPoints = 0;
@@ -571,9 +680,12 @@ export default {
               else medal = 'bronze';
             }
             
-            return {
+            // ✅ Build final topic object
+            const finalTopic = {
               ...topicData,
               lessons: lessons,
+              lessonCount: lessons.length,
+              totalTime: lessons.length * 10, // 10 min per lesson estimate
               progress: {
                 percent: progressPercent,
                 medal: medal,
@@ -581,17 +693,26 @@ export default {
                 totalLessons: lessons.length,
                 stars: totalStars,
                 points: totalPoints
-              }
+              },
+              hasLessons: lessons.length > 0,
+              // Preserve original study list entry data
+              studyListEntry: entry
             };
+            
+            console.log(`✅ Built complete topic: ${finalTopic.name} (${finalTopic.progress.percent}% complete)`);
+            return finalTopic;
             
           } catch (error) {
             console.error(`❌ Error processing topic ${entry.topicId}:`, error);
+            this.invalidTopicsCleanedUp++;
             return null;
           }
         });
         
+        // Wait for all topic processing to complete
         const results = await Promise.allSettled(topicPromises);
         
+        // Collect valid topics
         results.forEach(result => {
           if (result.status === 'fulfilled' && result.value) {
             validTopics.push(result.value);
@@ -601,6 +722,10 @@ export default {
         this.studyList = validTopics;
         this.extractSubjects(this.studyList);
         
+        console.log(`✅ Successfully loaded ${validTopics.length} study list topics`);
+        if (this.invalidTopicsCleanedUp > 0) {
+          console.log(`🧹 Cleaned up ${this.invalidTopicsCleanedUp} invalid topic entries`);
+        }
         
       } catch (err) {
         const errorInfo = this.handleApiError(err, 'fetch-study-list');
@@ -609,6 +734,41 @@ export default {
         console.error('❌ Critical error in fetchStudyList:', err);
       } finally {
         this.loadingStudyList = false;
+      }
+    },
+
+    // ✅ Helper method to extract topic name from lesson (same as CataloguePage)
+    getTopicNameFromLesson(lesson) {
+      if (!lesson) return 'Без темы';
+      
+      try {
+        // Check various possible fields for topic name
+        if (typeof lesson.topic === 'string') {
+          return lesson.topic;
+        }
+        
+        if (lesson.translations && lesson.translations[this.lang] && lesson.translations[this.lang].topic) {
+          return String(lesson.translations[this.lang].topic);
+        }
+        
+        if (lesson.topic && typeof lesson.topic === 'object') {
+          if (lesson.topic[this.lang]) {
+            return String(lesson.topic[this.lang]);
+          }
+          if (lesson.topic.en) {
+            return String(lesson.topic.en);
+          }
+        }
+        
+        // Fallback to lessonName or other fields
+        if (lesson.lessonName) {
+          return `Topic: ${lesson.lessonName}`;
+        }
+        
+        return 'Без темы';
+      } catch (error) {
+        console.error('❌ Error getting topic name from lesson:', error);
+        return 'Без темы';
       }
     },
 
@@ -637,24 +797,33 @@ export default {
 
     async handleAddTopic(topic) {
       try {
-        const token = await auth.currentUser?.getIdToken();
-        if (!token) return alert('Пожалуйста, войдите в аккаунт.');
+        if (!topic || !topic._id) {
+          console.error('❌ Invalid topic data for adding');
+          return;
+        }
         
-        const headers = { Authorization: `Bearer ${token}` };
-        const url = `${BASE_URL}/users/${this.userId}/study-list`;
+        console.log('➕ Adding topic to study list:', topic.name || topic.topicName);
         
-        const payload = {
+        const topicData = {
           subject: topic.subject,
           level: topic.level,
           topic: this.getTopicName(topic),
           topicId: topic._id
         };
         
-        await axios.post(url, payload, { headers });
-        await this.fetchStudyList();
+        const result = await addToStudyList(this.userId, topicData);
         
-        this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
-        
+        if (result.success) {
+          // Refresh study list to show the new addition
+          await this.fetchStudyList();
+          
+          // Remove from recommendations
+          this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
+          
+          console.log('✅ Topic added successfully');
+        } else {
+          throw new Error(result.error || 'Failed to add topic');
+        }
         
       } catch (err) {
         const errorInfo = this.handleApiError(err, 'add-topic');
@@ -682,15 +851,27 @@ export default {
 
     async removeStudyCard(id) {
       try {
+        console.log('🗑️ Removing study card:', id);
+        
+        // Remove from local state first for immediate UI update
         this.studyList = this.studyList.filter(topic => topic._id !== id);
         
-        const token = await auth.currentUser?.getIdToken();
-        if (token) {
-          const headers = { Authorization: `Bearer ${token}` };
-          await axios.delete(`${BASE_URL}/users/${this.userId}/study-list/${id}`, { headers });
+        // Try to remove from backend
+        try {
+          const result = await removeFromStudyList(this.userId, id);
+          if (result.success) {
+            console.log('✅ Successfully removed from backend');
+          } else {
+            console.warn('⚠️ Backend removal failed, but UI updated');
+          }
+        } catch (backendError) {
+          console.warn('⚠️ Backend removal failed:', backendError.message);
+          // UI is already updated, so we continue
         }
+        
       } catch (error) {
         console.error('❌ Error removing study card:', error);
+        // If there's an error, refresh the study list to ensure consistency
         await this.fetchStudyList();
       }
     }
@@ -1378,34 +1559,6 @@ export default {
   
   .card-buttons {
     padding: 0 20px 20px 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  .title {
-    font-size: 1.5rem;
-  }
-  
-  .controls {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 16px;
-  }
-  
-  .search-input,
-  .filter-select {
-    width: 100%;
-  }
-  
-  .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  
-  .recommendations-section,
-  .study-section {
-    padding: 20px;
   }
 }
 </style>
