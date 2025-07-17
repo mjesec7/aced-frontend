@@ -1485,7 +1485,7 @@ export default {
 }
 
 /* ========================================
-   🎠 RECOMMENDATIONS CAROUSEL - FIXED LAYOUT
+   🎠 RECOMMENDATIONS CAROUSEL - FIXED
 ======================================== */
 .recommendations-carousel {
   position: relative;
@@ -1514,8 +1514,11 @@ export default {
   padding: 0 8px;
 }
 
+/* ========================================
+   🎴 RECOMMENDATION CARDS - COMPLETELY FIXED
+======================================== */
 .recommendation-card {
-  flex: 0 0 320px;
+  flex: 0 0 340px;
   background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
@@ -1523,7 +1526,7 @@ export default {
   display: flex;
   flex-direction: column;
   border: 1px solid #1a1a1a;
-  height: 420px;
+  height: 460px;
   position: relative;
   overflow: hidden;
 }
@@ -1543,8 +1546,8 @@ export default {
 }
 
 .loading-carousel .recommendation-placeholder {
-  flex: 0 0 320px;
-  height: 420px;
+  flex: 0 0 340px;
+  height: 460px;
   background: #f9fafb;
   border: 1px solid #1a1a1a;
   border-radius: 16px;
@@ -1596,7 +1599,7 @@ export default {
 }
 
 /* ========================================
-   🏷️ TOPIC BADGE - FIXED POSITIONING
+   🏷️ TOPIC BADGE - FIXED
 ======================================== */
 .topic-badge {
   position: absolute;
@@ -1608,7 +1611,7 @@ export default {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  z-index: 3;
+  z-index: 10;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
@@ -1631,47 +1634,47 @@ export default {
 }
 
 /* ========================================
-   📝 TOPIC CONTENT - FIXED LAYOUT
+   📝 TOPIC CONTENT - PROPER LAYOUT
 ======================================== */
 .topic-content {
-  padding: 24px;
-  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  height: 100%;
+  padding: 24px;
   padding-top: 60px; /* Space for badge */
 }
 
 .topic-title {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #111827;
-  margin: 0 0 12px 0;
+  margin: 0 0 14px 0;
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 3.2rem;
+  min-height: 3.5rem;
 }
 
 .topic-desc {
   font-size: 0.9rem;
   color: #6b7280;
   margin: 0 0 20px 0;
-  line-height: 1.5;
+  line-height: 1.6;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   flex-grow: 1;
+  min-height: 4.8rem;
 }
 
 .topic-stats {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 16px;
-  padding: 12px 0;
+  margin: 0 0 18px 0;
+  padding: 14px 0;
   border-top: 1px solid #f3f4f6;
   border-bottom: 1px solid #f3f4f6;
 }
@@ -1680,17 +1683,17 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex: 1;
 }
 
 .stat-icon {
-  font-size: 1rem;
+  font-size: 1.1rem;
   opacity: 0.7;
 }
 
 .stat-value {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #111827;
 }
@@ -1703,21 +1706,22 @@ export default {
   display: inline-block;
   background: #f3f4f6;
   color: #374151;
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-radius: 12px;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 500;
   border: 1px solid #e5e7eb;
 }
 
 /* ========================================
-   🔘 CARD ACTIONS - FIXED BUTTON LAYOUT
+   🔘 CARD ACTIONS - PERFECT BUTTON LAYOUT
 ======================================== */
 .card-actions {
   display: flex;
   gap: 12px;
   margin-top: auto;
   flex-shrink: 0;
+  align-items: center;
 }
 
 .add-btn,
@@ -1726,8 +1730,8 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 14px 18px;
-  border-radius: 10px;
+  padding: 16px 20px;
+  border-radius: 12px;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -1735,12 +1739,12 @@ export default {
   border: none;
   text-decoration: none;
   white-space: nowrap;
-  min-height: 48px;
+  min-height: 52px;
+  box-sizing: border-box;
 }
 
 .add-btn {
-  flex: 0 0 auto;
-  min-width: 120px;
+  flex: 1;
   background: #f8fafc;
   color: #374151;
   border: 2px solid #e5e7eb;
@@ -1791,7 +1795,8 @@ export default {
 
 .add-text,
 .start-text {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 /* ========================================
@@ -1927,7 +1932,7 @@ export default {
 }
 
 /* ========================================
-   🃏 GRID & CARDS - COMPACT DESIGN
+   🃏 GRID & CARDS
 ======================================== */
 .grid {
   display: grid;
@@ -2069,8 +2074,8 @@ export default {
   }
   
   .recommendation-card {
-    flex: 0 0 300px;
-    height: 400px;
+    flex: 0 0 320px;
+    height: 440px;
   }
   
   .topic-content {
@@ -2079,7 +2084,7 @@ export default {
   }
   
   .topic-title {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
   }
   
   .card-actions {
@@ -2088,9 +2093,9 @@ export default {
   
   .add-btn,
   .start-btn {
-    padding: 12px 14px;
+    padding: 14px 16px;
     font-size: 0.85rem;
-    min-height: 44px;
+    min-height: 48px;
   }
 }
 
@@ -2154,52 +2159,54 @@ export default {
   }
   
   .recommendation-card {
-    flex: 0 0 280px;
-    height: 380px;
+    flex: 0 0 300px;
+    height: 420px;
   }
   
   .topic-content {
-    padding: 16px;
+    padding: 18px;
     padding-top: 50px;
   }
   
   .topic-title {
-    font-size: 1rem;
-    min-height: 2.8rem;
+    font-size: 1.1rem;
+    min-height: 3rem;
   }
   
   .topic-desc {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     margin-bottom: 16px;
+    min-height: 4rem;
   }
   
   .topic-stats {
-    margin-bottom: 12px;
-    padding: 8px 0;
+    margin-bottom: 16px;
+    padding: 12px 0;
   }
   
   .stat-value {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
   }
   
   .subject-tag {
-    padding: 4px 8px;
-    font-size: 0.7rem;
+    padding: 6px 10px;
+    font-size: 0.75rem;
   }
   
   .card-actions {
-    gap: 8px;
+    gap: 10px;
   }
   
   .add-btn,
   .start-btn {
-    padding: 10px 12px;
+    padding: 12px 14px;
     font-size: 0.8rem;
-    min-height: 40px;
+    min-height: 44px;
   }
   
-  .add-btn {
-    min-width: 100px;
+  .add-text,
+  .start-text {
+    font-size: 0.8rem;
   }
   
   .carousel-track {
@@ -2288,6 +2295,57 @@ export default {
     padding: 16px;
   }
   
+  .recommendation-card {
+    flex: 0 0 280px;
+    height: 400px;
+  }
+  
+  .topic-content {
+    padding: 16px;
+    padding-top: 45px;
+  }
+  
+  .topic-title {
+    font-size: 1rem;
+    min-height: 2.8rem;
+  }
+  
+  .topic-desc {
+    font-size: 0.8rem;
+    margin-bottom: 14px;
+    min-height: 3.6rem;
+  }
+  
+  .topic-stats {
+    margin-bottom: 14px;
+    padding: 10px 0;
+  }
+  
+  .stat-value {
+    font-size: 0.8rem;
+  }
+  
+  .subject-tag {
+    padding: 5px 8px;
+    font-size: 0.7rem;
+  }
+  
+  .card-actions {
+    gap: 8px;
+  }
+  
+  .add-btn,
+  .start-btn {
+    padding: 10px 12px;
+    font-size: 0.75rem;
+    min-height: 40px;
+  }
+  
+  .add-text,
+  .start-text {
+    font-size: 0.75rem;
+  }
+  
   .empty-state {
     padding: 40px 16px;
   }
@@ -2299,55 +2357,5 @@ export default {
   .empty-state h3 {
     font-size: 1.1rem;
   }
-  
-  /* ✅ FIXED: Keep recommendation card buttons on same line on mobile */
-  .recommendation-card .card-actions {
-    flex-direction: row !important;
-    gap: 8px;
-    padding: 0 16px 16px 16px;
-  }
-  
-  .recommendation-card .add-btn,
-  .recommendation-card .start-btn {
-    flex: 1;
-    padding: 10px 8px;
-    font-size: 0.75rem;
-    min-width: 0;
-  }
-  
-  .recommendation-card .add-text,
-  .recommendation-card .start-text {
-    font-size: 0.7rem;
-  }
-  
-  .recommendation-card .topic-content {
-    padding: 16px;
-  }
-  
-  .recommendation-card .topic-title {
-    font-size: 1rem;
-    margin-bottom: 8px;
-  }
-  
-  .recommendation-card .topic-desc {
-    font-size: 0.8rem;
-    margin-bottom: 16px;
-  }
-  
-  .recommendation-card .topic-stats {
-    margin-bottom: 12px;
-    padding: 8px 0;
-  }
-  
-  .recommendation-card .stat-value {
-    font-size: 0.8rem;
-  }
-  
-  .recommendation-card .subject-tag {
-    padding: 4px 8px;
-    font-size: 0.7rem;
-  }
 }
-
-/* Clean type indicators - REMOVED */
 </style>
