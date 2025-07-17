@@ -2311,10 +2311,28 @@ export const getUserStudyList = async (userId) => {
     const { data } = await api.get(`/users/${userId}/study-list`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    return data;
+    
+    return {
+      success: true,
+      data: data.data || data || [],
+      message: data.message
+    };
   } catch (error) {
     console.error('❌ Failed to get study list:', error);
-    throw error;
+    
+    if (error.response?.status === 404) {
+      return {
+        success: true,
+        data: [],
+        message: 'Study list not found, returning empty list'
+      };
+    }
+    
+    return {
+      success: false,
+      data: [],
+      error: error.response?.data?.error || error.message
+    };
   }
 };
 
@@ -2325,19 +2343,46 @@ export const addToStudyList = async (userId, topicData) => {
     const token = await auth.currentUser?.getIdToken();
     if (!token) throw new Error('No authentication token');
     
-    // ✅ SIMPLE: Just prepare the data exactly as backend expects
+    // ✅ COMPREHENSIVE DATA PREPARATION
     const studyListData = {
-      topicId: String(topicData.topicId || topicData._id || ''),
-      subject: String(topicData.subject || 'General'),
+      // Required fields
+      topicId: String(topicData.topicId || topicData._id || topicData.id || '').trim(),
+      topic: String(topicData.topic || topicData.topicName || topicData.name || 'Без названия').trim(),
+      topicName: String(topicData.topicName || topicData.topic || topicData.name || 'Без названия').trim(),
+      
+      // Optional fields with defaults
+      subject: String(topicData.subject || 'General').trim(),
       level: parseInt(topicData.level) || 1,
-      topic: String(topicData.topic || topicData.topicName || topicData.name || 'Без названия'),
-      topicName: String(topicData.topicName || topicData.topic || topicData.name || 'Без названия'),
-      lessonCount: parseInt(topicData.lessonCount) || 0,
-      totalTime: parseInt(topicData.totalTime) || 10,
-      type: String(topicData.type || 'free'),
-      description: String(topicData.description || ''),
-      isActive: true,
-      addedAt: new Date().toISOString()
+      lessonCount: parseInt(topicData.lessonCount || topicData.lessons?.length || 0),
+      totalTime: parseInt(topicData.totalTime || (topicData.lessons?.length * 10) || 10),
+      type: String(topicData.type || 'free').trim(),
+      description: String(topicData.description || topicData.topicDescription || '').trim(),
+      
+      // System fields
+      isActive: Boolean(topicData.isActive !== false),
+      addedAt: new Date().toISOString(),
+      
+      // Enhancement flags
+      forceAdd: true, // Tell backend to create topic if it doesn't exist
+      
+      // Topic creation data (for backend to use if needed)
+      createTopicData: {
+        _id: topicData.topicId || topicData._id || topicData.id,
+        name: {
+          en: topicData.topic || topicData.topicName || topicData.name || 'Без названия',
+          ru: topicData.topic || topicData.topicName || topicData.name || 'Без названия',
+          uz: topicData.topic || topicData.topicName || topicData.name || 'Без названия'
+        },
+        subject: topicData.subject || 'General',
+        level: parseInt(topicData.level) || 1,
+        type: topicData.type || 'free',
+        lessonCount: parseInt(topicData.lessonCount || topicData.lessons?.length || 0),
+        totalTime: parseInt(topicData.totalTime || (topicData.lessons?.length * 10) || 10),
+        isActive: true,
+        description: topicData.description || topicData.topicDescription || `Курс по теме "${topicData.topic || topicData.topicName || topicData.name || 'Без названия'}"`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
     };
     
     // ✅ VALIDATION: Check required fields
@@ -2349,83 +2394,76 @@ export const addToStudyList = async (userId, topicData) => {
       throw new Error('Topic name is required');
     }
     
-    console.log('📦 Sending study list data:', studyListData);
+    console.log('📦 Sending study list data:', {
+      topicId: studyListData.topicId,
+      topic: studyListData.topic,
+      subject: studyListData.subject,
+      level: studyListData.level,
+      lessonCount: studyListData.lessonCount,
+      hasCreateData: !!studyListData.createTopicData
+    });
     
-    // ✅ SIMPLE APPROACH: Just try to add to study list with force flag
-    try {
-      const { data } = await api.post(`/users/${userId}/study-list`, {
-        ...studyListData,
-        forceAdd: true, // Tell backend to create topic if it doesn't exist
-        createTopicData: {
-          _id: studyListData.topicId,
-          name: {
-            en: studyListData.topic,
-            ru: studyListData.topic,
-            uz: studyListData.topic
-          },
-          subject: studyListData.subject,
-          level: studyListData.level,
-          type: studyListData.type,
-          lessonCount: studyListData.lessonCount,
-          totalTime: studyListData.totalTime,
-          isActive: true
-        }
-      }, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('✅ Study list add successful:', data);
-      return data;
-      
-    } catch (error) {
-      console.error('❌ Study list add failed:', error);
-      
-      // ✅ FALLBACK: Try with minimal data and different structure
-      const minimalData = {
-        topicId: studyListData.topicId,
-        topic: studyListData.topic,
-        subject: studyListData.subject,
-        level: studyListData.level,
-        type: studyListData.type
-      };
-      
-      const { data } = await api.post(`/users/${userId}/study-list`, minimalData, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('✅ Minimal study list add successful:', data);
-      return data;
-    }
+    // ✅ SEND REQUEST with proper error handling
+    const { data } = await api.post(`/users/${userId}/study-list`, studyListData, {
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 30000 // 30 second timeout
+    });
+    
+    console.log('✅ Study list add successful:', data);
+    
+    return {
+      success: true,
+      data: data.data || data,
+      message: data.message || 'Topic added to study list successfully'
+    };
     
   } catch (error) {
     console.error('❌ Failed to add to study list:', error);
     
-    // ✅ SIMPLE ERROR HANDLING
-    const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
+    // ✅ ENHANCED ERROR HANDLING
+    let errorMessage = 'Failed to add topic to study list';
     
     if (error.response?.status === 400) {
-      if (errorMessage.includes('already exists') || errorMessage.includes('duplicate')) {
-        throw new Error('Этот курс уже добавлен в ваш список');
+      const responseData = error.response.data;
+      
+      if (responseData.error?.includes('уже добавлен') || 
+          responseData.error?.includes('already exists') ||
+          responseData.error?.includes('duplicate')) {
+        errorMessage = 'Этот курс уже добавлен в ваш список';
+      } else if (responseData.error?.includes('required')) {
+        errorMessage = 'Недостаточно данных для добавления курса';
+      } else if (responseData.validationErrors) {
+        errorMessage = 'Ошибка валидации данных: ' + responseData.validationErrors.map(e => e.message).join(', ');
       } else {
-        throw new Error('Ошибка добавления курса. Попробуйте еще раз.');
+        errorMessage = responseData.error || 'Ошибка добавления курса';
       }
+    } else if (error.response?.status === 401) {
+      errorMessage = 'Необходимо войти в аккаунт';
+    } else if (error.response?.status === 403) {
+      errorMessage = 'Доступ запрещен';
+    } else if (error.response?.status === 409) {
+      errorMessage = 'Курс уже существует в списке';
+    } else if (error.response?.status >= 500) {
+      errorMessage = 'Ошибка сервера. Попробуйте позже';
+    } else if (error.code === 'ECONNABORTED') {
+      errorMessage = 'Превышено время ожидания. Попробуйте еще раз';
+    } else if (error.code === 'NETWORK_ERROR') {
+      errorMessage = 'Ошибка сети. Проверьте подключение к интернету';
+    } else if (error.message?.includes('Token')) {
+      errorMessage = 'Ошибка авторизации. Попробуйте перезайти';
+    } else {
+      errorMessage = error.message || 'Произошла неизвестная ошибка';
     }
     
-    if (error.response?.status === 401) {
-      throw new Error('Необходимо войти в аккаунт');
-    }
-    
-    if (error.response?.status >= 500) {
-      throw new Error('Ошибка сервера. Попробуйте позже');
-    }
-    
-    throw new Error('Не удалось добавить курс. Попробуйте еще раз.');
+    return {
+      success: false,
+      error: errorMessage,
+      details: error.response?.data || error.message,
+      code: error.response?.status
+    };
   }
 };
 
@@ -2437,10 +2475,26 @@ export const removeFromStudyList = async (userId, topicId) => {
     const { data } = await api.delete(`/users/${userId}/study-list/${topicId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    return data;
+    
+    return {
+      success: true,
+      data: data.data || data,
+      message: data.message || 'Topic removed from study list successfully'
+    };
   } catch (error) {
     console.error('❌ Failed to remove from study list:', error);
-    throw error;
+    
+    if (error.response?.status === 404) {
+      return {
+        success: true,
+        message: 'Topic was not in study list (already removed)'
+      };
+    }
+    
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message
+    };
   }
 };
 
@@ -2452,10 +2506,19 @@ export const cleanupStudyList = async (userId) => {
     const { data } = await api.post(`/users/${userId}/study-list/cleanup`, {}, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    return data;
+    
+    return {
+      success: true,
+      data: data.data || data,
+      message: data.message || 'Study list cleanup completed'
+    };
   } catch (error) {
     console.error('❌ Failed to cleanup study list:', error);
-    throw error;
+    
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message
+    };
   }
 };
 
