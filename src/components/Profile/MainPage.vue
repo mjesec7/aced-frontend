@@ -1259,6 +1259,8 @@ export default {
 </script>
 
 <style scoped>
+/* MainPage.vue - Compact Card Styles */
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 /* ========================================
@@ -1526,7 +1528,7 @@ export default {
 }
 
 /* ========================================
-   🎠 RECOMMENDATIONS CAROUSEL - FIXED
+   🎠 RECOMMENDATIONS CAROUSEL - COMPACT
 ======================================== */
 .recommendations-carousel {
   position: relative;
@@ -1551,51 +1553,51 @@ export default {
 
 .carousel-track {
   display: flex;
-  gap: 24px;
+  gap: 16px;
   padding: 0 8px;
 }
 
 /* ========================================
-   🎴 RECOMMENDATION CARDS - REDUCED GAPS
+   🎴 RECOMMENDATION CARDS - COMPACT SIZE
 ======================================== */
 .recommendation-card {
-  flex: 0 0 340px;
+  flex: 0 0 280px;
   background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  border: 1px solid #1a1a1a;
-  height: 460px;
+  border: 1px solid #e5e7eb;
+  height: 360px;
   position: relative;
   overflow: hidden;
 }
 
 .recommendation-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 0 30px rgba(139, 92, 246, 0.6), 0 16px 48px rgba(139, 92, 246, 0.2);
+  transform: translateY(-4px);
+  box-shadow: 0 0 24px rgba(139, 92, 246, 0.4), 0 12px 32px rgba(139, 92, 246, 0.15);
   border-color: #8b5cf6;
-  background: radial-gradient(circle at center, rgba(139, 92, 246, 0.05), #ffffff);
+  background: radial-gradient(circle at center, rgba(139, 92, 246, 0.03), #ffffff);
 }
 
 .loading-carousel {
   display: flex;
-  gap: 24px;
+  gap: 16px;
   overflow-x: auto;
   padding: 8px;
 }
 
 .loading-carousel .recommendation-placeholder {
-  flex: 0 0 340px;
-  height: 460px;
+  flex: 0 0 280px;
+  height: 360px;
   background: #f9fafb;
-  border: 1px solid #1a1a1a;
-  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: #6b7280;
   font-weight: 500;
 }
@@ -1603,13 +1605,13 @@ export default {
 .carousel-nav {
   background: #ffffff;
   border: 2px solid #e5e7eb;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: bold;
   color: #6b7280;
   cursor: pointer;
@@ -1640,15 +1642,15 @@ export default {
 }
 
 /* ========================================
-   🏷️ TOPIC BADGE - REDUCED SIZE
+   🏷️ TOPIC BADGE - COMPACT
 ======================================== */
 .topic-badge {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  padding: 6px 10px;
-  border-radius: 16px;
-  font-size: 0.7rem;
+  top: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -1657,9 +1659,9 @@ export default {
 }
 
 .topic-badge.free {
-  background: #ffffff;
-  color: #374151;
-  border: 1px solid #374151;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
 }
 
 .topic-badge.premium {
@@ -1674,49 +1676,48 @@ export default {
   border: 1px solid #1f2937;
 }
 
-
 /* ========================================
-   📝 TOPIC CONTENT - REDUCED GAPS
+   📝 TOPIC CONTENT - COMPACT
 ======================================== */
 .topic-content {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 20px;
-  padding-top: 45px; /* Reduced space for badge */
+  padding: 14px;
+  padding-top: 32px;
 }
 
 .topic-title {
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #111827;
-  margin: 0 0 8px 0; /* Reduced margin */
+  margin: 0 0 6px 0;
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 3rem; /* Reduced min-height */
+  min-height: 2.6rem;
 }
 
 .topic-desc {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #6b7280;
-  margin: 0 0 12px 0; /* Reduced margin */
+  margin: 0 0 8px 0;
   line-height: 1.4;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   flex-grow: 1;
-  min-height: 3.6rem; /* Reduced min-height */
+  min-height: 2.4rem;
 }
 
 .topic-stats {
   display: flex;
   justify-content: space-between;
-  margin: 0 0 12px 0; /* Reduced margin */
-  padding: 10px 0; /* Reduced padding */
+  margin: 0 0 8px 0;
+  padding: 6px 0;
   border-top: 1px solid #f3f4f6;
   border-bottom: 1px solid #f3f4f6;
 }
@@ -1725,42 +1726,42 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px; /* Reduced gap */
+  gap: 2px;
   flex: 1;
 }
 
 .stat-icon {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   opacity: 0.7;
 }
 
 .stat-value {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: #111827;
 }
 
 .subject-info {
-  margin-bottom: 16px; /* Reduced margin */
+  margin-bottom: 12px;
 }
 
 .subject-tag {
   display: inline-block;
-  background: #f3f4f6;
-  color: #374151;
-  padding: 5px 10px; /* Reduced padding */
-  border-radius: 10px;
-  font-size: 0.75rem;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 0.7rem;
   font-weight: 500;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #cbd5e1;
 }
 
 /* ========================================
-   🔘 CARD ACTIONS - REDUCED GAPS
+   🔘 CARD ACTIONS - COMPACT
 ======================================== */
 .card-actions {
   display: flex;
-  gap: 10px; /* Reduced gap */
+  gap: 8px;
   margin-top: auto;
   flex-shrink: 0;
   align-items: center;
@@ -1771,25 +1772,25 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px; /* Reduced gap */
-  padding: 12px 16px; /* Reduced padding */
-  border-radius: 10px;
-  font-size: 0.85rem;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
   text-decoration: none;
   white-space: nowrap;
-  min-height: 44px; /* Reduced min-height */
+  min-height: 36px;
   box-sizing: border-box;
 }
 
 .add-btn {
   flex: 1;
   background: #f8fafc;
-  color: #374151;
-  border: 2px solid #e5e7eb;
+  color: #475569;
+  border: 2px solid #e2e8f0;
 }
 
 .add-btn:hover:not(:disabled) {
@@ -1800,9 +1801,9 @@ export default {
 }
 
 .add-btn:disabled {
-  background: #f3f4f6;
-  color: #9ca3af;
-  border-color: #e5e7eb;
+  background: #f1f5f9;
+  color: #94a3b8;
+  border-color: #e2e8f0;
   cursor: not-allowed;
 }
 
@@ -1831,13 +1832,13 @@ export default {
 
 .add-icon,
 .start-icon {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: bold;
 }
 
 .add-text,
 .start-text {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 600;
 }
 
@@ -2078,7 +2079,7 @@ export default {
 }
 
 /* ========================================
-   📱 RESPONSIVE DESIGN - REDUCED GAPS
+   📱 RESPONSIVE DESIGN - COMPACT
 ======================================== */
 @media (max-width: 1024px) {
   .filter-section {
@@ -2110,29 +2111,29 @@ export default {
   }
   
   .carousel-nav {
-    width: 36px;
-    height: 36px;
-    font-size: 1.1rem;
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
   }
   
   .recommendation-card {
-    flex: 0 0 320px;
-    height: 440px;
+    flex: 0 0 260px;
+    height: 340px;
   }
   
   .topic-content {
-    padding: 18px;
-    padding-top: 50px;
+    padding: 12px;
+    padding-top: 30px;
   }
   
   .card-actions {
-    gap: 8px;
+    gap: 6px;
   }
   
   .add-btn,
   .start-btn {
-    padding: 10px 14px;
-    min-height: 40px;
+    padding: 7px 10px;
+    min-height: 32px;
   }
 }
 
@@ -2196,36 +2197,38 @@ export default {
   }
   
   .recommendation-card {
-    flex: 0 0 300px;
-    height: 420px;
+    flex: 0 0 240px;
+    height: 320px;
   }
   
   .topic-content {
-    padding: 16px;
-    padding-top: 45px;
+    padding: 12px;
+    padding-top: 28px;
   }
   
   .topic-title {
-    margin-bottom: 6px;
-    min-height: 2.6rem;
+    margin-bottom: 5px;
+    min-height: 2.4rem;
+    font-size: 0.95rem;
   }
   
   .topic-desc {
-    margin-bottom: 10px;
-    min-height: 3rem;
+    margin-bottom: 6px;
+    min-height: 2.2rem;
+    font-size: 0.75rem;
   }
   
   .topic-stats {
-    margin-bottom: 10px;
-    padding: 8px 0;
+    margin-bottom: 6px;
+    padding: 5px 0;
   }
   
   .subject-info {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
   
   .carousel-track {
-    gap: 16px;
+    gap: 12px;
   }
   
   .grid {
@@ -2311,43 +2314,45 @@ export default {
   }
   
   .recommendation-card {
-    flex: 0 0 280px;
-    height: 400px;
+    flex: 0 0 220px;
+    height: 300px;
   }
   
   .topic-content {
-    padding: 14px;
-    padding-top: 40px;
+    padding: 10px;
+    padding-top: 26px;
   }
   
   .topic-title {
-    margin-bottom: 6px;
-    min-height: 2.8rem;
+    margin-bottom: 4px;
+    min-height: 2.2rem;
+    font-size: 0.9rem;
   }
   
   .topic-desc {
-    margin-bottom: 10px;
-    min-height: 3rem;
+    margin-bottom: 5px;
+    min-height: 2rem;
+    font-size: 0.7rem;
   }
   
   .topic-stats {
-    margin-bottom: 10px;
-    padding: 8px 0;
+    margin-bottom: 5px;
+    padding: 4px 0;
   }
   
   .subject-info {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
   
   .card-actions {
-    gap: 6px;
+    gap: 5px;
   }
   
   .add-btn,
   .start-btn {
-    padding: 8px 10px;
-    min-height: 36px;
-    font-size: 0.75rem;
+    padding: 6px 8px;
+    min-height: 30px;
+    font-size: 0.7rem;
   }
   
   .empty-state {

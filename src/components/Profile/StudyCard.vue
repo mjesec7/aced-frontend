@@ -279,21 +279,8 @@ export default {
 </script>
 
 <style scoped>
-/* Keep all your existing styles and add this: */
+/* StudyCard.vue - Professional Styles (No Green Heart) */
 
-.btn-disabled {
-  background: #f3f4f6 !important;
-  color: #9ca3af !important;
-  border-color: #e5e7eb !important;
-  cursor: not-allowed !important;
-}
-
-.btn-disabled:hover {
-  transform: none !important;
-  background: #f3f4f6 !important;
-}
-
-/* All your existing CSS stays the same */
 .study-card {
   position: relative;
   background: #ffffff;
@@ -316,7 +303,7 @@ export default {
 }
 
 .topic-free {
-  border-left: 3px solid #1a1a1a;
+  border-left: 3px solid #6b7280;
 }
 
 .topic-premium {
@@ -324,7 +311,7 @@ export default {
 }
 
 .topic-pro {
-  border-left: 3px solid #6b7280;
+  border-left: 3px solid #1a1a1a;
 }
 
 .topic-type-badge {
@@ -344,9 +331,9 @@ export default {
 }
 
 .topic-type-badge.free {
-  background: #f3f4f6;
-  color: #1a1a1a;
-  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
 }
 
 .topic-type-badge.premium {
@@ -433,9 +420,9 @@ export default {
 }
 
 .subject-tag {
-  background: #f3f4f6;
-  color: #1a1a1a;
-  border: 1px solid #e5e7eb;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
 }
 
 .level-tag {
@@ -615,6 +602,18 @@ export default {
 
 .btn-completed:hover {
   transform: none;
+}
+
+.btn-disabled {
+  background: #f3f4f6 !important;
+  color: #9ca3af !important;
+  border-color: #e5e7eb !important;
+  cursor: not-allowed !important;
+}
+
+.btn-disabled:hover {
+  transform: none !important;
+  background: #f3f4f6 !important;
 }
 
 .btn-icon {
