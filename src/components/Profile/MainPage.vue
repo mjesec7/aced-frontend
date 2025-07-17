@@ -721,187 +721,216 @@ export default {
 
     // ✅ COMPLETELY FIXED: Fetch study list using proper API methods
     async fetchStudyList() {
+  try {
+    this.loadingStudyList = true;
+    this.errors.studyList = null;
+    this.invalidTopicsCleanedUp = 0;
+    
+    console.log('🔍 Fetching study list for user:', this.userId);
+    
+    // ✅ CRITICAL: Ensure we have a valid userId
+    if (!this.userId) {
+      console.error('❌ No userId available for fetching study list');
+      this.studyList = [];
+      return;
+    }
+    
+    // Get user's study list
+    const studyListResult = await getUserStudyList(this.userId);
+    
+    console.log('📊 Study list API result:', studyListResult);
+    
+    if (!studyListResult || !studyListResult.success) {
+      console.log('⚠️ Study list API returned unsuccessful result:', studyListResult);
+      
+      // ✅ FALLBACK: Try different API approach if available
+      if (studyListResult && studyListResult.error) {
+        console.error('❌ Study list API error:', studyListResult.error);
+        this.errors.studyList = studyListResult.error;
+      }
+      
+      this.studyList = [];
+      return;
+    }
+    
+    const studyListData = studyListResult.data;
+    
+    if (!Array.isArray(studyListData)) {
+      console.log('⚠️ Study list data is not an array:', typeof studyListData, studyListData);
+      this.studyList = [];
+      return;
+    }
+    
+    if (studyListData.length === 0) {
+      console.log('ℹ️ No study list entries found');
+      this.studyList = [];
+      return;
+    }
+    
+    console.log(`📚 Found ${studyListData.length} study list entries`);
+    
+    // ✅ DEBUGGING: Log each entry
+    studyListData.forEach((entry, index) => {
+      console.log(`📋 Entry ${index + 1}:`, {
+        topicId: entry.topicId,
+        topic: entry.topic,
+        hasLessons: entry.lessons?.length || 0,
+        addedAt: entry.addedAt
+      });
+    });
+    
+    // Get user progress for calculating completion
+    let userProgressData = [];
+    try {
+      const progressResult = await getUserProgress(this.userId);
+      if (progressResult && progressResult.success) {
+        userProgressData = progressResult.data || [];
+        console.log(`📊 Loaded ${userProgressData.length} progress records`);
+      }
+    } catch (progressError) {
+      console.warn('⚠️ Failed to load progress data:', progressError.message);
+    }
+    
+    // ✅ ENHANCED: Process each study list entry
+    const validTopics = [];
+    
+    for (const entry of studyListData) {
+      if (!entry.topicId) {
+        console.warn('⚠️ Study list entry missing topicId:', entry);
+        this.invalidTopicsCleanedUp++;
+        continue;
+      }
+      
       try {
-        this.loadingStudyList = true;
-        this.errors.studyList = null;
-        this.invalidTopicsCleanedUp = 0;
+        console.log(`🔍 Processing topic: ${entry.topicId}`);
         
-        console.log('🔍 Fetching study list...');
+        // ✅ STRATEGY 1: Use data from study list entry first
+        let topicData = {
+          _id: entry.topicId,
+          id: entry.topicId,
+          name: entry.topic || entry.topicName,
+          topicName: entry.topicName || entry.topic,
+          description: entry.description || `Курс по теме "${entry.topic || entry.topicName}"`,
+          subject: entry.subject || 'General',
+          level: entry.level || 1,
+          type: entry.type || 'free',
+          lessonCount: entry.lessonCount || 0,
+          totalTime: entry.totalTime || 10,
+          isActive: entry.isActive !== false,
+          metadata: {
+            source: 'study-list-entry',
+            processedAt: new Date().toISOString()
+          }
+        };
         
-        // Get user's study list
-        const studyListResult = await getUserStudyList(this.userId);
-        
-        if (!studyListResult.success || !Array.isArray(studyListResult.data) || studyListResult.data.length === 0) {
-          console.log('ℹ️ No study list entries found');
-          this.studyList = [];
-          return;
-        }
-        
-        console.log(`📚 Found ${studyListResult.data.length} study list entries`);
-        
-        // Get user progress for calculating completion
-        let userProgressData = [];
+        // ✅ STRATEGY 2: Try to get fresh topic data from API
         try {
-          const progressResult = await getUserProgress(this.userId);
-          if (progressResult.success) {
-            userProgressData = progressResult.data || [];
-            console.log(`📊 Loaded ${userProgressData.length} progress records`);
-          }
-        } catch (progressError) {
-          console.warn('⚠️ Failed to load progress data:', progressError.message);
-        }
-        
-        // Process each study list entry to build complete topic data
-        const validTopics = [];
-        
-        const topicPromises = studyListResult.data.map(async (entry) => {
-          if (!entry.topicId) {
-            console.warn('⚠️ Study list entry missing topicId:', entry);
-            return null;
-          }
-          
-          try {
-            console.log(`🔍 Processing topic: ${entry.topicId}`);
+          const topicResult = await getTopicById(entry.topicId);
+          if (topicResult && topicResult.success && topicResult.data) {
+            const freshTopicData = topicResult.data;
+            console.log(`✅ Got fresh topic data: ${freshTopicData.name || freshTopicData.topicName}`);
             
-            // ✅ Strategy 1: Try to get the topic directly
-            let topicData = null;
-            try {
-              const topicResult = await getTopicById(entry.topicId);
-              if (topicResult.success && topicResult.data) {
-                topicData = topicResult.data;
-                console.log(`✅ Got topic data: ${topicData.name || topicData.topicName}`);
-              }
-            } catch (topicError) {
-              console.warn(`⚠️ Failed to get topic ${entry.topicId} directly:`, topicError.message);
-            }
-            
-            // ✅ Strategy 2: Get lessons for this topic
-            let lessons = [];
-            try {
-              const lessonsResult = await getLessonsByTopic(entry.topicId);
-              if (lessonsResult.success && Array.isArray(lessonsResult.data)) {
-                lessons = lessonsResult.data;
-                console.log(`📚 Got ${lessons.length} lessons for topic ${entry.topicId}`);
-              }
-            } catch (lessonsError) {
-              console.warn(`⚠️ Failed to get lessons for topic ${entry.topicId}:`, lessonsError.message);
-            }
-            
-            // If no topic data and no lessons, skip this entry
-            if (!topicData && lessons.length === 0) {
-              console.warn(`⚠️ No data found for topic ${entry.topicId}, skipping`);
-              this.invalidTopicsCleanedUp++;
-              return null;
-            }
-            
-            // ✅ Build/enhance topic data
-            if (!topicData && lessons.length > 0) {
-              // Build topic from lessons (like CataloguePage does)
-              const firstLesson = lessons[0];
-              topicData = {
-                _id: entry.topicId,
-                id: entry.topicId,
-                name: this.getTopicNameFromLesson(firstLesson),
-                topicName: this.getTopicNameFromLesson(firstLesson),
-                description: `Курс по теме "${this.getTopicNameFromLesson(firstLesson)}" содержит ${lessons.length} уроков`,
-                subject: firstLesson.subject || 'General',
-                level: firstLesson.level || 1,
-                type: firstLesson.type || 'free',
-                isActive: true,
-                metadata: {
-                  source: 'constructed-from-lessons',
-                  constructedAt: new Date().toISOString()
-                }
-              };
-              console.log(`🏗️ Built topic data from lessons: ${topicData.name}`);
-            }
-            
-            // ✅ Calculate progress from user progress data
-            let completedLessons = 0;
-            let totalStars = 0;
-            let totalPoints = 0;
-            
-            lessons.forEach(lesson => {
-              const progress = userProgressData.find(p => {
-                const progressLessonId = p.lessonId?._id || p.lessonId;
-                return progressLessonId?.toString() === lesson._id?.toString();
-              });
-              
-              if (progress && progress.completed) {
-                completedLessons++;
-                totalStars += progress.stars || 0;
-                totalPoints += progress.points || 0;
-              }
-            });
-            
-            const progressPercent = lessons.length > 0 
-              ? Math.round((completedLessons / lessons.length) * 100)
-              : 0;
-            
-            let medal = 'none';
-            if (progressPercent === 100 && lessons.length > 0) {
-              const avgStars = totalStars / lessons.length;
-              if (avgStars >= 2.5) medal = 'gold';
-              else if (avgStars >= 1.5) medal = 'silver';
-              else medal = 'bronze';
-            }
-            
-            // ✅ Build final topic object
-            const finalTopic = {
+            // Merge fresh data with study list entry
+            topicData = {
               ...topicData,
-              lessons: lessons,
-              lessonCount: lessons.length,
-              totalTime: lessons.length * 10, // 10 min per lesson estimate
-              progress: {
-                percent: progressPercent,
-                medal: medal,
-                completedLessons: completedLessons,
-                totalLessons: lessons.length,
-                stars: totalStars,
-                points: totalPoints
-              },
-              hasLessons: lessons.length > 0,
-              // Preserve original study list entry data
+              ...freshTopicData,
+              // Keep study list specific data
               studyListEntry: entry
             };
-            
-            console.log(`✅ Built complete topic: ${finalTopic.name} (${finalTopic.progress.percent}% complete)`);
-            return finalTopic;
-            
-          } catch (error) {
-            console.error(`❌ Error processing topic ${entry.topicId}:`, error);
-            this.invalidTopicsCleanedUp++;
-            return null;
           }
-        });
-        
-        // Wait for all topic processing to complete
-        const results = await Promise.allSettled(topicPromises);
-        
-        // Collect valid topics
-        results.forEach(result => {
-          if (result.status === 'fulfilled' && result.value) {
-            validTopics.push(result.value);
-          }
-        });
-        
-        this.studyList = validTopics;
-        this.extractSubjects(this.studyList);
-        
-        console.log(`✅ Successfully loaded ${validTopics.length} study list topics`);
-        if (this.invalidTopicsCleanedUp > 0) {
-          console.log(`🧹 Cleaned up ${this.invalidTopicsCleanedUp} invalid topic entries`);
+        } catch (topicError) {
+          console.warn(`⚠️ Failed to get fresh topic data for ${entry.topicId}:`, topicError.message);
         }
         
-      } catch (err) {
-        const errorInfo = this.handleApiError(err, 'fetch-study-list');
-        this.errors.studyList = errorInfo.message;
-        this.studyList = [];
-        console.error('❌ Critical error in fetchStudyList:', err);
-      } finally {
-        this.loadingStudyList = false;
+        // ✅ STRATEGY 3: Get lessons for this topic
+        let lessons = entry.lessons || [];
+        
+        if (lessons.length === 0) {
+          try {
+            const lessonsResult = await getLessonsByTopic(entry.topicId);
+            if (lessonsResult && lessonsResult.success && Array.isArray(lessonsResult.data)) {
+              lessons = lessonsResult.data;
+              console.log(`📚 Got ${lessons.length} lessons for topic ${entry.topicId}`);
+            }
+          } catch (lessonsError) {
+            console.warn(`⚠️ Failed to get lessons for topic ${entry.topicId}:`, lessonsError.message);
+          }
+        }
+        
+        // ✅ STRATEGY 4: Calculate progress
+        let completedLessons = 0;
+        let totalStars = 0;
+        let totalPoints = 0;
+        
+        lessons.forEach(lesson => {
+          const progress = userProgressData.find(p => {
+            const progressLessonId = p.lessonId?._id || p.lessonId;
+            return progressLessonId?.toString() === lesson._id?.toString();
+          });
+          
+          if (progress && progress.completed) {
+            completedLessons++;
+            totalStars += progress.stars || 0;
+            totalPoints += progress.points || 0;
+          }
+        });
+        
+        const progressPercent = lessons.length > 0 
+          ? Math.round((completedLessons / lessons.length) * 100)
+          : 0;
+        
+        let medal = 'none';
+        if (progressPercent === 100 && lessons.length > 0) {
+          const avgStars = totalStars / lessons.length;
+          if (avgStars >= 2.5) medal = 'gold';
+          else if (avgStars >= 1.5) medal = 'silver';
+          else medal = 'bronze';
+        }
+        
+        // ✅ STRATEGY 5: Build final topic object
+        const finalTopic = {
+          ...topicData,
+          lessons: lessons,
+          lessonCount: lessons.length,
+          totalTime: lessons.length * 10,
+          progress: {
+            percent: progressPercent,
+            medal: medal,
+            completedLessons: completedLessons,
+            totalLessons: lessons.length,
+            stars: totalStars,
+            points: totalPoints
+          },
+          hasLessons: lessons.length > 0,
+          studyListEntry: entry
+        };
+        
+        validTopics.push(finalTopic);
+        console.log(`✅ Built complete topic: ${finalTopic.name} (${finalTopic.progress.percent}% complete)`);
+        
+      } catch (error) {
+        console.error(`❌ Error processing topic ${entry.topicId}:`, error);
+        this.invalidTopicsCleanedUp++;
       }
-    },
+    }
+    
+    this.studyList = validTopics;
+    this.extractSubjects(this.studyList);
+    
+    console.log(`✅ Successfully loaded ${validTopics.length} study list topics`);
+    if (this.invalidTopicsCleanedUp > 0) {
+      console.log(`🧹 Cleaned up ${this.invalidTopicsCleanedUp} invalid topic entries`);
+    }
+    
+  } catch (err) {
+    console.error('❌ Critical error in fetchStudyList:', err);
+    const errorInfo = this.handleApiError(err, 'fetch-study-list');
+    this.errors.studyList = errorInfo.message;
+    this.studyList = [];
+  } finally {
+    this.loadingStudyList = false;
+  }
+},
 
     // ✅ Helper method to extract topic name from lesson (same as CataloguePage)
     getTopicNameFromLesson(lesson) {
@@ -1095,97 +1124,109 @@ export default {
     },
 
     async handleAddTopic(topic) {
-      try {
-        if (!topic || !topic._id) {
-          console.error('❌ Invalid topic data for adding');
-          return;
-        }
-        
-        console.log('➕ Adding topic to study list:', topic.name || topic.topicName);
-        
-        // ✅ SIMPLIFIED: Just prepare the data as backend expects
-        const studyListData = {
+  try {
+    if (!topic || !topic._id) {
+      console.error('❌ Invalid topic data for adding');
+      return;
+    }
+    
+    console.log('➕ Adding topic to study list:', topic.name || topic.topicName);
+    
+    // ✅ ENHANCED: More comprehensive data preparation
+    const studyListData = {
+      topicId: topic._id,
+      topic: this.getTopicName(topic),
+      topicName: this.getTopicName(topic),
+      subject: topic.subject || 'General',
+      level: parseInt(topic.level) || 1,
+      lessonCount: parseInt(topic.lessonCount || topic.lessons?.length || 0),
+      totalTime: parseInt(topic.totalTime || (topic.lessons?.length * 10) || 10),
+      type: topic.type || 'free',
+      description: topic.description || this.getTopicDescription(topic),
+      isActive: true,
+      addedAt: new Date().toISOString(),
+      // ✅ CRITICAL: Include lesson data if available
+      lessons: topic.lessons || [],
+      // ✅ CRITICAL: Include progress data
+      progress: {
+        percent: 0,
+        medal: 'none',
+        completedLessons: 0,
+        totalLessons: topic.lessons?.length || 0,
+        stars: 0,
+        points: 0
+      }
+    };
+    
+    console.log('📦 Sending study list data:', studyListData);
+    
+    const result = await addToStudyList(this.userId, studyListData);
+    
+    if (result && result.success !== false) {
+      console.log('✅ Topic added to backend successfully');
+      
+      // ✅ IMMEDIATE: Add to local state for instant UI update
+      const newStudyItem = {
+        _id: topic._id,
+        ...studyListData,
+        studyListEntry: {
           topicId: topic._id,
-          subject: topic.subject || 'General',
-          level: parseInt(topic.level) || 1,
-          topic: this.getTopicName(topic),
-          topicName: this.getTopicName(topic),
-          lessonCount: parseInt(topic.lessonCount || topic.lessons?.length || 0),
-          totalTime: parseInt(topic.totalTime || (topic.lessons?.length * 10) || 10),
-          type: topic.type || 'free',
-          description: topic.description || `Курс по теме "${this.getTopicName(topic)}"`,
-          isActive: true,
-          addedAt: new Date().toISOString()
-        };
-        
-        console.log('📦 Sending study list data:', studyListData);
-        
-        const result = await addToStudyList(this.userId, studyListData);
-        
-        if (result && result.success !== false) {
-          // Refresh study list to show the new addition
-          await this.fetchStudyList();
-          
-          // Remove from both recommendation arrays
-          this.allRecommendations = this.allRecommendations.filter(t => t._id !== topic._id);
-          this.displayedRecommendations = this.displayedRecommendations.filter(t => t._id !== topic._id);
-          
-          // If we have less than 3 displayed recommendations, get more
-          if (this.displayedRecommendations.length < 3 && this.allRecommendations.length > this.displayedRecommendations.length) {
-            const needed = Math.min(3, this.allRecommendations.length - this.displayedRecommendations.length);
-            const available = this.allRecommendations.filter(t => 
-              !this.displayedRecommendations.some(d => d._id === t._id)
-            );
-            const additional = available.slice(0, needed);
-            this.displayedRecommendations.push(...additional);
-          }
-          
-          console.log('✅ Topic added successfully');
-          
-          // Show success message
-          this.$nextTick(() => {
-            alert('✅ Курс успешно добавлен в ваш список!');
-          });
-        } else {
-          throw new Error(result?.error || 'Failed to add topic');
+          createdAt: new Date().toISOString()
         }
-        
-      } catch (err) {
-        console.error('❌ Add topic error:', err);
-        
-        // ✅ SIMPLE ERROR HANDLING
-        let errorMessage = 'Не удалось добавить курс';
-        
-        if (err.message?.includes('уже добавлен') || err.message?.includes('already exists')) {
-          errorMessage = 'Этот курс уже добавлен в ваш список';
-        } else if (err.message?.includes('войти в аккаунт') || err.message?.includes('authentication')) {
-          errorMessage = 'Необходимо войти в аккаунт';
-        } else if (err.message?.includes('ошибка сервера') || err.message?.includes('server error')) {
-          errorMessage = 'Ошибка сервера. Попробуйте позже';
-        }
-        
-        this.$nextTick(() => {
-          alert(errorMessage);
-        });
-      }
-    },
-
-    handleStartTopic(topic) {
-      if (!topic._id) {
-        console.warn('⚠️ Cannot start topic without ID');
-        return;
+      };
+      
+      // Add to study list immediately
+      this.studyList.push(newStudyItem);
+      
+      // Remove from recommendations
+      this.allRecommendations = this.allRecommendations.filter(t => t._id !== topic._id);
+      this.displayedRecommendations = this.displayedRecommendations.filter(t => t._id !== topic._id);
+      
+      // ✅ BACKGROUND: Refresh from server to ensure consistency
+      setTimeout(() => {
+        this.fetchStudyList();
+      }, 1000);
+      
+      // Refill displayed recommendations if needed
+      if (this.displayedRecommendations.length < 3 && this.allRecommendations.length > this.displayedRecommendations.length) {
+        const needed = Math.min(3, this.allRecommendations.length - this.displayedRecommendations.length);
+        const available = this.allRecommendations.filter(t => 
+          !this.displayedRecommendations.some(d => d._id === t._id)
+        );
+        const additional = available.slice(0, needed);
+        this.displayedRecommendations.push(...additional);
       }
       
-      const topicType = this.getTopicType(topic);
-      const hasAccess = this.hasTopicAccess(topic);
+      console.log('✅ Topic added successfully and UI updated');
       
-      if (!hasAccess) {
-        this.requestedTopicId = topic._id;
-        this.showPaywall = true;
-      } else {
-        this.$router.push({ path: `/topic/${topic._id}/overview` });
-      }
-    },
+      // Show success message
+      this.$nextTick(() => {
+        alert('✅ Курс успешно добавлен в ваш список!');
+      });
+      
+    } else {
+      throw new Error(result?.error || 'Failed to add topic');
+    }
+    
+  } catch (err) {
+    console.error('❌ Add topic error:', err);
+    
+    // Show error message
+    let errorMessage = 'Не удалось добавить курс';
+    
+    if (err.message?.includes('уже добавлен') || err.message?.includes('already exists')) {
+      errorMessage = 'Этот курс уже добавлен в ваш список';
+    } else if (err.message?.includes('войти в аккаунт') || err.message?.includes('authentication')) {
+      errorMessage = 'Необходимо войти в аккаунт';
+    } else if (err.message?.includes('ошибка сервера') || err.message?.includes('server error')) {
+      errorMessage = 'Ошибка сервера. Попробуйте позже';
+    }
+    
+    this.$nextTick(() => {
+      alert(errorMessage);
+    });
+  }
+},
 
     async removeStudyCard(id) {
       try {
