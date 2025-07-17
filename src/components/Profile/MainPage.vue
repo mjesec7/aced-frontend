@@ -1485,7 +1485,7 @@ export default {
 }
 
 /* ========================================
-   🎠 RECOMMENDATIONS CAROUSEL
+   🎠 RECOMMENDATIONS CAROUSEL - FIXED LAYOUT
 ======================================== */
 .recommendations-carousel {
   position: relative;
@@ -1523,7 +1523,7 @@ export default {
   display: flex;
   flex-direction: column;
   border: 1px solid #1a1a1a;
-  height: 320px;
+  height: 420px;
   position: relative;
   overflow: hidden;
 }
@@ -1534,6 +1534,7 @@ export default {
   border-color: #8b5cf6;
   background: radial-gradient(circle at center, rgba(139, 92, 246, 0.05), #ffffff);
 }
+
 .loading-carousel {
   display: flex;
   gap: 24px;
@@ -1543,9 +1544,9 @@ export default {
 
 .loading-carousel .recommendation-placeholder {
   flex: 0 0 320px;
-  height: 260px;
+  height: 420px;
   background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #1a1a1a;
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -1592,6 +1593,205 @@ export default {
 
 .carousel-nav.next {
   margin-left: 4px;
+}
+
+/* ========================================
+   🏷️ TOPIC BADGE - FIXED POSITIONING
+======================================== */
+.topic-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 3;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.topic-badge.free {
+  background: #ffffff;
+  color: #374151;
+  border: 2px solid #374151;
+}
+
+.topic-badge.premium {
+  background: #8b5cf6;
+  color: #ffffff;
+  border: 2px solid #8b5cf6;
+}
+
+.topic-badge.pro {
+  background: #1f2937;
+  color: #ffffff;
+  border: 2px solid #1f2937;
+}
+
+/* ========================================
+   📝 TOPIC CONTENT - FIXED LAYOUT
+======================================== */
+.topic-content {
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-top: 60px; /* Space for badge */
+}
+
+.topic-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 3.2rem;
+}
+
+.topic-desc {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex-grow: 1;
+}
+
+.topic-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 12px 0;
+  border-top: 1px solid #f3f4f6;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.stat-icon {
+  font-size: 1rem;
+  opacity: 0.7;
+}
+
+.stat-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.subject-info {
+  margin-bottom: 20px;
+}
+
+.subject-tag {
+  display: inline-block;
+  background: #f3f4f6;
+  color: #374151;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid #e5e7eb;
+}
+
+/* ========================================
+   🔘 CARD ACTIONS - FIXED BUTTON LAYOUT
+======================================== */
+.card-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.add-btn,
+.start-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  text-decoration: none;
+  white-space: nowrap;
+  min-height: 48px;
+}
+
+.add-btn {
+  flex: 0 0 auto;
+  min-width: 120px;
+  background: #f8fafc;
+  color: #374151;
+  border: 2px solid #e5e7eb;
+}
+
+.add-btn:hover:not(:disabled) {
+  background: #8b5cf6;
+  color: #ffffff;
+  border-color: #8b5cf6;
+  transform: translateY(-1px);
+}
+
+.add-btn:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+}
+
+.start-btn {
+  flex: 1;
+  background: #111827;
+  color: #ffffff;
+  border: 2px solid #111827;
+}
+
+.start-btn:hover {
+  background: #1f2937;
+  border-color: #1f2937;
+  transform: translateY(-1px);
+}
+
+.start-btn.btn-restricted {
+  background: #6b7280;
+  border-color: #6b7280;
+}
+
+.start-btn.btn-restricted:hover {
+  background: #4b5563;
+  border-color: #4b5563;
+}
+
+.add-icon,
+.start-icon {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.add-text,
+.start-text {
+  font-size: 0.85rem;
 }
 
 /* ========================================
@@ -1715,29 +1915,6 @@ export default {
   font-weight: 500;
 }
 
-.refresh-btn {
-  background: #1a1a1a;
-  color: #ffffff;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 10px;
-  font-weight: 500;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.refresh-btn:hover {
-  background: #8b5cf6;
-  transform: translateY(-2px);
-}
-
-.refresh-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
 .info-badge {
   background: #8b5cf6;
   color: #ffffff;
@@ -1854,312 +2031,6 @@ export default {
 }
 
 /* ========================================
-   🎴 TOPIC CARDS - COMPACT DESIGN
-======================================== */
-.topic-card {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid #e5e7eb;
-  min-height: 220px;
-  position: relative;
-  overflow: hidden;
-}
-
-.topic-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
-  border-color: #8b5cf6;
-}
-
-/* Clean type indicators */
-.topic-free {
-  border-left: 3px solid #1a1a1a;
-}
-
-.topic-premium {
-  border-left: 3px solid #8b5cf6;
-}
-
-.topic-pro {
-  border-left: 3px solid #6b7280;
-}
-
-/* Topic type badge - compact */
-.topic-type-badge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  z-index: 2;
-}
-
-.topic-type-badge.free {
-  background: #f3f4f6;
-  color: #1a1a1a;
-  border: 1px solid #e5e7eb;
-}
-
-.topic-type-badge.premium {
-  background: #f3f0ff;
-  color: #8b5cf6;
-  border: 1px solid #8b5cf6;
-}
-
-.topic-type-badge.pro {
-  background: #1a1a1a;
-  color: #ffffff;
-  border: 1px solid #1a1a1a;
-}
-
-.badge-icon {
-  font-size: 0.8rem;
-}
-
-.badge-text {
-  font-size: 0.65rem;
-}
-
-/* Topic content - compact */
-.topic-content {
-  padding: 16px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.topic-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 6px;
-  line-height: 1.3;
-  margin-top: 16px;
-}
-
-.topic-desc {
-  font-size: 0.8rem;
-  color: #6b7280;
-  margin: 6px 0 12px 0;
-  line-height: 1.5;
-  flex-grow: 1;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Topic metadata - compact */
-.topic-metadata {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.metadata-item {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-.metadata-icon {
-  font-size: 0.8rem;
-}
-
-.metadata-text {
-  font-weight: 500;
-}
-
-.difficulty-stars {
-  display: flex;
-  gap: 1px;
-}
-
-.star {
-  color: #e5e7eb;
-  font-size: 0.7rem;
-}
-
-.star.filled {
-  color: #8b5cf6;
- size: 0.9rem; 
-}
-
-
-.badge-text {
-  font-size: 0.7rem;
-}
-
-/* Topic content */
-.topic-content {
-  padding: 24px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.topic-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 8px;
-  line-height: 1.4;
-  margin-top: 20px;
-}
-
-.topic-desc {
-  font-size: 0.85rem;
-  color: #6b7280;
-  margin: 8px 0 16px 0;
-  line-height: 1.6;
-  flex-grow: 1;
-}
-
-/* Topic metadata - clean */
-.topic-metadata {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.metadata-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.8rem;
-  color: #6b7280;
-}
-
-.metadata-icon {
-  font-size: 0.9rem;
-}
-
-.metadata-text {
-  font-weight: 500;
-}
-
-.difficulty-stars {
-  display: flex;
-  gap: 1px;
-}
-
-.star {
-  color: #e5e7eb;
-  font-size: 0.8rem;
-}
-
-.star.filled {
-  color: #8b5cf6;
-}
-
-/* ========================================
-   🔘 BUTTONS - COMPACT DESIGN
-======================================== */
-.card-buttons {
-  display: flex;
-  gap: 8px;
-  margin-top: auto;
-  padding: 0 16px 16px 16px;
-}
-
-.btn-add,
-.btn-start {
-  flex: 1;
-  padding: 10px 12px;
-  font-size: 0.8rem;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  text-decoration: none;
-  border: 2px solid transparent;
-}
-
-.btn-add {
-  background: #ffffff;
-  color: #1a1a1a;
-  border-color: #e5e7eb;
-}
-
-.btn-add:hover {
-  background: #f9fafb;
-  border-color: #8b5cf6;
-  color: #8b5cf6;
-  transform: translateY(-1px);
-}
-
-.btn-add:disabled {
-  background: #f3f4f6;
-  color: #9ca3af;
-  cursor: not-allowed;
-  border-color: #e5e7eb;
-}
-
-.btn-add:disabled:hover {
-  transform: none;
-}
-
-/* Start button variants - compact */
-.btn-free,
-.btn-premium,
-.btn-pro {
-  background: #1a1a1a;
-  color: #ffffff;
-  border-color: #1a1a1a;
-}
-
-.btn-free:hover,
-.btn-premium:hover,
-.btn-pro:hover {
-  background: #8b5cf6;
-  border-color: #8b5cf6;
-  transform: translateY(-1px);
-}
-
-.btn-restricted {
-  background: #6b7280;
-  color: #ffffff;
-  border-color: #6b7280;
-}
-
-.btn-restricted:hover {
-  background: #4b5563;
-  border-color: #4b5563;
-  transform: translateY(-1px);
-}
-
-.btn-icon {
-  font-size: 0.8rem;
-}
-
-.btn-text {
-  font-size: 0.75rem;
-}
-
-/* ========================================
    📱 RESPONSIVE DESIGN
 ======================================== */
 @media (max-width: 1024px) {
@@ -2199,7 +2070,27 @@ export default {
   
   .recommendation-card {
     flex: 0 0 300px;
-    height: 240px;
+    height: 400px;
+  }
+  
+  .topic-content {
+    padding: 20px;
+    padding-top: 55px;
+  }
+  
+  .topic-title {
+    font-size: 1.1rem;
+  }
+  
+  .card-actions {
+    gap: 10px;
+  }
+  
+  .add-btn,
+  .start-btn {
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    min-height: 44px;
   }
 }
 
@@ -2264,7 +2155,51 @@ export default {
   
   .recommendation-card {
     flex: 0 0 280px;
-    height: 220px;
+    height: 380px;
+  }
+  
+  .topic-content {
+    padding: 16px;
+    padding-top: 50px;
+  }
+  
+  .topic-title {
+    font-size: 1rem;
+    min-height: 2.8rem;
+  }
+  
+  .topic-desc {
+    font-size: 0.8rem;
+    margin-bottom: 16px;
+  }
+  
+  .topic-stats {
+    margin-bottom: 12px;
+    padding: 8px 0;
+  }
+  
+  .stat-value {
+    font-size: 0.8rem;
+  }
+  
+  .subject-tag {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+  }
+  
+  .card-actions {
+    gap: 8px;
+  }
+  
+  .add-btn,
+  .start-btn {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+    min-height: 40px;
+  }
+  
+  .add-btn {
+    min-width: 100px;
   }
   
   .carousel-track {
@@ -2295,25 +2230,6 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
-  }
-  
-  .topic-card {
-    min-height: 200px;
-  }
-  
-  .topic-content {
-    padding: 14px;
-  }
-  
-  .card-buttons {
-    padding: 0 14px 14px 14px;
-    flex-direction: column;
-    gap: 6px;
-  }
-  
-  .topic-metadata {
-    flex-direction: column;
-    gap: 6px;
   }
   
   .empty-actions {
@@ -2372,32 +2288,6 @@ export default {
     padding: 16px;
   }
   
-  .topic-card {
-    min-height: 180px;
-  }
-  
-  .topic-content {
-    padding: 12px;
-  }
-  
-  .topic-title {
-    font-size: 0.95rem;
-  }
-  
-  .topic-desc {
-    font-size: 0.75rem;
-  }
-  
-  .card-buttons {
-    padding: 0 12px 12px 12px;
-  }
-  
-  .btn-add,
-  .btn-start {
-    padding: 8px 10px;
-    font-size: 0.75rem;
-  }
-  
   .empty-state {
     padding: 40px 16px;
   }
@@ -2409,199 +2299,55 @@ export default {
   .empty-state h3 {
     font-size: 1.1rem;
   }
-}
-.recommendation-card .topic-badge {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  z-index: 2;
-}
-
-.recommendation-card .topic-badge.free {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-.recommendation-card .topic-badge.premium {
-  background: #ddd6fe;
-  color: #5b21b6;
-  border: 1px solid #8b5cf6;
-}
-
-.recommendation-card .topic-badge.pro {
-  background: #1f2937;
-  color: #ffffff;
-  border: 1px solid #374151;
-}
-
-.recommendation-card .topic-content {
-  padding: 20px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.recommendation-card .topic-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #111827;
-  margin: 0 0 8px 0;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  
+  /* ✅ FIXED: Keep recommendation card buttons on same line on mobile */
+  .recommendation-card .card-actions {
+    flex-direction: row !important;
+    gap: 8px;
+    padding: 0 16px 16px 16px;
+  }
+  
+  .recommendation-card .add-btn,
+  .recommendation-card .start-btn {
+    flex: 1;
+    padding: 10px 8px;
+    font-size: 0.75rem;
+    min-width: 0;
+  }
+  
+  .recommendation-card .add-text,
+  .recommendation-card .start-text {
+    font-size: 0.7rem;
+  }
+  
+  .recommendation-card .topic-content {
+    padding: 16px;
+  }
+  
+  .recommendation-card .topic-title {
+    font-size: 1rem;
+    margin-bottom: 8px;
+  }
+  
+  .recommendation-card .topic-desc {
+    font-size: 0.8rem;
+    margin-bottom: 16px;
+  }
+  
+  .recommendation-card .topic-stats {
+    margin-bottom: 12px;
+    padding: 8px 0;
+  }
+  
+  .recommendation-card .stat-value {
+    font-size: 0.8rem;
+  }
+  
+  .recommendation-card .subject-tag {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+  }
 }
 
-.recommendation-card .topic-desc {
-  font-size: 0.85rem;
-  color: #6b7280;
-  margin: 0 0 16px 0;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.recommendation-card .topic-stats {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  padding: 8px 0;
-  border-top: 1px solid #f3f4f6;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.recommendation-card .stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  flex: 1;
-}
-
-.recommendation-card .stat-icon {
-  font-size: 0.9rem;
-  opacity: 0.7;
-}
-
-.recommendation-card .stat-value {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #111827;
-}
-
-.recommendation-card .subject-info {
-  margin-bottom: 16px;
-}
-
-.recommendation-card .subject-tag {
-  display: inline-block;
-  background: #f3f4f6;
-  color: #374151;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  border: 1px solid #e5e7eb;
-}
-
-.recommendation-card .card-actions {
-  display: flex;
-  gap: 12px;
-  padding: 0 20px 20px 20px;
-}
-
-.recommendation-card .add-btn,
-.recommendation-card .start-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-  text-decoration: none;
-}
-
-.recommendation-card .add-btn {
-  flex: 0 0 auto;
-  background: #f8fafc;
-  color: #374151;
-  border: 2px solid #e5e7eb;
-}
-
-.recommendation-card .add-btn:hover:not(:disabled) {
-  background: #8b5cf6;
-  color: #ffffff;
-  border-color: #8b5cf6;
-  transform: translateY(-1px);
-}
-
-.recommendation-card .add-btn:disabled {
-  background: #f3f4f6;
-  color: #9ca3af;
-  border-color: #e5e7eb;
-  cursor: not-allowed;
-}
-
-.recommendation-card .start-btn {
-  flex: 1;
-  background: #111827;
-  color: #ffffff;
-  border: 2px solid #111827;
-}
-
-.recommendation-card .start-btn:hover {
-  background: #1f2937;
-  border-color: #1f2937;
-  transform: translateY(-1px);
-}
-
-.recommendation-card .start-btn.btn-restricted {
-  background: #6b7280;
-  border-color: #6b7280;
-}
-
-.recommendation-card .start-btn.btn-restricted:hover {
-  background: #4b5563;
-  border-color: #4b5563;
-}
-
-.recommendation-card .add-icon,
-.recommendation-card .start-icon {
-  font-size: 0.9rem;
-  font-weight: bold;
-}
-
-.recommendation-card .add-text,
-.recommendation-card .start-text {
-  font-size: 0.8rem;
-}
-
-/* Clean type indicators */
-.recommendation-card.topic-free {
-  border-left: 4px solid #374151;
-}
-
-.recommendation-card.topic-premium {
-  border-left: 4px solid #8b5cf6;
-}
-
-.recommendation-card.topic-pro {
-  border-left: 4px solid #1f2937;
-}
+/* Clean type indicators - REMOVED */
 </style>

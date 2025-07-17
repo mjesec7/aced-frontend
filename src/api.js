@@ -2351,15 +2351,103 @@ export const addToStudyList = async (userId, topicData) => {
     
     console.log('📦 Sending clean topic data:', cleanTopicData);
     
-    const { data } = await api.post(`/users/${userId}/study-list`, cleanTopicData, {
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
+    // ✅ STRATEGY 1: Try to add to study list directly first
+    try {
+      const { data } = await api.post(`/users/${userId}/study-list`, cleanTopicData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('✅ Direct add to study list successful:', data);
+      return data;
+      
+    } catch (directError) {
+      console.warn('⚠️ Direct add to study list failed:', directError.message);
+      
+      // If it's not a "not found" error, re-throw immediately
+      const errorMessage = directError.response?.data?.error || directError.response?.data?.message || directError.message;
+      if (!errorMessage.includes('not found') && !errorMessage.includes('Topic not found')) {
+        throw directError;
       }
-    });
-    
-    console.log('✅ Study list add response:', data);
-    return data;
+      
+      console.log('🔄 Topic not found in database, attempting to create it first...');
+      
+      // ✅ STRATEGY 2: Create the topic first, then add to study list
+      try {
+        const topicCreationData = {
+          _id: topicData._id || topicData.topicId,
+          topicId: topicData._id || topicData.topicId,
+          name: topicData.name || topicData.topic || topicData.topicName,
+          topicName: topicData.name || topicData.topic || topicData.topicName,
+          description: topicData.description || `Курс по теме "${cleanTopicData.topic}"`,
+          subject: topicData.subject || 'General',
+          level: topicData.level || 1,
+          type: topicData.type || 'free',
+          lessonCount: topicData.lessonCount || 0,
+          totalTime: topicData.totalTime || 10,
+          lessons: topicData.lessons || [],
+          isActive: true,
+          createdAt: topicData.createdAt || new Date().toISOString(),
+          metadata: {
+            source: 'frontend-creation',
+            createdFrom: 'addToStudyList',
+            originalData: topicData
+          }
+        };
+        
+        console.log('🏗️ Attempting to create topic first:', topicCreationData);
+        
+        // Try multiple endpoints for topic creation
+        const topicCreationEndpoints = [
+          '/topics/create-or-update',
+          '/topics/ensure', 
+          '/topics'
+        ];
+        
+        let topicCreated = false;
+        
+        for (const endpoint of topicCreationEndpoints) {
+          try {
+            const { data: creationResponse } = await api.post(endpoint, topicCreationData, {
+              headers: { 
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (creationResponse && creationResponse.success !== false) {
+              console.log(`✅ Topic created successfully via ${endpoint}`);
+              topicCreated = true;
+              break;
+            }
+          } catch (creationError) {
+            console.warn(`⚠️ Topic creation failed via ${endpoint}:`, creationError.message);
+            continue;
+          }
+        }
+        
+        if (!topicCreated) {
+          console.warn('⚠️ Could not create topic via any endpoint, but proceeding with study list add...');
+        }
+        
+        // Now try to add to study list again after topic creation
+        const { data } = await api.post(`/users/${userId}/study-list`, cleanTopicData, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('✅ Study list add successful after topic creation:', data);
+        return data;
+        
+      } catch (creationAndAddError) {
+        console.error('❌ Topic creation and study list add both failed:', creationAndAddError);
+        throw creationAndAddError;
+      }
+    }
     
   } catch (error) {
     console.error('❌ Failed to add to study list:', error);
