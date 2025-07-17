@@ -1,19 +1,99 @@
 <template>
   <div class="dashboard">
     <h1 class="title">👋 Добро пожаловать обратно!</h1>
-    <div class="controls">
-      <input v-model="searchQuery" class="search-input" placeholder="🔍 Поиск тем или курсов..." />
-      <select v-model="filterSubject" class="filter-select">
-        <option value="">Все предметы</option>
-        <option v-for="subject in allSubjects" :key="subject" :value="subject">{{ subject }}</option>
-      </select>
-      <select v-model="filterType" class="filter-select">
-        <option value="">Все типы</option>
-        <option value="free">💚 Бесплатные</option>
-        <option value="premium">💎 Премиум</option>
-        <option value="pro">🌟 Pro</option>
-      </select>
-      <span class="user-status-badge" :class="userStatus">{{ userStatusLabel }}</span>
+    <!-- Enhanced Filter Panel -->
+    <div class="filter-panel">
+      <div class="filter-header">
+        <h3>🔍 Фильтры и поиск</h3>
+        <button @click="clearFilters" class="clear-all-btn">🗑️ Очистить все</button>
+      </div>
+      
+      <div class="filter-grid">
+        <!-- Search -->
+        <div class="filter-group">
+          <label class="filter-label">Поиск</label>
+          <input v-model="searchQuery" class="search-input" placeholder="Найти курс..." />
+        </div>
+        
+        <!-- Subject Filter -->
+        <div class="filter-group">
+          <label class="filter-label">Предмет</label>
+          <select v-model="filterSubject" class="filter-select">
+            <option value="">Все предметы</option>
+            <option v-for="subject in allSubjects" :key="subject" :value="subject">{{ subject }}</option>
+          </select>
+        </div>
+        
+        <!-- Level Filter -->
+        <div class="filter-group">
+          <label class="filter-label">Уровень</label>
+          <select v-model="filterLevel" class="filter-select">
+            <option value="">Все уровни</option>
+            <option v-for="level in allLevels" :key="level" :value="level">{{ getLevelLabel(level) }}</option>
+          </select>
+        </div>
+        
+        <!-- Type Filter -->
+        <div class="filter-group">
+          <label class="filter-label">Тип доступа</label>
+          <select v-model="filterType" class="filter-select">
+            <option value="">Все типы</option>
+            <option value="free">💚 Бесплатные</option>
+            <option value="premium">💎 Премиум</option>
+            <option value="pro">🌟 Pro</option>
+          </select>
+        </div>
+        
+        <!-- Progress Filter (for study list) -->
+        <div class="filter-group">
+          <label class="filter-label">Прогресс</label>
+          <select v-model="filterProgress" class="filter-select">
+            <option value="">Любой прогресс</option>
+            <option value="not-started">⭕ Не начато</option>
+            <option value="in-progress">🔄 В процессе</option>
+            <option value="completed">✅ Завершено</option>
+          </select>
+        </div>
+        
+        <!-- Sort Options -->
+        <div class="filter-group">
+          <label class="filter-label">Сортировка</label>
+          <select v-model="sortBy" class="filter-select">
+            <option value="name">📝 По названию</option>
+            <option value="progress">📊 По прогрессу</option>
+            <option value="recent">🕒 Недавние</option>
+            <option value="subject">🏷️ По предмету</option>
+            <option value="level">📈 По уровню</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- Active Filters Display -->
+      <div v-if="hasActiveFilters" class="active-filters">
+        <span class="active-filters-label">Активные фильтры:</span>
+        <div class="filter-tags">
+          <span v-if="searchQuery" class="filter-tag" @click="searchQuery = ''">
+            🔍 "{{ searchQuery }}" ×
+          </span>
+          <span v-if="filterSubject" class="filter-tag" @click="filterSubject = ''">
+            🏷️ {{ filterSubject }} ×
+          </span>
+          <span v-if="filterLevel" class="filter-tag" @click="filterLevel = ''">
+            📈 {{ getLevelLabel(filterLevel) }} ×
+          </span>
+          <span v-if="filterType" class="filter-tag" @click="filterType = ''">
+            {{ getTypeIcon(filterType) }} {{ getTypeLabel(filterType) }} ×
+          </span>
+          <span v-if="filterProgress" class="filter-tag" @click="filterProgress = ''">
+            {{ getProgressIcon(filterProgress) }} {{ getProgressLabel(filterProgress) }} ×
+          </span>
+        </div>
+      </div>
+      
+      <!-- User Status Badge -->
+      <div class="user-status-section">
+        <span class="user-status-badge" :class="userStatus">{{ userStatusLabel }}</span>
+      </div>
     </div>
 
     <!-- Error Alert -->
@@ -200,11 +280,18 @@ export default {
       recommendations: [],
       studyList: [],
       allSubjects: [],
+      allLevels: [],
       loadingRecommendations: true,
       loadingStudyList: true,
+      
+      // Enhanced Filters
       searchQuery: '',
       filterSubject: '',
+      filterLevel: '',
       filterType: '',
+      filterProgress: '',
+      sortBy: 'name',
+      
       showPaywall: false,
       requestedTopicId: null,
       lang: localStorage.getItem('lang') || 'en',
@@ -222,7 +309,7 @@ export default {
     ...mapGetters('user', ['userStatus']),
     
     filteredRecommendations() {
-      return this.recommendations
+      return this.applySorting(this.recommendations
         .filter(t => t.lessons?.length)
         .filter(t => {
           const name = this.getTopicName(t);
@@ -231,26 +318,46 @@ export default {
           
           return (
             (!this.filterSubject || t.subject === this.filterSubject) &&
+            (!this.filterLevel || t.level?.toString() === this.filterLevel?.toString()) &&
             (!this.filterType || topicType === this.filterType) &&
             (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
              description.toLowerCase().includes(this.searchQuery.toLowerCase()))
           );
-        });
+        }));
     },
     
     filteredStudyList() {
-      return this.studyList.filter(t => {
+      return this.applySorting(this.studyList.filter(t => {
         const name = this.getTopicName(t);
         const description = this.getTopicDescription(t);
         const topicType = this.getTopicType(t);
+        const progress = t.progress?.percent || 0;
+        
+        // Progress filter logic
+        let matchesProgress = true;
+        if (this.filterProgress) {
+          switch (this.filterProgress) {
+            case 'not-started':
+              matchesProgress = progress === 0;
+              break;
+            case 'in-progress':
+              matchesProgress = progress > 0 && progress < 100;
+              break;
+            case 'completed':
+              matchesProgress = progress === 100;
+              break;
+          }
+        }
         
         return (
           (!this.filterSubject || t.subject === this.filterSubject) &&
+          (!this.filterLevel || t.level?.toString() === this.filterLevel?.toString()) &&
           (!this.filterType || topicType === this.filterType) &&
+          matchesProgress &&
           (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
            description.toLowerCase().includes(this.searchQuery.toLowerCase()))
         );
-      });
+      }));
     },
     
     userStatusLabel() {
@@ -261,6 +368,11 @@ export default {
     
     hasErrors() {
       return this.errors.recommendations || this.errors.studyList;
+    },
+    
+    hasActiveFilters() {
+      return this.searchQuery || this.filterSubject || this.filterLevel || 
+             this.filterType || this.filterProgress;
     }
   },
   async mounted() {
@@ -375,7 +487,10 @@ export default {
     clearFilters() {
       this.searchQuery = '';
       this.filterSubject = '';
+      this.filterLevel = '';
       this.filterType = '';
+      this.filterProgress = '';
+      this.sortBy = 'name';
     },
     
     getTopicName(topic) {
@@ -775,6 +890,83 @@ export default {
     extractSubjects(items) {
       const subjects = new Set(items.map(item => item.subject).filter(Boolean));
       this.allSubjects = Array.from(subjects);
+      
+      const levels = new Set(items.map(item => item.level).filter(Boolean));
+      this.allLevels = Array.from(levels).sort((a, b) => Number(a) - Number(b));
+    },
+    
+    // ✅ NEW: Sorting functionality
+    applySorting(items) {
+      const sorted = [...items];
+      
+      switch (this.sortBy) {
+        case 'name':
+          return sorted.sort((a, b) => this.getTopicName(a).localeCompare(this.getTopicName(b)));
+        
+        case 'progress':
+          return sorted.sort((a, b) => (b.progress?.percent || 0) - (a.progress?.percent || 0));
+        
+        case 'recent':
+          return sorted.sort((a, b) => {
+            const aDate = new Date(a.createdAt || a.studyListEntry?.createdAt || 0);
+            const bDate = new Date(b.createdAt || b.studyListEntry?.createdAt || 0);
+            return bDate - aDate;
+          });
+        
+        case 'subject':
+          return sorted.sort((a, b) => (a.subject || '').localeCompare(b.subject || ''));
+        
+        case 'level':
+          return sorted.sort((a, b) => (a.level || 0) - (b.level || 0));
+        
+        default:
+          return sorted;
+      }
+    },
+    
+    // ✅ NEW: Filter label helpers
+    getLevelLabel(level) {
+      if (!level) return '';
+      const num = Number(level);
+      if (num <= 3) return `Уровень ${level} (Начальный)`;
+      if (num <= 6) return `Уровень ${level} (Средний)`;
+      return `Уровень ${level} (Продвинутый)`;
+    },
+    
+    getTypeIcon(type) {
+      switch (type) {
+        case 'free': return '💚';
+        case 'premium': return '💎';
+        case 'pro': return '🌟';
+        default: return '';
+      }
+    },
+    
+    getTypeLabel(type) {
+      switch (type) {
+        case 'free': return 'Бесплатные';
+        case 'premium': return 'Премиум';
+        case 'pro': return 'Pro';
+        default: return '';
+      }
+    },
+    
+    getProgressIcon(progress) {
+      switch (progress) {
+        case 'not-started': return '⭕';
+        case 'in-progress': return '🔄';
+        case 'completed': return '✅';
+        default: return '';
+      }
+    },
+    
+    getProgressLabel(progress) {
+      switch (progress) {
+        case 'not-started': return 'Не начато';
+        case 'in-progress': return 'В процессе';
+        case 'completed': return 'Завершено';
+        default: return '';
+      }
     },
 
     async refreshRecommendations() {
@@ -905,40 +1097,84 @@ export default {
 }
 
 /* ========================================
-   🎛️ CONTROLS
+   🎛️ ENHANCED FILTER PANEL
 ======================================== */
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 40px;
-  padding: 24px;
+.filter-panel {
   background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border: 1px solid #e5e7eb;
+  margin-bottom: 32px;
+  padding: 24px;
+}
+
+.filter-header {
+  display: flex;
+  justify-content: between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.filter-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.clear-all-btn {
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-all-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #374151;
 }
 
 .search-input,
 .filter-select {
-  padding: 12px 16px;
+  padding: 10px 12px;
   font-size: 0.9rem;
   font-weight: 400;
   border: 2px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 8px;
   background: #ffffff;
   color: #1a1a1a;
   transition: all 0.3s ease;
-  min-width: 180px;
 }
 
 .search-input:focus,
 .filter-select:focus {
   outline: none;
   border-color: #8b5cf6;
-  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .search-input::placeholder {
@@ -949,6 +1185,52 @@ export default {
 .filter-select option {
   background: #ffffff;
   color: #1a1a1a;
+}
+
+/* Active Filters */
+.active-filters {
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+  margin-top: 16px;
+}
+
+.active-filters-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-right: 12px;
+}
+
+.filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.filter-tag {
+  background: #8b5cf6;
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.filter-tag:hover {
+  background: #7c3aed;
+  transform: scale(1.05);
+}
+
+/* User Status Section */
+.user-status-section {
+  margin-top: 16px;
+  text-align: center;
 }
 
 /* User Status Badge */
@@ -1131,12 +1413,12 @@ export default {
 }
 
 /* ========================================
-   🃏 GRID & CARDS
+   🃏 GRID & CARDS - COMPACT DESIGN
 ======================================== */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
   padding: 0;
 }
 
@@ -1144,12 +1426,12 @@ export default {
 .study-placeholder {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  height: 280px;
+  border-radius: 12px;
+  height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   color: #6b7280;
   font-weight: 500;
 }
@@ -1235,54 +1517,54 @@ export default {
 }
 
 /* ========================================
-   🎴 TOPIC CARDS - CLEAN DESIGN
+   🎴 TOPIC CARDS - COMPACT DESIGN
 ======================================== */
 .topic-card {
   background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: all 0.4s ease;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   border: 1px solid #e5e7eb;
-  min-height: 280px;
+  min-height: 220px;
   position: relative;
   overflow: hidden;
 }
 
 .topic-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
   border-color: #8b5cf6;
 }
 
 /* Clean type indicators */
 .topic-free {
-  border-left: 4px solid #1a1a1a;
+  border-left: 3px solid #1a1a1a;
 }
 
 .topic-premium {
-  border-left: 4px solid #8b5cf6;
+  border-left: 3px solid #8b5cf6;
 }
 
 .topic-pro {
-  border-left: 4px solid #6b7280;
+  border-left: 3px solid #6b7280;
 }
 
-/* Topic type badge - simplified */
+/* Topic type badge - compact */
 .topic-type-badge {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 12px;
+  right: 12px;
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.75rem;
+  gap: 3px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   z-index: 2;
 }
 
@@ -1305,8 +1587,83 @@ export default {
 }
 
 .badge-icon {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
+
+.badge-text {
+  font-size: 0.65rem;
+}
+
+/* Topic content - compact */
+.topic-content {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.topic-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+  line-height: 1.3;
+  margin-top: 16px;
+}
+
+.topic-desc {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 6px 0 12px 0;
+  line-height: 1.5;
+  flex-grow: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Topic metadata - compact */
+.topic-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.metadata-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.metadata-icon {
+  font-size: 0.8rem;
+}
+
+.metadata-text {
+  font-weight: 500;
+}
+
+.difficulty-stars {
+  display: flex;
+  gap: 1px;
+}
+
+.star {
+  color: #e5e7eb;
+  font-size: 0.7rem;
+}
+
+.star.filled {
+  color: #8b5cf6;
+  size: 0.9rem;
+}
+
 
 .badge-text {
   font-size: 0.7rem;
@@ -1378,28 +1735,28 @@ export default {
 }
 
 /* ========================================
-   🔘 BUTTONS - CLEAN DESIGN
+   🔘 BUTTONS - COMPACT DESIGN
 ======================================== */
 .card-buttons {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   margin-top: auto;
-  padding: 0 24px 24px 24px;
+  padding: 0 16px 16px 16px;
 }
 
 .btn-add,
 .btn-start {
   flex: 1;
-  padding: 12px 16px;
-  font-size: 0.85rem;
-  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   text-decoration: none;
   border: 2px solid transparent;
 }
@@ -1414,7 +1771,7 @@ export default {
   background: #f9fafb;
   border-color: #8b5cf6;
   color: #8b5cf6;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .btn-add:disabled {
@@ -1428,7 +1785,7 @@ export default {
   transform: none;
 }
 
-/* Start button variants - clean */
+/* Start button variants - compact */
 .btn-free,
 .btn-premium,
 .btn-pro {
@@ -1442,7 +1799,7 @@ export default {
 .btn-pro:hover {
   background: #8b5cf6;
   border-color: #8b5cf6;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .btn-restricted {
@@ -1454,15 +1811,15 @@ export default {
 .btn-restricted:hover {
   background: #4b5563;
   border-color: #4b5563;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .btn-icon {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .btn-text {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
 
 /* ========================================
@@ -1478,21 +1835,23 @@ export default {
     margin-bottom: 24px;
   }
   
-  .controls {
+  .filter-panel {
     padding: 20px;
+    margin-bottom: 24px;
+  }
+  
+  .filter-grid {
+    grid-template-columns: 1fr;
     gap: 12px;
   }
   
-  .search-input,
-  .filter-select {
-    min-width: 140px;
-    font-size: 0.85rem;
-    padding: 10px 14px;
+  .filter-tags {
+    justify-content: center;
   }
   
   .grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 16px;
   }
   
   .section h2 {
@@ -1501,7 +1860,7 @@ export default {
   
   .recommendations-section,
   .study-section {
-    padding: 24px;
+    padding: 20px;
   }
   
   .section-header {
@@ -1516,14 +1875,23 @@ export default {
     gap: 8px;
   }
   
+  .topic-card {
+    min-height: 200px;
+  }
+  
+  .topic-content {
+    padding: 14px;
+  }
+  
   .card-buttons {
+    padding: 0 14px 14px 14px;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
   
   .topic-metadata {
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
   
   .empty-actions {
@@ -1537,28 +1905,85 @@ export default {
     font-size: 1.5rem;
   }
   
-  .controls {
-    flex-direction: column;
-    align-items: stretch;
+  .filter-panel {
     padding: 16px;
+  }
+  
+  .filter-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .filter-header h3 {
+    font-size: 1rem;
+  }
+  
+  .clear-all-btn {
+    align-self: stretch;
+    text-align: center;
+  }
+  
+  .filter-grid {
+    gap: 10px;
   }
   
   .search-input,
   .filter-select {
-    width: 100%;
+    font-size: 0.85rem;
+    padding: 8px 10px;
   }
   
   .recommendations-section,
   .study-section {
-    padding: 20px;
+    padding: 16px;
+  }
+  
+  .topic-card {
+    min-height: 180px;
   }
   
   .topic-content {
-    padding: 20px;
+    padding: 12px;
+  }
+  
+  .topic-title {
+    font-size: 0.95rem;
+  }
+  
+  .topic-desc {
+    font-size: 0.75rem;
   }
   
   .card-buttons {
-    padding: 0 20px 20px 20px;
+    padding: 0 12px 12px 12px;
+  }
+  
+  .btn-add,
+  .btn-start {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+  
+  .empty-state {
+    padding: 40px 16px;
+  }
+  
+  .empty-icon {
+    font-size: 2.5rem;
+  }
+  
+  .empty-state h3 {
+    font-size: 1.1rem;
+  }
+  
+  .filter-tags {
+    gap: 6px;
+  }
+  
+  .filter-tag {
+    font-size: 0.75rem;
+    padding: 3px 8px;
   }
 }
 </style>

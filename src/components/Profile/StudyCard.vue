@@ -13,49 +13,51 @@
         <h3 class="topic-name">{{ displayName }}</h3>
         <div class="topic-meta">
           <span class="subject-tag" v-if="topic.subject">{{ topic.subject }}</span>
-          <span class="level-tag" v-if="topic.level">{{ topic.level }}</span>
+          <span class="level-tag" v-if="topic.level">Ур. {{ topic.level }}</span>
         </div>
       </div>
     </div>
 
     <div class="progress-section">
       <div class="progress-header">
-        <span class="progress-text">{{ lessonProgress }}% завершено</span>
-        <span class="points-earned" v-if="progress.points">+{{ progress.points }} очков</span>
+        <span class="progress-text">{{ lessonProgress }}%</span>
+        <span class="medal-badge" v-if="progress.medal && progress.medal !== 'none'">
+          {{ getMedalIcon(progress.medal) }}
+        </span>
       </div>
       <div class="progress-bar">
-        <div class="progress-fill" :style="{ width: lessonProgress + '%' }"></div>
+        <div class="progress-fill" :style="{ width: lessonProgress + '%' }" :class="getProgressClass()"></div>
+      </div>
+      <div class="progress-details">
+        <span class="lessons-count">{{ progress.completedLessons || 0 }}/{{ progress.totalLessons || lessons.length }}</span>
+        <span class="points" v-if="progress.points">+{{ progress.points }}⭐</span>
       </div>
     </div>
 
-    <div class="card-details">
-      <div class="detail-row">
-        <div class="detail-item">
-          <span class="detail-icon">📚</span>
-          <span class="detail-text">{{ progress.completedLessons || 0 }} из {{ progress.totalLessons || lessons.length }} уроков</span>
-        </div>
+    <div class="card-stats">
+      <div class="stat-item">
+        <span class="stat-icon">📚</span>
+        <span class="stat-text">{{ progress.totalLessons || lessons.length }} уроков</span>
       </div>
-      
-      <div class="detail-row">
-        <div class="detail-item">
-          <span class="detail-icon">⭐</span>
-          <span class="detail-text">{{ progress.stars || 0 }} звезд</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-icon">⏱</span>
-          <span class="detail-text">~{{ estimatedDuration }} мин</span>
-        </div>
+      <div class="stat-item">
+        <span class="stat-icon">⏱</span>
+        <span class="stat-text">~{{ estimatedDuration }} мин</span>
       </div>
-      
-      <div class="recent-activity" v-if="lastActivity">
-        <span class="activity-text">Последний раз: {{ lastActivity }}</span>
+      <div class="stat-item" v-if="progress.stars">
+        <span class="stat-icon">⭐</span>
+        <span class="stat-text">{{ progress.stars }} звезд</span>
       </div>
+    </div>
+    
+    <div class="recent-activity" v-if="lastActivity">
+      <span class="activity-icon">🕒</span>
+      <span class="activity-text">{{ lastActivity }}</span>
     </div>
 
     <div class="card-actions">
-      <button class="continue-btn" @click="goToLesson">
-        <span class="btn-icon">▶️</span>
-        <span>{{ lessonProgress > 0 ? 'Продолжить' : 'Начать изучение' }}</span>
+      <button class="continue-btn" @click="goToLesson" :class="getContinueButtonClass()">
+        <span class="btn-icon">{{ getContinueIcon() }}</span>
+        <span>{{ getContinueText() }}</span>
       </button>
       <button class="overview-btn" @click="goToOverview">
         <span class="btn-icon">📋</span>
@@ -70,7 +72,7 @@
           <div class="modal-icon">🗑️</div>
           <h4>Удалить курс?</h4>
           <p>Вы уверены, что хотите удалить <strong>{{ displayName }}</strong>?</p>
-          <p class="warning-text">Это также удалит весь ваш прогресс по этому курсу.</p>
+          <p class="warning-text">Прогресс по курсу будет сохранён.</p>
           <div class="modal-actions">
             <button class="confirm-btn" @click="confirmDelete">Удалить</button>
             <button class="cancel-btn" @click="showDeleteModal = false">Отмена</button>
@@ -110,13 +112,8 @@ export default {
       return isNaN(val) ? 0 : Math.round(val);
     },
     estimatedDuration() {
-      const wordSource = ['explanation', 'content', 'examples']
-        .map(k => this.topic[k]?.[this.lang] || this.topic[k]?.en || this.topic[k] || '')
-        .join(' ');
-      const wordCount = wordSource.trim().split(/\s+/).length;
-      const readTime = Math.ceil(wordCount / 50);
-      const exerciseTime = Math.ceil((this.topic.exercises?.length || 0) * 1.5);
-      return Math.max(readTime + exerciseTime, 5);
+      const lessonCount = this.progress.totalLessons || this.lessons.length || 0;
+      return Math.max(lessonCount * 8, 10); // 8 min per lesson estimate
     },
     lastActivity() {
       if (this.lessonProgress > 0) {
@@ -158,16 +155,57 @@ export default {
     getTopicTypeLabel(topic) {
       const type = this.getTopicType(topic);
       switch (type) {
-        case 'free': return 'Бесплатно';
-        case 'premium': return 'Премиум';
+        case 'free': return 'Free';
+        case 'premium': return 'Start';
         case 'pro': return 'Pro';
-        default: return 'Бесплатно';
+        default: return 'Free';
       }
+    },
+
+    // ✅ Progress and medal helpers
+    getMedalIcon(medal) {
+      switch (medal) {
+        case 'gold': return '🥇';
+        case 'silver': return '🥈';
+        case 'bronze': return '🥉';
+        default: return '';
+      }
+    },
+
+    getProgressClass() {
+      const progress = this.lessonProgress;
+      if (progress === 100) return 'progress-completed';
+      if (progress >= 70) return 'progress-high';
+      if (progress >= 30) return 'progress-medium';
+      if (progress > 0) return 'progress-low';
+      return 'progress-none';
+    },
+
+    getContinueButtonClass() {
+      const progress = this.lessonProgress;
+      if (progress === 100) return 'btn-completed';
+      if (progress > 0) return 'btn-continue';
+      return 'btn-start';
+    },
+
+    getContinueIcon() {
+      const progress = this.lessonProgress;
+      if (progress === 100) return '✅';
+      if (progress > 0) return '▶️';
+      return '🚀';
+    },
+
+    getContinueText() {
+      const progress = this.lessonProgress;
+      if (progress === 100) return 'Завершен';
+      if (progress > 0) return 'Продолжить';
+      return 'Начать';
     },
 
     checkLessonExists() {
       this.lessonExists = Array.isArray(this.lessons) && this.lessons.length > 0;
     },
+
     goToLesson() {
       try {
         if (!Array.isArray(this.lessons) || this.lessons.length === 0) {
@@ -184,9 +222,11 @@ export default {
         alert('❌ Не удалось открыть урок.');
       }
     },
+
     goToOverview() {
       this.$router.push({ path: `/topic/${this.topic._id}/overview` });
     },
+
     async confirmDelete() {
       try {
         if (!auth.currentUser) {
@@ -212,58 +252,58 @@ export default {
 
 <style scoped>
 /* ========================================
-   🎴 STUDY CARD - CLEAN THEME
+   🎴 COMPACT STUDY CARD DESIGN
 ======================================== */
 .study-card {
   position: relative;
   background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: all 0.4s ease;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   border: 1px solid #e5e7eb;
-  min-height: 280px;
-  padding: 24px;
-  gap: 20px;
+  min-height: 220px;
+  padding: 16px;
+  gap: 12px;
   overflow: hidden;
 }
 
 .study-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
   border-color: #8b5cf6;
 }
 
 /* Topic type specific styles */
 .topic-free {
-  border-left: 4px solid #1a1a1a;
+  border-left: 3px solid #1a1a1a;
 }
 
 .topic-premium {
-  border-left: 4px solid #8b5cf6;
+  border-left: 3px solid #8b5cf6;
 }
 
 .topic-pro {
-  border-left: 4px solid #6b7280;
+  border-left: 3px solid #6b7280;
 }
 
 /* ========================================
-   🏷️ TOPIC TYPE BADGE
+   🏷️ COMPACT TOPIC TYPE BADGE
 ======================================== */
 .topic-type-badge {
   position: absolute;
-  top: 16px;
-  right: 50px;
+  top: 12px;
+  right: 40px;
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.75rem;
+  gap: 3px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   z-index: 2;
 }
 
@@ -286,53 +326,49 @@ export default {
 }
 
 .badge-icon {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .badge-text {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
 }
 
 /* ========================================
-   🎯 CLOSE BUTTON
+   🎯 COMPACT CLOSE BUTTON
 ======================================== */
 .close-btn {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 8px;
+  right: 8px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   color: #6b7280;
   cursor: pointer;
   transition: all 0.2s ease;
   z-index: 10;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .close-btn:hover {
   background: #ef4444;
   color: #ffffff;
   border-color: #ef4444;
-  transform: scale(1.15);
+  transform: scale(1.1);
 }
 
 /* ========================================
-   📋 CARD HEADER
+   📋 COMPACT CARD HEADER
 ======================================== */
 .card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
 .topic-info {
@@ -340,24 +376,28 @@ export default {
 }
 
 .topic-name {
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #1a1a1a;
-  line-height: 1.4;
-  margin: 0 0 8px 0;
+  line-height: 1.3;
+  margin: 0 0 6px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .topic-meta {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .subject-tag,
 .level-tag {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.7rem;
+  padding: 3px 6px;
+  border-radius: 8px;
+  font-size: 0.65rem;
   font-weight: 500;
   text-transform: capitalize;
 }
@@ -374,12 +414,12 @@ export default {
 }
 
 /* ========================================
-   📊 PROGRESS SECTION
+   📊 COMPACT PROGRESS SECTION
 ======================================== */
 .progress-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .progress-header {
@@ -389,129 +429,172 @@ export default {
 }
 
 .progress-text {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #1a1a1a;
 }
 
-.points-earned {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #8b5cf6;
-  background: #f3f0ff;
-  padding: 2px 8px;
-  border-radius: 8px;
-  border: 1px solid #8b5cf6;
+.medal-badge {
+  font-size: 1rem;
 }
 
 .progress-bar {
   background: #f3f4f6;
-  height: 8px;
-  border-radius: 4px;
+  height: 6px;
+  border-radius: 3px;
   overflow: hidden;
   border: 1px solid #e5e7eb;
 }
 
 .progress-fill {
   height: 100%;
-  background: #8b5cf6;
-  border-radius: 4px;
+  border-radius: 3px;
   transition: width 0.5s ease;
 }
 
-/* ========================================
-   📝 CARD DETAILS
-======================================== */
-.card-details {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+.progress-none { background: #e5e7eb; }
+.progress-low { background: #dc2626; }
+.progress-medium { background: #d97706; }
+.progress-high { background: #1e40af; }
+.progress-completed { background: #059669; }
 
-.detail-row {
+.progress-details {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #6b7280;
 }
 
-.detail-item {
+.lessons-count {
+  font-weight: 500;
+}
+
+.points {
+  color: #8b5cf6;
+  font-weight: 600;
+}
+
+/* ========================================
+   📝 COMPACT CARD STATS
+======================================== */
+.card-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.stat-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
   flex: 1;
+  justify-content: center;
 }
 
-.detail-icon {
-  font-size: 0.9rem;
-}
-
-.detail-text {
+.stat-icon {
   font-size: 0.8rem;
+}
+
+.stat-text {
+  font-size: 0.7rem;
   color: #6b7280;
   font-weight: 500;
 }
 
 .recent-activity {
-  padding-top: 8px;
-  border-top: 1px solid #f3f4f6;
-}
-
-.activity-text {
-  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
   color: #9ca3af;
   font-style: italic;
+  justify-content: center;
+}
+
+.activity-icon {
+  font-size: 0.75rem;
 }
 
 /* ========================================
-   🔘 CARD ACTIONS
+   🔘 COMPACT CARD ACTIONS
 ======================================== */
 .card-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   margin-top: auto;
 }
 
 .continue-btn,
 .overview-btn {
-  padding: 12px 16px;
-  font-size: 0.85rem;
-  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   text-decoration: none;
   border: 2px solid transparent;
 }
 
 .continue-btn {
-  background: #1a1a1a;
-  color: #ffffff;
-  border-color: #1a1a1a;
   flex: 2;
 }
 
-.continue-btn:hover {
-  background: #8b5cf6;
-  border-color: #8b5cf6;
-  transform: translateY(-2px);
-}
-
 .overview-btn {
+  flex: 1;
   background: #ffffff;
   color: #1a1a1a;
   border-color: #e5e7eb;
-  flex: 1;
 }
 
 .overview-btn:hover {
   background: #f9fafb;
   border-color: #8b5cf6;
   color: #8b5cf6;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+}
+
+/* Continue button variants */
+.btn-start {
+  background: #1a1a1a;
+  color: #ffffff;
+  border-color: #1a1a1a;
+}
+
+.btn-start:hover {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  transform: translateY(-1px);
+}
+
+.btn-continue {
+  background: #1e40af;
+  color: #ffffff;
+  border-color: #1e40af;
+}
+
+.btn-continue:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.btn-completed {
+  background: #059669;
+  color: #ffffff;
+  border-color: #059669;
+  cursor: default;
+}
+
+.btn-completed:hover {
+  transform: none;
 }
 
 .btn-icon {
@@ -519,7 +602,7 @@ export default {
 }
 
 /* ========================================
-   🔔 MODAL STYLES
+   🔔 COMPACT MODAL STYLES
 ======================================== */
 .modal-overlay {
   position: fixed;
@@ -537,24 +620,20 @@ export default {
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal-content {
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  padding: 32px;
-  border-radius: 20px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
   text-align: center;
-  max-width: 420px;
+  max-width: 380px;
   width: 90%;
-  max-height: 90vh;
+  max-height: 85vh;
   overflow-y: auto;
   animation: modalSlideIn 0.3s ease-out;
 }
@@ -571,72 +650,72 @@ export default {
 }
 
 .modal-icon {
-  font-size: 3rem;
-  margin-bottom: 20px;
+  font-size: 2.5rem;
+  margin-bottom: 16px;
 }
 
 .modal-content h4 {
   color: #1a1a1a;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  margin: 0 0 16px 0;
+  margin: 0 0 12px 0;
   line-height: 1.3;
 }
 
 .modal-content p {
   color: #6b7280;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 400;
-  margin: 0 0 12px 0;
-  line-height: 1.6;
+  margin: 0 0 8px 0;
+  line-height: 1.5;
 }
 
 .warning-text {
-  color: #dc2626 !important;
-  font-weight: 600 !important;
-  margin-bottom: 28px !important;
-  background: #fef2f2;
-  padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid #fecaca;
+  color: #059669 !important;
+  font-weight: 500 !important;
+  margin-bottom: 20px !important;
+  background: #f0fdf4;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #bbf7d0;
 }
 
 .modal-actions {
   display: flex;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .confirm-btn {
   background: #ef4444;
   color: #ffffff;
-  padding: 12px 28px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-weight: 600;
+  font-size: 0.9rem;
   transition: all 0.2s ease;
-  min-width: 120px;
+  min-width: 100px;
 }
 
 .confirm-btn:hover {
   background: #dc2626;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .cancel-btn {
   background: #ffffff;
   color: #6b7280;
   border: 1px solid #e5e7eb;
-  padding: 12px 28px;
-  border-radius: 10px;
+  padding: 10px 20px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-weight: 500;
+  font-size: 0.9rem;
   transition: all 0.2s ease;
-  min-width: 120px;
+  min-width: 100px;
 }
 
 .cancel-btn:hover {
@@ -651,27 +730,33 @@ export default {
 ======================================== */
 @media (max-width: 768px) {
   .study-card {
-    padding: 20px;
-    min-height: 260px;
+    padding: 14px;
+    min-height: 200px;
+    gap: 10px;
   }
   
   .topic-name {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
   }
   
   .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    margin-top: 14px;
   }
   
-  .detail-row {
+  .card-stats {
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
+    align-items: stretch;
+  }
+  
+  .stat-item {
+    justify-content: flex-start;
+    gap: 6px;
   }
   
   .card-actions {
     flex-direction: column;
+    gap: 6px;
   }
   
   .continue-btn,
@@ -680,27 +765,27 @@ export default {
   }
   
   .close-btn {
-    top: 10px;
-    right: 10px;
-    width: 30px;
-    height: 30px;
-    font-size: 13px;
+    top: 6px;
+    right: 6px;
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
   }
   
   .topic-type-badge {
-    top: 10px;
-    right: 45px;
-    padding: 4px 8px;
+    top: 6px;
+    right: 36px;
+    padding: 3px 6px;
   }
   
   .modal-content {
-    padding: 28px 24px;
-    margin: 20px;
+    padding: 20px;
+    margin: 16px;
   }
   
   .modal-actions {
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
   }
   
   .confirm-btn,
@@ -711,22 +796,57 @@ export default {
 }
 
 @media (max-width: 480px) {
+  .study-card {
+    padding: 12px;
+    min-height: 180px;
+  }
+  
+  .topic-name {
+    font-size: 0.9rem;
+  }
+  
+  .card-header {
+    margin-top: 12px;
+  }
+  
   .close-btn {
-    top: 8px;
-    right: 8px;
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    font-size: 10px;
   }
   
   .topic-type-badge {
-    top: 8px;
-    right: 40px;
-    padding: 3px 6px;
+    top: 4px;
+    right: 32px;
+    padding: 2px 4px;
   }
   
   .badge-text {
     font-size: 0.6rem;
+  }
+  
+  .progress-bar {
+    height: 5px;
+  }
+  
+  .card-stats {
+    gap: 4px;
+  }
+  
+  .stat-text {
+    font-size: 0.65rem;
+  }
+  
+  .card-actions {
+    gap: 4px;
+  }
+  
+  .continue-btn,
+  .overview-btn {
+    padding: 8px 10px;
+    font-size: 0.75rem;
   }
 }
 </style>
