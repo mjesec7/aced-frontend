@@ -125,51 +125,56 @@
               :class="getTopicTypeClass(topic)"
             >
               <!-- Topic Type Badge -->
-              <div class="topic-type-badge" :class="getTopicType(topic)">
-                <span class="badge-icon">{{ getTopicTypeIcon(topic) }}</span>
+              <div class="topic-badge" :class="getTopicType(topic)">
                 <span class="badge-text">{{ getTopicTypeLabel(topic) }}</span>
               </div>
 
               <!-- Topic Content -->
               <div class="topic-content">
-                <h3 class="topic-title">📘 {{ getTopicName(topic) }}</h3>
+                <h3 class="topic-title">{{ getTopicName(topic) }}</h3>
                 <p class="topic-desc">{{ getTopicDescription(topic) }}</p>
                 
-                <!-- Topic Metadata -->
-                <div class="topic-metadata">
-                  <div class="metadata-item">
-                    <span class="metadata-icon">📚</span>
-                    <span class="metadata-text">{{ topic.lessons?.length || 0 }} уроков</span>
+                <!-- Topic Stats -->
+                <div class="topic-stats">
+                  <div class="stat-item">
+                    <span class="stat-icon">📚</span>
+                    <span class="stat-value">{{ topic.lessons?.length || 0 }}</span>
                   </div>
-                  <div v-if="topic.subject" class="metadata-item">
-                    <span class="metadata-icon">🏷️</span>
-                    <span class="metadata-text">{{ topic.subject }}</span>
+                  <div class="stat-item">
+                    <span class="stat-icon">⏱</span>
+                    <span class="stat-value">{{ Math.round((topic.totalTime || 0) / 60) || 1 }}ч</span>
                   </div>
-                  <div v-if="topic.level" class="metadata-item">
-                    <span class="metadata-icon">📈</span>
-                    <span class="metadata-text">Ур. {{ topic.level }}</span>
+                  <div class="stat-item">
+                    <span class="stat-icon">📈</span>
+                    <span class="stat-value">{{ topic.level || 1 }}</span>
                   </div>
+                </div>
+                
+                <!-- Subject Tag -->
+                <div class="subject-info">
+                  <span class="subject-tag">{{ topic.subject || 'Общий' }}</span>
                 </div>
               </div>
 
               <!-- Card Actions -->
-              <div class="card-buttons">
+              <div class="card-actions">
                 <button 
-                  class="btn-add" 
+                  class="add-btn" 
                   @click="handleAddTopic(topic)"
                   :disabled="isInStudyList(topic)"
                   :title="isInStudyList(topic) ? 'Уже в списке' : 'Добавить в мои курсы'"
                 >
-                  {{ isInStudyList(topic) ? '✓' : '＋' }}
+                  <span class="add-icon">{{ isInStudyList(topic) ? '✓' : '+' }}</span>
+                  <span class="add-text">{{ isInStudyList(topic) ? 'Добавлено' : 'Добавить' }}</span>
                 </button>
                 <button 
-                  class="btn-start" 
+                  class="start-btn" 
                   @click="handleStartTopic(topic)"
                   :class="getStartButtonClass(topic)"
                   :title="getStartButtonTitle(topic)"
                 >
-                  <span class="btn-icon">{{ getStartButtonIcon(topic) }}</span>
-                  <span class="btn-text">{{ getStartButtonText(topic) }}</span>
+                  <span class="start-icon">{{ getStartButtonIcon(topic) }}</span>
+                  <span class="start-text">{{ getStartButtonText(topic) }}</span>
                 </button>
               </div>
             </div>
@@ -1098,12 +1103,18 @@ export default {
         
         console.log('➕ Adding topic to study list:', topic.name || topic.topicName);
         
+        // ✅ FIXED: Use proper topic data structure for API
         const topicData = {
-          subject: topic.subject,
-          level: topic.level,
+          subject: topic.subject || 'General',
+          level: topic.level || 1,
           topic: this.getTopicName(topic),
-          topicId: topic._id
+          topicId: topic._id,
+          lessonCount: topic.lessonCount || topic.lessons?.length || 0,
+          totalTime: topic.totalTime || (topic.lessons?.length * 10) || 10,
+          type: topic.type || 'free'
         };
+        
+        console.log('📦 Sending topic data:', topicData);
         
         const result = await addToStudyList(this.userId, topicData);
         
@@ -1111,9 +1122,19 @@ export default {
           // Refresh study list to show the new addition
           await this.fetchStudyList();
           
-          // Remove from recommendations
+          // Remove from both recommendation arrays
           this.allRecommendations = this.allRecommendations.filter(t => t._id !== topic._id);
           this.displayedRecommendations = this.displayedRecommendations.filter(t => t._id !== topic._id);
+          
+          // If we have less than 3 displayed recommendations, get more
+          if (this.displayedRecommendations.length < 3 && this.allRecommendations.length > this.displayedRecommendations.length) {
+            const needed = Math.min(3, this.allRecommendations.length - this.displayedRecommendations.length);
+            const available = this.allRecommendations.filter(t => 
+              !this.displayedRecommendations.some(d => d._id === t._id)
+            );
+            const additional = available.slice(0, needed);
+            this.displayedRecommendations.push(...additional);
+          }
           
           console.log('✅ Topic added successfully');
         } else {
@@ -1121,9 +1142,31 @@ export default {
         }
         
       } catch (err) {
-        const errorInfo = this.handleApiError(err, 'add-topic');
-        console.error('❌ Add topic error details:', err.response?.data);
-        alert(`Error adding topic: ${errorInfo.message}`);
+        console.error('❌ Add topic error:', err);
+        
+        // ✅ ENHANCED: Better error messages
+        let errorMessage = 'Не удалось добавить курс';
+        
+        if (err.response?.status === 400) {
+          const errorData = err.response.data;
+          if (errorData.error?.includes('already exists') || errorData.message?.includes('duplicate')) {
+            errorMessage = 'Этот курс уже добавлен в ваш список';
+          } else if (errorData.error?.includes('validation') || errorData.message?.includes('validation')) {
+            errorMessage = 'Некорректные данные курса';
+          } else {
+            errorMessage = errorData.error || errorData.message || 'Ошибка валидации данных';
+          }
+        } else if (err.response?.status === 401) {
+          errorMessage = 'Необходимо войти в аккаунт';
+        } else if (err.response?.status === 403) {
+          errorMessage = 'Недостаточно прав доступа';
+        } else if (err.response?.status === 409) {
+          errorMessage = 'Курс уже добавлен в список';
+        } else if (err.response?.status >= 500) {
+          errorMessage = 'Ошибка сервера. Попробуйте позже';
+        }
+        
+        alert(errorMessage);
       }
     },
 
@@ -1467,43 +1510,43 @@ export default {
 
 .carousel-track {
   display: flex;
-  gap: 20px;
-  padding: 0 4px;
+  gap: 24px;
+  padding: 0 8px;
 }
 
 .recommendation-card {
-  flex: 0 0 300px;
+  flex: 0 0 320px;
   background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   border: 1px solid #e5e7eb;
-  height: 240px;
+  height: 260px;
   position: relative;
   overflow: hidden;
 }
 
 .recommendation-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  transform: translateY(-6px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
   border-color: #8b5cf6;
 }
 
 .loading-carousel {
   display: flex;
-  gap: 20px;
+  gap: 24px;
   overflow-x: auto;
-  padding: 4px;
+  padding: 8px;
 }
 
 .loading-carousel .recommendation-placeholder {
-  flex: 0 0 300px;
-  height: 240px;
+  flex: 0 0 320px;
+  height: 260px;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1955,7 +1998,7 @@ export default {
 
 .star.filled {
   color: #8b5cf6;
-  size: 0.9rem;
+ size: 0.9rem; 
 }
 
 
@@ -2155,7 +2198,8 @@ export default {
   }
   
   .recommendation-card {
-    flex: 0 0 280px;
+    flex: 0 0 300px;
+    height: 240px;
   }
 }
 
@@ -2219,8 +2263,12 @@ export default {
   }
   
   .recommendation-card {
-    flex: 0 0 260px;
+    flex: 0 0 280px;
     height: 220px;
+  }
+  
+  .carousel-track {
+    gap: 16px;
   }
   
   .grid {
@@ -2362,57 +2410,51 @@ export default {
     font-size: 1.1rem;
   }
 }
-/* ========================================
-   🎴 RECOMMENDATION CARD STYLES
-======================================== */
-.recommendation-card .topic-type-badge {
+.recommendation-card .topic-badge {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.7rem;
+  top: 16px;
+  right: 16px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
   z-index: 2;
 }
 
-.recommendation-card .topic-type-badge.free {
+.recommendation-card .topic-badge.free {
   background: #f3f4f6;
-  color: #1a1a1a;
-  border: 1px solid #e5e7eb;
+  color: #374151;
+  border: 1px solid #d1d5db;
 }
 
-.recommendation-card .topic-type-badge.premium {
-  background: #f3f0ff;
-  color: #8b5cf6;
+.recommendation-card .topic-badge.premium {
+  background: #ddd6fe;
+  color: #5b21b6;
   border: 1px solid #8b5cf6;
 }
 
-.recommendation-card .topic-type-badge.pro {
-  background: #1a1a1a;
+.recommendation-card .topic-badge.pro {
+  background: #1f2937;
   color: #ffffff;
-  border: 1px solid #1a1a1a;
+  border: 1px solid #374151;
 }
 
 .recommendation-card .topic-content {
-  padding: 16px;
+  padding: 20px;
   flex: 1;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
 }
 
 .recommendation-card .topic-title {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 6px;
-  line-height: 1.3;
-  margin-top: 16px;
+  color: #111827;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -2420,129 +2462,146 @@ export default {
 }
 
 .recommendation-card .topic-desc {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: #6b7280;
-  margin: 6px 0 12px 0;
+  margin: 0 0 16px 0;
   line-height: 1.5;
-  flex-grow: 1;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.recommendation-card .topic-metadata {
+.recommendation-card .topic-stats {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  justify-content: space-between;
   margin-bottom: 12px;
-  padding-bottom: 12px;
+  padding: 8px 0;
+  border-top: 1px solid #f3f4f6;
   border-bottom: 1px solid #f3f4f6;
 }
 
-.recommendation-card .metadata-item {
+.recommendation-card .stat-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
+  flex: 1;
+}
+
+.recommendation-card .stat-icon {
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.recommendation-card .stat-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.recommendation-card .subject-info {
+  margin-bottom: 16px;
+}
+
+.recommendation-card .subject-tag {
+  display: inline-block;
+  background: #f3f4f6;
+  color: #374151;
+  padding: 4px 10px;
+  border-radius: 12px;
   font-size: 0.75rem;
-  color: #6b7280;
-}
-
-.recommendation-card .metadata-icon {
-  font-size: 0.8rem;
-}
-
-.recommendation-card .metadata-text {
   font-weight: 500;
+  border: 1px solid #e5e7eb;
 }
 
-.recommendation-card .card-buttons {
+.recommendation-card .card-actions {
   display: flex;
-  gap: 8px;
-  margin-top: auto;
-  padding: 0 16px 16px 16px;
+  gap: 12px;
+  padding: 0 20px 20px 20px;
 }
 
-.recommendation-card .btn-add,
-.recommendation-card .btn-start {
-  padding: 8px 12px;
-  font-size: 0.8rem;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.recommendation-card .add-btn,
+.recommendation-card .start-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
   text-decoration: none;
-  border: 2px solid transparent;
 }
 
-.recommendation-card .btn-add {
-  flex: 0 0 40px;
-  background: #ffffff;
-  color: #1a1a1a;
-  border-color: #e5e7eb;
+.recommendation-card .add-btn {
+  flex: 0 0 auto;
+  background: #f8fafc;
+  color: #374151;
+  border: 2px solid #e5e7eb;
 }
 
-.recommendation-card .btn-add:hover {
-  background: #f9fafb;
+.recommendation-card .add-btn:hover:not(:disabled) {
+  background: #8b5cf6;
+  color: #ffffff;
   border-color: #8b5cf6;
-  color: #8b5cf6;
   transform: translateY(-1px);
 }
 
-.recommendation-card .btn-add:disabled {
+.recommendation-card .add-btn:disabled {
   background: #f3f4f6;
   color: #9ca3af;
-  cursor: not-allowed;
   border-color: #e5e7eb;
+  cursor: not-allowed;
 }
 
-.recommendation-card .btn-start {
+.recommendation-card .start-btn {
   flex: 1;
-  background: #1a1a1a;
+  background: #111827;
   color: #ffffff;
-  border-color: #1a1a1a;
+  border: 2px solid #111827;
 }
 
-.recommendation-card .btn-start:hover {
-  background: #8b5cf6;
-  border-color: #8b5cf6;
+.recommendation-card .start-btn:hover {
+  background: #1f2937;
+  border-color: #1f2937;
   transform: translateY(-1px);
 }
 
-.recommendation-card .btn-restricted {
+.recommendation-card .start-btn.btn-restricted {
   background: #6b7280;
-  color: #ffffff;
   border-color: #6b7280;
 }
 
-.recommendation-card .btn-restricted:hover {
+.recommendation-card .start-btn.btn-restricted:hover {
   background: #4b5563;
   border-color: #4b5563;
-  transform: translateY(-1px);
 }
 
-.recommendation-card .btn-icon {
+.recommendation-card .add-icon,
+.recommendation-card .start-icon {
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.recommendation-card .add-text,
+.recommendation-card .start-text {
   font-size: 0.8rem;
 }
 
-.recommendation-card .btn-text {
-  font-size: 0.75rem;
-}
-
-/* Type indicators for carousel cards */
+/* Clean type indicators */
 .recommendation-card.topic-free {
-  border-left: 3px solid #1a1a1a;
+  border-left: 4px solid #374151;
 }
 
 .recommendation-card.topic-premium {
-  border-left: 3px solid #8b5cf6;
+  border-left: 4px solid #8b5cf6;
 }
 
 .recommendation-card.topic-pro {
-  border-left: 3px solid #6b7280;
+  border-left: 4px solid #1f2937;
 }
 </style>
