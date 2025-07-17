@@ -2320,15 +2320,70 @@ export const getUserStudyList = async (userId) => {
 
 export const addToStudyList = async (userId, topicData) => {
   try {
+    console.log('📥 Adding to study list:', { userId, topicData });
+    
     const token = await auth.currentUser?.getIdToken();
     if (!token) throw new Error('No authentication token');
     
-    const { data } = await api.post(`/users/${userId}/study-list`, topicData, {
-      headers: { Authorization: `Bearer ${token}` }
+    // ✅ ENHANCED: Validate and clean the topic data before sending
+    const cleanTopicData = {
+      topicId: String(topicData.topicId || topicData._id || ''),
+      subject: String(topicData.subject || 'General'),
+      level: parseInt(topicData.level) || 1,
+      topic: String(topicData.topic || topicData.topicName || topicData.name || 'Без названия'),
+      topicName: String(topicData.topicName || topicData.topic || topicData.name || 'Без названия'),
+      lessonCount: parseInt(topicData.lessonCount) || 0,
+      totalTime: parseInt(topicData.totalTime) || 10,
+      type: String(topicData.type || 'free'),
+      description: String(topicData.description || ''),
+      isActive: Boolean(topicData.isActive !== false),
+      addedAt: topicData.addedAt || new Date().toISOString()
+    };
+    
+    // ✅ VALIDATION: Check required fields
+    if (!cleanTopicData.topicId) {
+      throw new Error('Topic ID is required');
+    }
+    
+    if (!cleanTopicData.topic || cleanTopicData.topic === 'Без названия') {
+      throw new Error('Topic name is required');
+    }
+    
+    console.log('📦 Sending clean topic data:', cleanTopicData);
+    
+    const { data } = await api.post(`/users/${userId}/study-list`, cleanTopicData, {
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
+    
+    console.log('✅ Study list add response:', data);
     return data;
+    
   } catch (error) {
     console.error('❌ Failed to add to study list:', error);
+    console.error('❌ Error details:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+    
+    // Enhanced error handling for 400 errors
+    if (error.response?.status === 400) {
+      const errorData = error.response.data;
+      const errorMessage = errorData.error || errorData.message || 'Invalid request data';
+      
+      console.error('❌ 400 Bad Request details:', {
+        error: errorMessage,
+        validationErrors: errorData.validationErrors,
+        requiredFields: errorData.requiredFields,
+        receivedData: errorData.receivedData
+      });
+      
+      throw new Error(`Validation Error: ${errorMessage}`);
+    }
+    
     throw error;
   }
 };
