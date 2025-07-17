@@ -1522,18 +1522,18 @@ export default {
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  border: 1px solid #e5e7eb;
-  height: 260px;
+  border: 1px solid #1a1a1a;
+  height: 320px;
   position: relative;
   overflow: hidden;
 }
 
 .recommendation-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.6), 0 16px 48px rgba(139, 92, 246, 0.2);
   border-color: #8b5cf6;
+  background: radial-gradient(circle at center, rgba(139, 92, 246, 0.05), #ffffff);
 }
-
 .loading-carousel {
   display: flex;
   gap: 24px;
