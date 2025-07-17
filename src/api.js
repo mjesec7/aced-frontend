@@ -2368,25 +2368,7 @@ export const addToStudyList = async (userId, topicData) => {
   }
 };
 
-export const getUserStudyList = async (userId) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    const response = await api.get(`/users/${userId}/study-list`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    return {
-      success: true,
-      data: response.data.data || []
-    };
-    
-  } catch (error) {
-    return {
-      success: true,
-      data: []
-    };
-  }
-};
+
 
 export const removeFromStudyList = async (userId, topicId) => {
   try {
