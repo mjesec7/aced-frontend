@@ -2338,159 +2338,29 @@ export const getUserStudyList = async (userId) => {
 
 export const addToStudyList = async (userId, topicData) => {
   try {
-    console.log('📥 Adding to study list:', { userId, topicData });
-    
     const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
+    if (!token) throw new Error('No token');
     
-    // ✅ COMPREHENSIVE DATA PREPARATION
-    const studyListData = {
-      // Required fields
-      topicId: String(topicData.topicId || topicData._id || topicData.id || '').trim(),
-      topic: String(topicData.topic || topicData.topicName || topicData.name || 'Без названия').trim(),
-      topicName: String(topicData.topicName || topicData.topic || topicData.name || 'Без названия').trim(),
-      
-      // Optional fields with defaults
-      subject: String(topicData.subject || 'General').trim(),
-      level: parseInt(topicData.level) || 1,
-      lessonCount: parseInt(topicData.lessonCount || topicData.lessons?.length || 0),
-      totalTime: parseInt(topicData.totalTime || (topicData.lessons?.length * 10) || 10),
-      type: String(topicData.type || 'free').trim(),
-      description: String(topicData.description || topicData.topicDescription || '').trim(),
-      
-      // System fields
-      isActive: Boolean(topicData.isActive !== false),
-      addedAt: new Date().toISOString(),
-      
-      // Enhancement flags
-      forceAdd: true, // Tell backend to create topic if it doesn't exist
-      
-      // Topic creation data (for backend to use if needed)
-      createTopicData: {
-        _id: topicData.topicId || topicData._id || topicData.id,
-        name: {
-          en: topicData.topic || topicData.topicName || topicData.name || 'Без названия',
-          ru: topicData.topic || topicData.topicName || topicData.name || 'Без названия',
-          uz: topicData.topic || topicData.topicName || topicData.name || 'Без названия'
-        },
-        subject: topicData.subject || 'General',
-        level: parseInt(topicData.level) || 1,
-        type: topicData.type || 'free',
-        lessonCount: parseInt(topicData.lessonCount || topicData.lessons?.length || 0),
-        totalTime: parseInt(topicData.totalTime || (topicData.lessons?.length * 10) || 10),
-        isActive: true,
-        description: topicData.description || topicData.topicDescription || `Курс по теме "${topicData.topic || topicData.topicName || topicData.name || 'Без названия'}"`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
+    const data = {
+      topicId: topicData.topicId || topicData._id,
+      topic: topicData.topic || topicData.topicName || topicData.name,
+      subject: topicData.subject || 'General',
+      level: topicData.level || 1,
+      lessonCount: topicData.lessonCount || 0,
+      totalTime: topicData.totalTime || 10,
+      type: topicData.type || 'free'
     };
     
-    // ✅ VALIDATION: Check required fields
-    if (!studyListData.topicId) {
-      throw new Error('Topic ID is required');
-    }
-    
-    if (!studyListData.topic || studyListData.topic === 'Без названия') {
-      throw new Error('Topic name is required');
-    }
-    
-    console.log('📦 Sending study list data:', {
-      topicId: studyListData.topicId,
-      topic: studyListData.topic,
-      subject: studyListData.subject,
-      level: studyListData.level,
-      lessonCount: studyListData.lessonCount,
-      hasCreateData: !!studyListData.createTopicData
-    });
-    
-    // ✅ SEND REQUEST with proper error handling
-    const { data } = await api.post(`/users/${userId}/study-list`, studyListData, {
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      timeout: 30000 // 30 second timeout
-    });
-    
-    console.log('✅ Study list add successful:', data);
-    
-    return {
-      success: true,
-      data: data.data || data,
-      message: data.message || 'Topic added to study list successfully'
-    };
-    
-  } catch (error) {
-    console.error('❌ Failed to add to study list:', error);
-    
-    // ✅ ENHANCED ERROR HANDLING
-    let errorMessage = 'Failed to add topic to study list';
-    
-    if (error.response?.status === 400) {
-      const responseData = error.response.data;
-      
-      if (responseData.error?.includes('уже добавлен') || 
-          responseData.error?.includes('already exists') ||
-          responseData.error?.includes('duplicate')) {
-        errorMessage = 'Этот курс уже добавлен в ваш список';
-      } else if (responseData.error?.includes('required')) {
-        errorMessage = 'Недостаточно данных для добавления курса';
-      } else if (responseData.validationErrors) {
-        errorMessage = 'Ошибка валидации данных: ' + responseData.validationErrors.map(e => e.message).join(', ');
-      } else {
-        errorMessage = responseData.error || 'Ошибка добавления курса';
-      }
-    } else if (error.response?.status === 401) {
-      errorMessage = 'Необходимо войти в аккаунт';
-    } else if (error.response?.status === 403) {
-      errorMessage = 'Доступ запрещен';
-    } else if (error.response?.status === 409) {
-      errorMessage = 'Курс уже существует в списке';
-    } else if (error.response?.status >= 500) {
-      errorMessage = 'Ошибка сервера. Попробуйте позже';
-    } else if (error.code === 'ECONNABORTED') {
-      errorMessage = 'Превышено время ожидания. Попробуйте еще раз';
-    } else if (error.code === 'NETWORK_ERROR') {
-      errorMessage = 'Ошибка сети. Проверьте подключение к интернету';
-    } else if (error.message?.includes('Token')) {
-      errorMessage = 'Ошибка авторизации. Попробуйте перезайти';
-    } else {
-      errorMessage = error.message || 'Произошла неизвестная ошибка';
-    }
-    
-    return {
-      success: false,
-      error: errorMessage,
-      details: error.response?.data || error.message,
-      code: error.response?.status
-    };
-  }
-};
-
-export const removeFromStudyList = async (userId, topicId) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
-    
-    const { data } = await api.delete(`/users/${userId}/study-list/${topicId}`, {
+    const response = await api.post(`/users/${userId}/study-list`, data, {
       headers: { Authorization: `Bearer ${token}` }
     });
     
     return {
       success: true,
-      data: data.data || data,
-      message: data.message || 'Topic removed from study list successfully'
+      data: response.data
     };
+    
   } catch (error) {
-    console.error('❌ Failed to remove from study list:', error);
-    
-    if (error.response?.status === 404) {
-      return {
-        success: true,
-        message: 'Topic was not in study list (already removed)'
-      };
-    }
-    
     return {
       success: false,
       error: error.response?.data?.error || error.message
@@ -2498,23 +2368,36 @@ export const removeFromStudyList = async (userId, topicId) => {
   }
 };
 
-export const cleanupStudyList = async (userId) => {
+export const getUserStudyList = async (userId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
-    
-    const { data } = await api.post(`/users/${userId}/study-list/cleanup`, {}, {
+    const response = await api.get(`/users/${userId}/study-list`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     
     return {
       success: true,
-      data: data.data || data,
-      message: data.message || 'Study list cleanup completed'
+      data: response.data.data || []
     };
-  } catch (error) {
-    console.error('❌ Failed to cleanup study list:', error);
     
+  } catch (error) {
+    return {
+      success: true,
+      data: []
+    };
+  }
+};
+
+export const removeFromStudyList = async (userId, topicId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    await api.delete(`/users/${userId}/study-list/${topicId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    return { success: true };
+    
+  } catch (error) {
     return {
       success: false,
       error: error.response?.data?.error || error.message
