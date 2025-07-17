@@ -1,98 +1,75 @@
 <template>
   <div class="dashboard">
     <h1 class="title">👋 Добро пожаловать обратно!</h1>
-    <!-- Enhanced Filter Panel -->
-    <div class="filter-panel">
-      <div class="filter-header">
-        <h3>🔍 Фильтры и поиск</h3>
-        <button @click="clearFilters" class="clear-all-btn">🗑️ Очистить все</button>
-      </div>
-      
-      <div class="filter-grid">
-        <!-- Search -->
-        <div class="filter-group">
-          <label class="filter-label">Поиск</label>
-          <input v-model="searchQuery" class="search-input" placeholder="Найти курс..." />
+    <!-- Professional Filter Bar -->
+    <div class="filter-bar">
+      <div class="filter-section">
+        <div class="search-group">
+          <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input v-model="searchQuery" class="search-input" placeholder="Поиск курсов..." />
+            <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search">×</button>
+          </div>
         </div>
         
-        <!-- Subject Filter -->
-        <div class="filter-group">
-          <label class="filter-label">Предмет</label>
+        <div class="filters-group">
           <select v-model="filterSubject" class="filter-select">
             <option value="">Все предметы</option>
             <option v-for="subject in allSubjects" :key="subject" :value="subject">{{ subject }}</option>
           </select>
-        </div>
-        
-        <!-- Level Filter -->
-        <div class="filter-group">
-          <label class="filter-label">Уровень</label>
+          
           <select v-model="filterLevel" class="filter-select">
             <option value="">Все уровни</option>
-            <option v-for="level in allLevels" :key="level" :value="level">{{ getLevelLabel(level) }}</option>
+            <option v-for="level in allLevels" :key="level" :value="level">Уровень {{ level }}</option>
           </select>
-        </div>
-        
-        <!-- Type Filter -->
-        <div class="filter-group">
-          <label class="filter-label">Тип доступа</label>
+          
           <select v-model="filterType" class="filter-select">
             <option value="">Все типы</option>
             <option value="free">💚 Бесплатные</option>
             <option value="premium">💎 Премиум</option>
             <option value="pro">🌟 Pro</option>
           </select>
-        </div>
-        
-        <!-- Progress Filter (for study list) -->
-        <div class="filter-group">
-          <label class="filter-label">Прогресс</label>
+          
           <select v-model="filterProgress" class="filter-select">
             <option value="">Любой прогресс</option>
             <option value="not-started">⭕ Не начато</option>
             <option value="in-progress">🔄 В процессе</option>
             <option value="completed">✅ Завершено</option>
           </select>
-        </div>
-        
-        <!-- Sort Options -->
-        <div class="filter-group">
-          <label class="filter-label">Сортировка</label>
+          
           <select v-model="sortBy" class="filter-select">
             <option value="name">📝 По названию</option>
             <option value="progress">📊 По прогрессу</option>
             <option value="recent">🕒 Недавние</option>
             <option value="subject">🏷️ По предмету</option>
-            <option value="level">📈 По уровню</option>
           </select>
         </div>
-      </div>
-      
-      <!-- Active Filters Display -->
-      <div v-if="hasActiveFilters" class="active-filters">
-        <span class="active-filters-label">Активные фильтры:</span>
-        <div class="filter-tags">
-          <span v-if="searchQuery" class="filter-tag" @click="searchQuery = ''">
-            🔍 "{{ searchQuery }}" ×
-          </span>
-          <span v-if="filterSubject" class="filter-tag" @click="filterSubject = ''">
-            🏷️ {{ filterSubject }} ×
-          </span>
-          <span v-if="filterLevel" class="filter-tag" @click="filterLevel = ''">
-            📈 {{ getLevelLabel(filterLevel) }} ×
-          </span>
-          <span v-if="filterType" class="filter-tag" @click="filterType = ''">
-            {{ getTypeIcon(filterType) }} {{ getTypeLabel(filterType) }} ×
-          </span>
-          <span v-if="filterProgress" class="filter-tag" @click="filterProgress = ''">
-            {{ getProgressIcon(filterProgress) }} {{ getProgressLabel(filterProgress) }} ×
-          </span>
+        
+        <div class="actions-group">
+          <button v-if="hasActiveFilters" @click="clearFilters" class="clear-all-btn">
+            🗑️ Очистить
+          </button>
+          <span class="user-badge" :class="userStatus">{{ userStatusLabel }}</span>
         </div>
       </div>
       
-      <!-- User Status Badge -->
-      <div class="user-status-section">
-        <span class="user-status-badge" :class="userStatus">{{ userStatusLabel }}</span>
+      <!-- Active Filters Tags -->
+      <div v-if="hasActiveFilters" class="active-filters-row">
+        <span class="filter-tag" v-if="searchQuery" @click="searchQuery = ''">
+          🔍 "{{ searchQuery }}" ×
+        </span>
+        <span class="filter-tag" v-if="filterSubject" @click="filterSubject = ''">
+          🏷️ {{ filterSubject }} ×
+        </span>
+        <span class="filter-tag" v-if="filterLevel" @click="filterLevel = ''">
+          📈 Уровень {{ filterLevel }} ×
+        </span>
+        <span class="filter-tag" v-if="filterType" @click="filterType = ''">
+          {{ getTypeIcon(filterType) }} {{ getTypeLabel(filterType) }} ×
+        </span>
+        <span class="filter-tag" v-if="filterProgress" @click="filterProgress = ''">
+          {{ getProgressIcon(filterProgress) }} {{ getProgressLabel(filterProgress) }} ×
+        </span>
       </div>
     </div>
 
@@ -537,67 +514,21 @@ export default {
       return { message: errorMessage, originalError: error };
     },
 
-    // ✅ FIXED: Get recommendations using proper API
+    // ✅ FIXED: Get recommendations using CataloguePage logic
     async fetchRecommendations() {
       try {
         this.loadingRecommendations = true;
         this.errors.recommendations = null;
         
-        console.log('🔍 Fetching recommendations...');
+        console.log('🔍 Fetching recommendations using CataloguePage logic...');
         
-        // Strategy 1: Try to get actual topics with lessons
-        const topicsResult = await getTopics({ includeStats: true });
-        
-        if (topicsResult.success && topicsResult.data.length > 0) {
-          console.log(`📚 Found ${topicsResult.data.length} topics`);
-          
-          // Get lessons for each topic to build complete topic data
-          const topicsWithLessons = await Promise.allSettled(
-            topicsResult.data.map(async (topic) => {
-              try {
-                // Get lessons for this topic
-                const lessonsResult = await getLessonsByTopic(topic._id);
-                
-                if (lessonsResult.success && lessonsResult.data.length > 0) {
-                  return {
-                    ...topic,
-                    lessons: lessonsResult.data,
-                    lessonCount: lessonsResult.data.length,
-                    totalTime: lessonsResult.data.length * 10, // 10 min per lesson
-                    hasLessons: true
-                  };
-                }
-                
-                return null;
-              } catch (error) {
-                console.warn(`⚠️ Failed to get lessons for topic ${topic._id}:`, error.message);
-                return null;
-              }
-            })
-          );
-          
-          // Filter successful results
-          const validTopics = topicsWithLessons
-            .filter(result => result.status === 'fulfilled' && result.value !== null)
-            .map(result => result.value);
-          
-          if (validTopics.length > 0) {
-            this.recommendations = validTopics;
-            this.extractSubjects(this.recommendations);
-            console.log(`✅ Successfully loaded ${validTopics.length} recommendations with lessons`);
-            return;
-          }
-        }
-        
-        // Strategy 2: Fallback - build topics from lessons (like CataloguePage)
-        console.log('🔄 Fallback: Building topics from lessons...');
-        
+        // ✅ STRATEGY: Build recommendations from lessons (same as CataloguePage)
         const lessonsResult = await getAllLessons();
         if (lessonsResult.success && lessonsResult.data.length > 0) {
           const allLessons = lessonsResult.data;
-          console.log(`📚 Got ${allLessons.length} lessons for topic building`);
+          console.log(`📚 Got ${allLessons.length} lessons for building recommendations`);
           
-          // Group lessons by topicId and build topic objects
+          // ✅ Group lessons by topicId and build topic objects (exact CataloguePage logic)
           const topicsMap = new Map();
           
           allLessons.forEach(lesson => {
@@ -621,36 +552,107 @@ export default {
                 id: topicId,
                 name: topicName,
                 topicName: topicName,
+                description: `Курс по теме "${topicName}" содержит уроков`,
+                topicDescription: `Изучите ${topicName} с практическими упражнениями`,
                 subject: lesson.subject || 'General',
                 level: lesson.level || 1,
-                description: `Курс по теме "${topicName}"`,
                 type: lesson.type || 'free',
                 lessons: [lesson],
                 lessonCount: 1,
                 totalTime: 10,
                 isActive: true,
-                hasLessons: true
+                hasLessons: true,
+                createdAt: lesson.createdAt || new Date().toISOString(),
+                updatedAt: lesson.updatedAt || new Date().toISOString(),
+                metadata: {
+                  source: 'built-from-lessons',
+                  constructedAt: new Date().toISOString()
+                }
               });
             } else {
               const topic = topicsMap.get(topicId);
               topic.lessons.push(lesson);
               topic.lessonCount++;
               topic.totalTime += 10;
+              
+              // Update description with lesson count
+              topic.description = `Курс по теме "${topicName}" содержит ${topic.lessonCount} уроков`;
             }
           });
           
+          // ✅ Convert to array and filter (only topics with lessons)
           const builtTopics = Array.from(topicsMap.values())
             .filter(topic => topic.lessons.length > 0)
-            .slice(0, 20); // Limit recommendations
+            .map(topic => ({
+              ...topic,
+              // Calculate difficulty based on level
+              difficulty: topic.level <= 3 ? 2 : topic.level <= 6 ? 3 : 4,
+              // Ensure we have proper structure
+              hasFreeLessons: topic.lessons.some(l => l.type === 'free'),
+              hasPremiumLessons: topic.lessons.some(l => l.type === 'premium'),
+            }))
+            .sort((a, b) => {
+              // Sort by subject first, then by level
+              if (a.subject !== b.subject) {
+                return a.subject.localeCompare(b.subject);
+              }
+              return (a.level || 0) - (b.level || 0);
+            });
           
-          this.recommendations = builtTopics;
-          this.extractSubjects(this.recommendations);
           console.log(`✅ Built ${builtTopics.length} topic recommendations from lessons`);
+          
+          // ✅ Limit to reasonable number for recommendations (not all topics)
+          this.recommendations = builtTopics.slice(0, 20);
+          this.extractSubjects(this.recommendations);
+          
+          console.log(`📊 Final recommendations: ${this.recommendations.length} topics`);
           return;
         }
         
+        // ✅ Fallback: Try to get topics directly
+        console.log('🔄 Fallback: Trying to get topics directly...');
+        const topicsResult = await getTopics({ includeStats: true });
+        
+        if (topicsResult.success && topicsResult.data.length > 0) {
+          console.log(`📚 Found ${topicsResult.data.length} topics directly`);
+          
+          // Get lessons for each topic to build complete topic data
+          const topicsWithLessons = await Promise.allSettled(
+            topicsResult.data.slice(0, 20).map(async (topic) => {
+              try {
+                const lessonsResult = await getLessonsByTopic(topic._id);
+                
+                if (lessonsResult.success && lessonsResult.data.length > 0) {
+                  return {
+                    ...topic,
+                    lessons: lessonsResult.data,
+                    lessonCount: lessonsResult.data.length,
+                    totalTime: lessonsResult.data.length * 10,
+                    hasLessons: true
+                  };
+                }
+                return null;
+              } catch (error) {
+                console.warn(`⚠️ Failed to get lessons for topic ${topic._id}:`, error.message);
+                return null;
+              }
+            })
+          );
+          
+          const validTopics = topicsWithLessons
+            .filter(result => result.status === 'fulfilled' && result.value !== null)
+            .map(result => result.value);
+          
+          if (validTopics.length > 0) {
+            this.recommendations = validTopics;
+            this.extractSubjects(this.recommendations);
+            console.log(`✅ Successfully loaded ${validTopics.length} recommendations with lessons`);
+            return;
+          }
+        }
+        
         // No data available
-        console.log('ℹ️ No topics or lessons available');
+        console.log('ℹ️ No topics or lessons available for recommendations');
         this.recommendations = [];
         
       } catch (err) {
@@ -927,10 +929,7 @@ export default {
     // ✅ NEW: Filter label helpers
     getLevelLabel(level) {
       if (!level) return '';
-      const num = Number(level);
-      if (num <= 3) return `Уровень ${level} (Начальный)`;
-      if (num <= 6) return `Уровень ${level} (Средний)`;
-      return `Уровень ${level} (Продвинутый)`;
+      return `Уровень ${level}`;
     },
     
     getTypeIcon(type) {
@@ -1097,41 +1096,132 @@ export default {
 }
 
 /* ========================================
-   🎛️ ENHANCED FILTER PANEL
+   🎛️ PROFESSIONAL FILTER BAR
 ======================================== */
-.filter-panel {
+.filter-bar {
   background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   border: 1px solid #e5e7eb;
   margin-bottom: 32px;
-  padding: 24px;
+  overflow: hidden;
 }
 
-.filter-header {
+.filter-section {
   display: flex;
-  justify-content: between;
   align-items: center;
-  margin-bottom: 20px;
+  padding: 16px 20px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.filter-header h3 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
+.search-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: #6b7280;
+  font-size: 0.9rem;
+  z-index: 2;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 0.9rem;
   color: #1a1a1a;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.clear-search {
+  position: absolute;
+  right: 8px;
+  background: #6b7280;
+  color: #ffffff;
+  border: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.clear-search:hover {
+  background: #4b5563;
+}
+
+.filters-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  padding: 10px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 0.85rem;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.filter-select:hover {
+  border-color: #d1d5db;
+}
+
+.actions-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
 }
 
 .clear-all-btn {
   background: #ef4444;
   color: #ffffff;
   border: none;
-  padding: 8px 16px;
+  padding: 10px 16px;
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .clear-all-btn:hover {
@@ -1139,122 +1229,50 @@ export default {
   transform: translateY(-1px);
 }
 
-.filter-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 16px;
+.user-badge {
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+.user-badge.free { background: #6b7280; }
+.user-badge.start { background: #8b5cf6; }
+.user-badge.pro { background: #1a1a1a; }
 
-.filter-label {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #374151;
-}
-
-.search-input,
-.filter-select {
-  padding: 10px 12px;
-  font-size: 0.9rem;
-  font-weight: 400;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #1a1a1a;
-  transition: all 0.3s ease;
-}
-
-.search-input:focus,
-.filter-select:focus {
-  outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-}
-
-.search-input::placeholder {
-  color: #6b7280;
-  font-weight: 400;
-}
-
-.filter-select option {
-  background: #ffffff;
-  color: #1a1a1a;
-}
-
-/* Active Filters */
-.active-filters {
-  padding-top: 16px;
+/* Active Filters Row */
+.active-filters-row {
+  background: #f9fafb;
   border-top: 1px solid #f3f4f6;
-  margin-top: 16px;
-}
-
-.active-filters-label {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #6b7280;
-  margin-right: 12px;
-}
-
-.filter-tags {
+  padding: 12px 20px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 8px;
+  align-items: center;
 }
 
 .filter-tag {
   background: #8b5cf6;
   color: #ffffff;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
 }
 
 .filter-tag:hover {
   background: #7c3aed;
   transform: scale(1.05);
-}
-
-/* User Status Section */
-.user-status-section {
-  margin-top: 16px;
-  text-align: center;
-}
-
-/* User Status Badge */
-.user-status-badge {
-  font-size: 0.75rem;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-weight: 600;
-  color: #ffffff;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: all 0.3s ease;
-}
-
-.user-status-badge.free {
-  background: #6b7280;
-}
-
-.user-status-badge.start {
-  background: #8b5cf6;
-}
-
-.user-status-badge.pro {
-  background: #1a1a1a;
 }
 
 /* ========================================
@@ -1661,9 +1679,8 @@ export default {
 
 .star.filled {
   color: #8b5cf6;
-  size: 0.9rem;
+}size: 0.9rem;
 }
-
 
 .badge-text {
   font-size: 0.7rem;
@@ -1825,6 +1842,32 @@ export default {
 /* ========================================
    📱 RESPONSIVE DESIGN
 ======================================== */
+@media (max-width: 1024px) {
+  .filter-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .search-group {
+    min-width: unset;
+  }
+  
+  .filters-group {
+    justify-content: flex-start;
+    gap: 10px;
+  }
+  
+  .filter-select {
+    min-width: 110px;
+  }
+  
+  .actions-group {
+    margin-left: 0;
+    justify-content: space-between;
+  }
+}
+
 @media (max-width: 768px) {
   .dashboard {
     padding: 16px 12px;
@@ -1835,18 +1878,40 @@ export default {
     margin-bottom: 24px;
   }
   
-  .filter-panel {
-    padding: 20px;
+  .filter-bar {
     margin-bottom: 24px;
   }
   
-  .filter-grid {
-    grid-template-columns: 1fr;
+  .filter-section {
+    padding: 16px;
     gap: 12px;
   }
   
-  .filter-tags {
-    justify-content: center;
+  .filters-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  
+  .filter-select {
+    min-width: unset;
+    font-size: 0.8rem;
+    padding: 8px 10px;
+  }
+  
+  .search-input {
+    font-size: 0.85rem;
+    padding: 8px 10px 8px 32px;
+  }
+  
+  .active-filters-row {
+    padding: 10px 16px;
+    gap: 6px;
+  }
+  
+  .filter-tag {
+    font-size: 0.7rem;
+    padding: 3px 8px;
   }
   
   .grid {
@@ -1905,33 +1970,44 @@ export default {
     font-size: 1.5rem;
   }
   
-  .filter-panel {
-    padding: 16px;
+  .filter-section {
+    padding: 12px;
   }
   
-  .filter-header {
+  .search-wrapper {
+    margin-bottom: 8px;
+  }
+  
+  .filters-group {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  
+  .filter-select {
+    font-size: 0.75rem;
+    padding: 6px 8px;
+  }
+  
+  .actions-group {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  
-  .filter-header h3 {
-    font-size: 1rem;
+    gap: 8px;
+    align-items: stretch;
   }
   
   .clear-all-btn {
-    align-self: stretch;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+  
+  .user-badge {
     text-align: center;
+    padding: 6px 10px;
+    font-size: 0.7rem;
   }
   
-  .filter-grid {
-    gap: 10px;
-  }
-  
-  .search-input,
-  .filter-select {
-    font-size: 0.85rem;
-    padding: 8px 10px;
+  .active-filters-row {
+    padding: 8px 12px;
+    justify-content: center;
   }
   
   .recommendations-section,
@@ -1975,15 +2051,6 @@ export default {
   
   .empty-state h3 {
     font-size: 1.1rem;
-  }
-  
-  .filter-tags {
-    gap: 6px;
-  }
-  
-  .filter-tag {
-    font-size: 0.75rem;
-    padding: 3px 8px;
   }
 }
 </style>
