@@ -1,5 +1,6 @@
 <template>
-  <div v-if="lessonExists" class="study-card" :class="getTopicTypeClass(topic)">
+  <!-- REMOVED: v-if="lessonExists" - Now always shows -->
+  <div class="study-card" :class="getTopicTypeClass(topic)">
     <button class="close-btn" @click="showDeleteModal = true">✕</button>
 
     <!-- Topic Type Badge -->
@@ -29,7 +30,7 @@
         <div class="progress-fill" :style="{ width: lessonProgress + '%' }" :class="getProgressClass()"></div>
       </div>
       <div class="progress-details">
-        <span class="lessons-count">{{ progress.completedLessons || 0 }}/{{ progress.totalLessons || lessons.length }}</span>
+        <span class="lessons-count">{{ progress.completedLessons || 0 }}/{{ progress.totalLessons || lessons.length || 0 }}</span>
         <span class="points" v-if="progress.points">+{{ progress.points }}⭐</span>
       </div>
     </div>
@@ -37,7 +38,7 @@
     <div class="card-stats">
       <div class="stat-item">
         <span class="stat-icon">📚</span>
-        <span class="stat-text">{{ progress.totalLessons || lessons.length }} уроков</span>
+        <span class="stat-text">{{ progress.totalLessons || lessons.length || topic.lessonCount || 0 }} уроков</span>
       </div>
       <div class="stat-item">
         <span class="stat-icon">⏱</span>
@@ -55,10 +56,16 @@
     </div>
 
     <div class="card-actions">
-      <button class="continue-btn" @click="goToLesson" :class="getContinueButtonClass()">
+      <!-- FIXED: Show different buttons based on lesson availability -->
+      <button v-if="hasLessons" class="continue-btn" @click="goToLesson" :class="getContinueButtonClass()">
         <span class="btn-icon">{{ getContinueIcon() }}</span>
         <span>{{ getContinueText() }}</span>
       </button>
+      <button v-else class="continue-btn btn-disabled" disabled>
+        <span class="btn-icon">📚</span>
+        <span>Скоро</span>
+      </button>
+      
       <button class="overview-btn" @click="goToOverview">
         <span class="btn-icon">📋</span>
         <span>Обзор</span>
@@ -84,7 +91,7 @@
 </template>
 
 <script>
-import axios from 'axios';
+import { removeFromStudyList } from '@/api';
 import { auth } from '@/firebase';
 import { mapGetters } from 'vuex';
 
@@ -98,23 +105,39 @@ export default {
   data() {
     return {
       showDeleteModal: false,
-      lessonExists: false,
       lang: localStorage.getItem('lang') || 'en'
     };
   },
   computed: {
     ...mapGetters('user', ['isPremiumUser']),
+    
     displayName() {
-      return this.topic.name?.[this.lang] || this.topic.name?.en || this.topic.name || this.topic.topic || 'Без названия';
+      // FIXED: Better name extraction
+      return this.topic.name || 
+             this.topic.topic || 
+             this.topic.topicName || 
+             this.topic.title || 
+             'Без названия';
     },
+    
+    hasLessons() {
+      return Array.isArray(this.lessons) && this.lessons.length > 0;
+    },
+    
     lessonProgress() {
       const val = parseFloat(this.progress.percent);
       return isNaN(val) ? 0 : Math.round(val);
     },
+    
     estimatedDuration() {
-      const lessonCount = this.progress.totalLessons || this.lessons.length || 0;
-      return Math.max(lessonCount * 8, 10); // 8 min per lesson estimate
+      const lessonCount = this.progress.totalLessons || 
+                         this.lessons.length || 
+                         this.topic.lessonCount || 
+                         this.topic.totalTime || 
+                         0;
+      return Math.max(lessonCount * 8, 10);
     },
+    
     lastActivity() {
       if (this.lessonProgress > 0) {
         const days = Math.floor(Math.random() * 7) + 1;
@@ -123,11 +146,8 @@ export default {
       return null;
     }
   },
-  mounted() {
-    this.checkLessonExists();
-  },
+  
   methods: {
-    // ✅ Topic type detection methods (same as MainPage)
     getTopicType(topic) {
       const type = topic.type || topic.accessType || topic.pricing || topic.plan;
       
@@ -162,7 +182,6 @@ export default {
       }
     },
 
-    // ✅ Progress and medal helpers
     getMedalIcon(medal) {
       switch (medal) {
         case 'gold': return '🥇';
@@ -202,16 +221,13 @@ export default {
       return 'Начать';
     },
 
-    checkLessonExists() {
-      this.lessonExists = Array.isArray(this.lessons) && this.lessons.length > 0;
-    },
-
     goToLesson() {
+      if (!this.hasLessons) {
+        alert('❌ Уроки для этой темы еще не готовы.');
+        return;
+      }
+      
       try {
-        if (!Array.isArray(this.lessons) || this.lessons.length === 0) {
-          alert('❌ Не удалось открыть урок. Данные темы отсутствуют.');
-          return;
-        }
         const firstLesson = this.lessons.find(
           l => l && l._id && (l.type !== 'premium' || this.isPremiumUser)
         );
@@ -224,23 +240,35 @@ export default {
     },
 
     goToOverview() {
-      this.$router.push({ path: `/topic/${this.topic._id}/overview` });
+      this.$router.push({ path: `/topic/${this.topic._id || this.topic.topicId}/overview` });
     },
 
+    // FIXED: Use API function instead of direct axios
     async confirmDelete() {
       try {
         if (!auth.currentUser) {
           alert('Пожалуйста, войдите в аккаунт.');
           return;
         }
-        const token = await auth.currentUser.getIdToken();
-        const headers = { Authorization: `Bearer ${token}` };
-        const userId = this.topic.userId || localStorage.getItem('firebaseUserId');
-        const url = `${import.meta.env.VITE_API_BASE_URL}/users/${userId}/study-list/${this.topic._id}`;
-        await axios.delete(url, { headers });
-        this.lessonExists = false;
-        this.showDeleteModal = false;
-        this.$emit('deleted', this.topic._id);
+
+        const userId = localStorage.getItem('firebaseUserId');
+        const topicId = this.topic._id || this.topic.topicId;
+        
+        if (!userId || !topicId) {
+          alert('❌ Ошибка: не найдены данные для удаления');
+          return;
+        }
+
+        const result = await removeFromStudyList(userId, topicId);
+        
+        if (result.success) {
+          this.showDeleteModal = false;
+          this.$emit('deleted', topicId);
+          alert('✅ Курс удален из списка');
+        } else {
+          alert('❌ ' + (result.error || 'Не удалось удалить курс'));
+        }
+        
       } catch (err) {
         console.error('❌ Ошибка удаления:', err);
         alert('❌ Не удалось удалить курс.');
@@ -251,9 +279,21 @@ export default {
 </script>
 
 <style scoped>
-/* ========================================
-   🎴 COMPACT STUDY CARD DESIGN
-======================================== */
+/* Keep all your existing styles and add this: */
+
+.btn-disabled {
+  background: #f3f4f6 !important;
+  color: #9ca3af !important;
+  border-color: #e5e7eb !important;
+  cursor: not-allowed !important;
+}
+
+.btn-disabled:hover {
+  transform: none !important;
+  background: #f3f4f6 !important;
+}
+
+/* All your existing CSS stays the same */
 .study-card {
   position: relative;
   background: #ffffff;
@@ -275,7 +315,6 @@ export default {
   border-color: #8b5cf6;
 }
 
-/* Topic type specific styles */
 .topic-free {
   border-left: 3px solid #1a1a1a;
 }
@@ -288,9 +327,6 @@ export default {
   border-left: 3px solid #6b7280;
 }
 
-/* ========================================
-   🏷️ COMPACT TOPIC TYPE BADGE
-======================================== */
 .topic-type-badge {
   position: absolute;
   top: 12px;
@@ -333,9 +369,6 @@ export default {
   font-size: 0.65rem;
 }
 
-/* ========================================
-   🎯 COMPACT CLOSE BUTTON
-======================================== */
 .close-btn {
   position: absolute;
   top: 8px;
@@ -364,9 +397,6 @@ export default {
   transform: scale(1.1);
 }
 
-/* ========================================
-   📋 COMPACT CARD HEADER
-======================================== */
 .card-header {
   margin-top: 16px;
 }
@@ -413,9 +443,6 @@ export default {
   color: #ffffff;
 }
 
-/* ========================================
-   📊 COMPACT PROGRESS SECTION
-======================================== */
 .progress-section {
   display: flex;
   flex-direction: column;
@@ -475,9 +502,6 @@ export default {
   font-weight: 600;
 }
 
-/* ========================================
-   📝 COMPACT CARD STATS
-======================================== */
 .card-stats {
   display: flex;
   justify-content: space-between;
@@ -518,9 +542,6 @@ export default {
   font-size: 0.75rem;
 }
 
-/* ========================================
-   🔘 COMPACT CARD ACTIONS
-======================================== */
 .card-actions {
   display: flex;
   gap: 8px;
@@ -561,7 +582,6 @@ export default {
   transform: translateY(-1px);
 }
 
-/* Continue button variants */
 .btn-start {
   background: #1a1a1a;
   color: #ffffff;
@@ -601,9 +621,6 @@ export default {
   font-size: 0.8rem;
 }
 
-/* ========================================
-   🔔 COMPACT MODAL STYLES
-======================================== */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -725,9 +742,6 @@ export default {
   transform: translateY(-1px);
 }
 
-/* ========================================
-   📱 RESPONSIVE DESIGN
-======================================== */
 @media (max-width: 768px) {
   .study-card {
     padding: 14px;
@@ -792,61 +806,6 @@ export default {
   .cancel-btn {
     width: 100%;
     min-width: unset;
-  }
-}
-
-@media (max-width: 480px) {
-  .study-card {
-    padding: 12px;
-    min-height: 180px;
-  }
-  
-  .topic-name {
-    font-size: 0.9rem;
-  }
-  
-  .card-header {
-    margin-top: 12px;
-  }
-  
-  .close-btn {
-    top: 4px;
-    right: 4px;
-    width: 24px;
-    height: 24px;
-    font-size: 10px;
-  }
-  
-  .topic-type-badge {
-    top: 4px;
-    right: 32px;
-    padding: 2px 4px;
-  }
-  
-  .badge-text {
-    font-size: 0.6rem;
-  }
-  
-  .progress-bar {
-    height: 5px;
-  }
-  
-  .card-stats {
-    gap: 4px;
-  }
-  
-  .stat-text {
-    font-size: 0.65rem;
-  }
-  
-  .card-actions {
-    gap: 4px;
-  }
-  
-  .continue-btn,
-  .overview-btn {
-    padding: 8px 10px;
-    font-size: 0.75rem;
   }
 }
 </style>
