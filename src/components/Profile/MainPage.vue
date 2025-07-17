@@ -154,28 +154,28 @@
                 <div class="subject-info">
                   <span class="subject-tag">{{ topic.subject || 'Общий' }}</span>
                 </div>
-              </div>
-
-              <!-- Card Actions -->
-              <div class="card-actions">
-                <button 
-                  class="add-btn" 
-                  @click="handleAddTopic(topic)"
-                  :disabled="isInStudyList(topic)"
-                  :title="isInStudyList(topic) ? 'Уже в списке' : 'Добавить в мои курсы'"
-                >
-                  <span class="add-icon">{{ isInStudyList(topic) ? '✓' : '+' }}</span>
-                  <span class="add-text">{{ isInStudyList(topic) ? 'Добавлено' : 'Добавить' }}</span>
-                </button>
-                <button 
-                  class="start-btn" 
-                  @click="handleStartTopic(topic)"
-                  :class="getStartButtonClass(topic)"
-                  :title="getStartButtonTitle(topic)"
-                >
-                  <span class="start-icon">{{ getStartButtonIcon(topic) }}</span>
-                  <span class="start-text">{{ getStartButtonText(topic) }}</span>
-                </button>
+                
+                <!-- Card Actions - FIXED TO BE AT BOTTOM -->
+                <div class="card-actions">
+                  <button 
+                    class="add-btn" 
+                    @click="handleAddTopic(topic)"
+                    :disabled="isInStudyList(topic)"
+                    :title="isInStudyList(topic) ? 'Уже в списке' : 'Добавить в мои курсы'"
+                  >
+                    <span class="add-icon">{{ isInStudyList(topic) ? '✓' : '+' }}</span>
+                    <span class="add-text">{{ isInStudyList(topic) ? 'Добавлено' : 'Добавить' }}</span>
+                  </button>
+                  <button 
+                    class="start-btn" 
+                    @click="handleStartTopic(topic)"
+                    :class="getStartButtonClass(topic)"
+                    :title="getStartButtonTitle(topic)"
+                  >
+                    <span class="start-icon">{{ getStartButtonIcon(topic) }}</span>
+                    <span class="start-text">{{ getStartButtonText(topic) }}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1103,22 +1103,26 @@ export default {
         
         console.log('➕ Adding topic to study list:', topic.name || topic.topicName);
         
-        // ✅ FIXED: Use proper topic data structure for API
-        const topicData = {
-          subject: topic.subject || 'General',
-          level: topic.level || 1,
-          topic: this.getTopicName(topic),
+        // ✅ SIMPLIFIED: Just prepare the data as backend expects
+        const studyListData = {
           topicId: topic._id,
-          lessonCount: topic.lessonCount || topic.lessons?.length || 0,
-          totalTime: topic.totalTime || (topic.lessons?.length * 10) || 10,
-          type: topic.type || 'free'
+          subject: topic.subject || 'General',
+          level: parseInt(topic.level) || 1,
+          topic: this.getTopicName(topic),
+          topicName: this.getTopicName(topic),
+          lessonCount: parseInt(topic.lessonCount || topic.lessons?.length || 0),
+          totalTime: parseInt(topic.totalTime || (topic.lessons?.length * 10) || 10),
+          type: topic.type || 'free',
+          description: topic.description || `Курс по теме "${this.getTopicName(topic)}"`,
+          isActive: true,
+          addedAt: new Date().toISOString()
         };
         
-        console.log('📦 Sending topic data:', topicData);
+        console.log('📦 Sending study list data:', studyListData);
         
-        const result = await addToStudyList(this.userId, topicData);
+        const result = await addToStudyList(this.userId, studyListData);
         
-        if (result.success) {
+        if (result && result.success !== false) {
           // Refresh study list to show the new addition
           await this.fetchStudyList();
           
@@ -1137,36 +1141,32 @@ export default {
           }
           
           console.log('✅ Topic added successfully');
+          
+          // Show success message
+          this.$nextTick(() => {
+            alert('✅ Курс успешно добавлен в ваш список!');
+          });
         } else {
-          throw new Error(result.error || 'Failed to add topic');
+          throw new Error(result?.error || 'Failed to add topic');
         }
         
       } catch (err) {
         console.error('❌ Add topic error:', err);
         
-        // ✅ ENHANCED: Better error messages
+        // ✅ SIMPLE ERROR HANDLING
         let errorMessage = 'Не удалось добавить курс';
         
-        if (err.response?.status === 400) {
-          const errorData = err.response.data;
-          if (errorData.error?.includes('already exists') || errorData.message?.includes('duplicate')) {
-            errorMessage = 'Этот курс уже добавлен в ваш список';
-          } else if (errorData.error?.includes('validation') || errorData.message?.includes('validation')) {
-            errorMessage = 'Некорректные данные курса';
-          } else {
-            errorMessage = errorData.error || errorData.message || 'Ошибка валидации данных';
-          }
-        } else if (err.response?.status === 401) {
+        if (err.message?.includes('уже добавлен') || err.message?.includes('already exists')) {
+          errorMessage = 'Этот курс уже добавлен в ваш список';
+        } else if (err.message?.includes('войти в аккаунт') || err.message?.includes('authentication')) {
           errorMessage = 'Необходимо войти в аккаунт';
-        } else if (err.response?.status === 403) {
-          errorMessage = 'Недостаточно прав доступа';
-        } else if (err.response?.status === 409) {
-          errorMessage = 'Курс уже добавлен в список';
-        } else if (err.response?.status >= 500) {
+        } else if (err.message?.includes('ошибка сервера') || err.message?.includes('server error')) {
           errorMessage = 'Ошибка сервера. Попробуйте позже';
         }
         
-        alert(errorMessage);
+        this.$nextTick(() => {
+          alert(errorMessage);
+        });
       }
     },
 
@@ -1515,7 +1515,7 @@ export default {
 }
 
 /* ========================================
-   🎴 RECOMMENDATION CARDS - COMPLETELY FIXED
+   🎴 RECOMMENDATION CARDS - REDUCED GAPS
 ======================================== */
 .recommendation-card {
   flex: 0 0 340px;
@@ -1599,82 +1599,83 @@ export default {
 }
 
 /* ========================================
-   🏷️ TOPIC BADGE - FIXED
+   🏷️ TOPIC BADGE - REDUCED SIZE
 ======================================== */
 .topic-badge {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  padding: 8px 14px;
-  border-radius: 20px;
-  font-size: 0.75rem;
+  top: 12px;
+  right: 12px;
+  padding: 6px 10px;
+  border-radius: 16px;
+  font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   z-index: 10;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .topic-badge.free {
   background: #ffffff;
   color: #374151;
-  border: 2px solid #374151;
+  border: 1px solid #374151;
 }
 
 .topic-badge.premium {
   background: #8b5cf6;
   color: #ffffff;
-  border: 2px solid #8b5cf6;
+  border: 1px solid #8b5cf6;
 }
 
 .topic-badge.pro {
   background: #1f2937;
   color: #ffffff;
-  border: 2px solid #1f2937;
+  border: 1px solid #1f2937;
 }
 
+
 /* ========================================
-   📝 TOPIC CONTENT - PROPER LAYOUT
+   📝 TOPIC CONTENT - REDUCED GAPS
 ======================================== */
 .topic-content {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 24px;
-  padding-top: 60px; /* Space for badge */
+  padding: 20px;
+  padding-top: 45px; /* Reduced space for badge */
 }
 
 .topic-title {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 600;
   color: #111827;
-  margin: 0 0 14px 0;
-  line-height: 1.4;
+  margin: 0 0 8px 0; /* Reduced margin */
+  line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 3.5rem;
+  min-height: 3rem; /* Reduced min-height */
 }
 
 .topic-desc {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #6b7280;
-  margin: 0 0 20px 0;
-  line-height: 1.6;
+  margin: 0 0 12px 0; /* Reduced margin */
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   flex-grow: 1;
-  min-height: 4.8rem;
+  min-height: 3.6rem; /* Reduced min-height */
 }
 
 .topic-stats {
   display: flex;
   justify-content: space-between;
-  margin: 0 0 18px 0;
-  padding: 14px 0;
+  margin: 0 0 12px 0; /* Reduced margin */
+  padding: 10px 0; /* Reduced padding */
   border-top: 1px solid #f3f4f6;
   border-bottom: 1px solid #f3f4f6;
 }
@@ -1683,42 +1684,42 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 3px; /* Reduced gap */
   flex: 1;
 }
 
 .stat-icon {
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   opacity: 0.7;
 }
 
 .stat-value {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #111827;
 }
 
 .subject-info {
-  margin-bottom: 20px;
+  margin-bottom: 16px; /* Reduced margin */
 }
 
 .subject-tag {
   display: inline-block;
   background: #f3f4f6;
   color: #374151;
-  padding: 8px 14px;
-  border-radius: 12px;
-  font-size: 0.85rem;
+  padding: 5px 10px; /* Reduced padding */
+  border-radius: 10px;
+  font-size: 0.75rem;
   font-weight: 500;
   border: 1px solid #e5e7eb;
 }
 
 /* ========================================
-   🔘 CARD ACTIONS - PERFECT BUTTON LAYOUT
+   🔘 CARD ACTIONS - REDUCED GAPS
 ======================================== */
 .card-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px; /* Reduced gap */
   margin-top: auto;
   flex-shrink: 0;
   align-items: center;
@@ -1729,17 +1730,17 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 16px 20px;
-  border-radius: 12px;
-  font-size: 0.9rem;
+  gap: 6px; /* Reduced gap */
+  padding: 12px 16px; /* Reduced padding */
+  border-radius: 10px;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
   text-decoration: none;
   white-space: nowrap;
-  min-height: 52px;
+  min-height: 44px; /* Reduced min-height */
   box-sizing: border-box;
 }
 
@@ -1789,13 +1790,13 @@ export default {
 
 .add-icon,
 .start-icon {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: bold;
 }
 
 .add-text,
 .start-text {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 600;
 }
 
@@ -2036,7 +2037,7 @@ export default {
 }
 
 /* ========================================
-   📱 RESPONSIVE DESIGN
+   📱 RESPONSIVE DESIGN - REDUCED GAPS
 ======================================== */
 @media (max-width: 1024px) {
   .filter-section {
@@ -2079,23 +2080,18 @@ export default {
   }
   
   .topic-content {
-    padding: 20px;
-    padding-top: 55px;
-  }
-  
-  .topic-title {
-    font-size: 1.15rem;
+    padding: 18px;
+    padding-top: 50px;
   }
   
   .card-actions {
-    gap: 10px;
+    gap: 8px;
   }
   
   .add-btn,
   .start-btn {
-    padding: 14px 16px;
-    font-size: 0.85rem;
-    min-height: 48px;
+    padding: 10px 14px;
+    min-height: 40px;
   }
 }
 
@@ -2164,49 +2160,27 @@ export default {
   }
   
   .topic-content {
-    padding: 18px;
-    padding-top: 50px;
+    padding: 16px;
+    padding-top: 45px;
   }
   
   .topic-title {
-    font-size: 1.1rem;
-    min-height: 3rem;
+    margin-bottom: 6px;
+    min-height: 2.6rem;
   }
   
   .topic-desc {
-    font-size: 0.85rem;
-    margin-bottom: 16px;
-    min-height: 4rem;
+    margin-bottom: 10px;
+    min-height: 3rem;
   }
   
   .topic-stats {
-    margin-bottom: 16px;
-    padding: 12px 0;
+    margin-bottom: 10px;
+    padding: 8px 0;
   }
   
-  .stat-value {
-    font-size: 0.85rem;
-  }
-  
-  .subject-tag {
-    padding: 6px 10px;
-    font-size: 0.75rem;
-  }
-  
-  .card-actions {
-    gap: 10px;
-  }
-  
-  .add-btn,
-  .start-btn {
-    padding: 12px 14px;
-    font-size: 0.8rem;
-    min-height: 44px;
-  }
-  
-  .add-text,
-  .start-text {
-    font-size: 0.8rem;
+  .subject-info {
+    margin-bottom: 12px;
   }
   
   .carousel-track {
@@ -2301,48 +2275,37 @@ export default {
   }
   
   .topic-content {
-    padding: 16px;
-    padding-top: 45px;
+    padding: 14px;
+    padding-top: 40px;
   }
   
   .topic-title {
-    font-size: 1rem;
+    margin-bottom: 6px;
     min-height: 2.8rem;
   }
   
   .topic-desc {
-    font-size: 0.8rem;
-    margin-bottom: 14px;
-    min-height: 3.6rem;
+    margin-bottom: 10px;
+    min-height: 3rem;
   }
   
   .topic-stats {
-    margin-bottom: 14px;
-    padding: 10px 0;
+    margin-bottom: 10px;
+    padding: 8px 0;
   }
   
-  .stat-value {
-    font-size: 0.8rem;
-  }
-  
-  .subject-tag {
-    padding: 5px 8px;
-    font-size: 0.7rem;
+  .subject-info {
+    margin-bottom: 12px;
   }
   
   .card-actions {
-    gap: 8px;
+    gap: 6px;
   }
   
   .add-btn,
   .start-btn {
-    padding: 10px 12px;
-    font-size: 0.75rem;
-    min-height: 40px;
-  }
-  
-  .add-text,
-  .start-text {
+    padding: 8px 10px;
+    min-height: 36px;
     font-size: 0.75rem;
   }
   

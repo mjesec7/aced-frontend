@@ -2325,8 +2325,8 @@ export const addToStudyList = async (userId, topicData) => {
     const token = await auth.currentUser?.getIdToken();
     if (!token) throw new Error('No authentication token');
     
-    // ✅ ENHANCED: Validate and clean the topic data before sending
-    const cleanTopicData = {
+    // ✅ SIMPLE: Just prepare the data exactly as backend expects
+    const studyListData = {
       topicId: String(topicData.topicId || topicData._id || ''),
       subject: String(topicData.subject || 'General'),
       level: parseInt(topicData.level) || 1,
@@ -2336,273 +2336,96 @@ export const addToStudyList = async (userId, topicData) => {
       totalTime: parseInt(topicData.totalTime) || 10,
       type: String(topicData.type || 'free'),
       description: String(topicData.description || ''),
-      isActive: Boolean(topicData.isActive !== false),
-      addedAt: topicData.addedAt || new Date().toISOString()
+      isActive: true,
+      addedAt: new Date().toISOString()
     };
     
     // ✅ VALIDATION: Check required fields
-    if (!cleanTopicData.topicId) {
+    if (!studyListData.topicId) {
       throw new Error('Topic ID is required');
     }
     
-    if (!cleanTopicData.topic || cleanTopicData.topic === 'Без названия') {
+    if (!studyListData.topic || studyListData.topic === 'Без названия') {
       throw new Error('Topic name is required');
     }
     
-    console.log('📦 Sending clean topic data:', cleanTopicData);
+    console.log('📦 Sending study list data:', studyListData);
     
-    // ✅ STRATEGY 1: Try to add to study list directly first
+    // ✅ SIMPLE APPROACH: Just try to add to study list with force flag
     try {
-      const { data } = await api.post(`/users/${userId}/study-list`, cleanTopicData, {
+      const { data } = await api.post(`/users/${userId}/study-list`, {
+        ...studyListData,
+        forceAdd: true, // Tell backend to create topic if it doesn't exist
+        createTopicData: {
+          _id: studyListData.topicId,
+          name: {
+            en: studyListData.topic,
+            ru: studyListData.topic,
+            uz: studyListData.topic
+          },
+          subject: studyListData.subject,
+          level: studyListData.level,
+          type: studyListData.type,
+          lessonCount: studyListData.lessonCount,
+          totalTime: studyListData.totalTime,
+          isActive: true
+        }
+      }, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
       
-      console.log('✅ Direct add to study list successful:', data);
+      console.log('✅ Study list add successful:', data);
       return data;
       
-    } catch (directError) {
-      console.warn('⚠️ Direct add to study list failed:', directError.message);
+    } catch (error) {
+      console.error('❌ Study list add failed:', error);
       
-      // Check if it's a "topic not found" error
-      const errorMessage = directError.response?.data?.error || directError.response?.data?.message || directError.message;
-      const isTopicNotFound = errorMessage.includes('not found') || 
-                             errorMessage.includes('Topic not found') ||
-                             errorMessage.includes('does not exist');
+      // ✅ FALLBACK: Try with minimal data and different structure
+      const minimalData = {
+        topicId: studyListData.topicId,
+        topic: studyListData.topic,
+        subject: studyListData.subject,
+        level: studyListData.level,
+        type: studyListData.type
+      };
       
-      if (!isTopicNotFound) {
-        // If it's not a "topic not found" error, throw immediately
-        throw directError;
-      }
-      
-      console.log('🔄 Topic not found in database, trying alternative approaches...');
-      
-      // ✅ STRATEGY 2: Try to add with embedded topic creation
-      try {
-        console.log('🔄 Attempting embedded topic creation...');
-        
-        const embeddedTopicData = {
-          ...cleanTopicData,
-          // Include full topic data for backend to potentially create
-          topicData: {
-            _id: topicData._id || topicData.topicId,
-            name: topicData.name || topicData.topic || topicData.topicName,
-            description: topicData.description || `Курс по теме "${cleanTopicData.topic}"`,
-            subject: topicData.subject || 'General',
-            level: topicData.level || 1,
-            type: topicData.type || 'free',
-            lessonCount: topicData.lessonCount || 0,
-            totalTime: topicData.totalTime || 10,
-            lessons: topicData.lessons || [],
-            isActive: true,
-            metadata: {
-              source: 'frontend-embedded',
-              createdFrom: 'addToStudyList-embedded'
-            }
-          }
-        };
-        
-        const { data } = await api.post(`/users/${userId}/study-list`, embeddedTopicData, {
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        console.log('✅ Embedded topic creation successful:', data);
-        return data;
-        
-      } catch (embeddedError) {
-        console.warn('⚠️ Embedded topic creation failed:', embeddedError.message);
-        
-        // ✅ STRATEGY 3: Try alternative endpoints
-        const alternativeEndpoints = [
-          `/users/${userId}/study-list/add-with-topic`,
-          `/users/${userId}/study-list/create-and-add`,
-          `/study-list/${userId}/add-topic`
-        ];
-        
-        for (const endpoint of alternativeEndpoints) {
-          try {
-            console.log(`🔄 Trying alternative endpoint: ${endpoint}`);
-            
-            const { data } = await api.post(endpoint, {
-              ...cleanTopicData,
-              createTopicIfNotExists: true,
-              fullTopicData: topicData
-            }, {
-              headers: { 
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            });
-            
-            console.log(`✅ Alternative endpoint ${endpoint} successful:`, data);
-            return data;
-            
-          } catch (altError) {
-            console.warn(`⚠️ Alternative endpoint ${endpoint} failed:`, altError.message);
-            continue;
-          }
+      const { data } = await api.post(`/users/${userId}/study-list`, minimalData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-        
-        // ✅ STRATEGY 4: Create topic separately first, then add to study list
-        try {
-          console.log('🔄 Attempting separate topic creation...');
-          
-          const topicCreationData = {
-            _id: topicData._id || topicData.topicId,
-            topicId: topicData._id || topicData.topicId,
-            name: topicData.name || topicData.topic || topicData.topicName,
-            topicName: topicData.name || topicData.topic || topicData.topicName,
-            description: topicData.description || `Курс по теме "${cleanTopicData.topic}"`,
-            subject: topicData.subject || 'General',
-            level: topicData.level || 1,
-            type: topicData.type || 'free',
-            lessonCount: topicData.lessonCount || 0,
-            totalTime: topicData.totalTime || 10,
-            lessons: topicData.lessons || [],
-            isActive: true,
-            createdAt: topicData.createdAt || new Date().toISOString(),
-            metadata: {
-              source: 'frontend-separate-creation',
-              createdFrom: 'addToStudyList-separate'
-            }
-          };
-          
-          // Try multiple topic creation endpoints
-          const topicCreationEndpoints = [
-            '/api/topics',
-            '/topics',
-            '/topics/create',
-            '/topics/ensure'
-          ];
-          
-          let topicCreated = false;
-          
-          for (const endpoint of topicCreationEndpoints) {
-            try {
-              console.log(`🏗️ Trying topic creation via ${endpoint}`);
-              
-              const { data: creationResponse } = await api.post(endpoint, topicCreationData, {
-                headers: { 
-                  Authorization: `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                }
-              });
-              
-              if (creationResponse && creationResponse.success !== false) {
-                console.log(`✅ Topic created successfully via ${endpoint}`);
-                topicCreated = true;
-                break;
-              }
-            } catch (creationError) {
-              console.warn(`⚠️ Topic creation failed via ${endpoint}:`, creationError.message);
-              continue;
-            }
-          }
-          
-          // Wait a bit for topic to be saved
-          if (topicCreated) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-          
-          // Now try to add to study list again
-          const { data } = await api.post(`/users/${userId}/study-list`, cleanTopicData, {
-            headers: { 
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          console.log('✅ Study list add successful after separate topic creation:', data);
-          return data;
-          
-        } catch (separateError) {
-          console.error('❌ Separate topic creation and study list add failed:', separateError);
-          
-          // ✅ STRATEGY 5: Last resort - try to add anyway with minimal data
-          try {
-            console.log('🔄 Last resort: minimal data add...');
-            
-            const minimalData = {
-              topicId: cleanTopicData.topicId,
-              topic: cleanTopicData.topic,
-              subject: cleanTopicData.subject,
-              level: cleanTopicData.level,
-              type: cleanTopicData.type || 'free',
-              forceAdd: true // Signal to backend to force add
-            };
-            
-            const { data } = await api.post(`/users/${userId}/study-list`, minimalData, {
-              headers: { 
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            });
-            
-            console.log('✅ Minimal data add successful:', data);
-            return data;
-            
-          } catch (minimalError) {
-            console.error('❌ Even minimal data add failed:', minimalError);
-            throw new Error('Все попытки добавления курса не удались. Попробуйте обновить страницу и повторить.');
-          }
-        }
-      }
+      });
+      
+      console.log('✅ Minimal study list add successful:', data);
+      return data;
     }
     
   } catch (error) {
     console.error('❌ Failed to add to study list:', error);
-    console.error('❌ Error details:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message
-    });
     
-    // Enhanced error handling
+    // ✅ SIMPLE ERROR HANDLING
+    const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
+    
     if (error.response?.status === 400) {
-      const errorData = error.response.data;
-      const errorMessage = errorData.error || errorData.message || 'Invalid request data';
-      
-      console.error('❌ 400 Bad Request details:', {
-        error: errorMessage,
-        validationErrors: errorData.validationErrors,
-        requiredFields: errorData.requiredFields,
-        receivedData: errorData.receivedData
-      });
-      
-      // More user-friendly error messages
-      if (errorMessage.includes('not found')) {
-        throw new Error('Курс не найден в базе данных. Попробуйте обновить страницу.');
-      } else if (errorMessage.includes('already exists') || errorMessage.includes('duplicate')) {
-        throw new Error('Этот курс уже добавлен в ваш список.');
-      } else if (errorMessage.includes('validation')) {
-        throw new Error('Ошибка валидации данных курса.');
+      if (errorMessage.includes('already exists') || errorMessage.includes('duplicate')) {
+        throw new Error('Этот курс уже добавлен в ваш список');
       } else {
-        throw new Error(`Ошибка добавления курса: ${errorMessage}`);
+        throw new Error('Ошибка добавления курса. Попробуйте еще раз.');
       }
     }
     
     if (error.response?.status === 401) {
-      throw new Error('Необходимо войти в аккаунт для добавления курса.');
-    }
-    
-    if (error.response?.status === 403) {
-      throw new Error('Недостаточно прав для добавления курса.');
+      throw new Error('Необходимо войти в аккаунт');
     }
     
     if (error.response?.status >= 500) {
-      throw new Error('Ошибка сервера. Попробуйте позже.');
+      throw new Error('Ошибка сервера. Попробуйте позже');
     }
     
-    if (error.message?.includes('Network Error')) {
-      throw new Error('Ошибка сети. Проверьте подключение к интернету.');
-    }
-    
-    throw error;
+    throw new Error('Не удалось добавить курс. Попробуйте еще раз.');
   }
 };
 
