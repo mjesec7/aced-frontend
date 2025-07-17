@@ -46,6 +46,10 @@
         </div>
         
         <div class="actions-group">
+          <button @click="refreshRecommendations" class="refresh-btn" :disabled="loadingRecommendations">
+            <span class="refresh-icon" :class="{ 'spinning': loadingRecommendations }">🔄</span>
+            <span>{{ loadingRecommendations ? 'Обновление...' : 'Обновить' }}</span>
+          </button>
           <button v-if="hasActiveFilters" @click="clearFilters" class="clear-all-btn">
             🗑️ Очистить
           </button>
@@ -85,75 +89,101 @@
       </div>
     </div>
 
-    <!-- 🌟 Recommendations -->
+    <!-- 🌟 Recommendations Carousel -->
     <div class="section recommendations-section">
       <div class="section-header">
         <h2>🌟 Рекомендовано для вас</h2>
         <div class="header-controls">
-          <span class="results-count">{{ filteredRecommendations.length }} найдено</span>
-          <button class="refresh-btn" @click="refreshRecommendations" :disabled="loadingRecommendations">
-            🔄 Обновить
+          <span class="results-count">{{ displayedRecommendations.length }} из {{ allRecommendations.length }}</span>
+          <button class="refresh-recommendations-btn" @click="shuffleRecommendations" :disabled="loadingRecommendations">
+            <span class="refresh-icon" :class="{ 'spinning': loadingRecommendations }">🎲</span>
+            <span>Новые курсы</span>
           </button>
         </div>
       </div>
 
-      <div v-if="loadingRecommendations" class="grid">
-        <div class="recommendation-placeholder" v-for="n in 4" :key="n">⏳</div>
+      <div v-if="loadingRecommendations" class="loading-carousel">
+        <div class="recommendation-placeholder" v-for="n in 10" :key="n">⏳</div>
       </div>
 
-      <div v-else-if="filteredRecommendations.length" class="grid">
-        <div class="topic-card" v-for="topic in filteredRecommendations" :key="topic._id" :class="getTopicTypeClass(topic)">
-          <!-- Topic Type Badge -->
-          <div class="topic-type-badge" :class="getTopicType(topic)">
-            <span class="badge-icon">{{ getTopicTypeIcon(topic) }}</span>
-            <span class="badge-text">{{ getTopicTypeLabel(topic) }}</span>
-          </div>
+      <div v-else-if="displayedRecommendations.length" class="recommendations-carousel">
+        <button 
+          class="carousel-nav prev" 
+          @click="scrollCarousel('left')"
+          :disabled="isAtStart"
+          :class="{ disabled: isAtStart }"
+        >
+          ‹
+        </button>
+        
+        <div class="carousel-container" ref="carouselContainer" @scroll="updateScrollPosition">
+          <div class="carousel-track">
+            <div 
+              class="recommendation-card" 
+              v-for="topic in displayedRecommendations" 
+              :key="topic._id" 
+              :class="getTopicTypeClass(topic)"
+            >
+              <!-- Topic Type Badge -->
+              <div class="topic-type-badge" :class="getTopicType(topic)">
+                <span class="badge-icon">{{ getTopicTypeIcon(topic) }}</span>
+                <span class="badge-text">{{ getTopicTypeLabel(topic) }}</span>
+              </div>
 
-          <!-- Topic Content -->
-          <div class="topic-content">
-            <h3 class="topic-title">📘 {{ getTopicName(topic) }}</h3>
-            <p class="topic-desc">{{ getTopicDescription(topic) }}</p>
-            
-            <!-- Topic Metadata -->
-            <div class="topic-metadata">
-              <div class="metadata-item">
-                <span class="metadata-icon">📚</span>
-                <span class="metadata-text">{{ topic.lessons?.length || 0 }} уроков</span>
-              </div>
-              <div v-if="topic.subject" class="metadata-item">
-                <span class="metadata-icon">🏷️</span>
-                <span class="metadata-text">{{ topic.subject }}</span>
-              </div>
-              <div v-if="topic.difficulty" class="metadata-item">
-                <span class="metadata-icon">⚡</span>
-                <div class="difficulty-stars">
-                  <span v-for="i in 5" :key="i" class="star" :class="{ 'filled': i <= topic.difficulty }">★</span>
+              <!-- Topic Content -->
+              <div class="topic-content">
+                <h3 class="topic-title">📘 {{ getTopicName(topic) }}</h3>
+                <p class="topic-desc">{{ getTopicDescription(topic) }}</p>
+                
+                <!-- Topic Metadata -->
+                <div class="topic-metadata">
+                  <div class="metadata-item">
+                    <span class="metadata-icon">📚</span>
+                    <span class="metadata-text">{{ topic.lessons?.length || 0 }} уроков</span>
+                  </div>
+                  <div v-if="topic.subject" class="metadata-item">
+                    <span class="metadata-icon">🏷️</span>
+                    <span class="metadata-text">{{ topic.subject }}</span>
+                  </div>
+                  <div v-if="topic.level" class="metadata-item">
+                    <span class="metadata-icon">📈</span>
+                    <span class="metadata-text">Ур. {{ topic.level }}</span>
+                  </div>
                 </div>
+              </div>
+
+              <!-- Card Actions -->
+              <div class="card-buttons">
+                <button 
+                  class="btn-add" 
+                  @click="handleAddTopic(topic)"
+                  :disabled="isInStudyList(topic)"
+                  :title="isInStudyList(topic) ? 'Уже в списке' : 'Добавить в мои курсы'"
+                >
+                  {{ isInStudyList(topic) ? '✓' : '＋' }}
+                </button>
+                <button 
+                  class="btn-start" 
+                  @click="handleStartTopic(topic)"
+                  :class="getStartButtonClass(topic)"
+                  :title="getStartButtonTitle(topic)"
+                >
+                  <span class="btn-icon">{{ getStartButtonIcon(topic) }}</span>
+                  <span class="btn-text">{{ getStartButtonText(topic) }}</span>
+                </button>
               </div>
             </div>
           </div>
-
-          <!-- Card Actions -->
-          <div class="card-buttons">
-            <button 
-              class="btn-add" 
-              @click="handleAddTopic(topic)"
-              :disabled="isInStudyList(topic)"
-              :title="isInStudyList(topic) ? 'Уже в списке' : 'Добавить в мои курсы'"
-            >
-              {{ isInStudyList(topic) ? '✓ Добавлено' : '＋ Добавить' }}
-            </button>
-            <button 
-              class="btn-start" 
-              @click="handleStartTopic(topic)"
-              :class="getStartButtonClass(topic)"
-              :title="getStartButtonTitle(topic)"
-            >
-              <span class="btn-icon">{{ getStartButtonIcon(topic) }}</span>
-              <span class="btn-text">{{ getStartButtonText(topic) }}</span>
-            </button>
-          </div>
         </div>
+        
+        <button 
+          class="carousel-nav next" 
+          @click="scrollCarousel('right')"
+          :disabled="isAtEnd"
+          :class="{ disabled: isAtEnd }"
+        >
+          ›
+        </button>
       </div>
 
       <div v-else class="empty-message">
@@ -254,12 +284,17 @@ export default {
   data() {
     return {
       userId: null,
-      recommendations: [],
+      allRecommendations: [], // All available recommendations
+      displayedRecommendations: [], // Currently displayed 10 random ones
       studyList: [],
       allSubjects: [],
       allLevels: [],
       loadingRecommendations: true,
       loadingStudyList: true,
+      
+      // Carousel state
+      isAtStart: true,
+      isAtEnd: false,
       
       // Enhanced Filters
       searchQuery: '',
@@ -286,7 +321,7 @@ export default {
     ...mapGetters('user', ['userStatus']),
     
     filteredRecommendations() {
-      return this.applySorting(this.recommendations
+      return this.applySorting(this.displayedRecommendations
         .filter(t => t.lessons?.length)
         .filter(t => {
           const name = this.getTopicName(t);
@@ -599,13 +634,14 @@ export default {
               return (a.level || 0) - (b.level || 0);
             });
           
-          console.log(`✅ Built ${builtTopics.length} topic recommendations from lessons`);
+                      console.log(`✅ Built ${builtTopics.length} topic recommendations from lessons`);
           
-          // ✅ Limit to reasonable number for recommendations (not all topics)
-          this.recommendations = builtTopics.slice(0, 20);
-          this.extractSubjects(this.recommendations);
+          // ✅ Store all recommendations and select random 10 for display
+          this.allRecommendations = builtTopics;
+          this.displayedRecommendations = this.getRandomRecommendations(10);
+          this.extractSubjects(this.allRecommendations);
           
-          console.log(`📊 Final recommendations: ${this.recommendations.length} topics`);
+          console.log(`📊 Total available: ${this.allRecommendations.length}, Displaying: ${this.displayedRecommendations.length}`);
           return;
         }
         
@@ -644,21 +680,24 @@ export default {
             .map(result => result.value);
           
           if (validTopics.length > 0) {
-            this.recommendations = validTopics;
-            this.extractSubjects(this.recommendations);
-            console.log(`✅ Successfully loaded ${validTopics.length} recommendations with lessons`);
+            this.allRecommendations = validTopics;
+            this.displayedRecommendations = this.getRandomRecommendations(10);
+            this.extractSubjects(this.allRecommendations);
+            console.log(`✅ Successfully loaded ${this.allRecommendations.length} total recommendations, displaying ${this.displayedRecommendations.length}`);
             return;
           }
         }
         
         // No data available
         console.log('ℹ️ No topics or lessons available for recommendations');
-        this.recommendations = [];
+        this.allRecommendations = [];
+        this.displayedRecommendations = [];
         
       } catch (err) {
         const errorInfo = this.handleApiError(err, 'fetch-recommendations');
         this.errors.recommendations = errorInfo.message;
-        this.recommendations = [];
+        this.allRecommendations = [];
+        this.displayedRecommendations = [];
         
         if (err.response?.status === 404) {
           this.errors.recommendations = null;
@@ -667,6 +706,11 @@ export default {
         console.error('❌ Failed to fetch recommendations:', err);
       } finally {
         this.loadingRecommendations = false;
+        
+        // Update carousel position after loading
+        this.$nextTick(() => {
+          this.updateScrollPosition();
+        });
       }
     },
 
@@ -897,6 +941,65 @@ export default {
       this.allLevels = Array.from(levels).sort((a, b) => Number(a) - Number(b));
     },
     
+    // ✅ NEW: Random selection and carousel methods
+    getRandomRecommendations(count = 10) {
+      if (this.allRecommendations.length <= count) {
+        return [...this.allRecommendations];
+      }
+      
+      const shuffled = [...this.allRecommendations].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, count);
+    },
+    
+    shuffleRecommendations() {
+      if (this.allRecommendations.length === 0) {
+        this.fetchRecommendations();
+        return;
+      }
+      
+      this.displayedRecommendations = this.getRandomRecommendations(10);
+      
+      // Reset carousel position
+      this.$nextTick(() => {
+        if (this.$refs.carouselContainer) {
+          this.$refs.carouselContainer.scrollLeft = 0;
+          this.updateScrollPosition();
+        }
+      });
+      
+      console.log(`🎲 Shuffled to ${this.displayedRecommendations.length} new recommendations`);
+    },
+    
+    scrollCarousel(direction) {
+      const container = this.$refs.carouselContainer;
+      if (!container) return;
+      
+      const scrollAmount = 320; // Card width + gap
+      const currentScroll = container.scrollLeft;
+      
+      if (direction === 'left') {
+        container.scrollTo({
+          left: currentScroll - scrollAmount,
+          behavior: 'smooth'
+        });
+      } else {
+        container.scrollTo({
+          left: currentScroll + scrollAmount,
+          behavior: 'smooth'
+        });
+      }
+    },
+    
+    updateScrollPosition() {
+      const container = this.$refs.carouselContainer;
+      if (!container) return;
+      
+      const { scrollLeft, scrollWidth, clientWidth } = container;
+      
+      this.isAtStart = scrollLeft <= 10;
+      this.isAtEnd = scrollLeft >= scrollWidth - clientWidth - 10;
+    },
+    
     // ✅ NEW: Sorting functionality
     applySorting(items) {
       const sorted = [...items];
@@ -1009,7 +1112,8 @@ export default {
           await this.fetchStudyList();
           
           // Remove from recommendations
-          this.recommendations = this.recommendations.filter(t => t._id !== topic._id);
+          this.allRecommendations = this.allRecommendations.filter(t => t._id !== topic._id);
+          this.displayedRecommendations = this.displayedRecommendations.filter(t => t._id !== topic._id);
           
           console.log('✅ Topic added successfully');
         } else {
@@ -1211,8 +1315,8 @@ export default {
   margin-left: auto;
 }
 
-.clear-all-btn {
-  background: #ef4444;
+.refresh-btn {
+  background: #1e40af;
   color: #ffffff;
   border: none;
   padding: 10px 16px;
@@ -1221,12 +1325,35 @@ export default {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
 }
 
-.clear-all-btn:hover {
-  background: #dc2626;
+.refresh-btn:hover:not(:disabled) {
+  background: #1d4ed8;
   transform: translateY(-1px);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.refresh-icon {
+  font-size: 0.9rem;
+  transition: transform 0.5s ease;
+}
+
+.refresh-icon.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .user-badge {
@@ -1270,9 +1397,158 @@ export default {
   white-space: nowrap;
 }
 
-.filter-tag:hover {
+.clear-all-btn {
+  background: #ef4444;
+  color: #ffffff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.clear-all-btn:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.refresh-recommendations-btn {
+  background: #8b5cf6;
+  color: #ffffff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.refresh-recommendations-btn:hover:not(:disabled) {
   background: #7c3aed;
-  transform: scale(1.05);
+  transform: translateY(-1px);
+}
+
+.refresh-recommendations-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ========================================
+   🎠 RECOMMENDATIONS CAROUSEL
+======================================== */
+.recommendations-carousel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.carousel-container {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 4px 0;
+}
+
+.carousel-container::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel-track {
+  display: flex;
+  gap: 20px;
+  padding: 0 4px;
+}
+
+.recommendation-card {
+  flex: 0 0 300px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e5e7eb;
+  height: 240px;
+  position: relative;
+  overflow: hidden;
+}
+
+.recommendation-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  border-color: #8b5cf6;
+}
+
+.loading-carousel {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding: 4px;
+}
+
+.loading-carousel .recommendation-placeholder {
+  flex: 0 0 300px;
+  height: 240px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.carousel-nav {
+  background: #ffffff;
+  border: 2px solid #e5e7eb;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.carousel-nav:hover:not(.disabled) {
+  background: #8b5cf6;
+  color: #ffffff;
+  border-color: #8b5cf6;
+  transform: scale(1.1);
+}
+
+.carousel-nav.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.carousel-nav.prev {
+  margin-right: 4px;
+}
+
+.carousel-nav.next {
+  margin-left: 4px;
 }
 
 /* ========================================
@@ -1867,6 +2143,20 @@ export default {
     margin-left: 0;
     justify-content: space-between;
   }
+  
+  .recommendations-carousel {
+    gap: 8px;
+  }
+  
+  .carousel-nav {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+  }
+  
+  .recommendation-card {
+    flex: 0 0 280px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1913,6 +2203,24 @@ export default {
   .filter-tag {
     font-size: 0.7rem;
     padding: 3px 8px;
+  }
+  
+  .recommendations-carousel {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .carousel-container {
+    order: 1;
+  }
+  
+  .carousel-nav {
+    display: none;
+  }
+  
+  .recommendation-card {
+    flex: 0 0 260px;
+    height: 220px;
   }
   
   .grid {
@@ -2053,5 +2361,188 @@ export default {
   .empty-state h3 {
     font-size: 1.1rem;
   }
+}
+/* ========================================
+   🎴 RECOMMENDATION CARD STYLES
+======================================== */
+.recommendation-card .topic-type-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  z-index: 2;
+}
+
+.recommendation-card .topic-type-badge.free {
+  background: #f3f4f6;
+  color: #1a1a1a;
+  border: 1px solid #e5e7eb;
+}
+
+.recommendation-card .topic-type-badge.premium {
+  background: #f3f0ff;
+  color: #8b5cf6;
+  border: 1px solid #8b5cf6;
+}
+
+.recommendation-card .topic-type-badge.pro {
+  background: #1a1a1a;
+  color: #ffffff;
+  border: 1px solid #1a1a1a;
+}
+
+.recommendation-card .topic-content {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.recommendation-card .topic-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+  line-height: 1.3;
+  margin-top: 16px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.recommendation-card .topic-desc {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 6px 0 12px 0;
+  line-height: 1.5;
+  flex-grow: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.recommendation-card .topic-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.recommendation-card .metadata-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.recommendation-card .metadata-icon {
+  font-size: 0.8rem;
+}
+
+.recommendation-card .metadata-text {
+  font-weight: 500;
+}
+
+.recommendation-card .card-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding: 0 16px 16px 16px;
+}
+
+.recommendation-card .btn-add,
+.recommendation-card .btn-start {
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-decoration: none;
+  border: 2px solid transparent;
+}
+
+.recommendation-card .btn-add {
+  flex: 0 0 40px;
+  background: #ffffff;
+  color: #1a1a1a;
+  border-color: #e5e7eb;
+}
+
+.recommendation-card .btn-add:hover {
+  background: #f9fafb;
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+  transform: translateY(-1px);
+}
+
+.recommendation-card .btn-add:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+  border-color: #e5e7eb;
+}
+
+.recommendation-card .btn-start {
+  flex: 1;
+  background: #1a1a1a;
+  color: #ffffff;
+  border-color: #1a1a1a;
+}
+
+.recommendation-card .btn-start:hover {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  transform: translateY(-1px);
+}
+
+.recommendation-card .btn-restricted {
+  background: #6b7280;
+  color: #ffffff;
+  border-color: #6b7280;
+}
+
+.recommendation-card .btn-restricted:hover {
+  background: #4b5563;
+  border-color: #4b5563;
+  transform: translateY(-1px);
+}
+
+.recommendation-card .btn-icon {
+  font-size: 0.8rem;
+}
+
+.recommendation-card .btn-text {
+  font-size: 0.75rem;
+}
+
+/* Type indicators for carousel cards */
+.recommendation-card.topic-free {
+  border-left: 3px solid #1a1a1a;
+}
+
+.recommendation-card.topic-premium {
+  border-left: 3px solid #8b5cf6;
+}
+
+.recommendation-card.topic-pro {
+  border-left: 3px solid #6b7280;
 }
 </style>
