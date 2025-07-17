@@ -2540,6 +2540,248 @@ export const diagnosticTool = {
 };
 
 // =============================================
+// 📊 ANALYTICS & REPORTING API FUNCTIONS
+// =============================================
+
+// ✅ Get user analytics
+export const getUserAnalytics = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    try {
+      const { data } = await api.get(`/users/${userId}/analytics`, { headers });
+      return data;
+    } catch (error) {
+      console.warn('⚠️ User analytics endpoint failed, trying fallback:', error.message);
+      
+      try {
+        const { data } = await api.get(`/analytics/${userId}`, { headers });
+        return data;
+      } catch (fallbackError) {
+        console.error('❌ All analytics endpoints failed:', fallbackError.message);
+        throw fallbackError;
+      }
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch user analytics:', error);
+    throw error;
+  }
+};
+
+// ✅ Get user stats
+export const getUserStats = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/stats`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get user stats:', error);
+    throw error;
+  }
+};
+
+// ✅ Get user achievements
+export const getUserAchievements = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/achievements`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get user achievements:', error);
+    throw error;
+  }
+};
+
+// ✅ Get user points
+export const getUserPoints = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/points`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get user points:', error);
+    throw error;
+  }
+};
+
+// ✅ Get recommendations
+export const getRecommendations = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/recommendations`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get recommendations:', error);
+    throw error;
+  }
+};
+
+// ✅ Get user progress stats
+export const getUserProgressStats = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/progress`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get progress stats:', error);
+    throw error;
+  }
+};
+
+// ✅ Get lesson progress stats
+export const getLessonProgressStats = async (userId, lessonId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/progress/lesson/${lessonId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get lesson progress stats:', error);
+    throw error;
+  }
+};
+
+// ✅ Get topics progress
+export const getTopicsProgress = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/topics-progress`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get topics progress:', error);
+    throw error;
+  }
+};
+
+// ✅ Save diary entry
+export const saveDiaryEntry = async (userId, diaryData) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.post(`/users/${userId}/diary`, diaryData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to save diary entry:', error);
+    throw error;
+  }
+};
+
+// ✅ Get diary entries
+export const getDiaryEntries = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/diary`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get diary entries:', error);
+    throw error;
+  }
+};
+
+// ✅ Get user goals
+export const getUserGoals = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/goals`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get user goals:', error);
+    throw error;
+  }
+};
+
+// ✅ Create user goal
+export const createUserGoal = async (userId, goalData) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.post(`/users/${userId}/goals`, goalData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to create user goal:', error);
+    throw error;
+  }
+};
+
+// ✅ Update user goal
+export const updateUserGoal = async (userId, goalId, goalData) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.put(`/users/${userId}/goals/${goalId}`, goalData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to update user goal:', error);
+    throw error;
+  }
+};
+
+// ✅ Delete user goal
+export const deleteUserGoal = async (userId, goalId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.delete(`/users/${userId}/goals/${goalId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to delete user goal:', error);
+    throw error;
+  }
+};
+
+// =============================================
 // 📱 BACKWARDS COMPATIBILITY & ALIASES
 // =============================================
 
