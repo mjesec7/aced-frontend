@@ -1679,8 +1679,9 @@ export default {
 
 .star.filled {
   color: #8b5cf6;
-}size: 0.9rem;
+  size: 0.9rem;
 }
+
 
 .badge-text {
   font-size: 0.7rem;
