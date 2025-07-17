@@ -1,4 +1,3 @@
-
 <template>
   <div class="analytics-panel" ref="pdfContent">
     <div class="header-row">
@@ -23,15 +22,42 @@
           </div>
 
           <div class="modal-section options-grid">
-            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="studyDays" /> Дней в обучении</label>
-            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="completedSubjects" /> Завершено предметов</label>
-            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="weeklyLessons" /> Уроков за неделю</label>
-            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="monthlyLessons" /> Уроков за месяц</label>
-            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="streakDays" /> Учебный стрик</label>
-            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="mostActiveDay" /> Активный день</label>
-            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="totalLessonsDone" /> Всего уроков</label>
-            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="totalPoints" /> Общие очки</label>
-            <label class="option-box"><input type="checkbox" v-model="selectedStats" value="avgPointsPerDay" /> Очков в день</label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="studyDays" />
+              Дней в обучении
+            </label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="completedSubjects" />
+              Завершено предметов
+            </label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="weeklyLessons" />
+              Уроков за неделю
+            </label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="monthlyLessons" />
+              Уроков за месяц
+            </label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="streakDays" />
+              Учебный стрик
+            </label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="mostActiveDay" />
+              Активный день
+            </label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="totalLessonsDone" />
+              Всего уроков
+            </label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="totalPoints" />
+              Общие очки
+            </label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="avgPointsPerDay" />
+              Очков в день
+            </label>
           </div>
 
           <div class="modal-buttons">
@@ -58,23 +84,67 @@
     <div v-else>
       <!-- Summary Cards -->
       <div class="card-grid">
-        <Card label="Общие очки" :value="analytics.totalPoints" subtext="Баллы за активность 💯" />
-        <Card label="Очков в день" :value="analytics.avgPointsPerDay" subtext="Средний заработок 📈" />
-        <Card label="Дней в обучении" :value="analytics.studyDays" :subtext="formatDaysToHuman(analytics.studyDays)" />
-        <Card label="Завершено предметов" :value="analytics.completedSubjects" :subtext="`${remainingSubjects} из ${analytics.totalSubjects}`" />
-        <Card label="Уроков за неделю" :value="analytics.weeklyLessons" subtext="Текущий темп 📈" />
-        <Card label="Уроков за месяц" :value="analytics.monthlyLessons" subtext="Стабильность важна" />
-        <Card label="Стрик" :value="`${analytics.streakDays} дней`" :subtext="analytics.streakDays > 0 ? 'Ты на волне 💫' : 'Начни снова 🚀'" />
-        <Card label="Активный день" :value="analytics.mostActiveDay || 'Нет данных'" subtext="Повтори успех 💪" />
-        <Card label="Всего уроков" :value="analytics.totalLessonsDone" subtext="Общий прогресс 📚" />
-        <Card label="Среднее время в день" :value="analytics.averageTime || '0 мин'" subtext="Сколько ты учишься ежедневно" />
+        <Card 
+          label="Общие очки" 
+          :value="analytics.totalPoints" 
+          subtext="Баллы за активность 💯" 
+        />
+        <Card 
+          label="Очков в день" 
+          :value="analytics.avgPointsPerDay" 
+          subtext="Средний заработок 📈" 
+        />
+        <Card 
+          label="Дней в обучении" 
+          :value="analytics.studyDays" 
+          :subtext="formatDaysToHuman(analytics.studyDays)" 
+        />
+        <Card 
+          label="Завершено предметов" 
+          :value="analytics.completedSubjects" 
+          :subtext="`${remainingSubjects} из ${analytics.totalSubjects}`" 
+        />
+        <Card 
+          label="Уроков за неделю" 
+          :value="analytics.weeklyLessons" 
+          subtext="Текущий темп 📈" 
+        />
+        <Card 
+          label="Уроков за месяц" 
+          :value="analytics.monthlyLessons" 
+          subtext="Стабильность важна" 
+        />
+        <Card 
+          label="Стрик" 
+          :value="`${analytics.streakDays} дней`" 
+          :subtext="analytics.streakDays > 0 ? 'Ты на волне 💫' : 'Начни снова 🚀'" 
+        />
+        <Card 
+          label="Активный день" 
+          :value="analytics.mostActiveDay || 'Нет данных'" 
+          subtext="Повтори успех 💪" 
+        />
+        <Card 
+          label="Всего уроков" 
+          :value="analytics.totalLessonsDone" 
+          subtext="Общий прогресс 📚" 
+        />
+        <Card 
+          label="Среднее время в день" 
+          :value="analytics.averageTime || '0 мин'" 
+          subtext="Сколько ты учишься ежедневно" 
+        />
       </div>
 
       <!-- Recent Activity -->
       <div class="chart-box" v-if="analytics.recentActivity && analytics.recentActivity.length > 0">
         <h2 class="chart-heading">📋 Последняя активность</h2>
         <div class="recent-activity-list">
-          <div v-for="activity in analytics.recentActivity" :key="activity.date" class="activity-item">
+          <div 
+            v-for="activity in analytics.recentActivity" 
+            :key="activity.date" 
+            class="activity-item"
+          >
             <div class="activity-date">{{ formatDate(activity.date) }}</div>
             <div class="activity-lesson">{{ activity.lesson }}</div>
             <div class="activity-stats">
@@ -88,7 +158,11 @@
       <!-- Subject Progress Bars -->
       <div class="chart-box" v-if="analytics.subjects && analytics.subjects.length > 0">
         <h2 class="chart-heading">📚 Прогресс по предметам</h2>
-        <div v-for="subject in analytics.subjects" :key="subject.name" class="subject-progress">
+        <div 
+          v-for="subject in analytics.subjects" 
+          :key="subject.name" 
+          class="subject-progress"
+        >
           <div class="progress-header">
             <span class="subject-name">{{ subject.name }}</span>
             <span class="subject-value">{{ subject.progress }}%</span>
@@ -109,13 +183,19 @@
         <div class="data-quality-grid">
           <div class="quality-item">
             <span class="quality-label">Данные активности:</span>
-            <span :class="{'quality-good': analytics.dataQuality.hasActivityData, 'quality-poor': !analytics.dataQuality.hasActivityData}">
+            <span :class="{
+              'quality-good': analytics.dataQuality.hasActivityData, 
+              'quality-poor': !analytics.dataQuality.hasActivityData
+            }">
               {{ analytics.dataQuality.hasActivityData ? '✅ Есть' : '❌ Нет' }}
             </span>
           </div>
           <div class="quality-item">
             <span class="quality-label">Данные предметов:</span>
-            <span :class="{'quality-good': analytics.dataQuality.hasSubjectData, 'quality-poor': !analytics.dataQuality.hasSubjectData}">
+            <span :class="{
+              'quality-good': analytics.dataQuality.hasSubjectData, 
+              'quality-poor': !analytics.dataQuality.hasSubjectData
+            }">
               {{ analytics.dataQuality.hasSubjectData ? '✅ Есть' : '❌ Нет' }}
             </span>
           </div>
@@ -138,16 +218,19 @@
 
 <script>
 import { mapState, mapGetters } from 'vuex';
+import { auth } from '@/firebase';
+import { getUserAnalytics } from '@/api';
 import LineChart from '@/components/Charts/LineChart.vue';
 import Card from '@/components/Profile/AnalyticsCard.vue';
 import ProgressBar from '@/components/Profile/ProgressBar.vue';
-import { auth } from '@/firebase';
-// FIX 1: Import the api module properly
-import { getUserAnalytics } from '@/api';
 
 export default {
   name: 'UserAnalyticsPanel',
-  components: { LineChart, Card, ProgressBar },
+  components: { 
+    LineChart, 
+    Card, 
+    ProgressBar 
+  },
   data() {
     return {
       loading: true,
@@ -267,15 +350,16 @@ export default {
         }
 
         const userId = currentUser.uid;
+        console.log('📊 Loading analytics for user:', userId);
         
-        // FIX 2: Use the imported getUserAnalytics function from api.js
         try {
           const response = await getUserAnalytics(userId);
-          
+          console.log('📊 Analytics response:', response);
 
-          if (response.data) {
+          if (response && response.data) {
             if (response.data.success && response.data.data) {
               this.analytics = { ...this.analytics, ...response.data.data };
+              console.log('✅ Analytics loaded successfully');
             } else if (response.data.success === false) {
               console.error('❌ Backend error:', response.data.error);
               this.error = response.data.error || 'Ошибка сервера';
@@ -283,8 +367,11 @@ export default {
             } else {
               // If response.data is the analytics object directly
               this.analytics = { ...this.analytics, ...response.data };
+              console.log('✅ Analytics loaded (direct format)');
             }
-            
+          } else {
+            console.warn('⚠️ No data in response');
+            this.error = 'Нет данных для аналитики';
           }
 
         } catch (apiError) {
@@ -294,6 +381,8 @@ export default {
             this.error = 'Ошибка авторизации. Попробуйте войти заново.';
           } else if (apiError.response?.status === 404) {
             this.error = 'Данные аналитики не найдены';
+          } else if (apiError.response?.status >= 500) {
+            this.error = 'Ошибка сервера. Попробуйте позже.';
           } else if (apiError.response) {
             this.error = apiError.response.data?.error || 'Ошибка загрузки данных';
           } else if (apiError.request) {
@@ -301,6 +390,8 @@ export default {
           } else {
             this.error = apiError.message || 'Ошибка загрузки аналитики';
           }
+          
+          // Don't return here - let the component show error state
         }
 
       } catch (err) {
@@ -355,7 +446,7 @@ export default {
       
       try {
         const html2pdf = await import('html2pdf.js');
-        html2pdf.default().set({
+        await html2pdf.default().set({
           margin: 0.5,
           filename: `aced-analytics-${new Date().toISOString().split('T')[0]}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
@@ -398,7 +489,7 @@ export default {
           minute: '2-digit'
         });
       } catch (err) {
-        console.error('Date formatting error:', err);
+        console.error('❌ Date formatting error:', err);
         return '—';
       }
     }
@@ -408,5 +499,4 @@ export default {
 
 <style scoped>
 @import '@/assets/css/UserAnalyticsPanel.css';
-
 </style>
