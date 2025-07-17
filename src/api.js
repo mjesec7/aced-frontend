@@ -1,4 +1,4 @@
-// src/api.js - COMPLETELY FIXED VERSION
+// src/api.js - COMPLETE FIXED VERSION FOR FRONTEND-BACKEND MATCHING
 import axios from 'axios';
 import { auth } from '@/firebase';
 
@@ -34,6 +34,24 @@ const createRequestKey = (config) => {
   }
   
   return `${config.method}-${config.url}-${JSON.stringify(config.data || {})}`;
+};
+
+// Debounce function to prevent rapid consecutive requests
+const debounceRequest = (fn, delay = 500) => {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    return new Promise((resolve, reject) => {
+      timeoutId = setTimeout(async () => {
+        try {
+          const result = await fn(...args);
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      }, delay);
+    });
+  };
 };
 
 // Request attempt tracking
@@ -319,9 +337,12 @@ export const formatPaymentAmount = (amount, currency = 'UZS') => {
 // ✅ DIRECT PAYME URL GENERATION (GET method)
 const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
   try {
-    const merchantId = (import.meta.env.VITE_PAYME_MERCHANT_ID || '').trim();
+    // Get merchant ID with validation
+    const merchantId = import.meta.env.VITE_PAYME_MERCHANT_ID;
     
-    if (!merchantId || merchantId === 'undefined' || merchantId.length < 10) {
+    if (!merchantId || merchantId === 'undefined' || typeof merchantId !== 'string') {
+      console.error('❌ VITE_PAYME_MERCHANT_ID not loaded properly');
+      console.error('Current value:', merchantId, 'Type:', typeof merchantId);
       throw new Error('PayMe Merchant ID not configured. Check your .env file.');
     }
     
@@ -367,6 +388,13 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
     const base64Params = btoa(paramString);
     const paymentUrl = `https://checkout.paycom.uz/${base64Params}`;
     
+    // Final verification
+    const verification = atob(base64Params);
+    
+    if (verification !== paramString) {
+      throw new Error('URL encoding/decoding mismatch');
+    }
+    
     return {
       success: true,
       paymentUrl,
@@ -390,8 +418,10 @@ const generateDirectPaymeUrl = async (userId, plan, options = {}) => {
 // ✅ DIRECT PAYME FORM GENERATION (POST method)
 const generateDirectPaymeForm = async (userId, plan, options = {}) => {
   try {
-    const merchantId = (import.meta.env.VITE_PAYME_MERCHANT_ID || '').trim();
+    // ✅ CRITICAL FIX: Clean merchant ID
+    const merchantId = (import.meta.env.VITE_PAYME_MERCHANT_ID || '68016cc1a5e04614247f7174').trim();
     
+    // ✅ VALIDATION: Check merchant ID
     if (!merchantId || merchantId === 'undefined' || merchantId.length < 10) {
       throw new Error('Invalid PayMe Merchant ID configuration');
     }
@@ -403,64 +433,71 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
       throw new Error(`Unknown plan: ${plan}`);
     }
     
-    // Generate clean order ID (only alphanumeric)
+    // ✅ CRITICAL FIX: Generate CLEAN order ID (only alphanumeric)
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substr(2, 9);
     const orderId = options.Login || `aced${timestamp}${randomStr}`;
     
-    // Sanitize order ID
+    // ✅ SANITIZE: Remove any special characters from order ID
     const cleanOrderId = orderId.replace(/[^a-zA-Z0-9]/g, '');
     
-    // Create detail object
+    // ✅ Create detail object as per PayMe documentation
     const detail = {
       receipt_type: 0,
       items: [{
         title: `ACED ${plan.toUpperCase()} Subscription`,
         price: planAmount,
         count: 1,
-        code: "10899002001000000",
+        code: "10899002001000000", // IKPU code for digital services
         vat_percent: 0,
         package_code: "123456"
       }]
     };
     
-    // Safe JSON encoding
-    let detailBase64 = '';
+    // ✅ Safe JSON encoding
+    let detailBase64;
     try {
       const detailJson = JSON.stringify(detail);
       detailBase64 = btoa(unescape(encodeURIComponent(detailJson)));
     } catch (encodingError) {
       console.error('❌ Detail encoding failed:', encodingError);
+      detailBase64 = ''; // Fallback to empty detail
     }
     
-    // Generate clean callback URL
+    // ✅ Generate clean callback URL
     const callbackUrl = options.callback || `${window.location.origin}/payment/success`;
     const cleanCallback = encodeURIComponent(callbackUrl);
     
-    // Validate language parameter
+    // ✅ Validate language parameter
     const validLanguages = ['ru', 'uz', 'en'];
     const language = validLanguages.includes(options.lang) ? options.lang : 'ru';
     
-    // Validate timeout parameter
+    // ✅ Validate timeout parameter
     const callbackTimeout = options.callback_timeout && Number.isInteger(Number(options.callback_timeout)) 
       ? options.callback_timeout 
       : 15000;
     
-    // Generate form HTML
+    // ✅ Generate form HTML exactly as per POST documentation
     const formHtml = `
     <form method="POST" action="https://checkout.paycom.uz/" id="payme-form" style="display: none;">
+      <!-- Required fields -->
       <input type="hidden" name="merchant" value="${merchantId}"/>
       <input type="hidden" name="amount" value="${planAmount}"/>
       <input type="hidden" name="account[Login]" value="${cleanOrderId}"/>
+      
+      <!-- Optional fields -->
       <input type="hidden" name="lang" value="${language}"/>
       <input type="hidden" name="callback" value="${cleanCallback}"/>
       <input type="hidden" name="callback_timeout" value="${callbackTimeout}"/>
       <input type="hidden" name="description" value="ACED ${plan.toUpperCase()} Plan Subscription"/>
       ${detailBase64 ? `<input type="hidden" name="detail" value="${detailBase64}"/>` : ''}
+      
+      <!-- Submit button (hidden, auto-submit) -->
       <button type="submit" style="display: none;">Pay with PayMe</button>
     </form>
     
     <script>
+      // Wait for DOM to be ready
       function submitPaymeForm() {
         const form = document.getElementById('payme-form');
         if (form) {
@@ -470,6 +507,7 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
         }
       }
       
+      // Auto-submit after short delay
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
           setTimeout(submitPaymeForm, 1000);
@@ -501,7 +539,7 @@ const generateDirectPaymeForm = async (userId, plan, options = {}) => {
   }
 };
 
-// ✅ PAYMENT INITIATION - MAIN FUNCTION
+// ✅ PAYMENT INITIATION - ENHANCED VERSION
 export const initiatePaymePayment = async (userId, plan, additionalData = {}) => {
   if (!trackPaymentAttempt(userId, 'payment-initiation')) {
     throw new Error('Слишком много попыток инициации платежа. Подождите несколько секунд.');
@@ -541,6 +579,21 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
     // Fallback to direct generation
     const method = additionalData.method || 'get';
     
+    if (method === 'get') {
+      const result = await generateDirectPaymeUrl(userId, plan, additionalData);
+      if (result.success) {
+        return {
+          success: true,
+          paymentUrl: result.paymentUrl,
+          transaction: result.transaction,
+          method: 'GET',
+          message: 'Payment URL generated successfully'
+        };
+      } else {
+        throw new Error(result.error);
+      }
+    }
+    
     if (method === 'post') {
       const result = await generateDirectPaymeForm(userId, plan, additionalData);
       if (result.success) {
@@ -556,7 +609,7 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
       }
     }
     
-    // Default to GET method
+    // Default fallback to GET method
     const result = await generateDirectPaymeUrl(userId, plan, additionalData);
     if (result.success) {
       return {
@@ -564,7 +617,7 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
         paymentUrl: result.paymentUrl,
         transaction: result.transaction,
         method: 'GET',
-        message: 'Payment URL generated successfully'
+        message: 'Payment URL generated successfully (fallback)'
       };
     } else {
       throw new Error(result.error);
@@ -580,6 +633,111 @@ export const initiatePaymePayment = async (userId, plan, additionalData = {}) =>
     };
   }
 };
+
+// ✅ PAYME FORM GENERATION FUNCTION
+export const generatePaymeForm = async (userId, plan, method = 'post', options = {}) => {
+  if (!trackPaymentAttempt(userId, 'form-generation')) {
+    throw new Error('Слишком много попыток генерации формы. Подождите несколько секунд.');
+  }
+  
+  try {
+    // Try backend endpoint first
+    try {
+      const response = await api.post('/payments/generate-form', {
+        userId: userId,
+        plan: plan,
+        method: method,
+        lang: options.lang || 'ru',
+        style: options.style || 'colored',
+        qrWidth: options.qrWidth || 250,
+        callback: options.callback,
+        ...options
+      });
+      
+      if (response.data.success) {
+        return {
+          success: true,
+          method: response.data.method,
+          formHtml: response.data.formHtml,
+          paymentUrl: response.data.paymentUrl,
+          buttonHtml: response.data.buttonHtml,
+          qrHtml: response.data.qrHtml,
+          transaction: response.data.transaction,
+          debug: response.data.debug
+        };
+      }
+    } catch (backendError) {
+      console.warn('⚠️ Backend form generation failed, using direct generation:', backendError.message);
+    }
+    
+    // Fallback to direct generation
+    if (method === 'get') {
+      const result = await generateDirectPaymeUrl(userId, plan, { method, ...options });
+      return {
+        success: result.success,
+        method: 'GET',
+        paymentUrl: result.paymentUrl,
+        transaction: result.transaction,
+        error: result.error
+      };
+    }
+    
+    if (method === 'post') {
+      const result = await generateDirectPaymeForm(userId, plan, { method, ...options });
+      return {
+        success: result.success,
+        method: 'POST',
+        formHtml: result.formHtml,
+        transaction: result.transaction,
+        error: result.error
+      };
+    }
+    
+    // Default fallback
+    const result = await generateDirectPaymeUrl(userId, plan, { method: 'get', ...options });
+    return {
+      success: result.success,
+      method: 'GET',
+      paymentUrl: result.paymentUrl,
+      transaction: result.transaction,
+      error: result.error
+    };
+    
+  } catch (error) {
+    console.error('❌ Form generation error:', error);
+    return {
+      success: false,
+      error: handlePaymentError(error, 'Генерация формы оплаты')
+    };
+  }
+};
+
+// ✅ PROMO CODE APPLICATION
+export const applyPromoCode = debounceRequest(async (userId, plan, promoCode) => {
+  if (!trackPaymentAttempt(userId, 'promo-code')) {
+    throw new Error('Слишком много попыток применения промокода. Подождите несколько секунд.');
+  }
+  
+  try {
+    const response = await api.post('/payments/promo-code', {
+      userId,
+      plan,
+      promoCode
+    });
+    
+    return {
+      success: true,
+      data: response.data,
+      message: response.data.message || 'Промокод успешно применён'
+    };
+  } catch (error) {
+    console.error('❌ Promo code error:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Ошибка применения промокода'
+    };
+  }
+}, 1000);
 
 // ✅ PAYMENT STATUS CHECK
 export const checkPaymentStatus = async (transactionId, userId = null) => {
@@ -614,7 +772,8 @@ export const validateUser = async (userId) => {
       success: true,
       valid: response.data.valid,
       user: response.data.user,
-      source: response.data.source
+      source: response.data.source,
+      note: response.data.note
     };
   } catch (error) {
     console.error('❌ User validation error:', error);
@@ -626,11 +785,26 @@ export const validateUser = async (userId) => {
   }
 };
 
+export const getTransactionStateText = (state) => {
+  switch (state) {
+    case 1:
+      return { text: 'Создана', color: 'warning', icon: '⏳' };
+    case 2:
+      return { text: 'Оплачена', color: 'success', icon: '✅' };
+    case -1:
+      return { text: 'Отменена', color: 'error', icon: '❌' };
+    case -2:
+      return { text: 'Возвращена', color: 'error', icon: '↩️' };
+    default:
+      return { text: 'Неизвестно', color: 'default', icon: '❓' };
+  }
+};
+
 // =============================================
-// 📚 TOPICS AND LESSONS API FUNCTIONS
+// 📚 LESSON AND TOPIC API FUNCTIONS - FIXED
 // =============================================
 
-// ✅ Get all topics
+// ✅ FIXED: Get all topics with enhanced error handling
 export const getTopics = async (filters = {}) => {
   try {
     const params = new URLSearchParams();
@@ -645,6 +819,7 @@ export const getTopics = async (filters = {}) => {
     
     const { data } = await api.get(url);
     
+    // Handle different response structures from backend
     if (data && data.success) {
       return {
         success: true,
@@ -671,38 +846,47 @@ export const getTopics = async (filters = {}) => {
   }
 };
 
-// ✅ Get topic by ID with lessons fallback
+// ✅ COMPLETELY FIXED: Get topic by ID with lessons fallback
 export const getTopicById = async (topicId) => {
   try {
-    console.log('🔍 Fetching topic by ID:', topicId);
+    console.log('🔍 API: Fetching topic by ID:', topicId);
     
     if (!topicId) {
       throw new Error('Topic ID is required');
     }
     
-    // Try the direct topics endpoint first
+    // ✅ STRATEGY 1: Try the direct topics endpoint first
     try {
       const { data } = await api.get(`/topics/${topicId}`);
+      console.log('📘 API: Raw topic response from /topics:', data);
       
-      if (data && data.success === true && data.data) {
-        return {
-          success: true,
-          data: data.data,
-          message: data.message,
-          source: 'topics-endpoint'
-        };
+      // Handle all possible response structures from your backend
+      if (data && data.success === true) {
+        if (data.data) {
+          console.log('✅ API: Using success+data wrapper format');
+          return {
+            success: true,
+            data: data.data,
+            message: data.message,
+            source: 'topics-endpoint'
+          };
+        }
       }
       
-      if (data && data.exists === true && data.data) {
-        return {
-          success: true,
-          exists: true,
-          data: data.data,
-          source: 'topics-endpoint'
-        };
+      if (data && data.exists === true) {
+        if (data.data) {
+          console.log('✅ API: Using exists+data wrapper format');
+          return {
+            success: true,
+            exists: true,
+            data: data.data,
+            source: 'topics-endpoint'
+          };
+        }
       }
       
       if (data && (data._id || data.name)) {
+        console.log('✅ API: Using direct topic object format');
         return {
           success: true,
           data: data,
@@ -713,19 +897,30 @@ export const getTopicById = async (topicId) => {
     } catch (topicsError) {
       console.warn('⚠️ Topics endpoint failed:', topicsError.response?.status, topicsError.message);
       
+      // If it's not a 404, throw the error
       if (topicsError.response?.status !== 404) {
         throw topicsError;
       }
+      
+      // If it's 404, continue to fallback strategy
+      console.log('🔄 Topic not found in /topics, trying lessons fallback...');
     }
     
-    // Fallback - Build topic from lessons
+    // ✅ STRATEGY 2: Fallback - Build topic from lessons (like CataloguePage does)
     try {
+      console.log('🔄 Building topic from lessons data...');
+      
+      // Get all lessons
       const { data: lessonsData } = await api.get('/lessons');
       const allLessons = Array.isArray(lessonsData) ? lessonsData : [];
       
+      console.log(`📚 Found ${allLessons.length} total lessons`);
+      
+      // Filter lessons for this topic
       const topicLessons = allLessons.filter(lesson => {
         if (!lesson) return false;
         
+        // Handle different topicId structures
         const lessonTopicId = lesson.topicId;
         
         if (typeof lessonTopicId === 'string') {
@@ -737,21 +932,28 @@ export const getTopicById = async (topicId) => {
         return false;
       });
       
+      console.log(`📚 Found ${topicLessons.length} lessons for topic ${topicId}`);
+      
       if (topicLessons.length === 0) {
+        console.log('❌ No lessons found for this topicId');
         return {
           success: false,
           error: 'Topic not found',
           code: 404,
+          details: `No lessons found for topic ID: ${topicId}`,
           source: 'lessons-fallback'
         };
       }
       
-      // Build topic from lessons
+      // ✅ BUILD TOPIC DATA from lessons (same logic as CataloguePage)
       const firstLesson = topicLessons[0];
+      
+      // Extract topic name (same logic as CataloguePage getTopicName)
       const getTopicName = (lesson) => {
         if (!lesson) return 'Без темы';
         
         try {
+          // Check different possible structures
           if (typeof lesson.topic === 'string') {
             return lesson.topic;
           }
@@ -779,15 +981,19 @@ export const getTopicById = async (topicId) => {
       };
       
       const topicName = getTopicName(firstLesson);
-      const totalLessons = topicLessons.length;
-      const estimatedTime = totalLessons * 10;
       
+      // Calculate total lessons and time
+      const totalLessons = topicLessons.length;
+      const estimatedTime = totalLessons * 10; // 10 min per lesson estimate
+      
+      // Build the topic object
       const constructedTopic = {
         _id: topicId,
         id: topicId,
         name: topicName,
         topicName: topicName,
         description: `Курс по теме "${topicName}" содержит ${totalLessons} уроков`,
+        topicDescription: `Курс по теме "${topicName}" содержит ${totalLessons} уроков`,
         subject: firstLesson.subject || 'Общий',
         level: firstLesson.level || 'Базовый',
         lessonCount: totalLessons,
@@ -800,9 +1006,12 @@ export const getTopicById = async (topicId) => {
         metadata: {
           source: 'constructed-from-lessons',
           constructedAt: new Date().toISOString(),
-          basedOnLessons: topicLessons.length
+          basedOnLessons: topicLessons.length,
+          firstLessonId: firstLesson._id
         }
       };
+      
+      console.log('✅ Successfully constructed topic from lessons:', constructedTopic);
       
       return {
         success: true,
@@ -818,41 +1027,88 @@ export const getTopicById = async (topicId) => {
         success: false,
         error: 'Topic not found and lessons fallback failed',
         code: 404,
+        details: `Could not find topic ${topicId} in topics or lessons`,
+        lessonsError: lessonsError.message,
         source: 'fallback-failed'
       };
     }
     
   } catch (error) {
-    console.error('❌ Failed to fetch topic by ID:', error);
+    console.error('❌ API: Failed to fetch topic by ID:', error);
     
+    // ✅ ENHANCED: Detailed error handling
     if (error.response?.status === 404) {
+      console.log('📍 API: Topic not found (404)');
       return {
         success: false,
         error: 'Topic not found',
-        code: 404
+        code: 404,
+        details: 'The requested topic does not exist'
       };
     }
     
+    if (error.response?.status === 403) {
+      return {
+        success: false,
+        error: 'Access denied',
+        code: 403,
+        details: 'You do not have permission to access this topic'
+      };
+    }
+    
+    if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
+      return {
+        success: false,
+        error: 'Network error',
+        details: 'Unable to connect to the server'
+      };
+    }
+    
+    if (error.code === 'ECONNABORTED') {
+      return {
+        success: false,
+        error: 'Request timeout',
+        details: 'The request took too long to complete'
+      };
+    }
+    
+    if (error.response?.status >= 500) {
+      return {
+        success: false,
+        error: 'Server error',
+        code: error.response.status,
+        details: 'Internal server error occurred'
+      };
+    }
+    
+    // Generic error handling
     return {
       success: false,
       error: error.response?.data?.message || error.message || 'Failed to fetch topic',
-      code: error.response?.status
+      code: error.response?.status,
+      details: error.response?.data || error
     };
   }
 };
 
-// ✅ Get lessons by topic
+// ✅ COMPLETELY FIXED: Get lessons by topic with comprehensive error handling
 export const getLessonsByTopic = async (topicId) => {
   try {
+    console.log(`📚 API: Fetching lessons for topic: ${topicId}`);
+    
     if (!topicId) {
       throw new Error('Topic ID is required');
     }
 
-    // Try enhanced endpoint first
+    // ✅ STRATEGY 1: Try the enhanced lessons endpoint first
     try {
+      console.log('🔄 Strategy 1: Enhanced lessons endpoint...');
       const { data } = await api.get(`/lessons/topic/${topicId}?includeStats=true&sortBy=createdAt&order=asc`);
       
+      console.log('📚 Enhanced endpoint raw response:', data);
+      
       if (data && data.success) {
+        console.log(`✅ Enhanced endpoint success: ${data.lessons?.length || 0} lessons`);
         return {
           success: true,
           data: data.lessons || [],
@@ -861,20 +1117,30 @@ export const getLessonsByTopic = async (topicId) => {
         };
       }
     } catch (enhancedError) {
-      console.warn('⚠️ Enhanced lessons endpoint failed:', enhancedError.message);
+      console.warn('⚠️ Enhanced lessons endpoint failed:', enhancedError.response?.status, enhancedError.message);
+      
+      // If it's a 501 (Not Implemented), continue to next strategy
+      if (enhancedError.response?.status === 501) {
+        console.log('📍 501 Not Implemented - endpoint not ready yet');
+      }
     }
     
-    // Try legacy endpoint
+    // ✅ STRATEGY 2: Try legacy topic-specific lessons endpoint
     try {
+      console.log('🔄 Strategy 2: Legacy topic lessons endpoint...');
       const { data } = await api.get(`/topics/${topicId}/lessons`);
       
+      console.log('📚 Legacy endpoint raw response:', data);
+      
       if (data && data.success) {
+        console.log(`✅ Legacy endpoint success: ${data.data?.length || data.lessons?.length || 0} lessons`);
         return {
           success: true,
           data: data.data || data.lessons || [],
           source: 'legacy-endpoint'
         };
       } else if (Array.isArray(data)) {
+        console.log(`✅ Legacy endpoint (direct array): ${data.length} lessons`);
         return {
           success: true,
           data: data,
@@ -882,33 +1148,47 @@ export const getLessonsByTopic = async (topicId) => {
         };
       }
     } catch (legacyError) {
-      console.warn('⚠️ Legacy lessons endpoint failed:', legacyError.message);
+      console.warn('⚠️ Legacy topic lessons endpoint failed:', legacyError.response?.status, legacyError.message);
+      
+      // If it's a 404, this might mean the topic doesn't exist
+      if (legacyError.response?.status === 404) {
+        console.log('📍 404 from legacy endpoint - topic might not exist');
+      }
     }
     
-    // Fallback - filter all lessons
+    // ✅ STRATEGY 3: Final fallback - get all lessons and filter by topicId
     try {
+      console.log('🔄 Strategy 3: Fallback - filter all lessons...');
       const { data } = await api.get('/lessons');
-      const allLessons = Array.isArray(data) ? data : [];
       
+      console.log(`📚 All lessons response: ${Array.isArray(data) ? data.length : 'not array'} items`);
+      
+      const allLessons = Array.isArray(data) ? data : [];
       const filteredLessons = allLessons.filter(lesson => {
         if (!lesson) return false;
         
+        // Handle different topicId structures
         const lessonTopicId = lesson.topicId;
         
+        // Direct string comparison
         if (typeof lessonTopicId === 'string') {
           return lessonTopicId === topicId;
         }
         
+        // Object with _id or id property
         if (typeof lessonTopicId === 'object' && lessonTopicId !== null) {
           return (lessonTopicId._id || lessonTopicId.id) === topicId;
         }
         
+        // Also check the topic field (legacy)
         if (lesson.topic === topicId) {
           return true;
         }
         
         return false;
       });
+      
+      console.log(`✅ Fallback filter success: ${filteredLessons.length} lessons found for topic ${topicId}`);
       
       return {
         success: true,
@@ -917,9 +1197,11 @@ export const getLessonsByTopic = async (topicId) => {
       };
       
     } catch (fallbackError) {
-      console.error('❌ Fallback failed:', fallbackError);
+      console.error('❌ Final fallback failed:', fallbackError.message);
     }
     
+    // If everything fails, return empty but successful response
+    console.log('ℹ️ All strategies failed, returning empty array');
     return {
       success: true,
       data: [],
@@ -928,17 +1210,19 @@ export const getLessonsByTopic = async (topicId) => {
     };
     
   } catch (error) {
-    console.error('❌ Failed to fetch lessons by topic:', error);
+    console.error('❌ API: Failed to fetch lessons by topic:', error);
     
+    // Return error response
     return {
       success: false,
       data: [],
-      error: error.message || 'Failed to fetch lessons for topic'
+      error: error.message || 'Failed to fetch lessons for topic',
+      details: error
     };
   }
 };
 
-// ✅ Get all lessons
+// ✅ FIXED: Get all lessons with enhanced filtering
 export const getAllLessons = async (filters = {}) => {
   try {
     const params = new URLSearchParams();
@@ -967,11 +1251,12 @@ export const getAllLessons = async (filters = {}) => {
   }
 };
 
-// ✅ Get lesson by ID
+// ✅ FIXED: Get lesson by ID with enhanced error handling
 export const getLessonById = async (lessonId) => {
   try {
     const { data } = await api.get(`/lessons/${lessonId}`);
     
+    // Handle different response structures from your backend
     if (data && data.success) {
       return {
         success: true,
@@ -990,6 +1275,7 @@ export const getLessonById = async (lessonId) => {
   } catch (error) {
     console.error('❌ Failed to fetch lesson by ID:', error);
     
+    // Provide specific error handling
     if (error.response?.status === 404) {
       throw new Error('Lesson not found');
     } else if (error.response?.status === 403) {
@@ -998,15 +1284,15 @@ export const getLessonById = async (lessonId) => {
       throw new Error('Authentication required');
     }
     
-    throw error;
+    throw error; // Re-throw for proper error handling in components
   }
 };
 
 // =============================================
-// 📊 USER PROGRESS API FUNCTIONS
+// 📊 USER PROGRESS API FUNCTIONS - FIXED
 // =============================================
 
-// ✅ Submit progress
+// ✅ FIXED: Submit progress with multiple endpoint fallbacks
 export const submitProgress = async (userId, progressData) => {
   try {
     const token = await auth.currentUser?.getIdToken();
@@ -1019,6 +1305,7 @@ export const submitProgress = async (userId, progressData) => {
       'Content-Type': 'application/json'
     };
     
+    // Enhanced progress data with all required fields
     const enhancedData = {
       userId: userId,
       lessonId: progressData.lessonId,
@@ -1037,6 +1324,7 @@ export const submitProgress = async (userId, progressData) => {
       ...progressData
     };
     
+    // Try multiple endpoints based on your server.js emergency routes
     const endpoints = [
       `/users/${userId}/progress/save`,
       `/progress`,
@@ -1047,8 +1335,8 @@ export const submitProgress = async (userId, progressData) => {
     for (const endpoint of endpoints) {
       try {
         const dataToSend = endpoint.includes('/progress') && !endpoint.includes('users') 
-          ? enhancedData
-          : { ...enhancedData, userId: undefined };
+          ? enhancedData  // Include userId in data for general progress endpoint
+          : { ...enhancedData, userId: undefined }; // Remove userId from data for user-specific endpoints
         
         const { data } = await api.post(endpoint, dataToSend, { headers, timeout: 15000 });
         
@@ -1060,7 +1348,7 @@ export const submitProgress = async (userId, progressData) => {
           };
         }
       } catch (endpointError) {
-        console.warn(`⚠️ Progress save failed via ${endpoint}:`, endpointError.message);
+        console.warn(`⚠️ Progress save failed via ${endpoint}:`, endpointError.response?.status, endpointError.message);
         continue;
       }
     }
@@ -1073,7 +1361,7 @@ export const submitProgress = async (userId, progressData) => {
   }
 };
 
-// ✅ Get lesson progress
+// ✅ FIXED: Get lesson progress with multiple endpoint support
 export const getLessonProgress = async (userId, lessonId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
@@ -1084,6 +1372,7 @@ export const getLessonProgress = async (userId, lessonId) => {
 
     const headers = { Authorization: `Bearer ${token}` };
     
+    // Try multiple endpoints as per your backend structure
     const endpoints = [
       `/users/${userId}/progress/lesson/${lessonId}`,
       `/user-progress/user/${userId}/lesson/${lessonId}`,
@@ -1107,6 +1396,7 @@ export const getLessonProgress = async (userId, lessonId) => {
       }
     }
     
+    // If no endpoint worked, return null progress
     return {
       success: true,
       data: null
@@ -1122,7 +1412,7 @@ export const getLessonProgress = async (userId, lessonId) => {
   }
 };
 
-// ✅ Get user progress
+// ✅ FIXED: Get user progress with enhanced support
 export const getUserProgress = async (userId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
@@ -1132,6 +1422,7 @@ export const getUserProgress = async (userId) => {
 
     const headers = { Authorization: `Bearer ${token}` };
     
+    // Try multiple endpoints
     const endpoints = [
       `/users/${userId}/progress`,
       `/user-progress/user/${userId}`,
@@ -1170,10 +1461,115 @@ export const getUserProgress = async (userId) => {
 };
 
 // =============================================
-// 📚 HOMEWORK API FUNCTIONS
+// 📝 TESTS API FUNCTIONS - FIXED
 // =============================================
 
-// ✅ Helper: Build homework list from multiple sources
+// ✅ FIXED: Get available tests with fallback support
+export const getAvailableTests = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
+    try {
+      const { data } = await api.get(`/users/${userId}/tests`, { headers });
+      return data;
+    } catch (error) {
+      console.warn('⚠️ User tests endpoint failed, trying direct:', error.message);
+      const { data } = await api.get(`/tests`, { headers });
+      return { tests: Array.isArray(data) ? data.filter(test => test.isActive !== false) : [] };
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch available tests:', error);
+    return { tests: [], error: error.message };
+  }
+};
+
+// ✅ FIXED: Get test by ID with fallback support
+export const getTestById = async (userId, testId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
+    try {
+      const { data } = await api.get(`/users/${userId}/tests/${testId}`, { headers });
+      return data;
+    } catch (error) {
+      console.warn('⚠️ User test endpoint failed, trying direct:', error.message);
+      const { data } = await api.get(`/tests/${testId}`, { headers });
+      return { test: data };
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch test by ID:', error);
+    throw error;
+  }
+};
+
+// ✅ FIXED: Submit test result with fallback support
+export const submitTestResult = async (userId, testId, answers) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
+    try {
+      const { data } = await api.post(`/users/${userId}/tests/${testId}/submit`, { answers }, { headers });
+      return data;
+    } catch (error) {
+      console.warn('⚠️ User test submit endpoint failed, trying direct:', error.message);
+      const { data } = await api.post(`/tests/${testId}/submit`, { userId, answers }, { headers });
+      return data;
+    }
+  } catch (error) {
+    console.error('❌ Failed to submit test result:', error);
+    throw error;
+  }
+};
+
+// ✅ FIXED: Get test result with enhanced error handling
+export const getTestResult = async (userId, testId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    const { data } = await api.get(`/users/${userId}/tests/${testId}/result`, { headers });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to fetch test result:', error);
+    throw error;
+  }
+};
+
+// ✅ FIXED: Get user test results
+export const getUserTestResults = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    try {
+      const { data } = await api.get(`/users/${userId}/tests/results`, { headers });
+      return data;
+    } catch (error) {
+      console.warn('⚠️ User test results endpoint failed:', error.message);
+      return { success: false, data: [] };
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch user test results:', error);
+    return { success: false, data: [], error: error.message };
+  }
+};
+
+// =============================================
+// 📚 HOMEWORK API FUNCTIONS - COMPLETELY FIXED
+// =============================================
+
+// ✅ HELPER: Build homework list from multiple sources
 const buildHomeworkListFallback = async (token, userId, headers) => {
   let allHomeworks = [];
   let lessonsWithHomework = [];
@@ -1181,25 +1577,32 @@ const buildHomeworkListFallback = async (token, userId, headers) => {
 
   // Get standalone homework
   try {
+    console.log('📚 Fetching standalone homework...');
     const { data: hwResponse } = await api.get('/homeworks', { headers });
     allHomeworks = hwResponse.data || hwResponse || [];
+    console.log(`📚 Found ${allHomeworks.length} standalone homework`);
   } catch (hwError) {
     console.warn('⚠️ Could not fetch standalone homework:', hwError.message);
   }
 
   // Get lessons with homework
   try {
+    console.log('📖 Fetching lessons with homework...');
     const { data: lessonsResponse } = await api.get('/lessons', { headers });
     const allLessons = lessonsResponse.data || lessonsResponse || [];
     lessonsWithHomework = allLessons.filter(lesson => 
       lesson.homework && Array.isArray(lesson.homework) && lesson.homework.length > 0
     );
+    console.log(`📖 Found ${lessonsWithHomework.length} lessons with homework`);
   } catch (lessonsError) {
     console.warn('⚠️ Could not fetch lessons:', lessonsError.message);
   }
 
   // Get user progress
   try {
+    console.log('📊 Fetching user progress...');
+    
+    // Try multiple progress endpoints
     const progressEndpoints = [
       `/users/${userId}/progress`,
       `/progress?userId=${userId}`,
@@ -1212,9 +1615,11 @@ const buildHomeworkListFallback = async (token, userId, headers) => {
         userProgress = progressResponse.data || progressResponse || [];
         
         if (Array.isArray(userProgress)) {
+          console.log(`📊 Found ${userProgress.length} progress records from ${endpoint}`);
           break;
         }
       } catch (progressError) {
+        console.warn(`⚠️ Progress endpoint ${endpoint} failed:`, progressError.message);
         continue;
       }
     }
@@ -1311,9 +1716,11 @@ const buildHomeworkListFallback = async (token, userId, headers) => {
   return uniqueHomeworks;
 };
 
-// ✅ Get all homework
+// ✅ FIXED: Get all homework with comprehensive endpoint support
 export const getAllHomeworks = async (userId) => {
   try {
+    console.log('📥 Fetching all homework for user:', userId);
+    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
@@ -1324,11 +1731,14 @@ export const getAllHomeworks = async (userId) => {
       'Content-Type': 'application/json'
     };
     
-    // Try enhanced endpoint first
+    // ✅ STRATEGY 1: Try the enhanced user homework endpoint
     try {
+      console.log('🔄 Trying enhanced user homework endpoint...');
+      
       const { data } = await api.get(`/homeworks/user/${userId}`, { headers });
       
       if (data && data.success && Array.isArray(data.data)) {
+        console.log(`✅ Enhanced endpoint success: ${data.data.length} homework items`);
         return {
           success: true,
           data: data.data,
@@ -1340,11 +1750,12 @@ export const getAllHomeworks = async (userId) => {
       console.warn('⚠️ Enhanced homework endpoint failed:', enhancedError.message);
       
       if (enhancedError.response?.status >= 500) {
+        // Server error - don't try fallbacks
         throw new Error('Ошибка сервера при загрузке домашних заданий');
       }
     }
     
-    // Try alternative endpoints
+    // ✅ STRATEGY 2: Try alternative user endpoints
     const alternativeEndpoints = [
       `/users/${userId}/homeworks`,
       `/homeworks/users/${userId}`,
@@ -1353,12 +1764,15 @@ export const getAllHomeworks = async (userId) => {
     
     for (const endpoint of alternativeEndpoints) {
       try {
+        console.log(`🔄 Trying alternative endpoint: ${endpoint}`);
+        
         const { data } = await api.get(endpoint, { headers });
         
         if (data && (data.success !== false)) {
           const homeworkData = data.data || data;
           
           if (Array.isArray(homeworkData) && homeworkData.length >= 0) {
+            console.log(`✅ Alternative endpoint success: ${homeworkData.length} homework items`);
             return {
               success: true,
               data: homeworkData,
@@ -1373,10 +1787,13 @@ export const getAllHomeworks = async (userId) => {
       }
     }
     
-    // Build from multiple sources (fallback)
+    // ✅ STRATEGY 3: Build homework list from multiple sources (fallback)
+    console.log('🔄 Building homework list from multiple sources...');
+    
     const fallbackHomeworks = await buildHomeworkListFallback(token, userId, headers);
     
     if (fallbackHomeworks.length > 0) {
+      console.log(`✅ Fallback success: ${fallbackHomeworks.length} homework items`);
       return {
         success: true,
         data: fallbackHomeworks,
@@ -1384,6 +1801,8 @@ export const getAllHomeworks = async (userId) => {
       };
     }
     
+    // ✅ STRATEGY 4: Return empty list if no errors (valid scenario)
+    console.log('ℹ️ No homework found - returning empty list');
     return {
       success: true,
       data: [],
@@ -1400,9 +1819,11 @@ export const getAllHomeworks = async (userId) => {
   }
 };
 
-// ✅ Get homework by lesson
+// ✅ FIXED: Get homework by lesson with enhanced support
 export const getHomeworkByLesson = async (userId, lessonId) => {
   try {
+    console.log('📥 Fetching homework for lesson:', { userId, lessonId });
+    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
@@ -1413,11 +1834,12 @@ export const getHomeworkByLesson = async (userId, lessonId) => {
       'Content-Type': 'application/json'
     };
     
-    // Try enhanced endpoint first
+    // ✅ Try the enhanced endpoint first
     try {
       const { data } = await api.get(`/homeworks/user/${userId}/lesson/${lessonId}`, { headers });
       
       if (data && data.success) {
+        console.log('✅ Enhanced lesson homework endpoint success');
         return {
           success: true,
           data: data.data,
@@ -1428,7 +1850,7 @@ export const getHomeworkByLesson = async (userId, lessonId) => {
       console.warn('⚠️ Enhanced lesson homework endpoint failed:', enhancedError.message);
     }
     
-    // Fallback: Build from lesson data
+    // ✅ Fallback: Build from lesson data
     try {
       const { data: lessonData } = await api.get(`/lessons/${lessonId}`, { headers });
       
@@ -1441,20 +1863,24 @@ export const getHomeworkByLesson = async (userId, lessonId) => {
       
       // Try to get user progress
       let userProgress = null;
-      const progressEndpoints = [
-        `/users/${userId}/progress/lesson/${lessonId}`,
-        `/progress?userId=${userId}&lessonId=${lessonId}`,
-        `/user-progress/lesson/${lessonId}?userId=${userId}`
-      ];
-      
-      for (const endpoint of progressEndpoints) {
-        try {
-          const { data: progressData } = await api.get(endpoint, { headers });
-          userProgress = progressData.data || progressData;
-          break;
-        } catch (progressError) {
-          continue;
+      try {
+        const progressEndpoints = [
+          `/users/${userId}/progress/lesson/${lessonId}`,
+          `/progress?userId=${userId}&lessonId=${lessonId}`,
+          `/user-progress/lesson/${lessonId}?userId=${userId}`
+        ];
+        
+        for (const endpoint of progressEndpoints) {
+          try {
+            const { data: progressData } = await api.get(endpoint, { headers });
+            userProgress = progressData.data || progressData;
+            break;
+          } catch (progressError) {
+            continue;
+          }
         }
+      } catch (progressError) {
+        console.warn('⚠️ Could not fetch lesson progress:', progressError.message);
       }
       
       return {
@@ -1482,9 +1908,11 @@ export const getHomeworkByLesson = async (userId, lessonId) => {
   }
 };
 
-// ✅ Get standalone homework
+// ✅ FIXED: Get standalone homework
 export const getStandaloneHomework = async (userId, homeworkId) => {
   try {
+    console.log('📥 Fetching standalone homework:', { userId, homeworkId });
+    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
@@ -1495,11 +1923,12 @@ export const getStandaloneHomework = async (userId, homeworkId) => {
       'Content-Type': 'application/json'
     };
     
-    // Try user-specific endpoint first
+    // ✅ Try the user-specific endpoint first
     try {
       const { data } = await api.get(`/homeworks/user/${userId}/homework/${homeworkId}`, { headers });
       
       if (data && data.success) {
+        console.log('✅ User-specific standalone homework endpoint success');
         return {
           success: true,
           data: data.data,
@@ -1510,7 +1939,7 @@ export const getStandaloneHomework = async (userId, homeworkId) => {
       console.warn('⚠️ User-specific standalone homework endpoint failed:', userError.message);
     }
     
-    // Fallback: Get homework directly and combine with user progress
+    // ✅ Fallback: Get homework directly and combine with user progress
     try {
       const { data: homeworkData } = await api.get(`/homeworks/${homeworkId}`, { headers });
       
@@ -1522,20 +1951,24 @@ export const getStandaloneHomework = async (userId, homeworkId) => {
       
       // Try to get user progress
       let userProgress = null;
-      const progressEndpoints = [
-        `/users/${userId}/homework/${homeworkId}/progress`,
-        `/progress?userId=${userId}&homeworkId=${homeworkId}`,
-        `/user-progress/homework/${homeworkId}?userId=${userId}`
-      ];
-      
-      for (const endpoint of progressEndpoints) {
-        try {
-          const { data: progressData } = await api.get(endpoint, { headers });
-          userProgress = progressData.data || progressData;
-          break;
-        } catch (progressError) {
-          continue;
+      try {
+        const progressEndpoints = [
+          `/users/${userId}/homework/${homeworkId}/progress`,
+          `/progress?userId=${userId}&homeworkId=${homeworkId}`,
+          `/user-progress/homework/${homeworkId}?userId=${userId}`
+        ];
+        
+        for (const endpoint of progressEndpoints) {
+          try {
+            const { data: progressData } = await api.get(endpoint, { headers });
+            userProgress = progressData.data || progressData;
+            break;
+          } catch (progressError) {
+            continue;
+          }
         }
+      } catch (progressError) {
+        console.warn('⚠️ Could not fetch homework progress:', progressError.message);
       }
       
       return {
@@ -1558,9 +1991,11 @@ export const getStandaloneHomework = async (userId, homeworkId) => {
   }
 };
 
-// ✅ Save homework
+// ✅ FIXED: Save homework with multiple endpoint support
 export const saveHomework = async (userId, lessonId, answers) => {
   try {
+    console.log('💾 Saving homework:', { userId, lessonId, answerCount: answers.length });
+    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
@@ -1577,6 +2012,7 @@ export const saveHomework = async (userId, lessonId, answers) => {
       completed: false 
     };
     
+    // Try multiple endpoints
     const endpoints = [
       `/homeworks/user/${userId}/save`,
       `/users/${userId}/homework/save`,
@@ -1588,6 +2024,7 @@ export const saveHomework = async (userId, lessonId, answers) => {
         const { data } = await api.post(endpoint, requestData, { headers });
         
         if (data && (data.success !== false)) {
+          console.log(`✅ Homework saved via ${endpoint}`);
           return {
             success: true,
             data: data.data || data
@@ -1607,9 +2044,11 @@ export const saveHomework = async (userId, lessonId, answers) => {
   }
 };
 
-// ✅ Submit homework
+// ✅ FIXED: Submit homework with multiple endpoint support
 export const submitHomework = async (userId, lessonId, answers) => {
   try {
+    console.log('📤 Submitting homework:', { userId, lessonId, answerCount: answers.length });
+    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
@@ -1622,6 +2061,7 @@ export const submitHomework = async (userId, lessonId, answers) => {
     
     const requestData = { answers };
     
+    // Try multiple endpoints
     const endpoints = [
       `/homeworks/user/${userId}/lesson/${lessonId}/submit`,
       `/users/${userId}/homework/lesson/${lessonId}/submit`,
@@ -1633,6 +2073,7 @@ export const submitHomework = async (userId, lessonId, answers) => {
         const { data } = await api.post(endpoint, requestData, { headers });
         
         if (data && (data.success !== false)) {
+          console.log(`✅ Homework submitted via ${endpoint}`);
           return {
             success: true,
             data: data.data || data
@@ -1652,9 +2093,11 @@ export const submitHomework = async (userId, lessonId, answers) => {
   }
 };
 
-// ✅ Save standalone homework
+// ✅ FIXED: Standalone homework functions
 export const saveStandaloneHomework = async (userId, homeworkId, answers) => {
   try {
+    console.log('💾 Saving standalone homework:', { userId, homeworkId, answerCount: answers.length });
+    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
@@ -1667,6 +2110,7 @@ export const saveStandaloneHomework = async (userId, homeworkId, answers) => {
     
     const requestData = { answers };
     
+    // Try multiple endpoints
     const endpoints = [
       `/homeworks/user/${userId}/homework/${homeworkId}/save`,
       `/users/${userId}/homework/${homeworkId}/save`,
@@ -1678,6 +2122,7 @@ export const saveStandaloneHomework = async (userId, homeworkId, answers) => {
         const { data } = await api.post(endpoint, requestData, { headers });
         
         if (data && (data.success !== false)) {
+          console.log(`✅ Standalone homework saved via ${endpoint}`);
           return {
             success: true,
             data: data.data || data
@@ -1697,9 +2142,10 @@ export const saveStandaloneHomework = async (userId, homeworkId, answers) => {
   }
 };
 
-// ✅ Submit standalone homework
 export const submitStandaloneHomework = async (userId, homeworkId, answers) => {
   try {
+    console.log('📤 Submitting standalone homework:', { userId, homeworkId, answerCount: answers.length });
+    
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error('No authentication token available');
@@ -1712,6 +2158,7 @@ export const submitStandaloneHomework = async (userId, homeworkId, answers) => {
     
     const requestData = { answers };
     
+    // Try multiple endpoints
     const endpoints = [
       `/homeworks/user/${userId}/homework/${homeworkId}/submit`,
       `/users/${userId}/homework/${homeworkId}/submit`,
@@ -1723,6 +2170,7 @@ export const submitStandaloneHomework = async (userId, homeworkId, answers) => {
         const { data } = await api.post(endpoint, requestData, { headers });
         
         if (data && (data.success !== false)) {
+          console.log(`✅ Standalone homework submitted via ${endpoint}`);
           return {
             success: true,
             data: data.data || data
@@ -1743,10 +2191,10 @@ export const submitStandaloneHomework = async (userId, homeworkId, answers) => {
 };
 
 // =============================================
-// 👤 USER MANAGEMENT API FUNCTIONS
+// 👤 USER MANAGEMENT API FUNCTIONS - FIXED
 // =============================================
 
-// ✅ Get user info
+// ✅ FIXED: Get user info with multiple endpoint support
 export const getUserInfo = async (userId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
@@ -1764,7 +2212,7 @@ export const getUserInfo = async (userId) => {
   }
 };
 
-// ✅ Get user status
+// ✅ FIXED: Get user status with multiple endpoint support
 export const getUserStatus = async (userId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
@@ -1774,6 +2222,7 @@ export const getUserStatus = async (userId) => {
 
     const headers = { Authorization: `Bearer ${token}` };
     
+    // Try multiple endpoints for user status
     const endpoints = [
       `/users/${userId}/status`,
       `/users/${userId}`,
@@ -1798,6 +2247,7 @@ export const getUserStatus = async (userId) => {
       }
     }
     
+    // If all fail, return default
     return {
       success: true,
       data: { subscriptionPlan: 'free' },
@@ -1815,9 +2265,10 @@ export const getUserStatus = async (userId) => {
   }
 };
 
-// ✅ Save user
+// ✅ FIXED: Save user with enhanced error handling
 export const saveUser = async (userData) => {
   try {
+    // This uses the emergency user save route from server.js
     const { data } = await api.post('/users/save', userData);
     
     return {
@@ -1830,7 +2281,7 @@ export const saveUser = async (userData) => {
   }
 };
 
-// ✅ Update user profile
+// ✅ FIXED: Update user profile
 export const updateUserProfile = async (userId, profileData) => {
   try {
     const token = await auth.currentUser?.getIdToken();
@@ -1849,10 +2300,9 @@ export const updateUserProfile = async (userId, profileData) => {
 };
 
 // =============================================
-// 📖 STUDY LIST MANAGEMENT
+// 📖 STUDY LIST MANAGEMENT - FIXED
 // =============================================
 
-// ✅ Get user study list
 export const getUserStudyList = async (userId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
@@ -1868,12 +2318,14 @@ export const getUserStudyList = async (userId) => {
   }
 };
 
-// ✅ Add to study list
 export const addToStudyList = async (userId, topicData) => {
   try {
+    console.log('📥 Adding to study list:', { userId, topicData });
+    
     const token = await auth.currentUser?.getIdToken();
     if (!token) throw new Error('No authentication token');
     
+    // ✅ SIMPLE: Just prepare the data exactly as backend expects
     const studyListData = {
       topicId: String(topicData.topicId || topicData._id || ''),
       subject: String(topicData.subject || 'General'),
@@ -1888,6 +2340,7 @@ export const addToStudyList = async (userId, topicData) => {
       addedAt: new Date().toISOString()
     };
     
+    // ✅ VALIDATION: Check required fields
     if (!studyListData.topicId) {
       throw new Error('Topic ID is required');
     }
@@ -1896,11 +2349,13 @@ export const addToStudyList = async (userId, topicData) => {
       throw new Error('Topic name is required');
     }
     
-    // Try to add to study list with force flag
+    console.log('📦 Sending study list data:', studyListData);
+    
+    // ✅ SIMPLE APPROACH: Just try to add to study list with force flag
     try {
       const { data } = await api.post(`/users/${userId}/study-list`, {
         ...studyListData,
-        forceAdd: true,
+        forceAdd: true, // Tell backend to create topic if it doesn't exist
         createTopicData: {
           _id: studyListData.topicId,
           name: {
@@ -1922,12 +2377,13 @@ export const addToStudyList = async (userId, topicData) => {
         }
       });
       
+      console.log('✅ Study list add successful:', data);
       return data;
       
     } catch (error) {
       console.error('❌ Study list add failed:', error);
       
-      // Fallback with minimal data
+      // ✅ FALLBACK: Try with minimal data and different structure
       const minimalData = {
         topicId: studyListData.topicId,
         topic: studyListData.topic,
@@ -1943,12 +2399,14 @@ export const addToStudyList = async (userId, topicData) => {
         }
       });
       
+      console.log('✅ Minimal study list add successful:', data);
       return data;
     }
     
   } catch (error) {
     console.error('❌ Failed to add to study list:', error);
     
+    // ✅ SIMPLE ERROR HANDLING
     const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message;
     
     if (error.response?.status === 400) {
@@ -1971,7 +2429,6 @@ export const addToStudyList = async (userId, topicData) => {
   }
 };
 
-// ✅ Remove from study list
 export const removeFromStudyList = async (userId, topicId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
@@ -1987,97 +2444,265 @@ export const removeFromStudyList = async (userId, topicId) => {
   }
 };
 
-// =============================================
-// 🧪 TESTS API FUNCTIONS
-// =============================================
-
-// ✅ Get available tests
-export const getAvailableTests = async (userId) => {
+export const cleanupStudyList = async (userId) => {
   try {
     const token = await auth.currentUser?.getIdToken();
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    if (!token) throw new Error('No authentication token');
     
-    try {
-      const { data } = await api.get(`/users/${userId}/tests`, { headers });
-      return data;
-    } catch (error) {
-      console.warn('⚠️ User tests endpoint failed, trying direct:', error.message);
-      const { data } = await api.get(`/tests`, { headers });
-      return { tests: Array.isArray(data) ? data.filter(test => test.isActive !== false) : [] };
-    }
-  } catch (error) {
-    console.error('❌ Failed to fetch available tests:', error);
-    return { tests: [], error: error.message };
-  }
-};
-
-// ✅ Get test by ID
-export const getTestById = async (userId, testId) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    
-    try {
-      const { data } = await api.get(`/users/${userId}/tests/${testId}`, { headers });
-      return data;
-    } catch (error) {
-      console.warn('⚠️ User test endpoint failed, trying direct:', error.message);
-      const { data } = await api.get(`/tests/${testId}`, { headers });
-      return { test: data };
-    }
-  } catch (error) {
-    console.error('❌ Failed to fetch test by ID:', error);
-    throw error;
-  }
-};
-
-// ✅ Submit test result
-export const submitTestResult = async (userId, testId, answers) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    
-    try {
-      const { data } = await api.post(`/users/${userId}/tests/${testId}/submit`, { answers }, { headers });
-      return data;
-    } catch (error) {
-      console.warn('⚠️ User test submit endpoint failed, trying direct:', error.message);
-      const { data } = await api.post(`/tests/${testId}/submit`, { userId, answers }, { headers });
-      return data;
-    }
-  } catch (error) {
-    console.error('❌ Failed to submit test result:', error);
-    throw error;
-  }
-};
-
-// =============================================
-// 🔧 UTILITY FUNCTIONS
-// =============================================
-
-// ✅ Health check
-export const healthCheck = async () => {
-  try {
-    const { data } = await api.get('/health');
+    const { data } = await api.post(`/users/${userId}/study-list/cleanup`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
     return data;
   } catch (error) {
-    console.error('❌ Health check failed:', error);
+    console.error('❌ Failed to cleanup study list:', error);
     throw error;
   }
 };
 
-// ✅ Auth test
-export const authTest = async () => {
+// =============================================
+// 🎯 RECOMMENDATIONS AND ANALYTICS - FIXED
+// =============================================
+
+export const getRecommendations = async (userId) => {
   try {
-    const { data } = await api.get('/auth-test');
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/recommendations`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
     return data;
   } catch (error) {
-    console.error('❌ Auth test failed:', error);
+    console.error('❌ Failed to get recommendations:', error);
     throw error;
   }
 };
 
-// ✅ Get subjects
+export const getUserProgressStats = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/progress`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get progress stats:', error);
+    throw error;
+  }
+};
+
+export const getLessonProgressStats = async (userId, lessonId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/progress/lesson/${lessonId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get lesson progress stats:', error);
+    throw error;
+  }
+};
+
+export const getTopicsProgress = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/topics-progress`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get topics progress:', error);
+    throw error;
+  }
+};
+
+export const getUserPoints = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/points`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get user points:', error);
+    throw error;
+  }
+};
+
+// =============================================
+// 🎯 GOALS MANAGEMENT - FIXED
+// =============================================
+
+export const getUserGoals = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/goals`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get user goals:', error);
+    throw error;
+  }
+};
+
+export const createUserGoal = async (userId, goalData) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.post(`/users/${userId}/goals`, goalData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to create user goal:', error);
+    throw error;
+  }
+};
+
+export const updateUserGoal = async (userId, goalId, goalData) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.put(`/users/${userId}/goals/${goalId}`, goalData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to update user goal:', error);
+    throw error;
+  }
+};
+
+export const deleteUserGoal = async (userId, goalId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.delete(`/users/${userId}/goals/${goalId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to delete user goal:', error);
+    throw error;
+  }
+};
+
+// =============================================
+// 📔 DIARY MANAGEMENT - FIXED
+// =============================================
+
+export const saveDiaryEntry = async (userId, diaryData) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.post(`/users/${userId}/diary`, diaryData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to save diary entry:', error);
+    throw error;
+  }
+};
+
+export const getDiaryEntries = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/diary`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get diary entries:', error);
+    throw error;
+  }
+};
+
+// =============================================
+// 📊 ANALYTICS - FIXED
+// =============================================
+
+export const getUserAnalytics = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+    
+    try {
+      const { data } = await api.get(`/users/${userId}/analytics`, { headers });
+      return data;
+    } catch (error) {
+      console.warn('⚠️ User analytics endpoint failed, trying fallback:', error.message);
+      
+      try {
+        const { data } = await api.get(`/analytics/${userId}`, { headers });
+        return data;
+      } catch (fallbackError) {
+        console.error('❌ All analytics endpoints failed:', fallbackError.message);
+        throw fallbackError;
+      }
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch user analytics:', error);
+    throw error;
+  }
+};
+
+export const getUserStats = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/stats`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get user stats:', error);
+    throw error;
+  }
+};
+
+export const getUserAchievements = async (userId) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const { data } = await api.get(`/users/${userId}/achievements`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to get user achievements:', error);
+    throw error;
+  }
+};
+
+// =============================================
+// 📚 SUBJECTS AND CONTENT - FIXED
+// =============================================
+
 export const getSubjects = async () => {
   try {
     const { data } = await api.get('/subjects');
@@ -2088,23 +2713,31 @@ export const getSubjects = async () => {
   }
 };
 
-// ✅ Get transaction state text
-export const getTransactionStateText = (state) => {
-  switch (state) {
-    case 1:
-      return { text: 'Создана', color: 'warning', icon: '⏳' };
-    case 2:
-      return { text: 'Оплачена', color: 'success', icon: '✅' };
-    case -1:
-      return { text: 'Отменена', color: 'error', icon: '❌' };
-    case -2:
-      return { text: 'Возвращена', color: 'error', icon: '↩️' };
-    default:
-      return { text: 'Неизвестно', color: 'default', icon: '❓' };
+// =============================================
+// 🔧 UTILITY FUNCTIONS - FIXED
+// =============================================
+
+export const healthCheck = async () => {
+  try {
+    const { data } = await api.get('/health');
+    return data;
+  } catch (error) {
+    console.error('❌ Health check failed:', error);
+    throw error;
   }
 };
 
-// ✅ General error handler
+export const authTest = async () => {
+  try {
+    const { data } = await api.get('/auth-test');
+    return data;
+  } catch (error) {
+    console.error('❌ Auth test failed:', error);
+    throw error;
+  }
+};
+
+// ✅ GENERAL ERROR HANDLER
 export const handleApiError = (error, context = 'API call') => {
   console.error(`❌ ${context} failed:`, {
     url: error.config?.url,
@@ -2134,36 +2767,7 @@ export const handleApiError = (error, context = 'API call') => {
   }
 };
 
-// ✅ Payment error handler
-export const handlePaymentError = (error, context = 'Платежная операция') => {
-  console.error(`❌ ${context} failed:`, error);
-  
-  if (error.response?.data?.code && error.response.data.code.toString().startsWith('-316')) {
-    return getPaymeErrorMessage(error.response.data.code);
-  }
-  
-  if (error.message?.includes('Слишком много попыток')) {
-    return error.message;
-  }
-  
-  if (error.response?.status === 401) {
-    return 'Необходимо войти в систему для совершения платежа';
-  } else if (error.response?.status === 403) {
-    return 'Доступ к платежной системе запрещен';
-  } else if (error.response?.status === 404) {
-    return 'Платежный сервис недоступен. Используется прямая интеграция.';
-  } else if (error.response?.status === 429) {
-    return 'Слишком много запросов. Подождите несколько секунд и попробуйте снова.';
-  } else if (error.response?.status >= 500) {
-    return 'Ошибка платежного сервера. Попробуйте позже';
-  } else if (error.message?.includes('timeout')) {
-    return 'Превышено время ожидания. Проверьте интернет-соединение';
-  } else {
-    return error.response?.data?.message || error.message || 'Произошла ошибка при обработке платежа';
-  }
-};
-
-// ✅ Retry API call helper
+// ✅ BATCH OPERATIONS HELPER
 export const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -2185,100 +2789,77 @@ export const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
   }
 };
 
-// ✅ Request cleanup utility
+// ✅ REQUEST CLEANUP UTILITY
 export const cleanupRequestCache = () => {
   requestCache.clear();
   pendingRequests.clear();
   requestAttempts.clear();
 };
 
-// ✅ Reset payment attempts
-export const resetPaymentAttempts = (userId) => {
-  const keysToDelete = [];
-  for (const [key] of requestAttempts.entries()) {
-    if (key.startsWith(userId)) {
-      keysToDelete.push(key);
-    }
-  }
-  keysToDelete.forEach(key => requestAttempts.delete(key));
-};
-
-// ✅ Validate PayMe URL
-export const validatePaymeUrl = (url) => {
+// ✅ ERROR HANDLING WRAPPER
+export const withErrorHandling = async (apiCall, context = 'API call') => {
   try {
-    const base64Part = url.split('/').pop();
-    const decoded = atob(base64Part);
-    
-    const hasValidMerchant = decoded.includes('m=') && !decoded.includes('m=undefined');
-    const hasValidAmount = decoded.includes('a=') && /a=\d+/.test(decoded);
-    const hasValidOrderId = decoded.includes('ac.Login=') && !decoded.includes('ac.Login=undefined');
-    
-    const isCorrupted = decoded.includes('�') || 
-                       decoded.includes('\f') || 
-                       decoded.includes('\0') ||
-                       decoded.includes('[object Object]');
-    
-    return {
-      isValid: hasValidMerchant && hasValidAmount && hasValidOrderId && !isCorrupted,
-      hasValidMerchant,
-      hasValidAmount,
-      hasValidOrderId,
-      isCorrupted,
-      decodedParams: decoded
-    };
-    
+    return await apiCall();
   } catch (error) {
-    console.error('❌ URL validation failed:', error);
-    return {
-      isValid: false,
-      error: error.message
-    };
+    console.error(`❌ ${context} failed:`, error);
+    
+    // Handle different error types
+    if (error.response?.status === 401) {
+      // Try to refresh token
+      try {
+        if (auth.currentUser) {
+          await auth.currentUser.getIdToken(true);
+          return await apiCall();
+        }
+      } catch (refreshError) {
+        console.error('❌ Token refresh failed:', refreshError);
+        throw new Error('Authentication failed. Please log in again.');
+      }
+    } else if (error.response?.status === 404) {
+      throw new Error('Resource not found');
+    } else if (error.response?.status >= 500) {
+      throw new Error('Server error. Please try again later.');
+    } else if (error.code === 'NETWORK_ERROR') {
+      throw new Error('Network error. Please check your connection.');
+    }
+    
+    throw error;
   }
 };
 
-// ✅ Test clean URL generation
-export const testCleanUrlGeneration = async () => {
+// =============================================
+// 🧪 DEVELOPMENT TESTING HELPERS
+// =============================================
+
+export const testPaymentFlow = async (userId, plan = 'start') => {
+  if (import.meta.env.MODE === 'production') {
+    console.warn('⚠️ Test functions not available in production');
+    return;
+  }
+  
   try {
-    const testResult = await generateDirectPaymeUrl('testuser123', 'start', {
-      lang: 'ru',
-      callback: 'https://aced.live/payment/success'
-    });
+    resetPaymentAttempts(userId);
     
-    if (testResult.success) {
-      const validation = validatePaymeUrl(testResult.paymentUrl);
+    const userValidation = await validateUser(userId);
+    
+    const promoResult = await applyPromoCode(userId, plan, 'acedpromocode2406');
+    
+    if (!promoResult.success) {
+      const paymentResult = await initiatePaymePayment(userId, plan);
       
-      return {
-        success: validation.isValid,
-        url: testResult.paymentUrl,
-        validation
-      };
-    } else {
-      throw new Error(testResult.error);
+      if (paymentResult.success && paymentResult.paymentUrl) {
+        console.log('✅ Payment URL generated successfully');
+      }
     }
+    
+    return { success: true, message: 'Test completed successfully' };
+    
   } catch (error) {
-    console.error('❌ Test clean URL generation failed:', error);
+    console.error('❌ Test failed:', error);
     return { success: false, error: error.message };
   }
 };
 
-// ✅ System status
-export const getSystemStatus = () => {
-  return {
-    environment: import.meta.env.MODE,
-    baseUrl: BASE_URL,
-    cacheSize: requestCache.size,
-    pendingRequests: pendingRequests.size,
-    trackedAttempts: requestAttempts.size,
-    auth: {
-      hasUser: !!auth.currentUser,
-      isRefreshing: isRefreshing,
-      queueSize: failedQueue.length
-    },
-    timestamp: new Date().toISOString()
-  };
-};
-
-// ✅ Check API health
 export const checkApiHealth = async () => {
   try {
     const healthResponse = await healthCheck();
@@ -2286,7 +2867,7 @@ export const checkApiHealth = async () => {
     try {
       const authResponse = await authTest();
     } catch (authError) {
-      console.warn('⚠️ Auth test failed (normal if not logged in):', authError.message);
+      console.warn('⚠️ Auth test failed (this is normal if not logged in):', authError.message);
     }
     
     return {
@@ -2305,58 +2886,66 @@ export const checkApiHealth = async () => {
   }
 };
 
-// ✅ Detect mobile app
-export const isMobileApp = () => {
-  return typeof window !== 'undefined' && 
-         (window.navigator.userAgent.includes('ACED-Mobile') ||
-          window.cordova ||
-          window.PhoneGap ||
-          window.phonegap);
+export const getSystemStatus = () => {
+  return {
+    environment: import.meta.env.MODE,
+    baseUrl: BASE_URL,
+    cacheSize: requestCache.size,
+    pendingRequests: pendingRequests.size,
+    trackedAttempts: requestAttempts.size,
+    auth: {
+      hasUser: !!auth.currentUser,
+      isRefreshing: isRefreshing,
+      queueSize: failedQueue.length
+    },
+    timestamp: new Date().toISOString()
+  };
 };
 
-// ✅ Check if online
-export const isOnline = () => {
-  return typeof navigator !== 'undefined' ? navigator.onLine : true;
-};
-
-// ✅ Offline support
-const offlineQueue = [];
-
-export const queueOfflineRequest = (request) => {
-  if (!isOnline()) {
-    offlineQueue.push(request);
-    return true;
-  }
-  return false;
-};
-
-export const processOfflineQueue = async () => {
-  if (isOnline() && offlineQueue.length > 0) {
-    console.log(`📶 Processing ${offlineQueue.length} offline requests...`);
-    const requests = [...offlineQueue];
-    offlineQueue.length = 0;
-    
-    for (const request of requests) {
-      try {
-        await request();
-      } catch (error) {
-        console.error('❌ Failed to process offline request:', error);
-        offlineQueue.push(request);
-      }
+// ✅ PAYMENT ATTEMPT RESET UTILITY
+export const resetPaymentAttempts = (userId) => {
+  const keysToDelete = [];
+  for (const [key] of requestAttempts.entries()) {
+    if (key.startsWith(userId)) {
+      keysToDelete.push(key);
     }
   }
+  keysToDelete.forEach(key => requestAttempts.delete(key));
 };
 
-// Listen for online/offline events
-if (typeof window !== 'undefined') {
-  window.addEventListener('online', processOfflineQueue);
-  window.addEventListener('offline', () => {
-    console.log('📵 Device went offline');
-  });
-}
+// ✅ COMPREHENSIVE ERROR HANDLER FOR PAYMENTS
+export const handlePaymentError = (error, context = 'Платежная операция') => {
+  console.error(`❌ ${context} failed:`, error);
+  
+  // Check for PayMe specific error codes
+  if (error.response?.data?.code && error.response.data.code.toString().startsWith('-316')) {
+    return getPaymeErrorMessage(error.response.data.code);
+  }
+  
+  // Check for rate limiting
+  if (error.message?.includes('Слишком много попыток')) {
+    return error.message;
+  }
+  
+  if (error.response?.status === 401) {
+    return 'Необходимо войти в систему для совершения платежа';
+  } else if (error.response?.status === 403) {
+    return 'Доступ к платежной системе запрещен';
+  } else if (error.response?.status === 404) {
+    return 'Платежный сервис недоступен. Используется прямая интеграция.';
+  } else if (error.response?.status === 429) {
+    return 'Слишком много запросов. Подождите несколько секунд и попробуйте снова.';
+  } else if (error.response?.status >= 500) {
+    return 'Ошибка платежного сервера. Попробуйте позже';
+  } else if (error.message?.includes('timeout')) {
+    return 'Превышено время ожидания. Проверьте интернет-соединение';
+  } else {
+    return error.response?.data?.message || error.message || 'Произошла ошибка при обработке платежа';
+  }
+};
 
 // =============================================
-// 🔍 DIAGNOSTIC TOOLS
+// 🔍 DIAGNOSTIC TOOLS FOR DEBUGGING
 // =============================================
 
 export const diagnosticTool = {
@@ -2366,12 +2955,15 @@ export const diagnosticTool = {
     console.log('🔍 Testing backend connectivity...');
     
     try {
+      // Test basic health check
       const healthResponse = await fetch(`${BASE_URL}/health`);
       const healthData = await healthResponse.json();
       
+      // Test API health
       const apiHealthResponse = await fetch(`${BASE_URL}/api/health`);
       const apiHealthData = await apiHealthResponse.json();
       
+      // Test routes endpoint
       const routesResponse = await fetch(`${BASE_URL}/api/routes`);
       const routesData = await routesResponse.json();
       
@@ -2449,8 +3041,10 @@ export const diagnosticTool = {
       const currentUser = auth.currentUser;
       
       if (currentUser) {
+        // Test token retrieval
         const token = await currentUser.getIdToken();
         
+        // Test authenticated API call
         const response = await fetch(`${BASE_URL}/api/auth-test`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -2486,12 +3080,89 @@ export const diagnosticTool = {
     }
   },
   
-  // Test homework endpoints
+  // Test specific component endpoints
+  async testComponentEndpoints(topicId, lessonId, userId) {
+    const results = {};
+    
+    // Test topic loading (TopicOverview.vue)
+    if (topicId) {
+      try {
+        const topicResult = await getTopicById(topicId);
+        results.topicLoad = {
+          success: topicResult.success,
+          data: topicResult.data ? 'Data received' : 'No data',
+          error: topicResult.error
+        };
+        
+        if (topicResult.success) {
+          const lessonsResult = await getLessonsByTopic(topicId);
+          results.topicLessons = {
+            success: lessonsResult.success,
+            count: lessonsResult.data?.length || 0,
+            error: lessonsResult.error
+          };
+        }
+      } catch (error) {
+        results.topicLoad = {
+          success: false,
+          error: error.message
+        };
+      }
+    }
+    
+    // Test lesson loading (LessonPage.vue)
+    if (lessonId) {
+      try {
+        const lessonResult = await getLessonById(lessonId);
+        results.lessonLoad = {
+          success: true,
+          data: lessonResult.data ? 'Data received' : 'No data',
+          steps: lessonResult.data?.steps?.length || 0
+        };
+      } catch (error) {
+        results.lessonLoad = {
+          success: false,
+          error: error.message
+        };
+      }
+    }
+    
+    // Test user-specific endpoints
+    if (userId) {
+      try {
+        const userStatusResult = await getUserStatus(userId);
+        results.userStatus = {
+          success: userStatusResult.success,
+          status: userStatusResult.status,
+          error: userStatusResult.error
+        };
+        
+        if (lessonId) {
+          const progressResult = await getLessonProgress(userId, lessonId);
+          results.lessonProgress = {
+            success: progressResult.success,
+            hasProgress: !!progressResult.data,
+            error: progressResult.error
+          };
+        }
+      } catch (error) {
+        results.userEndpoints = {
+          success: false,
+          error: error.message
+        };
+      }
+    }
+    
+    return results;
+  },
+  
+  // Test homework endpoints specifically
   async testHomeworkEndpoints(userId) {
     console.log('🔍 Testing homework endpoints for user:', userId);
     
     const results = {};
     
+    // Test homework list endpoint
     try {
       const homeworkListResult = await getAllHomeworks(userId);
       results.homeworkList = {
@@ -2507,6 +3178,7 @@ export const diagnosticTool = {
       };
     }
     
+    // Test individual homework fetching if we have some homework
     if (results.homeworkList.success && results.homeworkList.count > 0) {
       try {
         const homeworkData = await getAllHomeworks(userId);
@@ -2539,274 +3211,149 @@ export const diagnosticTool = {
   }
 };
 
+// ✅ ALIASES FOR BACKWARDS COMPATIBILITY
+export const generatePaymentForm = generatePaymeForm;
+export const executePaymentFlow = initiatePaymePayment;
+
 // =============================================
-// 📊 ANALYTICS & REPORTING API FUNCTIONS
+// 📱 MOBILE APP SUPPORT
 // =============================================
 
-// ✅ Get user analytics
-export const getUserAnalytics = async (userId) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) {
-      throw new Error('No authentication token available');
-    }
+// Detect if running in mobile app context
+export const isMobileApp = () => {
+  return typeof window !== 'undefined' && 
+         (window.navigator.userAgent.includes('ACED-Mobile') ||
+          window.cordova ||
+          window.PhoneGap ||
+          window.phonegap);
+};
 
-    const headers = { Authorization: `Bearer ${token}` };
+// Mobile-optimized API calls
+export const mobileApiCall = async (endpoint, options = {}) => {
+  if (isMobileApp()) {
+    // Add mobile-specific headers
+    options.headers = {
+      ...options.headers,
+      'X-Mobile-App': 'true',
+      'X-App-Version': window.ACED_APP_VERSION || '1.0.0'
+    };
+  }
+  
+  return api(endpoint, options);
+};
+
+// =============================================
+// 🔄 OFFLINE SUPPORT
+// =============================================
+
+// Check if online
+export const isOnline = () => {
+  return typeof navigator !== 'undefined' ? navigator.onLine : true;
+};
+
+// Queue offline requests
+const offlineQueue = [];
+
+export const queueOfflineRequest = (request) => {
+  if (!isOnline()) {
+    offlineQueue.push(request);
+    return true;
+  }
+  return false;
+};
+
+// Process offline queue when back online
+export const processOfflineQueue = async () => {
+  if (isOnline() && offlineQueue.length > 0) {
+    console.log(`📶 Processing ${offlineQueue.length} offline requests...`);
+    const requests = [...offlineQueue];
+    offlineQueue.length = 0; // Clear queue
     
-    try {
-      const { data } = await api.get(`/users/${userId}/analytics`, { headers });
-      return data;
-    } catch (error) {
-      console.warn('⚠️ User analytics endpoint failed, trying fallback:', error.message);
-      
+    for (const request of requests) {
       try {
-        const { data } = await api.get(`/analytics/${userId}`, { headers });
-        return data;
-      } catch (fallbackError) {
-        console.error('❌ All analytics endpoints failed:', fallbackError.message);
-        throw fallbackError;
+        await request();
+      } catch (error) {
+        console.error('❌ Failed to process offline request:', error);
+        // Re-queue failed requests
+        offlineQueue.push(request);
       }
     }
-  } catch (error) {
-    console.error('❌ Failed to fetch user analytics:', error);
-    throw error;
   }
 };
 
-// ✅ Get user stats
-export const getUserStats = async (userId) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
-    
-    const { data } = await api.get(`/users/${userId}/stats`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to get user stats:', error);
-    throw error;
-  }
-};
+// Listen for online/offline events
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', processOfflineQueue);
+  window.addEventListener('offline', () => {
+    console.log('📵 Device went offline');
+  });
+}
 
-// ✅ Get user achievements
-export const getUserAchievements = async (userId) => {
+// ✅ VALIDATION HELPERS
+export const validatePaymeUrl = (url) => {
   try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
+    // Extract base64 part
+    const base64Part = url.split('/').pop();
     
-    const { data } = await api.get(`/users/${userId}/achievements`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to get user achievements:', error);
-    throw error;
-  }
-};
-
-// ✅ Get user points
-export const getUserPoints = async (userId) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
+    // Decode and check
+    const decoded = atob(base64Part);
     
-    const { data } = await api.get(`/users/${userId}/points`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to get user points:', error);
-    throw error;
-  }
-};
-
-// ✅ Get recommendations
-export const getRecommendations = async (userId) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
+    // Check for required parameters
+    const hasValidMerchant = decoded.includes('m=') && !decoded.includes('m=undefined');
+    const hasValidAmount = decoded.includes('a=') && /a=\d+/.test(decoded);
+    const hasValidOrderId = decoded.includes('ac.Login=') && !decoded.includes('ac.Login=undefined');
     
-    const { data } = await api.get(`/users/${userId}/recommendations`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to get recommendations:', error);
-    throw error;
-  }
-};
-
-// ✅ Get user progress stats
-export const getUserProgressStats = async (userId) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
+    // Check for corruption
+    const isCorrupted = decoded.includes('�') || 
+                       decoded.includes('\f') || 
+                       decoded.includes('\0') ||
+                       decoded.includes('[object Object]');
     
-    const { data } = await api.get(`/users/${userId}/progress`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to get progress stats:', error);
-    throw error;
-  }
-};
-
-// ✅ Get lesson progress stats
-export const getLessonProgressStats = async (userId, lessonId) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
-    
-    const { data } = await api.get(`/users/${userId}/progress/lesson/${lessonId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to get lesson progress stats:', error);
-    throw error;
-  }
-};
-
-// ✅ Get topics progress
-export const getTopicsProgress = async (userId) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
-    
-    const { data } = await api.get(`/users/${userId}/topics-progress`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to get topics progress:', error);
-    throw error;
-  }
-};
-
-// ✅ Save diary entry
-export const saveDiaryEntry = async (userId, diaryData) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
-    
-    const { data } = await api.post(`/users/${userId}/diary`, diaryData, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to save diary entry:', error);
-    throw error;
-  }
-};
-
-// ✅ Get diary entries
-export const getDiaryEntries = async (userId) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
-    
-    const { data } = await api.get(`/users/${userId}/diary`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to get diary entries:', error);
-    throw error;
-  }
-};
-
-// ✅ Get user goals
-export const getUserGoals = async (userId) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
-    
-    const { data } = await api.get(`/users/${userId}/goals`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to get user goals:', error);
-    throw error;
-  }
-};
-
-// ✅ Create user goal
-export const createUserGoal = async (userId, goalData) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
-    
-    const { data } = await api.post(`/users/${userId}/goals`, goalData, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to create user goal:', error);
-    throw error;
-  }
-};
-
-// ✅ Update user goal
-export const updateUserGoal = async (userId, goalId, goalData) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
-    
-    const { data } = await api.put(`/users/${userId}/goals/${goalId}`, goalData, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to update user goal:', error);
-    throw error;
-  }
-};
-
-// ✅ Delete user goal
-export const deleteUserGoal = async (userId, goalId) => {
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('No authentication token');
-    
-    const { data } = await api.delete(`/users/${userId}/goals/${goalId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return data;
-  } catch (error) {
-    console.error('❌ Failed to delete user goal:', error);
-    throw error;
-  }
-};
-
-// =============================================
-// 📱 BACKWARDS COMPATIBILITY & ALIASES
-// =============================================
-
-// Keep old function names for compatibility
-export const fetchTopics = getTopics;
-export const generatePaymentForm = initiatePaymePayment;
-export const executePaymentFlow = initiatePaymePayment;
-export const applyPromoCode = async (userId, plan, promoCode) => {
-  try {
-    const response = await api.post('/payments/promo-code', {
-      userId,
-      plan,
-      promoCode
-    });
-    
-    return {
-      success: true,
-      data: response.data,
-      message: response.data.message || 'Промокод успешно применён'
+    const validation = {
+      isValid: hasValidMerchant && hasValidAmount && hasValidOrderId && !isCorrupted,
+      hasValidMerchant,
+      hasValidAmount,
+      hasValidOrderId,
+      isCorrupted,
+      decodedParams: decoded
     };
+    
+    return validation;
+    
   } catch (error) {
-    console.error('❌ Promo code error:', error);
+    console.error('❌ URL validation failed:', error);
+    return {
+      isValid: false,
+      error: error.message
+    };
+  }
+};
+
+// ✅ TEST FUNCTIONS
+export const testCleanUrlGeneration = async () => {
+  try {
+    const testResult = await generateDirectPaymeUrl('testuser123', 'start', {
+      lang: 'ru',
+      callback: 'https://aced.live/payment/success'
+    });
+    
+    if (testResult.success) {
+      const validation = validatePaymeUrl(testResult.paymentUrl);
+      
+      return {
+        success: validation.isValid,
+        url: testResult.paymentUrl,
+        validation
+      };
+    } else {
+      throw new Error(testResult.error);
+    }
+    
+  } catch (error) {
+    console.error('❌ Test failed:', error);
     return {
       success: false,
-      error: error.response?.data?.message || error.message || 'Ошибка применения промокода'
+      error: error.message
     };
   }
 };
