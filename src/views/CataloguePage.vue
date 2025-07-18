@@ -3219,4 +3219,339 @@ html {
   white-space: nowrap;
   border: 0;
 }
+/* ===== FIXED GRID LAYOUTS WITH PROPER SPACING ===== */
+.subjects-grid, .levels-grid, .topics-grid {
+  display: grid;
+  gap: 2rem;
+  width: 100%;
+  padding: 1rem 0;
+  box-sizing: border-box;
+}
+
+.subjects-grid {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+  justify-items: stretch;
+  align-items: start;
+}
+
+.levels-grid {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+  justify-items: stretch;
+  align-items: start;
+}
+
+.topics-grid {
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 2rem;
+  justify-items: stretch;
+  align-items: start;
+}
+
+/* ===== ENHANCED SUBJECT CARD SPACING ===== */
+.subject-card {
+  background: linear-gradient(135deg, #ffffff 0%, #fefefe 100%);
+  border-radius: 20px;
+  border: 1px solid #e9ecef;
+  padding: 2rem 1.5rem;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  min-height: 280px;
+  max-width: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+/* ===== LEVEL AND TOPIC CARD SPACING ===== */
+.level-card, .topic-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  position: relative;
+}
+
+/* ===== RESPONSIVE GRID IMPROVEMENTS ===== */
+@media (min-width: 1400px) {
+  .subjects-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2.5rem;
+  }
+  
+  .levels-grid, .topics-grid {
+    gap: 2.5rem;
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1399px) {
+  .subjects-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1199px) {
+  .subjects-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+  
+  .levels-grid, .topics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 899px) {
+  .subjects-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .levels-grid, .topics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .subject-card {
+    padding: 1.5rem 1.25rem;
+    min-height: 250px;
+  }
+  
+  .card-icon {
+    font-size: 3rem;
+    height: 70px;
+    margin-bottom: 1rem;
+  }
+  
+  .card-title {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  
+  .card-stats {
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 599px) {
+  .subjects-grid, .levels-grid, .topics-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 0.5rem 0;
+  }
+  
+  .subject-card {
+    padding: 1.5rem;
+    min-height: 220px;
+  }
+  
+  .card-icon {
+    font-size: 2.5rem;
+    height: 60px;
+    margin-bottom: 1rem;
+  }
+  
+  .card-title {
+    font-size: 1.125rem;
+    margin-bottom: 1rem;
+  }
+  
+  .level-card, .topic-card {
+    padding: 1.25rem;
+  }
+}
+
+/* ===== CONTAINER IMPROVEMENTS ===== */
+.content-area {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.main-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+  flex: 1;
+  box-sizing: border-box;
+}
+
+/* ===== CARD CONTENT SPACING ===== */
+.card-icon {
+  font-size: 3.5rem;
+  text-align: center;
+  margin-bottom: 1.25rem;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 16px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  z-index: 2;
+  box-shadow: 
+    0 4px 15px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+}
+
+.card-title {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: #212529;
+  margin: 0 0 1.25rem 0;
+  text-align: center;
+  line-height: 1.2;
+  transition: all 0.4s ease;
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+}
+
+.card-stats {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 0;
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.stat-badge {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: #495057;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid #e9ecef;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* ===== PREVENT CARD OVERLAP ===== */
+.subject-card,
+.level-card,
+.topic-card {
+  isolation: isolate;
+  contain: layout style;
+}
+
+.subject-card::before,
+.subject-card::after {
+  pointer-events: none;
+}
+
+/* ===== FLOATING ANIMATION FIX ===== */
+@keyframes float {
+  0%, 100% { 
+    transform: translateY(0px);
+  }
+  50% { 
+    transform: translateY(-2px);
+  }
+}
+
+.subject-card:not(:hover) {
+  animation: float 6s ease-in-out infinite;
+}
+
+.subject-card:hover {
+  animation: none;
+}
+
+/* ===== ENSURE CARDS DON'T BREAK LAYOUT ===== */
+.subjects-grid > *,
+.levels-grid > *,
+.topics-grid > * {
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ===== FILTER BAR SPACING ===== */
+.filter-bar {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* ===== MOBILE SPACING ADJUSTMENTS ===== */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1rem;
+  }
+  
+  .filter-bar {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .subjects-grid, .levels-grid, .topics-grid {
+    gap: 1rem;
+    padding: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: 0.75rem;
+  }
+  
+  .filter-bar {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .subject-card {
+    padding: 1.25rem;
+    min-height: 200px;
+  }
+  
+  .card-icon {
+    font-size: 2.25rem;
+    height: 50px;
+    margin-bottom: 1rem;
+  }
+  
+  .card-title {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .stat-badge {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+  }
+}
 </style>
