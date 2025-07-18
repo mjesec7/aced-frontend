@@ -47,29 +47,21 @@
     </div>
 
     <div class="main-content">
-      <!-- Horizontal Filter Sidebar -->
-      <div class="filter-sidebar">
-        <div class="sidebar-header">
-          <h3>🔍 Фильтры</h3>
-          <button @click="clearFilters" class="clear-filters">Очистить</button>
-        </div>
-
-        <!-- First Row: Search, Subject, Level -->
+      <!-- Compact Horizontal Filter Bar -->
+      <div class="filter-bar">
         <div class="filter-row">
           <!-- Search -->
-          <div class="filter-group">
-            <label class="filter-label">Поиск</label>
+          <div class="filter-item">
             <input
               v-model="searchQuery"
               type="text"
               class="search-input"
-              placeholder="Найти..."
+              placeholder="🔍 Поиск..."
             />
           </div>
 
-          <!-- Subject Filter (only when not in subjects view) -->
-          <div v-if="currentView !== 'subjects'" class="filter-group">
-            <label class="filter-label">Предмет</label>
+          <!-- Subject Filter -->
+          <div v-if="currentView !== 'subjects'" class="filter-item">
             <select v-model="filterSubject" class="filter-select">
               <option value="">Все предметы</option>
               <option v-for="subject in availableSubjects" :key="subject" :value="subject">
@@ -78,9 +70,8 @@
             </select>
           </div>
 
-          <!-- Level Filter (only when in topics view) -->
-          <div v-if="currentView === 'topics'" class="filter-group">
-            <label class="filter-label">Уровень</label>
+          <!-- Level Filter -->
+          <div v-if="currentView === 'topics'" class="filter-item">
             <select v-model="filterLevel" class="filter-select">
               <option value="">Все уровни</option>
               <option v-for="level in availableLevels" :key="level" :value="level">
@@ -88,81 +79,37 @@
               </option>
             </select>
           </div>
-        </div>
 
-        <!-- Second Row: Checkbox Filters -->
-        <div class="checkbox-row">
-          <!-- Access Type Filter -->
-          <div class="filter-group">
-            <label class="filter-label">Доступ</label>
-            <div class="checkbox-group">
-              <label class="checkbox-item">
-                <input 
-                  type="checkbox" 
-                  v-model="showFree"
-                  class="checkbox"
-                />
-                <span class="checkmark"></span>
-                🆓 Бесплатные
-              </label>
-              <label class="checkbox-item">
-                <input 
-                  type="checkbox" 
-                  v-model="showPremium"
-                  class="checkbox"
-                />
-                <span class="checkmark"></span>
-                ⭐ Премиум
-              </label>
-            </div>
+          <!-- Access Type -->
+          <div class="filter-item checkbox-filter">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="showFree" />
+              🆓 Бесплатные
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="showPremium" />
+              ⭐ Премиум
+            </label>
           </div>
 
-          <!-- Progress Filter (only for topics) -->
-          <div v-if="currentView === 'topics'" class="filter-group">
-            <label class="filter-label">Прогресс</label>
-            <div class="checkbox-group">
-              <label class="checkbox-item">
-                <input 
-                  type="checkbox" 
-                  v-model="showNotStarted"
-                  class="checkbox"
-                />
-                <span class="checkmark"></span>
-                ⭕ Не начато
-              </label>
-              <label class="checkbox-item">
-                <input 
-                  type="checkbox" 
-                  v-model="showInProgress"
-                  class="checkbox"
-                />
-                <span class="checkmark"></span>
-                🔄 В процессе
-              </label>
-              <label class="checkbox-item">
-                <input 
-                  type="checkbox" 
-                  v-model="showCompleted"
-                  class="checkbox"
-                />
-                <span class="checkmark"></span>
-                ✅ Завершено
-              </label>
-            </div>
+          <!-- Progress Filter -->
+          <div v-if="currentView === 'topics'" class="filter-item checkbox-filter">
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="showNotStarted" />
+              ⭕ Не начато
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="showInProgress" />
+              🔄 В процессе
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" v-model="showCompleted" />
+              ✅ Завершено
+            </label>
           </div>
-        </div>
 
-        <!-- Stats Section -->
-        <div class="stats-section">
-          <h4>📊 Статистика</h4>
-          <div class="stat-item">
-            <span class="stat-label">Всего элементов:</span>
-            <span class="stat-value">{{ currentItems.length }}</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Показано:</span>
-            <span class="stat-value">{{ filteredItems.length }}</span>
-          </div>
+          <!-- Clear Button -->
+          <button @click="clearFilters" class="clear-btn">Очистить</button>
         </div>
       </div>
 
@@ -180,30 +127,12 @@
             :key="subject.name"
             @click="selectSubject(subject.name)"
             class="subject-card"
-            tabindex="0"
-            @keydown.enter="selectSubject(subject.name)"
-            @keydown.space.prevent="selectSubject(subject.name)"
           >
             <div class="card-icon">{{ subject.icon }}</div>
             <h3 class="card-title">{{ subject.name }}</h3>
             <div class="card-stats">
               <span class="stat-badge">{{ subject.topicCount }} тем</span>
               <span class="stat-badge">{{ subject.lessonCount }} уроков</span>
-            </div>
-            <div class="card-levels">
-              <span 
-                v-for="level in subject.levels" 
-                :key="level"
-                class="level-tag"
-                :class="getLevelClass(level)"
-              >
-                {{ level }}
-              </span>
-            </div>
-            <div class="card-footer">
-              <span class="access-type" :class="subject.hasFreeLessons ? 'has-free' : 'premium-only'">
-                {{ subject.hasFreeLessons ? '🆓 Есть бесплатные' : '⭐ Только премиум' }}
-              </span>
             </div>
           </div>
         </div>
@@ -215,9 +144,6 @@
             :key="level.name"
             @click="selectLevel(level.name)"
             class="level-card"
-            tabindex="0"
-            @keydown.enter="selectLevel(level.name)"
-            @keydown.space.prevent="selectLevel(level.name)"
           >
             <div class="level-header">
               <div class="level-icon" :class="getLevelClass(level.name)">
@@ -1177,7 +1103,480 @@ export default {
 </script>
 
 <style scoped>
-/* Professional Clean Catalogue Page CSS - Horizontal Filters & Purple Glow */
+/* ===== CONTENT AREA ===== */
+.content-area {
+  width: 100%;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem 2rem;
+  font-size: 1rem;
+  color: #6c757d;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #f1f3f4;
+  border-top: 2px solid #8b5cf6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ===== GRID LAYOUTS ===== */
+.subjects-grid, .levels-grid, .topics-grid {
+  display: grid;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.subjects-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.levels-grid {
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+.topics-grid {
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+}
+
+/* ===== SUBJECT CARD STYLES WITH PURPLE GLOW ===== */
+.subject-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  padding: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.subject-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 1px;
+  background: linear-gradient(135deg, transparent, transparent);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.subject-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 
+    0 20px 40px rgba(139, 92, 246, 0.15),
+    0 0 0 1px rgba(139, 92, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.subject-card:hover::before {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(168, 85, 247, 0.4));
+  opacity: 1;
+}
+
+.card-icon {
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.subject-card:hover .card-icon {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.1));
+  transform: scale(1.05);
+}
+
+.card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #212529;
+  margin: 0 0 1rem 0;
+  text-align: center;
+  line-height: 1.3;
+  transition: all 0.3s ease;
+}
+
+.subject-card:hover .card-title {
+  color: #8b5cf6;
+}
+
+.card-stats {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.stat-badge {
+  background: #f8f9fa;
+  color: #495057;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.subject-card:hover .stat-badge {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+}
+
+/* ===== OTHER CARD STYLES ===== */
+.level-card, .topic-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  padding: 1.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.level-card {
+  cursor: pointer;
+}
+
+.level-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border-color: #8b5cf6;
+}
+
+.topic-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.level-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.level-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  border: 1px solid #e9ecef;
+}
+
+.level-header .card-title {
+  text-align: left;
+  margin: 0;
+  flex: 1;
+}
+
+.level-description {
+  color: #6c757d;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0 0 1rem 0;
+  text-align: center;
+}
+
+.progress-info {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  color: #6c757d;
+  text-align: center;
+  font-weight: 500;
+}
+
+.card-footer {
+  text-align: center;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f3f4;
+}
+
+.access-type {
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid;
+  display: inline-block;
+}
+
+.access-type.has-free {
+  background: #d4edda;
+  color: #155724;
+  border-color: #c3e6cb;
+}
+
+.access-type.premium-only {
+  background: #495057;
+  color: white;
+  border-color: #495057;
+}
+
+/* ===== TOPIC CARD SPECIFIC ===== */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.topic-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #212529;
+  margin: 0;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.add-btn {
+  background: #ffffff;
+  color: #8b5cf6;
+  border: 1px solid #8b5cf6;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.add-btn:disabled {
+  background: #d4edda;
+  color: #155724;
+  border-color: #c3e6cb;
+  cursor: not-allowed;
+}
+
+.add-btn:hover:not(:disabled) {
+  background: #8b5cf6;
+  color: white;
+}
+
+.topic-meta {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.level-badge, .access-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid;
+}
+
+.access-badge.free {
+  background: #d4edda;
+  color: #155724;
+  border-color: #c3e6cb;
+}
+
+.access-badge.premium {
+  background: #495057;
+  color: white;
+  border-color: #495057;
+}
+
+.topic-stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: #6c757d;
+  justify-content: center;
+  font-weight: 400;
+}
+
+.progress-section {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.progress-label {
+  font-weight: 500;
+  color: #495057;
+  font-size: 0.875rem;
+}
+
+.progress-percentage {
+  font-weight: 600;
+  color: #212529;
+  font-size: 0.875rem;
+}
+
+.status-section {
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.status-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid;
+}
+
+.status-badge.completed {
+  background: #d4edda;
+  color: #155724;
+  border-color: #c3e6cb;
+}
+
+.status-badge.in-progress {
+  background: #cce7ff;
+  color: #004085;
+  border-color: #80c1ff;
+}
+
+.status-badge.not-started {
+  background: #f8f9fa;
+  color: #6c757d;
+  border-color: #e9ecef;
+}
+
+.action-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 0.75rem;
+}
+
+.btn-start {
+  background: #8b5cf6;
+  color: white;
+}
+
+.btn-continue {
+  background: #495057;
+  color: white;
+}
+
+.btn-completed {
+  background: #f8f9fa;
+  color: #6c757d;
+  cursor: default;
+}
+
+.btn-start:hover, .btn-continue:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* ===== LEVEL CLASSES ===== */
+.level-beginner, .level-badge.level-beginner { 
+  background: #d4edda; 
+  color: #155724; 
+  border-color: #c3e6cb;
+}
+.level-intermediate, .level-badge.level-intermediate { 
+  background: #fff3cd; 
+  color: #856404; 
+  border-color: #ffeaa7;
+}
+.level-advanced, .level-badge.level-advanced { 
+  background: #f8d7da; 
+  color: #721c24; 
+  border-color: #f1aeb5;
+}
+
+/* Level Icons */
+.level-icon.level-1 { background: #d4edda; color: #155724; }
+.level-icon.level-2 { background: #d4edda; color: #155724; }
+.level-icon.level-3 { background: #d4edda; color: #155724; }
+.level-icon.level-4 { background: #fff3cd; color: #856404; }
+.level-icon.level-5 { background: #fff3cd; color: #856404; }
+.level-icon.level-6 { background: #fff3cd; color: #856404; }
+.level-icon.level-7 { background: #f8d7da; color: #721c24; }
+.level-icon.level-8 { background: #f8d7da; color: #721c24; }
+.level-icon.level-9 { background: #f8d7da; color: #721c24; }
+.level-icon.level-10 { background: #f8d7da; color: #721c24; }
+
+/* Level Badges for Numbers */
+.level-badge.level-1 { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+.level-badge.level-2 { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+.level-badge.level-3 { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+.level-badge.level-4 { background: #fff3cd; color: #856404; border-color: #ffeaa7; }
+.level-badge.level-5 { background: #fff3cd; color: #856404; border-color: #ffeaa7; }
+.level-badge.level-6 { background: #fff3cd; color: #856404; border-color: #ffeaa7; }/* Professional Clean Catalogue Page CSS - Thin Horizontal Filter Bar */
 .catalogue-page {
   display: flex;
   flex-direction: column;
@@ -1297,202 +1696,87 @@ export default {
   flex: 1;
 }
 
-/* ===== HORIZONTAL FILTER SIDEBAR ===== */
-.filter-sidebar {
-  width: 100%;
+/* ===== COMPACT HORIZONTAL FILTER BAR ===== */
+.filter-bar {
   background: #ffffff;
   border: 1px solid #e9ecef;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
   margin-bottom: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.sidebar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.sidebar-header h3 {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #212529;
-}
-
-.clear-filters {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  color: #6c757d;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.clear-filters:hover {
-  background: #e9ecef;
-  border-color: #adb5bd;
-  color: #495057;
-}
-
-/* HORIZONTAL FILTER LAYOUT */
 .filter-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
-  gap: 1.5rem;
-  align-items: end;
-  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.filter-group {
-  margin-bottom: 0;
-  padding: 0;
-  border: none;
-}
-
-/* Checkbox groups in second row */
-.checkbox-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-top: 1rem;
-}
-
-/* Label and input styling */
-.filter-label {
-  display: block;
-  font-weight: 500;
-  color: #495057;
-  margin-bottom: 0.5rem;
-  font-size: 0.875rem;
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .search-input, .filter-select {
-  width: 100%;
-  padding: 0.75rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid #e1e5e9;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #ffffff;
   font-size: 0.875rem;
   transition: all 0.2s ease;
   color: #495057;
-  box-sizing: border-box;
+  min-width: 180px;
 }
 
 .search-input:focus, .filter-select:focus {
   outline: none;
   border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
 }
 
 .search-input::placeholder {
   color: #adb5bd;
 }
 
-/* Checkbox group styling */
-.checkbox-group {
+.checkbox-filter {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  gap: 1rem;
 }
 
-.checkbox-item {
+.checkbox-label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #495057;
   cursor: pointer;
-  font-size: 0.875rem;
-  color: #495057;
-  transition: all 0.2s ease;
-  padding: 0.25rem 0;
+  white-space: nowrap;
 }
 
-.checkbox-item:hover {
-  color: #212529;
-}
-
-.checkbox {
-  width: 16px;
-  height: 16px;
+.checkbox-label input[type="checkbox"] {
   margin: 0;
-  opacity: 0;
-  position: absolute;
+  margin-right: 0.25rem;
 }
 
-.checkmark {
-  width: 16px;
-  height: 16px;
-  border: 2px solid #ced4da;
-  border-radius: 4px;
-  background: #ffffff;
-  position: relative;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.checkbox:checked + .checkmark {
-  background: #8b5cf6;
-  border-color: #8b5cf6;
-}
-
-.checkbox:checked + .checkmark::after {
-  content: '✓';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  font-size: 10px;
-  font-weight: bold;
-}
-
-.checkbox:checked ~ span {
-  color: #212529;
-  font-weight: 500;
-}
-
-/* Stats Section */
-.stats-section {
-  clear: both;
-  padding-top: 1rem;
-  border-top: 1px solid #e9ecef;
-  margin-top: 1rem;
-}
-
-.stats-section h4 {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #495057;
-}
-
-.stat-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  margin-right: 2rem;
-}
-
-.stat-label {
-  color: #6c757d;
-}
-
-.stat-value {
-  font-weight: 600;
-  color: #212529;
+.clear-btn {
   background: #f8f9fa;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
   border: 1px solid #e9ecef;
+  color: #6c757d;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.clear-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  color: #495057;
 }
 
 /* ===== CONTENT AREA ===== */
