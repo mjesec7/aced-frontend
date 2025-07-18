@@ -182,14 +182,15 @@
 
       <!-- Top Header with Problem Report Button -->
       <LessonHeader
-        :lesson="lesson"
-        :current-step="currentIndex + 1"
-        :total-steps="steps.length"
-        :formatted-time="formattedTime"
-        :stars="stars"
-        @exit="confirmExit"
-        @report-problem="openProblemReportModal"
-      />
+  :lesson="lesson"
+  :current-step="currentIndex + 1"
+  :total-steps="steps.length"
+  :formatted-time="formattedTime"
+  :stars="stars"
+  :show-stars-in-header="false"
+  @exit="confirmExit"
+  @report-problem="openProblemReportModal"
+/>
 
       <!-- Progress Bar -->
       <ProgressBar
