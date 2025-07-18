@@ -305,7 +305,6 @@
     />
   </div>
 </template>
-
 <script>
 import axios from 'axios';
 import { mapGetters } from 'vuex';
@@ -377,33 +376,45 @@ export default {
 
     currentItems() {
       switch (this.currentView) {
-        case 'subjects': return this.subjects;
-        case 'levels': return this.levels;
-        case 'topics': return this.topics;
+        case 'subjects': return this.subjects || [];
+        case 'levels': return this.levels || [];
+        case 'topics': return this.topics || [];
         default: return [];
       }
     },
 
     filteredItems() {
       switch (this.currentView) {
-        case 'subjects': return this.filteredSubjects;
-        case 'levels': return this.filteredLevels;
-        case 'topics': return this.filteredTopics;
+        case 'subjects': return this.filteredSubjects || [];
+        case 'levels': return this.filteredLevels || [];
+        case 'topics': return this.filteredTopics || [];
         default: return [];
       }
     },
 
     availableSubjects() {
-      return [...new Set(this.lessons.map(lesson => lesson.subject).filter(Boolean))];
+      if (!Array.isArray(this.lessons)) return [];
+      return [...new Set(this.lessons
+        .map(lesson => lesson?.subject)
+        .filter(subject => subject && typeof subject === 'string'))];
     },
 
     availableLevels() {
-      return [...new Set(this.lessons.map(lesson => lesson.level).filter(Boolean))];
+      if (!Array.isArray(this.lessons)) return [];
+      return [...new Set(this.lessons
+        .map(lesson => lesson?.level)
+        .filter(level => level && (typeof level === 'string' || typeof level === 'number')))];
     },
 
     filteredSubjects() {
+      if (!Array.isArray(this.subjects)) return [];
       return this.subjects.filter(subject => {
-        const matchesSearch = subject.name.toLowerCase().includes(this.searchQuery.toLowerCase());
+        if (!subject || !subject.name) return false;
+        
+        const subjectName = String(subject.name || '');
+        const searchTerm = String(this.searchQuery || '').toLowerCase();
+        
+        const matchesSearch = subjectName.toLowerCase().includes(searchTerm);
         const matchesAccess = (this.showFree && subject.hasFreeLessons) || 
                              (this.showPremium && subject.hasPremiumLessons);
         return matchesSearch && matchesAccess;
@@ -411,8 +422,14 @@ export default {
     },
 
     filteredLevels() {
+      if (!Array.isArray(this.levels)) return [];
       return this.levels.filter(level => {
-        const matchesSearch = level.name.toLowerCase().includes(this.searchQuery.toLowerCase());
+        if (!level || (!level.name && level.name !== 0)) return false;
+        
+        const levelName = String(level.name || '');
+        const searchTerm = String(this.searchQuery || '').toLowerCase();
+        
+        const matchesSearch = levelName.toLowerCase().includes(searchTerm);
         const matchesAccess = (this.showFree && level.hasFreeLessons) || 
                              (this.showPremium && level.hasPremiumLessons);
         return matchesSearch && matchesAccess;
@@ -420,18 +437,25 @@ export default {
     },
 
     filteredTopics() {
+      if (!Array.isArray(this.topics)) return [];
       return this.topics.filter(topic => {
-        const matchesSearch = topic.name.toLowerCase().includes(this.searchQuery.toLowerCase());
-        const matchesSubject = !this.filterSubject || topic.subject === this.filterSubject;
-        const matchesLevel = !this.filterLevel || topic.level === this.filterLevel;
+        if (!topic || !topic.name) return false;
+        
+        const topicName = String(topic.name || '');
+        const searchTerm = String(this.searchQuery || '').toLowerCase();
+        
+        const matchesSearch = topicName.toLowerCase().includes(searchTerm);
+        const matchesSubject = !this.filterSubject || String(topic.subject || '') === String(this.filterSubject);
+        const matchesLevel = !this.filterLevel || String(topic.level || '') === String(this.filterLevel);
         const matchesAccess = (this.showFree && topic.type === 'free') || 
                              (this.showPremium && topic.type === 'premium');
         
         let matchesProgress = true;
-        if (topic.progress !== undefined) {
-          const isNotStarted = topic.progress === 0;
-          const isInProgress = topic.progress > 0 && topic.progress < 100;
-          const isCompleted = topic.progress === 100;
+        if (typeof topic.progress === 'number') {
+          const progress = Number(topic.progress) || 0;
+          const isNotStarted = progress === 0;
+          const isInProgress = progress > 0 && progress < 100;
+          const isCompleted = progress === 100;
           
           matchesProgress = (this.showNotStarted && isNotStarted) ||
                            (this.showInProgress && isInProgress) ||
@@ -456,6 +480,7 @@ export default {
         
         const storedId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
         if (!storedId) {
+          console.warn('⚠️ No user ID found in localStorage');
           this.loading = false;
           return;
         }
@@ -487,14 +512,23 @@ export default {
     },
 
     async loadUserProgress() {
-      if (!this.userId) return;
+      if (!this.userId) {
+        console.warn('⚠️ No userId available for loading progress');
+        return;
+      }
       
       try {
         const currentUser = auth.currentUser;
-        if (!currentUser) return;
+        if (!currentUser) {
+          console.warn('⚠️ No current user authenticated');
+          return;
+        }
 
         const token = await currentUser.getIdToken();
-        if (!token) return;
+        if (!token) {
+          console.warn('⚠️ No auth token available');
+          return;
+        }
 
         // Try topics-progress endpoint first
         try {
@@ -502,8 +536,12 @@ export default {
             `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/topics-progress`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
-          this.userProgress = response.data || {};
-          return;
+          
+          if (response.data && typeof response.data === 'object') {
+            this.userProgress = response.data;
+            console.log('✅ Loaded topics progress:', Object.keys(this.userProgress).length);
+            return;
+          }
         } catch (topicProgressError) {
           console.warn('⚠️ Topics-progress endpoint failed:', topicProgressError.response?.status);
         }
@@ -516,7 +554,12 @@ export default {
           );
           
           const progressData = response.data?.data || response.data || [];
-          await this.calculateTopicProgressFromLessons(progressData);
+          if (Array.isArray(progressData)) {
+            await this.calculateTopicProgressFromLessons(progressData);
+          } else {
+            console.warn('⚠️ Progress data is not an array:', typeof progressData);
+            this.userProgress = {};
+          }
         } catch (userProgressError) {
           console.warn('⚠️ User progress endpoint failed:', userProgressError.response?.status);
           this.userProgress = {};
@@ -529,6 +572,7 @@ export default {
 
     async calculateTopicProgressFromLessons(progressData) {
       if (!Array.isArray(progressData)) {
+        console.warn('⚠️ Progress data is not an array for calculation');
         this.userProgress = {};
         return;
       }
@@ -537,28 +581,33 @@ export default {
       const topicLessons = {};
       
       // Group lessons by topicId and count totals
-      this.lessons.forEach(lesson => {
-        if (lesson && lesson.topicId) {
+      if (Array.isArray(this.lessons)) {
+        this.lessons.forEach(lesson => {
+          if (!lesson || !lesson.topicId) return;
+          
           const topicId = String(lesson.topicId);
           if (!topicLessons[topicId]) {
             topicLessons[topicId] = { total: 0, completed: 0 };
           }
           topicLessons[topicId].total++;
-        }
-      });
+        });
+      }
 
       // Count completed lessons per topic
       progressData.forEach(progress => {
-        if (progress && progress.completed && progress.lessonId) {
-          const lesson = this.lessons.find(l => 
-            l && (String(l._id) === String(progress.lessonId._id || progress.lessonId))
-          );
-          
-          if (lesson && lesson.topicId) {
-            const topicId = String(lesson.topicId);
-            if (topicLessons[topicId]) {
-              topicLessons[topicId].completed++;
-            }
+        if (!progress || !progress.completed || !progress.lessonId) return;
+        
+        const lessonId = progress.lessonId._id || progress.lessonId;
+        if (!lessonId) return;
+        
+        const lesson = this.lessons.find(l => 
+          l && (String(l._id) === String(lessonId))
+        );
+        
+        if (lesson && lesson.topicId) {
+          const topicId = String(lesson.topicId);
+          if (topicLessons[topicId]) {
+            topicLessons[topicId].completed++;
           }
         }
       });
@@ -574,24 +623,46 @@ export default {
       });
 
       this.userProgress = topicProgressMap;
+      console.log('✅ Calculated topic progress for', Object.keys(topicProgressMap).length, 'topics');
     },
 
     async loadStudyPlan() {
-      if (!this.userId) return;
+      if (!this.userId) {
+        console.warn('⚠️ No userId available for loading study plan');
+        return;
+      }
+      
       try {
         const currentUser = auth.currentUser;
-        if (!currentUser) return;
+        if (!currentUser) {
+          console.warn('⚠️ No current user authenticated for study plan');
+          return;
+        }
 
         const token = await currentUser.getIdToken();
-        if (!token) return;
+        if (!token) {
+          console.warn('⚠️ No auth token available for study plan');
+          return;
+        }
 
-        const { data } = await axios.get(
+        const response = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        this.studyPlanTopics = (data || []).map(item => {
-          return item?.topicId ? String(item.topicId) : '';
-        }).filter(id => id);
+        
+        const data = response.data;
+        if (Array.isArray(data)) {
+          this.studyPlanTopics = data.map(item => {
+            if (!item) return '';
+            const topicId = item.topicId || item._id || item.id;
+            return topicId ? String(topicId) : '';
+          }).filter(id => id);
+          
+          console.log('✅ Loaded study plan with', this.studyPlanTopics.length, 'topics');
+        } else {
+          console.warn('⚠️ Study plan data is not an array:', typeof data);
+          this.studyPlanTopics = [];
+        }
       } catch (error) {
         console.error('❌ Error loading study plan:', error);
         this.studyPlanTopics = [];
@@ -600,13 +671,21 @@ export default {
 
     // ===== DATA PROCESSING =====
     processSubjects() {
-      console.log('🔄 Processing subjects from lessons:', this.lessons.length);
+      console.log('🔄 Processing subjects from', this.lessons.length, 'lessons');
+      
+      if (!Array.isArray(this.lessons)) {
+        console.warn('⚠️ Lessons is not an array');
+        this.subjects = [];
+        this.loading = false;
+        return;
+      }
+      
       const subjectsMap = new Map();
       
       this.lessons.forEach(lesson => {
-        if (!lesson?.subject) return;
+        if (!lesson || !lesson.subject) return;
         
-        const subjectName = lesson.subject;
+        const subjectName = String(lesson.subject);
         if (!subjectsMap.has(subjectName)) {
           subjectsMap.set(subjectName, {
             name: subjectName,
@@ -621,12 +700,18 @@ export default {
         }
         
         const subject = subjectsMap.get(subjectName);
-        if (lesson.level) subject.levels.add(lesson.level);
+        
+        // Add level
+        if (lesson.level !== null && lesson.level !== undefined) {
+          subject.levels.add(String(lesson.level));
+        }
         
         // Add topic to count
         if (lesson.topicId || lesson.topic) {
           const topicKey = lesson.topicId || this.getTopicName(lesson);
-          subject.topics.add(topicKey);
+          if (topicKey) {
+            subject.topics.add(String(topicKey));
+          }
         }
         
         subject.lessonCount++;
@@ -638,7 +723,6 @@ export default {
       this.subjects = Array.from(subjectsMap.values()).map(subject => ({
         ...subject,
         levels: Array.from(subject.levels).sort((a, b) => {
-          // Sort levels numerically if they are numbers
           const aNum = parseInt(a);
           const bNum = parseInt(b);
           if (!isNaN(aNum) && !isNaN(bNum)) {
@@ -649,24 +733,30 @@ export default {
         topicCount: subject.topics.size
       }));
       
-      console.log('✅ Processed subjects:', this.subjects);
+      console.log('✅ Processed', this.subjects.length, 'subjects');
       this.loading = false;
     },
 
     processLevels() {
       console.log('🔄 Processing levels for subject:', this.selectedSubject);
+      
+      if (!Array.isArray(this.lessons) || !this.selectedSubject) {
+        this.levels = [];
+        return;
+      }
+      
       const levelsMap = new Map();
       
       const subjectLessons = this.lessons.filter(lesson => 
-        lesson.subject === this.selectedSubject
+        lesson && lesson.subject === this.selectedSubject
       );
       
-      console.log('📚 Found lessons for subject:', subjectLessons.length);
+      console.log('📚 Found', subjectLessons.length, 'lessons for subject');
       
       subjectLessons.forEach(lesson => {
-        if (!lesson?.level) return;
+        if (!lesson || (lesson.level === null || lesson.level === undefined)) return;
         
-        const levelName = lesson.level;
+        const levelName = String(lesson.level);
         if (!levelsMap.has(levelName)) {
           levelsMap.set(levelName, {
             name: levelName,
@@ -681,10 +771,15 @@ export default {
         }
         
         const level = levelsMap.get(levelName);
+        
+        // Add topic
         if (lesson.topicId || lesson.topic) {
           const topicKey = lesson.topicId || this.getTopicName(lesson);
-          level.topics.add(topicKey);
+          if (topicKey) {
+            level.topics.add(String(topicKey));
+          }
         }
+        
         level.lessonCount++;
         level.totalTime += 10; // Estimate
         
@@ -697,7 +792,6 @@ export default {
         topicCount: level.topics.size,
         progress: this.calculateLevelProgress(level.name)
       })).sort((a, b) => {
-        // Sort levels numerically
         const aNum = parseInt(a.name);
         const bNum = parseInt(b.name);
         if (!isNaN(aNum) && !isNaN(bNum)) {
@@ -706,19 +800,26 @@ export default {
         return String(a.name).localeCompare(String(b.name));
       });
       
-      console.log('✅ Processed levels:', this.levels);
+      console.log('✅ Processed', this.levels.length, 'levels');
     },
 
     processTopics() {
       console.log('🔄 Processing topics for:', this.selectedSubject, this.selectedLevel);
+      
+      if (!Array.isArray(this.lessons) || !this.selectedSubject || !this.selectedLevel) {
+        this.topics = [];
+        return;
+      }
+      
       const topicsMap = new Map();
       
       const levelLessons = this.lessons.filter(lesson => 
+        lesson && 
         lesson.subject === this.selectedSubject && 
-        lesson.level === this.selectedLevel
+        String(lesson.level) === String(this.selectedLevel)
       );
       
-      console.log('📚 Found lessons for level:', levelLessons.length);
+      console.log('📚 Found', levelLessons.length, 'lessons for level');
       
       levelLessons.forEach(lesson => {
         if (!lesson) return;
@@ -737,8 +838,8 @@ export default {
           topicsMap.set(topicId, {
             topicId,
             name,
-            subject: lesson.subject || '',
-            level: lesson.level || '',
+            subject: String(lesson.subject || ''),
+            level: String(lesson.level || ''),
             type: lesson.type || 'free',
             lessonCount: 1,
             totalTime: 10,
@@ -754,17 +855,20 @@ export default {
 
       this.topics = Array.from(topicsMap.values()).map(topic => ({
         ...topic,
-        progress: this.userProgress[topic.topicId] || 0,
-        inStudyPlan: this.studyPlanTopics.includes(topic.topicId)
+        progress: Number(this.userProgress[topic.topicId]) || 0,
+        inStudyPlan: Array.isArray(this.studyPlanTopics) && this.studyPlanTopics.includes(topic.topicId)
       }));
       
-      console.log('✅ Processed topics:', this.topics);
+      console.log('✅ Processed', this.topics.length, 'topics');
     },
 
     calculateLevelProgress(levelName) {
-      // Calculate average progress for all topics in this level
+      if (!this.selectedSubject || !levelName || !Array.isArray(this.lessons)) {
+        return 0;
+      }
+      
       const levelTopics = this.lessons.filter(l => 
-        l.subject === this.selectedSubject && l.level === levelName
+        l && l.subject === this.selectedSubject && String(l.level) === String(levelName)
       );
       
       if (levelTopics.length === 0) return 0;
@@ -774,9 +878,10 @@ export default {
       const seenTopics = new Set();
       
       levelTopics.forEach(lesson => {
-        if (lesson.topicId && !seenTopics.has(lesson.topicId)) {
+        if (lesson && lesson.topicId && !seenTopics.has(lesson.topicId)) {
           seenTopics.add(lesson.topicId);
-          totalProgress += this.userProgress[lesson.topicId] || 0;
+          const progress = Number(this.userProgress[lesson.topicId]) || 0;
+          totalProgress += progress;
           topicCount++;
         }
       });
@@ -787,7 +892,7 @@ export default {
     // ===== NAVIGATION METHODS =====
     selectSubject(subjectName) {
       console.log('🎯 Selecting subject:', subjectName);
-      this.selectedSubject = subjectName;
+      this.selectedSubject = String(subjectName);
       this.currentView = 'levels';
       this.processLevels();
       
@@ -799,7 +904,7 @@ export default {
 
     selectLevel(levelName) {
       console.log('🎯 Selecting level:', levelName);
-      this.selectedLevel = levelName;
+      this.selectedLevel = String(levelName);
       this.currentView = 'topics';
       this.processTopics();
       
@@ -839,6 +944,7 @@ export default {
 
     // ===== UTILITY METHODS =====
     getSubjectIcon(subject) {
+      const subjectStr = String(subject || '');
       const icons = {
         'Mathematics': '🔢',
         'Math': '🔢',
@@ -870,27 +976,30 @@ export default {
         'Philosophy': '🤔',
         'Философия': '🤔'
       };
-      return icons[subject] || '📖';
+      return icons[subjectStr] || '📖';
     },
 
     getTopicName(lesson) {
       if (!lesson) return 'Без темы';
       
       try {
-        if (typeof lesson.topic === 'string') {
-          return lesson.topic;
+        if (typeof lesson.topic === 'string' && lesson.topic.trim()) {
+          return lesson.topic.trim();
         }
         
-        if (lesson.translations && lesson.translations[this.lang] && lesson.translations[this.lang].topic) {
-          return String(lesson.translations[this.lang].topic);
+        if (lesson.translations && 
+            lesson.translations[this.lang] && 
+            lesson.translations[this.lang].topic &&
+            typeof lesson.translations[this.lang].topic === 'string') {
+          return String(lesson.translations[this.lang].topic).trim();
         }
         
         if (lesson.topic && typeof lesson.topic === 'object') {
-          if (lesson.topic[this.lang]) {
-            return String(lesson.topic[this.lang]);
+          if (lesson.topic[this.lang] && typeof lesson.topic[this.lang] === 'string') {
+            return String(lesson.topic[this.lang]).trim();
           }
-          if (lesson.topic.en) {
-            return String(lesson.topic.en);
+          if (lesson.topic.en && typeof lesson.topic.en === 'string') {
+            return String(lesson.topic.en).trim();
           }
         }
         
@@ -1062,12 +1171,12 @@ export default {
         }
         
         const body = {
-          subject: this.selectedTopic.subject || '',
-          level: this.selectedTopic.level || '',
-          topic: this.selectedTopic.name || '',
+          subject: String(this.selectedTopic.subject || ''),
+          level: String(this.selectedTopic.level || ''),
+          topic: String(this.selectedTopic.name || ''),
           topicId: topicId,
-          lessonCount: this.selectedTopic.lessonCount || 0,
-          totalTime: this.selectedTopic.totalTime || 0,
+          lessonCount: Number(this.selectedTopic.lessonCount) || 0,
+          totalTime: Number(this.selectedTopic.totalTime) || 0,
           type: this.selectedTopic.type || 'free'
         };
         
@@ -1080,14 +1189,16 @@ export default {
         
         // Update local state
         this.selectedTopic.inStudyPlan = true;
-        if (!this.studyPlanTopics.includes(this.selectedTopic.topicId)) {
-          this.studyPlanTopics.push(this.selectedTopic.topicId);
+        if (Array.isArray(this.studyPlanTopics) && !this.studyPlanTopics.includes(topicId)) {
+          this.studyPlanTopics.push(topicId);
         }
         
         // Update the topic in the topics array
-        const topicIndex = this.topics.findIndex(t => t.topicId === this.selectedTopic.topicId);
-        if (topicIndex !== -1) {
-          this.topics[topicIndex].inStudyPlan = true;
+        if (Array.isArray(this.topics)) {
+          const topicIndex = this.topics.findIndex(t => t && t.topicId === topicId);
+          if (topicIndex !== -1) {
+            this.topics[topicIndex].inStudyPlan = true;
+          }
         }
         
         this.showAddModal = false;
