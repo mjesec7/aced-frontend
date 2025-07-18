@@ -397,31 +397,31 @@ export default {
 </script>
 
 <style scoped>
-/* StudyCard.vue - Professional Styles (No Green Heart) */
+/* StudyCard.vue - Professional Compact Styles */
 
 .study-card {
   position: relative;
   background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
-  border: 1px solid #e5e7eb;
-  min-height: 220px;
-  padding: 16px;
-  gap: 12px;
+  border: 1px solid #e2e8f0;
+  min-height: 180px;
+  padding: 14px;
+  gap: 8px;
   overflow: hidden;
 }
 
 .study-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border-color: #8b5cf6;
 }
 
 .topic-free {
-  border-left: 3px solid #6b7280;
+  border-left: 3px solid #64748b;
 }
 
 .topic-premium {
@@ -429,19 +429,19 @@ export default {
 }
 
 .topic-pro {
-  border-left: 3px solid #1a1a1a;
+  border-left: 3px solid #1e293b;
 }
 
 .topic-type-badge {
   position: absolute;
-  top: 12px;
-  right: 40px;
+  top: 10px;
+  right: 32px;
   display: flex;
   align-items: center;
-  gap: 3px;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.7rem;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.6rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -449,61 +449,59 @@ export default {
 }
 
 .topic-type-badge.free {
-  background: #f8fafc;
-  color: #475569;
-  border: 1px solid #cbd5e1;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
 }
 
 .topic-type-badge.premium {
-  background: #f3f0ff;
+  background: #faf5ff;
   color: #8b5cf6;
-  border: 1px solid #8b5cf6;
+  border: 1px solid #c4b5fd;
 }
 
 .topic-type-badge.pro {
-  background: #1a1a1a;
+  background: #1e293b;
   color: #ffffff;
-  border: 1px solid #1a1a1a;
+  border: 1px solid #1e293b;
 }
 
 .badge-icon {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
 }
 
 .badge-text {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
 }
 
 .close-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  top: 6px;
+  right: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e2e8f0;
   border-radius: 50%;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
   cursor: pointer;
   transition: all 0.2s ease;
   z-index: 10;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .close-btn:hover {
   background: #ef4444;
   color: #ffffff;
   border-color: #ef4444;
-  transform: scale(1.1);
 }
 
 .card-header {
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .topic-info {
@@ -511,11 +509,11 @@ export default {
 }
 
 .topic-name {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: #1e293b;
   line-height: 1.3;
-  margin: 0 0 6px 0;
+  margin: 0 0 4px 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -524,23 +522,24 @@ export default {
 
 .topic-meta {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 
 .subject-tag,
 .level-tag {
-  padding: 3px 6px;
-  border-radius: 8px;
-  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.6rem;
   font-weight: 500;
   text-transform: capitalize;
 }
 
 .subject-tag {
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
 }
 
 .level-tag {
@@ -551,7 +550,7 @@ export default {
 .progress-section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .progress-header {
@@ -561,41 +560,41 @@ export default {
 }
 
 .progress-text {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #1a1a1a;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #1e293b;
 }
 
 .medal-badge {
-  font-size: 1rem;
+  font-size: 0.85rem;
 }
 
 .progress-bar {
-  background: #f3f4f6;
-  height: 6px;
-  border-radius: 3px;
+  background: #f1f5f9;
+  height: 4px;
+  border-radius: 2px;
   overflow: hidden;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e2e8f0;
 }
 
 .progress-fill {
   height: 100%;
-  border-radius: 3px;
-  transition: width 0.5s ease;
+  border-radius: 2px;
+  transition: width 0.3s ease;
 }
 
-.progress-none { background: #e5e7eb; }
-.progress-low { background: #dc2626; }
-.progress-medium { background: #d97706; }
-.progress-high { background: #1e40af; }
-.progress-completed { background: #059669; }
+.progress-none { background: #e2e8f0; }
+.progress-low { background: #ef4444; }
+.progress-medium { background: #f59e0b; }
+.progress-high { background: #3b82f6; }
+.progress-completed { background: #10b981; }
 
 .progress-details {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.75rem;
-  color: #6b7280;
+  font-size: 0.7rem;
+  color: #64748b;
 }
 
 .lessons-count {
@@ -610,63 +609,63 @@ export default {
 .card-stats {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid #f3f4f6;
+  gap: 6px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   flex: 1;
   justify-content: center;
 }
 
 .stat-icon {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
 
 .stat-text {
-  font-size: 0.7rem;
-  color: #6b7280;
+  font-size: 0.65rem;
+  color: #64748b;
   font-weight: 500;
 }
 
 .recent-activity {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.7rem;
+  gap: 3px;
+  font-size: 0.65rem;
   color: #9ca3af;
   font-style: italic;
   justify-content: center;
 }
 
 .activity-icon {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
 }
 
 .card-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   margin-top: auto;
 }
 
 .continue-btn,
 .overview-btn {
-  padding: 10px 12px;
-  font-size: 0.8rem;
+  padding: 8px 10px;
+  font-size: 0.75rem;
   border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   text-decoration: none;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
 }
 
 .continue-btn {
@@ -675,46 +674,43 @@ export default {
 
 .overview-btn {
   flex: 1;
-  background: #ffffff;
-  color: #1a1a1a;
-  border-color: #e5e7eb;
+  background: #f8fafc;
+  color: #64748b;
+  border-color: #e2e8f0;
 }
 
 .overview-btn:hover {
-  background: #f9fafb;
+  background: #f1f5f9;
   border-color: #8b5cf6;
   color: #8b5cf6;
-  transform: translateY(-1px);
 }
 
 .btn-start {
-  background: #1a1a1a;
+  background: #1e293b;
   color: #ffffff;
-  border-color: #1a1a1a;
+  border-color: #1e293b;
 }
 
 .btn-start:hover {
-  background: #8b5cf6;
-  border-color: #8b5cf6;
-  transform: translateY(-1px);
+  background: #334155;
+  border-color: #334155;
 }
 
 .btn-continue {
-  background: #1e40af;
+  background: #3b82f6;
   color: #ffffff;
-  border-color: #1e40af;
+  border-color: #3b82f6;
 }
 
 .btn-continue:hover {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
-  transform: translateY(-1px);
+  background: #2563eb;
+  border-color: #2563eb;
 }
 
 .btn-completed {
-  background: #059669;
+  background: #10b981;
   color: #ffffff;
-  border-color: #059669;
+  border-color: #10b981;
   cursor: default;
 }
 
@@ -723,19 +719,19 @@ export default {
 }
 
 .btn-disabled {
-  background: #f3f4f6 !important;
-  color: #9ca3af !important;
-  border-color: #e5e7eb !important;
+  background: #f8fafc !important;
+  color: #cbd5e1 !important;
+  border-color: #e2e8f0 !important;
   cursor: not-allowed !important;
 }
 
 .btn-disabled:hover {
   transform: none !important;
-  background: #f3f4f6 !important;
+  background: #f8fafc !important;
 }
 
 .btn-icon {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
 
 .modal-overlay {
@@ -744,13 +740,13 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 10000;
-  backdrop-filter: blur(8px);
-  animation: fadeIn 0.3s ease-out;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease-out;
 }
 
 @keyframes fadeIn {
@@ -760,22 +756,22 @@ export default {
 
 .modal-content {
   background: #ffffff;
-  border: 1px solid #e5e7eb;
-  padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   text-align: center;
-  max-width: 380px;
+  max-width: 320px;
   width: 90%;
-  max-height: 85vh;
+  max-height: 80vh;
   overflow-y: auto;
-  animation: modalSlideIn 0.3s ease-out;
+  animation: modalSlideIn 0.2s ease-out;
 }
 
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: scale(0.9) translateY(-20px);
+    transform: scale(0.95) translateY(-10px);
   }
   to {
     opacity: 1;
@@ -784,32 +780,32 @@ export default {
 }
 
 .modal-icon {
-  font-size: 2.5rem;
-  margin-bottom: 16px;
+  font-size: 2rem;
+  margin-bottom: 12px;
 }
 
 .modal-content h4 {
-  color: #1a1a1a;
-  font-size: 1.2rem;
-  font-weight: 700;
-  margin: 0 0 12px 0;
+  color: #1e293b;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 8px 0;
   line-height: 1.3;
 }
 
 .modal-content p {
-  color: #6b7280;
-  font-size: 0.9rem;
+  color: #64748b;
+  font-size: 0.85rem;
   font-weight: 400;
-  margin: 0 0 8px 0;
-  line-height: 1.5;
+  margin: 0 0 6px 0;
+  line-height: 1.4;
 }
 
 .warning-text {
-  color: #059669 !important;
+  color: #10b981 !important;
   font-weight: 500 !important;
-  margin-bottom: 20px !important;
+  margin-bottom: 16px !important;
   background: #f0fdf4;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-radius: 6px;
   border: 1px solid #bbf7d0;
 }
@@ -817,106 +813,105 @@ export default {
 .modal-actions {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .confirm-btn {
   background: #ef4444;
   color: #ffffff;
-  padding: 10px 20px;
+  padding: 8px 16px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 500;
+  font-size: 0.85rem;
   transition: all 0.2s ease;
-  min-width: 100px;
+  min-width: 80px;
 }
 
 .confirm-btn:hover {
   background: #dc2626;
-  transform: translateY(-1px);
 }
 
 .cancel-btn {
-  background: #ffffff;
-  color: #6b7280;
-  border: 1px solid #e5e7eb;
-  padding: 10px 20px;
-  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  padding: 8px 16px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   transition: all 0.2s ease;
-  min-width: 100px;
+  min-width: 80px;
 }
 
 .cancel-btn:hover {
-  background: #f9fafb;
+  background: #f1f5f9;
   border-color: #8b5cf6;
   color: #8b5cf6;
-  transform: translateY(-1px);
 }
 
 @media (max-width: 768px) {
   .study-card {
-    padding: 14px;
-    min-height: 200px;
-    gap: 10px;
+    padding: 12px;
+    min-height: 160px;
+    gap: 6px;
   }
   
   .topic-name {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
   }
   
   .card-header {
-    margin-top: 14px;
+    margin-top: 10px;
   }
   
   .card-stats {
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
     align-items: stretch;
   }
   
   .stat-item {
     justify-content: flex-start;
-    gap: 6px;
+    gap: 4px;
   }
   
   .card-actions {
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
   }
   
   .continue-btn,
   .overview-btn {
     flex: 1;
+    padding: 10px 12px;
   }
   
   .close-btn {
-    top: 6px;
-    right: 6px;
-    width: 26px;
-    height: 26px;
-    font-size: 11px;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    font-size: 10px;
   }
   
   .topic-type-badge {
-    top: 6px;
-    right: 36px;
-    padding: 3px 6px;
+    top: 4px;
+    right: 30px;
+    padding: 2px 4px;
   }
   
   .modal-content {
-    padding: 20px;
-    margin: 16px;
+    padding: 16px;
+    margin: 12px;
   }
   
   .modal-actions {
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
   
   .confirm-btn,
