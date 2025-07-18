@@ -47,102 +47,108 @@
     </div>
 
     <div class="main-content">
-      <!-- Filter Sidebar -->
+      <!-- Horizontal Filter Sidebar -->
       <div class="filter-sidebar">
         <div class="sidebar-header">
           <h3>🔍 Фильтры</h3>
           <button @click="clearFilters" class="clear-filters">Очистить</button>
         </div>
 
-        <!-- Search -->
-        <div class="filter-group">
-          <label class="filter-label">Поиск</label>
-          <input
-            v-model="searchQuery"
-            type="text"
-            class="search-input"
-            placeholder="Найти..."
-          />
-        </div>
+        <!-- First Row: Search, Subject, Level -->
+        <div class="filter-row">
+          <!-- Search -->
+          <div class="filter-group">
+            <label class="filter-label">Поиск</label>
+            <input
+              v-model="searchQuery"
+              type="text"
+              class="search-input"
+              placeholder="Найти..."
+            />
+          </div>
 
-        <!-- Subject Filter (only when not in subjects view) -->
-        <div v-if="currentView !== 'subjects'" class="filter-group">
-          <label class="filter-label">Предмет</label>
-          <select v-model="filterSubject" class="filter-select">
-            <option value="">Все предметы</option>
-            <option v-for="subject in availableSubjects" :key="subject" :value="subject">
-              {{ subject }}
-            </option>
-          </select>
-        </div>
+          <!-- Subject Filter (only when not in subjects view) -->
+          <div v-if="currentView !== 'subjects'" class="filter-group">
+            <label class="filter-label">Предмет</label>
+            <select v-model="filterSubject" class="filter-select">
+              <option value="">Все предметы</option>
+              <option v-for="subject in availableSubjects" :key="subject" :value="subject">
+                {{ subject }}
+              </option>
+            </select>
+          </div>
 
-        <!-- Level Filter (only when in topics view) -->
-        <div v-if="currentView === 'topics'" class="filter-group">
-          <label class="filter-label">Уровень</label>
-          <select v-model="filterLevel" class="filter-select">
-            <option value="">Все уровни</option>
-            <option v-for="level in availableLevels" :key="level" :value="level">
-              {{ level }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Access Type Filter -->
-        <div class="filter-group">
-          <label class="filter-label">Доступ</label>
-          <div class="checkbox-group">
-            <label class="checkbox-item">
-              <input 
-                type="checkbox" 
-                v-model="showFree"
-                class="checkbox"
-              />
-              <span class="checkmark"></span>
-              🆓 Бесплатные
-            </label>
-            <label class="checkbox-item">
-              <input 
-                type="checkbox" 
-                v-model="showPremium"
-                class="checkbox"
-              />
-              <span class="checkmark"></span>
-              ⭐ Премиум
-            </label>
+          <!-- Level Filter (only when in topics view) -->
+          <div v-if="currentView === 'topics'" class="filter-group">
+            <label class="filter-label">Уровень</label>
+            <select v-model="filterLevel" class="filter-select">
+              <option value="">Все уровни</option>
+              <option v-for="level in availableLevels" :key="level" :value="level">
+                {{ level }}
+              </option>
+            </select>
           </div>
         </div>
 
-        <!-- Progress Filter (only for topics) -->
-        <div v-if="currentView === 'topics'" class="filter-group">
-          <label class="filter-label">Прогресс</label>
-          <div class="checkbox-group">
-            <label class="checkbox-item">
-              <input 
-                type="checkbox" 
-                v-model="showNotStarted"
-                class="checkbox"
-              />
-              <span class="checkmark"></span>
-              ⭕ Не начато
-            </label>
-            <label class="checkbox-item">
-              <input 
-                type="checkbox" 
-                v-model="showInProgress"
-                class="checkbox"
-              />
-              <span class="checkmark"></span>
-              🔄 В процессе
-            </label>
-            <label class="checkbox-item">
-              <input 
-                type="checkbox" 
-                v-model="showCompleted"
-                class="checkbox"
-              />
-              <span class="checkmark"></span>
-              ✅ Завершено
-            </label>
+        <!-- Second Row: Checkbox Filters -->
+        <div class="checkbox-row">
+          <!-- Access Type Filter -->
+          <div class="filter-group">
+            <label class="filter-label">Доступ</label>
+            <div class="checkbox-group">
+              <label class="checkbox-item">
+                <input 
+                  type="checkbox" 
+                  v-model="showFree"
+                  class="checkbox"
+                />
+                <span class="checkmark"></span>
+                🆓 Бесплатные
+              </label>
+              <label class="checkbox-item">
+                <input 
+                  type="checkbox" 
+                  v-model="showPremium"
+                  class="checkbox"
+                />
+                <span class="checkmark"></span>
+                ⭐ Премиум
+              </label>
+            </div>
+          </div>
+
+          <!-- Progress Filter (only for topics) -->
+          <div v-if="currentView === 'topics'" class="filter-group">
+            <label class="filter-label">Прогресс</label>
+            <div class="checkbox-group">
+              <label class="checkbox-item">
+                <input 
+                  type="checkbox" 
+                  v-model="showNotStarted"
+                  class="checkbox"
+                />
+                <span class="checkmark"></span>
+                ⭕ Не начато
+              </label>
+              <label class="checkbox-item">
+                <input 
+                  type="checkbox" 
+                  v-model="showInProgress"
+                  class="checkbox"
+                />
+                <span class="checkmark"></span>
+                🔄 В процессе
+              </label>
+              <label class="checkbox-item">
+                <input 
+                  type="checkbox" 
+                  v-model="showCompleted"
+                  class="checkbox"
+                />
+                <span class="checkmark"></span>
+                ✅ Завершено
+              </label>
+            </div>
           </div>
         </div>
 
@@ -174,6 +180,9 @@
             :key="subject.name"
             @click="selectSubject(subject.name)"
             class="subject-card"
+            tabindex="0"
+            @keydown.enter="selectSubject(subject.name)"
+            @keydown.space.prevent="selectSubject(subject.name)"
           >
             <div class="card-icon">{{ subject.icon }}</div>
             <h3 class="card-title">{{ subject.name }}</h3>
@@ -206,6 +215,9 @@
             :key="level.name"
             @click="selectLevel(level.name)"
             class="level-card"
+            tabindex="0"
+            @keydown.enter="selectLevel(level.name)"
+            @keydown.space.prevent="selectLevel(level.name)"
           >
             <div class="level-header">
               <div class="level-icon" :class="getLevelClass(level.name)">
@@ -1165,13 +1177,13 @@ export default {
 </script>
 
 <style scoped>
-/* Professional Clean Catalogue Page CSS - Complete with Horizontal Filters */
+/* Professional Clean Catalogue Page CSS - Horizontal Filters & Purple Glow */
 .catalogue-page {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   background: #fafbfc;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+  font-family: 'Unbounded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
 }
 
 /* ===== HEADER STYLES ===== */
@@ -1186,9 +1198,9 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 2rem;
   margin-bottom: 1rem;
 }
 
@@ -1270,18 +1282,18 @@ export default {
   font-weight: 700;
   color: #212529;
   margin: 0;
-  max-width: 1200px;
+  max-width: 1400px;
   margin-left: auto;
   margin-right: auto;
   text-align: left;
-  padding: 0 1.5rem;
+  padding: 0 2rem;
 }
 
 /* ===== MAIN CONTAINER ===== */
 .main-content {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 1.5rem 2rem;
   flex: 1;
 }
 
@@ -1290,10 +1302,10 @@ export default {
   width: 100%;
   background: #ffffff;
   border: 1px solid #e9ecef;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .sidebar-header {
@@ -1330,61 +1342,27 @@ export default {
   color: #495057;
 }
 
-/* HORIZONTAL FILTER ROW - Put first 3 filter groups in one row */
-.filter-sidebar .filter-group:nth-child(2),
-.filter-sidebar .filter-group:nth-child(3), 
-.filter-sidebar .filter-group:nth-child(4) {
-  display: inline-block;
-  vertical-align: top;
-  margin-right: 1.5rem;
-  margin-bottom: 0;
-  min-width: 200px;
-}
-
-/* Search input gets more width */
-.filter-sidebar .filter-group:nth-child(2) {
-  width: 35%;
-  min-width: 280px;
-}
-
-/* Subject and Level selects get standard width */
-.filter-sidebar .filter-group:nth-child(3),
-.filter-sidebar .filter-group:nth-child(4) {
-  width: 20%;
-  min-width: 160px;
-}
-
-/* Create a container for the first row of filters */
-.filter-sidebar .filter-group:nth-child(2) {
+/* HORIZONTAL FILTER LAYOUT */
+.filter-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 1.5rem;
+  align-items: end;
   margin-bottom: 1.5rem;
 }
 
-.filter-sidebar .filter-group:nth-child(4)::after {
-  content: '';
-  display: block;
-  clear: both;
-  margin-bottom: 1.5rem;
-}
-
-/* Checkbox groups in their own row */
-.filter-sidebar .filter-group:nth-child(5),
-.filter-sidebar .filter-group:nth-child(6) {
-  display: inline-block;
-  vertical-align: top;
-  width: 45%;
-  margin-right: 5%;
-  margin-bottom: 1.5rem;
-}
-
-.filter-sidebar .filter-group:nth-child(6) {
-  margin-right: 0;
-}
-
-/* Reset any existing filter-group styles that might interfere */
 .filter-group {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
   padding: 0;
   border: none;
+}
+
+/* Checkbox groups in second row */
+.checkbox-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 1rem;
 }
 
 /* Label and input styling */
@@ -1400,7 +1378,7 @@ export default {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #e1e5e9;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #ffffff;
   font-size: 0.875rem;
   transition: all 0.2s ease;
@@ -1410,8 +1388,8 @@ export default {
 
 .search-input:focus, .filter-select:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .search-input::placeholder {
@@ -1460,8 +1438,8 @@ export default {
 }
 
 .checkbox:checked + .checkmark {
-  background: #007bff;
-  border-color: #007bff;
+  background: #8b5cf6;
+  border-color: #8b5cf6;
 }
 
 .checkbox:checked + .checkmark::after {
@@ -1539,7 +1517,7 @@ export default {
   width: 32px;
   height: 32px;
   border: 2px solid #f1f3f4;
-  border-top: 2px solid #007bff;
+  border-top: 2px solid #8b5cf6;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -1552,44 +1530,84 @@ export default {
 /* ===== GRID LAYOUTS ===== */
 .subjects-grid, .levels-grid, .topics-grid {
   display: grid;
-  gap: 1.25rem;
+  gap: 1.5rem;
+  width: 100%;
 }
 
 .subjects-grid {
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  justify-items: start;
+  grid-template-columns: repeat(4, 1fr);
+  justify-items: stretch;
 }
 
 .levels-grid {
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  justify-items: start;
+  justify-items: stretch;
 }
 
 .topics-grid {
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  justify-items: start;
+  justify-items: stretch;
 }
 
-/* ===== ENHANCED CARD STYLES ===== */
-.subject-card, .level-card, .topic-card {
+/* ===== ENHANCED SUBJECT CARD STYLES WITH PURPLE GLOW ===== */
+.subject-card {
   background: #ffffff;
-  border-radius: 8px;
+  border-radius: 16px;
+  border: 1px solid #e9ecef;
+  padding: 2rem 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.subject-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(135deg, transparent, transparent);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.subject-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 
+    0 20px 40px rgba(139, 92, 246, 0.15),
+    0 0 0 1px rgba(139, 92, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.subject-card:hover::before {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(168, 85, 247, 0.4));
+  opacity: 1;
+}
+
+.level-card, .topic-card {
+  background: #ffffff;
+  border-radius: 12px;
   border: 1px solid #e9ecef;
   padding: 1.5rem;
   transition: all 0.2s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 100%;
 }
 
-.subject-card, .level-card {
+.level-card {
   cursor: pointer;
 }
 
-.subject-card:hover, .level-card:hover {
+.level-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  border-color: #007bff;
+  border-color: #8b5cf6;
 }
 
 .topic-card:hover {
@@ -1605,6 +1623,14 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.subject-card:hover .card-icon {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.1));
+  transform: scale(1.1);
 }
 
 .card-title {
@@ -1614,6 +1640,11 @@ export default {
   margin: 0 0 0.75rem 0;
   text-align: center;
   line-height: 1.3;
+  transition: all 0.3s ease;
+}
+
+.subject-card:hover .card-title {
+  color: #8b5cf6;
 }
 
 .card-stats {
@@ -1628,10 +1659,17 @@ export default {
   background: #f8f9fa;
   color: #495057;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 500;
   border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.subject-card:hover .stat-badge {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
 }
 
 .card-levels {
@@ -1648,6 +1686,11 @@ export default {
   font-size: 0.75rem;
   font-weight: 500;
   border: 1px solid;
+  transition: all 0.3s ease;
+}
+
+.subject-card:hover .level-tag {
+  transform: translateY(-1px);
 }
 
 .card-footer {
@@ -1664,6 +1707,7 @@ export default {
   font-weight: 500;
   border: 1px solid;
   display: inline-block;
+  transition: all 0.3s ease;
 }
 
 .access-type.has-free {
@@ -1672,10 +1716,21 @@ export default {
   border-color: #c3e6cb;
 }
 
+.subject-card:hover .access-type.has-free {
+  background: #c8e6c9;
+  transform: translateY(-1px);
+}
+
 .access-type.premium-only {
   background: #495057;
   color: white;
   border-color: #495057;
+}
+
+.subject-card:hover .access-type.premium-only {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  transform: translateY(-1px);
 }
 
 /* ===== LEVEL CARD SPECIFIC ===== */
@@ -1761,8 +1816,8 @@ export default {
 
 .add-btn {
   background: #ffffff;
-  color: #007bff;
-  border: 1px solid #007bff;
+  color: #8b5cf6;
+  border: 1px solid #8b5cf6;
   width: 32px;
   height: 32px;
   border-radius: 6px;
@@ -1784,7 +1839,7 @@ export default {
 }
 
 .add-btn:hover:not(:disabled) {
-  background: #007bff;
+  background: #8b5cf6;
   color: white;
 }
 
@@ -1897,7 +1952,7 @@ export default {
 }
 
 .btn-start {
-  background: #007bff;
+  background: #8b5cf6;
   color: white;
 }
 
@@ -1962,7 +2017,7 @@ export default {
 .progress-none { background: #e9ecef; }
 .progress-low { background: #dc3545; }
 .progress-medium { background: #fd7e14; }
-.progress-high { background: #007bff; }
+.progress-high { background: #8b5cf6; }
 .progress-completed { background: #28a745; }
 
 /* ===== EMPTY STATE ===== */
@@ -1996,7 +2051,7 @@ export default {
 
 /* ===== BUTTON STYLES ===== */
 .btn-primary {
-  background: #007bff;
+  background: #8b5cf6;
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -2008,7 +2063,7 @@ export default {
 }
 
 .btn-primary:hover {
-  background: #0056b3;
+  background: #7c3aed;
 }
 
 .btn-secondary {
@@ -2183,16 +2238,35 @@ export default {
 
 /* ===== RESPONSIVE DESIGN FOR FILTERS ===== */
 @media (max-width: 1200px) {
-  .filter-sidebar .filter-group:nth-child(2),
-  .filter-sidebar .filter-group:nth-child(3), 
-  .filter-sidebar .filter-group:nth-child(4) {
-    width: 30%;
-    min-width: 150px;
-    margin-right: 2%;
+  .filter-row {
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 1rem;
   }
   
-  .filter-sidebar .filter-group:nth-child(2) {
-    width: 40%;
+  .clear-filters {
+    grid-column: 1 / -1;
+    justify-self: end;
+    margin-top: 1rem;
+  }
+  
+  .subjects-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .subjects-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .filter-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .checkbox-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }
 
@@ -2218,24 +2292,6 @@ export default {
   
   .filter-sidebar {
     padding: 1rem;
-  }
-  
-  .filter-sidebar .filter-group:nth-child(2),
-  .filter-sidebar .filter-group:nth-child(3), 
-  .filter-sidebar .filter-group:nth-child(4) {
-    display: block;
-    width: 100%;
-    margin-right: 0;
-    margin-bottom: 1rem;
-    min-width: auto;
-  }
-  
-  .filter-sidebar .filter-group:nth-child(5),
-  .filter-sidebar .filter-group:nth-child(6) {
-    display: block;
-    width: 100%;
-    margin-right: 0;
-    margin-bottom: 1rem;
   }
   
   .subjects-grid, .levels-grid, .topics-grid {
@@ -2338,18 +2394,18 @@ export default {
 .btn-secondary:focus,
 .search-input:focus,
 .filter-select:focus {
-  outline: 2px solid #007bff;
+  outline: 2px solid #8b5cf6;
   outline-offset: 2px;
 }
 
 .subject-card:focus,
 .level-card:focus {
-  outline: 2px solid #007bff;
+  outline: 2px solid #8b5cf6;
   outline-offset: 2px;
 }
 
 .checkbox-item:focus-within {
-  outline: 2px solid #007bff;
+  outline: 2px solid #8b5cf6;
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -2408,12 +2464,12 @@ html {
 
 /* ===== SELECTION STYLES ===== */
 ::selection {
-  background: rgba(0, 123, 255, 0.2);
+  background: rgba(139, 92, 246, 0.2);
   color: #212529;
 }
 
 ::-moz-selection {
-  background: rgba(0, 123, 255, 0.2);
+  background: rgba(139, 92, 246, 0.2);
   color: #212529;
 }
 
