@@ -1166,6 +1166,7 @@ export default {
 
 <style scoped>
 /* Professional Clean Catalogue Page CSS */
+/* Professional Clean Catalogue Page CSS */
 .catalogue-page {
   display: flex;
   flex-direction: column;
@@ -1266,14 +1267,14 @@ export default {
 }
 
 .page-title {
-  font-size: 1.75rem;
-  font-weight: 600;
+  font-size: 2.25rem;
+  font-weight: 700;
   color: #212529;
   margin: 0;
   max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
-  text-align: center;
+  text-align: left;
   padding: 0 1.5rem;
 }
 
@@ -1285,7 +1286,7 @@ export default {
   flex: 1;
 }
 
-/* ===== CLEAN FILTER BAR ===== */
+/* ===== ALL FILTERS IN ONE ROW ===== */
 .filter-sidebar {
   width: 100%;
   background: transparent;
@@ -1307,22 +1308,37 @@ export default {
   margin-bottom: 0;
 }
 
-/* Main Search and Filter Row */
-.main-filter-row {
+/* Single Row Filter Layout */
+.single-filter-row {
   display: flex;
   gap: 1rem;
-  align-items: end;
+  align-items: center;
+  padding: 1rem 0;
+  border-top: 1px solid #e9ecef;
+  border-bottom: 1px solid #e9ecef;
   margin-bottom: 1rem;
   flex-wrap: wrap;
 }
 
 .search-group {
   flex: 1;
-  min-width: 280px;
+  min-width: 250px;
 }
 
 .filter-group-inline {
-  flex: 0 0 180px;
+  flex: 0 0 160px;
+}
+
+.filter-access-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-progress-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .clear-filter-group {
@@ -1337,9 +1353,18 @@ export default {
   font-size: 0.875rem;
 }
 
+.filter-label-inline {
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.875rem;
+  margin: 0;
+  white-space: nowrap;
+  margin-right: 0.5rem;
+}
+
 .search-input, .filter-select {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid #e1e5e9;
   border-radius: 6px;
   background: #ffffff;
@@ -1365,7 +1390,7 @@ export default {
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 1rem;
   border-radius: 6px;
   transition: all 0.2s ease;
   height: fit-content;
@@ -1378,48 +1403,23 @@ export default {
   color: #495057;
 }
 
-/* Access and Progress Filters */
-.filter-tags-section {
+.checkbox-group-inline {
   display: flex;
-  gap: 2rem;
-  align-items: center;
-  padding: 1rem 0;
-  border-top: 1px solid #e9ecef;
-  border-bottom: 1px solid #e9ecef;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-
-.filter-group-row {
-  display: flex;
-  align-items: center;
   gap: 1rem;
-}
-
-.filter-group-label {
-  font-weight: 600;
-  color: #495057;
-  font-size: 0.875rem;
-  margin: 0;
-  white-space: nowrap;
-}
-
-.checkbox-group {
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .checkbox-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: #495057;
   position: relative;
   transition: all 0.2s ease;
-  padding: 0.25rem 0;
+  padding: 0;
+  white-space: nowrap;
 }
 
 .checkbox-item:hover {
@@ -1427,16 +1427,16 @@ export default {
 }
 
 .checkbox {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   margin: 0;
   opacity: 0;
   position: absolute;
 }
 
 .checkmark {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border: 1px solid #ced4da;
   border-radius: 3px;
   background: #ffffff;
@@ -1457,7 +1457,7 @@ export default {
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: bold;
 }
 
@@ -1548,14 +1548,17 @@ export default {
 
 .subjects-grid {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  justify-items: start;
 }
 
 .levels-grid {
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  justify-items: start;
 }
 
 .topics-grid {
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  justify-items: start;
 }
 
 /* ===== ENHANCED CARD STYLES ===== */
@@ -1566,6 +1569,8 @@ export default {
   padding: 1.5rem;
   transition: all 0.2s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 100%;
 }
 
 .subject-card, .level-card {
@@ -2180,7 +2185,7 @@ export default {
   }
   
   .page-title {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     padding: 0 1rem;
   }
   
@@ -2188,10 +2193,11 @@ export default {
     padding: 1rem;
   }
   
-  .main-filter-row {
+  .single-filter-row {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
+    padding: 1rem 0;
   }
   
   .search-group,
@@ -2201,21 +2207,16 @@ export default {
     min-width: auto;
   }
   
-  .filter-tags-section {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 0.75rem 0;
-  }
-  
-  .filter-group-row {
+  .filter-access-group,
+  .filter-progress-group {
     width: 100%;
     justify-content: flex-start;
+    flex-wrap: wrap;
   }
   
-  .checkbox-group {
-    width: 100%;
-    gap: 1rem;
+  .checkbox-group-inline {
+    gap: 0.75rem;
+    flex-wrap: wrap;
   }
   
   .stats-row {
@@ -2226,6 +2227,7 @@ export default {
   .subjects-grid, .levels-grid, .topics-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
+    justify-items: stretch;
   }
   
   .subject-card, .level-card, .topic-card {
@@ -2245,6 +2247,23 @@ export default {
   
   .level-header .card-title {
     text-align: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .single-filter-row {
+    gap: 0.75rem;
+  }
+  
+  .filter-access-group,
+  .filter-progress-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .checkbox-group-inline {
+    width: 100%;
   }
 }
 
