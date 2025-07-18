@@ -337,15 +337,15 @@ export default {
       userId: null,
       lang: '',
       
-      // Filter state
+      // Filter state - ALL INITIALIZED AS EMPTY/FALSE
       searchQuery: '',
       filterSubject: '',
       filterLevel: '',
-      showFree: true,
-      showPremium: true,
-      showNotStarted: true,
-      showInProgress: true,
-      showCompleted: true,
+      showFree: false,        // Changed to false
+      showPremium: false,     // Changed to false
+      showNotStarted: false,  // Changed to false
+      showInProgress: false,  // Changed to false
+      showCompleted: false,   // Changed to false
       
       // Modal state
       showAddModal: false,
@@ -414,9 +414,16 @@ export default {
         const subjectName = String(subject.name || '');
         const searchTerm = String(this.searchQuery || '').toLowerCase();
         
-        const matchesSearch = subjectName.toLowerCase().includes(searchTerm);
-        const matchesAccess = (this.showFree && subject.hasFreeLessons) || 
-                             (this.showPremium && subject.hasPremiumLessons);
+        // Search filter
+        const matchesSearch = !this.searchQuery || subjectName.toLowerCase().includes(searchTerm);
+        
+        // Access filter - if no access type is selected, show all
+        let matchesAccess = true;
+        if (this.showFree || this.showPremium) {
+          matchesAccess = (this.showFree && subject.hasFreeLessons) || 
+                         (this.showPremium && subject.hasPremiumLessons);
+        }
+        
         return matchesSearch && matchesAccess;
       });
     },
@@ -429,9 +436,16 @@ export default {
         const levelName = String(level.name || '');
         const searchTerm = String(this.searchQuery || '').toLowerCase();
         
-        const matchesSearch = levelName.toLowerCase().includes(searchTerm);
-        const matchesAccess = (this.showFree && level.hasFreeLessons) || 
-                             (this.showPremium && level.hasPremiumLessons);
+        // Search filter
+        const matchesSearch = !this.searchQuery || levelName.toLowerCase().includes(searchTerm);
+        
+        // Access filter - if no access type is selected, show all
+        let matchesAccess = true;
+        if (this.showFree || this.showPremium) {
+          matchesAccess = (this.showFree && level.hasFreeLessons) || 
+                         (this.showPremium && level.hasPremiumLessons);
+        }
+        
         return matchesSearch && matchesAccess;
       });
     },
@@ -444,22 +458,38 @@ export default {
         const topicName = String(topic.name || '');
         const searchTerm = String(this.searchQuery || '').toLowerCase();
         
-        const matchesSearch = topicName.toLowerCase().includes(searchTerm);
-        const matchesSubject = !this.filterSubject || String(topic.subject || '') === String(this.filterSubject);
-        const matchesLevel = !this.filterLevel || String(topic.level || '') === String(this.filterLevel);
-        const matchesAccess = (this.showFree && topic.type === 'free') || 
-                             (this.showPremium && topic.type === 'premium');
+        // Search filter
+        const matchesSearch = !this.searchQuery || topicName.toLowerCase().includes(searchTerm);
         
+        // Subject filter
+        const matchesSubject = !this.filterSubject || String(topic.subject || '') === String(this.filterSubject);
+        
+        // Level filter
+        const matchesLevel = !this.filterLevel || String(topic.level || '') === String(this.filterLevel);
+        
+        // Access filter - if no access type is selected, show all
+        let matchesAccess = true;
+        if (this.showFree || this.showPremium) {
+          matchesAccess = (this.showFree && topic.type === 'free') || 
+                         (this.showPremium && topic.type === 'premium');
+        }
+        
+        // Progress filter - if no progress filter is selected, show all
         let matchesProgress = true;
-        if (typeof topic.progress === 'number') {
-          const progress = Number(topic.progress) || 0;
-          const isNotStarted = progress === 0;
-          const isInProgress = progress > 0 && progress < 100;
-          const isCompleted = progress === 100;
-          
-          matchesProgress = (this.showNotStarted && isNotStarted) ||
-                           (this.showInProgress && isInProgress) ||
-                           (this.showCompleted && isCompleted);
+        if (this.showNotStarted || this.showInProgress || this.showCompleted) {
+          if (typeof topic.progress === 'number') {
+            const progress = Number(topic.progress) || 0;
+            const isNotStarted = progress === 0;
+            const isInProgress = progress > 0 && progress < 100;
+            const isCompleted = progress === 100;
+            
+            matchesProgress = (this.showNotStarted && isNotStarted) ||
+                             (this.showInProgress && isInProgress) ||
+                             (this.showCompleted && isCompleted);
+          } else {
+            // If progress is undefined, treat as not started
+            matchesProgress = this.showNotStarted;
+          }
         }
         
         return matchesSearch && matchesSubject && matchesLevel && matchesAccess && matchesProgress;
@@ -935,11 +965,11 @@ export default {
       this.searchQuery = '';
       this.filterSubject = '';
       this.filterLevel = '';
-      this.showFree = true;
-      this.showPremium = true;
-      this.showNotStarted = true;
-      this.showInProgress = true;
-      this.showCompleted = true;
+      this.showFree = false;
+      this.showPremium = false;
+      this.showNotStarted = false;
+      this.showInProgress = false;
+      this.showCompleted = false;
     },
 
     // ===== UTILITY METHODS =====
@@ -1229,7 +1259,6 @@ export default {
   }
 };
 </script>
-
 
 <style scoped>
 /* ===== CONTENT AREA ===== */
