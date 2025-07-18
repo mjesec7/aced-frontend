@@ -5,20 +5,8 @@
     <div class="lesson-meta">
       <div class="timer-display">⏱ {{ formattedTime }}</div>
       <div class="step-counter">{{ currentStep }}/{{ totalSteps }}</div>
-      <!-- Hide stars display during lesson progress to avoid overlap with problem report button -->
-      <div 
-        v-if="showStarsInHeader" 
-        class="stars-display"
-      >
-        ⭐ {{ stars }}
-      </div>
-      <button 
-        class="problem-report-btn-header" 
-        @click="$emit('report-problem')"
-        title="Сообщить о проблеме с уроком"
-      >
-        ⚠️ Проблема
-      </button>
+      <div class="stars-display">⭐ {{ stars }}</div>
+      <!-- Problem report button is removed from header since we have floating one -->
     </div>
   </div>
 </template>
@@ -46,14 +34,9 @@ export default {
     stars: {
       type: Number,
       default: 0
-    },
-    // New prop to control when to show stars
-    showStarsInHeader: {
-      type: Boolean,
-      default: false
     }
   },
-  emits: ['exit', 'report-problem'],
+  emits: ['exit'], // Removed 'report-problem' since we don't need it anymore
   methods: {
     getLocalized(field) {
       if (typeof field === 'string') return field;
@@ -202,54 +185,6 @@ export default {
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
 }
 
-/* Enhanced Problem Report Button */
-.problem-report-btn-header {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  border: none;
-  font-size: 0.85rem;
-  font-weight: 700;
-  padding: 12px 18px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
-  position: relative;
-  overflow: hidden;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.problem-report-btn-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.6s;
-}
-
-.problem-report-btn-header:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
-  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
-}
-
-.problem-report-btn-header:hover::before {
-  left: 100%;
-}
-
-.problem-report-btn-header:active {
-  transform: translateY(0);
-}
-
 /* Enhanced hover effects for meta items */
 .timer-display:hover,
 .step-counter:hover,
@@ -317,7 +252,7 @@ export default {
   .lesson-meta {
     order: 3;
     align-self: flex-start;
-    gap: 8px;
+    gap: 12px;
     width: 100%;
     justify-content: space-between;
     flex-wrap: wrap;
@@ -326,42 +261,26 @@ export default {
   .timer-display,
   .step-counter,
   .stars-display {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     padding: 8px 12px;
-    min-height: 36px;
+    min-height: 40px;
     flex: 1;
     min-width: 0;
-    justify-content: center;
-  }
-
-  .problem-report-btn-header {
-    font-size: 0.75rem;
-    padding: 8px 12px;
-    min-height: 36px;
-    width: 100%;
-    margin-top: 8px;
     justify-content: center;
   }
 }
 
 @media (max-width: 580px) {
   .lesson-meta {
-    gap: 6px;
+    gap: 8px;
   }
 
   .timer-display,
   .step-counter,
   .stars-display {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     padding: 6px 10px;
-    min-height: 32px;
-  }
-
-  .problem-report-btn-header {
-    font-size: 0.7rem;
-    padding: 6px 10px;
-    min-height: 32px;
-    margin-top: 6px;
+    min-height: 36px;
   }
 }
 
@@ -377,7 +296,7 @@ export default {
 
   .lesson-meta {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     grid-gap: 8px;
     width: 100%;
   }
@@ -390,19 +309,10 @@ export default {
     min-height: 32px;
     justify-content: center;
   }
-
-  .problem-report-btn-header {
-    grid-column: 1 / -1;
-    margin-top: 4px;
-    font-size: 0.75rem;
-    padding: 8px 12px;
-    min-height: 36px;
-  }
 }
 
 /* Focus states for accessibility */
-.exit-btn-small:focus,
-.problem-report-btn-header:focus {
+.exit-btn-small:focus {
   outline: 3px solid #3b82f6;
   outline-offset: 2px;
 }
@@ -411,17 +321,12 @@ export default {
 @media (prefers-contrast: high) {
   .timer-display,
   .step-counter,
-  .stars-display,
-  .problem-report-btn-header {
+  .stars-display {
     border-width: 3px;
   }
   
   .lesson-header {
     border-bottom-width: 3px;
-  }
-
-  .problem-report-btn-header {
-    border: 3px solid #d97706;
   }
 }
 
@@ -430,21 +335,18 @@ export default {
   .exit-btn-small:hover,
   .timer-display:hover,
   .step-counter:hover,
-  .stars-display:hover,
-  .problem-report-btn-header:hover {
+  .stars-display:hover {
     transform: none;
   }
 
-  .exit-btn-small::before,
-  .problem-report-btn-header::before {
+  .exit-btn-small::before {
     display: none;
   }
 }
 
 /* Print styles */
 @media print {
-  .exit-btn-small,
-  .problem-report-btn-header {
+  .exit-btn-small {
     display: none;
   }
   
