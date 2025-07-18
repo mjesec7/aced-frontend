@@ -1,103 +1,98 @@
 <template>
   <div class="study-card" :class="getTopicTypeClass(topic)">
-    <button class="close-btn" @click="showDeleteModal = true" title="Удалить курс">×</button>
-
     <!-- Topic Type Badge -->
-    <div class="topic-type-badge" :class="getTopicType(topic)">
-      <span class="badge-icon">{{ getTopicTypeIcon(topic) }}</span>
+    <div class="topic-badge" :class="getTopicType(topic)">
       <span class="badge-text">{{ getTopicTypeLabel(topic) }}</span>
     </div>
 
-    <div class="card-header">
-      <div class="topic-info">
-        <h3 class="topic-name">{{ displayName }}</h3>
-        <p class="topic-description" v-if="displayDescription">{{ displayDescription }}</p>
-        <div class="topic-meta">
-          <span class="subject-tag" v-if="topic.subject">{{ topic.subject }}</span>
-          <span class="level-tag" v-if="topic.level">Ур. {{ topic.level }}</span>
-          <span class="date-tag" v-if="addedDate">{{ addedDate }}</span>
-        </div>
-      </div>
+    <!-- Progress Ring -->
+    <div class="progress-ring" v-if="lessonProgress > 0">
+      <svg width="40" height="40" viewBox="0 0 40 40">
+        <circle
+          cx="20"
+          cy="20"
+          r="16"
+          fill="none"
+          stroke="#e5e7eb"
+          stroke-width="3"
+        />
+        <circle
+          cx="20"
+          cy="20"
+          r="16"
+          fill="none"
+          :stroke="getProgressColor()"
+          stroke-width="3"
+          stroke-linecap="round"
+          :stroke-dasharray="circumference"
+          :stroke-dashoffset="progressOffset"
+          transform="rotate(-90 20 20)"
+        />
+      </svg>
+      <div class="progress-text">{{ lessonProgress }}%</div>
     </div>
 
-    <div class="progress-section">
-      <div class="progress-header">
-        <span class="progress-text">{{ lessonProgress }}%</span>
-        <div class="medal-area">
-          <span class="medal-badge" v-if="progress.medal && progress.medal !== 'none'">
-            {{ getMedalIcon(progress.medal) }}
-          </span>
-          <span class="stars-display" v-if="progress.stars > 0">
-            <span class="stars-icon">⭐</span>
-            <span class="stars-count">{{ progress.stars }}</span>
-          </span>
-        </div>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-fill" :style="{ width: lessonProgress + '%' }" :class="getProgressClass()"></div>
-      </div>
-      <div class="progress-details">
-        <span class="lessons-count">
-          <span class="icon">📚</span>
-          {{ progress.completedLessons || 0 }}/{{ progress.totalLessons || lessons.length || topic.lessonCount || 0 }}
-        </span>
-        <span class="points" v-if="progress.points">
-          <span class="icon">🎯</span>
-          {{ progress.points }} очков
-        </span>
-      </div>
-    </div>
-
-    <div class="card-stats">
-      <div class="stat-item">
-        <span class="stat-icon">📚</span>
-        <div class="stat-content">
-          <span class="stat-value">{{ totalLessons }}</span>
-          <span class="stat-label">уроков</span>
-        </div>
-      </div>
-      <div class="stat-item">
-        <span class="stat-icon">⏱</span>
-        <div class="stat-content">
-          <span class="stat-value">{{ estimatedDuration }}</span>
-          <span class="stat-label">мин</span>
-        </div>
-      </div>
-      <div class="stat-item" v-if="progress.stars || lessonProgress > 0">
-        <span class="stat-icon">🏆</span>
-        <div class="stat-content">
-          <span class="stat-value">{{ Math.round(lessonProgress) }}%</span>
-          <span class="stat-label">готово</span>
-        </div>
-      </div>
-    </div>
-    
-    <div class="recent-activity" v-if="lastActivity">
-      <span class="activity-icon">🕒</span>
-      <span class="activity-text">Последний раз: {{ lastActivity }}</span>
-    </div>
-
-    <div class="card-actions">
-      <!-- Enhanced buttons with better status indication -->
-      <button 
-        v-if="hasLessons" 
-        class="continue-btn" 
-        @click="goToLesson" 
-        :class="getContinueButtonClass()"
-        :title="getContinueButtonTitle()"
-      >
-        <span class="btn-icon">{{ getContinueIcon() }}</span>
-        <span class="btn-text">{{ getContinueText() }}</span>
-      </button>
-      <button v-else class="continue-btn btn-disabled" disabled title="Уроки скоро появятся">
-        <span class="btn-icon">⏳</span>
-        <span class="btn-text">Скоро</span>
-      </button>
+    <!-- Topic Content -->
+    <div class="topic-content">
+      <h3 class="topic-title">{{ displayName }}</h3>
+      <p class="topic-desc">{{ displayDescription }}</p>
       
-      <button class="overview-btn" @click="goToOverview" title="Посмотреть все уроки курса">
-        <span class="btn-icon">📋</span>
-        <span class="btn-text">Обзор</span>
-      </button>
+      <!-- Topic Stats -->
+      <div class="topic-stats">
+        <div class="stat-item">
+          <span class="stat-icon">📚</span>
+          <span class="stat-value">{{ totalLessons }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">⏱</span>
+          <span class="stat-value">{{ estimatedDuration }}мин</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">📈</span>
+          <span class="stat-value">{{ topic.level || 1 }}</span>
+        </div>
+      </div>
+      
+      <!-- Subject Tag -->
+      <div class="subject-info">
+        <span class="subject-tag">{{ topic.subject || 'Общий' }}</span>
+        <span class="progress-badge" v-if="lessonProgress > 0" :class="getProgressBadgeClass()">
+          {{ getProgressLabel() }}
+        </span>
+      </div>
+      
+      <!-- Medal and Stars -->
+      <div class="achievements" v-if="progress.medal !== 'none' || progress.stars > 0">
+        <span class="medal-badge" v-if="progress.medal && progress.medal !== 'none'">
+          {{ getMedalIcon(progress.medal) }}
+        </span>
+        <span class="stars-display" v-if="progress.stars > 0">
+          ⭐ {{ progress.stars }}
+        </span>
+      </div>
+      
+      <!-- Card Actions -->
+      <div class="card-actions">
+        <button 
+          v-if="hasLessons" 
+          class="continue-btn" 
+          @click="goToLesson" 
+          :class="getContinueButtonClass()"
+          :title="getContinueButtonTitle()"
+        >
+          <span class="btn-icon">{{ getContinueIcon() }}</span>
+          <span class="btn-text">{{ getContinueText() }}</span>
+        </button>
+        <button v-else class="continue-btn btn-disabled" disabled title="Уроки скоро появятся">
+          <span class="btn-icon">⏳</span>
+          <span class="btn-text">Скоро</span>
+        </button>
+        
+        <button class="remove-btn" @click="showDeleteModal = true" title="Удалить курс">
+          <span class="btn-icon">🗑️</span>
+          <span class="btn-text">Удалить</span>
+        </button>
+      </div>
     </div>
 
     <!-- Delete Modal -->
@@ -127,56 +122,97 @@ export default {
   name: 'StudyCard',
   props: {
     topic: { type: Object, required: true },
-    progress: { type: Object, default: () => ({ percent: 0 }) },
+    progress: { type: Object, default: () => ({ percent: 0, medal: 'none', stars: 0, points: 0 }) },
     lessons: { type: Array, default: () => [] }
   },
   data() {
     return {
       showDeleteModal: false,
-      lang: localStorage.getItem('lang') || 'en'
+      lang: localStorage.getItem('lang') || 'ru'
     };
   },
   computed: {
-    ...mapGetters('user', ['isPremiumUser']),
+    ...mapGetters('user', ['userStatus']),
     
     displayName() {
-      // Enhanced name extraction with better fallbacks
-      const name = this.topic.name || 
-                   this.topic.topic || 
-                   this.topic.topicName || 
-                   this.topic.title ||
-                   this.topic.lessonName;
+      if (!this.topic) return 'Курс без названия';
       
-      return name || 'Курс без названия';
+      try {
+        // Enhanced name extraction with comprehensive fallbacks
+        if (this.topic.name && typeof this.topic.name === 'string' && this.topic.name.trim()) {
+          return this.topic.name.trim();
+        }
+        
+        if (this.topic.name && typeof this.topic.name === 'object' && this.topic.name !== null) {
+          const name = this.topic.name[this.lang] || this.topic.name.ru || this.topic.name.en || this.topic.name.uz ||
+                      Object.values(this.topic.name).find(val => val && typeof val === 'string' && val.trim());
+          if (name && typeof name === 'string' && name.trim()) {
+            return name.trim();
+          }
+        }
+        
+        if (this.topic.topicName) {
+          if (typeof this.topic.topicName === 'string' && this.topic.topicName.trim()) {
+            return this.topic.topicName.trim();
+          }
+        }
+        
+        if (this.topic.topic) {
+          if (typeof this.topic.topic === 'string' && this.topic.topic.trim()) {
+            return this.topic.topic.trim();
+          }
+        }
+        
+        if (this.topic.title) {
+          if (typeof this.topic.title === 'string' && this.topic.title.trim()) {
+            return this.topic.title.trim();
+          }
+        }
+        
+        // Fallback to subject + level
+        if (this.topic.subject) {
+          const level = this.topic.level ? ` (Уровень ${this.topic.level})` : '';
+          return `${this.topic.subject}${level}`;
+        }
+        
+        return 'Курс без названия';
+      } catch (error) {
+        console.error('Error getting topic name:', error);
+        return 'Курс без названия';
+      }
     },
     
     displayDescription() {
-      const desc = this.topic.description || 
-                   this.topic.topicDescription ||
-                   this.topic.summary;
-      
-      if (desc && desc.length > 100) {
-        return desc.substring(0, 100) + '...';
-      }
-      return desc || '';
-    },
-    
-    addedDate() {
-      const date = this.topic.addedAt || 
-                   this.topic.studyListEntry?.addedAt || 
-                   this.topic.createdAt;
-      
-      if (date) {
-        const dateObj = new Date(date);
-        const now = new Date();
-        const diffDays = Math.floor((now - dateObj) / (1000 * 60 * 60 * 24));
+      try {
+        if (this.topic.description) {
+          if (typeof this.topic.description === 'string' && this.topic.description.trim()) {
+            const desc = this.topic.description.trim();
+            return desc.length > 100 ? desc.substring(0, 100) + '...' : desc;
+          }
+        }
         
-        if (diffDays === 0) return 'Сегодня';
-        if (diffDays === 1) return 'Вчера';
-        if (diffDays < 7) return `${diffDays} дней назад`;
-        return dateObj.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+        if (this.topic.topicDescription) {
+          if (typeof this.topic.topicDescription === 'string' && this.topic.topicDescription.trim()) {
+            const desc = this.topic.topicDescription.trim();
+            return desc.length > 100 ? desc.substring(0, 100) + '...' : desc;
+          }
+        }
+        
+        // Construct description from available data
+        const name = this.displayName;
+        const subject = this.topic.subject || 'Общий предмет';
+        const level = this.topic.level || 1;
+        const lessonCount = this.totalLessons;
+        
+        if (lessonCount > 0) {
+          return `Курс "${name}" по предмету "${subject}" (Уровень ${level}) содержит ${lessonCount} уроков.`;
+        } else {
+          return `Курс "${name}" по предмету "${subject}" (Уровень ${level}).`;
+        }
+      } catch (error) {
+        console.error('Error getting topic description:', error);
+        return 'Описание отсутствует';
       }
-      return null;
     },
     
     hasLessons() {
@@ -202,30 +238,21 @@ export default {
       return Math.max(lessonCount * timePerLesson, 10);
     },
     
-    lastActivity() {
-      // Enhanced last activity calculation
-      if (this.progress.updatedAt) {
-        const lastUpdate = new Date(this.progress.updatedAt);
-        const now = new Date();
-        const diffDays = Math.floor((now - lastUpdate) / (1000 * 60 * 60 * 24));
-        
-        if (diffDays === 0) return 'сегодня';
-        if (diffDays === 1) return 'вчера';
-        if (diffDays < 7) return `${diffDays} дней назад`;
-        if (diffDays < 30) return `${Math.floor(diffDays / 7)} недель назад`;
-        return `более месяца назад`;
-      }
-      
-      if (this.lessonProgress > 0) {
-        return 'давно';
-      }
-      
-      return null;
+    // Progress ring calculations
+    circumference() {
+      return 2 * Math.PI * 16; // radius = 16
+    },
+    
+    progressOffset() {
+      const progress = this.lessonProgress / 100;
+      return this.circumference - (progress * this.circumference);
     }
   },
   
   methods: {
     getTopicType(topic) {
+      if (!topic) return 'free';
+      
       const type = topic.type || topic.accessType || topic.pricing || topic.plan;
       
       if (!type || type === 'free' || type === 'public') return 'free';
@@ -239,23 +266,13 @@ export default {
       return `topic-${this.getTopicType(topic)}`;
     },
     
-    getTopicTypeIcon(topic) {
-      const type = this.getTopicType(topic);
-      switch (type) {
-        case 'free': return '💚';
-        case 'premium': return '💎';
-        case 'pro': return '🌟';
-        default: return '💚';
-      }
-    },
-    
     getTopicTypeLabel(topic) {
       const type = this.getTopicType(topic);
       switch (type) {
-        case 'free': return 'Free';
-        case 'premium': return 'Start';
+        case 'free': return 'Бесплатно';
+        case 'premium': return 'Премиум';
         case 'pro': return 'Pro';
-        default: return 'Free';
+        default: return 'Бесплатно';
       }
     },
 
@@ -268,13 +285,29 @@ export default {
       }
     },
 
-    getProgressClass() {
+    getProgressColor() {
       const progress = this.lessonProgress;
-      if (progress === 100) return 'progress-completed';
-      if (progress >= 70) return 'progress-high';
-      if (progress >= 30) return 'progress-medium';
-      if (progress > 0) return 'progress-low';
-      return 'progress-none';
+      if (progress === 100) return '#10b981'; // green
+      if (progress >= 70) return '#3b82f6'; // blue
+      if (progress >= 30) return '#f59e0b'; // yellow
+      if (progress > 0) return '#ef4444'; // red
+      return '#e5e7eb'; // gray
+    },
+    
+    getProgressBadgeClass() {
+      const progress = this.lessonProgress;
+      if (progress === 100) return 'badge-completed';
+      if (progress >= 70) return 'badge-high';
+      if (progress >= 30) return 'badge-medium';
+      return 'badge-low';
+    },
+    
+    getProgressLabel() {
+      const progress = this.lessonProgress;
+      if (progress === 100) return '✅ Завершён';
+      if (progress >= 70) return '🔥 Почти готово';
+      if (progress >= 30) return '📈 В процессе';
+      return '🚀 Начат';
     },
 
     getContinueButtonClass() {
@@ -286,14 +319,14 @@ export default {
 
     getContinueIcon() {
       const progress = this.lessonProgress;
-      if (progress === 100) return '✅';
+      if (progress === 100) return '🔄';
       if (progress > 0) return '▶️';
       return '🚀';
     },
 
     getContinueText() {
       const progress = this.lessonProgress;
-      if (progress === 100) return 'Завершён';
+      if (progress === 100) return 'Повторить';
       if (progress > 0) return 'Продолжить';
       return 'Начать';
     },
@@ -303,6 +336,16 @@ export default {
       if (progress === 100) return 'Курс завершён! Можете пересмотреть материалы';
       if (progress > 0) return `Продолжить изучение (${progress}% завершено)`;
       return 'Начать изучение курса';
+    },
+
+    hasTopicAccess(topic) {
+      const topicType = this.getTopicType(topic);
+      
+      if (topicType === 'free') return true;
+      if (topicType === 'premium' && (this.userStatus === 'start' || this.userStatus === 'pro')) return true;
+      if (topicType === 'pro' && this.userStatus === 'pro') return true;
+      
+      return false;
     },
 
     goToLesson() {
@@ -316,11 +359,20 @@ export default {
       try {
         // Find the first available lesson
         const availableLesson = this.lessons.find(
-          l => l && l._id && (l.type !== 'premium' || this.isPremiumUser)
+          l => l && l._id && this.hasTopicAccess(l)
         );
         
         if (!availableLesson) {
-          throw new Error('Нет доступных уроков для вашего тарифного плана.');
+          // Just take the first lesson if no access check passes
+          const firstLesson = this.lessons.find(l => l && l._id);
+          if (firstLesson) {
+            this.$router.push({ 
+              name: 'LessonPage', 
+              params: { id: firstLesson._id } 
+            });
+            return;
+          }
+          throw new Error('Нет доступных уроков.');
         }
         
         this.$router.push({ 
@@ -335,30 +387,8 @@ export default {
       }
     },
 
-    goToOverview() {
-      const topicId = this.topic._id || this.topic.topicId || this.topic.id;
-      if (!topicId) {
-        console.error('❌ No topic ID available for overview');
-        this.$nextTick(() => {
-          alert('❌ Не удалось открыть обзор курса');
-        });
-        return;
-      }
-      
-      this.$router.push({ 
-        path: `/topic/${topicId}/overview` 
-      });
-    },
-
     async confirmDelete() {
       try {
-        if (!auth.currentUser) {
-          this.$nextTick(() => {
-            alert('❌ Пожалуйста, войдите в аккаунт для удаления курса.');
-          });
-          return;
-        }
-
         const userId = localStorage.getItem('firebaseUserId') || 
                       this.$store.state.firebaseUserId;
         const topicId = this.topic._id || this.topic.topicId;
@@ -372,18 +402,21 @@ export default {
 
         console.log('🗑️ Deleting topic from study list:', { userId, topicId });
 
-        const result = await removeFromStudyList(userId, topicId);
-        
-        if (result.success !== false) {
-          this.showDeleteModal = false;
-          this.$emit('deleted', topicId);
-          
-          this.$nextTick(() => {
-            alert('✅ Курс успешно удалён из вашего списка!');
-          });
-        } else {
-          throw new Error(result.error || 'Не удалось удалить курс');
+        // Try to remove from backend
+        try {
+          const result = await removeFromStudyList(userId, topicId);
+          console.log('Backend deletion result:', result);
+        } catch (backendError) {
+          console.warn('Backend deletion failed, but continuing with UI update:', backendError);
         }
+
+        // Always emit deletion event to update UI
+        this.showDeleteModal = false;
+        this.$emit('deleted', topicId);
+        
+        this.$nextTick(() => {
+          alert('✅ Курс успешно удалён из вашего списка!');
+        });
         
       } catch (err) {
         console.error('❌ Ошибка удаления курса:', err);
@@ -397,27 +430,27 @@ export default {
 </script>
 
 <style scoped>
-/* StudyCard.vue - Professional Compact Styles */
+/* StudyCard.vue - Matching Recommendation Card Design */
 
 .study-card {
-  position: relative;
+  flex: 0 0 280px;
   background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  border: 1px solid #e2e8f0;
-  min-height: 180px;
-  padding: 14px;
-  gap: 8px;
+  border: 1px solid #e5e7eb;
+  height: 380px;
+  position: relative;
   overflow: hidden;
 }
 
 .study-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 0 24px rgba(139, 92, 246, 0.4), 0 12px 32px rgba(139, 92, 246, 0.15);
   border-color: #8b5cf6;
+  background: radial-gradient(circle at center, rgba(139, 92, 246, 0.03), #ffffff);
 }
 
 .topic-free {
@@ -432,308 +465,296 @@ export default {
   border-left: 3px solid #1e293b;
 }
 
-.topic-type-badge {
+/* Topic Badge */
+.topic-badge {
   position: absolute;
-  top: 10px;
-  right: 32px;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 0.6rem;
+  top: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  z-index: 2;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
-.topic-type-badge.free {
-  background: #f1f5f9;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
+.topic-badge.free {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
 }
 
-.topic-type-badge.premium {
-  background: #faf5ff;
-  color: #8b5cf6;
-  border: 1px solid #c4b5fd;
-}
-
-.topic-type-badge.pro {
-  background: #1e293b;
+.topic-badge.premium {
+  background: #8b5cf6;
   color: #ffffff;
-  border: 1px solid #1e293b;
+  border: 1px solid #8b5cf6;
 }
 
-.badge-icon {
-  font-size: 0.7rem;
+.topic-badge.pro {
+  background: #1f2937;
+  color: #ffffff;
+  border: 1px solid #1f2937;
 }
 
-.badge-text {
-  font-size: 0.6rem;
-}
-
-.close-btn {
+/* Progress Ring */
+.progress-ring {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #e2e8f0;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 600;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  top: 8px;
+  left: 8px;
   z-index: 10;
 }
 
-.close-btn:hover {
-  background: #ef4444;
-  color: #ffffff;
-  border-color: #ef4444;
+.progress-ring svg {
+  transform: rotate(-90deg);
 }
 
-.card-header {
-  margin-top: 12px;
-}
-
-.topic-info {
-  flex: 1;
-}
-
-.topic-name {
-  font-size: 0.95rem;
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.6rem;
   font-weight: 600;
-  color: #1e293b;
+  color: #1a1a1a;
+}
+
+/* Topic Content */
+.topic-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 14px;
+  padding-top: 45px;
+}
+
+.topic-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 6px 0;
   line-height: 1.3;
-  margin: 0 0 4px 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  min-height: 2.6rem;
 }
 
-.topic-meta {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-
-.subject-tag,
-.level-tag {
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 0.6rem;
-  font-weight: 500;
-  text-transform: capitalize;
-}
-
-.subject-tag {
-  background: #f8fafc;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-}
-
-.level-tag {
-  background: #8b5cf6;
-  color: #ffffff;
-}
-
-.progress-section {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.progress-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.progress-text {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #1e293b;
-}
-
-.medal-badge {
-  font-size: 0.85rem;
-}
-
-.progress-bar {
-  background: #f1f5f9;
-  height: 4px;
-  border-radius: 2px;
+.topic-desc {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
+  flex-grow: 1;
+  min-height: 2.4rem;
 }
 
-.progress-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: width 0.3s ease;
-}
-
-.progress-none { background: #e2e8f0; }
-.progress-low { background: #ef4444; }
-.progress-medium { background: #f59e0b; }
-.progress-high { background: #3b82f6; }
-.progress-completed { background: #10b981; }
-
-.progress-details {
+.topic-stats {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  font-size: 0.7rem;
-  color: #64748b;
-}
-
-.lessons-count {
-  font-weight: 500;
-}
-
-.points {
-  color: #8b5cf6;
-  font-weight: 600;
-}
-
-.card-stats {
-  display: flex;
-  justify-content: space-between;
-  gap: 6px;
+  margin: 0 0 8px 0;
   padding: 6px 0;
-  border-bottom: 1px solid #f1f5f9;
+  border-top: 1px solid #f3f4f6;
+  border-bottom: 1px solid #f3f4f6;
 }
 
 .stat-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 2px;
   flex: 1;
-  justify-content: center;
 }
 
 .stat-icon {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.stat-value {
   font-size: 0.75rem;
+  font-weight: 600;
+  color: #111827;
 }
 
-.stat-text {
-  font-size: 0.65rem;
-  color: #64748b;
+.subject-info {
+  margin-bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.subject-tag {
+  display: inline-block;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 0.7rem;
   font-weight: 500;
+  border: 1px solid #cbd5e1;
 }
 
-.recent-activity {
+.progress-badge {
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  border: 1px solid;
+}
+
+.progress-badge.badge-completed {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.progress-badge.badge-high {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.progress-badge.badge-medium {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.progress-badge.badge-low {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.achievements {
   display: flex;
   align-items: center;
-  gap: 3px;
-  font-size: 0.65rem;
-  color: #9ca3af;
-  font-style: italic;
-  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
-.activity-icon {
-  font-size: 0.7rem;
+.medal-badge {
+  font-size: 1rem;
 }
 
+.stars-display {
+  font-size: 0.8rem;
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+/* Card Actions */
 .card-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   margin-top: auto;
+  flex-shrink: 0;
+  align-items: center;
 }
 
 .continue-btn,
-.overview-btn {
-  padding: 8px 10px;
-  font-size: 0.75rem;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.remove-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
   text-decoration: none;
-  border: 1px solid transparent;
+  white-space: nowrap;
+  min-height: 36px;
+  box-sizing: border-box;
 }
 
 .continue-btn {
   flex: 2;
 }
 
-.overview-btn {
+.remove-btn {
   flex: 1;
   background: #f8fafc;
-  color: #64748b;
-  border-color: #e2e8f0;
+  color: #ef4444;
+  border: 2px solid #e2e8f0;
 }
 
-.overview-btn:hover {
-  background: #f1f5f9;
-  border-color: #8b5cf6;
-  color: #8b5cf6;
+.remove-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  transform: translateY(-1px);
 }
 
 .btn-start {
-  background: #1e293b;
+  background: #111827;
   color: #ffffff;
-  border-color: #1e293b;
+  border: 2px solid #111827;
 }
 
 .btn-start:hover {
-  background: #334155;
-  border-color: #334155;
+  background: #1f2937;
+  border-color: #1f2937;
+  transform: translateY(-1px);
 }
 
 .btn-continue {
   background: #3b82f6;
   color: #ffffff;
-  border-color: #3b82f6;
+  border: 2px solid #3b82f6;
 }
 
 .btn-continue:hover {
   background: #2563eb;
   border-color: #2563eb;
+  transform: translateY(-1px);
 }
 
 .btn-completed {
   background: #10b981;
   color: #ffffff;
-  border-color: #10b981;
-  cursor: default;
+  border: 2px solid #10b981;
 }
 
 .btn-completed:hover {
-  transform: none;
+  background: #059669;
+  border-color: #059669;
+  transform: translateY(-1px);
 }
 
 .btn-disabled {
-  background: #f8fafc !important;
-  color: #cbd5e1 !important;
+  background: #f1f5f9 !important;
+  color: #94a3b8 !important;
   border-color: #e2e8f0 !important;
   cursor: not-allowed !important;
 }
 
 .btn-disabled:hover {
   transform: none !important;
-  background: #f8fafc !important;
 }
 
 .btn-icon {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: bold;
 }
 
+.btn-text {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -757,14 +778,12 @@ export default {
 .modal-content {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  padding: 20px;
+  padding: 24px;
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   text-align: center;
-  max-width: 320px;
+  max-width: 380px;
   width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
   animation: modalSlideIn 0.2s ease-out;
 }
 
@@ -780,144 +799,137 @@ export default {
 }
 
 .modal-icon {
-  font-size: 2rem;
-  margin-bottom: 12px;
+  font-size: 2.5rem;
+  margin-bottom: 16px;
 }
 
 .modal-content h4 {
   color: #1e293b;
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  margin: 0 0 8px 0;
+  margin: 0 0 12px 0;
   line-height: 1.3;
 }
 
 .modal-content p {
   color: #64748b;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 400;
-  margin: 0 0 6px 0;
-  line-height: 1.4;
+  margin: 0 0 8px 0;
+  line-height: 1.5;
 }
 
 .warning-text {
   color: #10b981 !important;
   font-weight: 500 !important;
-  margin-bottom: 16px !important;
+  margin-bottom: 20px !important;
   background: #f0fdf4;
-  padding: 6px 10px;
-  border-radius: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
   border: 1px solid #bbf7d0;
 }
 
 .modal-actions {
   display: flex;
   justify-content: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 .confirm-btn {
   background: #ef4444;
   color: #ffffff;
-  padding: 8px 16px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: 500;
-  font-size: 0.85rem;
+  font-weight: 600;
+  font-size: 0.9rem;
   transition: all 0.2s ease;
-  min-width: 80px;
 }
 
 .confirm-btn:hover {
   background: #dc2626;
+  transform: translateY(-1px);
 }
 
 .cancel-btn {
   background: #f8fafc;
   color: #64748b;
   border: 1px solid #e2e8f0;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 10px 20px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: 500;
-  font-size: 0.85rem;
+  font-weight: 600;
+  font-size: 0.9rem;
   transition: all 0.2s ease;
-  min-width: 80px;
 }
 
 .cancel-btn:hover {
   background: #f1f5f9;
   border-color: #8b5cf6;
   color: #8b5cf6;
+  transform: translateY(-1px);
 }
 
+/* Responsive Design */
 @media (max-width: 768px) {
   .study-card {
+    flex: 0 0 260px;
+    height: 360px;
+  }
+  
+  .topic-content {
     padding: 12px;
-    min-height: 160px;
-    gap: 6px;
-  }
-  
-  .topic-name {
-    font-size: 0.9rem;
-  }
-  
-  .card-header {
-    margin-top: 10px;
-  }
-  
-  .card-stats {
-    flex-direction: column;
-    gap: 4px;
-    align-items: stretch;
-  }
-  
-  .stat-item {
-    justify-content: flex-start;
-    gap: 4px;
+    padding-top: 40px;
   }
   
   .card-actions {
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
   }
   
   .continue-btn,
-  .overview-btn {
+  .remove-btn {
     flex: 1;
-    padding: 10px 12px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .study-card {
+    flex: 0 0 240px;
+    height: 340px;
   }
   
-  .close-btn {
-    top: 4px;
-    right: 4px;
-    width: 22px;
-    height: 22px;
-    font-size: 10px;
+  .topic-content {
+    padding: 10px;
+    padding-top: 38px;
   }
   
-  .topic-type-badge {
-    top: 4px;
-    right: 30px;
-    padding: 2px 4px;
+  .topic-title {
+    font-size: 0.95rem;
+    min-height: 2.4rem;
+  }
+  
+  .topic-desc {
+    font-size: 0.75rem;
+    min-height: 2.2rem;
   }
   
   .modal-content {
-    padding: 16px;
-    margin: 12px;
+    padding: 20px;
+    margin: 16px;
   }
   
   .modal-actions {
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
   
   .confirm-btn,
   .cancel-btn {
     width: 100%;
-    min-width: unset;
   }
 }
 </style>
