@@ -1165,7 +1165,7 @@ export default {
 </script>
 
 <style scoped>
-/* Professional Clean Catalogue Page CSS */
+/* Professional Clean Catalogue Page CSS - Complete with Horizontal Filters */
 .catalogue-page {
   display: flex;
   flex-direction: column;
@@ -1285,7 +1285,7 @@ export default {
   flex: 1;
 }
 
-/* ===== IMPROVED FILTER SIDEBAR ===== */
+/* ===== HORIZONTAL FILTER SIDEBAR ===== */
 .filter-sidebar {
   width: 100%;
   background: #ffffff;
@@ -1312,51 +1312,82 @@ export default {
   color: #212529;
 }
 
-/* MAIN FILTER LAYOUT - ALL IN ONE ROW */
+.clear-filters {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  color: #6c757d;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.clear-filters:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  color: #495057;
+}
+
+/* HORIZONTAL FILTER ROW - Put first 3 filter groups in one row */
+.filter-sidebar .filter-group:nth-child(2),
+.filter-sidebar .filter-group:nth-child(3), 
+.filter-sidebar .filter-group:nth-child(4) {
+  display: inline-block;
+  vertical-align: top;
+  margin-right: 1.5rem;
+  margin-bottom: 0;
+  min-width: 200px;
+}
+
+/* Search input gets more width */
+.filter-sidebar .filter-group:nth-child(2) {
+  width: 35%;
+  min-width: 280px;
+}
+
+/* Subject and Level selects get standard width */
+.filter-sidebar .filter-group:nth-child(3),
+.filter-sidebar .filter-group:nth-child(4) {
+  width: 20%;
+  min-width: 160px;
+}
+
+/* Create a container for the first row of filters */
+.filter-sidebar .filter-group:nth-child(2) {
+  margin-bottom: 1.5rem;
+}
+
+.filter-sidebar .filter-group:nth-child(4)::after {
+  content: '';
+  display: block;
+  clear: both;
+  margin-bottom: 1.5rem;
+}
+
+/* Checkbox groups in their own row */
+.filter-sidebar .filter-group:nth-child(5),
+.filter-sidebar .filter-group:nth-child(6) {
+  display: inline-block;
+  vertical-align: top;
+  width: 45%;
+  margin-right: 5%;
+  margin-bottom: 1.5rem;
+}
+
+.filter-sidebar .filter-group:nth-child(6) {
+  margin-right: 0;
+}
+
+/* Reset any existing filter-group styles that might interfere */
 .filter-group {
   margin-bottom: 1rem;
+  padding: 0;
+  border: none;
 }
 
-/* Create a horizontal layout for all filters */
-.filter-sidebar .filter-group:first-of-type {
-  display: grid;
-  grid-template-columns: 2fr 1.2fr 1.2fr 1fr 1fr;
-  gap: 1.5rem;
-  align-items: end;
-  margin-bottom: 1.5rem;
-}
-
-/* Hide individual filter groups that should be inline */
-.filter-sidebar .filter-group:nth-of-type(2),
-.filter-sidebar .filter-group:nth-of-type(3),
-.filter-sidebar .filter-group:nth-of-type(4),
-.filter-sidebar .filter-group:nth-of-type(5) {
-  display: none;
-}
-
-/* Show them as grid items instead */
-.filter-sidebar .filter-group:first-of-type::after {
-  content: '';
-  grid-column: 1 / -1;
-  display: block;
-  height: 1px;
-}
-
-/* Create the actual filter row layout */
-.filter-row {
-  display: grid;
-  grid-template-columns: 2fr 1.2fr 1.2fr 1fr 1fr;
-  gap: 1.5rem;
-  align-items: end;
-  margin-bottom: 1.5rem;
-}
-
-/* Individual filter styling */
-.filter-item {
-  display: flex;
-  flex-direction: column;
-}
-
+/* Label and input styling */
 .filter-label {
   display: block;
   font-weight: 500;
@@ -1374,6 +1405,7 @@ export default {
   font-size: 0.875rem;
   transition: all 0.2s ease;
   color: #495057;
+  box-sizing: border-box;
 }
 
 .search-input:focus, .filter-select:focus {
@@ -1386,34 +1418,7 @@ export default {
   color: #adb5bd;
 }
 
-.clear-filters {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  color: #6c757d;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  align-self: end;
-}
-
-.clear-filters:hover {
-  background: #e9ecef;
-  border-color: #adb5bd;
-  color: #495057;
-}
-
-/* Checkbox Groups in Row */
-.checkbox-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-bottom: 1.5rem;
-}
-
+/* Checkbox group styling */
 .checkbox-group {
   display: flex;
   flex-direction: column;
@@ -1477,9 +1482,10 @@ export default {
 
 /* Stats Section */
 .stats-section {
+  clear: both;
   padding-top: 1rem;
   border-top: 1px solid #e9ecef;
-  margin-top: 0;
+  margin-top: 1rem;
 }
 
 .stats-section h4 {
@@ -2177,14 +2183,16 @@ export default {
 
 /* ===== RESPONSIVE DESIGN FOR FILTERS ===== */
 @media (max-width: 1200px) {
-  .filter-sidebar .filter-group:first-of-type {
-    grid-template-columns: 2fr 1fr 1fr;
-    gap: 1rem;
+  .filter-sidebar .filter-group:nth-child(2),
+  .filter-sidebar .filter-group:nth-child(3), 
+  .filter-sidebar .filter-group:nth-child(4) {
+    width: 30%;
+    min-width: 150px;
+    margin-right: 2%;
   }
   
-  .checkbox-row {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+  .filter-sidebar .filter-group:nth-child(2) {
+    width: 40%;
   }
 }
 
@@ -2212,14 +2220,22 @@ export default {
     padding: 1rem;
   }
   
-  .filter-sidebar .filter-group:first-of-type {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+  .filter-sidebar .filter-group:nth-child(2),
+  .filter-sidebar .filter-group:nth-child(3), 
+  .filter-sidebar .filter-group:nth-child(4) {
+    display: block;
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 1rem;
+    min-width: auto;
   }
   
-  .checkbox-row {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+  .filter-sidebar .filter-group:nth-child(5),
+  .filter-sidebar .filter-group:nth-child(6) {
+    display: block;
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 1rem;
   }
   
   .subjects-grid, .levels-grid, .topics-grid {
