@@ -1,15 +1,6 @@
 <template>
   <div class="intro-screen">
-    <div class="top-buttons">
-      <button 
-        class="problem-report-btn-intro" 
-        @click="$emit('report-problem')"
-        title="Сообщить о проблеме с уроком"
-      >
-        ⚠️
-      </button>
-      <button class="exit-btn" @click="$emit('exit')">✕</button>
-    </div>
+    <button class="exit-btn" @click="$emit('exit')">✕</button>
     
     <div class="intro-content">
       <h2 class="lesson-title">{{ getLocalized(lesson?.lessonName) || 'Без названия' }}</h2>
@@ -67,6 +58,17 @@
         </button>
       </div>
     </div>
+
+    <!-- Problem Report Button at Bottom -->
+    <div class="bottom-help">
+      <button 
+        class="problem-report-btn-bottom" 
+        @click="$emit('report-problem')"
+        title="Сообщить о проблеме с уроком"
+      >
+        ⚠️ Нашли проблему с уроком? Сообщите нам
+      </button>
+    </div>
   </div>
 </template>
 
@@ -91,7 +93,7 @@ export default {
       default: null
     }
   },
-  emits: ['start', 'continue', 'exit', 'report-problem'], // Added report-problem
+  emits: ['start', 'continue', 'exit', 'report-problem'],
   methods: {
     getLocalized(field) {
       if (typeof field === 'string') return field;
@@ -114,56 +116,10 @@ export default {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
 }
 
-/* Top buttons container */
-.top-buttons {
+.exit-btn {
   position: absolute;
   top: 40px;
   right: 40px;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.problem-report-btn-intro {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 12px;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.problem-report-btn-intro::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.6s;
-}
-
-.problem-report-btn-intro:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
-}
-
-.problem-report-btn-intro:hover::before {
-  left: 100%;
-}
-
-.exit-btn {
   background: rgba(239, 68, 68, 0.1);
   border: none;
   font-size: 1.5rem;
@@ -422,20 +378,55 @@ export default {
   transform: translateY(-1px);
 }
 
+/* Bottom Help Section */
+.bottom-help {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 600px;
+  padding: 0 20px;
+}
+
+.problem-report-btn-bottom {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%);
+  border: 2px solid rgba(245, 158, 11, 0.3);
+  color: #d97706;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 12px 20px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
+}
+
+.problem-report-btn-bottom:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.15) 100%);
+  border-color: rgba(245, 158, 11, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.2);
+}
+
+.problem-report-btn-bottom:active {
+  transform: translateY(0);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .intro-screen {
     padding: 20px 16px;
   }
 
-  .top-buttons {
+  .exit-btn {
     top: 20px;
     right: 20px;
-    gap: 8px;
-  }
-
-  .problem-report-btn-intro,
-  .exit-btn {
     width: 40px;
     height: 40px;
     font-size: 1.2rem;
@@ -486,17 +477,26 @@ export default {
     font-size: 1.1rem;
     padding: 16px 32px;
   }
+
+  .bottom-help {
+    bottom: 15px;
+    padding: 0 16px;
+  }
+
+  .problem-report-btn-bottom {
+    font-size: 0.8rem;
+    padding: 10px 16px;
+  }
 }
 
 @media (max-width: 480px) {
-  .top-buttons {
-    top: 15px;
-    right: 15px;
-    gap: 6px;
+  .intro-screen {
+    padding: 15px 12px;
   }
 
-  .problem-report-btn-intro,
   .exit-btn {
+    top: 15px;
+    right: 15px;
     width: 36px;
     height: 36px;
     font-size: 1rem;
@@ -540,13 +540,23 @@ export default {
     font-size: 1rem;
     padding: 14px 28px;
   }
+
+  .bottom-help {
+    bottom: 10px;
+    padding: 0 12px;
+  }
+
+  .problem-report-btn-bottom {
+    font-size: 0.75rem;
+    padding: 8px 12px;
+  }
 }
 
 /* Focus states for accessibility */
 .exit-btn:focus,
 .start-btn:focus,
 .continue-btn:focus,
-.problem-report-btn-intro:focus {
+.problem-report-btn-bottom:focus {
   outline: 3px solid #3b82f6;
   outline-offset: 2px;
 }
@@ -561,13 +571,19 @@ export default {
   .stat:hover,
   .start-btn:hover,
   .continue-btn:hover,
-  .problem-report-btn-intro:hover {
+  .problem-report-btn-bottom:hover {
     transform: none;
   }
 
-  .start-btn::before,
-  .problem-report-btn-intro::before {
+  .start-btn::before {
     display: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .problem-report-btn-bottom {
+    border-width: 3px;
   }
 }
 </style>

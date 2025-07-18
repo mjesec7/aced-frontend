@@ -1,6 +1,6 @@
 <template>
   <div class="lesson-page">
-    <!-- REMOVED: No more floating problem report button -->
+    <!-- REMOVED: No floating button anymore -->
 
     <!-- Loading State -->
     <div v-if="loading" class="loading-screen">
@@ -157,7 +157,7 @@
       @jump-to-word="jumpToVocabWord"
     />
 
-    <!-- Intro Screen with Problem Report Button -->
+    <!-- Intro Screen with Problem Report Button at Bottom -->
     <LessonIntro
       v-if="!started && !showPaywallModal && !loading && !error"
       :lesson="lesson"
@@ -173,7 +173,7 @@
     <!-- Main Lesson Content -->
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
 
-      <!-- Top Header with Problem Report Button -->
+      <!-- Top Header with Problem Report Strip Below -->
       <LessonHeader
         :lesson="lesson"
         :current-step="currentIndex + 1"
@@ -194,7 +194,6 @@
 
       <!-- Split Screen Content -->
       <div class="split-content">
-
         <!-- Left Panel - Clean Content Display -->
         <ContentPanel
           :current-step="currentStep"
@@ -249,7 +248,6 @@
             :is-on-second-chance="isOnSecondChance"
             :show-correct-answer="showCorrectAnswer"
             :correct-answer-text="correctAnswerText"
-
             @answer-changed="handleAnswerChanged"
             @fill-blank-updated="updateFillBlankAnswer"
             @submit="handleSubmitOrNext"
@@ -362,7 +360,6 @@
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
-
 
 <script>
 // ✅ FULLY UPDATED LessonPage.vue <script> with Problem Reporting Integration
@@ -1360,51 +1357,18 @@ export default {
 }
 </script>
 
+
 <style scoped>
-/* Existing styles from LessonPage.css are imported */
+/* Remove the floating button styles from your CSS: */
+
+/* REMOVE THESE STYLES:
+.floating-problem-report-btn { ... }
+*/
+
+/* Keep all other existing styles from LessonPage.css */
 @import "@/assets/css/LessonPage.css";
 
-/* FLOATING PROBLEM REPORT BUTTON - ALWAYS VISIBLE */
-.floating-problem-report-btn {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  font-size: 1.5rem;
-  cursor: pointer;
-  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
-  transition: all 0.3s ease;
-  z-index: 999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: pulse 2s infinite;
-}
-
-.floating-problem-report-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 25px rgba(245, 158, 11, 0.6);
-}
-
-.floating-problem-report-btn:active {
-  transform: scale(0.95);
-}
-
-@keyframes pulse {
-  0%, 100% {
-    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
-  }
-  50% {
-    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.8);
-  }
-}
-
-/* PROBLEM REPORT MODAL STYLES */
+/* Add any remaining modal styles that might be missing */
 .problem-report-modal {
   background: white;
   border-radius: 20px;
@@ -1648,81 +1612,5 @@ export default {
 
 .close-success:hover {
   background: rgba(255, 255, 255, 0.3);
-}
-
-/* RESPONSIVE DESIGN */
-@media (max-width: 768px) {
-  .floating-problem-report-btn {
-    width: 50px;
-    height: 50px;
-    font-size: 1.2rem;
-    top: 15px;
-    right: 15px;
-  }
-  
-  .problem-report-modal {
-    max-width: 95%;
-    margin: 10px;
-  }
-  
-  .modal-header {
-    padding: 16px 20px;
-  }
-  
-  .modal-header h3 {
-    font-size: 1.1rem;
-  }
-  
-  .modal-body {
-    padding: 20px;
-  }
-  
-  .modal-footer {
-    padding: 16px 20px;
-    flex-direction: column;
-  }
-  
-  .cancel-btn,
-  .submit-btn {
-    width: 100%;
-    order: 2;
-  }
-  
-  .submit-btn {
-    order: 1;
-    margin-bottom: 8px;
-  }
-
-  .success-notification {
-    left: 10px;
-    right: 10px;
-    transform: none;
-  }
-
-  .success-content {
-    max-width: none;
-  }
-}
-
-/* ACCESSIBILITY */
-@media (prefers-reduced-motion: reduce) {
-  .floating-problem-report-btn {
-    animation: none;
-  }
-  
-  .success-notification {
-    animation: none;
-  }
-}
-
-/* HIGH CONTRAST MODE */
-@media (prefers-contrast: high) {
-  .floating-problem-report-btn {
-    border: 2px solid white;
-  }
-  
-  .problem-report-modal {
-    border: 2px solid #000;
-  }
 }
 </style>
