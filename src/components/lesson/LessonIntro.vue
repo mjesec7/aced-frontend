@@ -29,6 +29,17 @@
           </div>
         </div>
       </div>
+
+      <!-- Problem Report Link - Subtle placement -->
+      <div class="help-section">
+        <button 
+          class="problem-report-link" 
+          @click="$emit('report-problem')"
+          title="Сообщить о проблеме с уроком"
+        >
+          ⚠️ Есть проблема с уроком?
+        </button>
+      </div>
       
       <!-- Previous Progress Display -->
       <div v-if="previousProgress && (previousProgress?.completedSteps || []).length > 0" class="previous-progress">
@@ -57,17 +68,6 @@
           {{ previousProgress ? '🔄 Начать заново' : '🚀 Начать урок' }}
         </button>
       </div>
-    </div>
-
-    <!-- Problem Report Button at Bottom -->
-    <div class="bottom-help">
-      <button 
-        class="problem-report-btn-bottom" 
-        @click="$emit('report-problem')"
-        title="Сообщить о проблеме с уроком"
-      >
-        ⚠️ Нашли проблему с уроком? Сообщите нам
-      </button>
     </div>
   </div>
 </template>
@@ -182,7 +182,7 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .info-card {
@@ -247,6 +247,37 @@ export default {
   font-size: 1.1rem;
   font-weight: 700;
   color: #1e293b;
+}
+
+/* Help Section - Better placement */
+.help-section {
+  margin: 16px 0 24px 0;
+  padding: 0;
+}
+
+.problem-report-link {
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: transparent;
+}
+
+.problem-report-link:hover {
+  color: #f59e0b;
+  text-decoration-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.problem-report-link:active {
+  transform: scale(0.98);
 }
 
 .previous-progress {
@@ -378,46 +409,6 @@ export default {
   transform: translateY(-1px);
 }
 
-/* Bottom Help Section */
-.bottom-help {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 600px;
-  padding: 0 20px;
-}
-
-.problem-report-btn-bottom {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%);
-  border: 2px solid rgba(245, 158, 11, 0.3);
-  color: #d97706;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 12px 20px;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
-}
-
-.problem-report-btn-bottom:hover {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.15) 100%);
-  border-color: rgba(245, 158, 11, 0.5);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.2);
-}
-
-.problem-report-btn-bottom:active {
-  transform: translateY(0);
-}
-
 /* Responsive Design */
 @media (max-width: 768px) {
   .intro-screen {
@@ -449,6 +440,15 @@ export default {
     padding: 20px 16px;
   }
 
+  .help-section {
+    margin: 12px 0 20px 0;
+  }
+
+  .problem-report-link {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+  }
+
   .previous-progress {
     padding: 24px 20px;
   }
@@ -476,16 +476,6 @@ export default {
     max-width: 300px;
     font-size: 1.1rem;
     padding: 16px 32px;
-  }
-
-  .bottom-help {
-    bottom: 15px;
-    padding: 0 16px;
-  }
-
-  .problem-report-btn-bottom {
-    font-size: 0.8rem;
-    padding: 10px 16px;
   }
 }
 
@@ -520,6 +510,11 @@ export default {
     font-size: 1.5rem;
   }
 
+  .problem-report-link {
+    font-size: 0.8rem;
+    padding: 5px 8px;
+  }
+
   .previous-progress {
     padding: 20px 16px;
   }
@@ -540,23 +535,13 @@ export default {
     font-size: 1rem;
     padding: 14px 28px;
   }
-
-  .bottom-help {
-    bottom: 10px;
-    padding: 0 12px;
-  }
-
-  .problem-report-btn-bottom {
-    font-size: 0.75rem;
-    padding: 8px 12px;
-  }
 }
 
 /* Focus states for accessibility */
 .exit-btn:focus,
 .start-btn:focus,
 .continue-btn:focus,
-.problem-report-btn-bottom:focus {
+.problem-report-link:focus {
   outline: 3px solid #3b82f6;
   outline-offset: 2px;
 }
@@ -571,19 +556,12 @@ export default {
   .stat:hover,
   .start-btn:hover,
   .continue-btn:hover,
-  .problem-report-btn-bottom:hover {
+  .problem-report-link:hover {
     transform: none;
   }
 
   .start-btn::before {
     display: none;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .problem-report-btn-bottom {
-    border-width: 3px;
   }
 }
 </style>
