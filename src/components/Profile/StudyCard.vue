@@ -1,7 +1,6 @@
 <template>
-  <!-- REMOVED: v-if="lessonExists" - Now always shows -->
   <div class="study-card" :class="getTopicTypeClass(topic)">
-    <button class="close-btn" @click="showDeleteModal = true">✕</button>
+    <button class="close-btn" @click="showDeleteModal = true" title="Удалить курс">×</button>
 
     <!-- Topic Type Badge -->
     <div class="topic-type-badge" :class="getTopicType(topic)">
@@ -12,9 +11,11 @@
     <div class="card-header">
       <div class="topic-info">
         <h3 class="topic-name">{{ displayName }}</h3>
+        <p class="topic-description" v-if="displayDescription">{{ displayDescription }}</p>
         <div class="topic-meta">
           <span class="subject-tag" v-if="topic.subject">{{ topic.subject }}</span>
           <span class="level-tag" v-if="topic.level">Ур. {{ topic.level }}</span>
+          <span class="date-tag" v-if="addedDate">{{ addedDate }}</span>
         </div>
       </div>
     </div>
@@ -22,53 +23,80 @@
     <div class="progress-section">
       <div class="progress-header">
         <span class="progress-text">{{ lessonProgress }}%</span>
-        <span class="medal-badge" v-if="progress.medal && progress.medal !== 'none'">
-          {{ getMedalIcon(progress.medal) }}
-        </span>
+        <div class="medal-area">
+          <span class="medal-badge" v-if="progress.medal && progress.medal !== 'none'">
+            {{ getMedalIcon(progress.medal) }}
+          </span>
+          <span class="stars-display" v-if="progress.stars > 0">
+            <span class="stars-icon">⭐</span>
+            <span class="stars-count">{{ progress.stars }}</span>
+          </span>
+        </div>
       </div>
       <div class="progress-bar">
         <div class="progress-fill" :style="{ width: lessonProgress + '%' }" :class="getProgressClass()"></div>
       </div>
       <div class="progress-details">
-        <span class="lessons-count">{{ progress.completedLessons || 0 }}/{{ progress.totalLessons || lessons.length || 0 }}</span>
-        <span class="points" v-if="progress.points">+{{ progress.points }}⭐</span>
+        <span class="lessons-count">
+          <span class="icon">📚</span>
+          {{ progress.completedLessons || 0 }}/{{ progress.totalLessons || lessons.length || topic.lessonCount || 0 }}
+        </span>
+        <span class="points" v-if="progress.points">
+          <span class="icon">🎯</span>
+          {{ progress.points }} очков
+        </span>
       </div>
     </div>
 
     <div class="card-stats">
       <div class="stat-item">
         <span class="stat-icon">📚</span>
-        <span class="stat-text">{{ progress.totalLessons || lessons.length || topic.lessonCount || 0 }} уроков</span>
+        <div class="stat-content">
+          <span class="stat-value">{{ totalLessons }}</span>
+          <span class="stat-label">уроков</span>
+        </div>
       </div>
       <div class="stat-item">
         <span class="stat-icon">⏱</span>
-        <span class="stat-text">~{{ estimatedDuration }} мин</span>
+        <div class="stat-content">
+          <span class="stat-value">{{ estimatedDuration }}</span>
+          <span class="stat-label">мин</span>
+        </div>
       </div>
-      <div class="stat-item" v-if="progress.stars">
-        <span class="stat-icon">⭐</span>
-        <span class="stat-text">{{ progress.stars }} звезд</span>
+      <div class="stat-item" v-if="progress.stars || lessonProgress > 0">
+        <span class="stat-icon">🏆</span>
+        <div class="stat-content">
+          <span class="stat-value">{{ Math.round(lessonProgress) }}%</span>
+          <span class="stat-label">готово</span>
+        </div>
       </div>
     </div>
     
     <div class="recent-activity" v-if="lastActivity">
       <span class="activity-icon">🕒</span>
-      <span class="activity-text">{{ lastActivity }}</span>
+      <span class="activity-text">Последний раз: {{ lastActivity }}</span>
     </div>
 
     <div class="card-actions">
-      <!-- FIXED: Show different buttons based on lesson availability -->
-      <button v-if="hasLessons" class="continue-btn" @click="goToLesson" :class="getContinueButtonClass()">
+      <!-- Enhanced buttons with better status indication -->
+      <button 
+        v-if="hasLessons" 
+        class="continue-btn" 
+        @click="goToLesson" 
+        :class="getContinueButtonClass()"
+        :title="getContinueButtonTitle()"
+      >
         <span class="btn-icon">{{ getContinueIcon() }}</span>
-        <span>{{ getContinueText() }}</span>
+        <span class="btn-text">{{ getContinueText() }}</span>
       </button>
-      <button v-else class="continue-btn btn-disabled" disabled>
-        <span class="btn-icon">📚</span>
-        <span>Скоро</span>
+      <button v-else class="continue-btn btn-disabled" disabled title="Уроки скоро появятся">
+        <span class="btn-icon">⏳</span>
+        <span class="btn-text">Скоро</span>
       </button>
       
-      <button class="overview-btn" @click="goToOverview">
+      <button class="overview-btn" @click="goToOverview" title="Посмотреть все уроки курса">
         <span class="btn-icon">📋</span>
-        <span>Обзор</span>
+        <span class="btn-text">Обзор</span>
       </button>
     </div>
 
@@ -78,8 +106,8 @@
         <div class="modal-content" @click.stop>
           <div class="modal-icon">🗑️</div>
           <h4>Удалить курс?</h4>
-          <p>Вы уверены, что хотите удалить <strong>{{ displayName }}</strong>?</p>
-          <p class="warning-text">Прогресс по курсу будет сохранён.</p>
+          <p>Вы уверены, что хотите удалить <strong>{{ displayName }}</strong> из вашего списка?</p>
+          <p class="warning-text">💡 Ваш прогресс по курсу будет сохранён и останется доступным.</p>
           <div class="modal-actions">
             <button class="confirm-btn" @click="confirmDelete">Удалить</button>
             <button class="cancel-btn" @click="showDeleteModal = false">Отмена</button>
@@ -112,16 +140,55 @@ export default {
     ...mapGetters('user', ['isPremiumUser']),
     
     displayName() {
-      // FIXED: Better name extraction
-      return this.topic.name || 
-             this.topic.topic || 
-             this.topic.topicName || 
-             this.topic.title || 
-             'Без названия';
+      // Enhanced name extraction with better fallbacks
+      const name = this.topic.name || 
+                   this.topic.topic || 
+                   this.topic.topicName || 
+                   this.topic.title ||
+                   this.topic.lessonName;
+      
+      return name || 'Курс без названия';
+    },
+    
+    displayDescription() {
+      const desc = this.topic.description || 
+                   this.topic.topicDescription ||
+                   this.topic.summary;
+      
+      if (desc && desc.length > 100) {
+        return desc.substring(0, 100) + '...';
+      }
+      return desc || '';
+    },
+    
+    addedDate() {
+      const date = this.topic.addedAt || 
+                   this.topic.studyListEntry?.addedAt || 
+                   this.topic.createdAt;
+      
+      if (date) {
+        const dateObj = new Date(date);
+        const now = new Date();
+        const diffDays = Math.floor((now - dateObj) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) return 'Сегодня';
+        if (diffDays === 1) return 'Вчера';
+        if (diffDays < 7) return `${diffDays} дней назад`;
+        return dateObj.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+      }
+      return null;
     },
     
     hasLessons() {
       return Array.isArray(this.lessons) && this.lessons.length > 0;
+    },
+    
+    totalLessons() {
+      return this.progress.totalLessons || 
+             this.lessons.length || 
+             this.topic.lessonCount || 
+             this.topic.lessons?.length || 
+             0;
     },
     
     lessonProgress() {
@@ -130,19 +197,29 @@ export default {
     },
     
     estimatedDuration() {
-      const lessonCount = this.progress.totalLessons || 
-                         this.lessons.length || 
-                         this.topic.lessonCount || 
-                         this.topic.totalTime || 
-                         0;
-      return Math.max(lessonCount * 8, 10);
+      const lessonCount = this.totalLessons;
+      const timePerLesson = 8; // minutes
+      return Math.max(lessonCount * timePerLesson, 10);
     },
     
     lastActivity() {
-      if (this.lessonProgress > 0) {
-        const days = Math.floor(Math.random() * 7) + 1;
-        return days === 1 ? 'вчера' : `${days} дней назад`;
+      // Enhanced last activity calculation
+      if (this.progress.updatedAt) {
+        const lastUpdate = new Date(this.progress.updatedAt);
+        const now = new Date();
+        const diffDays = Math.floor((now - lastUpdate) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) return 'сегодня';
+        if (diffDays === 1) return 'вчера';
+        if (diffDays < 7) return `${diffDays} дней назад`;
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)} недель назад`;
+        return `более месяца назад`;
       }
+      
+      if (this.lessonProgress > 0) {
+        return 'давно';
+      }
+      
       return null;
     }
   },
@@ -216,62 +293,103 @@ export default {
 
     getContinueText() {
       const progress = this.lessonProgress;
-      if (progress === 100) return 'Завершен';
+      if (progress === 100) return 'Завершён';
       if (progress > 0) return 'Продолжить';
       return 'Начать';
+    },
+    
+    getContinueButtonTitle() {
+      const progress = this.lessonProgress;
+      if (progress === 100) return 'Курс завершён! Можете пересмотреть материалы';
+      if (progress > 0) return `Продолжить изучение (${progress}% завершено)`;
+      return 'Начать изучение курса';
     },
 
     goToLesson() {
       if (!this.hasLessons) {
-        alert('❌ Уроки для этой темы еще не готовы.');
+        this.$nextTick(() => {
+          alert('❌ Уроки для этого курса ещё готовятся. Попробуйте позже!');
+        });
         return;
       }
       
       try {
-        const firstLesson = this.lessons.find(
+        // Find the first available lesson
+        const availableLesson = this.lessons.find(
           l => l && l._id && (l.type !== 'premium' || this.isPremiumUser)
         );
-        if (!firstLesson) throw new Error('Нет доступа к уроку.');
-        this.$router.push({ name: 'LessonPage', params: { id: firstLesson._id } });
+        
+        if (!availableLesson) {
+          throw new Error('Нет доступных уроков для вашего тарифного плана.');
+        }
+        
+        this.$router.push({ 
+          name: 'LessonPage', 
+          params: { id: availableLesson._id } 
+        });
       } catch (err) {
         console.error('❌ Ошибка перехода к уроку:', err);
-        alert('❌ Не удалось открыть урок.');
+        this.$nextTick(() => {
+          alert('❌ Не удалось открыть урок: ' + err.message);
+        });
       }
     },
 
     goToOverview() {
-      this.$router.push({ path: `/topic/${this.topic._id || this.topic.topicId}/overview` });
+      const topicId = this.topic._id || this.topic.topicId || this.topic.id;
+      if (!topicId) {
+        console.error('❌ No topic ID available for overview');
+        this.$nextTick(() => {
+          alert('❌ Не удалось открыть обзор курса');
+        });
+        return;
+      }
+      
+      this.$router.push({ 
+        path: `/topic/${topicId}/overview` 
+      });
     },
 
-    // FIXED: Use API function instead of direct axios
     async confirmDelete() {
       try {
         if (!auth.currentUser) {
-          alert('Пожалуйста, войдите в аккаунт.');
+          this.$nextTick(() => {
+            alert('❌ Пожалуйста, войдите в аккаунт для удаления курса.');
+          });
           return;
         }
 
-        const userId = localStorage.getItem('firebaseUserId');
+        const userId = localStorage.getItem('firebaseUserId') || 
+                      this.$store.state.firebaseUserId;
         const topicId = this.topic._id || this.topic.topicId;
         
         if (!userId || !topicId) {
-          alert('❌ Ошибка: не найдены данные для удаления');
+          this.$nextTick(() => {
+            alert('❌ Ошибка: не найдены данные для удаления курса');
+          });
           return;
         }
 
+        console.log('🗑️ Deleting topic from study list:', { userId, topicId });
+
         const result = await removeFromStudyList(userId, topicId);
         
-        if (result.success) {
+        if (result.success !== false) {
           this.showDeleteModal = false;
           this.$emit('deleted', topicId);
-          alert('✅ Курс удален из списка');
+          
+          this.$nextTick(() => {
+            alert('✅ Курс успешно удалён из вашего списка!');
+          });
         } else {
-          alert('❌ ' + (result.error || 'Не удалось удалить курс'));
+          throw new Error(result.error || 'Не удалось удалить курс');
         }
         
       } catch (err) {
-        console.error('❌ Ошибка удаления:', err);
-        alert('❌ Не удалось удалить курс.');
+        console.error('❌ Ошибка удаления курса:', err);
+        this.$nextTick(() => {
+          alert('❌ Не удалось удалить курс: ' + (err.message || 'Неизвестная ошибка'));
+        });
       }
     }
   }

@@ -25,9 +25,9 @@
           
           <select v-model="filterType" class="filter-select">
             <option value="">Все типы</option>
-            <option value="free">💚 Бесплатные</option>
-            <option value="premium">💎 Премиум</option>
-            <option value="pro">🌟 Pro</option>
+            <option value="free"> Бесплатные</option>
+            <option value="premium">Премиум</option>
+            <option value="pro"> Pro</option>
           </select>
           
           <select v-model="filterProgress" class="filter-select">
@@ -311,7 +311,8 @@ export default {
       
       showPaywall: false,
       requestedTopicId: null,
-      lang: localStorage.getItem('lang') || 'en',
+      lang: localStorage.getItem('lang') || 'ru', // Changed default to 'ru'
+      
       // Error handling state
       errors: {
         recommendations: null,
@@ -322,6 +323,7 @@ export default {
       invalidTopicsCleanedUp: 0
     };
   },
+  
   computed: {
     ...mapGetters('user', ['userStatus']),
     
@@ -392,6 +394,7 @@ export default {
              this.filterType || this.filterProgress;
     }
   },
+  
   async mounted() {
     const storedId = this.$store.state.firebaseUserId || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
     if (!storedId) {
@@ -405,6 +408,7 @@ export default {
       this.fetchStudyList()
     ]);
   },
+  
   methods: {
     // ✅ ENHANCED: Topic type detection methods
     getTopicType(topic) {
@@ -510,14 +514,200 @@ export default {
       this.sortBy = 'name';
     },
     
+    // ✅ COMPLETELY FIXED: Topic name extraction with comprehensive fallbacks
     getTopicName(topic) {
-      return topic.name?.[this.lang] || topic.name?.en || topic.name || topic.topicName || 'Без названия';
+      if (!topic) {
+        console.warn('⚠️ getTopicName: No topic provided');
+        return 'Без названия';
+      }
+      
+      try {
+        // ✅ STRATEGY 1: Direct name field (highest priority)
+        if (topic.name) {
+          if (typeof topic.name === 'string' && topic.name.trim()) {
+            return topic.name.trim();
+          }
+          if (typeof topic.name === 'object' && topic.name !== null) {
+            const name = topic.name[this.lang] || topic.name.ru || topic.name.en || topic.name.uz || 
+                        Object.values(topic.name).find(val => val && typeof val === 'string' && val.trim());
+            if (name && typeof name === 'string' && name.trim()) {
+              return name.trim();
+            }
+          }
+        }
+        
+        // ✅ STRATEGY 2: TopicName field
+        if (topic.topicName) {
+          if (typeof topic.topicName === 'string' && topic.topicName.trim()) {
+            return topic.topicName.trim();
+          }
+          if (typeof topic.topicName === 'object' && topic.topicName !== null) {
+            const name = topic.topicName[this.lang] || topic.topicName.ru || topic.topicName.en || topic.topicName.uz ||
+                        Object.values(topic.topicName).find(val => val && typeof val === 'string' && val.trim());
+            if (name && typeof name === 'string' && name.trim()) {
+              return name.trim();
+            }
+          }
+        }
+        
+        // ✅ STRATEGY 3: Topic field (common in study list)
+        if (topic.topic) {
+          if (typeof topic.topic === 'string' && topic.topic.trim()) {
+            return topic.topic.trim();
+          }
+          if (typeof topic.topic === 'object' && topic.topic !== null) {
+            const name = topic.topic[this.lang] || topic.topic.ru || topic.topic.en || topic.topic.uz ||
+                        Object.values(topic.topic).find(val => val && typeof val === 'string' && val.trim());
+            if (name && typeof name === 'string' && name.trim()) {
+              return name.trim();
+            }
+          }
+        }
+        
+        // ✅ STRATEGY 4: Title field
+        if (topic.title) {
+          if (typeof topic.title === 'string' && topic.title.trim()) {
+            return topic.title.trim();
+          }
+          if (typeof topic.title === 'object' && topic.title !== null) {
+            const name = topic.title[this.lang] || topic.title.ru || topic.title.en || topic.title.uz ||
+                        Object.values(topic.title).find(val => val && typeof val === 'string' && val.trim());
+            if (name && typeof name === 'string' && name.trim()) {
+              return name.trim();
+            }
+          }
+        }
+        
+        // ✅ STRATEGY 5: Construct from description
+        if (topic.description) {
+          let desc = null;
+          if (typeof topic.description === 'string') {
+            desc = topic.description;
+          } else if (typeof topic.description === 'object' && topic.description !== null) {
+            desc = topic.description[this.lang] || topic.description.ru || topic.description.en || topic.description.uz ||
+                  Object.values(topic.description).find(val => val && typeof val === 'string');
+          }
+          
+          if (desc && desc.trim()) {
+            // Extract name from description patterns
+            const patterns = [
+              /Курс по теме "([^"]+)"/,
+              /Курс "([^"]+)"/,
+              /Изучите ([^с]+) с/,
+              /([^\.]+)\./
+            ];
+            
+            for (const pattern of patterns) {
+              const match = desc.match(pattern);
+              if (match && match[1] && match[1].trim()) {
+                return match[1].trim();
+              }
+            }
+            
+            // Use first 50 characters of description
+            if (desc.length > 50) {
+              return desc.substring(0, 47).trim() + '...';
+            }
+            return desc.trim();
+          }
+        }
+        
+        // ✅ STRATEGY 6: Construct from subject and level
+        if (topic.subject) {
+          const subject = typeof topic.subject === 'string' ? topic.subject : String(topic.subject);
+          const level = topic.level ? ` (Уровень ${topic.level})` : '';
+          return `${subject}${level}`;
+        }
+        
+        // ✅ STRATEGY 7: Use lesson name if this is built from lessons
+        if (topic.metadata && topic.metadata.source === 'built-from-lessons' && topic.lessons && topic.lessons.length > 0) {
+          const firstLesson = topic.lessons[0];
+          if (firstLesson.lessonName) {
+            return `Курс: ${firstLesson.lessonName}`;
+          }
+          if (firstLesson.title) {
+            return `Курс: ${firstLesson.title}`;
+          }
+        }
+        
+        // ✅ STRATEGY 8: Use ID as readable name
+        if (topic._id || topic.id) {
+          const id = (topic._id || topic.id).toString();
+          return `Курс ${id.substring(id.length - 6)}`;
+        }
+        
+        // ✅ STRATEGY 9: Debug and return fallback
+        console.warn('⚠️ getTopicName: No valid name found, available keys:', Object.keys(topic));
+        console.warn('⚠️ Topic object sample:', {
+          name: topic.name,
+          topicName: topic.topicName,
+          topic: topic.topic,
+          title: topic.title,
+          subject: topic.subject
+        });
+        
+        return 'Без названия';
+        
+      } catch (error) {
+        console.error('❌ Error in getTopicName:', error);
+        console.error('Topic object:', topic);
+        return 'Ошибка названия';
+      }
     },
     
+    // ✅ FIXED: Better topic description extraction
     getTopicDescription(topic) {
-      return topic.description?.[this.lang] || topic.description?.en || topic.description || topic.topicDescription || 'Описание отсутствует';
+      if (!topic) {
+        return 'Описание отсутствует';
+      }
+      
+      try {
+        // ✅ STRATEGY 1: Direct description field
+        if (topic.description) {
+          if (typeof topic.description === 'string' && topic.description.trim()) {
+            return topic.description.trim();
+          }
+          if (typeof topic.description === 'object' && topic.description !== null) {
+            const desc = topic.description[this.lang] || topic.description.ru || topic.description.en || topic.description.uz ||
+                        Object.values(topic.description).find(val => val && typeof val === 'string' && val.trim());
+            if (desc && typeof desc === 'string' && desc.trim()) {
+              return desc.trim();
+            }
+          }
+        }
+        
+        // ✅ STRATEGY 2: TopicDescription field
+        if (topic.topicDescription) {
+          if (typeof topic.topicDescription === 'string' && topic.topicDescription.trim()) {
+            return topic.topicDescription.trim();
+          }
+          if (typeof topic.topicDescription === 'object' && topic.topicDescription !== null) {
+            const desc = topic.topicDescription[this.lang] || topic.topicDescription.ru || topic.topicDescription.en || topic.topicDescription.uz ||
+                        Object.values(topic.topicDescription).find(val => val && typeof val === 'string' && val.trim());
+            if (desc && typeof desc === 'string' && desc.trim()) {
+              return desc.trim();
+            }
+          }
+        }
+        
+        // ✅ STRATEGY 3: Construct from available data
+        const topicName = this.getTopicName(topic);
+        const lessonCount = topic.lessonCount || topic.lessons?.length || 0;
+        const subject = topic.subject || 'Общий предмет';
+        const level = topic.level || 1;
+        
+        if (lessonCount > 0) {
+          return `Курс "${topicName}" по предмету "${subject}" (Уровень ${level}) содержит ${lessonCount} уроков.`;
+        } else {
+          return `Курс "${topicName}" по предмету "${subject}" (Уровень ${level}).`;
+        }
+        
+      } catch (error) {
+        console.error('❌ Error in getTopicDescription:', error);
+        return 'Описание отсутствует';
+      }
     },
-
+    
     // Enhanced error handling method
     handleApiError(error, context) {
       console.error(`❌ API Error [${context}]:`, error);
@@ -592,6 +782,8 @@ export default {
                 id: topicId,
                 name: topicName,
                 topicName: topicName,
+                topic: topicName, // ✅ CRITICAL: Add all name variants
+                title: topicName,
                 description: `Курс по теме "${topicName}" содержит уроков`,
                 topicDescription: `Изучите ${topicName} с практическими упражнениями`,
                 subject: lesson.subject || 'General',
@@ -639,7 +831,7 @@ export default {
               return (a.level || 0) - (b.level || 0);
             });
           
-                      console.log(`✅ Built ${builtTopics.length} topic recommendations from lessons`);
+          console.log(`✅ Built ${builtTopics.length} topic recommendations from lessons`);
           
           // ✅ Store all recommendations and select random 10 for display
           this.allRecommendations = builtTopics;
@@ -647,6 +839,11 @@ export default {
           this.extractSubjects(this.allRecommendations);
           
           console.log(`📊 Total available: ${this.allRecommendations.length}, Displaying: ${this.displayedRecommendations.length}`);
+          console.log('🔍 Sample recommendation names:', this.displayedRecommendations.slice(0, 3).map(t => ({
+            id: t._id,
+            name: this.getTopicName(t)
+          })));
+          
           return;
         }
         
@@ -721,216 +918,279 @@ export default {
 
     // ✅ COMPLETELY FIXED: Fetch study list using proper API methods
     async fetchStudyList() {
-  try {
-    this.loadingStudyList = true;
-    this.errors.studyList = null;
-    this.invalidTopicsCleanedUp = 0;
-    
-    console.log('🔍 Fetching study list for user:', this.userId);
-    
-    // ✅ CRITICAL: Ensure we have a valid userId
-    if (!this.userId) {
-      console.error('❌ No userId available for fetching study list');
-      this.studyList = [];
-      return;
-    }
-    
-    // Get user's study list
-    const studyListResult = await getUserStudyList(this.userId);
-    
-    console.log('📊 Study list API result:', studyListResult);
-    
-    if (!studyListResult || !studyListResult.success) {
-      console.log('⚠️ Study list API returned unsuccessful result:', studyListResult);
-      
-      // ✅ FALLBACK: Try different API approach if available
-      if (studyListResult && studyListResult.error) {
-        console.error('❌ Study list API error:', studyListResult.error);
-        this.errors.studyList = studyListResult.error;
-      }
-      
-      this.studyList = [];
-      return;
-    }
-    
-    const studyListData = studyListResult.data;
-    
-    if (!Array.isArray(studyListData)) {
-      console.log('⚠️ Study list data is not an array:', typeof studyListData, studyListData);
-      this.studyList = [];
-      return;
-    }
-    
-    if (studyListData.length === 0) {
-      console.log('ℹ️ No study list entries found');
-      this.studyList = [];
-      return;
-    }
-    
-    console.log(`📚 Found ${studyListData.length} study list entries`);
-    
-    // ✅ DEBUGGING: Log each entry
-    studyListData.forEach((entry, index) => {
-      console.log(`📋 Entry ${index + 1}:`, {
-        topicId: entry.topicId,
-        topic: entry.topic,
-        hasLessons: entry.lessons?.length || 0,
-        addedAt: entry.addedAt
-      });
-    });
-    
-    // Get user progress for calculating completion
-    let userProgressData = [];
-    try {
-      const progressResult = await getUserProgress(this.userId);
-      if (progressResult && progressResult.success) {
-        userProgressData = progressResult.data || [];
-        console.log(`📊 Loaded ${userProgressData.length} progress records`);
-      }
-    } catch (progressError) {
-      console.warn('⚠️ Failed to load progress data:', progressError.message);
-    }
-    
-    // ✅ ENHANCED: Process each study list entry
-    const validTopics = [];
-    
-    for (const entry of studyListData) {
-      if (!entry.topicId) {
-        console.warn('⚠️ Study list entry missing topicId:', entry);
-        this.invalidTopicsCleanedUp++;
-        continue;
-      }
-      
       try {
-        console.log(`🔍 Processing topic: ${entry.topicId}`);
+        this.loadingStudyList = true;
+        this.errors.studyList = null;
+        this.invalidTopicsCleanedUp = 0;
         
-        // ✅ STRATEGY 1: Use data from study list entry first
-        let topicData = {
-          _id: entry.topicId,
-          id: entry.topicId,
-          name: entry.topic || entry.topicName,
-          topicName: entry.topicName || entry.topic,
-          description: entry.description || `Курс по теме "${entry.topic || entry.topicName}"`,
-          subject: entry.subject || 'General',
-          level: entry.level || 1,
-          type: entry.type || 'free',
-          lessonCount: entry.lessonCount || 0,
-          totalTime: entry.totalTime || 10,
-          isActive: entry.isActive !== false,
-          metadata: {
-            source: 'study-list-entry',
-            processedAt: new Date().toISOString()
-          }
-        };
+        console.log('🔍 Fetching study list for user:', this.userId);
         
-        // ✅ STRATEGY 2: Try to get fresh topic data from API
-        try {
-          const topicResult = await getTopicById(entry.topicId);
-          if (topicResult && topicResult.success && topicResult.data) {
-            const freshTopicData = topicResult.data;
-            console.log(`✅ Got fresh topic data: ${freshTopicData.name || freshTopicData.topicName}`);
-            
-            // Merge fresh data with study list entry
-            topicData = {
-              ...topicData,
-              ...freshTopicData,
-              // Keep study list specific data
-              studyListEntry: entry
-            };
-          }
-        } catch (topicError) {
-          console.warn(`⚠️ Failed to get fresh topic data for ${entry.topicId}:`, topicError.message);
+        // ✅ CRITICAL: Ensure we have a valid userId
+        if (!this.userId) {
+          console.error('❌ No userId available for fetching study list');
+          this.studyList = [];
+          return;
         }
         
-        // ✅ STRATEGY 3: Get lessons for this topic
-        let lessons = entry.lessons || [];
+        // Get user's study list
+        const studyListResult = await getUserStudyList(this.userId);
         
-        if (lessons.length === 0) {
-          try {
-            const lessonsResult = await getLessonsByTopic(entry.topicId);
-            if (lessonsResult && lessonsResult.success && Array.isArray(lessonsResult.data)) {
-              lessons = lessonsResult.data;
-              console.log(`📚 Got ${lessons.length} lessons for topic ${entry.topicId}`);
-            }
-          } catch (lessonsError) {
-            console.warn(`⚠️ Failed to get lessons for topic ${entry.topicId}:`, lessonsError.message);
-          }
-        }
+        console.log('📊 Study list API result:', studyListResult);
         
-        // ✅ STRATEGY 4: Calculate progress
-        let completedLessons = 0;
-        let totalStars = 0;
-        let totalPoints = 0;
-        
-        lessons.forEach(lesson => {
-          const progress = userProgressData.find(p => {
-            const progressLessonId = p.lessonId?._id || p.lessonId;
-            return progressLessonId?.toString() === lesson._id?.toString();
-          });
+        if (!studyListResult || !studyListResult.success) {
+          console.log('⚠️ Study list API returned unsuccessful result:', studyListResult);
           
-          if (progress && progress.completed) {
-            completedLessons++;
-            totalStars += progress.stars || 0;
-            totalPoints += progress.points || 0;
+          // ✅ FALLBACK: Try different API approach if available
+          if (studyListResult && studyListResult.error) {
+            console.error('❌ Study list API error:', studyListResult.error);
+            this.errors.studyList = studyListResult.error;
           }
+          
+          this.studyList = [];
+          return;
+        }
+        
+        const studyListData = studyListResult.data;
+        
+        if (!Array.isArray(studyListData)) {
+          console.log('⚠️ Study list data is not an array:', typeof studyListData, studyListData);
+          this.studyList = [];
+          return;
+        }
+        
+        if (studyListData.length === 0) {
+          console.log('ℹ️ No study list entries found');
+          this.studyList = [];
+          return;
+        }
+        
+        console.log(`📚 Found ${studyListData.length} study list entries`);
+        
+        // ✅ DEBUGGING: Log each entry with comprehensive name check
+        studyListData.forEach((entry, index) => {
+          console.log(`📋 Entry ${index + 1}:`, {
+            topicId: entry.topicId,
+            name: entry.name,
+            topic: entry.topic,
+            topicName: entry.topicName,
+            title: entry.title,
+            hasLessons: entry.lessons?.length || 0,
+            addedAt: entry.addedAt,
+            allKeys: Object.keys(entry)
+          });
         });
         
-        const progressPercent = lessons.length > 0 
-          ? Math.round((completedLessons / lessons.length) * 100)
-          : 0;
-        
-        let medal = 'none';
-        if (progressPercent === 100 && lessons.length > 0) {
-          const avgStars = totalStars / lessons.length;
-          if (avgStars >= 2.5) medal = 'gold';
-          else if (avgStars >= 1.5) medal = 'silver';
-          else medal = 'bronze';
+        // Get user progress for calculating completion
+        let userProgressData = [];
+        try {
+          const progressResult = await getUserProgress(this.userId);
+          if (progressResult && progressResult.success) {
+            userProgressData = progressResult.data || [];
+            console.log(`📊 Loaded ${userProgressData.length} progress records`);
+          }
+        } catch (progressError) {
+          console.warn('⚠️ Failed to load progress data:', progressError.message);
         }
         
-        // ✅ STRATEGY 5: Build final topic object
-        const finalTopic = {
-          ...topicData,
-          lessons: lessons,
-          lessonCount: lessons.length,
-          totalTime: lessons.length * 10,
-          progress: {
-            percent: progressPercent,
-            medal: medal,
-            completedLessons: completedLessons,
-            totalLessons: lessons.length,
-            stars: totalStars,
-            points: totalPoints
-          },
-          hasLessons: lessons.length > 0,
-          studyListEntry: entry
-        };
+        // ✅ ENHANCED: Process each study list entry with robust name handling
+        const validTopics = [];
         
-        validTopics.push(finalTopic);
-        console.log(`✅ Built complete topic: ${finalTopic.name} (${finalTopic.progress.percent}% complete)`);
+        for (const entry of studyListData) {
+          if (!entry.topicId) {
+            console.warn('⚠️ Study list entry missing topicId:', entry);
+            this.invalidTopicsCleanedUp++;
+            continue;
+          }
+          
+          try {
+            console.log(`🔍 Processing topic: ${entry.topicId}`);
+            
+            // ✅ STRATEGY 1: Build base topic data with ALL possible name fields
+            let topicData = {
+              _id: entry.topicId,
+              id: entry.topicId,
+              // ✅ CRITICAL: Set ALL name variants from study list entry
+              name: entry.name || entry.topic || entry.topicName || entry.title,
+              topicName: entry.topicName || entry.name || entry.topic || entry.title,
+              topic: entry.topic || entry.name || entry.topicName || entry.title,
+              title: entry.title || entry.name || entry.topic || entry.topicName,
+              description: entry.description || `Курс "${entry.topic || entry.topicName || entry.name || 'Без названия'}"`,
+              topicDescription: entry.topicDescription || entry.description,
+              subject: entry.subject || 'General',
+              level: entry.level || 1,
+              type: entry.type || 'free',
+              lessonCount: entry.lessonCount || 0,
+              totalTime: entry.totalTime || 10,
+              isActive: entry.isActive !== false,
+              metadata: {
+                source: 'study-list-entry',
+                processedAt: new Date().toISOString(),
+                originalEntry: entry
+              }
+            };
+            
+            console.log(`📝 Base topic data for ${entry.topicId}:`, {
+              name: topicData.name,
+              topicName: topicData.topicName,
+              topic: topicData.topic,
+              title: topicData.title,
+              extractedName: this.getTopicName(topicData)
+            });
+            
+            // ✅ STRATEGY 2: Try to get fresh topic data from API (but keep names if API data lacks them)
+            try {
+              const topicResult = await getTopicById(entry.topicId);
+              if (topicResult && topicResult.success && topicResult.data) {
+                const freshTopicData = topicResult.data;
+                console.log(`✅ Got fresh topic data for ${entry.topicId}:`, {
+                  hasName: !!freshTopicData.name,
+                  hasTopicName: !!freshTopicData.topicName,
+                  hasTopic: !!freshTopicData.topic,
+                  hasTitle: !!freshTopicData.title
+                });
+                
+                // ✅ SMART MERGE: Use fresh data if it has names, otherwise keep study list names
+                const shouldKeepStudyListNames = !freshTopicData.name && !freshTopicData.topicName && 
+                                                !freshTopicData.topic && !freshTopicData.title;
+                
+                if (shouldKeepStudyListNames) {
+                  console.log(`📝 Keeping study list names for ${entry.topicId} (API data has no names)`);
+                  topicData = {
+                    ...freshTopicData,
+                    // Keep the names from study list entry
+                    name: topicData.name,
+                    topicName: topicData.topicName,
+                    topic: topicData.topic,
+                    title: topicData.title,
+                    description: freshTopicData.description || topicData.description,
+                    studyListEntry: entry
+                  };
+                } else {
+                  console.log(`📝 Using fresh API names for ${entry.topicId}`);
+                  topicData = {
+                    ...topicData,
+                    ...freshTopicData,
+                    // Use API names but fallback to study list if API names are empty
+                    name: freshTopicData.name || topicData.name,
+                    topicName: freshTopicData.topicName || topicData.topicName,
+                    topic: freshTopicData.topic || topicData.topic,
+                    title: freshTopicData.title || topicData.title,
+                    studyListEntry: entry
+                  };
+                }
+              }
+            } catch (topicError) {
+              console.warn(`⚠️ Failed to get fresh topic data for ${entry.topicId}:`, topicError.message);
+            }
+            
+            // ✅ STRATEGY 3: Get lessons for this topic
+            let lessons = entry.lessons || [];
+            
+            if (lessons.length === 0) {
+              try {
+                const lessonsResult = await getLessonsByTopic(entry.topicId);
+                if (lessonsResult && lessonsResult.success && Array.isArray(lessonsResult.data)) {
+                  lessons = lessonsResult.data;
+                  console.log(`📚 Got ${lessons.length} lessons for topic ${entry.topicId}`);
+                }
+              } catch (lessonsError) {
+                console.warn(`⚠️ Failed to get lessons for topic ${entry.topicId}:`, lessonsError.message);
+              }
+            }
+            
+            // ✅ STRATEGY 4: Calculate progress
+            let completedLessons = 0;
+            let totalStars = 0;
+            let totalPoints = 0;
+            
+            lessons.forEach(lesson => {
+              const progress = userProgressData.find(p => {
+                const progressLessonId = p.lessonId?._id || p.lessonId;
+                return progressLessonId?.toString() === lesson._id?.toString();
+              });
+              
+              if (progress && progress.completed) {
+                completedLessons++;
+                totalStars += progress.stars || 0;
+                totalPoints += progress.points || 0;
+              }
+            });
+            
+            const progressPercent = lessons.length > 0 
+              ? Math.round((completedLessons / lessons.length) * 100)
+              : 0;
+            
+            let medal = 'none';
+            if (progressPercent === 100 && lessons.length > 0) {
+              const avgStars = totalStars / lessons.length;
+              if (avgStars >= 2.5) medal = 'gold';
+              else if (avgStars >= 1.5) medal = 'silver';
+              else medal = 'bronze';
+            }
+            
+            // ✅ STRATEGY 5: Build final topic object
+            const finalTopic = {
+              ...topicData,
+              lessons: lessons,
+              lessonCount: lessons.length,
+              totalTime: lessons.length * 10,
+              progress: {
+                percent: progressPercent,
+                medal: medal,
+                completedLessons: completedLessons,
+                totalLessons: lessons.length,
+                stars: totalStars,
+                points: totalPoints
+              },
+              hasLessons: lessons.length > 0,
+              studyListEntry: entry
+            };
+            
+            // ✅ FINAL VERIFICATION: Check the final topic name
+            const finalName = this.getTopicName(finalTopic);
+            console.log(`✅ Final topic built for ${finalTopic._id}:`, {
+              extractedName: finalName,
+              progress: finalTopic.progress.percent,
+              hasName: !!(finalTopic.name || finalTopic.topic || finalTopic.topicName),
+              nameFields: {
+                name: finalTopic.name,
+                topic: finalTopic.topic,
+                topicName: finalTopic.topicName,
+                title: finalTopic.title
+              }
+            });
+            
+            validTopics.push(finalTopic);
+            
+          } catch (error) {
+            console.error(`❌ Error processing topic ${entry.topicId}:`, error);
+            this.invalidTopicsCleanedUp++;
+          }
+        }
         
-      } catch (error) {
-        console.error(`❌ Error processing topic ${entry.topicId}:`, error);
-        this.invalidTopicsCleanedUp++;
+        this.studyList = validTopics;
+        this.extractSubjects(this.studyList);
+        
+        console.log(`✅ Successfully loaded ${validTopics.length} study list topics`);
+        console.log('🔍 Final study list with names:', validTopics.map(t => ({
+          id: t._id,
+          name: this.getTopicName(t),
+          hasLessons: t.hasLessons
+        })));
+        
+        if (this.invalidTopicsCleanedUp > 0) {
+          console.log(`🧹 Cleaned up ${this.invalidTopicsCleanedUp} invalid topic entries`);
+        }
+        
+      } catch (err) {
+        console.error('❌ Critical error in fetchStudyList:', err);
+        const errorInfo = this.handleApiError(err, 'fetch-study-list');
+        this.errors.studyList = errorInfo.message;
+        this.studyList = [];
+      } finally {
+        this.loadingStudyList = false;
       }
-    }
-    
-    this.studyList = validTopics;
-    this.extractSubjects(this.studyList);
-    
-    console.log(`✅ Successfully loaded ${validTopics.length} study list topics`);
-    if (this.invalidTopicsCleanedUp > 0) {
-      console.log(`🧹 Cleaned up ${this.invalidTopicsCleanedUp} invalid topic entries`);
-    }
-    
-  } catch (err) {
-    console.error('❌ Critical error in fetchStudyList:', err);
-    const errorInfo = this.handleApiError(err, 'fetch-study-list');
-    this.errors.studyList = errorInfo.message;
-    this.studyList = [];
-  } finally {
-    this.loadingStudyList = false;
-  }
-},
+    },
 
     // ✅ Helper method to extract topic name from lesson (same as CataloguePage)
     getTopicNameFromLesson(lesson) {
@@ -938,26 +1198,29 @@ export default {
       
       try {
         // Check various possible fields for topic name
-        if (typeof lesson.topic === 'string') {
-          return lesson.topic;
+        if (typeof lesson.topic === 'string' && lesson.topic.trim()) {
+          return lesson.topic.trim();
         }
         
         if (lesson.translations && lesson.translations[this.lang] && lesson.translations[this.lang].topic) {
-          return String(lesson.translations[this.lang].topic);
+          return String(lesson.translations[this.lang].topic).trim();
         }
         
         if (lesson.topic && typeof lesson.topic === 'object') {
-          if (lesson.topic[this.lang]) {
-            return String(lesson.topic[this.lang]);
-          }
-          if (lesson.topic.en) {
-            return String(lesson.topic.en);
+          const topicName = lesson.topic[this.lang] || lesson.topic.ru || lesson.topic.en || lesson.topic.uz ||
+                           Object.values(lesson.topic).find(val => val && typeof val === 'string' && val.trim());
+          if (topicName && typeof topicName === 'string' && topicName.trim()) {
+            return topicName.trim();
           }
         }
         
         // Fallback to lessonName or other fields
-        if (lesson.lessonName) {
-          return `Topic: ${lesson.lessonName}`;
+        if (lesson.lessonName && lesson.lessonName.trim()) {
+          return `Тема: ${lesson.lessonName.trim()}`;
+        }
+        
+        if (lesson.title && lesson.title.trim()) {
+          return `Тема: ${lesson.title.trim()}`;
         }
         
         return 'Без темы';
@@ -1124,109 +1387,139 @@ export default {
     },
 
     async handleAddTopic(topic) {
-  try {
-    if (!topic || !topic._id) {
-      console.error('❌ Invalid topic data for adding');
-      return;
-    }
-    
-    console.log('➕ Adding topic to study list:', topic.name || topic.topicName);
-    
-    // ✅ ENHANCED: More comprehensive data preparation
-    const studyListData = {
-      topicId: topic._id,
-      topic: this.getTopicName(topic),
-      topicName: this.getTopicName(topic),
-      subject: topic.subject || 'General',
-      level: parseInt(topic.level) || 1,
-      lessonCount: parseInt(topic.lessonCount || topic.lessons?.length || 0),
-      totalTime: parseInt(topic.totalTime || (topic.lessons?.length * 10) || 10),
-      type: topic.type || 'free',
-      description: topic.description || this.getTopicDescription(topic),
-      isActive: true,
-      addedAt: new Date().toISOString(),
-      // ✅ CRITICAL: Include lesson data if available
-      lessons: topic.lessons || [],
-      // ✅ CRITICAL: Include progress data
-      progress: {
-        percent: 0,
-        medal: 'none',
-        completedLessons: 0,
-        totalLessons: topic.lessons?.length || 0,
-        stars: 0,
-        points: 0
-      }
-    };
-    
-    console.log('📦 Sending study list data:', studyListData);
-    
-    const result = await addToStudyList(this.userId, studyListData);
-    
-    if (result && result.success !== false) {
-      console.log('✅ Topic added to backend successfully');
-      
-      // ✅ IMMEDIATE: Add to local state for instant UI update
-      const newStudyItem = {
-        _id: topic._id,
-        ...studyListData,
-        studyListEntry: {
-          topicId: topic._id,
-          createdAt: new Date().toISOString()
+      try {
+        if (!topic || !topic._id) {
+          console.error('❌ Invalid topic data for adding');
+          return;
         }
-      };
-      
-      // Add to study list immediately
-      this.studyList.push(newStudyItem);
-      
-      // Remove from recommendations
-      this.allRecommendations = this.allRecommendations.filter(t => t._id !== topic._id);
-      this.displayedRecommendations = this.displayedRecommendations.filter(t => t._id !== topic._id);
-      
-      // ✅ BACKGROUND: Refresh from server to ensure consistency
-      setTimeout(() => {
-        this.fetchStudyList();
-      }, 1000);
-      
-      // Refill displayed recommendations if needed
-      if (this.displayedRecommendations.length < 3 && this.allRecommendations.length > this.displayedRecommendations.length) {
-        const needed = Math.min(3, this.allRecommendations.length - this.displayedRecommendations.length);
-        const available = this.allRecommendations.filter(t => 
-          !this.displayedRecommendations.some(d => d._id === t._id)
-        );
-        const additional = available.slice(0, needed);
-        this.displayedRecommendations.push(...additional);
+        
+        console.log('➕ Adding topic to study list:', this.getTopicName(topic));
+        
+        // ✅ ENHANCED: More comprehensive data preparation
+        const studyListData = {
+          topicId: topic._id,
+          topic: this.getTopicName(topic),
+          topicName: this.getTopicName(topic),
+          name: this.getTopicName(topic), // ✅ CRITICAL: Add name field too
+          subject: topic.subject || 'General',
+          level: parseInt(topic.level) || 1,
+          lessonCount: parseInt(topic.lessonCount || topic.lessons?.length || 0),
+          totalTime: parseInt(topic.totalTime || (topic.lessons?.length * 10) || 10),
+          type: topic.type || 'free',
+          description: topic.description || this.getTopicDescription(topic),
+          isActive: true,
+          addedAt: new Date().toISOString(),
+          // ✅ CRITICAL: Include lesson data if available
+          lessons: topic.lessons || [],
+          // ✅ CRITICAL: Include progress data
+          progress: {
+            percent: 0,
+            medal: 'none',
+            completedLessons: 0,
+            totalLessons: topic.lessons?.length || 0,
+            stars: 0,
+            points: 0
+          }
+        };
+        
+        console.log('📦 Sending study list data:', studyListData);
+        
+        const result = await addToStudyList(this.userId, studyListData);
+        
+        if (result && result.success !== false) {
+          console.log('✅ Topic added to backend successfully');
+          
+          // ✅ IMMEDIATE: Add to local state for instant UI update
+          const newStudyItem = {
+            _id: topic._id,
+            ...studyListData,
+            studyListEntry: {
+              topicId: topic._id,
+              createdAt: new Date().toISOString()
+            }
+          };
+          
+          // Add to study list immediately
+          this.studyList.push(newStudyItem);
+          
+          // Remove from recommendations
+          this.allRecommendations = this.allRecommendations.filter(t => t._id !== topic._id);
+          this.displayedRecommendations = this.displayedRecommendations.filter(t => t._id !== topic._id);
+          
+          // ✅ BACKGROUND: Refresh from server to ensure consistency
+          setTimeout(() => {
+            this.fetchStudyList();
+          }, 1000);
+          
+          // Refill displayed recommendations if needed
+          if (this.displayedRecommendations.length < 3 && this.allRecommendations.length > this.displayedRecommendations.length) {
+            const needed = Math.min(3, this.allRecommendations.length - this.displayedRecommendations.length);
+            const available = this.allRecommendations.filter(t => 
+              !this.displayedRecommendations.some(d => d._id === t._id)
+            );
+            const additional = available.slice(0, needed);
+            this.displayedRecommendations.push(...additional);
+          }
+          
+          console.log('✅ Topic added successfully and UI updated');
+          
+          // Show success message
+          this.$nextTick(() => {
+            alert('✅ Курс успешно добавлен в ваш список!');
+          });
+          
+        } else {
+          throw new Error(result?.error || 'Failed to add topic');
+        }
+        
+      } catch (err) {
+        console.error('❌ Add topic error:', err);
+        
+        // Show error message
+        let errorMessage = 'Не удалось добавить курс';
+        
+        if (err.message?.includes('уже добавлен') || err.message?.includes('already exists')) {
+          errorMessage = 'Этот курс уже добавлен в ваш список';
+        } else if (err.message?.includes('войти в аккаунт') || err.message?.includes('authentication')) {
+          errorMessage = 'Необходимо войти в аккаунт';
+        } else if (err.message?.includes('ошибка сервера') || err.message?.includes('server error')) {
+          errorMessage = 'Ошибка сервера. Попробуйте позже';
+        }
+        
+        this.$nextTick(() => {
+          alert(errorMessage);
+        });
       }
-      
-      console.log('✅ Topic added successfully and UI updated');
-      
-      // Show success message
-      this.$nextTick(() => {
-        alert('✅ Курс успешно добавлен в ваш список!');
-      });
-      
-    } else {
-      throw new Error(result?.error || 'Failed to add topic');
-    }
-    
-  } catch (err) {
-    console.error('❌ Add topic error:', err);
-    
-    // Show error message
-    let errorMessage = 'Не удалось добавить курс';
-    
-    if (err.message?.includes('уже добавлен') || err.message?.includes('already exists')) {
-      errorMessage = 'Этот курс уже добавлен в ваш список';
-    } else if (err.message?.includes('войти в аккаунт') || err.message?.includes('authentication')) {
-      errorMessage = 'Необходимо войти в аккаунт';
-    } else if (err.message?.includes('ошибка сервера') || err.message?.includes('server error')) {
-      errorMessage = 'Ошибка сервера. Попробуйте позже';
-    }
-    
-    this.$nextTick(() => {
-      alert(errorMessage);
-    });
-  }
-},
+    },
+
+    async handleStartTopic(topic) {
+      try {
+        const hasAccess = this.hasTopicAccess(topic);
+        
+        if (!hasAccess) {
+          // Show paywall
+          this.requestedTopicId = topic._id;
+          this.showPaywall = true;
+          return;
+        }
+        
+        // Navigate to topic overview or first lesson
+        if (topic.lessons && topic.lessons.length > 0) {
+          const firstLesson = topic.lessons.find(l => l && l._id);
+          if (firstLesson) {
+            this.$router.push({ name: 'LessonPage', params: { id: firstLesson._id } });
+          } else {
+            this.$router.push({ path: `/topic/${topic._id}/overview` });
+          }
+        } else {
+          this.$router.push({ path: `/topic/${topic._id}/overview` });
+        }
+        
+      } catch (error) {
+        console.error('❌ Error starting topic:', error);
+        alert('❌ Не удалось открыть курс');
+      }
+    },
 
     async removeStudyCard(id) {
       try {
