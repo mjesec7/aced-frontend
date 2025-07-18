@@ -1166,6 +1166,7 @@ export default {
 
 <style scoped>
 /* Professional Clean Catalogue Page CSS */
+/* Professional Clean Catalogue Page CSS */
 .catalogue-page {
   display: flex;
   flex-direction: column;
@@ -1285,13 +1286,13 @@ export default {
   flex: 1;
 }
 
-/* ===== COMPACT FILTER BAR ===== */
+/* ===== HORIZONTAL FILTER BAR ===== */
 .filter-sidebar {
   width: 100%;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 1.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   margin-bottom: 2rem;
   position: static;
   height: auto;
@@ -1307,17 +1308,23 @@ export default {
   margin-bottom: 0;
 }
 
-.filter-group:not(:last-child) {
-  margin-bottom: 1.5rem;
-}
-
 /* Main Filter Row */
 .main-filter-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
+  display: flex;
   gap: 1rem;
-  align-items: end;
-  margin-bottom: 1.5rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-group {
+  flex: 2;
+  min-width: 250px;
+}
+
+.filter-group-inline {
+  flex: 1;
+  min-width: 150px;
 }
 
 .filter-label {
@@ -1356,6 +1363,7 @@ export default {
   border-radius: 6px;
   transition: all 0.2s ease;
   height: fit-content;
+  white-space: nowrap;
 }
 
 .clear-filters:hover {
@@ -1367,20 +1375,25 @@ export default {
 /* Filter Tags Row */
 .filter-tags-row {
   display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  gap: 1rem;
   align-items: center;
+  flex-wrap: wrap;
+  padding: 1rem 0;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1rem;
 }
 
 .filter-tags-row .filter-label {
   margin: 0;
   margin-right: 0.5rem;
   white-space: nowrap;
+  font-weight: 600;
 }
 
 .checkbox-group {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
   flex-wrap: wrap;
 }
 
@@ -1389,19 +1402,19 @@ export default {
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
-  padding: 0.5rem 0.75rem;
+  padding: 0;
   font-size: 0.875rem;
   color: #374151;
   position: relative;
-  border-radius: 6px;
+  border-radius: 0;
   transition: all 0.2s ease;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
+  border: none;
+  background: transparent;
 }
 
 .checkbox-item:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
+  background: transparent;
+  border-color: transparent;
 }
 
 .checkbox {
@@ -1444,25 +1457,25 @@ export default {
   font-weight: 500;
 }
 
-/* Stats Section - Compact */
+/* Stats Section - Inline */
 .stats-section {
-  padding: 1rem;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  margin-top: 1.5rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  margin-bottom: 1.5rem;
 }
 
 .stats-section h4 {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #374151;
+  display: none;
 }
 
 .stats-row {
   display: flex;
   gap: 2rem;
+  font-size: 0.875rem;
+  color: #6b7280;
 }
 
 .stat-item {
@@ -1479,10 +1492,6 @@ export default {
 .stat-value {
   font-weight: 600;
   color: #1e293b;
-  background: #f1f5f9;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
 }
 
 /* ===== CONTENT AREA ===== */
@@ -2166,23 +2175,32 @@ export default {
   }
   
   .main-filter-row {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .search-group,
+  .filter-group-inline {
+    flex: none;
+    min-width: auto;
   }
   
   .filter-tags-row {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
+    padding: 0.75rem 0;
   }
   
   .checkbox-group {
     width: 100%;
+    gap: 1rem;
   }
   
   .stats-row {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
   
   .subjects-grid, .levels-grid, .topics-grid {
