@@ -1,14 +1,6 @@
 <template>
   <div class="lesson-page">
-    <!-- ALWAYS VISIBLE FLOATING PROBLEM REPORT BUTTON -->
-    <button 
-      v-if="!showProblemReportModal"
-      class="floating-problem-report-btn"
-      @click="openProblemReportModal"
-      title="Сообщить о проблеме с уроком"
-    >
-      ⚠️
-    </button>
+    <!-- REMOVED: No more floating problem report button -->
 
     <!-- Loading State -->
     <div v-if="loading" class="loading-screen">
@@ -165,7 +157,7 @@
       @jump-to-word="jumpToVocabWord"
     />
 
-    <!-- Intro Screen -->
+    <!-- Intro Screen with Problem Report Button -->
     <LessonIntro
       v-if="!started && !showPaywallModal && !loading && !error"
       :lesson="lesson"
@@ -175,6 +167,7 @@
       @start="startLesson"
       @continue="continuePreviousProgress"
       @exit="confirmExit"
+      @report-problem="openProblemReportModal"
     />
 
     <!-- Main Lesson Content -->
@@ -182,15 +175,14 @@
 
       <!-- Top Header with Problem Report Button -->
       <LessonHeader
-  :lesson="lesson"
-  :current-step="currentIndex + 1"
-  :total-steps="steps.length"
-  :formatted-time="formattedTime"
-  :stars="stars"
-  :show-stars-in-header="false"
-  @exit="confirmExit"
-  @report-problem="openProblemReportModal"
-/>
+        :lesson="lesson"
+        :current-step="currentIndex + 1"
+        :total-steps="steps.length"
+        :formatted-time="formattedTime"
+        :stars="stars"
+        @exit="confirmExit"
+        @report-problem="openProblemReportModal"
+      />
 
       <!-- Progress Bar -->
       <ProgressBar
@@ -370,6 +362,7 @@
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
+
 
 <script>
 // ✅ FULLY UPDATED LessonPage.vue <script> with Problem Reporting Integration
