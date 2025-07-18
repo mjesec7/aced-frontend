@@ -362,9 +362,9 @@
 </template>
 
 <script>
-// ✅ FULLY UPDATED LessonPage.vue <script> with Problem Reporting Integration
+// ✅ FULLY UPDATED LessonPage.vue <script> with Fixed Navigation
 import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'; // Import useRouter
+import { useRouter } from 'vue-router'
 
 // Import composables
 import { useVocabulary } from '@/composables/useVocabulary'
@@ -401,7 +401,7 @@ export default {
   },
 
   setup() {
-    const router = useRouter(); // Initialize router
+    const router = useRouter()
     
     // ==========================================
     // COMPOSABLES INITIALIZATION
@@ -442,14 +442,14 @@ export default {
     // ==========================================
     // PROBLEM REPORTING STATE
     // ==========================================
-    const showProblemReportModal = ref(false);
-    const problemDescription = ref('');
-    const problemType = ref('');
-    const screenshotUrl = ref('');
-    const contactInfo = ref('');
-    const isSubmitting = ref(false);
-    const showValidationError = ref(false);
-    const showSuccessMessage = ref(false);
+    const showProblemReportModal = ref(false)
+    const problemDescription = ref('')
+    const problemType = ref('')
+    const screenshotUrl = ref('')
+    const contactInfo = ref('')
+    const isSubmitting = ref(false)
+    const showValidationError = ref(false)
+    const showSuccessMessage = ref(false)
 
     // ==========================================
     // COMPUTED PROPERTIES
@@ -472,32 +472,146 @@ export default {
     })
 
     // ==========================================
+    // FIXED NAVIGATION METHODS
+    // ==========================================
+    const handleReturnToCatalogue = () => {
+      console.log('🔄 Returning to catalogue...')
+      
+      try {
+        // Primary: Direct navigation to the nested catalogue route
+        router.push({ 
+          path: '/profile/catalogue' 
+        }).catch(err => {
+          console.warn('⚠️ Direct path navigation failed:', err)
+          
+          // Fallback 1: Try using the named route
+          router.push({ 
+            name: 'CataloguePage' 
+          }).catch(err2 => {
+            console.warn('⚠️ Named route navigation failed:', err2)
+            
+            // Fallback 2: Navigate to profile root
+            router.push({ 
+              path: '/profile' 
+            }).catch(err3 => {
+              console.error('❌ All navigation attempts failed:', err3)
+              
+              // Final fallback: Force page reload
+              window.location.href = '/profile/catalogue'
+            })
+          })
+        })
+      } catch (error) {
+        console.error('❌ Navigation error in handleReturnToCatalogue:', error)
+        window.location.href = '/profile/catalogue'
+      }
+    }
+
+    const handleGoToHomework = () => {
+      console.log('📚 Navigating to homework...')
+      
+      if (lessonOrchestrator.lesson.value?._id) {
+        try {
+          router.push({
+            name: 'LessonHomeworkPage',
+            params: { lessonId: lessonOrchestrator.lesson.value._id },
+            query: {
+              title: lessonOrchestrator.lesson.value.title || lessonOrchestrator.lesson.value.lessonName,
+              subject: lessonOrchestrator.lesson.value.subject || 'general'
+            }
+          }).catch(err => {
+            console.warn('⚠️ Lesson homework navigation failed:', err)
+            
+            router.push({ 
+              name: 'HomeworkList' 
+            }).catch(err2 => {
+              console.error('❌ Homework navigation failed:', err2)
+              window.location.href = '/profile/homeworks'
+            })
+          })
+        } catch (error) {
+          console.error('❌ Error navigating to homework:', error)
+          window.location.href = '/profile/homeworks'
+        }
+      } else {
+        console.error('❌ Cannot navigate to homework: Lesson ID is missing.')
+        try {
+          router.push({ 
+            name: 'HomeworkList' 
+          }).catch(err => {
+            console.error('❌ Fallback homework navigation failed:', err)
+            window.location.href = '/profile/homeworks'
+          })
+        } catch (error) {
+          window.location.href = '/profile/homeworks'
+        }
+      }
+    }
+
+    const exitLesson = () => {
+      console.log('🚪 Exiting lesson...')
+      
+      try {
+        // Save any final progress before leaving
+        if (lessonOrchestrator.saveProgress) {
+          lessonOrchestrator.saveProgress().catch(err => {
+            console.warn('⚠️ Failed to save progress on exit:', err)
+          })
+        }
+        
+        // Clear any lesson-specific data
+        if (lessonOrchestrator.cleanup) {
+          lessonOrchestrator.cleanup()
+        }
+        
+        // Close the exit modal first
+        lessonOrchestrator.showExitModal.value = false
+        
+        // Navigate back to catalogue
+        handleReturnToCatalogue()
+        
+      } catch (error) {
+        console.error('❌ Error during lesson exit:', error)
+        
+        // Ensure modal is closed
+        lessonOrchestrator.showExitModal.value = false
+        
+        // Force navigation even if there's an error
+        try {
+          router.push({ path: '/profile/catalogue' })
+        } catch (navError) {
+          window.location.href = '/profile/catalogue'
+        }
+      }
+    }
+
+    // ==========================================
     // PROBLEM REPORTING METHODS
     // ==========================================
     const openProblemReportModal = () => {
-      showProblemReportModal.value = true;
-      resetProblemForm();
-    };
+      showProblemReportModal.value = true
+      resetProblemForm()
+    }
 
     const closeProblemReportModal = () => {
-      showProblemReportModal.value = false;
-      resetProblemForm();
-    };
+      showProblemReportModal.value = false
+      resetProblemForm()
+    }
 
     const resetProblemForm = () => {
-      problemDescription.value = '';
-      problemType.value = '';
-      screenshotUrl.value = '';
-      contactInfo.value = '';
-      isSubmitting.value = false;
-      showValidationError.value = false;
-    };
+      problemDescription.value = ''
+      problemType.value = ''
+      screenshotUrl.value = ''
+      contactInfo.value = ''
+      isSubmitting.value = false
+      showValidationError.value = false
+    }
 
     const validateForm = () => {
-      const isValid = problemDescription.value.trim().length > 0;
-      showValidationError.value = !isValid;
-      return isValid;
-    };
+      const isValid = problemDescription.value.trim().length > 0
+      showValidationError.value = !isValid
+      return isValid
+    }
 
     const getCurrentLessonInfo = () => {
       return {
@@ -508,21 +622,19 @@ export default {
         userAgent: navigator.userAgent,
         timestamp: new Date().toLocaleString('ru-RU'),
         url: window.location.href
-      };
-    };
+      }
+    }
 
     const formatProblemReport = () => {
-      const lessonInfo = getCurrentLessonInfo();
+      const lessonInfo = getCurrentLessonInfo()
       
-      let message = `🚨 ОТЧЕТ О ПРОБЛЕМЕ В УРОКЕ\n\n`;
+      let message = `🚨 ОТЧЕТ О ПРОБЛЕМЕ В УРОКЕ\n\n`
       
-      // Lesson Information
-      message += `📚 Урок: ${lessonInfo.lessonName}\n`;
-      message += `🆔 ID урока: ${lessonInfo.lessonId}\n`;
-      message += `📍 Текущий шаг: ${lessonInfo.currentStep}/${lessonInfo.totalSteps}\n`;
-      message += `🕐 Время: ${lessonInfo.timestamp}\n\n`;
+      message += `📚 Урок: ${lessonInfo.lessonName}\n`
+      message += `🆔 ID урока: ${lessonInfo.lessonId}\n`
+      message += `📍 Текущий шаг: ${lessonInfo.currentStep}/${lessonInfo.totalSteps}\n`
+      message += `🕐 Время: ${lessonInfo.timestamp}\n\n`
       
-      // Problem Details
       if (problemType.value) {
         const typeLabels = {
           content: 'Ошибка в содержании',
@@ -531,50 +643,47 @@ export default {
           exercise: 'Ошибка в упражнении',
           audio: 'Проблема со звуком',
           other: 'Другое'
-        };
-        message += `⚠️ Тип проблемы: ${typeLabels[problemType.value]}\n\n`;
+        }
+        message += `⚠️ Тип проблемы: ${typeLabels[problemType.value]}\n\n`
       }
       
-      message += `📝 Описание проблемы:\n${problemDescription.value}\n\n`;
+      message += `📝 Описание проблемы:\n${problemDescription.value}\n\n`
       
       if (screenshotUrl.value) {
-        message += `📸 Скриншот: ${screenshotUrl.value}\n\n`;
+        message += `📸 Скриншот: ${screenshotUrl.value}\n\n`
       }
       
       if (contactInfo.value) {
-        message += `📞 Контакт: ${contactInfo.value}\n\n`;
+        message += `📞 Контакт: ${contactInfo.value}\n\n`
       }
       
-      // Technical Information
-      message += `🔧 ТЕХНИЧЕСКАЯ ИНФОРМАЦИЯ:\n`;
-      message += `🌐 URL: ${lessonInfo.url}\n`;
-      message += `💻 Браузер: ${lessonInfo.userAgent}\n`;
+      message += `🔧 ТЕХНИЧЕСКАЯ ИНФОРМАЦИЯ:\n`
+      message += `🌐 URL: ${lessonInfo.url}\n`
+      message += `💻 Браузер: ${lessonInfo.userAgent}\n`
       
-      return message;
-    };
+      return message
+    }
 
     const submitProblemReport = async () => {
       if (!validateForm()) {
-        return;
+        return
       }
       
       try {
-        isSubmitting.value = true;
+        isSubmitting.value = true
         
-        const reportMessage = formatProblemReport();
-        const encodedMessage = encodeURIComponent(reportMessage);
-        const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`;
+        const reportMessage = formatProblemReport()
+        const encodedMessage = encodeURIComponent(reportMessage)
+        const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`
         
-        // Log the report for analytics (optional)
         console.log('📊 Problem Report Submitted:', {
           lessonId: getCurrentLessonInfo().lessonId,
           problemType: problemType.value,
           hasScreenshot: !!screenshotUrl.value,
           hasContact: !!contactInfo.value,
           timestamp: new Date().toISOString()
-        });
+        })
         
-        // Optional: Send to your analytics API
         try {
           await fetch('/api/analytics/problem-report', {
             method: 'POST',
@@ -591,60 +700,53 @@ export default {
               userAgent: navigator.userAgent,
               timestamp: new Date().toISOString()
             })
-          });
+          })
         } catch (analyticsError) {
-          console.warn('Analytics logging failed:', analyticsError);
-          // Don't block the main flow if analytics fails
+          console.warn('Analytics logging failed:', analyticsError)
         }
         
-        // Open Telegram with the formatted message
-        window.open(telegramLink, '_blank');
+        window.open(telegramLink, '_blank')
         
-        // Show success message
-        closeProblemReportModal();
-        showSuccessMessage.value = true;
+        closeProblemReportModal()
+        showSuccessMessage.value = true
         
-        // Auto-hide success message after 5 seconds
         setTimeout(() => {
-          showSuccessMessage.value = false;
-        }, 5000);
+          showSuccessMessage.value = false
+        }, 5000)
         
       } catch (error) {
-        console.error('❌ Error submitting problem report:', error);
+        console.error('❌ Error submitting problem report:', error)
         
-        // Show error toast if available
         if (lessonOrchestrator.showToast) {
-          lessonOrchestrator.showToast('Ошибка при отправке отчета. Попробуйте еще раз.', 'error');
+          lessonOrchestrator.showToast('Ошибка при отправке отчета. Попробуйте еще раз.', 'error')
         } else {
-          alert('Ошибка при отправке отчета. Попробуйте еще раз.');
+          alert('Ошибка при отправке отчета. Попробуйте еще раз.')
         }
       } finally {
-        isSubmitting.value = false;
+        isSubmitting.value = false
       }
-    };
+    }
 
     const closeSuccessMessage = () => {
-      showSuccessMessage.value = false;
-    };
+      showSuccessMessage.value = false
+    }
 
-    // Alternative method: Direct problem report without modal (for quick access)
     const quickProblemReport = (issueType = 'technical') => {
-      const lessonInfo = getCurrentLessonInfo();
-      const message = `🚨 Быстрый отчет о проблеме в уроке "${lessonInfo.lessonName}" (Шаг ${lessonInfo.currentStep}/${lessonInfo.totalSteps}). Тип: ${issueType}. Время: ${lessonInfo.timestamp}`;
-      const encodedMessage = encodeURIComponent(message);
-      const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`;
-      window.open(telegramLink, '_blank');
-    };
+      const lessonInfo = getCurrentLessonInfo()
+      const message = `🚨 Быстрый отчет о проблеме в уроке "${lessonInfo.lessonName}" (Шаг ${lessonInfo.currentStep}/${lessonInfo.totalSteps}). Тип: ${issueType}. Время: ${lessonInfo.timestamp}`
+      const encodedMessage = encodeURIComponent(message)
+      const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`
+      window.open(telegramLink, '_blank')
+    }
 
-    // Keyboard shortcut support (Ctrl+Shift+R to report problem)
     const handleKeyboardShortcuts = (event) => {
       if (event.ctrlKey && event.shiftKey && event.key === 'R') {
-        event.preventDefault();
+        event.preventDefault()
         if (!showProblemReportModal.value && lessonOrchestrator.started.value && !lessonOrchestrator.lessonCompleted.value) {
-          openProblemReportModal();
+          openProblemReportModal()
         }
       }
-    };
+    }
 
     // ==========================================
     // LESSON COMPLETION WITH EXTRACTION
@@ -942,7 +1044,7 @@ export default {
     }
 
     // ==========================================
-    // SIMPLIFIED EVENT HANDLERS (Delegate to composable)
+    // SIMPLIFIED EVENT HANDLERS
     // ==========================================
     const handleAnswerChanged = (newAnswer) => {
       console.log('📝 Answer changed:', newAnswer)
@@ -964,23 +1066,23 @@ export default {
     }
     
     const handleDragItemStart = ({ item, type }) => {
-      exercises.handleDragItemStart({ item, type });
+      exercises.handleDragItemStart({ item, type })
     }
 
     const handleDragOverZone = (zoneId) => {
-      exercises.handleDragOverZone(zoneId);
+      exercises.handleDragOverZone(zoneId)
     }
 
     const handleDragLeaveZone = (zoneId) => {
-      exercises.handleDragLeaveZone(zoneId);
+      exercises.handleDragLeaveZone(zoneId)
     }
 
     const handleDropInZone = ({ zoneId, item, type }) => {
-      exercises.handleDropInZone({ zoneId, item, type });
+      exercises.handleDropInZone({ zoneId, item, type })
     }
 
     const handleRemoveDroppedItem = (item) => {
-      exercises.handleRemoveDroppedItem(item);
+      exercises.handleRemoveDroppedItem(item)
     }
 
     // ==========================================
@@ -997,31 +1099,32 @@ export default {
         moveToNextStep()
         return
       }
-      // ✅ SIMPLIFIED: Delegate to exercises composable
+
       const currentExercise = getCurrentExercise()
       const currentQuiz = getCurrentQuiz()
       let isCorrect = false
       let exerciseOrQuiz = null
+
       if (currentStep.type === 'exercise' || currentStep.type === 'practice') {
         exerciseOrQuiz = currentExercise
         if (exerciseOrQuiz) {
-          // ✅ Use composable validation method
           isCorrect = exercises.validateCurrentAnswer(exerciseOrQuiz)
         }
       } else if (currentStep.type === 'quiz') {
         exerciseOrQuiz = currentQuiz
         if (exerciseOrQuiz) {
-          // ✅ Use composable validation method
           isCorrect = exercises.validateQuizAnswer(exerciseOrQuiz)
         }
       }
+
       attemptCount.value++
+
       if (isCorrect) {
         exercises.answerWasCorrect.value = true
         lessonOrchestrator.stars.value++
         lessonOrchestrator.earnedPoints.value += 10
         if (attemptCount.value === 1) {
-          lessonOrchestrator.earnedPoints.value += 5 // ✅ Use composable message method
+          lessonOrchestrator.earnedPoints.value += 5
           exercises.confirmation.value = exercises.getRandomSuccessMessage() + ' 🌟 Бонус за первую попытку!'
         } else {
           exercises.confirmation.value = exercises.getRandomSuccessMessage() + ' 💪 Отлично, со второй попытки!'
@@ -1031,14 +1134,14 @@ export default {
       } else {
         exercises.answerWasCorrect.value = false
         if (attemptCount.value < maxAttempts.value) {
-          isOnSecondChance.value = true // ✅ Use composable message method
+          isOnSecondChance.value = true
           exercises.confirmation.value = exercises.getSecondChanceMessage(exerciseOrQuiz)
           sound.playErrorSound?.()
           return
         } else {
           lessonOrchestrator.mistakeCount.value++
           lessonOrchestrator.earnedPoints.value = Math.max(0, lessonOrchestrator.earnedPoints.value - 2)
-          showCorrectAnswer.value = true // ✅ Use composable display method
+          showCorrectAnswer.value = true
           correctAnswerText.value = exercises.getCorrectAnswerDisplay(exerciseOrQuiz)
           exercises.confirmation.value = exercises.getFinalFailureMessage(exerciseOrQuiz, correctAnswerText.value)
           isOnSecondChance.value = false
@@ -1102,93 +1205,64 @@ export default {
     }
 
     // ==========================================
-    // NAVIGATION FUNCTIONS FOR COMPLETION SCREEN
+    // SIMPLIFIED EXERCISE METHODS
     // ==========================================
-    const handleReturnToCatalogue = () => {
-      router.push({ name: 'CataloguePage' }); // Correctly uses the named route for CataloguePage
-    };
-
-    const handleGoToHomework = () => {
-      if (lessonOrchestrator.lesson.value?._id) {
-        router.push({
-          name: 'LessonHomeworkPage', // Uses the named route for lesson-specific homework
-          params: { lessonId: lessonOrchestrator.lesson.value._id },
-          query: {
-            title: lessonOrchestrator.lesson.value.title, // Pass title for context
-            subject: lessonOrchestrator.lesson.value.subject // Pass subject for context
-          }
-        });
-      } else {
-        console.error('❌ Cannot navigate to homework: Lesson ID is missing.');
-        // Fallback to the generic homework list page if lesson ID is not available
-        router.push({ name: 'HomeworkList' });
-      }
-    };
-
-    // ==========================================
-    // SIMPLIFIED EXERCISE METHODS (Delegate to composable)
-    // ==========================================
-    const showHint = (exercise) => exercises.showHint(exercise);
-    const clearSmartHint = () => exercises.clearSmartHint();
+    const showHint = (exercise) => exercises.showHint(exercise)
+    const clearSmartHint = () => exercises.clearSmartHint()
 
     // ==========================================
     // AI HELP PANEL METHODS
     // ==========================================
-    const toggleExplanationHelp = explanation.toggleExplanationHelp;
-    const askAboutExplanation = explanation.askAboutExplanation;
-    const sendAIMessage = explanation.sendAIMessage;
-    const askAI = explanation.askAI;
-    const clearAIChat = explanation.clearAIChat;
+    const toggleExplanationHelp = explanation.toggleExplanationHelp
+    const askAboutExplanation = explanation.askAboutExplanation
+    const sendAIMessage = explanation.sendAIMessage
+    const askAI = explanation.askAI
+    const clearAIChat = explanation.clearAIChat
 
     // ==========================================
     // FLOATING AI ASSISTANT METHODS
     // ==========================================
-    const toggleFloatingAI = explanation.toggleFloatingAI;
-    const closeFloatingAI = explanation.closeFloatingAI;
-    const sendFloatingAIMessage = explanation.sendFloatingAIMessage;
+    const toggleFloatingAI = explanation.toggleFloatingAI
+    const closeFloatingAI = explanation.closeFloatingAI
+    const sendFloatingAIMessage = explanation.sendFloatingAIMessage
 
     // ==========================================
     // CONFETTI ANIMATION
     // ==========================================
-    const confettiCanvas = ref(null);
-    const showConfetti = ref(false);
+    const confettiCanvas = ref(null)
+    const showConfetti = ref(false)
 
     const startConfetti = () => {
-      showConfetti.value = true;
+      showConfetti.value = true
       nextTick(() => {
-        // Implement your confetti logic here using confettiCanvas.value
-        // For example: confetti({ canvas: confettiCanvas.value, ... });
-        // This part would depend on your confetti library.
-        console.log('Starting confetti animation...');
+        console.log('Starting confetti animation...')
         setTimeout(() => {
-          showConfetti.value = false;
-        }, 5000); // Stop confetti after 5 seconds
-      });
-    };
+          showConfetti.value = false
+        }, 5000)
+      })
+    }
 
     // ==========================================
     // LIFECYCLE HOOKS
     // ==========================================
     
-    // Add keyboard event listener when component is mounted
     onMounted(() => {
-      document.addEventListener('keydown', handleKeyboardShortcuts);
-    });
+      document.addEventListener('keydown', handleKeyboardShortcuts)
+    })
 
-    // Remove keyboard event listener when component is unmounted
     onUnmounted(() => {
-      document.removeEventListener('keydown', handleKeyboardShortcuts);
-    });
+      document.removeEventListener('keydown', handleKeyboardShortcuts)
+    })
 
     // ==========================================
     // WATCHERS
     // ==========================================
     watch(() => lessonOrchestrator.lessonCompleted.value, (newVal) => {
       if (newVal) {
-        console.log('Lesson completed watcher triggered!');
-        startConfetti();
+        console.log('Lesson completed watcher triggered!')
+        startConfetti()
       }
-    });
+    })
 
     // ==========================================
     // RETURN ALL PROPS AND METHODS
@@ -1285,11 +1359,15 @@ export default {
       startLesson: lessonOrchestrator.startLesson,
       continuePreviousProgress: lessonOrchestrator.continuePreviousProgress,
       confirmExit: lessonOrchestrator.confirmExit,
-      exitLesson: lessonOrchestrator.exitLesson,
       cancelExit: lessonOrchestrator.cancelExit,
       shareResult: lessonOrchestrator.shareResult,
       goToVocabulary: lessonOrchestrator.goToVocabulary,
       getLessonProgress: lessonOrchestrator.getLessonProgress,
+
+      // FIXED navigation methods
+      exitLesson,
+      handleReturnToCatalogue,
+      handleGoToHomework,
 
       // Exercise methods
       getCurrentExercise,
@@ -1341,10 +1419,6 @@ export default {
       migrateLessonContent,
       showMigrationPanelModal,
       closeMigrationPanel,
-
-      // Navigation methods
-      handleReturnToCatalogue,
-      handleGoToHomework,
 
       // Problem Reporting methods
       openProblemReportModal,
