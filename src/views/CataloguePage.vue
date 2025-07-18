@@ -451,6 +451,7 @@ export default {
     // ===== INITIALIZATION =====
     async initializeComponent() {
       try {
+        this.loading = true;
         this.lang = localStorage.getItem('lang') || 'en';
         
         const storedId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
@@ -478,6 +479,7 @@ export default {
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/lessons`);
         this.lessons = Array.isArray(response.data) ? response.data : [];
+        console.log('✅ Loaded lessons:', this.lessons.length);
       } catch (error) {
         console.error('❌ Error loading lessons:', error);
         this.lessons = [];
@@ -598,6 +600,7 @@ export default {
 
     // ===== DATA PROCESSING =====
     processSubjects() {
+      console.log('🔄 Processing subjects from lessons:', this.lessons.length);
       const subjectsMap = new Map();
       
       this.lessons.forEach(lesson => {
@@ -646,15 +649,19 @@ export default {
         topicCount: subject.topics.size
       }));
       
+      console.log('✅ Processed subjects:', this.subjects);
       this.loading = false;
     },
 
     processLevels() {
+      console.log('🔄 Processing levels for subject:', this.selectedSubject);
       const levelsMap = new Map();
       
       const subjectLessons = this.lessons.filter(lesson => 
         lesson.subject === this.selectedSubject
       );
+      
+      console.log('📚 Found lessons for subject:', subjectLessons.length);
       
       subjectLessons.forEach(lesson => {
         if (!lesson?.level) return;
@@ -698,15 +705,20 @@ export default {
         }
         return String(a.name).localeCompare(String(b.name));
       });
+      
+      console.log('✅ Processed levels:', this.levels);
     },
 
     processTopics() {
+      console.log('🔄 Processing topics for:', this.selectedSubject, this.selectedLevel);
       const topicsMap = new Map();
       
       const levelLessons = this.lessons.filter(lesson => 
         lesson.subject === this.selectedSubject && 
         lesson.level === this.selectedLevel
       );
+      
+      console.log('📚 Found lessons for level:', levelLessons.length);
       
       levelLessons.forEach(lesson => {
         if (!lesson) return;
@@ -745,6 +757,8 @@ export default {
         progress: this.userProgress[topic.topicId] || 0,
         inStudyPlan: this.studyPlanTopics.includes(topic.topicId)
       }));
+      
+      console.log('✅ Processed topics:', this.topics);
     },
 
     calculateLevelProgress(levelName) {
@@ -772,6 +786,7 @@ export default {
 
     // ===== NAVIGATION METHODS =====
     selectSubject(subjectName) {
+      console.log('🎯 Selecting subject:', subjectName);
       this.selectedSubject = subjectName;
       this.currentView = 'levels';
       this.processLevels();
@@ -783,6 +798,7 @@ export default {
     },
 
     selectLevel(levelName) {
+      console.log('🎯 Selecting level:', levelName);
       this.selectedLevel = levelName;
       this.currentView = 'topics';
       this.processTopics();
@@ -792,6 +808,7 @@ export default {
     },
 
     goBack() {
+      console.log('🔄 Going back from:', this.currentView);
       if (this.currentView === 'topics') {
         this.currentView = 'levels';
         this.selectedLevel = null;
@@ -1101,6 +1118,7 @@ export default {
   }
 };
 </script>
+
 
 <style scoped>
 /* ===== CONTENT AREA ===== */
