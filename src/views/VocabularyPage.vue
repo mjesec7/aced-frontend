@@ -17,9 +17,9 @@
     <!-- No Languages Available -->
     <div v-else-if="!hasLanguages" class="empty-state">
       <div class="empty-icon">🌍</div>
-      <h3>Языки не найдены</h3>
-      <p>Добавьте слова в админ-панели для появления языков</p>
-      <button @click="goToAdmin" class="primary-btn">Админ-панель</button>
+      <h3>Добро пожаловать!</h3>
+      <p>Выберите язык для начала изучения словаря</p>
+      <button @click="initialize" class="primary-btn">Обновить</button>
     </div>
     
     <!-- Language Selection View -->
@@ -39,11 +39,11 @@
             </div>
             <div class="stat">
               <span class="stat-number">{{ availableLanguages.length }}</span>
-              <span class="stat-label">языков</span>
+              <span class="stat-label">языков доступно</span>
             </div>
             <div class="stat">
-              <span class="stat-number">{{ overallStats.mastered || 0 }}</span>
-              <span class="stat-label">изучено</span>
+              <span class="stat-number">{{ overallStats.languagesStarted || 0 }}</span>
+              <span class="stat-label">начато изучение</span>
             </div>
           </div>
         </div>
@@ -54,7 +54,7 @@
           v-for="language in availableLanguages" 
           :key="language.code"
           class="language-card"
-          :class="{ 'has-content': language.totalWords > 0 }"
+          :class="{ 'has-progress': language.totalWords > 0 }"
           @click="selectLanguage(language)"
         >
           <div class="lang-flag">{{ language.flag }}</div>
@@ -63,15 +63,15 @@
             <div class="lang-stats">
               <div v-if="language.totalWords > 0" class="stat-item">
                 <span class="stat-icon">📚</span>
-                <span class="stat-text">{{ language.totalWords }} слов</span>
+                <span class="stat-text">{{ language.totalWords }} слов изучается</span>
               </div>
               <div v-if="language.progress > 0" class="stat-item">
                 <span class="stat-icon">✅</span>
                 <span class="stat-text">{{ language.progress }}% изучено</span>
               </div>
               <div v-if="language.totalWords === 0" class="stat-item">
-                <span class="stat-icon">🆕</span>
-                <span class="stat-text">Пока нет слов</span>
+                <span class="stat-icon">🚀</span>
+                <span class="stat-text">Начать изучение</span>
               </div>
             </div>
           </div>
@@ -161,10 +161,10 @@
       <!-- Empty Language State -->
       <div v-else class="empty-language-state">
         <div class="empty-icon">📚</div>
-        <h3>В этом языке пока нет слов</h3>
-        <p>Добавьте слова через админ-панель</p>
+        <h3>Начните изучение {{ selectedLanguage.nameRu || selectedLanguage.name }}</h3>
+        <p>Выберите тему для начала изучения словаря</p>
         <div class="empty-actions">
-          <button @click="goToAdmin" class="primary-btn">Добавить слова</button>
+          <button @click="goBackToLanguages" class="primary-btn">Выбрать другой язык</button>
         </div>
       </div>
     </div>
@@ -182,13 +182,19 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useVocabularyStore } from '@/composables/useVocabularyStore'
-import { useToast } from '@/composables/useToast'
+import { vocabularyService } from '@/services/vocabularyService'
 import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
 const { currentUser } = useAuth()
-const { toast, showToast, hideToast } = useToast()
+
+// Simple toast functionality
+const toast = ref({ visible: false, message: '', type: 'success' })
+const showToast = (message, type = 'success') => {
+  toast.value = { visible: true, message, type }
+  setTimeout(() => { toast.value.visible = false }, 3000)
+}
+const hideToast = () => { toast.value.visible = false }
 
 // State
 const isLoading = ref(true)
@@ -198,14 +204,9 @@ const selectedLanguage = ref(null)
 const loadingMessage = ref('Загрузка языков...')
 const topics = ref([])
 
-// Vocabulary store
-const {
-  availableLanguages,
-  overallStats,
-  fetchUserLanguages,
-  getLanguageVocabulary,
-  isInitialized
-} = useVocabularyStore()
+// Data
+const availableLanguages = ref([])
+const overallStats = ref(null)
 
 // Computed
 const hasLanguages = computed(() => 
@@ -281,7 +282,14 @@ const initialize = async () => {
     error.value = null
     loadingMessage.value = 'Загрузка ваших языков...'
     
-    await fetchUserLanguages(currentUser.value.uid)
+    const result = await vocabularyService.getUserLanguages(currentUser.value.uid)
+    
+    if (result.success) {
+      availableLanguages.value = result.data.languages || []
+      overallStats.value = result.data.stats || { totalWords: 0, languagesWithLessons: 0, mastered: 0 }
+    } else {
+      throw new Error(result.error)
+    }
     
   } catch (err) {
     console.error('❌ Failed to initialize vocabulary:', err)
@@ -305,12 +313,12 @@ const loadLanguageContent = async (language) => {
     languageLoading.value = true
     topics.value = []
     
-    const vocabData = await getLanguageVocabulary(currentUser.value.uid, language.code)
+    const result = await vocabularyService.getLanguageTopics(currentUser.value.uid, language.code)
     
-    if (vocabData.success) {
-      topics.value = vocabData.data.topics || []
+    if (result.success) {
+      topics.value = result.data.topics || []
     } else {
-      throw new Error(vocabData.error)
+      throw new Error(result.error)
     }
     
   } catch (err) {
@@ -347,16 +355,16 @@ const createTest = () => {
 }
 
 const goToAdmin = () => {
-  router.push('/admin/vocabulary')
+  // Only available for admin users
+  if (currentUser.value?.role === 'admin') {
+    router.push('/admin/vocabulary')
+  } else {
+    showToast('Изучайте доступные темы и слова', 'info')
+  }
 }
 
 // Lifecycle
 onMounted(async () => {
-  if (isInitialized.value) {
-    isLoading.value = false
-    return
-  }
-  
   await initialize()
 })
 
@@ -543,7 +551,7 @@ setTimeout(() => {
   box-shadow: var(--shadow);
 }
 
-.language-card.has-content:hover {
+.language-card.has-progress:hover {
   transform: translateY(-4px);
   border-color: var(--primary);
   box-shadow: var(--shadow-lg);
