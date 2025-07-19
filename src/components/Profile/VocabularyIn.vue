@@ -749,6 +749,7 @@ export default {
       if (currentWordIndex.value < currentWords.value.length - 1) {
         currentWordIndex.value++;
         showTranslation.value = false;
+        window.wordStartTime = Date.now(); // Track time for new word
       } else {
         learningComplete.value = true;
         showToast('🎉 Вы изучили все слова!');
@@ -759,6 +760,7 @@ export default {
       if (currentWordIndex.value > 0) {
         currentWordIndex.value--;
         showTranslation.value = false;
+        window.wordStartTime = Date.now(); // Track time for new word
       }
     };
 
@@ -766,12 +768,21 @@ export default {
       showTranslation.value = !showTranslation.value;
     };
 
-    const markWordAsLearned = () => {
+    const markWordAsLearned = async () => {
       const currentWord = currentWords.value[currentWordIndex.value];
-      if (currentWord && !learningProgress.value.includes(currentWord._id)) {
-        learningProgress.value.push(currentWord._id);
-        showToast('✅ Слово отмечено как изученное');
+      if (!currentWord || learningProgress.value.includes(currentWord._id)) {
+        return;
       }
+
+      learningProgress.value.push(currentWord._id);
+      
+      // Save progress to backend
+      await saveLearningProgress(currentWord._id, true);
+      
+      showToast('✅ Слово отмечено как изученное');
+      
+      // Track time for next word
+      window.wordStartTime = Date.now();
     };
 
     // Test methods
@@ -840,7 +851,7 @@ export default {
       }
     };
 
-    const completeTest = () => {
+    const completeTest = async () => {
       const correctAnswers = userAnswers.value.filter(a => a.correct).length;
       const totalQuestions = testQuestions.value.length;
       const percentage = Math.round((correctAnswers / totalQuestions) * 100);
@@ -853,6 +864,32 @@ export default {
       };
 
       testComplete.value = true;
+      
+      // Save test results to backend
+      if (currentUser.value) {
+        try {
+          await fetch('/api/vocabulary/test-results', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${currentUser.value.token || localStorage.getItem('authToken')}`
+            },
+            body: JSON.stringify({
+              userId: currentUser.value.uid,
+              language: languageCode.value,
+              testType: testConfig.value.type,
+              topics: testConfig.value.topics || [],
+              totalQuestions: totalQuestions,
+              correctAnswers: correctAnswers,
+              percentage: percentage,
+              answers: userAnswers.value,
+              timestamp: new Date().toISOString()
+            })
+          });
+        } catch (error) {
+          console.error('Error saving test results:', error);
+        }
+      }
       
       if (testResults.value.passed) {
         showToast(`🎉 Тест пройден! Результат: ${percentage}%`);
@@ -868,24 +905,47 @@ export default {
       testComplete.value = false;
     };
 
-    // Data fetching methods
+    // Data fetching methods with real API integration
     const fetchTopics = async () => {
       try {
         loading.value = true;
         
-        // Sample topics for demo
-        topics.value = [
-          { name: 'Travel', difficulty: 'beginner', wordCount: 8 },
-          { name: 'Food', difficulty: 'beginner', wordCount: 8 },
-          { name: 'Family', difficulty: 'intermediate', wordCount: 8 },
-          { name: 'Business', difficulty: 'intermediate', wordCount: 8 },
-          { name: 'Technology', difficulty: 'advanced', wordCount: 8 },
-          { name: 'Health', difficulty: 'beginner', wordCount: 8 }
-        ];
+        if (!currentUser.value) {
+          showToast('Пожалуйста, войдите в систему', 'error');
+          topics.value = getDefaultTopics();
+          return;
+        }
+
+        // Fetch topics with vocabulary from lessons and manual topics
+        const response = await fetch(`/api/vocabulary/topics/${languageCode.value}?userId=${currentUser.value.uid}`, {
+          headers: {
+            'Authorization': `Bearer ${currentUser.value.token || localStorage.getItem('authToken')}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          topics.value = data.topics || [];
+          
+          // Update user progress from API
+          userProgress.value = data.userProgress || null;
+          
+          if (topics.value.length === 0) {
+            showToast('В этом языке пока нет доступных тем', 'info');
+            topics.value = getDefaultTopics();
+          }
+        } else if (response.status === 404) {
+          showToast('Темы для изучения не найдены', 'info');
+          topics.value = getDefaultTopics();
+        } else {
+          throw new Error('Failed to fetch topics');
+        }
         
       } catch (err) {
         console.error('Error fetching topics:', err);
         showToast('Не удалось загрузить темы', 'error');
+        // Fallback to default topics
+        topics.value = getDefaultTopics();
       } finally {
         loading.value = false;
       }
@@ -895,14 +955,41 @@ export default {
       try {
         loading.value = true;
         
-        // Generate sample words
-        const sampleWords = generateSampleWords(languageCode.value, topicName);
-        currentWords.value = sampleWords;
+        if (!currentUser.value) {
+          showToast('Пожалуйста, войдите в систему', 'error');
+          return;
+        }
+
+        // Fetch words from both lessons and manual vocabulary for this topic
+        const response = await fetch(`/api/vocabulary/topic/${languageCode.value}/${topicName}?userId=${currentUser.value.uid}`, {
+          headers: {
+            'Authorization': `Bearer ${currentUser.value.token || localStorage.getItem('authToken')}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          currentWords.value = data.words || [];
+          
+          if (currentWords.value.length === 0) {
+            showToast('В этой теме пока нет слов', 'info');
+          } else {
+            // Initialize word timing
+            window.wordStartTime = Date.now();
+          }
+        } else if (response.status === 404) {
+          showToast('Тема не найдена', 'error');
+          currentWords.value = [];
+        } else {
+          throw new Error('Failed to fetch words');
+        }
+        
         resetLearningState();
         
       } catch (err) {
         console.error('Error fetching words:', err);
         showToast('Не удалось загрузить слова', 'error');
+        currentWords.value = [];
       } finally {
         loading.value = false;
       }
@@ -912,19 +999,35 @@ export default {
       try {
         loading.value = true;
         
-        // Get random words from all topics
-        const allWords = [];
-        ['Travel', 'Food', 'Family'].forEach(topic => {
-          allWords.push(...generateSampleWords(languageCode.value, topic));
+        if (!currentUser.value) {
+          showToast('Пожалуйста, войдите в систему', 'error');
+          return;
+        }
+
+        // Fetch random words from user's vocabulary across all topics
+        const response = await fetch(`/api/vocabulary/random/${languageCode.value}?userId=${currentUser.value.uid}&count=${count}`, {
+          headers: {
+            'Authorization': `Bearer ${currentUser.value.token || localStorage.getItem('authToken')}`
+          }
         });
-        
-        currentWords.value = allWords
-          .sort(() => Math.random() - 0.5)
-          .slice(0, count);
+
+        if (response.ok) {
+          const data = await response.json();
+          currentWords.value = data.words || [];
           
+          if (currentWords.value.length === 0) {
+            showToast('Недостаточно слов для создания теста', 'error');
+          } else if (currentWords.value.length < count) {
+            showToast(`Найдено только ${currentWords.value.length} слов из ${count} запрошенных`, 'info');
+          }
+        } else {
+          throw new Error('Failed to fetch random words');
+        }
+        
       } catch (err) {
         console.error('Error fetching random words:', err);
-        showToast('Не удалось загрузить слова', 'error');
+        showToast('Не удалось загрузить случайные слова', 'error');
+        currentWords.value = [];
       } finally {
         loading.value = false;
       }
@@ -934,88 +1037,78 @@ export default {
       try {
         loading.value = true;
         
-        const words = [];
-        topicNames.forEach(topic => {
-          words.push(...generateSampleWords(languageCode.value, topic));
+        if (!currentUser.value) {
+          showToast('Пожалуйста, войдите в систему', 'error');
+          return;
+        }
+
+        // Fetch words from multiple topics
+        const response = await fetch(`/api/vocabulary/topics-words/${languageCode.value}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentUser.value.token || localStorage.getItem('authToken')}`
+          },
+          body: JSON.stringify({
+            userId: currentUser.value.uid,
+            topics: topicNames
+          })
         });
-        
-        currentWords.value = words;
+
+        if (response.ok) {
+          const data = await response.json();
+          currentWords.value = data.words || [];
+          
+          if (currentWords.value.length === 0) {
+            showToast('В выбранных темах нет слов', 'error');
+          }
+        } else {
+          throw new Error('Failed to fetch topics words');
+        }
         
       } catch (err) {
-        console.error('Error fetching topic words:', err);
-        showToast('Не удалось загрузить слова', 'error');
+        console.error('Error fetching topics words:', err);
+        showToast('Не удалось загрузить слова из выбранных тем', 'error');
+        currentWords.value = [];
       } finally {
         loading.value = false;
       }
     };
 
-    const generateSampleWords = (lang, topic) => {
-      const vocabularyData = {
-        english: {
-          'Travel': [
-            { _id: 'en_travel_1', word: 'airport', translation: 'аэропорт', example: 'I arrived at the airport early.', partOfSpeech: 'noun' },
-            { _id: 'en_travel_2', word: 'hotel', translation: 'отель', example: 'The hotel was comfortable.', partOfSpeech: 'noun' },
-            { _id: 'en_travel_3', word: 'passport', translation: 'паспорт', example: 'Don\'t forget your passport.', partOfSpeech: 'noun' },
-            { _id: 'en_travel_4', word: 'luggage', translation: 'багаж', example: 'My luggage is heavy.', partOfSpeech: 'noun' },
-            { _id: 'en_travel_5', word: 'flight', translation: 'рейс', example: 'The flight was delayed.', partOfSpeech: 'noun' },
-            { _id: 'en_travel_6', word: 'ticket', translation: 'билет', example: 'I bought a ticket online.', partOfSpeech: 'noun' },
-            { _id: 'en_travel_7', word: 'vacation', translation: 'отпуск', example: 'I love my vacation.', partOfSpeech: 'noun' },
-            { _id: 'en_travel_8', word: 'tourist', translation: 'турист', example: 'The tourist took photos.', partOfSpeech: 'noun' }
-          ],
-          'Food': [
-            { _id: 'en_food_1', word: 'apple', translation: 'яблоко', example: 'I eat an apple every day.', partOfSpeech: 'noun' },
-            { _id: 'en_food_2', word: 'bread', translation: 'хлеб', example: 'Fresh bread smells good.', partOfSpeech: 'noun' },
-            { _id: 'en_food_3', word: 'cheese', translation: 'сыр', example: 'This cheese is delicious.', partOfSpeech: 'noun' },
-            { _id: 'en_food_4', word: 'chicken', translation: 'курица', example: 'Grilled chicken is healthy.', partOfSpeech: 'noun' },
-            { _id: 'en_food_5', word: 'vegetables', translation: 'овощи', example: 'Eat more vegetables.', partOfSpeech: 'noun' },
-            { _id: 'en_food_6', word: 'fruit', translation: 'фрукт', example: 'Fruit is good for you.', partOfSpeech: 'noun' },
-            { _id: 'en_food_7', word: 'water', translation: 'вода', example: 'Drink plenty of water.', partOfSpeech: 'noun' },
-            { _id: 'en_food_8', word: 'coffee', translation: 'кофе', example: 'I drink coffee in the morning.', partOfSpeech: 'noun' }
-          ],
-          'Family': [
-            { _id: 'en_family_1', word: 'mother', translation: 'мать', example: 'My mother is kind.', partOfSpeech: 'noun' },
-            { _id: 'en_family_2', word: 'father', translation: 'отец', example: 'My father works hard.', partOfSpeech: 'noun' },
-            { _id: 'en_family_3', word: 'brother', translation: 'брат', example: 'I have one brother.', partOfSpeech: 'noun' },
-            { _id: 'en_family_4', word: 'sister', translation: 'сестра', example: 'My sister is younger.', partOfSpeech: 'noun' },
-            { _id: 'en_family_5', word: 'child', translation: 'ребенок', example: 'The child is playing.', partOfSpeech: 'noun' },
-            { _id: 'en_family_6', word: 'parents', translation: 'родители', example: 'My parents are proud.', partOfSpeech: 'noun' },
-            { _id: 'en_family_7', word: 'family', translation: 'семья', example: 'Family is important.', partOfSpeech: 'noun' },
-            { _id: 'en_family_8', word: 'grandmother', translation: 'бабушка', example: 'My grandmother tells stories.', partOfSpeech: 'noun' }
-          ],
-          'Business': [
-            { _id: 'en_business_1', word: 'meeting', translation: 'встреча', example: 'We have a meeting at 3 PM.', partOfSpeech: 'noun' },
-            { _id: 'en_business_2', word: 'office', translation: 'офис', example: 'I work in a modern office.', partOfSpeech: 'noun' },
-            { _id: 'en_business_3', word: 'manager', translation: 'менеджер', example: 'The manager is very supportive.', partOfSpeech: 'noun' },
-            { _id: 'en_business_4', word: 'contract', translation: 'контракт', example: 'Please sign the contract.', partOfSpeech: 'noun' },
-            { _id: 'en_business_5', word: 'profit', translation: 'прибыль', example: 'The company made a profit.', partOfSpeech: 'noun' },
-            { _id: 'en_business_6', word: 'client', translation: 'клиент', example: 'The client is satisfied.', partOfSpeech: 'noun' },
-            { _id: 'en_business_7', word: 'project', translation: 'проект', example: 'This project is important.', partOfSpeech: 'noun' },
-            { _id: 'en_business_8', word: 'deadline', translation: 'срок', example: 'The deadline is tomorrow.', partOfSpeech: 'noun' }
-          ],
-          'Technology': [
-            { _id: 'en_tech_1', word: 'computer', translation: 'компьютер', example: 'I use my computer daily.', partOfSpeech: 'noun' },
-            { _id: 'en_tech_2', word: 'internet', translation: 'интернет', example: 'The internet is fast here.', partOfSpeech: 'noun' },
-            { _id: 'en_tech_3', word: 'software', translation: 'программное обеспечение', example: 'This software is useful.', partOfSpeech: 'noun' },
-            { _id: 'en_tech_4', word: 'smartphone', translation: 'смартфон', example: 'My smartphone has good camera.', partOfSpeech: 'noun' },
-            { _id: 'en_tech_5', word: 'application', translation: 'приложение', example: 'Download this application.', partOfSpeech: 'noun' },
-            { _id: 'en_tech_6', word: 'website', translation: 'веб-сайт', example: 'The website is well-designed.', partOfSpeech: 'noun' },
-            { _id: 'en_tech_7', word: 'database', translation: 'база данных', example: 'The database is secure.', partOfSpeech: 'noun' },
-            { _id: 'en_tech_8', word: 'password', translation: 'пароль', example: 'Create a strong password.', partOfSpeech: 'noun' }
-          ],
-          'Health': [
-            { _id: 'en_health_1', word: 'doctor', translation: 'врач', example: 'The doctor is experienced.', partOfSpeech: 'noun' },
-            { _id: 'en_health_2', word: 'hospital', translation: 'больница', example: 'The hospital is nearby.', partOfSpeech: 'noun' },
-            { _id: 'en_health_3', word: 'medicine', translation: 'лекарство', example: 'Take your medicine regularly.', partOfSpeech: 'noun' },
-            { _id: 'en_health_4', word: 'exercise', translation: 'упражнение', example: 'Exercise is good for health.', partOfSpeech: 'noun' },
-            { _id: 'en_health_5', word: 'patient', translation: 'пациент', example: 'The patient is recovering.', partOfSpeech: 'noun' },
-            { _id: 'en_health_6', word: 'treatment', translation: 'лечение', example: 'The treatment is effective.', partOfSpeech: 'noun' },
-            { _id: 'en_health_7', word: 'symptom', translation: 'симптом', example: 'What are your symptoms?', partOfSpeech: 'noun' },
-            { _id: 'en_health_8', word: 'healthy', translation: 'здоровый', example: 'Eat healthy food.', partOfSpeech: 'adjective' }
-          ]
-        }
-      };
+    // Progress tracking method
+    const saveLearningProgress = async (wordId, isCorrect = true) => {
+      if (!currentUser.value) return;
 
-      return vocabularyData[lang]?.[topic] || [];
+      try {
+        await fetch('/api/vocabulary/progress', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentUser.value.token || localStorage.getItem('authToken')}`
+          },
+          body: JSON.stringify({
+            userId: currentUser.value.uid,
+            vocabularyId: wordId,
+            language: languageCode.value,
+            correct: isCorrect,
+            timeSpent: Date.now() - (window.wordStartTime || Date.now())
+          })
+        });
+      } catch (error) {
+        console.error('Error saving progress:', error);
+      }
+    };
+
+    // Helper function for default topics (fallback only)
+    const getDefaultTopics = () => {
+      return [
+        { name: 'Travel', difficulty: 'beginner', wordCount: 0 },
+        { name: 'Food', difficulty: 'beginner', wordCount: 0 },
+        { name: 'Family', difficulty: 'intermediate', wordCount: 0 },
+        { name: 'Business', difficulty: 'intermediate', wordCount: 0 },
+        { name: 'Technology', difficulty: 'advanced', wordCount: 0 },
+        { name: 'Health', difficulty: 'beginner', wordCount: 0 }
+      ];
     };
 
     // Keyboard shortcuts
@@ -1078,6 +1171,9 @@ export default {
         
         createCustomTest(config);
       }
+      
+      // Initialize word timing
+      window.wordStartTime = Date.now();
     });
 
     onUnmounted(() => {
