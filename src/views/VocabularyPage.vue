@@ -45,6 +45,10 @@
               <span class="stat-number">{{ overallStats.languagesStarted || 0 }}</span>
               <span class="stat-label">начато изучение</span>
             </div>
+            <div class="stat">
+              <span class="stat-number">{{ overallStats.wordsFromLessons || 0 }}</span>
+              <span class="stat-label">из уроков</span>
+            </div>
           </div>
         </div>
       </div>
@@ -65,9 +69,13 @@
                 <span class="stat-icon">📚</span>
                 <span class="stat-text">{{ language.totalWords }} слов изучается</span>
               </div>
-              <div v-if="language.progress > 0" class="stat-item">
+              <div v-if="language.wordsFromLessons > 0" class="stat-item">
+                <span class="stat-icon">🎓</span>
+                <span class="stat-text">{{ language.wordsFromLessons }} из уроков</span>
+              </div>
+              <div v-if="language.mastered > 0" class="stat-item">
                 <span class="stat-icon">✅</span>
-                <span class="stat-text">{{ language.progress }}% изучено</span>
+                <span class="stat-text">{{ language.mastered }} изучено</span>
               </div>
               <div v-if="language.totalWords === 0" class="stat-item">
                 <span class="stat-icon">🚀</span>
@@ -105,6 +113,14 @@
             <span class="btn-icon">🎯</span>
             <span>Тест</span>
           </button>
+          <button 
+            v-if="hasAnyContent"
+            @click="startReview"
+            class="action-btn secondary"
+          >
+            <span class="btn-icon">📖</span>
+            <span>Повторить</span>
+          </button>
         </div>
       </div>
 
@@ -117,8 +133,36 @@
       <!-- Language Content -->
       <div v-else-if="hasAnyContent" class="language-content">
         
+        <!-- Filter and Search -->
+        <div class="controls-section">
+          <div class="search-bar">
+            <input 
+              v-model="searchQuery" 
+              type="text" 
+              placeholder="Поиск слов..."
+              class="search-input"
+              @input="performSearch"
+            >
+            <span class="search-icon">🔍</span>
+          </div>
+          
+          <div class="filter-tabs">
+            <button 
+              v-for="tab in filterTabs" 
+              :key="tab.key"
+              @click="setActiveTab(tab.key)"
+              class="filter-tab"
+              :class="{ active: activeTab === tab.key }"
+            >
+              <span class="tab-icon">{{ tab.icon }}</span>
+              <span class="tab-label">{{ tab.label }}</span>
+              <span class="tab-count">{{ tab.count }}</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Topics Section -->
-        <section v-if="topics.length > 0" class="vocabulary-section">
+        <section v-if="activeTab === 'topics' && topics.length > 0" class="vocabulary-section">
           <div class="section-header">
             <div class="section-info">
               <h2 class="section-title">📚 Темы для изучения</h2>
@@ -155,6 +199,179 @@
             </div>
           </div>
         </section>
+
+        <!-- Words from Lessons Section -->
+        <section v-if="activeTab === 'lessons' && wordsFromLessons.length > 0" class="vocabulary-section">
+          <div class="section-header">
+            <div class="section-info">
+              <h2 class="section-title">🎓 Слова из пройденных уроков</h2>
+              <span class="section-count">{{ wordsFromLessons.length }}</span>
+            </div>
+            <div class="section-actions">
+              <button @click="practiceFromLessons" class="practice-btn">
+                <span class="btn-icon">🔄</span>
+                <span>Практика</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="words-grid">
+            <div 
+              v-for="word in paginatedWordsFromLessons"
+              :key="word.id"
+              class="word-card lesson-word"
+              @click="showWordDetails(word)"
+            >
+              <div class="word-header">
+                <h4 class="word-text">{{ word.word }}</h4>
+                <span class="word-lesson">{{ word.lessonName }}</span>
+              </div>
+              <p class="word-translation">{{ word.translation }}</p>
+              <div class="word-meta">
+                <span class="word-type">{{ getPartOfSpeechRu(word.partOfSpeech) }}</span>
+                <span class="word-difficulty" :class="word.difficulty">
+                  {{ getDifficultyLabel(word.difficulty) }}
+                </span>
+              </div>
+              <div class="word-progress">
+                <div class="progress-bar">
+                  <div 
+                    class="progress-fill" 
+                    :style="{ width: `${word.progress || 0}%` }"
+                  ></div>
+                </div>
+                <span class="progress-text">{{ word.progress || 0 }}%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pagination for words from lessons -->
+          <div v-if="wordsFromLessons.length > wordsPerPage" class="pagination">
+            <button 
+              @click="changePage(-1)" 
+              :disabled="currentPage === 1"
+              class="pagination-btn"
+            >
+              ←
+            </button>
+            <span class="pagination-info">
+              {{ currentPage }} из {{ totalPages }}
+            </span>
+            <button 
+              @click="changePage(1)" 
+              :disabled="currentPage === totalPages"
+              class="pagination-btn"
+            >
+              →
+            </button>
+          </div>
+        </section>
+
+        <!-- All Words Section -->
+        <section v-if="activeTab === 'all' && allWords.length > 0" class="vocabulary-section">
+          <div class="section-header">
+            <div class="section-info">
+              <h2 class="section-title">📖 Все слова</h2>
+              <span class="section-count">{{ allWords.length }}</span>
+            </div>
+            <div class="section-actions">
+              <select v-model="sortBy" @change="sortWords" class="sort-select">
+                <option value="word">По алфавиту</option>
+                <option value="difficulty">По сложности</option>
+                <option value="progress">По прогрессу</option>
+                <option value="recent">Недавние</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="words-grid">
+            <div 
+              v-for="word in paginatedAllWords"
+              :key="word.id"
+              class="word-card"
+              @click="showWordDetails(word)"
+            >
+              <div class="word-header">
+                <h4 class="word-text">{{ word.word }}</h4>
+                <span class="word-source" v-if="word.source">{{ word.source }}</span>
+              </div>
+              <p class="word-translation">{{ word.translation }}</p>
+              <div class="word-meta">
+                <span class="word-type">{{ getPartOfSpeechRu(word.partOfSpeech) }}</span>
+                <span class="word-difficulty" :class="word.difficulty">
+                  {{ getDifficultyLabel(word.difficulty) }}
+                </span>
+              </div>
+              <div class="word-progress" v-if="word.progress !== undefined">
+                <div class="progress-bar">
+                  <div 
+                    class="progress-fill" 
+                    :style="{ width: `${word.progress || 0}%` }"
+                  ></div>
+                </div>
+                <span class="progress-text">{{ word.progress || 0 }}%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pagination for all words -->
+          <div v-if="allWords.length > wordsPerPage" class="pagination">
+            <button 
+              @click="changeAllWordsPage(-1)" 
+              :disabled="allWordsCurrentPage === 1"
+              class="pagination-btn"
+            >
+              ←
+            </button>
+            <span class="pagination-info">
+              {{ allWordsCurrentPage }} из {{ allWordsTotalPages }}
+            </span>
+            <button 
+              @click="changeAllWordsPage(1)" 
+              :disabled="allWordsCurrentPage === allWordsTotalPages"
+              class="pagination-btn"
+            >
+              →
+            </button>
+          </div>
+        </section>
+
+        <!-- Review Section -->
+        <section v-if="activeTab === 'review' && wordsForReview.length > 0" class="vocabulary-section">
+          <div class="section-header">
+            <div class="section-info">
+              <h2 class="section-title">🔄 Повторение</h2>
+              <span class="section-count">{{ wordsForReview.length }}</span>
+            </div>
+            <div class="section-actions">
+              <button @click="startReviewSession" class="practice-btn primary">
+                <span class="btn-icon">🎯</span>
+                <span>Начать повторение</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="words-grid">
+            <div 
+              v-for="word in wordsForReview"
+              :key="word.id"
+              class="word-card review-word"
+              @click="showWordDetails(word)"
+            >
+              <div class="word-header">
+                <h4 class="word-text">{{ word.word }}</h4>
+                <span class="review-due">{{ getReviewStatus(word) }}</span>
+              </div>
+              <p class="word-translation">{{ word.translation }}</p>
+              <div class="word-meta">
+                <span class="word-type">{{ getPartOfSpeechRu(word.partOfSpeech) }}</span>
+                <span class="review-stats">
+                  {{ word.timesCorrect || 0 }}/{{ word.timesShown || 0 }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
         
       </div>
       
@@ -162,9 +379,56 @@
       <div v-else class="empty-language-state">
         <div class="empty-icon">📚</div>
         <h3>Начните изучение {{ selectedLanguage.nameRu || selectedLanguage.name }}</h3>
-        <p>Выберите тему для начала изучения словаря</p>
+        <p>Пройдите уроки или выберите тему для начала изучения словаря</p>
         <div class="empty-actions">
           <button @click="goBackToLanguages" class="primary-btn">Выбрать другой язык</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Word Details Modal -->
+    <div v-if="selectedWord" class="word-modal" @click="closeWordModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3 class="modal-title">{{ selectedWord.word }}</h3>
+          <button @click="closeWordModal" class="modal-close">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="word-details">
+            <p class="word-translation-large">{{ selectedWord.translation }}</p>
+            <div class="word-info">
+              <span class="word-type-large">{{ getPartOfSpeechRu(selectedWord.partOfSpeech) }}</span>
+              <span class="word-difficulty-large" :class="selectedWord.difficulty">
+                {{ getDifficultyLabel(selectedWord.difficulty) }}
+              </span>
+            </div>
+            <div v-if="selectedWord.definition" class="word-definition">
+              <h4>Определение:</h4>
+              <p>{{ selectedWord.definition }}</p>
+            </div>
+            <div v-if="selectedWord.examples && selectedWord.examples.length > 0" class="word-examples">
+              <h4>Примеры:</h4>
+              <div v-for="example in selectedWord.examples" :key="example.sentence" class="example">
+                <p class="example-sentence">{{ example.sentence }}</p>
+                <p class="example-translation">{{ example.translation }}</p>
+              </div>
+            </div>
+            <div v-if="selectedWord.lessonName" class="word-lesson-info">
+              <h4>Из урока:</h4>
+              <p>{{ selectedWord.lessonName }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button @click="markAsKnown(selectedWord)" class="modal-btn success">
+            ✅ Знаю
+          </button>
+          <button @click="markAsUnknown(selectedWord)" class="modal-btn warning">
+            ❌ Не знаю
+          </button>
+          <button @click="addToReview(selectedWord)" class="modal-btn primary">
+            🔄 Повторить позже
+          </button>
         </div>
       </div>
     </div>
@@ -180,13 +444,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { vocabularyService } from '@/services/vocabularyService'
-import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
-const { currentUser } = useAuth()
+
+// Mock current user - replace with your actual auth solution
+const currentUser = ref({ uid: 'demo-user-123', role: 'user' })
 
 // Simple toast functionality
 const toast = ref({ visible: false, message: '', type: 'success' })
@@ -203,10 +467,324 @@ const error = ref(null)
 const selectedLanguage = ref(null)
 const loadingMessage = ref('Загрузка языков...')
 const topics = ref([])
+const wordsFromLessons = ref([])
+const allWords = ref([])
+const wordsForReview = ref([])
+const selectedWord = ref(null)
 
 // Data
 const availableLanguages = ref([])
 const overallStats = ref(null)
+
+// Filters and search
+const activeTab = ref('topics')
+const searchQuery = ref('')
+const sortBy = ref('word')
+
+// Pagination
+const wordsPerPage = 12
+const currentPage = ref(1)
+const allWordsCurrentPage = ref(1)
+
+// Enhanced vocabulary service that matches backend API structure
+const vocabularyService = {
+  async getUserLanguages(userId) {
+    try {
+      const response = await fetch(`/api/vocabulary/languages`)
+      const languagesResult = await response.json()
+      
+      if (!languagesResult.success) {
+        throw new Error(languagesResult.error || 'Failed to fetch languages')
+      }
+
+      // Get user progress for each language
+      const languagesWithProgress = await Promise.all(
+        languagesResult.data.map(async (lang) => {
+          try {
+            // Get vocabulary statistics
+            const statsResponse = await fetch(`/api/vocabulary/stats/language/${lang.code}`)
+            const statsData = await statsResponse.json()
+            
+            // Get user progress
+            let progressData = { success: false, data: [] }
+            try {
+              const progressResponse = await fetch(`/api/vocabulary/progress/${userId}?language=${lang.code}`)
+              progressData = await progressResponse.json()
+            } catch (progressError) {
+              console.warn('Progress data not available:', progressError)
+            }
+            
+            // Get words from lessons (vocabulary learned during lessons)
+            let lessonsData = { success: false, data: [] }
+            try {
+              const lessonsResponse = await fetch(`/api/vocabulary/from-lessons/${userId}?language=${lang.code}`)
+              lessonsData = await lessonsResponse.json()
+            } catch (lessonsError) {
+              console.warn('Lessons vocabulary not available:', lessonsError)
+              // Fallback: try to get from user progress or lessons
+              try {
+                const userProgressResponse = await fetch(`/api/user-progress?userId=${userId}`)
+                const userProgress = await userProgressResponse.json()
+                
+                if (userProgress.success) {
+                  // Extract vocabulary from completed lessons
+                  const completedLessons = userProgress.data.filter(p => p.completed && p.progressPercent >= 100)
+                  
+                  // For each completed lesson, try to get its vocabulary
+                  const vocabularyFromLessons = await Promise.all(
+                    completedLessons.slice(0, 10).map(async (progress) => {
+                      try {
+                        const lessonResponse = await fetch(`/api/lessons/${progress.lessonId}`)
+                        const lessonData = await lessonResponse.json()
+                        
+                        if (lessonData.success && lessonData.lesson.steps) {
+                          const vocabularySteps = lessonData.lesson.steps.filter(step => step.type === 'vocabulary')
+                          const words = []
+                          
+                          vocabularySteps.forEach(step => {
+                            if (Array.isArray(step.data)) {
+                              step.data.forEach(vocab => {
+                                if (vocab.term && vocab.definition) {
+                                  words.push({
+                                    id: `${progress.lessonId}_${vocab.term}`,
+                                    word: vocab.term,
+                                    translation: vocab.definition,
+                                    definition: vocab.example || '',
+                                    language: lang.code,
+                                    partOfSpeech: 'noun',
+                                    difficulty: 'beginner',
+                                    source: 'lesson',
+                                    lessonId: progress.lessonId,
+                                    lessonName: lessonData.lesson.lessonName || lessonData.lesson.title,
+                                    progress: 100, // From completed lesson
+                                    examples: vocab.example ? [{ sentence: vocab.example, translation: '' }] : []
+                                  })
+                                }
+                              })
+                            }
+                          })
+                          
+                          return words
+                        }
+                        return []
+                      } catch (lessonError) {
+                        console.warn('Could not fetch lesson vocabulary:', lessonError)
+                        return []
+                      }
+                    })
+                  )
+                  
+                  lessonsData = {
+                    success: true,
+                    data: vocabularyFromLessons.flat()
+                  }
+                }
+              } catch (fallbackError) {
+                console.warn('Fallback vocabulary extraction failed:', fallbackError)
+              }
+            }
+            
+            const wordsFromLessons = lessonsData.success ? lessonsData.data.length : 0
+            const totalProgress = progressData.success ? progressData.data : []
+            const mastered = totalProgress.filter(p => p.status === 'mastered').length
+            
+            return {
+              ...lang,
+              flag: getLanguageFlag(lang.code),
+              totalWords: (statsData.success ? statsData.data.totalWords : 0) + wordsFromLessons,
+              wordsFromLessons: wordsFromLessons,
+              progress: totalProgress.length > 0 ? Math.round((mastered / totalProgress.length) * 100) : 0,
+              mastered: mastered
+            }
+          } catch (langError) {
+            console.warn(`Error processing language ${lang.code}:`, langError)
+            return {
+              ...lang,
+              flag: getLanguageFlag(lang.code),
+              totalWords: 0,
+              wordsFromLessons: 0,
+              progress: 0,
+              mastered: 0
+            }
+          }
+        })
+      )
+
+      const totalWords = languagesWithProgress.reduce((sum, lang) => sum + lang.totalWords, 0)
+      const totalFromLessons = languagesWithProgress.reduce((sum, lang) => sum + lang.wordsFromLessons, 0)
+      const languagesStarted = languagesWithProgress.filter(lang => lang.totalWords > 0).length
+
+      return {
+        success: true,
+        data: {
+          languages: languagesWithProgress,
+          stats: {
+            totalWords,
+            wordsFromLessons: totalFromLessons,
+            languagesStarted,
+            mastered: languagesWithProgress.reduce((sum, lang) => sum + lang.mastered, 0)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user languages:', error)
+      return {
+        success: false,
+        error: error.message
+      }
+    }
+  },
+
+  async getLanguageContent(userId, languageCode) {
+    try {
+      const results = await Promise.allSettled([
+        // Get topics
+        fetch(`/api/vocabulary/topics/${languageCode}`).then(r => r.json()),
+        
+        // Get words from lessons - with fallback
+        this.getWordsFromLessons(userId, languageCode),
+        
+        // Get all vocabulary words
+        fetch(`/api/vocabulary/words/${languageCode}/all/all?limit=1000`).then(r => r.json()),
+        
+        // Get user progress
+        fetch(`/api/vocabulary/progress/${userId}?language=${languageCode}`).then(r => r.json()),
+        
+        // Get words for review
+        fetch(`/api/vocabulary/review/${userId}?language=${languageCode}&limit=50`).then(r => r.json())
+      ])
+
+      const [topicsResult, lessonsResult, allWordsResult, progressResult, reviewResult] = results
+
+      return {
+        success: true,
+        data: {
+          topics: topicsResult.status === 'fulfilled' && topicsResult.value.success ? topicsResult.value.data : [],
+          wordsFromLessons: lessonsResult.status === 'fulfilled' ? lessonsResult.value : [],
+          allWords: allWordsResult.status === 'fulfilled' && allWordsResult.value.success ? allWordsResult.value.data : [],
+          userProgress: progressResult.status === 'fulfilled' && progressResult.value.success ? progressResult.value.data : [],
+          wordsForReview: reviewResult.status === 'fulfilled' && reviewResult.value.success ? reviewResult.value.data : []
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching language content:', error)
+      return {
+        success: false,
+        error: error.message
+      }
+    }
+  },
+
+  async getWordsFromLessons(userId, languageCode) {
+    try {
+      // First try the dedicated endpoint
+      const response = await fetch(`/api/vocabulary/from-lessons/${userId}?language=${languageCode}`)
+      const data = await response.json()
+      
+      if (data.success) {
+        return data.data
+      }
+      
+      // Fallback: extract from user progress and lessons
+      const userProgressResponse = await fetch(`/api/user-progress?userId=${userId}`)
+      const userProgress = await userProgressResponse.json()
+      
+      if (!userProgress.success) {
+        return []
+      }
+      
+      const completedLessons = userProgress.data.filter(p => 
+        p.completed && p.progressPercent >= 70 // Include lessons with 70%+ completion
+      )
+      
+      const vocabularyFromLessons = []
+      
+      // Process completed lessons in batches to avoid overwhelming the API
+      for (const progress of completedLessons.slice(0, 20)) {
+        try {
+          const lessonResponse = await fetch(`/api/lessons/${progress.lessonId}`)
+          const lessonData = await lessonResponse.json()
+          
+          if (lessonData.success && lessonData.lesson.steps) {
+            const vocabularySteps = lessonData.lesson.steps.filter(step => step.type === 'vocabulary')
+            
+            vocabularySteps.forEach(step => {
+              if (Array.isArray(step.data)) {
+                step.data.forEach((vocab, index) => {
+                  if (vocab.term && vocab.definition) {
+                    vocabularyFromLessons.push({
+                      id: `${progress.lessonId}_${index}_${vocab.term}`,
+                      word: vocab.term,
+                      translation: vocab.definition,
+                      definition: vocab.example || '',
+                      language: languageCode,
+                      partOfSpeech: 'noun',
+                      difficulty: lessonData.lesson.metadata?.difficulty || 'beginner',
+                      source: 'lesson',
+                      lessonId: progress.lessonId,
+                      lessonName: lessonData.lesson.lessonName || lessonData.lesson.title,
+                      progress: Math.round((progress.progressPercent || 0)),
+                      examples: vocab.example ? [{ 
+                        sentence: vocab.example, 
+                        translation: vocab.definition 
+                      }] : [],
+                      updatedAt: progress.updatedAt || new Date().toISOString()
+                    })
+                  }
+                })
+              }
+            })
+          }
+        } catch (lessonError) {
+          console.warn(`Could not fetch lesson ${progress.lessonId}:`, lessonError)
+        }
+      }
+      
+      return vocabularyFromLessons
+    } catch (error) {
+      console.warn('Error getting words from lessons:', error)
+      return []
+    }
+  },
+
+  async updateWordProgress(userId, vocabularyId, correct, timeSpent = 0) {
+    try {
+      const response = await fetch(`/api/vocabulary/progress/${userId}/update`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          vocabularyId,
+          correct,
+          timeSpent
+        })
+      })
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Error updating word progress:', error)
+      return { success: false, error: error.message }
+    }
+  }
+}
+
+// Helper function to get language flags
+const getLanguageFlag = (code) => {
+  const flags = {
+    'english': '🇺🇸',
+    'spanish': '🇪🇸', 
+    'french': '🇫🇷',
+    'german': '🇩🇪',
+    'chinese': '🇨🇳',
+    'arabic': '🇸🇦',
+    'japanese': '🇯🇵',
+    'korean': '🇰🇷',
+    'uzbek': '🇺🇿',
+    'russian': '🇷🇺'
+  }
+  return flags[code] || '🌍'
+}
 
 // Computed
 const hasLanguages = computed(() => 
@@ -214,15 +792,69 @@ const hasLanguages = computed(() =>
 )
 
 const hasAnyContent = computed(() => 
-  topics.value.length > 0
+  topics.value.length > 0 || wordsFromLessons.value.length > 0 || allWords.value.length > 0
+)
+
+const filterTabs = computed(() => [
+  {
+    key: 'topics',
+    label: 'Темы',
+    icon: '📚',
+    count: topics.value.length
+  },
+  {
+    key: 'lessons',
+    label: 'Из уроков',
+    icon: '🎓',
+    count: wordsFromLessons.value.length
+  },
+  {
+    key: 'all',
+    label: 'Все слова',
+    icon: '📖',
+    count: allWords.value.length
+  },
+  {
+    key: 'review',
+    label: 'Повторение',
+    icon: '🔄',
+    count: wordsForReview.value.length
+  }
+])
+
+const paginatedWordsFromLessons = computed(() => {
+  const start = (currentPage.value - 1) * wordsPerPage
+  const end = start + wordsPerPage
+  return wordsFromLessons.value.slice(start, end)
+})
+
+const totalPages = computed(() => 
+  Math.ceil(wordsFromLessons.value.length / wordsPerPage)
+)
+
+const paginatedAllWords = computed(() => {
+  const start = (allWordsCurrentPage.value - 1) * wordsPerPage
+  const end = start + wordsPerPage
+  return allWords.value.slice(start, end)
+})
+
+const allWordsTotalPages = computed(() => 
+  Math.ceil(allWords.value.length / wordsPerPage)
 )
 
 const getTotalWordsText = () => {
   const topicsCount = topics.value.length
-  const totalWords = topics.value.reduce((sum, topic) => sum + topic.wordCount, 0)
+  const wordsFromLessonsCount = wordsFromLessons.value.length
+  const totalVocabWords = allWords.value.length
   
-  if (totalWords === 0) return 'Нет слов'
-  return `${topicsCount} тем, ${totalWords} слов`
+  if (topicsCount === 0 && wordsFromLessonsCount === 0) return 'Нет слов'
+  
+  let parts = []
+  if (topicsCount > 0) parts.push(`${topicsCount} тем`)
+  if (wordsFromLessonsCount > 0) parts.push(`${wordsFromLessonsCount} из уроков`)
+  if (totalVocabWords > 0) parts.push(`${totalVocabWords} в словаре`)
+  
+  return parts.join(', ')
 }
 
 // Helper functions
@@ -269,11 +901,40 @@ const getDifficultyLabel = (difficulty) => {
   return labels[difficulty] || difficulty
 }
 
+const getPartOfSpeechRu = (partOfSpeech) => {
+  const translations = {
+    'noun': 'Существительное',
+    'verb': 'Глагол',
+    'adjective': 'Прилагательное',
+    'adverb': 'Наречие',
+    'preposition': 'Предлог',
+    'conjunction': 'Союз',
+    'interjection': 'Междометие',
+    'phrase': 'Фраза',
+    'idiom': 'Идиома'
+  }
+  return translations[partOfSpeech] || partOfSpeech
+}
+
+const getReviewStatus = (word) => {
+  if (!word.nextReview) return 'Готово к повторению'
+  
+  const now = new Date()
+  const reviewDate = new Date(word.nextReview)
+  
+  if (reviewDate <= now) return 'Готово'
+  
+  const diffHours = Math.ceil((reviewDate - now) / (1000 * 60 * 60))
+  if (diffHours < 24) return `Через ${diffHours}ч`
+  
+  const diffDays = Math.ceil(diffHours / 24)
+  return `Через ${diffDays}д`
+}
+
 // Methods
 const initialize = async () => {
   if (!currentUser.value) {
     showToast('Пожалуйста, войдите в систему', 'warning')
-    router.push('/auth/login')
     return
   }
 
@@ -286,7 +947,12 @@ const initialize = async () => {
     
     if (result.success) {
       availableLanguages.value = result.data.languages || []
-      overallStats.value = result.data.stats || { totalWords: 0, languagesWithLessons: 0, mastered: 0 }
+      overallStats.value = result.data.stats || { 
+        totalWords: 0, 
+        languagesStarted: 0, 
+        mastered: 0,
+        wordsFromLessons: 0 
+      }
     } else {
       throw new Error(result.error)
     }
@@ -312,11 +978,28 @@ const loadLanguageContent = async (language) => {
   try {
     languageLoading.value = true
     topics.value = []
+    wordsFromLessons.value = []
+    allWords.value = []
+    wordsForReview.value = []
     
-    const result = await vocabularyService.getLanguageTopics(currentUser.value.uid, language.code)
+    const result = await vocabularyService.getLanguageContent(currentUser.value.uid, language.code)
     
     if (result.success) {
       topics.value = result.data.topics || []
+      wordsFromLessons.value = result.data.wordsFromLessons || []
+      allWords.value = result.data.allWords || []
+      wordsForReview.value = result.data.wordsForReview || []
+      
+      // Set default active tab based on available content
+      if (wordsFromLessons.value.length > 0) {
+        activeTab.value = 'lessons'
+      } else if (topics.value.length > 0) {
+        activeTab.value = 'topics'
+      } else if (allWords.value.length > 0) {
+        activeTab.value = 'all'
+      } else {
+        activeTab.value = 'topics'
+      }
     } else {
       throw new Error(result.error)
     }
@@ -331,55 +1014,209 @@ const loadLanguageContent = async (language) => {
 
 const selectTopic = (topic) => {
   router.push({
-    name: 'VocabularyIn',
+    name: 'VocabularyTopic',
     params: { 
-      languageCode: selectedLanguage.value.code
-    },
-    query: {
-      topic: topic.name
+      languageCode: selectedLanguage.value.code,
+      topicName: topic.name
     }
   })
+}
+
+const setActiveTab = (tabKey) => {
+  activeTab.value = tabKey
+  currentPage.value = 1
+  allWordsCurrentPage.value = 1
+}
+
+const performSearch = () => {
+  // Implement search functionality
+  if (!searchQuery.value.trim()) {
+    return
+  }
+  
+  // Filter words based on search query
+  const query = searchQuery.value.toLowerCase()
+  
+  if (activeTab.value === 'lessons') {
+    // Filter words from lessons
+    wordsFromLessons.value = wordsFromLessons.value.filter(word => 
+      word.word.toLowerCase().includes(query) ||
+      word.translation.toLowerCase().includes(query)
+    )
+  } else if (activeTab.value === 'all') {
+    // Filter all words
+    allWords.value = allWords.value.filter(word => 
+      word.word.toLowerCase().includes(query) ||
+      word.translation.toLowerCase().includes(query) ||
+      (word.definition && word.definition.toLowerCase().includes(query))
+    )
+  }
+  
+  currentPage.value = 1
+  allWordsCurrentPage.value = 1
+}
+
+const sortWords = () => {
+  const sortFunction = (a, b) => {
+    switch (sortBy.value) {
+      case 'word':
+        return a.word.localeCompare(b.word)
+      case 'difficulty':
+        const difficultyOrder = { beginner: 1, intermediate: 2, advanced: 3 }
+        return (difficultyOrder[a.difficulty] || 1) - (difficultyOrder[b.difficulty] || 1)
+      case 'progress':
+        return (b.progress || 0) - (a.progress || 0)
+      case 'recent':
+        return new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
+      default:
+        return 0
+    }
+  }
+  
+  if (activeTab.value === 'lessons') {
+    wordsFromLessons.value.sort(sortFunction)
+  } else if (activeTab.value === 'all') {
+    allWords.value.sort(sortFunction)
+  }
+}
+
+const changePage = (direction) => {
+  const newPage = currentPage.value + direction
+  if (newPage >= 1 && newPage <= totalPages.value) {
+    currentPage.value = newPage
+  }
+}
+
+const changeAllWordsPage = (direction) => {
+  const newPage = allWordsCurrentPage.value + direction
+  if (newPage >= 1 && newPage <= allWordsTotalPages.value) {
+    allWordsCurrentPage.value = newPage
+  }
+}
+
+const showWordDetails = (word) => {
+  selectedWord.value = word
+}
+
+const closeWordModal = () => {
+  selectedWord.value = null
+}
+
+const markAsKnown = async (word) => {
+  const result = await vocabularyService.updateWordProgress(
+    currentUser.value.uid, 
+    word.id || word._id, 
+    true, 
+    5
+  )
+  
+  if (result.success) {
+    showToast('Слово отмечено как изученное', 'success')
+    // Update local progress
+    if (word.progress !== undefined) {
+      word.progress = Math.min(100, (word.progress || 0) + 20)
+    }
+  } else {
+    showToast('Ошибка обновления прогресса', 'error')
+  }
+  
+  closeWordModal()
+}
+
+const markAsUnknown = async (word) => {
+  const result = await vocabularyService.updateWordProgress(
+    currentUser.value.uid, 
+    word.id || word._id, 
+    false, 
+    3
+  )
+  
+  if (result.success) {
+    showToast('Слово добавлено для повторения', 'info')
+    // Update local progress
+    if (word.progress !== undefined) {
+      word.progress = Math.max(0, (word.progress || 0) - 10)
+    }
+  } else {
+    showToast('Ошибка обновления прогресса', 'error')
+  }
+  
+  closeWordModal()
+}
+
+const addToReview = async (word) => {
+  // Add word to review list
+  if (!wordsForReview.value.find(w => (w.id || w._id) === (word.id || word._id))) {
+    wordsForReview.value.push(word)
+    showToast('Слово добавлено для повторения', 'success')
+  } else {
+    showToast('Слово уже в списке повторения', 'info')
+  }
+  
+  closeWordModal()
 }
 
 const goBackToLanguages = () => {
   selectedLanguage.value = null
   topics.value = []
+  wordsFromLessons.value = []
+  allWords.value = []
+  wordsForReview.value = []
+  activeTab.value = 'topics'
+  searchQuery.value = ''
+  currentPage.value = 1
+  allWordsCurrentPage.value = 1
 }
 
 const createTest = () => {
+  // Create vocabulary test for selected language
   router.push({
-    name: 'VocabularyIn',
+    name: 'VocabularyTest',
     params: { languageCode: selectedLanguage.value.code },
     query: { mode: 'test' }
   })
 }
 
-const goToAdmin = () => {
-  // Only available for admin users
-  if (currentUser.value?.role === 'admin') {
-    router.push('/admin/vocabulary')
-  } else {
-    showToast('Изучайте доступные темы и слова', 'info')
-  }
+const startReview = () => {
+  activeTab.value = 'review'
 }
+
+const practiceFromLessons = () => {
+  router.push({
+    name: 'VocabularyPractice',
+    params: { languageCode: selectedLanguage.value.code },
+    query: { source: 'lessons' }
+  })
+}
+
+const startReviewSession = () => {
+  router.push({
+    name: 'VocabularyReview',
+    params: { languageCode: selectedLanguage.value.code },
+    query: { mode: 'review' }
+  })
+}
+
+// Watch for search query changes
+watch(searchQuery, (newQuery) => {
+  if (!newQuery.trim()) {
+    // Reset filters when search is cleared
+    loadLanguageContent(selectedLanguage.value)
+  }
+})
 
 // Lifecycle
 onMounted(async () => {
   await initialize()
 })
-
-// Auto-hide toast
-setTimeout(() => {
-  if (toast.visible) {
-    hideToast()
-  }
-}, 3000)
 </script>
+
 <style scoped>
 /* Variables */
 :root {
   --primary: #8b5cf6;
   --primary-dark: #7c3aed;
+  --secondary: #6366f1;
   --success: #10b981;
   --warning: #f59e0b;
   --error: #ef4444;
@@ -396,7 +1233,9 @@ setTimeout(() => {
   --white: #ffffff;
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   --transition: all 0.2s ease;
+  --transition-fast: all 0.15s ease;
 }
 
 /* Base */
@@ -693,6 +1532,110 @@ setTimeout(() => {
   box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
 }
 
+.action-btn.secondary {
+  background: var(--white);
+  border: 2px solid var(--secondary);
+  color: var(--secondary);
+}
+
+.action-btn.secondary:hover {
+  background: var(--secondary);
+  color: var(--white);
+}
+
+/* Controls Section */
+.controls-section {
+  background: var(--white);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow);
+}
+
+.search-bar {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  padding-right: 3rem;
+  border: 2px solid var(--gray-200);
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  transition: var(--transition);
+  background: var(--gray-50);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.search-icon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.25rem;
+  color: var(--gray-400);
+  pointer-events: none;
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--gray-200);
+  border-radius: 0.75rem;
+  background: var(--gray-50);
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 500;
+}
+
+.filter-tab:hover {
+  border-color: var(--primary);
+  background: var(--white);
+}
+
+.filter-tab.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--white);
+}
+
+.tab-icon {
+  font-size: 1.125rem;
+}
+
+.tab-count {
+  background: rgba(255, 255, 255, 0.2);
+  color: inherit;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.filter-tab:not(.active) .tab-count {
+  background: var(--gray-200);
+  color: var(--gray-600);
+}
+
 /* Vocabulary Sections */
 .vocabulary-section {
   background: var(--white);
@@ -816,6 +1759,433 @@ setTimeout(() => {
   border-color: #fecaca;
 }
 
+/* Words Grid */
+.words-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.word-card {
+  background: var(--white);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid var(--gray-100);
+  position: relative;
+  overflow: hidden;
+}
+
+.word-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-lg);
+}
+
+.word-card.lesson-word {
+  border-left: 4px solid var(--success);
+}
+
+.word-card.review-word {
+  border-left: 4px solid var(--warning);
+}
+
+.word-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.word-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
+  flex: 1;
+}
+
+.word-lesson,
+.word-source {
+  font-size: 0.75rem;
+  color: var(--primary);
+  background: rgba(139, 92, 246, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+}
+
+.review-due {
+  font-size: 0.75rem;
+  color: var(--warning);
+  background: rgba(245, 158, 11, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+}
+
+.word-translation {
+  font-size: 1rem;
+  color: var(--gray-700);
+  margin: 0 0 1rem 0;
+  line-height: 1.5;
+}
+
+.word-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.word-type {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  background: var(--gray-100);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+}
+
+.word-difficulty {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+}
+
+.word-difficulty.beginner {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.word-difficulty.intermediate {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.word-difficulty.advanced {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.review-stats {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  font-weight: 500;
+}
+
+.word-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 0.5rem;
+  background: var(--gray-200);
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--success) 0%, var(--primary) 100%);
+  transition: var(--transition);
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  color: var(--gray-600);
+  font-weight: 600;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.pagination-btn {
+  background: var(--white);
+  border: 2px solid var(--gray-200);
+  color: var(--gray-700);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 500;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-weight: 600;
+  color: var(--gray-700);
+}
+
+/* Section Actions */
+.section-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.practice-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--primary);
+  border-radius: 0.75rem;
+  background: var(--white);
+  color: var(--primary);
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 600;
+}
+
+.practice-btn:hover {
+  background: var(--primary);
+  color: var(--white);
+}
+
+.practice-btn.primary {
+  background: var(--primary);
+  color: var(--white);
+}
+
+.practice-btn.primary:hover {
+  background: var(--primary-dark);
+}
+
+.sort-select {
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--gray-200);
+  border-radius: 0.5rem;
+  background: var(--white);
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* Word Modal */
+.word-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.modal-content {
+  background: var(--white);
+  border-radius: 1rem;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 1.5rem 0 1.5rem;
+  border-bottom: 1px solid var(--gray-200);
+  margin-bottom: 1.5rem;
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--gray-400);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: var(--transition);
+}
+
+.modal-close:hover {
+  background: var(--gray-100);
+  color: var(--gray-600);
+}
+
+.modal-body {
+  padding: 0 1.5rem;
+}
+
+.word-translation-large {
+  font-size: 1.25rem;
+  color: var(--gray-700);
+  margin: 0 0 1rem 0;
+  font-weight: 500;
+}
+
+.word-info {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.word-type-large {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+}
+
+.word-difficulty-large {
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+}
+
+.word-difficulty-large.beginner {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.word-difficulty-large.intermediate {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.word-difficulty-large.advanced {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.word-definition,
+.word-examples,
+.word-lesson-info {
+  margin-bottom: 1.5rem;
+}
+
+.word-definition h4,
+.word-examples h4,
+.word-lesson-info h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin: 0 0 0.5rem 0;
+}
+
+.word-definition p,
+.word-lesson-info p {
+  color: var(--gray-700);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.example {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--gray-50);
+  border-radius: 0.75rem;
+  border-left: 4px solid var(--primary);
+}
+
+.example:last-child {
+  margin-bottom: 0;
+}
+
+.example-sentence {
+  font-weight: 600;
+  color: var(--gray-900);
+  margin: 0 0 0.5rem 0;
+}
+
+.example-translation {
+  color: var(--gray-600);
+  font-style: italic;
+  margin: 0;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-top: 1px solid var(--gray-200);
+  justify-content: flex-end;
+}
+
+.modal-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid transparent;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 600;
+}
+
+.modal-btn.success {
+  background: var(--success);
+  color: var(--white);
+}
+
+.modal-btn.success:hover {
+  background: #059669;
+}
+
+.modal-btn.warning {
+  background: var(--warning);
+  color: var(--white);
+}
+
+.modal-btn.warning:hover {
+  background: #d97706;
+}
+
+.modal-btn.primary {
+  background: var(--primary);
+  color: var(--white);
+}
+
+.modal-btn.primary:hover {
+  background: var(--primary-dark);
+}
+
 /* Toast */
 .toast {
   position: fixed;
@@ -909,9 +2279,376 @@ setTimeout(() => {
     justify-content: center;
   }
   
+/* Responsive */
+@media (max-width: 768px) {
+  .vocabulary-page {
+    padding: 1rem;
+  }
+  
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .stats-bar {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .language-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .lang-title-section {
+    justify-content: center;
+  }
+  
   .languages-grid,
-  .topics-grid {
+  .topics-grid,
+  .words-grid {
     grid-template-columns: 1fr;
   }
+  
+  .filter-tabs {
+    flex-direction: column;
+  }
+  
+  .modal-content {
+    margin: 1rem;
+    max-height: 90vh;
+  }
+  
+  .modal-footer {
+    flex-direction: column;
+  }
+  
+  .section-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .action-btn {
+    justify-content: center;
+  }
+  
+  .word-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .word-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .vocabulary-page {
+    padding: 0.5rem;
+  }
+  
+  .page-header,
+  .language-header,
+  .controls-section,
+  .vocabulary-section {
+    padding: 1rem;
+  }
+  
+  .page-title {
+    font-size: 1.5rem;
+  }
+  
+  .lang-title {
+    font-size: 1.5rem;
+  }
+  
+  .filter-tab {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .word-card,
+  .topic-card {
+    padding: 1rem;
+  }
+  
+  .modal-content {
+    margin: 0.5rem;
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 1rem;
+  }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --gray-50: #1f2937;
+    --gray-100: #374151;
+    --gray-200: #4b5563;
+    --gray-300: #6b7280;
+    --gray-400: #9ca3af;
+    --gray-500: #d1d5db;
+    --gray-600: #e5e7eb;
+    --gray-700: #f3f4f6;
+    --gray-800: #f9fafb;
+    --gray-900: #ffffff;
+    --white: #111827;
+  }
+  
+  .vocabulary-page {
+    background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+  }
+  
+  .loading-spinner {
+    border-color: var(--gray-700);
+    border-top-color: var(--primary);
+  }
+}
+
+/* Print styles */
+@media print {
+  .vocabulary-page {
+    background: white;
+    padding: 1rem;
+  }
+  
+  .back-btn,
+  .action-btn,
+  .practice-btn,
+  .filter-tabs,
+  .pagination,
+  .modal-footer,
+  .toast {
+    display: none;
+  }
+  
+  .word-card,
+  .topic-card,
+  .language-card {
+    border: 1px solid #ccc;
+    break-inside: avoid;
+    margin-bottom: 1rem;
+  }
+  
+  .word-card:hover,
+  .topic-card:hover,
+  .language-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --primary: #6d28d9;
+    --primary-dark: #5b21b6;
+    --success: #047857;
+    --warning: #d97706;
+    --error: #dc2626;
+  }
+  
+  .word-card,
+  .topic-card,
+  .language-card {
+    border-width: 2px;
+  }
+  
+  .filter-tab.active {
+    outline: 2px solid var(--primary);
+  }
+  
+  .word-card:hover,
+  .topic-card:hover,
+  .language-card:hover {
+    outline: 2px solid var(--primary);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .lang-flag {
+    animation: none;
+  }
+  
+  .loading-spinner {
+    animation: none;
+    border: 3px solid var(--primary);
+  }
+}
+
+/* Focus styles for accessibility */
+.vocabulary-page *:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.vocabulary-page button:focus,
+.vocabulary-page input:focus,
+.vocabulary-page select:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar for modal */
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: var(--gray-100);
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: var(--gray-400);
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-500);
+}
+
+/* Loading skeleton styles */
+.skeleton {
+  background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 50%, var(--gray-200) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Additional utility classes */
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-1 {
+  gap: 0.25rem;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.gap-3 {
+  gap: 0.75rem;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+.mt-1 {
+  margin-top: 0.25rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.mb-1 {
+  margin-bottom: 0.25rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.p-1 {
+  padding: 0.25rem;
+}
+
+.p-2 {
+  padding: 0.5rem;
+}
+
+.p-4 {
+  padding: 1rem;
+}
+
+.rounded {
+  border-radius: 0.25rem;
+}
+
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+
+.rounded-xl {
+  border-radius: 0.75rem;
+}
+
+.shadow {
+  box-shadow: var(--shadow);
+}
+
+.shadow-lg {
+  box-shadow: var(--shadow-lg);
+}
+
+.shadow-xl {
+  box-shadow: var(--shadow-xl);
+}
 }
 </style>
