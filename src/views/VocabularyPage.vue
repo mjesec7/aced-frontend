@@ -1121,17 +1121,12 @@ const getDifficultyLabel = (difficulty) => {
 
 // Methods
 const initialize = async () => {
-  if (!currentUser.value) {
-    showToast('Пожалуйста, войдите в систему', 'warning')
-    return
-  }
-
   try {
     isLoading.value = true
     error.value = null
     loadingMessage.value = 'Загрузка ваших языков...'
     
-    const result = await vocabularyService.getUserLanguages(currentUser.value.uid)
+    const result = await vocabularyService.getUserLanguages(currentUser.value?.uid || 'demo-user')
     
     if (result.success) {
       availableLanguages.value = result.data.languages || []
@@ -1178,7 +1173,7 @@ const loadLanguageContent = async (language) => {
     allWords.value = []
     wordsForReview.value = []
     
-    const result = await vocabularyService.getLanguageContent(currentUser.value.uid, language.code)
+    const result = await vocabularyService.getLanguageContent(currentUser.value?.uid || 'demo-user', language.code)
     
     if (result.success) {
       wordsFromLessons.value = result.data.wordsFromLessons || []
@@ -1288,7 +1283,7 @@ const closeWordModal = () => {
 
 const markAsKnown = async (word) => {
   const result = await vocabularyService.updateWordProgress(
-    currentUser.value.uid, 
+    currentUser.value?.uid || 'demo-user', 
     word.id || word._id, 
     true, 
     5
@@ -1308,7 +1303,7 @@ const markAsKnown = async (word) => {
 
 const markAsUnknown = async (word) => {
   const result = await vocabularyService.updateWordProgress(
-    currentUser.value.uid, 
+    currentUser.value?.uid || 'demo-user', 
     word.id || word._id, 
     false, 
     3
@@ -1374,7 +1369,7 @@ const debugExtraction = async () => {
   showToast('Запуск диагностики...', 'info')
   
   try {
-    await vocabularyService.getFallbackLanguages(currentUser.value.uid)
+    await vocabularyService.getFallbackLanguages(currentUser.value?.uid || 'demo-user')
     showToast('Диагностика завершена. См. журнал ниже.', 'success')
   } catch (error) {
     showToast(`Ошибка диагностики: ${error.message}`, 'error')
@@ -1393,6 +1388,7 @@ onMounted(async () => {
   await initialize()
 })
 </script>
+
 
 <style scoped>
 /* Variables */

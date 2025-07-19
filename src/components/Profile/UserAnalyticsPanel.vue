@@ -27,8 +27,12 @@
               Дней в обучении
             </label>
             <label class="option-box">
-              <input type="checkbox" v-model="selectedStats" value="completedSubjects" />
-              Завершено предметов
+              <input type="checkbox" v-model="selectedStats" value="completedLessons" />
+              Завершено уроков
+            </label>
+            <label class="option-box">
+              <input type="checkbox" v-model="selectedStats" value="completedTopics" />
+              Завершено тем
             </label>
             <label class="option-box">
               <input type="checkbox" v-model="selectedStats" value="weeklyLessons" />
@@ -86,37 +90,42 @@
       <div class="card-grid">
         <Card 
           label="Общие очки" 
-          :value="analytics.totalPoints" 
+          :value="formatNumber(analytics.totalPoints)" 
           subtext="Баллы за активность 💯" 
         />
         <Card 
           label="Очков в день" 
-          :value="analytics.avgPointsPerDay" 
+          :value="formatNumber(analytics.avgPointsPerDay)" 
           subtext="Средний заработок 📈" 
         />
         <Card 
           label="Дней в обучении" 
-          :value="analytics.studyDays" 
+          :value="formatNumber(analytics.studyDays)" 
           :subtext="formatDaysToHuman(analytics.studyDays)" 
         />
         <Card 
-          label="Завершено предметов" 
-          :value="analytics.completedSubjects" 
-          :subtext="`${remainingSubjects} из ${analytics.totalSubjects}`" 
+          label="Завершено уроков" 
+          :value="formatNumber(analytics.completedLessons || analytics.totalLessonsDone)" 
+          subtext="Пройденные уроки 📚" 
+        />
+        <Card 
+          label="Завершено тем" 
+          :value="formatNumber(analytics.completedTopics || analytics.completedSubjects)" 
+          :subtext="analytics.totalTopics ? `${analytics.totalTopics - (analytics.completedTopics || analytics.completedSubjects)} осталось` : 'Продолжай изучать 🚀'" 
         />
         <Card 
           label="Уроков за неделю" 
-          :value="analytics.weeklyLessons" 
+          :value="formatNumber(analytics.weeklyLessons)" 
           subtext="Текущий темп 📈" 
         />
         <Card 
           label="Уроков за месяц" 
-          :value="analytics.monthlyLessons" 
+          :value="formatNumber(analytics.monthlyLessons)" 
           subtext="Стабильность важна" 
         />
         <Card 
           label="Стрик" 
-          :value="`${analytics.streakDays} дней`" 
+          :value="analytics.streakDays > 0 ? `${analytics.streakDays} дней` : '0 дней'" 
           :subtext="analytics.streakDays > 0 ? 'Ты на волне 💫' : 'Начни снова 🚀'" 
         />
         <Card 
@@ -125,14 +134,9 @@
           subtext="Повтори успех 💪" 
         />
         <Card 
-          label="Всего уроков" 
-          :value="analytics.totalLessonsDone" 
-          subtext="Общий прогресс 📚" 
-        />
-        <Card 
           label="Среднее время в день" 
-          :value="analytics.averageTime || '0 мин'" 
-          subtext="Сколько ты учишься ежедневно" 
+          :value="formatTime(analytics.averageTime)" 
+          subtext="Ежедневная продолжительность обучения ⏰" 
         />
       </div>
 
@@ -141,15 +145,15 @@
         <h2 class="chart-heading">📋 Последняя активность</h2>
         <div class="recent-activity-list">
           <div 
-            v-for="activity in analytics.recentActivity" 
-            :key="activity.date" 
+            v-for="(activity, index) in analytics.recentActivity" 
+            :key="`activity-${index}-${activity.date}`" 
             class="activity-item"
           >
             <div class="activity-date">{{ formatDate(activity.date) }}</div>
-            <div class="activity-lesson">{{ activity.lesson }}</div>
+            <div class="activity-lesson">{{ formatLessonName(activity.lesson) }}</div>
             <div class="activity-stats">
-              <span class="points">{{ activity.points }} очков</span>
-              <span class="duration">{{ activity.duration }} мин</span>
+              <span class="points">{{ formatNumber(activity.points) }} очков</span>
+              <span class="duration" v-if="activity.duration">{{ formatDuration(activity.duration) }}</span>
             </div>
           </div>
         </div>
@@ -165,9 +169,25 @@
         >
           <div class="progress-header">
             <span class="subject-name">{{ subject.name }}</span>
-            <span class="subject-value">{{ subject.progress }}%</span>
+            <span class="subject-value">{{ Math.round(subject.progress) }}%</span>
           </div>
           <ProgressBar :percent="subject.progress" />
+        </div>
+      </div>
+
+      <!-- Topic Progress -->
+      <div class="chart-box" v-if="analytics.topics && analytics.topics.length > 0">
+        <h2 class="chart-heading">🎯 Прогресс по темам</h2>
+        <div 
+          v-for="topic in analytics.topics" 
+          :key="topic.name" 
+          class="topic-progress"
+        >
+          <div class="progress-header">
+            <span class="topic-name">{{ topic.name }}</span>
+            <span class="topic-value">{{ topic.completedLessons || 0 }} / {{ topic.totalLessons || 0 }} уроков</span>
+          </div>
+          <ProgressBar :percent="calculateTopicProgress(topic)" />
         </div>
       </div>
 
@@ -175,6 +195,29 @@
       <div class="chart-box" v-if="analytics.knowledgeChart && analytics.knowledgeChart.length > 0">
         <h2 class="chart-heading">📊 Рост знаний по месяцам</h2>
         <LineChart :chart-data="chartData" />
+      </div>
+
+      <!-- Performance Metrics -->
+      <div class="chart-box">
+        <h2 class="chart-heading">🏆 Показатели эффективности</h2>
+        <div class="performance-grid">
+          <div class="performance-item">
+            <div class="performance-label">Точность ответов</div>
+            <div class="performance-value">{{ calculateAccuracy() }}%</div>
+          </div>
+          <div class="performance-item">
+            <div class="performance-label">Средний балл за урок</div>
+            <div class="performance-value">{{ calculateAvgScore() }}</div>
+          </div>
+          <div class="performance-item">
+            <div class="performance-label">Использовано подсказок</div>
+            <div class="performance-value">{{ formatNumber(analytics.hintsUsed || 0) }}</div>
+          </div>
+          <div class="performance-item">
+            <div class="performance-label">Заработано звёзд</div>
+            <div class="performance-value">{{ formatNumber(analytics.totalStars || 0) }} ⭐</div>
+          </div>
+        </div>
       </div>
 
       <!-- Data Quality Info -->
@@ -200,8 +243,12 @@
             </span>
           </div>
           <div class="quality-item">
-            <span class="quality-label">Валидные даты:</span>
-            <span class="quality-neutral">{{ analytics.dataQuality.validDates }}</span>
+            <span class="quality-label">Валидные записи:</span>
+            <span class="quality-neutral">{{ formatNumber(analytics.dataQuality.validDates || 0) }}</span>
+          </div>
+          <div class="quality-item">
+            <span class="quality-label">Последнее обновление:</span>
+            <span class="quality-neutral">{{ formatDate(analytics.lastUpdated) }}</span>
           </div>
         </div>
       </div>
@@ -211,6 +258,9 @@
         <div class="empty-icon">📊</div>
         <h3>Пока нет данных для аналитики</h3>
         <p>Начни изучать уроки, чтобы увидеть свой прогресс здесь!</p>
+        <button @click="$router.push('/catalogue')" class="start-learning-btn">
+          🚀 Начать обучение
+        </button>
       </div>
     </div>
   </div>
@@ -219,7 +269,7 @@
 <script>
 import { mapState, mapGetters } from 'vuex';
 import { auth } from '@/firebase';
-import { getUserAnalytics } from '@/api';
+import { getUserAnalytics, getLessonById } from '@/api';
 import LineChart from '@/components/Charts/LineChart.vue';
 import Card from '@/components/Profile/AnalyticsCard.vue';
 import ProgressBar from '@/components/Profile/ProgressBar.vue';
@@ -238,7 +288,8 @@ export default {
       showModal: false,
       selectedStats: [
         'studyDays',
-        'completedSubjects',
+        'completedLessons',
+        'completedTopics',
         'weeklyLessons',
         'monthlyLessons',
         'streakDays',
@@ -248,19 +299,23 @@ export default {
         'avgPointsPerDay'
       ],
       period: 30,
+      lessonCache: new Map(), // Cache for lesson names
       analytics: {
         // Basic stats from backend
         studyDays: 0,
         totalDays: 0,
+        completedLessons: 0,
+        completedTopics: 0,
         completedSubjects: 0,
         totalSubjects: 0,
+        totalTopics: 0,
         totalLessonsDone: 0,
         
         // Time-based metrics
         weeklyLessons: 0,
         monthlyLessons: 0,
         streakDays: 0,
-        averageTime: '0 мин',
+        averageTime: 0,
         
         // Points and performance
         totalPoints: 0,
@@ -271,6 +326,7 @@ export default {
         // Charts and progress
         knowledgeChart: [],
         subjects: [],
+        topics: [],
         
         // Activity patterns
         mostActiveDay: null,
@@ -290,14 +346,11 @@ export default {
     ...mapState(['user']),
     ...mapGetters(['isAuthenticated']),
     
-    remainingSubjects() {
-      return Math.max(this.analytics.totalSubjects - this.analytics.completedSubjects, 0);
-    },
-    
     hasAnyData() {
       return this.analytics.totalLessonsDone > 0 || 
              this.analytics.studyDays > 0 || 
-             (this.analytics.subjects && this.analytics.subjects.length > 0);
+             (this.analytics.subjects && this.analytics.subjects.length > 0) ||
+             (this.analytics.topics && this.analytics.topics.length > 0);
     },
     
     chartData() {
@@ -311,11 +364,21 @@ export default {
         labels.push(months[monthIndex]);
       }
       
+      // Ensure we have data for all 12 months
+      const chartData = Array.isArray(this.analytics.knowledgeChart) 
+        ? this.analytics.knowledgeChart 
+        : [];
+      
+      // Pad with zeros if we don't have enough data
+      while (chartData.length < 12) {
+        chartData.unshift(0);
+      }
+      
       return {
         labels,
         datasets: [{
-          label: 'Рост знаний',
-          data: this.analytics.knowledgeChart,
+          label: 'Рост знаний (%)',
+          data: chartData.slice(-12), // Take last 12 months
           borderColor: '#7c3aed',
           backgroundColor: 'rgba(124, 58, 237, 0.1)',
           pointBackgroundColor: '#7c3aed',
@@ -331,69 +394,115 @@ export default {
   },
   
   methods: {
-    // ✅ NEW: Method to fetch lesson name by ID
+    // ✅ FIXED: Method to fetch lesson name by ID using proper API
     async fetchLessonName(lessonId) {
+      // Check cache first
+      if (this.lessonCache.has(lessonId)) {
+        return this.lessonCache.get(lessonId);
+      }
+      
       try {
-        // Call your API to get lesson details
-        const response = await this.$http.get(`/api/lessons/${lessonId}`);
-        return response.data.title || 'Урок без названия';
+        console.log('🔍 Fetching lesson name for ID:', lessonId);
+        const response = await getLessonById(lessonId);
+        
+        let lessonName = 'Урок без названия';
+        
+        if (response.success && response.data) {
+          lessonName = response.data.lessonName || 
+                      response.data.title || 
+                      response.data.name || 
+                      'Урок без названия';
+        } else if (response.data) {
+          lessonName = response.data.lessonName || 
+                      response.data.title || 
+                      response.data.name || 
+                      'Урок без названия';
+        }
+        
+        // Cache the result
+        this.lessonCache.set(lessonId, lessonName);
+        console.log('✅ Lesson name cached:', lessonName);
+        
+        return lessonName;
+        
       } catch (error) {
-        console.error('Error fetching lesson name:', error);
-        return 'Урок без названия';
+        console.error('❌ Error fetching lesson name for', lessonId, ':', error);
+        const fallbackName = `Урок (${lessonId.slice(-6)})`;
+        this.lessonCache.set(lessonId, fallbackName);
+        return fallbackName;
       }
     },
 
-    // ✅ NEW: Method to resolve all lesson names in recent activity
+    // ✅ IMPROVED: Method to resolve all lesson names in recent activity
     async resolveActivityLessonNames() {
       if (!this.analytics.recentActivity || this.analytics.recentActivity.length === 0) {
         return;
       }
 
-      // Get all activities that need lesson name resolution
-      const activitiesNeedingResolution = this.analytics.recentActivity.filter(
-        activity => activity.lesson && typeof activity.lesson === 'string' && activity.lesson.length === 24
-      );
+      console.log('🔍 Starting lesson name resolution...');
+      
+      // Get all activities that need lesson name resolution (ObjectId-like strings)
+      const activitiesNeedingResolution = this.analytics.recentActivity.filter(activity => {
+        const lesson = activity.lesson;
+        return lesson && 
+               typeof lesson === 'string' && 
+               lesson.length === 24 && 
+               /^[a-f\d]{24}$/i.test(lesson); // MongoDB ObjectId pattern
+      });
 
       if (activitiesNeedingResolution.length === 0) {
-        return; // No lesson IDs to resolve
+        console.log('ℹ️ No lesson IDs need resolution');
+        return;
       }
 
+      console.log(`🔍 Resolving ${activitiesNeedingResolution.length} lesson names...`);
+      
       try {
-        console.log('🔍 Resolving lesson names for', activitiesNeedingResolution.length, 'activities...');
+        // Process in batches to avoid overwhelming the API
+        const batchSize = 5;
+        const batches = [];
         
-        // Fetch all lesson names in parallel for better performance
-        const lessonNamePromises = activitiesNeedingResolution.map(activity => 
-          this.fetchLessonName(activity.lesson)
-        );
+        for (let i = 0; i < activitiesNeedingResolution.length; i += batchSize) {
+          batches.push(activitiesNeedingResolution.slice(i, i + batchSize));
+        }
         
-        const resolvedLessonNames = await Promise.all(lessonNamePromises);
-
-        // Update the analytics data
-        const updatedActivity = this.analytics.recentActivity.map(activity => {
-          const needsResolutionIndex = activitiesNeedingResolution.findIndex(
-            a => a.lesson === activity.lesson
+        // Process each batch
+        for (const batch of batches) {
+          const batchPromises = batch.map(activity => 
+            this.fetchLessonName(activity.lesson)
           );
           
-          if (needsResolutionIndex !== -1) {
-            return {
-              ...activity,
-              lesson: resolvedLessonNames[needsResolutionIndex],
-              lessonId: activity.lesson // Keep the original ID for reference
-            };
-          }
+          const batchResults = await Promise.allSettled(batchPromises);
           
-          return activity;
-        });
+          // Update activities with resolved names
+          batch.forEach((activity, index) => {
+            const result = batchResults[index];
+            if (result.status === 'fulfilled') {
+              // Find the activity in the main array and update it
+              const activityIndex = this.analytics.recentActivity.findIndex(
+                a => a.lesson === activity.lesson && a.date === activity.date
+              );
+              
+              if (activityIndex !== -1) {
+                this.analytics.recentActivity[activityIndex] = {
+                  ...this.analytics.recentActivity[activityIndex],
+                  lesson: result.value,
+                  originalLessonId: activity.lesson
+                };
+              }
+            }
+          });
+          
+          // Small delay between batches to be nice to the API
+          if (batches.length > 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
 
-        this.analytics = {
-          ...this.analytics,
-          recentActivity: updatedActivity
-        };
-
-        console.log('✅ Lesson names resolved successfully');
+        console.log('✅ Lesson name resolution completed');
 
       } catch (error) {
-        console.error('❌ Error resolving lesson names:', error);
+        console.error('❌ Error during lesson name resolution:', error);
         // Don't break the component, just keep the IDs
       }
     },
@@ -426,11 +535,7 @@ export default {
           if (response && response.data) {
             if (response.data.success && response.data.data) {
               this.analytics = { ...this.analytics, ...response.data.data };
-              console.log('✅ Analytics loaded successfully');
-              
-              // ✅ NEW: Resolve lesson names after loading analytics
-              await this.resolveActivityLessonNames();
-              
+              console.log('✅ Analytics loaded successfully (wrapped format)');
             } else if (response.data.success === false) {
               console.error('❌ Backend error:', response.data.error);
               this.error = response.data.error || 'Ошибка сервера';
@@ -438,11 +543,12 @@ export default {
             } else {
               // If response.data is the analytics object directly
               this.analytics = { ...this.analytics, ...response.data };
-              console.log('✅ Analytics loaded (direct format)');
-              
-              // ✅ NEW: Resolve lesson names after loading analytics
-              await this.resolveActivityLessonNames();
+              console.log('✅ Analytics loaded successfully (direct format)');
             }
+            
+            // ✅ Resolve lesson names after loading analytics
+            await this.resolveActivityLessonNames();
+            
           } else {
             console.warn('⚠️ No data in response');
             this.error = 'Нет данных для аналитики';
@@ -454,7 +560,7 @@ export default {
           if (apiError.response?.status === 401) {
             this.error = 'Ошибка авторизации. Попробуйте войти заново.';
           } else if (apiError.response?.status === 404) {
-            this.error = 'Данные аналитики не найдены';
+            this.error = 'Данные аналитики не найдены. Начните изучать уроки!';
           } else if (apiError.response?.status >= 500) {
             this.error = 'Ошибка сервера. Попробуйте позже.';
           } else if (apiError.response) {
@@ -464,8 +570,6 @@ export default {
           } else {
             this.error = apiError.message || 'Ошибка загрузки аналитики';
           }
-          
-          // Don't return here - let the component show error state
         }
 
       } catch (err) {
@@ -483,7 +587,8 @@ export default {
     async downloadPDF() {
       const labelMap = {
         studyDays: 'Дней в обучении',
-        completedSubjects: 'Завершено предметов',
+        completedLessons: 'Завершено уроков',
+        completedTopics: 'Завершено тем',
         weeklyLessons: 'Уроков за неделю',
         monthlyLessons: 'Уроков за месяц',
         streakDays: 'Учебный стрик',
@@ -500,10 +605,19 @@ export default {
       
       this.selectedStats.forEach(key => {
         const label = labelMap[key];
-        const value = this.analytics[key] ?? '—';
+        let value = this.analytics[key] ?? '—';
+        
+        // Format specific values
+        if (key === 'completedLessons' && !this.analytics[key]) {
+          value = this.analytics.totalLessonsDone ?? '—';
+        }
+        if (key === 'completedTopics' && !this.analytics[key]) {
+          value = this.analytics.completedSubjects ?? '—';
+        }
+        
         wrapper.innerHTML += `
           <div style="margin: 12px 0; padding: 8px; border-left: 3px solid #7c3aed; background: #f8f9fa;">
-            <strong>${label}:</strong> ${value}
+            <strong>${label}:</strong> ${this.formatNumber(value)}
           </div>
         `;
       });
@@ -533,6 +647,75 @@ export default {
       }
     },
     
+    // ✅ NEW: Helper methods for better formatting
+    formatNumber(value) {
+      if (value === null || value === undefined || value === '') return '—';
+      if (typeof value === 'string' && isNaN(Number(value))) return value;
+      
+      const num = Number(value);
+      if (isNaN(num)) return '—';
+      
+      return num.toLocaleString('ru-RU');
+    },
+    
+    formatTime(timeValue) {
+      if (!timeValue) return '0 мин';
+      
+      // If it's already a formatted string
+      if (typeof timeValue === 'string' && timeValue.includes('мин')) {
+        return timeValue;
+      }
+      
+      // If it's a number (minutes)
+      const minutes = Number(timeValue);
+      if (isNaN(minutes)) return '0 мин';
+      
+      if (minutes < 60) {
+        return `${Math.round(minutes)} мин`;
+      } else {
+        const hours = Math.floor(minutes / 60);
+        const remainingMinutes = Math.round(minutes % 60);
+        return remainingMinutes > 0 ? `${hours}ч ${remainingMinutes}м` : `${hours}ч`;
+      }
+    },
+    
+    formatDuration(duration) {
+      if (!duration) return '';
+      
+      const minutes = Number(duration);
+      if (isNaN(minutes)) return duration;
+      
+      return `${Math.round(minutes)} мин`;
+    },
+    
+    formatLessonName(lesson) {
+      if (!lesson) return 'Урок без названия';
+      
+      // If it's still an ID (24 characters, alphanumeric)
+      if (typeof lesson === 'string' && lesson.length === 24 && /^[a-f\d]{24}$/i.test(lesson)) {
+        return `Урок (${lesson.slice(-6)})`;
+      }
+      
+      return lesson;
+    },
+    
+    calculateTopicProgress(topic) {
+      if (!topic.totalLessons || topic.totalLessons === 0) return 0;
+      return Math.round((topic.completedLessons / topic.totalLessons) * 100);
+    },
+    
+    calculateAccuracy() {
+      // Calculate based on total correct vs total attempts
+      const totalAttempts = (this.analytics.totalCorrect || 0) + (this.analytics.totalMistakes || 0);
+      if (totalAttempts === 0) return 0;
+      return Math.round(((this.analytics.totalCorrect || 0) / totalAttempts) * 100);
+    },
+    
+    calculateAvgScore() {
+      if (!this.analytics.totalLessonsDone || this.analytics.totalLessonsDone === 0) return 0;
+      return Math.round((this.analytics.totalPoints || 0) / this.analytics.totalLessonsDone);
+    },
+    
     formatDaysToHuman(days) {
       if (!days || days === 0) return '0 дней';
       
@@ -555,6 +738,31 @@ export default {
         const date = new Date(dateString);
         if (isNaN(date.getTime())) return '—';
         
+        // Check if date is today
+        const today = new Date();
+        const isToday = date.toDateString() === today.toDateString();
+        
+        if (isToday) {
+          return `Сегодня, ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
+        }
+        
+        // Check if date is yesterday
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const isYesterday = date.toDateString() === yesterday.toDateString();
+        
+        if (isYesterday) {
+          return `Вчера, ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
+        }
+        
+        // Check if date is within this week
+        const daysDiff = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+        if (daysDiff < 7) {
+          const dayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+          return `${dayNames[date.getDay()]}, ${date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`;
+        }
+        
+        // Otherwise show full date
         return date.toLocaleDateString('ru-RU', {
           year: 'numeric',
           month: 'short',
