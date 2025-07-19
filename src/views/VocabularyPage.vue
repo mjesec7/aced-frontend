@@ -458,7 +458,6 @@ const showToast = (message, type = 'success') => {
   toast.value = { visible: true, message, type }
   setTimeout(() => { toast.value.visible = false }, 3000)
 }
-const hideToast = () => { toast.value.visible = false }
 
 // State
 const isLoading = ref(true)
@@ -494,7 +493,7 @@ const vocabularyService = {
       let response, languagesResult
       
       try {
-        response = await fetch(`/api/vocabulary/languages`)
+        response = await fetch('/api/vocabulary/languages')
         
         // Check if response is ok and content-type is JSON
         if (!response.ok) {
@@ -518,56 +517,18 @@ const vocabularyService = {
         return this.getFallbackLanguages(userId)
       }
 
-      // Get user progress for each language
+      // Process languages with user data
       const languagesWithProgress = await Promise.all(
         languagesResult.data.map(async (lang) => {
-          try {
-            // Get vocabulary statistics (with fallback)
-            let statsData = { success: false, data: { totalWords: 0 } }
-            try {
-              const statsResponse = await fetch(`/api/vocabulary/stats/language/${lang.code}`)
-              if (statsResponse.ok) {
-                statsData = await statsResponse.json()
-              }
-            } catch (statsError) {
-              console.warn(`Stats not available for ${lang.code}:`, statsError.message)
-            }
-            
-            // Get user progress (with fallback)
-            let progressData = { success: false, data: [] }
-            try {
-              const progressResponse = await fetch(`/api/vocabulary/progress/${userId}?language=${lang.code}`)
-              if (progressResponse.ok) {
-                progressData = await progressResponse.json()
-              }
-            } catch (progressError) {
-              console.warn(`Progress not available for ${lang.code}:`, progressError.message)
-            }
-            
-            // Get words from lessons (with enhanced fallback)
-            const wordsFromLessons = await this.getWordsFromLessonsWithFallback(userId, lang.code)
-            
-            const totalProgress = progressData.success ? progressData.data : []
-            const mastered = totalProgress.filter(p => p.status === 'mastered').length
-            
-            return {
-              ...lang,
-              flag: getLanguageFlag(lang.code),
-              totalWords: (statsData.success ? statsData.data.totalWords : 0) + wordsFromLessons.length,
-              wordsFromLessons: wordsFromLessons.length,
-              progress: totalProgress.length > 0 ? Math.round((mastered / totalProgress.length) * 100) : 0,
-              mastered: mastered
-            }
-          } catch (langError) {
-            console.warn(`Error processing language ${lang.code}:`, langError)
-            return {
-              ...lang,
-              flag: getLanguageFlag(lang.code),
-              totalWords: 0,
-              wordsFromLessons: 0,
-              progress: 0,
-              mastered: 0
-            }
+          const wordsFromLessons = await this.getWordsFromLessonsWithFallback(userId, lang.code)
+          
+          return {
+            ...lang,
+            flag: getLanguageFlag(lang.code),
+            totalWords: wordsFromLessons.length,
+            wordsFromLessons: wordsFromLessons.length,
+            progress: 0,
+            mastered: 0
           }
         })
       )
@@ -584,13 +545,12 @@ const vocabularyService = {
             totalWords,
             wordsFromLessons: totalFromLessons,
             languagesStarted,
-            mastered: languagesWithProgress.reduce((sum, lang) => sum + lang.mastered, 0)
+            mastered: 0
           }
         }
       }
     } catch (error) {
       console.error('Error fetching user languages:', error)
-      // Return fallback data instead of failing completely
       return this.getFallbackLanguages(userId)
     }
   },
@@ -656,7 +616,7 @@ const vocabularyService = {
                     if (vocab.term && vocab.definition) {
                       languageStats[language].wordsFromLessons++
                       languageStats[language].totalWords++
-                      languageStats[language].mastered++ // From completed lesson
+                      languageStats[language].mastered++
                     }
                   })
                 }
@@ -725,26 +685,6 @@ const vocabularyService = {
               wordsFromLessons: 0,
               progress: 0,
               mastered: 0
-            },
-            {
-              code: 'spanish',
-              name: 'Spanish',
-              nameRu: 'Испанский',
-              flag: '🇪🇸',
-              totalWords: 0,
-              wordsFromLessons: 0,
-              progress: 0,
-              mastered: 0
-            },
-            {
-              code: 'french',
-              name: 'French',
-              nameRu: 'Французский',
-              flag: '🇫🇷',
-              totalWords: 0,
-              wordsFromLessons: 0,
-              progress: 0,
-              mastered: 0
             }
           ],
           stats: {
@@ -766,12 +706,6 @@ const vocabularyService = {
     if (subjectLower.includes('spanish') || subjectLower.includes('испанский')) return 'spanish'
     if (subjectLower.includes('french') || subjectLower.includes('французский')) return 'french'
     if (subjectLower.includes('german') || subjectLower.includes('немецкий')) return 'german'
-    if (subjectLower.includes('chinese') || subjectLower.includes('китайский')) return 'chinese'
-    if (subjectLower.includes('japanese') || subjectLower.includes('японский')) return 'japanese'
-    if (subjectLower.includes('korean') || subjectLower.includes('корейский')) return 'korean'
-    if (subjectLower.includes('arabic') || subjectLower.includes('арабский')) return 'arabic'
-    if (subjectLower.includes('uzbek') || subjectLower.includes('узбекский')) return 'uzbek'
-    if (subjectLower.includes('russian') || subjectLower.includes('русский')) return 'russian'
     
     return 'english' // Default fallback
   },
@@ -781,13 +715,7 @@ const vocabularyService = {
       'english': 'English',
       'spanish': 'Spanish',
       'french': 'French',
-      'german': 'German',
-      'chinese': 'Chinese',
-      'arabic': 'Arabic',
-      'japanese': 'Japanese',
-      'korean': 'Korean',
-      'uzbek': 'Uzbek',
-      'russian': 'Russian'
+      'german': 'German'
     }
     return names[code] || code.charAt(0).toUpperCase() + code.slice(1)
   },
@@ -797,46 +725,22 @@ const vocabularyService = {
       'english': 'Английский',
       'spanish': 'Испанский',
       'french': 'Французский',
-      'german': 'Немецкий',
-      'chinese': 'Китайский',
-      'arabic': 'Арабский',
-      'japanese': 'Японский',
-      'korean': 'Корейский',
-      'uzbek': 'Узбекский',
-      'russian': 'Русский'
+      'german': 'Немецкий'
     }
     return names[code] || this.getLanguageDisplayName(code)
   },
 
   async getLanguageContent(userId, languageCode) {
     try {
-      const results = await Promise.allSettled([
-        // Get topics (with fallback)
-        this.getTopicsWithFallback(languageCode),
-        
-        // Get words from lessons - with enhanced fallback
-        this.getWordsFromLessonsWithFallback(userId, languageCode),
-        
-        // Get all vocabulary words (with fallback)
-        this.getAllWordsWithFallback(languageCode),
-        
-        // Get user progress (with fallback)
-        this.getUserProgressWithFallback(userId, languageCode),
-        
-        // Get words for review (with fallback)
-        this.getReviewWordsWithFallback(userId, languageCode)
-      ])
-
-      const [topicsResult, lessonsResult, allWordsResult, progressResult, reviewResult] = results
-
+      const wordsFromLessons = await this.getWordsFromLessonsWithFallback(userId, languageCode)
+      
       return {
         success: true,
         data: {
-          topics: topicsResult.status === 'fulfilled' ? topicsResult.value : [],
-          wordsFromLessons: lessonsResult.status === 'fulfilled' ? lessonsResult.value : [],
-          allWords: allWordsResult.status === 'fulfilled' ? allWordsResult.value : [],
-          userProgress: progressResult.status === 'fulfilled' ? progressResult.value : [],
-          wordsForReview: reviewResult.status === 'fulfilled' ? reviewResult.value : []
+          wordsFromLessons: wordsFromLessons,
+          allWords: [],
+          userProgress: [],
+          wordsForReview: []
         }
       }
     } catch (error) {
@@ -848,96 +752,7 @@ const vocabularyService = {
     }
   },
 
-  async getTopicsWithFallback(languageCode) {
-    try {
-      const response = await fetch(`/api/vocabulary/topics/${languageCode}`)
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          return data.data
-        }
-      }
-    } catch (error) {
-      console.warn('Topics API not available:', error.message)
-    }
-    
-    // Return fallback topics
-    return [
-      { name: 'Travel', wordCount: 0, difficulty: 'beginner' },
-      { name: 'Food', wordCount: 0, difficulty: 'beginner' },
-      { name: 'Family', wordCount: 0, difficulty: 'beginner' },
-      { name: 'Business', wordCount: 0, difficulty: 'intermediate' },
-      { name: 'Technology', wordCount: 0, difficulty: 'advanced' }
-    ]
-  },
-
-  async getAllWordsWithFallback(languageCode) {
-    try {
-      const response = await fetch(`/api/vocabulary/words/${languageCode}/all/all?limit=1000`)
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          return data.data
-        }
-      }
-    } catch (error) {
-      console.warn('All words API not available:', error.message)
-    }
-    
-    return [] // Return empty array as fallback
-  },
-
-  async getUserProgressWithFallback(userId, languageCode) {
-    try {
-      const response = await fetch(`/api/vocabulary/progress/${userId}?language=${languageCode}`)
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          return data.data
-        }
-      }
-    } catch (error) {
-      console.warn('User progress API not available:', error.message)
-    }
-    
-    return [] // Return empty array as fallback
-  },
-
-  async getReviewWordsWithFallback(userId, languageCode) {
-    try {
-      const response = await fetch(`/api/vocabulary/review/${userId}?language=${languageCode}&limit=50`)
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          return data.data
-        }
-      }
-    } catch (error) {
-      console.warn('Review words API not available:', error.message)
-    }
-    
-    return [] // Return empty array as fallback
-  },
-
   async getWordsFromLessonsWithFallback(userId, languageCode) {
-    try {
-      // First try the dedicated endpoint
-      const response = await fetch(`/api/vocabulary/from-lessons/${userId}?language=${languageCode}`)
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success) {
-          return data.data
-        }
-      }
-    } catch (error) {
-      console.warn('From-lessons API not available, using fallback extraction:', error.message)
-    }
-    
-    // Enhanced fallback: extract from user progress and lessons
-    return this.extractVocabularyFromUserLessons(userId, languageCode)
-  },
-
-  async extractVocabularyFromUserLessons(userId, languageCode) {
     try {
       const userProgressResponse = await fetch(`/api/user-progress?userId=${userId}`)
       
@@ -952,12 +767,11 @@ const vocabularyService = {
       }
       
       const completedLessons = userProgress.data.filter(p => 
-        p.completed && p.progressPercent >= 70 // Include lessons with 70%+ completion
+        p.completed && p.progressPercent >= 70
       )
       
       const vocabularyFromLessons = []
       
-      // Process completed lessons in batches to avoid overwhelming the API
       for (const progress of completedLessons.slice(0, 20)) {
         try {
           const lessonResponse = await fetch(`/api/lessons/${progress.lessonId}`)
@@ -967,7 +781,6 @@ const vocabularyService = {
           const lessonData = await lessonResponse.json()
           
           if (lessonData.success && lessonData.lesson.steps) {
-            // Check if this lesson is for the requested language
             const lessonLanguage = this.getLanguageFromSubject(lessonData.lesson.subject || '')
             if (languageCode && lessonLanguage !== languageCode) {
               continue
@@ -1035,43 +848,11 @@ const vocabularyService = {
       return await response.json()
     } catch (error) {
       console.error('Error updating word progress:', error)
-      // Return success for fallback mode
       return { 
         success: true, 
         message: 'Progress updated locally (API not available)',
         fallback: true 
       }
-    }
-  }
-}(`Could not fetch lesson ${progress.lessonId}:`, lessonError)
-        }
-      }
-      
-      return vocabularyFromLessons
-    } catch (error) {
-      console.warn('Error getting words from lessons:', error)
-      return []
-    }
-  },
-
-  async updateWordProgress(userId, vocabularyId, correct, timeSpent = 0) {
-    try {
-      const response = await fetch(`/api/vocabulary/progress/${userId}/update`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          vocabularyId,
-          correct,
-          timeSpent
-        })
-      })
-      
-      return await response.json()
-    } catch (error) {
-      console.error('Error updating word progress:', error)
-      return { success: false, error: error.message }
     }
   }
 }
@@ -1238,7 +1019,7 @@ const getReviewStatus = (word) => {
   return `Через ${diffDays}д`
 }
 
-// Update the initialize method to handle the improved error handling
+// Methods
 const initialize = async () => {
   if (!currentUser.value) {
     showToast('Пожалуйста, войдите в систему', 'warning')
@@ -1345,22 +1126,18 @@ const setActiveTab = (tabKey) => {
 }
 
 const performSearch = () => {
-  // Implement search functionality
   if (!searchQuery.value.trim()) {
     return
   }
   
-  // Filter words based on search query
   const query = searchQuery.value.toLowerCase()
   
   if (activeTab.value === 'lessons') {
-    // Filter words from lessons
     wordsFromLessons.value = wordsFromLessons.value.filter(word => 
       word.word.toLowerCase().includes(query) ||
       word.translation.toLowerCase().includes(query)
     )
   } else if (activeTab.value === 'all') {
-    // Filter all words
     allWords.value = allWords.value.filter(word => 
       word.word.toLowerCase().includes(query) ||
       word.translation.toLowerCase().includes(query) ||
@@ -1428,7 +1205,6 @@ const markAsKnown = async (word) => {
   
   if (result.success) {
     showToast('Слово отмечено как изученное', 'success')
-    // Update local progress
     if (word.progress !== undefined) {
       word.progress = Math.min(100, (word.progress || 0) + 20)
     }
@@ -1449,7 +1225,6 @@ const markAsUnknown = async (word) => {
   
   if (result.success) {
     showToast('Слово добавлено для повторения', 'info')
-    // Update local progress
     if (word.progress !== undefined) {
       word.progress = Math.max(0, (word.progress || 0) - 10)
     }
@@ -1461,7 +1236,6 @@ const markAsUnknown = async (word) => {
 }
 
 const addToReview = async (word) => {
-  // Add word to review list
   if (!wordsForReview.value.find(w => (w.id || w._id) === (word.id || word._id))) {
     wordsForReview.value.push(word)
     showToast('Слово добавлено для повторения', 'success')
@@ -1485,7 +1259,6 @@ const goBackToLanguages = () => {
 }
 
 const createTest = () => {
-  // Create vocabulary test for selected language
   router.push({
     name: 'VocabularyTest',
     params: { languageCode: selectedLanguage.value.code },
@@ -1516,7 +1289,6 @@ const startReviewSession = () => {
 // Watch for search query changes
 watch(searchQuery, (newQuery) => {
   if (!newQuery.trim()) {
-    // Reset filters when search is cleared
     loadLanguageContent(selectedLanguage.value)
   }
 })
