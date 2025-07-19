@@ -330,7 +330,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { vocabularyService } from '@/services/vocabularyService'
-import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
 const route = useRoute()
