@@ -331,6 +331,73 @@ export default {
   },
   
   methods: {
+    // ✅ NEW: Method to fetch lesson name by ID
+    async fetchLessonName(lessonId) {
+      try {
+        // Call your API to get lesson details
+        const response = await this.$http.get(`/api/lessons/${lessonId}`);
+        return response.data.title || 'Урок без названия';
+      } catch (error) {
+        console.error('Error fetching lesson name:', error);
+        return 'Урок без названия';
+      }
+    },
+
+    // ✅ NEW: Method to resolve all lesson names in recent activity
+    async resolveActivityLessonNames() {
+      if (!this.analytics.recentActivity || this.analytics.recentActivity.length === 0) {
+        return;
+      }
+
+      // Get all activities that need lesson name resolution
+      const activitiesNeedingResolution = this.analytics.recentActivity.filter(
+        activity => activity.lesson && typeof activity.lesson === 'string' && activity.lesson.length === 24
+      );
+
+      if (activitiesNeedingResolution.length === 0) {
+        return; // No lesson IDs to resolve
+      }
+
+      try {
+        console.log('🔍 Resolving lesson names for', activitiesNeedingResolution.length, 'activities...');
+        
+        // Fetch all lesson names in parallel for better performance
+        const lessonNamePromises = activitiesNeedingResolution.map(activity => 
+          this.fetchLessonName(activity.lesson)
+        );
+        
+        const resolvedLessonNames = await Promise.all(lessonNamePromises);
+
+        // Update the analytics data
+        const updatedActivity = this.analytics.recentActivity.map(activity => {
+          const needsResolutionIndex = activitiesNeedingResolution.findIndex(
+            a => a.lesson === activity.lesson
+          );
+          
+          if (needsResolutionIndex !== -1) {
+            return {
+              ...activity,
+              lesson: resolvedLessonNames[needsResolutionIndex],
+              lessonId: activity.lesson // Keep the original ID for reference
+            };
+          }
+          
+          return activity;
+        });
+
+        this.analytics = {
+          ...this.analytics,
+          recentActivity: updatedActivity
+        };
+
+        console.log('✅ Lesson names resolved successfully');
+
+      } catch (error) {
+        console.error('❌ Error resolving lesson names:', error);
+        // Don't break the component, just keep the IDs
+      }
+    },
+
     async loadAnalytics() {
       this.loading = true;
       this.error = null;
@@ -360,6 +427,10 @@ export default {
             if (response.data.success && response.data.data) {
               this.analytics = { ...this.analytics, ...response.data.data };
               console.log('✅ Analytics loaded successfully');
+              
+              // ✅ NEW: Resolve lesson names after loading analytics
+              await this.resolveActivityLessonNames();
+              
             } else if (response.data.success === false) {
               console.error('❌ Backend error:', response.data.error);
               this.error = response.data.error || 'Ошибка сервера';
@@ -368,6 +439,9 @@ export default {
               // If response.data is the analytics object directly
               this.analytics = { ...this.analytics, ...response.data };
               console.log('✅ Analytics loaded (direct format)');
+              
+              // ✅ NEW: Resolve lesson names after loading analytics
+              await this.resolveActivityLessonNames();
             }
           } else {
             console.warn('⚠️ No data in response');
