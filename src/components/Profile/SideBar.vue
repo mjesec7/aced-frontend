@@ -180,7 +180,6 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
-import { useSubscription } from '@/composables/useSubscription';
 import { useAuth } from '@/composables/useAuth';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
