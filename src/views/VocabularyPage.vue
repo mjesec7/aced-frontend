@@ -1044,7 +1044,6 @@ onMounted(() => {
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: #8b5cf6;
   border-radius: 1rem;
   opacity: 0;
   z-index: -1;
