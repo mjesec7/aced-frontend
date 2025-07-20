@@ -329,6 +329,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 import { vocabularyService } from '@/services/vocabularyService'
 
 const router = useRouter()
@@ -544,19 +545,19 @@ const toggleTranslation = () => {
 
 const markWordAsLearned = async () => {
   const currentWord = currentWords.value[currentWordIndex.value]
-  if (!currentWord || learningProgress.value.includes(currentWord._id)) {
+  if (!currentWord || learningProgress.value.includes(currentWord.id)) {
     return
   }
 
   try {
     const response = await vocabularyService.updateWordProgress(
       currentUser.value.uid, 
-      currentWord._id, 
+      currentWord.id, 
       { correct: true, timeSpent: 0 }
     )
 
     if (response.success) {
-      learningProgress.value.push(currentWord._id)
+      learningProgress.value.push(currentWord.id)
       showToast('✅ Слово отмечено как изученное')
     } else {
       throw new Error(response.error)
@@ -587,7 +588,7 @@ const generateTestQuestions = () => {
   
   shuffledWords.forEach(word => {
     // Create wrong answers from other words
-    const otherWords = words.filter(w => w._id !== word._id)
+    const otherWords = words.filter(w => w.id !== word.id)
     const wrongAnswers = otherWords
       .sort(() => Math.random() - 0.5)
       .slice(0, 3)
@@ -754,6 +755,7 @@ onUnmounted(() => {
   }
 })
 </script>
+
 <style scoped>
 /* Variables */
 :root {
@@ -1170,6 +1172,14 @@ onUnmounted(() => {
 .word-container {
   max-width: 700px;
   margin: 0 auto;
+}
+
+.word-card {
+  background: var(--white);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: var(--shadow-lg);
+  border: 2px solid rgba(139, 92, 246, 0.1);
 }
 
 .word-header {
@@ -1705,11 +1715,6 @@ onUnmounted(() => {
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(30px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes wordAppear {
-  from { opacity: 0; transform: translateY(30px) scale(0.9); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes translateAppear {

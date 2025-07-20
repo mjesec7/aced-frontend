@@ -46,8 +46,8 @@
               <span class="stat-label">начато изучение</span>
             </div>
             <div class="stat">
-              <span class="stat-number">{{ overallStats.wordsFromLessons || 0 }}</span>
-              <span class="stat-label">из уроков</span>
+              <span class="stat-number">{{ overallStats.mastered || 0 }}</span>
+              <span class="stat-label">изучено</span>
             </div>
           </div>
         </div>
@@ -296,27 +296,6 @@
             </button>
           </div>
         </section>
-
-        <!-- Debug Section (to help diagnose) -->
-        <section class="debug-section" style="background: #f0f0f0; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
-          <h3>🔍 Отладочная информация</h3>
-          <div style="font-family: monospace; font-size: 0.875rem;">
-            <p><strong>Активная вкладка:</strong> {{ activeTab }}</p>
-            <p><strong>Слов из уроков:</strong> {{ wordsFromLessons.length }}</p>
-            <p><strong>Всего слов:</strong> {{ allWords.length }}</p>
-            <p><strong>Выбранный язык:</strong> {{ selectedLanguage?.code }}</p>
-            <p><strong>Имеется контент:</strong> {{ hasAnyContent ? 'Да' : 'Нет' }}</p>
-            <p><strong>Загрузка языка:</strong> {{ languageLoading ? 'Да' : 'Нет' }}</p>
-            <div v-if="extractionLog.length > 0">
-              <strong>Журнал извлечения:</strong>
-              <ul style="max-height: 200px; overflow-y: auto; margin: 0.5rem 0;">
-                <li v-for="(log, index) in extractionLog.slice(-20)" :key="index" style="margin: 0.25rem 0;">
-                  {{ log }}
-                </li>
-              </ul>
-            </div>
-          </div>
-        </section>
         
       </div>
       
@@ -327,7 +306,6 @@
         <p>Пройдите уроки или выберите тему для начала изучения словаря</p>
         <div class="empty-actions">
           <button @click="goBackToLanguages" class="primary-btn">Выбрать другой язык</button>
-          <button @click="debugExtraction" class="secondary-btn">Диагностика</button>
         </div>
       </div>
     </div>
@@ -393,6 +371,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { vocabularyService } from '@/services/vocabularyService'
 
 const router = useRouter()
 const { currentUser } = useAuth()
@@ -414,7 +393,6 @@ const wordsFromLessons = ref([])
 const allWords = ref([])
 const wordsForReview = ref([])
 const selectedWord = ref(null)
-const extractionLog = ref([])
 
 // Data
 const availableLanguages = ref([])
@@ -429,617 +407,6 @@ const sortBy = ref('word')
 const wordsPerPage = 12
 const currentPage = ref(1)
 const allWordsCurrentPage = ref(1)
-
-// Enhanced vocabulary service with better error handling and fallbacks
-const vocabularyService = {
-  async getUserLanguages(userId) {
-    try {
-      extractionLog.value = []
-      extractionLog.value.push(`🔍 Starting language extraction for user: ${userId}`)
-
-      // First, try the main vocabulary languages endpoint
-      let response, languagesResult
-      
-      try {
-        response = await fetch('/api/vocabulary/languages')
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-        }
-        
-        const contentType = response.headers.get('content-type')
-        if (!contentType || !contentType.includes('application/json')) {
-          throw new Error('Response is not JSON - vocabulary routes may not be available')
-        }
-        
-        languagesResult = await response.json()
-        extractionLog.value.push(`✅ Vocabulary API available: ${languagesResult.data?.length || 0} languages`)
-      } catch (apiError) {
-        extractionLog.value.push(`⚠️ Primary vocabulary API not available: ${apiError.message}`)
-        return this.getFallbackLanguages(userId)
-      }
-      
-      if (!languagesResult.success) {
-        extractionLog.value.push(`⚠️ Vocabulary API error: ${languagesResult.error}`)
-        return this.getFallbackLanguages(userId)
-      }
-
-      // Process languages with user data
-      const languagesWithProgress = await Promise.all(
-        languagesResult.data.map(async (lang) => {
-          const wordsFromLessons = await this.getWordsFromLessonsWithFallback(userId, lang.code)
-          
-          return {
-            ...lang,
-            flag: getLanguageFlag(lang.code),
-            totalWords: wordsFromLessons.length,
-            wordsFromLessons: wordsFromLessons.length,
-            progress: 0,
-            mastered: 0
-          }
-        })
-      )
-
-      const totalWords = languagesWithProgress.reduce((sum, lang) => sum + lang.totalWords, 0)
-      const totalFromLessons = languagesWithProgress.reduce((sum, lang) => sum + lang.wordsFromLessons, 0)
-      const languagesStarted = languagesWithProgress.filter(lang => lang.totalWords > 0).length
-
-      extractionLog.value.push(`✅ Processed ${languagesWithProgress.length} languages, ${totalWords} total words`)
-
-      return {
-        success: true,
-        data: {
-          languages: languagesWithProgress,
-          stats: {
-            totalWords,
-            wordsFromLessons: totalFromLessons,
-            languagesStarted,
-            mastered: 0
-          }
-        }
-      }
-    } catch (error) {
-      extractionLog.value.push(`❌ Error in getUserLanguages: ${error.message}`)
-      console.error('Error fetching user languages:', error)
-      return this.getFallbackLanguages(userId)
-    }
-  },
-
-  async getFallbackLanguages(userId) {
-    extractionLog.value.push(`🔄 Using fallback language extraction from lessons...`)
-    
-    try {
-      // Get user progress
-      const userProgressResponse = await fetch(`/api/users/${userId}/progress`)
-      
-      if (!userProgressResponse.ok) {
-        extractionLog.value.push(`❌ User progress API failed: ${userProgressResponse.status}`)
-        throw new Error('User progress not available')
-      }
-      
-      const userProgressData = await userProgressResponse.json()
-      const userProgress = userProgressData.data || userProgressData || []
-      
-      extractionLog.value.push(`📊 Found ${userProgress.length} progress records`)
-      
-      // Get completed lessons
-      const completedLessons = userProgress.filter(p => 
-        p.completed && p.progressPercent >= 70
-      )
-      
-      extractionLog.value.push(`📚 Found ${completedLessons.length} completed lessons`)
-      
-      // Extract vocabulary from lessons and determine languages
-      const languageStats = {}
-      let totalProcessedLessons = 0
-      let totalVocabularyFound = 0
-      
-      for (const progress of completedLessons.slice(0, 30)) { // Process more lessons
-        try {
-          const lessonResponse = await fetch(`/api/lessons/${progress.lessonId}`)
-          
-          if (!lessonResponse.ok) {
-            extractionLog.value.push(`⚠️ Lesson ${progress.lessonId}: HTTP ${lessonResponse.status}`)
-            continue
-          }
-          
-          const lessonData = await lessonResponse.json()
-          
-          if (lessonData.success && lessonData.data) {
-            const lesson = lessonData.data
-            totalProcessedLessons++
-            
-            // Enhanced language detection
-            const language = this.getLanguageFromLesson(lesson)
-            extractionLog.value.push(`📖 Lesson "${lesson.lessonName || lesson.title}": detected language "${language}"`)
-            
-            if (!languageStats[language]) {
-              languageStats[language] = {
-                code: language,
-                name: this.getLanguageDisplayName(language),
-                nameRu: this.getLanguageDisplayNameRu(language),
-                totalWords: 0,
-                wordsFromLessons: 0,
-                progress: 0,
-                mastered: 0
-              }
-            }
-            
-            // Enhanced vocabulary extraction
-            const vocabCount = this.extractVocabularyFromLesson(lesson)
-            languageStats[language].wordsFromLessons += vocabCount
-            languageStats[language].totalWords += vocabCount
-            languageStats[language].mastered += vocabCount
-            totalVocabularyFound += vocabCount
-            
-            if (vocabCount > 0) {
-              extractionLog.value.push(`  ✅ Extracted ${vocabCount} vocabulary items`)
-            }
-          }
-        } catch (lessonError) {
-          extractionLog.value.push(`❌ Error processing lesson ${progress.lessonId}: ${lessonError.message}`)
-        }
-      }
-      
-      extractionLog.value.push(`📈 Processing complete: ${totalProcessedLessons} lessons, ${totalVocabularyFound} vocabulary items`)
-      
-      // Add default languages if none found
-      if (Object.keys(languageStats).length === 0) {
-        extractionLog.value.push(`⚠️ No languages detected, adding defaults`)
-        
-        languageStats.english = {
-          code: 'english',
-          name: 'English',
-          nameRu: 'Английский',
-          totalWords: 0,
-          wordsFromLessons: 0,
-          progress: 0,
-          mastered: 0
-        }
-        
-        languageStats.russian = {
-          code: 'russian',
-          name: 'Russian',
-          nameRu: 'Русский',
-          totalWords: 0,
-          wordsFromLessons: 0,
-          progress: 0,
-          mastered: 0
-        }
-      }
-      
-      // Convert to array and add flags
-      const languages = Object.values(languageStats).map(lang => ({
-        ...lang,
-        flag: getLanguageFlag(lang.code),
-        progress: lang.totalWords > 0 ? Math.round((lang.mastered / lang.totalWords) * 100) : 0
-      }))
-      
-      const totalWords = languages.reduce((sum, lang) => sum + lang.totalWords, 0)
-      const totalFromLessons = languages.reduce((sum, lang) => sum + lang.wordsFromLessons, 0)
-      const languagesStarted = languages.filter(lang => lang.totalWords > 0).length
-      
-      extractionLog.value.push(`✅ Fallback complete: ${languages.length} languages, ${totalWords} total words`)
-      
-      return {
-        success: true,
-        data: {
-          languages,
-          stats: {
-            totalWords,
-            wordsFromLessons: totalFromLessons,
-            languagesStarted,
-            mastered: languages.reduce((sum, lang) => sum + lang.mastered, 0)
-          }
-        },
-        source: 'fallback_extraction'
-      }
-      
-    } catch (fallbackError) {
-      extractionLog.value.push(`❌ Fallback extraction failed: ${fallbackError.message}`)
-      console.warn('Fallback language extraction failed:', fallbackError.message)
-      
-      // Last resort: return basic language structure
-      return {
-        success: true,
-        data: {
-          languages: [
-            {
-              code: 'english',
-              name: 'English',
-              nameRu: 'Английский',
-              flag: '🇺🇸',
-              totalWords: 0,
-              wordsFromLessons: 0,
-              progress: 0,
-              mastered: 0
-            },
-            {
-              code: 'russian',
-              name: 'Russian',
-              nameRu: 'Русский',
-              flag: '🇷🇺',
-              totalWords: 0,
-              wordsFromLessons: 0,
-              progress: 0,
-              mastered: 0
-            }
-          ],
-          stats: {
-            totalWords: 0,
-            wordsFromLessons: 0,
-            languagesStarted: 0,
-            mastered: 0
-          }
-        },
-        source: 'basic_fallback'
-      }
-    }
-  },
-
-  getLanguageFromLesson(lesson) {
-    const title = (lesson.lessonName || lesson.title || '').toLowerCase()
-    const subject = (lesson.subject || '').toLowerCase()
-    const description = (lesson.description || '').toLowerCase()
-    
-    // Enhanced language detection patterns
-    const patterns = {
-      english: [
-        'english', 'английский', 'англ', 'eng', 'vocabulary', 'words',
-        'learn english', 'english lesson', 'english vocabulary'
-      ],
-      russian: [
-        'russian', 'русский', 'рус', 'rus', 'русский язык', 'russian language'
-      ],
-      spanish: [
-        'spanish', 'испанский', 'español', 'esp', 'spanish lesson'
-      ],
-      french: [
-        'french', 'французский', 'français', 'fr', 'french lesson'
-      ],
-      german: [
-        'german', 'немецкий', 'deutsch', 'de', 'german lesson'
-      ]
-    }
-    
-    const searchText = `${title} ${subject} ${description}`.toLowerCase()
-    
-    for (const [language, keywords] of Object.entries(patterns)) {
-      if (keywords.some(keyword => searchText.includes(keyword))) {
-        return language
-      }
-    }
-    
-    // Default fallback based on common patterns
-    if (searchText.includes('lesson') || searchText.includes('урок')) {
-      return 'english'
-    }
-    
-    return 'english' // Default fallback
-  },
-
-  extractVocabularyFromLesson(lesson) {
-    let vocabCount = 0
-    
-    if (!lesson.steps || !Array.isArray(lesson.steps)) {
-      return vocabCount
-    }
-    
-    lesson.steps.forEach(step => {
-      if (!step || !step.type) return
-      
-      // Enhanced step type detection
-      const stepType = step.type.toLowerCase()
-      
-      if (stepType.includes('vocabulary') || stepType.includes('word')) {
-        if (Array.isArray(step.data)) {
-          step.data.forEach(item => {
-            if (item && (item.term || item.word) && (item.definition || item.translation)) {
-              vocabCount++
-            }
-          })
-        } else if (step.data && typeof step.data === 'object') {
-          // Single vocabulary item
-          if ((step.data.term || step.data.word) && (step.data.definition || step.data.translation)) {
-            vocabCount++
-          }
-        }
-      }
-      
-      // Also check for vocabulary in other step types
-      if (stepType.includes('text') || stepType.includes('explanation')) {
-        if (step.vocabulary && Array.isArray(step.vocabulary)) {
-          vocabCount += step.vocabulary.length
-        }
-      }
-      
-      // Check for flashcards
-      if (stepType.includes('flashcard') || stepType.includes('card')) {
-        if (Array.isArray(step.data)) {
-          step.data.forEach(card => {
-            if (card && card.front && card.back) {
-              vocabCount++
-            }
-          })
-        }
-      }
-    })
-    
-    return vocabCount
-  },
-
-  getLanguageDisplayName(code) {
-    const names = {
-      'english': 'English',
-      'spanish': 'Spanish',
-      'french': 'French',
-      'german': 'German',
-      'russian': 'Russian',
-      'chinese': 'Chinese',
-      'arabic': 'Arabic',
-      'japanese': 'Japanese'
-    }
-    return names[code] || code.charAt(0).toUpperCase() + code.slice(1)
-  },
-
-  getLanguageDisplayNameRu(code) {
-    const names = {
-      'english': 'Английский',
-      'spanish': 'Испанский',
-      'french': 'Французский',
-      'german': 'Немецкий',
-      'russian': 'Русский',
-      'chinese': 'Китайский',
-      'arabic': 'Арабский',
-      'japanese': 'Японский'
-    }
-    return names[code] || this.getLanguageDisplayName(code)
-  },
-
-  async getLanguageContent(userId, languageCode) {
-    try {
-      extractionLog.value.push(`🔍 Loading content for language: ${languageCode}`)
-      
-      const wordsFromLessons = await this.getWordsFromLessonsWithFallback(userId, languageCode)
-      
-      extractionLog.value.push(`📚 Content loaded: ${wordsFromLessons.length} words from lessons`)
-      
-      return {
-        success: true,
-        data: {
-          wordsFromLessons: wordsFromLessons,
-          allWords: wordsFromLessons, // Copy for "all words" tab
-          userProgress: [],
-          wordsForReview: []
-        }
-      }
-    } catch (error) {
-      extractionLog.value.push(`❌ Error loading language content: ${error.message}`)
-      console.error('Error fetching language content:', error)
-      return {
-        success: false,
-        error: error.message
-      }
-    }
-  },
-
-  async getWordsFromLessonsWithFallback(userId, languageCode) {
-    try {
-      extractionLog.value.push(`📚 Extracting vocabulary for ${languageCode} from user ${userId}'s lessons`)
-      
-      // Get user progress
-      const userProgressResponse = await fetch(`/api/users/${userId}/progress`)
-      
-      if (!userProgressResponse.ok) {
-        extractionLog.value.push(`⚠️ Progress API failed: ${userProgressResponse.status}`)
-        return []
-      }
-      
-      const userProgressData = await userProgressResponse.json()
-      const userProgress = userProgressData.data || userProgressData || []
-      
-      extractionLog.value.push(`📊 Found ${userProgress.length} progress records`)
-      
-      const completedLessons = userProgress.filter(p => 
-        p.completed && p.progressPercent >= 70
-      )
-      
-      extractionLog.value.push(`✅ ${completedLessons.length} completed lessons to process`)
-      
-      const vocabularyFromLessons = []
-      let processedCount = 0
-      
-      for (const progress of completedLessons.slice(0, 30)) {
-        try {
-          const lessonResponse = await fetch(`/api/lessons/${progress.lessonId}`)
-          
-          if (!lessonResponse.ok) {
-            extractionLog.value.push(`⚠️ Lesson ${progress.lessonId}: HTTP ${lessonResponse.status}`)
-            continue
-          }
-          
-          const lessonData = await lessonResponse.json()
-          
-          if (lessonData.success && lessonData.data) {
-            const lesson = lessonData.data
-            processedCount++
-            
-            // Check if lesson matches the target language
-            const lessonLanguage = this.getLanguageFromLesson(lesson)
-            if (languageCode && lessonLanguage !== languageCode) {
-              continue
-            }
-            
-            extractionLog.value.push(`📖 Processing lesson: "${lesson.lessonName || lesson.title}" (${lessonLanguage})`)
-            
-            if (lesson.steps && Array.isArray(lesson.steps)) {
-              const vocabularySteps = lesson.steps.filter(step => {
-                const stepType = (step.type || '').toLowerCase()
-                return stepType.includes('vocabulary') || 
-                       stepType.includes('word') || 
-                       stepType.includes('flashcard')
-              })
-              
-              vocabularySteps.forEach((step, stepIndex) => {
-                if (Array.isArray(step.data)) {
-                  step.data.forEach((vocab, vocabIndex) => {
-                    if (this.isValidVocabularyItem(vocab)) {
-                      const word = this.createWordFromVocabulary(vocab, lesson, progress, `${stepIndex}_${vocabIndex}`)
-                      vocabularyFromLessons.push(word)
-                    }
-                  })
-                } else if (step.data && this.isValidVocabularyItem(step.data)) {
-                  const word = this.createWordFromVocabulary(step.data, lesson, progress, stepIndex.toString())
-                  vocabularyFromLessons.push(word)
-                }
-              })
-              
-              // Also check for vocabulary in other step types
-              lesson.steps.forEach((step, stepIndex) => {
-                if (step.vocabulary && Array.isArray(step.vocabulary)) {
-                  step.vocabulary.forEach((vocab, vocabIndex) => {
-                    if (this.isValidVocabularyItem(vocab)) {
-                      const word = this.createWordFromVocabulary(vocab, lesson, progress, `extra_${stepIndex}_${vocabIndex}`)
-                      vocabularyFromLessons.push(word)
-                    }
-                  })
-                }
-              })
-            }
-            
-            if (vocabularyFromLessons.length > 0) {
-              extractionLog.value.push(`  ✅ Found vocabulary in lesson "${lesson.lessonName || lesson.title}"`)
-            }
-          }
-        } catch (lessonError) {
-          extractionLog.value.push(`❌ Error processing lesson ${progress.lessonId}: ${lessonError.message}`)
-        }
-      }
-      
-      extractionLog.value.push(`🎉 Extraction complete: ${vocabularyFromLessons.length} vocabulary items from ${processedCount} lessons`)
-      
-      return vocabularyFromLessons
-    } catch (error) {
-      extractionLog.value.push(`❌ Error in vocabulary extraction: ${error.message}`)
-      console.warn('Error extracting vocabulary from lessons:', error)
-      return []
-    }
-  },
-
-  isValidVocabularyItem(vocab) {
-    if (!vocab || typeof vocab !== 'object') return false
-    
-    // Check various possible structures
-    const hasTermDefinition = vocab.term && vocab.definition
-    const hasWordTranslation = vocab.word && vocab.translation
-    const hasFrontBack = vocab.front && vocab.back
-    const hasQuestionAnswer = vocab.question && vocab.answer
-    
-    return hasTermDefinition || hasWordTranslation || hasFrontBack || hasQuestionAnswer
-  },
-
-  createWordFromVocabulary(vocab, lesson, progress, uniqueId) {
-    // Extract word and translation from various possible structures
-    let word, translation, definition = '', examples = []
-    
-    if (vocab.term && vocab.definition) {
-      word = vocab.term
-      translation = vocab.definition
-      definition = vocab.example || vocab.description || ''
-    } else if (vocab.word && vocab.translation) {
-      word = vocab.word
-      translation = vocab.translation
-      definition = vocab.definition || vocab.example || ''
-    } else if (vocab.front && vocab.back) {
-      word = vocab.front
-      translation = vocab.back
-      definition = vocab.hint || vocab.example || ''
-    } else if (vocab.question && vocab.answer) {
-      word = vocab.question
-      translation = vocab.answer
-      definition = vocab.explanation || ''
-    }
-    
-    // Create examples array
-    if (vocab.example) {
-      examples.push({
-        sentence: vocab.example,
-        translation: translation
-      })
-    }
-    
-    if (vocab.examples && Array.isArray(vocab.examples)) {
-      examples = [...examples, ...vocab.examples]
-    }
-    
-    return {
-      id: `${progress.lessonId}_${uniqueId}_${word}`,
-      word: word,
-      translation: translation,
-      definition: definition,
-      language: this.getLanguageFromLesson(lesson),
-      partOfSpeech: vocab.partOfSpeech || vocab.type || 'noun',
-      difficulty: lesson.metadata?.difficulty || lesson.level || 'beginner',
-      source: 'lesson',
-      lessonId: progress.lessonId,
-      lessonName: lesson.lessonName || lesson.title,
-      progress: Math.round(progress.progressPercent || 0),
-      examples: examples,
-      updatedAt: progress.updatedAt || new Date().toISOString(),
-      metadata: {
-        stepType: vocab.stepType || 'vocabulary',
-        lessonSubject: lesson.subject,
-        extractedFrom: 'lesson_steps'
-      }
-    }
-  },
-
-  async updateWordProgress(userId, vocabularyId, correct, timeSpent = 0) {
-    try {
-      const response = await fetch(`/api/vocabulary/progress/${userId}/update`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          vocabularyId,
-          correct,
-          timeSpent
-        })
-      })
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-      
-      return await response.json()
-    } catch (error) {
-      console.error('Error updating word progress:', error)
-      return { 
-        success: true, 
-        message: 'Progress updated locally (API not available)',
-        fallback: true 
-      }
-    }
-  }
-}
-
-// Helper function to get language flags
-const getLanguageFlag = (code) => {
-  const flags = {
-    'english': '🇺🇸',
-    'spanish': '🇪🇸', 
-    'french': '🇫🇷',
-    'german': '🇩🇪',
-    'chinese': '🇨🇳',
-    'arabic': '🇸🇦',
-    'japanese': '🇯🇵',
-    'korean': '🇰🇷',
-    'uzbek': '🇺🇿',
-    'russian': '🇷🇺'
-  }
-  return flags[code] || '🌍'
-}
 
 // Computed
 const hasLanguages = computed(() => 
@@ -1126,7 +493,11 @@ const initialize = async () => {
     error.value = null
     loadingMessage.value = 'Загрузка ваших языков...'
     
-    const result = await vocabularyService.getUserLanguages(currentUser.value?.uid || 'demo-user')
+    if (!currentUser.value) {
+      throw new Error('Пользователь не авторизован')
+    }
+    
+    const result = await vocabularyService.getUserLanguages(currentUser.value.uid)
     
     if (result.success) {
       availableLanguages.value = result.data.languages || []
@@ -1137,23 +508,16 @@ const initialize = async () => {
         wordsFromLessons: 0 
       }
 
-      // Show appropriate message based on data source
-      if (result.source === 'fallback_extraction') {
-        showToast('Vocabulary loaded from your lessons', 'info')
-      } else if (result.source === 'basic_fallback') {
-        showToast('Basic vocabulary interface loaded', 'info')
-      } else {
-        showToast('Vocabulary loaded successfully', 'success')
-      }
+      showToast('Словари загружены успешно', 'success')
     } else {
-      throw new Error(result.error)
+      throw new Error(result.error || 'Не удалось загрузить языки')
     }
     
   } catch (err) {
     console.error('❌ Failed to initialize vocabulary:', err)
     error.value = {
       title: 'Ошибка загрузки',
-      message: 'Не удалось загрузить словарь. Проверьте подключение к интернету.',
+      message: err.message || 'Не удалось загрузить словарь. Проверьте подключение к интернету.',
       code: err.code || 'UNKNOWN_ERROR'
     }
   } finally {
@@ -1173,12 +537,18 @@ const loadLanguageContent = async (language) => {
     allWords.value = []
     wordsForReview.value = []
     
-    const result = await vocabularyService.getLanguageContent(currentUser.value?.uid || 'demo-user', language.code)
+    if (!currentUser.value) {
+      throw new Error('Пользователь не авторизован')
+    }
+    
+    const result = await vocabularyService.getUserVocabularyByLanguage(currentUser.value.uid, language.code)
     
     if (result.success) {
-      wordsFromLessons.value = result.data.wordsFromLessons || []
-      allWords.value = result.data.allWords || result.data.wordsFromLessons || []
-      wordsForReview.value = result.data.wordsForReview || []
+      const vocabulary = result.vocabulary || []
+      
+      // Separate words by source
+      wordsFromLessons.value = vocabulary.filter(word => word.source === 'lesson')
+      allWords.value = vocabulary
       
       // Set default active tab based on available content
       if (wordsFromLessons.value.length > 0) {
@@ -1189,11 +559,11 @@ const loadLanguageContent = async (language) => {
         activeTab.value = 'lessons'
       }
       
-      if (wordsFromLessons.value.length > 0) {
-        showToast(`Загружено ${wordsFromLessons.value.length} слов из уроков`, 'success')
+      if (vocabulary.length > 0) {
+        showToast(`Загружено ${vocabulary.length} слов`, 'success')
       }
     } else {
-      throw new Error(result.error)
+      throw new Error(result.error || 'Не удалось загрузить содержимое языка')
     }
     
   } catch (err) {
@@ -1282,19 +652,23 @@ const closeWordModal = () => {
 }
 
 const markAsKnown = async (word) => {
-  const result = await vocabularyService.updateWordProgress(
-    currentUser.value?.uid || 'demo-user', 
-    word.id || word._id, 
-    true, 
-    5
-  )
-  
-  if (result.success) {
-    showToast('Слово отмечено как изученное', 'success')
-    if (word.progress !== undefined) {
-      word.progress = Math.min(100, (word.progress || 0) + 20)
+  try {
+    const result = await vocabularyService.updateWordProgress(
+      currentUser.value.uid, 
+      word.id || word._id, 
+      { correct: true, timeSpent: 5 }
+    )
+    
+    if (result.success) {
+      showToast('Слово отмечено как изученное', 'success')
+      if (word.progress !== undefined) {
+        word.progress = Math.min(100, (word.progress || 0) + 20)
+      }
+    } else {
+      throw new Error(result.error)
     }
-  } else {
+  } catch (error) {
+    console.error('Error marking word as known:', error)
     showToast('Ошибка обновления прогресса', 'error')
   }
   
@@ -1302,19 +676,23 @@ const markAsKnown = async (word) => {
 }
 
 const markAsUnknown = async (word) => {
-  const result = await vocabularyService.updateWordProgress(
-    currentUser.value?.uid || 'demo-user', 
-    word.id || word._id, 
-    false, 
-    3
-  )
-  
-  if (result.success) {
-    showToast('Слово добавлено для повторения', 'info')
-    if (word.progress !== undefined) {
-      word.progress = Math.max(0, (word.progress || 0) - 10)
+  try {
+    const result = await vocabularyService.updateWordProgress(
+      currentUser.value.uid, 
+      word.id || word._id, 
+      { correct: false, timeSpent: 3 }
+    )
+    
+    if (result.success) {
+      showToast('Слово добавлено для повторения', 'info')
+      if (word.progress !== undefined) {
+        word.progress = Math.max(0, (word.progress || 0) - 10)
+      }
+    } else {
+      throw new Error(result.error)
     }
-  } else {
+  } catch (error) {
+    console.error('Error marking word as unknown:', error)
     showToast('Ошибка обновления прогресса', 'error')
   }
   
@@ -1341,15 +719,10 @@ const goBackToLanguages = () => {
   searchQuery.value = ''
   currentPage.value = 1
   allWordsCurrentPage.value = 1
-  extractionLog.value = []
 }
 
 const createTest = () => {
-  router.push({
-    name: 'VocabularyTest',
-    params: { languageCode: selectedLanguage.value.code },
-    query: { mode: 'test' }
-  })
+  showToast('Функция тестирования скоро будет доступна!', 'info')
 }
 
 const startReview = () => {
@@ -1357,23 +730,7 @@ const startReview = () => {
 }
 
 const practiceFromLessons = () => {
-  router.push({
-    name: 'VocabularyPractice',
-    params: { languageCode: selectedLanguage.value.code },
-    query: { source: 'lessons' }
-  })
-}
-
-const debugExtraction = async () => {
-  extractionLog.value = []
-  showToast('Запуск диагностики...', 'info')
-  
-  try {
-    await vocabularyService.getFallbackLanguages(currentUser.value?.uid || 'demo-user')
-    showToast('Диагностика завершена. См. журнал ниже.', 'success')
-  } catch (error) {
-    showToast(`Ошибка диагностики: ${error.message}`, 'error')
-  }
+  showToast('Функция практики скоро будет доступна!', 'info')
 }
 
 // Watch for search query changes
@@ -1389,8 +746,8 @@ onMounted(async () => {
 })
 </script>
 
-
 <style scoped>
+/* Same styles as before - they are fine as is */
 /* Variables */
 :root {
   --primary: #8b5cf6;
@@ -1855,89 +1212,6 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-/* Topics Grid */
-.topics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.topic-card {
-  background: var(--gray-50);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 2px solid transparent;
-  position: relative;
-}
-
-.topic-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--primary);
-  box-shadow: var(--shadow-lg);
-  background: var(--white);
-}
-
-.topic-icon {
-  font-size: 2.5rem;
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.topic-name {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--gray-900);
-  margin: 0 0 0.5rem 0;
-  text-align: center;
-}
-
-.topic-description {
-  color: var(--gray-600);
-  font-size: 0.875rem;
-  text-align: center;
-  margin: 0 0 1rem 0;
-  line-height: 1.5;
-}
-
-.topic-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.stat-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: var(--white);
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.75rem;
-  font-size: 0.875rem;
-  color: var(--gray-700);
-  font-weight: 500;
-  border: 1px solid var(--gray-200);
-}
-
-.stat-badge.difficulty.beginner {
-  background: #ecfdf5;
-  color: #065f46;
-  border-color: #a7f3d0;
-}
-
-.stat-badge.difficulty.intermediate {
-  background: #fffbeb;
-  color: #92400e;
-  border-color: #fde68a;
-}
-
-.stat-badge.difficulty.advanced {
-  background: #fef2f2;
-  color: #991b1b;
-  border-color: #fecaca;
-}
-
 /* Words Grid */
 .words-grid {
   display: grid;
@@ -1967,10 +1241,6 @@ onMounted(async () => {
   border-left: 4px solid var(--success);
 }
 
-.word-card.review-word {
-  border-left: 4px solid var(--warning);
-}
-
 .word-header {
   display: flex;
   justify-content: space-between;
@@ -1991,15 +1261,6 @@ onMounted(async () => {
   font-size: 0.75rem;
   color: var(--primary);
   background: rgba(139, 92, 246, 0.1);
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-}
-
-.review-due {
-  font-size: 0.75rem;
-  color: var(--warning);
-  background: rgba(245, 158, 11, 0.1);
   padding: 0.25rem 0.5rem;
   border-radius: 0.5rem;
   font-weight: 500;
@@ -2048,12 +1309,6 @@ onMounted(async () => {
 .word-difficulty.advanced {
   background: #fecaca;
   color: #991b1b;
-}
-
-.review-stats {
-  font-size: 0.75rem;
-  color: var(--gray-500);
-  font-weight: 500;
 }
 
 .word-progress {
@@ -2143,15 +1398,6 @@ onMounted(async () => {
 .practice-btn:hover {
   background: var(--primary);
   color: var(--white);
-}
-
-.practice-btn.primary {
-  background: var(--primary);
-  color: var(--white);
-}
-
-.practice-btn.primary:hover {
-  background: var(--primary-dark);
 }
 
 .sort-select {
@@ -2398,10 +1644,10 @@ onMounted(async () => {
   color: #065f46;
 }
 
-.toast.warning {
-  border-color: var(--warning);
-  background: #fffbeb;
-  color: #92400e;
+.toast.info {
+  border-color: var(--primary);
+  background: #f5f3ff;
+  color: #5b21b6;
 }
 
 .toast-icon {
@@ -2458,34 +1704,7 @@ onMounted(async () => {
     justify-content: center;
   }
   
-/* Responsive */
-@media (max-width: 768px) {
-  .vocabulary-page {
-    padding: 1rem;
-  }
-  
-  .header-content {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .stats-bar {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .language-header {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
-  }
-  
-  .lang-title-section {
-    justify-content: center;
-  }
-  
   .languages-grid,
-  .topics-grid,
   .words-grid {
     grid-template-columns: 1fr;
   }
@@ -2550,8 +1769,7 @@ onMounted(async () => {
     font-size: 0.875rem;
   }
   
-  .word-card,
-  .topic-card {
+  .word-card {
     padding: 1rem;
   }
   
@@ -2564,270 +1782,5 @@ onMounted(async () => {
   .modal-footer {
     padding: 1rem;
   }
-}
-
-/* Dark mode support (optional) */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --gray-50: #1f2937;
-    --gray-100: #374151;
-    --gray-200: #4b5563;
-    --gray-300: #6b7280;
-    --gray-400: #9ca3af;
-    --gray-500: #d1d5db;
-    --gray-600: #e5e7eb;
-    --gray-700: #f3f4f6;
-    --gray-800: #f9fafb;
-    --gray-900: #ffffff;
-    --white: #111827;
-  }
-  
-  .vocabulary-page {
-    background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
-  }
-  
-  .loading-spinner {
-    border-color: var(--gray-700);
-    border-top-color: var(--primary);
-  }
-}
-
-/* Print styles */
-@media print {
-  .vocabulary-page {
-    background: white;
-    padding: 1rem;
-  }
-  
-  .back-btn,
-  .action-btn,
-  .practice-btn,
-  .filter-tabs,
-  .pagination,
-  .modal-footer,
-  .toast {
-    display: none;
-  }
-  
-  .word-card,
-  .topic-card,
-  .language-card {
-    border: 1px solid #ccc;
-    break-inside: avoid;
-    margin-bottom: 1rem;
-  }
-  
-  .word-card:hover,
-  .topic-card:hover,
-  .language-card:hover {
-    transform: none;
-    box-shadow: none;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  :root {
-    --primary: #6d28d9;
-    --primary-dark: #5b21b6;
-    --success: #047857;
-    --warning: #d97706;
-    --error: #dc2626;
-  }
-  
-  .word-card,
-  .topic-card,
-  .language-card {
-    border-width: 2px;
-  }
-  
-  .filter-tab.active {
-    outline: 2px solid var(--primary);
-  }
-  
-  .word-card:hover,
-  .topic-card:hover,
-  .language-card:hover {
-    outline: 2px solid var(--primary);
-  }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  
-  .lang-flag {
-    animation: none;
-  }
-  
-  .loading-spinner {
-    animation: none;
-    border: 3px solid var(--primary);
-  }
-}
-
-/* Focus styles for accessibility */
-.vocabulary-page *:focus {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-.vocabulary-page button:focus,
-.vocabulary-page input:focus,
-.vocabulary-page select:focus {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-/* Custom scrollbar for modal */
-.modal-content::-webkit-scrollbar {
-  width: 8px;
-}
-
-.modal-content::-webkit-scrollbar-track {
-  background: var(--gray-100);
-  border-radius: 4px;
-}
-
-.modal-content::-webkit-scrollbar-thumb {
-  background: var(--gray-400);
-  border-radius: 4px;
-}
-
-.modal-content::-webkit-scrollbar-thumb:hover {
-  background: var(--gray-500);
-}
-
-/* Loading skeleton styles */
-.skeleton {
-  background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 50%, var(--gray-200) 75%);
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.5s infinite;
-}
-
-@keyframes skeleton-loading {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-/* Additional utility classes */
-.text-center {
-  text-align: center;
-}
-
-.text-left {
-  text-align: left;
-}
-
-.text-right {
-  text-align: right;
-}
-
-.flex {
-  display: flex;
-}
-
-.flex-col {
-  flex-direction: column;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.justify-center {
-  justify-content: center;
-}
-
-.justify-between {
-  justify-content: space-between;
-}
-
-.gap-1 {
-  gap: 0.25rem;
-}
-
-.gap-2 {
-  gap: 0.5rem;
-}
-
-.gap-3 {
-  gap: 0.75rem;
-}
-
-.gap-4 {
-  gap: 1rem;
-}
-
-.mt-1 {
-  margin-top: 0.25rem;
-}
-
-.mt-2 {
-  margin-top: 0.5rem;
-}
-
-.mt-4 {
-  margin-top: 1rem;
-}
-
-.mb-1 {
-  margin-bottom: 0.25rem;
-}
-
-.mb-2 {
-  margin-bottom: 0.5rem;
-}
-
-.mb-4 {
-  margin-bottom: 1rem;
-}
-
-.p-1 {
-  padding: 0.25rem;
-}
-
-.p-2 {
-  padding: 0.5rem;
-}
-
-.p-4 {
-  padding: 1rem;
-}
-
-.rounded {
-  border-radius: 0.25rem;
-}
-
-.rounded-lg {
-  border-radius: 0.5rem;
-}
-
-.rounded-xl {
-  border-radius: 0.75rem;
-}
-
-.shadow {
-  box-shadow: var(--shadow);
-}
-
-.shadow-lg {
-  box-shadow: var(--shadow-lg);
-}
-
-.shadow-xl {
-  box-shadow: var(--shadow-xl);
-}
 }
 </style>
