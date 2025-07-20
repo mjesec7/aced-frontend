@@ -180,9 +180,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
-import { useSubscription } from '@/composables/useSubscription';
 import { useAuth } from '@/composables/useAuth';
-import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
 export default {
   name: 'Sidebar',
@@ -194,16 +192,7 @@ export default {
     const store = useStore();
     const { currentUser: user, logout } = useAuth();
     
-    const {
-      userStatus,
-      hasVocabularyAccess,
-      hasAdvancedFeatures,
-      getSubscriptionBadge: subscriptionBadge,
-      isSubscriptionExpiringSoon,
-      getDaysUntilExpiry: daysUntilExpiry,
-      getRecommendedUpgrade: recommendedUpgrade,
-      updateSubscription
-    } = useSubscription();
+
 
     // Modal states
     const showVocabularyPaywall = ref(false);
@@ -237,32 +226,7 @@ export default {
       }
     };
 
-    // Handle successful unlocks
-    const handleVocabularyUnlocked = async (planInfo) => {
-      console.log('✅ Vocabulary unlocked:', planInfo);
-      await updateSubscription(planInfo.plan);
-      showVocabularyPaywall.value = false;
-      router.push({ name: 'VocabularyPage' });
-    };
-
-    const handleAnalyticsUnlocked = async (planInfo) => {
-      console.log('✅ Analytics unlocked:', planInfo);
-      await updateSubscription(planInfo.plan);
-      showAnalyticsPaywall.value = false;
-      router.push({ name: 'AnalyticsPage' });
-    };
-
-    const handleUpgradeUnlocked = async (planInfo) => {
-      console.log('✅ Upgrade completed:', planInfo);
-      await updateSubscription(planInfo.plan);
-      showUpgradeModal.value = false;
-    };
-
-    const handleRenewalUnlocked = async (planInfo) => {
-      console.log('✅ Subscription renewed:', planInfo);
-      await updateSubscription(planInfo.plan);
-      showRenewalModal.value = false;
-    };
+ 
 
     // Handle logout
     const handleLogout = async () => {
