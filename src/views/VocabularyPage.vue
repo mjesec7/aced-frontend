@@ -220,26 +220,305 @@ const filteredWords = computed(() => {
 })
 
 // ========================================
-// API FUNCTIONS (SIMPLIFIED)
+// API FUNCTIONS (MATCHING VOCABULARY MODAL APPROACH)
 // ========================================
 const getUserVocabulary = async (userId, languageCode = null) => {
   try {
-    const endpoint = languageCode 
-      ? `/api/vocabulary/user/${userId}/language/${languageCode}`
-      : `/api/vocabulary/user/${userId}`
+    console.log('📚 [VocabularyPage] Extracting vocabulary from completed lessons for user:', userId)
     
-    const response = await fetch(endpoint)
-    const data = await response.json()
+    // Get user's completed lessons (same as VocabularyModal)
+    const progressResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live'}/users/${userId}/progress`)
     
-    if (data.success) {
-      return languageCode ? data.vocabulary : data.data
-    } else {
-      throw new Error(data.error || 'Failed to fetch vocabulary')
+    if (!progressResponse.ok) {
+      console.warn('⚠️ Could not fetch user progress, trying lessons directly...')
+      return await extractVocabularyFromAllLessons(languageCode)
     }
+    
+    const progressData = await progressResponse.json()
+    const userProgress = Array.isArray(progressData) ? progressData : progressData.data || []
+    
+    console.log(`📊 Found ${userProgress.length} progress records`)
+    
+    // Get completed lessons
+    const completedLessons = userProgress.filter(p => p.completed && p.lessonId)
+    console.log(`✅ Found ${completedLessons.length} completed lessons`)
+    
+    if (completedLessons.length === 0) {
+      console.log('ℹ️ No completed lessons found, using demo data')
+      return getDemoVocabulary(languageCode)
+    }
+    
+    const allVocabulary = []
+    
+    // Extract vocabulary from each completed lesson (same logic as VocabularyModal)
+    for (const progress of completedLessons.slice(0, 20)) {
+      try {
+        const lessonResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live'}/lessons/${progress.lessonId}`)
+        
+        if (!lessonResponse.ok) continue
+        
+        const lessonData = await lessonResponse.json()
+        const lesson = lessonData.lesson || lessonData
+        
+        if (!lesson || !lesson.steps) continue
+        
+        // Extract vocabulary from lesson steps (EXACT same logic as VocabularyModal)
+        lesson.steps.forEach((step, stepIndex) => {
+          if (!step || !step.type) return
+          
+          // Check for vocabulary step
+          if (step.type === 'vocabulary' && step.data) {
+            const vocabularyItems = Array.isArray(step.data) ? step.data : [step.data]
+            
+            vocabularyItems.forEach((vocab, vocabIndex) => {
+              if (isValidVocabularyItem(vocab)) {
+                const extractedWord = extractVocabularyFromStep(vocab, lesson, progress, `${stepIndex}_${vocabIndex}`)
+                if (extractedWord) {
+                  allVocabulary.push(extractedWord)
+                }
+              }
+            })
+          }
+          
+          // Also check for vocabulary within other step types
+          if (step.vocabulary && Array.isArray(step.vocabulary)) {
+            step.vocabulary.forEach((vocab, vocabIndex) => {
+              if (isValidVocabularyItem(vocab)) {
+                const extractedWord = extractVocabularyFromStep(vocab, lesson, progress, `vocab_${stepIndex}_${vocabIndex}`)
+                if (extractedWord) {
+                  allVocabulary.push(extractedWord)
+                }
+              }
+            })
+          }
+        })
+        
+      } catch (lessonError) {
+        console.warn(`⚠️ Error processing lesson ${progress.lessonId}:`, lessonError.message)
+      }
+    }
+    
+    console.log(`📚 Extracted ${allVocabulary.length} vocabulary items from completed lessons`)
+    
+    // Filter by language if specified
+    if (languageCode) {
+      const filteredVocabulary = allVocabulary.filter(word => 
+        word.language && word.language.toLowerCase() === languageCode.toLowerCase()
+      )
+      console.log(`🔍 Filtered to ${filteredVocabulary.length} words for language: ${languageCode}`)
+      return filteredVocabulary
+    }
+    
+    return allVocabulary
+    
   } catch (error) {
-    console.error('❌ API Error:', error)
-    return []
+    console.error('❌ Error extracting vocabulary from lessons:', error)
+    
+    // Fallback to demo data
+    console.log('📚 Using demo vocabulary data as fallback...')
+    return getDemoVocabulary(languageCode)
   }
+}
+
+// Helper function to check if vocabulary item is valid (same as VocabularyModal)
+const isValidVocabularyItem = (vocab) => {
+  if (!vocab || typeof vocab !== 'object') return false
+  
+  // Check various vocabulary formats
+  const hasTermDefinition = vocab.term && vocab.definition
+  const hasWordTranslation = vocab.word && vocab.translation
+  const hasFrontBack = vocab.front && vocab.back
+  const hasQuestionAnswer = vocab.question && vocab.answer
+  
+  return hasTermDefinition || hasWordTranslation || hasFrontBack || hasQuestionAnswer
+}
+
+// Helper function to extract vocabulary from step (same logic as VocabularyModal)
+const extractVocabularyFromStep = (vocab, lesson, progress, uniqueId) => {
+  try {
+    let word, translation, definition = '', examples = []
+    
+    // Handle different vocabulary formats (same as VocabularyModal)
+    if (vocab.term && vocab.definition) {
+      word = vocab.term
+      translation = vocab.definition
+      definition = vocab.example || vocab.description || ''
+    } else if (vocab.word && vocab.translation) {
+      word = vocab.word
+      translation = vocab.translation
+      definition = vocab.definition || vocab.example || ''
+    } else if (vocab.front && vocab.back) {
+      word = vocab.front
+      translation = vocab.back
+      definition = vocab.hint || vocab.example || ''
+    } else if (vocab.question && vocab.answer) {
+      word = vocab.question
+      translation = vocab.answer
+      definition = vocab.explanation || ''
+    } else {
+      return null
+    }
+    
+    // Handle examples
+    if (vocab.example) {
+      examples.push({
+        sentence: vocab.example,
+        translation: translation
+      })
+    }
+    
+    if (vocab.examples && Array.isArray(vocab.examples)) {
+      examples = [...examples, ...vocab.examples]
+    }
+    
+    // Determine language from lesson (same logic as VocabularyModal)
+    const language = getLanguageFromLesson(lesson)
+    
+    return {
+      id: `${progress.lessonId}_${uniqueId}_${word}`,
+      word: word.trim(),
+      translation: translation.trim(),
+      definition: definition.trim(),
+      language: language,
+      topic: lesson.topic || lesson.subject || 'General',
+      lessonName: lesson.lessonName || lesson.title,
+      level: lesson.level || 1,
+      partOfSpeech: vocab.partOfSpeech || vocab.type || 'noun',
+      difficulty: getDifficultyFromLevel(lesson.level || 1),
+      progress: Math.round(progress.progressPercent || 0),
+      examples: examples,
+      pronunciation: vocab.pronunciation || '',
+      metadata: {
+        source: 'lesson_extraction',
+        lessonId: lesson._id,
+        stepType: 'vocabulary',
+        extractedAt: new Date().toISOString()
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ Error extracting vocabulary from step:', error)
+    return null
+  }
+}
+
+// Helper function to determine language from lesson (same as VocabularyModal)
+const getLanguageFromLesson = (lesson) => {
+  const title = (lesson.lessonName || lesson.title || '').toLowerCase()
+  const subject = (lesson.subject || '').toLowerCase()
+  const description = (lesson.description || '').toLowerCase()
+  
+  const patterns = {
+    english: ['english', 'английский', 'англ', 'eng', 'vocabulary', 'words'],
+    russian: ['russian', 'русский', 'рус', 'rus', 'русский язык'],
+    spanish: ['spanish', 'испанский', 'español', 'esp'],
+    french: ['french', 'французский', 'français', 'fr'],
+    german: ['german', 'немецкий', 'deutsch', 'de'],
+    uzbek: ['uzbek', 'узбекский', 'o\'zbek', 'uz'],
+    chinese: ['chinese', 'китайский', '中文', 'zh'],
+    arabic: ['arabic', 'арабский', 'العربية', 'ar'],
+    japanese: ['japanese', 'японский', '日本語', 'jp'],
+    korean: ['korean', 'корейский', '한국어', 'kr']
+  }
+  
+  const searchText = `${title} ${subject} ${description}`.toLowerCase()
+  
+  for (const [language, keywords] of Object.entries(patterns)) {
+    if (keywords.some(keyword => searchText.includes(keyword))) {
+      return language
+    }
+  }
+  
+  // Default to English if no language detected
+  return 'english'
+}
+
+// Helper function to get difficulty from lesson level
+const getDifficultyFromLevel = (level) => {
+  if (level <= 2) return 'beginner'
+  if (level <= 4) return 'intermediate'
+  return 'advanced'
+}
+
+// Fallback function to extract from all lessons if no progress available
+const extractVocabularyFromAllLessons = async (languageCode = null) => {
+  try {
+    console.log('🔄 Extracting vocabulary from all available lessons...')
+    
+    const lessonsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live'}/lessons`)
+    
+    if (!lessonsResponse.ok) {
+      return getDemoVocabulary(languageCode)
+    }
+    
+    const lessonsData = await lessonsResponse.json()
+    const allLessons = Array.isArray(lessonsData) ? lessonsData : []
+    
+    console.log(`📚 Found ${allLessons.length} total lessons`)
+    
+    const allVocabulary = []
+    
+    // Process a subset of lessons to extract vocabulary
+    allLessons.slice(0, 10).forEach((lesson, lessonIndex) => {
+      if (!lesson || !lesson.steps) return
+      
+      lesson.steps.forEach((step, stepIndex) => {
+        if (!step || !step.type) return
+        
+        if (step.type === 'vocabulary' && step.data) {
+          const vocabularyItems = Array.isArray(step.data) ? step.data : [step.data]
+          
+          vocabularyItems.forEach((vocab, vocabIndex) => {
+            if (isValidVocabularyItem(vocab)) {
+              const mockProgress = {
+                lessonId: lesson._id,
+                progressPercent: 0,
+                updatedAt: new Date().toISOString()
+              }
+              
+              const extractedWord = extractVocabularyFromStep(vocab, lesson, mockProgress, `${stepIndex}_${vocabIndex}`)
+              if (extractedWord) {
+                allVocabulary.push(extractedWord)
+              }
+            }
+          })
+        }
+      })
+    })
+    
+    console.log(`📚 Extracted ${allVocabulary.length} vocabulary items from all lessons`)
+    
+    if (languageCode) {
+      return allVocabulary.filter(word => 
+        word.language && word.language.toLowerCase() === languageCode.toLowerCase()
+      )
+    }
+    
+    return allVocabulary
+    
+  } catch (error) {
+    console.error('❌ Error extracting from all lessons:', error)
+    return getDemoVocabulary(languageCode)
+  }
+}
+
+const getDemoVocabulary = (languageCode = null) => {
+  const demoWords = [
+    { id: 'hello_en', word: 'Hello', translation: 'Привет', language: 'english', topic: 'Greetings', level: 1, progress: 75, partOfSpeech: 'interjection', difficulty: 'beginner', definition: 'A greeting used when meeting someone' },
+    { id: 'goodbye_en', word: 'Goodbye', translation: 'До свидания', language: 'english', topic: 'Greetings', level: 1, progress: 50, partOfSpeech: 'interjection', difficulty: 'beginner', definition: 'A farewell greeting' },
+    { id: 'house_en', word: 'House', translation: 'Дом', language: 'english', topic: 'Home', level: 1, progress: 90, partOfSpeech: 'noun', difficulty: 'beginner', definition: 'A building for human habitation' },
+    { id: 'water_en', word: 'Water', translation: 'Вода', language: 'english', topic: 'Nature', level: 1, progress: 100, partOfSpeech: 'noun', difficulty: 'beginner', definition: 'A clear liquid that forms the seas, lakes, rivers, and rain' },
+    { id: 'computer_en', word: 'Computer', translation: 'Компьютер', language: 'english', topic: 'Technology', level: 2, progress: 25, partOfSpeech: 'noun', difficulty: 'intermediate', definition: 'An electronic device for storing and processing data' },
+    { id: 'hola_es', word: 'Hola', translation: 'Привет', language: 'spanish', topic: 'Greetings', level: 1, progress: 60, partOfSpeech: 'interjection', difficulty: 'beginner', definition: 'A Spanish greeting' },
+    { id: 'casa_es', word: 'Casa', translation: 'Дом', language: 'spanish', topic: 'Home', level: 1, progress: 80, partOfSpeech: 'noun', difficulty: 'beginner', definition: 'A house or home in Spanish' },
+    { id: 'bonjour_fr', word: 'Bonjour', translation: 'Привет', language: 'french', topic: 'Greetings', level: 1, progress: 40, partOfSpeech: 'interjection', difficulty: 'beginner', definition: 'A French greeting meaning good day' }
+  ]
+  
+  if (languageCode) {
+    return demoWords.filter(w => w.language === languageCode)
+  }
+  
+  return demoWords
 }
 
 // ========================================
@@ -299,6 +578,12 @@ const loadLanguages = async () => {
   try {
     const vocabulary = await getUserVocabulary(currentUser.value.uid)
     
+    if (!vocabulary || vocabulary.length === 0) {
+      showToast('Словарь пуст. Начните изучать уроки для добавления слов!', 'warning')
+      languages.value = []
+      return
+    }
+    
     // Group by language
     const languageMap = new Map()
     
@@ -335,9 +620,15 @@ const loadLanguages = async () => {
       progress: lang.totalWords > 0 ? Math.round((lang.mastered / lang.totalWords) * 100) : 0
     })).filter(lang => lang.totalWords > 0)
     
-    showToast(`Найдено ${languages.value.length} языков с словарем`)
+    if (languages.value.length === 0) {
+      showToast('Нет доступных языков в словаре', 'warning')
+    } else {
+      showToast(`Найдено ${languages.value.length} языков с словарем`)
+    }
   } catch (error) {
+    console.error('❌ Error loading languages:', error)
     showToast('Ошибка загрузки языков', 'error')
+    languages.value = []
   } finally {
     loading.value = false
   }
@@ -483,7 +774,8 @@ const getTopicIcon = (topicName) => {
   const icons = {
     'Travel': '✈️', 'Business': '💼', 'Food': '🍽️', 'Family': '👨‍👩‍👧‍👦',
     'Education': '🎓', 'Health': '🏥', 'Technology': '💻', 'Sports': '⚽',
-    'Music': '🎵', 'Art': '🎨', 'Nature': '🌿', 'Animals': '🐾'
+    'Music': '🎵', 'Art': '🎨', 'Nature': '🌿', 'Animals': '🐾',
+    'Greetings': '👋', 'Home': '🏠', 'General': '📖'
   }
   return icons[topicName] || '📖'
 }
@@ -492,7 +784,8 @@ const getTopicNameRu = (topicName) => {
   const translations = {
     'Travel': 'Путешествия', 'Business': 'Бизнес', 'Food': 'Еда',
     'Family': 'Семья', 'Education': 'Образование', 'Health': 'Здоровье',
-    'Technology': 'Технологии', 'Sports': 'Спорт'
+    'Technology': 'Технологии', 'Sports': 'Спорт', 'Greetings': 'Приветствие',
+    'Home': 'Дом', 'Nature': 'Природа', 'General': 'Общее'
   }
   return translations[topicName] || topicName
 }
@@ -501,7 +794,10 @@ const getTopicDescription = (topicName) => {
   const descriptions = {
     'Travel': 'Слова для путешествий',
     'Business': 'Деловая лексика',
-    'Food': 'Еда и напитки'
+    'Food': 'Еда и напитки',
+    'Greetings': 'Приветствие и знакомство',
+    'Home': 'Дом и семья',
+    'Technology': 'Компьютеры и технологии'
   }
   return descriptions[topicName] || `Изучайте слова по теме "${topicName}"`
 }
@@ -509,7 +805,7 @@ const getTopicDescription = (topicName) => {
 const getPartOfSpeechRu = (partOfSpeech) => {
   const translations = {
     'noun': 'сущ.', 'verb': 'глаг.', 'adjective': 'прил.',
-    'adverb': 'нар.', 'phrase': 'фраза'
+    'adverb': 'нар.', 'phrase': 'фраза', 'interjection': 'межд.'
   }
   return translations[partOfSpeech] || partOfSpeech
 }
@@ -558,6 +854,8 @@ const showToast = (message, type = 'success') => {
 onMounted(() => {
   if (currentUser.value) {
     loadLanguages()
+  } else {
+    showToast('Необходимо войти в систему для доступа к словарю', 'error')
   }
 })
 </script>

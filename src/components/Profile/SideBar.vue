@@ -96,7 +96,7 @@ export default {
         { name: 'homework', label: 'Помощь с ДЗ' },
         { name: 'homeworks', label: 'Домашние задания' },
         { name: 'tests', label: 'Тесты' },
-        // ✅ UPDATED: Vocabulary points to profile vocabulary (VocabularyPage from views)
+        // ✅ UPDATED: Vocabulary now points to standalone VocabularyPage
         { name: 'vocabulary', label: 'Словарь' },
         { name: 'settings', label: 'Настройки' }
       ],
@@ -163,7 +163,7 @@ export default {
       if (linkName === 'settings') {
         return '/settings';
       }
-      // ✅ UPDATED: All links now go to profile routes
+      // ✅ All links go to profile routes (including vocabulary)
       return `/profile/${linkName}`;
     },
     isActive(name) {

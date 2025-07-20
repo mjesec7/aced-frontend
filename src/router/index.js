@@ -184,20 +184,16 @@ const routes = [
         component: TestsPage, 
         props: true,
         meta: { title: 'Прохождение теста' }
+      },
+      
+      // ✅ VOCABULARY PAGE - Under profile
+      { 
+        path: 'vocabulary', 
+        name: 'VocabularyPage', 
+        component: VocabularyPage,
+        meta: { title: 'Словарь' }
       }
     ],
-  },
-  
-  // ✅ VOCABULARY PAGE - Standalone vocabulary route
-  {
-    path: '/vocabulary',
-    name: 'VocabularyPage',
-    component: VocabularyPage,
-    meta: { 
-      title: 'Словарь',
-      requiresAuth: true,
-      description: 'Изучение языков и словарный запас'
-    }
   },
   
   // ✅ PAYMENT ROUTES
