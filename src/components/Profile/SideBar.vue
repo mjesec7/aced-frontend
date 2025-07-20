@@ -1,495 +1,748 @@
 <template>
-  <div class="sidebar-wrapper">
-    <div class="sidebar" :class="{ open: isOpen }">
-      <div class="sidebar-content">
-        <!-- 👤 User Info - Fixed at top -->
-        <div class="user-info" v-if="user">
-          <img src="@/assets/icons/user.png" alt="User Icon" class="user-icon" />
-          <div class="user-details">
-            <span class="user-name">{{ user.name || user.email }}</span>
-            <span class="user-plan">📦 {{ planLabel }}</span>
-          </div>
+  <div class="sidebar">
+    <!-- User Info Section -->
+    <div class="user-info">
+      <div class="user-avatar">
+        <img v-if="user?.photoURL" :src="user.photoURL" :alt="user.displayName" />
+        <div v-else class="avatar-placeholder">
+          {{ (user?.displayName || user?.email || 'U').charAt(0).toUpperCase() }}
         </div>
-
-        <!-- 📚 Navigation Links - Scrollable -->
-        <div class="nav-links scrollable">
-          <router-link
-            to="/profile/main"
-            class="nav-item"
-            :class="{ active: isActive('main') }"
-            @click="closeSidebarOnMobile"
-          >
-            <span class="highlight"></span>
-            Главная
-          </router-link>
-
-          <router-link
-            to="/profile/catalogue"
-            class="nav-item"
-            :class="{ active: isActive('catalogue') }"
-            @click="closeSidebarOnMobile"
-          >
-            <span class="highlight"></span>
-            Каталог
-          </router-link>
-
-          <router-link
-            v-for="link in links"
-            :key="link.name"
-            :to="getRoutePath(link.name)"
-            class="nav-item"
-            :class="{ active: isActive(link.name) }"
-            @click="closeSidebarOnMobile"
-          >
-            <span class="highlight"></span>
-            {{ link.label }}
-          </router-link>
-        </div>
-
-        <!-- 🚪 Logout - Fixed at bottom -->
-        <div class="bottom-logout">
-          <button class="logout-button" @click="showLogoutModal = true">Выйти</button>
+      </div>
+      <div class="user-details">
+        <div class="user-name">{{ user?.displayName || user?.email || 'Пользователь' }}</div>
+        <div class="subscription-status">
+          <span class="status-badge" :class="subscriptionBadge.class">
+            {{ subscriptionBadge.icon }} {{ subscriptionBadge.text }}
+          </span>
         </div>
       </div>
     </div>
 
-    <!-- Overlay for mobile -->
-    <div 
-      class="sidebar-overlay" 
-      v-if="isOpen && isMobile" 
-      @click="closeSidebar"
-    ></div>
+    <!-- Navigation Items -->
+    <nav class="sidebar-nav">
+      <!-- Dashboard -->
+      <router-link to="/dashboard" class="sidebar-item">
+        <span class="item-icon">🏠</span>
+        <span class="item-text">Главная</span>
+      </router-link>
 
-    <!-- 🔐 Confirm Logout Modal -->
-    <div class="logout-modal" v-if="showLogoutModal">
-      <div class="logout-modal-content">
-        <p>Вы уверены, что хотите выйти?</p>
-        <div class="logout-actions">
-          <button class="confirm-btn" @click="logout">Да</button>
-          <button class="cancel-btn" @click="showLogoutModal = false">Нет</button>
+      <!-- Catalogue -->
+      <router-link to="/catalogue" class="sidebar-item">
+        <span class="item-icon">📖</span>
+        <span class="item-text">Каталог</span>
+      </router-link>
+
+      <!-- Study Plan -->
+      <router-link to="/study-plan" class="sidebar-item">
+        <span class="item-icon">📅</span>
+        <span class="item-text">План обучения</span>
+      </router-link>
+
+      <!-- Vocabulary (Premium Feature) -->
+      <div 
+        class="sidebar-item" 
+        :class="{ 
+          'premium-item': !hasVocabularyAccess,
+          'has-access': hasVocabularyAccess 
+        }"
+        @click="handleVocabularyClick"
+      >
+        <div class="item-content">
+          <span class="item-icon">📚</span>
+          <span class="item-text">Словарь</span>
+          <span v-if="!hasVocabularyAccess" class="premium-badge">
+            ⭐ Start
+          </span>
+        </div>
+        <div v-if="!hasVocabularyAccess" class="lock-overlay">
+          <span class="lock-icon">🔒</span>
         </div>
       </div>
+
+      <!-- Analytics (Pro Feature) -->
+      <div 
+        class="sidebar-item" 
+        :class="{ 
+          'premium-item': !hasAdvancedFeatures,
+          'has-access': hasAdvancedFeatures 
+        }"
+        @click="handleAnalyticsClick"
+      >
+        <div class="item-content">
+          <span class="item-icon">📊</span>
+          <span class="item-text">Аналитика</span>
+          <span v-if="!hasAdvancedFeatures" class="premium-badge pro-badge">
+            👑 Pro
+          </span>
+        </div>
+        <div v-if="!hasAdvancedFeatures" class="lock-overlay">
+          <span class="lock-icon">🔒</span>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <router-link to="/progress" class="sidebar-item">
+        <span class="item-icon">📈</span>
+        <span class="item-text">Прогресс</span>
+      </router-link>
+
+      <!-- Settings -->
+      <router-link to="/settings" class="sidebar-item">
+        <span class="item-icon">⚙️</span>
+        <span class="item-text">Настройки</span>
+      </router-link>
+    </nav>
+
+    <!-- Upgrade Section for Free/Start Users -->
+    <div v-if="recommendedUpgrade" class="upgrade-section">
+      <div class="upgrade-card">
+        <div class="upgrade-header">
+          <h4>{{ userStatus === 'free' ? 'Получите больше!' : 'Улучшите подписку!' }}</h4>
+          <span class="upgrade-badge">{{ recommendedUpgrade.plan.toUpperCase() }}</span>
+        </div>
+        <ul class="upgrade-benefits">
+          <li v-for="benefit in recommendedUpgrade.benefits" :key="benefit">
+            ✅ {{ benefit }}
+          </li>
+        </ul>
+        <button class="upgrade-btn" @click="showUpgradeModal = true">
+          {{ userStatus === 'free' ? 'Попробовать Start' : 'Обновить до Pro' }}
+        </button>
+      </div>
     </div>
+
+    <!-- Subscription Expiry Warning -->
+    <div v-if="isSubscriptionExpiringSoon" class="expiry-warning">
+      <div class="warning-content">
+        <span class="warning-icon">⚠️</span>
+        <div class="warning-text">
+          <strong>Подписка истекает</strong>
+          <span>через {{ daysUntilExpiry }} {{ getDaysText(daysUntilExpiry) }}</span>
+        </div>
+      </div>
+      <button class="renew-btn" @click="showRenewalModal = true">
+        Продлить
+      </button>
+    </div>
+
+    <!-- Logout -->
+    <div class="sidebar-footer">
+      <button class="logout-btn" @click="handleLogout">
+        <span class="item-icon">🚪</span>
+        <span class="item-text">Выйти</span>
+      </button>
+    </div>
+
+    <!-- Modals -->
+    <PaymentModal
+      v-if="showVocabularyPaywall"
+      :user-id="userId"
+      :visible="showVocabularyPaywall"
+      :default-plan="'start'"
+      :requested-topic-id="null"
+      @close="showVocabularyPaywall = false"
+      @unlocked="handleVocabularyUnlocked"
+    />
+
+    <PaymentModal
+      v-if="showAnalyticsPaywall"
+      :user-id="userId"
+      :visible="showAnalyticsPaywall"
+      :default-plan="'pro'"
+      :requested-topic-id="null"
+      @close="showAnalyticsPaywall = false"
+      @unlocked="handleAnalyticsUnlocked"
+    />
+
+    <PaymentModal
+      v-if="showUpgradeModal"
+      :user-id="userId"
+      :visible="showUpgradeModal"
+      :default-plan="recommendedUpgrade?.plan || 'start'"
+      :requested-topic-id="null"
+      @close="showUpgradeModal = false"
+      @unlocked="handleUpgradeUnlocked"
+    />
+
+    <PaymentModal
+      v-if="showRenewalModal"
+      :user-id="userId"
+      :visible="showRenewalModal"
+      :default-plan="userStatus"
+      :requested-topic-id="null"
+      @close="showRenewalModal = false"
+      @unlocked="handleRenewalUnlocked"
+    />
   </div>
 </template>
 
 <script>
-import { signOut, onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/firebase';
-import { mapState, mapMutations, mapGetters } from 'vuex';
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useStore } from 'vuex';
+import { useSubscription } from '@/composables/useSubscription';
+import { useAuth } from '@/composables/useAuth';
+import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
 export default {
-  name: 'SideBar',
-  props: {
-    isOpen: {
-      type: Boolean,
-      default: true
-    }
+  name: 'Sidebar',
+  components: {
+    PaymentModal
   },
-  data() {
-    return {
-      showLogoutModal: false,
-      links: [
-        { name: 'analytics', label: 'Аналитика' },
-        { name: 'goal', label: 'Цели' },
-        { name: 'diary', label: 'Дневник' },
-        { name: 'homework', label: 'Помощь с ДЗ' },
-        { name: 'homeworks', label: 'Домашние задания' },
-        { name: 'tests', label: 'Тесты' },
-        // ✅ UPDATED: Vocabulary now points to standalone VocabularyPage
-        { name: 'vocabulary', label: 'Словарь' },
-        { name: 'settings', label: 'Настройки' }
-      ],
-      isMobile: false
-    };
-  },
-  computed: {
-    ...mapState(['user']),
-    ...mapGetters('user', ['userStatus']),
-    planLabel() {
-      if (this.userStatus === 'pro') return 'Pro';
-      if (this.userStatus === 'start') return 'Start';
-      return 'Free';
-    }
-  },
-  mounted() {
-    this.checkMobile();
-    window.addEventListener('resize', this.checkMobile);
+  setup() {
+    const router = useRouter();
+    const store = useStore();
+    const { currentUser: user, logout } = useAuth();
     
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        this.setUser({
-          name: user.displayName || user.email?.split('@')[0],
-          email: user.email,
-          uid: user.uid
-        });
-      }
+    const {
+      userStatus,
+      hasVocabularyAccess,
+      hasAdvancedFeatures,
+      getSubscriptionBadge: subscriptionBadge,
+      isSubscriptionExpiringSoon,
+      getDaysUntilExpiry: daysUntilExpiry,
+      getRecommendedUpgrade: recommendedUpgrade,
+      updateSubscription
+    } = useSubscription();
+
+    // Modal states
+    const showVocabularyPaywall = ref(false);
+    const showAnalyticsPaywall = ref(false);
+    const showUpgradeModal = ref(false);
+    const showRenewalModal = ref(false);
+
+    // User ID for payment modal
+    const userId = computed(() => {
+      return user.value?.uid || 
+             localStorage.getItem('firebaseUserId') || 
+             localStorage.getItem('userId') || 
+             'demo_user';
     });
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.checkMobile);
-  },
-  methods: {
-    ...mapMutations(['setUser', 'clearUser']),
-    checkMobile() {
-      this.isMobile = window.innerWidth <= 768;
-    },
-    closeSidebar() {
-      this.$emit('toggle-sidebar', false);
-    },
-    closeSidebarOnMobile() {
-      if (this.isMobile) {
-        this.closeSidebar();
+
+    // Handle vocabulary access
+    const handleVocabularyClick = async () => {
+      if (hasVocabularyAccess.value) {
+        router.push({ name: 'VocabularyPage' });
+      } else {
+        showVocabularyPaywall.value = true;
       }
-    },
-    logout() {
-      signOut(auth)
-        .then(() => {
-          this.clearUser();
-          this.$toast.success('Вы успешно вышли из аккаунта.', {
-            duration: 3000,
-            position: 'top-center'
-          });
-          setTimeout(() => {
-            this.$router.push('/');
-          }, 1500);
-        })
-        .catch((err) => {
-          console.error('❌ Ошибка выхода:', err.message);
-          this.$toast.error('Ошибка при выходе: попробуйте ещё раз.');
-        });
-    },
-    getRoutePath(linkName) {
-      if (linkName === 'settings') {
-        return '/settings';
+    };
+
+    // Handle analytics access
+    const handleAnalyticsClick = async () => {
+      if (hasAdvancedFeatures.value) {
+        router.push({ name: 'AnalyticsPage' });
+      } else {
+        showAnalyticsPaywall.value = true;
       }
-      // ✅ All links go to profile routes (including vocabulary)
-      return `/profile/${linkName}`;
-    },
-    isActive(name) {
-      const path = this.$route.path;
-      
-      if (name === 'main') {
-        return path === '/profile/main' || path === '/profile' || path === '/profile/';
+    };
+
+    // Handle successful unlocks
+    const handleVocabularyUnlocked = async (planInfo) => {
+      console.log('✅ Vocabulary unlocked:', planInfo);
+      await updateSubscription(planInfo.plan);
+      showVocabularyPaywall.value = false;
+      router.push({ name: 'VocabularyPage' });
+    };
+
+    const handleAnalyticsUnlocked = async (planInfo) => {
+      console.log('✅ Analytics unlocked:', planInfo);
+      await updateSubscription(planInfo.plan);
+      showAnalyticsPaywall.value = false;
+      router.push({ name: 'AnalyticsPage' });
+    };
+
+    const handleUpgradeUnlocked = async (planInfo) => {
+      console.log('✅ Upgrade completed:', planInfo);
+      await updateSubscription(planInfo.plan);
+      showUpgradeModal.value = false;
+    };
+
+    const handleRenewalUnlocked = async (planInfo) => {
+      console.log('✅ Subscription renewed:', planInfo);
+      await updateSubscription(planInfo.plan);
+      showRenewalModal.value = false;
+    };
+
+    // Handle logout
+    const handleLogout = async () => {
+      try {
+        await logout();
+        router.push({ name: 'Login' });
+      } catch (error) {
+        console.error('❌ Logout error:', error);
       }
-      if (name === 'catalogue') {
-        return path === '/profile/catalogue';
-      }
-      if (name === 'analytics') {
-        return path === '/profile/analytics';
-      }
-      if (name === 'goal') {
-        return path === '/profile/goal';
-      }
-      if (name === 'diary') {
-        return path === '/profile/diary';
-      }
-      if (name === 'homework') {
-        return path === '/profile/homework';
-      }
-      if (name === 'homeworks') {
-        return path === '/profile/homeworks' || path.startsWith('/profile/homeworks/');
-      }
-      if (name === 'tests') {
-        return path === '/profile/tests' || path.startsWith('/profile/tests/');
-      }
-      // ✅ UPDATED: Vocabulary now checks for profile vocabulary route
-      if (name === 'vocabulary') {
-        return path === '/profile/vocabulary' || path.startsWith('/profile/vocabulary');
-      }
-      if (name === 'settings') {
-        return path === '/settings';
-      }
-      
-      return path.includes(`/profile/${name}`);
-    }
+    };
+
+    // Helper function for days text
+    const getDaysText = (days) => {
+      if (days === 1) return 'день';
+      if (days < 5) return 'дня';
+      return 'дней';
+    };
+
+    return {
+      // Data
+      user,
+      userId,
+      userStatus,
+      hasVocabularyAccess,
+      hasAdvancedFeatures,
+      subscriptionBadge,
+      isSubscriptionExpiringSoon,
+      daysUntilExpiry,
+      recommendedUpgrade,
+
+      // Modal states
+      showVocabularyPaywall,
+      showAnalyticsPaywall,
+      showUpgradeModal,
+      showRenewalModal,
+
+      // Methods
+      handleVocabularyClick,
+      handleAnalyticsClick,
+      handleVocabularyUnlocked,
+      handleAnalyticsUnlocked,
+      handleUpgradeUnlocked,
+      handleRenewalUnlocked,
+      handleLogout,
+      getDaysText
+    };
   }
 };
 </script>
 
 <style scoped>
-.sidebar-wrapper {
-  position: relative;
-}
-
 .sidebar {
-  width: 260px;
-  min-height: 100vh;
-  position: fixed;
-  left: 0;
-  top: 0;
-  background: #ffffff;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.06);
-  z-index: 1000;
-  transition: transform 0.3s ease-in-out;
-  color: #111827;
+  width: 280px;
+  height: 100vh;
+  background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+  border-right: 1px solid #e9ecef;
   display: flex;
   flex-direction: column;
-  transform: translateX(-100%);
+  overflow-y: auto;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
 }
 
-.sidebar.open {
-  transform: translateX(0);
-}
-
-.sidebar-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-}
-
-.sidebar-content {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-}
-
+/* User Info Section */
 .user-info {
-  padding: 60px 16px 20px;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 0.95rem;
-  color: #111827;
-  border-bottom: 1px solid #eee;
-  flex-shrink: 0;
+  gap: 1rem;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
 }
 
-.user-icon {
-  width: 36px;
-  height: 36px;
+.user-avatar {
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  background: #f3f4f6;
-  border: 2px solid #c7d2fe;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: white;
 }
 
 .user-details {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  margin-top: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .user-name {
-  font-weight: 700;
-  font-size: 0.95rem;
-  line-height: 1.2;
-  color: #1f2937;
-  word-break: break-word;
-  max-width: 160px;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.user-plan {
-  font-size: 0.7rem;
-  color: #6b7280;
-  margin-top: 2px;
-  background: #f3f4f6;
-  padding: 1px 6px;
+.subscription-status {
+  font-size: 0.75rem;
+}
+
+.status-badge {
+  padding: 0.25rem 0.5rem;
   border-radius: 4px;
-  font-weight: 600;
-  text-transform: uppercase;
+  font-weight: 500;
+  display: inline-block;
 }
 
-.nav-links {
+.status-badge.badge-pro {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.status-badge.badge-start {
+  background: rgba(59, 130, 246, 0.8);
+  color: white;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.status-badge.badge-free {
+  background: rgba(107, 114, 128, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+/* Navigation */
+.sidebar-nav {
   flex: 1;
-  padding: 16px 16px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  padding: 1rem 0;
 }
 
-.nav-links.scrollable {
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
-}
-
-.nav-links.scrollable::-webkit-scrollbar {
-  width: 4px;
-}
-
-.nav-links.scrollable::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.nav-links.scrollable::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.3);
-  border-radius: 2px;
-}
-
-.nav-links.scrollable::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.5);
-}
-
-.nav-item {
-  font-size: 0.85rem;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  color: #111827;
-  text-decoration: none;
-  background-color: #f9fafb;
+.sidebar-item {
   position: relative;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  display: block;
+  padding: 0.75rem 1.5rem;
+  color: #374151;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+
+.sidebar-item:hover,
+.sidebar-item.router-link-active {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+  border-left-color: #8b5cf6;
+}
+
+.item-content {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 40px;
+  gap: 0.75rem;
+  position: relative;
+  z-index: 2;
 }
 
-.nav-item:hover {
-  background: linear-gradient(to right, #ede9fe, #f0f5ff);
-  color: #4f46e5;
-  transform: translateX(4px);
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.12);
-}
-
-.nav-item .highlight {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 3px;
-  background: linear-gradient(to bottom, #6366f1, #8b5cf6);
-  border-radius: 1px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.nav-item.active .highlight,
-.nav-item:hover .highlight {
-  opacity: 1;
-}
-
-.nav-item.active {
-  background: linear-gradient(to right, #ede9fe, #f0f5ff);
-  color: #4f46e5;
-  transform: translateX(4px);
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
-}
-
-.bottom-logout {
-  padding: 16px;
-  border-top: 1px solid #e5e7eb;
+.item-icon {
+  font-size: 1.25rem;
+  width: 24px;
+  text-align: center;
   flex-shrink: 0;
 }
 
-.logout-button {
-  padding: 8px 14px;
-  background: #ef4444;
-  color: white;
-  border: none;
-  font-size: 0.8rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-family: 'Unbounded', sans-serif;
-  transition: all 0.2s ease;
-  width: 100%;
-  font-weight: 600;
-  min-height: 36px;
+.item-text {
+  font-weight: 500;
+  flex: 1;
 }
 
-.logout-button:hover {
-  background: #dc2626;
+/* Premium Features */
+.premium-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-badge {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+  animation: pulse-premium 2s ease-in-out infinite;
+}
+
+.pro-badge {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+}
+
+@keyframes pulse-premium {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.lock-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(
+    135deg, 
+    rgba(107, 114, 128, 0.05) 0%, 
+    rgba(156, 163, 175, 0.05) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0.75rem 1.5rem;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+.lock-icon {
+  font-size: 1rem;
+  color: #9ca3af;
+}
+
+.premium-item:hover .lock-overlay {
+  opacity: 1;
+  background: linear-gradient(
+    135deg, 
+    rgba(139, 92, 246, 0.1) 0%, 
+    rgba(168, 85, 247, 0.1) 100%
+  );
+}
+
+.premium-item:hover .item-text {
+  color: #8b5cf6;
+}
+
+.premium-item:hover .premium-badge {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.4);
+}
+
+/* Upgrade Section */
+.upgrade-section {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.upgrade-card {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.3s ease;
+}
+
+.upgrade-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+}
+
+.upgrade-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.upgrade-header h4 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.upgrade-badge {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.upgrade-benefits {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem 0;
+}
+
+.upgrade-benefits li {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.upgrade-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.upgrade-btn:hover {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
+}
+
+/* Expiry Warning */
+.expiry-warning {
+  background: linear-gradient(135deg, #fef3c7, #fed7aa);
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 1.5rem;
+  animation: pulse-warning 2s ease-in-out infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% { box-shadow: 0 0 0 rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2); }
+}
+
+.warning-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.warning-icon {
+  font-size: 1rem;
+}
+
+.warning-text {
+  flex: 1;
+  font-size: 0.75rem;
+}
+
+.warning-text strong {
+  display: block;
+  color: #92400e;
+  font-weight: 600;
+}
+
+.warning-text span {
+  color: #b45309;
+}
+
+.renew-btn {
+  width: 100%;
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.renew-btn:hover {
+  background: #d97706;
   transform: translateY(-1px);
 }
 
-.logout-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
+/* Footer */
+.sidebar-footer {
+  padding: 1rem 0;
+  border-top: 1px solid #e9ecef;
 }
 
-.logout-modal-content {
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  text-align: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  font-family: 'Unbounded', sans-serif;
-  max-width: 380px;
-  width: 90%;
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-.logout-actions {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 20px;
-}
-
-.confirm-btn,
-.cancel-btn {
-  padding: 10px 20px;
-  font-size: 0.9rem;
+.logout-btn {
+  width: 100%;
+  background: transparent;
   border: none;
-  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  color: #6b7280;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
 }
 
-.confirm-btn {
-  background: #ef4444;
-  color: white;
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
 }
 
-.cancel-btn {
-  background: #e5e7eb;
-  color: #1f2937;
-}
-
-.confirm-btn:hover {
-  background: #dc2626;
-}
-
-.cancel-btn:hover {
-  background: #d1d5db;
-}
-
-/* Desktop: Always show sidebar */
-@media (min-width: 769px) {
-  .sidebar {
-    transform: translateX(0) !important;
-  }
-  
-  .sidebar-overlay {
-    display: none !important;
-  }
-}
-
-/* Mobile: Hide sidebar by default */
+/* Responsive */
 @media (max-width: 768px) {
   .sidebar {
-    z-index: 1001;
+    width: 100%;
+    height: auto;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    flex-direction: row;
+    overflow-x: auto;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
   }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
+  
+  .user-info {
+    display: none;
   }
-  to {
-    opacity: 1;
-    transform: scale(1);
+  
+  .sidebar-nav {
+    display: flex;
+    flex-direction: row;
+    padding: 0.5rem 0;
+    flex: 1;
+  }
+  
+  .sidebar-item {
+    flex: 1;
+    padding: 0.5rem;
+    text-align: center;
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    min-width: 80px;
+  }
+  
+  .sidebar-item:hover,
+  .sidebar-item.router-link-active {
+    border-left: none;
+    border-bottom-color: #8b5cf6;
+  }
+  
+  .item-content {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .item-text {
+    font-size: 0.7rem;
+  }
+  
+  .item-icon {
+    font-size: 1rem;
+  }
+  
+  .premium-badge {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    padding: 0.1rem 0.25rem;
+    font-size: 0.6rem;
+  }
+  
+  .upgrade-section,
+  .expiry-warning,
+  .sidebar-footer {
+    display: none;
   }
 }
 </style>

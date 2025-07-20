@@ -58,6 +58,72 @@ const routes = [
       next();
     }
   },
+
+  // ✅ ENHANCED VOCABULARY ROUTE WITH SUBSCRIPTION PROTECTION
+  {
+    path: '/vocabulary',
+    name: 'VocabularyPage',
+    component: VocabularyPage,
+    meta: { 
+      requiresAuth: true,
+      requiresSubscription: true,
+      subscriptionLevel: 'start', // Minimum required level
+      title: 'Словарь',
+      description: 'Персональный словарь с изученными словами'
+    },
+    beforeEnter: async (to, from, next) => {
+      console.log('🔍 Vocabulary route guard checking access...');
+      
+      // Check authentication first
+      const isLoggedIn = store.getters.isLoggedIn;
+      if (!isLoggedIn) {
+        console.warn('❌ Vocabulary requires authentication');
+        return next({ 
+          name: 'HomePage',
+          query: { 
+            redirect: to.fullPath,
+            LoginRequired: 'true',
+            message: 'Для доступа к словарю необходимо войти в систему'
+          }
+        });
+      }
+
+      // Check subscription status
+      const userStatus = store.getters['user/userStatus'];
+      const hasVocabularyAccess = store.getters['user/hasVocabularyAccess'] || 
+                                  ['start', 'pro', 'premium'].includes(userStatus);
+      
+      console.log(`🔍 Vocabulary access check: status=${userStatus}, hasAccess=${hasVocabularyAccess}`);
+      
+      if (!hasVocabularyAccess) {
+        console.warn('❌ Vocabulary requires subscription');
+        
+        // Store the intended destination for after subscription
+        sessionStorage.setItem('intendedRoute', JSON.stringify({
+          path: to.path,
+          name: to.name,
+          params: to.params,
+          query: to.query
+        }));
+        
+        // Redirect to payment page with vocabulary context
+        return next({ 
+          name: 'PaymePayment',
+          params: { plan: 'start' },
+          query: { 
+            feature: 'vocabulary',
+            requiredPlan: 'start',
+            returnTo: to.path,
+            message: 'Словарь доступен с подпиской Start'
+          }
+        });
+      }
+      
+      console.log('✅ Vocabulary access granted');
+      next();
+    }
+  },
+
   {
     path: '/profile',
     component: ProfilePage,
@@ -80,7 +146,37 @@ const routes = [
         path: 'analytics', 
         name: 'UserAnalyticsPanel', 
         component: UserAnalyticsPanel,
-        meta: { title: 'Аналитика' }
+        meta: { 
+          title: 'Аналитика',
+          requiresSubscription: true,
+          subscriptionLevel: 'pro'
+        },
+        beforeEnter: async (to, from, next) => {
+          const userStatus = store.getters['user/userStatus'];
+          const hasProAccess = ['pro', 'premium'].includes(userStatus);
+          
+          if (!hasProAccess) {
+            sessionStorage.setItem('intendedRoute', JSON.stringify({
+              path: to.path,
+              name: to.name,
+              params: to.params,
+              query: to.query
+            }));
+            
+            return next({ 
+              name: 'PaymePayment',
+              params: { plan: 'pro' },
+              query: { 
+                feature: 'analytics',
+                requiredPlan: 'pro',
+                returnTo: to.path,
+                message: 'Продвинутая аналитика доступна с подпиской Pro'
+              }
+            });
+          }
+          
+          next();
+        }
       },
       { 
         path: 'goal', 
@@ -186,12 +282,10 @@ const routes = [
         meta: { title: 'Прохождение теста' }
       },
       
-      // ✅ VOCABULARY PAGE - Under profile
+      // ✅ LEGACY VOCABULARY REDIRECT - Under profile (deprecated)
       { 
         path: 'vocabulary', 
-        name: 'VocabularyPage', 
-        component: VocabularyPage,
-        meta: { title: 'Словарь' }
+        redirect: '/vocabulary'
       }
     ],
   },
@@ -204,7 +298,10 @@ const routes = [
     props: route => ({
       plan: route.params.plan,
       userId: route.query.userId,
-      returnTo: route.query.returnTo
+      returnTo: route.query.returnTo,
+      feature: route.query.feature,
+      requiredPlan: route.query.requiredPlan,
+      message: route.query.message
     }),
     meta: { 
       title: 'Оплата',
@@ -219,6 +316,19 @@ const routes = [
         return next({ 
           name: 'SettingsPage',
           query: { error: 'invalid_plan' }
+        });
+      }
+      
+      const isLoggedIn = store.getters.isLoggedIn;
+      if (!isLoggedIn) {
+        console.warn('❌ Payment requires authentication');
+        return next({ 
+          name: 'HomePage',
+          query: { 
+            redirect: to.fullPath,
+            LoginRequired: 'true',
+            message: 'Для оплаты необходимо войти в систему'
+          }
         });
       }
       
@@ -256,24 +366,55 @@ const routes = [
   {
     path: '/payment-success',
     name: 'PaymentSuccess',
-    beforeEnter: (to, from, next) => {
+    beforeEnter: async (to, from, next) => {
+      console.log('✅ Payment success, updating user status...');
       
       // Update user subscription status
       if (store.getters['user/isAuthenticated']) {
-        store.dispatch('user/checkPendingPayments').catch(err => {
+        try {
+          await store.dispatch('user/checkPendingPayments');
+          
+          // If there's a plan in query, update immediately
+          if (to.query.plan) {
+            await store.dispatch('user/updateUserStatus', to.query.plan);
+          }
+        } catch (err) {
           console.warn('⚠️ Failed to update user status:', err);
-        });
+        }
+      }
+      
+      // Check for intended route to redirect to
+      const intendedRoute = sessionStorage.getItem('intendedRoute');
+      if (intendedRoute) {
+        try {
+          const route = JSON.parse(intendedRoute);
+          sessionStorage.removeItem('intendedRoute');
+          
+          console.log('📍 Redirecting to intended route after payment:', route);
+          
+          // Small delay to ensure status is updated
+          setTimeout(() => {
+            next(route);
+          }, 1000);
+          return;
+        } catch (err) {
+          console.error('❌ Error parsing intended route:', err);
+        }
       }
       
       // Check if we should show modal or page
       if (to.query.showModal === 'true' || !to.query.noModal) {
         // Store transaction data for modal
-        store.dispatch('payment/showSuccessModal', {
-          transactionId: to.query.transaction || to.query.id,
-          plan: to.query.plan,
-          amount: to.query.amount,
-          source: to.query.source || 'payme'
-        });
+        if (store.dispatch) {
+          store.dispatch('payment/showSuccessModal', {
+            transactionId: to.query.transaction || to.query.id,
+            plan: to.query.plan,
+            amount: to.query.amount,
+            source: to.query.source || 'payme'
+          }).catch(() => {
+            // Ignore if payment module doesn't exist
+          });
+        }
         
         // Redirect to main page (modal will show there)
         next({ name: 'MainPage' });
@@ -297,6 +438,8 @@ const routes = [
       title: 'Payment Failed'
     },
     beforeEnter: (to, from, next) => {
+      // Clear any intended route on payment failure
+      sessionStorage.removeItem('intendedRoute');
       next();
     }
   },
@@ -316,6 +459,7 @@ const routes = [
     path: '/payme/return/success',
     name: 'PaymeReturnSuccess',
     beforeEnter: (to, from, next) => {
+      console.log('✅ PayMe success return, query:', to.query);
       
       // Extract transaction info from PayMe response
       const transactionId = to.query.transaction || to.query.id;
@@ -333,6 +477,7 @@ const routes = [
     path: '/payme/return/failure',
     name: 'PaymeReturnFailure', 
     beforeEnter: (to, from, next) => {
+      console.log('❌ PayMe failure return, query:', to.query);
       
       // Extract error info from PayMe response
       const transactionId = to.query.transaction || to.query.id;
@@ -499,8 +644,9 @@ const router = createRouter({
   },
 });
 
-// ✅ ENHANCED Route Guard with Payment Integration
+// ✅ ENHANCED Route Guard with Subscription Integration
 router.beforeEach(async (to, from, next) => {
+  console.log(`🔄 Router guard: ${from.path} → ${to.path}`);
   
   // Public routes that don't require authentication
   const publicRoutes = ['HomePage', 'NotFound', 'PaymentFailed', 'PaymeCheckout', 'PaymentSuccess', 'PaymentReturn'];
@@ -529,6 +675,42 @@ router.beforeEach(async (to, from, next) => {
         LoginRequired: 'true'
       }
     });
+  }
+
+  // ✅ SUBSCRIPTION CHECKS FOR PROTECTED ROUTES
+  if (to.meta.requiresSubscription && isLoggedIn) {
+    const userStatus = store.getters['user/userStatus'];
+    const requiredLevel = to.meta.subscriptionLevel || 'start';
+    
+    console.log(`🔍 Subscription check: route=${to.name}, required=${requiredLevel}, current=${userStatus}`);
+    
+    // Check subscription level
+    const hasAccess = checkSubscriptionAccess(userStatus, requiredLevel);
+    
+    if (!hasAccess) {
+      console.log('❌ Insufficient subscription level');
+      
+      // Store the intended destination
+      sessionStorage.setItem('intendedRoute', JSON.stringify({
+        path: to.path,
+        name: to.name,
+        params: to.params,
+        query: to.query
+      }));
+      
+      // Redirect to payment page
+      return next({ 
+        name: 'PaymePayment',
+        params: { plan: requiredLevel },
+        query: { 
+          requiredPlan: requiredLevel,
+          returnTo: to.path,
+          feature: to.name?.toLowerCase()?.replace('page', '') || 'feature'
+        } 
+      });
+    }
+    
+    console.log('✅ Subscription access granted');
   }
 
   // ✅ PAYMENT ROUTE SPECIFIC CHECKS
@@ -574,15 +756,6 @@ router.beforeEach(async (to, from, next) => {
     });
   }
 
-  // ✅ ENHANCED LOGGING for specific route types
-  if (to.name && to.name.includes('Homework') && to.params.id) {
-  
-  }
-
-  if (to.name && (to.name.includes('Payme') || to.name.includes('Payment'))) {
-  
-  }
-
   // ✅ SUCCESS: Allow navigation
   next();
 });
@@ -594,23 +767,19 @@ router.afterEach((to, from) => {
   document.title = to.meta.title ? `${to.meta.title} - ACED` : baseTitle;
   
   // Enhanced logging for specific route types
-  if (to.name && to.name.includes('Homework')) {
- 
+  if (to.name && (to.name.includes('Vocabulary') || to.name.includes('Analytics'))) {
+    console.log(`📚 Premium feature accessed: ${to.name}`);
   } 
   else if (to.name && (to.name.includes('Payme') || to.name.includes('Payment'))) {
-   
-  } else {
+    console.log(`💳 Payment flow: ${to.name}`);
   }
   
   // Log params if any
   if (Object.keys(to.params).length > 0) {
+    console.log('📋 Route params:', to.params);
   }
   
-  // Log query params if any
-  if (Object.keys(to.query).length > 0) {
-  }
-  
-  // ✅ AUTO-CHECK PAYMENTS on navigation (for authenticated users)
+  // ✅ AUTO-CHECK SUBSCRIPTION STATUS on navigation (for authenticated users)
   if (store.getters.isLoggedIn && !to.path.includes('/pay')) {
     // Check for pending payments periodically
     const lastCheck = store.getters['user/lastPaymentCheck'];
@@ -651,7 +820,7 @@ router.onError((err) => {
 
 // ✅ PAYMENT NAVIGATION HELPERS (can be imported and used in components)
 export const navigateToPayment = (plan = 'start', options = {}) => {
-  const { userId, returnTo, router: routerInstance } = options;
+  const { userId, returnTo, router: routerInstance, feature } = options;
   
   if (!['start', 'pro'].includes(plan)) {
     console.error('❌ Invalid payment plan:', plan);
@@ -661,6 +830,7 @@ export const navigateToPayment = (plan = 'start', options = {}) => {
   const query = {};
   if (userId) query.userId = userId;
   if (returnTo) query.returnTo = returnTo;
+  if (feature) query.feature = feature;
   
   const route = {
     name: 'PaymePayment',
@@ -668,6 +838,7 @@ export const navigateToPayment = (plan = 'start', options = {}) => {
     ...(Object.keys(query).length > 0 && { query })
   };
   
+  console.log('💳 Navigating to payment:', route);
   
   if (routerInstance) {
     return routerInstance.push(route);
@@ -684,6 +855,7 @@ export const navigateToSettings = (options = {}) => {
     ...(returnTo && { query: { returnTo } })
   };
   
+  console.log('⚙️ Navigating to settings:', route);
   
   if (routerInstance) {
     return routerInstance.push(route);
@@ -693,8 +865,7 @@ export const navigateToSettings = (options = {}) => {
 };
 
 // ✅ SUBSCRIPTION CHECK HELPER
-export const checkSubscriptionAccess = (requiredPlan = 'start') => {
-  const userStatus = store.getters['user/userStatus'];
+export const checkSubscriptionAccess = (userStatus, requiredPlan = 'start') => {
   const planHierarchy = {
     free: 0,
     start: 1,
@@ -706,6 +877,47 @@ export const checkSubscriptionAccess = (requiredPlan = 'start') => {
   const requiredLevel = planHierarchy[requiredPlan] || 1;
   
   return userLevel >= requiredLevel;
+};
+
+// ✅ NAVIGATION TO INTENDED ROUTE HELPER
+export const navigateToIntendedRoute = (router) => {
+  try {
+    const intendedRoute = sessionStorage.getItem('intendedRoute');
+    if (intendedRoute) {
+      const route = JSON.parse(intendedRoute);
+      sessionStorage.removeItem('intendedRoute');
+      
+      console.log('📍 Navigating to intended route:', route);
+      router.push(route);
+      return true;
+    }
+  } catch (error) {
+    console.error('❌ Error navigating to intended route:', error);
+  }
+  return false;
+};
+
+// ✅ VOCABULARY ACCESS HELPER
+export const checkVocabularyAccess = () => {
+  const userStatus = store.getters['user/userStatus'];
+  return ['start', 'pro', 'premium'].includes(userStatus);
+};
+
+// ✅ FEATURE ACCESS HELPERS
+export const getFeatureAccess = (feature) => {
+  const userStatus = store.getters['user/userStatus'];
+  
+  const featureRequirements = {
+    vocabulary: 'start',
+    analytics: 'pro',
+    advanced_lessons: 'start',
+    unlimited_practice: 'pro',
+    priority_support: 'start',
+    custom_courses: 'pro'
+  };
+  
+  const required = featureRequirements[feature] || 'start';
+  return checkSubscriptionAccess(userStatus, required);
 };
 
 export default router;

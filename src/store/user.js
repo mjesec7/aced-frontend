@@ -1,4 +1,4 @@
-// src/store/user.js - ENHANCED USER STORE WITH MONTHLY USAGE TRACKING
+// src/store/user.js - COMPLETE USER STORE WITH SUBSCRIPTION MANAGEMENT
 import { checkPaymentStatus } from '@/api/payments';
 import { getUserUsage, resetMonthlyUsage } from '@/services/GPTService';
 
@@ -21,12 +21,40 @@ const state = () => ({
     free: { messages: 50, images: 5 },
     start: { messages: -1, images: 20 },
     pro: { messages: -1, images: -1 }
+  },
+
+  // Enhanced subscription tracking
+  subscriptionExpiry: null,
+  subscriptionStartDate: null,
+  isTrialUser: false,
+  trialDaysRemaining: 0,
+  
+  // Feature access cache
+  featureAccess: {
+    vocabulary: false,
+    analytics: false,
+    unlimited_lessons: false,
+    priority_support: false,
+    custom_courses: false,
+    offline_mode: false
+  },
+
+  // User preferences
+  preferences: {
+    language: 'ru',
+    notifications: true,
+    emailUpdates: false,
+    theme: 'light'
   }
 });
 
 const mutations = {
   setUser(state, user) {
     state.currentUser = user;
+    // Store in localStorage for persistence
+    if (user) {
+      localStorage.setItem('currentUser', JSON.stringify(user));
+    }
   },
   
   clearUser(state) {
@@ -38,15 +66,58 @@ const mutations = {
     state.currentMonthUsage = { messages: 0, images: 0, lastUpdated: null };
     state.usageHistory = [];
     state.lastUsageCheck = null;
+    state.subscriptionExpiry = null;
+    state.subscriptionStartDate = null;
+    state.isTrialUser = false;
+    state.trialDaysRemaining = 0;
+    state.featureAccess = {
+      vocabulary: false,
+      analytics: false,
+      unlimited_lessons: false,
+      priority_support: false,
+      custom_courses: false,
+      offline_mode: false
+    };
+    
+    // Clear localStorage
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('userStatus');
+    localStorage.removeItem('subscriptionDetails');
   },
   
   setUserStatus(state, status) {
     const oldStatus = state.userStatus;
     state.userStatus = status;
+    
+    // Store in localStorage
+    localStorage.setItem('userStatus', status);
+    
+    // Update feature access when status changes
+    updateFeatureAccess(state);
+    
+    console.log(`🔄 User status updated: ${oldStatus} → ${status}`);
   },
   
   setSubscriptionDetails(state, details) {
     state.subscriptionDetails = details;
+    
+    if (details) {
+      if (details.expiryDate) {
+        state.subscriptionExpiry = details.expiryDate;
+      }
+      if (details.startDate) {
+        state.subscriptionStartDate = details.startDate;
+      }
+      if (details.isTrial !== undefined) {
+        state.isTrialUser = details.isTrial;
+      }
+      if (details.trialDaysRemaining !== undefined) {
+        state.trialDaysRemaining = details.trialDaysRemaining;
+      }
+      
+      // Store in localStorage
+      localStorage.setItem('subscriptionDetails', JSON.stringify(details));
+    }
   },
   
   addPaymentRecord(state, payment) {
@@ -64,6 +135,7 @@ const mutations = {
   updateUserProfile(state, profileData) {
     if (state.currentUser) {
       state.currentUser = { ...state.currentUser, ...profileData };
+      localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
     }
   },
   
@@ -99,17 +171,92 @@ const mutations = {
   
   setUsageLimits(state, limits) {
     state.usageLimits = { ...state.usageLimits, ...limits };
+  },
+
+  // Feature access mutations
+  setFeatureAccess(state, { feature, hasAccess }) {
+    state.featureAccess[feature] = hasAccess;
+  },
+
+  updateAllFeatureAccess(state) {
+    updateFeatureAccess(state);
+  },
+
+  // Preferences mutations
+  setPreferences(state, preferences) {
+    state.preferences = { ...state.preferences, ...preferences };
+  },
+
+  updatePreference(state, { key, value }) {
+    state.preferences[key] = value;
+  },
+
+  // Subscription expiry mutations
+  setSubscriptionExpiry(state, expiry) {
+    state.subscriptionExpiry = expiry;
+    if (expiry) {
+      localStorage.setItem('subscriptionExpiry', expiry);
+    }
+  },
+
+  setTrialInfo(state, { isTrialUser, trialDaysRemaining }) {
+    state.isTrialUser = isTrialUser;
+    state.trialDaysRemaining = trialDaysRemaining;
   }
+};
+
+// Helper function to update feature access based on user status
+const updateFeatureAccess = (state) => {
+  const status = state.userStatus;
+  
+  const featureMap = {
+    free: {
+      vocabulary: false,
+      analytics: false,
+      unlimited_lessons: false,
+      priority_support: false,
+      custom_courses: false,
+      offline_mode: false
+    },
+    start: {
+      vocabulary: true,
+      analytics: false,
+      unlimited_lessons: false,
+      priority_support: true,
+      custom_courses: false,
+      offline_mode: true
+    },
+    pro: {
+      vocabulary: true,
+      analytics: true,
+      unlimited_lessons: true,
+      priority_support: true,
+      custom_courses: true,
+      offline_mode: true
+    },
+    premium: {
+      vocabulary: true,
+      analytics: true,
+      unlimited_lessons: true,
+      priority_support: true,
+      custom_courses: true,
+      offline_mode: true
+    }
+  };
+  
+  state.featureAccess = { ...featureMap[status] || featureMap.free };
 };
 
 const actions = {
   // ✅ ENHANCED: Save user with better error handling and subscription sync
   async saveUserToBackend({ commit, dispatch }, { userData, token }) {
     try {
+      console.log('💾 Saving user to backend...');
 
       const payload = {
         token,
         name: userData.displayName || userData.name || 'Unnamed User',
+        email: userData.email || '',
         subscriptionPlan: 'free'
       };
 
@@ -141,9 +288,13 @@ const actions = {
       }
       
       // Load detailed subscription status and usage data
-      await dispatch('loadUserStatus');
-      await dispatch('loadCurrentMonthUsage');
+      await Promise.all([
+        dispatch('loadUserStatus'),
+        dispatch('loadCurrentMonthUsage'),
+        dispatch('checkMonthlyReset')
+      ]);
       
+      console.log('✅ User saved successfully');
       return { success: true, user: savedUser };
 
     } catch (err) {
@@ -167,6 +318,7 @@ const actions = {
         return { success: false, error: 'No user ID' };
       }
 
+      console.log('🔍 Loading user status for:', userId);
 
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/${userId}/status`);
       
@@ -182,18 +334,26 @@ const actions = {
       const data = await res.json();
       
       // Update user status and subscription details
-      commit('setUserStatus', data.status || data.subscriptionPlan || 'free');
+      const status = data.status || data.subscriptionPlan || 'free';
+      commit('setUserStatus', status);
       
       if (data.subscriptionDetails) {
         commit('setSubscriptionDetails', data.subscriptionDetails);
       }
       
+      // Update trial information if available
+      if (data.isTrialUser !== undefined || data.trialDaysRemaining !== undefined) {
+        commit('setTrialInfo', {
+          isTrialUser: data.isTrialUser || false,
+          trialDaysRemaining: data.trialDaysRemaining || 0
+        });
+      }
+      
       // Update last check timestamp
       commit('updateLastPaymentCheck', Date.now());
       
-     
-
-      return { success: true, status: data.status || data.subscriptionPlan };
+      console.log('✅ User status loaded:', status);
+      return { success: true, status };
 
     } catch (err) {
       console.error('❌ Failed to load user status:', err);
@@ -215,6 +375,7 @@ const actions = {
         return { success: false, error: 'No user ID' };
       }
 
+      console.log('📊 Loading current month usage...');
 
       const usageInfo = await getUserUsage();
       
@@ -229,8 +390,7 @@ const actions = {
         
         commit('updateLastUsageCheck', Date.now());
         
-      
-        
+        console.log('✅ Usage data loaded:', usageInfo.usage);
         return { success: true, usage: usageInfo.usage };
       } else {
         console.warn('⚠️ Failed to load usage data:', usageInfo.error);
@@ -271,6 +431,7 @@ const actions = {
       }
       
       if (shouldReset) {
+        console.log('🔄 Monthly usage reset triggered');
         
         // Reset local state
         commit('resetCurrentMonthUsage');
@@ -305,7 +466,7 @@ const actions = {
         images: hasImage ? 1 : 0 
       });
       
-     
+      console.log('📊 Usage updated:', state.currentMonthUsage);
       return { success: true };
 
     } catch (err) {
@@ -381,6 +542,7 @@ const actions = {
         return { success: true, message: 'Recently checked' };
       }
 
+      console.log('🔍 Checking pending payments...');
 
       // Get recent transactions from local storage or API
       const pendingTransactionIds = JSON.parse(
@@ -408,6 +570,7 @@ const actions = {
 
             // If payment completed, update user status
             if (transaction.state === 2) { // Completed
+              console.log('✅ Payment completed, updating status');
               
               // Determine plan based on amount
               let newStatus = 'free';
@@ -437,8 +600,10 @@ const actions = {
 
       // If status changed, reload full user status and usage limits
       if (statusChanged) {
-        await dispatch('loadUserStatus');
-        await dispatch('loadCurrentMonthUsage');
+        await Promise.all([
+          dispatch('loadUserStatus'),
+          dispatch('loadCurrentMonthUsage')
+        ]);
       }
 
       return { 
@@ -475,12 +640,63 @@ const actions = {
         pendingPayments.push(transactionId);
         localStorage.setItem(`pendingPayments_${userId}`, JSON.stringify(pendingPayments));
         
+        console.log('📝 Added pending payment:', transactionId);
       }
 
       return { success: true };
 
     } catch (err) {
       console.error('❌ Failed to add pending payment:', err);
+      return { success: false, error: err.message };
+    }
+  },
+
+  // ✅ NEW: Update user status manually (for subscription upgrades)
+  async updateUserStatus({ commit, dispatch }, newStatus) {
+    try {
+      const validStatuses = ['free', 'start', 'pro', 'premium'];
+      if (!validStatuses.includes(newStatus)) {
+        throw new Error(`Invalid status: ${newStatus}`);
+      }
+      
+      commit('setUserStatus', newStatus);
+      
+      // Reload usage data with new status
+      await dispatch('loadCurrentMonthUsage');
+      
+      console.log('✅ User status manually updated to:', newStatus);
+      return { success: true };
+      
+    } catch (err) {
+      console.error('❌ Failed to update user status:', err);
+      return { success: false, error: err.message };
+    }
+  },
+
+  // ✅ NEW: Upgrade subscription
+  async upgradeSubscription({ commit, dispatch }, { plan, expiry = null }) {
+    try {
+      const validPlans = ['start', 'pro', 'premium'];
+      if (!validPlans.includes(plan)) {
+        throw new Error(`Invalid plan: ${plan}`);
+      }
+      
+      // Update status
+      commit('setUserStatus', plan);
+      
+      // Set expiry if provided
+      if (expiry) {
+        commit('setSubscriptionExpiry', expiry);
+      }
+      
+      // Reload usage limits
+      await dispatch('loadCurrentMonthUsage');
+      
+      console.log('✅ Subscription upgraded to:', plan);
+      return { success: true };
+      
+    } catch (err) {
+      console.error('❌ Failed to upgrade subscription:', err);
       return { success: false, error: err.message };
     }
   },
@@ -563,13 +779,84 @@ const actions = {
     }
   },
 
+  // ✅ NEW: Update user preferences
+  async updatePreferences({ commit, state }, preferences) {
+    try {
+      commit('setPreferences', preferences);
+      
+      // Save to localStorage
+      localStorage.setItem('userPreferences', JSON.stringify(state.preferences));
+      
+      // Optionally save to backend
+      const userId = state.currentUser?.firebaseId || localStorage.getItem('userId');
+      if (userId) {
+        try {
+          await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/${userId}/preferences`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(preferences)
+          });
+        } catch (err) {
+          console.warn('⚠️ Failed to save preferences to backend:', err);
+        }
+      }
+      
+      return { success: true };
+      
+    } catch (err) {
+      console.error('❌ Failed to update preferences:', err);
+      return { success: false, error: err.message };
+    }
+  },
+
+  // ✅ NEW: Check subscription expiry
+  async checkSubscriptionExpiry({ commit, state, dispatch }) {
+    try {
+      if (!state.subscriptionExpiry) return { active: true };
+      
+      const now = new Date();
+      const expiry = new Date(state.subscriptionExpiry);
+      
+      if (now > expiry) {
+        // Subscription has expired
+        console.log('⏰ Subscription has expired, reverting to free');
+        
+        commit('setUserStatus', 'free');
+        commit('setSubscriptionExpiry', null);
+        
+        // Reload usage limits
+        await dispatch('loadCurrentMonthUsage');
+        
+        return { active: false, expired: true };
+      }
+      
+      // Check if expiring soon (within 7 days)
+      const daysUntilExpiry = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+      const expiringSoon = daysUntilExpiry <= 7 && daysUntilExpiry > 0;
+      
+      return { 
+        active: true, 
+        expired: false, 
+        expiringSoon,
+        daysUntilExpiry: Math.max(0, daysUntilExpiry)
+      };
+      
+    } catch (err) {
+      console.error('❌ Error checking subscription expiry:', err);
+      return { active: false, error: err.message };
+    }
+  },
+
   // ✅ ENHANCED: Initialize user on app start
   async initializeUser({ commit, dispatch }) {
     try {
+      console.log('🚀 Initializing user state...');
       
       // Check for stored user data
       const storedUserId = localStorage.getItem('userId');
       const storedUser = localStorage.getItem('currentUser');
+      const storedStatus = localStorage.getItem('userStatus');
+      const storedPreferences = localStorage.getItem('userPreferences');
       
       if (storedUser) {
         try {
@@ -581,14 +868,31 @@ const actions = {
         }
       }
       
-      // Load current status and usage if we have a user ID
-      if (storedUserId) {
-        await dispatch('loadUserStatus');
-        await dispatch('loadCurrentMonthUsage');
-        await dispatch('checkMonthlyReset');
-        await dispatch('checkPendingPayments');
+      if (storedStatus) {
+        commit('setUserStatus', storedStatus);
       }
       
+      if (storedPreferences) {
+        try {
+          const preferences = JSON.parse(storedPreferences);
+          commit('setPreferences', preferences);
+        } catch (err) {
+          console.warn('⚠️ Failed to parse stored preferences');
+        }
+      }
+      
+      // Load current status and usage if we have a user ID
+      if (storedUserId) {
+        await Promise.all([
+          dispatch('loadUserStatus'),
+          dispatch('loadCurrentMonthUsage'),
+          dispatch('checkMonthlyReset'),
+          dispatch('checkPendingPayments'),
+          dispatch('checkSubscriptionExpiry')
+        ]);
+      }
+      
+      console.log('✅ User initialization complete');
       return { success: true };
 
     } catch (err) {
@@ -600,6 +904,7 @@ const actions = {
   // ✅ ENHANCED: Clear user data on logout
   async logout({ commit }) {
     try {
+      console.log('👋 Logging out user...');
       
       // Clear store
       commit('clearUser');
@@ -609,6 +914,10 @@ const actions = {
       localStorage.removeItem('firebaseUserId');
       localStorage.removeItem('currentUser');
       localStorage.removeItem('token');
+      localStorage.removeItem('userStatus');
+      localStorage.removeItem('subscriptionDetails');
+      localStorage.removeItem('subscriptionExpiry');
+      localStorage.removeItem('userPreferences');
       
       // Clear pending payments for all users (optional)
       const keys = Object.keys(localStorage);
@@ -618,6 +927,7 @@ const actions = {
         }
       });
       
+      console.log('✅ Logout complete');
       return { success: true };
 
     } catch (err) {
@@ -647,6 +957,22 @@ const getters = {
     ['start', 'pro', 'premium'].includes(state.userStatus),
   isProUser: (state) => 
     ['pro', 'premium'].includes(state.userStatus),
+  isFreeUser: (state) => 
+    state.userStatus === 'free',
+  
+  // Feature access getters
+  hasVocabularyAccess: (state) => 
+    state.featureAccess.vocabulary || ['start', 'pro', 'premium'].includes(state.userStatus),
+  hasAdvancedFeatures: (state) => 
+    state.featureAccess.analytics || ['pro', 'premium'].includes(state.userStatus),
+  hasUnlimitedLessons: (state) => 
+    state.featureAccess.unlimited_lessons || ['pro', 'premium'].includes(state.userStatus),
+  hasPrioritySupport: (state) => 
+    state.featureAccess.priority_support || ['start', 'pro', 'premium'].includes(state.userStatus),
+  hasCustomCourses: (state) => 
+    state.featureAccess.custom_courses || ['pro', 'premium'].includes(state.userStatus),
+  hasOfflineMode: (state) => 
+    state.featureAccess.offline_mode || ['start', 'pro', 'premium'].includes(state.userStatus),
   
   // Usage getters
   currentMonthUsage: (state) => state.currentMonthUsage,
@@ -732,8 +1058,32 @@ const getters = {
     ['start', 'pro', 'premium'].includes(state.userStatus),
   
   // Get subscription expiry (if available)
-  subscriptionExpiry: (state) => 
-    state.subscriptionDetails?.expiryDate || null,
+  subscriptionExpiry: (state) => state.subscriptionExpiry,
+  
+  // Trial status
+  isTrialUser: (state) => state.isTrialUser,
+  trialDaysRemaining: (state) => state.trialDaysRemaining,
+  
+  // Subscription expiry checks
+  isSubscriptionExpiringSoon: (state) => {
+    if (!state.subscriptionExpiry || state.userStatus === 'free') return false;
+    
+    const now = new Date();
+    const expiry = new Date(state.subscriptionExpiry);
+    const daysUntilExpiry = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+    
+    return daysUntilExpiry <= 7 && daysUntilExpiry > 0;
+  },
+  
+  daysUntilExpiry: (state) => {
+    if (!state.subscriptionExpiry || state.userStatus === 'free') return null;
+    
+    const now = new Date();
+    const expiry = new Date(state.subscriptionExpiry);
+    const daysUntilExpiry = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+    
+    return daysUntilExpiry > 0 ? daysUntilExpiry : 0;
+  },
   
   // Check if user can access specific content
   canAccessContent: (state) => (contentType = 'basic') => {
@@ -745,6 +1095,11 @@ const getters = {
     };
     
     return access[contentType]?.includes(state.userStatus) || false;
+  },
+  
+  // Feature access checker
+  hasFeatureAccess: (state) => (feature) => {
+    return state.featureAccess[feature] || false;
   },
   
   // Usage summary for UI
@@ -770,6 +1125,39 @@ const getters = {
       },
       lastUpdated: state.currentMonthUsage.lastUpdated
     };
+  },
+  
+  // Preferences getter
+  userPreferences: (state) => state.preferences,
+  
+  // Get recommended upgrade plan
+  recommendedUpgrade: (state) => {
+    if (state.userStatus === 'free') {
+      return {
+        plan: 'start',
+        displayName: 'Start',
+        benefits: [
+          'Доступ к словарю',
+          'Приоритетная поддержка', 
+          'Офлайн режим',
+          'Безлимитные сообщения'
+        ],
+        price: '260,000 сум'
+      };
+    } else if (state.userStatus === 'start') {
+      return {
+        plan: 'pro',
+        displayName: 'Pro',
+        benefits: [
+          'Продвинутая аналитика',
+          'Безлимитные уроки',
+          'Персональные курсы',
+          'Экспорт прогресса'
+        ],
+        price: '450,000 сум'
+      };
+    }
+    return null;
   }
 };
 
