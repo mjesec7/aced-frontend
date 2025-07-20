@@ -588,18 +588,16 @@ export default {
     const localFillBlankAnswers = ref([])
     const draggedDragItem = ref(null)
     const dropOverZone = ref(null)
-
-    // FIXED: Ordering exercise state
     const localOrderingItems = ref([])
     const draggedOrderingItem = ref(null)
     const dropTargetIndex = ref(null)
-
+    
     // Touch handling for mobile drag-drop
     const touchStartPos = ref({ x: 0, y: 0 })
     const draggedTouchItem = ref(null)
 
     // ==========================================
-    // COMPUTED PROPERTIES
+    // COMPUTED PROPERTIES  
     // ==========================================
     const isExerciseStep = computed(() => 
       ['exercise', 'practice'].includes(props.currentStep?.type)
@@ -631,7 +629,6 @@ export default {
       })
     })
     
-    // ENHANCED: Left items processing with multiple data structure support
     const leftItems = computed(() => {
       if (!props.currentExercise?.pairs) return []
       
@@ -654,7 +651,6 @@ export default {
       return []
     })
     
-    // FIXED: Right items are now SHUFFLED for challenging gameplay
     const rightItems = computed(() => {
       if (!props.currentExercise?.pairs) return []
       
@@ -678,27 +674,6 @@ export default {
       
       return []
     })
-
-    // Helper to get original right items in correct order (for validation)
-    const getOriginalRightItems = computed(() => {
-      if (!props.currentExercise?.pairs) return []
-      
-      const pairs = props.currentExercise.pairs
-      
-      if (Array.isArray(pairs)) {
-        return pairs.map((pair, index) => {
-          if (Array.isArray(pair)) {
-            return String(pair[1] || '')
-          } else if (pair && typeof pair === 'object') {
-            return String(pair.right || pair[1] || pair.answer || pair.definition || '')
-          } else {
-            return String(pair || '')
-          }
-        }).filter(item => item.trim() !== '')
-      }
-      
-      return []
-    })
     
     const isLastExercise = computed(() => 
       props.exerciseIndex >= props.totalExercises - 1
@@ -708,11 +683,9 @@ export default {
       props.quizIndex >= props.totalQuizzes - 1
     )
 
-    // FIXED: Improved blank count calculation
     const blankCount = computed(() => {
       if (!props.currentExercise) return 0
       
-      // Handle MongoDB structure for blanks
       if (props.currentExercise.blanks && Array.isArray(props.currentExercise.blanks)) {
         return props.currentExercise.blanks.length
       }
@@ -725,7 +698,6 @@ export default {
         return props.currentExercise.answers.length
       }
       
-      // Parse template for different blank formats
       const template = props.currentExercise.template || props.currentExercise.question || ''
       const asteriskMatches = template.match(/\*/g) || []
       const underscoreMatches = template.match(/_+/g) || []
@@ -741,7 +713,6 @@ export default {
       )
     })
     
-    // ENHANCED: Can submit answer validation
     const canSubmitAnswer = computed(() => {
       switch (exerciseType.value) {
         case 'multiple-choice':
@@ -774,15 +745,199 @@ export default {
     })
 
     // ==========================================
-    // METHODS
+    // CRITICAL: MISSING DRAG-AND-DROP METHODS
     // ==========================================
+    
+    // ✅ FIXED: handleDragItemStart - This was causing the main error
+    const handleDragItemStart = (item, event) => {
+      console.log('🔥 InteractivePanel: handleDragItemStart called', { item, event })
+      
+      if (!item) {
+        console.warn('⚠️ No item provided to handleDragItemStart')
+        return
+      }
+      
+      // Set the dragged item
+      draggedDragItem.value = item
+      
+      // Store data for transfer
+      if (event && event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move'
+        event.dataTransfer.setData('text/plain', JSON.stringify(item))
+      }
+      
+      // Emit to parent component
+      emit('drag-item-start', { item, event })
+      
+      console.log('✅ Drag item started successfully:', item)
+    }
 
-    // FIXED: Update answer method
+    // ✅ FIXED: All other missing drag methods
+    const handleDragEnd = (event) => {
+      console.log('🏁 Drag ended')
+      draggedDragItem.value = null
+      dropOverZone.value = null
+      emit('drag-end', event)
+    }
+
+    const handleDragOver = (event, zoneId) => {
+      if (event) {
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'move'
+      }
+      
+      dropOverZone.value = zoneId
+      emit('drag-over-zone', zoneId)
+    }
+
+    const handleDragLeave = (event, zoneId) => {
+      if (!event || !event.currentTarget.contains(event.relatedTarget)) {
+        dropOverZone.value = null
+        emit('drag-leave-zone', zoneId)
+      }
+    }
+
+    const handleDrop = (event, zoneId) => {
+      console.log('💧 Drop event in zone:', zoneId)
+      
+      if (event) {
+        event.preventDefault()
+      }
+      
+      let droppedItem = draggedDragItem.value
+      
+      if (!droppedItem && event && event.dataTransfer) {
+        try {
+          const transferData = event.dataTransfer.getData('text/plain')
+          if (transferData) {
+            droppedItem = JSON.parse(transferData)
+          }
+        } catch (e) {
+          console.warn('⚠️ Could not parse transfer data')
+        }
+      }
+      
+      if (!droppedItem) {
+        console.warn('⚠️ No item to drop')
+        return
+      }
+      
+      emit('drop-in-zone', { zoneId, item: droppedItem })
+      
+      draggedDragItem.value = null
+      dropOverZone.value = null
+    }
+
+    // ✅ FIXED: Utility methods for drag-and-drop
+    const getDragItemText = (item) => {
+      if (!item) return ''
+      
+      if (typeof item === 'string') return item
+      
+      if (item.text) return item.text
+      if (item.label) return item.label
+      if (item.name) return item.name
+      if (item.title) return item.title
+      if (item.content) return item.content
+      
+      return String(item)
+    }
+
+    const getZoneId = (zone) => {
+      if (!zone) return 'default'
+      
+      if (typeof zone === 'string') return zone
+      
+      if (zone.id) return zone.id
+      if (zone.label) return zone.label
+      if (zone.name) return zone.name
+      if (zone.title) return zone.title
+      
+      return String(zone)
+    }
+
+    const getDropZoneItems = (zoneId) => {
+      const placements = props.dragDropPlacements || {}
+      return placements[zoneId] || []
+    }
+
+    const removeDroppedItem = (zoneId, itemIndex) => {
+      console.log('🗑️ Removing item from zone:', zoneId, 'index:', itemIndex)
+      
+      const currentPlacements = { ...props.dragDropPlacements }
+      
+      if (currentPlacements[zoneId] && currentPlacements[zoneId][itemIndex]) {
+        const removedItem = currentPlacements[zoneId][itemIndex]
+        currentPlacements[zoneId].splice(itemIndex, 1)
+        
+        emit('answer-changed', currentPlacements)
+        emit('remove-dropped-item', { zoneId, itemIndex, item: removedItem })
+      }
+    }
+
+    // ==========================================
+    // MOBILE TOUCH SUPPORT
+    // ==========================================
+    
+    const handleTouchStart = (event, item) => {
+      if (props.showCorrectAnswer) return
+      
+      const touch = event.touches[0]
+      touchStartPos.value = { x: touch.clientX, y: touch.clientY }
+      draggedTouchItem.value = item
+      
+      event.preventDefault()
+      
+      console.log('📱 Touch drag started for:', item)
+    }
+
+    const handleTouchMove = (event) => {
+      if (!draggedTouchItem.value) return
+      
+      event.preventDefault()
+      
+      const touch = event.touches[0]
+      const element = document.elementFromPoint(touch.clientX, touch.clientY)
+      
+      const dropZone = element?.closest('.drop-zone')
+      if (dropZone) {
+        const zoneLabel = dropZone.querySelector('.zone-label')?.textContent
+        if (zoneLabel) {
+          dropOverZone.value = zoneLabel
+        }
+      } else {
+        dropOverZone.value = null
+      }
+    }
+
+    const handleTouchEnd = (event) => {
+      if (!draggedTouchItem.value) return
+      
+      const touch = event.changedTouches[0]
+      const element = document.elementFromPoint(touch.clientX, touch.clientY)
+      
+      const dropZone = element?.closest('.drop-zone')
+      if (dropZone) {
+        const zoneLabel = dropZone.querySelector('.zone-label')?.textContent
+        if (zoneLabel) {
+          handleDrop(null, zoneLabel)
+        }
+      }
+      
+      draggedTouchItem.value = null
+      dropOverZone.value = null
+      
+      console.log('📱 Touch drag ended')
+    }
+
+    // ==========================================
+    // OTHER EXERCISE METHODS
+    // ==========================================
+    
     const updateAnswer = () => {
       emit('answer-changed', localUserAnswer.value)
     }
 
-    // FILL-BLANK METHODS
     const getFillBlankValue = (index) => {
       if (localFillBlankAnswers.value[index] !== undefined) {
         return localFillBlankAnswers.value[index]
@@ -793,7 +948,6 @@ export default {
     const handleFillBlankInput = (index, event) => {
       const value = event.target.value
       
-      // Update local array
       while (localFillBlankAnswers.value.length <= index) {
         localFillBlankAnswers.value.push('')
       }
@@ -803,44 +957,6 @@ export default {
       emit('fill-blank-updated', { index, value })
     }
 
-    const renderFillBlankTemplate = () => {
-      if (!props.currentExercise?.template) return ''
-      
-      let template = props.currentExercise.template
-      let blankIndex = 0
-      
-      // Handle MongoDB structure - replace * with blank indicators
-      template = template.replace(/\*/g, () => {
-        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
-      })
-      
-      // Replace underscores with blank indicators
-      template = template.replace(/_+/g, () => {
-        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
-      })
-      
-      // Replace [blank] markers
-      template = template.replace(/\[blank\]/gi, () => {
-        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
-      })
-      
-      return template
-    }
-
-    const initializeFillBlankAnswers = () => {
-      if (exerciseType.value === 'fill-blank') {
-        const count = blankCount.value
-        localFillBlankAnswers.value = new Array(count).fill('')
-        
-        if (props.fillBlankAnswers && Array.isArray(props.fillBlankAnswers)) {
-          for (let i = 0; i < Math.min(count, props.fillBlankAnswers.length); i++) {
-            localFillBlankAnswers.value[i] = props.fillBlankAnswers[i] || ''
-          }
-        }
-      }
-    }
-
-    // OPTION SELECTION METHODS
     const selectOption = (option) => {
       localUserAnswer.value = option
       emit('answer-changed', option)
@@ -856,101 +972,77 @@ export default {
       emit('answer-changed', value)
     }
 
-    // MATCHING METHODS - ENHANCED WITH SHUFFLING SUPPORT
-    const getActualRightIndex = (shuffledIndex) => {
-      const shuffledItem = rightItems.value[shuffledIndex]
-      const originalItems = getOriginalRightItems.value
-      
-      // Find the original index of this item
-      const actualIndex = originalItems.findIndex(item => 
-        item.toLowerCase().trim() === shuffledItem.toLowerCase().trim()
-      )
-      
-      return actualIndex
-    }
-
+    // ==========================================
+    // MATCHING METHODS
+    // ==========================================
+    
     const handleMatchingItemClick = (side, index) => {
       if (props.showCorrectAnswer) return
       selectMatchingItem(side, index)
     }
 
-    const handleRemovePair = (pairIndex) => {
+    const handleRemoveMatchingPair = (pairIndex) => {
       if (props.showCorrectAnswer) return
       removeMatchingPair(pairIndex)
     }
     
-    // ENHANCED: selectMatchingItem with proper index mapping for shuffled items
     const selectMatchingItem = (side, index) => {
       const currentSelection = props.selectedMatchingItem
       
-      // If nothing is selected, select this item
       if (!currentSelection) {
         emit('matching-item-selected', { side, index })
         return
       }
       
-      // If clicking the same item, deselect it
       if (currentSelection.side === side && currentSelection.index === index) {
         emit('matching-item-selected', null)
         return
       }
       
-      // If selecting from the same side, switch selection
       if (currentSelection.side === side) {
         emit('matching-item-selected', { side, index })
         return
       }
       
-      // If selecting from different side, create a pair
       let leftIndex, rightIndex
       
       if (side === 'left') {
         leftIndex = index
-        rightIndex = getActualRightIndex(currentSelection.index) // Map shuffled to actual
+        rightIndex = currentSelection.index
       } else {
         leftIndex = currentSelection.index
-        rightIndex = getActualRightIndex(index) // Map shuffled to actual
+        rightIndex = index
       }
       
       const newPair = { leftIndex, rightIndex }
       
-      // Check if this exact pair already exists
       const currentPairs = props.matchingPairs || []
       const pairExists = currentPairs.some(pair => 
         pair.leftIndex === newPair.leftIndex && pair.rightIndex === newPair.rightIndex
       )
       
       if (!pairExists) {
-        // Remove any existing pairs that use these items
         const updatedPairs = currentPairs.filter(pair => 
           pair.leftIndex !== newPair.leftIndex && pair.rightIndex !== newPair.rightIndex
         )
         
-        // Add the new pair
         updatedPairs.push(newPair)
-        
-        // Emit the change
         emit('answer-changed', updatedPairs)
       }
       
-      // Clear selection after creating/attempting pair
       emit('matching-item-selected', null)
     }
     
-    // ENHANCED: removeMatchingPair with proper emit calls
     const removeMatchingPair = (pairIndex) => {
       const currentPairs = props.matchingPairs || []
       
       if (pairIndex >= 0 && pairIndex < currentPairs.length) {
         const updatedPairs = currentPairs.filter((_, index) => index !== pairIndex)
-        
-        // Emit the change
         emit('answer-changed', updatedPairs)
         emit('remove-matching-pair', pairIndex)
       }
     }
     
-    // Enhanced isItemMatched function
     const isItemMatched = (side, index) => {
       const currentPairs = props.matchingPairs || []
       
@@ -961,13 +1053,10 @@ export default {
       if (side === 'left') {
         return currentPairs.some(pair => pair.leftIndex === index)
       } else {
-        // For right side, we need to check if the actual index is matched
-        const actualIndex = getActualRightIndex(index)
-        return currentPairs.some(pair => pair.rightIndex === actualIndex)
+        return currentPairs.some(pair => pair.rightIndex === index)
       }
     }
     
-    // Helper functions to get item text by index
     const getLeftItemText = (index) => {
       if (index >= 0 && index < leftItems.value.length) {
         return leftItems.value[index]
@@ -976,29 +1065,27 @@ export default {
     }
     
     const getRightItemText = (index) => {
-      // This should return the original right item text, not shuffled
-      const originalItems = getOriginalRightItems.value
-      if (index >= 0 && index < originalItems.length) {
-        return originalItems[index]
+      if (index >= 0 && index < rightItems.value.length) {
+        return rightItems.value[index]
       }
       return `Right Item ${index + 1}`
     }
 
-    // FIXED: ORDERING METHODS - COMPLETE IMPLEMENTATION
+    // ==========================================
+    // ORDERING METHODS
+    // ==========================================
+    
     const initializeOrderingItems = () => {
       if (props.currentExercise?.items && Array.isArray(props.currentExercise.items)) {
-        // Create a shuffled version of the items for the exercise
         const items = props.currentExercise.items.map((item, index) => ({
           id: item.id || `item_${index}`,
           text: typeof item === 'string' ? item : (item.text || String(item)),
           originalIndex: index
         }))
         
-        // Shuffle the items so they're not in correct order
         const shuffledItems = [...items].sort(() => Math.random() - 0.5)
         localOrderingItems.value = shuffledItems
         
-        // Emit the initial shuffled order
         emit('answer-changed', localOrderingItems.value)
       }
     }
@@ -1021,12 +1108,9 @@ export default {
       newItems.splice(toIndex, 0, movedItem)
       
       localOrderingItems.value = newItems
-      
-      // Emit the updated order
       emit('answer-changed', localOrderingItems.value)
     }
 
-    // FIXED: Drag and drop methods for ordering
     const startOrderingDrag = (event, index) => {
       draggedOrderingItem.value = index
       
@@ -1056,7 +1140,6 @@ export default {
 
     const handleOrderingDragLeave = () => {
       // Only clear if we're leaving the container
-      // dropTargetIndex.value = null
     }
 
     const handleOrderingDrop = (event, dropIndex) => {
@@ -1071,182 +1154,35 @@ export default {
       endOrderingDrag()
     }
 
-    // DRAG AND DROP METHODS
-    const getDragItemText = (item) => {
-      if (typeof item === 'string') return item
-      if (item && item.text) return item.text
-      if (item && item.label) return item.label
-      return String(item)
-    }
+    // ==========================================
+    // RENDER METHODS
+    // ==========================================
     
-    const getZoneId = (zone) => {
-      if (zone && zone.id) return zone.id
-      if (zone && zone.label) return zone.label
-      return String(zone)
-    }
-    
-    const startDragItem = (item, event) => {
-      draggedDragItem.value = item
-      if (event && event.dataTransfer) {
-        event.dataTransfer.effectAllowed = 'move'
-        event.dataTransfer.setData('text/plain', JSON.stringify(item))
-      }
-      emit('drag-item-start', item)
-    }
-    
-    const endDragItem = () => {
-      draggedDragItem.value = null
-    }
-    
-    const dragOverZone = (zoneId, event) => {
-      if (event) {
-        event.preventDefault()
-        event.dataTransfer.dropEffect = 'move'
-      }
-      dropOverZone.value = zoneId
-      emit('drag-over-zone', zoneId)
-    }
-    
-    const dragLeaveZone = (event) => {
-      if (!event || !event.currentTarget.contains(event.relatedTarget)) {
-        dropOverZone.value = null
-        emit('drag-leave-zone')
-      }
-    }
-    
-    const dropInZone = (zoneId, event) => {
-      if (event) {
-        event.preventDefault()
-      }
+    const renderFillBlankTemplate = () => {
+      if (!props.currentExercise?.template) return ''
       
-      let draggedItem
-      try {
-        if (event && event.dataTransfer) {
-          const transferData = event.dataTransfer.getData('text/plain')
-          if (transferData) {
-            draggedItem = JSON.parse(transferData)
-          }
-        }
-      } catch (e) {
-        console.warn('Could not parse transfer data, using local state')
-      }
+      let template = props.currentExercise.template
+      let blankIndex = 0
       
-      if (!draggedItem && draggedDragItem.value) {
-        draggedItem = draggedDragItem.value
-      }
-      
-      if (!draggedItem) {
-        console.warn('❌ No item to drop')
-        return
-      }
-      
-      const updatedPlacements = { ...props.dragDropPlacements }
-      
-      if (!updatedPlacements[zoneId]) {
-        updatedPlacements[zoneId] = []
-      }
-      
-      const isAlreadyInZone = updatedPlacements[zoneId].some(placedItem => {
-        const placedText = getDragItemText(placedItem)
-        const draggedText = getDragItemText(draggedItem)
-        return placedText === draggedText
+      template = template.replace(/\*/g, () => {
+        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
       })
       
-      if (!isAlreadyInZone) {
-        // Remove item from other zones first
-        Object.keys(updatedPlacements).forEach(otherZoneId => {
-          if (otherZoneId !== zoneId) {
-            updatedPlacements[otherZoneId] = updatedPlacements[otherZoneId].filter(placedItem => {
-              const placedText = getDragItemText(placedItem)
-              const draggedText = getDragItemText(draggedItem)
-              return placedText !== draggedText
-            })
-          }
-        })
-        
-        updatedPlacements[zoneId].push(draggedItem)
-        emit('answer-changed', updatedPlacements)
-        emit('drop-in-zone', { zoneId, item: draggedItem })
-      }
+      template = template.replace(/_+/g, () => {
+        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
+      })
       
-      draggedDragItem.value = null
-      dropOverZone.value = null
-    }
-    
-    const getDropZoneItems = (zoneId) => {
-      return props.dragDropPlacements[zoneId] || []
-    }
-    
-    const removeDroppedItem = (zoneId, itemIndex) => {
-      const updatedPlacements = { ...props.dragDropPlacements }
+      template = template.replace(/\[blank\]/gi, () => {
+        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
+      })
       
-      if (updatedPlacements[zoneId] && updatedPlacements[zoneId][itemIndex]) {
-        const removedItem = updatedPlacements[zoneId][itemIndex]
-        updatedPlacements[zoneId].splice(itemIndex, 1)
-        
-        emit('answer-changed', updatedPlacements)
-        emit('remove-dropped-item', { zoneId, itemIndex, item: removedItem })
-      }
-    }
-
-    // MOBILE TOUCH SUPPORT FOR DRAG-DROP
-    const handleTouchStart = (event, item) => {
-      if (props.showCorrectAnswer) return
-      
-      const touch = event.touches[0]
-      touchStartPos.value = { x: touch.clientX, y: touch.clientY }
-      draggedTouchItem.value = item
-      
-      // Prevent scrolling while dragging
-      event.preventDefault()
-    }
-
-    const handleTouchMove = (event) => {
-      if (!draggedTouchItem.value) return
-      
-      // Prevent scrolling
-      event.preventDefault()
-      
-      const touch = event.touches[0]
-      const element = document.elementFromPoint(touch.clientX, touch.clientY)
-      
-      // Find if we're over a drop zone
-      const dropZone = element?.closest('.drop-zone')
-      if (dropZone) {
-        const zoneLabel = dropZone.querySelector('.zone-label')?.textContent
-        if (zoneLabel) {
-          dropOverZone.value = zoneLabel
-        }
-      } else {
-        dropOverZone.value = null
-      }
-    }
-
-    const handleTouchEnd = (event) => {
-      if (!draggedTouchItem.value) return
-      
-      const touch = event.changedTouches[0]
-      const element = document.elementFromPoint(touch.clientX, touch.clientY)
-      
-      // Find if we're over a drop zone
-      const dropZone = element?.closest('.drop-zone')
-      if (dropZone) {
-        const zoneLabel = dropZone.querySelector('.zone-label')?.textContent
-        if (zoneLabel) {
-          // Simulate drop
-          const mockEvent = { preventDefault: () => {} }
-          dropInZone(zoneLabel, mockEvent)
-        }
-      }
-      
-      // Clean up
-      draggedTouchItem.value = null
-      dropOverZone.value = null
+      return template
     }
 
     // ==========================================
     // WATCHERS
     // ==========================================
+    
     watch(() => props.userAnswer, (newValue) => {
       if (exerciseType.value !== 'fill-blank' && exerciseType.value !== 'ordering') {
         localUserAnswer.value = newValue || ''
@@ -1262,7 +1198,6 @@ export default {
       }
     }, { immediate: true, deep: true })
 
-    // FIXED: Watch for ordering items changes
     watch(() => props.orderingItems, (newValue) => {
       if (Array.isArray(newValue) && newValue.length > 0) {
         localOrderingItems.value = [...newValue]
@@ -1279,50 +1214,61 @@ export default {
           })
         }
         
-        // FIXED: Initialize ordering items when exercise changes
         if (newExercise.type === 'ordering') {
           nextTick(() => {
             initializeOrderingItems()
           })
         }
         
-        // Special handling for matching exercises
         if (newExercise.type === 'matching') {
-          // Clear any existing selection when exercise changes
           emit('matching-item-selected', null)
         }
       }
     }, { immediate: true })
 
     // ==========================================
+    // INITIALIZATION
+    // ==========================================
+    
+    const initializeFillBlankAnswers = () => {
+      if (exerciseType.value === 'fill-blank') {
+        const count = blankCount.value
+        localFillBlankAnswers.value = new Array(count).fill('')
+        
+        if (props.fillBlankAnswers && Array.isArray(props.fillBlankAnswers)) {
+          for (let i = 0; i < Math.min(count, props.fillBlankAnswers.length); i++) {
+            localFillBlankAnswers.value[i] = props.fillBlankAnswers[i] || ''
+          }
+        }
+      }
+    }
+
+    // ==========================================
     // LIFECYCLE
     // ==========================================
+    
     onMounted(() => {
       localUserAnswer.value = props.userAnswer || ''
       initializeFillBlankAnswers()
       
-      // FIXED: Initialize ordering items on mount
       if (props.currentExercise?.type === 'ordering') {
         initializeOrderingItems()
       }
     })
 
     // ==========================================
-    // RETURN
+    // RETURN ALL METHODS AND STATE
     // ==========================================
+    
     return {
       // State
       localUserAnswer,
       localFillBlankAnswers,
       draggedDragItem,
       dropOverZone,
-      
-      // FIXED: Ordering state
       localOrderingItems,
       draggedOrderingItem,
       dropTargetIndex,
-      
-      // Touch state
       touchStartPos,
       draggedTouchItem,
       
@@ -1334,13 +1280,28 @@ export default {
       quizOptions,
       leftItems,
       rightItems,
-      getOriginalRightItems,
       isLastExercise,
       isLastQuiz,
       blankCount,
       canSubmitAnswer,
       
-      // Methods
+      // ✅ CRITICAL: All missing drag-and-drop methods
+      handleDragItemStart,           // This was the main missing method causing errors
+      handleDragEnd,
+      handleDragOver,
+      handleDragLeave,
+      handleDrop,
+      getDragItemText,
+      getZoneId,
+      getDropZoneItems,
+      removeDroppedItem,
+      
+      // Touch support for mobile
+      handleTouchStart,
+      handleTouchMove,
+      handleTouchEnd,
+      
+      // Answer methods
       updateAnswer,
       
       // Fill-blank methods
@@ -1354,17 +1315,16 @@ export default {
       selectQuizOption,
       selectTrueFalse,
       
-      // Enhanced matching methods with shuffling support
+      // Matching methods
       handleMatchingItemClick,
-      handleRemovePair,
+      handleRemoveMatchingPair,
       selectMatchingItem,
       removeMatchingPair,
       isItemMatched,
       getLeftItemText,
       getRightItemText,
-      getActualRightIndex,
       
-      // FIXED: Ordering methods
+      // Ordering methods
       initializeOrderingItems,
       getOrderingItemText,
       moveOrderingItem,
@@ -1373,23 +1333,7 @@ export default {
       handleOrderingDragOver,
       handleOrderingDragEnter,
       handleOrderingDragLeave,
-      handleOrderingDrop,
-      
-      // Drag and drop methods
-      getDragItemText,
-      getZoneId,
-      startDragItem,
-      endDragItem,
-      dragOverZone,
-      dragLeaveZone,
-      dropInZone,
-      getDropZoneItems,
-      removeDroppedItem,
-      
-      // Mobile touch methods
-      handleTouchStart,
-      handleTouchMove,
-      handleTouchEnd
+      handleOrderingDrop
     }
   }
 }
