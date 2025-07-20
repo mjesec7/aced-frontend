@@ -321,16 +321,34 @@ const getUserVocabulary = async (userId, languageCode = null) => {
     
     console.log(`📚 Extracted ${allVocabulary.length} vocabulary items from completed lessons`)
     
+    // ✅ DEDUPLICATE vocabulary by word + language combination
+    const uniqueVocabulary = []
+    const seenWords = new Set()
+    
+    allVocabulary.forEach(word => {
+      if (!word || !word.word || !word.language) return
+      
+      // Create unique key from word + language (case insensitive)
+      const uniqueKey = `${word.word.toLowerCase()}_${word.language.toLowerCase()}`
+      
+      if (!seenWords.has(uniqueKey)) {
+        seenWords.add(uniqueKey)
+        uniqueVocabulary.push(word)
+      }
+    })
+    
+    console.log(`📚 After deduplication: ${uniqueVocabulary.length} unique vocabulary items`)
+    
     // Filter by language if specified
     if (languageCode) {
-      const filteredVocabulary = allVocabulary.filter(word => 
+      const filteredVocabulary = uniqueVocabulary.filter(word => 
         word && word.language && word.language.toLowerCase() === languageCode.toLowerCase()
       )
       console.log(`🔍 Filtered to ${filteredVocabulary.length} words for language: ${languageCode}`)
       return filteredVocabulary
     }
     
-    return allVocabulary
+    return uniqueVocabulary
     
   } catch (error) {
     console.error('❌ Error extracting vocabulary from lessons:', error)
@@ -750,13 +768,29 @@ const loadTopics = async (language, level) => {
 const loadWords = async (language, level, topic) => {
   loading.value = true
   try {
-    words.value = topic.words.map(word => ({
-      ...word,
-      id: word.id || `${word.word}_${word.language}`,
-      isLearned: word.progress >= 90
-    })).sort((a, b) => a.word.localeCompare(b.word))
+    // ✅ DEDUPLICATE words within the topic to prevent repeats
+    const uniqueWords = []
+    const seenWords = new Set()
     
-    showToast(`Найдено ${words.value.length} слов`)
+    topic.words.forEach(word => {
+      if (!word || !word.word) return
+      
+      // Create unique key from word text (case insensitive)
+      const uniqueKey = word.word.toLowerCase()
+      
+      if (!seenWords.has(uniqueKey)) {
+        seenWords.add(uniqueKey)
+        uniqueWords.push({
+          ...word,
+          id: word.id || `${word.word}_${word.language}`,
+          isLearned: word.progress >= 90
+        })
+      }
+    })
+    
+    words.value = uniqueWords.sort((a, b) => a.word.localeCompare(b.word))
+    
+    showToast(`Найдено ${words.value.length} уникальных слов`)
   } finally {
     loading.value = false
   }
