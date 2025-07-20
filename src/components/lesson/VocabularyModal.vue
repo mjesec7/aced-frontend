@@ -24,8 +24,8 @@
         </div>
       </div>
 
-      <!-- Vocabulary Card Container -->
-      <div v-if="!vocabularyData?.isCompleted && !vocabularyData?.showingList" class="vocabulary-card-container">
+      <!-- FIXED: Vocabulary Card Container with proper data validation -->
+      <div v-if="!vocabularyData?.isCompleted && !vocabularyData?.showingList && hasValidWords" class="vocabulary-card-container">
         
         <!-- Main Vocabulary Card -->
         <div class="vocabulary-card" 
@@ -39,7 +39,7 @@
           <div class="card-front" @click="$emit('show-definition')">
             <div class="card-content">
               <div class="vocab-term-section">
-                <h2 class="vocab-term">{{ currentWord?.term || 'Loading...' }}</h2>
+                <h2 class="vocab-term">{{ currentWord?.term || currentWord?.word || 'Loading...' }}</h2>
                 
                 <div v-if="currentWord?.pronunciation" class="vocab-pronunciation">
                   /{{ currentWord.pronunciation }}/
@@ -58,8 +58,8 @@
             
             <!-- Voice Button - Fixed Position -->
             <button 
-              v-if="currentWord?.term" 
-              @click.stop="$emit('pronounce', currentWord.term)"
+              v-if="currentWord?.term || currentWord?.word" 
+              @click.stop="$emit('pronounce', currentWord.term || currentWord.word)"
               class="voice-btn"
               title="Произношение"
             >
@@ -71,10 +71,10 @@
           <div class="card-back" @click="$emit('hide-definition')">
             <div class="card-content">
               <div class="vocab-definition-section">
-                <h3 class="vocab-term-small">{{ currentWord?.term || '' }}</h3>
+                <h3 class="vocab-term-small">{{ currentWord?.term || currentWord?.word || '' }}</h3>
                 
                 <div class="vocab-definition">
-                  {{ currentWord?.definition || 'Определение не найдено' }}
+                  {{ currentWord?.definition || currentWord?.translation || 'Определение не найдено' }}
                 </div>
                 
                 <div v-if="currentWord?.example" class="vocab-example">
@@ -91,8 +91,8 @@
             
             <!-- Voice Button - Also on back -->
             <button 
-              v-if="currentWord?.term" 
-              @click.stop="$emit('pronounce', currentWord.term)"
+              v-if="currentWord?.term || currentWord?.word" 
+              @click.stop="$emit('pronounce', currentWord.term || currentWord.word)"
               class="voice-btn"
               title="Произношение"
             >
@@ -155,10 +155,21 @@
               active: wordIndex === (vocabularyData?.currentIndex || 0),
               learned: word?.learned 
             }"
-            :title="word?.term || 'Word'"
+            :title="word?.term || word?.word || 'Word'"
           >
           </button>
         </div>
+      </div>
+
+      <!-- FIXED: No Words Available State -->
+      <div v-else-if="!hasValidWords && !vocabularyData?.isCompleted && !vocabularyData?.showingList" class="no-vocabulary-content">
+        <div class="no-vocab-icon">📚</div>
+        <h3 class="no-vocab-title">Словарь пуст</h3>
+        <p class="no-vocab-subtitle">В этом уроке нет слов для изучения</p>
+        <button @click="$emit('skip')" class="continue-btn">
+          <span class="btn-icon">📋</span>
+          <span class="btn-text">Продолжить урок</span>
+        </button>
       </div>
 
       <!-- Completion Screen -->
@@ -246,8 +257,19 @@ export default {
     'skip',
     'restart',
     'close',
-    'pronounce'
+    'pronounce',
+    'jump-to-word'
   ],
+  computed: {
+    // FIXED: Check if we have valid vocabulary words
+    hasValidWords() {
+      const words = this.vocabularyData?.words || []
+      return words.length > 0 && words.some(word => 
+        (word?.term && word.term.trim()) || 
+        (word?.word && word.word.trim())
+      )
+    }
+  },
   methods: {
     jumpToWord(index) {
       this.$emit('jump-to-word', index);
@@ -257,7 +279,7 @@ export default {
 </script>
 
 <style scoped>
-/* Vocabulary Modal Overlay */
+/* Existing vocabulary modal styles */
 .vocabulary-modal-overlay {
   position: fixed;
   top: 0;
@@ -285,7 +307,6 @@ export default {
   }
 }
 
-/* Modal Container */
 .vocabulary-modal-container {
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 20px;
@@ -313,7 +334,6 @@ export default {
   }
 }
 
-/* Modal Header */
 .vocabulary-modal-header {
   display: flex;
   justify-content: space-between;
@@ -343,22 +363,6 @@ export default {
   border-radius: inherit;
   transition: width 0.6s ease;
   position: relative;
-}
-
-.vocab-progress-fill::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  animation: progressShimmer 2s infinite;
-}
-
-@keyframes progressShimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
 }
 
 .vocab-progress-text {
@@ -501,7 +505,6 @@ export default {
   backdrop-filter: blur(8px);
 }
 
-/* Card Content */
 .card-content {
   padding: 32px;
   text-align: center;
@@ -526,6 +529,7 @@ export default {
   margin: 0 0 16px 0;
   line-height: 1.1;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  word-break: break-word;
 }
 
 .vocab-term-small {
@@ -533,6 +537,7 @@ export default {
   font-weight: 500;
   margin: 0 0 20px 0;
   opacity: 0.9;
+  word-break: break-word;
 }
 
 .vocab-pronunciation {
@@ -566,6 +571,7 @@ export default {
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  word-break: break-word;
 }
 
 .vocab-example {
@@ -590,7 +596,7 @@ export default {
   margin-bottom: 4px;
 }
 
-/* Voice Button - Enhanced */
+/* Voice Button */
 .voice-btn {
   position: absolute;
   top: 12px;
@@ -620,10 +626,6 @@ export default {
 
 .voice-btn:active {
   transform: scale(0.95);
-}
-
-.voice-icon {
-  font-size: 1rem;
 }
 
 /* Card Actions */
@@ -776,6 +778,33 @@ export default {
   transform: scale(1.3);
 }
 
+/* FIXED: No Vocabulary Content State */
+.no-vocabulary-content {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.no-vocab-icon {
+  font-size: 4rem;
+  margin-bottom: 24px;
+  opacity: 0.7;
+}
+
+.no-vocab-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: #374151;
+}
+
+.no-vocab-subtitle {
+  font-size: 1rem;
+  margin: 0 0 32px 0;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
 /* Completion Screen */
 .vocabulary-completion {
   text-align: center;
@@ -844,7 +873,7 @@ export default {
   cursor: pointer;
   transition: all 0.2s ease;
   margin-top: 20px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   justify-content: center;
