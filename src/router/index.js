@@ -5,7 +5,6 @@ import store from '@/store';
 import HomePage from '@/views/HomePage.vue';
 import ProfilePage from '@/views/ProfilePage.vue';
 import AcedSettings from '@/components/Main/AcedSettings.vue';
-import VocabularyPage from '@/views/VocabularyPage.vue';
 
 // ✅ Profile Sub-Pages
 import MainPage from '@/components/Profile/MainPage.vue';
@@ -17,7 +16,6 @@ import HomeworkPage from '@/components/Profile/HomeworkPage.vue';
 import DiaryPage from '@/components/Profile/DiaryPage.vue';
 import CataloguePage from '@/views/CataloguePage.vue';
 import TestsPage from '@/components/Profile/TestsPage.vue';
-import VocabularyIn from '@/components/Profile/VocabularyIn.vue';
 
 // ✅ Payment Components
 import PaymePayment from '@/components/Payments/PaymePayment.vue';
@@ -185,32 +183,6 @@ const routes = [
         component: TestsPage, 
         props: true,
         meta: { title: 'Прохождение теста' }
-      },
-      
-      // ✅ UPDATED: Vocabulary route now uses VocabularyPage from views
-      { 
-        path: 'vocabulary', 
-        name: 'VocabularyPage', 
-        component: VocabularyPage,
-        meta: { title: 'Словарь' }
-      },
-      
-      // ✅ NEW: VocabularyIn route for specific language learning
-      { 
-        path: 'vocabulary/:languageCode', 
-        name: 'VocabularyIn', 
-        component: VocabularyIn,
-        props: true,
-        meta: { title: 'Изучение языка' },
-        beforeEnter: (to, from, next) => {
-          const validLanguages = ['english', 'spanish', 'french', 'german', 'chinese', 'arabic', 'japanese', 'korean', 'uzbek', 'russian'];
-          if (!to.params.languageCode || !validLanguages.includes(to.params.languageCode)) {
-            console.error('❌ Invalid language code:', to.params.languageCode);
-            next({ name: 'VocabularyPage' });
-          } else {
-            next();
-          }
-        }
       }
     ],
   },
@@ -240,7 +212,6 @@ const routes = [
           query: { error: 'invalid_plan' }
         });
       }
-      
       
       next();
     }
@@ -464,14 +435,22 @@ const routes = [
     }
   },
   
-  // ✅ LEGACY REDIRECTS: Redirect old vocabulary routes to profile vocabulary
+  // ✅ LEGACY REDIRECTS: Redirect old vocabulary routes to catalogue
   {
     path: '/vocabulary',
-    redirect: '/profile/vocabulary'
+    redirect: '/profile/catalogue'
   },
   {
     path: '/vocabulary/:language',
-    redirect: to => `/profile/vocabulary/${to.params.language}`
+    redirect: '/profile/catalogue'
+  },
+  {
+    path: '/profile/vocabulary',
+    redirect: '/profile/catalogue'
+  },
+  {
+    path: '/profile/vocabulary/:language',
+    redirect: '/profile/catalogue'
   },
   
   // ✅ OLD PAYMENT REDIRECTS: Handle legacy payment URLs
@@ -595,10 +574,6 @@ router.beforeEach(async (to, from, next) => {
   
   }
 
-  if (to.name && to.name.includes('Vocabulary')) {
-  
-  }
-
   if (to.name && (to.name.includes('Payme') || to.name.includes('Payment'))) {
   
   }
@@ -617,9 +592,6 @@ router.afterEach((to, from) => {
   if (to.name && to.name.includes('Homework')) {
  
   } 
-  else if (to.name && to.name.includes('Vocabulary')) {
-  
-  }
   else if (to.name && (to.name.includes('Payme') || to.name.includes('Payment'))) {
    
   } else {
@@ -664,10 +636,6 @@ router.onError((err) => {
     console.error('📚 Homework route error:', err);
   }
   
-  if (err.message.includes('vocabulary') || err.message.includes('Vocabulary')) {
-    console.error('📖 Vocabulary route error:', err);
-  }
-  
   if (err.message.includes('payment') || err.message.includes('Payment')) {
     console.error('💳 Payment route error:', err);
   }
@@ -675,8 +643,6 @@ router.onError((err) => {
   // Generic error handling
   console.error('🔄 Navigation failed, attempting recovery...');
 });
-
-
 
 // ✅ PAYMENT NAVIGATION HELPERS (can be imported and used in components)
 export const navigateToPayment = (plan = 'start', options = {}) => {
