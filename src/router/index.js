@@ -5,6 +5,7 @@ import store from '@/store';
 import HomePage from '@/views/HomePage.vue';
 import ProfilePage from '@/views/ProfilePage.vue';
 import AcedSettings from '@/components/Main/AcedSettings.vue';
+import VocabularyPage from '@/views/VocabularyPage.vue';
 
 // ✅ Profile Sub-Pages
 import MainPage from '@/components/Profile/MainPage.vue';
@@ -185,6 +186,18 @@ const routes = [
         meta: { title: 'Прохождение теста' }
       }
     ],
+  },
+  
+  // ✅ VOCABULARY PAGE - Standalone vocabulary route
+  {
+    path: '/vocabulary',
+    name: 'VocabularyPage',
+    component: VocabularyPage,
+    meta: { 
+      title: 'Словарь',
+      requiresAuth: true,
+      description: 'Изучение языков и словарный запас'
+    }
   },
   
   // ✅ PAYMENT ROUTES
@@ -435,22 +448,18 @@ const routes = [
     }
   },
   
-  // ✅ LEGACY REDIRECTS: Redirect old vocabulary routes to catalogue
-  {
-    path: '/vocabulary',
-    redirect: '/profile/catalogue'
-  },
+  // ✅ LEGACY REDIRECTS: Redirect old vocabulary routes to new standalone vocabulary page
   {
     path: '/vocabulary/:language',
-    redirect: '/profile/catalogue'
+    redirect: '/vocabulary'
   },
   {
     path: '/profile/vocabulary',
-    redirect: '/profile/catalogue'
+    redirect: '/vocabulary'
   },
   {
     path: '/profile/vocabulary/:language',
-    redirect: '/profile/catalogue'
+    redirect: '/vocabulary'
   },
   
   // ✅ OLD PAYMENT REDIRECTS: Handle legacy payment URLs
