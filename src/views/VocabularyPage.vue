@@ -1036,6 +1036,7 @@ onMounted(() => {
   z-index: 1;
 }
 
+
 .card::after {
   content: '';
   position: absolute;
@@ -1043,22 +1044,11 @@ onMounted(() => {
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: linear-gradient(
-    45deg,
-    #3b82f6,
-    #8b5cf6,
-    #06b6d4,
-    #10b981,
-    #f59e0b,
-    #ef4444,
-    #3b82f6
-  );
-  background-size: 300% 300%;
+  background: #8b5cf6;
   border-radius: 1rem;
   opacity: 0;
   z-index: -1;
   transition: all 0.5s ease;
-  animation: gradientShift 3s ease infinite;
 }
 
 .card:hover {
