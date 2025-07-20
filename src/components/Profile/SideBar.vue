@@ -3,7 +3,7 @@
     <!-- User Info Section -->
     <div class="user-info">
       <div class="user-avatar">
-        <img v-if="user?.photoURL" :src="user.photoURL" :alt="user.displayName || 'User'" />
+        <img v-if="user?.photoURL" :src="user.photoURL" :alt="user.displayName" />
         <div v-else class="avatar-placeholder">
           {{ (user?.displayName || user?.email || 'U').charAt(0).toUpperCase() }}
         </div>
@@ -22,30 +22,31 @@
     <nav class="sidebar-nav">
       <!-- Dashboard -->
       <router-link to="/dashboard" class="sidebar-item">
-        <div class="item-content">
-          <span class="item-icon">🏠</span>
-          <span class="item-text">Главная</span>
-        </div>
+        <span class="item-icon">🏠</span>
+        <span class="item-text">Главная</span>
       </router-link>
 
       <!-- Catalogue -->
       <router-link to="/catalogue" class="sidebar-item">
-        <div class="item-content">
-          <span class="item-icon">📖</span>
-          <span class="item-text">Каталог</span>
-        </div>
+        <span class="item-icon">📖</span>
+        <span class="item-text">Каталог</span>
       </router-link>
 
       <!-- Study Plan -->
       <router-link to="/study-plan" class="sidebar-item">
-        <div class="item-content">
-          <span class="item-icon">📅</span>
-          <span class="item-text">План обучения</span>
-        </div>
+        <span class="item-icon">📅</span>
+        <span class="item-text">План обучения</span>
       </router-link>
 
-      <!-- Vocabulary -->
-      <router-link to="/vocabulary" class="sidebar-item">
+      <!-- Vocabulary (Premium Feature) -->
+      <div 
+        class="sidebar-item" 
+        :class="{ 
+          'premium-item': !hasVocabularyAccess,
+          'has-access': hasVocabularyAccess 
+        }"
+        @click="handleVocabularyClick"
+      >
         <div class="item-content">
           <span class="item-icon">📚</span>
           <span class="item-text">Словарь</span>
@@ -53,10 +54,20 @@
             ⭐ Start
           </span>
         </div>
-      </router-link>
+        <div v-if="!hasVocabularyAccess" class="lock-overlay">
+          <span class="lock-icon">🔒</span>
+        </div>
+      </div>
 
-      <!-- Analytics -->
-      <router-link to="/analytics" class="sidebar-item">
+      <!-- Analytics (Pro Feature) -->
+      <div 
+        class="sidebar-item" 
+        :class="{ 
+          'premium-item': !hasAdvancedFeatures,
+          'has-access': hasAdvancedFeatures 
+        }"
+        @click="handleAnalyticsClick"
+      >
         <div class="item-content">
           <span class="item-icon">📊</span>
           <span class="item-text">Аналитика</span>
@@ -64,41 +75,54 @@
             👑 Pro
           </span>
         </div>
-      </router-link>
+        <div v-if="!hasAdvancedFeatures" class="lock-overlay">
+          <span class="lock-icon">🔒</span>
+        </div>
+      </div>
 
       <!-- Progress -->
       <router-link to="/progress" class="sidebar-item">
-        <div class="item-content">
-          <span class="item-icon">📈</span>
-          <span class="item-text">Прогресс</span>
-        </div>
+        <span class="item-icon">📈</span>
+        <span class="item-text">Прогресс</span>
       </router-link>
 
       <!-- Settings -->
       <router-link to="/settings" class="sidebar-item">
-        <div class="item-content">
-          <span class="item-icon">⚙️</span>
-          <span class="item-text">Настройки</span>
-        </div>
+        <span class="item-icon">⚙️</span>
+        <span class="item-text">Настройки</span>
       </router-link>
     </nav>
 
-    <!-- Upgrade Section for Free Users -->
-    <div v-if="showUpgradeSection" class="upgrade-section">
+    <!-- Upgrade Section for Free/Start Users -->
+    <div v-if="recommendedUpgrade" class="upgrade-section">
       <div class="upgrade-card">
         <div class="upgrade-header">
-          <h4>Получите больше возможностей!</h4>
-          <span class="upgrade-badge">START</span>
+          <h4>{{ userStatus === 'free' ? 'Получите больше!' : 'Улучшите подписку!' }}</h4>
+          <span class="upgrade-badge">{{ recommendedUpgrade.plan.toUpperCase() }}</span>
         </div>
         <ul class="upgrade-benefits">
-          <li>✅ Расширенный словарь</li>
-          <li>✅ Дополнительные уроки</li>
-          <li>✅ Персональные планы</li>
+          <li v-for="benefit in recommendedUpgrade.benefits" :key="benefit">
+            ✅ {{ benefit }}
+          </li>
         </ul>
-        <button class="upgrade-btn" @click="handleUpgrade">
-          Попробовать Start
+        <button class="upgrade-btn" @click="showUpgradeModal = true">
+          {{ userStatus === 'free' ? 'Попробовать Start' : 'Обновить до Pro' }}
         </button>
       </div>
+    </div>
+
+    <!-- Subscription Expiry Warning -->
+    <div v-if="isSubscriptionExpiringSoon" class="expiry-warning">
+      <div class="warning-content">
+        <span class="warning-icon">⚠️</span>
+        <div class="warning-text">
+          <strong>Подписка истекает</strong>
+          <span>через {{ daysUntilExpiry }} {{ getDaysText(daysUntilExpiry) }}</span>
+        </div>
+      </div>
+      <button class="renew-btn" @click="showRenewalModal = true">
+        Продлить
+      </button>
     </div>
 
     <!-- Logout -->
@@ -108,94 +132,182 @@
         <span class="item-text">Выйти</span>
       </button>
     </div>
+
+    <!-- Modals -->
+    <PaymentModal
+      v-if="showVocabularyPaywall"
+      :user-id="userId"
+      :visible="showVocabularyPaywall"
+      :default-plan="'start'"
+      :requested-topic-id="null"
+      @close="showVocabularyPaywall = false"
+      @unlocked="handleVocabularyUnlocked"
+    />
+
+    <PaymentModal
+      v-if="showAnalyticsPaywall"
+      :user-id="userId"
+      :visible="showAnalyticsPaywall"
+      :default-plan="'pro'"
+      :requested-topic-id="null"
+      @close="showAnalyticsPaywall = false"
+      @unlocked="handleAnalyticsUnlocked"
+    />
+
+    <PaymentModal
+      v-if="showUpgradeModal"
+      :user-id="userId"
+      :visible="showUpgradeModal"
+      :default-plan="recommendedUpgrade?.plan || 'start'"
+      :requested-topic-id="null"
+      @close="showUpgradeModal = false"
+      @unlocked="handleUpgradeUnlocked"
+    />
+
+    <PaymentModal
+      v-if="showRenewalModal"
+      :user-id="userId"
+      :visible="showRenewalModal"
+      :default-plan="userStatus"
+      :requested-topic-id="null"
+      @close="showRenewalModal = false"
+      @unlocked="handleRenewalUnlocked"
+    />
   </div>
 </template>
 
 <script>
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { useStore } from 'vuex';
+import { useSubscription } from '@/composables/useSubscription';
 import { useAuth } from '@/composables/useAuth';
+import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
 export default {
   name: 'Sidebar',
+  components: {
+    PaymentModal
+  },
   setup() {
     const router = useRouter();
+    const store = useStore();
     const { currentUser: user, logout } = useAuth();
-
-    // Simple subscription status based on localStorage or default
-    const userStatus = ref(localStorage.getItem('userSubscription') || 'free');
     
-    // Computed properties for access control
-    const hasVocabularyAccess = computed(() => {
-      return userStatus.value === 'start' || userStatus.value === 'pro';
-    });
-    
-    const hasAdvancedFeatures = computed(() => {
-      return userStatus.value === 'pro';
+    const {
+      userStatus,
+      hasVocabularyAccess,
+      hasAdvancedFeatures,
+      getSubscriptionBadge: subscriptionBadge,
+      isSubscriptionExpiringSoon,
+      getDaysUntilExpiry: daysUntilExpiry,
+      getRecommendedUpgrade: recommendedUpgrade,
+      updateSubscription
+    } = useSubscription();
+
+    // Modal states
+    const showVocabularyPaywall = ref(false);
+    const showAnalyticsPaywall = ref(false);
+    const showUpgradeModal = ref(false);
+    const showRenewalModal = ref(false);
+
+    // User ID for payment modal
+    const userId = computed(() => {
+      return user.value?.uid || 
+             localStorage.getItem('firebaseUserId') || 
+             localStorage.getItem('userId') || 
+             'demo_user';
     });
 
-    // Subscription badge
-    const subscriptionBadge = computed(() => {
-      switch (userStatus.value) {
-        case 'pro':
-          return {
-            icon: '👑',
-            text: 'Pro',
-            class: 'badge-pro'
-          };
-        case 'start':
-          return {
-            icon: '⭐',
-            text: 'Start',
-            class: 'badge-start'
-          };
-        default:
-          return {
-            icon: '🆓',
-            text: 'Free',
-            class: 'badge-free'
-          };
+    // Handle vocabulary access
+    const handleVocabularyClick = async () => {
+      if (hasVocabularyAccess.value) {
+        router.push({ name: 'VocabularyPage' });
+      } else {
+        showVocabularyPaywall.value = true;
       }
-    });
+    };
 
-    // Show upgrade section for free users
-    const showUpgradeSection = computed(() => {
-      return userStatus.value === 'free';
-    });
+    // Handle analytics access
+    const handleAnalyticsClick = async () => {
+      if (hasAdvancedFeatures.value) {
+        router.push({ name: 'AnalyticsPage' });
+      } else {
+        showAnalyticsPaywall.value = true;
+      }
+    };
 
-    // Handle upgrade
-    const handleUpgrade = () => {
-      // Simulate upgrade - in real app this would open payment modal
-      console.log('🚀 Opening upgrade modal...');
-      // For demo purposes, let's upgrade to start
-      userStatus.value = 'start';
-      localStorage.setItem('userSubscription', 'start');
+    // Handle successful unlocks
+    const handleVocabularyUnlocked = async (planInfo) => {
+      console.log('✅ Vocabulary unlocked:', planInfo);
+      await updateSubscription(planInfo.plan);
+      showVocabularyPaywall.value = false;
+      router.push({ name: 'VocabularyPage' });
+    };
+
+    const handleAnalyticsUnlocked = async (planInfo) => {
+      console.log('✅ Analytics unlocked:', planInfo);
+      await updateSubscription(planInfo.plan);
+      showAnalyticsPaywall.value = false;
+      router.push({ name: 'AnalyticsPage' });
+    };
+
+    const handleUpgradeUnlocked = async (planInfo) => {
+      console.log('✅ Upgrade completed:', planInfo);
+      await updateSubscription(planInfo.plan);
+      showUpgradeModal.value = false;
+    };
+
+    const handleRenewalUnlocked = async (planInfo) => {
+      console.log('✅ Subscription renewed:', planInfo);
+      await updateSubscription(planInfo.plan);
+      showRenewalModal.value = false;
     };
 
     // Handle logout
     const handleLogout = async () => {
       try {
         await logout();
-        // Clear subscription data
-        localStorage.removeItem('userSubscription');
         router.push({ name: 'Login' });
       } catch (error) {
         console.error('❌ Logout error:', error);
       }
     };
 
+    // Helper function for days text
+    const getDaysText = (days) => {
+      if (days === 1) return 'день';
+      if (days < 5) return 'дня';
+      return 'дней';
+    };
+
     return {
       // Data
       user,
+      userId,
       userStatus,
       hasVocabularyAccess,
       hasAdvancedFeatures,
       subscriptionBadge,
-      showUpgradeSection,
+      isSubscriptionExpiringSoon,
+      daysUntilExpiry,
+      recommendedUpgrade,
+
+      // Modal states
+      showVocabularyPaywall,
+      showAnalyticsPaywall,
+      showUpgradeModal,
+      showRenewalModal,
 
       // Methods
-      handleUpgrade,
-      handleLogout
+      handleVocabularyClick,
+      handleAnalyticsClick,
+      handleVocabularyUnlocked,
+      handleAnalyticsUnlocked,
+      handleUpgradeUnlocked,
+      handleRenewalUnlocked,
+      handleLogout,
+      getDaysText
     };
   }
 };
@@ -211,7 +323,6 @@ export default {
   flex-direction: column;
   overflow-y: auto;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
-  position: relative;
 }
 
 /* User Info Section */
@@ -340,6 +451,11 @@ export default {
 }
 
 /* Premium Features */
+.premium-item {
+  position: relative;
+  overflow: hidden;
+}
+
 .premium-badge {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: white;
@@ -362,49 +478,78 @@ export default {
   50% { transform: scale(1.05); }
 }
 
+.lock-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(
+    135deg, 
+    rgba(107, 114, 128, 0.05) 0%, 
+    rgba(156, 163, 175, 0.05) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0.75rem 1.5rem;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+.lock-icon {
+  font-size: 1rem;
+  color: #9ca3af;
+}
+
+.premium-item:hover .lock-overlay {
+  opacity: 1;
+  background: linear-gradient(
+    135deg, 
+    rgba(139, 92, 246, 0.1) 0%, 
+    rgba(168, 85, 247, 0.1) 100%
+  );
+}
+
+.premium-item:hover .item-text {
+  color: #8b5cf6;
+}
+
+.premium-item:hover .premium-badge {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.4);
+}
+
 /* Upgrade Section */
 .upgrade-section {
   padding: 1rem 1.5rem;
   border-top: 1px solid #e9ecef;
-  background: rgba(139, 92, 246, 0.02);
 }
 
 .upgrade-card {
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border: 1px solid #e9ecef;
-  border-radius: 12px;
-  padding: 1.25rem;
+  border-radius: 8px;
+  padding: 1rem;
   transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.upgrade-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #8b5cf6, #7c3aed);
 }
 
 .upgrade-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.15);
-  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
 }
 
 .upgrade-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .upgrade-header h4 {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #374151;
 }
@@ -412,24 +557,22 @@ export default {
 .upgrade-badge {
   background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: white;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
   font-size: 0.7rem;
   font-weight: 600;
-  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
 }
 
 .upgrade-benefits {
   list-style: none;
   padding: 0;
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.75rem 0;
 }
 
 .upgrade-benefits li {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #6b7280;
-  margin-bottom: 0.5rem;
-  line-height: 1.4;
+  margin-bottom: 0.25rem;
 }
 
 .upgrade-btn {
@@ -437,30 +580,83 @@ export default {
   background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: white;
   border: none;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.8rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
 }
 
 .upgrade-btn:hover {
   background: linear-gradient(135deg, #7c3aed, #6d28d9);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
 }
 
-.upgrade-btn:active {
-  transform: translateY(0);
+/* Expiry Warning */
+.expiry-warning {
+  background: linear-gradient(135deg, #fef3c7, #fed7aa);
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 1.5rem;
+  animation: pulse-warning 2s ease-in-out infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% { box-shadow: 0 0 0 rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2); }
+}
+
+.warning-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.warning-icon {
+  font-size: 1rem;
+}
+
+.warning-text {
+  flex: 1;
+  font-size: 0.75rem;
+}
+
+.warning-text strong {
+  display: block;
+  color: #92400e;
+  font-weight: 600;
+}
+
+.warning-text span {
+  color: #b45309;
+}
+
+.renew-btn {
+  width: 100%;
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.renew-btn:hover {
+  background: #d97706;
+  transform: translateY(-1px);
 }
 
 /* Footer */
 .sidebar-footer {
   padding: 1rem 0;
   border-top: 1px solid #e9ecef;
-  background: rgba(0, 0, 0, 0.02);
 }
 
 .logout-btn {
@@ -475,7 +671,6 @@ export default {
   align-items: center;
   gap: 0.75rem;
   font-size: 0.875rem;
-  font-weight: 500;
 }
 
 .logout-btn:hover {
@@ -483,43 +678,7 @@ export default {
   color: #ef4444;
 }
 
-.logout-btn:active {
-  background: rgba(239, 68, 68, 0.15);
-}
-
-/* Enhanced Scrollbar */
-.sidebar::-webkit-scrollbar {
-  width: 4px;
-}
-
-.sidebar::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-
-.sidebar::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 2px;
-}
-
-.sidebar::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* Mobile Responsive */
-@media (max-width: 1024px) {
-  .sidebar {
-    width: 260px;
-  }
-  
-  .upgrade-section {
-    padding: 0.75rem 1rem;
-  }
-  
-  .upgrade-card {
-    padding: 1rem;
-  }
-}
-
+/* Responsive */
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
@@ -531,7 +690,6 @@ export default {
     flex-direction: row;
     overflow-x: auto;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-    background: white;
   }
   
   .user-info {
@@ -543,24 +701,21 @@ export default {
     flex-direction: row;
     padding: 0.5rem 0;
     flex: 1;
-    overflow-x: auto;
   }
   
   .sidebar-item {
     flex: 1;
-    padding: 0.75rem 0.5rem;
+    padding: 0.5rem;
     text-align: center;
     border-left: none;
     border-bottom: 3px solid transparent;
     min-width: 80px;
-    white-space: nowrap;
   }
   
   .sidebar-item:hover,
   .sidebar-item.router-link-active {
     border-left: none;
     border-bottom-color: #8b5cf6;
-    background: rgba(139, 92, 246, 0.1);
   }
   
   .item-content {
@@ -570,36 +725,6 @@ export default {
   
   .item-text {
     font-size: 0.7rem;
-    font-weight: 600;
-  }
-  
-  .item-icon {
-    font-size: 1.1rem;
-  }
-  
-  .premium-badge {
-    position: absolute;
-    top: 0.25rem;
-    right: 0.25rem;
-    padding: 0.1rem 0.25rem;
-    font-size: 0.55rem;
-    transform: scale(0.8);
-  }
-  
-  .upgrade-section,
-  .sidebar-footer {
-    display: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .sidebar-item {
-    min-width: 70px;
-    padding: 0.5rem 0.25rem;
-  }
-  
-  .item-text {
-    font-size: 0.65rem;
   }
   
   .item-icon {
@@ -607,99 +732,16 @@ export default {
   }
   
   .premium-badge {
-    font-size: 0.5rem;
-    padding: 0.05rem 0.2rem;
-  }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .sidebar {
-    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-    border-right-color: #374151;
-    color: #e2e8f0;
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    padding: 0.1rem 0.25rem;
+    font-size: 0.6rem;
   }
   
-  .sidebar-item {
-    color: #e2e8f0;
-  }
-  
-  .sidebar-item:hover,
-  .sidebar-item.router-link-active {
-    background: rgba(139, 92, 246, 0.2);
-    color: #a855f7;
-  }
-  
-  .upgrade-card {
-    background: linear-gradient(135deg, #374151 0%, #1e293b 100%);
-    border-color: #4b5563;
-  }
-  
-  .upgrade-header h4 {
-    color: #e2e8f0;
-  }
-  
-  .upgrade-benefits li {
-    color: #9ca3af;
-  }
-  
-  .logout-btn {
-    color: #9ca3af;
-  }
-  
-  .logout-btn:hover {
-    color: #f87171;
-    background: rgba(239, 68, 68, 0.15);
-  }
-  
+  .upgrade-section,
+  .expiry-warning,
   .sidebar-footer {
-    background: rgba(0, 0, 0, 0.2);
-    border-top-color: #374151;
-  }
-}
-
-/* High contrast mode */
-@media (prefers-contrast: high) {
-  .sidebar {
-    border-right-width: 2px;
-  }
-  
-  .sidebar-item {
-    border-left-width: 4px;
-  }
-  
-  .upgrade-card {
-    border-width: 2px;
-  }
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  
-  .sidebar-item:hover,
-  .upgrade-card:hover,
-  .upgrade-btn:hover,
-  .logout-btn:hover {
-    transform: none;
-  }
-}
-
-/* Focus management for accessibility */
-.sidebar-item:focus,
-.upgrade-btn:focus,
-.logout-btn:focus {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
-}
-
-/* Print styles */
-@media print {
-  .sidebar {
     display: none;
   }
 }
