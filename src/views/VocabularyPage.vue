@@ -226,21 +226,39 @@ const getUserVocabulary = async (userId, languageCode = null) => {
   try {
     console.log('📚 [VocabularyPage] Extracting vocabulary from completed lessons for user:', userId)
     
-    // Get user's completed lessons (same as VocabularyModal)
-    const progressResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live'}/users/${userId}/progress`)
+    if (!userId) {
+      console.warn('⚠️ No user ID provided, using demo data')
+      return getDemoVocabulary(languageCode)
+    }
     
-    if (!progressResponse.ok) {
+    // Get user's completed lessons (same as VocabularyModal)
+    let progressResponse
+    try {
+      progressResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live'}/users/${userId}/progress`)
+    } catch (fetchError) {
+      console.warn('⚠️ Progress fetch failed:', fetchError.message)
+      return await extractVocabularyFromAllLessons(languageCode)
+    }
+    
+    if (!progressResponse || !progressResponse.ok) {
       console.warn('⚠️ Could not fetch user progress, trying lessons directly...')
       return await extractVocabularyFromAllLessons(languageCode)
     }
     
-    const progressData = await progressResponse.json()
+    let progressData
+    try {
+      progressData = await progressResponse.json()
+    } catch (jsonError) {
+      console.warn('⚠️ Progress JSON parse failed:', jsonError.message)
+      return await extractVocabularyFromAllLessons(languageCode)
+    }
+    
     const userProgress = Array.isArray(progressData) ? progressData : progressData.data || []
     
     console.log(`📊 Found ${userProgress.length} progress records`)
     
     // Get completed lessons
-    const completedLessons = userProgress.filter(p => p.completed && p.lessonId)
+    const completedLessons = userProgress.filter(p => p && p.completed && p.lessonId)
     console.log(`✅ Found ${completedLessons.length} completed lessons`)
     
     if (completedLessons.length === 0) {
@@ -253,6 +271,8 @@ const getUserVocabulary = async (userId, languageCode = null) => {
     // Extract vocabulary from each completed lesson (same logic as VocabularyModal)
     for (const progress of completedLessons.slice(0, 20)) {
       try {
+        if (!progress || !progress.lessonId) continue
+        
         const lessonResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live'}/lessons/${progress.lessonId}`)
         
         if (!lessonResponse.ok) continue
@@ -260,7 +280,7 @@ const getUserVocabulary = async (userId, languageCode = null) => {
         const lessonData = await lessonResponse.json()
         const lesson = lessonData.lesson || lessonData
         
-        if (!lesson || !lesson.steps) continue
+        if (!lesson || !lesson.steps || !Array.isArray(lesson.steps)) continue
         
         // Extract vocabulary from lesson steps (EXACT same logic as VocabularyModal)
         lesson.steps.forEach((step, stepIndex) => {
@@ -295,6 +315,7 @@ const getUserVocabulary = async (userId, languageCode = null) => {
         
       } catch (lessonError) {
         console.warn(`⚠️ Error processing lesson ${progress.lessonId}:`, lessonError.message)
+        continue
       }
     }
     
@@ -303,7 +324,7 @@ const getUserVocabulary = async (userId, languageCode = null) => {
     // Filter by language if specified
     if (languageCode) {
       const filteredVocabulary = allVocabulary.filter(word => 
-        word.language && word.language.toLowerCase() === languageCode.toLowerCase()
+        word && word.language && word.language.toLowerCase() === languageCode.toLowerCase()
       )
       console.log(`🔍 Filtered to ${filteredVocabulary.length} words for language: ${languageCode}`)
       return filteredVocabulary
@@ -336,6 +357,8 @@ const isValidVocabularyItem = (vocab) => {
 // Helper function to extract vocabulary from step (same logic as VocabularyModal)
 const extractVocabularyFromStep = (vocab, lesson, progress, uniqueId) => {
   try {
+    if (!vocab || typeof vocab !== 'object') return null
+    
     let word, translation, definition = '', examples = []
     
     // Handle different vocabulary formats (same as VocabularyModal)
@@ -359,8 +382,13 @@ const extractVocabularyFromStep = (vocab, lesson, progress, uniqueId) => {
       return null
     }
     
+    // Ensure word and translation are strings
+    if (!word || !translation || typeof word !== 'string' || typeof translation !== 'string') {
+      return null
+    }
+    
     // Handle examples
-    if (vocab.example) {
+    if (vocab.example && typeof vocab.example === 'string') {
       examples.push({
         sentence: vocab.example,
         translation: translation
@@ -368,7 +396,7 @@ const extractVocabularyFromStep = (vocab, lesson, progress, uniqueId) => {
     }
     
     if (vocab.examples && Array.isArray(vocab.examples)) {
-      examples = [...examples, ...vocab.examples]
+      examples = [...examples, ...vocab.examples.filter(ex => ex && typeof ex === 'object')]
     }
     
     // Determine language from lesson (same logic as VocabularyModal)
@@ -378,10 +406,10 @@ const extractVocabularyFromStep = (vocab, lesson, progress, uniqueId) => {
       id: `${progress.lessonId}_${uniqueId}_${word}`,
       word: word.trim(),
       translation: translation.trim(),
-      definition: definition.trim(),
+      definition: (definition || '').trim(),
       language: language,
       topic: lesson.topic || lesson.subject || 'General',
-      lessonName: lesson.lessonName || lesson.title,
+      lessonName: lesson.lessonName || lesson.title || 'Unknown Lesson',
       level: lesson.level || 1,
       partOfSpeech: vocab.partOfSpeech || vocab.type || 'noun',
       difficulty: getDifficultyFromLevel(lesson.level || 1),
@@ -576,7 +604,11 @@ const goBack = () => {
 const loadLanguages = async () => {
   loading.value = true
   try {
-    const vocabulary = await getUserVocabulary(currentUser.value.uid)
+    // Get user ID safely
+    const userId = currentUser.value?.uid || 'demo_user'
+    console.log('📚 Loading languages for user:', userId)
+    
+    const vocabulary = await getUserVocabulary(userId)
     
     if (!vocabulary || vocabulary.length === 0) {
       showToast('Словарь пуст. Начните изучать уроки для добавления слов!', 'warning')
@@ -588,6 +620,8 @@ const loadLanguages = async () => {
     const languageMap = new Map()
     
     vocabulary.forEach(word => {
+      if (!word || !word.language) return
+      
       const langCode = word.language || 'english'
       
       if (!languageMap.has(langCode)) {
@@ -637,12 +671,15 @@ const loadLanguages = async () => {
 const loadLevels = async (language) => {
   loading.value = true
   try {
-    const vocabulary = await getUserVocabulary(currentUser.value.uid, language.code)
+    const userId = currentUser.value?.uid || 'demo_user'
+    const vocabulary = await getUserVocabulary(userId, language.code)
     
     // Group by level
     const levelMap = new Map()
     
     vocabulary.forEach(word => {
+      if (!word) return
+      
       const level = word.level || word.metadata?.lessonLevel || 1
       
       if (!levelMap.has(level)) {
@@ -676,13 +713,14 @@ const loadLevels = async (language) => {
 const loadTopics = async (language, level) => {
   loading.value = true
   try {
-    const vocabulary = await getUserVocabulary(currentUser.value.uid, language.code)
+    const userId = currentUser.value?.uid || 'demo_user'
+    const vocabulary = await getUserVocabulary(userId, language.code)
     
     // Filter by level and group by topic
     const topicMap = new Map()
     
     vocabulary
-      .filter(word => (word.level || 1) === level)
+      .filter(word => word && (word.level || 1) === level)
       .forEach(word => {
         const topicName = word.topic || word.lessonName || 'General'
         
@@ -852,11 +890,9 @@ const showToast = (message, type = 'success') => {
 // LIFECYCLE
 // ========================================
 onMounted(() => {
-  if (currentUser.value) {
-    loadLanguages()
-  } else {
-    showToast('Необходимо войти в систему для доступа к словарю', 'error')
-  }
+  // Always try to load languages, even without user check
+  console.log('🔄 VocabularyPage mounted, loading languages...')
+  loadLanguages()
 })
 </script>
 
