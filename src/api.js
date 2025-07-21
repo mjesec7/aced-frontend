@@ -27,7 +27,7 @@ import {
   // Aliases
   generatePaymentForm,
   executePaymentFlow
-} from './payments.js';
+} from './api/payments.js';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
 
