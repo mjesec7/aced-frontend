@@ -1,5 +1,6 @@
 /* ===========================================
    ENHANCED LESSONPAGE.CSS - COMPLETE RESPONSIVE DESIGN
+   WITH RESIZABLE SPLIT SCREEN FUNCTIONALITY
    FOR ALL DEVICES WITH MODERN UX PATTERNS
    =========================================== */
 
@@ -238,17 +239,21 @@
     overflow: hidden;
   }
   
-  /* Enhanced Split Screen Content */
+  /* ===========================================
+     RESIZABLE SPLIT SCREEN CONTENT
+     =========================================== */
+  
   .split-content {
     flex: 1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: row;
     min-height: 0;
-    gap: 1px;
+    gap: 0;
     background: #e2e8f0;
+    position: relative;
   }
   
-  /* Enhanced Panel Containers */
+  /* Enhanced Panel Containers with Resizable Support */
   .interactive-panel-container {
     display: flex;
     flex-direction: column;
@@ -257,6 +262,11 @@
     padding: 24px;
     background: #ffffff;
     position: relative;
+    flex: 0 0 50%;
+    min-width: 300px;
+    transition: flex 0.2s ease, padding 0.2s ease, box-shadow 0.2s ease;
+    order: 2;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.05);
   }
   
   .interactive-panel-container::before {
@@ -277,6 +287,201 @@
     justify-content: center;
     padding: 48px;
     position: relative;
+    flex: 0 0 50%;
+    min-width: 300px;
+    transition: flex 0.2s ease, padding 0.2s ease, box-shadow 0.2s ease;
+    order: 2;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Content Panel - Updated for resizing */
+  .content-panel {
+    background: white;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    min-height: 0;
+    position: relative;
+    flex: 0 0 50%;
+    min-width: 300px;
+    transition: flex 0.2s ease, padding 0.2s ease, box-shadow 0.2s ease;
+    order: 0;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+  }
+  
+  .content-panel::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 2px;
+    background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+    opacity: 0.1;
+  }
+  
+  /* ===========================================
+     RESIZABLE DIVIDER SYSTEM
+     =========================================== */
+  
+  .resize-divider {
+    width: 8px;
+    background: #e2e8f0;
+    cursor: col-resize;
+    position: relative;
+    flex-shrink: 0;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-left: 1px solid #cbd5e1;
+    border-right: 1px solid #cbd5e1;
+    order: 1;
+    background-image: 
+      radial-gradient(circle, #94a3b8 1px, transparent 1px),
+      radial-gradient(circle, #94a3b8 1px, transparent 1px);
+    background-size: 4px 20px, 4px 20px;
+    background-position: 2px 10px, 2px 30px;
+    background-repeat: repeat-y;
+  }
+  
+  .resize-divider:hover {
+    background-color: #cbd5e1;
+    transform: scaleX(1.2);
+  }
+  
+  .resize-divider:active {
+    background-color: #3b82f6;
+    background-image: 
+      radial-gradient(circle, #ffffff 1px, transparent 1px),
+      radial-gradient(circle, #ffffff 1px, transparent 1px);
+  }
+  
+  .resize-divider::before {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 40px;
+    background: #94a3b8;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+  }
+  
+  .resize-divider:hover::before {
+    background: #64748b;
+    height: 60px;
+  }
+  
+  .resize-divider:active::before {
+    background: #ffffff;
+    height: 80px;
+  }
+  
+  /* DRAG INDICATOR */
+  .resize-divider::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 100%;
+    left: -6px;
+    top: 0;
+    cursor: col-resize;
+  }
+  
+  /* WIDTH INDICATOR */
+  .width-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(59, 130, 246, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    z-index: 20;
+    white-space: nowrap;
+  }
+  
+  .resize-divider:active .width-indicator {
+    opacity: 1;
+  }
+  
+  /* DRAG STATES */
+  .dragging {
+    user-select: none;
+    cursor: col-resize !important;
+  }
+  
+  .dragging * {
+    cursor: col-resize !important;
+    pointer-events: none;
+  }
+  
+  .dragging .content-panel,
+  .dragging .interactive-panel-container,
+  .dragging .non-interactive-panel {
+    transition: none;
+  }
+  
+  .split-content.divider-active .resize-divider {
+    background-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  }
+  
+  /* Visual indicators for minimum/maximum width reached */
+  .content-panel[style*="25%"]::after,
+  .interactive-panel-container[style*="75%"]::after,
+  .non-interactive-panel[style*="75%"]::after {
+    content: '◀';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #3b82f6;
+    font-size: 1.2rem;
+    animation: pulse 1s infinite;
+    z-index: 5;
+  }
+  
+  .content-panel[style*="75%"]::after,
+  .interactive-panel-container[style*="25%"]::after,
+  .non-interactive-panel[style*="25%"]::after {
+    content: '▶';
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #3b82f6;
+    font-size: 1.2rem;
+    animation: pulse 1s infinite;
+    z-index: 5;
+  }
+  
+  /* Remove indicators when not at extremes */
+  .content-panel:not([style*="25%"]):not([style*="75%"])::after,
+  .interactive-panel-container:not([style*="25%"]):not([style*="75%"])::after,
+  .non-interactive-panel:not([style*="25%"]):not([style*="75%"])::after {
+    display: none;
+  }
+  
+  /* Handle edge cases for very narrow panels */
+  .content-panel[style*="25%"],
+  .interactive-panel-container[style*="25%"],
+  .non-interactive-panel[style*="25%"] {
+    padding: 16px;
+  }
+  
+  .content-panel[style*="75%"],
+  .interactive-panel-container[style*="75%"],
+  .non-interactive-panel[style*="75%"] {
+    padding: 40px;
   }
   
   .panel-placeholder {
@@ -1277,10 +1482,12 @@
   /* Desktop (1440px - 1919px) */
   @media (min-width: 1440px) and (max-width: 1919px) {
     .split-content {
-      gap: 2px;
+      gap: 0;
     }
     
-    .interactive-panel-container {
+    .interactive-panel-container,
+    .content-panel,
+    .non-interactive-panel {
       padding: 28px;
     }
     
@@ -1292,11 +1499,114 @@
   /* Large Tablet (1024px - 1439px) */
   @media (min-width: 1024px) and (max-width: 1439px) {
     .split-content {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto 1fr;
+      flex-direction: column;
     }
     
-    .interactive-panel-container {
+    .resize-divider {
+      width: 100%;
+      height: 8px;
+      cursor: row-resize;
+      order: 1;
+      background-image: 
+        radial-gradient(circle, #94a3b8 1px, transparent 1px),
+        radial-gradient(circle, #94a3b8 1px, transparent 1px);
+      background-size: 20px 4px, 20px 4px;
+      background-position: 10px 2px, 30px 2px;
+      background-repeat: repeat-x;
+      border-left: none;
+      border-right: none;
+      border-top: 1px solid #cbd5e1;
+      border-bottom: 1px solid #cbd5e1;
+    }
+    
+    .resize-divider:hover {
+      transform: scaleY(1.2);
+    }
+    
+    .resize-divider::before {
+      width: 40px;
+      height: 2px;
+    }
+    
+    .resize-divider:hover::before {
+      width: 60px;
+    }
+    
+    .resize-divider:active::before {
+      width: 80px;
+    }
+    
+    .resize-divider::after {
+      width: 100%;
+      height: 20px;
+      left: 0;
+      top: -6px;
+      cursor: row-resize;
+    }
+    
+    .content-panel,
+    .interactive-panel-container,
+    .non-interactive-panel {
+      min-width: auto;
+      min-height: 200px;
+    }
+    
+    .content-panel::after {
+      display: none;
+    }
+    
+    .content-panel {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .interactive-panel-container,
+    .non-interactive-panel {
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .dragging {
+      cursor: row-resize !important;
+    }
+    
+    .dragging * {
+      cursor: row-resize !important;
+    }
+    
+    /* Update mobile indicators for tablet */
+    .content-panel[style*="25%"]::after {
+      content: '▲';
+      bottom: 8px;
+      top: auto;
+      right: 50%;
+      transform: translateX(50%);
+    }
+    
+    .content-panel[style*="75%"]::after {
+      content: '▼';
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    
+    .interactive-panel-container[style*="25%"]::after,
+    .non-interactive-panel[style*="25%"]::after {
+      content: '▲';
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    
+    .interactive-panel-container[style*="75%"]::after,
+    .non-interactive-panel[style*="75%"]::after {
+      content: '▼';
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    
+    .interactive-panel-container,
+    .content-panel,
+    .non-interactive-panel {
       padding: 24px;
       gap: 18px;
     }
@@ -1324,20 +1634,118 @@
     }
     
     .split-content {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto 1fr;
+      flex-direction: column;
       gap: 0;
     }
     
-    .interactive-panel-container {
+    .resize-divider {
+      width: 100%;
+      height: 8px;
+      cursor: row-resize;
+      order: 1;
+      background-image: 
+        radial-gradient(circle, #94a3b8 1px, transparent 1px),
+        radial-gradient(circle, #94a3b8 1px, transparent 1px);
+      background-size: 20px 4px, 20px 4px;
+      background-position: 10px 2px, 30px 2px;
+      background-repeat: repeat-x;
+      border-left: none;
+      border-right: none;
+      border-top: 1px solid #cbd5e1;
+      border-bottom: 1px solid #cbd5e1;
+    }
+    
+    .resize-divider:hover {
+      transform: scaleY(1.2);
+    }
+    
+    .resize-divider::before {
+      width: 40px;
+      height: 2px;
+    }
+    
+    .resize-divider:hover::before {
+      width: 60px;
+    }
+    
+    .resize-divider:active::before {
+      width: 80px;
+    }
+    
+    .resize-divider::after {
+      width: 100%;
+      height: 20px;
+      left: 0;
+      top: -6px;
+      cursor: row-resize;
+    }
+    
+    .interactive-panel-container,
+    .content-panel,
+    .non-interactive-panel {
       padding: 20px;
       gap: 16px;
+      min-width: auto;
+      min-height: 200px;
     }
     
     .interactive-panel-container::before {
       height: 3px;
     }
     
+    .content-panel::after {
+      display: none;
+    }
+    
+    .content-panel {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .interactive-panel-container,
+    .non-interactive-panel {
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .dragging {
+      cursor: row-resize !important;
+    }
+    
+    .dragging * {
+      cursor: row-resize !important;
+    }
+    
+    /* Update indicators for vertical layout */
+    .content-panel[style*="25%"]::after {
+      content: '▲';
+      bottom: 8px;
+      top: auto;
+      right: 50%;
+      transform: translateX(50%);
+    }
+    
+    .content-panel[style*="75%"]::after {
+      content: '▼';
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    
+    .interactive-panel-container[style*="25%"]::after,
+    .non-interactive-panel[style*="25%"]::after {
+      content: '▲';
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    
+    .interactive-panel-container[style*="75%"]::after,
+    .non-interactive-panel[style*="75%"]::after {
+      content: '▼';
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  
     .modal-content {
       padding: 32px;
       margin: 16px;
@@ -1463,14 +1871,24 @@
     }
     
     .split-content {
-      grid-template-columns: 1fr;
-      display: flex;
       flex-direction: column;
+      display: flex;
     }
     
-    .interactive-panel-container {
+    .resize-divider {
+      width: 100%;
+      height: 8px;
+      cursor: row-resize;
+      order: 1;
+    }
+    
+    .interactive-panel-container,
+    .content-panel,
+    .non-interactive-panel {
       padding: 18px;
       gap: 14px;
+      min-width: auto;
+      min-height: 200px;
     }
     
     .loading-screen,
@@ -1532,14 +1950,24 @@
     }
     
     .split-content {
-      grid-template-columns: 1fr;
-      display: flex;
       flex-direction: column;
+      display: flex;
     }
     
-    .interactive-panel-container {
+    .resize-divider {
+      width: 100%;
+      height: 12px;
+      cursor: row-resize;
+      order: 1;
+    }
+    
+    .interactive-panel-container,
+    .content-panel,
+    .non-interactive-panel {
       padding: 16px;
       gap: 12px;
+      min-width: auto;
+      min-height: 200px;
     }
     
     .loading-screen,
@@ -1642,14 +2070,24 @@
     }
     
     .split-content {
-      grid-template-columns: 1fr;
-      display: flex;
       flex-direction: column;
+      display: flex;
     }
     
-    .interactive-panel-container {
+    .resize-divider {
+      width: 100%;
+      height: 12px;
+      cursor: row-resize;
+      order: 1;
+    }
+    
+    .interactive-panel-container,
+    .content-panel,
+    .non-interactive-panel {
       padding: 14px;
       gap: 10px;
+      min-width: auto;
+      min-height: 200px;
     }
     
     .loading-screen,
@@ -1821,15 +2259,22 @@
     .vocab-dot,
     .close-btn,
     .vocab-close-btn,
-    .floating-ai-btn {
+    .floating-ai-btn,
+    .resize-divider {
       min-height: 48px;
       min-width: 48px;
     }
     
-    /* Larger interactive areas */
-    .vocabulary-card {
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
+    /* Larger resizable divider for touch */
+    .resize-divider {
+      width: 12px;
+    }
+    
+    @media (max-width: 768px) {
+      .resize-divider {
+        width: 100%;
+        height: 12px;
+      }
     }
     
     /* Better spacing for touch */
@@ -1868,7 +2313,8 @@
   .vocab-restart-btn:focus,
   .submit-btn:focus,
   .close-btn:focus,
-  .vocab-close-btn:focus {
+  .vocab-close-btn:focus,
+  .resize-divider:focus {
     outline: 3px solid #3b82f6;
     outline-offset: 2px;
   }
@@ -1887,6 +2333,14 @@
   .form-textarea:focus,
   .form-select:focus {
     outline: none; /* Using box-shadow instead */
+  }
+  
+  /* Enhanced focus indicator for resizable divider */
+  .resize-divider:focus {
+    background-color: #3b82f6;
+    box-shadow: 
+      0 0 0 2px rgba(59, 130, 246, 0.3),
+      inset 0 0 0 2px #ffffff;
   }
   
   /* Screen reader only content */
@@ -1926,6 +2380,21 @@
     .floating-ai-btn {
       border: 3px solid #fff;
     }
+    
+    .resize-divider {
+      border-left: 3px solid #000;
+      border-right: 3px solid #000;
+      background: #000;
+    }
+    
+    @media (max-width: 768px) {
+      .resize-divider {
+        border-left: none;
+        border-right: none;
+        border-top: 3px solid #000;
+        border-bottom: 3px solid #000;
+      }
+    }
   }
   
   /* ===========================================
@@ -1961,6 +2430,17 @@
     .retry-btn:hover {
       transform: none;
     }
+    
+    .resize-divider:hover {
+      transform: none;
+    }
+    
+    .content-panel,
+    .interactive-panel-container,
+    .non-interactive-panel,
+    .resize-divider {
+      transition: none;
+    }
   }
   
   /* ===========================================
@@ -1982,7 +2462,8 @@
     }
   
     .interactive-panel-container,
-    .non-interactive-panel {
+    .non-interactive-panel,
+    .content-panel {
       background: #1e293b;
       color: #e2e8f0;
     }
@@ -2066,6 +2547,25 @@
     .success-text p {
       color: #d1d5db;
     }
+    
+    .resize-divider {
+      background-color: #374151;
+      border-color: #4b5563;
+      background-image: 
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px);
+    }
+
+    .resize-divider:hover {
+      background-color: #4b5563;
+    }
+
+    .resize-divider:active {
+      background-color: #3b82f6;
+      background-image: 
+        radial-gradient(circle, #ffffff 1px, transparent 1px),
+        radial-gradient(circle, #ffffff 1px, transparent 1px);
+    }
   }
   
   /* ===========================================
@@ -2077,7 +2577,8 @@
     .modal-overlay,
     .confetti-canvas,
     .vocabulary-modal-overlay,
-    .success-notification {
+    .success-notification,
+    .resize-divider {
       display: none !important;
     }
   
@@ -2095,11 +2596,16 @@
     }
   
     .interactive-panel-container,
-    .non-interactive-panel {
+    .non-interactive-panel,
+    .content-panel {
       background: white !important;
       color: black !important;
       border: 1px solid #000;
       margin-bottom: 20px;
+      flex: none;
+      width: 100%;
+      min-width: auto;
+      page-break-inside: avoid;
     }
   
     .vocabulary-card {
@@ -2128,7 +2634,10 @@
   .vocabulary-card,
   .floating-ai-btn,
   .modal-content,
-  .vocabulary-modal-container {
+  .vocabulary-modal-container,
+  .content-panel,
+  .interactive-panel-container,
+  .non-interactive-panel {
     will-change: transform;
     transform: translateZ(0);
   }
@@ -2141,6 +2650,16 @@
   /* Prevent layout thrashing */
   .loading-spinner {
     will-change: transform;
+  }
+  
+  .resize-divider {
+    will-change: background-color;
+  }
+  
+  .content-panel,
+  .interactive-panel-container,
+  .non-interactive-panel {
+    will-change: flex;
   }
   
   /* ===========================================
@@ -2195,4 +2714,46 @@
   ::-moz-selection {
     background-color: rgba(59, 130, 246, 0.2);
     color: inherit;
+  }
+  
+  /* SMOOTH RESIZE ANIMATION CLASS */
+  .smooth-resize .content-panel,
+  .smooth-resize .interactive-panel-container,
+  .smooth-resize .non-interactive-panel {
+    transition: flex 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* JavaScript-triggered classes */
+  .lesson-container.resizing {
+    overflow: hidden;
+  }
+  
+  .lesson-container.resizing * {
+    user-select: none;
+  }
+  
+  /* Enhanced hover effects */
+  .resize-divider:hover::before {
+    background: #64748b;
+    height: 60px;
+  }
+  
+  @media (max-width: 768px) {
+    .resize-divider:hover::before {
+      width: 60px;
+      height: 2px;
+    }
+  }
+  
+  /* Final responsive adjustments */
+  @media (max-width: 320px) {
+    .interactive-panel-container,
+    .content-panel,
+    .non-interactive-panel {
+      padding: 12px;
+    }
+    
+    .resize-divider {
+      height: 16px;
+    }
   }
