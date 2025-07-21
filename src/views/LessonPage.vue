@@ -362,7 +362,7 @@
 </template>
 
 <script>
-// ✅ FULLY UPDATED LessonPage.vue <script> with Fixed Drag & Drop
+// ✅ COMPLETE LESSONPAGE.VUE SCRIPT with Enhanced Resizable Split Screen
 import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -418,7 +418,19 @@ export default {
     explanation.initializeAI?.()
 
     // ==========================================
-    // REACTIVE STATE
+    // RESIZABLE SPLIT SCREEN STATE
+    // ==========================================
+    const isResizing = ref(false)
+    const startX = ref(0)
+    const startY = ref(0)
+    const startWidthLeft = ref(50)
+    const startWidthRight = ref(50)
+    const currentLeftWidth = ref(50)
+    const currentRightWidth = ref(50)
+    const resizeDirection = ref('horizontal') // 'horizontal' or 'vertical'
+
+    // ==========================================
+    // OTHER REACTIVE STATE
     // ==========================================
     const attemptCount = ref(0)
     const maxAttempts = ref(2)
@@ -450,7 +462,46 @@ export default {
     const showConfetti = ref(false)
 
     // ==========================================
-    // COMPUTED PROPERTIES
+    // RESIZABLE SPLIT SCREEN COMPUTED PROPERTIES
+    // ==========================================
+    const leftPanelStyle = computed(() => {
+      const isVertical = window.innerWidth <= 1023
+      if (isVertical) {
+        return { 
+          flex: `1 1 ${currentLeftWidth.value}%`,
+          minHeight: '200px',
+          maxHeight: currentLeftWidth.value >= 75 ? '75%' : 'none'
+        }
+      }
+      return { 
+        flex: `0 0 ${currentLeftWidth.value}%`,
+        minWidth: '300px',
+        maxWidth: currentLeftWidth.value >= 75 ? '75%' : 'none'
+      }
+    })
+
+    const rightPanelStyle = computed(() => {
+      const isVertical = window.innerWidth <= 1023
+      if (isVertical) {
+        return { 
+          flex: `1 1 ${currentRightWidth.value}%`,
+          minHeight: '200px',
+          maxHeight: currentRightWidth.value >= 75 ? '75%' : 'none'
+        }
+      }
+      return { 
+        flex: `0 0 ${currentRightWidth.value}%`,
+        minWidth: '300px',
+        maxWidth: currentRightWidth.value >= 75 ? '75%' : 'none'
+      }
+    })
+
+    const widthIndicatorText = computed(() => {
+      return `${Math.round(currentLeftWidth.value)}% | ${Math.round(currentRightWidth.value)}%`
+    })
+
+    // ==========================================
+    // OTHER COMPUTED PROPERTIES
     // ==========================================
     const getUserProgress = computed(() => ({
       currentStep: lessonOrchestrator.currentIndex.value,
@@ -467,6 +518,231 @@ export default {
     const userToken = computed(() => {
       return lessonOrchestrator.currentUser?.value?.token || localStorage.getItem('authToken')
     })
+
+    // ==========================================
+    // RESIZABLE SPLIT SCREEN METHODS
+    // ==========================================
+    const startResize = (event) => {
+      event.preventDefault()
+      
+      isResizing.value = true
+      
+      // Determine if we're in mobile/tablet mode (vertical) or desktop mode (horizontal)
+      resizeDirection.value = window.innerWidth <= 1023 ? 'vertical' : 'horizontal'
+      
+      if (resizeDirection.value === 'horizontal') {
+        startX.value = event.clientX || event.touches?.[0]?.clientX || 0
+      } else {
+        startY.value = event.clientY || event.touches?.[0]?.clientY || 0
+      }
+      
+      startWidthLeft.value = currentLeftWidth.value
+      startWidthRight.value = currentRightWidth.value
+      
+      // Add event listeners
+      document.addEventListener('mousemove', handleResize, { passive: false })
+      document.addEventListener('mouseup', stopResize)
+      document.addEventListener('touchmove', handleResize, { passive: false })
+      document.addEventListener('touchend', stopResize)
+      
+      // Prevent text selection during resize
+      document.body.style.userSelect = 'none'
+      document.body.style.cursor = resizeDirection.value === 'horizontal' ? 'col-resize' : 'row-resize'
+      
+      console.log('🔧 Started resizing:', resizeDirection.value)
+    }
+
+    const handleResize = (event) => {
+      if (!isResizing.value) return
+      
+      event.preventDefault()
+      
+      const splitContent = document.querySelector('.split-content')
+      if (!splitContent) return
+      
+      let delta = 0
+      let containerSize = 0
+      
+      if (resizeDirection.value === 'horizontal') {
+        const currentX = event.clientX || event.touches?.[0]?.clientX || startX.value
+        delta = currentX - startX.value
+        containerSize = splitContent.offsetWidth
+      } else {
+        const currentY = event.clientY || event.touches?.[0]?.clientY || startY.value
+        delta = currentY - startY.value
+        containerSize = splitContent.offsetHeight
+      }
+      
+      // Calculate percentage change
+      const deltaPercentage = (delta / containerSize) * 100
+      
+      // Calculate new widths
+      let newLeftWidth = startWidthLeft.value + deltaPercentage
+      let newRightWidth = startWidthRight.value - deltaPercentage
+      
+      // Apply constraints (25% minimum, 75% maximum)
+      const minWidth = 25
+      const maxWidth = 75
+      
+      if (newLeftWidth < minWidth) {
+        newLeftWidth = minWidth
+        newRightWidth = 100 - newLeftWidth
+      } else if (newLeftWidth > maxWidth) {
+        newLeftWidth = maxWidth
+        newRightWidth = 100 - newLeftWidth
+      }
+      
+      if (newRightWidth < minWidth) {
+        newRightWidth = minWidth
+        newLeftWidth = 100 - newRightWidth
+      } else if (newRightWidth > maxWidth) {
+        newRightWidth = maxWidth
+        newLeftWidth = 100 - newRightWidth
+      }
+      
+      // Update reactive values
+      currentLeftWidth.value = newLeftWidth
+      currentRightWidth.value = newRightWidth
+    }
+
+    const stopResize = () => {
+      if (!isResizing.value) return
+      
+      isResizing.value = false
+      
+      // Remove event listeners
+      document.removeEventListener('mousemove', handleResize)
+      document.removeEventListener('mouseup', stopResize)
+      document.removeEventListener('touchmove', handleResize)
+      document.removeEventListener('touchend', stopResize)
+      
+      // Restore text selection and cursor
+      document.body.style.userSelect = ''
+      document.body.style.cursor = ''
+      
+      // Save the current sizes to localStorage for persistence
+      try {
+        localStorage.setItem('lessonPageSplitSizes', JSON.stringify({
+          left: currentLeftWidth.value,
+          right: currentRightWidth.value,
+          timestamp: Date.now()
+        }))
+      } catch (error) {
+        console.warn('Could not save split sizes to localStorage:', error)
+      }
+      
+      console.log('✅ Stopped resizing. Final sizes:', {
+        left: Math.round(currentLeftWidth.value),
+        right: Math.round(currentRightWidth.value)
+      })
+    }
+
+    // Keyboard support for accessibility
+    const handleResizeKeyboard = (event) => {
+      const step = 5 // 5% step size
+      let newLeftWidth = currentLeftWidth.value
+      
+      switch (event.key) {
+        case 'ArrowLeft':
+          event.preventDefault()
+          newLeftWidth = Math.max(25, currentLeftWidth.value - step)
+          break
+        case 'ArrowRight':
+          event.preventDefault()
+          newLeftWidth = Math.min(75, currentLeftWidth.value + step)
+          break
+        case 'ArrowUp':
+          if (resizeDirection.value === 'vertical') {
+            event.preventDefault()
+            newLeftWidth = Math.max(25, currentLeftWidth.value - step)
+          }
+          break
+        case 'ArrowDown':
+          if (resizeDirection.value === 'vertical') {
+            event.preventDefault()
+            newLeftWidth = Math.min(75, currentLeftWidth.value + step)
+          }
+          break
+        case 'Home':
+          event.preventDefault()
+          newLeftWidth = 25
+          break
+        case 'End':
+          event.preventDefault()
+          newLeftWidth = 75
+          break
+        case ' ':
+        case 'Enter':
+          event.preventDefault()
+          newLeftWidth = 50
+          break
+        default:
+          return
+      }
+      
+      currentLeftWidth.value = newLeftWidth
+      currentRightWidth.value = 100 - newLeftWidth
+      
+      // Save the new sizes
+      try {
+        localStorage.setItem('lessonPageSplitSizes', JSON.stringify({
+          left: currentLeftWidth.value,
+          right: currentRightWidth.value,
+          timestamp: Date.now()
+        }))
+      } catch (error) {
+        console.warn('Could not save split sizes to localStorage:', error)
+      }
+    }
+
+    // Function to reset to default sizes
+    const resetSplitSizes = () => {
+      currentLeftWidth.value = 50
+      currentRightWidth.value = 50
+      
+      // Remove saved sizes from localStorage
+      try {
+        localStorage.removeItem('lessonPageSplitSizes')
+      } catch (error) {
+        console.warn('Could not remove saved sizes from localStorage:', error)
+      }
+      
+      console.log('🔄 Reset split sizes to default (50/50)')
+    }
+
+    // Function to load saved sizes from localStorage
+    const loadSavedSizes = () => {
+      try {
+        const saved = localStorage.getItem('lessonPageSplitSizes')
+        if (saved) {
+          const { left, right, timestamp } = JSON.parse(saved)
+          
+          // Check if saved data is recent (within 30 days)
+          const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000)
+          if (timestamp && timestamp > thirtyDaysAgo) {
+            currentLeftWidth.value = Math.max(25, Math.min(75, left || 50))
+            currentRightWidth.value = Math.max(25, Math.min(75, right || 50))
+            console.log('📊 Loaded saved split sizes:', { left: currentLeftWidth.value, right: currentRightWidth.value })
+          } else {
+            // Remove old data
+            localStorage.removeItem('lessonPageSplitSizes')
+          }
+        }
+      } catch (error) {
+        console.warn('Could not load saved sizes from localStorage:', error)
+      }
+    }
+
+    // Handle window resize
+    const handleWindowResize = () => {
+      const wasVertical = resizeDirection.value === 'vertical'
+      const isNowVertical = window.innerWidth <= 1023
+      
+      if (wasVertical !== isNowVertical) {
+        resizeDirection.value = isNowVertical ? 'vertical' : 'horizontal'
+        console.log('📱 Resize direction changed to:', resizeDirection.value)
+      }
+    }
 
     // ==========================================
     // NAVIGATION METHODS
@@ -711,20 +987,18 @@ export default {
       showSuccessMessage.value = false
     }
 
-    const quickProblemReport = (issueType = 'technical') => {
-      const lessonInfo = getCurrentLessonInfo()
-      const message = `🚨 Быстрый отчет о проблеме в уроке "${lessonInfo.lessonName}" (Шаг ${lessonInfo.currentStep}/${lessonInfo.totalSteps}). Тип: ${issueType}. Время: ${lessonInfo.timestamp}`
-      const encodedMessage = encodeURIComponent(message)
-      const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`
-      window.open(telegramLink, '_blank')
-    }
-
     const handleKeyboardShortcuts = (event) => {
       if (event.ctrlKey && event.shiftKey && event.key === 'R') {
         event.preventDefault()
         if (!showProblemReportModal.value && lessonOrchestrator.started.value && !lessonOrchestrator.lessonCompleted.value) {
           openProblemReportModal()
         }
+      }
+      
+      // Keyboard shortcut for resetting split sizes
+      if (event.ctrlKey && event.altKey && event.key === 'R') {
+        event.preventDefault()
+        resetSplitSizes()
       }
     }
 
@@ -925,46 +1199,6 @@ export default {
     // ==========================================
     // DRAG & DROP HELPER METHODS
     // ==========================================
-    const testDragAndDrop = () => {
-      console.log('🧪 Testing drag and drop functionality:')
-      console.log('  - Current exercise:', getCurrentExercise())
-      console.log('  - Available drag items:', exercises.availableDragItems.value)
-      console.log('  - Drop zones:', exercises.dropZones.value)
-      console.log('  - Current placements:', exercises.dragDropPlacements)
-    }
-
-    const resetDragAndDropState = () => {
-      console.log('🔄 Resetting drag and drop state')
-      
-      Object.keys(exercises.dragDropPlacements).forEach(key => {
-        delete exercises.dragDropPlacements[key]
-      })
-      
-      exercises.draggedDragItem.value = null
-      exercises.dropOverZone.value = null
-      
-      console.log('✅ Drag and drop state reset')
-    }
-
-    const validateDragDropSetup = () => {
-      const currentExercise = getCurrentExercise()
-      
-      if (!currentExercise || currentExercise.type !== 'drag-drop') {
-        console.log('ℹ️ Current exercise is not drag-drop type')
-        return false
-      }
-      
-      const hasItems = exercises.availableDragItems.value.length > 0
-      const hasZones = exercises.dropZones.value.length > 0
-      
-      console.log('🔍 Drag-drop setup validation:')
-      console.log('  - Has drag items:', hasItems, `(${exercises.availableDragItems.value.length})`)
-      console.log('  - Has drop zones:', hasZones, `(${exercises.dropZones.value.length})`)
-      console.log('  - Exercise data:', currentExercise.dragItems, currentExercise.dropZones)
-      
-      return hasItems && hasZones
-    }
-
     const ensureDragDropInitialization = () => {
       const currentExercise = getCurrentExercise()
       
@@ -978,33 +1212,6 @@ export default {
         console.log('⚠️ Drag-drop not properly initialized, forcing re-init')
         exercises.initializeDragDropItems(currentExercise)
       }
-      
-      setTimeout(() => {
-        if (!validateDragDropSetup()) {
-          console.error('❌ Drag-drop setup validation failed after initialization')
-          console.log('Exercise data:', currentExercise)
-        }
-      }, 100)
-    }
-
-    const debugDragAndDrop = () => {
-      console.group('🐛 Drag & Drop Debug Info')
-      
-      const currentExercise = getCurrentExercise()
-      console.log('Current Exercise:', currentExercise)
-      console.log('Exercise Type:', currentExercise?.type)
-      console.log('Available Drag Items:', exercises.availableDragItems.value)
-      console.log('Drop Zones:', exercises.dropZones.value)
-      console.log('Current Placements:', JSON.parse(JSON.stringify(exercises.dragDropPlacements)))
-      console.log('Dragged Item:', exercises.draggedDragItem.value)
-      console.log('Drop Over Zone:', exercises.dropOverZone.value)
-      
-      if (currentExercise?.type === 'drag-drop') {
-        console.log('Exercise Drag Items:', currentExercise.dragItems)
-        console.log('Exercise Drop Zones:', currentExercise.dropZones)
-      }
-      
-      console.groupEnd()
     }
 
     // ==========================================
@@ -1338,25 +1545,39 @@ export default {
     // ==========================================
     onMounted(() => {
       document.addEventListener('keydown', handleKeyboardShortcuts)
+      window.addEventListener('resize', handleWindowResize)
+      
+      // Load saved split sizes
+      loadSavedSizes()
       
       // Make debug functions globally available
-      window.debugDragAndDrop = debugDragAndDrop
-      window.testDragAndDrop = testDragAndDrop
-      window.resetDragAndDropState = resetDragAndDropState
+      window.resetSplitSizes = resetSplitSizes
+      window.loadSavedSizes = loadSavedSizes
       
-      console.log('🎮 LessonPage mounted - Debug functions available:')
-      console.log('  - debugDragAndDrop() - Show current drag & drop state')
-      console.log('  - testDragAndDrop() - Test drag & drop functionality')
-      console.log('  - resetDragAndDropState() - Reset drag & drop state')
+      console.log('🎮 LessonPage mounted with resizable split screen')
+      console.log('  - Current split sizes:', {
+        left: currentLeftWidth.value,
+        right: currentRightWidth.value
+      })
+      console.log('  - Available functions:')
+      console.log('    - resetSplitSizes() - Reset to 50/50 split')
+      console.log('    - Ctrl+Alt+R - Keyboard shortcut to reset')
+      console.log('    - Arrow keys on divider - Resize panels')
+      console.log('    - Drag divider - Resize panels')
     })
 
     onUnmounted(() => {
       document.removeEventListener('keydown', handleKeyboardShortcuts)
+      window.removeEventListener('resize', handleWindowResize)
+      
+      // Clean up any active resize state
+      if (isResizing.value) {
+        stopResize()
+      }
       
       // Clean up debug functions
-      delete window.debugDragAndDrop
-      delete window.testDragAndDrop
-      delete window.resetDragAndDropState
+      delete window.resetSplitSizes
+      delete window.loadSavedSizes
     })
 
     // ==========================================
@@ -1384,10 +1605,33 @@ export default {
       { immediate: true }
     )
 
+    // Watch for window size changes to update resize direction
+    watch(() => resizeDirection.value, (newDirection) => {
+      console.log('📱 Resize direction changed to:', newDirection)
+    })
+
     // ==========================================
     // RETURN ALL PROPS AND METHODS
     // ==========================================
     return {
+      // Resizable Split Screen State
+      isResizing,
+      currentLeftWidth,
+      currentRightWidth,
+      resizeDirection,
+      leftPanelStyle,
+      rightPanelStyle,
+      widthIndicatorText,
+
+      // Resizable Split Screen Methods
+      startResize,
+      handleResize,
+      stopResize,
+      handleResizeKeyboard,
+      resetSplitSizes,
+      loadSavedSizes,
+      handleWindowResize,
+
       // Data and state from lessonOrchestrator
       loading: lessonOrchestrator.loading,
       error: lessonOrchestrator.error,
@@ -1511,11 +1755,7 @@ export default {
       handleDragLeaveZone,
       handleDropInZone,
       handleRemoveDroppedItem,
-      testDragAndDrop,
-      resetDragAndDropState,
-      validateDragDropSetup,
       ensureDragDropInitialization,
-      debugDragAndDrop,
 
       // AI Help Panel Methods
       toggleExplanationHelp,
@@ -1551,16 +1791,16 @@ export default {
       closeProblemReportModal,
       submitProblemReport,
       closeSuccessMessage,
-      quickProblemReport
+
+      // Lesson completion methods
+      completeLessonWithExtraction,
+      extractLessonContent,
+      showCompletionMessage
     }
   }
 }
 </script>
 
-
 <style scoped>
-
 @import "@/assets/css/LessonPage.css";
-
-
 </style>
