@@ -1,5 +1,5 @@
 <template>
-  <!-- ✅ FIXED: Interactive Panel with Proper Scrolling and Height Management -->
+  <!-- ✅ FIXED: Interactive Panel with Better Layout and Visibility -->
   <div class="interactive-panel">
     <!-- Exercise Content -->
     <div v-if="isExerciseStep" class="exercise-content">
@@ -11,7 +11,7 @@
         </div>
       </div>
 
-      <!-- ✅ FIXED: Scrollable Body -->
+      <!-- ✅ FIXED: Better Scrollable Body -->
       <div class="exercise-body">
         <!-- Short Answer Exercise -->
         <div v-if="exerciseType === 'short-answer'" class="exercise-type short-answer">
@@ -23,7 +23,7 @@
               v-model="localUserAnswer"
               @input="updateAnswer"
               placeholder="Введите ваш ответ здесь..."
-              rows="3"
+              rows="4"
               class="answer-textarea"
               :disabled="showCorrectAnswer"
             />
@@ -268,7 +268,7 @@
           </div>
         </div>
 
-        <!-- ✅ FIXED: Drag and Drop Exercise -->
+        <!-- ✅ FIXED: Drag and Drop Exercise - Better Layout -->
         <div v-else-if="exerciseType === 'drag-drop'" class="exercise-type drag-drop">
           <div class="question-text">
             {{ currentExercise?.question }}
@@ -385,7 +385,7 @@
         </div>
       </div>
 
-      <!-- ✅ FIXED: Fixed Action Buttons -->
+      <!-- ✅ FIXED: Better Action Buttons Layout -->
       <div class="exercise-actions">
         <button 
           v-if="!confirmation && attemptCount === 0"
@@ -430,7 +430,7 @@
         </div>
       </div>
 
-      <!-- ✅ FIXED: Scrollable Body -->
+      <!-- ✅ FIXED: Better Scrollable Body -->
       <div class="quiz-body">
         <div class="quiz-question">
           {{ currentQuiz?.question }}
@@ -497,7 +497,7 @@
         </div>
       </div>
 
-      <!-- ✅ FIXED: Fixed Action Buttons -->
+      <!-- ✅ FIXED: Better Action Buttons Layout -->
       <div class="quiz-actions">
         <button 
           v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
@@ -1345,6 +1345,6 @@ export default {
 </script>
 
 <style scoped>
-/* ✅ Use the fixed CSS file provided above */
+/* ✅ Use the improved CSS file */
 @import "@/assets/css/InteractivePanel.css";
 </style>
