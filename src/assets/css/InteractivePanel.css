@@ -1,5 +1,5 @@
 /* ================================
-   INTERACTIVE PANEL - MAIN LAYOUT
+   FIXED INTERACTIVE PANEL - PROPER SCROLLING
    ================================ */
 
    .interactive-panel {
@@ -7,18 +7,19 @@
     border-radius: 24px;
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 40px);
-    max-height: calc(100vh - 40px);
+    height: 100%;
+    max-height: 100%;
     overflow: hidden;
     box-shadow: 
       0 4px 20px rgba(0, 0, 0, 0.08),
       0 1px 3px rgba(0, 0, 0, 0.05),
       inset 0 1px 0 rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(226, 232, 240, 0.8);
+    position: relative;
   }
   
   /* ================================
-     HEADER SECTION
+     HEADER SECTION - FIXED HEIGHT
      ================================ */
   
   .exercise-header, .quiz-header {
@@ -32,6 +33,7 @@
     flex-shrink: 0;
     box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
     z-index: 20;
+    min-height: 80px;
   }
   
   .exercise-header h3, .quiz-header h3 {
@@ -52,7 +54,7 @@
   }
   
   /* ================================
-     MAIN CONTENT AREA
+     MAIN CONTENT AREA - SCROLLABLE
      ================================ */
   
   .exercise-body, .quiz-body {
@@ -62,15 +64,17 @@
     flex-direction: column;
     gap: 24px;
     overflow-y: auto;
+    overflow-x: hidden;
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 transparent;
     position: relative;
     z-index: 10;
     min-height: 0;
+    max-height: calc(100vh - 280px); /* Account for header and actions */
   }
   
   .exercise-body::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
   }
   
   .exercise-body::-webkit-scrollbar-track {
@@ -79,7 +83,29 @@
   
   .exercise-body::-webkit-scrollbar-thumb {
     background: #cbd5e1;
-    border-radius: 3px;
+    border-radius: 4px;
+  }
+  
+  .exercise-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+  
+  /* Same for quiz body */
+  .quiz-body::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .quiz-body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .quiz-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+  
+  .quiz-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
   }
   
   /* ================================
@@ -99,6 +125,7 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     position: relative;
     z-index: 15;
+    flex-shrink: 0;
   }
   
   /* ================================
@@ -123,6 +150,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-height: 0;
   }
   
   .answer-textarea {
@@ -163,6 +191,7 @@
     flex-direction: column;
     gap: 16px;
     flex: 1;
+    min-height: 0;
   }
   
   .option-item, .quiz-option, .tf-option {
@@ -179,6 +208,7 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     position: relative;
     overflow: hidden;
+    flex-shrink: 0;
   }
   
   .option-item::before, .quiz-option::before, .tf-option::before {
@@ -223,6 +253,7 @@
     cursor: pointer;
     z-index: 1;
     position: relative;
+    flex-shrink: 0;
   }
   
   .option-text {
@@ -248,6 +279,7 @@
     color: #92400e;
     line-height: 1.6;
     box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+    flex-shrink: 0;
   }
   
   .true-false-options {
@@ -276,6 +308,7 @@
     font-size: 1.2rem;
     line-height: 1.8;
     color: #475569;
+    flex-shrink: 0;
   }
   
   .blank-indicator {
@@ -292,12 +325,15 @@
     flex-direction: column;
     gap: 20px;
     flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
   
   .blank-input-group {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    flex-shrink: 0;
   }
   
   .blank-label {
@@ -341,6 +377,7 @@
     gap: 24px;
     flex: 1;
     min-height: 300px;
+    max-height: 500px;
   }
   
   .matching-side {
@@ -351,6 +388,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    overflow-y: auto;
   }
   
   .matching-side h4 {
@@ -361,6 +399,7 @@
     margin-bottom: 8px;
     padding-bottom: 12px;
     border-bottom: 2px solid #e2e8f0;
+    flex-shrink: 0;
   }
   
   .matching-item {
@@ -377,6 +416,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
   
   .matching-item:hover:not(.disabled) {
@@ -411,6 +451,7 @@
     border-radius: 16px;
     padding: 20px;
     margin-top: 20px;
+    flex-shrink: 0;
   }
   
   .matching-pairs h4 {
@@ -452,6 +493,7 @@
     margin-top: 16px;
     font-size: 0.95rem;
     line-height: 1.5;
+    flex-shrink: 0;
   }
   
   .current-selection {
@@ -461,7 +503,7 @@
   }
   
   /* ================================
-     DRAG AND DROP - FIXED
+     DRAG AND DROP - SCROLLABLE
      ================================ */
   
   .drag-drop-container {
@@ -470,6 +512,7 @@
     gap: 24px;
     flex: 1;
     min-height: 400px;
+    max-height: 600px;
   }
   
   .drag-items {
@@ -480,6 +523,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    overflow-y: auto;
   }
   
   .drag-items h4 {
@@ -490,6 +534,7 @@
     margin-bottom: 8px;
     padding-bottom: 12px;
     border-bottom: 2px solid #cbd5e1;
+    flex-shrink: 0;
   }
   
   .drag-item {
@@ -513,6 +558,7 @@
     line-height: 1.4;
     position: relative;
     z-index: 1;
+    flex-shrink: 0;
   }
   
   .drag-item:hover:not(.disabled) {
@@ -545,6 +591,7 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    overflow-y: auto;
   }
   
   .drop-zone {
@@ -557,6 +604,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    flex-shrink: 0;
   }
   
   .drop-zone.drag-over {
@@ -574,6 +622,7 @@
     text-align: center;
     padding-bottom: 8px;
     border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
   }
   
   .zone-items {
@@ -581,6 +630,7 @@
     flex-direction: column;
     gap: 8px;
     flex: 1;
+    overflow-y: auto;
   }
   
   .dropped-item {
@@ -595,6 +645,7 @@
     font-weight: 500;
     transition: all 0.2s ease;
     box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+    flex-shrink: 0;
   }
   
   .dropped-item:hover:not(.disabled) {
@@ -617,7 +668,7 @@
   }
   
   /* ================================
-     ORDERING EXERCISE
+     ORDERING EXERCISE - SCROLLABLE
      ================================ */
   
   .ordering-instructions {
@@ -629,6 +680,7 @@
     font-size: 0.95rem;
     line-height: 1.5;
     color: #1e40af;
+    flex-shrink: 0;
   }
   
   .ordering-container {
@@ -636,6 +688,9 @@
     flex-direction: column;
     gap: 12px;
     flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 8px;
   }
   
   .ordering-item {
@@ -646,6 +701,7 @@
     cursor: move;
     transition: all 0.3s ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
   }
   
   .ordering-item:hover:not(.disabled) {
@@ -679,6 +735,7 @@
     padding: 4px;
     border-radius: 4px;
     transition: all 0.2s ease;
+    flex-shrink: 0;
   }
   
   .drag-handle:hover:not(.disabled) {
@@ -690,6 +747,8 @@
     flex: 1;
     font-weight: 500;
     font-size: 1rem;
+    min-width: 0;
+    word-wrap: break-word;
   }
   
   .item-number {
@@ -703,11 +762,13 @@
     justify-content: center;
     font-weight: 600;
     font-size: 0.9rem;
+    flex-shrink: 0;
   }
   
   .ordering-controls {
     display: flex;
     gap: 4px;
+    flex-shrink: 0;
   }
   
   .move-btn {
@@ -732,7 +793,7 @@
   }
   
   /* ================================
-     CONFIRMATION & FEEDBACK - FIXED Z-INDEX
+     CONFIRMATION & FEEDBACK - FIXED HEIGHT
      ================================ */
   
   .confirmation-section {
@@ -744,6 +805,7 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     position: relative;
     z-index: 30;
+    flex-shrink: 0;
   }
   
   .second-chance-indicator {
@@ -846,7 +908,7 @@
   }
   
   /* ================================
-     HINTS SECTION
+     HINTS SECTION - FIXED HEIGHT
      ================================ */
   
   .hints-section {
@@ -857,6 +919,7 @@
     margin-top: 20px;
     position: relative;
     z-index: 25;
+    flex-shrink: 0;
   }
   
   .hint {
@@ -904,7 +967,7 @@
   }
   
   /* ================================
-     ACTION BUTTONS - FIXED Z-INDEX
+     ACTION BUTTONS - FIXED HEIGHT
      ================================ */
   
   .exercise-actions, .quiz-actions {
@@ -919,6 +982,7 @@
     flex-shrink: 0;
     position: relative;
     z-index: 35;
+    min-height: 100px;
   }
   
   .hint-btn, .submit-btn, .next-btn {
@@ -1041,8 +1105,13 @@
   
   @media (max-width: 1024px) {
     .interactive-panel {
-      min-height: calc(100vh - 20px);
-      max-height: calc(100vh - 20px);
+      border-radius: 16px;
+      min-height: calc(100vh - 40px);
+      max-height: calc(100vh - 40px);
+    }
+  
+    .exercise-body, .quiz-body {
+      max-height: calc(100vh - 240px);
     }
   
     .drag-drop-container,
@@ -1050,6 +1119,7 @@
       grid-template-columns: 1fr;
       gap: 20px;
       min-height: 500px;
+      max-height: 600px;
     }
   
     .true-false-options {
@@ -1060,17 +1130,16 @@
   
   @media (max-width: 768px) {
     .interactive-panel {
-      border-radius: 16px;
-      min-height: calc(100vh - 20px);
-      max-height: calc(100vh - 20px);
+      border-radius: 12px;
     }
   
     .exercise-header, .quiz-header {
       padding: 16px 20px;
-      border-radius: 16px 16px 0 0;
+      border-radius: 12px 12px 0 0;
       flex-direction: column;
       gap: 12px;
       text-align: center;
+      min-height: 100px;
     }
   
     .exercise-header h3, .quiz-header h3 {
@@ -1080,6 +1149,7 @@
     .exercise-body, .quiz-body {
       padding: 20px 16px 16px;
       gap: 20px;
+      max-height: calc(100vh - 220px);
     }
   
     .question-text, .quiz-question {
@@ -1126,6 +1196,7 @@
       padding: 16px;
       gap: 12px;
       flex-direction: column;
+      min-height: 80px;
     }
   
     .hint-btn, .submit-btn, .next-btn {
@@ -1158,6 +1229,7 @@
     .exercise-body, .quiz-body {
       padding: 16px 12px 12px;
       gap: 16px;
+      max-height: calc(100vh - 200px);
     }
   
     .option-item, .quiz-option, .tf-option {
@@ -1174,6 +1246,7 @@
     .exercise-actions, .quiz-actions {
       padding: 12px;
       gap: 10px;
+      min-height: 70px;
     }
   
     .hint-btn, .submit-btn, .next-btn {
@@ -1229,5 +1302,42 @@
     .tf-option.selected {
       background: #000000;
       color: #ffffff;
+    }
+  }
+  
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .interactive-panel {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border-color: #374151;
+    }
+  
+    .exercise-header, .quiz-header {
+      background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+    }
+  
+    .question-text, .quiz-question {
+      background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+      color: #e2e8f0;
+      border-left-color: #3b82f6;
+    }
+  
+    .option-item, .quiz-option, .tf-option,
+    .matching-item, .ordering-item,
+    .drop-zone, .drag-items {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e2e8f0;
+    }
+  
+    .answer-textarea, .blank-input {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e2e8f0;
+    }
+  
+    .exercise-actions, .quiz-actions {
+      background: #1e293b;
+      border-top-color: #374151;
     }
   }

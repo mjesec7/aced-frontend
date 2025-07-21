@@ -1,7 +1,9 @@
 <template>
+  <!-- ✅ FIXED: Interactive Panel with Proper Scrolling and Height Management -->
   <div class="interactive-panel">
     <!-- Exercise Content -->
     <div v-if="isExerciseStep" class="exercise-content">
+      <!-- Fixed Header -->
       <div class="exercise-header">
         <h3>{{ currentExercise?.title || 'Упражнение' }}</h3>
         <div class="exercise-counter">
@@ -9,6 +11,7 @@
         </div>
       </div>
 
+      <!-- ✅ FIXED: Scrollable Body -->
       <div class="exercise-body">
         <!-- Short Answer Exercise -->
         <div v-if="exerciseType === 'short-answer'" class="exercise-type short-answer">
@@ -265,7 +268,7 @@
           </div>
         </div>
 
-        <!-- 🔥 FIXED: Drag and Drop Exercise -->
+        <!-- ✅ FIXED: Drag and Drop Exercise -->
         <div v-else-if="exerciseType === 'drag-drop'" class="exercise-type drag-drop">
           <div class="question-text">
             {{ currentExercise?.question }}
@@ -382,7 +385,7 @@
         </div>
       </div>
 
-      <!-- Exercise Actions -->
+      <!-- ✅ FIXED: Fixed Action Buttons -->
       <div class="exercise-actions">
         <button 
           v-if="!confirmation && attemptCount === 0"
@@ -419,6 +422,7 @@
 
     <!-- Quiz Content -->
     <div v-else-if="isQuizStep" class="quiz-content">
+      <!-- Fixed Header -->
       <div class="quiz-header">
         <h3>{{ currentQuiz?.title || 'Вопрос' }}</h3>
         <div class="quiz-counter">
@@ -426,6 +430,7 @@
         </div>
       </div>
 
+      <!-- ✅ FIXED: Scrollable Body -->
       <div class="quiz-body">
         <div class="quiz-question">
           {{ currentQuiz?.question }}
@@ -492,7 +497,7 @@
         </div>
       </div>
 
-      <!-- Quiz Actions -->
+      <!-- ✅ FIXED: Fixed Action Buttons -->
       <div class="quiz-actions">
         <button 
           v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
@@ -748,7 +753,7 @@ export default {
     })
 
     // ==========================================
-    // 🔥 FIXED: DRAG AND DROP METHODS
+    // DRAG AND DROP METHODS
     // ==========================================
     
     const startDragItem = (item, event) => {
@@ -835,7 +840,7 @@ export default {
     }
 
     // ==========================================
-    // 🔥 UTILITY METHODS FOR DRAG-AND-DROP
+    // UTILITY METHODS FOR DRAG-AND-DROP
     // ==========================================
     
     const getDragItemText = (item) => {
@@ -876,7 +881,7 @@ export default {
     }
 
     // ==========================================
-    // 🔥 MOBILE TOUCH SUPPORT
+    // MOBILE TOUCH SUPPORT
     // ==========================================
     
     const handleTouchStart = (event, item) => {
@@ -1285,7 +1290,7 @@ export default {
       blankCount,
       canSubmitAnswer,
       
-      // 🔥 FIXED: All drag-and-drop methods
+      // Drag-and-drop methods
       startDragItem,
       endDragItem,
       dragOverZone,
@@ -1340,8 +1345,6 @@ export default {
 </script>
 
 <style scoped>
-/* Use existing styles from the original component */
+/* ✅ Use the fixed CSS file provided above */
 @import "@/assets/css/InteractivePanel.css";
-
-
 </style>
