@@ -362,7 +362,7 @@
 </template>
 
 <script>
-// ✅ FULLY UPDATED LessonPage.vue <script> with Fixed Navigation
+// ✅ FULLY UPDATED LessonPage.vue <script> with Fixed Drag & Drop
 import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -418,30 +418,18 @@ export default {
     explanation.initializeAI?.()
 
     // ==========================================
-    // REACTIVE STATE (Lesson-specific only)
+    // REACTIVE STATE
     // ==========================================
-
-    // Second chance system
     const attemptCount = ref(0)
     const maxAttempts = ref(2)
     const showCorrectAnswer = ref(false)
     const correctAnswerText = ref('')
     const isOnSecondChance = ref(false)
-
-    // Exercise initialization tracking
-    const initializationTracker = ref({
-      currentExerciseId: null,
-      initialized: false
-    })
-
-    // Lesson completion and extraction state
     const extractionResults = ref(null)
     const migrationLoading = ref(false)
     const showMigrationPanel = ref(false)
 
-    // ==========================================
-    // PROBLEM REPORTING STATE
-    // ==========================================
+    // Problem reporting state
     const showProblemReportModal = ref(false)
     const problemDescription = ref('')
     const problemType = ref('')
@@ -451,10 +439,19 @@ export default {
     const showValidationError = ref(false)
     const showSuccessMessage = ref(false)
 
+    // Exercise initialization tracking
+    const initializationTracker = ref({
+      currentExerciseId: null,
+      initialized: false
+    })
+
+    // Confetti
+    const confettiCanvas = ref(null)
+    const showConfetti = ref(false)
+
     // ==========================================
     // COMPUTED PROPERTIES
     // ==========================================
-
     const getUserProgress = computed(() => ({
       currentStep: lessonOrchestrator.currentIndex.value,
       completedSteps: Array.from({length: lessonOrchestrator.currentIndex.value}, (_, i) => i),
@@ -472,31 +469,24 @@ export default {
     })
 
     // ==========================================
-    // FIXED NAVIGATION METHODS
+    // NAVIGATION METHODS
     // ==========================================
     const handleReturnToCatalogue = () => {
       console.log('🔄 Returning to catalogue...')
       
       try {
-        // Primary: Direct navigation to the nested catalogue route
         router.push({ 
           path: '/profile/catalogue' 
         }).catch(err => {
           console.warn('⚠️ Direct path navigation failed:', err)
-          
-          // Fallback 1: Try using the named route
           router.push({ 
             name: 'CataloguePage' 
           }).catch(err2 => {
             console.warn('⚠️ Named route navigation failed:', err2)
-            
-            // Fallback 2: Navigate to profile root
             router.push({ 
               path: '/profile' 
             }).catch(err3 => {
               console.error('❌ All navigation attempts failed:', err3)
-              
-              // Final fallback: Force page reload
               window.location.href = '/profile/catalogue'
             })
           })
@@ -521,7 +511,6 @@ export default {
             }
           }).catch(err => {
             console.warn('⚠️ Lesson homework navigation failed:', err)
-            
             router.push({ 
               name: 'HomeworkList' 
             }).catch(err2 => {
@@ -552,31 +541,23 @@ export default {
       console.log('🚪 Exiting lesson...')
       
       try {
-        // Save any final progress before leaving
         if (lessonOrchestrator.saveProgress) {
           lessonOrchestrator.saveProgress().catch(err => {
             console.warn('⚠️ Failed to save progress on exit:', err)
           })
         }
         
-        // Clear any lesson-specific data
         if (lessonOrchestrator.cleanup) {
           lessonOrchestrator.cleanup()
         }
         
-        // Close the exit modal first
         lessonOrchestrator.showExitModal.value = false
-        
-        // Navigate back to catalogue
         handleReturnToCatalogue()
         
       } catch (error) {
         console.error('❌ Error during lesson exit:', error)
-        
-        // Ensure modal is closed
         lessonOrchestrator.showExitModal.value = false
         
-        // Force navigation even if there's an error
         try {
           router.push({ path: '/profile/catalogue' })
         } catch (navError) {
@@ -629,7 +610,6 @@ export default {
       const lessonInfo = getCurrentLessonInfo()
       
       let message = `🚨 ОТЧЕТ О ПРОБЛЕМЕ В УРОКЕ\n\n`
-      
       message += `📚 Урок: ${lessonInfo.lessonName}\n`
       message += `🆔 ID урока: ${lessonInfo.lessonId}\n`
       message += `📍 Текущий шаг: ${lessonInfo.currentStep}/${lessonInfo.totalSteps}\n`
@@ -749,161 +729,8 @@ export default {
     }
 
     // ==========================================
-    // LESSON COMPLETION WITH EXTRACTION
-    // ==========================================
-
-    const completeLessonWithExtraction = async () => {
-      try {
-        console.log('🏁 Starting enhanced lesson completion with extraction')
-
-        const completionResult = await lessonOrchestrator.completeLesson?.()
-
-        if (completionResult?.success || lessonOrchestrator.lessonCompleted.value) {
-          console.log('✅ Lesson completed, triggering content extraction')
-
-          const extractionResult = await extractLessonContent()
-
-          if (extractionResult?.success) {
-            console.log('🎉 Content extraction successful:', extractionResult)
-            showCompletionMessage(extractionResult)
-          } else {
-            console.warn('⚠️ Content extraction failed, but lesson still completed')
-            lessonOrchestrator.lessonCompleted.value = true
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error completing lesson with extraction:', error)
-        lessonOrchestrator.lessonCompleted.value = true
-      }
-    }
-
-    const extractLessonContent = async () => {
-      try {
-        console.log('📤 Extracting lesson content...')
-
-        if (!lessonOrchestrator.currentUser?.value?.uid || !lessonOrchestrator.lesson.value?._id) {
-          console.error('❌ Missing required data for extraction')
-          return { success: false, error: 'Missing user or lesson data' }
-        }
-
-        const response = await fetch('/api/lessons/complete-and-extract', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${userToken.value}`
-          },
-          body: JSON.stringify({
-            userId: lessonOrchestrator.currentUser.value.uid,
-            lessonId: lessonOrchestrator.lesson.value._id,
-            progress: getUserProgress.value
-          })
-        })
-
-        const result = await response.json()
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Failed to extract content')
-        }
-
-        console.log('✅ Content extraction response:', result)
-        return result
-
-      } catch (error) {
-        console.error('❌ Error extracting lesson content:', error)
-        return { success: false, error: error.message }
-      }
-    }
-
-    const showCompletionMessage = (extractionResult) => {
-      console.log('🎊 Showing enhanced completion message')
-
-      let message = '🎉 Урок успешно завершён!'
-
-      if (extractionResult.homeworkCreated) {
-        message += '\n📝 Новое домашнее задание создано и доступно в разделе заданий!'
-      }
-
-      if (extractionResult.vocabularyAdded) {
-        message += `\n📚 ${extractionResult.vocabularyCount} новых слов добавлено в вашу коллекцию словаря!`
-      }
-
-      if (lessonOrchestrator.showToast) {
-        lessonOrchestrator.showToast(message, 'success')
-      } else {
-        console.log('📢 Completion message:', message)
-      }
-
-      lessonOrchestrator.lessonCompleted.value = true
-      extractionResults.value = extractionResult
-    }
-
-    // ==========================================
-    // MIGRATION FUNCTIONALITY
-    // ==========================================
-
-    const migrateLessonContent = async () => {
-      try {
-        migrationLoading.value = true
-        console.log('🔄 Starting lesson content migration')
-
-        if (!lessonOrchestrator.currentUser?.value?.uid) {
-          throw new Error('User not found')
-        }
-
-        const response = await fetch(`/api/homework/migrate-from-lessons/${lessonOrchestrator.currentUser.value.uid}`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${userToken.value}`,
-            'Content-Type': 'application/json'
-          }
-        })
-
-        const result = await response.json()
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Migration failed')
-        }
-
-        if (result.success) {
-          const message = `✅ Миграция завершена! Создано ${result.data?.homeworkCreated || 0} заданий и добавлено ${result.data?.vocabularyAdded || 0} слов в словарь.`
-
-          if (lessonOrchestrator.showToast) {
-            lessonOrchestrator.showToast(message, 'success')
-          } else {
-            alert(message)
-          }
-
-          showMigrationPanel.value = false
-        } else {
-          throw new Error(result.error || 'Migration failed')
-        }
-
-      } catch (error) {
-        console.error('❌ Migration error:', error)
-        const errorMessage = '❌ Ошибка миграции: ' + error.message
-
-        if (lessonOrchestrator.showToast) {
-          lessonOrchestrator.showToast(errorMessage, 'error')
-        } else {
-          alert(errorMessage)
-        }
-      } finally {
-        migrationLoading.value = false
-      }
-    }
-
-    const showMigrationPanelModal = () => {
-      showMigrationPanel.value = true
-    }
-
-    const closeMigrationPanel = () => {
-      showMigrationPanel.value = false
-    }
-
-    // ==========================================
     // VOCABULARY METHODS
     // ==========================================
-
     const initializeVocabularyModal = (step) => {
       console.log('📚 Initializing vocabulary modal from LessonPage:', step)
 
@@ -1014,7 +841,7 @@ export default {
     }
 
     // ==========================================
-    // EXERCISE INITIALIZATION (Simplified)
+    // EXERCISE METHODS
     // ==========================================
     const getCurrentExercise = () => {
       const exercise = exercises.getCurrentExercise(lessonOrchestrator.currentStep.value)
@@ -1025,6 +852,12 @@ export default {
           nextTick(() => {
             exercises.initializeCurrentExerciseData(exercise)
             initializationTracker.value.initialized = true
+            
+            if (exercise.type === 'drag-drop') {
+              nextTick(() => {
+                ensureDragDropInitialization()
+              })
+            }
           })
         }
       }
@@ -1044,7 +877,138 @@ export default {
     }
 
     // ==========================================
-    // SIMPLIFIED EVENT HANDLERS
+    // DRAG AND DROP EVENT HANDLERS
+    // ==========================================
+    const handleDragItemStart = ({ item, event }) => {
+      console.log('🔥 LessonPage: Drag item start:', item)
+      exercises.handleDragItemStart({ item, event })
+      
+      if (sound.playClickSound) {
+        sound.playClickSound()
+      }
+    }
+
+    const handleDragOverZone = (zoneId) => {
+      console.log('🔥 LessonPage: Drag over zone:', zoneId)
+      exercises.handleDragOverZone(zoneId)
+    }
+
+    const handleDragLeaveZone = () => {
+      console.log('🔥 LessonPage: Drag leave zone')
+      exercises.handleDragLeaveZone()
+    }
+
+    const handleDropInZone = ({ zoneId, item }) => {
+      console.log('🔥 LessonPage: Drop in zone:', zoneId, 'item:', item)
+      exercises.handleDropInZone({ zoneId, item })
+      
+      if (sound.playSuccessSound) {
+        sound.playSuccessSound()
+      }
+      
+      if (lessonOrchestrator.saveProgress) {
+        lessonOrchestrator.saveProgress().catch(err => {
+          console.warn('⚠️ Failed to save progress after drop:', err)
+        })
+      }
+    }
+
+    const handleRemoveDroppedItem = ({ zoneId, itemIndex, item }) => {
+      console.log('🔥 LessonPage: Remove dropped item:', { zoneId, itemIndex, item })
+      exercises.handleRemoveDroppedItem({ zoneId, itemIndex, item })
+      
+      if (sound.playClickSound) {
+        sound.playClickSound()
+      }
+    }
+
+    // ==========================================
+    // DRAG & DROP HELPER METHODS
+    // ==========================================
+    const testDragAndDrop = () => {
+      console.log('🧪 Testing drag and drop functionality:')
+      console.log('  - Current exercise:', getCurrentExercise())
+      console.log('  - Available drag items:', exercises.availableDragItems.value)
+      console.log('  - Drop zones:', exercises.dropZones.value)
+      console.log('  - Current placements:', exercises.dragDropPlacements)
+    }
+
+    const resetDragAndDropState = () => {
+      console.log('🔄 Resetting drag and drop state')
+      
+      Object.keys(exercises.dragDropPlacements).forEach(key => {
+        delete exercises.dragDropPlacements[key]
+      })
+      
+      exercises.draggedDragItem.value = null
+      exercises.dropOverZone.value = null
+      
+      console.log('✅ Drag and drop state reset')
+    }
+
+    const validateDragDropSetup = () => {
+      const currentExercise = getCurrentExercise()
+      
+      if (!currentExercise || currentExercise.type !== 'drag-drop') {
+        console.log('ℹ️ Current exercise is not drag-drop type')
+        return false
+      }
+      
+      const hasItems = exercises.availableDragItems.value.length > 0
+      const hasZones = exercises.dropZones.value.length > 0
+      
+      console.log('🔍 Drag-drop setup validation:')
+      console.log('  - Has drag items:', hasItems, `(${exercises.availableDragItems.value.length})`)
+      console.log('  - Has drop zones:', hasZones, `(${exercises.dropZones.value.length})`)
+      console.log('  - Exercise data:', currentExercise.dragItems, currentExercise.dropZones)
+      
+      return hasItems && hasZones
+    }
+
+    const ensureDragDropInitialization = () => {
+      const currentExercise = getCurrentExercise()
+      
+      if (!currentExercise || currentExercise.type !== 'drag-drop') {
+        return
+      }
+      
+      console.log('🔧 Ensuring drag-drop initialization for:', currentExercise)
+      
+      if (exercises.availableDragItems.value.length === 0 || exercises.dropZones.value.length === 0) {
+        console.log('⚠️ Drag-drop not properly initialized, forcing re-init')
+        exercises.initializeDragDropItems(currentExercise)
+      }
+      
+      setTimeout(() => {
+        if (!validateDragDropSetup()) {
+          console.error('❌ Drag-drop setup validation failed after initialization')
+          console.log('Exercise data:', currentExercise)
+        }
+      }, 100)
+    }
+
+    const debugDragAndDrop = () => {
+      console.group('🐛 Drag & Drop Debug Info')
+      
+      const currentExercise = getCurrentExercise()
+      console.log('Current Exercise:', currentExercise)
+      console.log('Exercise Type:', currentExercise?.type)
+      console.log('Available Drag Items:', exercises.availableDragItems.value)
+      console.log('Drop Zones:', exercises.dropZones.value)
+      console.log('Current Placements:', JSON.parse(JSON.stringify(exercises.dragDropPlacements)))
+      console.log('Dragged Item:', exercises.draggedDragItem.value)
+      console.log('Drop Over Zone:', exercises.dropOverZone.value)
+      
+      if (currentExercise?.type === 'drag-drop') {
+        console.log('Exercise Drag Items:', currentExercise.dragItems)
+        console.log('Exercise Drop Zones:', currentExercise.dropZones)
+      }
+      
+      console.groupEnd()
+    }
+
+    // ==========================================
+    // EVENT HANDLERS
     // ==========================================
     const handleAnswerChanged = (newAnswer) => {
       console.log('📝 Answer changed:', newAnswer)
@@ -1064,29 +1028,9 @@ export default {
       console.log('🗑️ Handling remove matching pair:', pairIndex)
       exercises.removeMatchingPair(pairIndex)
     }
-    
-    const handleDragItemStart = ({ item, type }) => {
-      exercises.handleDragItemStart({ item, type })
-    }
-
-    const handleDragOverZone = (zoneId) => {
-      exercises.handleDragOverZone(zoneId)
-    }
-
-    const handleDragLeaveZone = (zoneId) => {
-      exercises.handleDragLeaveZone(zoneId)
-    }
-
-    const handleDropInZone = ({ zoneId, item, type }) => {
-      exercises.handleDropInZone({ zoneId, item, type })
-    }
-
-    const handleRemoveDroppedItem = (item) => {
-      exercises.handleRemoveDroppedItem(item)
-    }
 
     // ==========================================
-    // SIMPLIFIED SUBMISSION HANDLER
+    // SUBMISSION HANDLER
     // ==========================================
     const handleSubmitOrNext = async () => {
       console.log('🎯 Submit/Next triggered, attempt:', attemptCount.value + 1)
@@ -1229,9 +1173,6 @@ export default {
     // ==========================================
     // CONFETTI ANIMATION
     // ==========================================
-    const confettiCanvas = ref(null)
-    const showConfetti = ref(false)
-
     const startConfetti = () => {
       showConfetti.value = true
       nextTick(() => {
@@ -1243,15 +1184,179 @@ export default {
     }
 
     // ==========================================
+    // MIGRATION FUNCTIONALITY
+    // ==========================================
+    const migrateLessonContent = async () => {
+      try {
+        migrationLoading.value = true
+        console.log('🔄 Starting lesson content migration')
+
+        if (!lessonOrchestrator.currentUser?.value?.uid) {
+          throw new Error('User not found')
+        }
+
+        const response = await fetch(`/api/homework/migrate-from-lessons/${lessonOrchestrator.currentUser.value.uid}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${userToken.value}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Migration failed')
+        }
+
+        if (result.success) {
+          const message = `✅ Миграция завершена! Создано ${result.data?.homeworkCreated || 0} заданий и добавлено ${result.data?.vocabularyAdded || 0} слов в словарь.`
+
+          if (lessonOrchestrator.showToast) {
+            lessonOrchestrator.showToast(message, 'success')
+          } else {
+            alert(message)
+          }
+
+          showMigrationPanel.value = false
+        } else {
+          throw new Error(result.error || 'Migration failed')
+        }
+
+      } catch (error) {
+        console.error('❌ Migration error:', error)
+        const errorMessage = '❌ Ошибка миграции: ' + error.message
+
+        if (lessonOrchestrator.showToast) {
+          lessonOrchestrator.showToast(errorMessage, 'error')
+        } else {
+          alert(errorMessage)
+        }
+      } finally {
+        migrationLoading.value = false
+      }
+    }
+
+    const showMigrationPanelModal = () => {
+      showMigrationPanel.value = true
+    }
+
+    const closeMigrationPanel = () => {
+      showMigrationPanel.value = false
+    }
+
+    // ==========================================
+    // LESSON COMPLETION WITH EXTRACTION
+    // ==========================================
+    const completeLessonWithExtraction = async () => {
+      try {
+        console.log('🏁 Starting enhanced lesson completion with extraction')
+
+        const completionResult = await lessonOrchestrator.completeLesson?.()
+
+        if (completionResult?.success || lessonOrchestrator.lessonCompleted.value) {
+          console.log('✅ Lesson completed, triggering content extraction')
+
+          const extractionResult = await extractLessonContent()
+
+          if (extractionResult?.success) {
+            console.log('🎉 Content extraction successful:', extractionResult)
+            showCompletionMessage(extractionResult)
+          } else {
+            console.warn('⚠️ Content extraction failed, but lesson still completed')
+            lessonOrchestrator.lessonCompleted.value = true
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error completing lesson with extraction:', error)
+        lessonOrchestrator.lessonCompleted.value = true
+      }
+    }
+
+    const extractLessonContent = async () => {
+      try {
+        console.log('📤 Extracting lesson content...')
+
+        if (!lessonOrchestrator.currentUser?.value?.uid || !lessonOrchestrator.lesson.value?._id) {
+          console.error('❌ Missing required data for extraction')
+          return { success: false, error: 'Missing user or lesson data' }
+        }
+
+        const response = await fetch('/api/lessons/complete-and-extract', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${userToken.value}`
+          },
+          body: JSON.stringify({
+            userId: lessonOrchestrator.currentUser.value.uid,
+            lessonId: lessonOrchestrator.lesson.value._id,
+            progress: getUserProgress.value
+          })
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to extract content')
+        }
+
+        console.log('✅ Content extraction response:', result)
+        return result
+
+      } catch (error) {
+        console.error('❌ Error extracting lesson content:', error)
+        return { success: false, error: error.message }
+      }
+    }
+
+    const showCompletionMessage = (extractionResult) => {
+      console.log('🎊 Showing enhanced completion message')
+
+      let message = '🎉 Урок успешно завершён!'
+
+      if (extractionResult.homeworkCreated) {
+        message += '\n📝 Новое домашнее задание создано и доступно в разделе заданий!'
+      }
+
+      if (extractionResult.vocabularyAdded) {
+        message += `\n📚 ${extractionResult.vocabularyCount} новых слов добавлено в вашу коллекцию словаря!`
+      }
+
+      if (lessonOrchestrator.showToast) {
+        lessonOrchestrator.showToast(message, 'success')
+      } else {
+        console.log('📢 Completion message:', message)
+      }
+
+      lessonOrchestrator.lessonCompleted.value = true
+      extractionResults.value = extractionResult
+    }
+
+    // ==========================================
     // LIFECYCLE HOOKS
     // ==========================================
-    
     onMounted(() => {
       document.addEventListener('keydown', handleKeyboardShortcuts)
+      
+      // Make debug functions globally available
+      window.debugDragAndDrop = debugDragAndDrop
+      window.testDragAndDrop = testDragAndDrop
+      window.resetDragAndDropState = resetDragAndDropState
+      
+      console.log('🎮 LessonPage mounted - Debug functions available:')
+      console.log('  - debugDragAndDrop() - Show current drag & drop state')
+      console.log('  - testDragAndDrop() - Test drag & drop functionality')
+      console.log('  - resetDragAndDropState() - Reset drag & drop state')
     })
 
     onUnmounted(() => {
       document.removeEventListener('keydown', handleKeyboardShortcuts)
+      
+      // Clean up debug functions
+      delete window.debugDragAndDrop
+      delete window.testDragAndDrop
+      delete window.resetDragAndDropState
     })
 
     // ==========================================
@@ -1264,10 +1369,24 @@ export default {
       }
     })
 
+    // Watch for exercise changes and ensure drag-drop is initialized
+    watch(() => [lessonOrchestrator.currentStep.value, exercises.currentExerciseIndex.value], 
+      ([newStep, newIndex], [oldStep, oldIndex]) => {
+        if (newStep && newStep.type === 'exercise') {
+          const currentExercise = getCurrentExercise()
+          if (currentExercise && currentExercise.type === 'drag-drop') {
+            nextTick(() => {
+              ensureDragDropInitialization()
+            })
+          }
+        }
+      }, 
+      { immediate: true }
+    )
+
     // ==========================================
     // RETURN ALL PROPS AND METHODS
     // ==========================================
-
     return {
       // Data and state from lessonOrchestrator
       loading: lessonOrchestrator.loading,
@@ -1364,7 +1483,7 @@ export default {
       goToVocabulary: lessonOrchestrator.goToVocabulary,
       getLessonProgress: lessonOrchestrator.getLessonProgress,
 
-      // FIXED navigation methods
+      // Navigation methods
       exitLesson,
       handleReturnToCatalogue,
       handleGoToHomework,
@@ -1385,11 +1504,18 @@ export default {
       clearSmartHint,
       handleMatchingItemSelected,
       handleRemoveMatchingPair,
+
+      // Drag and Drop methods
       handleDragItemStart,
       handleDragOverZone,
       handleDragLeaveZone,
       handleDropInZone,
       handleRemoveDroppedItem,
+      testDragAndDrop,
+      resetDragAndDropState,
+      validateDragDropSetup,
+      ensureDragDropInitialization,
+      debugDragAndDrop,
 
       // AI Help Panel Methods
       toggleExplanationHelp,

@@ -57,7 +57,7 @@
           </div>
         </div>
 
-        <!-- Fill in the Blanks Exercise - FIXED -->
+        <!-- Fill in the Blanks Exercise -->
         <div v-else-if="exerciseType === 'fill-blank'" class="exercise-type fill-blank">
           <div class="question-text">
             {{ currentExercise?.question }}
@@ -92,7 +92,7 @@
           </div>
         </div>
 
-        <!-- True/False Exercise - FIXED -->
+        <!-- True/False Exercise -->
         <div v-else-if="exerciseType === 'true-false'" class="exercise-type true-false">
           <div class="question-text">
             {{ currentExercise?.question }}
@@ -140,7 +140,7 @@
           </div>
         </div>
 
-        <!-- Matching Exercise - ENHANCED -->
+        <!-- Matching Exercise -->
         <div v-else-if="exerciseType === 'matching'" class="exercise-type matching">
           <div class="question-text">
             {{ currentExercise?.question }}
@@ -216,7 +216,7 @@
           </div>
         </div>
 
-        <!-- FIXED: Ordering Exercise with proper drag and drop implementation -->
+        <!-- Ordering Exercise -->
         <div v-else-if="exerciseType === 'ordering'" class="exercise-type ordering">
           <div class="question-text">
             {{ currentExercise?.question }}
@@ -265,13 +265,14 @@
           </div>
         </div>
 
-        <!-- FIXED: Drag and Drop Exercise with improved mobile support -->
+        <!-- 🔥 FIXED: Drag and Drop Exercise -->
         <div v-else-if="exerciseType === 'drag-drop'" class="exercise-type drag-drop">
           <div class="question-text">
             {{ currentExercise?.question }}
           </div>
           
           <div v-if="availableDragItems.length > 0 && dropZones.length > 0" class="drag-drop-container">
+            <!-- Available Items to Drag -->
             <div class="drag-items">
               <h4>Перетащите элементы:</h4>
               <div 
@@ -292,6 +293,8 @@
                 {{ getDragItemText(item) }}
               </div>
             </div>
+
+            <!-- Drop Zones -->
             <div class="drop-zones">
               <div 
                 v-for="(zone, index) in dropZones" 
@@ -414,7 +417,7 @@
       </div>
     </div>
 
-    <!-- Quiz Content - FIXED -->
+    <!-- Quiz Content -->
     <div v-else-if="isQuizStep" class="quiz-content">
       <div class="quiz-header">
         <h3>{{ currentQuiz?.title || 'Вопрос' }}</h3>
@@ -745,42 +748,39 @@ export default {
     })
 
     // ==========================================
-    // CRITICAL: MISSING DRAG-AND-DROP METHODS
+    // 🔥 FIXED: DRAG AND DROP METHODS
     // ==========================================
     
-    // ✅ FIXED: handleDragItemStart - This was causing the main error
-    const handleDragItemStart = (item, event) => {
-      console.log('🔥 InteractivePanel: handleDragItemStart called', { item, event })
+    const startDragItem = (item, event) => {
+      console.log('🔥 Starting drag for item:', item)
       
-      if (!item) {
-        console.warn('⚠️ No item provided to handleDragItemStart')
+      if (!item || props.showCorrectAnswer) {
+        console.warn('⚠️ Cannot start drag - invalid item or answers shown')
         return
       }
       
-      // Set the dragged item
       draggedDragItem.value = item
       
-      // Store data for transfer
       if (event && event.dataTransfer) {
         event.dataTransfer.effectAllowed = 'move'
         event.dataTransfer.setData('text/plain', JSON.stringify(item))
       }
       
-      // Emit to parent component
+      // Emit to parent for coordination
       emit('drag-item-start', { item, event })
       
-      console.log('✅ Drag item started successfully:', item)
+      console.log('✅ Drag started for:', getDragItemText(item))
     }
 
-    // ✅ FIXED: All other missing drag methods
-    const handleDragEnd = (event) => {
-      console.log('🏁 Drag ended')
+    const endDragItem = () => {
+      console.log('🏁 Ending drag operation')
       draggedDragItem.value = null
       dropOverZone.value = null
-      emit('drag-end', event)
     }
 
-    const handleDragOver = (event, zoneId) => {
+    const dragOverZone = (zoneId, event) => {
+      if (!draggedDragItem.value || props.showCorrectAnswer) return
+      
       if (event) {
         event.preventDefault()
         event.dataTransfer.dropEffect = 'move'
@@ -790,15 +790,16 @@ export default {
       emit('drag-over-zone', zoneId)
     }
 
-    const handleDragLeave = (event, zoneId) => {
+    const dragLeaveZone = (event) => {
+      // Only clear if we're actually leaving the zone (not entering a child element)
       if (!event || !event.currentTarget.contains(event.relatedTarget)) {
         dropOverZone.value = null
-        emit('drag-leave-zone', zoneId)
+        emit('drag-leave-zone')
       }
     }
 
-    const handleDrop = (event, zoneId) => {
-      console.log('💧 Drop event in zone:', zoneId)
+    const dropInZone = (zoneId, event) => {
+      console.log('💧 Dropping item in zone:', zoneId)
       
       if (event) {
         event.preventDefault()
@@ -806,6 +807,7 @@ export default {
       
       let droppedItem = draggedDragItem.value
       
+      // Try to get item from dataTransfer if drag item is null
       if (!droppedItem && event && event.dataTransfer) {
         try {
           const transferData = event.dataTransfer.getData('text/plain')
@@ -813,7 +815,7 @@ export default {
             droppedItem = JSON.parse(transferData)
           }
         } catch (e) {
-          console.warn('⚠️ Could not parse transfer data')
+          console.warn('⚠️ Could not parse transfer data:', e)
         }
       }
       
@@ -822,13 +824,20 @@ export default {
         return
       }
       
+      console.log('✅ Dropping item:', getDragItemText(droppedItem), 'into zone:', zoneId)
+      
+      // Emit to parent to handle the actual drop logic
       emit('drop-in-zone', { zoneId, item: droppedItem })
       
+      // Clean up
       draggedDragItem.value = null
       dropOverZone.value = null
     }
 
-    // ✅ FIXED: Utility methods for drag-and-drop
+    // ==========================================
+    // 🔥 UTILITY METHODS FOR DRAG-AND-DROP
+    // ==========================================
+    
     const getDragItemText = (item) => {
       if (!item) return ''
       
@@ -863,20 +872,11 @@ export default {
 
     const removeDroppedItem = (zoneId, itemIndex) => {
       console.log('🗑️ Removing item from zone:', zoneId, 'index:', itemIndex)
-      
-      const currentPlacements = { ...props.dragDropPlacements }
-      
-      if (currentPlacements[zoneId] && currentPlacements[zoneId][itemIndex]) {
-        const removedItem = currentPlacements[zoneId][itemIndex]
-        currentPlacements[zoneId].splice(itemIndex, 1)
-        
-        emit('answer-changed', currentPlacements)
-        emit('remove-dropped-item', { zoneId, itemIndex, item: removedItem })
-      }
+      emit('remove-dropped-item', { zoneId, itemIndex })
     }
 
     // ==========================================
-    // MOBILE TOUCH SUPPORT
+    // 🔥 MOBILE TOUCH SUPPORT
     // ==========================================
     
     const handleTouchStart = (event, item) => {
@@ -888,7 +888,7 @@ export default {
       
       event.preventDefault()
       
-      console.log('📱 Touch drag started for:', item)
+      console.log('📱 Touch drag started for:', getDragItemText(item))
     }
 
     const handleTouchMove = (event) => {
@@ -920,7 +920,7 @@ export default {
       if (dropZone) {
         const zoneLabel = dropZone.querySelector('.zone-label')?.textContent
         if (zoneLabel) {
-          handleDrop(null, zoneLabel)
+          dropInZone(zoneLabel, null)
         }
       }
       
@@ -981,7 +981,7 @@ export default {
       selectMatchingItem(side, index)
     }
 
-    const handleRemoveMatchingPair = (pairIndex) => {
+    const handleRemovePair = (pairIndex) => {
       if (props.showCorrectAnswer) return
       removeMatchingPair(pairIndex)
     }
@@ -1285,12 +1285,12 @@ export default {
       blankCount,
       canSubmitAnswer,
       
-      // ✅ CRITICAL: All missing drag-and-drop methods
-      handleDragItemStart,           // This was the main missing method causing errors
-      handleDragEnd,
-      handleDragOver,
-      handleDragLeave,
-      handleDrop,
+      // 🔥 FIXED: All drag-and-drop methods
+      startDragItem,
+      endDragItem,
+      dragOverZone,
+      dragLeaveZone,
+      dropInZone,
       getDragItemText,
       getZoneId,
       getDropZoneItems,
@@ -1317,7 +1317,7 @@ export default {
       
       // Matching methods
       handleMatchingItemClick,
-      handleRemoveMatchingPair,
+      handleRemovePair,
       selectMatchingItem,
       removeMatchingPair,
       isItemMatched,
@@ -1343,6 +1343,153 @@ export default {
 /* Use existing styles from the original component */
 @import "@/assets/css/InteractivePanel.css";
 
+/* 🔥 ENHANCED DRAG AND DROP STYLES */
+.drag-drop-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 20px 0;
+  min-height: 300px;
+}
+
+.drag-items {
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.drag-items h4 {
+  margin: 0 0 16px 0;
+  color: #374151;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.drag-item {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  padding: 12px 16px;
+  margin: 8px 0;
+  border-radius: 8px;
+  cursor: grab;
+  user-select: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  touch-action: none;
+}
+
+.drag-item:hover:not(.disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.drag-item:active:not(.disabled) {
+  cursor: grabbing;
+  transform: scale(1.02);
+}
+
+.drag-item.dragging {
+  opacity: 0.8;
+  transform: scale(1.05) rotate(2deg);
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6);
+}
+
+.drag-item.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #9ca3af;
+}
+
+.drop-zones {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.drop-zone {
+  background: #ffffff;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 16px;
+  min-height: 120px;
+  transition: all 0.2s ease;
+}
+
+.drop-zone.drag-over {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: #8b5cf6;
+  border-style: solid;
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.2);
+}
+
+.drop-zone.disabled {
+  opacity: 0.6;
+  background: #f3f4f6;
+}
+
+.zone-label {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+
+.zone-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dropped-item {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+}
+
+.dropped-item:hover:not(.disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+}
+
+.remove-dropped {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: bold;
+  font-size: 1.1rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.remove-dropped:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.no-dragdrop-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 2px dashed #d1d5db;
+}
+
 /* Additional mobile-friendly improvements */
 .drag-item,
 .drop-zone {
@@ -1361,14 +1508,6 @@ export default {
   transform: scale(1.05);
   z-index: 1000;
   pointer-events: none;
-}
-
-/* Enhanced drop zone feedback */
-.drop-zone.drag-over {
-  background: rgba(139, 92, 246, 0.2);
-  border-color: #8b5cf6;
-  border-style: solid;
-  border-width: 2px;
 }
 
 /* Statement text for true/false */

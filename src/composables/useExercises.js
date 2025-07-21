@@ -1,4 +1,4 @@
-// src/composables/useExercises.js - COMPLETE EXERCISE LOGIC
+// src/composables/useExercises.js - COMPLETE EXERCISE LOGIC WITH FIXED DRAG & DROP
 import { ref, reactive, computed } from 'vue'
 
 export function useExercises() {
@@ -27,7 +27,7 @@ export function useExercises() {
   const dropTarget = ref(null)
 
   // ==========================================
-  // 🔥 NEW: VALIDATION FUNCTIONS (moved from LessonPage)
+  // 🔥 VALIDATION FUNCTIONS
   // ==========================================
   
   const calculateSimilarity = (str1, str2) => {
@@ -370,10 +370,16 @@ export function useExercises() {
     return isValid
   }
 
+  // 🔥 FIXED: Enhanced Drag & Drop Validation
   const validateDragDrop = (userPlacements, exercise) => {
     if (!userPlacements || typeof userPlacements !== 'object') {
       userPlacements = dragDropPlacements
     }
+
+    console.log('🔄 Validating drag-drop exercise:', {
+      userPlacements,
+      exercise: exercise.dropZones
+    })
 
     let dropZonesArray = []
     
@@ -384,6 +390,7 @@ export function useExercises() {
         zone && (zone.label || zone.id)
       )
     } else {
+      console.log('❌ No drop zones found in exercise')
       return false
     }
 
@@ -410,25 +417,35 @@ export function useExercises() {
 
       totalRequired += correctItems.length
 
+      console.log(`🎯 Zone "${zoneId}": ${userItems.length} user items, ${correctItems.length} required items`)
+
       for (const correctItem of correctItems) {
         const correctText = typeof correctItem === 'string' ? correctItem : (correctItem?.text || correctItem?.label || String(correctItem))
         
         const isItemPresent = userItems.some(userItem => {
           const userText = typeof userItem === 'string' ? userItem : (userItem?.text || userItem?.label || String(userItem))
-          return userText.trim().toLowerCase() === correctText.trim().toLowerCase()
+          const match = userText.trim().toLowerCase() === correctText.trim().toLowerCase()
+          console.log(`  Checking: "${userText}" vs "${correctText}" = ${match}`)
+          return match
         })
 
         if (isItemPresent) {
           correctCount++
+          console.log(`  ✅ Found correct item: "${correctText}"`)
+        } else {
+          console.log(`  ❌ Missing item: "${correctText}"`)
         }
       }
     }
 
-    return correctCount === totalRequired && totalRequired > 0
+    const isValid = correctCount === totalRequired && totalRequired > 0
+    console.log(`🎯 Drag-drop validation: ${correctCount}/${totalRequired} correct = ${isValid}`)
+    
+    return isValid
   }
 
   // ==========================================
-  // 🔥 NEW: UNIFIED VALIDATION METHOD
+  // 🔥 UNIFIED VALIDATION METHOD
   // ==========================================
   
   const validateCurrentAnswer = (exercise) => {
@@ -477,7 +494,7 @@ export function useExercises() {
   }
 
   // ==========================================
-  // 🔥 NEW: ANSWER DISPLAY METHODS
+  // 🔥 ANSWER DISPLAY METHODS
   // ==========================================
   
   const getCorrectAnswerDisplay = (exercise) => {
@@ -546,13 +563,16 @@ export function useExercises() {
         
         return displayAnswers.join(', ')
 
+      case 'drag-drop':
+        return 'Правильное размещение показано выше'
+
       default:
         return String(exercise.correctAnswer || exercise.answer || '')
     }
   }
 
   // ==========================================
-  // 🔥 NEW: MESSAGE METHODS
+  // 🔥 MESSAGE METHODS
   // ==========================================
   
   const getSecondChanceMessage = (exercise) => {
@@ -618,7 +638,7 @@ export function useExercises() {
   }
 
   // ==========================================
-  // 🔥 NEW: UNIFIED ANSWER UPDATE METHOD
+  // 🔥 UNIFIED ANSWER UPDATE METHOD
   // ==========================================
   
   const updateUserAnswer = (newAnswer, exercise) => {
@@ -652,7 +672,7 @@ export function useExercises() {
   }
 
   // ==========================================
-  // 🔥 NEW: INTERACTION HANDLERS
+  // 🔥 INTERACTION HANDLERS
   // ==========================================
   
   const handleMatchingSelection = (selection) => {
@@ -671,29 +691,34 @@ export function useExercises() {
   }
 
   // ==========================================
-  // 🔥 NEW: DRAG AND DROP HANDLERS
+  // 🔥 FIXED: DRAG AND DROP HANDLERS
   // ==========================================
   
-  const startDragItem = (item) => {
+  const handleDragItemStart = ({ item, event }) => {
+    console.log('🔥 useExercises: Starting drag for item:', item)
     draggedDragItem.value = item
   }
 
-  const dragOverZone = (zoneId) => {
+  const handleDragOverZone = (zoneId) => {
+    console.log('🔥 useExercises: Drag over zone:', zoneId)
     dropOverZone.value = zoneId
   }
 
-  const dragLeaveZone = () => {
+  const handleDragLeaveZone = () => {
+    console.log('🔥 useExercises: Drag leave zone')
     dropOverZone.value = null
   }
 
-  const dropInZone = (zoneId, item) => {
+  const handleDropInZone = ({ zoneId, item }) => {
+    console.log('🔥 useExercises: Drop in zone:', zoneId, 'item:', item)
+    
     if (!dragDropPlacements[zoneId]) {
       dragDropPlacements[zoneId] = []
     }
     
     const itemText = typeof item === 'string' ? item : (item?.text || item?.label || String(item))
     
-    // Remove item from other zones
+    // Remove item from other zones first
     Object.keys(dragDropPlacements).forEach(otherZoneId => {
       if (otherZoneId !== zoneId && Array.isArray(dragDropPlacements[otherZoneId])) {
         dragDropPlacements[otherZoneId] = dragDropPlacements[otherZoneId].filter(placedItem => {
@@ -713,43 +738,30 @@ export function useExercises() {
       dragDropPlacements[zoneId].push(item)
     }
     
-    // Force reactivity update
-    const updatedPlacements = {}
-    Object.keys(dragDropPlacements).forEach(key => {
-      updatedPlacements[key] = [...dragDropPlacements[key]]
-    })
+    console.log('✅ Updated dragDropPlacements:', JSON.parse(JSON.stringify(dragDropPlacements)))
     
-    Object.keys(dragDropPlacements).forEach(key => {
-      delete dragDropPlacements[key]
-    })
-    
-    Object.assign(dragDropPlacements, updatedPlacements)
+    // Clean up drag state
+    draggedDragItem.value = null
+    dropOverZone.value = null
   }
 
-  const removeDroppedItem = (zoneId, itemIndex, item) => {
+  const handleRemoveDroppedItem = ({ zoneId, itemIndex, item }) => {
+    console.log('🗑️ useExercises: Removing dropped item:', { zoneId, itemIndex, item })
+    
     if (!dragDropPlacements || 
         !dragDropPlacements[zoneId] || 
         !dragDropPlacements[zoneId][itemIndex]) {
+      console.warn('⚠️ Invalid removal request')
       return
     }
     
     dragDropPlacements[zoneId].splice(itemIndex, 1)
     
-    // Force reactivity update
-    const updatedPlacements = {}
-    Object.keys(dragDropPlacements).forEach(key => {
-      updatedPlacements[key] = [...dragDropPlacements[key]]
-    })
-    
-    Object.keys(dragDropPlacements).forEach(key => {
-      delete dragDropPlacements[key]
-    })
-    
-    Object.assign(dragDropPlacements, updatedPlacements)
+    console.log('✅ Item removed, updated placements:', JSON.parse(JSON.stringify(dragDropPlacements)))
   }
 
   // ==========================================
-  // 🔥 NEW: HINT SYSTEM
+  // 🔥 HINT SYSTEM
   // ==========================================
   
   const showHint = () => {
@@ -975,7 +987,9 @@ export function useExercises() {
     console.log('✅ Initialized ordering items:', orderingItems.value.length)
   }
   
+  // 🔥 FIXED: Enhanced Drag Drop Initialization
   const initializeDragDropItems = (exercise) => {
+    // Clear existing placements
     Object.keys(dragDropPlacements).forEach(key => {
       delete dragDropPlacements[key]
     })
@@ -988,6 +1002,7 @@ export function useExercises() {
       return
     }
     
+    // Initialize drag items
     if (exercise.dragItems && Array.isArray(exercise.dragItems)) {
       availableDragItems.value = exercise.dragItems.map(item => {
         if (typeof item === 'string') {
@@ -1000,6 +1015,7 @@ export function useExercises() {
       })
     }
     
+    // Initialize drop zones
     if (exercise.dropZones && Array.isArray(exercise.dropZones)) {
       dropZones.value = exercise.dropZones.map(zone => {
         if (typeof zone === 'string') {
@@ -1015,6 +1031,7 @@ export function useExercises() {
         }
       })
       
+      // Initialize empty arrays for each zone
       dropZones.value.forEach(zone => {
         dragDropPlacements[zone.id] = []
       })
@@ -1022,7 +1039,8 @@ export function useExercises() {
     
     console.log('✅ Initialized drag-drop items:', {
       dragItems: availableDragItems.value.length,
-      dropZones: dropZones.value.length
+      dropZones: dropZones.value.length,
+      placements: Object.keys(dragDropPlacements)
     })
   }
   
@@ -1062,7 +1080,9 @@ export function useExercises() {
         return Array.isArray(orderingItems.value) && orderingItems.value.length > 0
         
       case 'drag-drop':
-        return Object.keys(dragDropPlacements).length > 0
+        return Object.values(dragDropPlacements).some(items => 
+          Array.isArray(items) && items.length > 0
+        )
         
       default:
         return userAnswer.value && userAnswer.value.trim().length > 0
@@ -1181,7 +1201,7 @@ export function useExercises() {
     getCurrentExerciseType,
     getFormattedFillBlankTemplate,
     
-    // 🔥 NEW: Validation Methods
+    // 🔥 FIXED: Validation Methods
     validateCurrentAnswer,
     validateQuizAnswer,
     validateShortAnswer,
@@ -1192,24 +1212,26 @@ export function useExercises() {
     validateOrdering,
     validateDragDrop,
     
-    // 🔥 NEW: Display Methods
+    // 🔥 FIXED: Display Methods
     getCorrectAnswerDisplay,
     getSecondChanceMessage,
     getFinalFailureMessage,
     getRandomSuccessMessage,
     
-    // 🔥 NEW: Interaction Methods
+    // 🔥 FIXED: Interaction Methods
     updateUserAnswer,
     getCurrentUserAnswer,
     handleMatchingSelection,
     removeMatchingPair,
-    startDragItem,
-    dragOverZone,
-    dragLeaveZone,
-    dropInZone,
-    removeDroppedItem,
     
-    // 🔥 NEW: Hint Methods
+    // 🔥 FIXED: Drag and Drop Methods
+    handleDragItemStart,
+    handleDragOverZone,
+    handleDragLeaveZone,
+    handleDropInZone,
+    handleRemoveDroppedItem,
+    
+    // 🔥 FIXED: Hint Methods
     showHint,
     clearSmartHint,
     setSmartHint,
