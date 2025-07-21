@@ -1,8 +1,8 @@
-// src/composables/useVocabulary.js - FIXED VERSION
-import { reactive, computed } from 'vue'
+// src/composables/useVocabulary.js - COMPLETE REWRITTEN VERSION
+import { reactive, computed, watch, nextTick } from 'vue'
 
 export function useVocabulary() {
-  // ✅ Vocabulary state
+  // ✅ Core Vocabulary State
   const vocabularyModal = reactive({
     isVisible: false,
     currentIndex: 0,
@@ -15,28 +15,211 @@ export function useVocabulary() {
     isFlipping: false,
     showDefinition: false
   })
+
+  const studyTimer = reactive({
+    startTime: null,
+    endTime: null,
+    totalTime: 0,
+    wordTimes: {},
+    isActive: false
+  })
   
-  // ✅ Computed properties
+  // ✅ Computed Properties
   const currentVocabWord = computed(() => {
-    if (!vocabularyModal.words.length) return null
-    return vocabularyModal.words[vocabularyModal.currentIndex]
+    const validWords = getValidWords()
+    if (!validWords.length) return null
+    
+    const currentWord = validWords[vocabularyModal.currentIndex] || null
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 [useVocabulary] currentVocabWord:', {
+        currentIndex: vocabularyModal.currentIndex,
+        validWordsLength: validWords.length,
+        hasCurrentWord: !!currentWord,
+        term: currentWord ? extractWordProperty(currentWord, 'term') : null
+      })
+    }
+    
+    return currentWord
   })
   
   const vocabProgress = computed(() => {
-    if (!vocabularyModal.words.length) return 0
-    return Math.round(((vocabularyModal.currentIndex + 1) / vocabularyModal.words.length) * 100)
+    const validWords = getValidWords()
+    if (!validWords.length) return 0
+    return Math.round(((vocabularyModal.currentIndex + 1) / validWords.length) * 100)
   })
   
   const isLastVocabWord = computed(() => {
-    return vocabularyModal.currentIndex >= vocabularyModal.words.length - 1
+    const validWords = getValidWords()
+    return vocabularyModal.currentIndex >= validWords.length - 1
   })
-  
-  // ✅ ENHANCED: Vocabulary initialization with better error handling
+
+  // ✅ Core Helper Functions
+  const extractWordProperty = (word, propertyType) => {
+    if (!word || typeof word !== 'object') return ''
+    
+    let value = ''
+    
+    switch (propertyType) {
+      case 'term':
+        value = word.term || word.word || word.title || word.name || ''
+        break
+      case 'definition':
+        value = word.definition || word.translation || word.meaning || word.desc || word.description || ''
+        break
+      case 'example':
+        value = word.example || word.examples || word.usage || word.sample || ''
+        break
+      case 'pronunciation':
+        value = word.pronunciation || word.phonetic || word.ipa || ''
+        break
+      case 'partOfSpeech':
+        value = word.partOfSpeech || word.pos || word.type || word.category || ''
+        break
+      default:
+        value = word[propertyType] || ''
+    }
+    
+    return String(value).trim()
+  }
+
+  const getValidWords = () => {
+    return vocabularyModal.words.filter(word => {
+      if (!word || typeof word !== 'object') return false
+      
+      const hasTerm = extractWordProperty(word, 'term')
+      const hasDefinition = extractWordProperty(word, 'definition')
+      
+      return !!(hasTerm && hasDefinition)
+    })
+  }
+
+  const detectVocabularyPatterns = (step) => {
+    const patterns = []
+    
+    if (!step) {
+      return { patterns, recommendation: 'No step provided', bestPattern: null }
+    }
+
+    // Pattern 1: Direct array in step.data
+    if (Array.isArray(step.data)) {
+      const validCount = step.data.filter(item => 
+        extractWordProperty(item, 'term') && extractWordProperty(item, 'definition')
+      ).length
+      
+      patterns.push({
+        type: 'step.data (array)',
+        data: step.data,
+        count: step.data.length,
+        valid: validCount
+      })
+    }
+
+    // Pattern 2: Vocabulary nested in step.data.vocabulary
+    if (step.data && Array.isArray(step.data.vocabulary)) {
+      const validCount = step.data.vocabulary.filter(item => 
+        extractWordProperty(item, 'term') && extractWordProperty(item, 'definition')
+      ).length
+      
+      patterns.push({
+        type: 'step.data.vocabulary',
+        data: step.data.vocabulary,
+        count: step.data.vocabulary.length,
+        valid: validCount
+      })
+    }
+
+    // Pattern 3: Vocabulary in step.data.words
+    if (step.data && Array.isArray(step.data.words)) {
+      const validCount = step.data.words.filter(item => 
+        extractWordProperty(item, 'term') && extractWordProperty(item, 'definition')
+      ).length
+      
+      patterns.push({
+        type: 'step.data.words',
+        data: step.data.words,
+        count: step.data.words.length,
+        valid: validCount
+      })
+    }
+
+    // Pattern 4: Vocabulary directly on step.vocabulary
+    if (step.vocabulary && Array.isArray(step.vocabulary)) {
+      const validCount = step.vocabulary.filter(item => 
+        extractWordProperty(item, 'term') && extractWordProperty(item, 'definition')
+      ).length
+      
+      patterns.push({
+        type: 'step.vocabulary',
+        data: step.vocabulary,
+        count: step.vocabulary.length,
+        valid: validCount
+      })
+    }
+
+    // Pattern 5: Single vocabulary item in step.data
+    if (step.data && typeof step.data === 'object' && !Array.isArray(step.data)) {
+      const hasTerm = extractWordProperty(step.data, 'term')
+      const hasDefinition = extractWordProperty(step.data, 'definition')
+      
+      if (hasTerm && hasDefinition) {
+        patterns.push({
+          type: 'step.data (single item)',
+          data: [step.data],
+          count: 1,
+          valid: 1
+        })
+      }
+    }
+
+    // Pattern 6: Single vocabulary item directly on step
+    if (extractWordProperty(step, 'term') && extractWordProperty(step, 'definition')) {
+      patterns.push({
+        type: 'step (direct)',
+        data: [step],
+        count: 1,
+        valid: 1
+      })
+    }
+
+    // Pattern 7: Nested arrays in step.data
+    if (step.data && typeof step.data === 'object' && !Array.isArray(step.data)) {
+      Object.entries(step.data).forEach(([key, value]) => {
+        if (Array.isArray(value) && value.length > 0) {
+          const validCount = value.filter(item => 
+            extractWordProperty(item, 'term') && extractWordProperty(item, 'definition')
+          ).length
+          
+          if (validCount > 0) {
+            patterns.push({
+              type: `step.data.${key}`,
+              data: value,
+              count: value.length,
+              valid: validCount
+            })
+          }
+        }
+      })
+    }
+
+    // Find best pattern
+    const bestPattern = patterns
+      .filter(p => p.valid > 0)
+      .sort((a, b) => b.valid - a.valid)[0]
+
+    const recommendation = bestPattern 
+      ? `Use ${bestPattern.type} (${bestPattern.valid}/${bestPattern.count} valid items)`
+      : 'No valid vocabulary data found'
+
+    return { patterns, recommendation, bestPattern }
+  }
+
+  // ✅ Vocabulary Initialization
   const initializeVocabularyModal = (step) => {
     console.log('📚 [useVocabulary] Initializing vocabulary modal with step:', step)
     
     if (!step) {
-      console.error('❌ [useVocabulary] No step provided for vocabulary initialization')
+      console.error('❌ [useVocabulary] No step provided')
       return false
     }
     
@@ -45,360 +228,707 @@ export function useVocabulary() {
       return false
     }
     
-    let vocabularyItems = []
-    
     try {
-      // ✅ ENHANCED: Handle multiple data structure patterns
-      console.log('🔍 [useVocabulary] Analyzing step data structure:', {
-        hasData: !!step.data,
-        dataType: typeof step.data,
-        isDataArray: Array.isArray(step.data),
-        dataKeys: step.data ? Object.keys(step.data) : [],
-        hasVocabulary: !!(step.vocabulary),
-        stepKeys: Object.keys(step)
-      })
+      const { patterns, recommendation, bestPattern } = detectVocabularyPatterns(step)
       
-      if (Array.isArray(step.data)) {
-        // Pattern 1: Direct array in step.data
-        vocabularyItems = step.data
-        console.log('📝 [useVocabulary] Found vocabulary in step.data array:', vocabularyItems.length)
-      } else if (step.data && Array.isArray(step.data.vocabulary)) {
-        // Pattern 2: Vocabulary nested in step.data.vocabulary
-        vocabularyItems = step.data.vocabulary
-        console.log('📝 [useVocabulary] Found vocabulary in step.data.vocabulary:', vocabularyItems.length)
-      } else if (step.vocabulary && Array.isArray(step.vocabulary)) {
-        // Pattern 3: Vocabulary directly on step
-        vocabularyItems = step.vocabulary
-        console.log('📝 [useVocabulary] Found vocabulary in step.vocabulary:', vocabularyItems.length)
-      } else if (step.data && step.data.term && step.data.definition) {
-        // Pattern 4: Single vocabulary item in step.data
-        vocabularyItems = [step.data]
-        console.log('📝 [useVocabulary] Found single vocabulary item in step.data')
-      } else if (step.term && step.definition) {
-        // Pattern 5: Single vocabulary item directly on step
-        vocabularyItems = [step]
-        console.log('📝 [useVocabulary] Found single vocabulary item on step')
+      console.log('🔍 [useVocabulary] Pattern analysis:', {
+        totalPatterns: patterns.length,
+        recommendation,
+        bestPattern: bestPattern ? {
+          type: bestPattern.type,
+          count: bestPattern.count,
+          valid: bestPattern.valid
+        } : null
+      })
+
+      let vocabularyItems = []
+
+      if (bestPattern) {
+        vocabularyItems = bestPattern.data
+        console.log(`📝 [useVocabulary] Using ${bestPattern.type} with ${bestPattern.valid} valid items`)
       } else {
-        console.error('❌ [useVocabulary] No vocabulary data found in step structure:', step)
-        
-        // ✅ FALLBACK: Create a sample vocabulary item for testing
-        vocabularyItems = [{
-          term: "Sample Word",
-          definition: "This is a sample definition for testing vocabulary functionality.",
-          example: "This is how you use the sample word in a sentence.",
-          pronunciation: "",
-          partOfSpeech: "noun"
-        }]
-        console.warn('⚠️ [useVocabulary] Using fallback sample vocabulary item')
+        // Enhanced fallback with realistic vocabulary
+        vocabularyItems = [
+          {
+            id: 'fallback_1',
+            term: "Algorithm",
+            definition: "A step-by-step procedure for solving a problem or completing a task.",
+            example: "The sorting algorithm efficiently organized the data.",
+            pronunciation: "al-guh-ri-thuhm",
+            partOfSpeech: "noun",
+            difficulty: "medium",
+            learned: false
+          },
+          {
+            id: 'fallback_2',
+            term: "Variable",
+            definition: "A storage location with an associated name that contains data.",
+            example: "The variable stores the user's input value.",
+            pronunciation: "vair-ee-uh-buhl",
+            partOfSpeech: "noun",
+            difficulty: "easy",
+            learned: false
+          },
+          {
+            id: 'fallback_3',
+            term: "Function",
+            definition: "A reusable block of code that performs a specific task.",
+            example: "The function calculates the area of a rectangle.",
+            pronunciation: "fuhngk-shuhn",
+            partOfSpeech: "noun",
+            difficulty: "medium",
+            learned: false
+          }
+        ]
+        console.warn('⚠️ [useVocabulary] Using fallback vocabulary items')
       }
       
-      // ✅ ENHANCED: Better validation and processing
-      console.log('🔍 [useVocabulary] Raw vocabulary items before processing:', vocabularyItems)
-      
+      // Process and validate vocabulary items
       const processedItems = vocabularyItems
         .map((vocab, index) => {
-          // Log each item for debugging
-          console.log(`🔍 [useVocabulary] Processing vocab item ${index}:`, vocab)
-          
-          return vocab
-        })
-        .filter((vocab, index) => {
-          const hasRequiredFields = vocab && 
-                                   vocab.term && 
-                                   typeof vocab.term === 'string' && 
-                                   vocab.term.trim() && 
-                                   vocab.definition && 
-                                   typeof vocab.definition === 'string' && 
-                                   vocab.definition.trim()
-          
-          if (!hasRequiredFields) {
-            console.warn(`⚠️ [useVocabulary] Invalid vocabulary item at index ${index}:`, vocab)
+          if (!vocab || typeof vocab !== 'object') {
+            console.warn(`⚠️ [useVocabulary] Invalid item at index ${index}:`, vocab)
+            return null
           }
           
-          return hasRequiredFields
-        })
-        .map((vocab, index) => {
-          const processedVocab = {
-            id: vocab.id || `vocab_${index}_${Date.now()}`,
-            term: String(vocab.term).trim(),
-            definition: String(vocab.definition).trim(),
-            example: vocab.example ? String(vocab.example).trim() : '',
-            pronunciation: vocab.pronunciation ? String(vocab.pronunciation).trim() : '',
-            partOfSpeech: vocab.partOfSpeech ? String(vocab.partOfSpeech).trim() : '',
+          const term = extractWordProperty(vocab, 'term')
+          const definition = extractWordProperty(vocab, 'definition')
+          
+          if (!term || !definition) {
+            console.warn(`⚠️ [useVocabulary] Missing required fields at index ${index}:`, { term, definition })
+            return null
+          }
+          
+          return {
+            id: vocab.id || vocab._id || `vocab_${index}_${Date.now()}`,
+            term,
+            definition,
+            example: extractWordProperty(vocab, 'example'),
+            pronunciation: extractWordProperty(vocab, 'pronunciation'),
+            partOfSpeech: extractWordProperty(vocab, 'partOfSpeech'),
             difficulty: vocab.difficulty || 'medium',
-            learned: Boolean(vocab.learned || false)
+            learned: Boolean(vocab.learned || false),
+            originalIndex: index,
+            category: vocab.category || 'general',
+            tags: vocab.tags || [],
+            createdAt: vocab.createdAt || new Date().toISOString(),
+            lastStudied: vocab.lastStudied || null
           }
-          
-          console.log(`✅ [useVocabulary] Processed vocab item ${index}:`, processedVocab)
-          return processedVocab
         })
+        .filter(Boolean)
       
       if (processedItems.length === 0) {
-        console.error('❌ [useVocabulary] No valid vocabulary items found after processing')
+        console.error('❌ [useVocabulary] No valid vocabulary items after processing')
         return false
       }
       
-      // ✅ ENHANCED: Initialize modal state with validation
-      console.log(`🎯 [useVocabulary] Initializing modal with ${processedItems.length} vocabulary items`)
-      
+      // Initialize modal state
       vocabularyModal.isVisible = true
       vocabularyModal.currentIndex = 0
       vocabularyModal.words = processedItems
       vocabularyModal.isCompleted = false
       vocabularyModal.showingList = false
       
-      // Reset card animation state
+      // Reset card animation
       cardAnimation.isFlipping = false
       cardAnimation.showDefinition = false
       
-      console.log(`✅ [useVocabulary] Vocabulary modal initialized successfully:`, {
-        wordCount: processedItems.length,
-        firstWord: processedItems[0]?.term,
-        modalState: {
-          isVisible: vocabularyModal.isVisible,
-          currentIndex: vocabularyModal.currentIndex,
-          wordsLength: vocabularyModal.words.length
-        }
-      })
+      // Start study timer
+      startStudyTimer()
+      
+      console.log(`✅ [useVocabulary] Modal initialized with ${processedItems.length} words`)
       
       trackVocabularyEvent('vocabulary_started', {
         wordCount: processedItems.length,
-        firstWord: processedItems[0]?.term,
-        difficulty: processedItems[0]?.difficulty,
-        source: 'enhanced_initialization'
+        source: bestPattern ? 'detected' : 'fallback',
+        patternUsed: bestPattern?.type || 'fallback'
       })
       
       return true
       
     } catch (error) {
-      console.error('❌ [useVocabulary] Error initializing vocabulary modal:', error)
-      console.error('❌ [useVocabulary] Error stack:', error.stack)
+      console.error('❌ [useVocabulary] Initialization error:', error)
       return false
     }
   }
   
-  // ✅ ENHANCED: Card animation with better error handling
+  // ✅ Card Animation Methods
   const showVocabDefinition = () => {
-    console.log('🔄 [useVocabulary] Showing vocabulary definition')
-    
-    if (cardAnimation.isFlipping) {
-      console.log('⚠️ [useVocabulary] Card is already flipping, ignoring request')
-      return
-    }
-    
-    if (cardAnimation.showDefinition) {
-      console.log('ℹ️ [useVocabulary] Definition already shown')
-      return
-    }
-    
-    if (!currentVocabWord.value) {
-      console.error('❌ [useVocabulary] No current word available')
-      return
-    }
+    if (cardAnimation.isFlipping || cardAnimation.showDefinition) return
+    if (!currentVocabWord.value) return
     
     cardAnimation.isFlipping = true
     
     setTimeout(() => {
-      try {
-        cardAnimation.showDefinition = true
-        cardAnimation.isFlipping = false
-        
-        console.log('✅ [useVocabulary] Definition shown successfully for:', currentVocabWord.value.term)
-        
-        trackVocabularyEvent('definition_viewed', {
-          word: currentVocabWord.value?.term,
-          wordIndex: vocabularyModal.currentIndex,
-          totalWords: vocabularyModal.words.length
-        })
-      } catch (error) {
-        console.error('❌ [useVocabulary] Error showing definition:', error)
-        cardAnimation.isFlipping = false
-      }
+      cardAnimation.showDefinition = true
+      cardAnimation.isFlipping = false
+      
+      trackVocabularyEvent('definition_viewed', {
+        word: extractWordProperty(currentVocabWord.value, 'term'),
+        wordIndex: vocabularyModal.currentIndex
+      })
     }, 200)
   }
   
   const hideVocabDefinition = () => {
-    console.log('🔄 [useVocabulary] Hiding vocabulary definition')
-    
-    if (cardAnimation.isFlipping) {
-      console.log('⚠️ [useVocabulary] Card is already flipping, ignoring request')
-      return
-    }
-    
-    if (!cardAnimation.showDefinition) {
-      console.log('ℹ️ [useVocabulary] Definition already hidden')
-      return
-    }
+    if (cardAnimation.isFlipping || !cardAnimation.showDefinition) return
     
     cardAnimation.isFlipping = true
     
     setTimeout(() => {
-      try {
-        cardAnimation.showDefinition = false
-        cardAnimation.isFlipping = false
-        
-        console.log('✅ [useVocabulary] Definition hidden successfully')
-      } catch (error) {
-        console.error('❌ [useVocabulary] Error hiding definition:', error)
-        cardAnimation.isFlipping = false
-      }
+      cardAnimation.showDefinition = false
+      cardAnimation.isFlipping = false
     }, 200)
   }
   
-  // ✅ ENHANCED: Word navigation with validation
+  // ✅ Navigation Methods
   const nextVocabWord = () => {
-    console.log('➡️ [useVocabulary] Going to next vocabulary word')
+    const validWords = getValidWords()
     
-    if (isLastVocabWord.value) {
-      console.log('🏁 [useVocabulary] Reached last word, completing vocabulary')
+    if (vocabularyModal.currentIndex >= validWords.length - 1) {
       completeVocabularyModal()
       return
     }
     
-    if (vocabularyModal.currentIndex >= vocabularyModal.words.length - 1) {
-      console.log('⚠️ [useVocabulary] Already at last word')
-      return
-    }
-    
-    // Reset card state before navigation
     cardAnimation.isFlipping = false
     cardAnimation.showDefinition = false
     
-    // Small delay to ensure smooth transition
     setTimeout(() => {
       vocabularyModal.currentIndex++
-      console.log(`✅ [useVocabulary] Moved to word ${vocabularyModal.currentIndex + 1}/${vocabularyModal.words.length}`)
+      announceForScreenReader(`Word ${vocabularyModal.currentIndex + 1} of ${validWords.length}: ${extractWordProperty(currentVocabWord.value, 'term')}`)
     }, 100)
   }
   
   const previousVocabWord = () => {
-    console.log('⬅️ [useVocabulary] Going to previous vocabulary word')
+    if (vocabularyModal.currentIndex <= 0) return
     
-    if (vocabularyModal.currentIndex <= 0) {
-      console.log('ℹ️ [useVocabulary] Already at first word')
-      return
-    }
-    
-    // Reset card state before navigation
     cardAnimation.isFlipping = false
     cardAnimation.showDefinition = false
     
     setTimeout(() => {
       vocabularyModal.currentIndex--
-      console.log(`✅ [useVocabulary] Moved to word ${vocabularyModal.currentIndex + 1}/${vocabularyModal.words.length}`)
+      announceForScreenReader(`Word ${vocabularyModal.currentIndex + 1} of ${getValidWords().length}: ${extractWordProperty(currentVocabWord.value, 'term')}`)
     }, 100)
   }
   
-  // ✅ ENHANCED: Word marking with validation
-  const markWordAsLearned = () => {
-    console.log('📚 [useVocabulary] Marking word as learned')
+  const jumpToVocabWord = (index) => {
+    const validWords = getValidWords()
     
-    if (!currentVocabWord.value) {
-      console.error('❌ [useVocabulary] No current word to mark as learned')
+    if (index < 0 || index >= validWords.length || index === vocabularyModal.currentIndex) {
       return
     }
     
-    try {
-      currentVocabWord.value.learned = true
-      
-      const learnedCount = vocabularyModal.words.filter(w => w.learned).length
-      
-      console.log(`✅ [useVocabulary] Word "${currentVocabWord.value.term}" marked as learned (${learnedCount}/${vocabularyModal.words.length})`)
-      
-      trackVocabularyEvent('word_learned', {
-        word: currentVocabWord.value.term,
-        wordIndex: vocabularyModal.currentIndex,
-        totalLearned: learnedCount,
-        totalWords: vocabularyModal.words.length
-      })
-      
-      // Auto-advance to next word after marking as learned
-      setTimeout(() => {
-        nextVocabWord()
-      }, 500)
-      
-    } catch (error) {
-      console.error('❌ [useVocabulary] Error marking word as learned:', error)
-    }
+    cardAnimation.isFlipping = false
+    cardAnimation.showDefinition = false
+    
+    setTimeout(() => {
+      vocabularyModal.currentIndex = index
+      announceForScreenReader(`Jumped to word ${index + 1}: ${extractWordProperty(currentVocabWord.value, 'term')}`)
+    }, 50)
   }
   
-  // ✅ ENHANCED: Completion handling
-  const completeVocabularyModal = () => {
-    console.log('🏁 [useVocabulary] Completing vocabulary modal')
+  // ✅ Learning Progress Methods
+  const markWordAsLearned = () => {
+    if (!currentVocabWord.value) return
     
-    const learnedCount = vocabularyModal.words.filter(w => w.learned).length
-    const completionRate = learnedCount / vocabularyModal.words.length
+    const currentWord = currentVocabWord.value
+    const wasLearned = currentWord.learned
     
-    vocabularyModal.isCompleted = true
+    currentWord.learned = !currentWord.learned
+    currentWord.lastStudied = new Date().toISOString()
     
-    console.log(`✅ [useVocabulary] Vocabulary completed:`, {
-      totalWords: vocabularyModal.words.length,
-      learnedWords: learnedCount,
-      completionRate: Math.round(completionRate * 100) + '%'
+    const validWords = getValidWords()
+    const learnedCount = validWords.filter(w => w.learned).length
+    
+    announceForScreenReader(
+      currentWord.learned 
+        ? `Word marked as learned. ${learnedCount} of ${validWords.length} words completed.`
+        : `Word unmarked. ${learnedCount} of ${validWords.length} words completed.`
+    )
+    
+    trackVocabularyEvent('word_learned_toggled', {
+      word: extractWordProperty(currentWord, 'term'),
+      wasLearned,
+      nowLearned: currentWord.learned,
+      totalLearned: learnedCount,
+      totalWords: validWords.length
     })
     
+    // Auto-advance if newly learned
+    if (currentWord.learned && !wasLearned) {
+      setTimeout(() => {
+        nextVocabWord()
+      }, 800)
+    }
+    
+    // Auto-save progress
+    setTimeout(autoSaveProgress, 100)
+  }
+  
+  // ✅ Completion Methods
+  const completeVocabularyModal = () => {
+    const validWords = getValidWords()
+    const learnedCount = validWords.filter(w => w.learned).length
+    const completionRate = validWords.length > 0 ? (learnedCount / validWords.length) * 100 : 0
+    
+    vocabularyModal.isCompleted = true
+    stopStudyTimer()
+    
+    announceForScreenReader(`Vocabulary completed! You learned ${learnedCount} out of ${validWords.length} words.`)
+    
     trackVocabularyEvent('vocabulary_completed', {
-      totalWords: vocabularyModal.words.length,
+      totalWords: validWords.length,
       learnedWords: learnedCount,
-      completionRate: completionRate,
-      timeSpent: Date.now() // Could track actual time
+      completionRate,
+      studyTime: studyTimer.totalTime
     })
     
     setTimeout(() => {
       showVocabularyList()
-    }, 2000)
+    }, 2500)
   }
   
   const showVocabularyList = () => {
-    console.log('📋 [useVocabulary] Showing vocabulary list')
     vocabularyModal.showingList = true
     
     setTimeout(() => {
       vocabularyModal.isVisible = false
       vocabularyModal.showingList = false
-      console.log('✅ [useVocabulary] Vocabulary modal closed')
+      
+      trackVocabularyEvent('vocabulary_modal_closed', {
+        reason: 'completed'
+      })
     }, 1500)
   }
   
   const skipVocabularyModal = () => {
-    console.log('⏭️ [useVocabulary] Skipping vocabulary modal')
+    const validWords = getValidWords()
+    const learnedCount = validWords.filter(w => w.learned).length
+    
+    stopStudyTimer()
+    vocabularyModal.isVisible = false
     
     trackVocabularyEvent('vocabulary_skipped', {
       skipAt: vocabularyModal.currentIndex,
-      totalWords: vocabularyModal.words.length,
-      learnedWords: vocabularyModal.words.filter(w => w.learned).length
+      totalWords: validWords.length,
+      learnedWords: learnedCount
     })
-    
-    vocabularyModal.isVisible = false
   }
   
   const restartVocabulary = () => {
-    console.log('🔄 [useVocabulary] Restarting vocabulary')
+    const validWords = getValidWords()
     
     vocabularyModal.currentIndex = 0
     vocabularyModal.isCompleted = false
     vocabularyModal.showingList = false
-    vocabularyModal.words.forEach(word => word.learned = false)
+    
+    validWords.forEach(word => {
+      word.learned = false
+      word.lastStudied = null
+    })
     
     cardAnimation.isFlipping = false
     cardAnimation.showDefinition = false
     
+    // Restart timer
+    startStudyTimer()
+    
     trackVocabularyEvent('vocabulary_restarted', {
-      totalWords: vocabularyModal.words.length
+      totalWords: validWords.length
     })
   }
   
-  // ✅ DEBUGGING: Enhanced state inspection
+  // ✅ Timer Functions
+  const startStudyTimer = () => {
+    studyTimer.startTime = Date.now()
+    studyTimer.isActive = true
+    studyTimer.endTime = null
+    studyTimer.totalTime = 0
+    
+    trackVocabularyEvent('study_timer_started')
+  }
+
+  const stopStudyTimer = () => {
+    if (!studyTimer.isActive) return
+    
+    studyTimer.endTime = Date.now()
+    studyTimer.totalTime = studyTimer.endTime - studyTimer.startTime
+    studyTimer.isActive = false
+    
+    trackVocabularyEvent('study_timer_stopped', {
+      totalTime: studyTimer.totalTime,
+      totalMinutes: Math.round(studyTimer.totalTime / 60000 * 10) / 10
+    })
+  }
+
+  const recordWordTime = (wordId, timeSpent) => {
+    if (!wordId) return
+    studyTimer.wordTimes[wordId] = (studyTimer.wordTimes[wordId] || 0) + timeSpent
+  }
+
+  // ✅ Auto-Save Functions
+  const autoSaveProgress = () => {
+    try {
+      const progressData = {
+        currentIndex: vocabularyModal.currentIndex,
+        words: getValidWords().map(word => ({
+          id: word.id,
+          learned: word.learned,
+          lastStudied: word.lastStudied
+        })),
+        lastSaved: new Date().toISOString()
+      }
+      
+      localStorage.setItem('vocabularyProgress', JSON.stringify(progressData))
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('💾 [useVocabulary] Progress auto-saved')
+      }
+    } catch (error) {
+      console.warn('⚠️ [useVocabulary] Failed to auto-save:', error)
+    }
+  }
+
+  const loadSavedProgress = () => {
+    try {
+      const saved = localStorage.getItem('vocabularyProgress')
+      return saved ? JSON.parse(saved) : null
+    } catch (error) {
+      console.warn('⚠️ [useVocabulary] Failed to load saved progress:', error)
+      return null
+    }
+  }
+
+  const applySavedProgress = (progressData) => {
+    if (!progressData?.words) return false
+
+    try {
+      const validWords = getValidWords()
+      let appliedCount = 0
+
+      progressData.words.forEach(savedWord => {
+        const matchingWord = validWords.find(word => 
+          word.id === savedWord.id || 
+          extractWordProperty(word, 'term') === extractWordProperty(savedWord, 'term')
+        )
+        
+        if (matchingWord) {
+          matchingWord.learned = savedWord.learned
+          matchingWord.lastStudied = savedWord.lastStudied
+          appliedCount++
+        }
+      })
+
+      if (progressData.currentIndex !== undefined && progressData.currentIndex < validWords.length) {
+        vocabularyModal.currentIndex = progressData.currentIndex
+      }
+
+      console.log(`✅ [useVocabulary] Applied saved progress to ${appliedCount}/${validWords.length} words`)
+      
+      trackVocabularyEvent('progress_restored', {
+        totalWords: validWords.length,
+        restoredWords: appliedCount
+      })
+
+      return true
+    } catch (error) {
+      console.error('❌ [useVocabulary] Failed to apply saved progress:', error)
+      return false
+    }
+  }
+
+  // ✅ Voice Pronunciation
+  const pronounceWord = (word, options = {}) => {
+    if (!word || typeof word !== 'string') return
+
+    try {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+        
+        const utterance = new SpeechSynthesisUtterance(word.trim())
+        utterance.lang = options.lang || 'en-US'
+        utterance.rate = options.rate || 0.8
+        utterance.pitch = options.pitch || 1
+        utterance.volume = options.volume || 1
+        
+        utterance.onstart = () => {
+          trackVocabularyEvent('word_pronounced', { word, lang: utterance.lang })
+        }
+        
+        utterance.onerror = (event) => {
+          console.error('❌ [useVocabulary] Pronunciation error:', event.error)
+        }
+        
+        window.speechSynthesis.speak(utterance)
+      }
+    } catch (error) {
+      console.error('❌ [useVocabulary] Error pronouncing word:', error)
+    }
+  }
+
+  // ✅ Accessibility
+  const announceForScreenReader = (message) => {
+    if (typeof window === 'undefined') return
+    
+    try {
+      const announcement = document.createElement('div')
+      announcement.setAttribute('aria-live', 'polite')
+      announcement.setAttribute('aria-atomic', 'true')
+      announcement.style.cssText = 'position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;'
+      
+      document.body.appendChild(announcement)
+      announcement.textContent = message
+      
+      setTimeout(() => {
+        document.body.removeChild(announcement)
+      }, 1000)
+    } catch (error) {
+      console.warn('⚠️ [useVocabulary] Screen reader announcement failed:', error)
+    }
+  }
+
+  // ✅ Keyboard Shortcuts
+  const handleKeyboardShortcuts = (event) => {
+    if (!vocabularyModal.isVisible) return
+
+    const { key, ctrlKey, altKey } = event
+
+    const shortcuts = {
+      ' ': (e) => {
+        e.preventDefault()
+        cardAnimation.showDefinition ? hideVocabDefinition() : showVocabDefinition()
+      },
+      'ArrowLeft': (e) => {
+        e.preventDefault()
+        previousVocabWord()
+      },
+      'ArrowRight': (e) => {
+        e.preventDefault()
+        nextVocabWord()
+      },
+      'Enter': (e) => {
+        e.preventDefault()
+        markWordAsLearned()
+      },
+      'Escape': (e) => {
+        e.preventDefault()
+        skipVocabularyModal()
+      },
+      'Home': (e) => {
+        e.preventDefault()
+        jumpToVocabWord(0)
+      },
+      'End': (e) => {
+        e.preventDefault()
+        jumpToVocabWord(getValidWords().length - 1)
+      }
+    }
+
+    // Handle Ctrl/Alt + R for restart
+    if ((ctrlKey || altKey) && key === 'r') {
+      event.preventDefault()
+      restartVocabulary()
+      return
+    }
+
+    // Handle number keys (1-9) for quick jump
+    if (/^[1-9]$/.test(key)) {
+      const index = parseInt(key) - 1
+      const validWords = getValidWords()
+      if (index < validWords.length) {
+        event.preventDefault()
+        jumpToVocabWord(index)
+      }
+      return
+    }
+
+    const shortcut = shortcuts[key]
+    if (shortcut) {
+      shortcut(event)
+      
+      trackVocabularyEvent('keyboard_shortcut_used', {
+        key,
+        ctrlKey,
+        altKey,
+        currentWord: extractWordProperty(currentVocabWord.value, 'term')
+      })
+    }
+  }
+
+  // ✅ Statistics and Analysis
+  const getStudySessionStats = () => {
+    const validWords = getValidWords()
+    const learnedWords = validWords.filter(w => w.learned)
+    const unlearnedWords = validWords.filter(w => !w.learned)
+    
+    return {
+      total: validWords.length,
+      learned: learnedWords.length,
+      unlearned: unlearnedWords.length,
+      progress: validWords.length > 0 ? Math.round((learnedWords.length / validWords.length) * 100) : 0,
+      currentIndex: vocabularyModal.currentIndex,
+      currentWord: currentVocabWord.value ? {
+        term: extractWordProperty(currentVocabWord.value, 'term'),
+        definition: extractWordProperty(currentVocabWord.value, 'definition'),
+        learned: currentVocabWord.value.learned,
+        difficulty: currentVocabWord.value.difficulty
+      } : null,
+      isCompleted: vocabularyModal.isCompleted,
+      isVisible: vocabularyModal.isVisible,
+      studyTime: studyTimer.totalTime
+    }
+  }
+
+  const getStudyRecommendations = () => {
+    const validWords = getValidWords()
+    const learnedWords = validWords.filter(w => w.learned)
+    const progressPercentage = validWords.length > 0 ? (learnedWords.length / validWords.length) * 100 : 0
+    
+    const recommendations = []
+
+    if (progressPercentage === 0) {
+      recommendations.push({
+        type: 'start',
+        priority: 'high',
+        message: 'Start your vocabulary journey! Begin with the first word.',
+        action: 'start_studying'
+      })
+    } else if (progressPercentage < 25) {
+      recommendations.push({
+        type: 'continue',
+        priority: 'high',
+        message: 'Great start! Keep building momentum.',
+        action: 'continue_studying'
+      })
+    } else if (progressPercentage < 50) {
+      recommendations.push({
+        type: 'halfway',
+        priority: 'medium',
+        message: 'You\'re making good progress! Halfway there.',
+        action: 'continue_studying'
+      })
+    } else if (progressPercentage < 100) {
+      recommendations.push({
+        type: 'almost_done',
+        priority: 'high',
+        message: 'Almost finished! Push through to complete the set.',
+        action: 'finish_studying'
+      })
+    } else {
+      recommendations.push({
+        type: 'completed',
+        priority: 'low',
+        message: 'Excellent! You\'ve learned all words. Consider reviewing.',
+        action: 'review_or_restart'
+      })
+    }
+
+    return recommendations
+  }
+
+  // ✅ Search and Filter
+  const searchWords = (query) => {
+    if (!query || typeof query !== 'string') return getValidWords()
+    
+    const searchTerm = query.toLowerCase().trim()
+    const validWords = getValidWords()
+    
+    return validWords.filter(word => {
+      const term = extractWordProperty(word, 'term').toLowerCase()
+      const definition = extractWordProperty(word, 'definition').toLowerCase()
+      const example = extractWordProperty(word, 'example').toLowerCase()
+      
+      return term.includes(searchTerm) || 
+             definition.includes(searchTerm) || 
+             example.includes(searchTerm)
+    })
+  }
+
+  const filterWordsByDifficulty = (difficulty) => {
+    return getValidWords().filter(word => word.difficulty === difficulty)
+  }
+
+  const filterWordsByLearned = (learnedStatus = true) => {
+    return getValidWords().filter(word => word.learned === learnedStatus)
+  }
+
+  // ✅ Data Export
+  const exportVocabularyData = () => {
+    const validWords = getValidWords()
+    
+    return {
+      metadata: {
+        exportedAt: new Date().toISOString(),
+        totalWords: validWords.length,
+        learnedWords: validWords.filter(w => w.learned).length,
+        version: '1.0'
+      },
+      vocabulary: validWords.map(word => ({
+        id: word.id,
+        term: extractWordProperty(word, 'term'),
+        definition: extractWordProperty(word, 'definition'),
+        example: extractWordProperty(word, 'example'),
+        pronunciation: extractWordProperty(word, 'pronunciation'),
+        partOfSpeech: extractWordProperty(word, 'partOfSpeech'),
+        difficulty: word.difficulty,
+        learned: word.learned,
+        lastStudied: word.lastStudied
+      }))
+    }
+  }
+
+  // ✅ Validation
+  const validateVocabularyStep = (step) => {
+    if (!step || step.type !== 'vocabulary') {
+      return { 
+        isValid: false, 
+        reason: 'Invalid step type',
+        stepType: step?.type || 'undefined'
+      }
+    }
+    
+    const { patterns, recommendation, bestPattern } = detectVocabularyPatterns(step)
+    
+    return {
+      isValid: bestPattern && bestPattern.valid > 0,
+      reason: recommendation,
+      patterns: patterns.map(p => ({
+        type: p.type,
+        count: p.count,
+        valid: p.valid,
+        validationRate: p.count > 0 ? Math.round((p.valid / p.count) * 100) : 0
+      })),
+      bestPattern: bestPattern ? {
+        type: bestPattern.type,
+        totalItems: bestPattern.count,
+        validItems: bestPattern.valid,
+        validationRate: Math.round((bestPattern.valid / bestPattern.count) * 100)
+      } : null
+    }
+  }
+
+  // ✅ Debug Functions
   const getVocabularyDebugInfo = () => {
+    const validWords = getValidWords()
+    const rawWords = vocabularyModal.words
+    
     return {
       modal: {
         isVisible: vocabularyModal.isVisible,
         currentIndex: vocabularyModal.currentIndex,
-        totalWords: vocabularyModal.words.length,
+        totalWords: rawWords.length,
+        validWords: validWords.length,
+        invalidWords: rawWords.length - validWords.length,
         isCompleted: vocabularyModal.isCompleted,
         showingList: vocabularyModal.showingList
       },
-      currentWord: currentVocabWord.value,
+      currentWord: currentVocabWord.value ? {
+        id: currentVocabWord.value.id,
+        term: extractWordProperty(currentVocabWord.value, 'term'),
+        definition: extractWordProperty(currentVocabWord.value, 'definition'),
+        learned: currentVocabWord.value.learned,
+        difficulty: currentVocabWord.value.difficulty
+      } : null,
       animation: {
         isFlipping: cardAnimation.isFlipping,
         showDefinition: cardAnimation.showDefinition
@@ -406,59 +936,211 @@ export function useVocabulary() {
       progress: {
         percentage: vocabProgress.value,
         isLastWord: isLastVocabWord.value,
-        learnedCount: vocabularyModal.words.filter(w => w.learned).length
+        learnedCount: validWords.filter(w => w.learned).length
       },
-      words: vocabularyModal.words.map((word, index) => ({
+      timer: {
+        isActive: studyTimer.isActive,
+        totalTime: studyTimer.totalTime,
+        startTime: studyTimer.startTime
+      },
+      words: validWords.map((word, index) => ({
         index,
-        term: word.term,
+        id: word.id,
+        term: extractWordProperty(word, 'term'),
         learned: word.learned,
         isCurrent: index === vocabularyModal.currentIndex
       }))
     }
   }
-  
-  // ✅ Utility functions
+
+  // ✅ Event Tracking
   const trackVocabularyEvent = (eventType, data = {}) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`📚 [useVocabulary] Vocabulary Event: ${eventType}`, data)
+    const eventData = {
+      ...data,
+      timestamp: new Date().toISOString(),
+      sessionId: `vocab_${Date.now()}`
     }
-    // Send to analytics service if needed
-  }
-  
-  const getWordStudyTime = () => {
-    return Math.floor(Math.random() * 30) + 10 // Mock data
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📚 [useVocabulary] Event: ${eventType}`, eventData)
+    }
+    
+    // Store events locally for analytics
+    try {
+      const events = JSON.parse(localStorage.getItem('vocabularyEvents') || '[]')
+      events.push({ type: eventType, data: eventData })
+      
+      // Keep only last 100 events
+      if (events.length > 100) {
+        events.splice(0, events.length - 100)
+      }
+      
+      localStorage.setItem('vocabularyEvents', JSON.stringify(events))
+    } catch (error) {
+      console.warn('Could not store vocabulary event locally:', error)
+    }
   }
 
-  // Make debug function available in development
+  // ✅ Cleanup
+  const cleanup = () => {
+    console.log('🧹 [useVocabulary] Cleaning up')
+    
+    stopStudyTimer()
+    
+    // Reset all state
+    vocabularyModal.isVisible = false
+    vocabularyModal.currentIndex = 0
+    vocabularyModal.words = []
+    vocabularyModal.isCompleted = false
+    vocabularyModal.showingList = false
+    
+    cardAnimation.isFlipping = false
+    cardAnimation.showDefinition = false
+    
+    // Reset timer
+    studyTimer.startTime = null
+    studyTimer.endTime = null
+    studyTimer.totalTime = 0
+    studyTimer.wordTimes = {}
+    studyTimer.isActive = false
+    
+    trackVocabularyEvent('vocabulary_cleanup')
+  }
+
+  // ✅ Bulk Operations
+  const markAllWordsAsLearned = () => {
+    const validWords = getValidWords()
+    const timestamp = new Date().toISOString()
+    
+    validWords.forEach(word => {
+      word.learned = true
+      word.lastStudied = timestamp
+    })
+    
+    announceForScreenReader(`All ${validWords.length} words marked as learned`)
+    
+    trackVocabularyEvent('all_words_learned', {
+      totalWords: validWords.length
+    })
+    
+    autoSaveProgress()
+  }
+
+  const resetAllProgress = () => {
+    const validWords = getValidWords()
+    const previousLearnedCount = validWords.filter(w => w.learned).length
+    
+    validWords.forEach(word => {
+      word.learned = false
+      word.lastStudied = null
+    })
+    
+    vocabularyModal.currentIndex = 0
+    vocabularyModal.isCompleted = false
+    
+    announceForScreenReader(`All progress reset. ${previousLearnedCount} words unmarked.`)
+    
+    trackVocabularyEvent('progress_reset', {
+      totalWords: validWords.length,
+      previousLearnedCount
+    })
+    
+    autoSaveProgress()
+  }
+
+  // ✅ Watch for auto-save triggers
+  watch(() => vocabularyModal.currentIndex, () => {
+    autoSaveProgress()
+  })
+
+  watch(() => getValidWords().filter(w => w.learned).length, () => {
+    autoSaveProgress()
+  })
+
+  // ✅ Development Debug Functions
   if (process.env.NODE_ENV === 'development') {
     window.getVocabularyDebugInfo = getVocabularyDebugInfo
+    window.validateVocabularyStep = validateVocabularyStep
+    window.vocabularyModal = vocabularyModal
+    window.extractWordProperty = extractWordProperty
+    window.detectVocabularyPatterns = detectVocabularyPatterns
+    window.getStudySessionStats = getStudySessionStats
+    window.exportVocabularyData = exportVocabularyData
+    
+    console.log('🔧 [useVocabulary] Debug functions available:')
+    console.log('  - getVocabularyDebugInfo() - Complete state inspection')
+    console.log('  - validateVocabularyStep(step) - Validate step data')
+    console.log('  - vocabularyModal - Direct state access')
+    console.log('  - extractWordProperty(word, type) - Property extraction')
+    console.log('  - detectVocabularyPatterns(step) - Pattern analysis')
+    console.log('  - getStudySessionStats() - Session statistics')
+    console.log('  - exportVocabularyData() - Export functionality')
   }
-  
+
   return {
-    // State
+    // ✅ State
     vocabularyModal,
     cardAnimation,
+    studyTimer,
     
-    // Computed
+    // ✅ Computed
     currentVocabWord,
     vocabProgress,
     isLastVocabWord,
     
-    // Methods
+    // ✅ Core Methods
     initializeVocabularyModal,
     showVocabDefinition,
     hideVocabDefinition,
     markWordAsLearned,
     nextVocabWord,
     previousVocabWord,
+    jumpToVocabWord,
     completeVocabularyModal,
     showVocabularyList,
     skipVocabularyModal,
     restartVocabulary,
     
-    // Utility
+    // ✅ Bulk Operations
+    markAllWordsAsLearned,
+    resetAllProgress,
+    
+    // ✅ Navigation & Interaction
+    handleKeyboardShortcuts,
+    pronounceWord,
+    
+    // ✅ Timer Functions
+    startStudyTimer,
+    stopStudyTimer,
+    recordWordTime,
+    
+    // ✅ Data Management
+    autoSaveProgress,
+    loadSavedProgress,
+    applySavedProgress,
+    exportVocabularyData,
+    
+    // ✅ Search & Filter
+    searchWords,
+    filterWordsByDifficulty,
+    filterWordsByLearned,
+    
+    // ✅ Statistics & Analysis
+    getStudySessionStats,
+    getStudyRecommendations,
+    
+    // ✅ Accessibility
+    announceForScreenReader,
+    
+    // ✅ Helper Methods
+    getValidWords,
+    extractWordProperty,
+    validateVocabularyStep,
+    detectVocabularyPatterns,
+    
+    // ✅ Utility
     trackVocabularyEvent,
-    getWordStudyTime,
-    getVocabularyDebugInfo
+    getVocabularyDebugInfo,
+    cleanup
   }
 }

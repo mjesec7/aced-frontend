@@ -9,7 +9,7 @@
             <div class="vocab-progress-fill" :style="{ width: progress + '%' }"></div>
           </div>
           <div class="vocab-progress-text">
-            {{ (vocabularyData?.currentIndex || 0) + 1 }} / {{ (vocabularyData?.words || []).length || 1 }}
+            {{ (vocabularyData?.currentIndex || 0) + 1 }} / {{ getValidWordsCount() }}
           </div>
         </div>
         
@@ -24,6 +24,14 @@
         </div>
       </div>
 
+      <!-- DEBUG INFO (only in development) -->
+      <div v-if="isDevelopment" class="debug-info">
+        <details>
+          <summary>🔍 Debug Info</summary>
+          <pre>{{ debugInfo }}</pre>
+        </details>
+      </div>
+
       <!-- FIXED: Vocabulary Card Container with proper data validation -->
       <div v-if="!vocabularyData?.isCompleted && !vocabularyData?.showingList && hasValidWords" class="vocabulary-card-container">
         
@@ -32,21 +40,21 @@
              :class="{ 
                'flipped': cardAnimation?.showDefinition, 
                'flipping': cardAnimation?.isFlipping,
-               'learned': currentWord?.learned
+               'learned': currentDisplayWord?.learned
              }">
           
           <!-- Front of Card (Term) -->
           <div class="card-front" @click="$emit('show-definition')">
             <div class="card-content">
               <div class="vocab-term-section">
-                <h2 class="vocab-term">{{ currentWord?.term || currentWord?.word || 'Loading...' }}</h2>
+                <h2 class="vocab-term">{{ getWordTerm(currentDisplayWord) }}</h2>
                 
-                <div v-if="currentWord?.pronunciation" class="vocab-pronunciation">
-                  /{{ currentWord.pronunciation }}/
+                <div v-if="getWordPronunciation(currentDisplayWord)" class="vocab-pronunciation">
+                  /{{ getWordPronunciation(currentDisplayWord) }}/
                 </div>
                 
-                <div v-if="currentWord?.partOfSpeech" class="vocab-part-of-speech">
-                  {{ currentWord.partOfSpeech }}
+                <div v-if="getWordPartOfSpeech(currentDisplayWord)" class="vocab-part-of-speech">
+                  {{ getWordPartOfSpeech(currentDisplayWord) }}
                 </div>
               </div>
               
@@ -58,8 +66,8 @@
             
             <!-- Voice Button - Fixed Position -->
             <button 
-              v-if="currentWord?.term || currentWord?.word" 
-              @click.stop="$emit('pronounce', currentWord.term || currentWord.word)"
+              v-if="getWordTerm(currentDisplayWord)" 
+              @click.stop="$emit('pronounce', getWordTerm(currentDisplayWord))"
               class="voice-btn"
               title="Произношение"
             >
@@ -71,15 +79,15 @@
           <div class="card-back" @click="$emit('hide-definition')">
             <div class="card-content">
               <div class="vocab-definition-section">
-                <h3 class="vocab-term-small">{{ currentWord?.term || currentWord?.word || '' }}</h3>
+                <h3 class="vocab-term-small">{{ getWordTerm(currentDisplayWord) }}</h3>
                 
                 <div class="vocab-definition">
-                  {{ currentWord?.definition || currentWord?.translation || 'Определение не найдено' }}
+                  {{ getWordDefinition(currentDisplayWord) }}
                 </div>
                 
-                <div v-if="currentWord?.example" class="vocab-example">
+                <div v-if="getWordExample(currentDisplayWord)" class="vocab-example">
                   <strong>Пример:</strong><br>
-                  <em>{{ currentWord.example }}</em>
+                  <em>{{ getWordExample(currentDisplayWord) }}</em>
                 </div>
               </div>
               
@@ -91,8 +99,8 @@
             
             <!-- Voice Button - Also on back -->
             <button 
-              v-if="currentWord?.term || currentWord?.word" 
-              @click.stop="$emit('pronounce', currentWord.term || currentWord.word)"
+              v-if="getWordTerm(currentDisplayWord)" 
+              @click.stop="$emit('pronounce', getWordTerm(currentDisplayWord))"
               class="voice-btn"
               title="Произношение"
             >
@@ -117,11 +125,11 @@
             <button 
               @click="$emit('mark-learned')" 
               class="vocab-learned-btn"
-              :class="{ active: currentWord?.learned }"
+              :class="{ active: currentDisplayWord?.learned }"
               title="Отметить как изученное"
             >
-              <span class="btn-icon">{{ currentWord?.learned ? '✅' : '📚' }}</span>
-              <span class="btn-text">{{ currentWord?.learned ? 'Изучено' : 'Изучить' }}</span>
+              <span class="btn-icon">{{ currentDisplayWord?.learned ? '✅' : '📚' }}</span>
+              <span class="btn-text">{{ currentDisplayWord?.learned ? 'Изучено' : 'Изучить' }}</span>
             </button>
             
             <button 
@@ -147,15 +155,15 @@
         <!-- Quick Navigation Dots -->
         <div class="vocab-dots-navigation">
           <button
-            v-for="(word, wordIndex) in (vocabularyData?.words || [])"
-            :key="word?.id || `vocab-dot-${wordIndex}`"
+            v-for="(word, wordIndex) in getValidWords()"
+            :key="getWordId(word, wordIndex)"
             @click="jumpToWord(wordIndex)"
             class="vocab-dot"
             :class="{ 
               active: wordIndex === (vocabularyData?.currentIndex || 0),
               learned: word?.learned 
             }"
-            :title="word?.term || word?.word || 'Word'"
+            :title="getWordTerm(word)"
           >
           </button>
         </div>
@@ -165,7 +173,18 @@
       <div v-else-if="!hasValidWords && !vocabularyData?.isCompleted && !vocabularyData?.showingList" class="no-vocabulary-content">
         <div class="no-vocab-icon">📚</div>
         <h3 class="no-vocab-title">Словарь пуст</h3>
-        <p class="no-vocab-subtitle">В этом уроке нет слов для изучения</p>
+        <p class="no-vocab-subtitle">
+          {{ vocabularyData?.words?.length > 0 ? 'В этом уроке нет корректных слов для изучения' : 'В этом уроке нет слов для изучения' }}
+        </p>
+        
+        <!-- Show problematic data for debugging in development -->
+        <div v-if="isDevelopment && vocabularyData?.words?.length > 0" class="debug-words">
+          <details>
+            <summary>🔧 Отладочная информация слов</summary>
+            <pre>{{ JSON.stringify(vocabularyData.words, null, 2) }}</pre>
+          </details>
+        </div>
+        
         <button @click="$emit('skip')" class="continue-btn">
           <span class="btn-icon">📋</span>
           <span class="btn-text">Продолжить урок</span>
@@ -177,15 +196,17 @@
         <div class="completion-animation">
           <div class="completion-icon">🎉</div>
           <h3 class="completion-title">Отлично!</h3>
-          <p class="completion-subtitle">Вы изучили {{ ((vocabularyData?.words || []).filter(w => w?.learned) || []).length }} из {{ (vocabularyData?.words || []).length }} слов</p>
+          <p class="completion-subtitle">
+            Вы изучили {{ getLearnedWordsCount() }} из {{ getValidWordsCount() }} слов
+          </p>
           
           <div class="completion-stats">
             <div class="completion-stat">
-              <div class="stat-number">{{ ((vocabularyData?.words || []).filter(w => w?.learned) || []).length }}</div>
+              <div class="stat-number">{{ getLearnedWordsCount() }}</div>
               <div class="stat-label">Изучено</div>
             </div>
             <div class="completion-stat">
-              <div class="stat-number">{{ Math.round((((vocabularyData?.words || []).filter(w => w?.learned) || []).length / Math.max((vocabularyData?.words || []).length, 1)) * 100) }}%</div>
+              <div class="stat-number">{{ getCompletionPercentage() }}%</div>
               <div class="stat-label">Прогресс</div>
             </div>
           </div>
@@ -261,25 +282,245 @@ export default {
     'jump-to-word'
   ],
   computed: {
-    // FIXED: Check if we have valid vocabulary words
+    // Environment check
+    isDevelopment() {
+      return process.env.NODE_ENV === 'development'
+    },
+
+    // FIXED: Robust validation for vocabulary words
     hasValidWords() {
-      const words = this.vocabularyData?.words || []
-      return words.length > 0 && words.some(word => 
-        (word?.term && word.term.trim()) || 
-        (word?.word && word.word.trim())
-      )
+      const words = this.getValidWords()
+      const hasWords = words.length > 0
+      
+      if (this.isDevelopment) {
+        console.log('🔍 [VocabularyModal] hasValidWords check:', {
+          rawWordsLength: this.vocabularyData?.words?.length || 0,
+          validWordsLength: words.length,
+          hasWords,
+          sampleWords: words.slice(0, 2)
+        })
+      }
+      
+      return hasWords
+    },
+
+    // FIXED: Current word with better fallback logic
+    currentDisplayWord() {
+      const validWords = this.getValidWords()
+      const index = this.vocabularyData?.currentIndex || 0
+      const word = validWords[index] || this.currentWord || null
+      
+      if (this.isDevelopment) {
+        console.log('🔍 [VocabularyModal] currentDisplayWord:', {
+          index,
+          validWordsLength: validWords.length,
+          word: word ? {
+            term: this.getWordTerm(word),
+            definition: this.getWordDefinition(word),
+            hasValidData: !!(this.getWordTerm(word) && this.getWordDefinition(word))
+          } : null
+        })
+      }
+      
+      return word
+    },
+
+    // Debug information
+    debugInfo() {
+      if (!this.isDevelopment) return null
+      
+      return {
+        vocabularyData: {
+          isVisible: this.vocabularyData?.isVisible,
+          currentIndex: this.vocabularyData?.currentIndex,
+          wordsLength: this.vocabularyData?.words?.length,
+          isCompleted: this.vocabularyData?.isCompleted,
+          showingList: this.vocabularyData?.showingList,
+          wordsStructure: this.vocabularyData?.words?.slice(0, 2)?.map(word => ({
+            keys: Object.keys(word || {}),
+            hasTerms: !!(word?.term || word?.word),
+            hasDefinition: !!(word?.definition || word?.translation)
+          }))
+        },
+        currentWord: this.currentWord ? {
+          keys: Object.keys(this.currentWord),
+          term: this.getWordTerm(this.currentWord),
+          definition: this.getWordDefinition(this.currentWord)
+        } : null,
+        validWordsCount: this.getValidWordsCount(),
+        hasValidWords: this.hasValidWords
+      }
     }
   },
   methods: {
+    // FIXED: Robust word validation and extraction
+    getValidWords() {
+      const words = this.vocabularyData?.words || []
+      
+      return words.filter(word => {
+        if (!word || typeof word !== 'object') {
+          return false
+        }
+        
+        const hasTerm = this.getWordTerm(word)
+        const hasDefinition = this.getWordDefinition(word)
+        
+        return !!(hasTerm && hasDefinition)
+      })
+    },
+
+    getValidWordsCount() {
+      return this.getValidWords().length
+    },
+
+    getLearnedWordsCount() {
+      return this.getValidWords().filter(word => word?.learned).length
+    },
+
+    getCompletionPercentage() {
+      const total = this.getValidWordsCount()
+      const learned = this.getLearnedWordsCount()
+      return total > 0 ? Math.round((learned / total) * 100) : 0
+    },
+
+    // FIXED: Flexible word property extraction with multiple fallbacks
+    getWordTerm(word) {
+      if (!word) return ''
+      
+      // Try multiple possible property names
+      const term = word.term || word.word || word.title || word.name || ''
+      return String(term).trim()
+    },
+
+    getWordDefinition(word) {
+      if (!word) return 'Определение не найдено'
+      
+      // Try multiple possible property names
+      const definition = word.definition || word.translation || word.meaning || word.desc || word.description || ''
+      return String(definition).trim() || 'Определение не найдено'
+    },
+
+    getWordExample(word) {
+      if (!word) return ''
+      
+      const example = word.example || word.examples || word.usage || ''
+      return String(example).trim()
+    },
+
+    getWordPronunciation(word) {
+      if (!word) return ''
+      
+      const pronunciation = word.pronunciation || word.phonetic || ''
+      return String(pronunciation).trim()
+    },
+
+    getWordPartOfSpeech(word) {
+      if (!word) return ''
+      
+      const partOfSpeech = word.partOfSpeech || word.pos || word.type || ''
+      return String(partOfSpeech).trim()
+    },
+
+    getWordId(word, index) {
+      if (!word) return `vocab-${index}`
+      
+      return word.id || word._id || `vocab-${index}-${this.getWordTerm(word)?.substring(0, 10) || 'word'}`
+    },
+
     jumpToWord(index) {
-      this.$emit('jump-to-word', index);
+      console.log('🎯 [VocabularyModal] Jumping to word:', index)
+      this.$emit('jump-to-word', index)
+    }
+  },
+  
+  // Add mounted hook for debugging
+  mounted() {
+    if (this.isDevelopment) {
+      console.log('🔍 [VocabularyModal] Mounted with data:', {
+        vocabularyData: this.vocabularyData,
+        currentWord: this.currentWord,
+        hasValidWords: this.hasValidWords,
+        validWordsCount: this.getValidWordsCount()
+      })
+    }
+  },
+
+  // Watch for data changes
+  watch: {
+    vocabularyData: {
+      handler(newData) {
+        if (this.isDevelopment) {
+          console.log('🔍 [VocabularyModal] vocabularyData changed:', {
+            isVisible: newData?.isVisible,
+            currentIndex: newData?.currentIndex,
+            wordsLength: newData?.words?.length,
+            validWordsCount: this.getValidWordsCount(),
+            hasValidWords: this.hasValidWords
+          })
+        }
+      },
+      deep: true,
+      immediate: true
     }
   }
 }
 </script>
 
 <style scoped>
-/* Existing vocabulary modal styles */
+/* Debug styles */
+.debug-info {
+  background: rgba(255, 255, 0, 0.1);
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  font-size: 0.8rem;
+}
+
+.debug-info summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.debug-info pre {
+  margin-top: 8px;
+  background: white;
+  padding: 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.7rem;
+  color: #374151;
+}
+
+.debug-words {
+  margin: 16px 0;
+  padding: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.debug-words summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.debug-words pre {
+  margin-top: 8px;
+  background: white;
+  padding: 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.7rem;
+  color: #374151;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Main modal styles */
 .vocabulary-modal-overlay {
   position: fixed;
   top: 0;
@@ -778,7 +1019,7 @@ export default {
   transform: scale(1.3);
 }
 
-/* FIXED: No Vocabulary Content State */
+/* No Vocabulary Content State */
 .no-vocabulary-content {
   text-align: center;
   padding: 60px 20px;
@@ -1021,6 +1262,164 @@ export default {
   .vocab-dot {
     width: 8px;
     height: 8px;
+  }
+}
+
+/* Focus states for accessibility */
+.vocab-nav-btn:focus,
+.vocab-learned-btn:focus,
+.vocab-next-btn:focus,
+.vocab-restart-btn:focus,
+.vocab-skip-btn:focus,
+.vocab-close-btn:focus,
+.voice-btn:focus,
+.continue-btn:focus,
+.vocab-dot:focus {
+  outline: 3px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .vocabulary-card,
+  .card-front,
+  .card-back {
+    border: 2px solid currentColor;
+  }
+  
+  .vocab-dot {
+    border-width: 3px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .vocabulary-card,
+  .card-front,
+  .card-back,
+  .vocab-nav-btn,
+  .vocab-learned-btn,
+  .vocab-next-btn,
+  .vocab-restart-btn,
+  .voice-btn,
+  .continue-btn {
+    transition: none;
+  }
+  
+  .vocabulary-card:hover,
+  .vocab-nav-btn:hover,
+  .vocab-learned-btn:hover,
+  .vocab-next-btn:hover,
+  .vocab-restart-btn:hover,
+  .voice-btn:hover,
+  .continue-btn:hover {
+    transform: none;
+  }
+  
+  .modalFadeIn,
+  .modalSlideUp,
+  .cardAppear,
+  .completionBounce,
+  .spin,
+  .dotPulse {
+    animation: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .vocabulary-modal-overlay {
+    position: static;
+    background: white;
+    backdrop-filter: none;
+  }
+  
+  .vocabulary-modal-container {
+    box-shadow: none;
+    max-height: none;
+    overflow: visible;
+  }
+  
+  .vocab-header-actions,
+  .vocab-card-actions,
+  .voice-btn,
+  .vocab-dots-navigation {
+    display: none;
+  }
+  
+  .vocabulary-card {
+    height: auto;
+    perspective: none;
+  }
+  
+  .card-front,
+  .card-back {
+    position: static;
+    transform: none;
+    backface-visibility: visible;
+  }
+  
+  .card-back {
+    margin-top: 20px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .vocabulary-modal-container {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    color: #e2e8f0;
+  }
+  
+  .debug-info {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: #3b82f6;
+  }
+  
+  .debug-info summary {
+    color: #60a5fa;
+  }
+  
+  .debug-info pre,
+  .debug-words pre {
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+  
+  .debug-words {
+    background: rgba(239, 68, 68, 0.2);
+  }
+  
+  .debug-words summary {
+    color: #f87171;
+  }
+  
+  .vocab-progress-bar {
+    background: #475569;
+  }
+  
+  .vocab-skip-btn {
+    background: #334155;
+    color: #cbd5e1;
+  }
+  
+  .vocab-skip-btn:hover {
+    background: #475569;
+  }
+  
+  .vocab-learned-btn {
+    background: #334155;
+    color: #cbd5e1;
+  }
+  
+  .no-vocabulary-content,
+  .vocabulary-completion {
+    color: #cbd5e1;
+  }
+  
+  .no-vocab-title,
+  .completion-title {
+    color: #f1f5f9;
   }
 }
 </style>
