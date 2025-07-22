@@ -87,6 +87,9 @@
               <p v-if="subscriptionDetails?.expiryDate" class="plan-expiry">
                 Активен до: {{ formatDate(subscriptionDetails.expiryDate) }}
               </p>
+              <p v-if="hasPromocodeSubscription" class="plan-source">
+                🎟️ Активирован по промокоду: {{ lastAppliedPromocode?.code }}
+              </p>
             </div>
           </div>
         </div>
@@ -96,39 +99,121 @@
       <div class="payment-options">
         <h3>Варианты оплаты</h3>
         
-        <!-- Promo Code Section -->
+        <!-- Enhanced Promo Code Section -->
         <div class="promo-section">
           <h4>🎟️ Промокод</h4>
           <div class="promo-input-group">
-            <input 
-              type="text" 
-              v-model="promoCode" 
-              placeholder="acedpromocode2406"
-              :disabled="loading"
-              @keyup.enter="applyPromo"
-            />
-            <select v-model="selectedPlan" :disabled="loading">
+            <div class="promo-code-input">
+              <input 
+                type="text" 
+                v-model="promoCode" 
+                placeholder="Введите промокод (например: ACED2024)"
+                :disabled="loading || isProcessingPromo"
+                @keyup.enter="applyPromo"
+                @input="handlePromoCodeInput"
+                maxlength="20"
+                class="promo-input"
+                :class="{ 
+                  'promo-valid': promoValidation && promoValidation.valid,
+                  'promo-invalid': promoValidation && !promoValidation.valid && promoCode.length > 3,
+                  'promo-loading': isValidatingPromo
+                }"
+              />
+              
+              <!-- Validation feedback -->
+              <div v-if="isValidatingPromo" class="promo-validation promo-loading-message">
+                <div class="spinner-small"></div>
+                Проверка промокода...
+              </div>
+              
+              <div v-else-if="promoValidation && promoCode.length > 3" class="promo-validation">
+                <div v-if="promoValidation.valid" class="promo-valid-message">
+                  ✅ Промокод действителен! 
+                  <br>
+                  <strong>Предоставляет: {{ promoValidation.data?.grantsPlan?.toUpperCase() }} план</strong>
+                  <br>
+                  <small>{{ promoValidation.data?.description }}</small>
+                </div>
+                <div v-else class="promo-invalid-message">
+                  ❌ {{ promoValidation.error }}
+                </div>
+              </div>
+            </div>
+            
+            <select 
+              v-model="selectedPlan" 
+              :disabled="loading || isProcessingPromo" 
+              class="plan-select"
+              @change="onPlanChange"
+            >
               <option value="">Выберите тариф...</option>
-              <option value="start">Start (260,000 сум)</option>
-              <option value="pro">Pro (455,000 сум)</option>
+              <option value="start" :disabled="currentPlan === 'start' || currentPlan === 'pro' || currentPlan === 'premium'">
+                Start (260,000 сум) {{ currentPlan === 'start' ? '- Уже активен' : '' }}
+              </option>
+              <option value="pro" :disabled="currentPlan === 'pro' || currentPlan === 'premium'">
+                Pro (455,000 сум) {{ currentPlan === 'pro' ? '- Уже активен' : '' }}
+              </option>
             </select>
           </div>
+          
+          <!-- Plan compatibility warning -->
+          <div v-if="planCompatibilityWarning" class="plan-warning">
+            ⚠️ {{ planCompatibilityWarning }}
+          </div>
+          
           <button 
             class="promo-button" 
             @click="applyPromo"
-            :disabled="loading || !promoCode.trim() || !selectedPlan"
+            :disabled="!canApplyPromo || isProcessingPromo"
+            :class="{ 
+              'promo-button-ready': canApplyPromo && !isProcessingPromo,
+              'promo-button-loading': isProcessingPromo 
+            }"
           >
-            {{ loading ? '⏳ Применение...' : 'Применить промокод' }}
+            {{ promoButtonText }}
           </button>
         </div>
 
+        <!-- Applied Promocodes History -->
+        <div v-if="appliedPromocodes.length > 0" class="applied-promocodes">
+          <h4>📋 История применённых промокодов</h4>
+          <div class="promocodes-list">
+            <div 
+              v-for="promo in appliedPromocodes.slice(0, 3)" 
+              :key="promo.code + promo.appliedAt"
+              class="promocode-item"
+            >
+              <div class="promocode-info">
+                <span class="promocode-code">{{ promo.code }}</span>
+                <span class="promocode-plan">{{ promo.plan?.toUpperCase() }}</span>
+              </div>
+              <div class="promocode-date">
+                {{ formatDate(promo.appliedAt) }}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Payment Plans -->
-        <div class="plans-section">
+        <div class="plans-section" :class="{ 'plans-disabled': hasPromocodeSubscription }">
           <h4>💰 Выберите тариф для оплаты</h4>
+          
+          <div v-if="hasPromocodeSubscription" class="promocode-notice">
+            <div class="notice-content">
+              🎉 У вас активна подписка по промокоду! 
+              <br>
+              <small>Вы можете продлить подписку через оплату или применить новый промокод</small>
+            </div>
+          </div>
+          
           <div class="plans-grid">
             <div 
               class="plan-card" 
-              :class="{ active: paymentPlan === 'start', disabled: currentPlan === 'start' || currentPlan === 'pro' }"
+              :class="{ 
+                active: paymentPlan === 'start', 
+                disabled: currentPlan === 'start' || currentPlan === 'pro' || currentPlan === 'premium',
+                'current-plan': currentPlan === 'start'
+              }"
               @click="selectPaymentPlan('start')"
             >
               <div class="plan-header">
@@ -136,10 +221,12 @@
                 <div class="plan-price">260,000 сум</div>
               </div>
               <ul class="plan-features">
+                <li>✅ Безлимитные сообщения</li>
+                <li>✅ Доступ к словарю</li>
                 <li>✅ Базовые курсы</li>
                 <li>✅ Домашние задания</li>
                 <li>✅ Основные тесты</li>
-                <li>✅ Прогресс-трекинг</li>
+                <li>✅ Приоритетная поддержка</li>
               </ul>
               <div v-if="currentPlan === 'start'" class="plan-status">
                 ✅ Активен
@@ -148,7 +235,11 @@
             
             <div 
               class="plan-card recommended" 
-              :class="{ active: paymentPlan === 'pro', disabled: currentPlan === 'pro' }"
+              :class="{ 
+                active: paymentPlan === 'pro', 
+                disabled: currentPlan === 'pro' || currentPlan === 'premium',
+                'current-plan': currentPlan === 'pro'
+              }"
               @click="selectPaymentPlan('pro')"
             >
               <div class="plan-badge">Рекомендуем</div>
@@ -158,9 +249,10 @@
               </div>
               <ul class="plan-features">
                 <li>✅ Все возможности Start</li>
+                <li>✅ Безлимитные изображения</li>
                 <li>✅ Продвинутые курсы</li>
                 <li>✅ Персональная аналитика</li>
-                <li>✅ Приоритетная поддержка</li>
+                <li>✅ Персональные курсы</li>
                 <li>✅ Эксклюзивные материалы</li>
               </ul>
               <div v-if="currentPlan === 'pro'" class="plan-status">
@@ -198,6 +290,37 @@
                 <span class="payment-date">{{ formatDate(payment.timestamp) }}</span>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Usage Summary -->
+    <div v-if="!isFreeUser" class="settings-content">
+      <h2 class="section-title">📊 Использование</h2>
+      
+      <div class="usage-summary">
+        <div class="usage-item">
+          <div class="usage-header">
+            <span class="usage-label">Сообщения</span>
+            <span class="usage-value">
+              {{ currentMonthUsage.messages }} / {{ usageLimits.messages === -1 ? '∞' : usageLimits.messages }}
+            </span>
+          </div>
+          <div v-if="usageLimits.messages !== -1" class="usage-bar">
+            <div class="usage-fill" :style="{ width: messageUsagePercentage + '%' }"></div>
+          </div>
+        </div>
+        
+        <div class="usage-item">
+          <div class="usage-header">
+            <span class="usage-label">Изображения</span>
+            <span class="usage-value">
+              {{ currentMonthUsage.images }} / {{ usageLimits.images === -1 ? '∞' : usageLimits.images }}
+            </span>
+          </div>
+          <div v-if="usageLimits.images !== -1" class="usage-bar">
+            <div class="usage-fill" :style="{ width: imageUsagePercentage + '%' }"></div>
           </div>
         </div>
       </div>
@@ -259,6 +382,12 @@ export default {
       subscriptionDetails: null,
       paymentHistory: [],
       
+      // Promocode validation
+      promoValidation: null,
+      promoValidationTimeout: null,
+      isValidatingPromo: false,
+      isProcessingPromo: false,
+      
       // UI state
       loading: false,
       loadingText: "",
@@ -268,6 +397,39 @@ export default {
     };
   },
   computed: {
+    // Store getters
+    currentMonthUsage() {
+      return this.$store.getters['user/currentMonthUsage'];
+    },
+    
+    usageLimits() {
+      return this.$store.getters['user/usageLimits'];
+    },
+    
+    messageUsagePercentage() {
+      return this.$store.getters['user/messageUsagePercentage'];
+    },
+    
+    imageUsagePercentage() {
+      return this.$store.getters['user/imageUsagePercentage'];
+    },
+    
+    isFreeUser() {
+      return this.$store.getters['user/isFreeUser'];
+    },
+    
+    appliedPromocodes() {
+      return this.$store.getters['user/appliedPromocodes'];
+    },
+    
+    hasPromocodeSubscription() {
+      return this.$store.getters['user/hasPromocodeSubscription'];
+    },
+    
+    lastAppliedPromocode() {
+      return this.$store.getters['user/lastAppliedPromocode'];
+    },
+    
     currentPlanLabel() {
       const labels = {
         pro: 'Pro',
@@ -291,7 +453,7 @@ export default {
     currentPlanDescription() {
       const descriptions = {
         pro: 'Полный доступ ко всем курсам и функциям',
-        start: 'Доступ к базовым курсам и материалам',
+        start: 'Доступ к базовым курсам и безлимитным сообщениям',
         premium: 'Премиум подписка с эксклюзивным контентом',
         free: 'Бесплатный доступ с ограниченным функционалом'
       };
@@ -300,6 +462,60 @@ export default {
     
     userId() {
       return this.currentUser?.uid || this.$store.getters['user/getUserId'];
+    },
+    
+    // Enhanced promocode validation computed properties
+    canApplyPromo() {
+      return this.promoCode.trim().length > 3 && 
+             this.selectedPlan && 
+             this.promoValidation?.valid &&
+             !this.loading &&
+             !this.isProcessingPromo &&
+             !this.planCompatibilityError;
+    },
+    
+    promoButtonText() {
+      if (this.isProcessingPromo) {
+        return '⏳ Применение...';
+      }
+      if (this.isValidatingPromo) {
+        return '🔄 Проверка...';
+      }
+      if (!this.promoCode.trim()) {
+        return 'Введите промокод';
+      }
+      if (!this.selectedPlan) {
+        return 'Выберите тариф';
+      }
+      if (this.promoValidation && !this.promoValidation.valid) {
+        return 'Неверный промокод';
+      }
+      if (this.planCompatibilityError) {
+        return 'Проверьте тариф';
+      }
+      if (this.canApplyPromo) {
+        return '🎉 Применить промокод';
+      }
+      return 'Применить промокод';
+    },
+    
+    // Plan compatibility checking
+    planCompatibilityError() {
+      if (!this.promoValidation?.valid || !this.selectedPlan) return false;
+      
+      const promoGrantsPlan = this.promoValidation.data?.grantsPlan;
+      if (promoGrantsPlan && promoGrantsPlan !== this.selectedPlan) {
+        return true;
+      }
+      
+      return false;
+    },
+    
+    planCompatibilityWarning() {
+      if (!this.planCompatibilityError) return null;
+      
+      const promoGrantsPlan = this.promoValidation.data?.grantsPlan?.toUpperCase();
+      return `Этот промокод предоставляет план "${promoGrantsPlan}", но вы выбрали "${this.selectedPlan.toUpperCase()}". Выберите правильный план.`;
     }
   },
   
@@ -315,12 +531,19 @@ export default {
       try {
         await this.checkAuthState();
         await this.loadPaymentHistory();
+        await this.syncWithStore();
       } catch (error) {
         console.error('❌ Settings initialization error:', error);
         this.showNotification('Ошибка загрузки настроек', 'error');
       } finally {
         this.loading = false;
       }
+    },
+    
+    async syncWithStore() {
+      // Sync current plan with store
+      this.currentPlan = this.$store.getters['user/userStatus'];
+      this.subscriptionDetails = this.$store.getters['user/subscriptionDetails'];
     },
     
     checkAuthState() {
@@ -365,16 +588,15 @@ export default {
       try {
         if (!this.currentUser) return;
         
-        const result = await getUserStatus(this.currentUser.uid);
+        // Use store action to fetch status
+        const result = await this.$store.dispatch('user/loadUserStatus');
         
-        if (result.data) {
-          this.currentPlan = result.data.status || result.data.subscriptionPlan || 'free';
-          this.subscriptionDetails = result.data.subscriptionDetails || null;
+        if (result.success) {
+          this.currentPlan = result.status;
+          this.subscriptionDetails = this.$store.getters['user/subscriptionDetails'];
         } else {
           this.currentPlan = 'free';
         }
-        
-        
       } catch (err) {
         console.warn('⚠️ Failed to fetch subscription status:', err);
         this.currentPlan = 'free';
@@ -383,11 +605,163 @@ export default {
     
     async loadPaymentHistory() {
       try {
-        // Get payment history from store
         const history = this.$store.getters['user/paymentHistory'] || [];
-        this.paymentHistory = history.slice(0, 5); // Show last 5 payments
+        this.paymentHistory = history.slice(0, 5);
       } catch (error) {
         console.warn('⚠️ Failed to load payment history:', error);
+      }
+    },
+    
+    // ✅ ENHANCED: Promocode input handler with validation
+    handlePromoCodeInput() {
+      // Clear previous timeout
+      if (this.promoValidationTimeout) {
+        clearTimeout(this.promoValidationTimeout);
+      }
+      
+      // Convert to uppercase
+      this.promoCode = this.promoCode.toUpperCase();
+      
+      // Reset validation if code is too short
+      if (this.promoCode.length <= 3) {
+        this.promoValidation = null;
+        this.isValidatingPromo = false;
+        return;
+      }
+      
+      // Show loading state
+      this.isValidatingPromo = true;
+      
+      // Debounce validation
+      this.promoValidationTimeout = setTimeout(() => {
+        this.validatePromoCode();
+      }, 800); // Increased delay for better UX
+    },
+    
+    // ✅ ENHANCED: Validate promocode using store action
+    async validatePromoCode() {
+      if (!this.promoCode.trim() || this.promoCode.length <= 3) {
+        this.promoValidation = null;
+        this.isValidatingPromo = false;
+        return;
+      }
+      
+      try {
+        console.log('🔍 Validating promocode:', this.promoCode);
+        
+        // Use store action for validation
+        const result = await this.$store.dispatch('user/validatePromocode', this.promoCode);
+        
+        this.promoValidation = result;
+        
+        if (result.valid && result.data) {
+          console.log('✅ Valid promocode:', result.data);
+          
+          // Auto-select the plan that the promocode grants if no plan is selected
+          if (!this.selectedPlan && result.data.grantsPlan) {
+            this.selectedPlan = result.data.grantsPlan;
+          }
+          
+          // Check if selected plan matches promocode plan
+          if (this.selectedPlan && result.data.grantsPlan && 
+              this.selectedPlan !== result.data.grantsPlan) {
+            console.warn('⚠️ Plan mismatch detected');
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Promocode validation error:', error);
+        this.promoValidation = {
+          valid: false,
+          error: 'Ошибка проверки промокода'
+        };
+      } finally {
+        this.isValidatingPromo = false;
+      }
+    },
+    
+    // ✅ NEW: Handle plan selection changes
+    onPlanChange() {
+      // If we have a valid promocode, check compatibility
+      if (this.promoValidation?.valid && this.selectedPlan) {
+        const promoGrantsPlan = this.promoValidation.data?.grantsPlan;
+        if (promoGrantsPlan && promoGrantsPlan !== this.selectedPlan) {
+          this.showNotification(
+            `Промокод предоставляет план "${promoGrantsPlan.toUpperCase()}", но вы выбрали "${this.selectedPlan.toUpperCase()}"`, 
+            'warning'
+          );
+        }
+      }
+    },
+    
+    // ✅ ENHANCED: Apply promocode using store action
+    async applyPromo() {
+      if (!this.canApplyPromo) {
+        this.showNotification('Проверьте данные и попробуйте снова', 'error');
+        return;
+      }
+      
+      if (!this.userId) {
+        this.showNotification("Ошибка авторизации", 'error');
+        return;
+      }
+      
+      this.isProcessingPromo = true;
+      this.loadingText = 'Применение промокода...';
+      
+      try {
+        console.log('🎟️ Applying promocode:', {
+          userId: this.userId,
+          plan: this.selectedPlan,
+          code: this.promoCode
+        });
+        
+        // Use store action to apply promocode
+        const result = await this.$store.dispatch('user/applyPromocode', {
+          promoCode: this.promoCode.trim(),
+          plan: this.selectedPlan
+        });
+        
+        console.log('🎟️ Promocode result:', result);
+        
+        if (result.success) {
+          // ✅ SUCCESS: Update local state
+          const oldPlan = this.currentPlan;
+          this.currentPlan = result.newPlan;
+          this.subscriptionDetails = result.subscriptionDetails;
+          
+          // Clear form
+          this.promoCode = "";
+          this.selectedPlan = "";
+          this.promoValidation = null;
+          
+          // Show success message with plan change info
+          this.showNotification(
+            result.message || `🎉 Промокод применён! Тариф обновлён: "${oldPlan.toUpperCase()}" → "${result.newPlan.toUpperCase()}"`, 
+            'success'
+          );
+          
+          // Reload component data
+          setTimeout(async () => {
+            await this.syncWithStore();
+            await this.fetchSubscriptionStatus();
+          }, 1000);
+          
+        } else {
+          // ❌ ERROR: Show error message
+          this.showNotification(
+            result.error || "❌ Не удалось применить промокод", 
+            'error'
+          );
+        }
+        
+      } catch (error) {
+        console.error("❌ Promo code error:", error);
+        this.showNotification(
+          handlePaymentError(error, 'Применение промокода'), 
+          'error'
+        );
+      } finally {
+        this.isProcessingPromo = false;
       }
     },
     
@@ -458,56 +832,11 @@ export default {
       }
     },
     
-    async applyPromo() {
-      if (!this.promoCode.trim() || !this.selectedPlan) {
-        return this.showNotification("Введите промокод и выберите тариф", 'error');
-      }
-      
-      if (!this.userId) {
-        return this.showNotification("Ошибка авторизации", 'error');
-      }
-      
-      this.loading = true;
-      this.loadingText = 'Применение промокода...';
-      
-      try {
-     
-        
-        const result = await applyPromoCode(
-          this.userId,
-          this.selectedPlan,
-          this.promoCode.trim()
-        );
-        
-        if (result.success) {
-          this.showNotification(result.message || "✅ Промокод успешно применён!", 'success');
-          
-          // Update current plan
-          this.currentPlan = this.selectedPlan;
-          
-          // Update store
-          await this.$store.dispatch('user/loadUserStatus');
-          
-          // Clear form
-          this.promoCode = "";
-          this.selectedPlan = "";
-          
-        } else {
-          this.showNotification(result.error || "❌ Не удалось применить промокод", 'error');
-        }
-        
-      } catch (error) {
-        console.error("❌ Promo code error:", error);
-        this.showNotification(handlePaymentError(error, 'Применение промокода'), 'error');
-      } finally {
-        this.loading = false;
-      }
-    },
-    
     selectPaymentPlan(plan) {
       // Don't allow selecting current plan or downgrade
       if (this.currentPlan === plan || 
-          (this.currentPlan === 'pro' && plan === 'start')) {
+          (this.currentPlan === 'pro' && plan === 'start') ||
+          (this.currentPlan === 'premium')) {
         return;
       }
       
@@ -524,8 +853,6 @@ export default {
       }
       
       try {
-          
-        
         // Navigate to payment page
         await this.$router.push({ 
           name: 'PaymePayment', 
@@ -591,7 +918,9 @@ export default {
       return date.toLocaleDateString('ru-RU', {
         year: 'numeric',
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
       });
     },
     
@@ -612,11 +941,12 @@ export default {
       };
       this.notificationIcon = icons[type] || 'ℹ️';
       
+      // Auto-hide notification
       setTimeout(() => {
         this.notification = "";
         this.notificationClass = "";
         this.notificationIcon = "";
-      }, 5000);
+      }, type === 'success' ? 6000 : 5000); // Success messages show longer
     },
     
     // Navigation methods
@@ -627,11 +957,37 @@ export default {
     goToProfile() {
       this.$router.push("/profile/main");
     }
+  },
+  
+  // ✅ Watch for store changes
+  watch: {
+    '$store.getters["user/userStatus"]'(newStatus) {
+      if (newStatus !== this.currentPlan) {
+        this.currentPlan = newStatus;
+        console.log('🔄 Current plan updated from store:', newStatus);
+      }
+    },
+    
+    '$store.getters["user/subscriptionDetails"]'(newDetails) {
+      if (newDetails !== this.subscriptionDetails) {
+        this.subscriptionDetails = newDetails;
+        console.log('🔄 Subscription details updated from store:', newDetails);
+      }
+    }
+  },
+  
+  // ✅ Cleanup timeouts
+  beforeUnmount() {
+    if (this.promoValidationTimeout) {
+      clearTimeout(this.promoValidationTimeout);
+    }
   }
 };
 </script>
 
 <style scoped>
+/* Your existing CSS stays the same, plus these enhanced additions for promocode styling */
+
 .settings-page {
   display: flex;
   flex-direction: column;
@@ -771,30 +1127,234 @@ input:disabled, select:disabled {
   opacity: 0.9;
 }
 
-.plan-expiry {
+.plan-expiry, .plan-source {
   margin: 0;
   font-size: clamp(0.8rem, 2vw, 0.85rem);
   opacity: 0.8;
 }
 
-/* Payment Options */
-.payment-options h3 {
-  font-size: clamp(1.2rem, 3vw, 1.3rem);
-  font-weight: 700;
-  color: #1f2937;
+/* Enhanced Promo Section */
+.promo-section {
+  background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%);
+  border: 2px solid #e879f9;
+  padding: clamp(20px, 4vw, 24px);
+  border-radius: clamp(12px, 3vw, 16px);
+  margin-bottom: clamp(24px, 5vw, 32px);
+}
+
+.promo-section h4 {
+  color: #7c3aed;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: clamp(1rem, 2.5vw, 1.1rem);
+  font-weight: 600;
+  margin-bottom: clamp(12px, 3vw, 16px);
+}
+
+.promo-code-input {
+  position: relative;
+  margin-bottom: clamp(12px, 3vw, 16px);
+}
+
+.promo-input {
+  transition: all 0.3s ease;
+  margin-bottom: 0;
+}
+
+.promo-input.promo-valid {
+  border-color: #10b981;
+  background-color: #ecfdf5;
+}
+
+.promo-input.promo-invalid {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.promo-input.promo-loading {
+  border-color: #f59e0b;
+  background-color: #fffbeb;
+}
+
+.promo-validation {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin-top: 4px;
+  padding: clamp(8px, 2vw, 12px);
+  border-radius: clamp(6px, 1.5vw, 8px);
+  font-size: clamp(0.8rem, 2vw, 0.875rem);
+  font-weight: 500;
+  animation: fadeIn 0.3s ease-out;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.promo-valid-message {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.promo-invalid-message {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #ef4444;
+}
+
+.promo-loading-message {
+  background-color: #fffbeb;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spinner-small {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #fbbf24;
+  border-left: 2px solid #92400e;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.plan-select {
+  margin-top: clamp(8px, 2vw, 12px);
+  margin-bottom: clamp(12px, 3vw, 16px);
+}
+
+.plan-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+  padding: clamp(8px, 2vw, 12px);
+  border-radius: clamp(6px, 1.5vw, 8px);
+  border: 1px solid #f59e0b;
+  font-size: clamp(0.8rem, 2vw, 0.875rem);
+  margin-bottom: clamp(12px, 3vw, 16px);
+}
+
+/* Enhanced Button Styles */
+.promo-button {
+  width: 100%;
+  padding: clamp(12px, 3vw, 14px) clamp(20px, 4vw, 24px);
+  border: none;
+  border-radius: clamp(10px, 2.5vw, 12px);
+  font-size: clamp(0.9rem, 2.2vw, 1rem);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #e879f9, #c084fc);
+  color: white;
+  min-height: clamp(44px, 10vw, 48px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 1.5vw, 8px);
+}
+
+.promo-button-ready {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  transform: scale(1.02);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+}
+
+.promo-button-loading {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  cursor: not-allowed;
+}
+
+.promo-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.promo-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(232, 121, 249, 0.3);
+}
+
+.promo-button-ready:hover {
+  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.4);
+}
+
+/* Applied Promocodes History */
+.applied-promocodes {
+  background: #f8fafc;
+  padding: clamp(16px, 3vw, 20px);
+  border-radius: clamp(10px, 2.5vw, 12px);
+  border: 1px solid #e2e8f0;
   margin-bottom: clamp(20px, 4vw, 24px);
 }
 
-.promo-section,
+.applied-promocodes h4 {
+  font-size: clamp(0.9rem, 2.2vw, 1rem);
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: clamp(10px, 2.5vw, 12px);
+}
+
+.promocodes-list {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 2vw, 10px);
+}
+
+.promocode-item {
+  background: white;
+  padding: clamp(10px, 2.5vw, 12px);
+  border-radius: clamp(8px, 2vw, 10px);
+  border: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: clamp(8px, 2vw, 10px);
+}
+
+.promocode-info {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2px, 0.5vw, 3px);
+}
+
+.promocode-code {
+  font-family: monospace;
+  font-weight: 600;
+  color: #7c3aed;
+  font-size: clamp(0.8rem, 2vw, 0.9rem);
+}
+
+.promocode-plan {
+  font-size: clamp(0.75rem, 1.8vw, 0.8rem);
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.promocode-date {
+  font-size: clamp(0.75rem, 1.8vw, 0.8rem);
+  color: #9ca3af;
+}
+
+/* Plans Section Enhancements */
 .plans-section {
   margin-bottom: clamp(24px, 5vw, 32px);
   padding: clamp(20px, 4vw, 24px);
   background: #f8fafc;
   border-radius: clamp(12px, 3vw, 16px);
   border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
 }
 
-.promo-section h4,
+.plans-section.plans-disabled {
+  opacity: 0.8;
+  background: #f3f4f6;
+}
+
 .plans-section h4 {
   font-size: clamp(1rem, 2.5vw, 1.1rem);
   font-weight: 600;
@@ -802,11 +1362,19 @@ input:disabled, select:disabled {
   margin-bottom: clamp(12px, 3vw, 16px);
 }
 
-.promo-input-group {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(10px, 2.5vw, 12px);
-  margin-bottom: clamp(12px, 3vw, 16px);
+.promocode-notice {
+  background: linear-gradient(135deg, #ddd6fe 0%, #e0e7ff 100%);
+  border: 2px solid #8b5cf6;
+  border-radius: clamp(10px, 2.5vw, 12px);
+  padding: clamp(12px, 3vw, 16px);
+  margin-bottom: clamp(16px, 3.5vw, 20px);
+}
+
+.notice-content {
+  text-align: center;
+  color: #5b21b6;
+  font-weight: 500;
+  font-size: clamp(0.9rem, 2.2vw, 0.95rem);
 }
 
 /* Plans Grid */
@@ -837,6 +1405,11 @@ input:disabled, select:disabled {
   border-color: #7c3aed;
   background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%);
   box-shadow: 0 8px 25px rgba(124, 58, 237, 0.2);
+}
+
+.plan-card.current-plan {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
 }
 
 .plan-card.disabled {
@@ -904,7 +1477,55 @@ input:disabled, select:disabled {
   font-size: clamp(0.85rem, 2.1vw, 0.9rem);
 }
 
-/* Buttons */
+/* Usage Summary */
+.usage-summary {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 3.5vw, 20px);
+}
+
+.usage-item {
+  background: #f8fafc;
+  padding: clamp(16px, 3.5vw, 20px);
+  border-radius: clamp(10px, 2.5vw, 12px);
+  border: 1px solid #e2e8f0;
+}
+
+.usage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: clamp(8px, 2vw, 10px);
+}
+
+.usage-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: clamp(0.9rem, 2.2vw, 1rem);
+}
+
+.usage-value {
+  font-weight: 700;
+  color: #7c3aed;
+  font-size: clamp(0.9rem, 2.2vw, 1rem);
+}
+
+.usage-bar {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.usage-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+/* Button Group and Payment Button */
 .button-group {
   display: flex;
   flex-wrap: wrap;
@@ -915,7 +1536,6 @@ input:disabled, select:disabled {
 
 .save-button,
 .back-button,
-.promo-button,
 .payment-button {
   flex: 1 1 clamp(120px, 45%, 200px);
   padding: clamp(12px, 3vw, 14px) clamp(20px, 4vw, 24px);
@@ -956,19 +1576,6 @@ input:disabled, select:disabled {
   border-color: #d1d5db;
 }
 
-.promo-button {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
-  width: 100%;
-  margin-top: clamp(6px, 1.5vw, 8px);
-}
-
-.promo-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #059669, #047857);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
-}
-
 .payment-button {
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: white;
@@ -984,7 +1591,6 @@ input:disabled, select:disabled {
 }
 
 .save-button:disabled,
-.promo-button:disabled,
 .payment-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -1178,6 +1784,17 @@ input:disabled, select:disabled {
   to { transform: rotate(360deg); }
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .settings-page {
@@ -1232,6 +1849,21 @@ input:disabled, select:disabled {
     margin: 0 20px;
     bottom: 20px;
   }
+  
+  .promo-validation {
+    position: static;
+    margin-top: 8px;
+  }
+  
+  .usage-summary {
+    gap: 12px;
+  }
+  
+  .promocode-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
 }
 
 /* Small mobile */
@@ -1259,6 +1891,18 @@ input:disabled, select:disabled {
   .promo-input-group input,
   .promo-input-group select {
     margin-bottom: 8px;
+  }
+  
+  .usage-item {
+    padding: 12px;
+  }
+  
+  .applied-promocodes {
+    padding: 12px;
+  }
+  
+  .promocode-item {
+    padding: 8px;
   }
 }
 
@@ -1319,8 +1963,12 @@ input:disabled, select:disabled {
   .save-button,
   .back-button,
   .promo-button,
-  .payment-button {
+  .payment-button,
+  .promo-validation,
+  .spinner,
+  .spinner-small {
     transition: none;
+    animation: none;
   }
   
   .settings-content:hover,
@@ -1343,8 +1991,900 @@ input:disabled, select:disabled {
   .plan-card,
   .promo-section,
   .plans-section,
-  .payment-history {
+  .payment-history,
+  .applied-promocodes,
+  .usage-item {
     border: 2px solid #000;
+  }
+  
+  .promo-validation {
+    border: 2px solid #000;
+  }
+}
+
+/* Print styles */
+@media print {
+  .notification,
+  .loading-overlay,
+  .promo-button,
+  .payment-button,
+  .save-button,
+  .back-button {
+    display: none;
+  }
+  
+  .settings-page {
+    background: white;
+  }
+  
+  .settings-content {
+    box-shadow: none;
+    border: 1px solid #000;
+    page-break-inside: avoid;
+  }
+}
+</style><template>
+  <div class="settings-page">
+    <!-- User Profile Settings -->
+    <div class="settings-content">
+      <h2 class="section-title">⚙️ Настройки профиля</h2>
+
+      <label>Имя</label>
+      <input 
+        type="text" 
+        v-model="user.name" 
+        placeholder="Введите имя"
+        :disabled="loading" 
+      />
+
+      <label>Фамилия</label>
+      <input 
+        type="text" 
+        v-model="user.surname" 
+        placeholder="Введите фамилию"
+        :disabled="loading" 
+      />
+
+      <label>Email</label>
+      <input 
+        type="email" 
+        v-model="user.email" 
+        placeholder="Введите email"
+        :disabled="loading" 
+      />
+
+      <div v-if="!isGoogleUser">
+        <label>Текущий пароль</label>
+        <input 
+          type="password" 
+          v-model="oldPassword" 
+          placeholder="Введите текущий пароль"
+          :disabled="loading" 
+        />
+
+        <label>Новый пароль</label>
+        <input 
+          type="password" 
+          v-model="newPassword" 
+          placeholder="Введите новый пароль"
+          :disabled="loading" 
+        />
+
+        <label>Подтвердите новый пароль</label>
+        <input 
+          type="password" 
+          v-model="confirmPassword" 
+          placeholder="Повторите новый пароль"
+          :disabled="loading" 
+        />
+      </div>
+
+      <p class="forgot-password" @click="sendPasswordReset">
+        {{ isGoogleUser ? 'Создать пароль' : 'Забыли пароль?' }}
+      </p>
+
+      <div class="button-group">
+        <button 
+          class="save-button" 
+          @click="saveChanges"
+          :disabled="loading"
+        >
+          {{ loading ? '⏳ Сохранение...' : 'Сохранить' }}
+        </button>
+        <button class="back-button" @click="goToProfile">В профиль</button>
+      </div>
+    </div>
+
+    <!-- Subscription and Payment Settings -->
+    <div class="settings-content">
+      <h2 class="section-title">💳 Подписка и оплата</h2>
+
+      <!-- Current Plan Display -->
+      <div class="current-plan-section">
+        <div class="plan-info">
+          <h3>Текущий тариф</h3>
+          <div class="plan-display">
+            <span :class="['plan-badge', currentPlanClass]">
+              {{ currentPlanLabel }}
+            </span>
+            <div class="plan-details">
+              <p class="plan-description">{{ currentPlanDescription }}</p>
+              <p v-if="subscriptionDetails?.expiryDate" class="plan-expiry">
+                Активен до: {{ formatDate(subscriptionDetails.expiryDate) }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Options -->
+      <div class="payment-options">
+        <h3>Варианты оплаты</h3>
+        
+        <!-- Enhanced Promo Code Section -->
+        <div class="promo-section">
+          <h4>🎟️ Промокод</h4>
+          <div class="promo-input-group">
+            <div class="promo-code-input">
+              <input 
+                type="text" 
+                v-model="promoCode" 
+                placeholder="Введите промокод (например: ACED2024)"
+                :disabled="loading"
+                @keyup.enter="applyPromo"
+                @input="handlePromoCodeInput"
+                maxlength="20"
+                class="promo-input"
+                :class="{ 
+                  'promo-valid': promoValidation && promoValidation.valid,
+                  'promo-invalid': promoValidation && !promoValidation.valid && promoCode.length > 3
+                }"
+              />
+              <div v-if="promoValidation && promoCode.length > 3" class="promo-validation">
+                <div v-if="promoValidation.valid" class="promo-valid-message">
+                  ✅ Промокод действителен! Предоставляет: {{ promoValidation.data?.grantsPlan?.toUpperCase() }} план
+                </div>
+                <div v-else class="promo-invalid-message">
+                  ❌ {{ promoValidation.error }}
+                </div>
+              </div>
+            </div>
+            
+            <select v-model="selectedPlan" :disabled="loading" class="plan-select">
+              <option value="">Выберите тариф...</option>
+              <option value="start">Start (260,000 сум)</option>
+              <option value="pro">Pro (455,000 сум)</option>
+            </select>
+          </div>
+          
+          <button 
+            class="promo-button" 
+            @click="applyPromo"
+            :disabled="loading || !canApplyPromo"
+            :class="{ 'promo-button-ready': canApplyPromo }"
+          >
+            {{ promoButtonText }}
+          </button>
+        </div>
+
+        <!-- Payment Plans -->
+        <div class="plans-section">
+          <h4>💰 Выберите тариф для оплаты</h4>
+          <div class="plans-grid">
+            <div 
+              class="plan-card" 
+              :class="{ active: paymentPlan === 'start', disabled: currentPlan === 'start' || currentPlan === 'pro' }"
+              @click="selectPaymentPlan('start')"
+            >
+              <div class="plan-header">
+                <h5>Start</h5>
+                <div class="plan-price">260,000 сум</div>
+              </div>
+              <ul class="plan-features">
+                <li>✅ Базовые курсы</li>
+                <li>✅ Домашние задания</li>
+                <li>✅ Основные тесты</li>
+                <li>✅ Прогресс-трекинг</li>
+              </ul>
+              <div v-if="currentPlan === 'start'" class="plan-status">
+                ✅ Активен
+              </div>
+            </div>
+            
+            <div 
+              class="plan-card recommended" 
+              :class="{ active: paymentPlan === 'pro', disabled: currentPlan === 'pro' }"
+              @click="selectPaymentPlan('pro')"
+            >
+              <div class="plan-badge">Рекомендуем</div>
+              <div class="plan-header">
+                <h5>Pro</h5>
+                <div class="plan-price">455,000 сум</div>
+              </div>
+              <ul class="plan-features">
+                <li>✅ Все возможности Start</li>
+                <li>✅ Продвинутые курсы</li>
+                <li>✅ Персональная аналитика</li>
+                <li>✅ Приоритетная поддержка</li>
+                <li>✅ Эксклюзивные материалы</li>
+              </ul>
+              <div v-if="currentPlan === 'pro'" class="plan-status">
+                ✅ Активен
+              </div>
+            </div>
+          </div>
+          
+          <button 
+            class="payment-button" 
+            @click="goToPayment"
+            :disabled="loading || !paymentPlan || (currentPlan !== 'free' && paymentPlan === currentPlan)"
+          >
+            {{ getPaymentButtonText() }}
+          </button>
+        </div>
+
+        <!-- Payment History -->
+        <div v-if="paymentHistory.length > 0" class="payment-history">
+          <h4>📊 История платежей</h4>
+          <div class="history-list">
+            <div 
+              v-for="payment in paymentHistory" 
+              :key="payment.id"
+              class="payment-item"
+            >
+              <div class="payment-info">
+                <span class="payment-id">{{ payment.id }}</span>
+                <span class="payment-amount">{{ formatAmount(payment.amount) }}</span>
+              </div>
+              <div class="payment-status">
+                <span :class="['status-badge', getStatusClass(payment.state)]">
+                  {{ payment.stateText }}
+                </span>
+                <span class="payment-date">{{ formatDate(payment.timestamp) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification -->
+    <div v-if="notification" class="notification" :class="notificationClass">
+      <span class="notification-icon">{{ notificationIcon }}</span>
+      {{ notification }}
+    </div>
+
+    <!-- Loading Overlay -->
+    <div v-if="loading" class="loading-overlay">
+      <div class="spinner"></div>
+      <p>{{ loadingText }}</p>
+    </div>
+  </div>
+</template>
+
+<script>
+import { auth, db } from "@/firebase";
+import { 
+  applyPromoCode, 
+  getUserStatus,
+  getPaymentAmounts,
+  formatPaymentAmount,
+  getTransactionStateText,
+  handlePaymentError
+} from "@/api";
+import {
+  updateEmail,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  updatePassword,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  GoogleAuthProvider,
+  signInWithPopup
+} from "firebase/auth";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+
+export default {
+  name: 'AcedSettings',
+  data() {
+    return {
+      // User profile data
+      user: { name: "", surname: "", email: "" },
+      oldPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+      currentUser: null,
+      isGoogleUser: false,
+      
+      // Payment data
+      promoCode: "",
+      selectedPlan: "",
+      paymentPlan: "",
+      currentPlan: "free",
+      subscriptionDetails: null,
+      paymentHistory: [],
+      
+      // Promocode validation
+      promoValidation: null,
+      promoValidationTimeout: null,
+      
+      // UI state
+      loading: false,
+      loadingText: "",
+      notification: "",
+      notificationClass: "",
+      notificationIcon: ""
+    };
+  },
+  computed: {
+    currentPlanLabel() {
+      const labels = {
+        pro: 'Pro',
+        start: 'Start', 
+        premium: 'Premium',
+        free: 'Free'
+      };
+      return labels[this.currentPlan] || 'Free';
+    },
+    
+    currentPlanClass() {
+      const classes = {
+        pro: 'badge-pro',
+        start: 'badge-start',
+        premium: 'badge-premium',
+        free: 'badge-free'
+      };
+      return classes[this.currentPlan] || 'badge-free';
+    },
+    
+    currentPlanDescription() {
+      const descriptions = {
+        pro: 'Полный доступ ко всем курсам и функциям',
+        start: 'Доступ к базовым курсам и материалам',
+        premium: 'Премиум подписка с эксклюзивным контентом',
+        free: 'Бесплатный доступ с ограниченным функционалом'
+      };
+      return descriptions[this.currentPlan] || 'Бесплатный доступ';
+    },
+    
+    userId() {
+      return this.currentUser?.uid || this.$store.getters['user/getUserId'];
+    },
+    
+    // Enhanced promocode validation computed properties
+    canApplyPromo() {
+      return this.promoCode.trim().length > 3 && 
+             this.selectedPlan && 
+             this.promoValidation?.valid &&
+             !this.loading;
+    },
+    
+    promoButtonText() {
+      if (this.loading) {
+        return '⏳ Применение...';
+      }
+      if (!this.promoCode.trim()) {
+        return 'Введите промокод';
+      }
+      if (!this.selectedPlan) {
+        return 'Выберите тариф';
+      }
+      if (this.promoValidation && !this.promoValidation.valid) {
+        return 'Неверный промокод';
+      }
+      if (this.canApplyPromo) {
+        return '🎉 Применить промокод';
+      }
+      return 'Применить промокод';
+    }
+  },
+  
+  async mounted() {
+    await this.initializeComponent();
+  },
+  
+  methods: {
+    async initializeComponent() {
+      this.loading = true;
+      this.loadingText = 'Загрузка настроек...';
+      
+      try {
+        await this.checkAuthState();
+        await this.loadPaymentHistory();
+      } catch (error) {
+        console.error('❌ Settings initialization error:', error);
+        this.showNotification('Ошибка загрузки настроек', 'error');
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    checkAuthState() {
+      return new Promise((resolve) => {
+        onAuthStateChanged(auth, async (user) => {
+          this.currentUser = user;
+          if (user) {
+            this.isGoogleUser = user.providerData[0]?.providerId === "google.com";
+            await this.fetchUserData();
+            await this.fetchSubscriptionStatus();
+          }
+          resolve();
+        });
+      });
+    },
+    
+    async fetchUserData() {
+      try {
+        if (!this.currentUser) return;
+        
+        const userRef = doc(db, "users", this.currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (userDoc.exists()) {
+          this.user = userDoc.data();
+        } else {
+          const newUserData = {
+            name: "Новый пользователь",
+            surname: "",
+            email: this.currentUser.email,
+          };
+          await setDoc(userRef, newUserData);
+          this.user = newUserData;
+        }
+      } catch (error) {
+        console.error('❌ User data fetch error:', error);
+        this.showNotification("Ошибка загрузки данных пользователя", 'error');
+      }
+    },
+    
+    async fetchSubscriptionStatus() {
+      try {
+        if (!this.currentUser) return;
+        
+        const result = await getUserStatus(this.currentUser.uid);
+        
+        if (result.data) {
+          this.currentPlan = result.data.status || result.data.subscriptionPlan || 'free';
+          this.subscriptionDetails = result.data.subscriptionDetails || null;
+          
+          // Update store as well
+          this.$store.commit('user/setUserStatus', this.currentPlan);
+          if (this.subscriptionDetails) {
+            this.$store.commit('user/setSubscriptionDetails', this.subscriptionDetails);
+          }
+        } else {
+          this.currentPlan = 'free';
+        }
+      } catch (err) {
+        console.warn('⚠️ Failed to fetch subscription status:', err);
+        this.currentPlan = 'free';
+      }
+    },
+    
+    async loadPaymentHistory() {
+      try {
+        const history = this.$store.getters['user/paymentHistory'] || [];
+        this.paymentHistory = history.slice(0, 5);
+      } catch (error) {
+        console.warn('⚠️ Failed to load payment history:', error);
+      }
+    },
+    
+    // ✅ NEW: Promocode input handler with validation
+    handlePromoCodeInput() {
+      // Clear previous timeout
+      if (this.promoValidationTimeout) {
+        clearTimeout(this.promoValidationTimeout);
+      }
+      
+      // Convert to uppercase
+      this.promoCode = this.promoCode.toUpperCase();
+      
+      // Reset validation if code is too short
+      if (this.promoCode.length <= 3) {
+        this.promoValidation = null;
+        return;
+      }
+      
+      // Debounce validation
+      this.promoValidationTimeout = setTimeout(() => {
+        this.validatePromoCode();
+      }, 500);
+    },
+    
+    // ✅ NEW: Validate promocode without applying
+    async validatePromoCode() {
+      if (!this.promoCode.trim() || this.promoCode.length <= 3) {
+        this.promoValidation = null;
+        return;
+      }
+      
+      try {
+        // Call backend validation endpoint
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/promocodes/validate/${this.promoCode}`);
+        const result = await response.json();
+        
+        this.promoValidation = result;
+        
+        if (result.valid && result.data) {
+          console.log('✅ Valid promocode:', result.data);
+          // Optionally auto-select the plan that the promocode grants
+          if (!this.selectedPlan && result.data.grantsPlan) {
+            this.selectedPlan = result.data.grantsPlan;
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Promocode validation error:', error);
+        this.promoValidation = {
+          valid: false,
+          error: 'Ошибка проверки промокода'
+        };
+      }
+    },
+    
+    // ✅ ENHANCED: Apply promocode with proper integration
+    async applyPromo() {
+      if (!this.canApplyPromo) {
+        this.showNotification('Проверьте данные и попробуйте снова', 'error');
+        return;
+      }
+      
+      if (!this.userId) {
+        this.showNotification("Ошибка авторизации", 'error');
+        return;
+      }
+      
+      this.loading = true;
+      this.loadingText = 'Применение промокода...';
+      
+      try {
+        console.log('🎟️ Applying promocode:', {
+          userId: this.userId,
+          plan: this.selectedPlan,
+          code: this.promoCode
+        });
+        
+        // Use the existing applyPromoCode function from your API
+        const result = await applyPromoCode(
+          this.userId,
+          this.selectedPlan,
+          this.promoCode.trim()
+        );
+        
+        console.log('🎟️ Promocode result:', result);
+        
+        if (result.success) {
+          // ✅ SUCCESS: Update local state and store
+          const oldPlan = this.currentPlan;
+          this.currentPlan = this.selectedPlan;
+          
+          // Update store
+          await this.$store.dispatch('user/updateUserStatus', this.selectedPlan);
+          
+          // Update subscription details if provided
+          if (result.subscriptionDetails) {
+            this.subscriptionDetails = result.subscriptionDetails;
+            this.$store.commit('user/setSubscriptionDetails', result.subscriptionDetails);
+          }
+          
+          // Clear form
+          this.promoCode = "";
+          this.selectedPlan = "";
+          this.promoValidation = null;
+          
+          // Show success message
+          this.showNotification(
+            result.message || `🎉 Промокод успешно применён! Тариф обновлён с "${oldPlan}" на "${this.currentPlan.toUpperCase()}"`, 
+            'success'
+          );
+          
+          // Optionally reload user status to get the latest data
+          setTimeout(async () => {
+            await this.fetchSubscriptionStatus();
+          }, 1000);
+          
+        } else {
+          // ❌ ERROR: Show error message
+          this.showNotification(
+            result.error || result.message || "❌ Не удалось применить промокод", 
+            'error'
+          );
+        }
+        
+      } catch (error) {
+        console.error("❌ Promo code error:", error);
+        this.showNotification(
+          handlePaymentError(error, 'Применение промокода'), 
+          'error'
+        );
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    async saveChanges() {
+      if (!this.currentUser) {
+        return this.showNotification("Пользователь не авторизован", 'error');
+      }
+      
+      this.loading = true;
+      this.loadingText = 'Сохранение изменений...';
+      
+      try {
+        // Update Firestore
+        const userRef = doc(db, "users", this.currentUser.uid);
+        await updateDoc(userRef, { 
+          name: this.user.name, 
+          surname: this.user.surname 
+        });
+        
+        // Update email if changed
+        if (this.user.email !== this.currentUser.email) {
+          if (this.isGoogleUser) {
+            const provider = new GoogleAuthProvider();
+            await signInWithPopup(auth, provider);
+            await updateEmail(this.currentUser, this.user.email);
+          } else {
+            if (!this.oldPassword) {
+              return this.showNotification("Введите текущий пароль для изменения email", 'error');
+            }
+            const credential = EmailAuthProvider.credential(this.currentUser.email, this.oldPassword);
+            await reauthenticateWithCredential(this.currentUser, credential);
+            await updateEmail(this.currentUser, this.user.email);
+          }
+        }
+        
+        // Update password if provided
+        if (this.newPassword) {
+          if (this.isGoogleUser) {
+            return this.showNotification("Вы вошли через Google. Пароль изменить нельзя", 'error');
+          }
+          if (this.newPassword !== this.confirmPassword) {
+            return this.showNotification("Пароли не совпадают", 'error');
+          }
+          const credential = EmailAuthProvider.credential(this.currentUser.email, this.oldPassword);
+          await reauthenticateWithCredential(this.currentUser, credential);
+          await updatePassword(this.currentUser, this.newPassword);
+        }
+        
+        // Update store
+        await this.$store.dispatch('user/updateProfile', {
+          name: this.user.name,
+          surname: this.user.surname,
+          email: this.user.email
+        });
+        
+        this.showNotification("Изменения успешно сохранены!", 'success');
+        
+        // Clear password fields
+        this.oldPassword = "";
+        this.newPassword = "";
+        this.confirmPassword = "";
+        
+      } catch (error) {
+        console.error("❌ Save changes error:", error);
+        this.showNotification(`Ошибка: ${error.message}`, 'error');
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    selectPaymentPlan(plan) {
+      // Don't allow selecting current plan or downgrade
+      if (this.currentPlan === plan || 
+          (this.currentPlan === 'pro' && plan === 'start')) {
+        return;
+      }
+      
+      this.paymentPlan = plan;
+    },
+    
+    async goToPayment() {
+      if (!this.paymentPlan) {
+        return this.showNotification("Выберите тариф для оплаты", 'error');
+      }
+      
+      if (!this.userId) {
+        return this.showNotification("Ошибка авторизации", 'error');
+      }
+      
+      try {
+        // Navigate to payment page
+        await this.$router.push({ 
+          name: 'PaymePayment', 
+          params: { plan: this.paymentPlan },
+          query: { 
+            userId: this.userId,
+            returnTo: this.$route.query.returnTo || 'settings'
+          }
+        });
+        
+      } catch (error) {
+        console.error('❌ Payment navigation error:', error);
+        this.showNotification('Ошибка при переходе к оплате', 'error');
+      }
+    },
+    
+    getPaymentButtonText() {
+      if (!this.paymentPlan) {
+        return 'Выберите тариф';
+      }
+      
+      if (this.loading) {
+        return '⏳ Обработка...';
+      }
+      
+      if (this.currentPlan === this.paymentPlan) {
+        return '✅ Уже активен';
+      }
+      
+      const amounts = getPaymentAmounts();
+      const planData = amounts[this.paymentPlan];
+      
+      if (planData) {
+        return `💳 Оплатить ${planData.label} (${formatPaymentAmount(planData.uzs, 'UZS')})`;
+      }
+      
+      return 'Перейти к оплате';
+    },
+    
+    async sendPasswordReset() {
+      try {
+        if (!this.currentUser) {
+          return this.showNotification("Ошибка: Пользователь не авторизован", 'error');
+        }
+        
+        await sendPasswordResetEmail(auth, this.currentUser.email);
+        this.showNotification("Ссылка для создания пароля отправлена на ваш email", 'success');
+        
+      } catch (error) {
+        console.error("❌ Password reset error:", error);
+        this.showNotification(`Ошибка: ${error.message}`, 'error');
+      }
+    },
+    
+    // Utility methods
+    formatAmount(amount) {
+      return formatPaymentAmount(amount / 100, 'UZS');
+    },
+    
+    formatDate(timestamp) {
+      if (!timestamp) return '';
+      const date = new Date(timestamp);
+      return date.toLocaleDateString('ru-RU', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    },
+    
+    getStatusClass(state) {
+      const stateInfo = getTransactionStateText(state);
+      return `status-${stateInfo.color}`;
+    },
+    
+    showNotification(message, type = 'info') {
+      this.notification = message;
+      this.notificationClass = `notification-${type}`;
+      
+      const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+      };
+      this.notificationIcon = icons[type] || 'ℹ️';
+      
+      setTimeout(() => {
+        this.notification = "";
+        this.notificationClass = "";
+        this.notificationIcon = "";
+      }, 5000);
+    },
+    
+    // Navigation methods
+    goBack() {
+      this.$router.push("/");
+    },
+    
+    goToProfile() {
+      this.$router.push("/profile/main");
+    }
+  }
+};
+</script>
+
+<style scoped>
+/* Your existing CSS stays the same, plus these additions for promocode styling */
+
+.promo-code-input {
+  position: relative;
+}
+
+.promo-input {
+  transition: all 0.3s ease;
+}
+
+.promo-input.promo-valid {
+  border-color: #10b981;
+  background-color: #ecfdf5;
+}
+
+.promo-input.promo-invalid {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+}
+
+.promo-validation {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin-top: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.promo-valid-message {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.promo-invalid-message {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #ef4444;
+}
+
+.promo-button-ready {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  transform: scale(1.02);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+}
+
+.plan-select {
+  margin-top: 8px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Enhanced promo section styling */
+.promo-section {
+  background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%);
+  border: 2px solid #e879f9;
+}
+
+.promo-section h4 {
+  color: #7c3aed;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.promo-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .promo-validation {
+    position: static;
+    margin-top: 8px;
   }
 }
 </style>

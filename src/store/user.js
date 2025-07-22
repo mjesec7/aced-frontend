@@ -1,4 +1,4 @@
-// src/store/user.js - COMPLETE USER STORE WITH SUBSCRIPTION MANAGEMENT
+// src/store/user.js - COMPLETE USER STORE WITH PROMOCODE INTEGRATION
 import { checkPaymentStatus } from '@/api/payments';
 import { getUserUsage, resetMonthlyUsage } from '@/services/GPTService';
 
@@ -45,7 +45,11 @@ const state = () => ({
     notifications: true,
     emailUpdates: false,
     theme: 'light'
-  }
+  },
+
+  // ✅ NEW: Promocode tracking
+  appliedPromocodes: [], // Track applied promocodes
+  lastPromocodeCheck: null
 });
 
 const mutations = {
@@ -78,11 +82,14 @@ const mutations = {
       custom_courses: false,
       offline_mode: false
     };
+    state.appliedPromocodes = [];
+    state.lastPromocodeCheck = null;
     
     // Clear localStorage
     localStorage.removeItem('currentUser');
     localStorage.removeItem('userStatus');
     localStorage.removeItem('subscriptionDetails');
+    localStorage.removeItem('appliedPromocodes');
   },
   
   setUserStatus(state, status) {
@@ -202,6 +209,31 @@ const mutations = {
   setTrialInfo(state, { isTrialUser, trialDaysRemaining }) {
     state.isTrialUser = isTrialUser;
     state.trialDaysRemaining = trialDaysRemaining;
+  },
+
+  // ✅ NEW: Promocode mutations
+  addAppliedPromocode(state, promocodeData) {
+    const promocode = {
+      code: promocodeData.code,
+      plan: promocodeData.plan,
+      appliedAt: new Date().toISOString(),
+      subscriptionDays: promocodeData.subscriptionDays || 30,
+      ...promocodeData
+    };
+    
+    state.appliedPromocodes.unshift(promocode);
+    
+    // Keep only last 10 applied promocodes
+    if (state.appliedPromocodes.length > 10) {
+      state.appliedPromocodes = state.appliedPromocodes.slice(0, 10);
+    }
+    
+    // Store in localStorage
+    localStorage.setItem('appliedPromocodes', JSON.stringify(state.appliedPromocodes));
+  },
+
+  updateLastPromocodeCheck(state, timestamp) {
+    state.lastPromocodeCheck = timestamp;
   }
 };
 
@@ -245,6 +277,19 @@ const updateFeatureAccess = (state) => {
   };
   
   state.featureAccess = { ...featureMap[status] || featureMap.free };
+};
+
+// Helper function to get user token
+const getUserToken = async () => {
+  try {
+    const { auth } = await import('@/firebase');
+    if (auth.currentUser) {
+      return await auth.currentUser.getIdToken();
+    }
+  } catch (error) {
+    console.warn('⚠️ Could not get user token:', error);
+  }
+  return null;
 };
 
 const actions = {
@@ -701,6 +746,180 @@ const actions = {
     }
   },
 
+  // ✅ NEW: Apply promocode action
+  async applyPromocode({ commit, state, dispatch }, { promoCode, plan }) {
+    try {
+      const userId = 
+        state.currentUser?.firebaseId ||
+        state.currentUser?._id ||
+        localStorage.getItem('userId') ||
+        localStorage.getItem('firebaseUserId');
+
+      if (!userId) {
+        return { success: false, error: 'Пользователь не найден' };
+      }
+
+      console.log('🎟️ Applying promocode via store:', { userId, plan, promoCode });
+
+      // Get auth token
+      const token = await getUserToken();
+
+      // Prepare headers
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // Call the backend API for promocode application
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/promo-code`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+          userId: userId,
+          plan: plan,
+          promoCode: promoCode.trim().toUpperCase()
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // ✅ SUCCESS: Update store state
+        const oldStatus = state.userStatus;
+        
+        // Update user status
+        commit('setUserStatus', plan);
+        
+        // Set subscription details
+        const subscriptionDetails = {
+          plan: plan,
+          appliedViaPromocode: true,
+          promocode: promoCode.trim().toUpperCase(),
+          activatedAt: new Date().toISOString(),
+          source: 'promocode'
+        };
+        
+        if (result.data?.subscriptionDetails) {
+          Object.assign(subscriptionDetails, result.data.subscriptionDetails);
+        }
+        
+        commit('setSubscriptionDetails', subscriptionDetails);
+        
+        // Track applied promocode
+        commit('addAppliedPromocode', {
+          code: promoCode.trim().toUpperCase(),
+          plan: plan,
+          activatedAt: new Date().toISOString(),
+          subscriptionDetails: subscriptionDetails
+        });
+        
+        // Update feature access
+        commit('updateAllFeatureAccess');
+        
+        // Reload usage data with new plan limits
+        await dispatch('loadCurrentMonthUsage');
+        
+        console.log(`✅ Promocode applied successfully: ${oldStatus} → ${plan}`);
+        
+        return {
+          success: true,
+          message: result.message || `Промокод успешно применён! Подписка "${plan.toUpperCase()}" активирована.`,
+          oldPlan: oldStatus,
+          newPlan: plan,
+          subscriptionDetails: subscriptionDetails
+        };
+        
+      } else {
+        // ❌ ERROR from backend
+        console.warn('⚠️ Promocode application failed:', result.error);
+        return {
+          success: false,
+          error: result.error || 'Не удалось применить промокод'
+        };
+      }
+
+    } catch (error) {
+      console.error('❌ Promocode application error:', error);
+      
+      if (error.message.includes('Network Error') || error.code === 'NETWORK_ERROR') {
+        return {
+          success: false,
+          error: 'Ошибка сети. Проверьте подключение к интернету'
+        };
+      } else if (error.status === 400) {
+        return {
+          success: false,
+          error: 'Неверный промокод или данные'
+        };
+      } else if (error.status === 404) {
+        return {
+          success: false,
+          error: 'Промокод не найден'
+        };
+      } else if (error.status === 403) {
+        return {
+          success: false,
+          error: 'Промокод уже использован или недоступен'
+        };
+      } else {
+        return {
+          success: false,
+          error: 'Произошла ошибка при применении промокода'
+        };
+      }
+    }
+  },
+
+  // ✅ NEW: Validate promocode without applying
+  async validatePromocode({ state }, promoCode) {
+    try {
+      if (!promoCode || promoCode.length <= 3) {
+        return { valid: false, error: 'Промокод слишком короткий' };
+      }
+
+      console.log('🔍 Validating promocode:', promoCode);
+
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/promocodes/validate/${promoCode.trim().toUpperCase()}`);
+      const result = await response.json();
+
+      if (result.success && result.valid) {
+        return {
+          valid: true,
+          data: result.data,
+          message: `Промокод действителен! Предоставляет: ${result.data.grantsPlan?.toUpperCase()} план`
+        };
+      } else {
+        return {
+          valid: false,
+          error: result.error || 'Промокод недействителен'
+        };
+      }
+
+    } catch (error) {
+      console.error('❌ Promocode validation error:', error);
+      
+      if (error.status === 404) {
+        return {
+          valid: false,
+          error: 'Промокод не найден'
+        };
+      } else if (error.status === 400) {
+        return {
+          valid: false,
+          error: 'Неверный формат промокода'
+        };
+      } else {
+        return {
+          valid: false,
+          error: 'Ошибка проверки промокода'
+        };
+      }
+    }
+  },
+
   // ✅ NEW: Get usage statistics and trends
   async getUsageStatistics({ state }) {
     try {
@@ -755,12 +974,18 @@ const actions = {
         throw new Error('No user ID found');
       }
 
+      const token = await getUserToken();
+      const headers = { 
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/${userId}/profile`, {
         method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json'
-          // Add authorization header if needed
-        },
+        headers: headers,
         body: JSON.stringify(profileData)
       });
 
@@ -791,9 +1016,15 @@ const actions = {
       const userId = state.currentUser?.firebaseId || localStorage.getItem('userId');
       if (userId) {
         try {
+          const token = await getUserToken();
+          const headers = { 'Content-Type': 'application/json' };
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+          
           await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/${userId}/preferences`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: headers,
             body: JSON.stringify(preferences)
           });
         } catch (err) {
@@ -857,6 +1088,7 @@ const actions = {
       const storedUser = localStorage.getItem('currentUser');
       const storedStatus = localStorage.getItem('userStatus');
       const storedPreferences = localStorage.getItem('userPreferences');
+      const storedPromocodes = localStorage.getItem('appliedPromocodes');
       
       if (storedUser) {
         try {
@@ -878,6 +1110,15 @@ const actions = {
           commit('setPreferences', preferences);
         } catch (err) {
           console.warn('⚠️ Failed to parse stored preferences');
+        }
+      }
+      
+      if (storedPromocodes) {
+        try {
+          const promocodes = JSON.parse(storedPromocodes);
+          commit('appliedPromocodes', promocodes);
+        } catch (err) {
+          console.warn('⚠️ Failed to parse stored promocodes');
         }
       }
       
@@ -918,6 +1159,7 @@ const actions = {
       localStorage.removeItem('subscriptionDetails');
       localStorage.removeItem('subscriptionExpiry');
       localStorage.removeItem('userPreferences');
+      localStorage.removeItem('appliedPromocodes');
       
       // Clear pending payments for all users (optional)
       const keys = Object.keys(localStorage);
@@ -1033,6 +1275,13 @@ const getters = {
   hasRecentPayments: (state) => 
     state.paymentHistory.length > 0 && 
     state.paymentHistory.some(p => p.state === 2), // Has completed payments
+  
+  // ✅ NEW: Promocode getters
+  appliedPromocodes: (state) => state.appliedPromocodes,
+  lastPromocodeCheck: (state) => state.lastPromocodeCheck,
+  hasAppliedPromocodes: (state) => state.appliedPromocodes.length > 0,
+  lastAppliedPromocode: (state) => 
+    state.appliedPromocodes.length > 0 ? state.appliedPromocodes[0] : null,
   
   // User info getters
   userName: (state) => 
@@ -1158,6 +1407,24 @@ const getters = {
       };
     }
     return null;
+  },
+
+  // ✅ NEW: Check if user got subscription via promocode
+  hasPromocodeSubscription: (state) => {
+    return state.subscriptionDetails?.appliedViaPromocode || false;
+  },
+
+  // ✅ NEW: Get subscription source
+  subscriptionSource: (state) => {
+    if (state.subscriptionDetails?.source) {
+      return state.subscriptionDetails.source;
+    } else if (state.subscriptionDetails?.appliedViaPromocode) {
+      return 'promocode';
+    } else if (state.userStatus !== 'free') {
+      return 'payment';
+    } else {
+      return 'free';
+    }
   }
 };
 
