@@ -498,7 +498,7 @@ export default {
     
     // Plan compatibility checking
     planCompatibilityError() {
-      if (!this.promoValidation?.valid || !this.selectedPlan) return false;
+      if (!this.promoValidation || !this.promoValidation.valid || !this.selectedPlan) return false;
       
       const promoGrantsPlan = this.promoValidation.data?.grantsPlan;
       if (promoGrantsPlan && promoGrantsPlan !== this.selectedPlan) {
@@ -666,29 +666,71 @@ export default {
       try {
         console.log('🔍 Validating promocode:', this.promoCode);
         
-        // Check if store dispatch is available
-        if (!this.$store || typeof this.$store.dispatch !== 'function') {
-          console.warn('⚠️ Vuex store not available for promocode validation');
+        let result = null;
+        
+        // Try using the store first
+        if (this.$store && typeof this.$store.dispatch === 'function') {
+          try {
+            result = await this.$store.dispatch('user/validatePromocode', this.promoCode);
+          } catch (storeError) {
+            console.warn('⚠️ Store validation failed, trying direct API:', storeError.message);
+            result = null;
+          }
+        }
+        
+        // Fallback to direct API call if store failed
+        if (!result) {
+          try {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/promocodes/validate/${this.promoCode.trim().toUpperCase()}`);
+            const apiResult = await response.json();
+            
+            if (apiResult.success && apiResult.valid) {
+              result = {
+                valid: true,
+                data: apiResult.data,
+                message: `Промокод действителен! Предоставляет: ${apiResult.data.grantsPlan?.toUpperCase()} план`
+              };
+            } else {
+              result = {
+                valid: false,
+                error: apiResult.error || 'Промокод недействителен'
+              };
+            }
+          } catch (apiError) {
+            console.warn('⚠️ Direct API validation also failed:', apiError.message);
+            result = {
+              valid: false,
+              error: 'Ошибка проверки промокода'
+            };
+          }
+        }
+        
+        // Ensure result has the expected structure
+        if (!result || typeof result !== 'object') {
+          console.warn('⚠️ Invalid promocode validation result:', result);
           this.promoValidation = {
             valid: false,
-            error: 'Система недоступна. Попробуйте позже.'
+            error: 'Ошибка проверки промокода'
           };
           return;
         }
         
-        const result = await this.$store.dispatch('user/validatePromocode', this.promoCode);
+        this.promoValidation = {
+          valid: result.valid || false,
+          error: result.error || null,
+          data: result.data || null,
+          message: result.message || null
+        };
         
-        this.promoValidation = result;
-        
-        if (result.valid && result.data) {
-          console.log('✅ Valid promocode:', result.data);
+        if (this.promoValidation.valid && this.promoValidation.data) {
+          console.log('✅ Valid promocode:', this.promoValidation.data);
           
-          if (!this.selectedPlan && result.data.grantsPlan) {
-            this.selectedPlan = result.data.grantsPlan;
+          if (!this.selectedPlan && this.promoValidation.data.grantsPlan) {
+            this.selectedPlan = this.promoValidation.data.grantsPlan;
           }
           
-          if (this.selectedPlan && result.data.grantsPlan && 
-              this.selectedPlan !== result.data.grantsPlan) {
+          if (this.selectedPlan && this.promoValidation.data.grantsPlan && 
+              this.selectedPlan !== this.promoValidation.data.grantsPlan) {
             console.warn('⚠️ Plan mismatch detected');
           }
         }
@@ -704,7 +746,7 @@ export default {
     },
     
     onPlanChange() {
-      if (this.promoValidation?.valid && this.selectedPlan) {
+      if (this.promoValidation && this.promoValidation.valid && this.selectedPlan) {
         const promoGrantsPlan = this.promoValidation.data?.grantsPlan;
         if (promoGrantsPlan && promoGrantsPlan !== this.selectedPlan) {
           this.showNotification(
