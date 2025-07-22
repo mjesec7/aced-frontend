@@ -397,37 +397,37 @@ export default {
     };
   },
   computed: {
-    // Store getters
+    // Store getters with safe defaults
     currentMonthUsage() {
-      return this.$store.getters['user/currentMonthUsage'];
+      return this.$store.getters['user/currentMonthUsage'] || { messages: 0, images: 0 };
     },
     
     usageLimits() {
-      return this.$store.getters['user/usageLimits'];
+      return this.$store.getters['user/usageLimits'] || { messages: 0, images: 0 };
     },
     
     messageUsagePercentage() {
-      return this.$store.getters['user/messageUsagePercentage'];
+      return this.$store.getters['user/messageUsagePercentage'] || 0;
     },
     
     imageUsagePercentage() {
-      return this.$store.getters['user/imageUsagePercentage'];
+      return this.$store.getters['user/imageUsagePercentage'] || 0;
     },
     
     isFreeUser() {
-      return this.$store.getters['user/isFreeUser'];
+      return this.$store.getters['user/isFreeUser'] ?? true;
     },
     
     appliedPromocodes() {
-      return this.$store.getters['user/appliedPromocodes'];
+      return this.$store.getters['user/appliedPromocodes'] || [];
     },
     
     hasPromocodeSubscription() {
-      return this.$store.getters['user/hasPromocodeSubscription'];
+      return this.$store.getters['user/hasPromocodeSubscription'] || false;
     },
     
     lastAppliedPromocode() {
-      return this.$store.getters['user/lastAppliedPromocode'];
+      return this.$store.getters['user/lastAppliedPromocode'] || null;
     },
     
     currentPlanLabel() {
@@ -526,6 +526,9 @@ export default {
       this.loadingText = 'Загрузка настроек...';
       
       try {
+        // Wait a bit for store to be available
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         await this.checkAuthState();
         await this.loadPaymentHistory();
         await this.syncWithStore();
@@ -538,8 +541,20 @@ export default {
     },
     
     async syncWithStore() {
-      this.currentPlan = this.$store.getters['user/userStatus'];
-      this.subscriptionDetails = this.$store.getters['user/subscriptionDetails'];
+      try {
+        // Check if store is available
+        if (!this.$store || !this.$store.getters) {
+          console.warn('⚠️ Vuex store not available during sync');
+          return;
+        }
+        
+        this.currentPlan = this.$store.getters['user/userStatus'] || 'free';
+        this.subscriptionDetails = this.$store.getters['user/subscriptionDetails'] || null;
+      } catch (error) {
+        console.warn('⚠️ Error syncing with store:', error);
+        this.currentPlan = 'free';
+        this.subscriptionDetails = null;
+      }
     },
     
     checkAuthState() {
@@ -584,11 +599,18 @@ export default {
       try {
         if (!this.currentUser) return;
         
+        // Check if store dispatch exists and is a function
+        if (!this.$store || typeof this.$store.dispatch !== 'function') {
+          console.warn('⚠️ Vuex store not available');
+          this.currentPlan = 'free';
+          return;
+        }
+        
         const result = await this.$store.dispatch('user/loadUserStatus');
         
-        if (result.success) {
-          this.currentPlan = result.status;
-          this.subscriptionDetails = this.$store.getters['user/subscriptionDetails'];
+        if (result && result.success) {
+          this.currentPlan = result.status || 'free';
+          this.subscriptionDetails = this.$store.getters['user/subscriptionDetails'] || null;
         } else {
           this.currentPlan = 'free';
         }
@@ -600,10 +622,17 @@ export default {
     
     async loadPaymentHistory() {
       try {
-        const history = this.$store.getters['user/paymentHistory'] || [];
-        this.paymentHistory = history.slice(0, 5);
+        if (!this.$store || !this.$store.getters) {
+          console.warn('⚠️ Vuex store not available for payment history');
+          this.paymentHistory = [];
+          return;
+        }
+        
+        const history = this.$store.getters['user/paymentHistory'];
+        this.paymentHistory = Array.isArray(history) ? history.slice(0, 5) : [];
       } catch (error) {
         console.warn('⚠️ Failed to load payment history:', error);
+        this.paymentHistory = [];
       }
     },
     
@@ -636,6 +665,16 @@ export default {
       
       try {
         console.log('🔍 Validating promocode:', this.promoCode);
+        
+        // Check if store dispatch is available
+        if (!this.$store || typeof this.$store.dispatch !== 'function') {
+          console.warn('⚠️ Vuex store not available for promocode validation');
+          this.promoValidation = {
+            valid: false,
+            error: 'Система недоступна. Попробуйте позже.'
+          };
+          return;
+        }
         
         const result = await this.$store.dispatch('user/validatePromocode', this.promoCode);
         
@@ -687,6 +726,11 @@ export default {
         return;
       }
       
+      if (!this.$store || typeof this.$store.dispatch !== 'function') {
+        this.showNotification("Система недоступна. Попробуйте позже.", 'error');
+        return;
+      }
+      
       this.isProcessingPromo = true;
       this.loadingText = 'Применение промокода...';
       
@@ -733,7 +777,7 @@ export default {
       } catch (error) {
         console.error("❌ Promo code error:", error);
         this.showNotification(
-          handlePaymentError(error, 'Применение промокода'), 
+          this.handlePaymentError ? this.handlePaymentError(error, 'Применение промокода') : 'Произошла ошибка при применении промокода', 
           'error'
         );
       } finally {
