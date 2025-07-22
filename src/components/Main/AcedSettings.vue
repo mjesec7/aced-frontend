@@ -342,14 +342,6 @@
 
 <script>
 import { auth, db } from "@/firebase";
-import { 
-  applyPromoCode, 
-  getUserStatus,
-  getPaymentAmounts,
-  formatPaymentAmount,
-  getTransactionStateText,
-  handlePaymentError
-} from "@/api";
 import {
   updateEmail,
   reauthenticateWithCredential,
@@ -396,38 +388,39 @@ export default {
       notificationIcon: ""
     };
   },
+  
   computed: {
     // Store getters with safe defaults
     currentMonthUsage() {
-      return this.$store.getters['user/currentMonthUsage'] || { messages: 0, images: 0 };
+      return this.$store?.getters?.['user/currentMonthUsage'] || { messages: 0, images: 0 };
     },
     
     usageLimits() {
-      return this.$store.getters['user/usageLimits'] || { messages: 0, images: 0 };
+      return this.$store?.getters?.['user/usageLimits'] || { messages: 0, images: 0 };
     },
     
     messageUsagePercentage() {
-      return this.$store.getters['user/messageUsagePercentage'] || 0;
+      return this.$store?.getters?.['user/messageUsagePercentage'] || 0;
     },
     
     imageUsagePercentage() {
-      return this.$store.getters['user/imageUsagePercentage'] || 0;
+      return this.$store?.getters?.['user/imageUsagePercentage'] || 0;
     },
     
     isFreeUser() {
-      return this.$store.getters['user/isFreeUser'] ?? true;
+      return this.$store?.getters?.['user/isFreeUser'] ?? true;
     },
     
     appliedPromocodes() {
-      return this.$store.getters['user/appliedPromocodes'] || [];
+      return this.$store?.getters?.['user/appliedPromocodes'] || [];
     },
     
     hasPromocodeSubscription() {
-      return this.$store.getters['user/hasPromocodeSubscription'] || false;
+      return this.$store?.getters?.['user/hasPromocodeSubscription'] || false;
     },
     
     lastAppliedPromocode() {
-      return this.$store.getters['user/lastAppliedPromocode'] || null;
+      return this.$store?.getters?.['user/lastAppliedPromocode'] || null;
     },
     
     currentPlanLabel() {
@@ -458,14 +451,16 @@ export default {
     },
     
     userId() {
-      return this.currentUser?.uid || this.$store.getters['user/getUserId'];
+      return this.currentUser?.uid || this.$store?.getters?.['user/getUserId'];
     },
     
     // Enhanced promocode validation computed properties
     canApplyPromo() {
-      return this.promoCode.trim().length > 3 && 
+      return this.promoCode && 
+             this.promoCode.trim().length > 3 && 
              this.selectedPlan && 
-             this.promoValidation?.valid &&
+             this.promoValidation &&
+             this.promoValidation.valid === true &&
              !this.loading &&
              !this.isProcessingPromo &&
              !this.planCompatibilityError;
@@ -599,7 +594,7 @@ export default {
       try {
         if (!this.currentUser) return;
         
-        // Check if store dispatch exists and is a function
+        // Check if store dispatch is available
         if (!this.$store || typeof this.$store.dispatch !== 'function') {
           console.warn('⚠️ Vuex store not available');
           this.currentPlan = 'free';
@@ -656,6 +651,39 @@ export default {
       }, 800);
     },
     
+    // Helper method to try multiple API URL patterns
+    async tryMultipleApiEndpoints(endpoints, options = {}) {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      
+      for (const endpoint of endpoints) {
+        const urls = [
+          `${baseUrl}${endpoint}`,
+          `${baseUrl}/api${endpoint}`,
+          `https://api.aced.live${endpoint}`,
+          `https://api.aced.live/api${endpoint}`
+        ];
+        
+        for (const url of urls) {
+          try {
+            console.log(`🔍 Trying URL: ${url}`);
+            const response = await fetch(url, options);
+            
+            if (response.ok) {
+              console.log(`✅ Success with URL: ${url}`);
+              return await response.json();
+            } else {
+              console.log(`❌ Failed with ${response.status}: ${url}`);
+            }
+          } catch (error) {
+            console.log(`❌ Error with ${url}:`, error.message);
+            continue;
+          }
+        }
+      }
+      
+      throw new Error('All API endpoints failed');
+    },
+    
     async validatePromoCode() {
       if (!this.promoCode.trim() || this.promoCode.length <= 3) {
         this.promoValidation = null;
@@ -684,7 +712,13 @@ export default {
           console.log('🔄 Trying direct API call...');
           
           try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/promocodes/validate/${this.promoCode.trim().toUpperCase()}`, {
+            const promocodeCode = this.promoCode.trim().toUpperCase();
+            const endpoints = [
+              `/promocodes/validate/${promocodeCode}`,
+              `/api/promocodes/validate/${promocodeCode}`
+            ];
+            
+            const apiResult = await this.tryMultipleApiEndpoints(endpoints, {
               method: 'GET',
               headers: {
                 'Content-Type': 'application/json',
@@ -692,38 +726,22 @@ export default {
               }
             });
             
-            console.log('📡 Direct API response status:', response.status);
+            console.log('📡 API validation result:', apiResult);
             
-            if (response.ok) {
-              const apiResult = await response.json();
-              console.log('📡 Direct API result:', apiResult);
-              
-              if (apiResult.success && apiResult.valid) {
-                result = {
-                  valid: true,
-                  data: apiResult.data,
-                  message: `Промокод действителен! Предоставляет: ${apiResult.data.grantsPlan?.toUpperCase()} план`
-                };
-              } else {
-                result = {
-                  valid: false,
-                  error: apiResult.error || 'Промокод недействителен'
-                };
-              }
-            } else if (response.status === 404) {
+            if (apiResult.success && apiResult.valid) {
               result = {
-                valid: false,
-                error: 'Промокод не найден'
+                valid: true,
+                data: apiResult.data,
+                message: `Промокод действителен! Предоставляет: ${apiResult.data.grantsPlan?.toUpperCase()} план`
               };
             } else {
-              const errorData = await response.json().catch(() => ({}));
               result = {
                 valid: false,
-                error: errorData.error || 'Ошибка проверки промокода'
+                error: apiResult.error || 'Промокод недействителен'
               };
             }
           } catch (apiError) {
-            console.warn('⚠️ Direct API validation also failed:', apiError.message);
+            console.warn('⚠️ All API endpoints failed:', apiError.message);
             result = {
               valid: false,
               error: 'Ошибка соединения с сервером'
@@ -851,7 +869,12 @@ export default {
           console.log('🔄 Trying direct API apply...');
           
           try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/promo-code`, {
+            const endpoints = [
+              `/payments/promo-code`,
+              `/api/payments/promo-code`
+            ];
+            
+            const apiResult = await this.tryMultipleApiEndpoints(endpoints, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -864,40 +887,29 @@ export default {
               })
             });
             
-            console.log('📡 Direct API apply response status:', response.status);
+            console.log('📡 API apply result:', apiResult);
             
-            if (response.ok) {
-              const apiResult = await response.json();
-              console.log('📡 Direct API apply result:', apiResult);
-              
-              if (apiResult.success) {
-                result = {
-                  success: true,
-                  message: apiResult.message || 'Промокод применён успешно!',
-                  newPlan: this.selectedPlan,
-                  subscriptionDetails: {
-                    plan: this.selectedPlan,
-                    appliedViaPromocode: true,
-                    promocode: this.promoCode.trim().toUpperCase(),
-                    activatedAt: new Date().toISOString(),
-                    source: 'promocode'
-                  }
-                };
-              } else {
-                result = {
-                  success: false,
-                  error: apiResult.error || 'Не удалось применить промокод'
-                };
-              }
+            if (apiResult.success) {
+              result = {
+                success: true,
+                message: apiResult.message || 'Промокод применён успешно!',
+                newPlan: this.selectedPlan,
+                subscriptionDetails: {
+                  plan: this.selectedPlan,
+                  appliedViaPromocode: true,
+                  promocode: this.promoCode.trim().toUpperCase(),
+                  activatedAt: new Date().toISOString(),
+                  source: 'promocode'
+                }
+              };
             } else {
-              const errorData = await response.json().catch(() => ({}));
               result = {
                 success: false,
-                error: errorData.error || 'Ошибка применения промокода'
+                error: apiResult.error || 'Не удалось применить промокод'
               };
             }
           } catch (apiError) {
-            console.warn('⚠️ Direct API apply also failed:', apiError.message);
+            console.warn('⚠️ All API endpoints failed:', apiError.message);
             result = {
               success: false,
               error: 'Ошибка соединения с сервером'
@@ -973,19 +985,106 @@ export default {
       }
     },
 
-    // Additional methods that would be needed (placeholders for missing functionality)
+    // Additional methods that would be needed
     async saveChanges() {
-      // Implementation for saving user profile changes
-      console.log('Saving profile changes...');
+      this.loading = true;
+      this.loadingText = 'Сохранение изменений...';
+      
+      try {
+        // Validate input
+        if (!this.user.name.trim()) {
+          this.showNotification('Имя не может быть пустым', 'error');
+          return;
+        }
+        
+        if (!this.user.email.trim()) {
+          this.showNotification('Email не может быть пустым', 'error');
+          return;
+        }
+        
+        // Update profile in Firestore
+        if (this.currentUser) {
+          const userRef = doc(db, "users", this.currentUser.uid);
+          await updateDoc(userRef, {
+            name: this.user.name.trim(),
+            surname: this.user.surname.trim(),
+            email: this.user.email.trim(),
+            updatedAt: new Date()
+          });
+          
+          // Update email in Firebase Auth if changed
+          if (this.currentUser.email !== this.user.email.trim()) {
+            await updateEmail(this.currentUser, this.user.email.trim());
+          }
+          
+          // Update password if provided
+          if (!this.isGoogleUser && this.newPassword) {
+            if (this.newPassword !== this.confirmPassword) {
+              this.showNotification('Пароли не совпадают', 'error');
+              return;
+            }
+            
+            if (this.newPassword.length < 6) {
+              this.showNotification('Пароль должен содержать минимум 6 символов', 'error');
+              return;
+            }
+            
+            // Reauthenticate before password change
+            if (this.oldPassword) {
+              const credential = EmailAuthProvider.credential(
+                this.currentUser.email,
+                this.oldPassword
+              );
+              await reauthenticateWithCredential(this.currentUser, credential);
+              await updatePassword(this.currentUser, this.newPassword);
+              
+              // Clear password fields
+              this.oldPassword = "";
+              this.newPassword = "";
+              this.confirmPassword = "";
+            }
+          }
+          
+          this.showNotification('Профиль успешно обновлён', 'success');
+        }
+      } catch (error) {
+        console.error('❌ Save changes error:', error);
+        
+        if (error.code === 'auth/wrong-password') {
+          this.showNotification('Неверный текущий пароль', 'error');
+        } else if (error.code === 'auth/email-already-in-use') {
+          this.showNotification('Этот email уже используется', 'error');
+        } else if (error.code === 'auth/weak-password') {
+          this.showNotification('Пароль слишком простой', 'error');
+        } else {
+          this.showNotification('Ошибка сохранения изменений', 'error');
+        }
+      } finally {
+        this.loading = false;
+      }
     },
 
     async sendPasswordReset() {
-      // Implementation for password reset
-      console.log('Sending password reset...');
+      try {
+        if (!this.user.email) {
+          this.showNotification('Введите email для сброса пароля', 'error');
+          return;
+        }
+        
+        await sendPasswordResetEmail(auth, this.user.email);
+        this.showNotification('Письмо для сброса пароля отправлено на ваш email', 'success');
+      } catch (error) {
+        console.error('❌ Password reset error:', error);
+        
+        if (error.code === 'auth/user-not-found') {
+          this.showNotification('Пользователь с таким email не найден', 'error');
+        } else {
+          this.showNotification('Ошибка отправки письма для сброса пароля', 'error');
+        }
+      }
     },
 
     goToProfile() {
-      // Navigate to profile page
       this.$router.push('/profile');
     },
 
@@ -995,7 +1094,6 @@ export default {
     },
 
     async goToPayment() {
-      // Navigate to payment page
       this.$router.push(`/payment?plan=${this.paymentPlan}`);
     },
 
@@ -1018,7 +1116,12 @@ export default {
       const classes = {
         success: 'status-success',
         pending: 'status-warning',
-        failed: 'status-error'
+        failed: 'status-error',
+        2: 'status-success',
+        1: 'status-warning',
+        0: 'status-warning',
+        '-1': 'status-error',
+        '-2': 'status-error'
       };
       return classes[state] || 'status-warning';
     },
@@ -1045,7 +1148,6 @@ export default {
   }
 }
 </script>
-
 <style scoped>
 .settings-page {
   display: flex;
