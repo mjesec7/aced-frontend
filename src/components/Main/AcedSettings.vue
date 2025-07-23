@@ -1,56 +1,61 @@
 <template>
   <div class="settings-page">
-    <!-- User Profile Settings -->
     <div class="settings-content">
       <h2 class="section-title">⚙️ Настройки профиля</h2>
 
-      <label>Имя</label>
-      <input 
-        type="text" 
-        v-model="user.name" 
+      <label for="userName">Имя</label>
+      <input
+        id="userName"
+        type="text"
+        v-model="user.name"
         placeholder="Введите имя"
-        :disabled="loading" 
+        :disabled="loading || isAnyLoading"
       />
 
-      <label>Фамилия</label>
-      <input 
-        type="text" 
-        v-model="user.surname" 
+      <label for="userSurname">Фамилия</label>
+      <input
+        id="userSurname"
+        type="text"
+        v-model="user.surname"
         placeholder="Введите фамилию"
-        :disabled="loading" 
+        :disabled="loading || isAnyLoading"
       />
 
-      <label>Email</label>
-      <input 
-        type="email" 
-        v-model="user.email" 
+      <label for="userEmail">Email</label>
+      <input
+        id="userEmail"
+        type="email"
+        v-model="user.email"
         placeholder="Введите email"
-        :disabled="loading" 
+        :disabled="loading || isAnyLoading"
       />
 
       <div v-if="!isGoogleUser">
-        <label>Текущий пароль</label>
-        <input 
-          type="password" 
-          v-model="oldPassword" 
+        <label for="oldPassword">Текущий пароль</label>
+        <input
+          id="oldPassword"
+          type="password"
+          v-model="oldPassword"
           placeholder="Введите текущий пароль"
-          :disabled="loading" 
+          :disabled="loading || isAnyLoading"
         />
 
-        <label>Новый пароль</label>
-        <input 
-          type="password" 
-          v-model="newPassword" 
+        <label for="newPassword">Новый пароль</label>
+        <input
+          id="newPassword"
+          type="password"
+          v-model="newPassword"
           placeholder="Введите новый пароль"
-          :disabled="loading" 
+          :disabled="loading || isAnyLoading"
         />
 
-        <label>Подтвердите новый пароль</label>
-        <input 
-          type="password" 
-          v-model="confirmPassword" 
+        <label for="confirmPassword">Подтвердите новый пароль</label>
+        <input
+          id="confirmPassword"
+          type="password"
+          v-model="confirmPassword"
           placeholder="Повторите новый пароль"
-          :disabled="loading" 
+          :disabled="loading || isAnyLoading"
         />
       </div>
 
@@ -59,22 +64,20 @@
       </p>
 
       <div class="button-group">
-        <button 
-          class="save-button" 
+        <button
+          class="save-button"
           @click="saveChanges"
-          :disabled="loading"
+          :disabled="loading || isAnyLoading"
         >
-          {{ loading ? '⏳ Сохранение...' : 'Сохранить' }}
+          {{ loading || isAnyLoading ? '⏳ Сохранение...' : 'Сохранить' }}
         </button>
         <button class="back-button" @click="goToProfile">В профиль</button>
       </div>
     </div>
 
-    <!-- Subscription and Payment Settings -->
     <div class="settings-content">
       <h2 class="section-title">💳 Подписка и оплата</h2>
 
-      <!-- Current Plan Display -->
       <div class="current-plan-section">
         <div class="plan-info">
           <h3>Текущий тариф</h3>
@@ -86,6 +89,7 @@
               <p class="plan-description">{{ currentPlanDescription }}</p>
               <p v-if="storeSubscriptionDetails?.expiryDate" class="plan-expiry">
                 Активен до: {{ formatDate(storeSubscriptionDetails.expiryDate) }}
+                <span v-if="isSubscriptionExpiringSoon" class="expiry-warning"> (Осталось {{ daysUntilExpiry }} {{ daysUntilExpiryText }})</span>
               </p>
               <p v-if="hasPromocodeSubscription" class="plan-source">
                 🎟️ Активирован по промокоду: {{ lastAppliedPromocode?.code }}
@@ -95,91 +99,92 @@
         </div>
       </div>
 
-      <!-- Payment Options -->
       <div class="payment-options">
         <h3>Варианты оплаты</h3>
-        
-        <!-- Enhanced Promo Code Section -->
+
         <div class="promo-section">
           <h4>🎟️ Промокод</h4>
           <div class="promo-input-group">
             <div class="promo-code-input">
-              <input 
-                type="text" 
-                v-model="promoCode" 
+              <input
+                type="text"
+                v-model="promoCode"
                 placeholder="Введите промокод (например: ACED2024)"
-                :disabled="loading || isProcessingPromo"
+                :disabled="isAnyLoading || isProcessingPromo"
                 @keyup.enter="applyPromo"
                 @input="handlePromoCodeInput"
                 maxlength="20"
                 class="promo-input"
-                :class="{ 
+                :class="{
                   'promo-valid': promoValidation && promoValidation.valid,
                   'promo-invalid': promoValidation && !promoValidation.valid && promoCode.length > 3,
                   'promo-loading': isValidatingPromo
                 }"
               />
-              
-              <!-- Validation feedback -->
+
               <div v-if="isValidatingPromo" class="promo-validation promo-loading-message">
                 <div class="spinner-small"></div>
                 Проверка промокода...
               </div>
-              
+
               <div v-else-if="promoValidation && promoCode.length > 3" class="promo-validation">
                 <div v-if="promoValidation.valid" class="promo-valid-message">
-                  ✅ Промокод действителен! 
+                  ✅ Промокод действителен!
                   <br>
                   <strong>Предоставляет: {{ promoValidation.data?.grantsPlan?.toUpperCase() }} план</strong>
                   <br>
-                  <small>{{ promoValidation.data?.description }}</small>
+                  <small>
+                    {{ promoValidation.data?.description }}
+                    <span v-if="promoValidation.data?.subscriptionDays"> ({{ promoValidation.data.subscriptionDays }} дней)</span>
+                  </small>
                 </div>
                 <div v-else class="promo-invalid-message">
                   ❌ {{ promoValidation.error }}
                 </div>
               </div>
             </div>
-            
-            <select 
-              v-model="selectedPlan" 
-              :disabled="loading || isProcessingPromo" 
+
+            <select
+              v-model="selectedPlan"
+              :disabled="isAnyLoading || isProcessingPromo || (promoValidation && promoValidation.valid && promoValidation.data?.grantsPlan)"
               class="plan-select"
               @change="onPlanChange"
             >
               <option value="">Выберите тариф...</option>
-              <option value="start" :disabled="currentPlan === 'start' || currentPlan === 'pro'">
+              <option value="start" :disabled="currentPlan === 'start' || currentPlan === 'pro' || currentPlan === 'premium'">
                 Start (260,000 сум) {{ currentPlan === 'start' ? '- Уже активен' : '' }}
               </option>
-              <option value="pro" :disabled="currentPlan === 'pro'">
+              <option value="pro" :disabled="currentPlan === 'pro' || currentPlan === 'premium'">
                 Pro (455,000 сум) {{ currentPlan === 'pro' ? '- Уже активен' : '' }}
+              </option>
+              <option value="premium" :disabled="currentPlan === 'premium'">
+                Premium (600,000 сум) {{ currentPlan === 'premium' ? '- Уже активен' : '' }}
               </option>
             </select>
           </div>
-          
-          <!-- Plan compatibility warning -->
+
           <div v-if="planCompatibilityWarning" class="plan-warning">
             ⚠️ {{ planCompatibilityWarning }}
           </div>
-          
-          <button 
-            class="promo-button" 
+
+          <button
+            class="promo-button"
             @click="applyPromo"
-            :disabled="!canApplyPromo || isProcessingPromo"
-            :class="{ 
+            :disabled="!canApplyPromo || isProcessingPromo || isAnyLoading"
+            :class="{
               'promo-button-ready': canApplyPromo && !isProcessingPromo,
-              'promo-button-loading': isProcessingPromo 
+              'promo-button-loading': isProcessingPromo
             }"
           >
             {{ promoButtonText }}
           </button>
         </div>
 
-        <!-- Applied Promocodes History -->
         <div v-if="appliedPromocodes.length > 0" class="applied-promocodes">
           <h4>📋 История применённых промокодов</h4>
           <div class="promocodes-list">
-            <div 
-              v-for="promo in appliedPromocodes.slice(0, 3)" 
+            <div
+              v-for="promo in appliedPromocodes.slice(0, 3)"
               :key="promo.code + promo.appliedAt"
               class="promocode-item"
             >
@@ -194,24 +199,23 @@
           </div>
         </div>
 
-        <!-- Payment Plans -->
-        <div class="plans-section" :class="{ 'plans-disabled': hasPromocodeSubscription }">
+        <div class="plans-section" :class="{ 'plans-disabled': hasPromocodeSubscription && currentPlan !== 'free' }">
           <h4>💰 Выберите тариф для оплаты</h4>
-          
-          <div v-if="hasPromocodeSubscription" class="promocode-notice">
+
+          <div v-if="hasPromocodeSubscription && currentPlan !== 'free'" class="promocode-notice">
             <div class="notice-content">
-              🎉 У вас активна подписка по промокоду! 
+              🎉 У вас активна подписка по промокоду!
               <br>
               <small>Вы можете продлить подписку через оплату или применить новый промокод</small>
             </div>
           </div>
-          
+
           <div class="plans-grid">
-            <div 
-              class="plan-card" 
-              :class="{ 
-                active: paymentPlan === 'start', 
-                disabled: currentPlan === 'start' || currentPlan === 'pro',
+            <div
+              class="plan-card"
+              :class="{
+                active: paymentPlan === 'start',
+                disabled: currentPlan === 'start' || currentPlan === 'pro' || currentPlan === 'premium',
                 'current-plan': currentPlan === 'start'
               }"
               @click="selectPaymentPlan('start')"
@@ -232,12 +236,12 @@
                 ✅ Активен
               </div>
             </div>
-            
-            <div 
-              class="plan-card recommended" 
-              :class="{ 
-                active: paymentPlan === 'pro', 
-                disabled: currentPlan === 'pro',
+
+            <div
+              class="plan-card recommended"
+              :class="{
+                active: paymentPlan === 'pro',
+                disabled: currentPlan === 'pro' || currentPlan === 'premium',
                 'current-plan': currentPlan === 'pro'
               }"
               @click="selectPaymentPlan('pro')"
@@ -260,22 +264,21 @@
               </div>
             </div>
           </div>
-          
-          <button 
-            class="payment-button" 
+
+          <button
+            class="payment-button"
             @click="goToPayment"
-            :disabled="loading || !paymentPlan || (currentPlan !== 'free' && paymentPlan === currentPlan)"
+            :disabled="isAnyLoading || !paymentPlan || (currentPlan !== 'free' && paymentPlan === currentPlan) || (hasPromocodeSubscription && currentPlan !== 'free')"
           >
             {{ getPaymentButtonText() }}
           </button>
         </div>
 
-        <!-- Payment History -->
         <div v-if="storePaymentHistory.length > 0" class="payment-history">
           <h4>📊 История платежей</h4>
           <div class="history-list">
-            <div 
-              v-for="payment in storePaymentHistory" 
+            <div
+              v-for="payment in storePaymentHistory"
               :key="payment.id"
               class="payment-item"
             >
@@ -295,10 +298,9 @@
       </div>
     </div>
 
-    <!-- Usage Summary -->
     <div v-if="!isFreeUser" class="settings-content">
       <h2 class="section-title">📊 Использование</h2>
-      
+
       <div class="usage-summary">
         <div class="usage-item">
           <div class="usage-header">
@@ -311,7 +313,7 @@
             <div class="usage-fill" :style="{ width: messageUsagePercentage + '%' }"></div>
           </div>
         </div>
-        
+
         <div class="usage-item">
           <div class="usage-header">
             <span class="usage-label">Изображения</span>
@@ -326,13 +328,11 @@
       </div>
     </div>
 
-    <!-- Notification -->
     <div v-if="notification" class="notification" :class="notificationClass">
       <span class="notification-icon">{{ notificationIcon }}</span>
       {{ notification }}
     </div>
 
-    <!-- Loading Overlay -->
     <div v-if="loading" class="loading-overlay">
       <div class="spinner"></div>
       <p>{{ loadingText }}</p>
@@ -366,32 +366,35 @@ export default {
       confirmPassword: "",
       currentUser: null,
       isGoogleUser: false,
-      
-      // Payment data - removed currentPlan and subscriptionDetails from data
+
+      // Payment data
       promoCode: "",
-      selectedPlan: "",
-      paymentPlan: "",
-      
+      selectedPlan: "", // Selected plan for promo code or payment
+      paymentPlan: "",  // Selected plan for direct payment
+
       // Promocode validation
       promoValidation: null,
       promoValidationTimeout: null,
       isValidatingPromo: false,
       isProcessingPromo: false,
-      
+
       // UI state
-      loading: false,
+      loading: false, // General page loading
       loadingText: "",
       notification: "",
       notificationClass: "",
-      notificationIcon: ""
+      notificationIcon: "",
+
+      // Local storage check for Firebase user ID
+      firebaseUserIdFromLocalStorage: null,
     };
   },
-  
+
   computed: {
     // ✅ Use mapGetters for reactive store access
     ...mapGetters('user', [
       'userStatus',
-      'currentMonthUsage', 
+      'currentMonthUsage',
       'usageLimits',
       'messageUsagePercentage',
       'imageUsagePercentage',
@@ -400,66 +403,78 @@ export default {
       'hasPromocodeSubscription',
       'lastAppliedPromocode',
       'subscriptionDetails',
-      'paymentHistory'
+      'paymentHistory',
+      'isLoading', // From user store for granular loading states
+      'isSubscriptionExpiringSoon', // Added for expiry warning
+      'daysUntilExpiry' // Added for expiry warning
     ]),
-    
+
+    // Combine granular loading states into one for UI disable
+    isAnyLoading() {
+        return this.isLoading('status') || this.isLoading('usage') || this.isLoading('payments') || this.isLoading('saving');
+    },
+
     // ✅ Make currentPlan reactive to store changes
     currentPlan() {
       return this.userStatus || 'free';
     },
-    
+
     // ✅ Use computed names that don't conflict with mapGetters
     storeSubscriptionDetails() {
       return this.subscriptionDetails;
     },
-    
+
     storePaymentHistory() {
       return Array.isArray(this.paymentHistory) ? this.paymentHistory.slice(0, 5) : [];
     },
-    
+
     currentPlanLabel() {
       const labels = {
         pro: 'Pro',
-        start: 'Start', 
-        free: 'Free'
+        start: 'Start',
+        free: 'Free',
+        premium: 'Premium' // Added premium
       };
       return labels[this.currentPlan] || 'Free';
     },
-    
+
     currentPlanClass() {
       const classes = {
         pro: 'badge-pro',
         start: 'badge-start',
-        free: 'badge-free'
+        free: 'badge-free',
+        premium: 'badge-premium' // Added premium
       };
       return classes[this.currentPlan] || 'badge-free';
     },
-    
+
     currentPlanDescription() {
       const descriptions = {
         pro: 'Полный доступ ко всем курсам и функциям',
         start: 'Доступ к базовым курсам и безлимитным сообщениям',
-        free: 'Бесплатный доступ с ограниченным функционалом'
+        free: 'Бесплатный доступ с ограниченным функционалом',
+        premium: 'Максимальный доступ ко всем возможностям' // Added premium
       };
       return descriptions[this.currentPlan] || 'Бесплатный доступ';
     },
-    
+
     userId() {
-      return this.currentUser?.uid;
+      // Prioritize firebaseUserIdFromLocalStorage if available and matches current firebaseUser, else use currentUser.uid
+      return this.currentUser?.uid || this.firebaseUserIdFromLocalStorage;
     },
-    
+
     // Enhanced promocode validation computed properties
     canApplyPromo() {
-      return this.promoCode && 
-             this.promoCode.trim().length > 3 && 
-             this.selectedPlan && 
+      return this.promoCode &&
+             this.promoCode.trim().length > 3 &&
+             this.selectedPlan &&
              this.promoValidation &&
              this.promoValidation.valid === true &&
-             !this.loading &&
-             !this.isProcessingPromo &&
-             !this.planCompatibilityError;
+             !this.planCompatibilityError && // Check for plan compatibility
+             !this.isAnyLoading &&
+             !this.isProcessingPromo;
     },
-    
+
     promoButtonText() {
       if (this.isProcessingPromo) {
         return '⏳ Применение...';
@@ -484,34 +499,40 @@ export default {
       }
       return 'Применить промокод';
     },
-    
+
     // Plan compatibility checking
     planCompatibilityError() {
       if (!this.promoValidation || !this.promoValidation.valid || !this.selectedPlan) return false;
-      
+
       const promoGrantsPlan = this.promoValidation.data?.grantsPlan;
       if (promoGrantsPlan && promoGrantsPlan !== this.selectedPlan) {
         return true;
       }
-      
       return false;
     },
-    
+
     planCompatibilityWarning() {
       if (!this.planCompatibilityError) return null;
-      
+
       const promoGrantsPlan = this.promoValidation.data?.grantsPlan?.toUpperCase();
       return `Этот промокод предоставляет план "${promoGrantsPlan}", но вы выбрали "${this.selectedPlan.toUpperCase()}". Выберите правильный план.`;
+    },
+
+    daysUntilExpiryText() {
+      const days = this.daysUntilExpiry;
+      if (days === 1) return 'день';
+      if (days >= 2 && days <= 4) return 'дня';
+      return 'дней';
     }
   },
-  
+
   // ✅ Add watchers to respond to store changes
   watch: {
     userStatus: {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
           console.log(`👀 User status changed: ${oldStatus} → ${newStatus}`);
-          // Don't need to set this.currentPlan since it's computed now
+          // Force UI update
           this.$nextTick(() => {
             this.$forceUpdate();
           });
@@ -519,7 +540,7 @@ export default {
       },
       immediate: true
     },
-    
+
     subscriptionDetails: {
       handler(newDetails, oldDetails) {
         if (newDetails !== oldDetails) {
@@ -532,7 +553,7 @@ export default {
       deep: true,
       immediate: true
     },
-    
+
     appliedPromocodes: {
       handler(newPromocodes) {
         console.log('👀 Applied promocodes updated:', newPromocodes);
@@ -542,7 +563,7 @@ export default {
       },
       deep: true
     },
-    
+
     paymentHistory: {
       handler(newHistory) {
         console.log('👀 Payment history updated:', newHistory);
@@ -551,31 +572,73 @@ export default {
         });
       },
       deep: true
+    },
+    // Watch for currentUser changes to update local user data
+    currentUser: {
+      immediate: true,
+      handler(newVal) {
+        if (newVal) {
+          this.user.name = newVal.displayName || newVal.name || '';
+          this.user.surname = newVal.surname || ''; // Assuming surname might be on currentUser
+          this.user.email = newVal.email || '';
+          this.isGoogleUser = newVal.providerData[0]?.providerId === "google.com";
+          // Also set local storage firebaseUserId if currentUser is available
+          this.firebaseUserIdFromLocalStorage = newVal.uid;
+        } else {
+            // If currentUser becomes null, clear local user data
+            this.user = { name: "", surname: "", email: "" };
+            this.isGoogleUser = false;
+            this.firebaseUserIdFromLocalStorage = null;
+        }
+      }
     }
   },
-  
+
   async mounted() {
-    await this.initializeComponent();
+    // Listen for auth state changes immediately
+    onAuthStateChanged(auth, async (user) => {
+      this.currentUser = user;
+      if (user) {
+        this.firebaseUserIdFromLocalStorage = user.uid; // Ensure local ID is set
+      }
+      await this.initializeComponent();
+    });
   },
-  
+
   methods: {
     // ✅ Use mapActions for store methods
     ...mapActions('user', [
       'loadUserStatus',
-      'validatePromocode', 
-      'applyPromocode'
+      'validatePromocode',
+      'applyPromocode',
+      'updateUserProfile' // Map the action for user profile updates
     ]),
-    
+
+    // ===== INITIALIZATION =====
     async initializeComponent() {
       this.loading = true;
       this.loadingText = 'Загрузка настроек...';
-      
+
       try {
-        // Wait a bit for store to be available
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        await this.checkAuthState();
-        await this.loadInitialData();
+        // Wait a bit for store to be available and initial auth state to be processed
+        await new Promise(resolve => setTimeout(resolve, 300)); // Increased delay for more stability
+
+        // Ensure userId is set before loading data
+        if (!this.userId) {
+          console.warn('⚠️ No userId available, cannot load initial data from server.');
+          this.loading = false;
+          return;
+        }
+
+        await this.fetchUserData(); // Fetch user profile from Firestore
+
+        // Load store-managed data (status, usage, payments)
+        await Promise.allSettled([
+          this.loadUserStatus(), // Loads user status and subscription details
+          this.$store.dispatch('user/loadUsage'), // Load usage data
+          this.$store.dispatch('user/checkPendingPayments') // Check for pending payments
+        ]);
+
       } catch (error) {
         console.error('❌ Settings initialization error:', error);
         this.showNotification('Ошибка загрузки настроек', 'error');
@@ -583,197 +646,88 @@ export default {
         this.loading = false;
       }
     },
-    
-    async loadInitialData() {
-      try {
-        // ✅ Use store actions instead of direct API calls
-        if (this.$store && typeof this.loadUserStatus === 'function') {
-          await this.loadUserStatus();
-          console.log('✅ Store data loaded via actions');
-        } else {
-          console.warn('⚠️ Store actions not available, using fallback');
-        }
-      } catch (error) {
-        console.warn('⚠️ Failed to load initial data:', error);
-      }
-    },
-    
-    checkAuthState() {
-      return new Promise((resolve) => {
-        onAuthStateChanged(auth, async (user) => {
-          this.currentUser = user;
-          if (user) {
-            this.isGoogleUser = user.providerData[0]?.providerId === "google.com";
-            await this.fetchUserData();
-          }
-          resolve();
-        });
-      });
-    },
-    
+
+    // ===== DATA LOADING =====
     async fetchUserData() {
       try {
-        if (!this.currentUser) return;
-        
-        const userRef = doc(db, "users", this.currentUser.uid);
+        if (!this.userId) {
+            console.warn('⚠️ No userId for fetching user data from Firestore');
+            return;
+        }
+
+        const userRef = doc(db, "users", this.userId);
         const userDoc = await getDoc(userRef);
-        
+
         if (userDoc.exists()) {
-          this.user = userDoc.data();
+          const userDataFromFirestore = userDoc.data();
+          this.user.name = userDataFromFirestore.name || '';
+          this.user.surname = userDataFromFirestore.surname || '';
+          this.user.email = userDataFromFirestore.email || '';
+          console.log('✅ User data loaded from Firestore:', userDataFromFirestore.email);
         } else {
-          const newUserData = {
-            name: "Новый пользователь",
-            surname: "",
-            email: this.currentUser.email,
-          };
-          await setDoc(userRef, newUserData);
-          this.user = newUserData;
+          // If Firestore doc doesn't exist, use Firebase Auth data as fallback
+          if (this.currentUser) {
+            this.user.name = this.currentUser.displayName || this.currentUser.email?.split('@')[0] || '';
+            this.user.email = this.currentUser.email || '';
+            this.isGoogleUser = this.currentUser.providerData[0]?.providerId === "google.com";
+            console.log('⚠️ Firestore user doc not found, using Firebase Auth data');
+          } else {
+            console.warn('⚠️ No Firestore doc and no Firebase user to fallback data from.');
+          }
         }
       } catch (error) {
         console.error('❌ User data fetch error:', error);
         this.showNotification("Ошибка загрузки данных пользователя", 'error');
       }
     },
-    
+
     handlePromoCodeInput() {
       if (this.promoValidationTimeout) {
         clearTimeout(this.promoValidationTimeout);
       }
-      
+
       this.promoCode = this.promoCode.toUpperCase();
-      
+
       if (this.promoCode.length <= 3) {
         this.promoValidation = null;
         this.isValidatingPromo = false;
         return;
       }
-      
+
       this.isValidatingPromo = true;
-      
+
       this.promoValidationTimeout = setTimeout(() => {
         this.validatePromoCodeLocal();
       }, 800);
     },
-    
+
     async validatePromoCodeLocal() {
       if (!this.promoCode.trim() || this.promoCode.length <= 3) {
         this.promoValidation = null;
         this.isValidatingPromo = false;
         return;
       }
-      
+
       try {
         console.log('🔍 Validating promocode:', this.promoCode);
-        
-        let result = null;
-        
-        // ✅ Strategy 1: Try the store action first
-        if (typeof this.validatePromocode === 'function') {
-          try {
-            result = await this.validatePromocode(this.promoCode);
-            console.log('📦 Store validation result:', result);
-          } catch (storeError) {
-            console.warn('⚠️ Store validation failed:', storeError.message);
-            result = null;
-          }
-        }
-        
-        // Strategy 2: Direct API call if store failed or returned invalid result
-        if (!result || typeof result !== 'object' || result.valid === undefined) {
-          console.log('🔄 Trying direct API call...');
-          
-          try {
-            const promocodeCode = this.promoCode.trim().toUpperCase();
-            const endpoints = [
-              `/promocodes/validate/${promocodeCode}`,
-              `/api/promocodes/validate/${promocodeCode}`
-            ];
-            
-            const apiResult = await this.tryMultipleApiEndpoints(endpoints, {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-              }
-            });
-            
-            console.log('📡 API validation result:', apiResult);
-            
-            if (apiResult.success && apiResult.valid) {
-              result = {
-                valid: true,
-                data: apiResult.data,
-                message: `Промокод действителен! Предоставляет: ${apiResult.data.grantsPlan?.toUpperCase()} план`
-              };
-            } else {
-              result = {
-                valid: false,
-                error: apiResult.error || 'Промокод недействителен'
-              };
-            }
-          } catch (apiError) {
-            console.warn('⚠️ All API endpoints failed:', apiError.message);
-            result = {
-              valid: false,
-              error: 'Ошибка соединения с сервером'
-            };
-          }
-        }
-        
-        // Strategy 3: Hardcoded validation for common promocodes (fallback)
-        if (!result || (!result.valid && !result.error)) {
-          console.log('🔄 Using hardcoded validation fallback...');
-          
-          const hardcodedPromocodes = {
-            'ACEDPROMOCODE2406': { valid: true, grantsPlan: 'start', description: 'Start план доступ' },
-            'FREE2024': { valid: true, grantsPlan: 'start', description: 'Бесплатный Start план' },
-            'TESTCODE': { valid: true, grantsPlan: 'pro', description: 'Тестовый Pro план' },
-            'START2024': { valid: true, grantsPlan: 'start', description: 'Start план промо' },
-            'PRO2024': { valid: true, grantsPlan: 'pro', description: 'Pro план промо' }
-          };
-          
-          const promocodeUpper = this.promoCode.trim().toUpperCase();
-          const hardcodedData = hardcodedPromocodes[promocodeUpper];
-          
-          if (hardcodedData) {
-            result = {
-              valid: true,
-              data: {
-                code: promocodeUpper,
-                grantsPlan: hardcodedData.grantsPlan,
-                description: hardcodedData.description,
-                subscriptionDays: 30
-              },
-              message: `Промокод действителен! Предоставляет: ${hardcodedData.grantsPlan.toUpperCase()} план`
-            };
-            console.log('✅ Hardcoded validation successful:', promocodeUpper);
-          } else {
-            result = {
-              valid: false,
-              error: 'Промокод не найден'
-            };
-          }
-        }
-        
-        // Ensure result has the expected structure
+
+        const result = await this.validatePromocode(this.promoCode); // Using Vuex action
+
         this.promoValidation = {
           valid: result.valid || false,
           error: result.error || null,
           data: result.data || null,
           message: result.message || null
         };
-        
+
         if (this.promoValidation.valid && this.promoValidation.data) {
           console.log('✅ Valid promocode:', this.promoValidation.data);
-          
-          if (!this.selectedPlan && this.promoValidation.data.grantsPlan) {
+          // Auto-select the plan granted by the promocode if not already selected
+          if (!this.selectedPlan || this.selectedPlan !== this.promoValidation.data.grantsPlan) {
             this.selectedPlan = this.promoValidation.data.grantsPlan;
           }
-          
-          if (this.selectedPlan && this.promoValidation.data.grantsPlan && 
-              this.selectedPlan !== this.promoValidation.data.grantsPlan) {
-            console.warn('⚠️ Plan mismatch detected');
-          }
+          // Check for plan compatibility right away
+          this.onPlanChange();
         }
       } catch (error) {
         console.warn('⚠️ Promocode validation error:', error);
@@ -785,305 +739,63 @@ export default {
         this.isValidatingPromo = false;
       }
     },
-    
-    // Helper method to try multiple API URL patterns
-    async tryMultipleApiEndpoints(endpoints, options = {}) {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
-      
-      // Since VITE_API_BASE_URL is "https://api.aced.live/api", we need to be smarter about URL building
-      const isBaseUrlWithApi = baseUrl.endsWith('/api');
-      
-      for (const endpoint of endpoints) {
-        let urls = [];
-        
-        if (isBaseUrlWithApi) {
-          // Base URL already has /api, so don't add it again
-          urls = [
-            `${baseUrl}${endpoint}`, // https://api.aced.live/api + /payments/promo-code
-            `${baseUrl.replace('/api', '')}${endpoint}`, // https://api.aced.live + /payments/promo-code
-            `${baseUrl.replace('/api', '')}/api${endpoint}` // https://api.aced.live/api + /payments/promo-code
-          ];
-        } else {
-          // Base URL doesn't have /api
-          urls = [
-            `${baseUrl}${endpoint}`,
-            `${baseUrl}/api${endpoint}`,
-            `https://api.aced.live/api${endpoint}`
-          ];
-        }
-        
-        for (const url of urls) {
-          try {
-            console.log(`🔍 Trying URL: ${url}`);
-            const response = await fetch(url, options);
-            
-            if (response.ok) {
-              console.log(`✅ Success with URL: ${url}`);
-              return await response.json();
-            } else {
-              console.log(`❌ Failed with ${response.status}: ${url}`);
-              
-              // If it's a 400 error, let's log the error details
-              if (response.status === 400) {
-                try {
-                  const errorData = await response.json();
-                  console.log(`📋 400 Error details:`, errorData);
-                } catch (e) {
-                  console.log(`📋 400 Error (no JSON response)`);
-                }
-              }
-            }
-          } catch (error) {
-            console.log(`❌ Error with ${url}:`, error.message);
-            continue;
-          }
-        }
-      }
-      
-      throw new Error('All API endpoints failed');
-    },
-    
+
     onPlanChange() {
       if (this.promoValidation && this.promoValidation.valid && this.selectedPlan) {
         const promoGrantsPlan = this.promoValidation.data?.grantsPlan;
         if (promoGrantsPlan && promoGrantsPlan !== this.selectedPlan) {
           this.showNotification(
-            `Промокод предоставляет план "${promoGrantsPlan.toUpperCase()}", но вы выбрали "${this.selectedPlan.toUpperCase()}"`, 
+            `Промокод предоставляет план "${promoGrantsPlan.toUpperCase()}", но вы выбрали "${this.selectedPlan.toUpperCase()}"`,
             'warning'
           );
         }
       }
     },
-    
+
     async applyPromo() {
       if (!this.canApplyPromo) {
         this.showNotification('Проверьте данные и попробуйте снова', 'error');
         return;
       }
-      
+
       if (!this.userId) {
         this.showNotification("Ошибка авторизации", 'error');
         return;
       }
-      
+
       this.isProcessingPromo = true;
       this.loadingText = 'Применение промокода...';
-      
+
       try {
-        console.log('🎟️ Applying promocode:', {
-          userId: this.userId,
-          plan: this.selectedPlan,
-          code: this.promoCode
+        const result = await this.applyPromocode({ // Using Vuex action
+          promoCode: this.promoCode.trim(),
+          plan: this.selectedPlan
         });
-        
-        let result = null;
-        
-        // ✅ Strategy 1: Try the store action first
-        if (typeof this.applyPromocode === 'function') {
-          try {
-            result = await this.applyPromocode({
-              promoCode: this.promoCode.trim(),
-              plan: this.selectedPlan
-            });
-            console.log('📦 Store apply result:', result);
-          } catch (storeError) {
-            console.warn('⚠️ Store apply failed:', storeError.message);
-            result = null;
-          }
-        }
-        
-        // Strategy 2: Direct API call if store failed
-        if (!result || !result.success) {
-          console.log('🔄 Trying direct API apply...');
-          
-          try {
-            const requestData = {
-              userId: this.userId,
-              plan: this.selectedPlan,
-              promoCode: this.promoCode.trim().toUpperCase()
-            };
-            
-            console.log('📤 Request data:', requestData);
-            
-            const endpoints = [
-              `/payments/promo-code`
-            ];
-            
-            const apiResult = await this.tryMultipleApiEndpoints(endpoints, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-              },
-              body: JSON.stringify(requestData)
-            });
-            
-            console.log('📡 API apply result:', apiResult);
-            
-            if (apiResult.success) {
-              result = {
-                success: true,
-                message: apiResult.message || 'Промокод применён успешно!',
-                newPlan: this.selectedPlan,
-                subscriptionDetails: {
-                  plan: this.selectedPlan,
-                  appliedViaPromocode: true,
-                  promocode: this.promoCode.trim().toUpperCase(),
-                  activatedAt: new Date().toISOString(),
-                  source: 'promocode'
-                }
-              };
-            } else {
-              result = {
-                success: false,
-                error: apiResult.error || 'Не удалось применить промокод'
-              };
-            }
-          } catch (apiError) {
-            console.warn('⚠️ API apply failed:', apiError.message);
-            
-            // Let's try the emergency endpoint directly
-            try {
-              console.log('🔄 Trying emergency endpoint directly...');
-              
-              const emergencyUrl = 'https://api.aced.live/api/payments/promo-code';
-              const requestData = {
-                userId: this.userId,
-                plan: this.selectedPlan,
-                promoCode: this.promoCode.trim().toUpperCase()
-              };
-              
-              console.log('🚨 Emergency request to:', emergencyUrl);
-              console.log('🚨 Emergency data:', requestData);
-              
-              const emergencyResponse = await fetch(emergencyUrl, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json',
-                },
-                body: JSON.stringify(requestData)
-              });
-              
-              console.log('🚨 Emergency response status:', emergencyResponse.status);
-              
-              if (emergencyResponse.ok) {
-                const emergencyResult = await emergencyResponse.json();
-                console.log('🚨 Emergency success:', emergencyResult);
-                
-                result = {
-                  success: true,
-                  message: emergencyResult.message || 'Промокод применён успешно!',
-                  newPlan: this.selectedPlan,
-                  subscriptionDetails: {
-                    plan: this.selectedPlan,
-                    appliedViaPromocode: true,
-                    promocode: this.promoCode.trim().toUpperCase(),
-                    activatedAt: new Date().toISOString(),
-                    source: 'emergency-endpoint'
-                  }
-                };
-              } else {
-                const emergencyError = await emergencyResponse.json().catch(() => ({}));
-                console.log('🚨 Emergency error:', emergencyError);
-                
-                result = {
-                  success: false,
-                  error: emergencyError.error || `HTTP ${emergencyResponse.status} error`
-                };
-              }
-            } catch (emergencyError) {
-              console.warn('🚨 Emergency endpoint also failed:', emergencyError.message);
-              result = {
-                success: false,
-                error: 'Все попытки API не удались'
-              };
-            }
-          }
-        }
-        
-        // Strategy 3: Hardcoded success for valid promocodes (development/fallback)
-        if (!result || !result.success) {
-          console.log('🔄 Using hardcoded apply fallback...');
-          
-          const validPromocodes = ['ACEDPROMOCODE2406', 'FREE2024', 'TESTCODE', 'START2024', 'PRO2024', 'STA4CZWPY5'];
-          const promocodeUpper = this.promoCode.trim().toUpperCase();
-          
-          if (validPromocodes.includes(promocodeUpper)) {
-            // Simulate successful application
-            result = {
-              success: true,
-              message: `🎉 Промокод ${promocodeUpper} применён! Тариф обновлён: "${this.currentPlan.toUpperCase()}" → "${this.selectedPlan.toUpperCase()}"`,
-              newPlan: this.selectedPlan,
-              subscriptionDetails: {
-                plan: this.selectedPlan,
-                appliedViaPromocode: true,
-                promocode: promocodeUpper,
-                activatedAt: new Date().toISOString(),
-                source: 'hardcoded-fallback'
-              }
-            };
-            console.log('✅ Hardcoded apply successful for:', promocodeUpper);
-            
-            // ✅ Update the store using actions/mutations if available
-            if (this.$store && typeof this.$store.commit === 'function') {
-              try {
-                this.$store.commit('user/setUserStatus', this.selectedPlan);
-                this.$store.commit('user/setSubscriptionDetails', result.subscriptionDetails);
-                console.log('✅ Store updated with hardcoded result');
-              } catch (storeError) {
-                console.warn('⚠️ Could not update store:', storeError.message);
-              }
-            }
-          } else {
-            result = {
-              success: false,
-              error: 'Неверный промокод'
-            };
-          }
-        }
-        
-        console.log('🎟️ Final promocode result:', result);
-        
+
         if (result && result.success) {
-          const oldPlan = this.currentPlan;
-          
           this.promoCode = "";
           this.selectedPlan = "";
           this.promoValidation = null;
-          
           this.showNotification(
-            result.message || `🎉 Промокод применён! Тариф обновлён: "${oldPlan.toUpperCase()}" → "${result.newPlan.toUpperCase()}"`, 
+            result.message || `🎉 Промокод применён! Тариф обновлён: "${result.oldPlan.toUpperCase()}" → "${result.newPlan.toUpperCase()}"`,
             'success'
           );
-          
-          // ✅ Force reactivity update and reload store data
-          setTimeout(async () => {
-            try {
-              if (typeof this.loadUserStatus === 'function') {
-                await this.loadUserStatus();
-              }
-              this.$forceUpdate();
-            } catch (refreshError) {
-              console.warn('⚠️ Could not refresh user status:', refreshError);
-            }
-          }, 1000);
-          
         } else {
           this.showNotification(
-            result?.error || "❌ Не удалось применить промокод", 
+            result?.error || "❌ Не удалось применить промокод",
             'error'
           );
         }
-        
       } catch (error) {
-        console.error("❌ Promo code error:", error);
+        console.error("❌ Promo code application error:", error);
         this.showNotification(
-          'Произошла ошибка при применении промокода', 
+          'Произошла ошибка при применении промокода',
           'error'
         );
       } finally {
         this.isProcessingPromo = false;
+        // Force re-fetch user data to ensure everything is synced
+        await this.initializeComponent();
       }
     },
 
@@ -1091,46 +803,48 @@ export default {
     async saveChanges() {
       this.loading = true;
       this.loadingText = 'Сохранение изменений...';
-      
+
       try {
         // Validate input
         if (!this.user.name.trim()) {
           this.showNotification('Имя не может быть пустым', 'error');
           return;
         }
-        
+
         if (!this.user.email.trim()) {
           this.showNotification('Email не может быть пустым', 'error');
           return;
         }
-        
-        // Update profile in Firestore
-        if (this.currentUser) {
-          const userRef = doc(db, "users", this.currentUser.uid);
-          await updateDoc(userRef, {
-            name: this.user.name.trim(),
-            surname: this.user.surname.trim(),
-            email: this.user.email.trim(),
-            updatedAt: new Date()
-          });
-          
-          // Update email in Firebase Auth if changed
+
+        // Prepare data for backend update
+        const profileData = {
+          name: this.user.name.trim(),
+          surname: this.user.surname.trim(),
+          email: this.user.email.trim(),
+        };
+
+        // Update profile in Firestore and Firebase Auth
+        if (this.currentUser && this.userId) {
+          // Use Vuex action for profile update
+          await this.updateUserProfile({ userId: this.userId, profileData });
+
+          // Update email in Firebase Auth if changed (handled by Firebase in action)
           if (this.currentUser.email !== this.user.email.trim()) {
             await updateEmail(this.currentUser, this.user.email.trim());
           }
-          
+
           // Update password if provided
           if (!this.isGoogleUser && this.newPassword) {
             if (this.newPassword !== this.confirmPassword) {
               this.showNotification('Пароли не совпадают', 'error');
               return;
             }
-            
+
             if (this.newPassword.length < 6) {
               this.showNotification('Пароль должен содержать минимум 6 символов', 'error');
               return;
             }
-            
+
             // Reauthenticate before password change
             if (this.oldPassword) {
               const credential = EmailAuthProvider.credential(
@@ -1139,19 +853,21 @@ export default {
               );
               await reauthenticateWithCredential(this.currentUser, credential);
               await updatePassword(this.currentUser, this.newPassword);
-              
+
               // Clear password fields
               this.oldPassword = "";
               this.newPassword = "";
               this.confirmPassword = "";
             }
           }
-          
+
           this.showNotification('Профиль успешно обновлён', 'success');
+        } else {
+            this.showNotification('Пользователь не авторизован', 'error');
         }
       } catch (error) {
         console.error('❌ Save changes error:', error);
-        
+
         if (error.code === 'auth/wrong-password') {
           this.showNotification('Неверный текущий пароль', 'error');
         } else if (error.code === 'auth/email-already-in-use') {
@@ -1172,12 +888,12 @@ export default {
           this.showNotification('Введите email для сброса пароля', 'error');
           return;
         }
-        
+
         await sendPasswordResetEmail(auth, this.user.email);
         this.showNotification('Письмо для сброса пароля отправлено на ваш email', 'success');
       } catch (error) {
         console.error('❌ Password reset error:', error);
-        
+
         if (error.code === 'auth/user-not-found') {
           this.showNotification('Пользователь с таким email не найден', 'error');
         } else {
@@ -1191,23 +907,40 @@ export default {
     },
 
     selectPaymentPlan(plan) {
-      if (this.currentPlan === plan) return;
+      // Prevent selecting the current active plan directly for payment
+      if (this.currentPlan === plan && this.currentPlan !== 'free') {
+        this.paymentPlan = ''; // Deselect if already active
+        return;
+      }
       this.paymentPlan = plan;
     },
 
     async goToPayment() {
+      if (!this.paymentPlan) {
+        this.showNotification('Пожалуйста, выберите тариф для оплаты.', 'warning');
+        return;
+      }
       this.$router.push(`/payment?plan=${this.paymentPlan}`);
     },
 
     getPaymentButtonText() {
       if (!this.paymentPlan) return 'Выберите тариф';
-      if (this.currentPlan === this.paymentPlan) return 'Уже активен';
+      if (this.currentPlan === this.paymentPlan && this.currentPlan !== 'free') return '✅ Уже активен';
+      // If current plan is free, they can always upgrade.
+      // If they have a promocode subscription, the button should remain disabled
+      // unless they select a higher plan than their current promo plan,
+      // or if their current promo plan has expired.
+      if (this.hasPromocodeSubscription && this.currentPlan !== 'free' && this.paymentPlan === this.currentPlan) {
+          return '✅ Активен по промокоду'; // Indicate current plan is from promocode
+      }
       return `Оплатить ${this.paymentPlan.toUpperCase()}`;
     },
 
     formatDate(date) {
       if (!date) return '';
-      return new Date(date).toLocaleDateString('ru-RU');
+      // Ensure date is a valid object before calling toLocaleDateString
+      const d = new Date(date);
+      return isNaN(d.getTime()) ? '' : d.toLocaleDateString('ru-RU');
     },
 
     formatAmount(amount) {
@@ -1217,9 +950,10 @@ export default {
     getStatusClass(state) {
       const classes = {
         success: 'status-success',
+        completed: 'status-success', // Map 'completed' to success
         pending: 'status-warning',
         failed: 'status-error',
-        2: 'status-success',
+        2: 'status-success', // Example states from payment gateways
         1: 'status-warning',
         0: 'status-warning',
         '-1': 'status-error',
@@ -1231,21 +965,26 @@ export default {
     showNotification(message, type = 'info') {
       this.notification = message;
       this.notificationClass = `notification-${type}`;
-      
+
       const icons = {
         success: '✅',
         error: '❌',
         warning: '⚠️',
         info: 'ℹ️'
       };
-      
+
       this.notificationIcon = icons[type] || 'ℹ️';
-      
-      setTimeout(() => {
+
+      // Clear previous timeout to ensure notification stays for full duration
+      if (this._notificationTimeout) {
+        clearTimeout(this._notificationTimeout);
+      }
+
+      this._notificationTimeout = setTimeout(() => {
         this.notification = '';
         this.notificationClass = '';
         this.notificationIcon = '';
-      }, 5000);
+      }, 5000); // Notification disappears after 5 seconds
     }
   }
 }
