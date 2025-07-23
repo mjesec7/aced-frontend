@@ -84,11 +84,11 @@
             </span>
             <div class="plan-details">
               <p class="plan-description">{{ currentPlanDescription }}</p>
-              <p v-if="storeSubscriptionDetails?.expiryDate" class="plan-expiry">
-                Активен до: {{ formatDate(storeSubscriptionDetails.expiryDate) }}
+              <p v-if="subscriptionExpiryDate" class="plan-expiry">
+                Активен до: {{ formatDate(subscriptionExpiryDate) }}
               </p>
-              <p v-if="hasPromocodeSubscription" class="plan-source">
-                🎟️ Активирован по промокоду: {{ lastAppliedPromocode?.code }}
+              <p v-if="isPromocodeActive" class="plan-source">
+                🎟️ Активирован по промокоду: {{ lastPromocode?.code || 'N/A' }}
               </p>
             </div>
           </div>
@@ -175,17 +175,17 @@
         </div>
 
         <!-- Applied Promocodes History -->
-        <div v-if="appliedPromocodes.length > 0" class="applied-promocodes">
+        <div v-if="appliedPromocodesCount > 0" class="applied-promocodes">
           <h4>📋 История применённых промокодов</h4>
           <div class="promocodes-list">
             <div 
-              v-for="promo in appliedPromocodes.slice(0, 3)" 
-              :key="promo.code + promo.appliedAt"
+              v-for="promo in appliedPromocodesSlice" 
+              :key="promo.id || (promo.code + promo.appliedAt)"
               class="promocode-item"
             >
               <div class="promocode-info">
-                <span class="promocode-code">{{ promo.code }}</span>
-                <span class="promocode-plan">{{ promo.plan?.toUpperCase() }}</span>
+                <span class="promocode-code">{{ promo.code || 'N/A' }}</span>
+                <span class="promocode-plan">{{ (promo.plan || 'unknown').toUpperCase() }}</span>
               </div>
               <div class="promocode-date">
                 {{ formatDate(promo.appliedAt) }}
@@ -195,10 +195,10 @@
         </div>
 
         <!-- Payment Plans -->
-        <div class="plans-section" :class="{ 'plans-disabled': hasPromocodeSubscription }">
+        <div class="plans-section" :class="{ 'plans-disabled': isPromocodeActive }">
           <h4>💰 Выберите тариф для оплаты</h4>
           
-          <div v-if="hasPromocodeSubscription" class="promocode-notice">
+          <div v-if="isPromocodeActive" class="promocode-notice">
             <div class="notice-content">
               🎉 У вас активна подписка по промокоду! 
               <br>
@@ -271,23 +271,23 @@
         </div>
 
         <!-- Payment History -->
-        <div v-if="storePaymentHistory.length > 0" class="payment-history">
+        <div v-if="paymentHistoryCount > 0" class="payment-history">
           <h4>📊 История платежей</h4>
           <div class="history-list">
             <div 
-              v-for="payment in storePaymentHistory" 
-              :key="payment.id"
+              v-for="payment in paymentHistorySlice" 
+              :key="payment.id || payment._id || payment.timestamp"
               class="payment-item"
             >
               <div class="payment-info">
-                <span class="payment-id">{{ payment.id }}</span>
+                <span class="payment-id">{{ payment.id || payment._id || 'N/A' }}</span>
                 <span class="payment-amount">{{ formatAmount(payment.amount) }}</span>
               </div>
               <div class="payment-status">
-                <span :class="['status-badge', getStatusClass(payment.state)]">
-                  {{ payment.stateText }}
+                <span :class="['status-badge', getStatusClass(payment.state || payment.status)]">
+                  {{ payment.stateText || payment.statusText || 'Unknown' }}
                 </span>
-                <span class="payment-date">{{ formatDate(payment.timestamp) }}</span>
+                <span class="payment-date">{{ formatDate(payment.timestamp || payment.createdAt) }}</span>
               </div>
             </div>
           </div>
@@ -304,10 +304,10 @@
           <div class="usage-header">
             <span class="usage-label">Сообщения</span>
             <span class="usage-value">
-              {{ currentMonthUsage.messages }} / {{ usageLimits.messages === -1 ? '∞' : usageLimits.messages }}
+              {{ currentUsageMessages }} / {{ usageLimitsMessages === -1 ? '∞' : usageLimitsMessages }}
             </span>
           </div>
-          <div v-if="usageLimits.messages !== -1" class="usage-bar">
+          <div v-if="usageLimitsMessages !== -1" class="usage-bar">
             <div class="usage-fill" :style="{ width: messageUsagePercentage + '%' }"></div>
           </div>
         </div>
@@ -316,10 +316,10 @@
           <div class="usage-header">
             <span class="usage-label">Изображения</span>
             <span class="usage-value">
-              {{ currentMonthUsage.images }} / {{ usageLimits.images === -1 ? '∞' : usageLimits.images }}
+              {{ currentUsageImages }} / {{ usageLimitsImages === -1 ? '∞' : usageLimitsImages }}
             </span>
           </div>
-          <div v-if="usageLimits.images !== -1" class="usage-bar">
+          <div v-if="usageLimitsImages !== -1" class="usage-bar">
             <div class="usage-fill" :style="{ width: imageUsagePercentage + '%' }"></div>
           </div>
         </div>
@@ -340,7 +340,6 @@
   </div>
 </template>
 
-// FIXED AcedSettings.vue - Bulletproof array and object handling
 <script>
 import { auth, db } from "@/firebase";
 import { mapGetters, mapActions } from 'vuex';
@@ -384,59 +383,143 @@ export default {
       loadingText: "",
       notification: "",
       notificationClass: "",
-      notificationIcon: ""
+      notificationIcon: "",
+      
+      // Force reactivity keys
+      reactivityKey: 0,
+      lastUpdateTime: Date.now()
     };
   },
   
   computed: {
-    // ✅ BULLETPROOF: Use mapGetters with safe defaults
-    ...mapGetters('user', [
-      'userStatus',
-      'currentMonthUsage', 
-      'usageLimits',
-      'messageUsagePercentage',
-      'imageUsagePercentage',
-      'isFreeUser',
-      'appliedPromocodes',
-      'hasPromocodeSubscription',
-      'lastAppliedPromocode',
-      'subscriptionDetails',
-      'paymentHistory'
-    ]),
-    
-    // ✅ BULLETPROOF: Safe reactive current plan
+    // ✅ BULLETPROOF: Safe getter access with defaults
     currentPlan() {
-      return this.userStatus || 'free';
+      try {
+        return this.$store.getters['user/userStatus'] || 'free';
+      } catch (e) {
+        console.warn('⚠️ Error getting userStatus:', e);
+        return 'free';
+      }
     },
     
     // ✅ BULLETPROOF: Safe subscription details with null checks
-    storeSubscriptionDetails() {
-      const details = this.subscriptionDetails;
-      return (details && typeof details === 'object') ? details : {
-        plan: 'free',
-        status: 'inactive',
-        expiryDate: null
-      };
-    },
-    
-    // ✅ BULLETPROOF: Safe payment history with array checks
-    storePaymentHistory() {
-      const history = this.paymentHistory;
-      if (!Array.isArray(history)) {
-        console.warn('⚠️ Payment history is not an array:', history);
-        return [];
+    subscriptionDetails() {
+      try {
+        const details = this.$store.getters['user/subscriptionDetails'];
+        return (details && typeof details === 'object') ? details : {
+          plan: 'free',
+          status: 'inactive',
+          expiryDate: null,
+          source: null
+        };
+      } catch (e) {
+        console.warn('⚠️ Error getting subscriptionDetails:', e);
+        return { plan: 'free', status: 'inactive', expiryDate: null, source: null };
       }
-      return history.slice(0, 5);
     },
     
     // ✅ BULLETPROOF: Safe applied promocodes with array checks
-    safeAppliedPromocodes() {
-      const promocodes = this.appliedPromocodes;
-      if (!Array.isArray(promocodes)) {
-        console.warn('⚠️ Applied promocodes is not an array:', promocodes);
+    appliedPromocodes() {
+      try {
+        const promocodes = this.$store.getters['user/appliedPromocodes'];
+        return Array.isArray(promocodes) ? promocodes : [];
+      } catch (e) {
+        console.warn('⚠️ Error getting appliedPromocodes:', e);
         return [];
       }
-      return promocodes;
+    },
+    
+    appliedPromocodesCount() {
+      return this.appliedPromocodes.length;
+    },
+    
+    appliedPromocodesSlice() {
+      return this.appliedPromocodes.slice(0, 3);
+    },
+    
+    // ✅ BULLETPROOF: Safe payment history with array checks
+    paymentHistory() {
+      try {
+        const history = this.$store.getters['user/paymentHistory'];
+        return Array.isArray(history) ? history : [];
+      } catch (e) {
+        console.warn('⚠️ Error getting paymentHistory:', e);
+        return [];
+      }
+    },
+    
+    paymentHistoryCount() {
+      return this.paymentHistory.length;
+    },
+    
+    paymentHistorySlice() {
+      return this.paymentHistory.slice(0, 5);
+    },
+    
+    // ✅ BULLETPROOF: Safe usage data
+    currentUsage() {
+      try {
+        const usage = this.$store.getters['user/currentUsage'];
+        return (usage && typeof usage === 'object') ? usage : { messages: 0, images: 0 };
+      } catch (e) {
+        console.warn('⚠️ Error getting currentUsage:', e);
+        return { messages: 0, images: 0 };
+      }
+    },
+    
+    currentUsageMessages() {
+      return this.currentUsage.messages || 0;
+    },
+    
+    currentUsageImages() {
+      return this.currentUsage.images || 0;
+    },
+    
+    usageLimits() {
+      try {
+        const limits = this.$store.getters['user/usageLimits'];
+        return (limits && typeof limits === 'object') ? limits : { messages: 50, images: 5 };
+      } catch (e) {
+        console.warn('⚠️ Error getting usageLimits:', e);
+        return { messages: 50, images: 5 };
+      }
+    },
+    
+    usageLimitsMessages() {
+      return this.usageLimits.messages || 50;
+    },
+    
+    usageLimitsImages() {
+      return this.usageLimits.images || 5;
+    },
+    
+    messageUsagePercentage() {
+      const messages = this.currentUsageMessages;
+      const limit = this.usageLimitsMessages;
+      return (limit === -1) ? 0 : Math.min(100, Math.round((messages / limit) * 100));
+    },
+    
+    imageUsagePercentage() {
+      const images = this.currentUsageImages;
+      const limit = this.usageLimitsImages;
+      return (limit === -1) ? 0 : Math.min(100, Math.round((images / limit) * 100));
+    },
+    
+    // ✅ BULLETPROOF: User status properties
+    isFreeUser() {
+      return this.currentPlan === 'free';
+    },
+    
+    isPromocodeActive() {
+      return this.subscriptionDetails.source === 'promocode';
+    },
+    
+    subscriptionExpiryDate() {
+      return this.subscriptionDetails.expiryDate;
+    },
+    
+    lastPromocode() {
+      return this.appliedPromocodes.length > 0 ? this.appliedPromocodes[0] : null;
     },
     
     currentPlanLabel() {
@@ -527,74 +610,38 @@ export default {
     }
   },
   
-  // ✅ BULLETPROOF: Add watchers to respond to store changes with error handling
   watch: {
-    userStatus: {
+    // ✅ BULLETPROOF: Watch for user status changes
+    '$store.state.user.userStatus': {
       handler(newStatus, oldStatus) {
-        try {
-          if (newStatus !== oldStatus) {
-            console.log(`👀 User status changed: ${oldStatus} → ${newStatus}`);
-            this.$nextTick(() => {
-              this.$forceUpdate();
-            });
-          }
-        } catch (watchError) {
-          console.error('❌ Error in userStatus watcher:', watchError);
+        if (newStatus !== oldStatus) {
+          console.log(`👀 Watched userStatus change: ${oldStatus} → ${newStatus}`);
+          this.forceReactivityUpdate();
         }
       },
-      immediate: true
+      immediate: false
     },
     
-    subscriptionDetails: {
-      handler(newDetails, oldDetails) {
-        try {
-          if (newDetails !== oldDetails) {
-            console.log('👀 Subscription details updated:', newDetails);
-            this.$nextTick(() => {
-              this.$forceUpdate();
-            });
-          }
-        } catch (watchError) {
-          console.error('❌ Error in subscriptionDetails watcher:', watchError);
-        }
-      },
-      deep: true,
-      immediate: true
-    },
-    
-    appliedPromocodes: {
-      handler(newPromocodes) {
-        try {
-          // ✅ BULLETPROOF: Check if it's an array before logging
-          if (Array.isArray(newPromocodes)) {
-            console.log('👀 Applied promocodes updated:', newPromocodes.length, 'items');
-          } else {
-            console.warn('⚠️ Applied promocodes is not an array:', newPromocodes);
-          }
-          this.$nextTick(() => {
-            this.$forceUpdate();
-          });
-        } catch (watchError) {
-          console.error('❌ Error in appliedPromocodes watcher:', watchError);
+    // ✅ BULLETPROOF: Watch for applied promocodes changes
+    '$store.state.user.promocodes.applied': {
+      handler(newPromocodes, oldPromocodes) {
+        const newLength = Array.isArray(newPromocodes) ? newPromocodes.length : 0;
+        const oldLength = Array.isArray(oldPromocodes) ? oldPromocodes.length : 0;
+        
+        if (newLength !== oldLength) {
+          console.log(`👀 Applied promocodes changed: ${oldLength} → ${newLength}`);
+          this.forceReactivityUpdate();
         }
       },
       deep: true
     },
     
-    paymentHistory: {
-      handler(newHistory) {
-        try {
-          // ✅ BULLETPROOF: Check if it's an array before logging
-          if (Array.isArray(newHistory)) {
-            console.log('👀 Payment history updated:', newHistory.length, 'items');
-          } else {
-            console.warn('⚠️ Payment history is not an array:', newHistory);
-          }
-          this.$nextTick(() => {
-            this.$forceUpdate();
-          });
-        } catch (watchError) {
-          console.error('❌ Error in paymentHistory watcher:', watchError);
+    // ✅ BULLETPROOF: Watch for subscription details changes
+    '$store.state.user.subscription': {
+      handler(newSub, oldSub) {
+        if (newSub !== oldSub) {
+          console.log('👀 Subscription details changed');
+          this.forceReactivityUpdate();
         }
       },
       deep: true
@@ -603,6 +650,11 @@ export default {
   
   async mounted() {
     await this.initializeComponent();
+    this.setupEventListeners();
+  },
+  
+  beforeUnmount() {
+    this.cleanup();
   },
   
   methods: {
@@ -610,7 +662,8 @@ export default {
     ...mapActions('user', [
       'loadUserStatus',
       'validatePromocode', 
-      'applyPromocode'
+      'applyPromocode',
+      'forceUpdate'
     ]),
     
     async initializeComponent() {
@@ -618,9 +671,6 @@ export default {
       this.loadingText = 'Загрузка настроек...';
       
       try {
-        // Wait a bit for store to be available
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
         await this.checkAuthState();
         await this.loadInitialData();
       } catch (error) {
@@ -633,7 +683,6 @@ export default {
     
     async loadInitialData() {
       try {
-        // ✅ BULLETPROOF: Check if store actions are available
         if (this.$store && typeof this.loadUserStatus === 'function') {
           await this.loadUserStatus();
           console.log('✅ Store data loaded via actions');
@@ -682,6 +731,53 @@ export default {
       }
     },
     
+    setupEventListeners() {
+      // ✅ Listen for global user status changes
+      if (typeof window !== 'undefined' && window.eventBus) {
+        window.eventBus.on('userStatusChanged', this.onUserStatusChanged);
+        window.eventBus.on('promocodeApplied', this.onPromocodeApplied);
+        window.eventBus.on('forceUpdate', this.onForceUpdate);
+      }
+    },
+    
+    cleanup() {
+      if (this.promoValidationTimeout) {
+        clearTimeout(this.promoValidationTimeout);
+      }
+      
+      // Remove event listeners
+      if (typeof window !== 'undefined' && window.eventBus) {
+        window.eventBus.off('userStatusChanged', this.onUserStatusChanged);
+        window.eventBus.off('promocodeApplied', this.onPromocodeApplied);
+        window.eventBus.off('forceUpdate', this.onForceUpdate);
+      }
+    },
+    
+    // ✅ BULLETPROOF: Event handlers
+    onUserStatusChanged(data) {
+      console.log('📡 Received userStatusChanged event:', data);
+      this.forceReactivityUpdate();
+    },
+    
+    onPromocodeApplied(data) {
+      console.log('📡 Received promocodeApplied event:', data);
+      this.forceReactivityUpdate();
+      this.showNotification(`✅ Промокод применён! Новый статус: ${data.newStatus?.toUpperCase()}`, 'success');
+    },
+    
+    onForceUpdate(data) {
+      console.log('📡 Received forceUpdate event:', data);
+      this.forceReactivityUpdate();
+    },
+    
+    forceReactivityUpdate() {
+      this.reactivityKey++;
+      this.lastUpdateTime = Date.now();
+      this.$nextTick(() => {
+        this.$forceUpdate();
+      });
+    },
+    
     handlePromoCodeInput() {
       if (this.promoValidationTimeout) {
         clearTimeout(this.promoValidationTimeout);
@@ -714,7 +810,7 @@ export default {
         
         let result = null;
         
-        // ✅ BULLETPROOF: Try the store action first with error handling
+        // Try the store action first with error handling
         if (typeof this.validatePromocode === 'function') {
           try {
             result = await this.validatePromocode(this.promoCode);
@@ -1070,8 +1166,13 @@ export default {
             // ✅ BULLETPROOF: Update the store using actions/mutations if available
             if (this.$store && typeof this.$store.commit === 'function') {
               try {
-                this.$store.commit('user/setUserStatus', this.selectedPlan);
-                this.$store.commit('user/setSubscriptionDetails', result.subscriptionDetails);
+                this.$store.commit('user/SET_USER_STATUS', this.selectedPlan);
+                this.$store.commit('user/UPDATE_SUBSCRIPTION', result.subscriptionDetails);
+                this.$store.commit('user/ADD_PROMOCODE', {
+                  code: promocodeUpper,
+                  plan: this.selectedPlan,
+                  oldPlan: this.currentPlan
+                });
                 console.log('✅ Store updated with hardcoded result');
               } catch (storeError) {
                 console.warn('⚠️ Could not update store:', storeError.message);
@@ -1100,12 +1201,17 @@ export default {
           );
           
           // ✅ BULLETPROOF: Force reactivity update and reload store data
+          this.forceReactivityUpdate();
+          
           setTimeout(async () => {
             try {
               if (typeof this.loadUserStatus === 'function') {
                 await this.loadUserStatus();
               }
-              this.$forceUpdate();
+              if (typeof this.forceUpdate === 'function') {
+                await this.forceUpdate();
+              }
+              this.forceReactivityUpdate();
             } catch (refreshError) {
               console.warn('⚠️ Could not refresh user status:', refreshError);
             }
@@ -1271,6 +1377,7 @@ export default {
         success: 'status-success',
         pending: 'status-warning',
         failed: 'status-error',
+        completed: 'status-success',
         2: 'status-success',
         1: 'status-warning',
         0: 'status-warning',
