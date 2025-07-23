@@ -1,254 +1,458 @@
-// src/store/user.js - COMPLETE USER STORE WITH PROMOCODE INTEGRATION
+// src/store/user.js - REDESIGNED USER STORE WITH GLOBAL REACTIVITY
 import { checkPaymentStatus } from '@/api/payments';
 import { getUserUsage, resetMonthlyUsage } from '@/services/GPTService';
 
+// ✅ CENTRALIZED STATE MANAGEMENT
 const state = () => ({
+  // Core user data
   currentUser: null,
   userStatus: 'free', // 'free', 'start', 'pro', 'premium'
-  subscriptionDetails: null,
-  paymentHistory: [],
-  lastPaymentCheck: null,
   
-  // Monthly usage tracking
-  currentMonthUsage: {
-    messages: 0,
-    images: 0,
-    lastUpdated: null
+  // Subscription management
+  subscription: {
+    plan: 'free',
+    status: 'inactive', // 'active', 'inactive', 'expired', 'trial'
+    source: null, // 'payment', 'promocode', 'trial'
+    startDate: null,
+    expiryDate: null,
+    isAutoRenew: false,
+    details: {}
   },
-  usageHistory: [], // Last 6 months
-  lastUsageCheck: null,
-  usageLimits: {
-    free: { messages: 50, images: 5 },
-    start: { messages: -1, images: 20 },
-    pro: { messages: -1, images: -1 }
-  },
-
-  // Enhanced subscription tracking
-  subscriptionExpiry: null,
-  subscriptionStartDate: null,
-  isTrialUser: false,
-  trialDaysRemaining: 0,
   
-  // Feature access cache
-  featureAccess: {
+  // Usage tracking
+  usage: {
+    current: { messages: 0, images: 0, lastUpdated: null },
+    limits: {
+      free: { messages: 50, images: 5 },
+      start: { messages: -1, images: 20 },
+      pro: { messages: -1, images: -1 }
+    },
+    history: []
+  },
+  
+  // Feature access matrix
+  features: {
     vocabulary: false,
     analytics: false,
     unlimited_lessons: false,
     priority_support: false,
     custom_courses: false,
-    offline_mode: false
+    offline_mode: false,
+    export_progress: false
   },
-
+  
+  // Promocodes tracking
+  promocodes: {
+    applied: [],
+    lastCheck: null
+  },
+  
+  // Payment history
+  payments: {
+    history: [],
+    pending: [],
+    lastCheck: null
+  },
+  
   // User preferences
   preferences: {
     language: 'ru',
+    theme: 'light',
     notifications: true,
-    emailUpdates: false,
-    theme: 'light'
+    emailUpdates: false
   },
-
-  // ✅ NEW: Promocode tracking
-  appliedPromocodes: [], // Track applied promocodes
-  lastPromocodeCheck: null
+  
+  // System state
+  system: {
+    initialized: false,
+    lastUpdate: null,
+    forceUpdateCounter: 0,
+    loading: {
+      status: false,
+      usage: false,
+      payments: false
+    }
+  }
 });
 
+// ✅ MUTATION HANDLERS
 const mutations = {
-  setUser(state, user) {
+  // ==================================================
+  // CORE USER MUTATIONS
+  // ==================================================
+  
+  SET_USER(state, user) {
     state.currentUser = user;
-    // Store in localStorage for persistence
+    state.system.lastUpdate = Date.now();
+    
     if (user) {
       localStorage.setItem('currentUser', JSON.stringify(user));
+      console.log('👤 User set:', user.email);
     }
   },
   
-  clearUser(state) {
+  CLEAR_USER(state) {
     state.currentUser = null;
     state.userStatus = 'free';
-    state.subscriptionDetails = null;
-    state.paymentHistory = [];
-    state.lastPaymentCheck = null;
-    state.currentMonthUsage = { messages: 0, images: 0, lastUpdated: null };
-    state.usageHistory = [];
-    state.lastUsageCheck = null;
-    state.subscriptionExpiry = null;
-    state.subscriptionStartDate = null;
-    state.isTrialUser = false;
-    state.trialDaysRemaining = 0;
-    state.featureAccess = {
+    state.subscription = {
+      plan: 'free',
+      status: 'inactive',
+      source: null,
+      startDate: null,
+      expiryDate: null,
+      isAutoRenew: false,
+      details: {}
+    };
+    state.usage.current = { messages: 0, images: 0, lastUpdated: null };
+    state.features = {
       vocabulary: false,
       analytics: false,
       unlimited_lessons: false,
       priority_support: false,
       custom_courses: false,
-      offline_mode: false
+      offline_mode: false,
+      export_progress: false
     };
-    state.appliedPromocodes = [];
-    state.lastPromocodeCheck = null;
+    state.promocodes.applied = [];
+    state.payments.history = [];
+    state.payments.pending = [];
+    state.system.initialized = false;
+    state.system.lastUpdate = Date.now();
+    state.system.forceUpdateCounter++;
     
     // Clear localStorage
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('userStatus');
-    localStorage.removeItem('subscriptionDetails');
-    localStorage.removeItem('appliedPromocodes');
+    ['currentUser', 'userStatus', 'subscriptionDetails', 'appliedPromocodes'].forEach(key => {
+      localStorage.removeItem(key);
+    });
+    
+    console.log('🧹 User data cleared');
+    triggerGlobalEvent('userCleared', { timestamp: Date.now() });
   },
   
-  setUserStatus(state, status) {
+  // ==================================================
+  // SUBSCRIPTION STATUS MUTATIONS
+  // ==================================================
+  
+  SET_USER_STATUS(state, status) {
     const oldStatus = state.userStatus;
     state.userStatus = status;
+    state.subscription.plan = status;
+    state.system.lastUpdate = Date.now();
+    state.system.forceUpdateCounter++;
+    
+    // Update feature access
+    updateFeatureMatrix(state);
+    
+    // Persist to localStorage
+    localStorage.setItem('userStatus', status);
+    
+    console.log(`🔄 Status updated: ${oldStatus} → ${status}`);
+    
+    // Trigger global events
+    triggerGlobalEvent('userStatusChanged', {
+      oldStatus,
+      newStatus: status,
+      timestamp: Date.now(),
+      features: { ...state.features }
+    });
+  },
+
+  // ✅ ENHANCED: setUserStatus with manual reactivity triggers
+  setUserStatus(state, status) {
+    const oldStatus = state.userStatus;
+    
+    // ✅ Use direct assignment (Vue 3) - guaranteed reactivity
+    state.userStatus = status;
+    state.subscription.plan = status;
+    state.system.lastUpdate = Date.now();
+    state.system.forceUpdateCounter++;
     
     // Store in localStorage
     localStorage.setItem('userStatus', status);
     
     // Update feature access when status changes
-    updateFeatureAccess(state);
+    updateFeatureMatrix(state);
     
     console.log(`🔄 User status updated: ${oldStatus} → ${status}`);
-  },
-  
-  setSubscriptionDetails(state, details) {
-    state.subscriptionDetails = details;
     
-    if (details) {
-      if (details.expiryDate) {
-        state.subscriptionExpiry = details.expiryDate;
-      }
-      if (details.startDate) {
-        state.subscriptionStartDate = details.startDate;
-      }
-      if (details.isTrial !== undefined) {
-        state.isTrialUser = details.isTrial;
-      }
-      if (details.trialDaysRemaining !== undefined) {
-        state.trialDaysRemaining = details.trialDaysRemaining;
+    // ✅ NEW: Trigger reactivity manually if needed
+    if (typeof window !== 'undefined') {
+      // Vue 3 nextTick
+      if (window.Vue?.nextTick) {
+        window.Vue.nextTick(() => {
+          console.log('🔄 Forced Vue reactivity update');
+        });
       }
       
-      // Store in localStorage
-      localStorage.setItem('subscriptionDetails', JSON.stringify(details));
+      // Alternative: trigger custom DOM event for manual reactivity
+      const reactivityEvent = new CustomEvent('vueReactivityUpdate', {
+        detail: { mutation: 'setUserStatus', oldStatus, newStatus: status }
+      });
+      window.dispatchEvent(reactivityEvent);
     }
+    
+    // Trigger global events
+    triggerGlobalEvent('userStatusChanged', {
+      oldStatus,
+      newStatus: status,
+      timestamp: Date.now(),
+      features: { ...state.features }
+    });
   },
   
-  addPaymentRecord(state, payment) {
-    // Add payment to history (keep last 10)
-    state.paymentHistory.unshift(payment);
-    if (state.paymentHistory.length > 10) {
-      state.paymentHistory = state.paymentHistory.slice(0, 10);
+  UPDATE_SUBSCRIPTION(state, subscriptionData) {
+    state.subscription = { ...state.subscription, ...subscriptionData };
+    state.system.lastUpdate = Date.now();
+    
+    if (subscriptionData.plan && subscriptionData.plan !== state.userStatus) {
+      mutations.SET_USER_STATUS(state, subscriptionData.plan);
     }
+    
+    localStorage.setItem('subscriptionDetails', JSON.stringify(state.subscription));
   },
   
-  updateLastPaymentCheck(state, timestamp) {
-    state.lastPaymentCheck = timestamp;
-  },
+  // ==================================================
+  // USAGE TRACKING MUTATIONS
+  // ==================================================
   
-  updateUserProfile(state, profileData) {
-    if (state.currentUser) {
-      state.currentUser = { ...state.currentUser, ...profileData };
-      localStorage.setItem('currentUser', JSON.stringify(state.currentUser));
-    }
-  },
-  
-  // Usage tracking mutations
-  setCurrentMonthUsage(state, usage) {
-    state.currentMonthUsage = {
-      ...usage,
+  SET_USAGE(state, usageData) {
+    state.usage.current = {
+      ...usageData,
       lastUpdated: new Date().toISOString()
     };
+    state.system.lastUpdate = Date.now();
   },
   
-  incrementUsage(state, { messages = 0, images = 0 }) {
-    state.currentMonthUsage.messages += messages;
-    state.currentMonthUsage.images += images;
-    state.currentMonthUsage.lastUpdated = new Date().toISOString();
+  INCREMENT_USAGE(state, { messages = 0, images = 0 }) {
+    state.usage.current.messages += messages;
+    state.usage.current.images += images;
+    state.usage.current.lastUpdated = new Date().toISOString();
+    state.system.lastUpdate = Date.now();
+    
+    triggerGlobalEvent('usageUpdated', {
+      usage: { ...state.usage.current },
+      limits: getCurrentLimits(state)
+    });
   },
   
-  resetCurrentMonthUsage(state) {
-    state.currentMonthUsage = {
+  RESET_USAGE(state) {
+    state.usage.current = {
       messages: 0,
       images: 0,
       lastUpdated: new Date().toISOString()
     };
+    state.system.lastUpdate = Date.now();
+    
+    console.log('🔄 Monthly usage reset');
   },
   
-  setUsageHistory(state, history) {
-    state.usageHistory = history;
+  SET_USAGE_LIMITS(state, limits) {
+    state.usage.limits = { ...state.usage.limits, ...limits };
   },
   
-  updateLastUsageCheck(state, timestamp) {
-    state.lastUsageCheck = timestamp;
-  },
+  // ==================================================
+  // FEATURE ACCESS MUTATIONS
+  // ==================================================
   
-  setUsageLimits(state, limits) {
-    state.usageLimits = { ...state.usageLimits, ...limits };
-  },
-
-  // Feature access mutations
-  setFeatureAccess(state, { feature, hasAccess }) {
-    state.featureAccess[feature] = hasAccess;
-  },
-
-  updateAllFeatureAccess(state) {
-    updateFeatureAccess(state);
-  },
-
-  // Preferences mutations
-  setPreferences(state, preferences) {
-    state.preferences = { ...state.preferences, ...preferences };
-  },
-
-  updatePreference(state, { key, value }) {
-    state.preferences[key] = value;
-  },
-
-  // Subscription expiry mutations
-  setSubscriptionExpiry(state, expiry) {
-    state.subscriptionExpiry = expiry;
-    if (expiry) {
-      localStorage.setItem('subscriptionExpiry', expiry);
+  UPDATE_FEATURES(state, features = {}) {
+    if (Object.keys(features).length > 0) {
+      state.features = { ...state.features, ...features };
+    } else {
+      updateFeatureMatrix(state);
     }
+    
+    state.system.lastUpdate = Date.now();
+    state.system.forceUpdateCounter++;
+    
+    triggerGlobalEvent('featuresUpdated', {
+      features: { ...state.features },
+      userStatus: state.userStatus
+    });
   },
-
-  setTrialInfo(state, { isTrialUser, trialDaysRemaining }) {
-    state.isTrialUser = isTrialUser;
-    state.trialDaysRemaining = trialDaysRemaining;
-  },
-
-  // ✅ NEW: Promocode mutations
-  addAppliedPromocode(state, promocodeData) {
+  
+  // ==================================================
+  // PROMOCODE MUTATIONS
+  // ==================================================
+  
+  ADD_PROMOCODE(state, promocodeData) {
     const promocode = {
-      code: promocodeData.code,
-      plan: promocodeData.plan,
+      ...promocodeData,
       appliedAt: new Date().toISOString(),
-      subscriptionDays: promocodeData.subscriptionDays || 30,
-      ...promocodeData
+      id: Date.now().toString()
     };
     
-    state.appliedPromocodes.unshift(promocode);
+    state.promocodes.applied.unshift(promocode);
     
-    // Keep only last 10 applied promocodes
-    if (state.appliedPromocodes.length > 10) {
-      state.appliedPromocodes = state.appliedPromocodes.slice(0, 10);
+    // Keep only last 10
+    if (state.promocodes.applied.length > 10) {
+      state.promocodes.applied = state.promocodes.applied.slice(0, 10);
     }
     
-    // Store in localStorage
-    localStorage.setItem('appliedPromocodes', JSON.stringify(state.appliedPromocodes));
+    localStorage.setItem('appliedPromocodes', JSON.stringify(state.promocodes.applied));
+    
+    console.log('🎟️ Promocode added:', promocode.code);
+    
+    triggerGlobalEvent('promocodeApplied', {
+      promocode,
+      newStatus: promocodeData.plan
+    });
+  },
+  
+  // ==================================================
+  // PAYMENT MUTATIONS
+  // ==================================================
+  
+  ADD_PAYMENT(state, payment) {
+    state.payments.history.unshift(payment);
+    
+    // Keep only last 20 payments
+    if (state.payments.history.length > 20) {
+      state.payments.history = state.payments.history.slice(0, 20);
+    }
+    
+    state.system.lastUpdate = Date.now();
+  },
+  
+  SET_PENDING_PAYMENTS(state, pendingIds) {
+    state.payments.pending = pendingIds;
+    state.payments.lastCheck = Date.now();
+  },
+  
+  // ==================================================
+  // PREFERENCES MUTATIONS
+  // ==================================================
+  
+  SET_PREFERENCES(state, preferences) {
+    state.preferences = { ...state.preferences, ...preferences };
+    localStorage.setItem('userPreferences', JSON.stringify(state.preferences));
+  },
+  
+  UPDATE_PREFERENCE(state, { key, value }) {
+    state.preferences[key] = value;
+    localStorage.setItem('userPreferences', JSON.stringify(state.preferences));
+  },
+  
+  // ==================================================
+  // SYSTEM MUTATIONS
+  // ==================================================
+  
+  SET_LOADING(state, { type, loading }) {
+    state.system.loading[type] = loading;
+  },
+  
+  SET_INITIALIZED(state, initialized = true) {
+    state.system.initialized = initialized;
+    state.system.lastUpdate = Date.now();
+    
+    if (initialized) {
+      console.log('✅ User store initialized');
+      triggerGlobalEvent('storeInitialized', {
+        userStatus: state.userStatus,
+        features: { ...state.features }
+      });
+    }
+  },
+  
+  FORCE_UPDATE(state) {
+    state.system.forceUpdateCounter++;
+    state.system.lastUpdate = Date.now();
+    
+    triggerGlobalEvent('forceUpdate', {
+      counter: state.system.forceUpdateCounter,
+      timestamp: Date.now()
+    });
+    
+    console.log('🔄 Forced global update:', state.system.forceUpdateCounter);
   },
 
-  updateLastPromocodeCheck(state, timestamp) {
-    state.lastPromocodeCheck = timestamp;
-  }
+  // ✅ NEW: Enhanced force component updates mutation
+  forceGlobalUpdate(state) {
+    // Trigger a dummy reactive update
+    state.system.lastUpdate = Date.now();
+    state.system.forceUpdateCounter++;
+    
+    // ✅ Force reactivity in multiple ways
+    if (typeof window !== 'undefined') {
+      // Method 1: Vue nextTick
+      if (window.Vue?.nextTick) {
+        window.Vue.nextTick(() => {
+          console.log('🔄 Vue nextTick triggered for global update');
+        });
+      }
+      
+      // Method 2: Custom DOM event for manual component updates
+      const forceUpdateEvent = new CustomEvent('forceComponentUpdate', {
+        detail: { 
+          counter: state.system.forceUpdateCounter,
+          timestamp: Date.now(),
+          reason: 'manual_force_update'
+        }
+      });
+      window.dispatchEvent(forceUpdateEvent);
+      
+      // Method 3: Event bus emission
+      if (window.eventBus?.emit) {
+        window.eventBus.emit('forceGlobalUpdate', {
+          counter: state.system.forceUpdateCounter,
+          timestamp: Date.now()
+        });
+      }
+      
+      // Method 4: Direct component force update (if app instance available)
+      if (window.$app?.$forceUpdate) {
+        window.$app.$forceUpdate();
+      }
+    }
+    
+    console.log('🔄 Forced global component update triggered:', state.system.forceUpdateCounter);
+  },
+
+  // ✅ NEW: Enhanced feature access update with reactivity
+  updateAllFeatureAccess(state) {
+    updateFeatureMatrix(state);
+    state.system.forceUpdateCounter++;
+    state.system.lastUpdate = Date.now();
+    
+    // ✅ Trigger reactivity for feature changes
+    if (typeof window !== 'undefined') {
+      const featureUpdateEvent = new CustomEvent('featureAccessUpdated', {
+        detail: { 
+          features: { ...state.features }, 
+          userStatus: state.userStatus,
+          timestamp: Date.now()
+        }
+      });
+      window.dispatchEvent(featureUpdateEvent);
+      
+      // Vue reactivity trigger
+      if (window.Vue?.nextTick) {
+        window.Vue.nextTick(() => {
+          console.log('🔧 Feature access reactivity update completed');
+        });
+      }
+    }
+    
+    triggerGlobalEvent('featuresUpdated', {
+      features: { ...state.features },
+      userStatus: state.userStatus,
+      timestamp: Date.now()
+    });
+    
+    console.log('🔧 All feature access updated with reactivity');
+  },
 };
 
-// Helper function to update feature access based on user status
-const updateFeatureAccess = (state) => {
-  const status = state.userStatus;
-  
-  const featureMap = {
+// ✅ HELPER FUNCTIONS
+const updateFeatureMatrix = (state) => {
+  const featureMatrix = {
     free: {
       vocabulary: false,
       analytics: false,
       unlimited_lessons: false,
       priority_support: false,
       custom_courses: false,
-      offline_mode: false
+      offline_mode: false,
+      export_progress: false
     },
     start: {
       vocabulary: true,
@@ -256,7 +460,8 @@ const updateFeatureAccess = (state) => {
       unlimited_lessons: false,
       priority_support: true,
       custom_courses: false,
-      offline_mode: true
+      offline_mode: true,
+      export_progress: false
     },
     pro: {
       vocabulary: true,
@@ -264,7 +469,8 @@ const updateFeatureAccess = (state) => {
       unlimited_lessons: true,
       priority_support: true,
       custom_courses: true,
-      offline_mode: true
+      offline_mode: true,
+      export_progress: true
     },
     premium: {
       vocabulary: true,
@@ -272,898 +478,625 @@ const updateFeatureAccess = (state) => {
       unlimited_lessons: true,
       priority_support: true,
       custom_courses: true,
-      offline_mode: true
+      offline_mode: true,
+      export_progress: true
     }
   };
   
-  state.featureAccess = { ...featureMap[status] || featureMap.free };
+  state.features = { ...featureMatrix[state.userStatus] || featureMatrix.free };
+  console.log(`🔧 Features updated for ${state.userStatus}:`, state.features);
 };
 
-// Helper function to get user token
+const getCurrentLimits = (state) => {
+  return state.usage.limits[state.userStatus] || state.usage.limits.free;
+};
+
+const triggerGlobalEvent = (eventName, data = {}) => {
+  if (typeof window !== 'undefined') {
+    // Custom DOM event
+    const event = new CustomEvent(eventName, { detail: data });
+    window.dispatchEvent(event);
+    
+    // Event bus (if available)
+    if (window.eventBus?.emit) {
+      window.eventBus.emit(eventName, data);
+    }
+    
+    // Vue event bus (if available)
+    if (window.Vue?.$bus?.$emit) {
+      window.Vue.$bus.$emit(eventName, data);
+    }
+  }
+};
+
 const getUserToken = async () => {
   try {
     const { auth } = await import('@/firebase');
-    if (auth.currentUser) {
-      return await auth.currentUser.getIdToken();
-    }
+    return auth.currentUser ? await auth.currentUser.getIdToken() : null;
   } catch (error) {
     console.warn('⚠️ Could not get user token:', error);
+    return null;
   }
-  return null;
 };
 
+// ✅ ACTION HANDLERS
 const actions = {
-  // ✅ ENHANCED: Save user with better error handling and subscription sync
-  async saveUserToBackend({ commit, dispatch }, { userData, token }) {
+  // ==================================================
+  // INITIALIZATION ACTIONS
+  // ==================================================
+  
+  async initialize({ commit, dispatch, state }) {
+    if (state.system.initialized) {
+      console.log('ℹ️ Store already initialized');
+      return { success: true };
+    }
+    
+    try {
+      console.log('🚀 Initializing user store...');
+      
+      // Load from localStorage
+      const storedData = {
+        user: localStorage.getItem('currentUser'),
+        status: localStorage.getItem('userStatus'),
+        preferences: localStorage.getItem('userPreferences'),
+        promocodes: localStorage.getItem('appliedPromocodes')
+      };
+      
+      // Restore user data
+      if (storedData.user) {
+        try {
+          const userData = JSON.parse(storedData.user);
+          commit('SET_USER', userData);
+        } catch (err) {
+          console.warn('⚠️ Invalid stored user data');
+          localStorage.removeItem('currentUser');
+        }
+      }
+      
+      // Restore status
+      if (storedData.status) {
+        commit('SET_USER_STATUS', storedData.status);
+      }
+      
+      // Restore preferences
+      if (storedData.preferences) {
+        try {
+          const preferences = JSON.parse(storedData.preferences);
+          commit('SET_PREFERENCES', preferences);
+        } catch (err) {
+          console.warn('⚠️ Invalid stored preferences');
+        }
+      }
+      
+      // Restore promocodes
+      if (storedData.promocodes) {
+        try {
+          const promocodes = JSON.parse(storedData.promocodes);
+          state.promocodes.applied = promocodes;
+        } catch (err) {
+          console.warn('⚠️ Invalid stored promocodes');
+        }
+      }
+      
+      // Load remote data if user exists
+      const userId = state.currentUser?.firebaseId || localStorage.getItem('userId');
+      if (userId) {
+        await Promise.allSettled([
+          dispatch('loadUserStatus'),
+          dispatch('loadUsage'),
+          dispatch('checkMonthlyReset'),
+          dispatch('checkPendingPayments')
+        ]);
+      }
+      
+      commit('SET_INITIALIZED', true);
+      return { success: true };
+      
+    } catch (error) {
+      console.error('❌ Initialization failed:', error);
+      commit('SET_INITIALIZED', false);
+      return { success: false, error: error.message };
+    }
+  },
+  
+  // ==================================================
+  // USER MANAGEMENT ACTIONS
+  // ==================================================
+  
+  async saveUser({ commit, dispatch }, { userData, token }) {
     try {
       console.log('💾 Saving user to backend...');
-
+      
       const payload = {
         token,
-        name: userData.displayName || userData.name || 'Unnamed User',
+        name: userData.displayName || userData.name || 'User',
         email: userData.email || '',
         subscriptionPlan: 'free'
       };
-
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/save`, {
+      
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/save`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(payload)
       });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || `HTTP ${res.status}: ${res.statusText}`);
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP ${response.status}`);
       }
-
-      const savedUser = await res.json();
       
-      // Store user data
-      commit('setUser', savedUser);
-      commit('setUserStatus', savedUser.subscriptionPlan || 'free');
+      const savedUser = await response.json();
       
-      // Store user ID in localStorage for payment integration
+      // Update store
+      commit('SET_USER', savedUser);
+      commit('SET_USER_STATUS', savedUser.subscriptionPlan || 'free');
+      
+      // Store user ID
       const userId = savedUser.firebaseId || savedUser._id;
       if (userId) {
         localStorage.setItem('userId', userId);
         localStorage.setItem('firebaseUserId', userId);
       }
       
-      // Load detailed subscription status and usage data
+      // Load additional data
       await Promise.all([
         dispatch('loadUserStatus'),
-        dispatch('loadCurrentMonthUsage'),
+        dispatch('loadUsage'),
         dispatch('checkMonthlyReset')
       ]);
       
       console.log('✅ User saved successfully');
       return { success: true, user: savedUser };
-
-    } catch (err) {
-      console.error('❌ Failed to save user to backend:', err);
-      return { success: false, error: err.message };
+      
+    } catch (error) {
+      console.error('❌ Failed to save user:', error);
+      return { success: false, error: error.message };
     }
   },
-
-  // ✅ ENHANCED: Load user status with payment verification
+  
   async loadUserStatus({ commit, state }) {
     try {
-      const userId = 
-        state.currentUser?.firebaseId ||
-        state.currentUser?._id ||
-        localStorage.getItem('userId') ||
-        localStorage.getItem('firebaseUserId');
-
+      commit('SET_LOADING', { type: 'status', loading: true });
+      
+      const userId = getUserId(state);
       if (!userId) {
-        console.warn('⚠️ No userId found for subscription status check');
-        commit('setUserStatus', 'free');
+        commit('SET_USER_STATUS', 'free');
         return { success: false, error: 'No user ID' };
       }
-
-      console.log('🔍 Loading user status for:', userId);
-
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/${userId}/status`);
       
-      if (!res.ok) {
-        if (res.status === 404) {
-          console.warn('⚠️ User not found on backend, assuming "free" status');
-          commit('setUserStatus', 'free');
+      console.log('🔍 Loading user status for:', userId);
+      
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/${userId}/status`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          commit('SET_USER_STATUS', 'free');
           return { success: false, error: 'User not found' };
         }
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        throw new Error(`HTTP ${response.status}`);
       }
-
-      const data = await res.json();
       
-      // Update user status and subscription details
+      const data = await response.json();
       const status = data.status || data.subscriptionPlan || 'free';
-      commit('setUserStatus', status);
+      
+      // Update status and subscription
+      commit('SET_USER_STATUS', status);
       
       if (data.subscriptionDetails) {
-        commit('setSubscriptionDetails', data.subscriptionDetails);
-      }
-      
-      // Update trial information if available
-      if (data.isTrialUser !== undefined || data.trialDaysRemaining !== undefined) {
-        commit('setTrialInfo', {
-          isTrialUser: data.isTrialUser || false,
-          trialDaysRemaining: data.trialDaysRemaining || 0
+        commit('UPDATE_SUBSCRIPTION', {
+          ...data.subscriptionDetails,
+          plan: status,
+          status: status !== 'free' ? 'active' : 'inactive'
         });
       }
       
-      // Update last check timestamp
-      commit('updateLastPaymentCheck', Date.now());
-      
       console.log('✅ User status loaded:', status);
       return { success: true, status };
-
-    } catch (err) {
-      console.error('❌ Failed to load user status:', err);
-      commit('setUserStatus', 'free'); // Fallback to free
-      return { success: false, error: err.message };
+      
+    } catch (error) {
+      console.error('❌ Failed to load user status:', error);
+      commit('SET_USER_STATUS', 'free');
+      return { success: false, error: error.message };
+      
+    } finally {
+      commit('SET_LOADING', { type: 'status', loading: false });
     }
   },
-
-  // ✅ NEW: Load current month usage data
-  async loadCurrentMonthUsage({ commit, state }) {
+  
+  // ==================================================
+  // USAGE MANAGEMENT ACTIONS
+  // ==================================================
+  
+  async loadUsage({ commit, state }) {
     try {
-      const userId = 
-        state.currentUser?.firebaseId ||
-        state.currentUser?._id ||
-        localStorage.getItem('userId');
-
+      commit('SET_LOADING', { type: 'usage', loading: true });
+      
+      const userId = getUserId(state);
       if (!userId) {
-        console.warn('⚠️ No userId for usage check');
         return { success: false, error: 'No user ID' };
       }
-
-      console.log('📊 Loading current month usage...');
-
+      
+      console.log('📊 Loading usage data...');
+      
       const usageInfo = await getUserUsage();
       
       if (usageInfo.success) {
-        commit('setCurrentMonthUsage', usageInfo.usage);
-        commit('setUserStatus', usageInfo.plan);
+        commit('SET_USAGE', usageInfo.usage);
         
-        // Update limits based on current plan
-        if (usageInfo.limits) {
-          commit('setUsageLimits', { [usageInfo.plan]: usageInfo.limits });
+        if (usageInfo.plan && usageInfo.plan !== state.userStatus) {
+          commit('SET_USER_STATUS', usageInfo.plan);
         }
         
-        commit('updateLastUsageCheck', Date.now());
+        if (usageInfo.limits) {
+          commit('SET_USAGE_LIMITS', { [usageInfo.plan]: usageInfo.limits });
+        }
         
-        console.log('✅ Usage data loaded:', usageInfo.usage);
+        console.log('✅ Usage data loaded');
         return { success: true, usage: usageInfo.usage };
-      } else {
-        console.warn('⚠️ Failed to load usage data:', usageInfo.error);
-        return { success: false, error: usageInfo.error };
       }
-
-    } catch (err) {
-      console.error('❌ Failed to load current month usage:', err);
-      return { success: false, error: err.message };
+      
+      return { success: false, error: usageInfo.error };
+      
+    } catch (error) {
+      console.error('❌ Failed to load usage:', error);
+      return { success: false, error: error.message };
+      
+    } finally {
+      commit('SET_LOADING', { type: 'usage', loading: false });
     }
   },
-
-  // ✅ NEW: Check and perform monthly reset if needed
+  
+  async updateUsage({ commit }, { messages = 0, images = 0 }) {
+    commit('INCREMENT_USAGE', { messages, images });
+    return { success: true };
+  },
+  
+  async checkUsageLimits({ state }, { action = 'message', hasImage = false }) {
+    const limits = getCurrentLimits(state);
+    const usage = state.usage.current;
+    
+    // Check message limit
+    if (action === 'message' && limits.messages !== -1 && usage.messages >= limits.messages) {
+      return {
+        allowed: false,
+        reason: 'message_limit_exceeded',
+        message: `Достигнут лимит сообщений (${limits.messages}) для плана "${state.userStatus}"`
+      };
+    }
+    
+    // Check image limit
+    if (hasImage && limits.images !== -1 && usage.images >= limits.images) {
+      return {
+        allowed: false,
+        reason: 'image_limit_exceeded',
+        message: `Достигнут лимит изображений (${limits.images}) для плана "${state.userStatus}"`
+      };
+    }
+    
+    return {
+      allowed: true,
+      remaining: {
+        messages: limits.messages === -1 ? '∞' : Math.max(0, limits.messages - usage.messages),
+        images: limits.images === -1 ? '∞' : Math.max(0, limits.images - usage.images)
+      }
+    };
+  },
+  
   async checkMonthlyReset({ commit, dispatch, state }) {
     try {
       const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
+      const currentMonth = `${now.getFullYear()}-${now.getMonth()}`;
       
-      // Check if we have stored the last reset check
-      const lastResetKey = `lastMonthlyReset_${state.currentUser?.firebaseId || localStorage.getItem('userId')}`;
+      const userId = getUserId(state);
+      const lastResetKey = `lastMonthlyReset_${userId}`;
       const lastReset = localStorage.getItem(lastResetKey);
       
-      let shouldReset = false;
-      
-      if (!lastReset) {
-        // First time user
-        shouldReset = false; // Don't reset on first visit
-        localStorage.setItem(lastResetKey, `${currentYear}-${currentMonth}`);
-      } else {
-        const [lastYear, lastMonth] = lastReset.split('-').map(Number);
+      if (!lastReset || lastReset !== currentMonth) {
+        console.log('🔄 Monthly reset triggered');
         
-        // Check if month changed
-        if (currentYear > lastYear || (currentYear === lastYear && currentMonth > lastMonth)) {
-          shouldReset = true;
-          localStorage.setItem(lastResetKey, `${currentYear}-${currentMonth}`);
-        }
-      }
-      
-      if (shouldReset) {
-        console.log('🔄 Monthly usage reset triggered');
+        commit('RESET_USAGE');
+        localStorage.setItem(lastResetKey, currentMonth);
         
-        // Reset local state
-        commit('resetCurrentMonthUsage');
-        
-        // Try to reset on backend (optional - backend should handle this automatically)
+        // Try backend reset
         try {
           await resetMonthlyUsage();
         } catch (err) {
-          console.warn('⚠️ Backend reset failed (will be handled automatically):', err);
+          console.warn('⚠️ Backend reset warning:', err.message);
         }
         
-        // Reload current usage to sync with backend
-        await dispatch('loadCurrentMonthUsage');
+        // Reload usage
+        await dispatch('loadUsage');
         
         return { success: true, reset: true };
       }
       
       return { success: true, reset: false };
-
-    } catch (err) {
-      console.error('❌ Failed to check monthly reset:', err);
-      return { success: false, error: err.message };
+      
+    } catch (error) {
+      console.error('❌ Monthly reset check failed:', error);
+      return { success: false, error: error.message };
     }
   },
-
-  // ✅ NEW: Update usage after sending message
-  async updateUsageAfterMessage({ commit, state }, { hasImage = false }) {
+  
+  // ==================================================
+  // SUBSCRIPTION ACTIONS
+  // ==================================================
+  
+  async updateSubscription({ commit, dispatch }, { plan, source = 'payment', details = {} }) {
     try {
-      // Optimistically update local state
-      commit('incrementUsage', { 
-        messages: 1, 
-        images: hasImage ? 1 : 0 
-      });
-      
-      console.log('📊 Usage updated:', state.currentMonthUsage);
-      return { success: true };
-
-    } catch (err) {
-      console.error('❌ Failed to update usage:', err);
-      return { success: false, error: err.message };
-    }
-  },
-
-  // ✅ NEW: Check usage limits before action
-  async checkUsageLimits({ state }, { action = 'message', hasImage = false }) {
-    try {
-      const plan = state.userStatus;
-      const limits = state.usageLimits[plan] || state.usageLimits.free;
-      const usage = state.currentMonthUsage;
-      
-      // Check message limit
-      if (action === 'message' && limits.messages !== -1 && usage.messages >= limits.messages) {
-        return {
-          allowed: false,
-          reason: 'message_limit_exceeded',
-          message: `Достигнут лимит сообщений (${limits.messages}) для плана "${plan}". Обновите план для продолжения.`,
-          usage,
-          limits
-        };
-      }
-      
-      // Check image limit
-      if (hasImage && limits.images !== -1 && usage.images >= limits.images) {
-        return {
-          allowed: false,
-          reason: 'image_limit_exceeded',
-          message: `Достигнут лимит изображений (${limits.images}) для плана "${plan}". Обновите план для продолжения.`,
-          usage,
-          limits
-        };
-      }
-      
-      return {
-        allowed: true,
-        remaining: {
-          messages: limits.messages === -1 ? '∞' : Math.max(0, limits.messages - usage.messages),
-          images: limits.images === -1 ? '∞' : Math.max(0, limits.images - usage.images)
-        },
-        usage,
-        limits
+      const subscriptionData = {
+        plan,
+        status: plan !== 'free' ? 'active' : 'inactive',
+        source,
+        startDate: new Date().toISOString(),
+        details
       };
-
-    } catch (err) {
-      console.error('❌ Failed to check usage limits:', err);
-      return { allowed: false, error: err.message };
-    }
-  },
-
-  // ✅ ENHANCED: Check for pending payments and update status
-  async checkPendingPayments({ commit, state, dispatch }) {
-    try {
-      const userId = 
-        state.currentUser?.firebaseId ||
-        state.currentUser?._id ||
-        localStorage.getItem('userId');
-
-      if (!userId) {
-        console.warn('⚠️ No userId for payment check');
-        return { success: false, error: 'No user ID' };
-      }
-
-      // Check if we've checked recently (within last 5 minutes)
-      const now = Date.now();
-      const lastCheck = state.lastPaymentCheck;
-      const fiveMinutes = 5 * 60 * 1000;
       
-      if (lastCheck && (now - lastCheck) < fiveMinutes) {
-        return { success: true, message: 'Recently checked' };
-      }
-
-      console.log('🔍 Checking pending payments...');
-
-      // Get recent transactions from local storage or API
-      const pendingTransactionIds = JSON.parse(
-        localStorage.getItem(`pendingPayments_${userId}`) || '[]'
-      );
-
-      let statusChanged = false;
-
-      // Check each pending transaction
-      for (const transactionId of pendingTransactionIds) {
-        try {
-          const result = await checkPaymentStatus(transactionId, userId);
-          
-          if (result.success && result.transaction) {
-            const transaction = result.transaction;
-            
-            // Add to payment history
-            commit('addPaymentRecord', {
-              id: transaction.id,
-              amount: transaction.amount,
-              state: transaction.state,
-              timestamp: transaction.perform_time || transaction.create_time,
-              stateText: getTransactionStateText(transaction.state)
-            });
-
-            // If payment completed, update user status
-            if (transaction.state === 2) { // Completed
-              console.log('✅ Payment completed, updating status');
-              
-              // Determine plan based on amount
-              let newStatus = 'free';
-              if (transaction.amount === 260000) {
-                newStatus = 'start';
-              } else if (transaction.amount === 455000) {
-                newStatus = 'pro';
-              }
-              
-              if (newStatus !== 'free' && newStatus !== state.userStatus) {
-                commit('setUserStatus', newStatus);
-                statusChanged = true;
-              }
-              
-              // Remove from pending list
-              const updatedPending = pendingTransactionIds.filter(id => id !== transactionId);
-              localStorage.setItem(`pendingPayments_${userId}`, JSON.stringify(updatedPending));
-            }
-          }
-        } catch (err) {
-          console.warn(`⚠️ Failed to check transaction ${transactionId}:`, err.message);
-        }
-      }
-
-      // Update last check timestamp
-      commit('updateLastPaymentCheck', now);
-
-      // If status changed, reload full user status and usage limits
-      if (statusChanged) {
-        await Promise.all([
-          dispatch('loadUserStatus'),
-          dispatch('loadCurrentMonthUsage')
-        ]);
-      }
-
-      return { 
-        success: true, 
-        statusChanged,
-        checkedTransactions: pendingTransactionIds.length
-      };
-
-    } catch (err) {
-      console.error('❌ Failed to check pending payments:', err);
-      return { success: false, error: err.message };
-    }
-  },
-
-  // ✅ NEW: Add transaction to pending payments list
-  async addPendingPayment({ state }, { transactionId, amount, plan }) {
-    try {
-      const userId = 
-        state.currentUser?.firebaseId ||
-        state.currentUser?._id ||
-        localStorage.getItem('userId');
-
-      if (!userId || !transactionId) {
-        console.warn('⚠️ Missing userId or transactionId for pending payment');
-        return { success: false, error: 'Missing required data' };
-      }
-
-      const pendingPayments = JSON.parse(
-        localStorage.getItem(`pendingPayments_${userId}`) || '[]'
-      );
-
-      // Add new transaction if not already present
-      if (!pendingPayments.includes(transactionId)) {
-        pendingPayments.push(transactionId);
-        localStorage.setItem(`pendingPayments_${userId}`, JSON.stringify(pendingPayments));
-        
-        console.log('📝 Added pending payment:', transactionId);
-      }
-
-      return { success: true };
-
-    } catch (err) {
-      console.error('❌ Failed to add pending payment:', err);
-      return { success: false, error: err.message };
-    }
-  },
-
-  // ✅ NEW: Update user status manually (for subscription upgrades)
-  async updateUserStatus({ commit, dispatch }, newStatus) {
-    try {
-      const validStatuses = ['free', 'start', 'pro', 'premium'];
-      if (!validStatuses.includes(newStatus)) {
-        throw new Error(`Invalid status: ${newStatus}`);
-      }
+      commit('SET_USER_STATUS', plan);
+      commit('UPDATE_SUBSCRIPTION', subscriptionData);
       
-      commit('setUserStatus', newStatus);
+      // Reload usage with new limits
+      await dispatch('loadUsage');
       
-      // Reload usage data with new status
-      await dispatch('loadCurrentMonthUsage');
-      
-      console.log('✅ User status manually updated to:', newStatus);
+      console.log('✅ Subscription updated:', plan);
       return { success: true };
       
-    } catch (err) {
-      console.error('❌ Failed to update user status:', err);
-      return { success: false, error: err.message };
+    } catch (error) {
+      console.error('❌ Failed to update subscription:', error);
+      return { success: false, error: error.message };
     }
   },
-
-  // ✅ NEW: Upgrade subscription
-  async upgradeSubscription({ commit, dispatch }, { plan, expiry = null }) {
-    try {
-      const validPlans = ['start', 'pro', 'premium'];
-      if (!validPlans.includes(plan)) {
-        throw new Error(`Invalid plan: ${plan}`);
-      }
-      
-      // Update status
-      commit('setUserStatus', plan);
-      
-      // Set expiry if provided
-      if (expiry) {
-        commit('setSubscriptionExpiry', expiry);
-      }
-      
-      // Reload usage limits
-      await dispatch('loadCurrentMonthUsage');
-      
-      console.log('✅ Subscription upgraded to:', plan);
-      return { success: true };
-      
-    } catch (err) {
-      console.error('❌ Failed to upgrade subscription:', err);
-      return { success: false, error: err.message };
-    }
-  },
-
-  // ✅ NEW: Apply promocode action
+  
+  // ==================================================
+  // PROMOCODE ACTIONS
+  // ==================================================
+  
   async applyPromocode({ commit, state, dispatch }, { promoCode, plan }) {
     try {
-      const userId = 
-        state.currentUser?.firebaseId ||
-        state.currentUser?._id ||
-        localStorage.getItem('userId') ||
-        localStorage.getItem('firebaseUserId');
-
+      const userId = getUserId(state);
       if (!userId) {
         return { success: false, error: 'Пользователь не найден' };
       }
-
-      console.log('🎟️ Applying promocode via store:', { userId, plan, promoCode });
-
-      // Get auth token
-      const token = await getUserToken();
-
-      // Prepare headers
-      const headers = {
-        'Content-Type': 'application/json'
-      };
       
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      // Call the backend API for promocode application
+      console.log('🎟️ Applying promocode:', { promoCode, plan });
+      
+      const token = await getUserToken();
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/promo-code`, {
         method: 'POST',
-        headers: headers,
+        headers,
         body: JSON.stringify({
-          userId: userId,
-          plan: plan,
+          userId,
+          plan,
           promoCode: promoCode.trim().toUpperCase()
         })
       });
-
+      
       const result = await response.json();
-
+      
       if (result.success) {
-        // ✅ SUCCESS: Update store state
         const oldStatus = state.userStatus;
         
-        // Update user status
-        commit('setUserStatus', plan);
-        
-        // Set subscription details
-        const subscriptionDetails = {
-          plan: plan,
-          appliedViaPromocode: true,
-          promocode: promoCode.trim().toUpperCase(),
-          activatedAt: new Date().toISOString(),
-          source: 'promocode'
-        };
-        
-        if (result.data?.subscriptionDetails) {
-          Object.assign(subscriptionDetails, result.data.subscriptionDetails);
-        }
-        
-        commit('setSubscriptionDetails', subscriptionDetails);
-        
-        // Track applied promocode
-        commit('addAppliedPromocode', {
-          code: promoCode.trim().toUpperCase(),
-          plan: plan,
-          activatedAt: new Date().toISOString(),
-          subscriptionDetails: subscriptionDetails
+        // Update subscription
+        await dispatch('updateSubscription', {
+          plan,
+          source: 'promocode',
+          details: {
+            promocode: promoCode.trim().toUpperCase(),
+            appliedAt: new Date().toISOString(),
+            ...result.data?.subscriptionDetails
+          }
         });
         
-        // Update feature access
-        commit('updateAllFeatureAccess');
+        // Track promocode
+        commit('ADD_PROMOCODE', {
+          code: promoCode.trim().toUpperCase(),
+          plan,
+          oldPlan: oldStatus
+        });
         
-        // Reload usage data with new plan limits
-        await dispatch('loadCurrentMonthUsage');
+        // Force update
+        commit('FORCE_UPDATE');
         
-        console.log(`✅ Promocode applied successfully: ${oldStatus} → ${plan}`);
+        console.log(`✅ Promocode applied: ${oldStatus} → ${plan}`);
         
         return {
           success: true,
-          message: result.message || `Промокод успешно применён! Подписка "${plan.toUpperCase()}" активирована.`,
+          message: `Промокод успешно применён! Подписка "${plan.toUpperCase()}" активирована.`,
           oldPlan: oldStatus,
-          newPlan: plan,
-          subscriptionDetails: subscriptionDetails
-        };
-        
-      } else {
-        // ❌ ERROR from backend
-        console.warn('⚠️ Promocode application failed:', result.error);
-        return {
-          success: false,
-          error: result.error || 'Не удалось применить промокод'
+          newPlan: plan
         };
       }
-
-    } catch (error) {
-      console.error('❌ Promocode application error:', error);
       
-      if (error.message.includes('Network Error') || error.code === 'NETWORK_ERROR') {
-        return {
-          success: false,
-          error: 'Ошибка сети. Проверьте подключение к интернету'
-        };
-      } else if (error.status === 400) {
-        return {
-          success: false,
-          error: 'Неверный промокод или данные'
-        };
-      } else if (error.status === 404) {
-        return {
-          success: false,
-          error: 'Промокод не найден'
-        };
-      } else if (error.status === 403) {
-        return {
-          success: false,
-          error: 'Промокод уже использован или недоступен'
-        };
-      } else {
-        return {
-          success: false,
-          error: 'Произошла ошибка при применении промокода'
-        };
-      }
+      return { success: false, error: result.error || 'Не удалось применить промокод' };
+      
+    } catch (error) {
+      console.error('❌ Promocode application failed:', error);
+      
+      const errorMessages = {
+        400: 'Неверный промокод или данные',
+        404: 'Промокод не найден',
+        403: 'Промокод уже использован или недоступен'
+      };
+      
+      return {
+        success: false,
+        error: errorMessages[error.status] || 'Произошла ошибка при применении промокода'
+      };
     }
   },
-
-  // ✅ NEW: Validate promocode without applying
+  
   async validatePromocode({ state }, promoCode) {
     try {
       if (!promoCode || promoCode.length <= 3) {
         return { valid: false, error: 'Промокод слишком короткий' };
       }
-
-      console.log('🔍 Validating promocode:', promoCode);
-
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/promocodes/validate/${promoCode.trim().toUpperCase()}`);
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/promocodes/validate/${promoCode.trim().toUpperCase()}`
+      );
       const result = await response.json();
-
+      
       if (result.success && result.valid) {
         return {
           valid: true,
           data: result.data,
           message: `Промокод действителен! Предоставляет: ${result.data.grantsPlan?.toUpperCase()} план`
         };
-      } else {
-        return {
-          valid: false,
-          error: result.error || 'Промокод недействителен'
-        };
       }
-
+      
+      return { valid: false, error: result.error || 'Промокод недействителен' };
+      
     } catch (error) {
-      console.error('❌ Promocode validation error:', error);
+      console.error('❌ Promocode validation failed:', error);
       
-      if (error.status === 404) {
-        return {
-          valid: false,
-          error: 'Промокод не найден'
-        };
-      } else if (error.status === 400) {
-        return {
-          valid: false,
-          error: 'Неверный формат промокода'
-        };
-      } else {
-        return {
-          valid: false,
-          error: 'Ошибка проверки промокода'
-        };
-      }
-    }
-  },
-
-  // ✅ NEW: Get usage statistics and trends
-  async getUsageStatistics({ state }) {
-    try {
-      const userId = 
-        state.currentUser?.firebaseId ||
-        state.currentUser?._id ||
-        localStorage.getItem('userId');
-
-      if (!userId) {
-        return { success: false, error: 'No user ID' };
-      }
-
-      // This would call your backend API for detailed stats
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/${userId}/usage/stats?months=6`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const stats = await response.json();
+      const errorMessages = {
+        404: 'Промокод не найден',
+        400: 'Неверный формат промокода'
+      };
       
       return {
-        success: true,
-        ...stats
-      };
-
-    } catch (err) {
-      console.error('❌ Failed to get usage statistics:', err);
-      
-      // Return local data as fallback
-      return {
-        success: false,
-        error: err.message,
-        localData: {
-          currentMonth: state.currentMonthUsage,
-          plan: state.userStatus,
-          limits: state.usageLimits[state.userStatus]
-        }
+        valid: false,
+        error: errorMessages[error.status] || 'Ошибка проверки промокода'
       };
     }
   },
-
-  // ✅ NEW: Update user profile
-  async updateProfile({ commit, state }, profileData) {
+  
+  // ==================================================
+  // PAYMENT ACTIONS
+  // ==================================================
+  
+  async checkPendingPayments({ commit, state, dispatch }) {
     try {
-      const userId = 
-        state.currentUser?.firebaseId ||
-        state.currentUser?._id ||
-        localStorage.getItem('userId');
-
-      if (!userId) {
-        throw new Error('No user ID found');
+      commit('SET_LOADING', { type: 'payments', loading: true });
+      
+      const userId = getUserId(state);
+      if (!userId) return { success: false, error: 'No user ID' };
+      
+      // Rate limiting
+      const now = Date.now();
+      const lastCheck = state.payments.lastCheck;
+      if (lastCheck && (now - lastCheck) < 300000) { // 5 minutes
+        return { success: true, message: 'Recently checked' };
       }
-
-      const token = await getUserToken();
-      const headers = { 
-        'Content-Type': 'application/json'
-      };
       
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/${userId}/profile`, {
-        method: 'PUT',
-        headers: headers,
-        body: JSON.stringify(profileData)
-      });
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      }
-
-      const updatedUser = await res.json();
-      commit('updateUserProfile', updatedUser);
+      console.log('🔍 Checking pending payments...');
       
-      return { success: true, user: updatedUser };
-
-    } catch (err) {
-      console.error('❌ Failed to update profile:', err);
-      return { success: false, error: err.message };
-    }
-  },
-
-  // ✅ NEW: Update user preferences
-  async updatePreferences({ commit, state }, preferences) {
-    try {
-      commit('setPreferences', preferences);
+      const pendingIds = JSON.parse(localStorage.getItem(`pendingPayments_${userId}`) || '[]');
+      let statusChanged = false;
       
-      // Save to localStorage
-      localStorage.setItem('userPreferences', JSON.stringify(state.preferences));
-      
-      // Optionally save to backend
-      const userId = state.currentUser?.firebaseId || localStorage.getItem('userId');
-      if (userId) {
+      for (const transactionId of pendingIds) {
         try {
-          const token = await getUserToken();
-          const headers = { 'Content-Type': 'application/json' };
-          if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-          }
+          const result = await checkPaymentStatus(transactionId, userId);
           
-          await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/${userId}/preferences`, {
-            method: 'PUT',
-            headers: headers,
-            body: JSON.stringify(preferences)
-          });
+          if (result.success && result.transaction?.state === 2) {
+            console.log('✅ Payment completed:', transactionId);
+            
+            // Determine plan
+            let newStatus = 'free';
+            if (result.transaction.amount === 260000) newStatus = 'start';
+            else if (result.transaction.amount === 455000) newStatus = 'pro';
+            
+            if (newStatus !== 'free' && newStatus !== state.userStatus) {
+              await dispatch('updateSubscription', {
+                plan: newStatus,
+                source: 'payment',
+                details: { transactionId, amount: result.transaction.amount }
+              });
+              statusChanged = true;
+            }
+            
+            // Remove from pending
+            const updatedPending = pendingIds.filter(id => id !== transactionId);
+            localStorage.setItem(`pendingPayments_${userId}`, JSON.stringify(updatedPending));
+            
+            // Add to history
+            commit('ADD_PAYMENT', {
+              id: transactionId,
+              amount: result.transaction.amount,
+              status: 'completed',
+              timestamp: result.transaction.perform_time || Date.now()
+            });
+          }
         } catch (err) {
-          console.warn('⚠️ Failed to save preferences to backend:', err);
+          console.warn(`⚠️ Failed to check transaction ${transactionId}:`, err.message);
         }
+      }
+      
+      commit('SET_PENDING_PAYMENTS', pendingIds);
+      
+      return { success: true, statusChanged, checkedTransactions: pendingIds.length };
+      
+    } catch (error) {
+      console.error('❌ Failed to check pending payments:', error);
+      return { success: false, error: error.message };
+      
+    } finally {
+      commit('SET_LOADING', { type: 'payments', loading: false });
+    }
+  },
+  
+  async addPendingPayment({ state }, { transactionId, amount, plan }) {
+    try {
+      const userId = getUserId(state);
+      if (!userId || !transactionId) {
+        return { success: false, error: 'Missing required data' };
+      }
+      
+      const pendingKey = `pendingPayments_${userId}`;
+      const pending = JSON.parse(localStorage.getItem(pendingKey) || '[]');
+      
+      if (!pending.includes(transactionId)) {
+        pending.push(transactionId);
+        localStorage.setItem(pendingKey, JSON.stringify(pending));
+        console.log('📝 Added pending payment:', transactionId);
       }
       
       return { success: true };
       
-    } catch (err) {
-      console.error('❌ Failed to update preferences:', err);
-      return { success: false, error: err.message };
+    } catch (error) {
+      console.error('❌ Failed to add pending payment:', error);
+      return { success: false, error: error.message };
     }
   },
-
-  // ✅ NEW: Check subscription expiry
-  async checkSubscriptionExpiry({ commit, state, dispatch }) {
-    try {
-      if (!state.subscriptionExpiry) return { active: true };
-      
-      const now = new Date();
-      const expiry = new Date(state.subscriptionExpiry);
-      
-      if (now > expiry) {
-        // Subscription has expired
-        console.log('⏰ Subscription has expired, reverting to free');
-        
-        commit('setUserStatus', 'free');
-        commit('setSubscriptionExpiry', null);
-        
-        // Reload usage limits
-        await dispatch('loadCurrentMonthUsage');
-        
-        return { active: false, expired: true };
-      }
-      
-      // Check if expiring soon (within 7 days)
-      const daysUntilExpiry = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
-      const expiringSoon = daysUntilExpiry <= 7 && daysUntilExpiry > 0;
-      
-      return { 
-        active: true, 
-        expired: false, 
-        expiringSoon,
-        daysUntilExpiry: Math.max(0, daysUntilExpiry)
-      };
-      
-    } catch (err) {
-      console.error('❌ Error checking subscription expiry:', err);
-      return { active: false, error: err.message };
-    }
+  
+  // ==================================================
+  // UTILITY ACTIONS
+  // ==================================================
+  
+  async updatePreferences({ commit }, preferences) {
+    commit('SET_PREFERENCES', preferences);
+    return { success: true };
   },
-
-  // ✅ ENHANCED: Initialize user on app start
-  async initializeUser({ commit, dispatch }) {
-    try {
-      console.log('🚀 Initializing user state...');
-      
-      // Check for stored user data
-      const storedUserId = localStorage.getItem('userId');
-      const storedUser = localStorage.getItem('currentUser');
-      const storedStatus = localStorage.getItem('userStatus');
-      const storedPreferences = localStorage.getItem('userPreferences');
-      const storedPromocodes = localStorage.getItem('appliedPromocodes');
-      
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser);
-          commit('setUser', userData);
-        } catch (err) {
-          console.warn('⚠️ Failed to parse stored user data');
-          localStorage.removeItem('currentUser');
-        }
-      }
-      
-      if (storedStatus) {
-        commit('setUserStatus', storedStatus);
-      }
-      
-      if (storedPreferences) {
-        try {
-          const preferences = JSON.parse(storedPreferences);
-          commit('setPreferences', preferences);
-        } catch (err) {
-          console.warn('⚠️ Failed to parse stored preferences');
-        }
-      }
-      
-      if (storedPromocodes) {
-        try {
-          const promocodes = JSON.parse(storedPromocodes);
-          commit('appliedPromocodes', promocodes);
-        } catch (err) {
-          console.warn('⚠️ Failed to parse stored promocodes');
-        }
-      }
-      
-      // Load current status and usage if we have a user ID
-      if (storedUserId) {
-        await Promise.all([
-          dispatch('loadUserStatus'),
-          dispatch('loadCurrentMonthUsage'),
-          dispatch('checkMonthlyReset'),
-          dispatch('checkPendingPayments'),
-          dispatch('checkSubscriptionExpiry')
-        ]);
-      }
-      
-      console.log('✅ User initialization complete');
-      return { success: true };
-
-    } catch (err) {
-      console.error('❌ Failed to initialize user:', err);
-      return { success: false, error: err.message };
-    }
+  
+  async forceUpdate({ commit }) {
+    commit('FORCE_UPDATE');
+    commit('UPDATE_FEATURES');
+    return { success: true };
   },
-
-  // ✅ ENHANCED: Clear user data on logout
+  
   async logout({ commit }) {
     try {
       console.log('👋 Logging out user...');
       
-      // Clear store
-      commit('clearUser');
+      commit('CLEAR_USER');
       
-      // Clear localStorage
-      localStorage.removeItem('userId');
-      localStorage.removeItem('firebaseUserId');
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('token');
-      localStorage.removeItem('userStatus');
-      localStorage.removeItem('subscriptionDetails');
-      localStorage.removeItem('subscriptionExpiry');
-      localStorage.removeItem('userPreferences');
-      localStorage.removeItem('appliedPromocodes');
+      // Clear all localStorage
+      const keysToRemove = [
+        'userId', 'firebaseUserId', 'currentUser', 'token', 
+        'userStatus', 'subscriptionDetails', 'subscriptionExpiry',
+        'userPreferences', 'appliedPromocodes'
+      ];
       
-      // Clear pending payments for all users (optional)
-      const keys = Object.keys(localStorage);
-      keys.forEach(key => {
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      // Clear pending payments
+      Object.keys(localStorage).forEach(key => {
         if (key.startsWith('pendingPayments_') || key.startsWith('lastMonthlyReset_')) {
           localStorage.removeItem(key);
         }
@@ -1171,215 +1104,241 @@ const actions = {
       
       console.log('✅ Logout complete');
       return { success: true };
-
-    } catch (err) {
-      console.error('❌ Logout error:', err);
-      return { success: false, error: err.message };
+      
+    } catch (error) {
+      console.error('❌ Logout error:', error);
+      return { success: false, error: error.message };
     }
   }
 };
 
+// ✅ HELPER FUNCTION FOR USER ID
+const getUserId = (state) => {
+  return state.currentUser?.firebaseId ||
+         state.currentUser?._id ||
+         localStorage.getItem('userId') ||
+         localStorage.getItem('firebaseUserId');
+};
+
+// ✅ GETTER DEFINITIONS
 const getters = {
-  // Basic user getters
+  // ==================================================
+  // BASIC USER GETTERS
+  // ==================================================
+  
   isAuthenticated: (state) => !!state.currentUser,
   getUser: (state) => state.currentUser,
-  getUserId: (state) => 
-    state.currentUser?.firebaseId || 
-    state.currentUser?._id || 
-    localStorage.getItem('userId'),
+  getUserId: (state) => getUserId(state),
+  userName: (state) => state.currentUser?.name || state.currentUser?.displayName || 'Пользователь',
+  userEmail: (state) => state.currentUser?.email || '',
   
-  // Subscription status getters
+  // ==================================================
+  // SUBSCRIPTION GETTERS
+  // ==================================================
+  
   userStatus: (state) => state.userStatus,
-  subscriptionDetails: (state) => state.subscriptionDetails,
+  subscription: (state) => state.subscription,
+  subscriptionDetails: (state) => state.subscription,
   
-  // Premium access getters
-  isPremiumUser: (state) => 
-    ['premium', 'start', 'pro'].includes(state.userStatus),
-  isStartUser: (state) => 
-    ['start', 'pro', 'premium'].includes(state.userStatus),
-  isProUser: (state) => 
-    ['pro', 'premium'].includes(state.userStatus),
-  isFreeUser: (state) => 
-    state.userStatus === 'free',
+  // Status checks
+  isPremiumUser: (state) => ['premium', 'start', 'pro'].includes(state.userStatus),
+  isStartUser: (state) => ['start', 'pro', 'premium'].includes(state.userStatus),
+  isProUser: (state) => ['pro', 'premium'].includes(state.userStatus),
+  isFreeUser: (state) => state.userStatus === 'free',
+  hasActiveSubscription: (state) => state.subscription.status === 'active',
   
-  // Feature access getters
-  hasVocabularyAccess: (state) => 
-    state.featureAccess.vocabulary || ['start', 'pro', 'premium'].includes(state.userStatus),
-  hasAdvancedFeatures: (state) => 
-    state.featureAccess.analytics || ['pro', 'premium'].includes(state.userStatus),
-  hasUnlimitedLessons: (state) => 
-    state.featureAccess.unlimited_lessons || ['pro', 'premium'].includes(state.userStatus),
-  hasPrioritySupport: (state) => 
-    state.featureAccess.priority_support || ['start', 'pro', 'premium'].includes(state.userStatus),
-  hasCustomCourses: (state) => 
-    state.featureAccess.custom_courses || ['pro', 'premium'].includes(state.userStatus),
-  hasOfflineMode: (state) => 
-    state.featureAccess.offline_mode || ['start', 'pro', 'premium'].includes(state.userStatus),
+  // Subscription metadata
+  subscriptionSource: (state) => state.subscription.source || 'free',
+  hasPromocodeSubscription: (state) => state.subscription.source === 'promocode',
+  subscriptionExpiry: (state) => state.subscription.expiryDate,
   
-  // Usage getters
-  currentMonthUsage: (state) => state.currentMonthUsage,
-  usageLimits: (state) => state.usageLimits[state.userStatus] || state.usageLimits.free,
+  // Status text
+  statusText: (state) => {
+    const statusMap = {
+      free: 'Бесплатный',
+      start: 'Start',
+      pro: 'Pro', 
+      premium: 'Premium'
+    };
+    return statusMap[state.userStatus] || 'Неизвестно';
+  },
   
-  // Remaining usage calculations
+  // ==================================================
+  // FEATURE ACCESS GETTERS
+  // ==================================================
+  
+  features: (state) => state.features,
+  hasVocabularyAccess: (state) => state.features.vocabulary,
+  hasAdvancedFeatures: (state) => state.features.analytics,
+  hasUnlimitedLessons: (state) => state.features.unlimited_lessons,
+  hasPrioritySupport: (state) => state.features.priority_support,
+  hasCustomCourses: (state) => state.features.custom_courses,
+  hasOfflineMode: (state) => state.features.offline_mode,
+  hasExportProgress: (state) => state.features.export_progress,
+  
+  // Feature checker function
+  hasFeatureAccess: (state) => (feature) => {
+    return state.features[feature] || false;
+  },
+  
+  // Content access checker
+  canAccessContent: (state) => (contentType = 'basic') => {
+    const accessMap = {
+      basic: ['free', 'start', 'pro', 'premium'],
+      premium: ['start', 'pro', 'premium'],
+      pro: ['pro', 'premium'],
+      admin: ['premium']
+    };
+    return accessMap[contentType]?.includes(state.userStatus) || false;
+  },
+  
+  // ==================================================
+  // USAGE GETTERS
+  // ==================================================
+  
+  currentUsage: (state) => state.usage.current,
+  usageLimits: (state) => state.usage.limits[state.userStatus] || state.usage.limits.free,
+  usageHistory: (state) => state.usage.history,
+  
+  // Remaining usage
   remainingMessages: (state, getters) => {
     const limits = getters.usageLimits;
     if (limits.messages === -1) return '∞';
-    return Math.max(0, limits.messages - state.currentMonthUsage.messages);
+    return Math.max(0, limits.messages - state.usage.current.messages);
   },
   
   remainingImages: (state, getters) => {
     const limits = getters.usageLimits;
     if (limits.images === -1) return '∞';
-    return Math.max(0, limits.images - state.currentMonthUsage.images);
+    return Math.max(0, limits.images - state.usage.current.images);
   },
   
-  // Usage percentage calculations
+  // Usage percentages
   messageUsagePercentage: (state, getters) => {
     const limits = getters.usageLimits;
     if (limits.messages === -1) return 0;
-    return Math.min(100, (state.currentMonthUsage.messages / limits.messages) * 100);
+    return Math.min(100, Math.round((state.usage.current.messages / limits.messages) * 100));
   },
   
   imageUsagePercentage: (state, getters) => {
     const limits = getters.usageLimits;
     if (limits.images === -1) return 0;
-    return Math.min(100, (state.currentMonthUsage.images / limits.images) * 100);
+    return Math.min(100, Math.round((state.usage.current.images / limits.images) * 100));
   },
   
-  // Limit status checks
+  // Limit status
   isMessageLimitReached: (state, getters) => {
     const limits = getters.usageLimits;
-    return limits.messages !== -1 && state.currentMonthUsage.messages >= limits.messages;
+    return limits.messages !== -1 && state.usage.current.messages >= limits.messages;
   },
   
   isImageLimitReached: (state, getters) => {
     const limits = getters.usageLimits;
-    return limits.images !== -1 && state.currentMonthUsage.images >= limits.images;
+    return limits.images !== -1 && state.usage.current.images >= limits.images;
   },
   
   isNearMessageLimit: (state, getters) => {
     const limits = getters.usageLimits;
     if (limits.messages === -1) return false;
-    return state.currentMonthUsage.messages >= (limits.messages * 0.8); // 80% threshold
+    return state.usage.current.messages >= (limits.messages * 0.8);
   },
   
   isNearImageLimit: (state, getters) => {
     const limits = getters.usageLimits;
     if (limits.images === -1) return false;
-    return state.currentMonthUsage.images >= (limits.images * 0.8); // 80% threshold
+    return state.usage.current.images >= (limits.images * 0.8);
   },
   
-  // Payment history getters
-  paymentHistory: (state) => state.paymentHistory,
-  lastPaymentCheck: (state) => state.lastPaymentCheck,
-  hasRecentPayments: (state) => 
-    state.paymentHistory.length > 0 && 
-    state.paymentHistory.some(p => p.state === 2), // Has completed payments
+  // Usage summary
+  usageSummary: (state, getters) => ({
+    plan: state.userStatus,
+    planDisplayName: getters.statusText,
+    messages: {
+      used: state.usage.current.messages,
+      limit: getters.usageLimits.messages,
+      remaining: getters.remainingMessages,
+      percentage: getters.messageUsagePercentage,
+      isNearLimit: getters.isNearMessageLimit,
+      isLimitReached: getters.isMessageLimitReached
+    },
+    images: {
+      used: state.usage.current.images,
+      limit: getters.usageLimits.images,
+      remaining: getters.remainingImages,
+      percentage: getters.imageUsagePercentage,
+      isNearLimit: getters.isNearImageLimit,
+      isLimitReached: getters.isImageLimitReached
+    },
+    lastUpdated: state.usage.current.lastUpdated
+  }),
   
-  // ✅ NEW: Promocode getters
-  appliedPromocodes: (state) => state.appliedPromocodes,
-  lastPromocodeCheck: (state) => state.lastPromocodeCheck,
-  hasAppliedPromocodes: (state) => state.appliedPromocodes.length > 0,
+  // ==================================================
+  // PROMOCODE GETTERS
+  // ==================================================
+  
+  appliedPromocodes: (state) => state.promocodes.applied,
+  hasAppliedPromocodes: (state) => state.promocodes.applied.length > 0,
   lastAppliedPromocode: (state) => 
-    state.appliedPromocodes.length > 0 ? state.appliedPromocodes[0] : null,
+    state.promocodes.applied.length > 0 ? state.promocodes.applied[0] : null,
+  lastPromocodeCheck: (state) => state.promocodes.lastCheck,
   
-  // User info getters
-  userName: (state) => 
-    state.currentUser?.name || 
-    state.currentUser?.displayName || 
-    'Пользователь',
-  userEmail: (state) => 
-    state.currentUser?.email || '',
+  // ==================================================
+  // PAYMENT GETTERS
+  // ==================================================
   
-  // Subscription status text
-  statusText: (state) => {
-    const statusTexts = {
-      free: 'Бесплатный',
-      start: 'Start',
-      pro: 'Pro',
-      premium: 'Premium'
-    };
-    return statusTexts[state.userStatus] || 'Неизвестно';
-  },
+  paymentHistory: (state) => state.payments.history,
+  pendingPayments: (state) => state.payments.pending,
+  lastPaymentCheck: (state) => state.payments.lastCheck,
+  hasRecentPayments: (state) => 
+    state.payments.history.some(p => p.status === 'completed'),
   
-  // Check if subscription is active
-  hasActiveSubscription: (state) => 
-    ['start', 'pro', 'premium'].includes(state.userStatus),
+  // ==================================================
+  // SYSTEM GETTERS
+  // ==================================================
   
-  // Get subscription expiry (if available)
-  subscriptionExpiry: (state) => state.subscriptionExpiry,
+  isInitialized: (state) => state.system.initialized,
+  isLoading: (state) => (type) => state.system.loading[type] || false,
+  isAnyLoading: (state) => Object.values(state.system.loading).some(Boolean),
+  lastUpdate: (state) => state.system.lastUpdate,
+  forceUpdateCounter: (state) => state.system.forceUpdateCounter,
   
-  // Trial status
-  isTrialUser: (state) => state.isTrialUser,
-  trialDaysRemaining: (state) => state.trialDaysRemaining,
+  // ==================================================
+  // PREFERENCES GETTERS
+  // ==================================================
   
-  // Subscription expiry checks
+  userPreferences: (state) => state.preferences,
+  language: (state) => state.preferences.language,
+  theme: (state) => state.preferences.theme,
+  notificationsEnabled: (state) => state.preferences.notifications,
+  
+  // ==================================================
+  // SUBSCRIPTION EXPIRY GETTERS
+  // ==================================================
+  
   isSubscriptionExpiringSoon: (state) => {
-    if (!state.subscriptionExpiry || state.userStatus === 'free') return false;
+    if (!state.subscription.expiryDate || state.userStatus === 'free') return false;
     
     const now = new Date();
-    const expiry = new Date(state.subscriptionExpiry);
+    const expiry = new Date(state.subscription.expiryDate);
     const daysUntilExpiry = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
     
     return daysUntilExpiry <= 7 && daysUntilExpiry > 0;
   },
   
   daysUntilExpiry: (state) => {
-    if (!state.subscriptionExpiry || state.userStatus === 'free') return null;
+    if (!state.subscription.expiryDate || state.userStatus === 'free') return null;
     
     const now = new Date();
-    const expiry = new Date(state.subscriptionExpiry);
+    const expiry = new Date(state.subscription.expiryDate);
     const daysUntilExpiry = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
     
-    return daysUntilExpiry > 0 ? daysUntilExpiry : 0;
+    return Math.max(0, daysUntilExpiry);
   },
   
-  // Check if user can access specific content
-  canAccessContent: (state) => (contentType = 'basic') => {
-    const access = {
-      basic: ['free', 'start', 'pro', 'premium'],
-      premium: ['start', 'pro', 'premium'],
-      pro: ['pro', 'premium'],
-      admin: ['premium']
-    };
-    
-    return access[contentType]?.includes(state.userStatus) || false;
-  },
+  // ==================================================
+  // UPGRADE RECOMMENDATIONS
+  // ==================================================
   
-  // Feature access checker
-  hasFeatureAccess: (state) => (feature) => {
-    return state.featureAccess[feature] || false;
-  },
-  
-  // Usage summary for UI
-  usageSummary: (state, getters) => {
-    return {
-      plan: state.userStatus,
-      planDisplayName: getters.statusText,
-      messages: {
-        used: state.currentMonthUsage.messages,
-        limit: getters.usageLimits.messages,
-        remaining: getters.remainingMessages,
-        percentage: getters.messageUsagePercentage,
-        isNearLimit: getters.isNearMessageLimit,
-        isLimitReached: getters.isMessageLimitReached
-      },
-      images: {
-        used: state.currentMonthUsage.images,
-        limit: getters.usageLimits.images,
-        remaining: getters.remainingImages,
-        percentage: getters.imageUsagePercentage,
-        isNearLimit: getters.isNearImageLimit,
-        isLimitReached: getters.isImageLimitReached
-      },
-      lastUpdated: state.currentMonthUsage.lastUpdated
-    };
-  },
-  
-  // Preferences getter
-  userPreferences: (state) => state.preferences,
-  
-  // Get recommended upgrade plan
   recommendedUpgrade: (state) => {
     if (state.userStatus === 'free') {
       return {
@@ -1387,8 +1346,8 @@ const getters = {
         displayName: 'Start',
         benefits: [
           'Доступ к словарю',
-          'Приоритетная поддержка', 
-          'Офлайн режим',
+          'Приоритетная поддержка',
+          'Офлайн режим', 
           'Безлимитные сообщения'
         ],
         price: '260,000 сум'
@@ -1407,43 +1366,10 @@ const getters = {
       };
     }
     return null;
-  },
-
-  // ✅ NEW: Check if user got subscription via promocode
-  hasPromocodeSubscription: (state) => {
-    return state.subscriptionDetails?.appliedViaPromocode || false;
-  },
-
-  // ✅ NEW: Get subscription source
-  subscriptionSource: (state) => {
-    if (state.subscriptionDetails?.source) {
-      return state.subscriptionDetails.source;
-    } else if (state.subscriptionDetails?.appliedViaPromocode) {
-      return 'promocode';
-    } else if (state.userStatus !== 'free') {
-      return 'payment';
-    } else {
-      return 'free';
-    }
   }
 };
 
-// Helper function for transaction state text
-const getTransactionStateText = (state) => {
-  switch (state) {
-    case 1:
-      return 'Ожидание оплаты';
-    case 2:
-      return 'Оплачено';
-    case -1:
-      return 'Отменено';
-    case -2:
-      return 'Возвращено';
-    default:
-      return 'Неизвестно';
-  }
-};
-
+// ✅ EXPORT STORE MODULE
 export default {
   namespaced: true,
   state,

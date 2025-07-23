@@ -100,65 +100,205 @@ export default {
         { name: 'vocabulary', label: 'Словарь' },
         { name: 'settings', label: 'Настройки' }
       ],
-      isMobile: false
+      isMobile: false,
+      // ✅ Track component update state
+      componentKey: 0
     };
   },
   computed: {
     ...mapState(['user']),
-    ...mapGetters('user', ['userStatus']),
+    // ✅ FIXED: Map all needed user getters from store
+    ...mapGetters('user', [
+      'userStatus',
+      'isPremiumUser',
+      'isStartUser', 
+      'isProUser',
+      'isFreeUser',
+      'hasActiveSubscription'
+    ]),
+    
+    // ✅ ENHANCED: Better plan label with reactive updates
     planLabel() {
-      if (this.userStatus === 'pro') return 'Pro';
-      if (this.userStatus === 'start') return 'Start';
+      const status = this.userStatus;
+      console.log('📊 Sidebar: Computing plan label for status:', status);
+      
+      if (status === 'pro') return 'Pro';
+      if (status === 'start') return 'Start';
       return 'Free';
+    },
+    
+    // ✅ NEW: Computed property to track user info changes
+    userDisplayName() {
+      if (!this.user) return 'Пользователь';
+      return this.user.name || this.user.displayName || this.user.email?.split('@')[0] || 'Пользователь';
     }
   },
+  
+  // ✅ ADDED: Watchers for store changes
+  watch: {
+    // ✅ Watch for user status changes from store
+    userStatus: {
+      handler(newStatus, oldStatus) {
+        console.log('📊 Sidebar: User status changed from', oldStatus, 'to:', newStatus);
+        
+        // Force component reactivity update
+        this.componentKey++;
+        
+        // Optional: Show notification for subscription changes
+        if (oldStatus && oldStatus !== newStatus) {
+          console.log('🔄 Sidebar: Plan changed, updating UI...');
+          
+          // Force re-render of plan label
+          this.$nextTick(() => {
+            this.$forceUpdate();
+          });
+        }
+      },
+      immediate: true
+    },
+    
+    // ✅ Watch for user object changes
+    user: {
+      handler(newUser, oldUser) {
+        console.log('👤 Sidebar: User object changed:', { 
+          old: oldUser?.email, 
+          new: newUser?.email,
+          status: this.userStatus 
+        });
+        
+        if (newUser && (!oldUser || oldUser.email !== newUser.email)) {
+          console.log('👤 Sidebar: New user logged in:', newUser.email);
+        }
+      },
+      deep: true,
+      immediate: true
+    },
+    
+    // ✅ Watch for subscription status changes
+    hasActiveSubscription: {
+      handler(hasSubscription) {
+        console.log('💳 Sidebar: Subscription status changed to:', hasSubscription);
+        this.componentKey++;
+      },
+      immediate: true
+    }
+  },
+  
   mounted() {
+    console.log('🔧 Sidebar: Component mounted');
+    console.log('📊 Sidebar: Initial user status:', this.userStatus);
+    console.log('👤 Sidebar: Initial user:', this.user);
+    
     this.checkMobile();
     window.addEventListener('resize', this.checkMobile);
     
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        this.setUser({
-          name: user.displayName || user.email?.split('@')[0],
-          email: user.email,
-          uid: user.uid
-        });
+    // ✅ ENHANCED: Better Firebase auth state handling
+    onAuthStateChanged(auth, (firebaseUser) => {
+      console.log('🔥 Sidebar: Firebase auth state changed:', firebaseUser?.email);
+      
+      if (firebaseUser) {
+        const userData = {
+          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
+          displayName: firebaseUser.displayName,
+          email: firebaseUser.email,
+          uid: firebaseUser.uid,
+          emailVerified: firebaseUser.emailVerified,
+          photoURL: firebaseUser.photoURL
+        };
+        
+        console.log('👤 Sidebar: Setting user data:', userData);
+        this.setUser(userData);
+        
+        // ✅ Store user ID for API calls
+        this.$store.commit('setFirebaseUserId', firebaseUser.uid);
+        localStorage.setItem('firebaseUserId', firebaseUser.uid);
+        
+      } else {
+        console.log('👤 Sidebar: User logged out, clearing data');
+        this.clearUser();
+        this.$store.commit('setFirebaseUserId', null);
+        localStorage.removeItem('firebaseUserId');
+      }
+    });
+    
+    // ✅ Listen for store subscription updates
+    this.$store.subscribe((mutation) => {
+      if (mutation.type === 'user/SET_USER_STATUS') {
+        console.log('📊 Sidebar: Store subscription detected status change:', mutation.payload);
+        this.componentKey++;
       }
     });
   },
+  
   beforeUnmount() {
+    console.log('🔧 Sidebar: Component unmounting');
     window.removeEventListener('resize', this.checkMobile);
   },
+  
   methods: {
     ...mapMutations(['setUser', 'clearUser']),
+    
     checkMobile() {
       this.isMobile = window.innerWidth <= 768;
     },
+    
     closeSidebar() {
       this.$emit('toggle-sidebar', false);
     },
+    
     closeSidebarOnMobile() {
       if (this.isMobile) {
         this.closeSidebar();
       }
     },
-    logout() {
-      signOut(auth)
-        .then(() => {
-          this.clearUser();
+    
+    // ✅ ENHANCED: Better logout handling
+    async logout() {
+      try {
+        console.log('🚪 Sidebar: Starting logout process...');
+        
+        // Show loading state
+        this.showLogoutModal = false;
+        
+        // Sign out from Firebase
+        await signOut(auth);
+        
+        // Clear all store data
+        this.clearUser();
+        this.$store.commit('user/CLEAR_USER_STATUS');
+        this.$store.commit('setFirebaseUserId', null);
+        
+        // Clear local storage
+        localStorage.removeItem('firebaseUserId');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userStatus');
+        
+        console.log('✅ Sidebar: Logout successful');
+        
+        // Show success message
+        if (this.$toast) {
           this.$toast.success('Вы успешно вышли из аккаунта.', {
             duration: 3000,
             position: 'top-center'
           });
-          setTimeout(() => {
-            this.$router.push('/');
-          }, 1500);
-        })
-        .catch((err) => {
-          console.error('❌ Ошибка выхода:', err.message);
+        }
+        
+        // Redirect after delay
+        setTimeout(() => {
+          this.$router.push('/');
+        }, 1500);
+        
+      } catch (error) {
+        console.error('❌ Sidebar: Logout error:', error);
+        
+        if (this.$toast) {
           this.$toast.error('Ошибка при выходе: попробуйте ещё раз.');
-        });
+        } else {
+          alert('Ошибка при выходе: попробуйте ещё раз.');
+        }
+      }
     },
+    
     getRoutePath(linkName) {
       if (linkName === 'settings') {
         return '/settings';
@@ -166,42 +306,56 @@ export default {
       // ✅ All links go to profile routes (including vocabulary)
       return `/profile/${linkName}`;
     },
+    
+    // ✅ ENHANCED: Better route matching
     isActive(name) {
       const path = this.$route.path;
       
-      if (name === 'main') {
-        return path === '/profile/main' || path === '/profile' || path === '/profile/';
-      }
-      if (name === 'catalogue') {
-        return path === '/profile/catalogue';
-      }
-      if (name === 'analytics') {
-        return path === '/profile/analytics';
-      }
-      if (name === 'goal') {
-        return path === '/profile/goal';
-      }
-      if (name === 'diary') {
-        return path === '/profile/diary';
-      }
-      if (name === 'homework') {
-        return path === '/profile/homework';
-      }
-      if (name === 'homeworks') {
-        return path === '/profile/homeworks' || path.startsWith('/profile/homeworks/');
-      }
-      if (name === 'tests') {
-        return path === '/profile/tests' || path.startsWith('/profile/tests/');
-      }
-      // ✅ UPDATED: Vocabulary now checks for profile vocabulary route
-      if (name === 'vocabulary') {
-        return path === '/profile/vocabulary' || path.startsWith('/profile/vocabulary');
-      }
-      if (name === 'settings') {
-        return path === '/settings';
+      // Handle specific route matches
+      const routeMatches = {
+        main: ['/profile/main', '/profile', '/profile/'],
+        catalogue: ['/profile/catalogue'],
+        analytics: ['/profile/analytics'],
+        goal: ['/profile/goal'],
+        diary: ['/profile/diary'],
+        homework: ['/profile/homework'],
+        settings: ['/settings']
+      };
+      
+      // Handle routes with sub-paths
+      const routeStartsWith = {
+        homeworks: '/profile/homeworks',
+        tests: '/profile/tests',
+        vocabulary: '/profile/vocabulary'
+      };
+      
+      // Check exact matches first
+      if (routeMatches[name]) {
+        return routeMatches[name].includes(path);
       }
       
+      // Check routes that can have sub-paths
+      if (routeStartsWith[name]) {
+        return path === routeStartsWith[name] || path.startsWith(routeStartsWith[name] + '/');
+      }
+      
+      // Fallback to generic match
       return path.includes(`/profile/${name}`);
+    },
+    
+    // ✅ NEW: Force component update method
+    forceUpdate() {
+      console.log('🔄 Sidebar: Forcing component update');
+      this.componentKey++;
+      this.$forceUpdate();
+    },
+    
+    // ✅ NEW: Get user status badge color
+    getStatusBadgeClass() {
+      const status = this.userStatus;
+      if (status === 'pro') return 'status-pro';
+      if (status === 'start') return 'status-start';
+      return 'status-free';
     }
   }
 };
