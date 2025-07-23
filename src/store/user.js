@@ -1012,6 +1012,66 @@ const actions = {
       };
     }
   },
+  // Add this method to your actions object in src/store/user.js
+async updateSubscription({ commit, dispatch }, { plan, source = 'payment', details = {} }) {
+  try {
+    console.log('🔄 Updating subscription:', { plan, source, details });
+    
+    const subscriptionData = {
+      plan: plan || 'free',
+      status: (plan && plan !== 'free') ? 'active' : 'inactive',
+      source,
+      startDate: new Date().toISOString(),
+      expiryDate: source === 'promocode' ? 
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() :
+        new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      details: details || {}
+    };
+    
+    // Update all related state
+    commit('SET_USER_STATUS', plan || 'free');
+    commit('UPDATE_SUBSCRIPTION', subscriptionData);
+    commit('UPDATE_FEATURES');
+    commit('FORCE_UPDATE');
+    
+    // Persistent storage
+    localStorage.setItem('userStatus', plan || 'free');
+    localStorage.setItem('subscriptionDetails', JSON.stringify(subscriptionData));
+    
+    // Global event broadcasting
+    if (typeof window !== 'undefined' && window.eventBus) {
+      window.eventBus.emit('userStatusChanged', {
+        oldStatus: 'free', // Track this if needed
+        newStatus: plan || 'free',
+        source,
+        timestamp: Date.now(),
+        subscriptionDetails: subscriptionData
+      });
+    }
+    
+    // Custom DOM event
+    if (typeof window !== 'undefined') {
+      const event = new CustomEvent('userSubscriptionChanged', {
+        detail: {
+          plan: plan || 'free',
+          source,
+          subscriptionData,
+          timestamp: Date.now()
+        }
+      });
+      window.dispatchEvent(event);
+    }
+    
+    await dispatch('loadUsage');
+    
+    console.log('✅ Subscription updated successfully:', subscriptionData);
+    return { success: true, subscriptionData };
+    
+  } catch (error) {
+    console.error('❌ Failed to update subscription:', error);
+    return { success: false, error: error.message };
+  }
+},
   
   // ✅ BULLETPROOF: Check monthly reset
   async checkMonthlyReset({ commit, dispatch, state }) {

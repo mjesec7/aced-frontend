@@ -993,247 +993,127 @@ export default {
       }
     },
     
-    async applyPromo() {
-      if (!this.canApplyPromo) {
-        this.showNotification('Проверьте данные и попробуйте снова', 'error');
-        return;
-      }
-      
-      if (!this.userId) {
-        this.showNotification("Ошибка авторизации", 'error');
-        return;
-      }
-      
-      this.isProcessingPromo = true;
-      this.loadingText = 'Применение промокода...';
-      
+    // Replace your existing applyPromo method with this enhanced version
+async applyPromo() {
+  if (!this.canApplyPromo) {
+    this.showNotification('Проверьте данные и попробуйте снова', 'error');
+    return;
+  }
+  
+  if (!this.userId) {
+    this.showNotification("Ошибка авторизации", 'error');
+    return;
+  }
+  
+  this.isProcessingPromo = true;
+  this.loadingText = 'Применение промокода...';
+  
+  try {
+    console.log('🎟️ Applying promocode:', {
+      userId: this.userId,
+      plan: this.selectedPlan,
+      code: this.promoCode
+    });
+    
+    let result = null;
+    
+    // Try the store action first
+    if (typeof this.applyPromocode === 'function') {
       try {
-        console.log('🎟️ Applying promocode:', {
-          userId: this.userId,
-          plan: this.selectedPlan,
-          code: this.promoCode
+        result = await this.applyPromocode({
+          promoCode: this.promoCode.trim(),
+          plan: this.selectedPlan
         });
-        
-        let result = null;
-        
-        // ✅ BULLETPROOF: Try the store action first with error handling
-        if (typeof this.applyPromocode === 'function') {
-          try {
-            result = await this.applyPromocode({
-              promoCode: this.promoCode.trim(),
-              plan: this.selectedPlan
-            });
-            console.log('📦 Store apply result:', result);
-          } catch (storeError) {
-            console.warn('⚠️ Store apply failed:', storeError.message);
-            result = null;
-          }
-        }
-        
-        // Strategy 2: Direct API call if store failed
-        if (!result || !result.success) {
-          console.log('🔄 Trying direct API apply...');
-          
-          try {
-            const requestData = {
-              userId: this.userId,
-              plan: this.selectedPlan,
-              promoCode: this.promoCode.trim().toUpperCase()
-            };
-            
-            console.log('📤 Request data:', requestData);
-            
-            const endpoints = [
-              `/payments/promo-code`
-            ];
-            
-            const apiResult = await this.tryMultipleApiEndpoints(endpoints, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-              },
-              body: JSON.stringify(requestData)
-            });
-            
-            console.log('📡 API apply result:', apiResult);
-            
-            if (apiResult.success) {
-              result = {
-                success: true,
-                message: apiResult.message || 'Промокод применён успешно!',
-                newPlan: this.selectedPlan,
-                subscriptionDetails: {
-                  plan: this.selectedPlan,
-                  appliedViaPromocode: true,
-                  promocode: this.promoCode.trim().toUpperCase(),
-                  activatedAt: new Date().toISOString(),
-                  source: 'promocode'
-                }
-              };
-            } else {
-              result = {
-                success: false,
-                error: apiResult.error || 'Не удалось применить промокод'
-              };
-            }
-          } catch (apiError) {
-            console.warn('⚠️ API apply failed:', apiError.message);
-            
-            // Let's try the emergency endpoint directly
-            try {
-              console.log('🔄 Trying emergency endpoint directly...');
-              
-              const emergencyUrl = 'https://api.aced.live/api/payments/promo-code';
-              const requestData = {
-                userId: this.userId,
-                plan: this.selectedPlan,
-                promoCode: this.promoCode.trim().toUpperCase()
-              };
-              
-              console.log('🚨 Emergency request to:', emergencyUrl);
-              console.log('🚨 Emergency data:', requestData);
-              
-              const emergencyResponse = await fetch(emergencyUrl, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json',
-                },
-                body: JSON.stringify(requestData)
-              });
-              
-              console.log('🚨 Emergency response status:', emergencyResponse.status);
-              
-              if (emergencyResponse.ok) {
-                const emergencyResult = await emergencyResponse.json();
-                console.log('🚨 Emergency success:', emergencyResult);
-                
-                result = {
-                  success: true,
-                  message: emergencyResult.message || 'Промокод применён успешно!',
-                  newPlan: this.selectedPlan,
-                  subscriptionDetails: {
-                    plan: this.selectedPlan,
-                    appliedViaPromocode: true,
-                    promocode: this.promoCode.trim().toUpperCase(),
-                    activatedAt: new Date().toISOString(),
-                    source: 'emergency-endpoint'
-                  }
-                };
-              } else {
-                const emergencyError = await emergencyResponse.json().catch(() => ({}));
-                console.log('🚨 Emergency error:', emergencyError);
-                
-                result = {
-                  success: false,
-                  error: emergencyError.error || `HTTP ${emergencyResponse.status} error`
-                };
-              }
-            } catch (emergencyError) {
-              console.warn('🚨 Emergency endpoint also failed:', emergencyError.message);
-              result = {
-                success: false,
-                error: 'Все попытки API не удались'
-              };
-            }
-          }
-        }
-        
-        // Strategy 3: Hardcoded success for valid promocodes (development/fallback)
-        if (!result || !result.success) {
-          console.log('🔄 Using hardcoded apply fallback...');
-          
-          const validPromocodes = ['ACEDPROMOCODE2406', 'FREE2024', 'TESTCODE', 'START2024', 'PRO2024', 'STA4CZWPY5'];
-          const promocodeUpper = this.promoCode.trim().toUpperCase();
-          
-          if (validPromocodes.includes(promocodeUpper)) {
-            // Simulate successful application
-            result = {
-              success: true,
-              message: `🎉 Промокод ${promocodeUpper} применён! Тариф обновлён: "${this.currentPlan.toUpperCase()}" → "${this.selectedPlan.toUpperCase()}"`,
-              newPlan: this.selectedPlan,
-              subscriptionDetails: {
-                plan: this.selectedPlan,
-                appliedViaPromocode: true,
-                promocode: promocodeUpper,
-                activatedAt: new Date().toISOString(),
-                source: 'hardcoded-fallback'
-              }
-            };
-            console.log('✅ Hardcoded apply successful for:', promocodeUpper);
-            
-            // ✅ BULLETPROOF: Update the store using actions/mutations if available
-            if (this.$store && typeof this.$store.commit === 'function') {
-              try {
-                this.$store.commit('user/SET_USER_STATUS', this.selectedPlan);
-                this.$store.commit('user/UPDATE_SUBSCRIPTION', result.subscriptionDetails);
-                this.$store.commit('user/ADD_PROMOCODE', {
-                  code: promocodeUpper,
-                  plan: this.selectedPlan,
-                  oldPlan: this.currentPlan
-                });
-                console.log('✅ Store updated with hardcoded result');
-              } catch (storeError) {
-                console.warn('⚠️ Could not update store:', storeError.message);
-              }
-            }
-          } else {
-            result = {
-              success: false,
-              error: 'Неверный промокод'
-            };
-          }
-        }
-        
-        console.log('🎟️ Final promocode result:', result);
-        
-        if (result && result.success) {
-          const oldStatus = this.currentPlan;
-          
-          this.promoCode = "";
-          this.selectedPlan = "";
-          this.promoValidation = null;
-          
-          this.showNotification(
-            result.message || `🎉 Промокод применён! Тариф обновлён: "${oldStatus.toUpperCase()}" → "${result.newPlan.toUpperCase()}"`, 
-            'success'
-          );
-          
-          // ✅ BULLETPROOF: Force reactivity update and reload store data
-          this.forceReactivityUpdate();
-          
-          setTimeout(async () => {
-            try {
-              if (typeof this.loadUserStatus === 'function') {
-                await this.loadUserStatus();
-              }
-              if (typeof this.forceUpdate === 'function') {
-                await this.forceUpdate();
-              }
-              this.forceReactivityUpdate();
-            } catch (refreshError) {
-              console.warn('⚠️ Could not refresh user status:', refreshError);
-            }
-          }, 1000);
-          
-        } else {
-          this.showNotification(
-            result?.error || "❌ Не удалось применить промокод", 
-            'error'
-          );
-        }
-        
-      } catch (error) {
-        console.error("❌ Promo code error:", error);
-        this.showNotification(
-          'Произошла ошибка при применении промокода', 
-          'error'
-        );
-      } finally {
-        this.isProcessingPromo = false;
+      } catch (storeError) {
+        console.warn('⚠️ Store apply failed:', storeError.message);
+        result = null;
       }
-    },
+    }
+    
+    // Fallback to direct API call
+    if (!result || !result.success) {
+      const requestData = {
+        userId: this.userId,
+        plan: this.selectedPlan,
+        promoCode: this.promoCode.trim().toUpperCase()
+      };
+      
+      const apiResult = await this.tryMultipleApiEndpoints([`/payments/promo-code`], {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
+      });
+      
+      if (apiResult.success) {
+        result = {
+          success: true,
+          message: apiResult.message || 'Промокод применён успешно!',
+          newPlan: this.selectedPlan,
+          oldPlan: this.userStatus
+        };
+      }
+    }
+    
+    if (result && result.success) {
+      await this.handlePromocodeSuccess(result);
+    } else {
+      this.showNotification(result?.error || "❌ Не удалось применить промокод", 'error');
+    }
+    
+  } catch (error) {
+    console.error("❌ Promo code error:", error);
+    this.showNotification('Произошла ошибка при применении промокода', 'error');
+  } finally {
+    this.isProcessingPromo = false;
+  }
+},
+
+// Add this new method to handle successful promocode application
+async handlePromocodeSuccess(result) {
+  console.log('🎉 Handling successful promocode application:', result);
+  
+  try {
+    const oldStatus = this.userStatus;
+    const newStatus = result.newPlan || result.plan;
+    
+    // Update store
+    if (this.$store && typeof this.$store.dispatch === 'function') {
+      await this.$store.dispatch('user/updateSubscription', {
+        plan: newStatus,
+        source: 'promocode',
+        details: {
+          promocode: this.promoCode.trim().toUpperCase(),
+          appliedAt: new Date().toISOString(),
+          oldPlan: oldStatus
+        }
+      });
+    }
+    
+    // Reset form
+    this.promoCode = "";
+    this.selectedPlan = "";
+    this.promoValidation = null;
+    
+    // Force reactivity
+    this.forceReactivityUpdate();
+    
+    // Success message
+    const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
+    this.showNotification(`🎉 Поздравляем! Промокод применён! Теперь у вас ${planLabel} подписка!`, 'success');
+    
+    // Delayed refresh
+    setTimeout(async () => {
+      if (typeof this.loadUserStatus === 'function') {
+        await this.loadUserStatus();
+      }
+      this.forceReactivityUpdate();
+    }, 1000);
+    
+  } catch (error) {
+    console.error('❌ Error in handlePromocodeSuccess:', error);
+    this.showNotification(result.message || `🎉 Промокод применён!`, 'success');
+  }
+},
 
     // ✅ BULLETPROOF: Additional methods with error handling
     async saveChanges() {

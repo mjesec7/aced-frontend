@@ -7,7 +7,7 @@
           <img src="@/assets/icons/user.png" alt="User Icon" class="user-icon" />
           <div class="user-details">
             <span class="user-name">{{ user.name || user.email }}</span>
-            <span class="user-plan">📦 {{ planLabel }}</span>
+            <span class="user-plan" :class="getStatusBadgeClass()" :key="reactivityKey">📦 {{ planLabel }}</span>
           </div>
         </div>
 
@@ -96,63 +96,94 @@ export default {
         { name: 'homework', label: 'Помощь с ДЗ' },
         { name: 'homeworks', label: 'Домашние задания' },
         { name: 'tests', label: 'Тесты' },
-        // ✅ UPDATED: Vocabulary now points to standalone VocabularyPage
         { name: 'vocabulary', label: 'Словарь' },
         { name: 'settings', label: 'Настройки' }
       ],
       isMobile: false,
-      // ✅ Track component update state
-      componentKey: 0
+      // ✅ Enhanced reactivity tracking
+      componentKey: 0,
+      reactivityKey: 0,
+      lastStatusUpdate: Date.now(),
+      unsubscribeStore: null,
+      globalEventHandlers: {}
     };
   },
   computed: {
     ...mapState(['user']),
-    // ✅ FIXED: Map all needed user getters from store
+    // ✅ ENHANCED: Map all needed user getters from store with reactivity
     ...mapGetters('user', [
       'userStatus',
       'isPremiumUser',
       'isStartUser', 
       'isProUser',
       'isFreeUser',
-      'hasActiveSubscription'
+      'hasActiveSubscription',
+      'subscriptionDetails',
+      'forceUpdateCounter'
     ]),
     
-    // ✅ ENHANCED: Better plan label with reactive updates
+    // ✅ ENHANCED: Better plan label with comprehensive reactivity
     planLabel() {
-      const status = this.userStatus;
-      console.log('📊 Sidebar: Computing plan label for status:', status);
+      // Force reactivity with multiple triggers
+      const status = this.userStatus || 'free';
+      const counter = this.forceUpdateCounter || 0;
+      const key = this.reactivityKey;
+      const timestamp = this.lastStatusUpdate;
       
-      if (status === 'pro') return 'Pro';
-      if (status === 'start') return 'Start';
-      return 'Free';
+      console.log('📊 Sidebar: Computing plan label:', { 
+        status, 
+        counter, 
+        key, 
+        timestamp,
+        raw: this.$store?.state?.user?.userStatus 
+      });
+      
+      // Multiple fallback checks for maximum reliability
+      const finalStatus = status || 
+                         this.$store?.getters['user/userStatus'] || 
+                         this.$store?.state?.user?.userStatus ||
+                         localStorage.getItem('userStatus') || 
+                         'free';
+      
+      const labels = {
+        'pro': 'Pro',
+        'start': 'Start',
+        'free': 'Free'
+      };
+      
+      return labels[finalStatus] || 'Free';
     },
     
-    // ✅ NEW: Computed property to track user info changes
+    // ✅ NEW: Computed property to track user info changes with reactivity
     userDisplayName() {
+      const key = this.componentKey; // Force reactivity
       if (!this.user) return 'Пользователь';
       return this.user.name || this.user.displayName || this.user.email?.split('@')[0] || 'Пользователь';
+    },
+    
+    // ✅ NEW: Reactive status for CSS classes
+    currentStatus() {
+      return this.userStatus || 'free';
     }
   },
   
-  // ✅ ADDED: Watchers for store changes
+  // ✅ ENHANCED: Comprehensive watchers for all possible changes
   watch: {
-    // ✅ Watch for user status changes from store
+    // ✅ Watch for user status changes from store with immediate feedback
     userStatus: {
       handler(newStatus, oldStatus) {
         console.log('📊 Sidebar: User status changed from', oldStatus, 'to:', newStatus);
         
-        // Force component reactivity update
-        this.componentKey++;
-        
-        // Optional: Show notification for subscription changes
-        if (oldStatus && oldStatus !== newStatus) {
-          console.log('🔄 Sidebar: Plan changed, updating UI...');
-          
-          // Force re-render of plan label
-          this.$nextTick(() => {
-            this.$forceUpdate();
-          });
-        }
+        this.handleStatusChange(newStatus, oldStatus);
+      },
+      immediate: true
+    },
+    
+    // ✅ Watch store force update counter
+    forceUpdateCounter: {
+      handler(newCounter, oldCounter) {
+        console.log('📊 Sidebar: Force update counter changed:', oldCounter, '→', newCounter);
+        this.triggerReactivityUpdate();
       },
       immediate: true
     },
@@ -168,6 +199,19 @@ export default {
         
         if (newUser && (!oldUser || oldUser.email !== newUser.email)) {
           console.log('👤 Sidebar: New user logged in:', newUser.email);
+          this.componentKey++;
+        }
+      },
+      deep: true,
+      immediate: true
+    },
+    
+    // ✅ Watch for subscription details changes
+    subscriptionDetails: {
+      handler(newSub, oldSub) {
+        if (newSub !== oldSub) {
+          console.log('💳 Sidebar: Subscription details changed:', newSub);
+          this.triggerReactivityUpdate();
         }
       },
       deep: true,
@@ -176,9 +220,11 @@ export default {
     
     // ✅ Watch for subscription status changes
     hasActiveSubscription: {
-      handler(hasSubscription) {
-        console.log('💳 Sidebar: Subscription status changed to:', hasSubscription);
-        this.componentKey++;
+      handler(hasSubscription, hadSubscription) {
+        if (hasSubscription !== hadSubscription) {
+          console.log('💳 Sidebar: Subscription status changed to:', hasSubscription);
+          this.triggerReactivityUpdate();
+        }
       },
       immediate: true
     }
@@ -221,22 +267,269 @@ export default {
       }
     });
     
-    // ✅ Listen for store subscription updates
-    this.$store.subscribe((mutation) => {
-      if (mutation.type === 'user/SET_USER_STATUS') {
-        console.log('📊 Sidebar: Store subscription detected status change:', mutation.payload);
-        this.componentKey++;
+    // ✅ ENHANCED: Setup all global listeners
+    this.setupGlobalListeners();
+    
+    // ✅ Store subscription listener with enhanced mutation tracking
+    this.unsubscribeStore = this.$store.subscribe((mutation) => {
+      const relevantMutations = [
+        'user/SET_USER_STATUS',
+        'user/setUserStatus', 
+        'user/UPDATE_SUBSCRIPTION',
+        'user/FORCE_UPDATE',
+        'user/ADD_PROMOCODE',
+        'user/SET_USER'
+      ];
+      
+      if (relevantMutations.includes(mutation.type)) {
+        console.log('📊 Sidebar: Store mutation detected:', mutation.type, mutation.payload);
+        this.handleStoreUpdate(mutation);
       }
     });
+    
+    // ✅ Initial status sync check
+    this.syncStatusWithStore();
   },
   
   beforeUnmount() {
     console.log('🔧 Sidebar: Component unmounting');
     window.removeEventListener('resize', this.checkMobile);
+    
+    // Remove global event listeners
+    this.cleanupGlobalListeners();
+    
+    // Remove store subscription
+    if (this.unsubscribeStore) {
+      this.unsubscribeStore();
+    }
   },
   
   methods: {
     ...mapMutations(['setUser', 'clearUser']),
+    
+    // ✅ ENHANCED: Comprehensive global event listeners setup
+    setupGlobalListeners() {
+      console.log('🔧 Sidebar: Setting up global event listeners');
+      
+      // ✅ Global subscription change handler
+      this.globalEventHandlers.subscriptionChange = (event) => {
+        console.log('📡 Sidebar: Global subscription change received:', event.detail);
+        
+        const { plan, source, oldPlan } = event.detail;
+        
+        // Force immediate update with multiple triggers
+        this.handleStatusChange(plan, oldPlan);
+        
+        // Show celebration for upgrades
+        this.$nextTick(() => {
+          if (plan && plan !== 'free' && oldPlan === 'free') {
+            this.showUpgradeNotification(plan, source);
+          }
+        });
+      };
+      
+      // ✅ Event bus listeners with error handling
+      if (typeof window !== 'undefined' && window.eventBus) {
+        this.globalEventHandlers.statusChanged = (data) => {
+          console.log('📡 Sidebar: User status change event:', data);
+          this.handleStatusChange(data.newStatus, data.oldStatus);
+        };
+        
+        this.globalEventHandlers.promocodeApplied = (data) => {
+          console.log('📡 Sidebar: Promocode applied event:', data);
+          this.handleStatusChange(data.newStatus, data.oldStatus);
+          
+          if (data.promocode && data.newStatus) {
+            const planLabel = data.newStatus === 'pro' ? 'Pro' : 'Start';
+            console.log(`🎉 Sidebar: Promocode ${data.promocode} activated ${planLabel} plan`);
+          }
+        };
+        
+        this.globalEventHandlers.subscriptionUpdated = (data) => {
+          console.log('📡 Sidebar: Subscription updated event:', data);
+          this.handleStatusChange(data.plan, data.oldPlan);
+        };
+        
+        this.globalEventHandlers.forceUpdate = (data) => {
+          console.log('📡 Sidebar: Force update event:', data);
+          this.triggerReactivityUpdate();
+        };
+        
+        // Register all event bus listeners
+        window.eventBus.on('userStatusChanged', this.globalEventHandlers.statusChanged);
+        window.eventBus.on('promocodeApplied', this.globalEventHandlers.promocodeApplied);
+        window.eventBus.on('subscriptionUpdated', this.globalEventHandlers.subscriptionUpdated);
+        window.eventBus.on('forceUpdate', this.globalEventHandlers.forceUpdate);
+        window.eventBus.on('globalForceUpdate', this.globalEventHandlers.forceUpdate);
+        
+        console.log('✅ Sidebar: Event bus listeners registered');
+      }
+      
+      // ✅ DOM event listener
+      if (typeof window !== 'undefined') {
+        window.addEventListener('userSubscriptionChanged', this.globalEventHandlers.subscriptionChange);
+        console.log('✅ Sidebar: DOM event listener registered');
+      }
+      
+      // ✅ Listen for localStorage changes (for cross-tab sync)
+      this.globalEventHandlers.storageChange = (event) => {
+        if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
+          console.log('📡 Sidebar: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
+          this.handleStatusChange(event.newValue, event.oldValue);
+        }
+      };
+      
+      window.addEventListener('storage', this.globalEventHandlers.storageChange);
+    },
+    
+    // ✅ ENHANCED: Comprehensive cleanup
+    cleanupGlobalListeners() {
+      console.log('🧹 Sidebar: Cleaning up global event listeners');
+      
+      if (typeof window !== 'undefined') {
+        // Remove DOM event listeners
+        if (this.globalEventHandlers.subscriptionChange) {
+          window.removeEventListener('userSubscriptionChanged', this.globalEventHandlers.subscriptionChange);
+        }
+        
+        if (this.globalEventHandlers.storageChange) {
+          window.removeEventListener('storage', this.globalEventHandlers.storageChange);
+        }
+        
+        // Remove event bus listeners
+        if (window.eventBus) {
+          Object.keys(this.globalEventHandlers).forEach(key => {
+            const handler = this.globalEventHandlers[key];
+            if (typeof handler === 'function') {
+              window.eventBus.off('userStatusChanged', handler);
+              window.eventBus.off('promocodeApplied', handler);
+              window.eventBus.off('subscriptionUpdated', handler);
+              window.eventBus.off('forceUpdate', handler);
+              window.eventBus.off('globalForceUpdate', handler);
+            }
+          });
+        }
+      }
+      
+      // Clear handlers object
+      this.globalEventHandlers = {};
+    },
+    
+    // ✅ NEW: Centralized status change handler
+    handleStatusChange(newStatus, oldStatus) {
+      console.log('🔄 Sidebar: Handling status change:', oldStatus, '→', newStatus);
+      
+      // Update local tracking
+      this.lastStatusUpdate = Date.now();
+      
+      // Trigger multiple reactivity updates
+      this.triggerReactivityUpdate();
+      
+      // Optional: Show notification for subscription changes
+      if (oldStatus && oldStatus !== newStatus && newStatus && newStatus !== 'free') {
+        // Delay notification to avoid showing multiple times
+        clearTimeout(this.notificationTimeout);
+        this.notificationTimeout = setTimeout(() => {
+          this.showUpgradeNotification(newStatus, 'subscription-change');
+        }, 500);
+      }
+    },
+    
+    // ✅ NEW: Store update handler
+    handleStoreUpdate(mutation) {
+      console.log('🔄 Sidebar: Handling store update:', mutation.type);
+      
+      // Force component update with multiple strategies
+      this.triggerReactivityUpdate();
+      
+      // Additional delayed update for stubborn cases
+      this.$nextTick(() => {
+        setTimeout(() => {
+          this.triggerReactivityUpdate();
+        }, 100);
+      });
+    },
+    
+    // ✅ NEW: Comprehensive reactivity update
+    triggerReactivityUpdate() {
+      // Multiple reactivity triggers for maximum reliability
+      this.componentKey++;
+      this.reactivityKey++;
+      this.lastStatusUpdate = Date.now();
+      
+      // Force Vue reactivity
+      this.$forceUpdate();
+      
+      // Additional delayed update
+      this.$nextTick(() => {
+        this.$forceUpdate();
+      });
+      
+      console.log('🔄 Sidebar: Reactivity update triggered:', {
+        componentKey: this.componentKey,
+        reactivityKey: this.reactivityKey,
+        currentStatus: this.userStatus
+      });
+    },
+    
+    // ✅ NEW: Status synchronization with store
+    syncStatusWithStore() {
+      try {
+        const storeStatus = this.$store?.getters['user/userStatus'];
+        const localStatus = localStorage.getItem('userStatus');
+        
+        console.log('🔄 Sidebar: Syncing status:', {
+          store: storeStatus,
+          localStorage: localStatus,
+          computed: this.userStatus
+        });
+        
+        // If there's a mismatch, prefer store over localStorage
+        if (storeStatus && storeStatus !== localStatus) {
+          console.log('⚠️ Sidebar: Status mismatch detected, syncing localStorage to store');
+          localStorage.setItem('userStatus', storeStatus);
+          this.triggerReactivityUpdate();
+        }
+        
+        // If store is empty but localStorage has data, update store
+        if (!storeStatus && localStatus && localStatus !== 'free') {
+          console.log('⚠️ Sidebar: Store missing status, updating from localStorage');
+          this.$store.commit('user/SET_USER_STATUS', localStatus);
+          this.triggerReactivityUpdate();
+        }
+        
+      } catch (error) {
+        console.error('❌ Sidebar: Error syncing status:', error);
+      }
+    },
+    
+    // ✅ NEW: Show upgrade notification
+    showUpgradeNotification(plan, source) {
+      const planLabels = {
+        start: 'Start',
+        pro: 'Pro'
+      };
+      
+      const sourceLabels = {
+        promocode: 'промокоду',
+        payment: 'оплате',
+        'subscription-change': 'обновлению'
+      };
+      
+      const planLabel = planLabels[plan] || plan.toUpperCase();
+      const sourceText = sourceLabels[source] || 'активации';
+      
+      const message = `🎉 Поздравляем! Теперь у вас ${planLabel} подписка по ${sourceText}!`;
+      
+      if (this.$toast) {
+        this.$toast.success(message, {
+          duration: 5000,
+          position: 'top-center'
+        });
+      } else {
+        console.log('🎉 Sidebar:', message);
+      }
+    },
     
     checkMobile() {
       this.isMobile = window.innerWidth <= 768;
@@ -265,13 +558,14 @@ export default {
         
         // Clear all store data
         this.clearUser();
-        this.$store.commit('user/CLEAR_USER_STATUS');
+        this.$store.commit('user/CLEAR_USER');
         this.$store.commit('setFirebaseUserId', null);
         
         // Clear local storage
-        localStorage.removeItem('firebaseUserId');
-        localStorage.removeItem('userId');
-        localStorage.removeItem('userStatus');
+        const keysToRemove = ['firebaseUserId', 'userId', 'userStatus', 'subscriptionDetails', 'appliedPromocodes'];
+        keysToRemove.forEach(key => {
+          localStorage.removeItem(key);
+        });
         
         console.log('✅ Sidebar: Logout successful');
         
@@ -303,7 +597,6 @@ export default {
       if (linkName === 'settings') {
         return '/settings';
       }
-      // ✅ All links go to profile routes (including vocabulary)
       return `/profile/${linkName}`;
     },
     
@@ -343,19 +636,15 @@ export default {
       return path.includes(`/profile/${name}`);
     },
     
-    // ✅ NEW: Force component update method
-    forceUpdate() {
-      console.log('🔄 Sidebar: Forcing component update');
-      this.componentKey++;
-      this.$forceUpdate();
-    },
-    
     // ✅ NEW: Get user status badge color
     getStatusBadgeClass() {
-      const status = this.userStatus;
-      if (status === 'pro') return 'status-pro';
-      if (status === 'start') return 'status-start';
-      return 'status-free';
+      const status = this.currentStatus;
+      return {
+        'status-free': status === 'free',
+        'status-start': status === 'start', 
+        'status-pro': status === 'pro',
+        'plan-updated': this.lastStatusUpdate > Date.now() - 5000 // Recently updated
+      };
     }
   }
 };

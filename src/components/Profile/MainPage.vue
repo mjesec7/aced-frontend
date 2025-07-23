@@ -282,26 +282,43 @@ import {
 import { auth } from '@/firebase';
 import StudyCard from '@/components/Profile/StudyCard.vue';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
+import { eventBus } from '@/main.js';
 
 export default {
   name: 'MainPage',
-  components: { StudyCard, PaymentModal },
+  components: { 
+    StudyCard, 
+    PaymentModal 
+  },
+  
   data() {
     return {
+      // ============================================================================
+      // 👤 USER & AUTHENTICATION DATA
+      // ============================================================================
       userId: null,
-      allRecommendations: [], // All available recommendations
-      displayedRecommendations: [], // Currently displayed 10 random ones
+      lang: localStorage.getItem('lang') || 'ru',
+      
+      // ============================================================================
+      // 📚 RECOMMENDATIONS DATA
+      // ============================================================================
+      allRecommendations: [], // All available recommendations from API
+      displayedRecommendations: [], // Currently displayed subset (10 random)
+      recommendationsLastFetch: null,
+      recommendationsSource: null, // 'lessons' | 'topics' | 'fallback'
+      
+      // ============================================================================
+      // 📖 STUDY LIST DATA
+      // ============================================================================
       studyList: [],
+      studyListLastFetch: null,
+      invalidTopicsCleanedUp: 0,
+      
+      // ============================================================================
+      // 🎛️ FILTER & SEARCH STATE
+      // ============================================================================
       allSubjects: [],
       allLevels: [],
-      loadingRecommendations: true,
-      loadingStudyList: true,
-      
-      // Carousel state
-      isAtStart: true,
-      isAtEnd: false,
-      
-      // Enhanced Filters
       searchQuery: '',
       filterSubject: '',
       filterLevel: '',
@@ -309,709 +326,689 @@ export default {
       filterProgress: '',
       sortBy: 'name',
       
+      // ============================================================================
+      // ⏳ LOADING STATES
+      // ============================================================================
+      loadingRecommendations: true,
+      loadingStudyList: true,
+      loadingOperations: {
+        add: new Set(),    // Topics being added to study list
+        start: new Set(),  // Topics being started
+        remove: new Set(), // Topics being removed
+        refresh: new Set() // Data being refreshed
+      },
+      
+      // ============================================================================
+      // 🎠 CAROUSEL STATE
+      // ============================================================================
+      isAtStart: true,
+      isAtEnd: false,
+      carouselScrollPosition: 0,
+      
+      // ============================================================================
+      // 💳 MODAL & PAYWALL STATE
+      // ============================================================================
       showPaywall: false,
       requestedTopicId: null,
-      lang: localStorage.getItem('lang') || 'ru',
       
-      // Error handling state
+      // ============================================================================
+      // ❌ ERROR HANDLING STATE
+      // ============================================================================
       errors: {
         recommendations: null,
-        studyList: null
+        studyList: null,
+        api: null
       },
       retryCount: 0,
       maxRetries: 3,
-      invalidTopicsCleanedUp: 0
+      lastErrorTime: null,
+      
+      // ============================================================================
+      // 🔄 REACTIVITY & PERFORMANCE
+      // ============================================================================
+      componentKey: 0,
+      updateTimer: null,
+      lastFilterChange: Date.now(),
+      forceUpdateCounter: 0,
+      
+      // ============================================================================
+      // 🔔 NOTIFICATION SYSTEM
+      // ============================================================================
+      notifications: [],
+      notificationCounter: 0,
+      maxNotifications: 5,
+      
+      // ============================================================================
+      // 🧹 EVENT CLEANUP TRACKING
+      // ============================================================================
+      unsubscribeStore: null,
+      eventCleanupFunctions: [],
+      globalEventListeners: new Map(),
+      
+      // ============================================================================
+      // 📊 PERFORMANCE & ANALYTICS
+      // ============================================================================
+      performanceMetrics: {
+        mountTime: null,
+        lastDataFetch: null,
+        totalApiCalls: 0,
+        successfulOperations: 0,
+        failedOperations: 0
+      },
+      
+      // ============================================================================
+      // 🎯 FEATURE FLAGS & CONFIGURATION
+      // ============================================================================
+      config: {
+        enableAutoRefresh: true,
+        autoRefreshInterval: 300000, // 5 minutes
+        maxRecommendations: 10,
+        enableNotifications: true,
+        enableProgressTracking: true,
+        enableAnalytics: import.meta.env.DEV
+      }
     };
   },
   
   computed: {
-    // ✅ FIXED: Map all needed user getters from store
+    // ============================================================================
+    // 👤 USER STATUS COMPUTED PROPERTIES
+    // ============================================================================
     ...mapGetters('user', [
       'userStatus',
       'isPremiumUser',
       'isStartUser', 
       'isProUser',
       'isFreeUser',
-      'hasActiveSubscription'
+      'hasActiveSubscription',
+      'getUser',
+      'subscriptionDetails'
     ]),
     
+    // ✅ Enhanced reactive user status with consistency checks
+    currentUserStatus() {
+      const storeStatus = this.userStatus;
+      const localStatus = localStorage.getItem('userStatus');
+      const computedStatus = storeStatus || localStatus || 'free';
+      
+      // Auto-fix inconsistencies
+      if (storeStatus && localStatus && storeStatus !== localStatus) {
+        console.log(`🔧 Auto-fixing status inconsistency: store(${storeStatus}) !== localStorage(${localStatus})`);
+        localStorage.setItem('userStatus', storeStatus);
+      }
+      
+      return computedStatus;
+    },
+    
+    userStatusLabel() {
+      const status = this.currentUserStatus;
+      const labels = {
+        'pro': 'Pro',
+        'start': 'Start',
+        'premium': 'Start', // Alias
+        'free': 'Free'
+      };
+      return labels[status] || 'Free';
+    },
+    
+    // ============================================================================
+    // 📊 FILTERED DATA COMPUTED PROPERTIES
+    // ============================================================================
+    
     filteredRecommendations() {
-      return this.applySorting(this.displayedRecommendations
-        .filter(t => t.lessons?.length)
-        .filter(t => {
-          const name = this.getTopicName(t);
-          const description = this.getTopicDescription(t);
-          const topicType = this.getTopicType(t);
-          
-          return (
-            (!this.filterSubject || t.subject === this.filterSubject) &&
-            (!this.filterLevel || t.level?.toString() === this.filterLevel?.toString()) &&
-            (!this.filterType || topicType === this.filterType) &&
-            (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-             description.toLowerCase().includes(this.searchQuery.toLowerCase()))
-          );
-        }));
+      try {
+        return this.applySorting(
+          this.displayedRecommendations
+            .filter(t => t?.lessons?.length > 0)
+            .filter(t => this.passesAllFilters(t))
+        );
+      } catch (error) {
+        console.error('❌ Error filtering recommendations:', error);
+        return [];
+      }
     },
     
     filteredStudyList() {
-      return this.applySorting(this.studyList.filter(t => {
-        const name = this.getTopicName(t);
-        const description = this.getTopicDescription(t);
-        const topicType = this.getTopicType(t);
-        const progress = t.progress?.percent || 0;
-        
-        // Progress filter logic
-        let matchesProgress = true;
-        if (this.filterProgress) {
-          switch (this.filterProgress) {
-            case 'not-started':
-              matchesProgress = progress === 0;
-              break;
-            case 'in-progress':
-              matchesProgress = progress > 0 && progress < 100;
-              break;
-            case 'completed':
-              matchesProgress = progress === 100;
-              break;
-          }
-        }
-        
-        return (
-          (!this.filterSubject || t.subject === this.filterSubject) &&
-          (!this.filterLevel || t.level?.toString() === this.filterLevel?.toString()) &&
-          (!this.filterType || topicType === this.filterType) &&
-          matchesProgress &&
-          (name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-           description.toLowerCase().includes(this.searchQuery.toLowerCase()))
+      try {
+        return this.applySorting(
+          this.studyList.filter(t => this.passesAllFilters(t))
         );
-      }));
+      } catch (error) {
+        console.error('❌ Error filtering study list:', error);
+        return [];
+      }
     },
     
-    // ✅ FIXED: Use reactive store getter instead of local data
-    userStatusLabel() {
-      if (this.userStatus === 'pro') return 'Pro';
-      if (this.userStatus === 'start') return 'Start';
-      return 'Free';
+    // ============================================================================
+    // 🎛️ UI STATE COMPUTED PROPERTIES
+    // ============================================================================
+    
+    hasActiveFilters() {
+      return !!(
+        this.searchQuery?.trim() || 
+        this.filterSubject || 
+        this.filterLevel || 
+        this.filterType || 
+        this.filterProgress
+      );
     },
     
     hasErrors() {
-      return this.errors.recommendations || this.errors.studyList;
+      return !!(
+        this.errors.recommendations || 
+        this.errors.studyList || 
+        this.errors.api
+      );
     },
     
-    hasActiveFilters() {
-      return this.searchQuery || this.filterSubject || this.filterLevel || 
-             this.filterType || this.filterProgress;
+    hasData() {
+      return this.allRecommendations.length > 0 || this.studyList.length > 0;
+    },
+    
+    isLoading() {
+      return this.loadingRecommendations || this.loadingStudyList;
+    },
+    
+    // ============================================================================
+    // 📈 ANALYTICS COMPUTED PROPERTIES
+    // ============================================================================
+    
+    totalTopicsAvailable() {
+      return this.allRecommendations.length + this.studyList.length;
+    },
+    
+    completionRate() {
+      const completedCourses = this.studyList.filter(t => t.progress?.percent === 100).length;
+      return this.studyList.length > 0 ? Math.round((completedCourses / this.studyList.length) * 100) : 0;
+    },
+    
+    averageProgress() {
+      if (this.studyList.length === 0) return 0;
+      const totalProgress = this.studyList.reduce((sum, t) => sum + (t.progress?.percent || 0), 0);
+      return Math.round(totalProgress / this.studyList.length);
     }
   },
   
+  // ============================================================================
+  // 🔄 LIFECYCLE HOOKS
+  // ============================================================================
+  
   async mounted() {
-    const storedId = this.$store.state.firebaseUserId || localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
-    if (!storedId) {
-      return this.$router.push('/');
-    }
-    this.userId = storedId;
+    const startTime = Date.now();
+    console.log('📱 MainPage: Component mounted');
     
-    // Load in parallel but handle errors independently
-    await Promise.allSettled([
-      this.fetchRecommendations(),
-      this.fetchStudyList()
-    ]);
+    try {
+      // Record mount time
+      this.performanceMetrics.mountTime = startTime;
+      
+      // Validate user authentication
+      await this.validateUserAuthentication();
+      
+      // Setup global event listeners
+      this.setupGlobalEventSystem();
+      
+      // Initialize data loading
+      await this.initializeDataLoading();
+      
+      // Setup auto-refresh if enabled
+      if (this.config.enableAutoRefresh) {
+        this.setupAutoRefresh();
+      }
+      
+      // Setup performance monitoring
+      if (this.config.enableAnalytics) {
+        this.setupPerformanceMonitoring();
+      }
+      
+      const mountTime = Date.now() - startTime;
+      console.log(`✅ MainPage: Mounted successfully in ${mountTime}ms`);
+      
+      // Show welcome notification
+      if (this.config.enableNotifications && !this.hasErrors) {
+        this.showNotification('Добро пожаловать! Данные загружены.', 'success', 3000);
+      }
+      
+    } catch (error) {
+      console.error('❌ MainPage mount error:', error);
+      this.handleCriticalError(error, 'mount');
+    }
+  },
+  
+  beforeUnmount() {
+    console.log('📱 MainPage: Component unmounting');
+    this.performCleanup();
+  },
+  
+  // ============================================================================
+  // 👀 WATCHERS
+  // ============================================================================
+  
+  watch: {
+    // Watch for user status changes
+    currentUserStatus: {
+      immediate: true,
+      handler(newStatus, oldStatus) {
+        if (newStatus !== oldStatus) {
+          console.log(`📊 MainPage: User status changed: ${oldStatus} → ${newStatus}`);
+          this.handleUserStatusChange(newStatus, oldStatus);
+        }
+      }
+    },
+    
+    // Watch for search query changes
+    searchQuery: {
+      handler() {
+        this.debouncedFilterUpdate();
+      }
+    },
+    
+    // Watch for filter changes
+    filterSubject() { this.debouncedFilterUpdate(); },
+    filterLevel() { this.debouncedFilterUpdate(); },
+    filterType() { this.debouncedFilterUpdate(); },
+    filterProgress() { this.debouncedFilterUpdate(); },
+    sortBy() { this.debouncedFilterUpdate(); }
   },
   
   methods: {
-    // ✅ ENHANCED: Topic type detection methods
-    getTopicType(topic) {
-      if (!topic) return 'free';
+    // ============================================================================
+    // 🚀 INITIALIZATION METHODS
+    // ============================================================================
+    
+    async validateUserAuthentication() {
+      console.log('🔐 Validating user authentication...');
       
-      const type = topic.type || topic.accessType || topic.pricing || topic.plan;
+      const storedId = this.$store.state.firebaseUserId || 
+                       localStorage.getItem('firebaseUserId') || 
+                       localStorage.getItem('userId');
       
-      if (!type || type === 'free' || type === 'public') return 'free';
-      if (type === 'premium' || type === 'paid' || type === 'start') return 'premium';
-      if (type === 'pro' || type === 'professional') return 'pro';
-      
-      return 'free';
-    },
-    
-    getTopicTypeClass(topic) {
-      return `topic-${this.getTopicType(topic)}`;
-    },
-    
-    getTopicTypeIcon(topic) {
-      const type = this.getTopicType(topic);
-      switch (type) {
-        case 'free': return '💚';
-        case 'premium': return '💎';
-        case 'pro': return '🌟';
-        default: return '💚';
-      }
-    },
-    
-    getTopicTypeLabel(topic) {
-      const type = this.getTopicType(topic);
-      switch (type) {
-        case 'free': return 'Бесплатно';
-        case 'premium': return 'Премиум';
-        case 'pro': return 'Pro';
-        default: return 'Бесплатно';
-      }
-    },
-    
-    // ✅ ENHANCED: Access status methods using store getters
-    getAccessStatus(topic) {
-      const topicType = this.getTopicType(topic);
-      const hasAccess = this.hasTopicAccess(topic);
-      
-      if (hasAccess) return 'accessible';
-      if (topicType === 'free') return 'accessible';
-      return 'restricted';
-    },
-    
-    // ✅ FIXED: Use store getters for access control
-    hasTopicAccess(topic) {
-      const topicType = this.getTopicType(topic);
-      
-      if (topicType === 'free') return true;
-      if (topicType === 'premium' && (this.isStartUser || this.isProUser)) return true;
-      if (topicType === 'pro' && this.isProUser) return true;
-      
-      return false;
-    },
-    
-    // ✅ ENHANCED: Button state methods
-    isInStudyList(topic) {
-      return this.studyList.some(t => t._id === topic._id);
-    },
-    
-    getStartButtonClass(topic) {
-      const hasAccess = this.hasTopicAccess(topic);
-      const topicType = this.getTopicType(topic);
-      
-      if (!hasAccess) return 'btn-restricted';
-      if (topicType === 'pro') return 'btn-pro';
-      if (topicType === 'premium') return 'btn-premium';
-      return 'btn-free';
-    },
-    
-    getStartButtonIcon(topic) {
-      if (!this.hasTopicAccess(topic)) return '🔒';
-      return '🚀';
-    },
-    
-    getStartButtonText(topic) {
-      if (!this.hasTopicAccess(topic)) {
-        const topicType = this.getTopicType(topic);
-        return topicType === 'pro' ? 'Нужен Pro' : 'Нужен Start';
-      }
-      return 'Начать';
-    },
-    
-    getStartButtonTitle(topic) {
-      const topicType = this.getTopicType(topic);
-      const hasAccess = this.hasTopicAccess(topic);
-      
-      if (!hasAccess) {
-        return `Этот курс требует подписку ${this.getTopicTypeLabel(topic)}`;
+      if (!storedId) {
+        console.warn('⚠️ No user ID found, redirecting to home');
+        this.showNotification('Необходимо войти в систему', 'warning');
+        this.$router.push('/');
+        throw new Error('Authentication required');
       }
       
-      return `Начать изучение курса "${this.getTopicName(topic)}"`;
+      this.userId = storedId;
+      console.log('✅ User authentication validated:', this.userId);
     },
     
-    // ✅ Enhanced filter methods
-    clearFilters() {
-      this.searchQuery = '';
-      this.filterSubject = '';
-      this.filterLevel = '';
-      this.filterType = '';
-      this.filterProgress = '';
-      this.sortBy = 'name';
-    },
-    
-    // ✅ IMPROVED: Enhanced error handling
-    handleApiError(error, context) {
-      console.error(`❌ API Error [${context}]:`, error);
+    setupGlobalEventSystem() {
+      console.log('🔗 Setting up global event system...');
       
-      let errorMessage = 'An unexpected error occurred';
-      
-      if (error?.response) {
-        const status = error.response.status;
-        const data = error.response.data;
+      // ===== SUBSCRIPTION CHANGE HANDLERS =====
+      this.handleSubscriptionChange = (event) => {
+        console.log('📡 MainPage: Subscription change received:', event.detail);
         
-        switch (status) {
-          case 404:
-            errorMessage = 'Resource not found. It may have been deleted.';
-            break;
-          case 401:
-            errorMessage = 'Authentication failed. Please log in again.';
-            setTimeout(() => this.$router.push('/'), 2000);
-            return { message: errorMessage, shouldRedirect: true };
-          case 403:
-            errorMessage = 'Access denied. You may not have permission.';
-            break;
-          case 500:
-            errorMessage = 'Server error. Please try again later.';
-            break;
-          default:
-            errorMessage = data?.message || `Server error (${status})`;
-        }
-      } else if (error?.request) {
-        errorMessage = 'Network error. Please check your connection.';
-      } else if (error?.message) {
-        // Check for specific errors like toUpperCase
-        if (error.message.includes('toUpperCase')) {
-          errorMessage = 'API configuration error. Please contact support.';
-        } else {
-          errorMessage = error.message;
-        }
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      }
-      
-      return { message: errorMessage, originalError: error };
-    },
-
-    // ✅ COMPLETELY FIXED: Topic name extraction with comprehensive fallbacks
-    getTopicName(topic) {
-      if (!topic) {
-        console.warn('⚠️ getTopicName: No topic provided');
-        return 'Без названия';
-      }
-      
-      try {
-        // ✅ STRATEGY 1: Direct name field (highest priority)
-        if (topic.name) {
-          if (typeof topic.name === 'string' && topic.name.trim()) {
-            return topic.name.trim();
-          }
-          if (typeof topic.name === 'object' && topic.name !== null) {
-            const name = topic.name[this.lang] || topic.name.ru || topic.name.en || topic.name.uz || 
-                        Object.values(topic.name).find(val => val && typeof val === 'string' && val.trim());
-            if (name && typeof name === 'string' && name.trim()) {
-              return name.trim();
-            }
-          }
-        }
+        const { plan, source, oldPlan } = event.detail;
         
-        // ✅ STRATEGY 2: TopicName field
-        if (topic.topicName) {
-          if (typeof topic.topicName === 'string' && topic.topicName.trim()) {
-            return topic.topicName.trim();
-          }
-          if (typeof topic.topicName === 'object' && topic.topicName !== null) {
-            const name = topic.topicName[this.lang] || topic.topicName.ru || topic.topicName.en || topic.topicName.uz ||
-                        Object.values(topic.topicName).find(val => val && typeof val === 'string' && val.trim());
-            if (name && typeof name === 'string' && name.trim()) {
-              return name.trim();
-            }
-          }
-        }
+        // Force immediate UI update
+        this.forceReactivityUpdate();
         
-        // ✅ STRATEGY 3: Topic field (common in study list)
-        if (topic.topic) {
-          if (typeof topic.topic === 'string' && topic.topic.trim()) {
-            return topic.topic.trim();
-          }
-          if (typeof topic.topic === 'object' && topic.topic !== null) {
-            const name = topic.topic[this.lang] || topic.topic.ru || topic.topic.en || topic.topic.uz ||
-                        Object.values(topic.topic).find(val => val && typeof val === 'string' && val.trim());
-            if (name && typeof name === 'string' && name.trim()) {
-              return name.trim();
-            }
-          }
-        }
+        // Update performance metrics
+        this.performanceMetrics.successfulOperations++;
         
-        // ✅ STRATEGY 4: Title field
-        if (topic.title) {
-          if (typeof topic.title === 'string' && topic.title.trim()) {
-            return topic.title.trim();
-          }
-          if (typeof topic.title === 'object' && topic.title !== null) {
-            const name = topic.title[this.lang] || topic.title.ru || topic.title.en || topic.title.uz ||
-                        Object.values(topic.title).find(val => val && typeof val === 'string' && val.trim());
-            if (name && typeof name === 'string' && name.trim()) {
-              return name.trim();
-            }
-          }
-        }
-        
-        // ✅ STRATEGY 5: Construct from description
-        if (topic.description) {
-          let desc = null;
-          if (typeof topic.description === 'string') {
-            desc = topic.description;
-          } else if (typeof topic.description === 'object' && topic.description !== null) {
-            desc = topic.description[this.lang] || topic.description.ru || topic.description.en || topic.description.uz ||
-                  Object.values(topic.description).find(val => val && typeof val === 'string');
-          }
+        // Show celebration for upgrades
+        if (plan && plan !== 'free' && oldPlan === 'free') {
+          const planLabel = plan === 'pro' ? 'Pro' : 'Start';
+          const sourceText = source === 'promocode' ? 'промокоду' : 'оплате';
           
-          if (desc && desc.trim()) {
-            // Extract name from description patterns
-            const patterns = [
-              /Курс по теме "([^"]+)"/,
-              /Курс "([^"]+)"/,
-              /Изучите ([^с]+) с/,
-              /([^\.]+)\./
-            ];
-            
-            for (const pattern of patterns) {
-              const match = desc.match(pattern);
-              if (match && match[1] && match[1].trim()) {
-                return match[1].trim();
-              }
-            }
-            
-            // Use first 50 characters of description
-            if (desc.length > 50) {
-              return desc.substring(0, 47).trim() + '...';
-            }
-            return desc.trim();
-          }
+          this.showNotification(
+            `🎉 Поздравляем! ${planLabel} подписка активирована по ${sourceText}!`,
+            'success',
+            5000
+          );
+        }
+      };
+      
+      this.handleUserStatusChange = (data) => {
+        console.log('📡 MainPage: User status changed via event bus:', data);
+        this.forceReactivityUpdate();
+      };
+      
+      this.handlePromocodeApplied = (data) => {
+        console.log('📡 MainPage: Promocode applied:', data);
+        
+        if (data.newStatus && data.newStatus !== 'free') {
+          const planLabel = data.newStatus === 'pro' ? 'Pro' : 'Start';
+          this.showNotification(
+            `🎟️ Промокод применён! ${planLabel} план активирован!`,
+            'success',
+            5000
+          );
         }
         
-        // ✅ STRATEGY 6: Construct from subject and level
-        if (topic.subject) {
-          const subject = typeof topic.subject === 'string' ? topic.subject : String(topic.subject);
-          const level = topic.level ? ` (Уровень ${topic.level})` : '';
-          return `${subject}${level}`;
+        this.forceReactivityUpdate();
+      };
+      
+      this.handleGlobalForceUpdate = (data) => {
+        console.log('📡 MainPage: Global force update:', data);
+        this.forceReactivityUpdate();
+      };
+      
+      this.handlePaymentCompleted = (data) => {
+        console.log('📡 MainPage: Payment completed:', data);
+        this.handleSubscriptionChange({ detail: data });
+      };
+      
+      // ===== REGISTER EVENT LISTENERS =====
+      
+      // DOM event listeners
+      if (typeof window !== 'undefined') {
+        window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
+        this.globalEventListeners.set('userSubscriptionChanged', this.handleSubscriptionChange);
+      }
+      
+      // Event bus listeners
+      const eventBusEvents = [
+        ['userStatusChanged', this.handleUserStatusChange],
+        ['promocodeApplied', this.handlePromocodeApplied],
+        ['globalForceUpdate', this.handleGlobalForceUpdate],
+        ['subscriptionUpgrade', this.handlePromocodeApplied],
+        ['paymentCompleted', this.handlePaymentCompleted]
+      ];
+      
+      eventBusEvents.forEach(([event, handler]) => {
+        eventBus.on(event, handler);
+        this.eventCleanupFunctions.push(() => {
+          eventBus.off(event, handler);
+        });
+      });
+      
+      // ===== STORE MUTATION LISTENER =====
+      this.unsubscribeStore = this.$store.subscribe((mutation) => {
+        if (this.isUserRelatedMutation(mutation)) {
+          console.log('📊 MainPage: Store mutation detected:', mutation.type);
+          this.forceReactivityUpdate();
         }
-        
-        // ✅ STRATEGY 7: Use lesson name if this is built from lessons
-        if (topic.metadata && topic.metadata.source === 'built-from-lessons' && topic.lessons && topic.lessons.length > 0) {
-          const firstLesson = topic.lessons[0];
-          if (firstLesson.lessonName) {
-            return `Курс: ${firstLesson.lessonName}`;
-          }
-          if (firstLesson.title) {
-            return `Курс: ${firstLesson.title}`;
-          }
-        }
-        
-        // ✅ STRATEGY 8: Use ID as readable name
-        if (topic._id || topic.id) {
-          const id = (topic._id || topic.id).toString();
-          return `Курс ${id.substring(id.length - 6)}`;
-        }
-        
-        return 'Без названия';
-        
-      } catch (error) {
-        console.error('❌ Error in getTopicName:', error);
-        return 'Ошибка названия';
+      });
+      
+      console.log('✅ Global event system setup complete');
+    },
+    
+    async initializeDataLoading() {
+      console.log('📊 Initializing data loading...');
+      
+      const startTime = Date.now();
+      
+      // Load both datasets in parallel with comprehensive error handling
+      const results = await Promise.allSettled([
+        this.fetchRecommendations(),
+        this.fetchStudyList()
+      ]);
+      
+      // Process results
+      const [recommendationsResult, studyListResult] = results;
+      
+      if (recommendationsResult.status === 'fulfilled') {
+        console.log('✅ Recommendations loaded successfully');
+      } else {
+        console.error('❌ Recommendations failed:', recommendationsResult.reason);
+        this.performanceMetrics.failedOperations++;
+      }
+      
+      if (studyListResult.status === 'fulfilled') {
+        console.log('✅ Study list loaded successfully');
+      } else {
+        console.error('❌ Study list failed:', studyListResult.reason);
+        this.performanceMetrics.failedOperations++;
+      }
+      
+      const loadTime = Date.now() - startTime;
+      this.performanceMetrics.lastDataFetch = Date.now();
+      
+      console.log(`⚡ Data loading completed in ${loadTime}ms`);
+      
+      // Update performance counters
+      this.performanceMetrics.totalApiCalls += 2;
+      if (!this.hasErrors) {
+        this.performanceMetrics.successfulOperations++;
       }
     },
     
-    // ✅ FIXED: Better topic description extraction
-    getTopicDescription(topic) {
-      if (!topic) {
-        return 'Описание отсутствует';
-      }
+    setupAutoRefresh() {
+      if (!this.config.enableAutoRefresh) return;
       
-      try {
-        // ✅ STRATEGY 1: Direct description field
-        if (topic.description) {
-          if (typeof topic.description === 'string' && topic.description.trim()) {
-            return topic.description.trim();
-          }
-          if (typeof topic.description === 'object' && topic.description !== null) {
-            const desc = topic.description[this.lang] || topic.description.ru || topic.description.en || topic.description.uz ||
-                        Object.values(topic.description).find(val => val && typeof val === 'string' && val.trim());
-            if (desc && typeof desc === 'string' && desc.trim()) {
-              return desc.trim();
-            }
-          }
-        }
-        
-        // ✅ STRATEGY 2: TopicDescription field
-        if (topic.topicDescription) {
-          if (typeof topic.topicDescription === 'string' && topic.topicDescription.trim()) {
-            return topic.topicDescription.trim();
-          }
-          if (typeof topic.topicDescription === 'object' && topic.topicDescription !== null) {
-            const desc = topic.topicDescription[this.lang] || topic.topicDescription.ru || topic.topicDescription.en || topic.topicDescription.uz ||
-                        Object.values(topic.topicDescription).find(val => val && typeof val === 'string' && val.trim());
-            if (desc && typeof desc === 'string' && desc.trim()) {
-              return desc.trim();
-            }
+      console.log(`🔄 Setting up auto-refresh (${this.config.autoRefreshInterval}ms)`);
+      
+      this.autoRefreshInterval = setInterval(async () => {
+        if (!document.hidden && this.hasData) {
+          console.log('🔄 Auto-refreshing data...');
+          
+          try {
+            await Promise.allSettled([
+              this.fetchRecommendations(),
+              this.fetchStudyList()
+            ]);
+            
+            console.log('✅ Auto-refresh completed');
+            
+          } catch (error) {
+            console.warn('⚠️ Auto-refresh failed:', error);
           }
         }
-        
-        // ✅ STRATEGY 3: Construct from available data
-        const topicName = this.getTopicName(topic);
-        const lessonCount = topic.lessonCount || topic.lessons?.length || 0;
-        const subject = topic.subject || 'Общий предмет';
-        const level = topic.level || 1;
-        
-        if (lessonCount > 0) {
-          return `Курс "${topicName}" по предмету "${subject}" (Уровень ${level}) содержит ${lessonCount} уроков.`;
+      }, this.config.autoRefreshInterval);
+      
+      // Cleanup function
+      this.eventCleanupFunctions.push(() => {
+        if (this.autoRefreshInterval) {
+          clearInterval(this.autoRefreshInterval);
+        }
+      });
+    },
+    
+    setupPerformanceMonitoring() {
+      if (!this.config.enableAnalytics) return;
+      
+      console.log('📈 Setting up performance monitoring...');
+      
+      // Track visibility changes
+      this.handleVisibilityChange = () => {
+        if (document.hidden) {
+          console.log('📱 MainPage: Hidden');
         } else {
-          return `Курс "${topicName}" по предмету "${subject}" (Уровень ${level}).`;
+          console.log('📱 MainPage: Visible');
+          // Refresh data when page becomes visible again
+          setTimeout(() => {
+            if (this.hasData && Date.now() - this.performanceMetrics.lastDataFetch > 60000) {
+              this.refreshAllData();
+            }
+          }, 1000);
         }
+      };
+      
+      document.addEventListener('visibilitychange', this.handleVisibilityChange);
+      this.eventCleanupFunctions.push(() => {
+        document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+      });
+    },
+    
+    // ============================================================================
+    // 🔄 REACTIVITY & UPDATE METHODS
+    // ============================================================================
+    
+    forceReactivityUpdate() {
+      this.componentKey++;
+      this.forceUpdateCounter++;
+      
+      // Force immediate update
+      this.$forceUpdate();
+      
+      // Additional delayed updates for maximum compatibility
+      this.$nextTick(() => {
+        this.$forceUpdate();
         
-      } catch (error) {
-        console.error('❌ Error in getTopicDescription:', error);
-        return 'Описание отсутствует';
+        setTimeout(() => {
+          this.$forceUpdate();
+        }, 100);
+      });
+      
+      console.log(`🔄 MainPage: Force update #${this.forceUpdateCounter} (key: ${this.componentKey})`);
+    },
+    
+    debouncedFilterUpdate() {
+      clearTimeout(this.updateTimer);
+      this.lastFilterChange = Date.now();
+      
+      this.updateTimer = setTimeout(() => {
+        this.forceReactivityUpdate();
+        console.log('🎯 Filters updated');
+      }, 300);
+    },
+    
+    handleUserStatusChange(newStatus, oldStatus) {
+      if (!newStatus || newStatus === oldStatus) return;
+      
+      console.log(`👤 MainPage: Handling status change ${oldStatus} → ${newStatus}`);
+      
+      // Update localStorage immediately
+      localStorage.setItem('userStatus', newStatus);
+      
+      // Force reactivity update
+      this.forceReactivityUpdate();
+      
+      // Update performance metrics
+      this.performanceMetrics.successfulOperations++;
+      
+      // Show status change notification
+      if (oldStatus && oldStatus !== 'free' && newStatus === 'free') {
+        this.showNotification('Подписка истекла', 'warning');
       }
     },
-
-    // ✅ FIXED: Get recommendations using CataloguePage logic
+    
+    // ============================================================================
+    // 📊 DATA FETCHING METHODS
+    // ============================================================================
+    
     async fetchRecommendations() {
+      const startTime = Date.now();
+      
       try {
         this.loadingRecommendations = true;
         this.errors.recommendations = null;
         
-        console.log('🔍 Fetching recommendations using CataloguePage logic...');
+        console.log('🔍 Fetching recommendations...');
+        this.performanceMetrics.totalApiCalls++;
         
-        // ✅ SAFER: Wrap API call with try-catch
+        // Strategy 1: Build from lessons (primary approach)
         let lessonsResult;
         try {
           lessonsResult = await getAllLessons();
+          this.performanceMetrics.totalApiCalls++;
         } catch (apiError) {
-          console.error('❌ Get all lessons API error:', apiError);
-          
-          if (apiError?.message?.includes('toUpperCase')) {
-            this.errors.recommendations = 'API configuration error. Please contact support.';
-          } else {
-            const errorInfo = this.handleApiError(apiError, 'getAllLessons');
-            this.errors.recommendations = errorInfo.message;
-          }
-          
-          // Try fallback
+          console.error('❌ getAllLessons failed:', apiError);
           return this.fetchRecommendationsFallback();
         }
         
         if (lessonsResult?.success && lessonsResult.data?.length > 0) {
-          const allLessons = lessonsResult.data;
-          console.log(`📚 Got ${allLessons.length} lessons for building recommendations`);
+          console.log(`📚 Got ${lessonsResult.data.length} lessons for building recommendations`);
           
-          // ✅ Group lessons by topicId and build topic objects
-          const topicsMap = new Map();
+          // Build topics from lessons
+          const topics = this.buildTopicsFromLessons(lessonsResult.data);
           
-          allLessons.forEach(lesson => {
-            if (!lesson || !lesson.topicId) return;
+          if (topics.length > 0) {
+            this.allRecommendations = topics;
+            this.displayedRecommendations = this.getRandomRecommendations(this.config.maxRecommendations);
+            this.extractSubjectsAndLevels(this.allRecommendations);
+            this.recommendationsSource = 'lessons';
+            this.recommendationsLastFetch = Date.now();
             
-            let topicId = lesson.topicId;
-            if (typeof topicId === 'object' && topicId !== null) {
-              topicId = topicId._id || topicId.id || String(topicId);
-            } else if (topicId) {
-              topicId = String(topicId);
-            } else {
-              return;
-            }
-            
-            const topicName = this.getTopicNameFromLesson(lesson);
-            if (!topicId || !topicName) return;
-
-            if (!topicsMap.has(topicId)) {
-              topicsMap.set(topicId, {
-                _id: topicId,
-                id: topicId,
-                name: topicName,
-                topicName: topicName,
-                topic: topicName,
-                title: topicName,
-                description: `Курс по теме "${topicName}" содержит уроков`,
-                topicDescription: `Изучите ${topicName} с практическими упражнениями`,
-                subject: lesson.subject || 'General',
-                level: lesson.level || 1,
-                type: lesson.type || 'free',
-                lessons: [lesson],
-                lessonCount: 1,
-                totalTime: 10,
-                isActive: true,
-                hasLessons: true,
-                createdAt: lesson.createdAt || new Date().toISOString(),
-                updatedAt: lesson.updatedAt || new Date().toISOString(),
-                metadata: {
-                  source: 'built-from-lessons',
-                  constructedAt: new Date().toISOString()
-                }
-              });
-            } else {
-              const topic = topicsMap.get(topicId);
-              topic.lessons.push(lesson);
-              topic.lessonCount++;
-              topic.totalTime += 10;
-              
-              // Update description with lesson count
-              topic.description = `Курс по теме "${topicName}" содержит ${topic.lessonCount} уроков`;
-            }
-          });
-          
-          // ✅ Convert to array and filter
-          const builtTopics = Array.from(topicsMap.values())
-            .filter(topic => topic.lessons.length > 0)
-            .map(topic => ({
-              ...topic,
-              difficulty: topic.level <= 3 ? 2 : topic.level <= 6 ? 3 : 4,
-              hasFreeLessons: topic.lessons.some(l => l.type === 'free'),
-              hasPremiumLessons: topic.lessons.some(l => l.type === 'premium'),
-            }))
-            .sort((a, b) => {
-              if (a.subject !== b.subject) {
-                return a.subject.localeCompare(b.subject);
-              }
-              return (a.level || 0) - (b.level || 0);
-            });
-          
-          console.log(`✅ Built ${builtTopics.length} topic recommendations from lessons`);
-          
-          this.allRecommendations = builtTopics;
-          this.displayedRecommendations = this.getRandomRecommendations(10);
-          this.extractSubjects(this.allRecommendations);
-          
-          console.log(`📊 Total available: ${this.allRecommendations.length}, Displaying: ${this.displayedRecommendations.length}`);
-          
-          return;
+            console.log(`✅ Built ${topics.length} recommendations from lessons in ${Date.now() - startTime}ms`);
+            this.performanceMetrics.successfulOperations++;
+            return;
+          }
         }
         
-        // ✅ Fallback: Try to get topics directly
+        // Fallback to direct topics
         return this.fetchRecommendationsFallback();
         
-      } catch (err) {
-        console.error('❌ Failed to fetch recommendations:', err);
-        const errorInfo = this.handleApiError(err, 'fetch-recommendations');
-        this.errors.recommendations = errorInfo.message;
+      } catch (error) {
+        console.error('❌ Fetch recommendations error:', error);
+        this.handleApiError(error, 'recommendations');
+        this.performanceMetrics.failedOperations++;
         this.allRecommendations = [];
         this.displayedRecommendations = [];
       } finally {
         this.loadingRecommendations = false;
-        
         this.$nextTick(() => {
           this.updateScrollPosition();
         });
       }
     },
-
-    // ✅ NEW: Fallback method for recommendations
+    
     async fetchRecommendationsFallback() {
+      const startTime = Date.now();
+      
       try {
-        console.log('🔄 Fallback: Trying to get topics directly...');
+        console.log('🔄 Fallback: Getting topics directly...');
         
-        let topicsResult;
-        try {
-          topicsResult = await getTopics({ includeStats: true });
-        } catch (apiError) {
-          console.error('❌ Get topics API error:', apiError);
-          if (apiError?.message?.includes('toUpperCase')) {
-            this.errors.recommendations = 'API configuration error. Please contact support.';
-          } else {
-            const errorInfo = this.handleApiError(apiError, 'getTopics');
-            this.errors.recommendations = errorInfo.message;
-          }
-          this.allRecommendations = [];
-          this.displayedRecommendations = [];
-          return;
-        }
+        const topicsResult = await getTopics({ includeStats: true });
+        this.performanceMetrics.totalApiCalls++;
         
         if (topicsResult?.success && topicsResult.data?.length > 0) {
           console.log(`📚 Found ${topicsResult.data.length} topics directly`);
           
-          // Get lessons for each topic to build complete topic data
-          const topicsWithLessons = await Promise.allSettled(
-            topicsResult.data.slice(0, 20).map(async (topic) => {
-              try {
-                const lessonsResult = await getLessonsByTopic(topic._id);
-                
-                if (lessonsResult?.success && lessonsResult.data?.length > 0) {
-                  return {
-                    ...topic,
-                    lessons: lessonsResult.data,
-                    lessonCount: lessonsResult.data.length,
-                    totalTime: lessonsResult.data.length * 10,
-                    hasLessons: true
-                  };
-                }
-                return null;
-              } catch (error) {
-                console.warn(`⚠️ Failed to get lessons for topic ${topic._id}:`, error.message);
-                return null;
-              }
-            })
+          // Enrich topics with lessons
+          const enrichedTopics = await this.enrichTopicsWithLessons(
+            topicsResult.data.slice(0, 20)
           );
           
-          const validTopics = topicsWithLessons
-            .filter(result => result.status === 'fulfilled' && result.value !== null)
-            .map(result => result.value);
-          
-          if (validTopics.length > 0) {
-            this.allRecommendations = validTopics;
-            this.displayedRecommendations = this.getRandomRecommendations(10);
-            this.extractSubjects(this.allRecommendations);
-            console.log(`✅ Successfully loaded ${this.allRecommendations.length} total recommendations, displaying ${this.displayedRecommendations.length}`);
+          if (enrichedTopics.length > 0) {
+            this.allRecommendations = enrichedTopics;
+            this.displayedRecommendations = this.getRandomRecommendations(this.config.maxRecommendations);
+            this.extractSubjectsAndLevels(this.allRecommendations);
+            this.recommendationsSource = 'topics';
+            this.recommendationsLastFetch = Date.now();
+            
+            console.log(`✅ Loaded ${enrichedTopics.length} enriched topics in ${Date.now() - startTime}ms`);
+            this.performanceMetrics.successfulOperations++;
             return;
           }
         }
         
-        // No data available
-        console.log('ℹ️ No topics or lessons available for recommendations');
+        console.log('ℹ️ No recommendations available from any source');
         this.allRecommendations = [];
         this.displayedRecommendations = [];
+        this.recommendationsSource = 'none';
         
       } catch (error) {
-        console.error('❌ Fallback also failed:', error);
+        console.error('❌ Fallback recommendations failed:', error);
+        this.handleApiError(error, 'recommendations');
+        this.performanceMetrics.failedOperations++;
         this.allRecommendations = [];
         this.displayedRecommendations = [];
+        this.recommendationsSource = 'error';
       }
     },
-
-    // ✅ IMPROVED: Enhanced fetchStudyList with better error handling
+    
     async fetchStudyList() {
+      const startTime = Date.now();
+      
       try {
         this.loadingStudyList = true;
         this.errors.studyList = null;
         this.invalidTopicsCleanedUp = 0;
         
         console.log('🔍 Fetching study list for user:', this.userId);
+        this.performanceMetrics.totalApiCalls++;
         
         if (!this.userId) {
-          console.error('❌ No userId available for fetching study list');
-          this.studyList = [];
-          return;
+          throw new Error('No user ID available for fetching study list');
         }
         
-        // ✅ SAFER: Wrap API call with try-catch
-        let studyListResult;
-        try {
-          studyListResult = await getUserStudyList(this.userId);
-        } catch (apiError) {
-          console.error('❌ Get user study list API error:', apiError);
-          
-          if (apiError?.message?.includes('toUpperCase')) {
-            this.errors.studyList = 'API configuration error. Please contact support.';
-          } else {
-            const errorInfo = this.handleApiError(apiError, 'getUserStudyList');
-            this.errors.studyList = errorInfo.message;
-          }
-          this.studyList = [];
-          return;
-        }
+        const studyListResult = await getUserStudyList(this.userId);
+        this.performanceMetrics.totalApiCalls++;
         
-        console.log('📊 Study list API result:', studyListResult);
-        
-        if (!studyListResult || !studyListResult.success) {
-          console.log('⚠️ Study list API returned unsuccessful result:', studyListResult);
-          
-          if (studyListResult?.error) {
-            console.error('❌ Study list API error:', studyListResult.error);
-            this.errors.studyList = studyListResult.error;
-          } else {
-            this.errors.studyList = 'Failed to load study list';
-          }
-          
-          this.studyList = [];
-          return;
+        if (!studyListResult?.success) {
+          throw new Error(studyListResult?.error || 'Failed to load study list');
         }
         
         const studyListData = studyListResult.data;
         
         if (!Array.isArray(studyListData)) {
-          console.log('⚠️ Study list data is not an array:', typeof studyListData, studyListData);
+          console.log('ℹ️ No study list data or invalid format');
           this.studyList = [];
-          return;
-        }
-        
-        if (studyListData.length === 0) {
-          console.log('ℹ️ No study list entries found');
-          this.studyList = [];
+          this.studyListLastFetch = Date.now();
           return;
         }
         
@@ -1021,6 +1018,8 @@ export default {
         let userProgressData = [];
         try {
           const progressResult = await getUserProgress(this.userId);
+          this.performanceMetrics.totalApiCalls++;
+          
           if (progressResult?.success) {
             userProgressData = progressResult.data || [];
             console.log(`📊 Loaded ${userProgressData.length} progress records`);
@@ -1029,58 +1028,177 @@ export default {
           console.warn('⚠️ Failed to load progress data:', progressError.message);
         }
         
-        // ✅ ENHANCED: Process each study list entry with robust error handling
+        // Process each study list entry with comprehensive error handling
         const validTopics = [];
-        
-        for (const entry of studyListData) {
+        const processingPromises = studyListData.map(async (entry, index) => {
           if (!entry?.topicId) {
-            console.warn('⚠️ Study list entry missing topicId:', entry);
             this.invalidTopicsCleanedUp++;
-            continue;
+            return null;
           }
           
           try {
             const processedTopic = await this.processStudyListEntry(entry, userProgressData);
-            if (processedTopic) {
-              validTopics.push(processedTopic);
-            } else {
-              this.invalidTopicsCleanedUp++;
-            }
+            return processedTopic;
           } catch (error) {
             console.error(`❌ Error processing topic ${entry.topicId}:`, error);
             this.invalidTopicsCleanedUp++;
+            return null;
           }
-        }
+        });
+        
+        const results = await Promise.allSettled(processingPromises);
+        
+        results.forEach(result => {
+          if (result.status === 'fulfilled' && result.value) {
+            validTopics.push(result.value);
+          }
+        });
         
         this.studyList = validTopics;
-        this.extractSubjects(this.studyList);
+        this.extractSubjectsAndLevels(this.studyList);
+        this.studyListLastFetch = Date.now();
         
-        console.log(`✅ Successfully loaded ${validTopics.length} study list topics`);
+        const loadTime = Date.now() - startTime;
+        console.log(`✅ Loaded ${validTopics.length} study list topics in ${loadTime}ms`);
         
         if (this.invalidTopicsCleanedUp > 0) {
-          console.log(`🧹 Cleaned up ${this.invalidTopicsCleanedUp} invalid topic entries`);
+          console.log(`🧹 Cleaned up ${this.invalidTopicsCleanedUp} invalid entries`);
         }
         
-      } catch (err) {
-        console.error('❌ Critical error in fetchStudyList:', err);
-        const errorInfo = this.handleApiError(err, 'fetch-study-list');
-        this.errors.studyList = errorInfo.message;
+        this.performanceMetrics.successfulOperations++;
+        
+      } catch (error) {
+        console.error('❌ Fetch study list error:', error);
+        this.handleApiError(error, 'studyList');
+        this.performanceMetrics.failedOperations++;
         this.studyList = [];
       } finally {
         this.loadingStudyList = false;
       }
     },
+    
+    // ============================================================================
+    // 🏗️ DATA PROCESSING METHODS
+    // ============================================================================
+    
+    buildTopicsFromLessons(lessons) {
+      const topicsMap = new Map();
+      let processedCount = 0;
+      
+      lessons.forEach(lesson => {
+        if (!lesson?.topicId) return;
+        
+        let topicId = this.extractTopicId(lesson.topicId);
+        if (!topicId) return;
+        
+        const topicName = this.getTopicNameFromLesson(lesson);
+        if (!topicName) return;
 
-    // ✅ NEW: Separate method for processing individual study list entries
+        if (!topicsMap.has(topicId)) {
+          topicsMap.set(topicId, {
+            _id: topicId,
+            id: topicId,
+            name: topicName,
+            topicName: topicName,
+            topic: topicName,
+            title: topicName,
+            description: `Курс по теме "${topicName}"`,
+            topicDescription: `Изучите ${topicName} с практическими упражнениями`,
+            subject: lesson.subject || 'General',
+            level: lesson.level || 1,
+            type: lesson.type || 'free',
+            lessons: [lesson],
+            lessonCount: 1,
+            totalTime: this.calculateLessonTime(lesson),
+            isActive: true,
+            hasLessons: true,
+            createdAt: lesson.createdAt || new Date().toISOString(),
+            updatedAt: lesson.updatedAt || new Date().toISOString(),
+            metadata: {
+              source: 'built-from-lessons',
+              constructedAt: new Date().toISOString(),
+              originalLessonCount: 1
+            }
+          });
+          processedCount++;
+        } else {
+          const topic = topicsMap.get(topicId);
+          topic.lessons.push(lesson);
+          topic.lessonCount++;
+          topic.totalTime += this.calculateLessonTime(lesson);
+          topic.metadata.originalLessonCount++;
+          
+          // Update description with lesson count
+          topic.description = `Курс по теме "${topicName}" содержит ${topic.lessonCount} уроков`;
+        }
+      });
+      
+      console.log(`🏗️ Built ${processedCount} unique topics from ${lessons.length} lessons`);
+      
+      return Array.from(topicsMap.values())
+        .filter(topic => topic.lessons.length > 0)
+        .map(topic => ({
+          ...topic,
+          difficulty: this.calculateTopicDifficulty(topic),
+          hasFreeLessons: topic.lessons.some(l => (l.type || 'free') === 'free'),
+          hasPremiumLessons: topic.lessons.some(l => l.type === 'premium' || l.type === 'start'),
+          hasProLessons: topic.lessons.some(l => l.type === 'pro'),
+        }))
+        .sort((a, b) => {
+          // Sort by subject first, then by level
+          if (a.subject !== b.subject) {
+            return a.subject.localeCompare(b.subject);
+          }
+          return (a.level || 0) - (b.level || 0);
+        });
+    },
+    
+    async enrichTopicsWithLessons(topics) {
+      console.log(`🔍 Enriching ${topics.length} topics with lessons...`);
+      
+      const enrichmentPromises = topics.map(async (topic) => {
+        try {
+          const lessonsResult = await getLessonsByTopic(topic._id);
+          this.performanceMetrics.totalApiCalls++;
+          
+          if (lessonsResult?.success && lessonsResult.data?.length > 0) {
+            return {
+              ...topic,
+              lessons: lessonsResult.data,
+              lessonCount: lessonsResult.data.length,
+              totalTime: lessonsResult.data.reduce((sum, lesson) => sum + this.calculateLessonTime(lesson), 0),
+              hasLessons: true,
+              metadata: {
+                source: 'enriched-topic',
+                enrichedAt: new Date().toISOString()
+              }
+            };
+          }
+          return null;
+        } catch (error) {
+          console.warn(`⚠️ Failed to enrich topic ${topic._id}:`, error.message);
+          return null;
+        }
+      });
+      
+      const results = await Promise.allSettled(enrichmentPromises);
+      
+      const enrichedTopics = results
+        .filter(result => result.status === 'fulfilled' && result.value !== null)
+        .map(result => result.value);
+      
+      console.log(`✅ Successfully enriched ${enrichedTopics.length}/${topics.length} topics`);
+      
+      return enrichedTopics;
+    },
+    
     async processStudyListEntry(entry, userProgressData) {
-      if (!entry?.topicId) {
-        return null;
-      }
+      if (!entry?.topicId) return null;
 
       try {
-        console.log(`🔍 Processing topic: ${entry.topicId}`);
+        console.log(`🔍 Processing study list entry: ${entry.topicId}`);
         
-        // ✅ Build base topic data with ALL possible name fields
+        // Build comprehensive base topic data
         let topicData = {
           _id: entry.topicId,
           id: entry.topicId,
@@ -1088,65 +1206,80 @@ export default {
           topicName: entry.topicName || entry.name || entry.topic || entry.title || 'Unnamed Topic',
           topic: entry.topic || entry.name || entry.topicName || entry.title || 'Unnamed Topic',
           title: entry.title || entry.name || entry.topic || entry.topicName || 'Unnamed Topic',
-          description: entry.description || `Курс "${entry.topic || entry.topicName || entry.name || 'Без названия'}"`,
+          description: entry.description || this.generateTopicDescription(entry),
           topicDescription: entry.topicDescription || entry.description,
           subject: entry.subject || 'General',
-          level: entry.level || 1,
+          level: parseInt(entry.level) || 1,
           type: entry.type || 'free',
-          lessonCount: entry.lessonCount || 0,
-          totalTime: entry.totalTime || 10,
+          lessonCount: parseInt(entry.lessonCount) || 0,
+          totalTime: parseInt(entry.totalTime) || 10,
           isActive: entry.isActive !== false,
+          createdAt: entry.createdAt || new Date().toISOString(),
           metadata: {
             source: 'study-list-entry',
             processedAt: new Date().toISOString(),
-            originalEntry: entry
+            originalEntry: { ...entry }
           }
         };
         
-        // ✅ Try to get fresh topic data from API (with error handling)
+        // Try to get fresh topic data from API
         try {
           const topicResult = await getTopicById(entry.topicId);
+          this.performanceMetrics.totalApiCalls++;
+          
           if (topicResult?.success && topicResult.data) {
-            const freshTopicData = topicResult.data;
+            const freshData = topicResult.data;
+            console.log(`📊 Got fresh data for topic ${entry.topicId}`);
             
-            // Smart merge: use fresh data but preserve names if API data lacks them
-            const shouldKeepStudyListNames = !freshTopicData.name && !freshTopicData.topicName && 
-                                            !freshTopicData.topic && !freshTopicData.title;
+            // Smart merge: preserve study list names if API data lacks them
+            const shouldKeepStudyListNames = this.shouldPreserveStudyListNames(freshData);
             
             if (shouldKeepStudyListNames) {
-              console.log(`📝 Keeping study list names for ${entry.topicId}`);
               topicData = {
-                ...freshTopicData,
+                ...freshData,
                 name: topicData.name,
                 topicName: topicData.topicName,
                 topic: topicData.topic,
                 title: topicData.title,
-                description: freshTopicData.description || topicData.description,
-                studyListEntry: entry
+                description: freshData.description || topicData.description,
+                studyListEntry: entry,
+                metadata: {
+                  ...topicData.metadata,
+                  mergeStrategy: 'preserve-study-list-names',
+                  freshDataAvailable: true
+                }
               };
             } else {
-              console.log(`📝 Using fresh API names for ${entry.topicId}`);
               topicData = {
                 ...topicData,
-                ...freshTopicData,
-                name: freshTopicData.name || topicData.name,
-                topicName: freshTopicData.topicName || topicData.topicName,
-                topic: freshTopicData.topic || topicData.topic,
-                title: freshTopicData.title || topicData.title,
-                studyListEntry: entry
+                ...freshData,
+                name: freshData.name || topicData.name,
+                topicName: freshData.topicName || topicData.topicName,
+                topic: freshData.topic || topicData.topic,
+                title: freshData.title || topicData.title,
+                studyListEntry: entry,
+                metadata: {
+                  ...topicData.metadata,
+                  mergeStrategy: 'use-fresh-data',
+                  freshDataAvailable: true
+                }
               };
             }
           }
         } catch (topicError) {
           console.warn(`⚠️ Failed to get fresh topic data for ${entry.topicId}:`, topicError.message);
+          topicData.metadata.freshDataAvailable = false;
+          topicData.metadata.freshDataError = topicError.message;
         }
         
-        // ✅ Get lessons for this topic (with error handling)
+        // Get lessons for this topic
         let lessons = entry.lessons || [];
         
         if (lessons.length === 0) {
           try {
             const lessonsResult = await getLessonsByTopic(entry.topicId);
+            this.performanceMetrics.totalApiCalls++;
+            
             if (lessonsResult?.success && Array.isArray(lessonsResult.data)) {
               lessons = lessonsResult.data;
               console.log(`📚 Got ${lessons.length} lessons for topic ${entry.topicId}`);
@@ -1156,35 +1289,52 @@ export default {
           }
         }
         
-        // ✅ Calculate progress safely
+        // Calculate comprehensive progress
         const progress = this.calculateTopicProgress(lessons, userProgressData);
         
-        // ✅ Build final topic object
+        // Build final topic object
         const finalTopic = {
           ...topicData,
           lessons: lessons,
           lessonCount: lessons.length,
-          totalTime: lessons.length * 10,
+          totalTime: lessons.reduce((sum, lesson) => sum + this.calculateLessonTime(lesson), 0) || topicData.totalTime,
           progress: progress,
           hasLessons: lessons.length > 0,
-          studyListEntry: entry
+          studyListEntry: entry,
+          lastUpdated: new Date().toISOString()
         };
         
         return finalTopic;
         
       } catch (error) {
-        console.error(`❌ Error processing topic ${entry.topicId}:`, error);
+        console.error(`❌ Error processing study list entry ${entry.topicId}:`, error);
         return null;
       }
     },
-
-    // ✅ NEW: Separate method for calculating topic progress
+    
     calculateTopicProgress(lessons, userProgressData) {
+      if (!lessons || lessons.length === 0) {
+        return {
+          percent: 0,
+          medal: 'none',
+          completedLessons: 0,
+          totalLessons: 0,
+          stars: 0,
+          points: 0,
+          estimatedTimeRemaining: 0
+        };
+      }
+      
       let completedLessons = 0;
       let totalStars = 0;
       let totalPoints = 0;
+      let totalTime = 0;
+      let completedTime = 0;
       
       lessons.forEach(lesson => {
+        const lessonTime = this.calculateLessonTime(lesson);
+        totalTime += lessonTime;
+        
         const progress = userProgressData.find(p => {
           const progressLessonId = p.lessonId?._id || p.lessonId;
           return progressLessonId?.toString() === lesson._id?.toString();
@@ -1192,15 +1342,16 @@ export default {
         
         if (progress?.completed) {
           completedLessons++;
+          completedTime += lessonTime;
           totalStars += progress.stars || 0;
           totalPoints += progress.points || 0;
         }
       });
       
-      const progressPercent = lessons.length > 0 
-        ? Math.round((completedLessons / lessons.length) * 100)
-        : 0;
+      const progressPercent = Math.round((completedLessons / lessons.length) * 100);
+      const estimatedTimeRemaining = Math.max(0, totalTime - completedTime);
       
+      // Calculate medal based on completion and average stars
       let medal = 'none';
       if (progressPercent === 100 && lessons.length > 0) {
         const avgStars = totalStars / lessons.length;
@@ -1215,61 +1366,650 @@ export default {
         completedLessons: completedLessons,
         totalLessons: lessons.length,
         stars: totalStars,
-        points: totalPoints
+        points: totalPoints,
+        averageStars: completedLessons > 0 ? totalStars / completedLessons : 0,
+        estimatedTimeRemaining: estimatedTimeRemaining,
+        completedTime: completedTime,
+        totalTime: totalTime
       };
     },
-
-    // ✅ Helper method to extract topic name from lesson
+    
+    // ============================================================================
+    // 🎯 TOPIC MANAGEMENT METHODS
+    // ============================================================================
+    
+    async handleAddTopic(topic) {
+      if (!topic?._id || this.loadingOperations.add.has(topic._id)) {
+        return;
+      }
+      
+      this.loadingOperations.add.add(topic._id);
+      
+      try {
+        console.log('➕ Adding topic to study list:', this.getTopicName(topic));
+        
+        const studyListData = {
+          topicId: topic._id,
+          topic: this.getTopicName(topic),
+          topicName: this.getTopicName(topic),
+          name: this.getTopicName(topic),
+          title: this.getTopicName(topic),
+          subject: topic.subject || 'General',
+          level: parseInt(topic.level) || 1,
+          lessonCount: parseInt(topic.lessonCount || topic.lessons?.length || 0),
+          totalTime: parseInt(topic.totalTime || this.calculateTopicTotalTime(topic)),
+          type: topic.type || 'free',
+          description: topic.description || this.getTopicDescription(topic),
+          isActive: true,
+          addedAt: new Date().toISOString(),
+          lessons: topic.lessons || [],
+          source: 'main-page-recommendations'
+        };
+        
+        console.log('📦 Sending study list data:', studyListData);
+        
+        const result = await addToStudyList(this.userId, studyListData);
+        this.performanceMetrics.totalApiCalls++;
+        
+        if (result?.success !== false) {
+          // Add to local state immediately for responsive UI
+          const newStudyItem = {
+            _id: topic._id,
+            ...studyListData,
+            progress: {
+              percent: 0,
+              medal: 'none',
+              completedLessons: 0,
+              totalLessons: topic.lessons?.length || 0,
+              stars: 0,
+              points: 0,
+              averageStars: 0,
+              estimatedTimeRemaining: studyListData.totalTime,
+              completedTime: 0,
+              totalTime: studyListData.totalTime
+            },
+            studyListEntry: {
+              topicId: topic._id,
+              createdAt: new Date().toISOString(),
+              addedVia: 'main-page'
+            },
+            hasLessons: (topic.lessons?.length || 0) > 0,
+            lastUpdated: new Date().toISOString()
+          };
+          
+          this.studyList.push(newStudyItem);
+          
+          // Remove from recommendations
+          this.allRecommendations = this.allRecommendations.filter(t => t._id !== topic._id);
+          this.displayedRecommendations = this.displayedRecommendations.filter(t => t._id !== topic._id);
+          
+          // Refill displayed recommendations if needed
+          this.refillDisplayedRecommendations();
+          
+          // Update performance metrics
+          this.performanceMetrics.successfulOperations++;
+          
+          this.showNotification('✅ Курс добавлен в ваш список!', 'success');
+          console.log(`✅ Topic "${this.getTopicName(topic)}" added successfully`);
+          
+          // Background refresh to sync with server
+          setTimeout(() => {
+            this.fetchStudyList();
+          }, 1000);
+          
+        } else {
+          throw new Error(result?.error || 'Failed to add topic to study list');
+        }
+        
+      } catch (error) {
+        console.error('❌ Add topic error:', error);
+        this.performanceMetrics.failedOperations++;
+        
+        let errorMessage = 'Не удалось добавить курс';
+        
+        if (error.message?.includes('уже добавлен') || error.message?.includes('already exists')) {
+          errorMessage = 'Этот курс уже добавлен в ваш список';
+        } else if (error.message?.includes('authentication') || error.message?.includes('auth')) {
+          errorMessage = 'Необходимо войти в аккаунт';
+        } else if (error.message?.includes('network') || error.message?.includes('Network')) {
+          errorMessage = 'Проблема с сетью. Проверьте подключение.';
+        } else if (error.message?.includes('server') || error.response?.status >= 500) {
+          errorMessage = 'Ошибка сервера. Попробуйте позже.';
+        }
+        
+        this.showNotification(errorMessage, 'error');
+        
+      } finally {
+        this.loadingOperations.add.delete(topic._id);
+      }
+    },
+    
+    async handleStartTopic(topic) {
+      if (!topic?._id || this.loadingOperations.start.has(topic._id)) {
+        return;
+      }
+      
+      this.loadingOperations.start.add(topic._id);
+      
+      try {
+        console.log('🚀 Starting topic:', this.getTopicName(topic));
+        
+        // Check access permissions
+        const hasAccess = this.hasTopicAccess(topic);
+        
+        if (!hasAccess) {
+          console.log('🔒 Topic requires subscription, showing paywall');
+          this.requestedTopicId = topic._id;
+          this.showPaywall = true;
+          return;
+        }
+        
+        // Find the best lesson to start with
+        const startingLesson = this.findStartingLesson(topic);
+        
+        if (startingLesson) {
+          console.log(`📖 Navigating to lesson: ${startingLesson._id}`);
+          this.$router.push({ 
+            name: 'LessonPage', 
+            params: { id: startingLesson._id },
+            query: { source: 'main-page' }
+          });
+        } else if (topic._id) {
+          console.log(`📚 Navigating to topic overview: ${topic._id}`);
+          this.$router.push({ 
+            path: `/topic/${topic._id}/overview`,
+            query: { source: 'main-page' }
+          });
+        } else {
+          throw new Error('No valid navigation target found');
+        }
+        
+        // Update performance metrics
+        this.performanceMetrics.successfulOperations++;
+        
+      } catch (error) {
+        console.error('❌ Start topic error:', error);
+        this.performanceMetrics.failedOperations++;
+        this.showNotification('Не удалось открыть курс', 'error');
+      } finally {
+        this.loadingOperations.start.delete(topic._id);
+      }
+    },
+    
+    async removeStudyCard(topicId) {
+      if (!topicId || this.loadingOperations.remove.has(topicId)) {
+        return;
+      }
+      
+      this.loadingOperations.remove.add(topicId);
+      
+      try {
+        console.log('🗑️ Removing study card:', topicId);
+        
+        // Find the topic before removal for undo functionality
+        const topicToRemove = this.studyList.find(t => t._id === topicId);
+        
+        // Remove from local state immediately for responsive UI
+        this.studyList = this.studyList.filter(topic => topic._id !== topicId);
+        
+        // Force UI update
+        this.forceReactivityUpdate();
+        
+        // Try to remove from backend
+        try {
+          const result = await removeFromStudyList(this.userId, topicId);
+          this.performanceMetrics.totalApiCalls++;
+          
+          if (result?.success) {
+            console.log('✅ Successfully removed from backend');
+            this.performanceMetrics.successfulOperations++;
+          } else {
+            console.warn('⚠️ Backend removal failed but UI updated');
+          }
+        } catch (backendError) {
+          console.warn('⚠️ Backend removal failed:', backendError.message);
+          this.performanceMetrics.failedOperations++;
+          
+          // Optionally restore the item on backend failure
+          if (topicToRemove) {
+            this.studyList.push(topicToRemove);
+            this.forceReactivityUpdate();
+            throw backendError;
+          }
+        }
+        
+        this.showNotification('Курс удален из списка', 'info');
+        
+      } catch (error) {
+        console.error('❌ Remove study card error:', error);
+        this.showNotification('Не удалось удалить курс', 'error');
+        
+        // Reload study list on critical error
+        setTimeout(() => {
+          this.fetchStudyList();
+        }, 1000);
+      } finally {
+        this.loadingOperations.remove.delete(topicId);
+      }
+    },
+    
+    // ============================================================================
+    // 🎨 UI HELPER METHODS
+    // ============================================================================
+    
+    // Topic name extraction with comprehensive fallback strategies
+    getTopicName(topic) {
+      if (!topic) {
+        console.warn('⚠️ getTopicName: No topic provided');
+        return 'Без названия';
+      }
+      
+      try {
+        // Priority order for name fields
+        const nameFields = ['name', 'topicName', 'topic', 'title'];
+        
+        for (const field of nameFields) {
+          if (topic[field]) {
+            // Handle string values
+            if (typeof topic[field] === 'string' && topic[field].trim()) {
+              return topic[field].trim();
+            }
+            
+            // Handle localized object values
+            if (typeof topic[field] === 'object' && topic[field] !== null) {
+              const localizedName = this.extractLocalizedString(topic[field]);
+              if (localizedName) {
+                return localizedName;
+              }
+            }
+          }
+        }
+        
+        // Fallback strategies
+        return this.generateTopicNameFallback(topic);
+        
+      } catch (error) {
+        console.error('❌ Error in getTopicName:', error);
+        return 'Ошибка названия';
+      }
+    },
+    
+    getTopicDescription(topic) {
+      if (!topic) return 'Описание отсутствует';
+      
+      try {
+        // Try description fields
+        const descFields = ['description', 'topicDescription'];
+        
+        for (const field of descFields) {
+          if (topic[field]) {
+            if (typeof topic[field] === 'string' && topic[field].trim()) {
+              return topic[field].trim();
+            }
+            if (typeof topic[field] === 'object' && topic[field] !== null) {
+              const localizedDesc = this.extractLocalizedString(topic[field]);
+              if (localizedDesc) {
+                return localizedDesc;
+              }
+            }
+          }
+        }
+        
+        // Generate description from available data
+        return this.generateTopicDescription(topic);
+        
+      } catch (error) {
+        console.error('❌ Error in getTopicDescription:', error);
+        return 'Описание отсутствует';
+      }
+    },
+    
     getTopicNameFromLesson(lesson) {
       if (!lesson) return 'Без темы';
       
       try {
+        // Direct topic field
         if (typeof lesson.topic === 'string' && lesson.topic.trim()) {
           return lesson.topic.trim();
         }
         
-        if (lesson.translations && lesson.translations[this.lang] && lesson.translations[this.lang].topic) {
-          return String(lesson.translations[this.lang].topic).trim();
-        }
-        
+        // Localized topic field
         if (lesson.topic && typeof lesson.topic === 'object') {
-          const topicName = lesson.topic[this.lang] || lesson.topic.ru || lesson.topic.en || lesson.topic.uz ||
-                           Object.values(lesson.topic).find(val => val && typeof val === 'string' && val.trim());
-          if (topicName && typeof topicName === 'string' && topicName.trim()) {
-            return topicName.trim();
+          const localizedTopic = this.extractLocalizedString(lesson.topic);
+          if (localizedTopic) {
+            return localizedTopic;
           }
         }
         
-        if (lesson.lessonName && lesson.lessonName.trim()) {
+        // Translation field
+        if (lesson.translations?.[this.lang]?.topic) {
+          return String(lesson.translations[this.lang].topic).trim();
+        }
+        
+        // Fallback to lesson name
+        if (lesson.lessonName?.trim()) {
           return `Тема: ${lesson.lessonName.trim()}`;
         }
         
-        if (lesson.title && lesson.title.trim()) {
+        if (lesson.title?.trim()) {
           return `Тема: ${lesson.title.trim()}`;
         }
         
         return 'Без темы';
+        
       } catch (error) {
         console.error('❌ Error getting topic name from lesson:', error);
         return 'Без темы';
       }
     },
-
-    extractSubjects(items) {
-      const subjects = new Set(items.map(item => item.subject).filter(Boolean));
-      this.allSubjects = Array.from(subjects);
+    
+    // Topic type and access control methods
+    getTopicType(topic) {
+      if (!topic) return 'free';
       
-      const levels = new Set(items.map(item => item.level).filter(Boolean));
-      this.allLevels = Array.from(levels).sort((a, b) => Number(a) - Number(b));
+      const type = topic.type || topic.accessType || topic.pricing || topic.plan || topic.tier;
+      
+      // Normalize type values
+      const normalizedType = String(type).toLowerCase();
+      
+      if (!normalizedType || normalizedType === 'free' || normalizedType === 'public') {
+        return 'free';
+      }
+      
+      if (normalizedType === 'premium' || normalizedType === 'paid' || 
+          normalizedType === 'start' || normalizedType === 'starter') {
+        return 'premium';
+      }
+      
+      if (normalizedType === 'pro' || normalizedType === 'professional' || 
+          normalizedType === 'advanced') {
+        return 'pro';
+      }
+      
+      return 'free';
     },
     
-    // ✅ Random selection and carousel methods
+    getTopicTypeClass(topic) {
+      return `topic-${this.getTopicType(topic)}`;
+    },
+    
+    getTopicTypeIcon(topic) {
+      const type = this.getTopicType(topic);
+      const icons = { 
+        free: '💚', 
+        premium: '💎', 
+        pro: '🌟' 
+      };
+      return icons[type] || '💚';
+    },
+    
+    getTopicTypeLabel(topic) {
+      const type = this.getTopicType(topic);
+      const labels = { 
+        free: 'Бесплатно', 
+        premium: 'Премиум', 
+        pro: 'Pro' 
+      };
+      return labels[type] || 'Бесплатно';
+    },
+    
+    hasTopicAccess(topic) {
+      const topicType = this.getTopicType(topic);
+      const currentStatus = this.currentUserStatus;
+      
+      // Free topics are always accessible
+      if (topicType === 'free') return true;
+      
+      // Premium topics require Start or Pro
+      if (topicType === 'premium' && (currentStatus === 'start' || currentStatus === 'pro')) {
+        return true;
+      }
+      
+      // Pro topics require Pro subscription
+      if (topicType === 'pro' && currentStatus === 'pro') {
+        return true;
+      }
+      
+      return false;
+    },
+    
+    // Button state methods
+    isInStudyList(topic) {
+      return this.studyList.some(t => t._id === topic._id);
+    },
+    
+    getAddButtonIcon(topic) {
+      if (this.loadingOperations.add.has(topic._id)) return '⏳';
+      if (this.isInStudyList(topic)) return '✓';
+      return '+';
+    },
+    
+    getAddButtonText(topic) {
+      if (this.loadingOperations.add.has(topic._id)) return 'Добавление...';
+      if (this.isInStudyList(topic)) return 'Добавлено';
+      return 'Добавить';
+    },
+    
+    getAddButtonTitle(topic) {
+      if (this.isInStudyList(topic)) {
+        return 'Уже в списке изучения';
+      }
+      return `Добавить "${this.getTopicName(topic)}" в мои курсы`;
+    },
+    
+    getStartButtonClass(topic) {
+      const hasAccess = this.hasTopicAccess(topic);
+      const topicType = this.getTopicType(topic);
+      
+      if (!hasAccess) return 'btn-restricted';
+      if (topicType === 'pro') return 'btn-pro';
+      if (topicType === 'premium') return 'btn-premium';
+      return 'btn-free';
+    },
+    
+    getStartButtonIcon(topic) {
+      if (this.loadingOperations.start.has(topic._id)) return '⏳';
+      if (!this.hasTopicAccess(topic)) return '🔒';
+      return '🚀';
+    },
+    
+    getStartButtonText(topic) {
+      if (this.loadingOperations.start.has(topic._id)) return 'Открытие...';
+      if (!this.hasTopicAccess(topic)) {
+        const topicType = this.getTopicType(topic);
+        return topicType === 'pro' ? 'Нужен Pro' : 'Нужен Start';
+      }
+      return 'Начать';
+    },
+    
+    getStartButtonTitle(topic) {
+      const hasAccess = this.hasTopicAccess(topic);
+      
+      if (!hasAccess) {
+        return `Этот курс требует подписку ${this.getTopicTypeLabel(topic)}`;
+      }
+      
+      return `Начать изучение курса "${this.getTopicName(topic)}"`;
+    },
+    
+    // ============================================================================
+    // 🎛️ FILTER & SEARCH METHODS
+    // ============================================================================
+    
+    passesAllFilters(topic) {
+      try {
+        const name = this.getTopicName(topic);
+        const description = this.getTopicDescription(topic);
+        const topicType = this.getTopicType(topic);
+        const progress = topic.progress?.percent || 0;
+        
+        // Text search filter
+        if (this.searchQuery?.trim()) {
+          const query = this.searchQuery.toLowerCase();
+          const searchTargets = [
+            name.toLowerCase(),
+            description.toLowerCase(),
+            (topic.subject || '').toLowerCase()
+          ];
+          
+          const matchesSearch = searchTargets.some(target => target.includes(query));
+          if (!matchesSearch) return false;
+        }
+        
+        // Subject filter
+        if (this.filterSubject && topic.subject !== this.filterSubject) {
+          return false;
+        }
+        
+        // Level filter
+        if (this.filterLevel) {
+          const topicLevel = parseInt(topic.level) || 1;
+          const filterLevel = parseInt(this.filterLevel);
+          if (topicLevel !== filterLevel) return false;
+        }
+        
+        // Type filter
+        if (this.filterType && topicType !== this.filterType) {
+          return false;
+        }
+        
+        // Progress filter (only applies to study list)
+        if (this.filterProgress && topic.progress) {
+          switch (this.filterProgress) {
+            case 'not-started':
+              if (progress !== 0) return false;
+              break;
+            case 'in-progress':
+              if (progress === 0 || progress === 100) return false;
+              break;
+            case 'completed':
+              if (progress !== 100) return false;
+              break;
+          }
+        }
+        
+        return true;
+        
+      } catch (error) {
+        console.error('❌ Error in passesAllFilters:', error);
+        return true; // Include item if filter check fails
+      }
+    },
+    
+    applySorting(items) {
+      if (!Array.isArray(items)) return [];
+      
+      try {
+        const sorted = [...items];
+        
+        switch (this.sortBy) {
+          case 'name':
+            return sorted.sort((a, b) => 
+              this.getTopicName(a).localeCompare(this.getTopicName(b), 'ru')
+            );
+          
+          case 'progress':
+            return sorted.sort((a, b) => 
+              (b.progress?.percent || 0) - (a.progress?.percent || 0)
+            );
+          
+          case 'recent':
+            return sorted.sort((a, b) => {
+              const aDate = new Date(a.createdAt || a.studyListEntry?.createdAt || a.lastUpdated || 0);
+              const bDate = new Date(b.createdAt || b.studyListEntry?.createdAt || b.lastUpdated || 0);
+              return bDate - aDate;
+            });
+          
+          case 'subject':
+            return sorted.sort((a, b) => 
+              (a.subject || '').localeCompare(b.subject || '', 'ru')
+            );
+          
+          case 'level':
+            return sorted.sort((a, b) => 
+              (parseInt(a.level) || 0) - (parseInt(b.level) || 0)
+            );
+          
+          default:
+            return sorted;
+        }
+        
+      } catch (error) {
+        console.error('❌ Error in applySorting:', error);
+        return items; // Return unsorted if sorting fails
+      }
+    },
+    
+    clearSearch() {
+      this.searchQuery = '';
+      this.debouncedFilterUpdate();
+    },
+    
+    clearAllFilters() {
+      this.searchQuery = '';
+      this.filterSubject = '';
+      this.filterLevel = '';
+      this.filterType = '';
+      this.filterProgress = '';
+      this.sortBy = 'name';
+      this.debouncedFilterUpdate();
+      
+      this.showNotification('Фильтры очищены', 'info');
+    },
+    
+    // Filter label helpers
+    getTypeIcon(type) {
+      const icons = { 
+        free: '💚', 
+        premium: '💎', 
+        pro: '🌟' 
+      };
+      return icons[type] || '';
+    },
+    
+    getTypeLabel(type) {
+      const labels = { 
+        free: 'Бесплатные', 
+        premium: 'Премиум', 
+        pro: 'Pro' 
+      };
+      return labels[type] || '';
+    },
+    
+    getProgressIcon(progress) {
+      const icons = { 
+        'not-started': '⭕', 
+        'in-progress': '🔄', 
+        'completed': '✅' 
+      };
+      return icons[progress] || '';
+    },
+    
+    getProgressLabel(progress) {
+      const labels = { 
+        'not-started': 'Не начато', 
+        'in-progress': 'В процессе', 
+        'completed': 'Завершено' 
+      };
+      return labels[progress] || '';
+    },
+    
+    // ============================================================================
+    // 🎠 CAROUSEL METHODS
+    // ============================================================================
+    
     getRandomRecommendations(count = 10) {
       if (this.allRecommendations.length <= count) {
         return [...this.allRecommendations];
       }
       
-      const shuffled = [...this.allRecommendations].sort(() => 0.5 - Math.random());
+      // Use crypto.getRandomValues for better randomness if available
+      const shuffled = [...this.allRecommendations];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      
       return shuffled.slice(0, count);
     },
     
@@ -1279,8 +2019,11 @@ export default {
         return;
       }
       
-      this.displayedRecommendations = this.getRandomRecommendations(10);
+      console.log('🎲 Shuffling recommendations...');
       
+      this.displayedRecommendations = this.getRandomRecommendations(this.config.maxRecommendations);
+      
+      // Reset carousel position
       this.$nextTick(() => {
         if (this.$refs.carouselContainer) {
           this.$refs.carouselContainer.scrollLeft = 0;
@@ -1289,26 +2032,29 @@ export default {
       });
       
       console.log(`🎲 Shuffled to ${this.displayedRecommendations.length} new recommendations`);
+      this.showNotification('Новые рекомендации загружены', 'info', 2000);
     },
     
     scrollCarousel(direction) {
       const container = this.$refs.carouselContainer;
       if (!container) return;
       
-      const scrollAmount = 320;
+      const scrollAmount = 320; // Width of one card + gap
       const currentScroll = container.scrollLeft;
       
-      if (direction === 'left') {
-        container.scrollTo({
-          left: currentScroll - scrollAmount,
-          behavior: 'smooth'
-        });
-      } else {
-        container.scrollTo({
-          left: currentScroll + scrollAmount,
-          behavior: 'smooth'
-        });
-      }
+      const targetScroll = direction === 'left' 
+        ? Math.max(0, currentScroll - scrollAmount)
+        : currentScroll + scrollAmount;
+      
+      container.scrollTo({
+        left: targetScroll,
+        behavior: 'smooth'
+      });
+      
+      // Update scroll position after animation
+      setTimeout(() => {
+        this.updateScrollPosition();
+      }, 300);
     },
     
     updateScrollPosition() {
@@ -1319,259 +2065,559 @@ export default {
       
       this.isAtStart = scrollLeft <= 10;
       this.isAtEnd = scrollLeft >= scrollWidth - clientWidth - 10;
+      this.carouselScrollPosition = scrollLeft;
     },
     
-    // ✅ Sorting functionality
-    applySorting(items) {
-      const sorted = [...items];
+    refillDisplayedRecommendations() {
+      const currentCount = this.displayedRecommendations.length;
+      const targetCount = this.config.maxRecommendations;
       
-      switch (this.sortBy) {
-        case 'name':
-          return sorted.sort((a, b) => this.getTopicName(a).localeCompare(this.getTopicName(b)));
+      if (currentCount < targetCount && this.allRecommendations.length > currentCount) {
+        const needed = Math.min(targetCount - currentCount, 
+                               this.allRecommendations.length - currentCount);
         
-        case 'progress':
-          return sorted.sort((a, b) => (b.progress?.percent || 0) - (a.progress?.percent || 0));
+        const available = this.allRecommendations.filter(t => 
+          !this.displayedRecommendations.some(d => d._id === t._id)
+        );
         
-        case 'recent':
-          return sorted.sort((a, b) => {
-            const aDate = new Date(a.createdAt || a.studyListEntry?.createdAt || 0);
-            const bDate = new Date(b.createdAt || b.studyListEntry?.createdAt || 0);
-            return bDate - aDate;
-          });
+        const additional = available.slice(0, needed);
+        this.displayedRecommendations.push(...additional);
         
-        case 'subject':
-          return sorted.sort((a, b) => (a.subject || '').localeCompare(b.subject || ''));
-        
-        case 'level':
-          return sorted.sort((a, b) => (a.level || 0) - (b.level || 0));
-        
-        default:
-          return sorted;
+        console.log(`🔄 Refilled ${additional.length} recommendations`);
       }
     },
     
-    // ✅ Filter label helpers
-    getTypeIcon(type) {
-      switch (type) {
-        case 'free': return '💚';
-        case 'premium': return '💎';
-        case 'pro': return '🌟';
-        default: return '';
-      }
-    },
+    // ============================================================================
+    // 🔄 REFRESH METHODS
+    // ============================================================================
     
-    getTypeLabel(type) {
-      switch (type) {
-        case 'free': return 'Бесплатные';
-        case 'premium': return 'Премиум';
-        case 'pro': return 'Pro';
-        default: return '';
-      }
-    },
-    
-    getProgressIcon(progress) {
-      switch (progress) {
-        case 'not-started': return '⭕';
-        case 'in-progress': return '🔄';
-        case 'completed': return '✅';
-        default: return '';
-      }
-    },
-    
-    getProgressLabel(progress) {
-      switch (progress) {
-        case 'not-started': return 'Не начато';
-        case 'in-progress': return 'В процессе';
-        case 'completed': return 'Завершено';
-        default: return '';
-      }
-    },
-
     async refreshRecommendations() {
-      await this.fetchRecommendations();
+      if (this.loadingOperations.refresh.has('recommendations')) return;
+      
+      this.loadingOperations.refresh.add('recommendations');
+      
+      try {
+        await this.fetchRecommendations();
+        this.showNotification('Рекомендации обновлены', 'success');
+        console.log('✅ Recommendations refreshed manually');
+      } catch (error) {
+        console.error('❌ Manual refresh recommendations failed:', error);
+        this.showNotification('Не удалось обновить рекомендации', 'error');
+      } finally {
+        this.loadingOperations.refresh.delete('recommendations');
+      }
     },
-
+    
+    async refreshStudyList() {
+      if (this.loadingOperations.refresh.has('studyList')) return;
+      
+      this.loadingOperations.refresh.add('studyList');
+      
+      try {
+        await this.fetchStudyList();
+        this.showNotification('Список курсов обновлен', 'success');
+        console.log('✅ Study list refreshed manually');
+      } catch (error) {
+        console.error('❌ Manual refresh study list failed:', error);
+        this.showNotification('Не удалось обновить список курсов', 'error');
+      } finally {
+        this.loadingOperations.refresh.delete('studyList');
+      }
+    },
+    
+    async refreshAllData() {
+      if (this.loadingOperations.refresh.has('all')) return;
+      
+      this.loadingOperations.refresh.add('all');
+      
+      try {
+        console.log('🔄 Refreshing all data...');
+        
+        await Promise.allSettled([
+          this.fetchRecommendations(),
+          this.fetchStudyList()
+        ]);
+        
+        this.showNotification('Все данные обновлены', 'success');
+        console.log('✅ All data refreshed');
+        
+      } catch (error) {
+        console.error('❌ Refresh all data failed:', error);
+        this.showNotification('Не удалось обновить данные', 'error');
+      } finally {
+        this.loadingOperations.refresh.delete('all');
+      }
+    },
+    
     async retryAll() {
       if (this.retryCount >= this.maxRetries) {
-        console.warn('⚠️ Max retries reached');
+        this.showNotification('Превышено максимальное количество попыток', 'error');
         return;
       }
       
       this.retryCount++;
+      console.log(`🔄 Retry attempt ${this.retryCount}/${this.maxRetries}`);
       
-      await Promise.allSettled([
-        this.errors.recommendations ? this.fetchRecommendations() : Promise.resolve(),
-        this.errors.studyList ? this.fetchStudyList() : Promise.resolve()
-      ]);
-    },
-
-    // ✅ IMPROVED: Enhanced add topic with better error handling
-    async handleAddTopic(topic) {
-      if (!topic?._id) {
-        console.error('❌ Invalid topic data for adding');
-        this.$nextTick(() => {
-          alert('❌ Недопустимые данные курса');
-        });
+      const promises = [];
+      
+      if (this.errors.recommendations) {
+        promises.push(this.fetchRecommendations());
+      }
+      
+      if (this.errors.studyList) {
+        promises.push(this.fetchStudyList());
+      }
+      
+      if (promises.length === 0) {
+        this.showNotification('Нет ошибок для повтора', 'info');
         return;
       }
       
-      try {
-        console.log('➕ Adding topic to study list:', this.getTopicName(topic));
-        
-        const studyListData = {
-          topicId: topic._id,
-          topic: this.getTopicName(topic),
-          topicName: this.getTopicName(topic),
-          name: this.getTopicName(topic),
-          subject: topic.subject || 'General',
-          level: parseInt(topic.level) || 1,
-          lessonCount: parseInt(topic.lessonCount || topic.lessons?.length || 0),
-          totalTime: parseInt(topic.totalTime || (topic.lessons?.length * 10) || 10),
-          type: topic.type || 'free',
-          description: topic.description || this.getTopicDescription(topic),
-          isActive: true,
-          addedAt: new Date().toISOString(),
-          lessons: topic.lessons || [],
-          progress: {
-            percent: 0,
-            medal: 'none',
-            completedLessons: 0,
-            totalLessons: topic.lessons?.length || 0,
-            stars: 0,
-            points: 0
+      const results = await Promise.allSettled(promises);
+      
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
+      if (failed === 0) {
+        this.showNotification('Данные успешно загружены', 'success');
+        this.retryCount = 0; // Reset retry count on success
+      } else if (successful > 0) {
+        this.showNotification('Некоторые данные загружены', 'warning');
+      } else {
+        this.showNotification('Не удалось загрузить данные', 'error');
+      }
+    },
+    
+    // ============================================================================
+    // 💳 PAYMENT & MODAL METHODS
+    // ============================================================================
+    
+    closePaywall() {
+      this.showPaywall = false;
+      this.requestedTopicId = null;
+      console.log('💳 Paywall closed');
+    },
+    
+    handlePaymentSuccess(newStatus) {
+      console.log('💳 Payment successful, new status:', newStatus);
+      
+      // The store should already be updated by the payment modal
+      // Force a reactivity update and close modal
+      this.forceReactivityUpdate();
+      this.closePaywall();
+      
+      // Update performance metrics
+      this.performanceMetrics.successfulOperations++;
+      
+      // Show success message
+      const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
+      this.showNotification(
+        `🎉 Поздравляем! ${planLabel} подписка активирована!`,
+        'success',
+        5000
+      );
+      
+      // If there was a requested topic, try to start it after a delay
+      if (this.requestedTopicId) {
+        setTimeout(() => {
+          const topic = this.allRecommendations.find(t => t._id === this.requestedTopicId) ||
+                       this.studyList.find(t => t._id === this.requestedTopicId);
+          
+          if (topic && this.hasTopicAccess(topic)) {
+            console.log('🚀 Auto-starting requested topic after payment');
+            this.handleStartTopic(topic);
           }
+        }, 1000);
+      }
+    },
+    
+    handleProgressUpdate(topicId, newProgress) {
+      console.log('📊 Progress updated:', topicId, newProgress);
+      
+      // Update local state
+      const topicIndex = this.studyList.findIndex(t => t._id === topicId);
+      if (topicIndex !== -1) {
+        this.studyList[topicIndex].progress = {
+          ...this.studyList[topicIndex].progress,
+          ...newProgress,
+          lastUpdated: new Date().toISOString()
         };
         
-        console.log('📦 Sending study list data:', studyListData);
+        // Force reactivity update
+        this.forceReactivityUpdate();
         
-        // ✅ SAFER: Wrap API call with better error handling
-        let result;
-        try {
-          result = await addToStudyList(this.userId, studyListData);
-        } catch (apiError) {
-          console.error('❌ Add to study list API error:', apiError);
-          
-          if (apiError?.message?.includes('toUpperCase')) {
-            throw new Error('API configuration error. Please contact support.');
+        // Show progress notification for significant milestones
+        if (newProgress.percent === 100) {
+          const topicName = this.getTopicName(this.studyList[topicIndex]);
+          this.showNotification(`🎉 Курс "${topicName}" завершен!`, 'success');
+        } else if (newProgress.percent >= 50 && newProgress.percent < 100) {
+          // Show milestone notification only once
+          const topic = this.studyList[topicIndex];
+          if (!topic.milestoneNotified) {
+            topic.milestoneNotified = true;
+            this.showNotification('📈 Вы прошли половину курса!', 'info');
+          }
+        }
+      }
+    },
+    
+    // ============================================================================
+    // 🔔 NOTIFICATION SYSTEM
+    // ============================================================================
+    
+    showNotification(message, type = 'info', duration = 4000) {
+      if (!this.config.enableNotifications) return;
+      
+      // Prevent duplicate notifications
+      const isDuplicate = this.notifications.some(n => 
+        n.message === message && n.type === type && 
+        Date.now() - n.timestamp < 1000
+      );
+      
+      if (isDuplicate) return;
+      
+      const notification = {
+        id: ++this.notificationCounter,
+        message,
+        type,
+        icon: this.getNotificationIcon(type),
+        timestamp: Date.now(),
+        duration
+      };
+      
+      // Limit number of notifications
+      if (this.notifications.length >= this.maxNotifications) {
+        this.notifications.shift(); // Remove oldest
+      }
+      
+      this.notifications.push(notification);
+      
+      // Auto-dismiss
+      setTimeout(() => {
+        this.dismissNotification(notification.id);
+      }, duration);
+      
+      console.log(`🔔 Notification [${type}]: ${message}`);
+    },
+    
+    getNotificationIcon(type) {
+      const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+      };
+      return icons[type] || 'ℹ️';
+    },
+    
+    dismissNotification(id) {
+      this.notifications = this.notifications.filter(n => n.id !== id);
+    },
+    
+    dismissAllNotifications() {
+      this.notifications = [];
+    },
+    
+    // ============================================================================
+    // 🛠️ UTILITY METHODS
+    // ============================================================================
+    
+    extractSubjectsAndLevels(items) {
+      if (!Array.isArray(items)) return;
+      
+      try {
+        // Extract unique subjects
+        const subjects = new Set();
+        const levels = new Set();
+        
+        items.forEach(item => {
+          if (item.subject && typeof item.subject === 'string') {
+            subjects.add(item.subject);
           }
           
-          const errorInfo = this.handleApiError(apiError, 'addToStudyList');
-          throw new Error(errorInfo.message);
-        }
-        
-        if (result?.success !== false) {
-          console.log('✅ Topic added to backend successfully');
-          
-          // Add to local state immediately
-          const newStudyItem = {
-            _id: topic._id,
-            ...studyListData,
-            studyListEntry: {
-              topicId: topic._id,
-              createdAt: new Date().toISOString()
-            }
-          };
-          
-          this.studyList.push(newStudyItem);
-          
-          // Remove from recommendations
-          this.allRecommendations = this.allRecommendations.filter(t => t._id !== topic._id);
-          this.displayedRecommendations = this.displayedRecommendations.filter(t => t._id !== topic._id);
-          
-          // Refresh from server in background
-          setTimeout(() => {
-            this.fetchStudyList();
-          }, 1000);
-          
-          // Refill displayed recommendations if needed
-          if (this.displayedRecommendations.length < 3 && this.allRecommendations.length > this.displayedRecommendations.length) {
-            const needed = Math.min(3, this.allRecommendations.length - this.displayedRecommendations.length);
-            const available = this.allRecommendations.filter(t => 
-              !this.displayedRecommendations.some(d => d._id === t._id)
-            );
-            const additional = available.slice(0, needed);
-            this.displayedRecommendations.push(...additional);
+          if (item.level && !isNaN(item.level)) {
+            levels.add(parseInt(item.level));
           }
-          
-          this.$nextTick(() => {
-            alert('✅ Курс успешно добавлен в ваш список!');
-          });
-          
-        } else {
-          throw new Error(result?.error || 'Failed to add topic');
-        }
-        
-      } catch (err) {
-        console.error('❌ Add topic error:', err);
-        
-        let errorMessage = 'Не удалось добавить курс';
-        
-        if (err.message?.includes('уже добавлен') || err.message?.includes('already exists')) {
-          errorMessage = 'Этот курс уже добавлен в ваш список';
-        } else if (err.message?.includes('войти в аккаунт') || err.message?.includes('authentication')) {
-          errorMessage = 'Необходимо войти в аккаунт';
-        } else if (err.message?.includes('API configuration')) {
-          errorMessage = 'Ошибка конфигурации API. Обратитесь к поддержке.';
-        } else {
-          errorMessage = err.message || 'Неизвестная ошибка';
-        }
-        
-        this.$nextTick(() => {
-          alert(`❌ ${errorMessage}`);
         });
+        
+        this.allSubjects = Array.from(subjects).sort((a, b) => a.localeCompare(b, 'ru'));
+        this.allLevels = Array.from(levels).sort((a, b) => a - b);
+        
+        console.log(`📊 Extracted ${this.allSubjects.length} subjects and ${this.allLevels.length} levels`);
+        
+      } catch (error) {
+        console.error('❌ Error extracting subjects and levels:', error);
       }
     },
-
-    async handleStartTopic(topic) {
-      try {
-        const hasAccess = this.hasTopicAccess(topic);
+    
+    handleApiError(error, context) {
+      console.error(`❌ API Error [${context}]:`, error);
+      
+      this.lastErrorTime = Date.now();
+      
+      let errorMessage = 'Произошла неожиданная ошибка';
+      
+      if (error?.response) {
+        const status = error.response.status;
+        const data = error.response.data;
         
-        if (!hasAccess) {
-          this.requestedTopicId = topic._id;
-          this.showPaywall = true;
-          return;
+        switch (status) {
+          case 404:
+            errorMessage = 'Ресурс не найден. Возможно, он был удален.';
+            break;
+          case 401:
+            errorMessage = 'Ошибка авторизации. Пожалуйста, войдите в систему заново.';
+            setTimeout(() => {
+              this.$router.push('/');
+            }, 2000);
+            break;
+          case 403:
+            errorMessage = 'Доступ запрещен. У вас может не быть прав доступа.';
+            break;
+          case 429:
+            errorMessage = 'Слишком много запросов. Попробуйте позже.';
+            break;
+          case 500:
+          case 502:
+          case 503:
+          case 504:
+            errorMessage = 'Ошибка сервера. Пожалуйста, попробуйте позже.';
+            break;
+          default:
+            errorMessage = data?.message || `Ошибка сервера (${status})`;
         }
-        
-        if (topic.lessons && topic.lessons.length > 0) {
-          const firstLesson = topic.lessons.find(l => l && l._id);
-          if (firstLesson) {
-            this.$router.push({ name: 'LessonPage', params: { id: firstLesson._id } });
-          } else {
-            this.$router.push({ path: `/topic/${topic._id}/overview` });
-          }
+      } else if (error?.request) {
+        errorMessage = 'Ошибка сети. Проверьте подключение к интернету.';
+      } else if (error?.message) {
+        if (error.message.includes('toUpperCase')) {
+          errorMessage = 'Ошибка конфигурации API. Обратитесь в поддержку.';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = 'Превышено время ожидания. Попробуйте позже.';
         } else {
-          this.$router.push({ path: `/topic/${topic._id}/overview` });
+          errorMessage = error.message;
         }
-        
-      } catch (error) {
-        console.error('❌ Error starting topic:', error);
-        alert('❌ Не удалось открыть курс');
+      }
+      
+      this.errors[context] = errorMessage;
+      
+      // Show notification for critical errors
+      if (context === 'api' || error?.response?.status >= 500) {
+        this.showNotification(errorMessage, 'error');
       }
     },
-
-    async removeStudyCard(id) {
-      try {
-        console.log('🗑️ Removing study card:', id);
-        
-        // Remove from local state first for immediate UI update
-        this.studyList = this.studyList.filter(topic => topic._id !== id);
-        
-        // Try to remove from backend
-        try {
-          const result = await removeFromStudyList(this.userId, id);
-          if (result?.success) {
-            console.log('✅ Successfully removed from backend');
-          } else {
-            console.warn('⚠️ Backend removal failed, but UI updated');
-          }
-        } catch (backendError) {
-          console.warn('⚠️ Backend removal failed:', backendError.message);
-        }
-        
-      } catch (error) {
-        console.error('❌ Error removing study card:', error);
-        await this.fetchStudyList();
+    
+    handleCriticalError(error, context) {
+      console.error(`🚨 Critical error in ${context}:`, error);
+      
+      this.errors.api = `Критическая ошибка в ${context}: ${error.message}`;
+      
+      this.showNotification(
+        'Произошла критическая ошибка. Попробуйте перезагрузить страницу.',
+        'error',
+        10000
+      );
+      
+      // Update performance metrics
+      this.performanceMetrics.failedOperations++;
+    },
+    
+    // Helper methods for data processing
+    extractTopicId(topicId) {
+      if (!topicId) return null;
+      
+      if (typeof topicId === 'string') {
+        return topicId;
       }
+      
+      if (typeof topicId === 'object' && topicId !== null) {
+        return topicId._id || topicId.id || String(topicId);
+      }
+      
+      return String(topicId);
+    },
+    
+    extractLocalizedString(obj) {
+      if (!obj || typeof obj !== 'object') return null;
+      
+      // Try current language first
+      if (obj[this.lang] && typeof obj[this.lang] === 'string' && obj[this.lang].trim()) {
+        return obj[this.lang].trim();
+      }
+      
+      // Try fallback languages
+      const fallbackLanguages = ['ru', 'en', 'uz'];
+      for (const lang of fallbackLanguages) {
+        if (obj[lang] && typeof obj[lang] === 'string' && obj[lang].trim()) {
+          return obj[lang].trim();
+        }
+      }
+      
+      // Try any string value
+      const stringValue = Object.values(obj).find(val => 
+        val && typeof val === 'string' && val.trim()
+      );
+      
+      return stringValue ? stringValue.trim() : null;
+    },
+    
+    generateTopicNameFallback(topic) {
+      // Try to construct from available data
+      if (topic.subject) {
+        const subject = typeof topic.subject === 'string' ? topic.subject : String(topic.subject);
+        const level = topic.level ? ` (Уровень ${topic.level})` : '';
+        return `${subject}${level}`;
+      }
+      
+      // Use lesson name if this is built from lessons
+      if (topic.metadata?.source === 'built-from-lessons' && topic.lessons?.length > 0) {
+        const firstLesson = topic.lessons[0];
+        if (firstLesson.lessonName) {
+          return `Курс: ${firstLesson.lessonName}`;
+        }
+        if (firstLesson.title) {
+          return `Курс: ${firstLesson.title}`;
+        }
+      }
+      
+      // Use ID as readable name
+      if (topic._id || topic.id) {
+        const id = (topic._id || topic.id).toString();
+        return `Курс ${id.substring(Math.max(0, id.length - 6))}`;
+      }
+      
+      return 'Без названия';
+    },
+    
+    generateTopicDescription(topic) {
+      const topicName = this.getTopicName(topic);
+      const lessonCount = topic.lessonCount || topic.lessons?.length || 0;
+      const subject = topic.subject || 'Общий предмет';
+      const level = topic.level || 1;
+      
+      if (lessonCount > 0) {
+        return `Курс "${topicName}" по предмету "${subject}" (Уровень ${level}) содержит ${lessonCount} уроков.`;
+      } else {
+        return `Курс "${topicName}" по предмету "${subject}" (Уровень ${level}).`;
+      }
+    },
+    
+    shouldPreserveStudyListNames(freshData) {
+      return !freshData.name && !freshData.topicName && 
+             !freshData.topic && !freshData.title;
+    },
+    
+    calculateLessonTime(lesson) {
+      // Calculate estimated time for a lesson
+      if (lesson.estimatedTime) return parseInt(lesson.estimatedTime);
+      if (lesson.duration) return parseInt(lesson.duration);
+      if (lesson.timeToComplete) return parseInt(lesson.timeToComplete);
+      
+      // Default to 10 minutes per lesson
+      return 10;
+    },
+    
+    calculateTopicTotalTime(topic) {
+      if (topic.totalTime) return parseInt(topic.totalTime);
+      if (topic.lessons?.length) {
+        return topic.lessons.reduce((sum, lesson) => sum + this.calculateLessonTime(lesson), 0);
+      }
+      return (topic.lessonCount || 1) * 10; // Default to 10 minutes per lesson
+    },
+    
+    calculateTopicDifficulty(topic) {
+      const level = parseInt(topic.level) || 1;
+      
+      if (level <= 2) return 1; // Beginner
+      if (level <= 4) return 2; // Intermediate
+      if (level <= 6) return 3; // Advanced
+      return 4; // Expert
+    },
+    
+    findStartingLesson(topic) {
+      if (!topic.lessons || topic.lessons.length === 0) return null;
+      
+      // Try to find the first lesson based on order or name
+      const lessons = [...topic.lessons];
+      
+      // Sort by order if available
+      if (lessons[0].order !== undefined) {
+        lessons.sort((a, b) => (a.order || 0) - (b.order || 0));
+      }
+      
+      // Return first valid lesson
+      return lessons.find(lesson => lesson && lesson._id) || null;
+    },
+    
+    isUserRelatedMutation(mutation) {
+      return mutation.type.includes('user/') && 
+             (mutation.type.includes('STATUS') || 
+              mutation.type.includes('SUBSCRIPTION') ||
+              mutation.type.includes('UPDATE') ||
+              mutation.type.includes('FORCE'));
+    },
+    
+    getCoursesWord(count) {
+      const num = parseInt(count) || 0;
+      
+      if (num % 10 === 1 && num % 100 !== 11) return 'курс';
+      if ([2, 3, 4].includes(num % 10) && ![12, 13, 14].includes(num % 100)) return 'курса';
+      return 'курсов';
+    },
+    
+    // ============================================================================
+    // 🧹 CLEANUP METHODS
+    // ============================================================================
+    
+    performCleanup() {
+      console.log('🧹 MainPage: Performing cleanup...');
+      
+      // Clear timers
+      if (this.updateTimer) {
+        clearTimeout(this.updateTimer);
+      }
+      
+      if (this.autoRefreshInterval) {
+        clearInterval(this.autoRefreshInterval);
+      }
+      
+      // Clean up global event listeners
+      this.globalEventListeners.forEach((handler, event) => {
+        try {
+          window.removeEventListener(event, handler);
+        } catch (error) {
+          console.warn(`⚠️ Failed to remove ${event} listener:`, error);
+        }
+      });
+      
+      // Clean up event bus listeners
+      this.eventCleanupFunctions.forEach(cleanup => {
+        try {
+          cleanup();
+        } catch (error) {
+          console.warn('⚠️ Event cleanup error:', error);
+        }
+      });
+      
+      // Unsubscribe from store
+      if (this.unsubscribeStore) {
+        this.unsubscribeStore();
+      }
+      
+      // Clear loading operations
+      this.loadingOperations.add.clear();
+      this.loadingOperations.start.clear();
+      this.loadingOperations.remove.clear();
+      this.loadingOperations.refresh.clear();
+      
+      // Clear notifications
+      this.dismissAllNotifications();
+      
+      // Log final performance metrics
+      if (this.config.enableAnalytics) {
+        console.log('📊 Final performance metrics:', this.performanceMetrics);
+      }
+      
+      console.log('✅ MainPage cleanup completed');
     }
   }
 };
