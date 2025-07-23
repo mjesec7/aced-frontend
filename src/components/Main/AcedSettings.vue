@@ -84,8 +84,8 @@
             </span>
             <div class="plan-details">
               <p class="plan-description">{{ currentPlanDescription }}</p>
-              <p v-if="subscriptionDetails?.expiryDate" class="plan-expiry">
-                Активен до: {{ formatDate(subscriptionDetails.expiryDate) }}
+              <p v-if="storeSubscriptionDetails?.expiryDate" class="plan-expiry">
+                Активен до: {{ formatDate(storeSubscriptionDetails.expiryDate) }}
               </p>
               <p v-if="hasPromocodeSubscription" class="plan-source">
                 🎟️ Активирован по промокоду: {{ lastAppliedPromocode?.code }}
@@ -271,11 +271,11 @@
         </div>
 
         <!-- Payment History -->
-        <div v-if="paymentHistory.length > 0" class="payment-history">
+        <div v-if="storePaymentHistory.length > 0" class="payment-history">
           <h4>📊 История платежей</h4>
           <div class="history-list">
             <div 
-              v-for="payment in paymentHistory" 
+              v-for="payment in storePaymentHistory" 
               :key="payment.id"
               class="payment-item"
             >
@@ -342,6 +342,7 @@
 
 <script>
 import { auth, db } from "@/firebase";
+import { mapGetters, mapActions } from 'vuex';
 import {
   updateEmail,
   reauthenticateWithCredential,
@@ -366,13 +367,10 @@ export default {
       currentUser: null,
       isGoogleUser: false,
       
-      // Payment data
+      // Payment data - removed currentPlan and subscriptionDetails from data
       promoCode: "",
       selectedPlan: "",
       paymentPlan: "",
-      currentPlan: "free",
-      subscriptionDetails: null,
-      paymentHistory: [],
       
       // Promocode validation
       promoValidation: null,
@@ -390,43 +388,39 @@ export default {
   },
   
   computed: {
-    // Store getters with safe defaults
-    currentMonthUsage() {
-      return this.$store?.getters?.['user/currentMonthUsage'] || { messages: 0, images: 0 };
+    // ✅ Use mapGetters for reactive store access
+    ...mapGetters('user', [
+      'userStatus',
+      'currentMonthUsage', 
+      'usageLimits',
+      'messageUsagePercentage',
+      'imageUsagePercentage',
+      'isFreeUser',
+      'appliedPromocodes',
+      'hasPromocodeSubscription',
+      'lastAppliedPromocode',
+      'subscriptionDetails',
+      'paymentHistory'
+    ]),
+    
+    // ✅ Make currentPlan reactive to store changes
+    currentPlan() {
+      return this.userStatus || 'free';
     },
     
-    usageLimits() {
-      return this.$store?.getters?.['user/usageLimits'] || { messages: 0, images: 0 };
+    // ✅ Use computed names that don't conflict with mapGetters
+    storeSubscriptionDetails() {
+      return this.subscriptionDetails;
     },
     
-    messageUsagePercentage() {
-      return this.$store?.getters?.['user/messageUsagePercentage'] || 0;
-    },
-    
-    imageUsagePercentage() {
-      return this.$store?.getters?.['user/imageUsagePercentage'] || 0;
-    },
-    
-    isFreeUser() {
-      return this.$store?.getters?.['user/isFreeUser'] ?? true;
-    },
-    
-    appliedPromocodes() {
-      return this.$store?.getters?.['user/appliedPromocodes'] || [];
-    },
-    
-    hasPromocodeSubscription() {
-      return this.$store?.getters?.['user/hasPromocodeSubscription'] || false;
-    },
-    
-    lastAppliedPromocode() {
-      return this.$store?.getters?.['user/lastAppliedPromocode'] || null;
+    storePaymentHistory() {
+      return Array.isArray(this.paymentHistory) ? this.paymentHistory.slice(0, 5) : [];
     },
     
     currentPlanLabel() {
       const labels = {
         pro: 'Pro',
-        start: 'Start',
+        start: 'Start', 
         free: 'Free'
       };
       return labels[this.currentPlan] || 'Free';
@@ -451,7 +445,7 @@ export default {
     },
     
     userId() {
-      return this.currentUser?.uid || this.$store?.getters?.['user/getUserId'];
+      return this.currentUser?.uid;
     },
     
     // Enhanced promocode validation computed properties
@@ -511,11 +505,67 @@ export default {
     }
   },
   
+  // ✅ Add watchers to respond to store changes
+  watch: {
+    userStatus: {
+      handler(newStatus, oldStatus) {
+        if (newStatus !== oldStatus) {
+          console.log(`👀 User status changed: ${oldStatus} → ${newStatus}`);
+          // Don't need to set this.currentPlan since it's computed now
+          this.$nextTick(() => {
+            this.$forceUpdate();
+          });
+        }
+      },
+      immediate: true
+    },
+    
+    subscriptionDetails: {
+      handler(newDetails, oldDetails) {
+        if (newDetails !== oldDetails) {
+          console.log('👀 Subscription details updated:', newDetails);
+          this.$nextTick(() => {
+            this.$forceUpdate();
+          });
+        }
+      },
+      deep: true,
+      immediate: true
+    },
+    
+    appliedPromocodes: {
+      handler(newPromocodes) {
+        console.log('👀 Applied promocodes updated:', newPromocodes);
+        this.$nextTick(() => {
+          this.$forceUpdate();
+        });
+      },
+      deep: true
+    },
+    
+    paymentHistory: {
+      handler(newHistory) {
+        console.log('👀 Payment history updated:', newHistory);
+        this.$nextTick(() => {
+          this.$forceUpdate();
+        });
+      },
+      deep: true
+    }
+  },
+  
   async mounted() {
     await this.initializeComponent();
   },
   
   methods: {
+    // ✅ Use mapActions for store methods
+    ...mapActions('user', [
+      'loadUserStatus',
+      'validatePromocode', 
+      'applyPromocode'
+    ]),
+    
     async initializeComponent() {
       this.loading = true;
       this.loadingText = 'Загрузка настроек...';
@@ -525,8 +575,7 @@ export default {
         await new Promise(resolve => setTimeout(resolve, 100));
         
         await this.checkAuthState();
-        await this.loadPaymentHistory();
-        await this.syncWithStore();
+        await this.loadInitialData();
       } catch (error) {
         console.error('❌ Settings initialization error:', error);
         this.showNotification('Ошибка загрузки настроек', 'error');
@@ -535,20 +584,17 @@ export default {
       }
     },
     
-    async syncWithStore() {
+    async loadInitialData() {
       try {
-        // Check if store is available
-        if (!this.$store || !this.$store.getters) {
-          console.warn('⚠️ Vuex store not available during sync');
-          return;
+        // ✅ Use store actions instead of direct API calls
+        if (this.$store && typeof this.loadUserStatus === 'function') {
+          await this.loadUserStatus();
+          console.log('✅ Store data loaded via actions');
+        } else {
+          console.warn('⚠️ Store actions not available, using fallback');
         }
-        
-        this.currentPlan = this.$store.getters['user/userStatus'] || 'free';
-        this.subscriptionDetails = this.$store.getters['user/subscriptionDetails'] || null;
       } catch (error) {
-        console.warn('⚠️ Error syncing with store:', error);
-        this.currentPlan = 'free';
-        this.subscriptionDetails = null;
+        console.warn('⚠️ Failed to load initial data:', error);
       }
     },
     
@@ -559,7 +605,6 @@ export default {
           if (user) {
             this.isGoogleUser = user.providerData[0]?.providerId === "google.com";
             await this.fetchUserData();
-            await this.fetchSubscriptionStatus();
           }
           resolve();
         });
@@ -590,47 +635,6 @@ export default {
       }
     },
     
-    async fetchSubscriptionStatus() {
-      try {
-        if (!this.currentUser) return;
-        
-        // Check if store dispatch is available
-        if (!this.$store || typeof this.$store.dispatch !== 'function') {
-          console.warn('⚠️ Vuex store not available');
-          this.currentPlan = 'free';
-          return;
-        }
-        
-        const result = await this.$store.dispatch('user/loadUserStatus');
-        
-        if (result && result.success) {
-          this.currentPlan = result.status || 'free';
-          this.subscriptionDetails = this.$store.getters['user/subscriptionDetails'] || null;
-        } else {
-          this.currentPlan = 'free';
-        }
-      } catch (err) {
-        console.warn('⚠️ Failed to fetch subscription status:', err);
-        this.currentPlan = 'free';
-      }
-    },
-    
-    async loadPaymentHistory() {
-      try {
-        if (!this.$store || !this.$store.getters) {
-          console.warn('⚠️ Vuex store not available for payment history');
-          this.paymentHistory = [];
-          return;
-        }
-        
-        const history = this.$store.getters['user/paymentHistory'];
-        this.paymentHistory = Array.isArray(history) ? history.slice(0, 5) : [];
-      } catch (error) {
-        console.warn('⚠️ Failed to load payment history:', error);
-        this.paymentHistory = [];
-      }
-    },
-    
     handlePromoCodeInput() {
       if (this.promoValidationTimeout) {
         clearTimeout(this.promoValidationTimeout);
@@ -647,69 +651,11 @@ export default {
       this.isValidatingPromo = true;
       
       this.promoValidationTimeout = setTimeout(() => {
-        this.validatePromoCode();
+        this.validatePromoCodeLocal();
       }, 800);
     },
     
-    // Helper method to try multiple API URL patterns
-    async tryMultipleApiEndpoints(endpoints, options = {}) {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
-      
-      // Since VITE_API_BASE_URL is "https://api.aced.live/api", we need to be smarter about URL building
-      const isBaseUrlWithApi = baseUrl.endsWith('/api');
-      
-      for (const endpoint of endpoints) {
-        let urls = [];
-        
-        if (isBaseUrlWithApi) {
-          // Base URL already has /api, so don't add it again
-          urls = [
-            `${baseUrl}${endpoint}`, // https://api.aced.live/api + /payments/promo-code
-            `${baseUrl.replace('/api', '')}${endpoint}`, // https://api.aced.live + /payments/promo-code
-            `${baseUrl.replace('/api', '')}/api${endpoint}` // https://api.aced.live/api + /payments/promo-code
-          ];
-        } else {
-          // Base URL doesn't have /api
-          urls = [
-            `${baseUrl}${endpoint}`,
-            `${baseUrl}/api${endpoint}`,
-            `https://api.aced.live${endpoint}`,
-            `https://api.aced.live/api${endpoint}`
-          ];
-        }
-        
-        for (const url of urls) {
-          try {
-            console.log(`🔍 Trying URL: ${url}`);
-            const response = await fetch(url, options);
-            
-            if (response.ok) {
-              console.log(`✅ Success with URL: ${url}`);
-              return await response.json();
-            } else {
-              console.log(`❌ Failed with ${response.status}: ${url}`);
-              
-              // If it's a 400 error, let's log the error details
-              if (response.status === 400) {
-                try {
-                  const errorData = await response.json();
-                  console.log(`📋 400 Error details:`, errorData);
-                } catch (e) {
-                  console.log(`📋 400 Error (no JSON response)`);
-                }
-              }
-            }
-          } catch (error) {
-            console.log(`❌ Error with ${url}:`, error.message);
-            continue;
-          }
-        }
-      }
-      
-      throw new Error('All API endpoints failed');
-    },
-    
-    async validatePromoCode() {
+    async validatePromoCodeLocal() {
       if (!this.promoCode.trim() || this.promoCode.length <= 3) {
         this.promoValidation = null;
         this.isValidatingPromo = false;
@@ -721,10 +667,10 @@ export default {
         
         let result = null;
         
-        // Strategy 1: Try the store method first
-        if (this.$store && typeof this.$store.dispatch === 'function') {
+        // ✅ Strategy 1: Try the store action first
+        if (typeof this.validatePromocode === 'function') {
           try {
-            result = await this.$store.dispatch('user/validatePromocode', this.promoCode);
+            result = await this.validatePromocode(this.promoCode);
             console.log('📦 Store validation result:', result);
           } catch (storeError) {
             console.warn('⚠️ Store validation failed:', storeError.message);
@@ -840,6 +786,63 @@ export default {
       }
     },
     
+    // Helper method to try multiple API URL patterns
+    async tryMultipleApiEndpoints(endpoints, options = {}) {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      
+      // Since VITE_API_BASE_URL is "https://api.aced.live/api", we need to be smarter about URL building
+      const isBaseUrlWithApi = baseUrl.endsWith('/api');
+      
+      for (const endpoint of endpoints) {
+        let urls = [];
+        
+        if (isBaseUrlWithApi) {
+          // Base URL already has /api, so don't add it again
+          urls = [
+            `${baseUrl}${endpoint}`, // https://api.aced.live/api + /payments/promo-code
+            `${baseUrl.replace('/api', '')}${endpoint}`, // https://api.aced.live + /payments/promo-code
+            `${baseUrl.replace('/api', '')}/api${endpoint}` // https://api.aced.live/api + /payments/promo-code
+          ];
+        } else {
+          // Base URL doesn't have /api
+          urls = [
+            `${baseUrl}${endpoint}`,
+            `${baseUrl}/api${endpoint}`,
+            `https://api.aced.live/api${endpoint}`
+          ];
+        }
+        
+        for (const url of urls) {
+          try {
+            console.log(`🔍 Trying URL: ${url}`);
+            const response = await fetch(url, options);
+            
+            if (response.ok) {
+              console.log(`✅ Success with URL: ${url}`);
+              return await response.json();
+            } else {
+              console.log(`❌ Failed with ${response.status}: ${url}`);
+              
+              // If it's a 400 error, let's log the error details
+              if (response.status === 400) {
+                try {
+                  const errorData = await response.json();
+                  console.log(`📋 400 Error details:`, errorData);
+                } catch (e) {
+                  console.log(`📋 400 Error (no JSON response)`);
+                }
+              }
+            }
+          } catch (error) {
+            console.log(`❌ Error with ${url}:`, error.message);
+            continue;
+          }
+        }
+      }
+      
+      throw new Error('All API endpoints failed');
+    },
+    
     onPlanChange() {
       if (this.promoValidation && this.promoValidation.valid && this.selectedPlan) {
         const promoGrantsPlan = this.promoValidation.data?.grantsPlan;
@@ -875,10 +878,10 @@ export default {
         
         let result = null;
         
-        // Strategy 1: Try the store method first
-        if (this.$store && typeof this.$store.dispatch === 'function') {
+        // ✅ Strategy 1: Try the store action first
+        if (typeof this.applyPromocode === 'function') {
           try {
-            result = await this.$store.dispatch('user/applyPromocode', {
+            result = await this.applyPromocode({
               promoCode: this.promoCode.trim(),
               plan: this.selectedPlan
             });
@@ -1022,7 +1025,7 @@ export default {
             };
             console.log('✅ Hardcoded apply successful for:', promocodeUpper);
             
-            // Also try to update the store if available
+            // ✅ Update the store using actions/mutations if available
             if (this.$store && typeof this.$store.commit === 'function') {
               try {
                 this.$store.commit('user/setUserStatus', this.selectedPlan);
@@ -1044,8 +1047,6 @@ export default {
         
         if (result && result.success) {
           const oldPlan = this.currentPlan;
-          this.currentPlan = result.newPlan;
-          this.subscriptionDetails = result.subscriptionDetails;
           
           this.promoCode = "";
           this.selectedPlan = "";
@@ -1056,9 +1057,16 @@ export default {
             'success'
           );
           
+          // ✅ Force reactivity update and reload store data
           setTimeout(async () => {
-            await this.syncWithStore();
-            await this.fetchSubscriptionStatus();
+            try {
+              if (typeof this.loadUserStatus === 'function') {
+                await this.loadUserStatus();
+              }
+              this.$forceUpdate();
+            } catch (refreshError) {
+              console.warn('⚠️ Could not refresh user status:', refreshError);
+            }
           }, 1000);
           
         } else {
