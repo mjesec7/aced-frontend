@@ -325,7 +325,15 @@ export default {
   },
   
   computed: {
-    ...mapGetters('user', ['userStatus']),
+    // ✅ FIXED: Map all needed user getters from store
+    ...mapGetters('user', [
+      'userStatus',
+      'isPremiumUser',
+      'isStartUser', 
+      'isProUser',
+      'isFreeUser',
+      'hasActiveSubscription'
+    ]),
     
     filteredRecommendations() {
       return this.applySorting(this.displayedRecommendations
@@ -379,6 +387,7 @@ export default {
       }));
     },
     
+    // ✅ FIXED: Use reactive store getter instead of local data
     userStatusLabel() {
       if (this.userStatus === 'pro') return 'Pro';
       if (this.userStatus === 'start') return 'Start';
@@ -447,7 +456,7 @@ export default {
       }
     },
     
-    // ✅ ENHANCED: Access status methods
+    // ✅ ENHANCED: Access status methods using store getters
     getAccessStatus(topic) {
       const topicType = this.getTopicType(topic);
       const hasAccess = this.hasTopicAccess(topic);
@@ -457,12 +466,13 @@ export default {
       return 'restricted';
     },
     
+    // ✅ FIXED: Use store getters for access control
     hasTopicAccess(topic) {
       const topicType = this.getTopicType(topic);
       
       if (topicType === 'free') return true;
-      if (topicType === 'premium' && (this.userStatus === 'start' || this.userStatus === 'pro')) return true;
-      if (topicType === 'pro' && this.userStatus === 'pro') return true;
+      if (topicType === 'premium' && (this.isStartUser || this.isProUser)) return true;
+      if (topicType === 'pro' && this.isProUser) return true;
       
       return false;
     },
