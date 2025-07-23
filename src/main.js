@@ -136,9 +136,12 @@ class AdvancedEventBus {
   }
 }
 
-// Create enhanced global event bus
+// Create enhanced global event bus and EXPORT it
 const eventBus = new AdvancedEventBus();
 window.eventBus = eventBus;
+
+// ✅ EXPORT the eventBus for component imports
+export { eventBus };
 
 // ============================================================================
 // 🌐 INTERNATIONALIZATION SETUP
@@ -334,7 +337,7 @@ async function handleUserLogin(firebaseUser) {
     eventBus.emit('userLoginError', {
       error: error.message || 'Login process failed',
       isCritical: true,
-      timestamp: Date.now() // Fixed Date.2now() to Date.now()
+      timestamp: Date.now()
     });
     
     await forceClearUserState();
