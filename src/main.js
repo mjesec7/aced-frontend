@@ -334,7 +334,7 @@ async function handleUserLogin(firebaseUser) {
     eventBus.emit('userLoginError', {
       error: error.message || 'Login process failed',
       isCritical: true,
-      timestamp: Date.now()
+      timestamp: Date.now() // Fixed Date.2now() to Date.now()
     });
     
     await forceClearUserState();
@@ -801,7 +801,7 @@ function setupGlobalSubscriptionManagement() {
         source: 'promocode',
         oldPlan: data.oldStatus,
         promocode: data.promocode,
-        timestamp: data.timestamp || Date.now()
+        timestamp: Date.now()
       }
     });
     window.dispatchEvent(domEvent);
@@ -818,7 +818,7 @@ function setupGlobalSubscriptionManagement() {
         oldPlan: 'free',
         transactionId: data.transactionId,
         amount: data.amount,
-        timestamp: data.timestamp || Date.now()
+        timestamp: Date.now()
       }
     });
     window.dispatchEvent(domEvent);
@@ -1227,7 +1227,7 @@ if (import.meta.env.DEV) {
           timestamp: Date.now()
         }
       });
-      window.dispatchEvent(domEvent);
+    window.dispatchEvent(domEvent);
       
       console.log(`✅ Test promocode events dispatched:`, eventData);
       return eventData;
@@ -1407,45 +1407,3 @@ initializeApplication().catch(error => {
     </div>
   `;
 });
-
-// ============================================================================
-// 📤 EXPORTS (moved to the end)
-// ============================================================================
-
-// Export the event bus for use in other modules
-export { eventBus };
-
-// Export the Vue app instance (available after mounting)
-export { app };
-
-// Export store and router for direct access if needed
-export { store, router, i18n };
-
-// Export utility functions that other modules might need
-export { 
-  forceClearUserState, 
-  handleUserLogin, 
-  handleUserLogout 
-};
-
-// Export app lifecycle state for monitoring
-export { appLifecycle };
-
-// Export auth state checkers
-export const isAuthReady = () => authInitialized;
-export const isStoreReady = () => storeInitialized;
-export const isAppMounted = () => isApplicationMounted; // Fixed: using renamed variable
-export const isAppReady = () => appLifecycle.initialized;
-
-// Export debugging helpers for development
-if (import.meta.env.DEV) {
-  export const getDebugInfo = () => ({
-    appLifecycle,
-    authInitialized,
-    storeInitialized,
-    isApplicationMounted, // Fixed: using renamed variable
-    eventBusStats: eventBus.getStats(),
-    userStatus: store?.getters['user/userStatus'],
-    timestamp: Date.now()
-  });
-}
