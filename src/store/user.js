@@ -1,4 +1,4 @@
-// src/store/user.js - REDESIGNED USER STORE WITH GLOBAL REACTIVITY
+// src/store/user.js - COMPLETE REDESIGNED USER STORE WITH SERVER-SIDE OPERATIONS
 import { checkPaymentStatus } from '@/api/payments';
 import { getUserUsage, resetMonthlyUsage } from '@/services/GPTService';
 
@@ -70,7 +70,8 @@ const state = () => ({
     loading: {
       status: false,
       usage: false,
-      payments: false
+      payments: false,
+      saving: false
     }
   }
 });
@@ -600,60 +601,310 @@ const actions = {
   },
   
   // ==================================================
-  // USER MANAGEMENT ACTIONS
+  // USER MANAGEMENT ACTIONS - COMPLETELY FIXED FOR SERVER-SIDE
   // ==================================================
   
-  async saveUser({ commit, dispatch }, { userData, token }) {
-    try {
-      console.log('💾 Saving user to backend...');
-      
-      const payload = {
-        token,
-        name: userData.displayName || userData.name || 'User',
-        email: userData.email || '',
-        subscriptionPlan: 'free'
+  async saveUser({ commit, dispatch, state }, { userData, token }) {
+    // ✅ SAFETY CHECK: Ensure we always return a valid object
+    if (!userData || !token) {
+      console.error('❌ Missing userData or token in saveUser');
+      return { 
+        success: false, 
+        error: 'Missing user data or authentication token',
+        user: null 
       };
+    }
+
+    try {
+      console.log('💾 Saving user to backend server...');
+      commit('SET_LOADING', { type: 'saving', loading: true });
       
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/save`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `HTTP ${response.status}`);
+      // Validate API base URL
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      if (!baseUrl) {
+        console.error('❌ VITE_API_BASE_URL not configured');
+        return { 
+          success: false, 
+          error: 'API base URL not configured - check environment variables',
+          user: null 
+        };
       }
       
-      const savedUser = await response.json();
+      // ✅ CORRECT: Use the existing API infrastructure from api.js
+      console.log('📤 Loading API module...');
       
-      // Update store
-      commit('SET_USER', savedUser);
-      commit('SET_USER_STATUS', savedUser.subscriptionPlan || 'free');
+      let api;
+      try {
+        const apiModule = await import('@/api');
+        api = apiModule.default;
+        
+        // Check if api module loaded correctly
+        if (!api || typeof api.post !== 'function') {
+          throw new Error('API module not properly loaded');
+        }
+        
+        console.log('✅ API module loaded successfully');
+      } catch (apiImportError) {
+        console.error('❌ Failed to import API module:', apiImportError);
+        return { 
+          success: false, 
+          error: 'Failed to load API module - check your api.js file',
+          user: null 
+        };
+      }
       
-      // Store user ID
-      const userId = savedUser.firebaseId || savedUser._id;
+      // ✅ PREPARE SERVER PAYLOAD
+      const payload = {
+        // Firebase user data
+        firebaseUserId: userData.uid,
+        email: userData.email,
+        name: userData.displayName || userData.name || userData.email?.split('@')[0] || 'User',
+        displayName: userData.displayName,
+        emailVerified: userData.emailVerified,
+        photoURL: userData.photoURL,
+        
+        // Default subscription
+        subscriptionPlan: 'free',
+        
+        // Additional metadata
+        lastLoginAt: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      };
+      
+      console.log('📤 Sending user data to server:', { 
+        url: '/users/save',
+        payload: { ...payload, firebaseUserId: '[HIDDEN]' }
+      });
+      
+      // ✅ USE CONFIGURED API INSTANCE WITH ALL INTERCEPTORS
+      let response;
+      try {
+        response = await api.post('/users/save', payload, {
+          timeout: 15000,
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('📥 Server response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          hasData: !!response.data
+        });
+        
+      } catch (networkError) {
+        console.error('❌ Network error during user save:', networkError);
+        
+        // Handle specific network errors
+        let userFriendlyError;
+        if (networkError.code === 'ECONNABORTED') {
+          userFriendlyError = 'Request timed out. Please check your connection and try again.';
+        } else if (networkError.message === 'Network Error') {
+          userFriendlyError = 'Network error. Please check your internet connection.';
+        } else if (networkError.response) {
+          // Server responded with error
+          const status = networkError.response.status;
+          const serverError = networkError.response.data;
+          
+          switch (status) {
+            case 400:
+              userFriendlyError = serverError?.message || serverError?.error || 'Invalid user data provided';
+              break;
+            case 401:
+              userFriendlyError = 'Authentication failed. Please log in again.';
+              break;
+            case 403:
+              userFriendlyError = 'Access denied. Please check your permissions.';
+              break;
+            case 404:
+              userFriendlyError = 'User service not found. Please contact support.';
+              break;
+            case 409:
+              userFriendlyError = serverError?.message || serverError?.error || 'User already exists with different data';
+              break;
+            case 429:
+              userFriendlyError = 'Too many requests. Please wait and try again.';
+              break;
+            case 500:
+            case 502:
+            case 503:
+            case 504:
+              userFriendlyError = 'Server error. Please try again later.';
+              break;
+            default:
+              userFriendlyError = serverError?.message || serverError?.error || `Server error (${status})`;
+          }
+        } else {
+          userFriendlyError = 'Unable to connect to server. Please try again.';
+        }
+        
+        return { 
+          success: false, 
+          error: userFriendlyError,
+          user: null,
+          statusCode: networkError.response?.status,
+          originalError: networkError.message,
+          timestamp: new Date().toISOString()
+        };
+      }
+      
+      // ✅ HANDLE SERVER RESPONSE
+      const responseData = response.data;
+      
+      if (!responseData) {
+        console.error('❌ Empty response from server');
+        return { 
+          success: false, 
+          error: 'Empty response from server',
+          user: null 
+        };
+      }
+      
+      console.log('📊 Processing server response:', {
+        hasSuccess: 'success' in responseData,
+        hasData: 'data' in responseData,
+        hasUser: 'user' in responseData,
+        responseKeys: Object.keys(responseData)
+      });
+      
+      // ✅ HANDLE DIFFERENT RESPONSE STRUCTURES YOUR BACKEND MIGHT RETURN
+      let savedUser;
+      if (responseData.success === true && responseData.data) {
+        savedUser = responseData.data;
+        console.log('✅ Using success+data response structure');
+      } else if (responseData.success === true && responseData.user) {
+        savedUser = responseData.user;
+        console.log('✅ Using success+user response structure');
+      } else if (responseData.user) {
+        savedUser = responseData.user;
+        console.log('✅ Using direct user response structure');
+      } else if (responseData._id || responseData.firebaseId) {
+        savedUser = responseData;
+        console.log('✅ Using direct object response structure');
+      } else if (responseData.success === false) {
+        console.error('❌ Server returned success: false');
+        return { 
+          success: false, 
+          error: responseData.message || responseData.error || 'Server returned failure status',
+          user: null 
+        };
+      } else {
+        console.error('❌ Unknown server response structure:', responseData);
+        return { 
+          success: false, 
+          error: 'Server returned unrecognized response format',
+          user: null,
+          rawResponse: responseData
+        };
+      }
+      
+      // ✅ VALIDATE SERVER RESPONSE
+      if (!savedUser || typeof savedUser !== 'object') {
+        console.error('❌ Invalid user data from server:', savedUser);
+        return { 
+          success: false, 
+          error: 'Server returned invalid user data',
+          user: null 
+        };
+      }
+      
+      // ✅ ENSURE USER HAS REQUIRED FIELDS
+      const completeUser = {
+        // Server data takes precedence
+        ...savedUser,
+        
+        // Ensure essential fields are present
+        firebaseId: savedUser.firebaseId || savedUser._id || userData.uid,
+        _id: savedUser._id || savedUser.firebaseId,
+        email: savedUser.email || userData.email,
+        name: savedUser.name || userData.displayName || userData.email?.split('@')[0] || 'User',
+        subscriptionPlan: savedUser.subscriptionPlan || 'free',
+        
+        // Update timestamps
+        lastLoginAt: new Date().toISOString(),
+        updatedAt: savedUser.updatedAt || new Date().toISOString()
+      };
+      
+      console.log('✅ User saved successfully to server:', {
+        id: completeUser._id,
+        email: completeUser.email,
+        plan: completeUser.subscriptionPlan,
+        firebaseId: completeUser.firebaseId
+      });
+      
+      // ✅ UPDATE LOCAL STORE WITH SERVER DATA
+      commit('SET_USER', completeUser);
+      commit('SET_USER_STATUS', completeUser.subscriptionPlan || 'free');
+      
+      // Store user ID for future API calls
+      const userId = completeUser.firebaseId || completeUser._id;
       if (userId) {
         localStorage.setItem('userId', userId);
         localStorage.setItem('firebaseUserId', userId);
       }
       
-      // Load additional data
-      await Promise.all([
-        dispatch('loadUserStatus'),
-        dispatch('loadUsage'),
-        dispatch('checkMonthlyReset')
-      ]);
+      // ✅ LOAD ADDITIONAL USER DATA FROM SERVER (parallel, non-blocking)
+      console.log('📊 Loading additional user data from server...');
       
-      console.log('✅ User saved successfully');
-      return { success: true, user: savedUser };
+      const additionalDataPromises = [
+        dispatch('loadUserStatus'),
+        dispatch('loadUsage'), 
+        dispatch('checkMonthlyReset'),
+        dispatch('checkPendingPayments')
+      ];
+      
+      // Don't await - let them load in background
+      Promise.allSettled(additionalDataPromises).then(results => {
+        const failures = results.filter(r => r.status === 'rejected');
+        if (failures.length > 0) {
+          console.warn('⚠️ Some additional data loading failed:', failures.map(f => f.reason));
+        } else {
+          console.log('✅ All additional user data loaded from server');
+        }
+      });
+      
+      return { 
+        success: true, 
+        user: completeUser,
+        message: 'User saved successfully to server'
+      };
       
     } catch (error) {
-      console.error('❌ Failed to save user:', error);
-      return { success: false, error: error.message };
+      console.error('❌ Unexpected error while saving user:', error);
+      
+      // ✅ COMPREHENSIVE ERROR CATEGORIZATION
+      let userFriendlyError;
+      if (error.message?.includes('API module')) {
+        userFriendlyError = 'Application configuration error. Please refresh the page.';
+      } else if (error.message?.includes('environment')) {
+        userFriendlyError = 'Application not properly configured. Please contact support.';
+      } else if (error.message?.includes('fetch') || error.message?.includes('network')) {
+        userFriendlyError = 'Network connection failed. Please check your internet connection.';
+      } else if (error.message?.includes('timeout')) {
+        userFriendlyError = 'Request timed out. Please try again.';
+      } else if (error.message?.includes('JSON')) {
+        userFriendlyError = 'Server returned invalid response. Please try again.';
+      } else {
+        userFriendlyError = 'An unexpected error occurred while saving user data.';
+      }
+      
+      console.error('❌ Detailed error info:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      
+      return { 
+        success: false, 
+        error: userFriendlyError,
+        user: null,
+        originalError: error.message,
+        timestamp: new Date().toISOString()
+      };
+      
+    } finally {
+      commit('SET_LOADING', { type: 'saving', loading: false });
     }
   },
   
@@ -667,34 +918,33 @@ const actions = {
         return { success: false, error: 'No user ID' };
       }
       
-      console.log('🔍 Loading user status for:', userId);
+      console.log('🔍 Loading user status from server for:', userId);
       
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/${userId}/status`);
+      // ✅ USE API MODULE FOR CONSISTENCY
+      const { getUserStatus } = await import('@/api');
+      const result = await getUserStatus(userId);
       
-      if (!response.ok) {
-        if (response.status === 404) {
-          commit('SET_USER_STATUS', 'free');
-          return { success: false, error: 'User not found' };
+      if (result.success) {
+        const status = result.status || result.data?.subscriptionPlan || 'free';
+        
+        // Update status and subscription
+        commit('SET_USER_STATUS', status);
+        
+        if (result.data?.subscriptionDetails) {
+          commit('UPDATE_SUBSCRIPTION', {
+            ...result.data.subscriptionDetails,
+            plan: status,
+            status: status !== 'free' ? 'active' : 'inactive'
+          });
         }
-        throw new Error(`HTTP ${response.status}`);
+        
+        console.log('✅ User status loaded from server:', status);
+        return { success: true, status };
+      } else {
+        console.warn('⚠️ Failed to load user status from server:', result.error);
+        commit('SET_USER_STATUS', 'free');
+        return { success: false, error: result.error };
       }
-      
-      const data = await response.json();
-      const status = data.status || data.subscriptionPlan || 'free';
-      
-      // Update status and subscription
-      commit('SET_USER_STATUS', status);
-      
-      if (data.subscriptionDetails) {
-        commit('UPDATE_SUBSCRIPTION', {
-          ...data.subscriptionDetails,
-          plan: status,
-          status: status !== 'free' ? 'active' : 'inactive'
-        });
-      }
-      
-      console.log('✅ User status loaded:', status);
-      return { success: true, status };
       
     } catch (error) {
       console.error('❌ Failed to load user status:', error);
@@ -719,7 +969,7 @@ const actions = {
         return { success: false, error: 'No user ID' };
       }
       
-      console.log('📊 Loading usage data...');
+      console.log('📊 Loading usage data from server...');
       
       const usageInfo = await getUserUsage();
       
@@ -734,7 +984,7 @@ const actions = {
           commit('SET_USAGE_LIMITS', { [usageInfo.plan]: usageInfo.limits });
         }
         
-        console.log('✅ Usage data loaded');
+        console.log('✅ Usage data loaded from server');
         return { success: true, usage: usageInfo.usage };
       }
       
@@ -861,13 +1111,14 @@ const actions = {
         return { success: false, error: 'Пользователь не найден' };
       }
       
-      console.log('🎟️ Applying promocode:', { promoCode, plan });
+      console.log('🎟️ Applying promocode to server:', { promoCode, plan });
       
       const token = await getUserToken();
       const headers = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
       
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/promo-code`, {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      const response = await fetch(`${baseUrl}/api/payments/promo-code`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -937,8 +1188,9 @@ const actions = {
         return { valid: false, error: 'Промокод слишком короткий' };
       }
       
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/promocodes/validate/${promoCode.trim().toUpperCase()}`
+        `${baseUrl}/api/promocodes/validate/${promoCode.trim().toUpperCase()}`
       );
       const result = await response.json();
       
@@ -985,7 +1237,7 @@ const actions = {
         return { success: true, message: 'Recently checked' };
       }
       
-      console.log('🔍 Checking pending payments...');
+      console.log('🔍 Checking pending payments on server...');
       
       const pendingIds = JSON.parse(localStorage.getItem(`pendingPayments_${userId}`) || '[]');
       let statusChanged = false;
