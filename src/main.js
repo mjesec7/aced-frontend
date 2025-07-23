@@ -156,7 +156,7 @@ const i18n = createI18n({
 // ============================================================================
 
 let app;
-let isAppMounted = false;
+let isApplicationMounted = false; // Renamed to avoid duplicate
 let authInitialized = false;
 let storeInitialized = false;
 
@@ -244,7 +244,7 @@ onAuthStateChanged(auth, async (firebaseUser) => {
   }
   
   // Mount app once auth is ready
-  if (!isAppMounted && authInitialized && storeInitialized) {
+  if (!isApplicationMounted && authInitialized && storeInitialized) {
     await mountVueApplication();
   }
 });
@@ -673,7 +673,7 @@ async function mountVueApplication() {
     
     // ✅ Mount the application
     app.mount('#app');
-    isAppMounted = true;
+    isApplicationMounted = true;
     appLifecycle.mounted = true;
     
     console.log('✅ Vue application mounted successfully');
@@ -1126,7 +1126,7 @@ if (import.meta.env.DEV) {
         firebaseUser: !!auth.currentUser,
         storeInitialized: storeInitialized,
         authInitialized: authInitialized,
-        appMounted: isAppMounted
+        appMounted: isApplicationMounted
       };
       
       console.log('📊 Auth flow status:', tests);
@@ -1409,7 +1409,7 @@ initializeApplication().catch(error => {
 });
 
 // ============================================================================
-// 📤 EXPORTS
+// 📤 EXPORTS (moved to the end)
 // ============================================================================
 
 // Export the event bus for use in other modules
@@ -1434,7 +1434,7 @@ export { appLifecycle };
 // Export auth state checkers
 export const isAuthReady = () => authInitialized;
 export const isStoreReady = () => storeInitialized;
-export const isAppMounted = () => isAppMounted;
+export const isAppMounted = () => isApplicationMounted; // Fixed: using renamed variable
 export const isAppReady = () => appLifecycle.initialized;
 
 // Export debugging helpers for development
@@ -1443,7 +1443,7 @@ if (import.meta.env.DEV) {
     appLifecycle,
     authInitialized,
     storeInitialized,
-    isAppMounted,
+    isApplicationMounted, // Fixed: using renamed variable
     eventBusStats: eventBus.getStats(),
     userStatus: store?.getters['user/userStatus'],
     timestamp: Date.now()
