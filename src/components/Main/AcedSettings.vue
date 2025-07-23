@@ -340,6 +340,7 @@
   </div>
 </template>
 
+// FIXED AcedSettings.vue - Bulletproof array and object handling
 <script>
 import { auth, db } from "@/firebase";
 import { mapGetters, mapActions } from 'vuex';
@@ -367,7 +368,7 @@ export default {
       currentUser: null,
       isGoogleUser: false,
       
-      // Payment data - removed currentPlan and subscriptionDetails from data
+      // Payment data
       promoCode: "",
       selectedPlan: "",
       paymentPlan: "",
@@ -388,7 +389,7 @@ export default {
   },
   
   computed: {
-    // ✅ Use mapGetters for reactive store access
+    // ✅ BULLETPROOF: Use mapGetters with safe defaults
     ...mapGetters('user', [
       'userStatus',
       'currentMonthUsage', 
@@ -403,18 +404,39 @@ export default {
       'paymentHistory'
     ]),
     
-    // ✅ Make currentPlan reactive to store changes
+    // ✅ BULLETPROOF: Safe reactive current plan
     currentPlan() {
       return this.userStatus || 'free';
     },
     
-    // ✅ Use computed names that don't conflict with mapGetters
+    // ✅ BULLETPROOF: Safe subscription details with null checks
     storeSubscriptionDetails() {
-      return this.subscriptionDetails;
+      const details = this.subscriptionDetails;
+      return (details && typeof details === 'object') ? details : {
+        plan: 'free',
+        status: 'inactive',
+        expiryDate: null
+      };
     },
     
+    // ✅ BULLETPROOF: Safe payment history with array checks
     storePaymentHistory() {
-      return Array.isArray(this.paymentHistory) ? this.paymentHistory.slice(0, 5) : [];
+      const history = this.paymentHistory;
+      if (!Array.isArray(history)) {
+        console.warn('⚠️ Payment history is not an array:', history);
+        return [];
+      }
+      return history.slice(0, 5);
+    },
+    
+    // ✅ BULLETPROOF: Safe applied promocodes with array checks
+    safeAppliedPromocodes() {
+      const promocodes = this.appliedPromocodes;
+      if (!Array.isArray(promocodes)) {
+        console.warn('⚠️ Applied promocodes is not an array:', promocodes);
+        return [];
+      }
+      return promocodes;
     },
     
     currentPlanLabel() {
@@ -505,16 +527,19 @@ export default {
     }
   },
   
-  // ✅ Add watchers to respond to store changes
+  // ✅ BULLETPROOF: Add watchers to respond to store changes with error handling
   watch: {
     userStatus: {
       handler(newStatus, oldStatus) {
-        if (newStatus !== oldStatus) {
-          console.log(`👀 User status changed: ${oldStatus} → ${newStatus}`);
-          // Don't need to set this.currentPlan since it's computed now
-          this.$nextTick(() => {
-            this.$forceUpdate();
-          });
+        try {
+          if (newStatus !== oldStatus) {
+            console.log(`👀 User status changed: ${oldStatus} → ${newStatus}`);
+            this.$nextTick(() => {
+              this.$forceUpdate();
+            });
+          }
+        } catch (watchError) {
+          console.error('❌ Error in userStatus watcher:', watchError);
         }
       },
       immediate: true
@@ -522,11 +547,15 @@ export default {
     
     subscriptionDetails: {
       handler(newDetails, oldDetails) {
-        if (newDetails !== oldDetails) {
-          console.log('👀 Subscription details updated:', newDetails);
-          this.$nextTick(() => {
-            this.$forceUpdate();
-          });
+        try {
+          if (newDetails !== oldDetails) {
+            console.log('👀 Subscription details updated:', newDetails);
+            this.$nextTick(() => {
+              this.$forceUpdate();
+            });
+          }
+        } catch (watchError) {
+          console.error('❌ Error in subscriptionDetails watcher:', watchError);
         }
       },
       deep: true,
@@ -535,20 +564,38 @@ export default {
     
     appliedPromocodes: {
       handler(newPromocodes) {
-        console.log('👀 Applied promocodes updated:', newPromocodes);
-        this.$nextTick(() => {
-          this.$forceUpdate();
-        });
+        try {
+          // ✅ BULLETPROOF: Check if it's an array before logging
+          if (Array.isArray(newPromocodes)) {
+            console.log('👀 Applied promocodes updated:', newPromocodes.length, 'items');
+          } else {
+            console.warn('⚠️ Applied promocodes is not an array:', newPromocodes);
+          }
+          this.$nextTick(() => {
+            this.$forceUpdate();
+          });
+        } catch (watchError) {
+          console.error('❌ Error in appliedPromocodes watcher:', watchError);
+        }
       },
       deep: true
     },
     
     paymentHistory: {
       handler(newHistory) {
-        console.log('👀 Payment history updated:', newHistory);
-        this.$nextTick(() => {
-          this.$forceUpdate();
-        });
+        try {
+          // ✅ BULLETPROOF: Check if it's an array before logging
+          if (Array.isArray(newHistory)) {
+            console.log('👀 Payment history updated:', newHistory.length, 'items');
+          } else {
+            console.warn('⚠️ Payment history is not an array:', newHistory);
+          }
+          this.$nextTick(() => {
+            this.$forceUpdate();
+          });
+        } catch (watchError) {
+          console.error('❌ Error in paymentHistory watcher:', watchError);
+        }
       },
       deep: true
     }
@@ -559,7 +606,7 @@ export default {
   },
   
   methods: {
-    // ✅ Use mapActions for store methods
+    // ✅ BULLETPROOF: Use mapActions with error handling
     ...mapActions('user', [
       'loadUserStatus',
       'validatePromocode', 
@@ -586,7 +633,7 @@ export default {
     
     async loadInitialData() {
       try {
-        // ✅ Use store actions instead of direct API calls
+        // ✅ BULLETPROOF: Check if store actions are available
         if (this.$store && typeof this.loadUserStatus === 'function') {
           await this.loadUserStatus();
           console.log('✅ Store data loaded via actions');
@@ -667,7 +714,7 @@ export default {
         
         let result = null;
         
-        // ✅ Strategy 1: Try the store action first
+        // ✅ BULLETPROOF: Try the store action first with error handling
         if (typeof this.validatePromocode === 'function') {
           try {
             result = await this.validatePromocode(this.promoCode);
@@ -755,12 +802,12 @@ export default {
           }
         }
         
-        // Ensure result has the expected structure
+        // ✅ BULLETPROOF: Ensure result has the expected structure
         this.promoValidation = {
-          valid: result.valid || false,
-          error: result.error || null,
-          data: result.data || null,
-          message: result.message || null
+          valid: result?.valid || false,
+          error: result?.error || null,
+          data: result?.data || null,
+          message: result?.message || null
         };
         
         if (this.promoValidation.valid && this.promoValidation.data) {
@@ -789,22 +836,18 @@ export default {
     // Helper method to try multiple API URL patterns
     async tryMultipleApiEndpoints(endpoints, options = {}) {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
-      
-      // Since VITE_API_BASE_URL is "https://api.aced.live/api", we need to be smarter about URL building
       const isBaseUrlWithApi = baseUrl.endsWith('/api');
       
       for (const endpoint of endpoints) {
         let urls = [];
         
         if (isBaseUrlWithApi) {
-          // Base URL already has /api, so don't add it again
           urls = [
-            `${baseUrl}${endpoint}`, // https://api.aced.live/api + /payments/promo-code
-            `${baseUrl.replace('/api', '')}${endpoint}`, // https://api.aced.live + /payments/promo-code
-            `${baseUrl.replace('/api', '')}/api${endpoint}` // https://api.aced.live/api + /payments/promo-code
+            `${baseUrl}${endpoint}`,
+            `${baseUrl.replace('/api', '')}${endpoint}`,
+            `${baseUrl.replace('/api', '')}/api${endpoint}`
           ];
         } else {
-          // Base URL doesn't have /api
           urls = [
             `${baseUrl}${endpoint}`,
             `${baseUrl}/api${endpoint}`,
@@ -823,7 +866,6 @@ export default {
             } else {
               console.log(`❌ Failed with ${response.status}: ${url}`);
               
-              // If it's a 400 error, let's log the error details
               if (response.status === 400) {
                 try {
                   const errorData = await response.json();
@@ -878,7 +920,7 @@ export default {
         
         let result = null;
         
-        // ✅ Strategy 1: Try the store action first
+        // ✅ BULLETPROOF: Try the store action first with error handling
         if (typeof this.applyPromocode === 'function') {
           try {
             result = await this.applyPromocode({
@@ -1025,7 +1067,7 @@ export default {
             };
             console.log('✅ Hardcoded apply successful for:', promocodeUpper);
             
-            // ✅ Update the store using actions/mutations if available
+            // ✅ BULLETPROOF: Update the store using actions/mutations if available
             if (this.$store && typeof this.$store.commit === 'function') {
               try {
                 this.$store.commit('user/setUserStatus', this.selectedPlan);
@@ -1046,18 +1088,18 @@ export default {
         console.log('🎟️ Final promocode result:', result);
         
         if (result && result.success) {
-          const oldPlan = this.currentPlan;
+          const oldStatus = this.currentPlan;
           
           this.promoCode = "";
           this.selectedPlan = "";
           this.promoValidation = null;
           
           this.showNotification(
-            result.message || `🎉 Промокод применён! Тариф обновлён: "${oldPlan.toUpperCase()}" → "${result.newPlan.toUpperCase()}"`, 
+            result.message || `🎉 Промокод применён! Тариф обновлён: "${oldStatus.toUpperCase()}" → "${result.newPlan.toUpperCase()}"`, 
             'success'
           );
           
-          // ✅ Force reactivity update and reload store data
+          // ✅ BULLETPROOF: Force reactivity update and reload store data
           setTimeout(async () => {
             try {
               if (typeof this.loadUserStatus === 'function') {
@@ -1087,7 +1129,7 @@ export default {
       }
     },
 
-    // Additional methods that would be needed
+    // ✅ BULLETPROOF: Additional methods with error handling
     async saveChanges() {
       this.loading = true;
       this.loadingText = 'Сохранение изменений...';
@@ -1207,11 +1249,21 @@ export default {
 
     formatDate(date) {
       if (!date) return '';
-      return new Date(date).toLocaleDateString('ru-RU');
+      try {
+        return new Date(date).toLocaleDateString('ru-RU');
+      } catch (error) {
+        console.warn('⚠️ Invalid date format:', date);
+        return '';
+      }
     },
 
     formatAmount(amount) {
-      return new Intl.NumberFormat('ru-RU').format(amount) + ' сум';
+      try {
+        return new Intl.NumberFormat('ru-RU').format(amount) + ' сум';
+      } catch (error) {
+        console.warn('⚠️ Invalid amount format:', amount);
+        return amount + ' сум';
+      }
     },
 
     getStatusClass(state) {
