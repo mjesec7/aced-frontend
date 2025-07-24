@@ -1003,6 +1003,7 @@ export default {
   this.isProcessingPromo = true;
 
   try {
+    // Step 1: Apply promocode via API
     const response = await fetch('https://api.aced.live/api/payments/promo-code', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1016,21 +1017,78 @@ export default {
     const result = await response.json();
 
     if (result.success) {
-      // 🔥 THIS IS THE KEY: Use the store action for global updates
-      const updateSuccess = await this.$store.dispatch('user/updateUserStatus', this.selectedPlan);
-      
-      if (updateSuccess) {
-        this.showNotification('🎉 Промокод применён! Подписка активирована!', 'success');
-        this.promoCode = '';
-        this.selectedPlan = '';
-      } else {
-        this.showNotification('Ошибка обновления статуса', 'warning');
+      // Step 2: ✅ FIXED - Use the correct store action with proper parameters
+      try {
+        const updateResult = await this.$store.dispatch('user/updateSubscription', {
+          plan: this.selectedPlan,
+          source: 'promocode',
+          details: {
+            promocode: this.promoCode.toUpperCase(),
+            appliedAt: new Date().toISOString(),
+            serverResponse: result.data || {}
+          }
+        });
+        
+        if (updateResult && updateResult.success) {
+          console.log('✅ Store subscription updated successfully');
+          
+          // Step 3: Also add the promocode to the applied list
+          this.$store.commit('user/ADD_PROMOCODE', {
+            code: this.promoCode.toUpperCase(),
+            plan: this.selectedPlan,
+            oldPlan: this.currentPlan,
+            source: 'api',
+            details: result.data || {}
+          });
+          
+          // Step 4: Force store update to trigger reactivity
+          await this.$store.dispatch('user/forceUpdate');
+          
+          // Step 5: Success feedback
+          this.showNotification('🎉 Промокод применён! Подписка активирована!', 'success');
+          
+          // Step 6: Reset form
+          this.promoCode = '';
+          this.selectedPlan = '';
+          this.promoValidation = null;
+          
+          // Step 7: Force component reactivity
+          this.forceReactivityUpdate();
+          
+        } else {
+          console.warn('⚠️ Store update returned unsuccessful result:', updateResult);
+          this.showNotification('Промокод применён, но возникла ошибка обновления интерфейса', 'warning');
+        }
+        
+      } catch (storeError) {
+        console.error('❌ Store update failed:', storeError);
+        
+        // Even if store update fails, the promocode was applied successfully on the server
+        this.showNotification('Промокод применён успешно! Обновите страницу если изменения не отображаются.', 'warning');
+        
+        // Try to manually refresh user status
+        setTimeout(async () => {
+          try {
+            if (typeof this.loadUserStatus === 'function') {
+              await this.loadUserStatus();
+            }
+            this.forceReactivityUpdate();
+          } catch (refreshError) {
+            console.warn('⚠️ Manual refresh failed:', refreshError);
+          }
+        }, 2000);
       }
+      
     } else {
+      // Server returned error
+      console.error('❌ Promocode application failed:', result.error);
       this.showNotification(result.error || 'Неверный промокод', 'error');
     }
-  } catch (error) {
-    this.showNotification('Ошибка соединения', 'error');
+    
+  } catch (networkError) {
+    console.error('❌ Network error during promocode application:', networkError);
+    this.showNotification('Ошибка соединения с сервером', 'error');
+    
   } finally {
     this.isProcessingPromo = false;
   }
