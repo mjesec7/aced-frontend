@@ -340,11 +340,13 @@ async function handleUserLogin(firebaseUser) {
       };
     }
     
-    // ✅ Handle save result
+    // ✅ Handle save result with safety check
     if (saveResult && saveResult.success === true) {
       await handleSuccessfulUserSave(saveResult, token, userData);
     } else {
-      await handleFailedUserSave(saveResult, token, userData);
+      // ✅ FIXED: Ensure saveResult is an object with error property
+      const safeResult = saveResult || { success: false, error: 'Save action returned undefined' };
+      await handleFailedUserSave(safeResult, token, userData);
     }
     
   } catch (error) {
@@ -460,15 +462,19 @@ async function handleSuccessfulUserSave(result, token, userData) {
 }
 
 // ============================================================================
-// ❌ FAILED USER SAVE HANDLER (ORIGINAL)
+// ❌ FAILED USER SAVE HANDLER (FIXED)
 // ============================================================================
 
 async function handleFailedUserSave(result, token, userData) {
-  const errorMessage = result.error || 'Failed to save user to server';
+  // ✅ FIXED: Safety check for result object
+  const safeResult = result || { success: false, error: 'Unknown error' };
+  
+  const errorMessage = safeResult.error || safeResult.message || 'Failed to save user to server';
   console.error('❌ Failed to save user to server:', {
     error: errorMessage,
-    statusCode: result.statusCode,
-    isDispatchError: result.isDispatchError
+    statusCode: safeResult.statusCode,
+    isDispatchError: safeResult.isDispatchError,
+    hasResult: !!result
   });
   
   // Clear any inconsistent state
@@ -479,16 +485,17 @@ async function handleFailedUserSave(result, token, userData) {
     error: errorMessage,
     isServerError: true,
     canRetry: true,
-    statusCode: result.statusCode,
-    isDispatchError: result.isDispatchError,
+    statusCode: safeResult.statusCode,
+    isDispatchError: safeResult.isDispatchError,
     timestamp: Date.now()
   });
   
   // ✅ AUTO-RETRY for server/network errors
   const shouldRetry = (
-    result.statusCode >= 500 || 
-    !result.statusCode || 
-    result.isDispatchError
+    safeResult.statusCode >= 500 || 
+    !safeResult.statusCode || 
+    safeResult.isDispatchError ||
+    errorMessage.includes('undefined')
   );
   
   if (shouldRetry) {
@@ -499,7 +506,8 @@ async function handleFailedUserSave(result, token, userData) {
         console.log('🔄 Retrying user save...');
         const retryResult = await store.dispatch('user/saveUser', { userData, token });
         
-        if (retryResult?.success === true && retryResult.user) {
+        // ✅ FIXED: Check retry result safely
+        if (retryResult && retryResult.success === true && retryResult.user) {
           console.log('✅ Retry successful');
           await handleSuccessfulUserSave(retryResult, token, userData);
           
@@ -510,7 +518,7 @@ async function handleFailedUserSave(result, token, userData) {
         } else {
           console.error('❌ Retry failed:', retryResult);
           eventBus.emit('userLoginRetryFailed', {
-            error: retryResult?.error || 'Retry failed',
+            error: retryResult?.error || 'Retry failed - no valid result',
             finalFailure: true,
             timestamp: Date.now()
           });
