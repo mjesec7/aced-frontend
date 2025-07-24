@@ -1250,48 +1250,46 @@ const actions = {
       }
     }
   },
-  async updateUserStatus({ commit, dispatch, state }, newStatus) {
+  async updateUserStatus({ commit, state, dispatch }, newStatus) {
     console.log('🔄 updateUserStatus called with:', newStatus);
     
     try {
-      // Validate the status first
+      const oldStatus = state.userStatus || 'free';
+      
+      // Validate status
       const validStatuses = ['free', 'start', 'pro', 'premium'];
       if (!validStatuses.includes(newStatus)) {
-        console.error('❌ Invalid status:', newStatus);
-        return { 
-          success: false, 
-          error: `Invalid status: ${newStatus}. Must be one of: ${validStatuses.join(', ')}` 
-        };
+        const error = `Invalid status: ${newStatus}`;
+        console.error('❌', error);
+        return { success: false, error };
       }
-
-      const oldStatus = state.userStatus;
-      console.log(`📊 Status changing: ${oldStatus} → ${newStatus}`);
-
-      // Update the status immediately
+      
+      console.log(`📊 Updating status: ${oldStatus} → ${newStatus}`);
+      
+      // Update status in store
       commit('SET_USER_STATUS', newStatus);
+      
+      // Update subscription details
+      commit('UPDATE_SUBSCRIPTION', {
+        plan: newStatus,
+        status: newStatus !== 'free' ? 'active' : 'inactive',
+        source: 'promocode',
+        startDate: new Date().toISOString(),
+        expiryDate: newStatus !== 'free' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
+        lastSync: new Date().toISOString()
+      });
       
       // Force reactivity update
       commit('FORCE_UPDATE');
       
-      // Try to update subscription if the action exists
+      // Store in localStorage
       try {
-        const subscriptionResult = await dispatch('updateSubscription', {
-          plan: newStatus,
-          source: 'manual',
-          details: {
-            updatedBy: 'updateUserStatus',
-            updatedAt: new Date().toISOString(),
-            oldStatus,
-            newStatus
-          }
-        });
-        
-        console.log('✅ Subscription update result:', subscriptionResult);
-      } catch (subscriptionError) {
-        console.warn('⚠️ Subscription update failed, but status was updated:', subscriptionError);
-        // Don't fail the entire operation
+        localStorage.setItem('userStatus', newStatus);
+      } catch (storageError) {
+        console.warn('⚠️ localStorage update failed:', storageError);
       }
-
+      
+      // ✅ CRITICAL: Always return a result object
       const result = {
         success: true,
         oldStatus,
@@ -1299,27 +1297,29 @@ const actions = {
         message: `Status updated successfully: ${oldStatus} → ${newStatus}`,
         timestamp: Date.now()
       };
-
+      
       console.log('✅ updateUserStatus SUCCESS:', result);
       return result;
-
+      
     } catch (error) {
       console.error('❌ updateUserStatus FAILED:', error);
       
+      // Set error in store
+      commit('SET_ERROR', {
+        message: error.message || 'Status update failed',
+        context: 'updateUserStatus',
+        originalError: error.message
+      });
+      
+      // ✅ CRITICAL: Always return a result object, even on error
       const errorResult = {
         success: false,
-        error: error.message || 'Failed to update user status',
+        error: error.message || 'Status update failed',
         newStatus,
         timestamp: Date.now()
       };
       
-      // Set error in store
-      commit('SET_ERROR', {
-        message: errorResult.error,
-        context: 'updateUserStatus',
-        originalError: error.message
-      });
-
+      console.log('❌ updateUserStatus ERROR:', errorResult);
       return errorResult;
     }
   },
