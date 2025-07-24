@@ -996,7 +996,7 @@ export default {
     // Replace your existing applyPromo method with this enhanced version
    // ✅ FINAL FIXED: Replace your applyPromo method with this bulletproof version
 
-async applyPromo() {
+   async applyPromo() {
   if (!this.promoCode || !this.selectedPlan || !this.userId) {
     this.showNotification('Заполните все поля', 'error');
     return;
@@ -1025,48 +1025,37 @@ async applyPromo() {
     console.log('📡 Server response:', { success: result.success, hasData: !!result.data });
 
     if (result.success) {
-      // Step 2: ✅ FIXED - Use the corrected store action with proper error handling
+      // Step 2: ✅ FIXED - Use your EXISTING updateUserStatus action
       try {
-        console.log('🔄 Updating store subscription...');
+        console.log('🔄 Updating user status via existing store action...');
         
-        const updateResult = await this.$store.dispatch('user/updateSubscription', {
-          plan: this.selectedPlan,
-          source: 'promocode',
-          details: {
-            promocode: this.promoCode.toUpperCase(),
-            appliedAt: new Date().toISOString(),
-            serverResponse: result.data || {},
-            apiSuccess: true
-          }
-        });
+        // ✅ This calls your existing updateUserStatus action that already works
+        const updateResult = await this.$store.dispatch('user/updateUserStatus', this.selectedPlan);
         
         console.log('📊 Store update result:', updateResult);
         
-        // ✅ BULLETPROOF: Check for successful result
+        // ✅ Check for successful result (your action returns success: true/false)
         if (updateResult && updateResult.success === true) {
-          console.log('✅ Store subscription updated successfully');
+          console.log('✅ Store user status updated successfully');
           
           // Step 3: Add the promocode to the applied list
           this.$store.commit('user/ADD_PROMOCODE', {
             code: this.promoCode.toUpperCase(),
             plan: this.selectedPlan,
-            oldPlan: this.currentPlan,
+            oldPlan: updateResult.oldStatus || this.currentPlan,
             source: 'api',
             details: result.data || {}
           });
           
-          // Step 4: Force store update to trigger reactivity
-          await this.$store.dispatch('user/forceUpdate');
-          
-          // Step 5: Success feedback
+          // Step 4: Success feedback
           this.showNotification(`🎉 Промокод применён! Подписка ${this.selectedPlan.toUpperCase()} активирована!`, 'success');
           
-          // Step 6: Reset form
+          // Step 5: Reset form
           this.promoCode = '';
           this.selectedPlan = '';
           this.promoValidation = null;
           
-          // Step 7: Force component reactivity
+          // Step 6: Force component reactivity (your action already handles store reactivity)
           this.forceReactivityUpdate();
           
           console.log('✅ Promocode application completed successfully');
@@ -1074,20 +1063,18 @@ async applyPromo() {
         } else {
           console.warn('⚠️ Store update returned unsuccessful result:', updateResult);
           
-          // Even if store update fails, the promocode was applied successfully on the server
-          this.showNotification('Промокод применён на сервере! Обновите страницу если изменения не отображаются.', 'warning');
+          // Check if there's a specific error message
+          const errorMessage = updateResult?.error || 'Неизвестная ошибка обновления статуса';
+          this.showNotification(`Промокод применён на сервере, но: ${errorMessage}`, 'warning');
           
-          // Try manual refresh of user data
+          // Try manual refresh
           this.attemptManualRefresh();
         }
         
       } catch (storeError) {
         console.error('❌ Store update failed:', storeError);
         
-        // Even if store update fails, the promocode was applied successfully on the server  
         this.showNotification('Промокод применён, но возникла ошибка обновления интерфейса', 'warning');
-        
-        // Try manual refresh
         this.attemptManualRefresh();
       }
       
@@ -1106,13 +1093,11 @@ async applyPromo() {
   }
 },
 
-// Helper method for manual refresh
 async attemptManualRefresh() {
   console.log('🔄 Attempting manual data refresh...');
   
   setTimeout(async () => {
     try {
-      // Try multiple refresh strategies
       const refreshTasks = [];
       
       if (typeof this.loadUserStatus === 'function') {

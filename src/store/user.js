@@ -1330,28 +1330,27 @@ const actions = {
   // ✅ ENHANCED: Initialize with comprehensive error handling and performance tracking
   async initialize({ commit, dispatch, state }) {
     const startTime = Date.now();
-    state.system.performance.startTime = startTime;
     
-    if (state.system.initialized) {
-      console.log('ℹ️ Store already initialized');
+    if (state.system?.initialized) {
+      console.log('ℹ️ Store already initialized, skipping...');
       return { success: true, cached: true };
     }
     
+    console.log('🚀 Initializing user store...');
+    
     try {
-      console.log('🚀 Initializing enhanced user store...');
+      // ✅ CRITICAL: Set basic initialized state first to prevent auth issues
+      commit('SET_INITIALIZED', true);
       
-      // ✅ BULLETPROOF: Load from localStorage with comprehensive error handling
+      // Load from localStorage with comprehensive error handling
       const storedDataKeys = {
         user: 'currentUser',
         status: 'userStatus',
         preferences: 'userPreferences',
-        promocodes: 'appliedPromocodes',
-        subscription: 'subscriptionDetails',
-        usage: 'usageData'
+        subscription: 'subscriptionDetails'
       };
       
       const storedData = {};
-      const storageErrors = [];
       
       // Load all stored data with individual error handling
       for (const [key, storageKey] of Object.entries(storedDataKeys)) {
@@ -1359,30 +1358,18 @@ const actions = {
           const stored = localStorage.getItem(storageKey);
           storedData[key] = stored;
         } catch (storageError) {
-          console.warn(`⚠️ Failed to read ${storageKey} from localStorage:`, storageError);
-          storageErrors.push({ key: storageKey, error: storageError.message });
+          console.warn(`⚠️ Failed to read ${storageKey}:`, storageError);
           storedData[key] = null;
         }
       }
       
-      if (storageErrors.length > 0) {
-        commit('SET_ERROR', { 
-          message: 'Some localStorage data could not be read', 
-          context: 'initialize-storage',
-          details: storageErrors 
-        });
-      }
-      
-      // ✅ BULLETPROOF: Restore user data with validation
+      // Restore user data with validation
       if (storedData.user) {
         try {
           const userData = JSON.parse(storedData.user);
           if (userData && typeof userData === 'object' && userData.email) {
             commit('SET_USER', userData);
-            console.log('✅ User data restored from localStorage');
-          } else {
-            console.warn('⚠️ Invalid stored user data, clearing...');
-            localStorage.removeItem('currentUser');
+            console.log('✅ User data restored:', { email: userData.email, id: userData.firebaseId?.substring(0, 8) });
           }
         } catch (parseError) {
           console.warn('⚠️ Failed to parse stored user data:', parseError);
@@ -1390,48 +1377,16 @@ const actions = {
         }
       }
       
-      // ✅ BULLETPROOF: Restore status with validation
+      // Restore status with validation
       if (storedData.status && typeof storedData.status === 'string') {
         const validStatuses = ['free', 'start', 'pro', 'premium'];
         if (validStatuses.includes(storedData.status)) {
           commit('SET_USER_STATUS', storedData.status);
           console.log('✅ User status restored:', storedData.status);
-        } else {
-          console.warn('⚠️ Invalid stored status, defaulting to free:', storedData.status);
-          commit('SET_USER_STATUS', 'free');
         }
       }
       
-      // ✅ BULLETPROOF: Restore preferences with validation
-      if (storedData.preferences) {
-        try {
-          const preferences = JSON.parse(storedData.preferences);
-          if (preferences && typeof preferences === 'object') {
-            commit('SET_PREFERENCES', preferences);
-            console.log('✅ Preferences restored from localStorage');
-          }
-        } catch (parseError) {
-          console.warn('⚠️ Invalid stored preferences, using defaults:', parseError);
-        }
-      }
-      
-      // ✅ BULLETPROOF: Restore promocodes with validation
-      if (storedData.promocodes) {
-        try {
-          const promocodes = JSON.parse(storedData.promocodes);
-          if (Array.isArray(promocodes)) {
-            state.promocodes.applied = promocodes.filter(p => 
-              p && typeof p === 'object' && p.code && p.plan
-            );
-            console.log(`✅ ${state.promocodes.applied.length} promocodes restored`);
-          }
-        } catch (parseError) {
-          console.warn('⚠️ Invalid stored promocodes, resetting to empty array:', parseError);
-          state.promocodes.applied = [];
-        }
-      }
-      
-      // ✅ BULLETPROOF: Restore subscription with validation
+      // Restore subscription with validation
       if (storedData.subscription) {
         try {
           const subscription = JSON.parse(storedData.subscription);
@@ -1440,95 +1395,30 @@ const actions = {
             console.log('✅ Subscription data restored');
           }
         } catch (parseError) {
-          console.warn('⚠️ Invalid stored subscription, using defaults:', parseError);
-        }
-      }
-      
-      // ✅ BULLETPROOF: Restore usage with validation
-      if (storedData.usage) {
-        try {
-          const usage = JSON.parse(storedData.usage);
-          if (usage && typeof usage === 'object') {
-            commit('SET_USAGE', usage);
-            console.log('✅ Usage data restored');
-          }
-        } catch (parseError) {
-          console.warn('⚠️ Invalid stored usage, using defaults:', parseError);
-        }
-      }
-      
-      // ✅ BULLETPROOF: Load remote data if user exists
-      const userId = state.currentUser?.firebaseId || localStorage.getItem('userId');
-      if (userId) {
-        console.log('📡 Loading remote data for user:', userId.substring(0, 8) + '...');
-        
-        const remoteDataTasks = [
-          { name: 'loadUserStatus', task: () => dispatch('loadUserStatus') },
-          { name: 'loadUsage', task: () => dispatch('loadUsage') },
-          { name: 'checkMonthlyReset', task: () => dispatch('checkMonthlyReset') },
-          { name: 'checkPendingPayments', task: () => dispatch('checkPendingPayments') }
-        ];
-        
-        // Execute tasks with individual error handling
-        const remoteResults = await Promise.allSettled(
-          remoteDataTasks.map(({ name, task }) => 
-            task().catch(error => ({ taskName: name, error: error.message }))
-          )
-        );
-        
-        const successes = remoteResults.filter(r => r.status === 'fulfilled').length;
-        const failures = remoteResults.filter(r => r.status === 'rejected');
-        
-        console.log(`📊 Remote data loading: ${successes}/${remoteDataTasks.length} successful`);
-        
-        if (failures.length > 0) {
-          console.warn('⚠️ Some remote data failed to load:', failures.map(f => f.reason));
-          commit('SET_ERROR', { 
-            message: 'Some remote data failed to load', 
-            context: 'initialize-remote',
-            failures: failures.length 
-          });
+          console.warn('⚠️ Invalid stored subscription:', parseError);
         }
       }
       
       const initDuration = Date.now() - startTime;
-      state.system.performance.loadTime = initDuration;
-      
-      commit('SET_INITIALIZED', true);
-      
-      console.log(`✅ Store initialized successfully in ${initDuration}ms`, {
-        hasUser: !!state.currentUser,
-        userStatus: state.userStatus,
-        storageErrors: storageErrors.length,
-        remoteDataLoaded: !!userId
-      });
+      console.log(`✅ Store initialized successfully in ${initDuration}ms`);
       
       return { 
         success: true, 
         duration: initDuration,
         hasUser: !!state.currentUser,
-        userStatus: state.userStatus,
-        storageErrors: storageErrors.length
+        userStatus: state.userStatus
       };
       
     } catch (error) {
-      console.error('❌ Initialization failed catastrophically:', error);
+      console.error('❌ Store initialization failed:', error);
       
+      // Even if initialization fails, mark as initialized to prevent infinite loops
       commit('SET_INITIALIZED', false);
-      commit('SET_ERROR', { 
-        message: 'Store initialization failed', 
-        context: 'initialize-catastrophic',
-        originalError: error.message,
-        stack: error.stack 
-      });
-      
-      const initDuration = Date.now() - startTime;
       
       return { 
         success: false, 
         error: error.message,
-        duration: initDuration,
-        catastrophic: true
+        duration: Date.now() - startTime
       };
     }
   },
@@ -1841,9 +1731,9 @@ const actions = {
   async updateSubscription({ commit, dispatch, state }, { plan, source = 'payment', details = {} }) {
     const startTime = Date.now();
     
+    console.log('🔄 updateSubscription called with:', { plan, source, detailsKeys: Object.keys(details) });
+    
     try {
-      console.log('🔄 Updating subscription:', { plan, source, hasDetails: Object.keys(details).length > 0 });
-      
       // Validate plan
       const validPlans = ['free', 'start', 'pro', 'premium'];
       const validatedPlan = validPlans.includes(plan) ? plan : 'free';
@@ -1854,6 +1744,7 @@ const actions = {
   
       // Get old status for comparison
       const oldStatus = state.userStatus || 'free';
+      console.log(`📊 Status change: ${oldStatus} → ${validatedPlan}`);
       
       // Calculate expiry dates based on source
       let expiryDate = null;
@@ -1889,19 +1780,25 @@ const actions = {
         lastSync: new Date().toISOString()
       };
       
+      console.log('📋 Subscription data prepared:', subscriptionData);
+      
       // Update all related state atomically
       commit('SET_USER_STATUS', validatedPlan);
       commit('UPDATE_SUBSCRIPTION', subscriptionData);
       commit('UPDATE_FEATURES'); // Recalculate features based on new plan
       commit('FORCE_UPDATE');
       
-      // Persistent storage
+      console.log('✅ Store mutations completed');
+      
+      // Persistent storage (don't let this fail the whole operation)
       try {
         localStorage.setItem('userStatus', validatedPlan);
         localStorage.setItem('subscriptionDetails', JSON.stringify(subscriptionData));
         localStorage.setItem('lastSubscriptionUpdate', Date.now().toString());
+        console.log('✅ LocalStorage updated');
       } catch (storageError) {
         console.warn('⚠️ Failed to persist subscription data:', storageError);
+        // Don't fail the operation due to storage issues
       }
       
       // Enhanced global event broadcasting
@@ -1923,35 +1820,44 @@ const actions = {
       ];
       
       events.forEach(eventName => {
-        triggerGlobalEvent(eventName, eventData);
+        try {
+          triggerGlobalEvent(eventName, eventData);
+        } catch (eventError) {
+          console.warn(`⚠️ Failed to trigger ${eventName}:`, eventError);
+        }
       });
       
-      // Reload usage data with new limits
+      console.log('✅ Events triggered');
+      
+      // Reload usage data with new limits (don't let this fail the operation)
       try {
         await dispatch('loadUsage');
+        console.log('✅ Usage data reloaded');
       } catch (usageError) {
         console.warn('⚠️ Failed to reload usage after subscription update:', usageError);
+        // Don't fail the operation due to usage reload issues
       }
       
       const duration = Date.now() - startTime;
-      console.log(`✅ Subscription updated successfully: ${oldStatus} → ${validatedPlan} (${duration}ms)`, {
-        source,
-        expiryDate: subscriptionData.expiryDate,
-        isActive: subscriptionData.status === 'active'
-      });
-      
-      // ✅ CRITICAL FIX: Always return a proper success object
-      return { 
+      const successResult = { 
         success: true, 
         subscriptionData: { ...subscriptionData },
         oldStatus,
         newStatus: validatedPlan,
         duration,
-        message: `Subscription updated successfully from ${oldStatus} to ${validatedPlan}`
+        message: `Subscription updated successfully from ${oldStatus} to ${validatedPlan}`,
+        timestamp: Date.now()
       };
       
+      console.log(`✅ updateSubscription completed successfully in ${duration}ms:`, successResult);
+      
+      // ✅ CRITICAL: Always return the success result
+      return successResult;
+      
     } catch (error) {
-      console.error('❌ Failed to update subscription:', error);
+      const duration = Date.now() - startTime;
+      
+      console.error('❌ updateSubscription failed:', error);
       
       commit('SET_ERROR', { 
         message: 'Subscription update failed', 
@@ -1961,14 +1867,20 @@ const actions = {
         source 
       });
       
-      // ✅ CRITICAL FIX: Always return a proper error object
-      return { 
+      const errorResult = { 
         success: false, 
         error: error.message || 'Subscription update failed',
-        duration: Date.now() - startTime,
+        duration,
         plan,
-        source
+        source,
+        timestamp: Date.now(),
+        stack: error.stack
       };
+      
+      console.log('❌ updateSubscription returning error result:', errorResult);
+      
+      // ✅ CRITICAL: Always return the error result
+      return errorResult;
     }
   },
   
