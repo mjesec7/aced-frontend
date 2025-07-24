@@ -331,7 +331,7 @@ export default {
       // ✅ Event bus listeners with error handling
       if (typeof window !== 'undefined' && window.eventBus) {
         this.globalEventHandlers.statusChanged = (data) => {
-          console.log('📡 Sidebar: User status change event:', data);
+          console.log('📡 Sidebar: Status change event:', data);
           this.handleStatusChange(data.newStatus, data.oldStatus);
         };
         

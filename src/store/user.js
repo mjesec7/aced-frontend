@@ -1,14 +1,14 @@
-// src/store/user.js - COMPLETELY FIXED WITH BULLETPROOF ERROR HANDLING
+// src/store/user.js - ENHANCED BULLETPROOF USER STORE FOR VUE 3
 import { checkPaymentStatus } from '@/api/payments';
 import { getUserUsage, resetMonthlyUsage } from '@/services/GPTService';
 
-// ✅ CENTRALIZED STATE MANAGEMENT
+// ✅ CENTRALIZED STATE MANAGEMENT WITH ENHANCED STRUCTURE
 const state = () => ({
   // Core user data
   currentUser: null,
   userStatus: 'free', // 'free', 'start', 'pro', 'premium'
   
-  // Subscription management
+  // Subscription management with enhanced tracking
   subscription: {
     plan: 'free',
     status: 'inactive',
@@ -16,21 +16,33 @@ const state = () => ({
     startDate: null,
     expiryDate: null,
     isAutoRenew: false,
-    details: {}
+    details: {},
+    lastSync: null
   },
   
-  // Usage tracking
+  // Enhanced usage tracking
   usage: {
-    current: { messages: 0, images: 0, lastUpdated: null },
+    current: { 
+      messages: 0, 
+      images: 0, 
+      lastUpdated: null,
+      resetDate: null
+    },
     limits: {
       free: { messages: 50, images: 5 },
       start: { messages: -1, images: 20 },
-      pro: { messages: -1, images: -1 }
+      pro: { messages: -1, images: -1 },
+      premium: { messages: -1, images: -1 }
     },
-    history: []
+    history: [],
+    monthlyStats: {
+      currentMonth: null,
+      totalMessages: 0,
+      totalImages: 0
+    }
   },
   
-  // Feature access matrix
+  // Enhanced feature access matrix
   features: {
     vocabulary: false,
     analytics: false,
@@ -38,59 +50,120 @@ const state = () => ({
     priority_support: false,
     custom_courses: false,
     offline_mode: false,
-    export_progress: false
+    export_progress: false,
+    advanced_grammar: false,
+    multiple_languages: false,
+    ai_tutor: false
   },
   
-  // Promocodes tracking - ✅ ENSURE NEVER NULL/UNDEFINED
+  // ✅ BULLETPROOF: Promocodes tracking - Always arrays
   promocodes: {
-    applied: [], // Always array, never null
-    lastCheck: null
+    applied: [],
+    available: [],
+    lastCheck: null,
+    validationCache: new Map()
   },
   
-  // Payment history - ✅ ENSURE NEVER NULL/UNDEFINED
+  // ✅ BULLETPROOF: Payment history - Always arrays
   payments: {
-    history: [], // Always array, never null
-    pending: [], // Always array, never null
-    lastCheck: null
+    history: [],
+    pending: [],
+    failed: [],
+    lastCheck: null,
+    retryQueue: []
   },
   
-  // User preferences
+  // Enhanced user preferences
   preferences: {
     language: 'ru',
     theme: 'light',
     notifications: true,
-    emailUpdates: false
+    emailUpdates: false,
+    autoSave: true,
+    soundEffects: true,
+    reducedMotion: false
   },
   
-  // System state
+  // Enhanced system state with better tracking
   system: {
     initialized: false,
+    initializationTime: null,
     lastUpdate: null,
     forceUpdateCounter: 0,
+    syncInProgress: false,
     loading: {
       status: false,
       usage: false,
       payments: false,
-      saving: false
-    }
-  }
-});
-
-// ✅ MUTATION HANDLERS WITH BULLETPROOF SAFETY
-const mutations = {
-  SET_USER(state, user) {
-    state.currentUser = user;
-    state.system.lastUpdate = Date.now();
-    
-    if (user) {
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      console.log('👤 User set:', user.email);
+      saving: false,
+      sync: false
+    },
+    errors: {
+      lastError: null,
+      errorCount: 0,
+      recoveryAttempts: 0
+    },
+    performance: {
+      loadTime: 0,
+      apiResponseTimes: []
     }
   },
   
+  // Cache for better performance
+  cache: {
+    userStatusCache: null,
+    usageCache: null,
+    lastCacheUpdate: null,
+    cacheExpiry: 5 * 60 * 1000 // 5 minutes
+  }
+});
+
+// ✅ ENHANCED MUTATIONS WITH BULLETPROOF SAFETY AND LOGGING
+const mutations = {
+  // Enhanced user management
+  SET_USER(state, user) {
+    const timestamp = Date.now();
+    const oldUser = state.currentUser;
+    
+    state.currentUser = user ? { ...user, lastUpdate: timestamp } : null;
+    state.system.lastUpdate = timestamp;
+    state.system.forceUpdateCounter++;
+    
+    if (user) {
+      try {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        localStorage.setItem('lastUserUpdate', timestamp.toString());
+        console.log('👤 User set successfully:', {
+          id: user.firebaseId || user._id,
+          email: user.email,
+          plan: user.subscriptionPlan || 'free'
+        });
+      } catch (storageError) {
+        console.warn('⚠️ Failed to store user in localStorage:', storageError);
+        state.system.errors.lastError = 'localStorage write failed';
+        state.system.errors.errorCount++;
+      }
+    }
+    
+    // Trigger global events
+    triggerGlobalEvent('userUpdated', {
+      oldUser: oldUser ? { id: oldUser.firebaseId, email: oldUser.email } : null,
+      newUser: user ? { id: user.firebaseId, email: user.email } : null,
+      timestamp
+    });
+  },
+  
+  // Enhanced user clearing with comprehensive cleanup
   CLEAR_USER(state) {
+    const timestamp = Date.now();
+    
+    console.log('🧹 Clearing all user data...');
+    
+    // Clear core data
     state.currentUser = null;
     state.userStatus = 'free';
+    
+    // Reset subscription
     state.subscription = {
       plan: 'free',
       status: 'inactive',
@@ -98,257 +171,662 @@ const mutations = {
       startDate: null,
       expiryDate: null,
       isAutoRenew: false,
-      details: {}
+      details: {},
+      lastSync: null
     };
-    state.usage.current = { messages: 0, images: 0, lastUpdated: null };
-    state.features = {
-      vocabulary: false,
-      analytics: false,
-      unlimited_lessons: false,
-      priority_support: false,
-      custom_courses: false,
-      offline_mode: false,
-      export_progress: false
+    
+    // Reset usage
+    state.usage.current = { 
+      messages: 0, 
+      images: 0, 
+      lastUpdated: null,
+      resetDate: null
     };
+    state.usage.history = [];
+    state.usage.monthlyStats = {
+      currentMonth: null,
+      totalMessages: 0,
+      totalImages: 0
+    };
+    
+    // Reset features
+    state.features = Object.keys(state.features).reduce((acc, key) => {
+      acc[key] = false;
+      return acc;
+    }, {});
     
     // ✅ BULLETPROOF: Ensure arrays are always arrays
     state.promocodes.applied = [];
+    state.promocodes.available = [];
+    state.promocodes.validationCache.clear();
+    
     state.payments.history = [];
     state.payments.pending = [];
+    state.payments.failed = [];
+    state.payments.retryQueue = [];
     
+    // Reset system state
     state.system.initialized = false;
-    state.system.lastUpdate = Date.now();
+    state.system.initializationTime = null;
+    state.system.lastUpdate = timestamp;
     state.system.forceUpdateCounter++;
+    state.system.syncInProgress = false;
+    state.system.errors = {
+      lastError: null,
+      errorCount: 0,
+      recoveryAttempts: 0
+    };
     
-    // Clear localStorage
-    ['currentUser', 'userStatus', 'subscriptionDetails', 'appliedPromocodes'].forEach(key => {
-      localStorage.removeItem(key);
+    // Clear cache
+    state.cache = {
+      userStatusCache: null,
+      usageCache: null,
+      lastCacheUpdate: null,
+      cacheExpiry: 5 * 60 * 1000
+    };
+    
+    // Clear localStorage with error handling
+    const keysToRemove = [
+      'currentUser', 'userStatus', 'subscriptionDetails', 'appliedPromocodes',
+      'lastUserUpdate', 'userPreferences', 'usageData', 'paymentHistory'
+    ];
+    
+    keysToRemove.forEach(key => {
+      try {
+        localStorage.removeItem(key);
+      } catch (error) {
+        console.warn(`⚠️ Failed to remove ${key} from localStorage:`, error);
+      }
     });
     
-    console.log('🧹 User data cleared');
-    triggerGlobalEvent('userCleared', { timestamp: Date.now() });
+    // Clear dynamic keys
+    try {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('pendingPayments_') || 
+            key.startsWith('lastMonthlyReset_') ||
+            key.startsWith('promocodeCache_')) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (error) {
+      console.warn('⚠️ Failed to clear dynamic localStorage keys:', error);
+    }
+    
+    console.log('✅ User data cleared completely');
+    triggerGlobalEvent('userCleared', { timestamp });
   },
   
+  // Enhanced status management with validation and caching
   SET_USER_STATUS(state, status) {
+    const timestamp = Date.now();
     const oldStatus = state.userStatus;
-    state.userStatus = status || 'free'; // ✅ BULLETPROOF: Never allow null/undefined
-    state.subscription.plan = state.userStatus;
-    state.system.lastUpdate = Date.now();
+    
+    // ✅ BULLETPROOF: Validate status
+    const validStatuses = ['free', 'start', 'pro', 'premium'];
+    const newStatus = validStatuses.includes(status) ? status : 'free';
+    
+    if (oldStatus === newStatus) {
+      console.log('ℹ️ Status unchanged, skipping update');
+      return;
+    }
+    
+    console.log(`🔄 Status changing: ${oldStatus} → ${newStatus}`);
+    
+    state.userStatus = newStatus;
+    state.subscription.plan = newStatus;
+    state.system.lastUpdate = timestamp;
     state.system.forceUpdateCounter++;
+    
+    // Update cache
+    state.cache.userStatusCache = newStatus;
+    state.cache.lastCacheUpdate = timestamp;
     
     // Update feature access
     updateFeatureMatrix(state);
     
-    // Persist to localStorage
-    localStorage.setItem('userStatus', state.userStatus);
-    
-    console.log(`🔄 Status updated: ${oldStatus} → ${state.userStatus}`);
-    
-    // Trigger global events
-    triggerGlobalEvent('userStatusChanged', {
-      oldStatus,
-      newStatus: state.userStatus,
-      timestamp: Date.now(),
-      features: { ...state.features }
-    });
-  },
-
-  setUserStatus(state, status) {
-    const oldStatus = state.userStatus;
-    
-    // ✅ BULLETPROOF: Never allow null/undefined status
-    state.userStatus = status || 'free';
-    state.subscription.plan = state.userStatus;
-    state.system.lastUpdate = Date.now();
-    state.system.forceUpdateCounter++;
-    
-    // Store in localStorage
-    localStorage.setItem('userStatus', state.userStatus);
-    
-    // Update feature access when status changes
-    updateFeatureMatrix(state);
-    
-    console.log(`🔄 User status updated: ${oldStatus} → ${state.userStatus}`);
-    
-    // Trigger reactivity manually if needed
-    if (typeof window !== 'undefined') {
-      if (window.Vue?.nextTick) {
-        window.Vue.nextTick(() => {
-          console.log('🔄 Forced Vue reactivity update');
-        });
-      }
-      
-      const reactivityEvent = new CustomEvent('vueReactivityUpdate', {
-        detail: { mutation: 'setUserStatus', oldStatus, newStatus: state.userStatus }
-      });
-      window.dispatchEvent(reactivityEvent);
+    // Persist to localStorage with error handling
+    try {
+      localStorage.setItem('userStatus', newStatus);
+      localStorage.setItem('statusUpdateTime', timestamp.toString());
+    } catch (storageError) {
+      console.warn('⚠️ Failed to persist status to localStorage:', storageError);
+      state.system.errors.lastError = 'Status persistence failed';
+      state.system.errors.errorCount++;
     }
     
-    triggerGlobalEvent('userStatusChanged', {
+    console.log(`✅ Status updated successfully: ${oldStatus} → ${newStatus}`);
+    
+    // Enhanced global event broadcasting
+    const eventData = {
       oldStatus,
-      newStatus: state.userStatus,
-      timestamp: Date.now(),
-      features: { ...state.features }
-    });
+      newStatus,
+      timestamp,
+      features: { ...state.features },
+      subscription: { ...state.subscription },
+      source: 'store-mutation'
+    };
+    
+    triggerGlobalEvent('userStatusChanged', eventData);
+    triggerGlobalEvent('subscriptionUpdated', eventData);
+    
+    // Force Vue reactivity
+    setTimeout(() => {
+      state.system.forceUpdateCounter++;
+      triggerGlobalEvent('forceReactivityUpdate', { timestamp });
+    }, 10);
   },
   
-  // ✅ BULLETPROOF: Ensure promocodes array is always safe
+  // Legacy mutation for backward compatibility
+  setUserStatus(state, status) {
+    mutations.SET_USER_STATUS(state, status);
+  },
+  
+  // ✅ ENHANCED: Bulletproof promocode management
   ADD_PROMOCODE(state, promocodeData) {
+    const timestamp = Date.now();
+    
     // Ensure applied array exists and is an array
     if (!Array.isArray(state.promocodes.applied)) {
       state.promocodes.applied = [];
+      console.warn('⚠️ Fixed promocodes.applied array');
     }
     
     const promocode = {
-      ...promocodeData,
+      id: `promo_${timestamp}`,
+      code: promocodeData.code?.toUpperCase() || '',
+      plan: promocodeData.plan || 'free',
+      oldPlan: promocodeData.oldPlan || state.userStatus,
       appliedAt: new Date().toISOString(),
-      id: Date.now().toString()
+      source: promocodeData.source || 'manual',
+      details: promocodeData.details || {},
+      timestamp
     };
     
-    state.promocodes.applied.unshift(promocode);
+    // Validate promocode
+    if (!promocode.code || promocode.code.length < 3) {
+      console.error('❌ Invalid promocode data:', promocode);
+      return;
+    }
     
-    // Keep only last 10
+    // Check for duplicates
+    const existingIndex = state.promocodes.applied.findIndex(p => p.code === promocode.code);
+    if (existingIndex >= 0) {
+      console.log('ℹ️ Updating existing promocode:', promocode.code);
+      state.promocodes.applied[existingIndex] = promocode;
+    } else {
+      state.promocodes.applied.unshift(promocode);
+    }
+    
+    // Keep only last 10 promocodes
     if (state.promocodes.applied.length > 10) {
       state.promocodes.applied = state.promocodes.applied.slice(0, 10);
     }
     
-    localStorage.setItem('appliedPromocodes', JSON.stringify(state.promocodes.applied));
+    // Persist to localStorage
+    try {
+      localStorage.setItem('appliedPromocodes', JSON.stringify(state.promocodes.applied));
+      localStorage.setItem('promocodesLastUpdate', timestamp.toString());
+    } catch (storageError) {
+      console.warn('⚠️ Failed to persist promocodes:', storageError);
+    }
     
-    console.log('🎟️ Promocode added:', promocode.code);
+    state.system.lastUpdate = timestamp;
+    state.system.forceUpdateCounter++;
+    
+    console.log('🎟️ Promocode added successfully:', {
+      code: promocode.code,
+      plan: promocode.plan,
+      timestamp: promocode.appliedAt
+    });
     
     triggerGlobalEvent('promocodeApplied', {
       promocode,
-      newStatus: promocodeData.plan
+      newStatus: promocode.plan,
+      oldStatus: promocode.oldPlan
     });
   },
   
-  // ✅ BULLETPROOF: Ensure payment arrays are always safe
-  ADD_PAYMENT(state, payment) {
+  // ✅ ENHANCED: Bulletproof payment management
+  ADD_PAYMENT(state, paymentData) {
+    const timestamp = Date.now();
+    
     // Ensure history array exists and is an array
     if (!Array.isArray(state.payments.history)) {
       state.payments.history = [];
+      console.warn('⚠️ Fixed payments.history array');
     }
     
-    state.payments.history.unshift(payment);
+    const payment = {
+      id: paymentData.id || `payment_${timestamp}`,
+      amount: paymentData.amount || 0,
+      currency: paymentData.currency || 'UZS',
+      status: paymentData.status || 'pending',
+      plan: paymentData.plan || 'free',
+      method: paymentData.method || 'unknown',
+      timestamp: paymentData.timestamp || timestamp,
+      createdAt: new Date().toISOString(),
+      details: paymentData.details || {},
+      retryCount: 0
+    };
     
-    // Keep only last 20 payments
-    if (state.payments.history.length > 20) {
-      state.payments.history = state.payments.history.slice(0, 20);
+    // Validate payment data
+    if (!payment.id || payment.amount <= 0) {
+      console.error('❌ Invalid payment data:', payment);
+      return;
     }
     
-    state.system.lastUpdate = Date.now();
+    // Check for duplicates
+    const existingIndex = state.payments.history.findIndex(p => p.id === payment.id);
+    if (existingIndex >= 0) {
+      console.log('ℹ️ Updating existing payment:', payment.id);
+      state.payments.history[existingIndex] = { ...state.payments.history[existingIndex], ...payment };
+    } else {
+      state.payments.history.unshift(payment);
+    }
+    
+    // Keep only last 50 payments
+    if (state.payments.history.length > 50) {
+      state.payments.history = state.payments.history.slice(0, 50);
+    }
+    
+    // Update pending payments
+    if (payment.status === 'completed') {
+      state.payments.pending = state.payments.pending.filter(id => id !== payment.id);
+    } else if (payment.status === 'pending' && !state.payments.pending.includes(payment.id)) {
+      state.payments.pending.push(payment.id);
+    } else if (payment.status === 'failed') {
+      if (!Array.isArray(state.payments.failed)) {
+        state.payments.failed = [];
+      }
+      if (!state.payments.failed.includes(payment.id)) {
+        state.payments.failed.push(payment.id);
+      }
+    }
+    
+    state.system.lastUpdate = timestamp;
+    state.system.forceUpdateCounter++;
+    
+    console.log('💳 Payment added successfully:', {
+      id: payment.id,
+      amount: payment.amount,
+      status: payment.status,
+      plan: payment.plan
+    });
+    
+    triggerGlobalEvent('paymentUpdated', { payment, timestamp });
   },
   
+  // Enhanced pending payments management
   SET_PENDING_PAYMENTS(state, pendingIds) {
+    const timestamp = Date.now();
+    
     // ✅ BULLETPROOF: Ensure pendingIds is always an array
-    state.payments.pending = Array.isArray(pendingIds) ? pendingIds : [];
-    state.payments.lastCheck = Date.now();
+    const validPendingIds = Array.isArray(pendingIds) ? 
+      pendingIds.filter(id => id && typeof id === 'string') : [];
+    
+    state.payments.pending = validPendingIds;
+    state.payments.lastCheck = timestamp;
+    state.system.lastUpdate = timestamp;
+    
+    console.log(`📋 Pending payments updated: ${validPendingIds.length} items`);
+    
+    triggerGlobalEvent('pendingPaymentsUpdated', { 
+      pendingIds: validPendingIds, 
+      timestamp 
+    });
   },
   
-  // ... other mutations remain the same but with safety checks
+  // Enhanced subscription management
   UPDATE_SUBSCRIPTION(state, subscriptionData) {
-    state.subscription = { ...state.subscription, ...(subscriptionData || {}) };
-    state.system.lastUpdate = Date.now();
+    const timestamp = Date.now();
     
-    if (subscriptionData?.plan && subscriptionData.plan !== state.userStatus) {
+    if (!subscriptionData || typeof subscriptionData !== 'object') {
+      console.warn('⚠️ Invalid subscription data provided');
+      return;
+    }
+    
+    const oldSubscription = { ...state.subscription };
+    
+    state.subscription = {
+      ...state.subscription,
+      ...subscriptionData,
+      lastSync: timestamp
+    };
+    
+    // Auto-update status if plan changed
+    if (subscriptionData.plan && subscriptionData.plan !== state.userStatus) {
       mutations.SET_USER_STATUS(state, subscriptionData.plan);
     }
     
-    localStorage.setItem('subscriptionDetails', JSON.stringify(state.subscription));
-  },
-  
-  SET_USAGE(state, usageData) {
-    state.usage.current = {
-      messages: 0,
-      images: 0,
-      lastUpdated: null,
-      ...(usageData || {}),
-      lastUpdated: new Date().toISOString()
-    };
-    state.system.lastUpdate = Date.now();
-  },
-  
-  INCREMENT_USAGE(state, { messages = 0, images = 0 }) {
-    // ✅ BULLETPROOF: Ensure usage object exists
-    if (!state.usage.current) {
-      state.usage.current = { messages: 0, images: 0, lastUpdated: null };
+    state.system.lastUpdate = timestamp;
+    state.system.forceUpdateCounter++;
+    
+    // Persist to localStorage
+    try {
+      localStorage.setItem('subscriptionDetails', JSON.stringify(state.subscription));
+      localStorage.setItem('subscriptionLastUpdate', timestamp.toString());
+    } catch (storageError) {
+      console.warn('⚠️ Failed to persist subscription:', storageError);
     }
     
-    state.usage.current.messages = (state.usage.current.messages || 0) + messages;
-    state.usage.current.images = (state.usage.current.images || 0) + images;
-    state.usage.current.lastUpdated = new Date().toISOString();
-    state.system.lastUpdate = Date.now();
+    console.log('📋 Subscription updated:', {
+      plan: state.subscription.plan,
+      status: state.subscription.status,
+      source: state.subscription.source
+    });
+    
+    triggerGlobalEvent('subscriptionUpdated', {
+      oldSubscription,
+      newSubscription: { ...state.subscription },
+      timestamp
+    });
+  },
+  
+  // Enhanced usage management
+  SET_USAGE(state, usageData) {
+    const timestamp = Date.now();
+    
+    if (!usageData || typeof usageData !== 'object') {
+      console.warn('⚠️ Invalid usage data provided');
+      return;
+    }
+    
+    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+    
+    state.usage.current = {
+      messages: Math.max(0, parseInt(usageData.messages) || 0),
+      images: Math.max(0, parseInt(usageData.images) || 0),
+      lastUpdated: new Date().toISOString(),
+      resetDate: usageData.resetDate || null,
+      ...usageData
+    };
+    
+    // Update monthly stats
+    if (state.usage.monthlyStats.currentMonth !== currentMonth) {
+      state.usage.monthlyStats = {
+        currentMonth,
+        totalMessages: state.usage.current.messages,
+        totalImages: state.usage.current.images
+      };
+    }
+    
+    // Update cache
+    state.cache.usageCache = { ...state.usage.current };
+    state.cache.lastCacheUpdate = timestamp;
+    
+    state.system.lastUpdate = timestamp;
+    
+    console.log('📊 Usage updated:', {
+      messages: state.usage.current.messages,
+      images: state.usage.current.images,
+      month: currentMonth
+    });
     
     triggerGlobalEvent('usageUpdated', {
       usage: { ...state.usage.current },
-      limits: getCurrentLimits(state)
+      limits: getCurrentLimits(state),
+      timestamp
     });
   },
   
-  UPDATE_FEATURES(state, features = {}) {
-    if (Object.keys(features).length > 0) {
-      state.features = { ...state.features, ...features };
-    } else {
-      updateFeatureMatrix(state);
+  // Enhanced usage increment with validation
+  INCREMENT_USAGE(state, { messages = 0, images = 0 }) {
+    const timestamp = Date.now();
+    
+    // ✅ BULLETPROOF: Ensure usage object exists
+    if (!state.usage.current || typeof state.usage.current !== 'object') {
+      state.usage.current = { messages: 0, images: 0, lastUpdated: null };
     }
     
-    state.system.lastUpdate = Date.now();
-    state.system.forceUpdateCounter++;
+    const oldUsage = { ...state.usage.current };
     
-    triggerGlobalEvent('featuresUpdated', {
-      features: { ...state.features },
-      userStatus: state.userStatus
-    });
-  },
-  
-  SET_LOADING(state, { type, loading }) {
-    if (state.system.loading) {
-      state.system.loading[type] = Boolean(loading);
+    // Validate and increment
+    const messageIncrement = Math.max(0, parseInt(messages) || 0);
+    const imageIncrement = Math.max(0, parseInt(images) || 0);
+    
+    state.usage.current.messages = Math.max(0, (state.usage.current.messages || 0) + messageIncrement);
+    state.usage.current.images = Math.max(0, (state.usage.current.images || 0) + imageIncrement);
+    state.usage.current.lastUpdated = new Date().toISOString();
+    
+    // Update monthly stats
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    if (!state.usage.monthlyStats.currentMonth) {
+      state.usage.monthlyStats.currentMonth = currentMonth;
     }
-  },
-  
-  SET_INITIALIZED(state, initialized = true) {
-    state.system.initialized = Boolean(initialized);
-    state.system.lastUpdate = Date.now();
     
-    if (initialized) {
-      console.log('✅ User store initialized');
-      triggerGlobalEvent('storeInitialized', {
-        userStatus: state.userStatus,
-        features: { ...state.features }
+    if (state.usage.monthlyStats.currentMonth === currentMonth) {
+      state.usage.monthlyStats.totalMessages += messageIncrement;
+      state.usage.monthlyStats.totalImages += imageIncrement;
+    }
+    
+    state.system.lastUpdate = timestamp;
+    
+    // Only log if there was actual usage
+    if (messageIncrement > 0 || imageIncrement > 0) {
+      console.log('📈 Usage incremented:', {
+        messages: `${oldUsage.messages} → ${state.usage.current.messages} (+${messageIncrement})`,
+        images: `${oldUsage.images} → ${state.usage.current.images} (+${imageIncrement})`
+      });
+      
+      triggerGlobalEvent('usageIncremented', {
+        oldUsage,
+        newUsage: { ...state.usage.current },
+        increment: { messages: messageIncrement, images: imageIncrement },
+        limits: getCurrentLimits(state),
+        timestamp
       });
     }
   },
   
-  FORCE_UPDATE(state) {
+  // Enhanced feature management
+  UPDATE_FEATURES(state, features = {}) {
+    const timestamp = Date.now();
+    
+    if (Object.keys(features).length > 0) {
+      // Update specific features
+      const oldFeatures = { ...state.features };
+      state.features = { ...state.features, ...features };
+      
+      console.log('🔧 Features updated manually:', features);
+      
+      triggerGlobalEvent('featuresUpdated', {
+        oldFeatures,
+        newFeatures: { ...state.features },
+        changedFeatures: features,
+        userStatus: state.userStatus,
+        timestamp
+      });
+    } else {
+      // Update all features based on current status
+      updateFeatureMatrix(state);
+    }
+    
+    state.system.lastUpdate = timestamp;
     state.system.forceUpdateCounter++;
+  },
+  
+  // Enhanced loading state management
+  SET_LOADING(state, { type, loading }) {
+    if (!state.system.loading) {
+      state.system.loading = {};
+    }
+    
+    const wasLoading = state.system.loading[type];
+    state.system.loading[type] = Boolean(loading);
+    
+    // Log significant loading state changes
+    if (wasLoading !== Boolean(loading)) {
+      console.log(`⏳ Loading ${type}: ${wasLoading} → ${Boolean(loading)}`);
+    }
+    
     state.system.lastUpdate = Date.now();
+  },
+  
+  // Enhanced initialization tracking
+  SET_INITIALIZED(state, initialized = true) {
+    const timestamp = Date.now();
+    const wasInitialized = state.system.initialized;
+    
+    state.system.initialized = Boolean(initialized);
+    state.system.lastUpdate = timestamp;
+    
+    if (initialized && !wasInitialized) {
+      state.system.initializationTime = timestamp;
+      state.system.performance.loadTime = timestamp - (state.system.performance.startTime || timestamp);
+      
+      console.log('✅ User store initialized successfully', {
+        loadTime: state.system.performance.loadTime,
+        userStatus: state.userStatus,
+        hasUser: !!state.currentUser
+      });
+      
+      triggerGlobalEvent('storeInitialized', {
+        userStatus: state.userStatus,
+        features: { ...state.features },
+        loadTime: state.system.performance.loadTime,
+        timestamp
+      });
+    } else if (!initialized && wasInitialized) {
+      console.log('🔄 User store reset to uninitialized state');
+      triggerGlobalEvent('storeReset', { timestamp });
+    }
+  },
+  
+  // Enhanced force update with better tracking
+  FORCE_UPDATE(state) {
+    const timestamp = Date.now();
+    const oldCounter = state.system.forceUpdateCounter;
+    
+    state.system.forceUpdateCounter++;
+    state.system.lastUpdate = timestamp;
+    
+    console.log(`🔄 Force update triggered: ${oldCounter} → ${state.system.forceUpdateCounter}`);
     
     triggerGlobalEvent('forceUpdate', {
       counter: state.system.forceUpdateCounter,
-      timestamp: Date.now()
+      oldCounter,
+      timestamp
     });
     
-    console.log('🔄 Forced global update:', state.system.forceUpdateCounter);
+    triggerGlobalEvent('globalForceUpdate', {
+      source: 'store-mutation',
+      counter: state.system.forceUpdateCounter,
+      timestamp
+    });
+  },
+  
+  // Enhanced error tracking
+  SET_ERROR(state, error) {
+    const timestamp = Date.now();
+    
+    state.system.errors.lastError = {
+      message: error.message || error,
+      timestamp,
+      stack: error.stack || null,
+      context: error.context || null
+    };
+    state.system.errors.errorCount++;
+    state.system.lastUpdate = timestamp;
+    
+    console.error('❌ Store error logged:', state.system.errors.lastError);
+    
+    triggerGlobalEvent('storeError', {
+      error: state.system.errors.lastError,
+      totalErrors: state.system.errors.errorCount
+    });
+  },
+  
+  // Enhanced preferences management
+  SET_PREFERENCES(state, preferences) {
+    const timestamp = Date.now();
+    
+    if (!preferences || typeof preferences !== 'object') {
+      console.warn('⚠️ Invalid preferences data provided');
+      return;
+    }
+    
+    const oldPreferences = { ...state.preferences };
+    state.preferences = { ...state.preferences, ...preferences };
+    state.system.lastUpdate = timestamp;
+    
+    // Persist to localStorage
+    try {
+      localStorage.setItem('userPreferences', JSON.stringify(state.preferences));
+    } catch (storageError) {
+      console.warn('⚠️ Failed to persist preferences:', storageError);
+    }
+    
+    console.log('⚙️ Preferences updated:', Object.keys(preferences));
+    
+    triggerGlobalEvent('preferencesUpdated', {
+      oldPreferences,
+      newPreferences: { ...state.preferences },
+      changedPreferences: preferences,
+      timestamp
+    });
+  },
+  
+  // Usage reset for new month
+  RESET_USAGE(state) {
+    const timestamp = Date.now();
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    
+    console.log('🔄 Resetting usage for new month:', currentMonth);
+    
+    state.usage.current = {
+      messages: 0,
+      images: 0,
+      lastUpdated: new Date().toISOString(),
+      resetDate: new Date().toISOString()
+    };
+    
+    state.usage.monthlyStats = {
+      currentMonth,
+      totalMessages: 0,
+      totalImages: 0
+    };
+    
+    state.system.lastUpdate = timestamp;
+    
+    triggerGlobalEvent('usageReset', {
+      month: currentMonth,
+      timestamp
+    });
+  },
+  
+  // Set usage limits for specific plan
+  SET_USAGE_LIMITS(state, limits) {
+    if (!limits || typeof limits !== 'object') {
+      return;
+    }
+    
+    state.usage.limits = { ...state.usage.limits, ...limits };
+    state.system.lastUpdate = Date.now();
+    
+    console.log('📊 Usage limits updated:', limits);
   }
 };
 
-// ✅ BULLETPROOF ACTION HANDLERS
+// ✅ ENHANCED ACTIONS WITH COMPREHENSIVE ERROR HANDLING
 const actions = {
-  // ✅ COMPLETELY FIXED: saveUser action with bulletproof error handling
+  // ✅ COMPLETELY BULLETPROOFED: saveUser action
   async saveUser({ commit, dispatch, state }, { userData, token }) {
-    console.log('💾 🔥 BULLETPROOF saveUser starting...', {
+    const startTime = Date.now();
+    
+    console.log('💾 🔥 ENHANCED saveUser starting...', {
       hasUserData: !!userData,
       hasToken: !!token,
-      tokenLength: token?.length || 0
+      tokenLength: token?.length || 0,
+      userEmail: userData?.email || 'unknown'
     });
     
-    // ✅ BULLETPROOF: Always return a valid object
+    // ✅ Result factory functions
     const createErrorResult = (error, details = {}) => ({
       success: false,
-      error: error || 'Unknown error occurred',
+      error: typeof error === 'string' ? error : (error?.message || 'Unknown error occurred'),
       user: null,
       timestamp: new Date().toISOString(),
+      duration: Date.now() - startTime,
       ...details
     });
     
@@ -356,47 +834,50 @@ const actions = {
       success: true,
       user: user || null,
       message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      duration: Date.now() - startTime
     });
     
-    // ✅ BULLETPROOF: Input validation
+    // ✅ BULLETPROOF: Input validation with detailed feedback
     if (!userData || typeof userData !== 'object') {
-      console.error('❌ Invalid userData provided to saveUser');
-      return createErrorResult('Missing or invalid user data', {
-        hasUserData: !!userData,
-        userDataType: typeof userData
-      });
+      const error = 'Missing or invalid user data';
+      console.error('❌', error, { hasUserData: !!userData, userDataType: typeof userData });
+      commit('SET_ERROR', { message: error, context: 'saveUser-validation' });
+      return createErrorResult(error, { validationError: true });
     }
     
     if (!token || typeof token !== 'string' || token.length < 10) {
-      console.error('❌ Invalid token provided to saveUser');
-      return createErrorResult('Missing or invalid authentication token', {
-        hasToken: !!token,
-        tokenType: typeof token,
-        tokenLength: token?.length || 0
-      });
+      const error = 'Missing or invalid authentication token';
+      console.error('❌', error, { hasToken: !!token, tokenLength: token?.length || 0 });
+      commit('SET_ERROR', { message: error, context: 'saveUser-validation' });
+      return createErrorResult(error, { validationError: true });
     }
 
     try {
-      console.log('🔄 Setting loading state...');
+      console.log('🔄 Setting loading state and initializing...');
       commit('SET_LOADING', { type: 'saving', loading: true });
       
       // ✅ BULLETPROOF: Environment validation
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
       if (!baseUrl || typeof baseUrl !== 'string') {
-        console.error('❌ VITE_API_BASE_URL not configured properly');
-        return createErrorResult('Application configuration error - API base URL not set', {
-          hasBaseUrl: !!baseUrl,
-          baseUrlType: typeof baseUrl
-        });
+        const error = 'Application configuration error - API base URL not set';
+        console.error('❌', error, { hasBaseUrl: !!baseUrl, baseUrlType: typeof baseUrl });
+        commit('SET_ERROR', { message: error, context: 'saveUser-config' });
+        return createErrorResult(error, { configError: true });
       }
       
       console.log('📤 Loading API module...');
       
-      // ✅ BULLETPROOF: API module loading
+      // ✅ BULLETPROOF: API module loading with timeout
       let api;
       try {
-        const apiModule = await import('@/api');
+        const apiLoadPromise = import('@/api');
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('API module load timeout')), 5000)
+        );
+        
+        const apiModule = await Promise.race([apiLoadPromise, timeoutPromise]);
+        
         api = apiModule.default || apiModule;
         
         if (!api || typeof api.post !== 'function') {
@@ -405,16 +886,15 @@ const actions = {
         
         console.log('✅ API module loaded successfully');
       } catch (apiImportError) {
-        console.error('❌ Failed to import API module:', apiImportError);
-        return createErrorResult('Failed to load API module - application error', {
-          isApiImportError: true,
-          originalError: apiImportError.message
-        });
+        const error = 'Failed to load API module - application error';
+        console.error('❌', error, apiImportError);
+        commit('SET_ERROR', { message: error, context: 'saveUser-api-import', originalError: apiImportError.message });
+        return createErrorResult(error, { apiImportError: true });
       }
       
-      // ✅ BULLETPROOF: Payload preparation
+      // ✅ BULLETPROOF: Payload preparation with validation
       const payload = {
-        firebaseUserId: userData.uid || userData.firebaseId,
+        firebaseUserId: userData.uid || userData.firebaseId || userData.firebaseUserId,
         email: userData.email || '',
         name: userData.displayName || userData.name || userData.email?.split('@')[0] || 'User',
         displayName: userData.displayName || userData.name || '',
@@ -422,42 +902,71 @@ const actions = {
         photoURL: userData.photoURL || null,
         subscriptionPlan: userData.subscriptionPlan || 'free',
         lastLoginAt: new Date().toISOString(),
-        createdAt: new Date().toISOString()
+        createdAt: userData.createdAt || new Date().toISOString(),
+        metadata: {
+          lastUpdate: new Date().toISOString(),
+          source: 'vue-app',
+          version: '2.0'
+        }
       };
       
       // ✅ BULLETPROOF: Validate essential payload fields
       if (!payload.firebaseUserId || !payload.email) {
-        console.error('❌ Missing essential user data:', {
+        const error = 'Missing essential user information (ID or email)';
+        console.error('❌', error, {
           hasFirebaseId: !!payload.firebaseUserId,
-          hasEmail: !!payload.email
+          hasEmail: !!payload.email,
+          userData: Object.keys(userData)
         });
-        return createErrorResult('Missing essential user information (ID or email)', {
-          payload: { ...payload, firebaseUserId: '[PRESENT]' }
-        });
+        commit('SET_ERROR', { message: error, context: 'saveUser-payload-validation' });
+        return createErrorResult(error, { payloadValidationError: true });
       }
       
       console.log('📤 Sending user data to server...', {
         url: '/users/save',
-        hasPayload: true,
-        firebaseUserId: payload.firebaseUserId.substring(0, 8) + '...'
+        firebaseUserId: payload.firebaseUserId.substring(0, 8) + '...',
+        email: payload.email,
+        plan: payload.subscriptionPlan
       });
       
-      // ✅ BULLETPROOF: API call with comprehensive error handling
+      // ✅ BULLETPROOF: API call with comprehensive error handling and timeout
       let response;
+      const apiStartTime = Date.now();
+      
       try {
-        response = await api.post('/users/save', payload, {
+        const requestPromise = api.post('/users/save', payload, {
           timeout: 15000,
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Request-ID': `save_user_${Date.now()}`,
+            'X-App-Version': '2.0'
           }
         });
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 20000)
+        );
+        
+        response = await Promise.race([requestPromise, timeoutPromise]);
+        
+        // Track API response time
+        const apiResponseTime = Date.now() - apiStartTime;
+        if (!Array.isArray(state.system.performance.apiResponseTimes)) {
+          state.system.performance.apiResponseTimes = [];
+        }
+        state.system.performance.apiResponseTimes.push(apiResponseTime);
+        
+        // Keep only last 10 response times
+        if (state.system.performance.apiResponseTimes.length > 10) {
+          state.system.performance.apiResponseTimes = state.system.performance.apiResponseTimes.slice(-10);
+        }
         
         console.log('📥 Server response received:', {
           status: response?.status,
           statusText: response?.statusText,
-          hasData: !!response?.data,
-          dataType: typeof response?.data
+          responseTime: apiResponseTime + 'ms',
+          hasData: !!response?.data
         });
         
       } catch (networkError) {
@@ -466,70 +975,87 @@ const actions = {
         // ✅ BULLETPROOF: Detailed network error handling
         let userFriendlyError = 'Network error occurred';
         let statusCode = null;
+        let errorDetails = { isNetworkError: true };
         
-        if (networkError.code === 'ECONNABORTED') {
+        if (networkError.message === 'Request timeout') {
           userFriendlyError = 'Request timed out. Please check your connection and try again.';
+          errorDetails.isTimeout = true;
+        } else if (networkError.code === 'ECONNABORTED') {
+          userFriendlyError = 'Request timed out. Please check your connection and try again.';
+          errorDetails.isTimeout = true;
         } else if (networkError.message === 'Network Error') {
           userFriendlyError = 'Network error. Please check your internet connection.';
+          errorDetails.isConnectionError = true;
         } else if (networkError.response) {
           statusCode = networkError.response.status;
           const serverError = networkError.response.data || {};
+          errorDetails.statusCode = statusCode;
           
           switch (statusCode) {
             case 400:
               userFriendlyError = serverError.message || serverError.error || 'Invalid user data provided';
+              errorDetails.isBadRequest = true;
               break;
             case 401:
               userFriendlyError = 'Authentication failed. Please log in again.';
+              errorDetails.isAuthError = true;
               break;
             case 403:
               userFriendlyError = 'Access denied. Please check your permissions.';
+              errorDetails.isAuthError = true;
               break;
             case 404:
               userFriendlyError = 'User service not found. Please contact support.';
+              errorDetails.isServiceError = true;
               break;
             case 409:
               userFriendlyError = serverError.message || serverError.error || 'User already exists with different data';
+              errorDetails.isConflict = true;
               break;
             case 429:
               userFriendlyError = 'Too many requests. Please wait and try again.';
+              errorDetails.isRateLimit = true;
               break;
             case 500:
             case 502:
             case 503:
             case 504:
               userFriendlyError = 'Server error. Please try again later.';
+              errorDetails.isServerError = true;
               break;
             default:
               userFriendlyError = serverError.message || serverError.error || `Server error (${statusCode})`;
+              errorDetails.isUnknownServerError = true;
           }
         } else {
           userFriendlyError = 'Unable to connect to server. Please try again.';
+          errorDetails.isConnectionError = true;
         }
         
-        return createErrorResult(userFriendlyError, {
-          statusCode,
-          isNetworkError: true,
-          originalError: networkError.message
+        commit('SET_ERROR', { 
+          message: userFriendlyError, 
+          context: 'saveUser-network', 
+          originalError: networkError.message,
+          statusCode 
         });
+        
+        return createErrorResult(userFriendlyError, errorDetails);
       }
       
       // ✅ BULLETPROOF: Response validation
       if (!response || typeof response !== 'object') {
-        console.error('❌ Invalid response object from server');
-        return createErrorResult('Invalid response from server', {
-          hasResponse: !!response,
-          responseType: typeof response
-        });
+        const error = 'Invalid response from server';
+        console.error('❌', error, { hasResponse: !!response, responseType: typeof response });
+        commit('SET_ERROR', { message: error, context: 'saveUser-response-validation' });
+        return createErrorResult(error, { responseValidationError: true });
       }
       
       const responseData = response.data;
       if (!responseData || typeof responseData !== 'object') {
-        console.error('❌ Empty or invalid response data from server');
-        return createErrorResult('Empty or invalid response from server', {
-          hasResponseData: !!responseData,
-          responseDataType: typeof responseData
-        });
+        const error = 'Empty or invalid response from server';
+        console.error('❌', error, { hasResponseData: !!responseData, responseDataType: typeof responseData });
+        commit('SET_ERROR', { message: error, context: 'saveUser-response-data' });
+        return createErrorResult(error, { responseDataError: true });
       }
       
       console.log('📊 Processing server response...', {
@@ -550,67 +1076,73 @@ const actions = {
           savedUser = responseData.user;
           console.log('✅ Using success+user response structure');
         } else {
-          console.error('❌ Success response but no valid user data');
-          return createErrorResult('Server returned success but no user data', {
-            responseStructure: Object.keys(responseData)
-          });
+          const error = 'Server returned success but no user data';
+          console.error('❌', error, { responseStructure: Object.keys(responseData) });
+          commit('SET_ERROR', { message: error, context: 'saveUser-response-structure' });
+          return createErrorResult(error, { responseStructureError: true });
         }
       } else if (responseData.user && typeof responseData.user === 'object') {
         savedUser = responseData.user;
         console.log('✅ Using direct user response structure');
-      } else if ((responseData._id || responseData.firebaseId) && responseData.email) {
+      } else if ((responseData._id || responseData.firebaseId || responseData.firebaseUserId) && responseData.email) {
         savedUser = responseData;
         console.log('✅ Using direct object response structure');
       } else if (responseData.success === false) {
-        console.error('❌ Server returned success: false');
-        return createErrorResult(
-          responseData.message || responseData.error || 'Server returned failure status',
-          { serverResponse: responseData }
-        );
+        const error = responseData.message || responseData.error || 'Server returned failure status';
+        console.error('❌ Server returned success: false:', error);
+        commit('SET_ERROR', { message: error, context: 'saveUser-server-failure' });
+        return createErrorResult(error, { serverFailure: true, serverResponse: responseData });
       } else {
-        console.error('❌ Unknown server response structure:', responseData);
-        return createErrorResult('Server returned unrecognized response format', {
-          rawResponse: responseData
-        });
+        const error = 'Server returned unrecognized response format';
+        console.error('❌', error, responseData);
+        commit('SET_ERROR', { message: error, context: 'saveUser-unknown-response' });
+        return createErrorResult(error, { unknownResponseError: true, rawResponse: responseData });
       }
       
       // ✅ BULLETPROOF: Validate saved user object
       if (!savedUser || typeof savedUser !== 'object') {
-        console.error('❌ Invalid user object from server:', savedUser);
-        return createErrorResult('Server returned invalid user data', {
-          savedUserType: typeof savedUser,
-          hasSavedUser: !!savedUser
-        });
+        const error = 'Server returned invalid user data';
+        console.error('❌', error, { savedUserType: typeof savedUser, hasSavedUser: !!savedUser });
+        commit('SET_ERROR', { message: error, context: 'saveUser-user-validation' });
+        return createErrorResult(error, { userValidationError: true });
       }
       
       // ✅ BULLETPROOF: Ensure user has all required fields
       const completeUser = {
         ...savedUser,
-        firebaseId: savedUser.firebaseId || savedUser._id || userData.uid,
-        _id: savedUser._id || savedUser.firebaseId,
+        firebaseId: savedUser.firebaseId || savedUser.firebaseUserId || savedUser._id || userData.uid,
+        _id: savedUser._id || savedUser.firebaseId || savedUser.firebaseUserId,
         email: savedUser.email || userData.email,
         name: savedUser.name || userData.displayName || userData.email?.split('@')[0] || 'User',
+        displayName: savedUser.displayName || savedUser.name || userData.displayName || '',
         subscriptionPlan: savedUser.subscriptionPlan || 'free',
-        lastLoginAt: new Date().toISOString(),
-        updatedAt: savedUser.updatedAt || new Date().toISOString()
+        lastLoginAt: savedUser.lastLoginAt || new Date().toISOString(),
+        updatedAt: savedUser.updatedAt || new Date().toISOString(),
+        metadata: {
+          ...savedUser.metadata,
+          lastSync: new Date().toISOString(),
+          syncSource: 'saveUser'
+        }
       };
       
       // ✅ BULLETPROOF: Final validation of complete user
       if (!completeUser.firebaseId || !completeUser.email) {
-        console.error('❌ Completed user missing essential fields:', {
+        const error = 'Server user data missing essential fields';
+        console.error('❌', error, {
           hasFirebaseId: !!completeUser.firebaseId,
-          hasEmail: !!completeUser.email
-        });
-        return createErrorResult('Server user data missing essential fields', {
+          hasEmail: !!completeUser.email,
           userFields: Object.keys(completeUser)
         });
+        commit('SET_ERROR', { message: error, context: 'saveUser-final-validation' });
+        return createErrorResult(error, { finalValidationError: true });
       }
       
       console.log('✅ User saved successfully to server:', {
-        id: completeUser._id,
+        id: completeUser._id || completeUser.firebaseId,
         email: completeUser.email,
         plan: completeUser.subscriptionPlan,
-        firebaseId: completeUser.firebaseId
+        firebaseId: completeUser.firebaseId,
+        duration: Date.now() - startTime + 'ms'
       });
       
       // ✅ BULLETPROOF: Update local store with server data
@@ -623,91 +1155,125 @@ const actions = {
         if (userId) {
           localStorage.setItem('userId', userId);
           localStorage.setItem('firebaseUserId', userId);
+          localStorage.setItem('lastUserSync', Date.now().toString());
         }
         
         console.log('✅ Local store updated with server data');
       } catch (storeError) {
         console.error('❌ Failed to update local store:', storeError);
+        commit('SET_ERROR', { message: 'Store update failed', context: 'saveUser-store-update', originalError: storeError.message });
         // Don't fail the entire operation if store update fails
       }
       
       // ✅ BULLETPROOF: Load additional user data (non-blocking)
-      console.log('📊 Loading additional user data from server...');
+      console.log('📊 Initiating background data loading...');
       
-      const additionalDataPromises = [
-        dispatch('loadUserStatus'),
-        dispatch('loadUsage'), 
-        dispatch('checkMonthlyReset'),
-        dispatch('checkPendingPayments')
+      const backgroundTasks = [
+        { name: 'loadUserStatus', action: () => dispatch('loadUserStatus') },
+        { name: 'loadUsage', action: () => dispatch('loadUsage') },
+        { name: 'checkMonthlyReset', action: () => dispatch('checkMonthlyReset') },
+        { name: 'checkPendingPayments', action: () => dispatch('checkPendingPayments') }
       ];
       
-      // Don't await - let them load in background
-      Promise.allSettled(additionalDataPromises)
-        .then(results => {
-          const failures = results.filter(r => r.status === 'rejected');
-          if (failures.length > 0) {
-            console.warn('⚠️ Some additional data loading failed:', failures.map(f => f.reason));
-          } else {
-            console.log('✅ All additional user data loaded from server');
-          }
-        })
-        .catch(error => {
-          console.warn('⚠️ Additional data loading error:', error);
-        });
+      // Execute background tasks without blocking
+      Promise.allSettled(backgroundTasks.map(task => 
+        task.action().catch(err => ({ taskName: task.name, error: err.message }))
+      )).then(results => {
+        const failures = results.filter(r => r.status === 'rejected');
+        const successes = results.filter(r => r.status === 'fulfilled');
+        
+        if (failures.length > 0) {
+          console.warn('⚠️ Some background tasks failed:', failures.map(f => f.reason));
+        }
+        
+        console.log(`✅ Background data loading complete: ${successes.length}/${backgroundTasks.length} succeeded`);
+      }).catch(error => {
+        console.warn('⚠️ Background task coordination error:', error);
+      });
       
-      return createSuccessResult(completeUser, 'User saved successfully to server');
+      return createSuccessResult(completeUser, 'User saved and synchronized successfully');
       
     } catch (error) {
       console.error('❌ Unexpected error in saveUser:', error);
       
       // ✅ BULLETPROOF: Comprehensive error categorization
       let userFriendlyError = 'An unexpected error occurred while saving user data.';
+      let errorCategory = 'unexpected';
       
       if (error.message?.includes('API module')) {
         userFriendlyError = 'Application configuration error. Please refresh the page.';
+        errorCategory = 'config';
       } else if (error.message?.includes('environment')) {
-        userFriendlyError = 'Application not properly configured. Please contact support.';  
+        userFriendlyError = 'Application not properly configured. Please contact support.';
+        errorCategory = 'config';
       } else if (error.message?.includes('fetch') || error.message?.includes('network')) {
         userFriendlyError = 'Network connection failed. Please check your internet connection.';
+        errorCategory = 'network';
       } else if (error.message?.includes('timeout')) {
         userFriendlyError = 'Request timed out. Please try again.';
+        errorCategory = 'timeout';
       } else if (error.message?.includes('JSON')) {
         userFriendlyError = 'Server returned invalid response. Please try again.';
+        errorCategory = 'parsing';
       }
+      
+      commit('SET_ERROR', { 
+        message: userFriendlyError, 
+        context: 'saveUser-unexpected', 
+        originalError: error.message,
+        stack: error.stack,
+        category: errorCategory
+      });
       
       console.error('❌ Detailed error info:', {
         message: error.message,
         stack: error.stack,
-        name: error.name
+        name: error.name,
+        category: errorCategory,
+        duration: Date.now() - startTime + 'ms'
       });
       
       return createErrorResult(userFriendlyError, {
         isUnexpectedError: true,
-        originalError: error.message
+        originalError: error.message,
+        category: errorCategory
       });
       
     } finally {
       // ✅ BULLETPROOF: Always clear loading state
       try {
         commit('SET_LOADING', { type: 'saving', loading: false });
+        console.log(`⏱️ saveUser completed in ${Date.now() - startTime}ms`);
       } catch (loadingError) {
         console.warn('⚠️ Failed to clear loading state:', loadingError);
       }
     }
   },
   
-  // ✅ BULLETPROOF: Other actions with proper error handling
+  // ✅ ENHANCED: Load user status with caching and validation
   async loadUserStatus({ commit, state }) {
+    const startTime = Date.now();
+    
     try {
       commit('SET_LOADING', { type: 'status', loading: true });
       
-      const userId = getUserId(state);
-      if (!userId) {
-        commit('SET_USER_STATUS', 'free');
-        return { success: false, error: 'No user ID' };
+      // Check cache first
+      const now = Date.now();
+      if (state.cache.userStatusCache && 
+          state.cache.lastCacheUpdate && 
+          (now - state.cache.lastCacheUpdate) < state.cache.cacheExpiry) {
+        console.log('✅ Using cached user status:', state.cache.userStatusCache);
+        return { success: true, status: state.cache.userStatusCache, cached: true };
       }
       
-      console.log('🔍 Loading user status from server for:', userId);
+      const userId = getUserId(state);
+      if (!userId) {
+        console.warn('⚠️ No user ID found, defaulting to free status');
+        commit('SET_USER_STATUS', 'free');
+        return { success: false, error: 'No user ID', defaulted: true };
+      }
+      
+      console.log('🔍 Loading user status from server for:', userId.substring(0, 8) + '...');
       
       const { getUserStatus } = await import('@/api');
       const result = await getUserStatus(userId);
@@ -717,75 +1283,123 @@ const actions = {
         
         commit('SET_USER_STATUS', status);
         
+        // Update subscription details if available
         if (result.data?.subscriptionDetails) {
           commit('UPDATE_SUBSCRIPTION', {
             ...result.data.subscriptionDetails,
             plan: status,
-            status: status !== 'free' ? 'active' : 'inactive'
+            status: status !== 'free' ? 'active' : 'inactive',
+            lastSync: new Date().toISOString()
           });
         }
         
-        console.log('✅ User status loaded from server:', status);
-        return { success: true, status };
+        // Update cache
+        state.cache.userStatusCache = status;
+        state.cache.lastCacheUpdate = now;
+        
+        const duration = Date.now() - startTime;
+        console.log(`✅ User status loaded from server: ${status} (${duration}ms)`);
+        
+        return { success: true, status, duration };
       } else {
         console.warn('⚠️ Failed to load user status from server:', result?.error);
         commit('SET_USER_STATUS', 'free');
-        return { success: false, error: result?.error || 'Unknown error' };
+        commit('SET_ERROR', { 
+          message: 'Failed to load user status', 
+          context: 'loadUserStatus',
+          originalError: result?.error 
+        });
+        return { success: false, error: result?.error || 'Unknown error', defaulted: true };
       }
       
     } catch (error) {
       console.error('❌ Failed to load user status:', error);
       commit('SET_USER_STATUS', 'free');
-      return { success: false, error: error.message };
+      commit('SET_ERROR', { 
+        message: 'User status loading failed', 
+        context: 'loadUserStatus',
+        originalError: error.message 
+      });
+      return { success: false, error: error.message, defaulted: true };
       
     } finally {
       commit('SET_LOADING', { type: 'status', loading: false });
     }
   },
   
-  // ✅ BULLETPROOF: Initialize with proper error handling
+  // ✅ ENHANCED: Initialize with comprehensive error handling and performance tracking
   async initialize({ commit, dispatch, state }) {
+    const startTime = Date.now();
+    state.system.performance.startTime = startTime;
+    
     if (state.system.initialized) {
       console.log('ℹ️ Store already initialized');
-      return { success: true };
+      return { success: true, cached: true };
     }
     
     try {
-      console.log('🚀 Initializing user store...');
+      console.log('🚀 Initializing enhanced user store...');
       
-      // ✅ BULLETPROOF: Load from localStorage with error handling
-      const storedData = {
-        user: null,
-        status: null,
-        preferences: null,
-        promocodes: null
+      // ✅ BULLETPROOF: Load from localStorage with comprehensive error handling
+      const storedDataKeys = {
+        user: 'currentUser',
+        status: 'userStatus',
+        preferences: 'userPreferences',
+        promocodes: 'appliedPromocodes',
+        subscription: 'subscriptionDetails',
+        usage: 'usageData'
       };
       
-      try {
-        storedData.user = localStorage.getItem('currentUser');
-        storedData.status = localStorage.getItem('userStatus');
-        storedData.preferences = localStorage.getItem('userPreferences');
-        storedData.promocodes = localStorage.getItem('appliedPromocodes');
-      } catch (storageError) {
-        console.warn('⚠️ LocalStorage access error:', storageError);
+      const storedData = {};
+      const storageErrors = [];
+      
+      // Load all stored data with individual error handling
+      for (const [key, storageKey] of Object.entries(storedDataKeys)) {
+        try {
+          const stored = localStorage.getItem(storageKey);
+          storedData[key] = stored;
+        } catch (storageError) {
+          console.warn(`⚠️ Failed to read ${storageKey} from localStorage:`, storageError);
+          storageErrors.push({ key: storageKey, error: storageError.message });
+          storedData[key] = null;
+        }
+      }
+      
+      if (storageErrors.length > 0) {
+        commit('SET_ERROR', { 
+          message: 'Some localStorage data could not be read', 
+          context: 'initialize-storage',
+          details: storageErrors 
+        });
       }
       
       // ✅ BULLETPROOF: Restore user data with validation
       if (storedData.user) {
         try {
           const userData = JSON.parse(storedData.user);
-          if (userData && typeof userData === 'object') {
+          if (userData && typeof userData === 'object' && userData.email) {
             commit('SET_USER', userData);
+            console.log('✅ User data restored from localStorage');
+          } else {
+            console.warn('⚠️ Invalid stored user data, clearing...');
+            localStorage.removeItem('currentUser');
           }
         } catch (parseError) {
-          console.warn('⚠️ Invalid stored user data, clearing...');
+          console.warn('⚠️ Failed to parse stored user data:', parseError);
           localStorage.removeItem('currentUser');
         }
       }
       
       // ✅ BULLETPROOF: Restore status with validation
       if (storedData.status && typeof storedData.status === 'string') {
-        commit('SET_USER_STATUS', storedData.status);
+        const validStatuses = ['free', 'start', 'pro', 'premium'];
+        if (validStatuses.includes(storedData.status)) {
+          commit('SET_USER_STATUS', storedData.status);
+          console.log('✅ User status restored:', storedData.status);
+        } else {
+          console.warn('⚠️ Invalid stored status, defaulting to free:', storedData.status);
+          commit('SET_USER_STATUS', 'free');
+        }
       }
       
       // ✅ BULLETPROOF: Restore preferences with validation
@@ -794,9 +1408,10 @@ const actions = {
           const preferences = JSON.parse(storedData.preferences);
           if (preferences && typeof preferences === 'object') {
             commit('SET_PREFERENCES', preferences);
+            console.log('✅ Preferences restored from localStorage');
           }
         } catch (parseError) {
-          console.warn('⚠️ Invalid stored preferences, using defaults');
+          console.warn('⚠️ Invalid stored preferences, using defaults:', parseError);
         }
       }
       
@@ -805,49 +1420,138 @@ const actions = {
         try {
           const promocodes = JSON.parse(storedData.promocodes);
           if (Array.isArray(promocodes)) {
-            state.promocodes.applied = promocodes;
+            state.promocodes.applied = promocodes.filter(p => 
+              p && typeof p === 'object' && p.code && p.plan
+            );
+            console.log(`✅ ${state.promocodes.applied.length} promocodes restored`);
           }
         } catch (parseError) {
-          console.warn('⚠️ Invalid stored promocodes, resetting to empty array');
+          console.warn('⚠️ Invalid stored promocodes, resetting to empty array:', parseError);
           state.promocodes.applied = [];
+        }
+      }
+      
+      // ✅ BULLETPROOF: Restore subscription with validation
+      if (storedData.subscription) {
+        try {
+          const subscription = JSON.parse(storedData.subscription);
+          if (subscription && typeof subscription === 'object') {
+            commit('UPDATE_SUBSCRIPTION', subscription);
+            console.log('✅ Subscription data restored');
+          }
+        } catch (parseError) {
+          console.warn('⚠️ Invalid stored subscription, using defaults:', parseError);
+        }
+      }
+      
+      // ✅ BULLETPROOF: Restore usage with validation
+      if (storedData.usage) {
+        try {
+          const usage = JSON.parse(storedData.usage);
+          if (usage && typeof usage === 'object') {
+            commit('SET_USAGE', usage);
+            console.log('✅ Usage data restored');
+          }
+        } catch (parseError) {
+          console.warn('⚠️ Invalid stored usage, using defaults:', parseError);
         }
       }
       
       // ✅ BULLETPROOF: Load remote data if user exists
       const userId = state.currentUser?.firebaseId || localStorage.getItem('userId');
       if (userId) {
-        const promises = [
-          dispatch('loadUserStatus'),
-          dispatch('loadUsage'),
-          dispatch('checkMonthlyReset'),
-          dispatch('checkPendingPayments')
+        console.log('📡 Loading remote data for user:', userId.substring(0, 8) + '...');
+        
+        const remoteDataTasks = [
+          { name: 'loadUserStatus', task: () => dispatch('loadUserStatus') },
+          { name: 'loadUsage', task: () => dispatch('loadUsage') },
+          { name: 'checkMonthlyReset', task: () => dispatch('checkMonthlyReset') },
+          { name: 'checkPendingPayments', task: () => dispatch('checkPendingPayments') }
         ];
         
-        // Don't fail initialization if remote data fails
-        try {
-          await Promise.allSettled(promises);
-        } catch (remoteError) {
-          console.warn('⚠️ Some remote data failed to load:', remoteError);
+        // Execute tasks with individual error handling
+        const remoteResults = await Promise.allSettled(
+          remoteDataTasks.map(({ name, task }) => 
+            task().catch(error => ({ taskName: name, error: error.message }))
+          )
+        );
+        
+        const successes = remoteResults.filter(r => r.status === 'fulfilled').length;
+        const failures = remoteResults.filter(r => r.status === 'rejected');
+        
+        console.log(`📊 Remote data loading: ${successes}/${remoteDataTasks.length} successful`);
+        
+        if (failures.length > 0) {
+          console.warn('⚠️ Some remote data failed to load:', failures.map(f => f.reason));
+          commit('SET_ERROR', { 
+            message: 'Some remote data failed to load', 
+            context: 'initialize-remote',
+            failures: failures.length 
+          });
         }
       }
       
+      const initDuration = Date.now() - startTime;
+      state.system.performance.loadTime = initDuration;
+      
       commit('SET_INITIALIZED', true);
-      return { success: true };
+      
+      console.log(`✅ Store initialized successfully in ${initDuration}ms`, {
+        hasUser: !!state.currentUser,
+        userStatus: state.userStatus,
+        storageErrors: storageErrors.length,
+        remoteDataLoaded: !!userId
+      });
+      
+      return { 
+        success: true, 
+        duration: initDuration,
+        hasUser: !!state.currentUser,
+        userStatus: state.userStatus,
+        storageErrors: storageErrors.length
+      };
       
     } catch (error) {
-      console.error('❌ Initialization failed:', error);
+      console.error('❌ Initialization failed catastrophically:', error);
+      
       commit('SET_INITIALIZED', false);
-      return { success: false, error: error.message };
+      commit('SET_ERROR', { 
+        message: 'Store initialization failed', 
+        context: 'initialize-catastrophic',
+        originalError: error.message,
+        stack: error.stack 
+      });
+      
+      const initDuration = Date.now() - startTime;
+      
+      return { 
+        success: false, 
+        error: error.message,
+        duration: initDuration,
+        catastrophic: true
+      };
     }
   },
   
-  // ✅ BULLETPROOF: Load usage with error handling
+  // ✅ ENHANCED: Load usage with better caching and error handling
   async loadUsage({ commit, state }) {
+    const startTime = Date.now();
+    
     try {
       commit('SET_LOADING', { type: 'usage', loading: true });
       
+      // Check cache first
+      const now = Date.now();
+      if (state.cache.usageCache && 
+          state.cache.lastCacheUpdate && 
+          (now - state.cache.lastCacheUpdate) < state.cache.cacheExpiry) {
+        console.log('✅ Using cached usage data');
+        return { success: true, usage: state.cache.usageCache, cached: true };
+      }
+      
       const userId = getUserId(state);
       if (!userId) {
+        console.warn('⚠️ No user ID found for usage loading');
         return { success: false, error: 'No user ID' };
       }
       
@@ -858,22 +1562,43 @@ const actions = {
       if (usageInfo?.success) {
         commit('SET_USAGE', usageInfo.usage);
         
+        // Auto-sync status if different
         if (usageInfo.plan && usageInfo.plan !== state.userStatus) {
+          console.log(`🔄 Auto-syncing status from usage: ${state.userStatus} → ${usageInfo.plan}`);
           commit('SET_USER_STATUS', usageInfo.plan);
         }
         
+        // Update limits if provided
         if (usageInfo.limits) {
-          commit('SET_USAGE_LIMITS', { [usageInfo.plan]: usageInfo.limits });
+          commit('SET_USAGE_LIMITS', { [usageInfo.plan || state.userStatus]: usageInfo.limits });
         }
         
-        console.log('✅ Usage data loaded from server');
-        return { success: true, usage: usageInfo.usage };
+        const duration = Date.now() - startTime;
+        console.log(`✅ Usage data loaded from server (${duration}ms):`, {
+          messages: usageInfo.usage?.messages || 0,
+          images: usageInfo.usage?.images || 0,
+          plan: usageInfo.plan || state.userStatus
+        });
+        
+        return { success: true, usage: usageInfo.usage, duration };
       }
+      
+      console.warn('⚠️ Failed to load usage from server:', usageInfo?.error);
+      commit('SET_ERROR', { 
+        message: 'Usage loading failed', 
+        context: 'loadUsage',
+        originalError: usageInfo?.error 
+      });
       
       return { success: false, error: usageInfo?.error || 'Unknown error' };
       
     } catch (error) {
       console.error('❌ Failed to load usage:', error);
+      commit('SET_ERROR', { 
+        message: 'Usage loading exception', 
+        context: 'loadUsage',
+        originalError: error.message 
+      });
       return { success: false, error: error.message };
       
     } finally {
@@ -881,15 +1606,38 @@ const actions = {
     }
   },
   
-  // ✅ BULLETPROOF: Apply promocode with comprehensive error handling
+  // ✅ ENHANCED: Apply promocode with comprehensive validation and error handling
   async applyPromocode({ commit, state, dispatch }, { promoCode, plan }) {
+    const startTime = Date.now();
+    
     try {
+      // Input validation
+      if (!promoCode || typeof promoCode !== 'string' || promoCode.trim().length < 3) {
+        return { success: false, error: 'Промокод должен содержать не менее 3 символов' };
+      }
+      
+      if (!plan || !['start', 'pro', 'premium'].includes(plan)) {
+        return { success: false, error: 'Неверный план подписки' };
+      }
+      
       const userId = getUserId(state);
       if (!userId) {
         return { success: false, error: 'Пользователь не найден' };
       }
       
-      console.log('🎟️ Applying promocode to server:', { promoCode, plan });
+      const normalizedCode = promoCode.trim().toUpperCase();
+      
+      // Check if already applied
+      const existingPromocode = state.promocodes.applied.find(p => p.code === normalizedCode);
+      if (existingPromocode) {
+        return { 
+          success: false, 
+          error: 'Этот промокод уже был применён',
+          alreadyApplied: true 
+        };
+      }
+      
+      console.log('🎟️ Applying promocode to server:', { code: normalizedCode, plan, userId: userId.substring(0, 8) + '...' });
       
       const token = await getUserToken();
       const headers = { 'Content-Type': 'application/json' };
@@ -897,340 +1645,681 @@ const actions = {
       
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
       if (!baseUrl) {
-        return { success: false, error: 'API configuration error' };
+        commit('SET_ERROR', { message: 'API configuration error', context: 'applyPromocode' });
+        return { success: false, error: 'Ошибка конфигурации приложения' };
       }
       
-      const response = await fetch(`${baseUrl}/api/payments/promo-code`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          userId,
-          plan,
-          promoCode: promoCode.trim().toUpperCase()
-        })
-      });
+      const response = await Promise.race([
+        fetch(`${baseUrl}/api/payments/promo-code`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            userId,
+            plan,
+            promoCode: normalizedCode
+          })
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 10000)
+        )
+      ]);
       
       const result = await response.json();
       
       if (result?.success) {
         const oldStatus = state.userStatus;
         
-        // Update subscription
+        // Update subscription through dedicated action
         await dispatch('updateSubscription', {
           plan,
           source: 'promocode',
           details: {
-            promocode: promoCode.trim().toUpperCase(),
+            promocode: normalizedCode,
             appliedAt: new Date().toISOString(),
+            originalResponse: result.data || {},
             ...result.data?.subscriptionDetails
           }
         });
         
-        // Track promocode
+        // Track promocode application
         commit('ADD_PROMOCODE', {
-          code: promoCode.trim().toUpperCase(),
+          code: normalizedCode,
           plan,
-          oldPlan: oldStatus
+          oldPlan: oldStatus,
+          source: 'api',
+          details: result.data || {}
         });
         
-        // Force update
+        // Force global update
         commit('FORCE_UPDATE');
         
-        console.log(`✅ Promocode applied: ${oldStatus} → ${plan}`);
+        const duration = Date.now() - startTime;
+        console.log(`✅ Promocode applied successfully: ${oldStatus} → ${plan} (${duration}ms)`);
         
         return {
           success: true,
           message: result.message || `Промокод успешно применён! Подписка "${plan.toUpperCase()}" активирована.`,
           oldPlan: oldStatus,
-          newPlan: plan
+          newPlan: plan,
+          duration
         };
       }
       
-      return { 
-        success: false, 
-        error: result?.error || 'Не удалось применить промокод' 
-      };
+      // Handle server errors
+      const serverError = result?.error || 'Не удалось применить промокод';
+      console.warn('⚠️ Promocode application failed:', serverError);
+      
+      commit('SET_ERROR', { 
+        message: serverError, 
+        context: 'applyPromocode-server',
+        promocode: normalizedCode,
+        plan 
+      });
+      
+      return { success: false, error: serverError };
       
     } catch (error) {
       console.error('❌ Promocode application failed:', error);
       
-      const errorMessages = {
-        400: 'Неверный промокод или данные',
-        404: 'Промокод не найден',
-        403: 'Промокод уже использован или недоступен'
-      };
+      let userFriendlyError = 'Произошла ошибка при применении промокода';
+      
+      if (error.message === 'Request timeout') {
+        userFriendlyError = 'Истекло время ожидания. Попробуйте снова.';
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        userFriendlyError = 'Ошибка сети. Проверьте подключение к интернету.';
+      }
+      
+      // Map HTTP status codes to user-friendly messages
+      if (error.status) {
+        const errorMessages = {
+          400: 'Неверный промокод или данные',
+          401: 'Необходимо войти в систему',
+          403: 'Промокод недоступен или уже использован',
+          404: 'Промокод не найден',
+          409: 'Промокод уже был применён',
+          429: 'Слишком много запросов. Попробуйте позже.',
+          500: 'Ошибка сервера. Попробуйте позже.'
+        };
+        userFriendlyError = errorMessages[error.status] || userFriendlyError;
+      }
+      
+      commit('SET_ERROR', { 
+        message: userFriendlyError, 
+        context: 'applyPromocode-exception',
+        originalError: error.message,
+        statusCode: error.status 
+      });
       
       return {
         success: false,
-        error: errorMessages[error.status] || 'Произошла ошибка при применении промокода'
+        error: userFriendlyError,
+        technical: error.message
       };
     }
   },
   
-  // ✅ BULLETPROOF: Validate promocode with error handling
-  async validatePromocode({ state }, promoCode) {
+  // ✅ ENHANCED: Validate promocode with caching
+  async validatePromocode({ state, commit }, promoCode) {
     try {
-      if (!promoCode || promoCode.length <= 3) {
-        return { valid: false, error: 'Промокод слишком короткий' };
+      if (!promoCode || typeof promoCode !== 'string' || promoCode.trim().length < 3) {
+        return { valid: false, error: 'Промокод должен содержать не менее 3 символов' };
+      }
+      
+      const normalizedCode = promoCode.trim().toUpperCase();
+      
+      // Check cache first
+      if (state.promocodes.validationCache.has(normalizedCode)) {
+        const cached = state.promocodes.validationCache.get(normalizedCode);
+        const age = Date.now() - cached.timestamp;
+        if (age < 300000) { // 5 minutes cache
+          console.log('✅ Using cached promocode validation:', normalizedCode);
+          return cached.result;
+        }
       }
       
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
       if (!baseUrl) {
-        return { valid: false, error: 'API configuration error' };
+        return { valid: false, error: 'Ошибка конфигурации приложения' };
       }
       
-      const response = await fetch(
-        `${baseUrl}/api/promocodes/validate/${promoCode.trim().toUpperCase()}`
-      );
+      const response = await Promise.race([
+        fetch(`${baseUrl}/api/promocodes/validate/${normalizedCode}`),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Validation timeout')), 5000)
+        )
+      ]);
       
       const result = await response.json();
       
-      if (result?.success && result.valid) {
-        return {
-          valid: true,
-          data: result.data,
-          message: `Промокод действителен! Предоставляет: ${result.data?.grantsPlan?.toUpperCase()} план`
-        };
+      const validationResult = {
+        valid: result?.success && result.valid,
+        data: result.data || null,
+        error: result?.error || null,
+        message: result?.success && result.valid 
+          ? `Промокод действителен! Предоставляет: ${result.data?.grantsPlan?.toUpperCase()} план`
+          : result?.error || 'Промокод недействителен'
+      };
+      
+      // Cache the result
+      state.promocodes.validationCache.set(normalizedCode, {
+        result: validationResult,
+        timestamp: Date.now()
+      });
+      
+      // Limit cache size
+      if (state.promocodes.validationCache.size > 50) {
+        const firstKey = state.promocodes.validationCache.keys().next().value;
+        state.promocodes.validationCache.delete(firstKey);
       }
       
-      return { 
-        valid: false, 
-        error: result?.error || 'Промокод недействителен' 
-      };
+      return validationResult;
       
     } catch (error) {
       console.error('❌ Promocode validation failed:', error);
       
-      const errorMessages = {
-        404: 'Промокод не найден',
-        400: 'Неверный формат промокода'
-      };
+      let userFriendlyError = 'Ошибка проверки промокода';
+      
+      if (error.message === 'Validation timeout') {
+        userFriendlyError = 'Истекло время ожидания проверки';
+      } else if (error.status) {
+        const errorMessages = {
+          404: 'Промокод не найден',
+          400: 'Неверный формат промокода',
+          429: 'Слишком много запросов проверки'
+        };
+        userFriendlyError = errorMessages[error.status] || userFriendlyError;
+      }
       
       return {
         valid: false,
-        error: errorMessages[error.status] || 'Ошибка проверки промокода'
+        error: userFriendlyError
       };
     }
   },
-  // Add this method to your actions object in src/store/user.js
-async updateSubscription({ commit, dispatch }, { plan, source = 'payment', details = {} }) {
-  try {
-    console.log('🔄 Updating subscription:', { plan, source, details });
-    
-    const subscriptionData = {
-      plan: plan || 'free',
-      status: (plan && plan !== 'free') ? 'active' : 'inactive',
-      source,
-      startDate: new Date().toISOString(),
-      expiryDate: source === 'promocode' ? 
-        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() :
-        new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-      details: details || {}
-    };
-    
-    // Update all related state
-    commit('SET_USER_STATUS', plan || 'free');
-    commit('UPDATE_SUBSCRIPTION', subscriptionData);
-    commit('UPDATE_FEATURES');
-    commit('FORCE_UPDATE');
-    
-    // Persistent storage
-    localStorage.setItem('userStatus', plan || 'free');
-    localStorage.setItem('subscriptionDetails', JSON.stringify(subscriptionData));
-    
-    // Global event broadcasting
-    if (typeof window !== 'undefined' && window.eventBus) {
-      window.eventBus.emit('userStatusChanged', {
-        oldStatus: 'free', // Track this if needed
-        newStatus: plan || 'free',
-        source,
-        timestamp: Date.now(),
-        subscriptionDetails: subscriptionData
-      });
-    }
-    
-    // Custom DOM event
-    if (typeof window !== 'undefined') {
-      const event = new CustomEvent('userSubscriptionChanged', {
-        detail: {
-          plan: plan || 'free',
-          source,
-          subscriptionData,
-          timestamp: Date.now()
-        }
-      });
-      window.dispatchEvent(event);
-    }
-    
-    await dispatch('loadUsage');
-    
-    console.log('✅ Subscription updated successfully:', subscriptionData);
-    return { success: true, subscriptionData };
-    
-  } catch (error) {
-    console.error('❌ Failed to update subscription:', error);
-    return { success: false, error: error.message };
-  }
-},
   
-  // ✅ BULLETPROOF: Check monthly reset
+  // ✅ ENHANCED: Update subscription with comprehensive state management
+  async updateSubscription({ commit, dispatch }, { plan, source = 'payment', details = {} }) {
+    const startTime = Date.now();
+    
+    try {
+      console.log('🔄 Updating subscription:', { plan, source, hasDetails: Object.keys(details).length > 0 });
+      
+      // Validate plan
+      const validPlans = ['free', 'start', 'pro', 'premium'];
+      const validatedPlan = validPlans.includes(plan) ? plan : 'free';
+      
+      if (plan !== validatedPlan) {
+        console.warn(`⚠️ Invalid plan "${plan}" normalized to "${validatedPlan}"`);
+      }
+      
+      // Calculate expiry dates based on source
+      let expiryDate = null;
+      if (validatedPlan !== 'free') {
+        const now = new Date();
+        switch (source) {
+          case 'promocode':
+            expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+            break;
+          case 'payment':
+            expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
+            break;
+          case 'gift':
+            expiryDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days
+            break;
+          default:
+            expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // Default 30 days
+        }
+      }
+      
+      const subscriptionData = {
+        plan: validatedPlan,
+        status: (validatedPlan !== 'free') ? 'active' : 'inactive',
+        source,
+        startDate: new Date().toISOString(),
+        expiryDate: expiryDate ? expiryDate.toISOString() : null,
+        isAutoRenew: source === 'payment',
+        details: {
+          ...details,
+          updatedAt: new Date().toISOString(),
+          updatedBy: 'updateSubscription'
+        },
+        lastSync: new Date().toISOString()
+      };
+      
+      // Update all related state atomically
+      const oldStatus = state.userStatus;
+      
+      commit('SET_USER_STATUS', validatedPlan);
+      commit('UPDATE_SUBSCRIPTION', subscriptionData);
+      commit('UPDATE_FEATURES'); // Recalculate features based on new plan
+      commit('FORCE_UPDATE');
+      
+      // Persistent storage
+      try {
+        localStorage.setItem('userStatus', validatedPlan);
+        localStorage.setItem('subscriptionDetails', JSON.stringify(subscriptionData));
+        localStorage.setItem('lastSubscriptionUpdate', Date.now().toString());
+      } catch (storageError) {
+        console.warn('⚠️ Failed to persist subscription data:', storageError);
+      }
+      
+      // Enhanced global event broadcasting
+      const eventData = {
+        oldStatus,
+        newStatus: validatedPlan,
+        source,
+        subscriptionData: { ...subscriptionData },
+        timestamp: Date.now(),
+        duration: Date.now() - startTime
+      };
+      
+      // Multiple event types for different listeners
+      const events = [
+        'userStatusChanged',
+        'subscriptionUpdated',
+        'userSubscriptionChanged', // Legacy compatibility
+        'planChanged'
+      ];
+      
+      events.forEach(eventName => {
+        triggerGlobalEvent(eventName, eventData);
+      });
+      
+      // Reload usage data with new limits
+      try {
+        await dispatch('loadUsage');
+      } catch (usageError) {
+        console.warn('⚠️ Failed to reload usage after subscription update:', usageError);
+      }
+      
+      const duration = Date.now() - startTime;
+      console.log(`✅ Subscription updated successfully: ${oldStatus} → ${validatedPlan} (${duration}ms)`, {
+        source,
+        expiryDate: subscriptionData.expiryDate,
+        isActive: subscriptionData.status === 'active'
+      });
+      
+      return { 
+        success: true, 
+        subscriptionData: { ...subscriptionData },
+        oldStatus,
+        newStatus: validatedPlan,
+        duration
+      };
+      
+    } catch (error) {
+      console.error('❌ Failed to update subscription:', error);
+      
+      commit('SET_ERROR', { 
+        message: 'Subscription update failed', 
+        context: 'updateSubscription',
+        originalError: error.message,
+        plan,
+        source 
+      });
+      
+      return { 
+        success: false, 
+        error: error.message,
+        duration: Date.now() - startTime
+      };
+    }
+  },
+  
+  // ✅ ENHANCED: Check monthly reset with better date handling
   async checkMonthlyReset({ commit, dispatch, state }) {
     try {
       const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${now.getMonth()}`;
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       
       const userId = getUserId(state);
       const lastResetKey = `lastMonthlyReset_${userId}`;
       const lastReset = localStorage.getItem(lastResetKey);
       
+      console.log('🗓️ Checking monthly usage reset:', { currentMonth, lastReset, hasUserId: !!userId });
+      
       if (!lastReset || lastReset !== currentMonth) {
-        console.log('🔄 Monthly reset triggered');
+        console.log('🔄 Monthly reset triggered for month:', currentMonth);
         
+        // Reset local usage
         commit('RESET_USAGE');
-        localStorage.setItem(lastResetKey, currentMonth);
         
-        // Try backend reset
-        try {
-          await resetMonthlyUsage();
-        } catch (err) {
-          console.warn('⚠️ Backend reset warning:', err.message);
+        // Update localStorage
+        if (userId) {
+          localStorage.setItem(lastResetKey, currentMonth);
         }
         
-        // Reload usage
-        await dispatch('loadUsage');
+        // Try backend reset (non-blocking)
+        try {
+          const resetResult = await resetMonthlyUsage();
+          if (resetResult?.success) {
+            console.log('✅ Backend monthly reset successful');
+          } else {
+            console.warn('⚠️ Backend monthly reset failed:', resetResult?.error);
+          }
+        } catch (resetError) {
+          console.warn('⚠️ Backend reset error (non-critical):', resetError.message);
+        }
         
-        return { success: true, reset: true };
+        // Reload fresh usage data
+        try {
+          await dispatch('loadUsage');
+        } catch (loadError) {
+          console.warn('⚠️ Failed to reload usage after reset:', loadError);
+        }
+        
+        // Trigger global event
+        triggerGlobalEvent('monthlyUsageReset', {
+          month: currentMonth,
+          userId,
+          timestamp: Date.now()
+        });
+        
+        return { success: true, reset: true, month: currentMonth };
       }
       
-      return { success: true, reset: false };
+      return { success: true, reset: false, month: currentMonth };
       
     } catch (error) {
       console.error('❌ Monthly reset check failed:', error);
+      
+      commit('SET_ERROR', { 
+        message: 'Monthly reset check failed', 
+        context: 'checkMonthlyReset',
+        originalError: error.message 
+      });
+      
       return { success: false, error: error.message };
     }
   },
   
-  // ✅ BULLETPROOF: Check pending payments
+  // ✅ ENHANCED: Check pending payments with better error handling and retry logic
   async checkPendingPayments({ commit, state, dispatch }) {
+    const startTime = Date.now();
+    
     try {
       commit('SET_LOADING', { type: 'payments', loading: true });
       
       const userId = getUserId(state);
-      if (!userId) return { success: false, error: 'No user ID' };
+      if (!userId) {
+        console.warn('⚠️ No user ID for pending payments check');
+        return { success: false, error: 'No user ID' };
+      }
       
-      // Rate limiting
+      // Rate limiting - avoid too frequent checks
       const now = Date.now();
       const lastCheck = state.payments.lastCheck;
-      if (lastCheck && (now - lastCheck) < 300000) { // 5 minutes
-        return { success: true, message: 'Recently checked' };
+      const minInterval = 300000; // 5 minutes
+      
+      if (lastCheck && (now - lastCheck) < minInterval) {
+        const remaining = Math.ceil((minInterval - (now - lastCheck)) / 60000);
+        console.log(`ℹ️ Payment check rate limited, ${remaining} minutes remaining`);
+        return { success: true, message: `Recently checked, wait ${remaining} minutes`, rateLimited: true };
       }
       
       console.log('🔍 Checking pending payments on server...');
       
-      const pendingIds = JSON.parse(localStorage.getItem(`pendingPayments_${userId}`) || '[]');
-      let statusChanged = false;
+      // Get pending payment IDs from localStorage
+      const pendingStorageKey = `pendingPayments_${userId}`;
+      let pendingIds = [];
       
+      try {
+        const stored = localStorage.getItem(pendingStorageKey);
+        pendingIds = stored ? JSON.parse(stored) : [];
+        if (!Array.isArray(pendingIds)) {
+          pendingIds = [];
+        }
+      } catch (parseError) {
+        console.warn('⚠️ Failed to parse pending payments from localStorage:', parseError);
+        pendingIds = [];
+      }
+      
+      console.log(`📋 Found ${pendingIds.length} pending payments to check`);
+      
+      if (pendingIds.length === 0) {
+        commit('SET_PENDING_PAYMENTS', []);
+        return { success: true, message: 'No pending payments', checkedTransactions: 0 };
+      }
+      
+      let statusChanged = false;
+      let completedPayments = 0;
+      let failedChecks = 0;
+      const completedTransactionIds = [];
+      
+      // Check each pending payment
       for (const transactionId of pendingIds) {
         try {
-          const result = await checkPaymentStatus(transactionId, userId);
+          console.log('🔍 Checking transaction:', transactionId);
           
-          if (result?.success && result.transaction?.state === 2) {
-            console.log('✅ Payment completed:', transactionId);
+          const result = await Promise.race([
+            checkPaymentStatus(transactionId, userId),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Payment check timeout')), 10000)
+            )
+          ]);
+          
+          if (result?.success && result.transaction) {
+            const transaction = result.transaction;
             
-            // Determine plan
-            let newStatus = 'free';
-            if (result.transaction.amount === 260000) newStatus = 'start';
-            else if (result.transaction.amount === 455000) newStatus = 'pro';
-            
-            if (newStatus !== 'free' && newStatus !== state.userStatus) {
-              await dispatch('updateSubscription', {
-                plan: newStatus,
-                source: 'payment',
-                details: { transactionId, amount: result.transaction.amount }
+            // Payment completed successfully
+            if (transaction.state === 2) {
+              console.log('✅ Payment completed:', transactionId, 'Amount:', transaction.amount);
+              
+              // Determine plan based on amount
+              let newPlan = 'free';
+              if (transaction.amount === 260000) newPlan = 'start';      // 260,000 UZS
+              else if (transaction.amount === 455000) newPlan = 'pro';   // 455,000 UZS
+              else if (transaction.amount >= 100000) newPlan = 'start';  // Fallback for any significant amount
+              
+              // Update subscription if plan changed
+              if (newPlan !== 'free' && newPlan !== state.userStatus) {
+                const updateResult = await dispatch('updateSubscription', {
+                  plan: newPlan,
+                  source: 'payment',
+                  details: { 
+                    transactionId, 
+                    amount: transaction.amount,
+                    currency: 'UZS',
+                    completedAt: new Date(transaction.perform_time || Date.now()).toISOString()
+                  }
+                });
+                
+                if (updateResult.success) {
+                  statusChanged = true;
+                  console.log(`🔄 Subscription upgraded: ${state.userStatus} → ${newPlan}`);
+                }
+              }
+              
+              // Add to payment history
+              commit('ADD_PAYMENT', {
+                id: transactionId,
+                amount: transaction.amount,
+                currency: 'UZS',
+                status: 'completed',
+                plan: newPlan,
+                method: 'payme',
+                timestamp: transaction.perform_time || Date.now(),
+                details: {
+                  ...transaction,
+                  processedAt: new Date().toISOString()
+                }
               });
-              statusChanged = true;
+              
+              completedTransactionIds.push(transactionId);
+              completedPayments++;
+              
+            } else if (transaction.state === -1 || transaction.state === -2) {
+              // Payment failed or cancelled
+              console.log('❌ Payment failed/cancelled:', transactionId, 'State:', transaction.state);
+              
+              commit('ADD_PAYMENT', {
+                id: transactionId,
+                amount: transaction.amount || 0,
+                currency: 'UZS',
+                status: transaction.state === -1 ? 'cancelled' : 'failed',
+                plan: 'free',
+                method: 'payme',
+                timestamp: transaction.cancel_time || Date.now(),
+                details: {
+                  ...transaction,
+                  processedAt: new Date().toISOString()
+                }
+              });
+              
+              completedTransactionIds.push(transactionId); // Remove from pending
             }
-            
-            // Remove from pending
-            const updatedPending = pendingIds.filter(id => id !== transactionId);
-            localStorage.setItem(`pendingPayments_${userId}`, JSON.stringify(updatedPending));
-            
-            // Add to history
-            commit('ADD_PAYMENT', {
-              id: transactionId,
-              amount: result.transaction.amount,
-              status: 'completed',
-              timestamp: result.transaction.perform_time || Date.now()
-            });
+            // If state is 1 (pending), keep in pending list
+          } else {
+            console.warn('⚠️ Invalid payment check response for:', transactionId);
+            failedChecks++;
           }
-        } catch (err) {
-          console.warn(`⚠️ Failed to check transaction ${transactionId}:`, err.message);
+          
+        } catch (checkError) {
+          console.warn(`⚠️ Failed to check transaction ${transactionId}:`, checkError.message);
+          failedChecks++;
+          
+          // Don't remove from pending on temporary failures
+          if (checkError.message !== 'Payment check timeout') {
+            // For persistent errors, consider removing after multiple attempts
+            // This would require more sophisticated retry logic
+          }
         }
       }
       
-      commit('SET_PENDING_PAYMENTS', pendingIds);
+      // Update pending payments list
+      const updatedPendingIds = pendingIds.filter(id => !completedTransactionIds.includes(id));
       
-      return { success: true, statusChanged, checkedTransactions: pendingIds.length };
+      try {
+        localStorage.setItem(pendingStorageKey, JSON.stringify(updatedPendingIds));
+      } catch (storageError) {
+        console.warn('⚠️ Failed to update pending payments in localStorage:', storageError);
+      }
+      
+      commit('SET_PENDING_PAYMENTS', updatedPendingIds);
+      
+      const duration = Date.now() - startTime;
+      const summary = {
+        success: true,
+        statusChanged,
+        checkedTransactions: pendingIds.length,
+        completedPayments,
+        failedChecks,
+        remainingPending: updatedPendingIds.length,
+        duration
+      };
+      
+      console.log(`✅ Pending payments check completed (${duration}ms):`, summary);
+      
+      // Trigger global event if status changed
+      if (statusChanged) {
+        triggerGlobalEvent('paymentStatusChanged', {
+          completedPayments,
+          newStatus: state.userStatus,
+          timestamp: Date.now()
+        });
+      }
+      
+      return summary;
       
     } catch (error) {
       console.error('❌ Failed to check pending payments:', error);
-      return { success: false, error: error.message };
+      
+      commit('SET_ERROR', { 
+        message: 'Pending payments check failed', 
+        context: 'checkPendingPayments',
+        originalError: error.message 
+      });
+      
+      return { 
+        success: false, 
+        error: error.message,
+        duration: Date.now() - startTime
+      };
       
     } finally {
       commit('SET_LOADING', { type: 'payments', loading: false });
     }
   },
   
-  // ✅ BULLETPROOF: Update subscription
-  async updateSubscription({ commit, dispatch }, { plan, source = 'payment', details = {} }) {
+  // ✅ ENHANCED: Force update with better event coordination
+  async forceUpdate({ commit, state }) {
     try {
-      const subscriptionData = {
-        plan: plan || 'free',
-        status: (plan && plan !== 'free') ? 'active' : 'inactive',
-        source,
-        startDate: new Date().toISOString(),
-        details: details || {}
+      const timestamp = Date.now();
+      const oldCounter = state.system.forceUpdateCounter;
+      
+      commit('FORCE_UPDATE');
+      commit('UPDATE_FEATURES'); // Ensure features are current
+      
+      // Additional Vue reactivity triggers
+      if (typeof window !== 'undefined') {
+        // Multiple event types for maximum compatibility
+        const events = [
+          'forceUpdate',
+          'globalForceUpdate',
+          'vueReactivityUpdate',
+          'storeForceUpdate'
+        ];
+        
+        events.forEach(eventName => {
+          triggerGlobalEvent(eventName, {
+            source: 'forceUpdate-action',
+            counter: state.system.forceUpdateCounter,
+            oldCounter,
+            timestamp
+          });
+        });
+        
+        // Try to trigger Vue reactivity if available
+        setTimeout(() => {
+          if (window.Vue?.nextTick) {
+            window.Vue.nextTick(() => {
+              console.log('🔄 Vue nextTick reactivity triggered');
+            });
+          }
+        }, 10);
+      }
+      
+      console.log(`🔄 Force update completed: ${oldCounter} → ${state.system.forceUpdateCounter}`);
+      
+      return { 
+        success: true, 
+        counter: state.system.forceUpdateCounter,
+        oldCounter,
+        timestamp
       };
       
-      commit('SET_USER_STATUS', plan || 'free');
-      commit('UPDATE_SUBSCRIPTION', subscriptionData);
-      
-      // Reload usage with new limits
-      await dispatch('loadUsage');
-      
-      console.log('✅ Subscription updated:', plan);
-      return { success: true };
-      
-    } catch (error) {
-      console.error('❌ Failed to update subscription:', error);
-      return { success: false, error: error.message };
-    }
-  },
-  
-  // ✅ BULLETPROOF: Force update
-  async forceUpdate({ commit }) {
-    try {
-      commit('FORCE_UPDATE');
-      commit('UPDATE_FEATURES');
-      return { success: true };
     } catch (error) {
       console.error('❌ Force update failed:', error);
+      
+      commit('SET_ERROR', { 
+        message: 'Force update failed', 
+        context: 'forceUpdate',
+        originalError: error.message 
+      });
+      
       return { success: false, error: error.message };
     }
   },
   
-  // ✅ BULLETPROOF: Logout
-  async logout({ commit }) {
+  // ✅ ENHANCED: Logout with comprehensive cleanup
+  async logout({ commit, state }) {
+    const startTime = Date.now();
+    
     try {
-      console.log('👋 Logging out user...');
+      console.log('👋 Enhanced logout process starting...');
       
+      const userId = getUserId(state);
+      
+      // Clear all user data from store
       commit('CLEAR_USER');
       
-      // Clear all localStorage
+      // Enhanced localStorage cleanup
       const keysToRemove = [
         'userId', 'firebaseUserId', 'currentUser', 'token', 
         'userStatus', 'subscriptionDetails', 'subscriptionExpiry',
-        'userPreferences', 'appliedPromocodes'
+        'userPreferences', 'appliedPromocodes', 'usageData',
+        'paymentHistory', 'lastUserUpdate', 'lastUserSync',
+        'statusUpdateTime', 'promocodesLastUpdate', 'subscriptionLastUpdate'
       ];
       
       keysToRemove.forEach(key => {
@@ -1241,28 +2330,382 @@ async updateSubscription({ commit, dispatch }, { plan, source = 'payment', detai
         }
       });
       
-      // Clear pending payments
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('pendingPayments_') || key.startsWith('lastMonthlyReset_')) {
-          try {
+      // Clear dynamic user-specific keys
+      if (userId) {
+        const dynamicKeyPrefixes = [
+          'pendingPayments_',
+          'lastMonthlyReset_',
+          'promocodeCache_',
+          'userCache_'
+        ];
+        
+        try {
+          Object.keys(localStorage).forEach(key => {
+            if (dynamicKeyPrefixes.some(prefix => key.startsWith(prefix + userId))) {
+              localStorage.removeItem(key);
+            }
+          });
+        } catch (error) {
+          console.warn('⚠️ Failed to clear dynamic localStorage keys:', error);
+        }
+      }
+      
+      // Clear any remaining user-specific keys
+      try {
+        Object.keys(localStorage).forEach(key => {
+          const userSpecificPatterns = [
+            /^pendingPayments_/,
+            /^lastMonthlyReset_/,
+            /^promocodeCache_/,
+            /^userSession_/
+          ];
+          
+          if (userSpecificPatterns.some(pattern => pattern.test(key))) {
             localStorage.removeItem(key);
-          } catch (storageError) {
-            console.warn(`⚠️ Failed to remove ${key} from localStorage:`, storageError);
           }
+        });
+      } catch (error) {
+        console.warn('⚠️ Failed to clear pattern-based localStorage keys:', error);
+      }
+      
+      // Clear any cached data
+      if (state.cache) {
+        state.cache.userStatusCache = null;
+        state.cache.usageCache = null;
+        state.cache.lastCacheUpdate = null;
+      }
+      
+      // Clear validation cache
+      if (state.promocodes?.validationCache) {
+        state.promocodes.validationCache.clear();
+      }
+      
+      // Enhanced global event broadcasting
+      const logoutData = {
+        userId: userId ? userId.substring(0, 8) + '...' : null,
+        timestamp: Date.now(),
+        duration: Date.now() - startTime,
+        source: 'enhanced-logout'
+      };
+      
+      const logoutEvents = [
+        'userLoggedOut',
+        'userCleared', 
+        'sessionEnded',
+        'authStatusChanged'
+      ];
+      
+      logoutEvents.forEach(eventName => {
+        triggerGlobalEvent(eventName, logoutData);
+      });
+      
+      const duration = Date.now() - startTime;
+      console.log(`✅ Enhanced logout completed successfully (${duration}ms)`, {
+        clearedUserId: userId ? userId.substring(0, 8) + '...' : 'none',
+        keysRemoved: keysToRemove.length
+      });
+      
+      return { 
+        success: true, 
+        duration,
+        keysCleared: keysToRemove.length,
+        userId: userId ? userId.substring(0, 8) + '...' : null
+      };
+      
+    } catch (error) {
+      console.error('❌ Enhanced logout error:', error);
+      
+      // Even if logout fails, try to clear critical data
+      try {
+        commit('CLEAR_USER');
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('token');
+      } catch (emergencyError) {
+        console.error('❌ Emergency cleanup also failed:', emergencyError);
+      }
+      
+      return { 
+        success: false, 
+        error: error.message,
+        duration: Date.now() - startTime
+      };
+    }
+  },
+  
+  // ✅ NEW: Sync user data from server
+  async syncUserData({ commit, dispatch, state }) {
+    const startTime = Date.now();
+    
+    try {
+      commit('SET_LOADING', { type: 'sync', loading: true });
+      state.system.syncInProgress = true;
+      
+      const userId = getUserId(state);
+      if (!userId) {
+        return { success: false, error: 'No user ID for sync' };
+      }
+      
+      console.log('🔄 Syncing user data from server...');
+      
+      // Sync multiple data sources in parallel
+      const syncTasks = [
+        { name: 'status', task: () => dispatch('loadUserStatus') },
+        { name: 'usage', task: () => dispatch('loadUsage') },
+        { name: 'payments', task: () => dispatch('checkPendingPayments') },
+        { name: 'monthlyReset', task: () => dispatch('checkMonthlyReset') }
+      ];
+      
+      const results = await Promise.allSettled(
+        syncTasks.map(({ name, task }) => 
+          task().then(result => ({ name, result }))
+        )
+      );
+      
+      const successes = results.filter(r => r.status === 'fulfilled').length;
+      const failures = results.filter(r => r.status === 'rejected');
+      
+      const syncSummary = {
+        success: successes > 0,
+        totalTasks: syncTasks.length,
+        successful: successes,
+        failed: failures.length,
+        duration: Date.now() - startTime
+      };
+      
+      if (failures.length > 0) {
+        console.warn(`⚠️ Sync partially failed: ${successes}/${syncTasks.length} successful`);
+        failures.forEach(f => console.warn('  - Sync failure:', f.reason));
+      } else {
+        console.log(`✅ Full sync completed successfully (${syncSummary.duration}ms)`);
+      }
+      
+      commit('FORCE_UPDATE');
+      
+      triggerGlobalEvent('userDataSynced', {
+        ...syncSummary,
+        timestamp: Date.now()
+      });
+      
+      return syncSummary;
+      
+    } catch (error) {
+      console.error('❌ User data sync failed:', error);
+      
+      commit('SET_ERROR', { 
+        message: 'User data sync failed', 
+        context: 'syncUserData',
+        originalError: error.message 
+      });
+      
+      return { 
+        success: false, 
+        error: error.message,
+        duration: Date.now() - startTime
+      };
+      
+    } finally {
+      commit('SET_LOADING', { type: 'sync', loading: false });
+      state.system.syncInProgress = false;
+    }
+  },
+  
+  // ✅ NEW: Add pending payment for tracking
+  async addPendingPayment({ commit, state }, { transactionId, amount, plan }) {
+    try {
+      if (!transactionId || !amount) {
+        return { success: false, error: 'Missing transaction details' };
+      }
+      
+      const userId = getUserId(state);
+      if (!userId) {
+        return { success: false, error: 'No user ID' };
+      }
+      
+      console.log('💳 Adding pending payment:', { transactionId, amount, plan });
+      
+      // Add to pending list
+      const pendingStorageKey = `pendingPayments_${userId}`;
+      let pendingIds = [];
+      
+      try {
+        const stored = localStorage.getItem(pendingStorageKey);
+        pendingIds = stored ? JSON.parse(stored) : [];
+        if (!Array.isArray(pendingIds)) {
+          pendingIds = [];
+        }
+      } catch (parseError) {
+        console.warn('⚠️ Failed to parse existing pending payments:', parseError);
+        pendingIds = [];
+      }
+      
+      // Avoid duplicates
+      if (!pendingIds.includes(transactionId)) {
+        pendingIds.push(transactionId);
+        
+        try {
+          localStorage.setItem(pendingStorageKey, JSON.stringify(pendingIds));
+        } catch (storageError) {
+          console.warn('⚠️ Failed to save pending payment:', storageError);
+        }
+      }
+      
+      // Add to payment history as pending
+      commit('ADD_PAYMENT', {
+        id: transactionId,
+        amount,
+        currency: 'UZS',
+        status: 'pending',
+        plan: plan || 'unknown',
+        method: 'payme',
+        timestamp: Date.now(),
+        details: {
+          addedAt: new Date().toISOString(),
+          source: 'addPendingPayment'
         }
       });
       
-      console.log('✅ Logout complete');
-      return { success: true };
+      // Update pending payments in state
+      commit('SET_PENDING_PAYMENTS', pendingIds);
+      
+      console.log('✅ Pending payment added successfully');
+      
+      triggerGlobalEvent('pendingPaymentAdded', {
+        transactionId,
+        amount,
+        plan,
+        totalPending: pendingIds.length,
+        timestamp: Date.now()
+      });
+      
+      return { success: true, transactionId, pendingCount: pendingIds.length };
       
     } catch (error) {
-      console.error('❌ Logout error:', error);
+      console.error('❌ Failed to add pending payment:', error);
+      
+      commit('SET_ERROR', { 
+        message: 'Failed to add pending payment', 
+        context: 'addPendingPayment',
+        originalError: error.message 
+      });
+      
+      return { success: false, error: error.message };
+    }
+  },
+  
+  // ✅ NEW: Update user preferences
+  async updatePreferences({ commit, state }, preferences) {
+    try {
+      if (!preferences || typeof preferences !== 'object') {
+        return { success: false, error: 'Invalid preferences data' };
+      }
+      
+      console.log('⚙️ Updating user preferences:', Object.keys(preferences));
+      
+      const oldPreferences = { ...state.preferences };
+      
+      commit('SET_PREFERENCES', preferences);
+      
+      // Optional: Sync with server
+      const userId = getUserId(state);
+      if (userId) {
+        try {
+          // This would be implemented based on your API
+          // await syncPreferencesToServer(userId, state.preferences);
+        } catch (syncError) {
+          console.warn('⚠️ Failed to sync preferences to server:', syncError);
+        }
+      }
+      
+      console.log('✅ Preferences updated successfully');
+      
+      return { 
+        success: true, 
+        oldPreferences,
+        newPreferences: { ...state.preferences }
+      };
+      
+    } catch (error) {
+      console.error('❌ Failed to update preferences:', error);
+      
+      commit('SET_ERROR', { 
+        message: 'Preferences update failed', 
+        context: 'updatePreferences',
+        originalError: error.message 
+      });
+      
+      return { success: false, error: error.message };
+    }
+  },
+  
+  // ✅ NEW: Increment usage with validation and limits check
+  async incrementUsage({ commit, state, dispatch }, { messages = 0, images = 0 }) {
+    try {
+      const messageIncrement = Math.max(0, parseInt(messages) || 0);
+      const imageIncrement = Math.max(0, parseInt(images) || 0);
+      
+      if (messageIncrement === 0 && imageIncrement === 0) {
+        return { success: true, message: 'No usage to increment' };
+      }
+      
+      // Check limits before incrementing
+      const currentUsage = state.usage.current || { messages: 0, images: 0 };
+      const limits = getCurrentLimits(state);
+      
+      const newMessageCount = currentUsage.messages + messageIncrement;
+      const newImageCount = currentUsage.images + imageIncrement;
+      
+      // Check if increment would exceed limits (for free users)
+      const warnings = [];
+      if (state.userStatus === 'free') {
+        if (limits.messages > 0 && newMessageCount > limits.messages) {
+          warnings.push(`Message limit exceeded: ${newMessageCount}/${limits.messages}`);
+        }
+        if (limits.images > 0 && newImageCount > limits.images) {
+          warnings.push(`Image limit exceeded: ${newImageCount}/${limits.images}`);
+        }
+      }
+      
+      // Increment usage
+      commit('INCREMENT_USAGE', { messages: messageIncrement, images: imageIncrement });
+      
+      // Try to sync with server (non-blocking)
+      try {
+        // This would typically update usage on the server
+        // await syncUsageToServer(getUserId(state), state.usage.current);
+      } catch (syncError) {
+        console.warn('⚠️ Failed to sync usage to server:', syncError);
+      }
+      
+      const result = {
+        success: true,
+        incremented: { messages: messageIncrement, images: imageIncrement },
+        newTotals: { ...state.usage.current },
+        limits,
+        warnings
+      };
+      
+      if (warnings.length > 0) {
+        console.warn('⚠️ Usage warnings:', warnings);
+        result.limitWarnings = warnings;
+      }
+      
+      return result;
+      
+    } catch (error) {
+      console.error('❌ Failed to increment usage:', error);
+      
+      commit('SET_ERROR', { 
+        message: 'Usage increment failed', 
+        context: 'incrementUsage',
+        originalError: error.message 
+      });
+      
       return { success: false, error: error.message };
     }
   }
 };
 
-// ✅ HELPER FUNCTIONS WITH BULLETPROOF SAFETY
+// ✅ ENHANCED HELPER FUNCTIONS WITH BULLETPROOF SAFETY
 const updateFeatureMatrix = (state) => {
   const featureMatrix = {
     free: {
@@ -1272,7 +2715,10 @@ const updateFeatureMatrix = (state) => {
       priority_support: false,
       custom_courses: false,
       offline_mode: false,
-      export_progress: false
+      export_progress: false,
+      advanced_grammar: false,
+      multiple_languages: false,
+      ai_tutor: false
     },
     start: {
       vocabulary: true,
@@ -1281,7 +2727,10 @@ const updateFeatureMatrix = (state) => {
       priority_support: true,
       custom_courses: false,
       offline_mode: true,
-      export_progress: false
+      export_progress: false,
+      advanced_grammar: true,
+      multiple_languages: false,
+      ai_tutor: false
     },
     pro: {
       vocabulary: true,
@@ -1290,7 +2739,10 @@ const updateFeatureMatrix = (state) => {
       priority_support: true,
       custom_courses: true,
       offline_mode: true,
-      export_progress: true
+      export_progress: true,
+      advanced_grammar: true,
+      multiple_languages: true,
+      ai_tutor: true
     },
     premium: {
       vocabulary: true,
@@ -1299,112 +2751,384 @@ const updateFeatureMatrix = (state) => {
       priority_support: true,
       custom_courses: true,
       offline_mode: true,
-      export_progress: true
+      export_progress: true,
+      advanced_grammar: true,
+      multiple_languages: true,
+      ai_tutor: true
     }
   };
   
   // ✅ BULLETPROOF: Ensure valid user status
   const userStatus = state.userStatus || 'free';
-  state.features = { ...(featureMatrix[userStatus] || featureMatrix.free) };
-  console.log(`🔧 Features updated for ${userStatus}:`, state.features);
+  const newFeatures = { ...(featureMatrix[userStatus] || featureMatrix.free) };
+  
+  // Only update if features actually changed
+  const featuresChanged = Object.keys(newFeatures).some(
+    key => state.features[key] !== newFeatures[key]
+  );
+  
+  if (featuresChanged) {
+    state.features = newFeatures;
+    console.log(`🔧 Features updated for ${userStatus}:`, Object.entries(newFeatures).filter(([k, v]) => v).map(([k]) => k));
+  }
+  
+  return featuresChanged;
 };
 
 const getCurrentLimits = (state) => {
   const userStatus = state.userStatus || 'free';
-  return state.usage.limits[userStatus] || state.usage.limits.free;
+  return state.usage?.limits?.[userStatus] || state.usage?.limits?.free || { messages: 50, images: 5 };
 };
 
 const triggerGlobalEvent = (eventName, data = {}) => {
-  if (typeof window !== 'undefined') {
-    try {
-      // Custom DOM event
-      const event = new CustomEvent(eventName, { detail: data });
-      window.dispatchEvent(event);
-      
-      // Event bus (if available)
-      if (window.eventBus?.emit) {
-        window.eventBus.emit(eventName, data);
-      }
-      
-      // Vue event bus (if available)
-      if (window.Vue?.$bus?.$emit) {
-        window.Vue.$bus.$emit(eventName, data);
-      }
-    } catch (eventError) {
-      console.warn('⚠️ Failed to trigger global event:', eventError);
+  if (typeof window === 'undefined') return;
+  
+  try {
+    // Enhanced event data with metadata
+    const enhancedData = {
+      ...data,
+      eventName,
+      source: 'user-store',
+      timestamp: data.timestamp || Date.now(),
+      version: '2.0'
+    };
+    
+    // Custom DOM event (primary method)
+    const customEvent = new CustomEvent(eventName, { 
+      detail: enhancedData,
+      bubbles: true,
+      cancelable: true
+    });
+    window.dispatchEvent(customEvent);
+    
+    // Event bus (secondary method)
+    if (window.eventBus?.emit) {
+      window.eventBus.emit(eventName, enhancedData);
     }
+    
+    // Vue event bus (tertiary method)
+    if (window.Vue?.$bus?.$emit) {
+      window.Vue.$bus.$emit(eventName, enhancedData);
+    }
+    
+    // Generic global update event
+    if (eventName !== 'globalUpdate') {
+      const globalEvent = new CustomEvent('globalUpdate', { 
+        detail: { originalEvent: eventName, data: enhancedData }
+      });
+      window.dispatchEvent(globalEvent);
+    }
+    
+  } catch (eventError) {
+    console.warn(`⚠️ Failed to trigger global event '${eventName}':`, eventError);
   }
 };
 
 const getUserToken = async () => {
   try {
-    const { auth } = await import('@/firebase');
-    return auth.currentUser ? await auth.currentUser.getIdToken() : null;
+    // Try multiple methods to get the token
+    
+    // Method 1: From Firebase Auth
+    try {
+      const { auth } = await import('@/firebase');
+      if (auth.currentUser) {
+        const token = await auth.currentUser.getIdToken();
+        if (token && token.length > 20) {
+          return token;
+        }
+      }
+    } catch (firebaseError) {
+      console.warn('⚠️ Firebase token retrieval failed:', firebaseError);
+    }
+    
+    // Method 2: From localStorage
+    try {
+      const storedToken = localStorage.getItem('token') || localStorage.getItem('authToken');
+      if (storedToken && storedToken.length > 20) {
+        return storedToken;
+      }
+    } catch (storageError) {
+      console.warn('⚠️ localStorage token retrieval failed:', storageError);
+    }
+    
+    // Method 3: From sessionStorage
+    try {
+      const sessionToken = sessionStorage.getItem('token') || sessionStorage.getItem('authToken');
+      if (sessionToken && sessionToken.length > 20) {
+        return sessionToken;
+      }
+    } catch (sessionError) {
+      console.warn('⚠️ sessionStorage token retrieval failed:', sessionError);
+    }
+    
+    console.warn('⚠️ No valid authentication token found');
+    return null;
+    
   } catch (error) {
-    console.warn('⚠️ Could not get user token:', error);
+    console.warn('⚠️ Token retrieval completely failed:', error);
     return null;
   }
 };
 
 const getUserId = (state) => {
+  // Try multiple sources for user ID with fallbacks
   return state.currentUser?.firebaseId ||
+         state.currentUser?.firebaseUserId ||
          state.currentUser?._id ||
+         state.currentUser?.uid ||
          localStorage.getItem('userId') ||
-         localStorage.getItem('firebaseUserId');
+         localStorage.getItem('firebaseUserId') ||
+         sessionStorage.getItem('userId') ||
+         null;
 };
 
-// ✅ BULLETPROOF GETTER DEFINITIONS WITH NULL SAFETY
+// ✅ ENHANCED GETTER DEFINITIONS WITH COMPREHENSIVE NULL SAFETY
 const getters = {
-  // Basic user getters with null safety
-  isAuthenticated: (state) => !!state.currentUser,
+  // ========================================
+  // BASIC USER GETTERS WITH NULL SAFETY
+  // ========================================
+  
+  isAuthenticated: (state) => {
+    return !!(state.currentUser && (state.currentUser.firebaseId || state.currentUser._id));
+  },
+  
   getUser: (state) => state.currentUser,
+  
   getUserId: (state) => getUserId(state),
-  userName: (state) => state.currentUser?.name || state.currentUser?.displayName || 'Пользователь',
+  
+  userName: (state) => {
+    return state.currentUser?.name || 
+           state.currentUser?.displayName || 
+           state.currentUser?.email?.split('@')[0] || 
+           'Пользователь';
+  },
+  
   userEmail: (state) => state.currentUser?.email || '',
   
-  // Subscription getters with null safety
+  userPhoto: (state) => state.currentUser?.photoURL || null,
+  
+  isEmailVerified: (state) => Boolean(state.currentUser?.emailVerified),
+  
+  // ========================================
+  // SUBSCRIPTION GETTERS WITH NULL SAFETY
+  // ========================================
+  
   userStatus: (state) => state.userStatus || 'free',
-  subscription: (state) => state.subscription || { plan: 'free', status: 'inactive' },
-  subscriptionDetails: (state) => state.subscription || { plan: 'free', status: 'inactive' },
   
-  // Status checks
-  isPremiumUser: (state) => ['premium', 'start', 'pro'].includes(state.userStatus || 'free'),
-  isStartUser: (state) => ['start', 'pro', 'premium'].includes(state.userStatus || 'free'),
-  isProUser: (state) => ['pro', 'premium'].includes(state.userStatus || 'free'),
-  isFreeUser: (state) => (state.userStatus || 'free') === 'free',
-  hasActiveSubscription: (state) => (state.subscription?.status || 'inactive') === 'active',
+  subscription: (state) => state.subscription || { 
+    plan: 'free', 
+    status: 'inactive',
+    source: null,
+    startDate: null,
+    expiryDate: null,
+    isAutoRenew: false,
+    details: {}
+  },
   
-  // Subscription metadata
-  subscriptionSource: (state) => state.subscription?.source || 'free',
-  hasPromocodeSubscription: (state) => (state.subscription?.source || '') === 'promocode',
+  subscriptionDetails: (state) => state.subscription || { 
+    plan: 'free', 
+    status: 'inactive' 
+  },
+  
+  // ========================================
+  // STATUS CHECKS WITH ENHANCED LOGIC
+  // ========================================
+  
+  isPremiumUser: (state) => {
+    const status = state.userStatus || 'free';
+    return ['premium', 'start', 'pro'].includes(status);
+  },
+  
+  isStartUser: (state) => {
+    const status = state.userStatus || 'free';
+    return ['start', 'pro', 'premium'].includes(status);
+  },
+  
+  isProUser: (state) => {
+    const status = state.userStatus || 'free';
+    return ['pro', 'premium'].includes(status);
+  },
+  
+  isFreeUser: (state) => {
+    const status = state.userStatus || 'free';
+    return status === 'free';
+  },
+  
+  hasActiveSubscription: (state) => {
+    const subscription = state.subscription || {};
+    return subscription.status === 'active' && 
+           (subscription.plan !== 'free');
+  },
+  
+  isSubscriptionExpired: (state) => {
+    const subscription = state.subscription || {};
+    if (!subscription.expiryDate || subscription.status !== 'active') {
+      return false;
+    }
+    
+    const expiryDate = new Date(subscription.expiryDate);
+    return expiryDate < new Date();
+  },
+  
+  subscriptionDaysLeft: (state) => {
+    const subscription = state.subscription || {};
+    if (!subscription.expiryDate || subscription.status !== 'active') {
+      return null;
+    }
+    
+    const expiryDate = new Date(subscription.expiryDate);
+    const now = new Date();
+    const diffTime = expiryDate - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return Math.max(0, diffDays);
+  },
+  
+  // ========================================
+  // SUBSCRIPTION METADATA
+  // ========================================
+  
+  subscriptionSource: (state) => (state.subscription?.source) || 'free',
+  
+  hasPromocodeSubscription: (state) => {
+    return (state.subscription?.source) === 'promocode';
+  },
+  
+  hasPaymentSubscription: (state) => {
+    return (state.subscription?.source) === 'payment';
+  },
+  
   subscriptionExpiry: (state) => state.subscription?.expiryDate || null,
   
-  // Feature access getters with null safety
+  subscriptionStartDate: (state) => state.subscription?.startDate || null,
+  
+  isAutoRenewEnabled: (state) => Boolean(state.subscription?.isAutoRenew),
+  
+  // ========================================
+  // FEATURE ACCESS GETTERS WITH NULL SAFETY
+  // ========================================
+  
   features: (state) => state.features || {},
-  hasVocabularyAccess: (state) => (state.features || {}).vocabulary || false,
-  hasAdvancedFeatures: (state) => (state.features || {}).analytics || false,
-  hasUnlimitedLessons: (state) => (state.features || {}).unlimited_lessons || false,
-  hasPrioritySupport: (state) => (state.features || {}).priority_support || false,
-  hasCustomCourses: (state) => (state.features || {}).custom_courses || false,
-  hasOfflineMode: (state) => (state.features || {}).offline_mode || false,
-  hasExportProgress: (state) => (state.features || {}).export_progress || false,
+  
+  hasVocabularyAccess: (state) => Boolean((state.features || {}).vocabulary),
+  
+  hasAnalyticsAccess: (state) => Boolean((state.features || {}).analytics),
+  
+  hasAdvancedFeatures: (state) => Boolean((state.features || {}).analytics),
+  
+  hasUnlimitedLessons: (state) => Boolean((state.features || {}).unlimited_lessons),
+  
+  hasPrioritySupport: (state) => Boolean((state.features || {}).priority_support),
+  
+  hasCustomCourses: (state) => Boolean((state.features || {}).custom_courses),
+  
+  hasOfflineMode: (state) => Boolean((state.features || {}).offline_mode),
+  
+  hasExportProgress: (state) => Boolean((state.features || {}).export_progress),
+  
+  hasAdvancedGrammar: (state) => Boolean((state.features || {}).advanced_grammar),
+  
+  hasMultipleLanguages: (state) => Boolean((state.features || {}).multiple_languages),
+  
+  hasAITutor: (state) => Boolean((state.features || {}).ai_tutor),
   
   // Feature checker function
   hasFeatureAccess: (state) => (feature) => {
-    return (state.features || {})[feature] || false;
+    return Boolean((state.features || {})[feature]);
   },
   
-  // Usage getters with null safety
-  currentUsage: (state) => state.usage?.current || { messages: 0, images: 0, lastUpdated: null },
+  // Get all enabled features
+  enabledFeatures: (state) => {
+    const features = state.features || {};
+    return Object.entries(features)
+      .filter(([key, enabled]) => enabled)
+      .map(([key]) => key);
+  },
+  
+  // Get feature count
+  enabledFeatureCount: (state, getters) => {
+    return getters.enabledFeatures.length;
+  },
+  
+  // ========================================
+  // USAGE GETTERS WITH NULL SAFETY
+  // ========================================
+  
+  currentUsage: (state) => {
+    return state.usage?.current || { 
+      messages: 0, 
+      images: 0, 
+      lastUpdated: null,
+      resetDate: null
+    };
+  },
+  
   usageLimits: (state) => {
     const userStatus = state.userStatus || 'free';
     return (state.usage?.limits || {})[userStatus] || { messages: 50, images: 5 };
   },
+  
   usageHistory: (state) => state.usage?.history || [],
   
-  // ✅ BULLETPROOF: Promocode getters with array safety
+  monthlyStats: (state) => {
+    return state.usage?.monthlyStats || {
+      currentMonth: null,
+      totalMessages: 0,
+      totalImages: 0
+    };
+  },
+  
+  // Usage percentage calculations
+  messageUsagePercentage: (state, getters) => {
+    const current = getters.currentUsage.messages || 0;
+    const limit = getters.usageLimits.messages;
+    
+    if (limit <= 0) return 0; // Unlimited
+    return Math.min(100, Math.round((current / limit) * 100));
+  },
+  
+  imageUsagePercentage: (state, getters) => {
+    const current = getters.currentUsage.images || 0;
+    const limit = getters.usageLimits.images;
+    
+    if (limit <= 0) return 0; // Unlimited
+    return Math.min(100, Math.round((current / limit) * 100));
+  },
+  
+  // Usage limit checks
+  isMessageLimitReached: (state, getters) => {
+    const current = getters.currentUsage.messages || 0;
+    const limit = getters.usageLimits.messages;
+    
+    return limit > 0 && current >= limit;
+  },
+  
+  isImageLimitReached: (state, getters) => {
+    const current = getters.currentUsage.images || 0;
+    const limit = getters.usageLimits.images;
+    
+    return limit > 0 && current >= limit;
+  },
+  
+  remainingMessages: (state, getters) => {
+    const current = getters.currentUsage.messages || 0;
+    const limit = getters.usageLimits.messages;
+    
+    return limit > 0 ? Math.max(0, limit - current) : -1; // -1 means unlimited
+  },
+  
+  remainingImages: (state, getters) => {
+    const current = getters.currentUsage.images || 0;
+    const limit = getters.usageLimits.images;
+    
+    return limit > 0 ? Math.max(0, limit - current) : -1; // -1 means unlimited
+  },
+  
+  // ========================================
+  // PROMOCODE GETTERS WITH ARRAY SAFETY
+  // ========================================
+  
   appliedPromocodes: (state) => {
-    // Ensure it's always an array
     const promocodes = state.promocodes?.applied;
     return Array.isArray(promocodes) ? promocodes : [];
   },
@@ -1419,7 +3143,25 @@ const getters = {
     return (Array.isArray(promocodes) && promocodes.length > 0) ? promocodes[0] : null;
   },
   
-  // ✅ BULLETPROOF: Payment getters with array safety
+  promocodeCount: (state, getters) => {
+    return getters.appliedPromocodes.length;
+  },
+  
+  // Get promocodes by plan
+  promocodesByPlan: (state, getters) => {
+    const promocodes = getters.appliedPromocodes;
+    return promocodes.reduce((acc, promo) => {
+      const plan = promo.plan || 'unknown';
+      if (!acc[plan]) acc[plan] = [];
+      acc[plan].push(promo);
+      return acc;
+    }, {});
+  },
+  
+  // ========================================
+  // PAYMENT GETTERS WITH ARRAY SAFETY
+  // ========================================
+  
   paymentHistory: (state) => {
     const history = state.payments?.history;
     return Array.isArray(history) ? history : [];
@@ -1430,31 +3172,190 @@ const getters = {
     return Array.isArray(pending) ? pending : [];
   },
   
+  failedPayments: (state) => {
+    const failed = state.payments?.failed;
+    return Array.isArray(failed) ? failed : [];
+  },
+  
   lastPaymentCheck: (state) => state.payments?.lastCheck || null,
   
   hasRecentPayments: (state, getters) => {
     const history = getters.paymentHistory;
-    return Array.isArray(history) && history.some(p => p.status === 'completed');
+    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+    
+    return Array.isArray(history) && history.some(p => 
+      p.status === 'completed' && 
+      p.timestamp > thirtyDaysAgo
+    );
   },
   
-  // System getters
-  isInitialized: (state) => state.system?.initialized || false,
-  isLoading: (state) => (type) => (state.system?.loading || {})[type] || false,
+  totalPaymentsAmount: (state, getters) => {
+    const history = getters.paymentHistory;
+    return history
+      .filter(p => p.status === 'completed')
+      .reduce((total, p) => total + (p.amount || 0), 0);
+  },
+  
+  pendingPaymentsCount: (state, getters) => {
+    return getters.pendingPayments.length;
+  },
+  
+  lastCompletedPayment: (state, getters) => {
+    const completed = getters.paymentHistory.filter(p => p.status === 'completed');
+    return completed.length > 0 ? completed[0] : null;
+  },
+  
+  // ========================================
+  // SYSTEM GETTERS
+  // ========================================
+  
+  isInitialized: (state) => Boolean(state.system?.initialized),
+  
+  initializationTime: (state) => state.system?.initializationTime || null,
+  
+  isLoading: (state) => (type) => {
+    return Boolean((state.system?.loading || {})[type]);
+  },
+  
   isAnyLoading: (state) => {
     const loading = state.system?.loading || {};
     return Object.values(loading).some(Boolean);
   },
+  
+  isSyncInProgress: (state) => Boolean(state.system?.syncInProgress),
+  
   lastUpdate: (state) => state.system?.lastUpdate || null,
+  
   forceUpdateCounter: (state) => state.system?.forceUpdateCounter || 0,
   
-  // Preferences getters
+  systemErrors: (state) => state.system?.errors || { lastError: null, errorCount: 0 },
+  
+  lastError: (state) => state.system?.errors?.lastError || null,
+  
+  errorCount: (state) => state.system?.errors?.errorCount || 0,
+  
+  performanceMetrics: (state) => state.system?.performance || { loadTime: 0, apiResponseTimes: [] },
+  
+  averageApiResponseTime: (state) => {
+    const times = state.system?.performance?.apiResponseTimes || [];
+    if (times.length === 0) return 0;
+    return Math.round(times.reduce((sum, time) => sum + time, 0) / times.length);
+  },
+  
+  // ========================================
+  // PREFERENCES GETTERS
+  // ========================================
+  
   userPreferences: (state) => state.preferences || {},
+  
   language: (state) => (state.preferences || {}).language || 'ru',
+  
   theme: (state) => (state.preferences || {}).theme || 'light',
-  notificationsEnabled: (state) => (state.preferences || {}).notifications !== false
+  
+  notificationsEnabled: (state) => (state.preferences || {}).notifications !== false,
+  
+  emailUpdatesEnabled: (state) => Boolean((state.preferences || {}).emailUpdates),
+  
+  autoSaveEnabled: (state) => (state.preferences || {}).autoSave !== false,
+  
+  soundEffectsEnabled: (state) => (state.preferences || {}).soundEffects !== false,
+  
+  reducedMotionEnabled: (state) => Boolean((state.preferences || {}).reducedMotion),
+  
+  // ========================================
+  // CACHE GETTERS
+  // ========================================
+  
+  isCacheValid: (state) => {
+    const cache = state.cache || {};
+    const now = Date.now();
+    const lastUpdate = cache.lastCacheUpdate || 0;
+    const expiry = cache.cacheExpiry || 300000; // 5 minutes default
+    
+    return (now - lastUpdate) < expiry;
+  },
+  
+  cacheAge: (state) => {
+    const cache = state.cache || {};
+    const now = Date.now();
+    const lastUpdate = cache.lastCacheUpdate || 0;
+    
+    return now - lastUpdate;
+  },
+  
+  // ========================================
+  // COMPUTED STATUS LABELS
+  // ========================================
+  
+  userStatusLabel: (state) => {
+    const labels = {
+      free: 'Бесплатный',
+      start: 'Стартовый',
+      pro: 'Профессиональный',
+      premium: 'Премиум'
+    };
+    return labels[state.userStatus] || labels.free;
+  },
+  
+  subscriptionStatusLabel: (state) => {
+    const subscription = state.subscription || {};
+    const labels = {
+      active: 'Активна',
+      inactive: 'Неактивна',
+      expired: 'Истекла',
+      cancelled: 'Отменена'
+    };
+    return labels[subscription.status] || labels.inactive;
+  },
+  
+  // ========================================
+  // SUMMARY GETTERS
+  // ========================================
+  
+  userSummary: (state, getters) => {
+    return {
+      isAuthenticated: getters.isAuthenticated,
+      userName: getters.userName,
+      userEmail: getters.userEmail,
+      userStatus: getters.userStatus,
+      userStatusLabel: getters.userStatusLabel,
+      isPremium: getters.isPremiumUser,
+      hasActiveSubscription: getters.hasActiveSubscription,
+      enabledFeatureCount: getters.enabledFeatureCount,
+      subscriptionDaysLeft: getters.subscriptionDaysLeft,
+      lastUpdate: getters.lastUpdate
+    };
+  },
+  
+  usageSummary: (state, getters) => {
+    return {
+      current: getters.currentUsage,
+      limits: getters.usageLimits,
+      messageUsagePercentage: getters.messageUsagePercentage,
+      imageUsagePercentage: getters.imageUsagePercentage,
+      isMessageLimitReached: getters.isMessageLimitReached,
+      isImageLimitReached: getters.isImageLimitReached,
+      remainingMessages: getters.remainingMessages,
+      remainingImages: getters.remainingImages
+    };
+  },
+  
+  subscriptionSummary: (state, getters) => {
+    return {
+      plan: getters.userStatus,
+      status: getters.subscriptionDetails.status,
+      source: getters.subscriptionSource,
+      isActive: getters.hasActiveSubscription,
+      isExpired: getters.isSubscriptionExpired,
+      daysLeft: getters.subscriptionDaysLeft,
+      expiryDate: getters.subscriptionExpiry,
+      isAutoRenew: getters.isAutoRenewEnabled,
+      enabledFeatures: getters.enabledFeatures
+    };
+  }
 };
 
-// ✅ EXPORT STORE MODULE
+// ✅ EXPORT ENHANCED STORE MODULE
 export default {
   namespaced: true,
   state,
@@ -1462,3 +3363,266 @@ export default {
   actions,
   getters
 };
+
+// ✅ ADDITIONAL UTILITY FUNCTIONS FOR EXTERNAL USE
+
+/**
+ * Create a reactive user status composable for Vue 3
+ * This can be imported and used in components
+ */
+export const createUserStatusComposable = (store) => {
+  return {
+    // Core reactive properties
+    userStatus: computed(() => store.getters['user/userStatus']),
+    isPremiumUser: computed(() => store.getters['user/isPremiumUser']),
+    isProUser: computed(() => store.getters['user/isProUser']),
+    isFreeUser: computed(() => store.getters['user/isFreeUser']),
+    
+    // Feature access
+    features: computed(() => store.getters['user/features']),
+    hasFeature: (feature) => computed(() => store.getters['user/hasFeatureAccess'](feature)),
+    
+    // Actions
+    updateStatus: (newStatus) => store.dispatch('user/updateSubscription', { plan: newStatus }),
+    applyPromocode: (promoCode, plan) => store.dispatch('user/applyPromocode', { promoCode, plan }),
+    
+    // Loading states
+    isLoading: computed(() => store.getters['user/isAnyLoading']),
+    isUpdating: computed(() => store.getters['user/isLoading']('status'))
+  };
+};
+
+/**
+ * Mixin for Vue 2 compatibility
+ * This provides the same functionality as the composable but for Options API
+ */
+export const userStatusMixin = {
+  computed: {
+    userStatus() {
+      return this.$store.getters['user/userStatus'];
+    },
+    
+    isPremiumUser() {
+      return this.$store.getters['user/isPremiumUser'];
+    },
+    
+    isProUser() {
+      return this.$store.getters['user/isProUser'];
+    },
+    
+    isFreeUser() {
+      return this.$store.getters['user/isFreeUser'];
+    },
+    
+    userFeatures() {
+      return this.$store.getters['user/features'];
+    },
+    
+    userStatusLabel() {
+      return this.$store.getters['user/userStatusLabel'];
+    },
+    
+    isUserLoading() {
+      return this.$store.getters['user/isAnyLoading'];
+    }
+  },
+  
+  methods: {
+    async updateUserStatus(newStatus) {
+      return await this.$store.dispatch('user/updateSubscription', { plan: newStatus });
+    },
+    
+    async applyUserPromocode(promoCode, plan) {
+      return await this.$store.dispatch('user/applyPromocode', { promoCode, plan });
+    },
+    
+    hasUserFeature(feature) {
+      return this.$store.getters['user/hasFeatureAccess'](feature);
+    },
+    
+    forceUserUpdate() {
+      return this.$store.dispatch('user/forceUpdate');
+    }
+  }
+};
+
+/**
+ * Global event listener setup for automatic reactivity
+ * Call this in your main.js or app setup
+ */
+export const setupUserStoreEvents = (app, store) => {
+  if (typeof window === 'undefined') return;
+  
+  // Create global event bus if it doesn't exist
+  if (!window.eventBus) {
+    window.eventBus = {
+      events: {},
+      emit(event, data) {
+        if (this.events[event]) {
+          this.events[event].forEach(callback => {
+            try {
+              callback(data);
+            } catch (error) {
+              console.warn(`Event listener error for ${event}:`, error);
+            }
+          });
+        }
+      },
+      on(event, callback) {
+        if (!this.events[event]) {
+          this.events[event] = [];
+        }
+        this.events[event].push(callback);
+      },
+      off(event, callback) {
+        if (this.events[event]) {
+          this.events[event] = this.events[event].filter(cb => cb !== callback);
+        }
+      }
+    };
+  }
+  
+  // Set up automatic store initialization
+  const initializeStore = async () => {
+    try {
+      await store.dispatch('user/initialize');
+      console.log('✅ User store initialized automatically');
+    } catch (error) {
+      console.error('❌ Auto-initialization failed:', error);
+    }
+  };
+  
+  // Initialize on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeStore);
+  } else {
+    initializeStore();
+  }
+  
+  // Set up periodic sync (every 5 minutes)
+  const syncInterval = setInterval(async () => {
+    if (store.getters['user/isAuthenticated'] && !store.getters['user/isSyncInProgress']) {
+      try {
+        await store.dispatch('user/syncUserData');
+      } catch (error) {
+        console.warn('⚠️ Periodic sync failed:', error);
+      }
+    }
+  }, 5 * 60 * 1000);
+  
+  // Clean up on app unmount
+  if (app && app.config && app.config.globalProperties) {
+    app.config.globalProperties.$userStoreSyncInterval = syncInterval;
+  }
+  
+  // Global error handler for store errors
+  window.addEventListener('storeError', (event) => {
+    const error = event.detail?.error;
+    if (error) {
+      console.error('🚨 User store error:', error);
+      // You can add your global error handling logic here
+      // For example, show a notification, send to error tracking service, etc.
+    }
+  });
+  
+  console.log('✅ User store events initialized');
+  
+  return () => {
+    clearInterval(syncInterval);
+    console.log('🧹 User store events cleaned up');
+  };
+};
+
+/**
+ * Validation utilities for user data
+ */
+export const userValidation = {
+  isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  },
+  
+  isValidStatus(status) {
+    return ['free', 'start', 'pro', 'premium'].includes(status);
+  },
+  
+  isValidPromocode(code) {
+    return typeof code === 'string' && code.trim().length >= 3;
+  },
+  
+  validateUserData(userData) {
+    const errors = [];
+    
+    if (!userData || typeof userData !== 'object') {
+      errors.push('User data must be an object');
+      return { valid: false, errors };
+    }
+    
+    if (!userData.email || !this.isValidEmail(userData.email)) {
+      errors.push('Valid email is required');
+    }
+    
+    if (!userData.uid && !userData.firebaseId && !userData._id) {
+      errors.push('User ID is required');
+    }
+    
+    if (userData.subscriptionPlan && !this.isValidStatus(userData.subscriptionPlan)) {
+      errors.push('Invalid subscription plan');
+    }
+    
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+};
+
+/**
+ * Performance monitoring utilities
+ */
+export const performanceMonitor = {
+  startTime: null,
+  
+  start(label) {
+    this.startTime = performance.now();
+    console.time(label);
+  },
+  
+  end(label) {
+    if (this.startTime) {
+      const duration = performance.now() - this.startTime;
+      console.timeEnd(label);
+      
+      if (duration > 1000) {
+        console.warn(`⚠️ Slow operation detected: ${label} took ${duration.toFixed(2)}ms`);
+      }
+      
+      return duration;
+    }
+    return 0;
+  },
+  
+  measureAsync(label, asyncFn) {
+    return async (...args) => {
+      this.start(label);
+      try {
+        const result = await asyncFn(...args);
+        this.end(label);
+        return result;
+      } catch (error) {
+        this.end(label);
+        throw error;
+      }
+    };
+  }
+};
+
+console.log('✅ Enhanced User Store v2.0 loaded successfully!');
+console.log('📚 Available exports:', {
+  default: 'Enhanced Vuex store module',
+  createUserStatusComposable: 'Vue 3 composable factory',
+  userStatusMixin: 'Vue 2 mixin',
+  setupUserStoreEvents: 'Global event setup',
+  userValidation: 'Validation utilities',
+  performanceMonitor: 'Performance monitoring'
+});

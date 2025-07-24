@@ -1016,18 +1016,19 @@ export default {
     const result = await response.json();
 
     if (result.success) {
-      // ✅ SIMPLE: Just update the store status
-      if (this.$store) {
-        await this.$store.dispatch('user/updateUserStatus', this.selectedPlan);
-      }
+      // 🔥 THIS IS THE KEY: Use the store action for global updates
+      const updateSuccess = await this.$store.dispatch('user/updateUserStatus', this.selectedPlan);
       
-      this.showNotification('🎉 Промокод применён! Подписка активирована!', 'success');
-      this.promoCode = '';
-      this.selectedPlan = '';
+      if (updateSuccess) {
+        this.showNotification('🎉 Промокод применён! Подписка активирована!', 'success');
+        this.promoCode = '';
+        this.selectedPlan = '';
+      } else {
+        this.showNotification('Ошибка обновления статуса', 'warning');
+      }
     } else {
       this.showNotification(result.error || 'Неверный промокод', 'error');
     }
-
   } catch (error) {
     this.showNotification('Ошибка соединения', 'error');
   } finally {

@@ -353,21 +353,29 @@ export default {
       showPaywall: false,
       selectedTopic: null,
       requestedTopicId: null,
-      plan: null
+      plan: null,
+      
+      // ✅ Enhanced reactivity tracking
+      componentKey: 0,
+      lastUpdateTime: Date.now()
     };
   },
   
   computed: {
-    ...mapGetters('user', ['isPremiumUser', 'userStatus']),
+    ...mapGetters('user', ['isPremiumUser', 'userStatus', 'forceUpdateCounter']),
     
+    // ✅ ENHANCED: Reactive subscription class with force counter
     subscriptionClass() {
+      const counter = this.forceUpdateCounter || 0; // Force reactivity
       const status = this.userStatus || 'free';
       return status === 'pro' ? 'badge-pro'
         : status === 'start' ? 'badge-start'
         : 'badge-free';
     },
     
+    // ✅ ENHANCED: Reactive subscription text with force counter  
     subscriptionText() {
+      const counter = this.forceUpdateCounter || 0; // Force reactivity
       const status = this.userStatus || 'free';
       return status === 'pro' ? 'Pro подписка'
         : status === 'start' ? 'Start подписка'
@@ -497,11 +505,104 @@ export default {
     }
   },
 
+  // ✅ ENHANCED: Watch for store changes with reactivity
+  watch: {
+    // Watch for user status changes from store
+    userStatus: {
+      handler(newStatus, oldStatus) {
+        console.log('📊 Catalogue: User status changed from', oldStatus, 'to:', newStatus);
+        this.triggerReactivityUpdate();
+      },
+      immediate: true
+    },
+    
+    // Watch for force update counter changes
+    forceUpdateCounter: {
+      handler(newCounter, oldCounter) {
+        console.log('📊 Catalogue: Force update counter changed:', oldCounter, '→', newCounter);
+        this.triggerReactivityUpdate();
+      },
+      immediate: true
+    }
+  },
+
   async mounted() {
     await this.initializeComponent();
+    this.setupEventListeners();
+  },
+
+  beforeUnmount() {
+    this.cleanup();
   },
 
   methods: {
+    // ✅ ENHANCED: Setup global event listeners
+    setupEventListeners() {
+      console.log('🔧 Catalogue: Setting up event listeners');
+      
+      // Listen for global user status changes
+      if (typeof window !== 'undefined' && window.eventBus) {
+        this.statusChangedHandler = (data) => {
+          console.log('📡 Catalogue: Status change event received:', data);
+          this.triggerReactivityUpdate();
+        };
+        
+        this.forceUpdateHandler = (data) => {
+          console.log('📡 Catalogue: Force update event received:', data);
+          this.triggerReactivityUpdate();
+        };
+        
+        window.eventBus.on('userStatusChanged', this.statusChangedHandler);
+        window.eventBus.on('promocodeApplied', this.statusChangedHandler);
+        window.eventBus.on('forceUpdate', this.forceUpdateHandler);
+        window.eventBus.on('globalForceUpdate', this.forceUpdateHandler);
+        
+        console.log('✅ Catalogue: Event bus listeners registered');
+      }
+      
+      // Listen for DOM subscription events
+      this.domEventHandler = (event) => {
+        console.log('📡 Catalogue: DOM subscription event:', event.detail);
+        this.triggerReactivityUpdate();
+      };
+      
+      window.addEventListener('userSubscriptionChanged', this.domEventHandler);
+    },
+    
+    // ✅ ENHANCED: Cleanup event listeners
+    cleanup() {
+      console.log('🧹 Catalogue: Cleaning up event listeners');
+      
+      if (typeof window !== 'undefined' && window.eventBus) {
+        if (this.statusChangedHandler) {
+          window.eventBus.off('userStatusChanged', this.statusChangedHandler);
+          window.eventBus.off('promocodeApplied', this.statusChangedHandler);
+        }
+        
+        if (this.forceUpdateHandler) {
+          window.eventBus.off('forceUpdate', this.forceUpdateHandler);
+          window.eventBus.off('globalForceUpdate', this.forceUpdateHandler);
+        }
+      }
+      
+      if (this.domEventHandler) {
+        window.removeEventListener('userSubscriptionChanged', this.domEventHandler);
+      }
+    },
+    
+    // ✅ NEW: Trigger reactivity update
+    triggerReactivityUpdate() {
+      this.componentKey++;
+      this.lastUpdateTime = Date.now();
+      this.$forceUpdate();
+      
+      console.log('🔄 Catalogue: Reactivity update triggered:', {
+        componentKey: this.componentKey,
+        userStatus: this.userStatus,
+        timestamp: this.lastUpdateTime
+      });
+    },
+
     // ===== INITIALIZATION =====
     async initializeComponent() {
       try {
@@ -1255,6 +1356,10 @@ export default {
 
     handlePlanUpdate(newPlan) {
       this.plan = newPlan;
+      console.log('💳 Catalogue: Plan updated to:', newPlan);
+      
+      // Trigger reactivity update to reflect new plan
+      this.triggerReactivityUpdate();
     }
   }
 };
