@@ -1458,6 +1458,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
     return errorResult;
   }
 },
+
   // ✅ ENHANCED: Load user status with caching and validation
   async loadUserStatus({ commit, state }) {
     const startTime = Date.now();
@@ -1936,176 +1937,157 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
   },
 
   // ✅ ENHANCED: Update subscription with comprehensive state management
-  async updateSubscription({ commit, dispatch, state }, { plan, source = 'payment', details = {} }) {
-    const startTime = Date.now();
+  // ✅ ALSO ADD: Enhanced updateSubscription action (if it doesn't exist or needs fixing)
+async updateSubscription({ commit, dispatch, state }, { plan, source = 'payment', details = {} }) {
+  const startTime = Date.now();
 
-    console.log('🔄 updateSubscription called with:', { plan, source, detailsKeys: Object.keys(details) });
+  console.log('🔄 updateSubscription called with:', { plan, source, detailsKeys: Object.keys(details) });
 
-    try {
-      // Validate plan
-      const validPlans = ['free', 'start', 'pro', 'premium'];
-      const validatedPlan = validPlans.includes(plan) ? plan : 'free';
+  try {
+    // Validate plan
+    const validPlans = ['free', 'start', 'pro', 'premium'];
+    const validatedPlan = validPlans.includes(plan) ? plan : 'free';
 
-      if (plan !== validatedPlan) {
-        console.warn(`⚠️ Invalid plan "${plan}" normalized to "${validatedPlan}"`);
-      }
-
-      // Get old status for comparison
-      const oldStatus = state.userStatus || 'free';
-      console.log(`📊 Status change: ${oldStatus} → ${validatedPlan}`);
-
-      // Calculate expiry dates based on source
-      let expiryDate = null;
-      if (validatedPlan !== 'free') {
-        const now = new Date();
-        switch (source) {
-          case 'promocode':
-            expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
-            break;
-          case 'payment':
-            expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
-            break;
-          case 'gift':
-            expiryDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days
-            break;
-          default:
-            expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // Default 30 days
-        }
-      }
-
-      const subscriptionData = {
-        plan: validatedPlan,
-        status: (validatedPlan !== 'free') ? 'active' : 'inactive',
-        source,
-        startDate: new Date().toISOString(),
-        expiryDate: expiryDate ? expiryDate.toISOString() : null,
-        isAutoRenew: source === 'payment',
-        details: {
-          ...details,
-          updatedAt: new Date().toISOString(),
-          updatedBy: 'updateSubscription'
-        },
-        lastSync: new Date().toISOString()
-      };
-
-      console.log('📋 Subscription data prepared:', subscriptionData);
-
-      // Update all related state atomically
-      commit('SET_USER_STATUS', validatedPlan);
-      commit('UPDATE_SUBSCRIPTION', subscriptionData);
-      commit('UPDATE_FEATURES'); // Recalculate features based on new plan
-      commit('FORCE_UPDATE');
-
-      console.log('✅ Store mutations completed');
-
-      // Persistent storage (don't let this fail the whole operation)
-      try {
-        localStorage.setItem('userStatus', validatedPlan);
-        localStorage.setItem('subscriptionDetails', JSON.stringify(subscriptionData));
-        localStorage.setItem('lastSubscriptionUpdate', Date.now().toString());
-        console.log('✅ LocalStorage updated');
-      } catch (storageError) {
-        console.warn('⚠️ Failed to persist subscription data:', storageError);
-        // Don't fail the operation due to storage issues
-      }
-
-      // Enhanced global event broadcasting
-      const eventData = {
-        oldStatus,
-        newStatus: validatedPlan,
-        source,
-        subscriptionData: { ...subscriptionData },
-        timestamp: Date.now(),
-        duration: Date.now() - startTime
-      };
-
-      // Multiple event types for different listeners
-      const events = [
-        'userStatusChanged',
-        'subscriptionUpdated',
-        'userSubscriptionChanged', // Legacy compatibility
-        'planChanged'
-      ];
-
-      events.forEach(eventName => {
-        try {
-          triggerGlobalEvent(eventName, eventData);
-        } catch (eventError) {
-          console.warn(`⚠️ Failed to trigger ${eventName}:`, eventError);
-        }
-      });
-
-      console.log('✅ Events triggered');
-
-      // Reload usage data with new limits (don't let this fail the operation)
-      try {
-        await dispatch('loadUsage');
-        console.log('✅ Usage data reloaded');
-      } catch (usageError) {
-        console.warn('⚠️ Failed to reload usage after subscription update:', usageError);
-        // Don't fail the operation due to usage reload issues
-      }
-
-      const duration = Date.now() - startTime;
-      const successResult = {
-        success: true,
-        subscriptionData: { ...subscriptionData },
-        oldStatus,
-        newStatus: validatedPlan,
-        duration,
-        message: `Subscription updated successfully from ${oldStatus} to ${validatedPlan}`,
-        timestamp: Date.now()
-      };
-
-      console.log(`✅ updateSubscription completed successfully in ${duration}ms:`, successResult);
-
-      // ✅ CRITICAL: Always return the success result
-      return successResult;
-
-    } catch (error) {
-      const duration = Date.now() - startTime;
-
-      console.error('❌ updateSubscription failed:', error);
-
-      commit('SET_ERROR', {
-        message: 'Subscription update failed',
-        context: 'updateSubscription',
-        originalError: error.message,
-        plan,
-        source
-      });
-
-      const errorResult = {
-        success: false,
-        error: error.message || 'Subscription update failed',
-        duration,
-        plan,
-        source,
-        timestamp: Date.now(),
-        stack: error.stack
-      };
-
-      console.log('❌ updateSubscription returning error result:', errorResult);
-
-      // ✅ CRITICAL: Always return the error result
-      return errorResult;
+    if (plan !== validatedPlan) {
+      console.warn(`⚠️ Invalid plan "${plan}" normalized to "${validatedPlan}"`);
     }
-  },
 
-  // ✅ NEW: Unified updateUserStatus action (replaces any duplicates)
-  async updateUserStatus({ dispatch }, newStatus) {
-    console.log('🔄 updateUserStatus called with:', newStatus);
+    // Get old status for comparison
+    const oldStatus = state.userStatus || 'free';
+    console.log(`📊 Status change: ${oldStatus} → ${validatedPlan}`);
 
-    // This is now just a wrapper around updateSubscription for backward compatibility
-    return await dispatch('updateSubscription', {
-      plan: newStatus,
-      source: 'manual',
+    // Calculate expiry dates based on source
+    let expiryDate = null;
+    if (validatedPlan !== 'free') {
+      const now = new Date();
+      switch (source) {
+        case 'promocode':
+          expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+          break;
+        case 'payment':
+          expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
+          break;
+        case 'gift':
+          expiryDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days
+          break;
+        default:
+          expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // Default 30 days
+      }
+    }
+
+    const subscriptionData = {
+      plan: validatedPlan,
+      status: (validatedPlan !== 'free') ? 'active' : 'inactive',
+      source,
+      startDate: new Date().toISOString(),
+      expiryDate: expiryDate ? expiryDate.toISOString() : null,
+      isAutoRenew: source === 'payment',
       details: {
-        updatedBy: 'updateUserStatus',
-        updatedAt: new Date().toISOString()
+        ...details,
+        updatedAt: new Date().toISOString(),
+        updatedBy: 'updateSubscription'
+      },
+      lastSync: new Date().toISOString()
+    };
+
+    console.log('📋 Subscription data prepared:', subscriptionData);
+
+    // Update all related state atomically
+    commit('SET_USER_STATUS', validatedPlan);
+    commit('UPDATE_SUBSCRIPTION', subscriptionData);
+    commit('UPDATE_FEATURES'); // Recalculate features based on new plan
+    commit('FORCE_UPDATE');
+
+    console.log('✅ Store mutations completed');
+
+    // Persistent storage (don't let this fail the whole operation)
+    try {
+      localStorage.setItem('userStatus', validatedPlan);
+      localStorage.setItem('subscriptionDetails', JSON.stringify(subscriptionData));
+      localStorage.setItem('lastSubscriptionUpdate', Date.now().toString());
+      console.log('✅ LocalStorage updated');
+    } catch (storageError) {
+      console.warn('⚠️ Failed to persist subscription data:', storageError);
+      // Don't fail the operation due to storage issues
+    }
+
+    // Enhanced global event broadcasting
+    const eventData = {
+      oldStatus,
+      newStatus: validatedPlan,
+      source,
+      subscriptionData: { ...subscriptionData },
+      timestamp: Date.now(),
+      duration: Date.now() - startTime
+    };
+
+    // Multiple event types for different listeners
+    const events = [
+      'userStatusChanged',
+      'subscriptionUpdated',
+      'userSubscriptionChanged', // Legacy compatibility
+      'planChanged'
+    ];
+
+    events.forEach(eventName => {
+      try {
+        if (typeof window !== 'undefined' && window.eventBus) {
+          window.eventBus.emit(eventName, eventData);
+        }
+      } catch (eventError) {
+        console.warn(`⚠️ Failed to trigger ${eventName}:`, eventError);
       }
     });
-  },
+
+    console.log('✅ Events triggered');
+
+    const duration = Date.now() - startTime;
+    const successResult = {
+      success: true,
+      subscriptionData: { ...subscriptionData },
+      oldStatus,
+      newStatus: validatedPlan,
+      duration,
+      message: `Subscription updated successfully from ${oldStatus} to ${validatedPlan}`,
+      timestamp: Date.now()
+    };
+
+    console.log(`✅ updateSubscription completed successfully in ${duration}ms:`, successResult);
+
+    // ✅ CRITICAL: Always return the success result
+    return successResult;
+
+  } catch (error) {
+    const duration = Date.now() - startTime;
+
+    console.error('❌ updateSubscription failed:', error);
+
+    commit('SET_ERROR', {
+      message: 'Subscription update failed',
+      context: 'updateSubscription',
+      originalError: error.message,
+      plan,
+      source
+    });
+
+    const errorResult = {
+      success: false,
+      error: error.message || 'Subscription update failed',
+      duration,
+      plan,
+      source,
+      timestamp: Date.now(),
+      stack: error.stack
+    };
+
+    console.log('❌ updateSubscription returning error result:', errorResult);
+
+    // ✅ CRITICAL: Always return the error result
+    return errorResult;
+  }
+},
+
+
 
   // ✅ NEW: Update user preferences
   async updatePreferences({ commit, state }, preferences) {
