@@ -1029,12 +1029,12 @@ export default {
       try {
         console.log('🔄 Updating user status via existing store action...');
         
-        // ✅ This calls your existing updateUserStatus action that already works
+        // ✅ CRITICAL FIX: Properly await and check the result
         const updateResult = await this.$store.dispatch('user/updateUserStatus', this.selectedPlan);
         
         console.log('📊 Store update result:', updateResult);
         
-        // ✅ Check for successful result (your action returns success: true/false)
+        // ✅ BULLETPROOF: Check for successful result with proper validation
         if (updateResult && updateResult.success === true) {
           console.log('✅ Store user status updated successfully');
           
@@ -1055,12 +1055,13 @@ export default {
           this.selectedPlan = '';
           this.promoValidation = null;
           
-          // Step 6: Force component reactivity (your action already handles store reactivity)
+          // Step 6: Force component reactivity
           this.forceReactivityUpdate();
           
           console.log('✅ Promocode application completed successfully');
           
         } else {
+          // ✅ FIXED: Handle undefined or falsy updateResult
           console.warn('⚠️ Store update returned unsuccessful result:', updateResult);
           
           // Check if there's a specific error message
@@ -1093,6 +1094,7 @@ export default {
   }
 },
 
+// ✅ ADDITION: Manual refresh helper method
 async attemptManualRefresh() {
   console.log('🔄 Attempting manual data refresh...');
   
@@ -1100,17 +1102,21 @@ async attemptManualRefresh() {
     try {
       const refreshTasks = [];
       
+      // Use the store action if available
       if (typeof this.loadUserStatus === 'function') {
         refreshTasks.push(this.loadUserStatus());
       }
       
+      // Try store dispatch methods
       if (this.$store && typeof this.$store.dispatch === 'function') {
         refreshTasks.push(this.$store.dispatch('user/loadUserStatus'));
         refreshTasks.push(this.$store.dispatch('user/forceUpdate'));
       }
       
+      // Execute all refresh tasks
       await Promise.allSettled(refreshTasks);
       
+      // Force component update
       this.forceReactivityUpdate();
       console.log('✅ Manual refresh completed');
       
@@ -1119,6 +1125,7 @@ async attemptManualRefresh() {
     }
   }, 2000);
 },
+
 // Add this new method to handle successful promocode application
 async handlePromocodeSuccess(result) {
   console.log('🎉 Handling successful promocode application:', result);

@@ -1256,7 +1256,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
       console.log('ℹ️ Status unchanged, but forcing global update');
       commit('FORCE_UPDATE');
       
-      // Trigger global event (assuming triggerGlobalEvent is available globally)
+      // Trigger global event
       if (typeof window !== 'undefined' && window.eventBus) {
         window.eventBus.emit('userStatusChanged', {
           oldStatus,
