@@ -811,448 +811,429 @@ const mutations = {
 // ✅ ENHANCED ACTIONS WITH COMPREHENSIVE ERROR HANDLING
 const actions = {
   // ✅ COMPLETELY BULLETPROOFED: saveUser action
-  async saveUser({ commit, dispatch, state }, { userData, token }) {
-    const startTime = Date.now();
+  // ✅ COMPLETELY FIXED saveUser action for src/store/user.js
+// Replace the existing saveUser action with this bulletproof version:
 
-    console.log('💾 🔥 ENHANCED saveUser starting...', {
-      hasUserData: !!userData,
-      hasToken: !!token,
-      tokenLength: token?.length || 0,
-      userEmail: userData?.email || 'unknown'
-    });
+async saveUser({ commit, dispatch, state }, { userData, token }) {
+  const startTime = Date.now();
 
-    // ✅ Result factory functions
-    const createErrorResult = (error, details = {}) => ({
+  console.log('💾 🔥 ENHANCED saveUser starting...', {
+    hasUserData: !!userData,
+    hasToken: !!token,
+    tokenLength: token?.length || 0,
+    userEmail: userData?.email || 'unknown'
+  });
+
+  // ✅ BULLETPROOF: Always return a result object
+  const createSuccessResult = (user, message = 'User saved successfully') => {
+    const result = {
+      success: true,
+      user: user || null,
+      message,
+      timestamp: new Date().toISOString(),
+      duration: Date.now() - startTime
+    };
+    console.log('✅ createSuccessResult:', result);
+    return result;
+  };
+
+  const createErrorResult = (error, details = {}) => {
+    const result = {
       success: false,
       error: typeof error === 'string' ? error : (error?.message || 'Unknown error occurred'),
       user: null,
       timestamp: new Date().toISOString(),
       duration: Date.now() - startTime,
       ...details
-    });
+    };
+    console.log('❌ createErrorResult:', result);
+    return result;
+  };
 
-    const createSuccessResult = (user, message = 'User saved successfully') => ({
-      success: true,
-      user: user || null,
-      message,
-      timestamp: new Date().toISOString(),
-      duration: Date.now() - startTime
-    });
+  // ✅ BULLETPROOF: Input validation with detailed feedback
+  if (!userData || typeof userData !== 'object') {
+    const error = 'Missing or invalid user data';
+    console.error('❌', error, { hasUserData: !!userData, userDataType: typeof userData });
+    commit('SET_ERROR', { message: error, context: 'saveUser-validation' });
+    return createErrorResult(error, { validationError: true });
+  }
 
-    // ✅ BULLETPROOF: Input validation with detailed feedback
-    if (!userData || typeof userData !== 'object') {
-      const error = 'Missing or invalid user data';
-      console.error('❌', error, { hasUserData: !!userData, userDataType: typeof userData });
-      commit('SET_ERROR', { message: error, context: 'saveUser-validation' });
-      return createErrorResult(error, { validationError: true });
+  if (!token || typeof token !== 'string' || token.length < 10) {
+    const error = 'Missing or invalid authentication token';
+    console.error('❌', error, { hasToken: !!token, tokenLength: token?.length || 0 });
+    commit('SET_ERROR', { message: error, context: 'saveUser-validation' });
+    return createErrorResult(error, { validationError: true });
+  }
+
+  try {
+    console.log('🔄 Setting loading state and initializing...');
+    commit('SET_LOADING', { type: 'saving', loading: true });
+
+    // ✅ BULLETPROOF: Environment validation
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
+    if (!baseUrl || typeof baseUrl !== 'string') {
+      const error = 'Application configuration error - API base URL not set';
+      console.error('❌', error, { hasBaseUrl: !!baseUrl, baseUrlType: typeof baseUrl });
+      commit('SET_ERROR', { message: error, context: 'saveUser-config' });
+      return createErrorResult(error, { configError: true });
     }
 
-    if (!token || typeof token !== 'string' || token.length < 10) {
-      const error = 'Missing or invalid authentication token';
-      console.error('❌', error, { hasToken: !!token, tokenLength: token?.length || 0 });
-      commit('SET_ERROR', { message: error, context: 'saveUser-validation' });
-      return createErrorResult(error, { validationError: true });
+    console.log('📤 Loading API module...');
+
+    // ✅ BULLETPROOF: API module loading with timeout
+    let api;
+    try {
+      const apiLoadPromise = import('@/api');
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('API module load timeout')), 5000)
+      );
+
+      const apiModule = await Promise.race([apiLoadPromise, timeoutPromise]);
+      api = apiModule.default || apiModule;
+
+      if (!api || typeof api.post !== 'function') {
+        throw new Error('API module does not have post method');
+      }
+
+      console.log('✅ API module loaded successfully');
+    } catch (apiImportError) {
+      const error = 'Failed to load API module - application error';
+      console.error('❌', error, apiImportError);
+      commit('SET_ERROR', { message: error, context: 'saveUser-api-import', originalError: apiImportError.message });
+      return createErrorResult(error, { apiImportError: true });
     }
+
+    // ✅ BULLETPROOF: Payload preparation with validation
+    const payload = {
+      firebaseUserId: userData.uid || userData.firebaseId || userData.firebaseUserId,
+      email: userData.email || '',
+      name: userData.displayName || userData.name || userData.email?.split('@')[0] || 'User',
+      displayName: userData.displayName || userData.name || '',
+      emailVerified: Boolean(userData.emailVerified),
+      photoURL: userData.photoURL || null,
+      subscriptionPlan: userData.subscriptionPlan || 'free',
+      lastLoginAt: new Date().toISOString(),
+      createdAt: userData.createdAt || new Date().toISOString(),
+      metadata: {
+        lastUpdate: new Date().toISOString(),
+        source: 'vue-app',
+        version: '2.0'
+      }
+    };
+
+    // ✅ BULLETPROOF: Validate essential payload fields
+    if (!payload.firebaseUserId || !payload.email) {
+      const error = 'Missing essential user information (ID or email)';
+      console.error('❌', error, {
+        hasFirebaseId: !!payload.firebaseUserId,
+        hasEmail: !!payload.email,
+        userData: Object.keys(userData)
+      });
+      commit('SET_ERROR', { message: error, context: 'saveUser-payload-validation' });
+      return createErrorResult(error, { payloadValidationError: true });
+    }
+
+    console.log('📤 Sending user data to server...', {
+      url: '/users/save',
+      firebaseUserId: payload.firebaseUserId.substring(0, 8) + '...',
+      email: payload.email,
+      plan: payload.subscriptionPlan
+    });
+
+    // ✅ BULLETPROOF: API call with comprehensive error handling and timeout
+    let response;
+    const apiStartTime = Date.now();
 
     try {
-      console.log('🔄 Setting loading state and initializing...');
-      commit('SET_LOADING', { type: 'saving', loading: true });
-
-      // ✅ BULLETPROOF: Environment validation
-      const baseUrl = import.meta.env.VITE_API_BASE_URL;
-      if (!baseUrl || typeof baseUrl !== 'string') {
-        const error = 'Application configuration error - API base URL not set';
-        console.error('❌', error, { hasBaseUrl: !!baseUrl, baseUrlType: typeof baseUrl });
-        commit('SET_ERROR', { message: error, context: 'saveUser-config' });
-        return createErrorResult(error, { configError: true });
-      }
-
-      console.log('📤 Loading API module...');
-
-      // ✅ BULLETPROOF: API module loading with timeout
-      let api;
-      try {
-        const apiLoadPromise = import('@/api');
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('API module load timeout')), 5000)
-        );
-
-        const apiModule = await Promise.race([apiLoadPromise, timeoutPromise]);
-
-        api = apiModule.default || apiModule;
-
-        if (!api || typeof api.post !== 'function') {
-          throw new Error('API module does not have post method');
-        }
-
-        console.log('✅ API module loaded successfully');
-      } catch (apiImportError) {
-        const error = 'Failed to load API module - application error';
-        console.error('❌', error, apiImportError);
-        commit('SET_ERROR', { message: error, context: 'saveUser-api-import', originalError: apiImportError.message });
-        return createErrorResult(error, { apiImportError: true });
-      }
-
-      // ✅ BULLETPROOF: Payload preparation with validation
-      const payload = {
-        firebaseUserId: userData.uid || userData.firebaseId || userData.firebaseUserId,
-        email: userData.email || '',
-        name: userData.displayName || userData.name || userData.email?.split('@')[0] || 'User',
-        displayName: userData.displayName || userData.name || '',
-        emailVerified: Boolean(userData.emailVerified),
-        photoURL: userData.photoURL || null,
-        subscriptionPlan: userData.subscriptionPlan || 'free',
-        lastLoginAt: new Date().toISOString(),
-        createdAt: userData.createdAt || new Date().toISOString(),
-        metadata: {
-          lastUpdate: new Date().toISOString(),
-          source: 'vue-app',
-          version: '2.0'
+      const requestConfig = {
+        timeout: 15000,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'X-Request-ID': `save_user_${Date.now()}`,
+          'X-App-Version': '2.0'
         }
       };
 
-      // ✅ BULLETPROOF: Validate essential payload fields
-      if (!payload.firebaseUserId || !payload.email) {
-        const error = 'Missing essential user information (ID or email)';
-        console.error('❌', error, {
-          hasFirebaseId: !!payload.firebaseUserId,
-          hasEmail: !!payload.email,
-          userData: Object.keys(userData)
-        });
-        commit('SET_ERROR', { message: error, context: 'saveUser-payload-validation' });
-        return createErrorResult(error, { payloadValidationError: true });
-      }
+      console.log('📡 Making API request to /users/save...');
 
-      console.log('📤 Sending user data to server...', {
-        url: '/users/save',
-        firebaseUserId: payload.firebaseUserId.substring(0, 8) + '...',
-        email: payload.email,
-        plan: payload.subscriptionPlan
+      const requestPromise = api.post('/users/save', payload, requestConfig);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), 20000)
+      );
+
+      response = await Promise.race([requestPromise, timeoutPromise]);
+
+      // Track API response time
+      const apiResponseTime = Date.now() - apiStartTime;
+      console.log('📥 Server response received:', {
+        status: response?.status,
+        statusText: response?.statusText,
+        responseTime: apiResponseTime + 'ms',
+        hasData: !!response?.data
       });
 
-      // ✅ BULLETPROOF: API call with comprehensive error handling and timeout
-      let response;
-      const apiStartTime = Date.now();
+    } catch (networkError) {
+      console.error('❌ Network error during user save:', networkError);
 
-      try {
-        const requestPromise = api.post('/users/save', payload, {
-          timeout: 15000,
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'X-Request-ID': `save_user_${Date.now()}`,
-            'X-App-Version': '2.0'
-          }
-        });
+      // ✅ BULLETPROOF: Detailed network error handling
+      let userFriendlyError = 'Network error occurred';
+      let statusCode = null;
+      let errorDetails = { isNetworkError: true };
 
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Request timeout')), 20000)
-        );
+      if (networkError.message === 'Request timeout') {
+        userFriendlyError = 'Request timed out. Please check your connection and try again.';
+        errorDetails.isTimeout = true;
+      } else if (networkError.code === 'ECONNABORTED') {
+        userFriendlyError = 'Request timed out. Please check your connection and try again.';
+        errorDetails.isTimeout = true;
+      } else if (networkError.message === 'Network Error') {
+        userFriendlyError = 'Network error. Please check your internet connection.';
+        errorDetails.isConnectionError = true;
+      } else if (networkError.response) {
+        statusCode = networkError.response.status;
+        const serverError = networkError.response.data || {};
+        errorDetails.statusCode = statusCode;
 
-        response = await Promise.race([requestPromise, timeoutPromise]);
-
-        // Track API response time
-        const apiResponseTime = Date.now() - apiStartTime;
-        if (!Array.isArray(state.system.performance.apiResponseTimes)) {
-          state.system.performance.apiResponseTimes = [];
+        switch (statusCode) {
+          case 400:
+            userFriendlyError = serverError.message || serverError.error || 'Invalid user data provided';
+            errorDetails.isBadRequest = true;
+            break;
+          case 401:
+            userFriendlyError = 'Authentication failed. Please log in again.';
+            errorDetails.isAuthError = true;
+            break;
+          case 403:
+            userFriendlyError = 'Access denied. Please check your permissions.';
+            errorDetails.isAuthError = true;
+            break;
+          case 404:
+            userFriendlyError = 'User service not found. Please contact support.';
+            errorDetails.isServiceError = true;
+            break;
+          case 409:
+            userFriendlyError = serverError.message || serverError.error || 'User already exists with different data';
+            errorDetails.isConflict = true;
+            break;
+          case 429:
+            userFriendlyError = 'Too many requests. Please wait and try again.';
+            errorDetails.isRateLimit = true;
+            break;
+          case 500:
+          case 502:
+          case 503:
+          case 504:
+            userFriendlyError = 'Server error. Please try again later.';
+            errorDetails.isServerError = true;
+            break;
+          default:
+            userFriendlyError = serverError.message || serverError.error || `Server error (${statusCode})`;
+            errorDetails.isUnknownServerError = true;
         }
-        state.system.performance.apiResponseTimes.push(apiResponseTime);
-
-        // Keep only last 10 response times
-        if (state.system.performance.apiResponseTimes.length > 10) {
-          state.system.performance.apiResponseTimes = state.system.performance.apiResponseTimes.slice(-10);
-        }
-
-        console.log('📥 Server response received:', {
-          status: response?.status,
-          statusText: response?.statusText,
-          responseTime: apiResponseTime + 'ms',
-          hasData: !!response?.data
-        });
-
-      } catch (networkError) {
-        console.error('❌ Network error during user save:', networkError);
-
-        // ✅ BULLETPROOF: Detailed network error handling
-        let userFriendlyError = 'Network error occurred';
-        let statusCode = null;
-        let errorDetails = { isNetworkError: true };
-
-        if (networkError.message === 'Request timeout') {
-          userFriendlyError = 'Request timed out. Please check your connection and try again.';
-          errorDetails.isTimeout = true;
-        } else if (networkError.code === 'ECONNABORTED') {
-          userFriendlyError = 'Request timed out. Please check your connection and try again.';
-          errorDetails.isTimeout = true;
-        } else if (networkError.message === 'Network Error') {
-          userFriendlyError = 'Network error. Please check your internet connection.';
-          errorDetails.isConnectionError = true;
-        } else if (networkError.response) {
-          statusCode = networkError.response.status;
-          const serverError = networkError.response.data || {};
-          errorDetails.statusCode = statusCode;
-
-          switch (statusCode) {
-            case 400:
-              userFriendlyError = serverError.message || serverError.error || 'Invalid user data provided';
-              errorDetails.isBadRequest = true;
-              break;
-            case 401:
-              userFriendlyError = 'Authentication failed. Please log in again.';
-              errorDetails.isAuthError = true;
-              break;
-            case 403:
-              userFriendlyError = 'Access denied. Please check your permissions.';
-              errorDetails.isAuthError = true;
-              break;
-            case 404:
-              userFriendlyError = 'User service not found. Please contact support.';
-              errorDetails.isServiceError = true;
-              break;
-            case 409:
-              userFriendlyError = serverError.message || serverError.error || 'User already exists with different data';
-              errorDetails.isConflict = true;
-              break;
-            case 429:
-              userFriendlyError = 'Too many requests. Please wait and try again.';
-              errorDetails.isRateLimit = true;
-              break;
-            case 500:
-            case 502:
-            case 503:
-            case 504:
-              userFriendlyError = 'Server error. Please try again later.';
-              errorDetails.isServerError = true;
-              break;
-            default:
-              userFriendlyError = serverError.message || serverError.error || `Server error (${statusCode})`;
-              errorDetails.isUnknownServerError = true;
-          }
-        } else {
-          userFriendlyError = 'Unable to connect to server. Please try again.';
-          errorDetails.isConnectionError = true;
-        }
-
-        commit('SET_ERROR', {
-          message: userFriendlyError,
-          context: 'saveUser-network',
-          originalError: networkError.message,
-          statusCode
-        });
-
-        return createErrorResult(userFriendlyError, errorDetails);
-      }
-
-      // ✅ BULLETPROOF: Response validation
-      if (!response || typeof response !== 'object') {
-        const error = 'Invalid response from server';
-        console.error('❌', error, { hasResponse: !!response, responseType: typeof response });
-        commit('SET_ERROR', { message: error, context: 'saveUser-response-validation' });
-        return createErrorResult(error, { responseValidationError: true });
-      }
-
-      const responseData = response.data;
-      if (!responseData || typeof responseData !== 'object') {
-        const error = 'Empty or invalid response from server';
-        console.error('❌', error, { hasResponseData: !!responseData, responseDataType: typeof responseData });
-        commit('SET_ERROR', { message: error, context: 'saveUser-response-data' });
-        return createErrorResult(error, { responseDataError: true });
-      }
-
-      console.log('📊 Processing server response...', {
-        hasSuccess: 'success' in responseData,
-        hasData: 'data' in responseData,
-        hasUser: 'user' in responseData,
-        responseKeys: Object.keys(responseData)
-      });
-
-      // ✅ BULLETPROOF: Handle different response structures
-      let savedUser = null;
-
-      if (responseData.success === true) {
-        if (responseData.data && typeof responseData.data === 'object') {
-          savedUser = responseData.data;
-          console.log('✅ Using success+data response structure');
-        } else if (responseData.user && typeof responseData.user === 'object') {
-          savedUser = responseData.user;
-          console.log('✅ Using success+user response structure');
-        } else {
-          const error = 'Server returned success but no user data';
-          console.error('❌', error, { responseStructure: Object.keys(responseData) });
-          commit('SET_ERROR', { message: error, context: 'saveUser-response-structure' });
-          return createErrorResult(error, { responseStructureError: true });
-        }
-      } else if (responseData.user && typeof responseData.user === 'object') {
-        savedUser = responseData.user;
-        console.log('✅ Using direct user response structure');
-      } else if ((responseData._id || responseData.firebaseId || responseData.firebaseUserId) && responseData.email) {
-        savedUser = responseData;
-        console.log('✅ Using direct object response structure');
-      } else if (responseData.success === false) {
-        const error = responseData.message || responseData.error || 'Server returned failure status';
-        console.error('❌ Server returned success: false:', error);
-        commit('SET_ERROR', { message: error, context: 'saveUser-server-failure' });
-        return createErrorResult(error, { serverFailure: true, serverResponse: responseData });
       } else {
-        const error = 'Server returned unrecognized response format';
-        console.error('❌', error, responseData);
-        commit('SET_ERROR', { message: error, context: 'saveUser-unknown-response' });
-        return createErrorResult(error, { unknownResponseError: true, rawResponse: responseData });
-      }
-
-      // ✅ BULLETPROOF: Validate saved user object
-      if (!savedUser || typeof savedUser !== 'object') {
-        const error = 'Server returned invalid user data';
-        console.error('❌', error, { savedUserType: typeof savedUser, hasSavedUser: !!savedUser });
-        commit('SET_ERROR', { message: error, context: 'saveUser-user-validation' });
-        return createErrorResult(error, { userValidationError: true });
-      }
-
-      // ✅ BULLETPROOF: Ensure user has all required fields
-      const completeUser = {
-        ...savedUser,
-        firebaseId: savedUser.firebaseId || savedUser.firebaseUserId || savedUser._id || userData.uid,
-        _id: savedUser._id || savedUser.firebaseId || savedUser.firebaseUserId,
-        email: savedUser.email || userData.email,
-        name: savedUser.name || userData.displayName || userData.email?.split('@')[0] || 'User',
-        displayName: savedUser.displayName || savedUser.name || userData.displayName || '',
-        subscriptionPlan: savedUser.subscriptionPlan || 'free',
-        lastLoginAt: savedUser.lastLoginAt || new Date().toISOString(),
-        updatedAt: savedUser.updatedAt || new Date().toISOString(),
-        metadata: {
-          ...savedUser.metadata,
-          lastSync: new Date().toISOString(),
-          syncSource: 'saveUser'
-        }
-      };
-
-      // ✅ BULLETPROOF: Final validation of complete user
-      if (!completeUser.firebaseId || !completeUser.email) {
-        const error = 'Server user data missing essential fields';
-        console.error('❌', error, {
-          hasFirebaseId: !!completeUser.firebaseId,
-          hasEmail: !!completeUser.email,
-          userFields: Object.keys(completeUser)
-        });
-        commit('SET_ERROR', { message: error, context: 'saveUser-final-validation' });
-        return createErrorResult(error, { finalValidationError: true });
-      }
-
-      console.log('✅ User saved successfully to server:', {
-        id: completeUser._id || completeUser.firebaseId,
-        email: completeUser.email,
-        plan: completeUser.subscriptionPlan,
-        firebaseId: completeUser.firebaseId,
-        duration: Date.now() - startTime + 'ms'
-      });
-
-      // ✅ BULLETPROOF: Update local store with server data
-      try {
-        commit('SET_USER', completeUser);
-        commit('SET_USER_STATUS', completeUser.subscriptionPlan || 'free');
-
-        // Store user ID for future API calls
-        const userId = completeUser.firebaseId || completeUser._id;
-        if (userId) {
-          localStorage.setItem('userId', userId);
-          localStorage.setItem('firebaseUserId', userId);
-          localStorage.setItem('lastUserSync', Date.now().toString());
-        }
-
-        console.log('✅ Local store updated with server data');
-      } catch (storeError) {
-        console.error('❌ Failed to update local store:', storeError);
-        commit('SET_ERROR', { message: 'Store update failed', context: 'saveUser-store-update', originalError: storeError.message });
-        // Don't fail the entire operation if store update fails
-      }
-
-      // ✅ BULLETPROOF: Load additional user data (non-blocking)
-      console.log('📊 Initiating background data loading...');
-
-      const backgroundTasks = [
-        { name: 'loadUserStatus', action: () => dispatch('loadUserStatus') },
-        { name: 'loadUsage', action: () => dispatch('loadUsage') },
-        { name: 'checkMonthlyReset', action: () => dispatch('checkMonthlyReset') },
-        { name: 'checkPendingPayments', action: () => dispatch('checkPendingPayments') }
-      ];
-
-      // Execute background tasks without blocking
-      Promise.allSettled(backgroundTasks.map(task =>
-        task.action().catch(err => ({ taskName: task.name, error: err.message }))
-      )).then(results => {
-        const failures = results.filter(r => r.status === 'rejected');
-        const successes = results.filter(r => r.status === 'fulfilled');
-
-        if (failures.length > 0) {
-          console.warn('⚠️ Some background tasks failed:', failures.map(f => f.reason));
-        }
-
-        console.log(`✅ Background data loading complete: ${successes.length}/${backgroundTasks.length} succeeded`);
-      }).catch(error => {
-        console.warn('⚠️ Background task coordination error:', error);
-      });
-
-      return createSuccessResult(completeUser, 'User saved and synchronized successfully');
-
-    } catch (error) {
-      console.error('❌ Unexpected error in saveUser:', error);
-
-      // ✅ BULLETPROOF: Comprehensive error categorization
-      let userFriendlyError = 'An unexpected error occurred while saving user data.';
-      let errorCategory = 'unexpected';
-
-      if (error.message?.includes('API module')) {
-        userFriendlyError = 'Application configuration error. Please refresh the page.';
-        errorCategory = 'config';
-      } else if (error.message?.includes('environment')) {
-        userFriendlyError = 'Application not properly configured. Please contact support.';
-        errorCategory = 'config';
-      } else if (error.message?.includes('fetch') || error.message?.includes('network')) {
-        userFriendlyError = 'Network connection failed. Please check your internet connection.';
-        errorCategory = 'network';
-      } else if (error.message?.includes('timeout')) {
-        userFriendlyError = 'Request timed out. Please try again.';
-        errorCategory = 'timeout';
-      } else if (error.message?.includes('JSON')) {
-        userFriendlyError = 'Server returned invalid response. Please try again.';
-        errorCategory = 'parsing';
+        userFriendlyError = 'Unable to connect to server. Please try again.';
+        errorDetails.isConnectionError = true;
       }
 
       commit('SET_ERROR', {
         message: userFriendlyError,
-        context: 'saveUser-unexpected',
-        originalError: error.message,
-        stack: error.stack,
-        category: errorCategory
+        context: 'saveUser-network',
+        originalError: networkError.message,
+        statusCode
       });
 
-      console.error('❌ Detailed error info:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-        category: errorCategory,
-        duration: Date.now() - startTime + 'ms'
-      });
-
-      return createErrorResult(userFriendlyError, {
-        isUnexpectedError: true,
-        originalError: error.message,
-        category: errorCategory
-      });
-
-    } finally {
-      // ✅ BULLETPROOF: Always clear loading state
-      try {
-        commit('SET_LOADING', { type: 'saving', loading: false });
-        console.log(`⏱️ saveUser completed in ${Date.now() - startTime}ms`);
-      } catch (loadingError) {
-        console.warn('⚠️ Failed to clear loading state:', loadingError);
-      }
+      return createErrorResult(userFriendlyError, errorDetails);
     }
-  },
- // ✅ FIXED: Remove duplicate and ensure proper return from updateUserStatus
-// In src/store/user.js, replace the updateUserStatus action at line 1479 with this:
 
+    // ✅ BULLETPROOF: Response validation
+    if (!response || typeof response !== 'object') {
+      const error = 'Invalid response from server';
+      console.error('❌', error, { hasResponse: !!response, responseType: typeof response });
+      commit('SET_ERROR', { message: error, context: 'saveUser-response-validation' });
+      return createErrorResult(error, { responseValidationError: true });
+    }
+
+    const responseData = response.data;
+    if (!responseData || typeof responseData !== 'object') {
+      const error = 'Empty or invalid response from server';
+      console.error('❌', error, { hasResponseData: !!responseData, responseDataType: typeof responseData });
+      commit('SET_ERROR', { message: error, context: 'saveUser-response-data' });
+      return createErrorResult(error, { responseDataError: true });
+    }
+
+    console.log('📊 Processing server response...', {
+      hasSuccess: 'success' in responseData,
+      hasData: 'data' in responseData,
+      hasUser: 'user' in responseData,
+      responseKeys: Object.keys(responseData)
+    });
+
+    // ✅ BULLETPROOF: Handle different response structures
+    let savedUser = null;
+
+    if (responseData.success === true) {
+      if (responseData.data && typeof responseData.data === 'object') {
+        savedUser = responseData.data;
+        console.log('✅ Using success+data response structure');
+      } else if (responseData.user && typeof responseData.user === 'object') {
+        savedUser = responseData.user;
+        console.log('✅ Using success+user response structure');
+      } else {
+        const error = 'Server returned success but no user data';
+        console.error('❌', error, { responseStructure: Object.keys(responseData) });
+        commit('SET_ERROR', { message: error, context: 'saveUser-response-structure' });
+        return createErrorResult(error, { responseStructureError: true });
+      }
+    } else if (responseData.user && typeof responseData.user === 'object') {
+      savedUser = responseData.user;
+      console.log('✅ Using direct user response structure');
+    } else if ((responseData._id || responseData.firebaseId || responseData.firebaseUserId) && responseData.email) {
+      savedUser = responseData;
+      console.log('✅ Using direct object response structure');
+    } else if (responseData.success === false) {
+      const error = responseData.message || responseData.error || 'Server returned failure status';
+      console.error('❌ Server returned success: false:', error);
+      commit('SET_ERROR', { message: error, context: 'saveUser-server-failure' });
+      return createErrorResult(error, { serverFailure: true, serverResponse: responseData });
+    } else {
+      const error = 'Server returned unrecognized response format';
+      console.error('❌', error, responseData);
+      commit('SET_ERROR', { message: error, context: 'saveUser-unknown-response' });
+      return createErrorResult(error, { unknownResponseError: true, rawResponse: responseData });
+    }
+
+    // ✅ BULLETPROOF: Validate saved user object
+    if (!savedUser || typeof savedUser !== 'object') {
+      const error = 'Server returned invalid user data';
+      console.error('❌', error, { savedUserType: typeof savedUser, hasSavedUser: !!savedUser });
+      commit('SET_ERROR', { message: error, context: 'saveUser-user-validation' });
+      return createErrorResult(error, { userValidationError: true });
+    }
+
+    // ✅ BULLETPROOF: Ensure user has all required fields
+    const completeUser = {
+      ...savedUser,
+      firebaseId: savedUser.firebaseId || savedUser.firebaseUserId || savedUser._id || userData.uid,
+      _id: savedUser._id || savedUser.firebaseId || savedUser.firebaseUserId,
+      uid: savedUser.uid || savedUser.firebaseId || savedUser.firebaseUserId || userData.uid,
+      email: savedUser.email || userData.email,
+      name: savedUser.name || userData.displayName || userData.email?.split('@')[0] || 'User',
+      displayName: savedUser.displayName || savedUser.name || userData.displayName || '',
+      subscriptionPlan: savedUser.subscriptionPlan || 'free',
+      lastLoginAt: savedUser.lastLoginAt || new Date().toISOString(),
+      updatedAt: savedUser.updatedAt || new Date().toISOString(),
+      metadata: {
+        ...savedUser.metadata,
+        lastSync: new Date().toISOString(),
+        syncSource: 'saveUser'
+      }
+    };
+
+    // ✅ BULLETPROOF: Final validation of complete user
+    if (!completeUser.firebaseId || !completeUser.email) {
+      const error = 'Server user data missing essential fields';
+      console.error('❌', error, {
+        hasFirebaseId: !!completeUser.firebaseId,
+        hasEmail: !!completeUser.email,
+        userFields: Object.keys(completeUser)
+      });
+      commit('SET_ERROR', { message: error, context: 'saveUser-final-validation' });
+      return createErrorResult(error, { finalValidationError: true });
+    }
+
+    console.log('✅ User saved successfully to server:', {
+      id: completeUser._id || completeUser.firebaseId,
+      email: completeUser.email,
+      plan: completeUser.subscriptionPlan,
+      firebaseId: completeUser.firebaseId,
+      duration: Date.now() - startTime + 'ms'
+    });
+
+    // ✅ BULLETPROOF: Update local store with server data
+    try {
+      commit('SET_USER', completeUser);
+      commit('SET_USER_STATUS', completeUser.subscriptionPlan || 'free');
+
+      // Store user ID for future API calls
+      const userId = completeUser.firebaseId || completeUser._id;
+      if (userId) {
+        localStorage.setItem('userId', userId);
+        localStorage.setItem('firebaseUserId', userId);
+        localStorage.setItem('lastUserSync', Date.now().toString());
+      }
+
+      console.log('✅ Local store updated with server data');
+    } catch (storeError) {
+      console.error('❌ Failed to update local store:', storeError);
+      commit('SET_ERROR', { message: 'Store update failed', context: 'saveUser-store-update', originalError: storeError.message });
+      // Don't fail the entire operation if store update fails
+    }
+
+    // ✅ CRITICAL: Always return success result
+    const finalResult = createSuccessResult(completeUser, 'User saved and synchronized successfully');
+    console.log('🎉 saveUser returning success result:', finalResult);
+    return finalResult;
+
+  } catch (error) {
+    console.error('❌ Unexpected error in saveUser:', error);
+
+    // ✅ BULLETPROOF: Comprehensive error categorization
+    let userFriendlyError = 'An unexpected error occurred while saving user data.';
+    let errorCategory = 'unexpected';
+
+    if (error.message?.includes('API module')) {
+      userFriendlyError = 'Application configuration error. Please refresh the page.';
+      errorCategory = 'config';
+    } else if (error.message?.includes('environment')) {
+      userFriendlyError = 'Application not properly configured. Please contact support.';
+      errorCategory = 'config';
+    } else if (error.message?.includes('fetch') || error.message?.includes('network')) {
+      userFriendlyError = 'Network connection failed. Please check your internet connection.';
+      errorCategory = 'network';
+    } else if (error.message?.includes('timeout')) {
+      userFriendlyError = 'Request timed out. Please try again.';
+      errorCategory = 'timeout';
+    } else if (error.message?.includes('JSON')) {
+      userFriendlyError = 'Server returned invalid response. Please try again.';
+      errorCategory = 'parsing';
+    }
+
+    commit('SET_ERROR', {
+      message: userFriendlyError,
+      context: 'saveUser-unexpected',
+      originalError: error.message,
+      stack: error.stack,
+      category: errorCategory
+    });
+
+    console.error('❌ Detailed error info:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      category: errorCategory,
+      duration: Date.now() - startTime + 'ms'
+    });
+
+    // ✅ CRITICAL: Always return error result
+    const finalResult = createErrorResult(userFriendlyError, {
+      isUnexpectedError: true,
+      originalError: error.message,
+      category: errorCategory
+    });
+    console.log('❌ saveUser returning error result:', finalResult);
+    return finalResult;
+
+  } finally {
+    // ✅ BULLETPROOF: Always clear loading state
+    try {
+      commit('SET_LOADING', { type: 'saving', loading: false });
+      console.log(`⏱️ saveUser completed in ${Date.now() - startTime}ms`);
+    } catch (loadingError) {
+      console.warn('⚠️ Failed to clear loading state:', loadingError);
+    }
+  }
+},
 async updateUserStatus({ commit, state, dispatch }, newStatus) {
   const startTime = Date.now();
   
