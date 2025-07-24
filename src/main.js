@@ -1,4 +1,4 @@
-// src/main.js - COMPLETE REWRITE WITH ENHANCED SUBSCRIPTION MANAGEMENT
+// src/main.js - COMPLETE REWRITE WITH FIXED AUTHENTICATION PERSISTENCE
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
@@ -12,7 +12,35 @@ import { createI18n } from 'vue-i18n';
 import messages from './locales/messages.json';
 
 import { auth } from './firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';
+
+// ============================================================================
+// 🔥 CRITICAL: SET FIREBASE AUTH PERSISTENCE FIRST
+// ============================================================================
+
+// ✅ CRITICAL: Set auth persistence to LOCAL for page refresh persistence
+setPersistence(auth, browserLocalPersistence).then(() => {
+  console.log('✅ Firebase auth persistence set to LOCAL');
+}).catch((error) => {
+  console.error('❌ Failed to set auth persistence:', error);
+});
+
+// ✅ CRITICAL: Create auth initialization promise - MUST be created before anything else
+let authInitialized = false;
+let authInitResolver = null;
+
+export const authInitPromise = new Promise((resolve) => {
+  authInitResolver = resolve;
+  
+  // Fallback timeout to prevent hanging
+  setTimeout(() => {
+    if (!authInitialized) {
+      console.warn('🔥 Firebase auth initialization timeout, resolving anyway');
+      authInitialized = true;
+      resolve(null);
+    }
+  }, 10000); // 10 second timeout
+});
 
 // ============================================================================
 // 🚀 ENHANCED EVENT BUS FOR SUBSCRIPTION MANAGEMENT
@@ -159,8 +187,7 @@ const i18n = createI18n({
 // ============================================================================
 
 let app;
-let isApplicationMounted = false; // Renamed to avoid duplicate
-let authInitialized = false;
+let isApplicationMounted = false;
 let storeInitialized = false;
 
 // Track app lifecycle
@@ -206,12 +233,30 @@ async function initializeStore() {
 }
 
 // ============================================================================
-// 🔥 ENHANCED FIREBASE AUTH HANDLER
+// 🔥 FIXED FIREBASE AUTH HANDLER WITH PROPER PERSISTENCE
 // ============================================================================
 
+// ✅ CRITICAL: Enhanced Firebase auth state change handler
 onAuthStateChanged(auth, async (firebaseUser) => {
   try {
     console.log('🔥 Firebase auth state changed:', firebaseUser?.email || 'logged out');
+    
+    // ✅ CRITICAL: Always resolve auth init promise first time
+    if (!authInitialized) {
+      authInitialized = true;
+      appLifecycle.authReady = true;
+      
+      console.log('✅ Firebase auth initialized');
+      
+      if (authInitResolver) {
+        authInitResolver(firebaseUser);
+      }
+      
+      eventBus.emit('authReady', {
+        hasUser: !!firebaseUser,
+        timestamp: Date.now()
+      });
+    }
     
     if (firebaseUser) {
       await handleUserLogin(firebaseUser);
@@ -219,21 +264,16 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       await handleUserLogout();
     }
     
-    // Mark auth as initialized
-    if (!authInitialized) {
-      authInitialized = true;
-      appLifecycle.authReady = true;
-      
-      eventBus.emit('authReady', {
-        hasUser: !!firebaseUser,
-        timestamp: Date.now()
-      });
-      
-      console.log('✅ Firebase auth initialized');
-    }
-    
   } catch (error) {
     console.error('❌ Critical auth state change error:', error);
+    
+    // ✅ CRITICAL: Still resolve auth init to prevent hanging
+    if (!authInitialized) {
+      authInitialized = true;
+      if (authInitResolver) {
+        authInitResolver(null);
+      }
+    }
     
     eventBus.emit('authCriticalError', {
       error: error.message,
@@ -246,40 +286,71 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     await forceClearUserState();
   }
   
-  // Mount app once auth is ready
+  // ✅ CRITICAL: Mount app once auth is ready AND store is ready
   if (!isApplicationMounted && authInitialized && storeInitialized) {
     await mountVueApplication();
   }
 });
 
 // ============================================================================
-// 👤 USER LOGIN HANDLER
+// 👤 ENHANCED USER LOGIN HANDLER WITH RETRY LOGIC
 // ============================================================================
 
 async function handleUserLogin(firebaseUser) {
   try {
     console.log('👤 Processing user login for:', firebaseUser.email);
     
-    // ✅ Get Firebase ID token
+    // ✅ IMMEDIATELY set user in store to prevent logout during save
+    const quickUserData = {
+      uid: firebaseUser.uid,
+      firebaseId: firebaseUser.uid,
+      email: firebaseUser.email,
+      displayName: firebaseUser.displayName,
+      name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+      emailVerified: firebaseUser.emailVerified,
+      photoURL: firebaseUser.photoURL,
+      subscriptionPlan: 'free', // Default until server confirms
+      lastLoginAt: new Date().toISOString()
+    };
+    
+    // Set user immediately to prevent auth flicker
+    store.commit('user/SET_USER', quickUserData);
+    store.commit('user/SET_AUTHENTICATED', true);
+    console.log('👤 User set immediately in store to prevent logout');
+    
+    // ✅ Get Firebase ID token with retry
     let token;
-    try {
-      token = await firebaseUser.getIdToken();
-      console.log('🔑 Firebase token obtained');
-    } catch (tokenError) {
-      console.error('❌ Failed to get Firebase token:', tokenError);
-      
-      eventBus.emit('userLoginError', {
-        error: 'Failed to get authentication token. Please try logging in again.',
-        isTokenError: true,
-        canRetry: true,
-        timestamp: Date.now()
-      });
-      
-      await forceClearUserState();
-      return;
+    let tokenAttempts = 0;
+    const maxTokenAttempts = 3;
+    
+    while (tokenAttempts < maxTokenAttempts) {
+      try {
+        token = await firebaseUser.getIdToken(true); // Force refresh
+        console.log('🔑 Firebase token obtained');
+        break;
+      } catch (tokenError) {
+        tokenAttempts++;
+        console.error(`❌ Token attempt ${tokenAttempts} failed:`, tokenError);
+        
+        if (tokenAttempts >= maxTokenAttempts) {
+          console.error('❌ Failed to get Firebase token after max attempts');
+          
+          eventBus.emit('userLoginError', {
+            error: 'Failed to get authentication token. Please try logging in again.',
+            isTokenError: true,
+            canRetry: true,
+            timestamp: Date.now()
+          });
+          
+          return; // Don't proceed without token
+        }
+        
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 1000 * tokenAttempts));
+      }
     }
     
-    // ✅ Prepare user data
+    // ✅ Prepare enhanced user data
     const userData = {
       uid: firebaseUser.uid,
       email: firebaseUser.email,
@@ -294,41 +365,63 @@ async function handleUserLogin(firebaseUser) {
       uid: userData.uid 
     });
     
-    // ✅ Save user to server with comprehensive error handling
+    // ✅ Save user to server with enhanced retry logic
     let saveResult;
-    try {
-      saveResult = await store.dispatch('user/saveUser', { userData, token });
-    } catch (dispatchError) {
-      console.error('❌ Store dispatch error:', dispatchError);
-      saveResult = {
-        success: false,
-        error: dispatchError.message || 'Failed to save user to server',
-        isDispatchError: true
-      };
+    let saveAttempts = 0;
+    const maxSaveAttempts = 3;
+    
+    while (saveAttempts < maxSaveAttempts) {
+      try {
+        saveResult = await store.dispatch('user/saveUser', { userData, token });
+        
+        if (saveResult && saveResult.success === true) {
+          console.log('✅ User saved successfully on attempt', saveAttempts + 1);
+          break; // Success, exit retry loop
+        } else {
+          throw new Error(saveResult?.error || 'Save returned unsuccessful result');
+        }
+        
+      } catch (saveError) {
+        saveAttempts++;
+        console.warn(`⚠️ User save attempt ${saveAttempts} failed:`, saveError.message);
+        
+        if (saveAttempts >= maxSaveAttempts) {
+          console.error('❌ Max save attempts reached');
+          
+          // Don't fail completely, continue with local auth
+          eventBus.emit('userSaveError', {
+            error: saveError.message,
+            maxAttemptsReached: true,
+            localAuthContinued: true,
+            timestamp: Date.now()
+          });
+          
+          // Use local user data
+          saveResult = {
+            success: true,
+            user: quickUserData,
+            fallback: true
+          };
+          break;
+          
+        } else {
+          // Wait before retry (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, saveAttempts - 1)));
+        }
+      }
     }
     
-    // ✅ Validate save result
-    if (!saveResult || typeof saveResult !== 'object') {
-      saveResult = {
-        success: false,
-        error: 'Invalid server response',
-        originalResult: saveResult
-      };
-    }
-    
-    if (!saveResult.hasOwnProperty('success')) {
-      saveResult = {
-        success: false,
-        error: 'Malformed server response',
-        originalResult: saveResult
-      };
-    }
-    
-    // ✅ Handle successful save
-    if (saveResult.success === true) {
+    // ✅ Handle successful save or fallback
+    if (saveResult && (saveResult.success === true || saveResult.fallback)) {
       await handleSuccessfulUserSave(saveResult, token, userData);
     } else {
-      await handleFailedUserSave(saveResult, token, userData);
+      // This shouldn't happen due to fallback, but handle it
+      console.error('❌ All user save attempts failed without fallback');
+      eventBus.emit('userLoginError', {
+        error: 'Failed to save user data after multiple attempts',
+        isCritical: true,
+        timestamp: Date.now()
+      });
     }
     
   } catch (error) {
@@ -340,31 +433,41 @@ async function handleUserLogin(firebaseUser) {
       timestamp: Date.now()
     });
     
-    await forceClearUserState();
+    // Don't clear user state if we at least have local auth
+    if (!store.getters['user/isAuthenticated']) {
+      await forceClearUserState();
+    }
   }
 }
 
 // ============================================================================
-// ✅ SUCCESSFUL USER SAVE HANDLER
+// ✅ ENHANCED SUCCESSFUL USER SAVE HANDLER
 // ============================================================================
 
 async function handleSuccessfulUserSave(result, token, userData) {
   try {
     console.log('✅ User saved to server successfully');
     
+    if (result.fallback) {
+      console.log('ℹ️ Using fallback local authentication');
+    }
+    
     // Validate user data in result
-    if (!result.user || typeof result.user !== 'object') {
-      console.error('❌ Success response missing user data:', result);
+    const serverUser = result.user;
+    if (!serverUser || typeof serverUser !== 'object') {
+      console.error('❌ Invalid user data in result:', result);
       
       eventBus.emit('userLoginError', {
-        error: 'Server saved user but returned invalid data. Please refresh the page.',
+        error: 'Server returned invalid user data. Using local authentication.',
         isDataError: true,
+        fallbackUsed: true,
         timestamp: Date.now()
       });
+      
+      // Use the quick user data we set earlier
       return;
     }
     
-    const serverUser = result.user;
     console.log('👤 Server user data:', {
       id: serverUser._id || serverUser.firebaseId,
       email: serverUser.email,
@@ -382,13 +485,22 @@ async function handleSuccessfulUserSave(result, token, userData) {
       store.commit('user/SET_USER', serverUser);
       store.commit('user/SET_AUTHENTICATED', true);
       
+      // Update user status if different
+      const serverStatus = serverUser.subscriptionPlan || 'free';
+      const currentStatus = store.getters['user/userStatus'];
+      
+      if (serverStatus !== currentStatus) {
+        console.log(`🔄 Updating user status: ${currentStatus} → ${serverStatus}`);
+        store.commit('user/SET_USER_STATUS', serverStatus);
+      }
+      
       // Update localStorage
       const storageData = {
         user: serverUser,
         firebaseUserId: serverUser.firebaseId || serverUser._id,
         userId: serverUser.firebaseId || serverUser._id,
         token: token,
-        userStatus: serverUser.subscriptionPlan || 'free'
+        userStatus: serverStatus
       };
       
       Object.entries(storageData).forEach(([key, value]) => {
@@ -416,7 +528,7 @@ async function handleSuccessfulUserSave(result, token, userData) {
     eventBus.emit('userLoggedIn', {
       user: serverUser,
       userStatus: userStatus,
-      source: 'server',
+      source: result.fallback ? 'fallback' : 'server',
       isFirstLogin: !localStorage.getItem('lastLoginTime'),
       timestamp: Date.now()
     });
@@ -433,6 +545,32 @@ async function handleSuccessfulUserSave(result, token, userData) {
     
     console.log(`🎉 User login completed: ${userData.email} (${userStatus})`);
     
+    // ✅ CRITICAL: Load additional user data (non-blocking)
+    console.log('📊 Initiating background data loading...');
+    
+    const backgroundTasks = [
+      { name: 'loadUserStatus', action: () => store.dispatch('user/loadUserStatus') },
+      { name: 'loadUsage', action: () => store.dispatch('user/loadUsage') },
+      { name: 'checkMonthlyReset', action: () => store.dispatch('user/checkMonthlyReset') },
+      { name: 'checkPendingPayments', action: () => store.dispatch('user/checkPendingPayments') }
+    ];
+    
+    // Execute background tasks without blocking
+    Promise.allSettled(backgroundTasks.map(task =>
+      task.action().catch(err => ({ taskName: task.name, error: err.message }))
+    )).then(results => {
+      const failures = results.filter(r => r.status === 'rejected');
+      const successes = results.filter(r => r.status === 'fulfilled');
+      
+      if (failures.length > 0) {
+        console.warn('⚠️ Some background tasks failed:', failures.map(f => f.reason));
+      }
+      
+      console.log(`✅ Background data loading complete: ${successes.length}/${backgroundTasks.length} succeeded`);
+    }).catch(error => {
+      console.warn('⚠️ Background task coordination error:', error);
+    });
+    
   } catch (error) {
     console.error('❌ Error in successful save handler:', error);
     eventBus.emit('userLoginError', {
@@ -440,74 +578,6 @@ async function handleSuccessfulUserSave(result, token, userData) {
       originalError: error.message,
       timestamp: Date.now()
     });
-  }
-}
-
-// ============================================================================
-// ❌ FAILED USER SAVE HANDLER
-// ============================================================================
-
-async function handleFailedUserSave(result, token, userData) {
-  const errorMessage = result.error || 'Failed to save user to server';
-  console.error('❌ Failed to save user to server:', {
-    error: errorMessage,
-    statusCode: result.statusCode,
-    isDispatchError: result.isDispatchError
-  });
-  
-  // Clear any inconsistent state
-  await forceClearUserState();
-  
-  // Emit detailed error
-  eventBus.emit('userLoginError', {
-    error: errorMessage,
-    isServerError: true,
-    canRetry: true,
-    statusCode: result.statusCode,
-    isDispatchError: result.isDispatchError,
-    timestamp: Date.now()
-  });
-  
-  // ✅ AUTO-RETRY for server/network errors
-  const shouldRetry = (
-    result.statusCode >= 500 || 
-    !result.statusCode || 
-    result.isDispatchError
-  );
-  
-  if (shouldRetry) {
-    console.log('🔄 Will retry user save in 3 seconds...');
-    
-    setTimeout(async () => {
-      try {
-        console.log('🔄 Retrying user save...');
-        const retryResult = await store.dispatch('user/saveUser', { userData, token });
-        
-        if (retryResult?.success === true && retryResult.user) {
-          console.log('✅ Retry successful');
-          await handleSuccessfulUserSave(retryResult, token, userData);
-          
-          eventBus.emit('userLoginRetrySuccess', {
-            message: 'Successfully connected after retry',
-            timestamp: Date.now()
-          });
-        } else {
-          console.error('❌ Retry failed:', retryResult);
-          eventBus.emit('userLoginRetryFailed', {
-            error: retryResult?.error || 'Retry failed',
-            finalFailure: true,
-            timestamp: Date.now()
-          });
-        }
-      } catch (retryError) {
-        console.error('❌ Retry exception:', retryError);
-        eventBus.emit('userLoginRetryFailed', {
-          error: retryError.message,
-          isException: true,
-          timestamp: Date.now()
-        });
-      }
-    }, 3000);
   }
 }
 
@@ -628,6 +698,7 @@ async function mountVueApplication() {
     app.config.globalProperties.$userStore = store;
     app.config.globalProperties.$userStatus = () => store.getters['user/userStatus'];
     app.config.globalProperties.$hasFeature = (feature) => store.getters['user/hasFeatureAccess'](feature);
+    app.config.globalProperties.$authInitPromise = authInitPromise;
     
     // ✅ Install plugins
     app.use(store);
@@ -644,6 +715,18 @@ async function mountVueApplication() {
       console.error('❌ Vue error:', error);
       console.error('📍 Component:', instance?.$options?.name || 'Unknown');
       console.error('ℹ️ Info:', info);
+      
+      // Handle specific auth-related errors
+      if (error.message?.includes('auth') || error.message?.includes('user')) {
+        console.error('🔍 Auth-related error detected');
+        
+        eventBus.emit('authVueError', {
+          error: error.message,
+          component: instance?.$options?.name || 'Unknown',
+          info,
+          timestamp: Date.now()
+        });
+      }
       
       // Handle specific length errors
       if (error.message?.includes("Cannot read properties of undefined (reading 'length')")) {
@@ -893,11 +976,14 @@ async function initializeApplication() {
   try {
     console.log('🚀 Starting application initialization...');
     
-    // Initialize store first
+    // ✅ CRITICAL: Initialize store first
     await initializeStore();
     
-    // Firebase auth will trigger mounting when ready
+    // ✅ CRITICAL: Wait for Firebase auth initialization
     console.log('⏳ Waiting for Firebase auth state...');
+    
+    // The Firebase auth handler will take care of mounting the app
+    // when both auth and store are ready
     
   } catch (error) {
     console.error('❌ Application initialization failed:', error);
@@ -942,6 +1028,9 @@ window.addEventListener('DOMContentLoaded', () => {
       events.forEach(event => eventBus.off(event, callback));
     };
   };
+  
+  // Auth initialization helper for components
+  window.waitForAuth = () => authInitPromise;
 });
 
 // ============================================================================
@@ -995,6 +1084,82 @@ if (import.meta.env.DEV) {
   window.$userStatus = () => store.getters['user/userStatus'];
   window.$userFeatures = () => store.getters['user/features'];
   window.$appLifecycle = appLifecycle;
+  window.$authInitPromise = authInitPromise;
+  
+  // Enhanced debugging tools
+  window.debugAuth = {
+    getCurrentUser: () => ({
+      firebase: auth.currentUser,
+      store: store.getters['user/getUser'],
+      localStorage: JSON.parse(localStorage.getItem('user') || 'null')
+    }),
+    
+    clearUserState: async () => {
+      await forceClearUserState();
+      console.log('✅ User state cleared via debug tool');
+    },
+    
+    testSaveUser: async () => {
+      if (auth.currentUser) {
+        const token = await auth.currentUser.getIdToken();
+        const result = await store.dispatch('user/saveUser', {
+          userData: {
+            uid: auth.currentUser.uid,
+            email: auth.currentUser.email,
+            displayName: auth.currentUser.displayName
+          },
+          token
+        });
+        console.log('🧪 Test save user result:', result);
+        return result;
+      } else {
+        console.log('❌ No current user to test save');
+        return null;
+      }
+    },
+    
+    forceAuthReinit: async () => {
+      console.log('🔄 Forcing auth reinitialization...');
+      authInitialized = false;
+      
+      // Trigger auth state change
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        await handleUserLogin(currentUser);
+      }
+    }
+  };
+  
+  window.debugSubscription = {
+    getCurrentStatus: () => ({
+      store: store.getters['user/userStatus'],
+      localStorage: localStorage.getItem('userStatus'),
+      subscription: store.getters['user/subscriptionDetails']
+    }),
+    
+    syncStatus: () => {
+      const storeStatus = store.getters['user/userStatus'];
+      localStorage.setItem('userStatus', storeStatus);
+      console.log('🔧 Status synced:', storeStatus);
+    },
+    
+    testPromocodeFlow: async (plan = 'pro') => {
+      console.log(`🧪 Testing promocode flow for ${plan}...`);
+      const result = await store.dispatch('user/updateUserStatus', plan);
+      console.log('🧪 Promocode test result:', result);
+      return result;
+    },
+    
+    testPaymentFlow: async (plan = 'start') => {
+      console.log(`🧪 Testing payment flow for ${plan}...`);
+      eventBus.emit('paymentCompleted', {
+        plan,
+        transactionId: 'test_' + Date.now(),
+        amount: plan === 'start' ? 260000 : 455000
+      });
+    }
+  };
+  
   console.log(`
 🐛 DEVELOPMENT DEBUG COMMANDS AVAILABLE:
 
@@ -1008,14 +1173,52 @@ if (import.meta.env.DEV) {
 - debugAuth.getCurrentUser(): Get comprehensive user state
 - debugAuth.clearUserState(): Clear all user data
 - debugAuth.testSaveUser(): Test server user save manually
+- debugAuth.forceAuthReinit(): Force auth reinitialization
 
 🎯 QUICK ACCESS:
 - $store: Vuex store instance
 - $eventBus: Global event bus
 - $userStatus(): Get current user status
 - $appLifecycle: App initialization state
+- $authInitPromise: Auth initialization promise
   `);
 }
+
+// ============================================================================
+// 🔄 AUTH STATE RECOVERY MECHANISM
+// ============================================================================
+
+// Add recovery mechanism for auth state issues
+window.addEventListener('focus', () => {
+  // Check if we lost auth state on window focus
+  if (authInitialized && !store.getters['user/isAuthenticated'] && auth.currentUser) {
+    console.log('🔄 Detected auth state mismatch on window focus, recovering...');
+    handleUserLogin(auth.currentUser).catch(error => {
+      console.error('❌ Auth recovery failed:', error);
+    });
+  }
+});
+
+// Add periodic auth state check (every 30 seconds)
+setInterval(() => {
+  if (authInitialized && store.getters['user/isAuthenticated']) {
+    const firebaseUser = auth.currentUser;
+    const storeUser = store.getters['user/getUser'];
+    
+    // Check for mismatches
+    if (firebaseUser && storeUser && firebaseUser.uid !== storeUser.firebaseId) {
+      console.warn('⚠️ Auth state mismatch detected, fixing...');
+      handleUserLogin(firebaseUser).catch(error => {
+        console.error('❌ Periodic auth fix failed:', error);
+      });
+    } else if (!firebaseUser && storeUser) {
+      console.warn('⚠️ Firebase user lost but store has user, clearing...');
+      handleUserLogout().catch(error => {
+        console.error('❌ Periodic logout failed:', error);
+      });
+    }
+  }
+}, 30000);
 
 // ============================================================================
 // 🎬 APPLICATION STARTUP
