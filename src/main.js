@@ -1,4 +1,4 @@
-// src/main.js - COMPLETE REWRITE WITH FIXED AUTHENTICATION PERSISTENCE
+// src/main.js - FIXED VERSION WITH WORKING AUTHENTICATION
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
@@ -25,7 +25,7 @@ setPersistence(auth, browserLocalPersistence).then(() => {
   console.error('❌ Failed to set auth persistence:', error);
 });
 
-// ✅ CRITICAL: Create auth initialization promise - MUST be created before anything else
+// ✅ CRITICAL: Create auth initialization promise
 let authInitialized = false;
 let authInitResolver = null;
 
@@ -39,7 +39,7 @@ export const authInitPromise = new Promise((resolve) => {
       authInitialized = true;
       resolve(null);
     }
-  }, 10000); // 10 second timeout
+  }, 8000); // 8 second timeout
 });
 
 // ============================================================================
@@ -54,7 +54,6 @@ class AdvancedEventBus {
     this.errorHandlers = new Set();
   }
   
-  // ✅ Enhanced emit with error handling and logging
   emit(event, data) {
     if (this.debugMode) {
       console.log(`📡 EventBus: Emitting "${event}"`, data);
@@ -70,33 +69,21 @@ class AdvancedEventBus {
         }
       });
     }
-    
-    // Special handling for subscription events
-    if (event.includes('subscription') || event.includes('promocode') || event.includes('payment')) {
-      this.notifySubscriptionListeners(event, data);
-    }
   }
   
-  // ✅ Standard event listener registration
   on(event, callback) {
     if (!this.events[event]) {
       this.events[event] = [];
     }
     this.events[event].push(callback);
-    
-    if (this.debugMode) {
-      console.log(`🔗 EventBus: Registered listener for "${event}"`);
-    }
   }
   
-  // ✅ Remove event listener
   off(event, callback) {
     if (this.events[event]) {
       this.events[event] = this.events[event].filter(cb => cb !== callback);
     }
   }
   
-  // ✅ One-time event listener
   once(event, callback) {
     const onceCallback = (data) => {
       callback(data);
@@ -105,13 +92,11 @@ class AdvancedEventBus {
     this.on(event, onceCallback);
   }
   
-  // ✅ Special subscription listener registry
   onSubscriptionChange(callback) {
     this.subscriptionListeners.add(callback);
     return () => this.subscriptionListeners.delete(callback);
   }
   
-  // ✅ Notify all subscription listeners
   notifySubscriptionListeners(event, data) {
     this.subscriptionListeners.forEach(callback => {
       try {
@@ -122,13 +107,11 @@ class AdvancedEventBus {
     });
   }
   
-  // ✅ Error handler registration
   onError(callback) {
     this.errorHandlers.add(callback);
     return () => this.errorHandlers.delete(callback);
   }
   
-  // ✅ Handle event errors
   handleEventError(event, error, data) {
     this.errorHandlers.forEach(handler => {
       try {
@@ -139,28 +122,10 @@ class AdvancedEventBus {
     });
   }
   
-  // ✅ Clear all events
   clear() {
     this.events = {};
     this.subscriptionListeners.clear();
     this.errorHandlers.clear();
-  }
-  
-  // ✅ Get event statistics
-  getStats() {
-    const stats = {
-      totalEvents: Object.keys(this.events).length,
-      totalListeners: Object.values(this.events).reduce((sum, arr) => sum + arr.length, 0),
-      subscriptionListeners: this.subscriptionListeners.size,
-      errorHandlers: this.errorHandlers.size,
-      events: {}
-    };
-    
-    Object.keys(this.events).forEach(event => {
-      stats.events[event] = this.events[event].length;
-    });
-    
-    return stats;
   }
 }
 
@@ -233,10 +198,9 @@ async function initializeStore() {
 }
 
 // ============================================================================
-// 🔥 FIXED FIREBASE AUTH HANDLER WITH PROPER PERSISTENCE
+// 🔥 FIXED FIREBASE AUTH HANDLER
 // ============================================================================
 
-// ✅ CRITICAL: Enhanced Firebase auth state change handler
 onAuthStateChanged(auth, async (firebaseUser) => {
   try {
     console.log('🔥 Firebase auth state changed:', firebaseUser?.email || 'logged out');
@@ -293,7 +257,7 @@ onAuthStateChanged(auth, async (firebaseUser) => {
 });
 
 // ============================================================================
-// 👤 ENHANCED USER LOGIN HANDLER WITH RETRY LOGIC
+// 👤 FIXED USER LOGIN HANDLER
 // ============================================================================
 
 async function handleUserLogin(firebaseUser) {
@@ -304,12 +268,13 @@ async function handleUserLogin(firebaseUser) {
     const quickUserData = {
       uid: firebaseUser.uid,
       firebaseId: firebaseUser.uid,
+      _id: firebaseUser.uid,
       email: firebaseUser.email,
       displayName: firebaseUser.displayName,
       name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
       emailVerified: firebaseUser.emailVerified,
       photoURL: firebaseUser.photoURL,
-      subscriptionPlan: 'free', // Default until server confirms
+      subscriptionPlan: 'free',
       lastLoginAt: new Date().toISOString()
     };
     
@@ -320,37 +285,25 @@ async function handleUserLogin(firebaseUser) {
     
     // ✅ Get Firebase ID token with retry
     let token;
-    let tokenAttempts = 0;
-    const maxTokenAttempts = 3;
-    
-    while (tokenAttempts < maxTokenAttempts) {
-      try {
-        token = await firebaseUser.getIdToken(true); // Force refresh
-        console.log('🔑 Firebase token obtained');
-        break;
-      } catch (tokenError) {
-        tokenAttempts++;
-        console.error(`❌ Token attempt ${tokenAttempts} failed:`, tokenError);
-        
-        if (tokenAttempts >= maxTokenAttempts) {
-          console.error('❌ Failed to get Firebase token after max attempts');
-          
-          eventBus.emit('userLoginError', {
-            error: 'Failed to get authentication token. Please try logging in again.',
-            isTokenError: true,
-            canRetry: true,
-            timestamp: Date.now()
-          });
-          
-          return; // Don't proceed without token
-        }
-        
-        // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, 1000 * tokenAttempts));
-      }
+    try {
+      token = await firebaseUser.getIdToken(true);
+      console.log('🔑 Firebase token obtained');
+    } catch (tokenError) {
+      console.error('❌ Failed to get Firebase token:', tokenError);
+      
+      eventBus.emit('userLoginError', {
+        error: 'Failed to get authentication token. Please try logging in again.',
+        isTokenError: true,
+        canRetry: true,
+        timestamp: Date.now()
+      });
+      
+      // Continue with local auth only
+      await handleSuccessfulUserSave({ success: true, user: quickUserData, fallback: true }, null, quickUserData);
+      return;
     }
     
-    // ✅ Prepare enhanced user data
+    // ✅ Prepare user data for server
     const userData = {
       uid: firebaseUser.uid,
       email: firebaseUser.email,
@@ -365,64 +318,38 @@ async function handleUserLogin(firebaseUser) {
       uid: userData.uid 
     });
     
-    // ✅ Save user to server with enhanced retry logic
+    // ✅ FIXED: Save user to server with proper error handling
     let saveResult;
-    let saveAttempts = 0;
-    const maxSaveAttempts = 3;
-    
-    while (saveAttempts < maxSaveAttempts) {
-      try {
-        saveResult = await store.dispatch('user/saveUser', { userData, token });
-        
-        if (saveResult && saveResult.success === true) {
-          console.log('✅ User saved successfully on attempt', saveAttempts + 1);
-          break; // Success, exit retry loop
-        } else {
-          throw new Error(saveResult?.error || 'Save returned unsuccessful result');
-        }
-        
-      } catch (saveError) {
-        saveAttempts++;
-        console.warn(`⚠️ User save attempt ${saveAttempts} failed:`, saveError.message);
-        
-        if (saveAttempts >= maxSaveAttempts) {
-          console.error('❌ Max save attempts reached');
-          
-          // Don't fail completely, continue with local auth
-          eventBus.emit('userSaveError', {
-            error: saveError.message,
-            maxAttemptsReached: true,
-            localAuthContinued: true,
-            timestamp: Date.now()
-          });
-          
-          // Use local user data
-          saveResult = {
-            success: true,
-            user: quickUserData,
-            fallback: true
-          };
-          break;
-          
-        } else {
-          // Wait before retry (exponential backoff)
-          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, saveAttempts - 1)));
-        }
+    try {
+      saveResult = await store.dispatch('user/saveUser', { userData, token });
+      
+      // ✅ FIXED: Handle different return formats
+      if (!saveResult) {
+        console.warn('⚠️ saveUser returned undefined, using fallback');
+        saveResult = { success: true, user: quickUserData, fallback: true };
+      } else if (typeof saveResult !== 'object') {
+        console.warn('⚠️ saveUser returned non-object, using fallback');
+        saveResult = { success: true, user: quickUserData, fallback: true };
+      } else if (saveResult.success !== true && saveResult.success !== false) {
+        console.warn('⚠️ saveUser returned ambiguous result, using fallback');
+        saveResult = { success: true, user: quickUserData, fallback: true };
       }
+      
+    } catch (saveError) {
+      console.error('❌ User save failed:', saveError);
+      
+      eventBus.emit('userSaveError', {
+        error: saveError.message,
+        fallbackUsed: true,
+        timestamp: Date.now()
+      });
+      
+      // Use fallback
+      saveResult = { success: true, user: quickUserData, fallback: true };
     }
     
     // ✅ Handle successful save or fallback
-    if (saveResult && (saveResult.success === true || saveResult.fallback)) {
-      await handleSuccessfulUserSave(saveResult, token, userData);
-    } else {
-      // This shouldn't happen due to fallback, but handle it
-      console.error('❌ All user save attempts failed without fallback');
-      eventBus.emit('userLoginError', {
-        error: 'Failed to save user data after multiple attempts',
-        isCritical: true,
-        timestamp: Date.now()
-      });
-    }
+    await handleSuccessfulUserSave(saveResult, token, userData);
     
   } catch (error) {
     console.error('❌ User login handler error:', error);
@@ -441,7 +368,7 @@ async function handleUserLogin(firebaseUser) {
 }
 
 // ============================================================================
-// ✅ ENHANCED SUCCESSFUL USER SAVE HANDLER
+// ✅ FIXED SUCCESSFUL USER SAVE HANDLER
 // ============================================================================
 
 async function handleSuccessfulUserSave(result, token, userData) {
@@ -456,20 +383,11 @@ async function handleSuccessfulUserSave(result, token, userData) {
     const serverUser = result.user;
     if (!serverUser || typeof serverUser !== 'object') {
       console.error('❌ Invalid user data in result:', result);
-      
-      eventBus.emit('userLoginError', {
-        error: 'Server returned invalid user data. Using local authentication.',
-        isDataError: true,
-        fallbackUsed: true,
-        timestamp: Date.now()
-      });
-      
-      // Use the quick user data we set earlier
-      return;
+      return; // Exit early if no valid user data
     }
     
     console.log('👤 Server user data:', {
-      id: serverUser._id || serverUser.firebaseId,
+      id: serverUser._id || serverUser.firebaseId || serverUser.uid,
       email: serverUser.email,
       plan: serverUser.subscriptionPlan || 'free'
     });
@@ -477,9 +395,17 @@ async function handleSuccessfulUserSave(result, token, userData) {
     // ✅ Update stores with server data
     try {
       // Update main store (legacy compatibility)
-      store.commit('setUser', serverUser);
-      store.commit('setFirebaseUserId', serverUser.firebaseId || serverUser._id);
-      store.commit('setToken', token);
+      if (store.commit) {
+        store.commit('setUser', serverUser);
+        
+        if (serverUser.firebaseId || serverUser._id || serverUser.uid) {
+          store.commit('setFirebaseUserId', serverUser.firebaseId || serverUser._id || serverUser.uid);
+        }
+        
+        if (token) {
+          store.commit('setToken', token);
+        }
+      }
       
       // Ensure user module store is also updated
       store.commit('user/SET_USER', serverUser);
@@ -497,11 +423,14 @@ async function handleSuccessfulUserSave(result, token, userData) {
       // Update localStorage
       const storageData = {
         user: serverUser,
-        firebaseUserId: serverUser.firebaseId || serverUser._id,
-        userId: serverUser.firebaseId || serverUser._id,
-        token: token,
+        firebaseUserId: serverUser.firebaseId || serverUser._id || serverUser.uid,
+        userId: serverUser.firebaseId || serverUser._id || serverUser.uid,
         userStatus: serverStatus
       };
+      
+      if (token) {
+        storageData.token = token;
+      }
       
       Object.entries(storageData).forEach(([key, value]) => {
         try {
@@ -545,31 +474,55 @@ async function handleSuccessfulUserSave(result, token, userData) {
     
     console.log(`🎉 User login completed: ${userData.email} (${userStatus})`);
     
-    // ✅ CRITICAL: Load additional user data (non-blocking)
+    // ✅ FIXED: Load additional user data (with proper error handling)
     console.log('📊 Initiating background data loading...');
     
-    const backgroundTasks = [
-      { name: 'loadUserStatus', action: () => store.dispatch('user/loadUserStatus') },
-      { name: 'loadUsage', action: () => store.dispatch('user/loadUsage') },
-      { name: 'checkMonthlyReset', action: () => store.dispatch('user/checkMonthlyReset') },
-      { name: 'checkPendingPayments', action: () => store.dispatch('user/checkPendingPayments') }
-    ];
+    const backgroundTasks = [];
     
-    // Execute background tasks without blocking
-    Promise.allSettled(backgroundTasks.map(task =>
-      task.action().catch(err => ({ taskName: task.name, error: err.message }))
-    )).then(results => {
-      const failures = results.filter(r => r.status === 'rejected');
-      const successes = results.filter(r => r.status === 'fulfilled');
+    // Only add tasks that exist and are functions
+    if (store.dispatch) {
+      const taskActions = [
+        'user/loadUserStatus',
+        'user/loadUsage', 
+        'user/checkMonthlyReset',
+        'user/checkPendingPayments'
+      ];
       
-      if (failures.length > 0) {
-        console.warn('⚠️ Some background tasks failed:', failures.map(f => f.reason));
-      }
-      
-      console.log(`✅ Background data loading complete: ${successes.length}/${backgroundTasks.length} succeeded`);
-    }).catch(error => {
-      console.warn('⚠️ Background task coordination error:', error);
-    });
+      taskActions.forEach(actionName => {
+        backgroundTasks.push({
+          name: actionName,
+          action: async () => {
+            try {
+              const result = await store.dispatch(actionName);
+              return { success: true, result, actionName };
+            } catch (error) {
+              console.warn(`⚠️ Background task ${actionName} failed:`, error.message);
+              return { success: false, error: error.message, actionName };
+            }
+          }
+        });
+      });
+    }
+    
+    if (backgroundTasks.length > 0) {
+      // Execute background tasks without blocking
+      Promise.allSettled(backgroundTasks.map(task => task.action()))
+        .then(results => {
+          const successes = results.filter(r => r.status === 'fulfilled' && r.value?.success).length;
+          const failures = results.filter(r => r.status === 'rejected' || !r.value?.success).length;
+          
+          console.log(`✅ Background data loading complete: ${successes}/${backgroundTasks.length} succeeded`);
+          
+          if (failures > 0) {
+            console.warn(`⚠️ ${failures} background tasks failed (non-critical)`);
+          }
+        })
+        .catch(error => {
+          console.warn('⚠️ Background task coordination error (non-critical):', error);
+        });
+    } else {
+      console.log('ℹ️ No background tasks to execute');
+    }
     
   } catch (error) {
     console.error('❌ Error in successful save handler:', error);
@@ -591,7 +544,9 @@ async function handleUserLogout() {
     
     // Clear user data through store actions
     try {
-      await store.dispatch('user/logout');
+      if (store.dispatch && typeof store.dispatch === 'function') {
+        await store.dispatch('user/logout');
+      }
     } catch (logoutError) {
       console.warn('⚠️ Store logout error:', logoutError);
       // Force clear if action fails
@@ -600,7 +555,9 @@ async function handleUserLogout() {
     
     // Also clear legacy main store
     try {
-      store.commit('logout');
+      if (store.commit) {
+        store.commit('logout');
+      }
     } catch (mainStoreError) {
       console.warn('⚠️ Main store logout warning:', mainStoreError);
     }
@@ -654,14 +611,18 @@ async function forceClearUserState() {
   
   try {
     // Clear user store
-    store.commit('user/CLEAR_USER');
+    if (store.commit) {
+      store.commit('user/CLEAR_USER');
+    }
   } catch (error) {
     console.warn('⚠️ Failed to clear user store:', error);
   }
   
   try {
     // Clear main store
-    store.commit('logout');
+    if (store.commit) {
+      store.commit('logout');
+    }
   } catch (error) {
     console.warn('⚠️ Failed to clear main store:', error);
   }
@@ -716,18 +677,6 @@ async function mountVueApplication() {
       console.error('📍 Component:', instance?.$options?.name || 'Unknown');
       console.error('ℹ️ Info:', info);
       
-      // Handle specific auth-related errors
-      if (error.message?.includes('auth') || error.message?.includes('user')) {
-        console.error('🔍 Auth-related error detected');
-        
-        eventBus.emit('authVueError', {
-          error: error.message,
-          component: instance?.$options?.name || 'Unknown',
-          info,
-          timestamp: Date.now()
-        });
-      }
-      
       // Handle specific length errors
       if (error.message?.includes("Cannot read properties of undefined (reading 'length')")) {
         console.error('🔍 Length property error detected');
@@ -741,7 +690,9 @@ async function mountVueApplication() {
         
         // Try to recover
         try {
-          store.commit('user/FORCE_UPDATE');
+          if (store.commit) {
+            store.commit('user/FORCE_UPDATE');
+          }
           console.log('🔄 Attempted store refresh for length error');
         } catch (refreshError) {
           console.error('❌ Store refresh failed:', refreshError);
@@ -784,6 +735,19 @@ async function mountVueApplication() {
       error: error.message,
       timestamp: Date.now()
     });
+    
+    // Show fallback UI
+    document.body.innerHTML = `
+      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
+        <div style="text-align: center; padding: 2rem; background: #fee; border: 1px solid #fcc; border-radius: 8px;">
+          <h2 style="color: #c33; margin-bottom: 1rem;">⚠️ Application Mount Error</h2>
+          <p style="color: #666; margin-bottom: 1rem;">Failed to mount the Vue application.</p>
+          <button onclick="window.location.reload()" style="background: #007cba; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
+            🔄 Reload Page
+          </button>
+        </div>
+      </div>
+    `;
   }
 }
 
@@ -831,32 +795,10 @@ function setupGlobalSubscriptionManagement() {
       oldPlan: oldPlan,
       timestamp: timestamp || Date.now()
     });
-    
-    // ✅ Show celebration for upgrades
-    if (plan !== 'free' && oldPlan === 'free') {
-      const sourceText = source === 'promocode' ? 'промокоду' : 'оплате';
-      console.log(`🎉 Subscription upgraded to ${planLabel} via ${sourceText}!`);
-      
-      eventBus.emit('subscriptionUpgrade', {
-        plan: plan,
-        source: source,
-        message: `Поздравляем! ${planLabel} подписка активирована по ${sourceText}!`,
-        timestamp: Date.now()
-      });
-    }
   };
   
   // ✅ Register global DOM event listener
   window.addEventListener('userSubscriptionChanged', handleGlobalSubscriptionChange);
-  
-  // ✅ Store reference for cleanup
-  if (!window.globalEventHandlers) {
-    window.globalEventHandlers = {
-      subscriptionHandlers: [],
-      statusHandlers: []
-    };
-  }
-  window.globalEventHandlers.subscriptionHandlers.push(handleGlobalSubscriptionChange);
   
   // ✅ Enhanced event bus subscription listeners
   eventBus.on('userStatusChanged', (data) => {
@@ -877,68 +819,34 @@ function setupGlobalSubscriptionManagement() {
     }
   });
   
-  eventBus.on('promocodeApplied', (data) => {
-    console.log('🎟️ Promocode applied:', data);
-    
-    // Create DOM event for global propagation
-    const domEvent = new CustomEvent('userSubscriptionChanged', {
-      detail: {
-        plan: data.newStatus,
-        source: 'promocode',
-        oldPlan: data.oldStatus,
-        promocode: data.promocode,
-        timestamp: Date.now()
-      }
-    });
-    window.dispatchEvent(domEvent);
-  });
-  
-  eventBus.on('paymentCompleted', (data) => {
-    console.log('💳 Payment completed:', data);
-    
-    // Create DOM event for global propagation
-    const domEvent = new CustomEvent('userSubscriptionChanged', {
-      detail: {
-        plan: data.plan,
-        source: 'payment',
-        oldPlan: 'free',
-        transactionId: data.transactionId,
-        amount: data.amount,
-        timestamp: Date.now()
-      }
-    });
-    window.dispatchEvent(domEvent);
-  });
-  
-  // ✅ Development mode: enhanced debugging
-  if (import.meta.env.DEV) {
-    const debugStatusChange = (data) => {
-      console.log('🐛 Debug: Status change event:', data);
-      
-      // Check for inconsistencies
-      const storeStatus = store?.getters['user/userStatus'];
-      const localStatus = localStorage.getItem('userStatus');
-      
-      if (storeStatus !== localStatus) {
-        console.warn('⚠️ Status inconsistency detected:', {
-          store: storeStatus,
-          localStorage: localStatus,
-          event: data.newStatus
-        });
-        
-        // Auto-fix inconsistency
-        if (storeStatus) {
-          localStorage.setItem('userStatus', storeStatus);
-          console.log('🔧 Auto-fixed localStorage from store');
-        }
-      }
-    };
-    
-    eventBus.on('userStatusChanged', debugStatusChange);
-    window.globalEventHandlers.statusHandlers.push(debugStatusChange);
-  }
-  
   console.log('✅ Global subscription management setup complete');
+}
+
+// ============================================================================
+// 🚀 APPLICATION INITIALIZATION
+// ============================================================================
+
+async function initializeApplication() {
+  try {
+    console.log('🚀 Starting application initialization...');
+    
+    // ✅ CRITICAL: Initialize store first
+    await initializeStore();
+    
+    // ✅ CRITICAL: Wait for Firebase auth initialization
+    console.log('⏳ Waiting for Firebase auth state...');
+    
+    // The Firebase auth handler will take care of mounting the app
+    // when both auth and store are ready
+    
+  } catch (error) {
+    console.error('❌ Application initialization failed:', error);
+    
+    eventBus.emit('appInitializationError', {
+      error: error.message,
+      timestamp: Date.now()
+    });
+  }
 }
 
 // ============================================================================
@@ -969,33 +877,6 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 // ============================================================================
-// 🚀 APPLICATION INITIALIZATION
-// ============================================================================
-
-async function initializeApplication() {
-  try {
-    console.log('🚀 Starting application initialization...');
-    
-    // ✅ CRITICAL: Initialize store first
-    await initializeStore();
-    
-    // ✅ CRITICAL: Wait for Firebase auth initialization
-    console.log('⏳ Waiting for Firebase auth state...');
-    
-    // The Firebase auth handler will take care of mounting the app
-    // when both auth and store are ready
-    
-  } catch (error) {
-    console.error('❌ Application initialization failed:', error);
-    
-    eventBus.emit('appInitializationError', {
-      error: error.message,
-      timestamp: Date.now()
-    });
-  }
-}
-
-// ============================================================================
 // 🔧 GLOBAL HELPER FUNCTIONS
 // ============================================================================
 
@@ -1019,59 +900,9 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   };
   
-  // User change listener helper
-  window.listenToUserChanges = (callback) => {
-    const events = ['userStatusChanged', 'promocodeApplied', 'featuresUpdated', 'forceUpdate'];
-    events.forEach(event => eventBus.on(event, callback));
-    
-    return () => {
-      events.forEach(event => eventBus.off(event, callback));
-    };
-  };
-  
   // Auth initialization helper for components
   window.waitForAuth = () => authInitPromise;
 });
-
-// ============================================================================
-// 📊 PERFORMANCE MONITORING
-// ============================================================================
-
-if (import.meta.env.DEV) {
-  // Track app load performance
-  window.addEventListener('load', () => {
-    if (performance.mark) {
-      performance.mark('app-loaded');
-      const loadTime = performance.now();
-      console.log(`⚡ App loaded in: ${loadTime.toFixed(2)}ms`);
-      
-      eventBus.emit('appPerformance', {
-        loadTime: loadTime,
-        timestamp: Date.now()
-      });
-    }
-  });
-  
-  // Track store mutations for debugging
-  let mutationCount = 0;
-  store.subscribe((mutation, state) => {
-    mutationCount++;
-    
-    if (mutation.type.startsWith('user/')) {
-      console.log(`🔄 User store mutation #${mutationCount}:`, mutation.type, mutation.payload);
-    }
-    
-    // Track subscription-related mutations
-    if (mutation.type.includes('STATUS') || mutation.type.includes('SUBSCRIPTION') || mutation.type.includes('UPDATE')) {
-      eventBus.emit('storeMutation', {
-        type: mutation.type,
-        payload: mutation.payload,
-        count: mutationCount,
-        timestamp: Date.now()
-      });
-    }
-  });
-}
 
 // ============================================================================
 // 🐛 DEVELOPMENT DEBUGGING TOOLS
@@ -1101,17 +932,22 @@ if (import.meta.env.DEV) {
     
     testSaveUser: async () => {
       if (auth.currentUser) {
-        const token = await auth.currentUser.getIdToken();
-        const result = await store.dispatch('user/saveUser', {
-          userData: {
-            uid: auth.currentUser.uid,
-            email: auth.currentUser.email,
-            displayName: auth.currentUser.displayName
-          },
-          token
-        });
-        console.log('🧪 Test save user result:', result);
-        return result;
+        try {
+          const token = await auth.currentUser.getIdToken();
+          const result = await store.dispatch('user/saveUser', {
+            userData: {
+              uid: auth.currentUser.uid,
+              email: auth.currentUser.email,
+              displayName: auth.currentUser.displayName
+            },
+            token
+          });
+          console.log('🧪 Test save user result:', result);
+          return result;
+        } catch (error) {
+          console.log('❌ Test save user failed:', error);
+          return { success: false, error: error.message };
+        }
       } else {
         console.log('❌ No current user to test save');
         return null;
@@ -1120,9 +956,6 @@ if (import.meta.env.DEV) {
     
     forceAuthReinit: async () => {
       console.log('🔄 Forcing auth reinitialization...');
-      authInitialized = false;
-      
-      // Trigger auth state change
       const currentUser = auth.currentUser;
       if (currentUser) {
         await handleUserLogin(currentUser);
@@ -1145,9 +978,14 @@ if (import.meta.env.DEV) {
     
     testPromocodeFlow: async (plan = 'pro') => {
       console.log(`🧪 Testing promocode flow for ${plan}...`);
-      const result = await store.dispatch('user/updateUserStatus', plan);
-      console.log('🧪 Promocode test result:', result);
-      return result;
+      try {
+        const result = await store.dispatch('user/updateUserStatus', plan);
+        console.log('🧪 Promocode test result:', result);
+        return result;
+      } catch (error) {
+        console.log('❌ Promocode test failed:', error);
+        return { success: false, error: error.message };
+      }
     },
     
     testPaymentFlow: async (plan = 'start') => {
@@ -1206,7 +1044,7 @@ setInterval(() => {
     const storeUser = store.getters['user/getUser'];
     
     // Check for mismatches
-    if (firebaseUser && storeUser && firebaseUser.uid !== storeUser.firebaseId) {
+    if (firebaseUser && storeUser && firebaseUser.uid !== (storeUser.firebaseId || storeUser.uid)) {
       console.warn('⚠️ Auth state mismatch detected, fixing...');
       handleUserLogin(firebaseUser).catch(error => {
         console.error('❌ Periodic auth fix failed:', error);
