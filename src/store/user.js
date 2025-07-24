@@ -1250,7 +1250,79 @@ const actions = {
       }
     }
   },
+  async updateUserStatus({ commit, dispatch, state }, newStatus) {
+    console.log('🔄 updateUserStatus called with:', newStatus);
+    
+    try {
+      // Validate the status first
+      const validStatuses = ['free', 'start', 'pro', 'premium'];
+      if (!validStatuses.includes(newStatus)) {
+        console.error('❌ Invalid status:', newStatus);
+        return { 
+          success: false, 
+          error: `Invalid status: ${newStatus}. Must be one of: ${validStatuses.join(', ')}` 
+        };
+      }
 
+      const oldStatus = state.userStatus;
+      console.log(`📊 Status changing: ${oldStatus} → ${newStatus}`);
+
+      // Update the status immediately
+      commit('SET_USER_STATUS', newStatus);
+      
+      // Force reactivity update
+      commit('FORCE_UPDATE');
+      
+      // Try to update subscription if the action exists
+      try {
+        const subscriptionResult = await dispatch('updateSubscription', {
+          plan: newStatus,
+          source: 'manual',
+          details: {
+            updatedBy: 'updateUserStatus',
+            updatedAt: new Date().toISOString(),
+            oldStatus,
+            newStatus
+          }
+        });
+        
+        console.log('✅ Subscription update result:', subscriptionResult);
+      } catch (subscriptionError) {
+        console.warn('⚠️ Subscription update failed, but status was updated:', subscriptionError);
+        // Don't fail the entire operation
+      }
+
+      const result = {
+        success: true,
+        oldStatus,
+        newStatus,
+        message: `Status updated successfully: ${oldStatus} → ${newStatus}`,
+        timestamp: Date.now()
+      };
+
+      console.log('✅ updateUserStatus SUCCESS:', result);
+      return result;
+
+    } catch (error) {
+      console.error('❌ updateUserStatus FAILED:', error);
+      
+      const errorResult = {
+        success: false,
+        error: error.message || 'Failed to update user status',
+        newStatus,
+        timestamp: Date.now()
+      };
+      
+      // Set error in store
+      commit('SET_ERROR', {
+        message: errorResult.error,
+        context: 'updateUserStatus',
+        originalError: error.message
+      });
+
+      return errorResult;
+    }
+  },
   // ✅ ENHANCED: Load user status with caching and validation
   async loadUserStatus({ commit, state }) {
     const startTime = Date.now();
