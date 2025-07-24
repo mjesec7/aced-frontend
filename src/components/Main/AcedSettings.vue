@@ -994,13 +994,20 @@ export default {
     },
     
     // Replace your existing applyPromo method with this enhanced version
-    async applyPromo() {
+   // ✅ FINAL FIXED: Replace your applyPromo method with this bulletproof version
+
+async applyPromo() {
   if (!this.promoCode || !this.selectedPlan || !this.userId) {
     this.showNotification('Заполните все поля', 'error');
     return;
   }
 
   this.isProcessingPromo = true;
+  console.log('🎟️ Starting promocode application:', {
+    code: this.promoCode.toUpperCase(),
+    plan: this.selectedPlan,
+    userId: this.userId.substring(0, 8) + '...'
+  });
 
   try {
     // Step 1: Apply promocode via API
@@ -1015,24 +1022,31 @@ export default {
     });
 
     const result = await response.json();
+    console.log('📡 Server response:', { success: result.success, hasData: !!result.data });
 
     if (result.success) {
-      // Step 2: ✅ FIXED - Use the correct store action with proper parameters
+      // Step 2: ✅ FIXED - Use the corrected store action with proper error handling
       try {
+        console.log('🔄 Updating store subscription...');
+        
         const updateResult = await this.$store.dispatch('user/updateSubscription', {
           plan: this.selectedPlan,
           source: 'promocode',
           details: {
             promocode: this.promoCode.toUpperCase(),
             appliedAt: new Date().toISOString(),
-            serverResponse: result.data || {}
+            serverResponse: result.data || {},
+            apiSuccess: true
           }
         });
         
-        if (updateResult && updateResult.success) {
+        console.log('📊 Store update result:', updateResult);
+        
+        // ✅ BULLETPROOF: Check for successful result
+        if (updateResult && updateResult.success === true) {
           console.log('✅ Store subscription updated successfully');
           
-          // Step 3: Also add the promocode to the applied list
+          // Step 3: Add the promocode to the applied list
           this.$store.commit('user/ADD_PROMOCODE', {
             code: this.promoCode.toUpperCase(),
             plan: this.selectedPlan,
@@ -1045,7 +1059,7 @@ export default {
           await this.$store.dispatch('user/forceUpdate');
           
           // Step 5: Success feedback
-          this.showNotification('🎉 Промокод применён! Подписка активирована!', 'success');
+          this.showNotification(`🎉 Промокод применён! Подписка ${this.selectedPlan.toUpperCase()} активирована!`, 'success');
           
           // Step 6: Reset form
           this.promoCode = '';
@@ -1055,28 +1069,26 @@ export default {
           // Step 7: Force component reactivity
           this.forceReactivityUpdate();
           
+          console.log('✅ Promocode application completed successfully');
+          
         } else {
           console.warn('⚠️ Store update returned unsuccessful result:', updateResult);
-          this.showNotification('Промокод применён, но возникла ошибка обновления интерфейса', 'warning');
+          
+          // Even if store update fails, the promocode was applied successfully on the server
+          this.showNotification('Промокод применён на сервере! Обновите страницу если изменения не отображаются.', 'warning');
+          
+          // Try manual refresh of user data
+          this.attemptManualRefresh();
         }
         
       } catch (storeError) {
         console.error('❌ Store update failed:', storeError);
         
-        // Even if store update fails, the promocode was applied successfully on the server
-        this.showNotification('Промокод применён успешно! Обновите страницу если изменения не отображаются.', 'warning');
+        // Even if store update fails, the promocode was applied successfully on the server  
+        this.showNotification('Промокод применён, но возникла ошибка обновления интерфейса', 'warning');
         
-        // Try to manually refresh user status
-        setTimeout(async () => {
-          try {
-            if (typeof this.loadUserStatus === 'function') {
-              await this.loadUserStatus();
-            }
-            this.forceReactivityUpdate();
-          } catch (refreshError) {
-            console.warn('⚠️ Manual refresh failed:', refreshError);
-          }
-        }, 2000);
+        // Try manual refresh
+        this.attemptManualRefresh();
       }
       
     } else {
@@ -1092,6 +1104,35 @@ export default {
   } finally {
     this.isProcessingPromo = false;
   }
+},
+
+// Helper method for manual refresh
+async attemptManualRefresh() {
+  console.log('🔄 Attempting manual data refresh...');
+  
+  setTimeout(async () => {
+    try {
+      // Try multiple refresh strategies
+      const refreshTasks = [];
+      
+      if (typeof this.loadUserStatus === 'function') {
+        refreshTasks.push(this.loadUserStatus());
+      }
+      
+      if (this.$store && typeof this.$store.dispatch === 'function') {
+        refreshTasks.push(this.$store.dispatch('user/loadUserStatus'));
+        refreshTasks.push(this.$store.dispatch('user/forceUpdate'));
+      }
+      
+      await Promise.allSettled(refreshTasks);
+      
+      this.forceReactivityUpdate();
+      console.log('✅ Manual refresh completed');
+      
+    } catch (refreshError) {
+      console.warn('⚠️ Manual refresh failed:', refreshError);
+    }
+  }, 2000);
 },
 // Add this new method to handle successful promocode application
 async handlePromocodeSuccess(result) {

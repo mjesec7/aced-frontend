@@ -1838,7 +1838,7 @@ const actions = {
   },
   
   // ✅ ENHANCED: Update subscription with comprehensive state management
-  async updateSubscription({ commit, dispatch }, { plan, source = 'payment', details = {} }) {
+  async updateSubscription({ commit, dispatch, state }, { plan, source = 'payment', details = {} }) {
     const startTime = Date.now();
     
     try {
@@ -1851,6 +1851,9 @@ const actions = {
       if (plan !== validatedPlan) {
         console.warn(`⚠️ Invalid plan "${plan}" normalized to "${validatedPlan}"`);
       }
+  
+      // Get old status for comparison
+      const oldStatus = state.userStatus || 'free';
       
       // Calculate expiry dates based on source
       let expiryDate = null;
@@ -1887,8 +1890,6 @@ const actions = {
       };
       
       // Update all related state atomically
-      const oldStatus = state.userStatus;
-      
       commit('SET_USER_STATUS', validatedPlan);
       commit('UPDATE_SUBSCRIPTION', subscriptionData);
       commit('UPDATE_FEATURES'); // Recalculate features based on new plan
@@ -1939,12 +1940,14 @@ const actions = {
         isActive: subscriptionData.status === 'active'
       });
       
+      // ✅ CRITICAL FIX: Always return a proper success object
       return { 
         success: true, 
         subscriptionData: { ...subscriptionData },
         oldStatus,
         newStatus: validatedPlan,
-        duration
+        duration,
+        message: `Subscription updated successfully from ${oldStatus} to ${validatedPlan}`
       };
       
     } catch (error) {
@@ -1958,10 +1961,13 @@ const actions = {
         source 
       });
       
+      // ✅ CRITICAL FIX: Always return a proper error object
       return { 
         success: false, 
-        error: error.message,
-        duration: Date.now() - startTime
+        error: error.message || 'Subscription update failed',
+        duration: Date.now() - startTime,
+        plan,
+        source
       };
     }
   },
