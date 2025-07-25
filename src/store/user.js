@@ -1234,7 +1234,6 @@ async saveUser({ commit, dispatch, state }, { userData, token }) {
     }
   }
 },
-updateUserStatus: updateUserStatusAction,
 
 async updateUserStatus({ commit, state, dispatch }, newStatus) {
   const startTime = Date.now();
@@ -1374,13 +1373,6 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
           cancelable: true
         });
         window.dispatchEvent(domEvent);
-        
-        // Secondary DOM event
-        const statusEvent = new CustomEvent('userStatusUpdate', {
-          detail: eventData,
-          bubbles: true
-        });
-        window.dispatchEvent(statusEvent);
         
         console.log('✅ DOM events dispatched successfully');
       }

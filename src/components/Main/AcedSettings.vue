@@ -1063,7 +1063,7 @@ async applyPromo() {
     if (result.success) {
       console.log('✅ DEBUG 11: Server returned success=true');
       
-      // Step 2: Update user status via store - WITH PROPER ERROR CHECKING
+      // Step 2: Update user status via store - WITH PROPER RETURN VALUE CHECKING
       try {
         console.log('🔍 DEBUG 12: About to update user status via store');
         console.log('🔍 DEBUG 12a: this.$store exists:', !!this.$store);
@@ -1177,6 +1177,70 @@ async applyPromo() {
   }
   
   console.log('🚀🚀🚀 ===== APPLY PROMO END =====');
+},
+
+// Add these helper methods to your AcedSettings.vue:
+handlePromoSuccess(updateResult) {
+  console.log('🎉 handlePromoSuccess called with:', updateResult);
+  
+  try {
+    // Add to store if available
+    if (this.$store && typeof this.$store.commit === 'function') {
+      try {
+        this.$store.commit('user/ADD_PROMOCODE', {
+          code: this.promoCode.toUpperCase(),
+          plan: this.selectedPlan,
+          oldPlan: updateResult.oldStatus || 'free',
+          source: 'api',
+          details: { appliedAt: new Date().toISOString() }
+        });
+        console.log('✅ Promocode added to store successfully');
+      } catch (commitError) {
+        console.error('❌ Error adding promocode to store:', commitError);
+      }
+    }
+    
+    // Success feedback
+    const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
+    this.showNotification(`🎉 Промокод применён! Подписка ${planLabel} активирована!`, 'success');
+    
+    // Reset form
+    this.promoCode = '';
+    this.selectedPlan = '';
+    this.promoValidation = null;
+    
+    // Force component reactivity
+    this.forceReactivityUpdate();
+    
+    console.log('✅ Promocode application completed successfully');
+    
+  } catch (error) {
+    console.error('❌ Error in handlePromoSuccess:', error);
+    this.showNotification('Промокод применён, но возникла ошибка интерфейса', 'warning');
+  }
+},
+
+handleManualSuccess() {
+  console.log('🔄 handleManualSuccess: Attempting manual refresh...');
+  
+  // Show success message
+  const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
+  this.showNotification(`🎉 Промокод применён! Подписка ${planLabel} активирована! Обновите страницу.`, 'success');
+  
+  // Reset form
+  this.promoCode = '';
+  this.selectedPlan = '';
+  this.promoValidation = null;
+  
+  // Force reactivity
+  this.forceReactivityUpdate();
+  
+  // Delayed page refresh suggestion
+  setTimeout(() => {
+    if (confirm('Промокод успешно применён! Обновить страницу для отображения изменений?')) {
+      window.location.reload();
+    }
+  }, 2000);
 },
 
 // ✅ ADD THESE HELPER METHODS TO YOUR COMPONENT:
