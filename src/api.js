@@ -312,8 +312,15 @@ export const getTopicById = async (topicId) => {
   try {
     console.log('🔍 API: Fetching topic by ID:', topicId);
     
-    if (!topicId) {
-      throw new Error('Topic ID is required');
+    // ✅ BULLETPROOF: Validate topicId
+    if (!topicId || typeof topicId !== 'string') {
+      console.error('❌ Invalid topicId:', topicId);
+      return {
+        success: false,
+        error: 'Invalid topic ID provided',
+        code: 400,
+        details: 'Topic ID must be a non-empty string'
+      };
     }
     
     // ✅ STRATEGY 1: Try the direct topics endpoint first
@@ -381,7 +388,7 @@ export const getTopicById = async (topicId) => {
       const topicLessons = allLessons.filter(lesson => {
         if (!lesson) return false;
         
-        // Handle different topicId structures
+        // ✅ BULLETPROOF: Handle different topicId structures safely
         const lessonTopicId = lesson.topicId;
         
         if (typeof lessonTopicId === 'string') {
@@ -409,29 +416,41 @@ export const getTopicById = async (topicId) => {
       // ✅ BUILD TOPIC DATA from lessons (same logic as CataloguePage)
       const firstLesson = topicLessons[0];
       
-      // Extract topic name (same logic as CataloguePage getTopicName)
+      // ✅ BULLETPROOF: Extract topic name with proper null checks
       const getTopicName = (lesson) => {
         if (!lesson) return 'Без темы';
         
         try {
           // Check different possible structures
-          if (typeof lesson.topic === 'string') {
-            return lesson.topic;
+          if (typeof lesson.topic === 'string' && lesson.topic.trim()) {
+            return lesson.topic.trim();
           }
           
           const lang = localStorage.getItem('lang') || 'en';
           
-          if (lesson.translations && lesson.translations[lang] && lesson.translations[lang].topic) {
-            return String(lesson.translations[lang].topic);
+          if (lesson.translations && 
+              lesson.translations[lang] && 
+              lesson.translations[lang].topic &&
+              typeof lesson.translations[lang].topic === 'string') {
+            return lesson.translations[lang].topic.trim();
           }
           
           if (lesson.topic && typeof lesson.topic === 'object') {
-            if (lesson.topic[lang]) {
-              return String(lesson.topic[lang]);
+            if (lesson.topic[lang] && typeof lesson.topic[lang] === 'string') {
+              return lesson.topic[lang].trim();
             }
-            if (lesson.topic.en) {
-              return String(lesson.topic.en);
+            if (lesson.topic.en && typeof lesson.topic.en === 'string') {
+              return lesson.topic.en.trim();
             }
+          }
+          
+          // ✅ FALLBACK: Use lesson name if topic name not available
+          if (lesson.lessonName && typeof lesson.lessonName === 'string') {
+            return `Тема: ${lesson.lessonName.trim()}`;
+          }
+          
+          if (lesson.title && typeof lesson.title === 'string') {
+            return `Тема: ${lesson.title.trim()}`;
           }
           
           return 'Без темы';
@@ -447,7 +466,7 @@ export const getTopicById = async (topicId) => {
       const totalLessons = topicLessons.length;
       const estimatedTime = totalLessons * 10; // 10 min per lesson estimate
       
-      // Build the topic object
+      // ✅ BULLETPROOF: Build the topic object with proper null checks
       const constructedTopic = {
         _id: topicId,
         id: topicId,
@@ -455,20 +474,20 @@ export const getTopicById = async (topicId) => {
         topicName: topicName,
         description: `Курс по теме "${topicName}" содержит ${totalLessons} уроков`,
         topicDescription: `Курс по теме "${topicName}" содержит ${totalLessons} уроков`,
-        subject: firstLesson.subject || 'Общий',
-        level: firstLesson.level || 'Базовый',
+        subject: (firstLesson.subject && typeof firstLesson.subject === 'string') ? firstLesson.subject : 'Общий',
+        level: (firstLesson.level && typeof firstLesson.level === 'string') ? firstLesson.level : 'Базовый',
         lessonCount: totalLessons,
         totalTime: estimatedTime,
         lessons: topicLessons,
-        type: firstLesson.type || 'free',
+        type: (firstLesson.type && typeof firstLesson.type === 'string') ? firstLesson.type : 'free',
         isActive: true,
-        createdAt: firstLesson.createdAt,
+        createdAt: firstLesson.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         metadata: {
           source: 'constructed-from-lessons',
           constructedAt: new Date().toISOString(),
           basedOnLessons: topicLessons.length,
-          firstLessonId: firstLesson._id
+          firstLessonId: firstLesson._id || firstLesson.id
         }
       };
       
@@ -497,7 +516,7 @@ export const getTopicById = async (topicId) => {
   } catch (error) {
     console.error('❌ API: Failed to fetch topic by ID:', error);
     
-    // ✅ ENHANCED: Detailed error handling
+    // ✅ BULLETPROOF: Detailed error handling
     if (error.response?.status === 404) {
       console.log('📍 API: Topic not found (404)');
       return {
