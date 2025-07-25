@@ -1,4 +1,71 @@
-// src/main.js - ORIGINAL VERSION WITH MINIMAL AUTH PERSISTENCE FIX
+// ============================================================================
+// 🐛 DEVELOPMENT DEBUGGING TOOLS - RESTORED FULL FUNCTIONALITY
+// ============================================================================
+
+if (import.meta.env.DEV) {
+  // Expose core objects for debugging
+  window.$store = store;
+  window.$eventBus = eventBus;
+  window.$userStatus = () => store.getters['user/userStatus'];
+  window.$userFeatures = () => store.getters['user/features'];
+  window.$appLifecycle = appLifecycle;
+  window.$authInitPromise = authInitPromise;
+  
+  console.log(`
+🐛 DEVELOPMENT DEBUG COMMANDS AVAILABLE:
+
+📊 SUBSCRIPTION DEBUGGING:
+- debugSubscription.getCurrentStatus(): Check status across all sources
+- debugSubscription.syncStatus(): Sync store and localStorage  
+- debugSubscription.testPromocodeFlow('pro'): Test promocode application
+- debugSubscription.testPaymentFlow('start'): Test payment completion
+
+🔐 AUTHENTICATION DEBUGGING:
+- debugAuth.getCurrentUser(): Get comprehensive user state
+- debugAuth.clearUserState(): Clear all user data
+- debugAuth.testSaveUser(): Test server user save manually
+
+🎯 QUICK ACCESS:
+- $store: Vuex store instance
+- $eventBus: Global event bus
+- $userStatus(): Get current user status
+- $appLifecycle: App initialization state
+- $authInitPromise: Auth initialization promise
+  `);
+}
+
+// ============================================================================
+// 🎬 APPLICATION STARTUP - RESTORED FULL ERROR HANDLING
+// ============================================================================
+
+// Start the application with comprehensive error handling
+initializeApplication().catch(error => {
+  console.error('❌ Critical application startup failure:', error);
+  
+  // Emit critical startup error
+  if (window.eventBus) {
+    eventBus.emit('criticalStartupError', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: Date.now()
+    });
+  }
+  
+  // Show user-friendly error message
+  document.body.innerHTML = `
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
+      <div style="text-align: center; padding: 2rem; background: #fee; border: 1px solid #fcc; border-radius: 8px;">
+        <h2 style="color: #c33; margin-bottom: 1rem;">⚠️ Application Startup Error</h2>
+        <p style="color: #666; margin-bottom: 1rem;">The application failed to initialize properly.</p>
+        <button onclick="window.location.reload()" style="background: #007cba; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
+          🔄 Reload Page
+        </button>
+      </div>
+    </div>
+  `;
+});
+
+console.log('🚀 Main.js initialization complete - waiting for Firebase auth...');// src/main.js - RESTRUCTURED VERSION: Authentication First, Clean & Simple
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
@@ -15,41 +82,17 @@ import { auth } from './firebase';
 import { onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 // ============================================================================
-// 🔥 MINIMAL AUTH PERSISTENCE FIX - ONLY ADDITION
+// 🔥 FIREBASE AUTH PERSISTENCE - SET IMMEDIATELY
 // ============================================================================
 
-// ✅ Set Firebase auth persistence to LOCAL (instead of default SESSION)
 setPersistence(auth, browserLocalPersistence).then(() => {
   console.log('✅ Firebase auth persistence set to LOCAL');
 }).catch((error) => {
   console.error('❌ Failed to set auth persistence:', error);
 });
 
-// ✅ Create auth initialization promise for router guard
-let authInitialized = false;
-export const authInitPromise = new Promise((resolve) => {
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    if (!authInitialized) {
-      authInitialized = true;
-      unsubscribe();
-      resolve(user);
-      console.log('🔥 Firebase auth initialized');
-    }
-  });
-  
-  // Timeout fallback
-  setTimeout(() => {
-    if (!authInitialized) {
-      authInitialized = true;
-      unsubscribe();
-      resolve(null);
-      console.warn('🔥 Firebase auth initialization timeout');
-    }
-  }, 8000);
-});
-
 // ============================================================================
-// 🚀 ORIGINAL EVENT BUS (UNCHANGED)
+// 🚀 ENHANCED EVENT BUS (PRESERVED FROM CURRENT VERSION)
 // ============================================================================
 
 class AdvancedEventBus {
@@ -60,7 +103,6 @@ class AdvancedEventBus {
     this.errorHandlers = new Set();
   }
   
-  // ✅ Enhanced emit with error handling and logging
   emit(event, data) {
     if (this.debugMode) {
       console.log(`📡 EventBus: Emitting "${event}"`, data);
@@ -83,7 +125,6 @@ class AdvancedEventBus {
     }
   }
   
-  // ✅ Standard event listener registration
   on(event, callback) {
     if (!this.events[event]) {
       this.events[event] = [];
@@ -95,14 +136,12 @@ class AdvancedEventBus {
     }
   }
   
-  // ✅ Remove event listener
   off(event, callback) {
     if (this.events[event]) {
       this.events[event] = this.events[event].filter(cb => cb !== callback);
     }
   }
   
-  // ✅ One-time event listener
   once(event, callback) {
     const onceCallback = (data) => {
       callback(data);
@@ -111,13 +150,11 @@ class AdvancedEventBus {
     this.on(event, onceCallback);
   }
   
-  // ✅ Special subscription listener registry
   onSubscriptionChange(callback) {
     this.subscriptionListeners.add(callback);
     return () => this.subscriptionListeners.delete(callback);
   }
   
-  // ✅ Notify all subscription listeners
   notifySubscriptionListeners(event, data) {
     this.subscriptionListeners.forEach(callback => {
       try {
@@ -128,13 +165,11 @@ class AdvancedEventBus {
     });
   }
   
-  // ✅ Error handler registration
   onError(callback) {
     this.errorHandlers.add(callback);
     return () => this.errorHandlers.delete(callback);
   }
   
-  // ✅ Handle event errors
   handleEventError(event, error, data) {
     this.errorHandlers.forEach(handler => {
       try {
@@ -145,14 +180,12 @@ class AdvancedEventBus {
     });
   }
   
-  // ✅ Clear all events
   clear() {
     this.events = {};
     this.subscriptionListeners.clear();
     this.errorHandlers.clear();
   }
   
-  // ✅ Get event statistics
   getStats() {
     const stats = {
       totalEvents: Object.keys(this.events).length,
@@ -170,15 +203,13 @@ class AdvancedEventBus {
   }
 }
 
-// Create enhanced global event bus and EXPORT it
+// Create and export event bus
 const eventBus = new AdvancedEventBus();
 window.eventBus = eventBus;
-
-// ✅ EXPORT the eventBus for component imports
 export { eventBus };
 
 // ============================================================================
-// 🌐 INTERNATIONALIZATION SETUP (UNCHANGED)
+// 🌐 INTERNATIONALIZATION SETUP
 // ============================================================================
 
 const i18n = createI18n({
@@ -189,25 +220,35 @@ const i18n = createI18n({
 });
 
 // ============================================================================
-// 🎯 APPLICATION STATE MANAGEMENT (UNCHANGED)
+// 📊 ASYNC STORE INITIALIZATION - RESTORED CRITICAL FUNCTIONS
 // ============================================================================
 
-let app;
-let isApplicationMounted = false;
 let storeInitialized = false;
+let authInitialized = false;
 
-// Track app lifecycle
-const appLifecycle = {
-  initialized: false,
-  mounted: false,
-  authReady: false,
-  storeReady: false
-};
+// ✅ Create auth initialization promise for router guard (RESTORED)
+export const authInitPromise = new Promise((resolve) => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (!authInitialized) {
+      authInitialized = true;
+      unsubscribe();
+      resolve(user);
+      console.log('🔥 Firebase auth initialized');
+    }
+  });
+  
+  // Timeout fallback
+  setTimeout(() => {
+    if (!authInitialized) {
+      authInitialized = true;
+      unsubscribe();
+      resolve(null);
+      console.warn('🔥 Firebase auth initialization timeout');
+    }
+  }, 8000);
+});
 
-// ============================================================================
-// 📊 STORE INITIALIZATION (UNCHANGED)
-// ============================================================================
-
+// ✅ ASYNC Store initialization function (RESTORED)
 async function initializeStore() {
   try {
     console.log('🏪 Initializing Vuex store...');
@@ -215,8 +256,10 @@ async function initializeStore() {
     // Initialize user store from localStorage
     await store.dispatch('user/initialize');
     
+    // Also load legacy store data
+    await store.dispatch('loadUserFromLocalStorage');
+    
     storeInitialized = true;
-    appLifecycle.storeReady = true;
     
     console.log('✅ Vuex store initialized successfully');
     
@@ -239,7 +282,121 @@ async function initializeStore() {
 }
 
 // ============================================================================
-// 🔥 FIREBASE AUTH HANDLER (MINIMAL CHANGES)
+// 🎯 PREPARE APP INSTANCE AND LIFECYCLE TRACKING
+// ============================================================================
+
+let app;
+let appMounted = false;
+let isApplicationMounted = false;
+
+// Track app lifecycle (RESTORED)
+const appLifecycle = {
+  initialized: false,
+  mounted: false,
+  authReady: false,
+  storeReady: false
+};
+
+// ✅ ASYNC Vue App Creation Function (RESTORED)
+async function createVueApp() {
+  console.log('🎯 Creating Vue application instance...');
+  
+  app = createApp(App);
+  
+  // Add global properties
+  app.config.globalProperties.$eventBus = eventBus;
+  app.config.globalProperties.$userStore = store;
+  app.config.globalProperties.$userStatus = () => store.getters['user/userStatus'];
+  app.config.globalProperties.$hasFeature = (feature) => store.getters['user/hasFeatureAccess'](feature);
+  
+  // Install plugins
+  app.use(store);
+  app.use(router);
+  app.use(VueToast, {
+    position: 'top-center',
+    duration: 4000,
+    dismissible: true
+  });
+  app.use(i18n);
+  
+  // Enhanced error handler
+  app.config.errorHandler = (error, instance, info) => {
+    console.error('❌ Vue error:', error);
+    console.error('📍 Component:', instance?.$options?.name || 'Unknown');
+    console.error('ℹ️ Info:', info);
+    
+    // Handle specific length errors
+    if (error.message?.includes("Cannot read properties of undefined (reading 'length')")) {
+      console.error('🔍 Length property error detected - attempting recovery');
+      
+      eventBus.emit('lengthPropertyError', {
+        error: error.message,
+        component: instance?.$options?.name || 'Unknown',
+        info,
+        timestamp: Date.now()
+      });
+      
+      try {
+        store.commit('user/FORCE_UPDATE');
+        console.log('🔄 Store refresh attempted');
+      } catch (refreshError) {
+        console.error('❌ Store refresh failed:', refreshError);
+      }
+    }
+    
+    eventBus.emit('vueError', {
+      error: error.message,
+      component: instance?.$options?.name || 'Unknown',
+      info,
+      timestamp: Date.now()
+    });
+  };
+  
+  return app;
+}
+
+// ✅ ASYNC Vue Application Mounting (RESTORED CRITICAL FUNCTION)
+async function mountVueApplication() {
+  try {
+    console.log('🎯 Mounting Vue application...');
+    
+    if (!app) {
+      app = await createVueApp();
+    }
+    
+    // Mount the application
+    app.mount('#app');
+    isApplicationMounted = true;
+    appMounted = true;
+    appLifecycle.mounted = true;
+    
+    console.log('✅ Vue application mounted successfully');
+    
+    // Setup global subscription management
+    setupGlobalSubscriptionManagement();
+    
+    // Emit app ready event
+    eventBus.emit('appReady', {
+      userAuthenticated: !!store.getters['user/isAuthenticated'],
+      userStatus: store.getters['user/userStatus'],
+      timestamp: Date.now()
+    });
+    
+    // Mark app as fully initialized
+    appLifecycle.initialized = true;
+    
+  } catch (error) {
+    console.error('❌ Failed to mount Vue app:', error);
+    
+    eventBus.emit('appMountError', {
+      error: error.message,
+      timestamp: Date.now()
+    });
+  }
+}
+
+// ============================================================================
+// 🔥 FIREBASE AUTH STATE HANDLER - WITH PROPER ASYNC COORDINATION
 // ============================================================================
 
 onAuthStateChanged(auth, async (firebaseUser) => {
@@ -247,12 +404,14 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     console.log('🔥 Firebase auth state changed:', firebaseUser?.email || 'logged out');
     
     if (firebaseUser) {
+      // ✅ USER IS LOGGED IN
       await handleUserLogin(firebaseUser);
     } else {
+      // ❌ USER IS LOGGED OUT  
       await handleUserLogout();
     }
     
-    // Mark auth as initialized
+    // Mark auth as initialized (RESTORED)
     if (!authInitialized) {
       authInitialized = true;
       appLifecycle.authReady = true;
@@ -263,6 +422,11 @@ onAuthStateChanged(auth, async (firebaseUser) => {
       });
       
       console.log('✅ Firebase auth initialized');
+    }
+    
+    // ✅ MOUNT APP ONLY ONCE AFTER BOTH AUTH AND STORE ARE READY
+    if (!isApplicationMounted && authInitialized && storeInitialized) {
+      await mountVueApplication();
     }
     
   } catch (error) {
@@ -278,22 +442,17 @@ onAuthStateChanged(auth, async (firebaseUser) => {
     // Force clear all user state on critical errors
     await forceClearUserState();
   }
-  
-  // Mount app once auth is ready
-  if (!isApplicationMounted && authInitialized && storeInitialized) {
-    await mountVueApplication();
-  }
 });
 
 // ============================================================================
-// 👤 USER LOGIN HANDLER (ORIGINAL WITH MINIMAL SAFETY)
+// 👤 HANDLE USER LOGIN - RESTORED FULL ASYNC FUNCTIONALITY
 // ============================================================================
 
 async function handleUserLogin(firebaseUser) {
   try {
     console.log('👤 Processing user login for:', firebaseUser.email);
     
-    // ✅ Get Firebase ID token
+    // ✅ Get Firebase ID token with retry logic
     let token;
     try {
       token = await firebaseUser.getIdToken();
@@ -327,7 +486,7 @@ async function handleUserLogin(firebaseUser) {
       uid: userData.uid 
     });
     
-    // ✅ Save user to server
+    // ✅ Save user to server with enhanced error handling
     let saveResult;
     try {
       saveResult = await store.dispatch('user/saveUser', { userData, token });
@@ -340,11 +499,11 @@ async function handleUserLogin(firebaseUser) {
       };
     }
     
-    // ✅ Handle save result with safety check
+    // ✅ Handle save result with comprehensive safety checks
     if (saveResult && saveResult.success === true) {
       await handleSuccessfulUserSave(saveResult, token, userData);
     } else {
-      // ✅ FIXED: Ensure saveResult is an object with error property
+      // ✅ Ensure saveResult is an object with error property
       const safeResult = saveResult || { success: false, error: 'Save action returned undefined' };
       await handleFailedUserSave(safeResult, token, userData);
     }
@@ -363,7 +522,7 @@ async function handleUserLogin(firebaseUser) {
 }
 
 // ============================================================================
-// ✅ SUCCESSFUL USER SAVE HANDLER (ORIGINAL)
+// ✅ SUCCESSFUL USER SAVE HANDLER - RESTORED FULL FUNCTIONALITY
 // ============================================================================
 
 async function handleSuccessfulUserSave(result, token, userData) {
@@ -400,7 +559,7 @@ async function handleSuccessfulUserSave(result, token, userData) {
       store.commit('user/SET_USER', serverUser);
       store.commit('user/SET_AUTHENTICATED', true);
       
-      // Update localStorage
+      // Update localStorage with comprehensive data
       const storageData = {
         user: serverUser,
         firebaseUserId: serverUser.firebaseId || serverUser._id,
@@ -428,7 +587,7 @@ async function handleSuccessfulUserSave(result, token, userData) {
       });
     }
     
-    // ✅ Emit success events
+    // ✅ Emit comprehensive success events
     const userStatus = store.getters['user/userStatus'] || 'free';
     
     eventBus.emit('userLoggedIn', {
@@ -462,11 +621,11 @@ async function handleSuccessfulUserSave(result, token, userData) {
 }
 
 // ============================================================================
-// ❌ FAILED USER SAVE HANDLER (FIXED)
+// ❌ FAILED USER SAVE HANDLER - RESTORED WITH AUTO-RETRY
 // ============================================================================
 
 async function handleFailedUserSave(result, token, userData) {
-  // ✅ FIXED: Safety check for result object
+  // ✅ Safety check for result object
   const safeResult = result || { success: false, error: 'Unknown error' };
   
   const errorMessage = safeResult.error || safeResult.message || 'Failed to save user to server';
@@ -490,7 +649,7 @@ async function handleFailedUserSave(result, token, userData) {
     timestamp: Date.now()
   });
   
-  // ✅ AUTO-RETRY for server/network errors
+  // ✅ AUTO-RETRY for server/network errors (RESTORED CRITICAL FUNCTION)
   const shouldRetry = (
     safeResult.statusCode >= 500 || 
     !safeResult.statusCode || 
@@ -506,7 +665,7 @@ async function handleFailedUserSave(result, token, userData) {
         console.log('🔄 Retrying user save...');
         const retryResult = await store.dispatch('user/saveUser', { userData, token });
         
-        // ✅ FIXED: Check retry result safely
+        // ✅ Check retry result safely
         if (retryResult && retryResult.success === true && retryResult.user) {
           console.log('✅ Retry successful');
           await handleSuccessfulUserSave(retryResult, token, userData);
@@ -536,7 +695,7 @@ async function handleFailedUserSave(result, token, userData) {
 }
 
 // ============================================================================
-// 👋 USER LOGOUT HANDLER (ORIGINAL)
+// 👋 HANDLE USER LOGOUT - SIMPLIFIED
 // ============================================================================
 
 async function handleUserLogout() {
@@ -544,20 +703,8 @@ async function handleUserLogout() {
     console.log('👋 Processing user logout...');
     
     // Clear user data through store actions
-    try {
-      await store.dispatch('user/logout');
-    } catch (logoutError) {
-      console.warn('⚠️ Store logout error:', logoutError);
-      // Force clear if action fails
-      await forceClearUserState();
-    }
-    
-    // Also clear legacy main store
-    try {
-      store.commit('logout');
-    } catch (mainStoreError) {
-      console.warn('⚠️ Main store logout warning:', mainStoreError);
-    }
+    await store.dispatch('user/logout');
+    store.commit('logout');
     
     // Clear localStorage
     const keysToRemove = [
@@ -568,8 +715,8 @@ async function handleUserLogout() {
     keysToRemove.forEach(key => {
       try {
         localStorage.removeItem(key);
-      } catch (storageError) {
-        console.warn(`⚠️ Failed to remove ${key}:`, storageError);
+      } catch (error) {
+        console.warn(`⚠️ Failed to remove ${key}:`, error);
       }
     });
     
@@ -589,7 +736,6 @@ async function handleUserLogout() {
     
   } catch (error) {
     console.error('❌ Logout error:', error);
-    // Force clear on any logout error
     await forceClearUserState();
     
     eventBus.emit('logoutError', {
@@ -600,24 +746,17 @@ async function handleUserLogout() {
 }
 
 // ============================================================================
-// 🧹 FORCE CLEAR USER STATE (ORIGINAL)
+// 🧹 FORCE CLEAR USER STATE - EMERGENCY CLEANUP
 // ============================================================================
 
 async function forceClearUserState() {
   console.log('🧹 Force clearing all user state...');
   
   try {
-    // Clear user store
     store.commit('user/CLEAR_USER');
-  } catch (error) {
-    console.warn('⚠️ Failed to clear user store:', error);
-  }
-  
-  try {
-    // Clear main store
     store.commit('logout');
   } catch (error) {
-    console.warn('⚠️ Failed to clear main store:', error);
+    console.warn('⚠️ Failed to clear stores:', error);
   }
   
   // Force clear localStorage
@@ -638,123 +777,32 @@ async function forceClearUserState() {
 }
 
 // ============================================================================
-// 🎯 VUE APPLICATION MOUNTING (ORIGINAL)
-// ============================================================================
-
-async function mountVueApplication() {
-  try {
-    console.log('🎯 Mounting Vue application...');
-    
-    app = createApp(App);
-    
-    // ✅ Add global properties
-    app.config.globalProperties.$eventBus = eventBus;
-    app.config.globalProperties.$userStore = store;
-    app.config.globalProperties.$userStatus = () => store.getters['user/userStatus'];
-    app.config.globalProperties.$hasFeature = (feature) => store.getters['user/hasFeatureAccess'](feature);
-    
-    // ✅ Install plugins
-    app.use(store);
-    app.use(router);
-    app.use(VueToast, {
-      position: 'top-center',
-      duration: 4000,
-      dismissible: true
-    });
-    app.use(i18n);
-    
-    // ✅ Enhanced global error handler
-    app.config.errorHandler = (error, instance, info) => {
-      console.error('❌ Vue error:', error);
-      console.error('📍 Component:', instance?.$options?.name || 'Unknown');
-      console.error('ℹ️ Info:', info);
-      
-      // Handle specific length errors
-      if (error.message?.includes("Cannot read properties of undefined (reading 'length')")) {
-        console.error('🔍 Length property error detected');
-        
-        eventBus.emit('lengthPropertyError', {
-          error: error.message,
-          component: instance?.$options?.name || 'Unknown',
-          info,
-          timestamp: Date.now()
-        });
-        
-        // Try to recover
-        try {
-          store.commit('user/FORCE_UPDATE');
-          console.log('🔄 Attempted store refresh for length error');
-        } catch (refreshError) {
-          console.error('❌ Store refresh failed:', refreshError);
-        }
-      }
-      
-      // Emit global error
-      eventBus.emit('vueError', {
-        error: error.message,
-        component: instance?.$options?.name || 'Unknown',
-        info,
-        timestamp: Date.now()
-      });
-    };
-    
-    // ✅ Mount the application
-    app.mount('#app');
-    isApplicationMounted = true;
-    appLifecycle.mounted = true;
-    
-    console.log('✅ Vue application mounted successfully');
-    
-    // ✅ Setup global subscription management
-    setupGlobalSubscriptionManagement();
-    
-    // ✅ Emit app ready event
-    eventBus.emit('appReady', {
-      userAuthenticated: !!store.getters['user/isAuthenticated'],
-      userStatus: store.getters['user/userStatus'],
-      timestamp: Date.now()
-    });
-    
-    // ✅ Mark app as fully initialized
-    appLifecycle.initialized = true;
-    
-  } catch (error) {
-    console.error('❌ Failed to mount Vue app:', error);
-    
-    eventBus.emit('appMountError', {
-      error: error.message,
-      timestamp: Date.now()
-    });
-  }
-}
-
-// ============================================================================
-// 🌐 GLOBAL SUBSCRIPTION MANAGEMENT SYSTEM (ORIGINAL)
+// 🌐 GLOBAL SUBSCRIPTION MANAGEMENT - PRESERVED
 // ============================================================================
 
 function setupGlobalSubscriptionManagement() {
   console.log('🌐 Setting up global subscription management...');
   
-  // ✅ Global subscription change handler
+  // Global subscription change handler
   const handleGlobalSubscriptionChange = (event) => {
     console.log('📡 Global subscription change detected:', event.detail);
     
     const { plan, source, oldPlan, timestamp } = event.detail;
     
-    // ✅ Update page title
+    // Update page title
     const planLabel = plan === 'pro' ? 'Pro' : plan === 'start' ? 'Start' : 'Free';
     if (document.title && !document.title.includes('|')) {
       document.title = `ACED | ${planLabel}`;
     }
     
-    // ✅ Update body classes for CSS styling
+    // Update body classes
     document.body.className = document.body.className.replace(/user-plan-\w+/g, '');
     document.body.classList.add(`user-plan-${plan}`);
     
-    // ✅ Update localStorage immediately
+    // Update localStorage
     localStorage.setItem('userStatus', plan);
     
-    // ✅ Force Vue app update
+    // Force Vue app update
     if (app?._instance) {
       try {
         app._instance.proxy.$forceUpdate();
@@ -764,7 +812,7 @@ function setupGlobalSubscriptionManagement() {
       }
     }
     
-    // ✅ Emit to all components via event bus
+    // Emit to event bus
     eventBus.emit('globalForceUpdate', {
       reason: 'subscription-change',
       plan: plan,
@@ -773,47 +821,33 @@ function setupGlobalSubscriptionManagement() {
       timestamp: timestamp || Date.now()
     });
     
-    // ✅ Show celebration for upgrades
+    // Show celebration for upgrades
     if (plan !== 'free' && oldPlan === 'free') {
-      const sourceText = source === 'promocode' ? 'промокоду' : 'оплате';
-      console.log(`🎉 Subscription upgraded to ${planLabel} via ${sourceText}!`);
-      
       eventBus.emit('subscriptionUpgrade', {
         plan: plan,
         source: source,
-        message: `Поздравляем! ${planLabel} подписка активирована по ${sourceText}!`,
+        message: `Поздравляем! ${planLabel} подписка активирована!`,
         timestamp: Date.now()
       });
     }
   };
   
-  // ✅ Register global DOM event listener
+  // Register global DOM event listener
   window.addEventListener('userSubscriptionChanged', handleGlobalSubscriptionChange);
   
-  // ✅ Store reference for cleanup
-  if (!window.globalEventHandlers) {
-    window.globalEventHandlers = {
-      subscriptionHandlers: [],
-      statusHandlers: []
-    };
-  }
-  window.globalEventHandlers.subscriptionHandlers.push(handleGlobalSubscriptionChange);
-  
-  // ✅ Enhanced event bus subscription listeners
+  // Event bus subscription listeners
   eventBus.on('userStatusChanged', (data) => {
-    console.log('👤 User status changed via event bus:', data);
+    console.log('👤 User status changed:', data);
     
-    // Sync with localStorage
     if (data.newStatus) {
       localStorage.setItem('userStatus', data.newStatus);
     }
     
-    // Force app update
     if (app?._instance) {
       try {
         app._instance.proxy.$forceUpdate();
       } catch (error) {
-        console.warn('⚠️ Failed to force update on status change:', error);
+        console.warn('⚠️ Failed to force update:', error);
       }
     }
   });
@@ -821,7 +855,6 @@ function setupGlobalSubscriptionManagement() {
   eventBus.on('promocodeApplied', (data) => {
     console.log('🎟️ Promocode applied:', data);
     
-    // Create DOM event for global propagation
     const domEvent = new CustomEvent('userSubscriptionChanged', {
       detail: {
         plan: data.newStatus,
@@ -837,7 +870,6 @@ function setupGlobalSubscriptionManagement() {
   eventBus.on('paymentCompleted', (data) => {
     console.log('💳 Payment completed:', data);
     
-    // Create DOM event for global propagation
     const domEvent = new CustomEvent('userSubscriptionChanged', {
       detail: {
         plan: data.plan,
@@ -855,34 +887,9 @@ function setupGlobalSubscriptionManagement() {
 }
 
 // ============================================================================
-// 🚀 APPLICATION INITIALIZATION (ORIGINAL)
+// 🌟 GLOBAL ERROR HANDLING
 // ============================================================================
 
-async function initializeApplication() {
-  try {
-    console.log('🚀 Starting application initialization...');
-    
-    // Initialize store first
-    await initializeStore();
-    
-    // Firebase auth will trigger mounting when ready
-    console.log('⏳ Waiting for Firebase auth state...');
-    
-  } catch (error) {
-    console.error('❌ Application initialization failed:', error);
-    
-    eventBus.emit('appInitializationError', {
-      error: error.message,
-      timestamp: Date.now()
-    });
-  }
-}
-
-// ============================================================================
-// 🌟 GLOBAL ERROR HANDLING (ORIGINAL)
-// ============================================================================
-
-// Global JavaScript error handler
 window.addEventListener('error', (event) => {
   console.error('❌ Global JavaScript error:', event.error);
   
@@ -895,7 +902,6 @@ window.addEventListener('error', (event) => {
   });
 });
 
-// Unhandled promise rejection handler
 window.addEventListener('unhandledrejection', (event) => {
   console.error('❌ Unhandled promise rejection:', event.reason);
   
@@ -906,10 +912,9 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 // ============================================================================
-// 🔧 GLOBAL HELPER FUNCTIONS (ORIGINAL)
+// 🔧 GLOBAL HELPER FUNCTIONS
 // ============================================================================
 
-// Helper functions for components
 window.addEventListener('DOMContentLoaded', () => {
   // Status change helper
   window.emitUserStatusChange = (oldStatus, newStatus, source = 'unknown') => {
@@ -941,7 +946,31 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================================
-// 📊 PERFORMANCE MONITORING (ORIGINAL)
+// 🚀 APPLICATION INITIALIZATION - RESTORED CRITICAL ASYNC FUNCTION
+// ============================================================================
+
+async function initializeApplication() {
+  try {
+    console.log('🚀 Starting application initialization...');
+    
+    // Initialize store first with proper async handling
+    await initializeStore();
+    
+    // Firebase auth will trigger mounting when ready
+    console.log('⏳ Waiting for Firebase auth state...');
+    
+  } catch (error) {
+    console.error('❌ Application initialization failed:', error);
+    
+    eventBus.emit('appInitializationError', {
+      error: error.message,
+      timestamp: Date.now()
+    });
+  }
+}
+
+// ============================================================================
+// 📊 PERFORMANCE MONITORING - RESTORED
 // ============================================================================
 
 if (import.meta.env.DEV) {
@@ -980,69 +1009,4 @@ if (import.meta.env.DEV) {
   });
 }
 
-// ============================================================================
-// 🐛 DEVELOPMENT DEBUGGING TOOLS (ORIGINAL)
-// ============================================================================
-
-if (import.meta.env.DEV) {
-  // Expose core objects for debugging
-  window.$store = store;
-  window.$eventBus = eventBus;
-  window.$userStatus = () => store.getters['user/userStatus'];
-  window.$userFeatures = () => store.getters['user/features'];
-  window.$appLifecycle = appLifecycle;
-  window.$authInitPromise = authInitPromise;
-  
-  console.log(`
-🐛 DEVELOPMENT DEBUG COMMANDS AVAILABLE:
-
-📊 SUBSCRIPTION DEBUGGING:
-- debugSubscription.getCurrentStatus(): Check status across all sources
-- debugSubscription.syncStatus(): Sync store and localStorage  
-- debugSubscription.testPromocodeFlow('pro'): Test promocode application
-- debugSubscription.testPaymentFlow('start'): Test payment completion
-
-🔐 AUTHENTICATION DEBUGGING:
-- debugAuth.getCurrentUser(): Get comprehensive user state
-- debugAuth.clearUserState(): Clear all user data
-- debugAuth.testSaveUser(): Test server user save manually
-
-🎯 QUICK ACCESS:
-- $store: Vuex store instance
-- $eventBus: Global event bus
-- $userStatus(): Get current user status
-- $appLifecycle: App initialization state
-- $authInitPromise: Auth initialization promise
-  `);
-}
-
-// ============================================================================
-// 🎬 APPLICATION STARTUP (ORIGINAL)
-// ============================================================================
-
-// Start the application
-initializeApplication().catch(error => {
-  console.error('❌ Critical application startup failure:', error);
-  
-  // Emit critical startup error
-  if (window.eventBus) {
-    eventBus.emit('criticalStartupError', {
-      error: error.message,
-      stack: error.stack,
-      timestamp: Date.now()
-    });
-  }
-  
-  // Show user-friendly error message
-  document.body.innerHTML = `
-    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
-      <div style="text-align: center; padding: 2rem; background: #fee; border: 1px solid #fcc; border-radius: 8px;">
-        <h2 style="color: #c33; margin-bottom: 1rem;">⚠️ Application Startup Error</h2>
-        <p style="color: #666; margin-bottom: 1rem;">The application failed to initialize properly.</p>
-        <button onclick="window.location.reload()" style="background: #007cba; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
-          🔄 Reload Page
-        </button>
-      </div>
-    </div>
-  `;
-});
+console.log('🚀 Main.js initialization complete - waiting for Firebase auth...');
