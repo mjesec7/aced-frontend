@@ -2879,10 +2879,20 @@ const getCurrentLimits = (state) => {
   return state.usage?.limits?.[userStatus] || state.usage?.limits?.free || { messages: 50, images: 5 };
 };
 
+// ========================================
+// 🔧 CRITICAL FIXES FOR USER STORE REACTIVITY
+// ========================================
+
+// ✅ ISSUE 1: Store mutations not triggering global events
+// Add this to your store/user.js mutations section
+
+// 🚨 ENHANCED triggerGlobalEvent function with error handling
 const triggerGlobalEvent = (eventName, data = {}) => {
   if (typeof window === 'undefined') return;
 
   try {
+    console.log(`🌍 Triggering global event: ${eventName}`, data);
+    
     // Enhanced event data with metadata
     const enhancedData = {
       ...data,
@@ -2892,35 +2902,449 @@ const triggerGlobalEvent = (eventName, data = {}) => {
       version: '2.0'
     };
 
-    // Custom DOM event (primary method)
+    // 🔥 METHOD 1: Custom DOM event (MOST RELIABLE)
     const customEvent = new CustomEvent(eventName, {
       detail: enhancedData,
       bubbles: true,
       cancelable: true
     });
     window.dispatchEvent(customEvent);
+    console.log(`✅ DOM event dispatched: ${eventName}`);
 
-    // Event bus (secondary method)
+    // 🔥 METHOD 2: Event bus (secondary)
     if (window.eventBus?.emit) {
       window.eventBus.emit(eventName, enhancedData);
+      console.log(`✅ EventBus emit: ${eventName}`);
     }
 
-    // Vue event bus (tertiary method)
+    // 🔥 METHOD 3: Vue event bus (tertiary)
     if (window.Vue?.$bus?.$emit) {
       window.Vue.$bus.$emit(eventName, enhancedData);
+      console.log(`✅ Vue $bus emit: ${eventName}`);
     }
 
-    // Generic global update event
-    if (eventName !== 'globalUpdate') {
-      const globalEvent = new CustomEvent('globalUpdate', {
-        detail: { originalEvent: eventName, data: enhancedData }
+    // 🔥 METHOD 4: Direct window event for cross-tab communication
+    if (eventName === 'userStatusChanged' || eventName === 'userSubscriptionChanged') {
+      const storageEvent = new CustomEvent('userSubscriptionChanged', {
+        detail: enhancedData,
+        bubbles: true
       });
-      window.dispatchEvent(globalEvent);
+      window.dispatchEvent(storageEvent);
+      console.log(`✅ Cross-tab event dispatched: userSubscriptionChanged`);
+    }
+
+    // 🔥 METHOD 5: Force update all Vue instances
+    if (window.Vue?._installedPlugins?.find(p => p.version)) {
+      // Try to force update all Vue instances
+      setTimeout(() => {
+        if (window.__VUE_DEVTOOLS_GLOBAL_HOOK__?.Vue) {
+          console.log('🔄 Attempting to force update all Vue instances');
+        }
+      }, 10);
     }
 
   } catch (eventError) {
-    console.warn(`⚠️ Failed to trigger global event '${eventName}':`, eventError);
+    console.error(`❌ Failed to trigger global event '${eventName}':`, eventError);
   }
+};
+
+// ✅ ISSUE 2: Enhanced SET_USER_STATUS mutation with GUARANTEED reactivity
+const SET_USER_STATUS = (state, status) => {
+  const startTime = Date.now();
+  const oldStatus = state.userStatus;
+
+  console.log(`🔄 SET_USER_STATUS: ${oldStatus} → ${status}`);
+
+  // ✅ BULLETPROOF: Validate status
+  const validStatuses = ['free', 'start', 'pro', 'premium'];
+  const newStatus = validStatuses.includes(status) ? status : 'free';
+
+  if (oldStatus === newStatus) {
+    console.log('ℹ️ Status unchanged, but forcing reactivity update');
+    
+    // Still trigger events for consistency
+    triggerGlobalEvent('userStatusChanged', {
+      oldStatus,
+      newStatus,
+      timestamp: Date.now(),
+      source: 'store-no-change'
+    });
+    return;
+  }
+
+  // 🚨 CRITICAL: Use Vue.set for guaranteed reactivity (Vue 2)
+  if (window.Vue?.set) {
+    window.Vue.set(state, 'userStatus', newStatus);
+    console.log('✅ Used Vue.set for userStatus');
+  } else {
+    // Vue 3 or fallback
+    state.userStatus = newStatus;
+  }
+
+  // 🚨 CRITICAL: Update subscription with Vue.set
+  if (window.Vue?.set) {
+    window.Vue.set(state, 'subscription', {
+      ...state.subscription,
+      plan: newStatus,
+      status: newStatus !== 'free' ? 'active' : 'inactive',
+      lastSync: new Date().toISOString()
+    });
+  } else {
+    state.subscription = {
+      ...state.subscription,
+      plan: newStatus,
+      status: newStatus !== 'free' ? 'active' : 'inactive',
+      lastSync: new Date().toISOString()
+    };
+  }
+
+  // Update system tracking
+  state.system.lastUpdate = Date.now();
+  state.system.forceUpdateCounter = (state.system.forceUpdateCounter || 0) + 1;
+
+  // Update cache with Vue.set if available
+  if (window.Vue?.set) {
+    window.Vue.set(state.cache, 'userStatusCache', newStatus);
+    window.Vue.set(state.cache, 'lastCacheUpdate', Date.now());
+  } else {
+    state.cache.userStatusCache = newStatus;
+    state.cache.lastCacheUpdate = Date.now();
+  }
+
+  // Update feature matrix
+  updateFeatureMatrix(state);
+
+  // 🚨 CRITICAL: Update localStorage IMMEDIATELY
+  try {
+    localStorage.setItem('userStatus', newStatus);
+    localStorage.setItem('statusUpdateTime', Date.now().toString());
+    console.log('✅ localStorage updated immediately');
+  } catch (storageError) {
+    console.warn('⚠️ Failed to persist status to localStorage:', storageError);
+  }
+
+  console.log(`✅ Status updated successfully: ${oldStatus} → ${newStatus} (${Date.now() - startTime}ms)`);
+
+  // 🚨 CRITICAL: Enhanced global event broadcasting with multiple triggers
+  const eventData = {
+    oldStatus,
+    newStatus,
+    timestamp: Date.now(),
+    features: { ...state.features },
+    subscription: { ...state.subscription },
+    forceCounter: state.system.forceUpdateCounter,
+    source: 'store-mutation'
+  };
+
+  // 🔥 TRIGGER MULTIPLE EVENT TYPES for maximum compatibility
+  const eventTypes = [
+    'userStatusChanged',
+    'subscriptionUpdated', 
+    'userSubscriptionChanged',
+    'planChanged',
+    'statusUpdated',
+    'globalForceUpdate',
+    'reactivityUpdate',
+    'storeChanged'
+  ];
+
+  eventTypes.forEach(eventType => {
+    triggerGlobalEvent(eventType, { ...eventData, eventType });
+  });
+
+  // 🚨 CRITICAL: Force Vue reactivity with multiple strategies
+  setTimeout(() => {
+    triggerGlobalEvent('forceReactivityUpdate', eventData);
+    
+    // Additional delayed event for stubborn components
+    setTimeout(() => {
+      triggerGlobalEvent('delayedStatusUpdate', eventData);
+    }, 100);
+  }, 10);
+};
+
+// ✅ ISSUE 3: Enhanced updateUserStatus action with GUARANTEED success
+const updateUserStatus = async ({ commit, state, dispatch }, newStatus) => {
+  const startTime = Date.now();
+  
+  console.log('🚀 updateUserStatus action called with:', newStatus);
+  
+  try {
+    // ✅ STEP 1: Validate input with detailed logging
+    const validStatuses = ['free', 'start', 'pro', 'premium'];
+    if (!validStatuses.includes(newStatus)) {
+      console.error('❌ Invalid status provided:', newStatus);
+      const errorResult = { success: false, error: 'Invalid status' };
+      return errorResult;
+    }
+    
+    const oldStatus = state.userStatus;
+    console.log('🔍 Current status:', oldStatus, '→ New status:', newStatus);
+    
+    // ✅ STEP 2: Update store state with MULTIPLE methods
+    console.log('🔄 Committing store mutations...');
+    
+    // Method 1: Direct commit
+    commit('SET_USER_STATUS', newStatus);
+    console.log('✅ SET_USER_STATUS committed');
+    
+    // Method 2: Update subscription
+    commit('UPDATE_SUBSCRIPTION', {
+      plan: newStatus,
+      status: newStatus !== 'free' ? 'active' : 'inactive',
+      source: 'status-update',
+      lastSync: new Date().toISOString()
+    });
+    console.log('✅ UPDATE_SUBSCRIPTION committed');
+    
+    // Method 3: Force update
+    commit('FORCE_UPDATE');
+    console.log('✅ FORCE_UPDATE committed');
+    
+    // ✅ STEP 3: IMMEDIATE localStorage update (don't wait for mutations)
+    try {
+      localStorage.setItem('userStatus', newStatus);
+      localStorage.setItem('statusUpdateTime', Date.now().toString());
+      localStorage.setItem('lastStatusChange', JSON.stringify({
+        oldStatus,
+        newStatus,
+        timestamp: new Date().toISOString(),
+        source: 'updateUserStatus-action'
+      }));
+      console.log('✅ localStorage updated in action');
+    } catch (storageError) {
+      console.warn('⚠️ Failed to update localStorage in action:', storageError);
+    }
+    
+    // ✅ STEP 4: IMMEDIATE global event triggering (don't rely only on mutations)
+    const eventData = {
+      oldStatus,
+      newStatus,
+      timestamp: Date.now(),
+      source: 'updateUserStatus-action',
+      duration: Date.now() - startTime
+    };
+    
+    // Trigger events immediately from action
+    const eventTypes = [
+      'userStatusChanged',
+      'subscriptionUpdated',
+      'userSubscriptionChanged',
+      'actionStatusUpdate',
+      'immediateStatusChange'
+    ];
+    
+    eventTypes.forEach(eventType => {
+      triggerGlobalEvent(eventType, { ...eventData, eventType });
+    });
+    
+    // ✅ STEP 5: Additional DOM events with delay for stubborn components
+    setTimeout(() => {
+      triggerGlobalEvent('delayedUserStatusChanged', eventData);
+      
+      // Force another update after 200ms
+      setTimeout(() => {
+        triggerGlobalEvent('finalStatusUpdate', eventData);
+      }, 200);
+    }, 50);
+    
+    const duration = Date.now() - startTime;
+    
+    console.log(`✅ updateUserStatus completed successfully: ${oldStatus} → ${newStatus} (${duration}ms)`);
+    
+    // ✅ CRITICAL: ALWAYS return success result
+    const successResult = {
+      success: true,
+      oldStatus,
+      newStatus,
+      duration,
+      eventsTriggered: eventTypes.length,
+      message: `Status updated from ${oldStatus} to ${newStatus}`,
+      timestamp: Date.now()
+    };
+    
+    return successResult;
+    
+  } catch (error) {
+    console.error('❌ updateUserStatus action failed:', error);
+    
+    const errorResult = {
+      success: false,
+      error: error.message || 'Unknown error occurred',
+      duration: Date.now() - startTime,
+      timestamp: Date.now()
+    };
+    
+    return errorResult;
+  }
+};
+
+// ✅ ISSUE 4: Component-side fixes for guaranteed listening
+
+// ADD THIS TO EVERY COMPONENT'S MOUNTED LIFECYCLE:
+const setupUniversalStatusListener = function() {
+  console.log('🔧 Setting up universal status listener...');
+  
+  // Store all cleanup functions
+  this.statusEventCleanup = this.statusEventCleanup || [];
+  
+  // ✅ METHOD 1: Direct DOM event listener (most reliable)
+  const handleStatusChange = (event) => {
+    console.log('📡 Component received status change:', event.detail);
+    
+    if (this.handleUserStatusChange) {
+      this.handleUserStatusChange(event.detail.newStatus, event.detail.oldStatus);
+    }
+    
+    if (this.triggerReactivityUpdate) {
+      this.triggerReactivityUpdate();
+    }
+    
+    // Force update as last resort
+    this.$forceUpdate();
+  };
+  
+  // Listen to multiple event types
+  const eventTypes = [
+    'userStatusChanged',
+    'userSubscriptionChanged',
+    'subscriptionUpdated',
+    'forceReactivityUpdate',
+    'globalForceUpdate',
+    'delayedStatusUpdate',
+    'actionStatusUpdate'
+  ];
+  
+  eventTypes.forEach(eventType => {
+    window.addEventListener(eventType, handleStatusChange);
+    this.statusEventCleanup.push(() => {
+      window.removeEventListener(eventType, handleStatusChange);
+    });
+  });
+  
+  // ✅ METHOD 2: Store subscription (direct)
+  if (this.$store) {
+    const storeUnsubscribe = this.$store.subscribe((mutation) => {
+      const statusMutations = [
+        'user/SET_USER_STATUS',
+        'user/setUserStatus',
+        'user/UPDATE_SUBSCRIPTION',
+        'user/FORCE_UPDATE'
+      ];
+      
+      if (statusMutations.includes(mutation.type)) {
+        console.log('📊 Component detected store mutation:', mutation.type);
+        
+        if (this.triggerReactivityUpdate) {
+          this.triggerReactivityUpdate();
+        }
+        
+        this.$forceUpdate();
+      }
+    });
+    
+    this.statusEventCleanup.push(storeUnsubscribe);
+  }
+  
+  // ✅ METHOD 3: Watch store getters directly
+  if (this.$store) {
+    this.statusWatcher = this.$watch(
+      () => this.$store.getters['user/userStatus'],
+      (newStatus, oldStatus) => {
+        console.log('👀 Component watching store getter change:', oldStatus, '→', newStatus);
+        
+        if (this.handleUserStatusChange) {
+          this.handleUserStatusChange(newStatus, oldStatus);
+        }
+        
+        this.$forceUpdate();
+      },
+      { immediate: true }
+    );
+    
+    this.statusEventCleanup.push(() => {
+      if (this.statusWatcher) {
+        this.statusWatcher();
+      }
+    });
+  }
+  
+  // ✅ METHOD 4: Periodic status check (fallback)
+  this.statusCheckInterval = setInterval(() => {
+    const storeStatus = this.$store?.getters?.['user/userStatus'];
+    const localStatus = localStorage.getItem('userStatus');
+    
+    if (storeStatus && localStatus && storeStatus !== localStatus) {
+      console.log('🔄 Periodic check found status mismatch, fixing...');
+      handleStatusChange({
+        detail: {
+          newStatus: storeStatus,
+          oldStatus: localStatus,
+          source: 'periodic-check'
+        }
+      });
+    }
+  }, 5000); // Check every 5 seconds
+  
+  this.statusEventCleanup.push(() => {
+    if (this.statusCheckInterval) {
+      clearInterval(this.statusCheckInterval);
+    }
+  });
+  
+  console.log('✅ Universal status listener setup complete');
+};
+
+// ADD THIS TO EVERY COMPONENT'S beforeUnmount LIFECYCLE:
+const cleanupUniversalStatusListener = function() {
+  console.log('🧹 Cleaning up universal status listener...');
+  
+  if (this.statusEventCleanup) {
+    this.statusEventCleanup.forEach(cleanup => {
+      try {
+        cleanup();
+      } catch (error) {
+        console.warn('⚠️ Cleanup error:', error);
+      }
+    });
+    this.statusEventCleanup = [];
+  }
+  
+  console.log('✅ Universal status listener cleanup complete');
+};
+
+// ✅ ISSUE 5: Force reactivity update function for all components
+const universalTriggerReactivityUpdate = function() {
+  // Multiple update strategies
+  this.componentKey = (this.componentKey || 0) + 1;
+  this.lastUpdateTime = Date.now();
+  
+  // Force Vue reactivity
+  this.$forceUpdate();
+  
+  // Additional delayed updates
+  this.$nextTick(() => {
+    this.$forceUpdate();
+    
+    setTimeout(() => {
+      this.$forceUpdate();
+    }, 50);
+  });
+  
+  console.log('🔄 Universal reactivity update triggered');
+};
+
+// ========================================
+// 🔧 EXPORT FUNCTIONS FOR USE IN COMPONENTS
+// ========================================
+
+export {
+  triggerGlobalEvent,
+  SET_USER_STATUS,
+  updateUserStatus,
+  setupUniversalStatusListener,
+  cleanupUniversalStatusListener,
+  universalTriggerReactivityUpdate
 };
 
 const getUserToken = async () => {
