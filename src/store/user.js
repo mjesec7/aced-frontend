@@ -1235,79 +1235,200 @@ async saveUser({ commit, dispatch, state }, { userData, token }) {
   }
 },
 
-  // Keep all your existing actions EXCEPT updateUserStatus...
-
-  // Replace the updateUserStatus action with this EXACT implementation:
-  async updateUserStatus({ commit, state }, newStatus) {
-    console.log('🚀 updateUserStatus action called with:', newStatus);
+async updateUserStatus({ commit, state, dispatch }, newStatus) {
+  const startTime = Date.now();
+  
+  console.log('🚀 DEBUG: updateUserStatus called with:', newStatus);
+  
+  try {
+    // ✅ STEP 1: Validate input
+    const validStatuses = ['free', 'start', 'pro', 'premium'];
+    if (!validStatuses.includes(newStatus)) {
+      console.error('❌ Invalid status provided:', newStatus);
+      const errorResult = { success: false, error: 'Invalid status' };
+      console.log('❌ DEBUG: Returning error result:', errorResult);
+      return errorResult; // ✅ CRITICAL: Return error result
+    }
     
-    const startTime = Date.now();
+    const oldStatus = state.userStatus;
+    console.log('🔍 DEBUG: Current status:', oldStatus, '→ New status:', newStatus);
     
-    try {
-      // Validate input
-      const validStatuses = ['free', 'start', 'pro', 'premium'];
-      if (!validStatuses.includes(newStatus)) {
-        console.error('❌ Invalid status:', newStatus);
-        return { success: false, error: 'Invalid status' };
-      }
-      
-      const oldStatus = state.userStatus;
-      console.log(`🔄 Updating status: ${oldStatus} → ${newStatus}`);
-      
-      // Skip if no change
-      if (oldStatus === newStatus) {
-        console.log('ℹ️ Status unchanged');
-        return { success: true, message: 'Status unchanged', noChange: true };
-      }
-      
-      // Update store state
-      commit('SET_USER_STATUS', newStatus);
-      commit('UPDATE_SUBSCRIPTION', {
-        plan: newStatus,
-        status: newStatus !== 'free' ? 'active' : 'inactive',
-        source: 'status-update',
-        lastSync: new Date().toISOString()
-      });
-      commit('UPDATE_FEATURES');
+    // ✅ STEP 2: Skip if no change
+    if (oldStatus === newStatus) {
+      console.log('ℹ️ Status unchanged, but forcing global update');
       commit('FORCE_UPDATE');
       
-      // Update localStorage
+      // Trigger global event
+      if (typeof window !== 'undefined' && window.eventBus) {
+        window.eventBus.emit('userStatusChanged', {
+          oldStatus,
+          newStatus,
+          source: 'updateUserStatus-nochange',
+          timestamp: Date.now()
+        });
+      }
+      
+      const noChangeResult = { success: true, message: 'Status unchanged', noChange: true };
+      console.log('✅ DEBUG: Returning no-change result:', noChangeResult);
+      return noChangeResult; // ✅ CRITICAL: Return no-change result
+    }
+    
+    console.log(`🔄 Updating user status: ${oldStatus} → ${newStatus}`);
+    
+    // ✅ STEP 3: Update store state immediately
+    commit('SET_USER_STATUS', newStatus);
+    
+    // ✅ STEP 4: Update subscription details
+    commit('UPDATE_SUBSCRIPTION', {
+      plan: newStatus,
+      status: newStatus !== 'free' ? 'active' : 'inactive',
+      source: 'status-update',
+      lastSync: new Date().toISOString()
+    });
+    
+    // ✅ STEP 5: Update features immediately
+    commit('UPDATE_FEATURES');
+    
+    // ✅ STEP 6: Force multiple reactivity triggers
+    commit('FORCE_UPDATE');
+    
+    // ✅ STEP 7: Update localStorage immediately
+    try {
       localStorage.setItem('userStatus', newStatus);
       localStorage.setItem('statusUpdateTime', Date.now().toString());
-      
-      const duration = Date.now() - startTime;
-      console.log(`✅ Status updated successfully: ${oldStatus} → ${newStatus} (${duration}ms)`);
-      
-      // CRITICAL: Always return success result
-      const result = {
-        success: true,
+      localStorage.setItem('lastStatusChange', JSON.stringify({
         oldStatus,
         newStatus,
-        duration,
-        message: `Status updated from ${oldStatus} to ${newStatus}`,
-        timestamp: Date.now()
-      };
-      
-      console.log('✅ Returning success result:', result);
-      return result;
-      
-    } catch (error) {
-      console.error('❌ updateUserStatus failed:', error);
-      
-      const errorResult = {
-        success: false,
-        error: error.message || 'Unknown error',
-        duration: Date.now() - startTime,
-        timestamp: Date.now()
-      };
-      
-      console.log('❌ Returning error result:', errorResult);
-      return errorResult;
+        timestamp: new Date().toISOString(),
+        source: 'store-action'
+      }));
+      console.log('✅ localStorage updated successfully');
+    } catch (storageError) {
+      console.warn('⚠️ Failed to update localStorage:', storageError);
     }
-  },
-
-  // Keep all your other existing actions...
-
+    
+    // ✅ STEP 8: Create comprehensive event data
+    const eventData = {
+      oldStatus,
+      newStatus,
+      timestamp: Date.now(),
+      source: 'store-updateUserStatus',
+      features: { ...state.features },
+      subscription: { ...state.subscription },
+      forceCounter: state.system?.forceUpdateCounter || 0,
+      duration: Date.now() - startTime
+    };
+    
+    // ✅ STEP 9: Trigger ALL possible global events immediately
+    const eventTypes = [
+      'userStatusChanged',
+      'subscriptionUpdated', 
+      'userSubscriptionChanged',
+      'planChanged',
+      'statusUpdated',
+      'globalForceUpdate',
+      'reactivityUpdate'
+    ];
+    
+    // Helper function to trigger global events
+    const triggerEvent = (eventName, data) => {
+      try {
+        // Method 1: Use global triggerGlobalEvent if available
+        if (typeof window !== 'undefined' && window.triggerGlobalEvent) {
+          window.triggerGlobalEvent(eventName, data);
+          return;
+        }
+        
+        // Method 2: Direct DOM event
+        if (typeof window !== 'undefined') {
+          const event = new CustomEvent(eventName, { detail: data, bubbles: true });
+          window.dispatchEvent(event);
+        }
+        
+        // Method 3: Event bus
+        if (typeof window !== 'undefined' && window.eventBus) {
+          window.eventBus.emit(eventName, data);
+        }
+      } catch (error) {
+        console.warn(`⚠️ Failed to trigger ${eventName}:`, error);
+      }
+    };
+    
+    eventTypes.forEach(eventType => {
+      triggerEvent(eventType, { ...eventData, eventType });
+    });
+    
+    // ✅ STEP 10: Additional DOM events for maximum compatibility
+    try {
+      if (typeof window !== 'undefined') {
+        // Primary DOM event
+        const domEvent = new CustomEvent('userSubscriptionChanged', {
+          detail: {
+            plan: newStatus,
+            source: 'store-action',
+            oldPlan: oldStatus,
+            timestamp: Date.now()
+          },
+          bubbles: true,
+          cancelable: true
+        });
+        window.dispatchEvent(domEvent);
+        
+        console.log('✅ DOM events dispatched successfully');
+      }
+    } catch (domError) {
+      console.warn('⚠️ DOM event dispatch failed:', domError);
+    }
+    
+    const duration = Date.now() - startTime;
+    
+    console.log(`✅ User status updated successfully: ${oldStatus} → ${newStatus} (${duration}ms)`);
+    
+    // ✅ CRITICAL FIX: CREATE AND RETURN the success result
+    const successResult = {
+      success: true,
+      oldStatus,
+      newStatus,
+      duration,
+      eventsTriggered: eventTypes.length,
+      message: `Status updated from ${oldStatus} to ${newStatus}`,
+      timestamp: Date.now()
+    };
+    
+    console.log('✅ DEBUG: About to return success result:', successResult);
+    console.log('✅ DEBUG: successResult.success =', successResult.success);
+    console.log('✅ DEBUG: typeof successResult =', typeof successResult);
+    
+    // 🚨 THE CRITICAL RETURN STATEMENT - THIS WAS MISSING!
+    return successResult;
+    
+  } catch (error) {
+    console.error('❌ updateUserStatus failed:', error);
+    
+    try {
+      commit('SET_ERROR', {
+        message: 'Status update failed',
+        context: 'updateUserStatus',
+        originalError: error.message
+      });
+    } catch (commitError) {
+      console.error('❌ Failed to commit error:', commitError);
+    }
+    
+    const errorResult = {
+      success: false,
+      error: error.message || 'Unknown error occurred',
+      duration: Date.now() - startTime,
+      timestamp: Date.now()
+    };
+    
+    console.log('❌ DEBUG: About to return error result:', errorResult);
+    console.log('❌ DEBUG: errorResult.success =', errorResult.success);
+    
+    // ✅ CRITICAL FIX: RETURN the error result too!
+    return errorResult;
+  }
+},
 
   // ✅ ENHANCED: Load user status with caching and validation
   async loadUserStatus({ commit, state }) {
@@ -2565,7 +2686,7 @@ async saveUser({ commit, dispatch, state }, { userData, token }) {
 
       triggerGlobalEvent('userDataSynced', {
         ...syncSummary,
-        timestamp: Date.Now()
+        timestamp: Date.now()
       });
 
       return syncSummary;
@@ -2935,7 +3056,7 @@ const SET_USER_STATUS = (state, status) => {
 };
 
 // ✅ ISSUE 3: Enhanced updateUserStatus action with GUARANTEED success
-const updateUserStatusActionFix = async ({ commit, state, dispatch }, newStatus) => {
+const updateUserStatus = async ({ commit, state, dispatch }, newStatus) => {
   const startTime = Date.now();
   
   console.log('🚀 updateUserStatus action called with:', newStatus);
@@ -3212,7 +3333,7 @@ const universalTriggerReactivityUpdate = function() {
 export {
   triggerGlobalEvent,
   SET_USER_STATUS,
-  updateUserStatusActionFix as updateUserStatus, // Export the fixed version
+  updateUserStatus,
   setupUniversalStatusListener,
   cleanupUniversalStatusListener,
   universalTriggerReactivityUpdate
@@ -3671,7 +3792,7 @@ const getters = {
 
   cacheAge: (state) => {
     const cache = state.cache || {};
-    const now = Date.Now();
+    const now = Date.now();
     const lastUpdate = cache.lastCacheUpdate || 0;
 
     return now - lastUpdate;
