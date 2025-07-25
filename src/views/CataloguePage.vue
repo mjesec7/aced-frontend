@@ -1,6 +1,5 @@
 <template>
   <div class="catalogue-page">
-    <!-- Header -->
     <div class="page-header">
       <div class="header-content">
         <div class="breadcrumb">
@@ -47,10 +46,8 @@
     </div>
 
     <div class="main-content">
-      <!-- Compact Horizontal Filter Bar -->
       <div class="filter-bar">
         <div class="filter-row">
-          <!-- Search -->
           <div class="filter-item">
             <input
               v-model="searchQuery"
@@ -60,7 +57,6 @@
             />
           </div>
 
-          <!-- Subject Filter -->
           <div v-if="currentView !== 'subjects'" class="filter-item">
             <select v-model="filterSubject" class="filter-select">
               <option value="">Все предметы</option>
@@ -70,7 +66,6 @@
             </select>
           </div>
 
-          <!-- Level Filter -->
           <div v-if="currentView === 'topics'" class="filter-item">
             <select v-model="filterLevel" class="filter-select">
               <option value="">Все уровни</option>
@@ -80,7 +75,6 @@
             </select>
           </div>
 
-          <!-- Access Type -->
           <div class="filter-item checkbox-filter">
             <label class="checkbox-label">
               <input type="checkbox" v-model="showFree" />
@@ -92,7 +86,6 @@
             </label>
           </div>
 
-          <!-- Progress Filter -->
           <div v-if="currentView === 'topics'" class="filter-item checkbox-filter">
             <label class="checkbox-label">
               <input type="checkbox" v-model="showNotStarted" />
@@ -108,19 +101,16 @@
             </label>
           </div>
 
-          <!-- Clear Button -->
           <button @click="clearFilters" class="clear-btn">Очистить</button>
         </div>
       </div>
 
-      <!-- Main Content Area -->
       <div class="content-area">
         <div v-if="loading" class="loading">
           <div class="loading-spinner"></div>
           <span>Загрузка...</span>
         </div>
 
-        <!-- Subjects View -->
         <div v-else-if="currentView === 'subjects'" class="subjects-grid">
           <div 
             v-for="subject in filteredSubjects" 
@@ -137,7 +127,6 @@
           </div>
         </div>
 
-        <!-- Levels View -->
         <div v-else-if="currentView === 'levels'" class="levels-grid">
           <div 
             v-for="level in filteredLevels" 
@@ -175,7 +164,6 @@
           </div>
         </div>
 
-        <!-- Topics View -->
         <div v-else-if="currentView === 'topics'" class="topics-grid">
           <div 
             v-for="topic in filteredTopics" 
@@ -208,7 +196,6 @@
               <span>⏱️ {{ topic.totalTime }} мин</span>
             </div>
 
-            <!-- Progress Section -->
             <div v-if="topic.progress !== undefined" class="progress-section">
               <div class="progress-header">
                 <span class="progress-label">Прогресс</span>
@@ -223,7 +210,6 @@
               </div>
             </div>
 
-            <!-- Status Badge -->
             <div class="status-section">
               <span 
                 class="status-badge" 
@@ -243,7 +229,6 @@
           </div>
         </div>
 
-        <!-- Empty State -->
         <div v-if="!loading && filteredItems.length === 0" class="empty-state">
           <div class="empty-icon">🔍</div>
           <h3>Ничего не найдено</h3>
@@ -255,7 +240,6 @@
       </div>
     </div>
 
-    <!-- Modals -->
     <div v-if="showAddModal" class="modal-overlay" @click="showAddModal = false">
       <div class="modal-content" @click.stop>
         <button class="modal-close" @click="showAddModal = false">×</button>
@@ -329,7 +313,7 @@ export default {
       levels: [],
       topics: [],
       userProgress: {},
-      lessonProgress: {},
+      lessonProgress: {}, // This variable is declared but not used in the provided code
       studyPlanTopics: [],
       
       // UI state
@@ -341,11 +325,11 @@ export default {
       searchQuery: '',
       filterSubject: '',
       filterLevel: '',
-      showFree: false,        // Changed to false
-      showPremium: false,     // Changed to false
-      showNotStarted: false,  // Changed to false
-      showInProgress: false,  // Changed to false
-      showCompleted: false,   // Changed to false
+      showFree: false,        
+      showPremium: false,     
+      showNotStarted: false,  
+      showInProgress: false,  
+      showCompleted: false,   
       
       // Modal state
       showAddModal: false,
@@ -353,33 +337,87 @@ export default {
       showPaywall: false,
       selectedTopic: null,
       requestedTopicId: null,
-      plan: null,
+      plan: null, // This variable is declared but not used for display
       
-      // ✅ Enhanced reactivity tracking
+      // ✅ ENHANCED: Add comprehensive reactivity tracking
       componentKey: 0,
-      lastUpdateTime: Date.now()
+      lastUpdateTime: Date.now(),
+      eventCleanupFunctions: [],
+      globalEventHandlers: {},
+      statusChangeTimeout: null,
+      forceUpdateInterval: null, // This variable is declared but not used
+      
+      // ✅ NEW: Status sync tracking
+      lastStatusSync: Date.now(),
+      statusSyncInterval: null
     };
   },
   
   computed: {
-    ...mapGetters('user', ['isPremiumUser', 'userStatus', 'forceUpdateCounter']),
+    // ✅ ADD THESE TO YOUR EXISTING COMPUTED PROPERTIES
+    ...mapGetters('user', [
+      'userStatus',
+      'isPremiumUser', // Already in initial code, but explicitly included here for clarity
+      'isStartUser',
+      'isProUser',
+      'isFreeUser',
+      'hasActiveSubscription',
+      'forceUpdateCounter',
+      'subscriptionDetails'
+    ]),
     
-    // ✅ ENHANCED: Reactive subscription class with force counter
+    // ✅ ENHANCED: Reactive subscription class with multiple triggers
     subscriptionClass() {
-      const counter = this.forceUpdateCounter || 0; // Force reactivity
+      const counter = this.forceUpdateCounter || 0; // Force reactivity via Vuex counter
+      const updateTime = this.lastUpdateTime; // Additional trigger for local changes
       const status = this.userStatus || 'free';
+      const syncTime = this.lastStatusSync; // Additional trigger for periodic sync
+      
+      console.log('📊 Catalogue: Computing subscription class:', {
+        status,
+        counter,
+        updateTime,
+        syncTime
+      });
+      
       return status === 'pro' ? 'badge-pro'
-        : status === 'start' ? 'badge-start'
+        : status === 'start' || status === 'premium' ? 'badge-start'
         : 'badge-free';
     },
     
-    // ✅ ENHANCED: Reactive subscription text with force counter  
+    // ✅ ENHANCED: Reactive subscription text with multiple triggers  
     subscriptionText() {
-      const counter = this.forceUpdateCounter || 0; // Force reactivity
+      const counter = this.forceUpdateCounter || 0; // Force reactivity via Vuex counter
+      const updateTime = this.lastUpdateTime; // Additional trigger for local changes
       const status = this.userStatus || 'free';
+      const syncTime = this.lastStatusSync; // Additional trigger for periodic sync
+      
+      console.log('📊 Catalogue: Computing subscription text:', {
+        status,
+        counter,
+        updateTime,
+        syncTime
+      });
+      
       return status === 'pro' ? 'Pro подписка'
-        : status === 'start' ? 'Start подписка'
+        : status === 'start' || status === 'premium' ? 'Start подписка'
         : 'Бесплатный доступ';
+    },
+
+    // ✅ NEW: Current reactive user status with comprehensive fallbacks
+    currentUserStatus() {
+      const counter = this.forceUpdateCounter || 0; // Depend on Vuex counter for reactivity
+      const storeStatus = this.userStatus;
+      const localStatus = localStorage.getItem('userStatus');
+      const computedStatus = storeStatus || localStatus || 'free';
+      
+      // Auto-fix inconsistencies
+      if (storeStatus && localStatus && storeStatus !== localStatus) {
+        console.log(`🔧 Catalogue: Auto-fixing status inconsistency: store(${storeStatus}) !== localStorage(${localStatus})`);
+        localStorage.setItem('userStatus', storeStatus);
+      }
+      
+      return computedStatus;
     },
 
     currentItems() {
@@ -507,102 +545,74 @@ export default {
 
   // ✅ ENHANCED: Watch for store changes with reactivity
   watch: {
-    // Watch for user status changes from store
+    // ✅ ENHANCED: Watch for user status changes from store
     userStatus: {
       handler(newStatus, oldStatus) {
         console.log('📊 Catalogue: User status changed from', oldStatus, 'to:', newStatus);
-        this.triggerReactivityUpdate();
+        this.handleUserStatusChange(newStatus, oldStatus);
       },
       immediate: true
     },
     
-    // Watch for force update counter changes
+    // ✅ NEW: Watch for force update counter changes
     forceUpdateCounter: {
       handler(newCounter, oldCounter) {
         console.log('📊 Catalogue: Force update counter changed:', oldCounter, '→', newCounter);
         this.triggerReactivityUpdate();
       },
       immediate: true
+    },
+    
+    // ✅ NEW: Watch for subscription details changes
+    subscriptionDetails: {
+      handler(newSub, oldSub) {
+        if (newSub !== oldSub) {
+          console.log('💳 Catalogue: Subscription details changed:', newSub);
+          this.triggerReactivityUpdate();
+        }
+      },
+      deep: true,
+      immediate: true
+    },
+    
+    // ✅ NEW: Watch current user status computed property
+    currentUserStatus: {
+      handler(newStatus, oldStatus) {
+        if (newStatus !== oldStatus) {
+          console.log('📊 Catalogue: Current user status computed changed:', oldStatus, '→', newStatus);
+          this.triggerReactivityUpdate();
+        }
+      },
+      immediate: true
     }
   },
 
   async mounted() {
-    await this.initializeComponent();
-    this.setupEventListeners();
+    console.log('📱 Catalogue: Component mounted');
+    
+    try {
+      // Initialize component
+      await this.initializeComponent();
+      
+      // ✅ ENHANCED: Setup comprehensive event listeners
+      this.setupEventListeners();
+      
+      // ✅ NEW: Setup periodic status sync
+      this.setupPeriodicStatusSync();
+      
+      console.log('✅ Catalogue: Component mounted successfully');
+      
+    } catch (error) {
+      console.error('❌ Catalogue: Mount error:', error);
+    }
   },
 
   beforeUnmount() {
+    console.log('📱 Catalogue: Component unmounting');
     this.cleanup();
   },
 
   methods: {
-    // ✅ ENHANCED: Setup global event listeners
-    setupEventListeners() {
-      console.log('🔧 Catalogue: Setting up event listeners');
-      
-      // Listen for global user status changes
-      if (typeof window !== 'undefined' && window.eventBus) {
-        this.statusChangedHandler = (data) => {
-          console.log('📡 Catalogue: Status change event received:', data);
-          this.triggerReactivityUpdate();
-        };
-        
-        this.forceUpdateHandler = (data) => {
-          console.log('📡 Catalogue: Force update event received:', data);
-          this.triggerReactivityUpdate();
-        };
-        
-        window.eventBus.on('userStatusChanged', this.statusChangedHandler);
-        window.eventBus.on('promocodeApplied', this.statusChangedHandler);
-        window.eventBus.on('forceUpdate', this.forceUpdateHandler);
-        window.eventBus.on('globalForceUpdate', this.forceUpdateHandler);
-        
-        console.log('✅ Catalogue: Event bus listeners registered');
-      }
-      
-      // Listen for DOM subscription events
-      this.domEventHandler = (event) => {
-        console.log('📡 Catalogue: DOM subscription event:', event.detail);
-        this.triggerReactivityUpdate();
-      };
-      
-      window.addEventListener('userSubscriptionChanged', this.domEventHandler);
-    },
-    
-    // ✅ ENHANCED: Cleanup event listeners
-    cleanup() {
-      console.log('🧹 Catalogue: Cleaning up event listeners');
-      
-      if (typeof window !== 'undefined' && window.eventBus) {
-        if (this.statusChangedHandler) {
-          window.eventBus.off('userStatusChanged', this.statusChangedHandler);
-          window.eventBus.off('promocodeApplied', this.statusChangedHandler);
-        }
-        
-        if (this.forceUpdateHandler) {
-          window.eventBus.off('forceUpdate', this.forceUpdateHandler);
-          window.eventBus.off('globalForceUpdate', this.forceUpdateHandler);
-        }
-      }
-      
-      if (this.domEventHandler) {
-        window.removeEventListener('userSubscriptionChanged', this.domEventHandler);
-      }
-    },
-    
-    // ✅ NEW: Trigger reactivity update
-    triggerReactivityUpdate() {
-      this.componentKey++;
-      this.lastUpdateTime = Date.now();
-      this.$forceUpdate();
-      
-      console.log('🔄 Catalogue: Reactivity update triggered:', {
-        componentKey: this.componentKey,
-        userStatus: this.userStatus,
-        timestamp: this.lastUpdateTime
-      });
-    },
-
     // ===== INITIALIZATION =====
     async initializeComponent() {
       try {
@@ -627,6 +637,8 @@ export default {
       } catch (error) {
         console.error('❌ Ошибка инициализации:', error);
         this.loading = false;
+      } finally {
+        this.loading = false; // Ensure loading is false even on partial failure
       }
     },
 
@@ -652,12 +664,15 @@ export default {
         const currentUser = auth.currentUser;
         if (!currentUser) {
           console.warn('⚠️ No current user authenticated');
+          // If no user, progress is empty, not an error
+          this.userProgress = {};
           return;
         }
 
         const token = await currentUser.getIdToken();
         if (!token) {
           console.warn('⚠️ No auth token available');
+          this.userProgress = {};
           return;
         }
 
@@ -674,10 +689,10 @@ export default {
             return;
           }
         } catch (topicProgressError) {
-          console.warn('⚠️ Topics-progress endpoint failed:', topicProgressError.response?.status);
+          console.warn('⚠️ Topics-progress endpoint failed, falling back:', topicProgressError.response?.status);
         }
 
-        // Fallback: try user progress endpoint
+        // Fallback: try user progress endpoint (lesson-level progress)
         try {
           const response = await axios.get(
             `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/progress`,
@@ -709,7 +724,7 @@ export default {
       }
 
       const topicProgressMap = {};
-      const topicLessons = {};
+      const topicLessonsCount = {}; // To store total lessons per topic
       
       // Group lessons by topicId and count totals
       if (Array.isArray(this.lessons)) {
@@ -717,10 +732,10 @@ export default {
           if (!lesson || !lesson.topicId) return;
           
           const topicId = String(lesson.topicId);
-          if (!topicLessons[topicId]) {
-            topicLessons[topicId] = { total: 0, completed: 0 };
+          if (!topicLessonsCount[topicId]) {
+            topicLessonsCount[topicId] = { total: 0, completed: 0 };
           }
-          topicLessons[topicId].total++;
+          topicLessonsCount[topicId].total++;
         });
       }
 
@@ -737,15 +752,15 @@ export default {
         
         if (lesson && lesson.topicId) {
           const topicId = String(lesson.topicId);
-          if (topicLessons[topicId]) {
-            topicLessons[topicId].completed++;
+          if (topicLessonsCount[topicId]) {
+            topicLessonsCount[topicId].completed++;
           }
         }
       });
 
       // Calculate percentages
-      Object.keys(topicLessons).forEach(topicId => {
-        const topic = topicLessons[topicId];
+      Object.keys(topicLessonsCount).forEach(topicId => {
+        const topic = topicLessonsCount[topicId];
         if (topic.total > 0) {
           topicProgressMap[topicId] = Math.round((topic.completed / topic.total) * 100);
         } else {
@@ -767,12 +782,14 @@ export default {
         const currentUser = auth.currentUser;
         if (!currentUser) {
           console.warn('⚠️ No current user authenticated for study plan');
+          this.studyPlanTopics = []; // Ensure it's cleared if no user
           return;
         }
 
         const token = await currentUser.getIdToken();
         if (!token) {
           console.warn('⚠️ No auth token available for study plan');
+          this.studyPlanTopics = []; // Ensure it's cleared if no token
           return;
         }
 
@@ -897,7 +914,7 @@ export default {
             hasFreeLessons: false,
             hasPremiumLessons: false,
             topics: new Set(),
-            progress: 0
+            progress: 0 // Will be calculated after all topics are processed
           });
         }
         
@@ -973,13 +990,13 @@ export default {
             level: String(lesson.level || ''),
             type: lesson.type || 'free',
             lessonCount: 1,
-            totalTime: 10,
-            lessons: [lesson]
+            totalTime: 10, // Estimate, could be more precise if lesson durations are available
+            lessons: [lesson] // Store actual lesson objects if needed later
           });
         } else {
           const entry = topicsMap.get(topicId);
           entry.lessonCount += 1;
-          entry.totalTime += 10;
+          entry.totalTime += 10; // Add to estimated time
           entry.lessons.push(lesson);
         }
       });
@@ -1006,7 +1023,7 @@ export default {
       
       let totalProgress = 0;
       let topicCount = 0;
-      const seenTopics = new Set();
+      const seenTopics = new Set(); // Use a Set to count unique topics
       
       levelTopics.forEach(lesson => {
         if (lesson && lesson.topicId && !seenTopics.has(lesson.topicId)) {
@@ -1029,7 +1046,7 @@ export default {
       
       // Reset filters when changing context
       this.searchQuery = '';
-      this.filterSubject = '';
+      this.filterSubject = ''; // Clear subject filter as it's now implied by selectedSubject
       this.filterLevel = '';
     },
 
@@ -1048,13 +1065,13 @@ export default {
       if (this.currentView === 'topics') {
         this.currentView = 'levels';
         this.selectedLevel = null;
-        this.topics = [];
+        this.topics = []; // Clear topics
       } else if (this.currentView === 'levels') {
         this.currentView = 'subjects';
         this.selectedSubject = null;
         this.selectedLevel = null;
-        this.levels = [];
-        this.topics = [];
+        this.levels = []; // Clear levels
+        this.topics = []; // Clear topics
       }
       
       // Reset search when going back
@@ -1077,35 +1094,20 @@ export default {
     getSubjectIcon(subject) {
       const subjectStr = String(subject || '');
       const icons = {
-        'Mathematics': '🔢',
-        'Math': '🔢',
-        'Математика': '🔢',
-        'English': '🇬🇧',
-        'Английский': '🇬🇧',
-        'Science': '🔬',
-        'Наука': '🔬',
-        'History': '📚',
-        'История': '📚',
-        'Geography': '🌍',
-        'География': '🌍',
-        'Programming': '💻',
-        'Программирование': '💻',
-        'Art': '🎨',
-        'Искусство': '🎨',
-        'Music': '🎵',
-        'Музыка': '🎵',
-        'Physics': '⚛️',
-        'Физика': '⚛️',
-        'Chemistry': '🧪',
-        'Химия': '🧪',
-        'Biology': '🧬',
-        'Биология': '🧬',
-        'Literature': '📖',
-        'Литература': '📖',
-        'Economics': '💰',
-        'Экономика': '💰',
-        'Philosophy': '🤔',
-        'Философия': '🤔'
+        'Mathematics': '🔢', 'Math': '🔢', 'Математика': '🔢',
+        'English': '🇬🇧', 'Английский': '🇬🇧',
+        'Science': '🔬', 'Наука': '🔬',
+        'History': '📚', 'История': '📚',
+        'Geography': '🌍', 'География': '🌍',
+        'Programming': '💻', 'Программирование': '💻',
+        'Art': '🎨', 'Искусство': '🎨',
+        'Music': '🎵', 'Музыка': '🎵',
+        'Physics': '⚛️', 'Физика': '⚛️',
+        'Chemistry': '🧪', 'Химия': '🧪',
+        'Biology': '🧬', 'Биология': '🧬',
+        'Literature': '📖', 'Литература': '📖',
+        'Economics': '💰', 'Экономика': '💰',
+        'Philosophy': '🤔', 'Философия': '🤔'
       };
       return icons[subjectStr] || '📖';
     },
@@ -1113,31 +1115,46 @@ export default {
     getTopicName(lesson) {
       if (!lesson) return 'Без темы';
       
+      // Prioritize explicit topic field, then localized, then fallback to lessonName/title
       try {
+        // Try direct `topic` string field
         if (typeof lesson.topic === 'string' && lesson.topic.trim()) {
           return lesson.topic.trim();
         }
         
+        // Try localized `topic` object field (e.g., { ru: 'Тема', en: 'Topic' })
+        if (lesson.topic && typeof lesson.topic === 'object' && lesson.topic !== null) {
+          if (lesson.topic[this.lang] && typeof lesson.topic[this.lang] === 'string') {
+            return String(lesson.topic[this.lang]).trim();
+          }
+          if (lesson.topic.en && typeof lesson.topic.en === 'string') { // Fallback to English
+            return String(lesson.topic.en).trim();
+          }
+          // If topic object exists but no matching lang field found, try any string value
+          const anyLangTopic = Object.values(lesson.topic).find(val => typeof val === 'string' && val.trim());
+          if (anyLangTopic) return anyLangTopic.trim();
+        }
+        
+        // Try `translations` object for topic name
         if (lesson.translations && 
             lesson.translations[this.lang] && 
             lesson.translations[this.lang].topic &&
             typeof lesson.translations[this.lang].topic === 'string') {
           return String(lesson.translations[this.lang].topic).trim();
         }
-        
-        if (lesson.topic && typeof lesson.topic === 'object') {
-          if (lesson.topic[this.lang] && typeof lesson.topic[this.lang] === 'string') {
-            return String(lesson.topic[this.lang]).trim();
-          }
-          if (lesson.topic.en && typeof lesson.topic.en === 'string') {
-            return String(lesson.topic.en).trim();
-          }
+
+        // Finally, fallback to lesson name or title
+        if (lesson.lessonName && typeof lesson.lessonName === 'string' && lesson.lessonName.trim()) {
+            return `Тема: ${lesson.lessonName.trim()}`;
         }
-        
-        return 'Без темы';
+        if (lesson.title && typeof lesson.title === 'string' && lesson.title.trim()) {
+            return `Тема: ${lesson.title.trim()}`;
+        }
+
+        return 'Без темы'; // Default fallback
       } catch (error) {
         console.error('❌ Error getting topic name:', error);
-        return 'Без темы';
+        return 'Ошибка названия темы'; // More descriptive error fallback
       }
     },
 
@@ -1147,7 +1164,9 @@ export default {
       // Handle numeric levels (1-10)
       const levelNum = parseInt(levelStr);
       if (!isNaN(levelNum)) {
-        return `level-${levelNum}`;
+        if (levelNum >= 1 && levelNum <= 3) return 'level-beginner';
+        if (levelNum >= 4 && levelNum <= 6) return 'level-intermediate';
+        if (levelNum >= 7 && levelNum <= 10) return 'level-advanced';
       }
       
       // Handle text levels
@@ -1163,7 +1182,7 @@ export default {
         case 'продвинутый':
           return 'level-advanced';
         default:
-          return 'level-beginner';
+          return 'level-beginner'; // Default for unknown text levels
       }
     },
 
@@ -1171,19 +1190,15 @@ export default {
       const levelNum = parseInt(level);
       if (!isNaN(levelNum)) {
         const icons = ['🌱', '🌿', '🍃', '🌳', '🌲', '🏔️', '⭐', '💎', '👑', '🏆'];
-        return icons[levelNum - 1] || '📚';
+        return icons[Math.min(levelNum - 1, icons.length - 1)] || '📚'; // Ensure index is within bounds
       }
       
       const icons = {
-        'beginner': '🌱',
-        'начинающий': '🌱',
-        'базовый': '🌱',
-        'intermediate': '🌿',
-        'средний': '🌿',
-        'advanced': '🌳',
-        'продвинутый': '🌳'
+        'beginner': '🌱', 'начинающий': '🌱', 'базовый': '🌱',
+        'intermediate': '🌿', 'средний': '🌿',
+        'advanced': '🌳', 'продвинутый': '🌳'
       };
-      return icons[level.toLowerCase()] || '📚';
+      return icons[String(level).toLowerCase()] || '📚';
     },
 
     getLevelDescription(level) {
@@ -1201,7 +1216,7 @@ export default {
           9: 'Профессиональный уровень - мастерство',
           10: 'Экспертный уровень - полное владение предметом'
         };
-        return descriptions[levelNum] || 'Изучение предмета на данном уровне';
+        return descriptions[levelNum] || `Изучение предмета на уровне ${levelNum}`;
       }
       
       const descriptions = {
@@ -1213,7 +1228,7 @@ export default {
         'advanced': 'Продвинутый уровень',
         'продвинутый': 'Продвинутый уровень'
       };
-      return descriptions[level.toLowerCase()] || 'Изучение предмета на данном уровне';
+      return descriptions[String(level).toLowerCase()] || 'Изучение предмета на данном уровне';
     },
 
     getProgressClass(progress) {
@@ -1260,10 +1275,12 @@ export default {
         return;
       }
       
-      if (type === 'premium' && !this.isPremiumUser) {
+      // Use currentUserStatus for access check
+      if ((type === 'premium' || type === 'pro') && !this.isPremiumUser && !this.isProUser) {
         this.requestedTopicId = topicId;
         this.showPaywall = true;
       } else {
+        // Assuming TopicOverview route needs topicId and it navigates to the first lesson or overview
         this.$router.push({ name: 'TopicOverview', params: { id: topicId } });
       }
     },
@@ -1281,8 +1298,8 @@ export default {
       }
 
       const currentUser = auth.currentUser;
-      if (!currentUser) {
-        alert('Пожалуйста, войдите в аккаунт.');
+      if (!currentUser || !this.userId) {
+        alert('Пожалуйста, войдите в аккаунт, чтобы добавить темы в учебный план.');
         this.showAddModal = false;
         return;
       }
@@ -1324,7 +1341,7 @@ export default {
           this.studyPlanTopics.push(topicId);
         }
         
-        // Update the topic in the topics array
+        // Update the topic in the topics array for immediate UI refresh
         if (Array.isArray(this.topics)) {
           const topicIndex = this.topics.findIndex(t => t && t.topicId === topicId);
           if (topicIndex !== -1) {
@@ -1355,11 +1372,278 @@ export default {
     },
 
     handlePlanUpdate(newPlan) {
-      this.plan = newPlan;
+      this.plan = newPlan; // Update local `plan` data property if needed elsewhere
       console.log('💳 Catalogue: Plan updated to:', newPlan);
       
-      // Trigger reactivity update to reflect new plan
+      // Trigger reactivity update to reflect new plan status
       this.triggerReactivityUpdate();
+    },
+
+    // ✅ ENHANCED: Setup comprehensive event listeners (like UserSection)
+    setupEventListeners() {
+      console.log('🔧 Catalogue: Setting up event listeners');
+      
+      // ===== SUBSCRIPTION CHANGE HANDLERS =====
+      this.globalEventHandlers.subscriptionChange = (event) => {
+        console.log('📡 Catalogue: Subscription change received:', event.detail);
+        
+        const { plan, source, oldPlan } = event.detail;
+        
+        // Force immediate UI update
+        this.triggerReactivityUpdate();
+        
+        // Show celebration for upgrades (assuming a global notification system)
+        if (plan && plan !== 'free' && oldPlan === 'free') {
+          const planLabel = plan === 'pro' ? 'Pro' : 'Start';
+          const sourceText = source === 'promocode' ? 'промокоду' : 'оплате';
+          
+          if (this.$toast) { // Example using a toast notification system
+            this.$toast.success(`🎉 ${planLabel} подписка активирована по ${sourceText}!`, { duration: 5000 });
+          } else {
+            console.log(`🎉 Catalogue: ${planLabel} подписка активирована по ${sourceText}!`);
+          }
+        }
+      };
+      
+      this.globalEventHandlers.userStatusChange = (data) => {
+        console.log('📡 Catalogue: Status change event received:', data);
+        this.handleUserStatusChange(data.newStatus, data.oldStatus);
+      };
+      
+      this.globalEventHandlers.promocodeApplied = (data) => {
+        console.log('📡 Catalogue: Promocode applied event:', data);
+        this.handleUserStatusChange(data.newStatus, data.oldStatus);
+        
+        if (data.newStatus && data.newStatus !== 'free') {
+          const planLabel = data.newStatus === 'pro' ? 'Pro' : 'Start';
+          if (this.$toast) {
+            this.$toast.info(`🎟️ Промокод применён! ${planLabel} план активирован!`, { duration: 5000 });
+          } else {
+            console.log(`🎟️ Catalogue: Promocode applied - ${planLabel} план активирован!`);
+          }
+        }
+      };
+      
+      this.globalEventHandlers.forceUpdate = (data) => {
+        console.log('📡 Catalogue: Force update event received:', data);
+        this.triggerReactivityUpdate();
+      };
+      
+      this.globalEventHandlers.paymentCompleted = (data) => {
+        console.log('📡 Catalogue: Payment completed event:', data);
+        // This effectively mirrors the logic of subscriptionChange
+        this.globalEventHandlers.subscriptionChange({ detail: data });
+      };
+      
+      // ===== REGISTER EVENT LISTENERS =====
+      
+      // DOM event listeners
+      if (typeof window !== 'undefined') {
+        window.addEventListener('userSubscriptionChanged', this.globalEventHandlers.subscriptionChange);
+        
+        // ✅ NEW: Listen for localStorage changes (cross-tab sync)
+        this.globalEventHandlers.storageChange = (event) => {
+          if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
+            console.log('📡 Catalogue: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
+            this.handleUserStatusChange(event.newValue, event.oldValue);
+          }
+        };
+        
+        window.addEventListener('storage', this.globalEventHandlers.storageChange);
+      }
+      
+      // Event bus listeners
+      if (typeof window !== 'undefined' && window.eventBus) {
+        const eventBusEvents = [
+          ['userStatusChanged', this.globalEventHandlers.userStatusChange],
+          ['promocodeApplied', this.globalEventHandlers.promocodeApplied],
+          ['forceUpdate', this.globalEventHandlers.forceUpdate],
+          ['globalForceUpdate', this.globalEventHandlers.forceUpdate],
+          ['subscriptionUpdated', this.globalEventHandlers.userStatusChange], // Alias/duplicate from original
+          ['paymentCompleted', this.globalEventHandlers.paymentCompleted]
+        ];
+        
+        eventBusEvents.forEach(([event, handler]) => {
+          window.eventBus.on(event, handler);
+          this.eventCleanupFunctions.push(() => { // Store cleanup function
+            window.eventBus.off(event, handler);
+          });
+        });
+        
+        console.log('✅ Catalogue: Event bus listeners registered');
+      }
+      
+      // ===== STORE MUTATION LISTENER =====
+      if (this.$store) {
+        // Use `this.storeUnsubscribe` for consistency with cleanup
+        this.storeUnsubscribe = this.$store.subscribe((mutation) => {
+          if (this.isUserRelatedMutation(mutation)) {
+            console.log('📊 Catalogue: Store mutation detected:', mutation.type);
+            this.triggerReactivityUpdate();
+          }
+        });
+      }
+      
+      console.log('✅ Catalogue: Event listeners setup complete');
+    },
+
+    // ✅ NEW: Setup periodic status synchronization
+    setupPeriodicStatusSync() {
+      // Clear any existing interval to prevent duplicates
+      if (this.statusSyncInterval) {
+        clearInterval(this.statusSyncInterval);
+      }
+      // Sync status every 30 seconds to ensure consistency
+      this.statusSyncInterval = setInterval(() => {
+        this.syncStatusWithStore();
+      }, 30000);
+      
+      console.log('✅ Catalogue: Periodic status sync setup');
+    },
+
+    // ✅ NEW: Synchronize status with store
+    syncStatusWithStore() {
+      try {
+        const storeStatus = this.$store?.getters['user/userStatus'];
+        const localStatus = localStorage.getItem('userStatus');
+        const currentTime = Date.now();
+        
+        console.log('🔄 Catalogue: Performing status sync check.', {
+            store: storeStatus,
+            local: localStatus,
+            timeSinceLastSync: currentTime - this.lastStatusSync
+        });
+
+        if (storeStatus && localStatus && storeStatus !== localStatus) {
+          console.log('⚠️ Catalogue: Status mismatch (store vs local). Syncing local to store.');
+          localStorage.setItem('userStatus', storeStatus);
+          this.triggerReactivityUpdate();
+        } else if (!storeStatus && localStatus && localStatus !== 'free') {
+            console.log('⚠️ Catalogue: Store status missing/free, but local is higher. Updating store.');
+            // Dispatch a mutation to update the store with local status
+            this.$store.commit('user/SET_USER_STATUS', localStatus); 
+            this.triggerReactivityUpdate();
+        }
+        
+        this.lastStatusSync = currentTime; // Update last sync time
+
+      } catch (error) {
+        console.error('❌ Catalogue: Error during status sync:', error);
+      }
+    },
+
+    // ✅ NEW: Handle user status changes (centralized logic)
+    handleUserStatusChange(newStatus, oldStatus) {
+      if (!newStatus || newStatus === oldStatus) return;
+      
+      console.log(`👤 Catalogue: Handling status change ${oldStatus} → ${newStatus}`);
+      
+      // Clear any pending status change timeout
+      if (this.statusChangeTimeout) {
+        clearTimeout(this.statusChangeTimeout);
+      }
+      
+      // Update localStorage immediately
+      localStorage.setItem('userStatus', newStatus);
+      
+      // Trigger immediate reactivity update
+      this.triggerReactivityUpdate();
+      
+      // Additional delayed update for stubborn cases
+      this.statusChangeTimeout = setTimeout(() => {
+        this.triggerReactivityUpdate();
+      }, 100);
+      
+      // Update last sync time
+      this.lastStatusSync = Date.now();
+      
+      console.log(`✅ Catalogue: Status change handled: ${oldStatus} → ${newStatus}`);
+    },
+
+    // ✅ NEW: Trigger comprehensive reactivity update
+    triggerReactivityUpdate() {
+      this.componentKey++;
+      this.lastUpdateTime = Date.now();
+      
+      // Force Vue reactivity with multiple strategies
+      this.$forceUpdate();
+      
+      // Additional delayed updates for maximum compatibility
+      this.$nextTick(() => {
+        this.$forceUpdate();
+        
+        setTimeout(() => {
+          this.$forceUpdate();
+        }, 50); // Small delay for rendering
+      });
+      
+      console.log('🔄 Catalogue: Reactivity update triggered:', {
+        componentKey: this.componentKey,
+        userStatus: this.userStatus,
+        timestamp: this.lastUpdateTime
+      });
+    },
+
+    // ✅ NEW: Check if mutation is user-related
+    isUserRelatedMutation(mutation) {
+      return mutation.type.includes('user/') && 
+             (mutation.type.includes('STATUS') || 
+              mutation.type.includes('SUBSCRIPTION') ||
+              mutation.type.includes('UPDATE') || // e.g., SET_USER
+              mutation.type.includes('FORCE')); // e.g., INCREMENT_FORCE_UPDATE_COUNTER
+    },
+
+    // ✅ ENHANCED: Cleanup method for all listeners and intervals
+    cleanup() {
+      console.log('🧹 Catalogue: Performing cleanup...');
+      
+      // Clear timeouts and intervals
+      if (this.statusChangeTimeout) {
+        clearTimeout(this.statusChangeTimeout);
+        this.statusChangeTimeout = null;
+      }
+      
+      if (this.forceUpdateInterval) { // If this was ever set, clear it
+        clearInterval(this.forceUpdateInterval);
+        this.forceUpdateInterval = null;
+      }
+      
+      if (this.statusSyncInterval) {
+        clearInterval(this.statusSyncInterval);
+        this.statusSyncInterval = null;
+      }
+      
+      // Clean up global DOM event listeners (from `window.addEventListener`)
+      if (typeof window !== 'undefined') {
+        if (this.globalEventHandlers.subscriptionChange) {
+          window.removeEventListener('userSubscriptionChanged', this.globalEventHandlers.subscriptionChange);
+        }
+        
+        if (this.globalEventHandlers.storageChange) {
+          window.removeEventListener('storage', this.globalEventHandlers.storageChange);
+        }
+      }
+      
+      // Clean up event bus listeners using stored cleanup functions
+      this.eventCleanupFunctions.forEach(cleanup => {
+        try {
+          cleanup();
+        } catch (error) {
+          console.warn('⚠️ Catalogue: Event cleanup function failed:', error);
+        }
+      });
+      this.eventCleanupFunctions = []; // Clear the array after cleanup
+
+      // Clean up store subscription
+      if (this.storeUnsubscribe) {
+        this.storeUnsubscribe();
+        this.storeUnsubscribe = null;
+      }
+      
+      // Clear global event handlers object
+      this.globalEventHandlers = {};
+      
+      console.log('✅ Catalogue: Cleanup completed');
     }
   }
 };
