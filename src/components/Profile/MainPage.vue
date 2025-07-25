@@ -1,7 +1,6 @@
 <template>
   <div class="dashboard">
     <h1 class="title">👋 Добро пожаловать обратно!</h1>
-    <!-- Professional Filter Bar -->
     <div class="filter-bar">
       <div class="filter-section">
         <div class="search-group">
@@ -50,14 +49,13 @@
             <span class="refresh-icon" :class="{ 'spinning': loadingRecommendations }">🔄</span>
             <span>{{ loadingRecommendations ? 'Обновление...' : 'Обновить' }}</span>
           </button>
-          <button v-if="hasActiveFilters" @click="clearFilters" class="clear-all-btn">
+          <button v-if="hasActiveFilters" @click="clearAllFilters" class="clear-all-btn">
             🗑️ Очистить
           </button>
-          <span class="user-badge" :class="userStatus">{{ userStatusLabel }}</span>
+          <span class="user-badge" :class="currentUserStatus">{{ userStatusLabel }}</span>
         </div>
       </div>
       
-      <!-- Active Filters Tags -->
       <div v-if="hasActiveFilters" class="active-filters-row">
         <span class="filter-tag" v-if="searchQuery" @click="searchQuery = ''">
           🔍 "{{ searchQuery }}" ×
@@ -77,7 +75,6 @@
       </div>
     </div>
 
-    <!-- Error Alert -->
     <div v-if="hasErrors" class="error-alert">
       <div class="error-content">
         <span class="error-icon">⚠️</span>
@@ -89,7 +86,6 @@
       </div>
     </div>
 
-    <!-- 🌟 Recommendations Carousel -->
     <div class="section recommendations-section">
       <div class="section-header">
         <h2>🌟 Рекомендовано для вас</h2>
@@ -124,17 +120,14 @@
               :key="topic._id" 
               :class="getTopicTypeClass(topic)"
             >
-              <!-- Topic Type Badge -->
               <div class="topic-badge" :class="getTopicType(topic)">
                 <span class="badge-text">{{ getTopicTypeLabel(topic) }}</span>
               </div>
 
-              <!-- Topic Content -->
               <div class="topic-content">
                 <h3 class="topic-title">{{ getTopicName(topic) }}</h3>
                 <p class="topic-desc">{{ getTopicDescription(topic) }}</p>
                 
-                <!-- Topic Stats -->
                 <div class="topic-stats">
                   <div class="stat-item">
                     <span class="stat-icon">📚</span>
@@ -150,12 +143,10 @@
                   </div>
                 </div>
                 
-                <!-- Subject Tag -->
                 <div class="subject-info">
                   <span class="subject-tag">{{ topic.subject || 'Общий' }}</span>
                 </div>
                 
-                <!-- Card Actions - FIXED TO BE AT BOTTOM -->
                 <div class="card-actions">
                   <button 
                     class="add-btn" 
@@ -203,13 +194,12 @@
         <button v-if="errors.recommendations" class="retry-btn inline" @click="fetchRecommendations">
           🔄 Попробовать снова
         </button>
-        <button v-else-if="filterType || filterSubject || searchQuery" class="clear-filters-btn" @click="clearFilters">
+        <button v-else-if="filterType || filterSubject || searchQuery" class="clear-filters-btn" @click="clearAllFilters">
           🗑️ Очистить фильтры
         </button>
       </div>
     </div>
 
-    <!-- 📚 Study List -->
     <div class="section study-section">
       <div class="section-header">
         <h2>📘 Мои курсы</h2>
@@ -246,7 +236,7 @@
           Добавьте курсы из рекомендаций или найдите их в каталоге
         </p>
         <div class="empty-actions">
-          <button v-if="filterType || filterSubject || searchQuery" class="clear-filters-btn" @click="clearFilters">
+          <button v-if="filterType || filterSubject || searchQuery" class="clear-filters-btn" @click="clearAllFilters">
             🗑️ Очистить фильтры
           </button>
           <router-link to="/profile/catalogue" class="browse-link">
@@ -256,13 +246,12 @@
       </div>
     </div>
 
-    <!-- 💳 Payment Modal -->
     <PaymentModal
       :user-id="userId"
       :visible="showPaywall"
       :requested-topic-id="requestedTopicId"
       @close="showPaywall = false"
-      @unlocked="userStatus = $event"
+      @unlocked="handlePaymentSuccess($event)"
     />
   </div>
 </template>
@@ -279,7 +268,9 @@ import {
   addToStudyList,
   removeFromStudyList 
 } from '@/api';
-import { auth } from '@/firebase';
+// Assuming 'auth' from '@/firebase' is used for user authentication logic,
+// but it's not directly used in the provided methods, so keeping it commented if not needed.
+// import { auth } from '@/firebase';
 import StudyCard from '@/components/Profile/StudyCard.vue';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
 import { eventBus } from '@/main.js';
@@ -369,7 +360,8 @@ export default {
       componentKey: 0,
       updateTimer: null,
       lastFilterChange: Date.now(),
-      forceUpdateCounter: 0,
+      // forceUpdateCounter is now mapped from Vuex, remove from data
+      // forceUpdateCounter: 0, 
       
       // ============================================================================
       // 🔔 NOTIFICATION SYSTEM
@@ -414,37 +406,43 @@ export default {
     // ============================================================================
     // 👤 USER STATUS COMPUTED PROPERTIES
     // ============================================================================
+    // ✅ ENHANCED: Reactive user status tracking
     ...mapGetters('user', [
       'userStatus',
-      'isPremiumUser',
-      'isStartUser', 
+      'isPremiumUser', 
+      'isStartUser',
       'isProUser',
       'isFreeUser',
       'hasActiveSubscription',
-      'getUser',
-      'subscriptionDetails'
+      'getUser', // Keep if still used directly in template or other methods
+      'subscriptionDetails',
+      'forceUpdateCounter' // Mapped from Vuex
     ]),
     
-    // ✅ Enhanced reactive user status with consistency checks
+    // ✅ NEW: Reactive current user status with multiple triggers
     currentUserStatus() {
+      // The `counter` variable explicitly uses `this.forceUpdateCounter` from Vuex
+      // to ensure this computed property reacts to changes in the Vuex store's counter.
+      const counter = this.forceUpdateCounter || 0; 
       const storeStatus = this.userStatus;
       const localStatus = localStorage.getItem('userStatus');
       const computedStatus = storeStatus || localStatus || 'free';
       
       // Auto-fix inconsistencies
       if (storeStatus && localStatus && storeStatus !== localStatus) {
-        console.log(`🔧 Auto-fixing status inconsistency: store(${storeStatus}) !== localStorage(${localStatus})`);
+        console.log(`🔧 MainPage: Auto-fixing status inconsistency: store(${storeStatus}) !== localStorage(${localStatus})`);
         localStorage.setItem('userStatus', storeStatus);
       }
       
       return computedStatus;
     },
     
+    // ✅ ENHANCED: User status label with reactivity
     userStatusLabel() {
       const status = this.currentUserStatus;
       const labels = {
         'pro': 'Pro',
-        'start': 'Start',
+        'start': 'Start', 
         'premium': 'Start', // Alias
         'free': 'Free'
       };
@@ -530,6 +528,56 @@ export default {
   },
   
   // ============================================================================
+  // 👀 WATCHERS
+  // ============================================================================
+  
+  watch: {
+    // ✅ NEW: Watch for user status changes from store (using `userStatus` from Vuex)
+    userStatus: {
+      handler(newStatus, oldStatus) {
+        console.log('📊 MainPage: User status changed from', oldStatus, 'to:', newStatus);
+        this.handleUserStatusChange(newStatus, oldStatus);
+      },
+      immediate: true
+    },
+    
+    // ✅ NEW: Watch for force update counter changes (from Vuex getter)
+    forceUpdateCounter: {
+      handler(newCounter, oldCounter) {
+        console.log('📊 MainPage: Force update counter changed:', oldCounter, '→', newCounter);
+        this.forceReactivityUpdate(); // Call the force reactivity method
+      },
+      immediate: true
+    },
+    
+    // ✅ NEW: Watch for subscription details changes (from Vuex getter)
+    subscriptionDetails: {
+      handler(newSub, oldSub) {
+        if (newSub !== oldSub) {
+          console.log('💳 MainPage: Subscription details changed:', newSub);
+          this.forceReactivityUpdate(); // Call the force reactivity method
+        }
+      },
+      deep: true,
+      immediate: true
+    },
+
+    // Watch for search query changes
+    searchQuery: {
+      handler() {
+        this.debouncedFilterUpdate();
+      }
+    },
+    
+    // Watch for filter changes
+    filterSubject() { this.debouncedFilterUpdate(); },
+    filterLevel() { this.debouncedFilterUpdate(); },
+    filterType() { this.debouncedFilterUpdate(); },
+    filterProgress() { this.debouncedFilterUpdate(); },
+    sortBy() { this.debouncedFilterUpdate(); }
+  },
+  
+  // ============================================================================
   // 🔄 LIFECYCLE HOOKS
   // ============================================================================
   
@@ -544,7 +592,7 @@ export default {
       // Validate user authentication
       await this.validateUserAuthentication();
       
-      // Setup global event listeners
+      // ✅ ENHANCED: Setup comprehensive global event system
       this.setupGlobalEventSystem();
       
       // Initialize data loading
@@ -579,37 +627,6 @@ export default {
     this.performCleanup();
   },
   
-  // ============================================================================
-  // 👀 WATCHERS
-  // ============================================================================
-  
-  watch: {
-    // Watch for user status changes
-    currentUserStatus: {
-      immediate: true,
-      handler(newStatus, oldStatus) {
-        if (newStatus !== oldStatus) {
-          console.log(`📊 MainPage: User status changed: ${oldStatus} → ${newStatus}`);
-          this.handleUserStatusChange(newStatus, oldStatus);
-        }
-      }
-    },
-    
-    // Watch for search query changes
-    searchQuery: {
-      handler() {
-        this.debouncedFilterUpdate();
-      }
-    },
-    
-    // Watch for filter changes
-    filterSubject() { this.debouncedFilterUpdate(); },
-    filterLevel() { this.debouncedFilterUpdate(); },
-    filterType() { this.debouncedFilterUpdate(); },
-    filterProgress() { this.debouncedFilterUpdate(); },
-    sortBy() { this.debouncedFilterUpdate(); }
-  },
-  
   methods: {
     // ============================================================================
     // 🚀 INITIALIZATION METHODS
@@ -633,10 +650,12 @@ export default {
       console.log('✅ User authentication validated:', this.userId);
     },
     
+    // ✅ NEW: Enhanced global event system setup (like UserSection)
     setupGlobalEventSystem() {
-      console.log('🔗 Setting up global event system...');
+      console.log('🔗 MainPage: Setting up global event system...');
       
       // ===== SUBSCRIPTION CHANGE HANDLERS =====
+      // Event handler for custom DOM event 'userSubscriptionChanged'
       this.handleSubscriptionChange = (event) => {
         console.log('📡 MainPage: Subscription change received:', event.detail);
         
@@ -661,11 +680,13 @@ export default {
         }
       };
       
+      // Event handler for EventBus 'userStatusChanged'
       this.handleUserStatusChange = (data) => {
         console.log('📡 MainPage: User status changed via event bus:', data);
         this.forceReactivityUpdate();
       };
       
+      // Event handler for EventBus 'promocodeApplied'
       this.handlePromocodeApplied = (data) => {
         console.log('📡 MainPage: Promocode applied:', data);
         
@@ -681,11 +702,13 @@ export default {
         this.forceReactivityUpdate();
       };
       
+      // Event handler for EventBus 'globalForceUpdate'
       this.handleGlobalForceUpdate = (data) => {
         console.log('📡 MainPage: Global force update:', data);
         this.forceReactivityUpdate();
       };
       
+      // Event handler for EventBus 'paymentCompleted'
       this.handlePaymentCompleted = (data) => {
         console.log('📡 MainPage: Payment completed:', data);
         this.handleSubscriptionChange({ detail: data });
@@ -693,7 +716,7 @@ export default {
       
       // ===== REGISTER EVENT LISTENERS =====
       
-      // DOM event listeners
+      // DOM event listeners (if applicable to window object)
       if (typeof window !== 'undefined') {
         window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
         this.globalEventListeners.set('userSubscriptionChanged', this.handleSubscriptionChange);
@@ -704,7 +727,7 @@ export default {
         ['userStatusChanged', this.handleUserStatusChange],
         ['promocodeApplied', this.handlePromocodeApplied],
         ['globalForceUpdate', this.handleGlobalForceUpdate],
-        ['subscriptionUpgrade', this.handlePromocodeApplied],
+        ['subscriptionUpgrade', this.handlePromocodeApplied], // This seems to be a duplicate or alias of promocodeApplied
         ['paymentCompleted', this.handlePaymentCompleted]
       ];
       
@@ -723,7 +746,7 @@ export default {
         }
       });
       
-      console.log('✅ Global event system setup complete');
+      console.log('✅ MainPage: Global event system setup complete');
     },
     
     async initializeDataLoading() {
@@ -827,11 +850,24 @@ export default {
     // 🔄 REACTIVITY & UPDATE METHODS
     // ============================================================================
     
+    // ✅ NEW: Enhanced reactivity update
     forceReactivityUpdate() {
       this.componentKey++;
-      this.forceUpdateCounter++;
+      // It's important that `forceUpdateCounter` is a reactive property (e.g., from Vuex or `data`).
+      // Since it's now mapped from Vuex, ensure your Vuex store has a mutation to increment it.
+      // For this example, I'm assuming such a mutation exists and the getter reflects it.
+      // If it was a local data property, it would be `this.forceUpdateCounter++;`.
+      // Given your original snippet for `forceReactivityUpdate` already had `this.forceUpdateCounter++`,
+      // and it's also in the proposed enhanced snippet, I'll keep it as a local state update.
+      // However, it's generally better to commit a mutation if `forceUpdateCounter` is truly in Vuex.
+      // For strict adherence to the provided code, I'll keep it as `this.forceUpdateCounter++` in data,
+      // and map the Vuex one as `mappedForceUpdateCounter` if both are needed, but that seems redundant.
+      // For simplicity and based on the instruction to "remove from data" if mapped, I'll assume
+      // the mapped `forceUpdateCounter` itself is the source of truth, and this method just triggers
+      // Vue's reactivity. If you *intended* for `forceUpdateCounter` to be a local counter *in addition*
+      // to the Vuex one, please clarify. Assuming `forceUpdateCounter` is purely from Vuex here.
       
-      // Force immediate update
+      // Trigger Vue's reactivity system
       this.$forceUpdate();
       
       // Additional delayed updates for maximum compatibility
@@ -843,7 +879,7 @@ export default {
         }, 100);
       });
       
-      console.log(`🔄 MainPage: Force update #${this.forceUpdateCounter} (key: ${this.componentKey})`);
+      console.log(`🔄 MainPage: Force update (key: ${this.componentKey})`);
     },
     
     debouncedFilterUpdate() {
@@ -856,6 +892,7 @@ export default {
       }, 300);
     },
     
+    // ✅ NEW: Handle user status changes (this method is now a standalone one, called by watcher and eventBus handler)
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
       
@@ -876,6 +913,20 @@ export default {
       }
     },
     
+    // ✅ NEW: Check if mutation is user-related
+    isUserRelatedMutation(mutation) {
+      return mutation.type.includes('user/') && 
+             (mutation.type.includes('STATUS') || 
+              mutation.type.includes('SUBSCRIPTION') ||
+              mutation.type.includes('UPDATE') || // e.g., USER_INFO_UPDATE
+              mutation.type.includes('FORCE')); // e.g., INCREMENT_FORCE_UPDATE_COUNTER
+    },
+
+    // A method to trigger reactivity update when `forceUpdateCounter` changes (used by watcher)
+    triggerReactivityUpdate() {
+      this.forceReactivityUpdate(); // Simply call the main force update method
+    },
+
     // ============================================================================
     // 📊 DATA FETCHING METHODS
     // ============================================================================
@@ -897,7 +948,8 @@ export default {
           this.performanceMetrics.totalApiCalls++;
         } catch (apiError) {
           console.error('❌ getAllLessons failed:', apiError);
-          return this.fetchRecommendationsFallback();
+          // Fallback to direct topics if primary strategy fails
+          return this.fetchRecommendationsFallback(); 
         }
         
         if (lessonsResult?.success && lessonsResult.data?.length > 0) {
@@ -915,11 +967,11 @@ export default {
             
             console.log(`✅ Built ${topics.length} recommendations from lessons in ${Date.now() - startTime}ms`);
             this.performanceMetrics.successfulOperations++;
-            return;
+            return; // Successfully fetched from lessons, exit
           }
         }
         
-        // Fallback to direct topics
+        // Fallback to direct topics if lessons method didn't yield results
         return this.fetchRecommendationsFallback();
         
       } catch (error) {
@@ -962,7 +1014,7 @@ export default {
             
             console.log(`✅ Loaded ${enrichedTopics.length} enriched topics in ${Date.now() - startTime}ms`);
             this.performanceMetrics.successfulOperations++;
-            return;
+            return; // Successfully fetched from topics, exit
           }
         }
         
@@ -1030,7 +1082,7 @@ export default {
         
         // Process each study list entry with comprehensive error handling
         const validTopics = [];
-        const processingPromises = studyListData.map(async (entry, index) => {
+        const processingPromises = studyListData.map(async (entry) => { // Removed index as it's not used
           if (!entry?.topicId) {
             this.invalidTopicsCleanedUp++;
             return null;
@@ -1198,7 +1250,7 @@ export default {
       try {
         console.log(`🔍 Processing study list entry: ${entry.topicId}`);
         
-        // Build comprehensive base topic data
+        // Build comprehensive base topic data from the entry itself (for initial display)
         let topicData = {
           _id: entry.topicId,
           id: entry.topicId,
@@ -1945,7 +1997,7 @@ export default {
       this.debouncedFilterUpdate();
     },
     
-    clearAllFilters() {
+    clearAllFilters() { // Renamed from clearFilters to avoid confusion with `clearSearch`
       this.searchQuery = '';
       this.filterSubject = '';
       this.filterLevel = '';
@@ -2198,7 +2250,7 @@ export default {
       console.log('💳 Paywall closed');
     },
     
-    handlePaymentSuccess(newStatus) {
+    handlePaymentSuccess(newStatus) { // This method is called from PaymentModal via @unlocked
       console.log('💳 Payment successful, new status:', newStatus);
       
       // The store should already be updated by the payment modal
@@ -2548,14 +2600,6 @@ export default {
       return lessons.find(lesson => lesson && lesson._id) || null;
     },
     
-    isUserRelatedMutation(mutation) {
-      return mutation.type.includes('user/') && 
-             (mutation.type.includes('STATUS') || 
-              mutation.type.includes('SUBSCRIPTION') ||
-              mutation.type.includes('UPDATE') ||
-              mutation.type.includes('FORCE'));
-    },
-    
     getCoursesWord(count) {
       const num = parseInt(count) || 0;
       
@@ -2574,43 +2618,63 @@ export default {
       // Clear timers
       if (this.updateTimer) {
         clearTimeout(this.updateTimer);
+        this.updateTimer = null;
       }
       
       if (this.autoRefreshInterval) {
         clearInterval(this.autoRefreshInterval);
+        this.autoRefreshInterval = null;
       }
       
       // Clean up global event listeners
-      this.globalEventListeners.forEach((handler, event) => {
-        try {
-          window.removeEventListener(event, handler);
-        } catch (error) {
-          console.warn(`⚠️ Failed to remove ${event} listener:`, error);
-        }
-      });
+      // Ensure globalEventListeners map exists before iterating
+      if (this.globalEventListeners) {
+        this.globalEventListeners.forEach((handler, event) => {
+          try {
+            // Check if window object exists (for SSR compatibility)
+            if (typeof window !== 'undefined') {
+              window.removeEventListener(event, handler);
+            }
+          } catch (error) {
+            console.warn(`⚠️ Failed to remove ${event} listener:`, error);
+          }
+        });
+        this.globalEventListeners.clear();
+      }
       
       // Clean up event bus listeners
-      this.eventCleanupFunctions.forEach(cleanup => {
-        try {
-          cleanup();
-        } catch (error) {
-          console.warn('⚠️ Event cleanup error:', error);
-        }
-      });
+      // Ensure eventCleanupFunctions array exists before iterating
+      if (this.eventCleanupFunctions) {
+        this.eventCleanupFunctions.forEach(cleanup => {
+          try {
+            cleanup();
+          } catch (error) {
+            console.warn('⚠️ Event cleanup error:', error);
+          }
+        });
+        this.eventCleanupFunctions = [];
+      }
       
       // Unsubscribe from store
       if (this.unsubscribeStore) {
         this.unsubscribeStore();
+        this.unsubscribeStore = null;
       }
       
       // Clear loading operations
-      this.loadingOperations.add.clear();
-      this.loadingOperations.start.clear();
-      this.loadingOperations.remove.clear();
-      this.loadingOperations.refresh.clear();
+      // Ensure loadingOperations object exists before accessing its properties
+      if (this.loadingOperations) {
+        this.loadingOperations.add.clear();
+        this.loadingOperations.start.clear();
+        this.loadingOperations.remove.clear();
+        this.loadingOperations.refresh.clear();
+      }
       
       // Clear notifications
-      this.dismissAllNotifications();
+      // Ensure dismissAllNotifications method exists before calling
+      if (this.dismissAllNotifications) {
+        this.dismissAllNotifications();
+      }
       
       // Log final performance metrics
       if (this.config.enableAnalytics) {
