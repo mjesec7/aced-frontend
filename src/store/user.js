@@ -1234,22 +1234,25 @@ async saveUser({ commit, dispatch, state }, { userData, token }) {
     }
   }
 },
+// ✅ URGENT FIX: Replace your updateUserStatus action with this exact code
+
 async updateUserStatus({ commit, state, dispatch }, newStatus) {
   const startTime = Date.now();
   
+  console.log('🚀 DEBUG: updateUserStatus called with:', newStatus);
+  
   try {
-    console.log('🔄 updateUserStatus called with:', newStatus);
-    
     // ✅ STEP 1: Validate input
     const validStatuses = ['free', 'start', 'pro', 'premium'];
     if (!validStatuses.includes(newStatus)) {
       console.error('❌ Invalid status provided:', newStatus);
       const errorResult = { success: false, error: 'Invalid status' };
-      console.log('❌ Returning error result:', errorResult);
+      console.log('❌ DEBUG: Returning error result:', errorResult);
       return errorResult; // ✅ CRITICAL: Return error result
     }
     
     const oldStatus = state.userStatus;
+    console.log('🔍 DEBUG: Current status:', oldStatus, '→ New status:', newStatus);
     
     // ✅ STEP 2: Skip if no change
     if (oldStatus === newStatus) {
@@ -1267,7 +1270,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
       }
       
       const noChangeResult = { success: true, message: 'Status unchanged', noChange: true };
-      console.log('✅ Returning no-change result:', noChangeResult);
+      console.log('✅ DEBUG: Returning no-change result:', noChangeResult);
       return noChangeResult; // ✅ CRITICAL: Return no-change result
     }
     
@@ -1385,38 +1388,11 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
       console.warn('⚠️ DOM event dispatch failed:', domError);
     }
     
-    // ✅ STEP 11: Additional Vue reactivity triggers (non-blocking)
-    try {
-      setTimeout(() => {
-        commit('FORCE_UPDATE');
-        triggerEvent('delayedForceUpdate', {
-          ...eventData,
-          reason: 'delayed-reactivity',
-          delayedTimestamp: Date.now()
-        });
-      }, 100);
-    } catch (delayedError) {
-      console.warn('⚠️ Delayed update failed:', delayedError);
-    }
-    
-    // ✅ STEP 12: Final delayed update for stubborn components (non-blocking)
-    try {
-      setTimeout(() => {
-        triggerEvent('finalForceUpdate', {
-          ...eventData,
-          reason: 'final-update',
-          finalTimestamp: Date.now()
-        });
-      }, 500);
-    } catch (finalError) {
-      console.warn('⚠️ Final update failed:', finalError);
-    }
-    
     const duration = Date.now() - startTime;
     
     console.log(`✅ User status updated successfully: ${oldStatus} → ${newStatus} (${duration}ms)`);
     
-    // ✅ CRITICAL FIX: RETURN the success result
+    // ✅ CRITICAL FIX: CREATE AND RETURN the success result
     const successResult = {
       success: true,
       oldStatus,
@@ -1427,9 +1403,11 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
       timestamp: Date.now()
     };
     
-    console.log('✅ Returning success result:', successResult);
+    console.log('✅ DEBUG: About to return success result:', successResult);
+    console.log('✅ DEBUG: successResult.success =', successResult.success);
+    console.log('✅ DEBUG: typeof successResult =', typeof successResult);
     
-    // 🚨 THIS WAS MISSING - THE RETURN STATEMENT!
+    // 🚨 THE CRITICAL RETURN STATEMENT - THIS WAS MISSING!
     return successResult;
     
   } catch (error) {
@@ -1452,7 +1430,8 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
       timestamp: Date.now()
     };
     
-    console.log('❌ Returning error result:', errorResult);
+    console.log('❌ DEBUG: About to return error result:', errorResult);
+    console.log('❌ DEBUG: errorResult.success =', errorResult.success);
     
     // ✅ CRITICAL FIX: RETURN the error result too!
     return errorResult;
