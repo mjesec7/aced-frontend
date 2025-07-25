@@ -1246,7 +1246,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
       console.error('❌ Invalid status provided:', newStatus);
       const errorResult = { success: false, error: 'Invalid status' };
       console.log('❌ Returning error result:', errorResult);
-      return errorResult;
+      return errorResult; // ✅ CRITICAL: Return error result
     }
     
     const oldStatus = state.userStatus;
@@ -1268,7 +1268,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
       
       const noChangeResult = { success: true, message: 'Status unchanged', noChange: true };
       console.log('✅ Returning no-change result:', noChangeResult);
-      return noChangeResult;
+      return noChangeResult; // ✅ CRITICAL: Return no-change result
     }
     
     console.log(`🔄 Updating user status: ${oldStatus} → ${newStatus}`);
@@ -1416,7 +1416,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
     
     console.log(`✅ User status updated successfully: ${oldStatus} → ${newStatus} (${duration}ms)`);
     
-    // ✅ CRITICAL: Prepare the success result
+    // ✅ CRITICAL FIX: RETURN the success result
     const successResult = {
       success: true,
       oldStatus,
@@ -1429,7 +1429,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
     
     console.log('✅ Returning success result:', successResult);
     
-    // ✅ CRITICAL: RETURN the success result
+    // 🚨 THIS WAS MISSING - THE RETURN STATEMENT!
     return successResult;
     
   } catch (error) {
@@ -1454,7 +1454,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
     
     console.log('❌ Returning error result:', errorResult);
     
-    // ✅ CRITICAL: RETURN the error result
+    // ✅ CRITICAL FIX: RETURN the error result too!
     return errorResult;
   }
 },
@@ -1462,10 +1462,10 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
   // ✅ ENHANCED: Load user status with caching and validation
   async loadUserStatus({ commit, state }) {
     const startTime = Date.now();
-
+  
     try {
       commit('SET_LOADING', { type: 'status', loading: true });
-
+  
       // Check cache first
       const now = Date.now();
       if (state.cache.userStatusCache &&
@@ -1474,24 +1474,24 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
         console.log('✅ Using cached user status:', state.cache.userStatusCache);
         return { success: true, status: state.cache.userStatusCache, cached: true };
       }
-
+  
       const userId = getUserId(state);
       if (!userId) {
         console.warn('⚠️ No user ID found, defaulting to free status');
         commit('SET_USER_STATUS', 'free');
         return { success: false, error: 'No user ID', defaulted: true };
       }
-
+  
       console.log('🔍 Loading user status from server for:', userId.substring(0, 8) + '...');
-
+  
       const { getUserStatus } = await import('@/api');
       const result = await getUserStatus(userId);
-
+  
       if (result?.success) {
         const status = result.status || result.data?.subscriptionPlan || 'free';
-
+  
         commit('SET_USER_STATUS', status);
-
+  
         // Update subscription details if available
         if (result.data?.subscriptionDetails) {
           commit('UPDATE_SUBSCRIPTION', {
@@ -1501,14 +1501,14 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
             lastSync: new Date().toISOString()
           });
         }
-
+  
         // Update cache
         state.cache.userStatusCache = status;
         state.cache.lastCacheUpdate = now;
-
+  
         const duration = Date.now() - startTime;
         console.log(`✅ User status loaded from server: ${status} (${duration}ms)`);
-
+  
         return { success: true, status, duration };
       } else {
         console.warn('⚠️ Failed to load user status from server:', result?.error);
@@ -1520,7 +1520,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
         });
         return { success: false, error: result?.error || 'Unknown error', defaulted: true };
       }
-
+  
     } catch (error) {
       console.error('❌ Failed to load user status:', error);
       commit('SET_USER_STATUS', 'free');
@@ -1530,7 +1530,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
         originalError: error.message
       });
       return { success: false, error: error.message, defaulted: true };
-
+  
     } finally {
       commit('SET_LOADING', { type: 'status', loading: false });
     }
@@ -1539,18 +1539,18 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
   // ✅ ENHANCED: Initialize with comprehensive error handling and performance tracking
   async initialize({ commit, dispatch, state }) {
     const startTime = Date.now();
-
+  
     if (state.system?.initialized) {
       console.log('ℹ️ Store already initialized, skipping...');
       return { success: true, cached: true };
     }
-
+  
     console.log('🚀 Initializing user store...');
-
+  
     try {
       // ✅ CRITICAL: Set basic initialized state first to prevent auth issues
       commit('SET_INITIALIZED', true);
-
+  
       // Load from localStorage with comprehensive error handling
       const storedDataKeys = {
         user: 'currentUser',
@@ -1558,9 +1558,9 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
         preferences: 'userPreferences',
         subscription: 'subscriptionDetails'
       };
-
+  
       const storedData = {};
-
+  
       // Load all stored data with individual error handling
       for (const [key, storageKey] of Object.entries(storedDataKeys)) {
         try {
@@ -1571,7 +1571,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
           storedData[key] = null;
         }
       }
-
+  
       // Restore user data with validation
       if (storedData.user) {
         try {
@@ -1585,7 +1585,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
           localStorage.removeItem('currentUser');
         }
       }
-
+  
       // Restore status with validation
       if (storedData.status && typeof storedData.status === 'string') {
         const validStatuses = ['free', 'start', 'pro', 'premium'];
@@ -1594,7 +1594,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
           console.log('✅ User status restored:', storedData.status);
         }
       }
-
+  
       // Restore subscription with validation
       if (storedData.subscription) {
         try {
@@ -1607,23 +1607,23 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
           console.warn('⚠️ Invalid stored subscription:', parseError);
         }
       }
-
+  
       const initDuration = Date.now() - startTime;
       console.log(`✅ Store initialized successfully in ${initDuration}ms`);
-
+  
       return {
         success: true,
         duration: initDuration,
         hasUser: !!state.currentUser,
         userStatus: state.userStatus
       };
-
+  
     } catch (error) {
       console.error('❌ Store initialization failed:', error);
-
+  
       // Even if initialization fails, mark as initialized to prevent infinite loops
       commit('SET_INITIALIZED', false);
-
+  
       return {
         success: false,
         error: error.message,
@@ -1635,10 +1635,10 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
   // ✅ ENHANCED: Load usage with better caching and error handling
   async loadUsage({ commit, state }) {
     const startTime = Date.now();
-
+  
     try {
       commit('SET_LOADING', { type: 'usage', loading: true });
-
+  
       // Check cache first
       const now = Date.now();
       if (state.cache.usageCache &&
@@ -1647,50 +1647,50 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
         console.log('✅ Using cached usage data');
         return { success: true, usage: state.cache.usageCache, cached: true };
       }
-
+  
       const userId = getUserId(state);
       if (!userId) {
         console.warn('⚠️ No user ID found for usage loading');
         return { success: false, error: 'No user ID' };
       }
-
+  
       console.log('📊 Loading usage data from server...');
-
+  
       const usageInfo = await getUserUsage();
-
+  
       if (usageInfo?.success) {
         commit('SET_USAGE', usageInfo.usage);
-
+  
         // Auto-sync status if different
         if (usageInfo.plan && usageInfo.plan !== state.userStatus) {
           console.log(`🔄 Auto-syncing status from usage: ${state.userStatus} → ${usageInfo.plan}`);
           commit('SET_USER_STATUS', usageInfo.plan);
         }
-
+  
         // Update limits if provided
         if (usageInfo.limits) {
           commit('SET_USAGE_LIMITS', { [usageInfo.plan || state.userStatus]: usageInfo.limits });
         }
-
+  
         const duration = Date.now() - startTime;
         console.log(`✅ Usage data loaded from server (${duration}ms):`, {
           messages: usageInfo.usage?.messages || 0,
           images: usageInfo.usage?.images || 0,
           plan: usageInfo.plan || state.userStatus
         });
-
+  
         return { success: true, usage: usageInfo.usage, duration };
       }
-
+  
       console.warn('⚠️ Failed to load usage from server:', usageInfo?.error);
       commit('SET_ERROR', {
         message: 'Usage loading failed',
         context: 'loadUsage',
         originalError: usageInfo?.error
       });
-
+  
       return { success: false, error: usageInfo?.error || 'Unknown error' };
-
+  
     } catch (error) {
       console.error('❌ Failed to load usage:', error);
       commit('SET_ERROR', {
@@ -1699,7 +1699,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
         originalError: error.message
       });
       return { success: false, error: error.message };
-
+  
     } finally {
       commit('SET_LOADING', { type: 'usage', loading: false });
     }
@@ -1708,24 +1708,24 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
   // ✅ ENHANCED: Apply promocode with comprehensive validation and error handling
   async applyPromocode({ commit, state, dispatch }, { promoCode, plan }) {
     const startTime = Date.now();
-
+  
     try {
       // Input validation
       if (!promoCode || typeof promoCode !== 'string' || promoCode.trim().length < 3) {
         return { success: false, error: 'Промокод должен содержать не менее 3 символов' };
       }
-
+  
       if (!plan || !['start', 'pro', 'premium'].includes(plan)) {
         return { success: false, error: 'Неверный план подписки' };
       }
-
+  
       const userId = getUserId(state);
       if (!userId) {
         return { success: false, error: 'Пользователь не найден' };
       }
-
+  
       const normalizedCode = promoCode.trim().toUpperCase();
-
+  
       // Check if already applied
       const existingPromocode = state.promocodes.applied.find(p => p.code === normalizedCode);
       if (existingPromocode) {
@@ -1735,19 +1735,19 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
           alreadyApplied: true
         };
       }
-
+  
       console.log('🎟️ Applying promocode to server:', { code: normalizedCode, plan, userId: userId.substring(0, 8) + '...' });
-
+  
       const token = await getUserToken();
       const headers = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
-
+  
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
       if (!baseUrl) {
         commit('SET_ERROR', { message: 'API configuration error', context: 'applyPromocode' });
         return { success: false, error: 'Ошибка конфигурации приложения' };
       }
-
+  
       const response = await Promise.race([
         fetch(`${baseUrl}/api/payments/promo-code`, {
           method: 'POST',
@@ -1762,12 +1762,12 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
           setTimeout(() => reject(new Error('Request timeout')), 10000)
         )
       ]);
-
+  
       const result = await response.json();
-
+  
       if (result?.success) {
         const oldStatus = state.userStatus;
-
+  
         // Update subscription through dedicated action
         await dispatch('updateSubscription', {
           plan,
@@ -1779,7 +1779,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
             ...result.data?.subscriptionDetails
           }
         });
-
+  
         // Track promocode application
         commit('ADD_PROMOCODE', {
           code: normalizedCode,
@@ -1788,13 +1788,13 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
           source: 'api',
           details: result.data || {}
         });
-
+  
         // Force global update
         commit('FORCE_UPDATE');
-
+  
         const duration = Date.now() - startTime;
         console.log(`✅ Promocode applied successfully: ${oldStatus} → ${plan} (${duration}ms)`);
-
+  
         return {
           success: true,
           message: result.message || `Промокод успешно применён! Подписка "${plan.toUpperCase()}" активирована.`,
@@ -1803,31 +1803,31 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
           duration
         };
       }
-
+  
       // Handle server errors
       const serverError = result?.error || 'Не удалось применить промокод';
       console.warn('⚠️ Promocode application failed:', serverError);
-
+  
       commit('SET_ERROR', {
         message: serverError,
         context: 'applyPromocode-server',
         promocode: normalizedCode,
         plan
       });
-
+  
       return { success: false, error: serverError };
-
+  
     } catch (error) {
       console.error('❌ Promocode application failed:', error);
-
+  
       let userFriendlyError = 'Произошла ошибка при применении промокода';
-
+  
       if (error.message === 'Request timeout') {
         userFriendlyError = 'Истекло время ожидания. Попробуйте снова.';
       } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
         userFriendlyError = 'Ошибка сети. Проверьте подключение к интернету.';
       }
-
+  
       // Map HTTP status codes to user-friendly messages
       if (error.status) {
         const errorMessages = {
@@ -1841,14 +1841,14 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
         };
         userFriendlyError = errorMessages[error.status] || userFriendlyError;
       }
-
+  
       commit('SET_ERROR', {
         message: userFriendlyError,
         context: 'applyPromocode-exception',
         originalError: error.message,
         statusCode: error.status
       });
-
+  
       return {
         success: false,
         error: userFriendlyError,
@@ -1857,15 +1857,14 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
     }
   },
 
-  // ✅ ENHANCED: Validate promocode with caching
   async validatePromocode({ state, commit }, promoCode) {
     try {
       if (!promoCode || typeof promoCode !== 'string' || promoCode.trim().length < 3) {
         return { valid: false, error: 'Промокод должен содержать не менее 3 символов' };
       }
-
+  
       const normalizedCode = promoCode.trim().toUpperCase();
-
+  
       // Check cache first
       if (state.promocodes.validationCache.has(normalizedCode)) {
         const cached = state.promocodes.validationCache.get(normalizedCode);
@@ -1875,21 +1874,21 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
           return cached.result;
         }
       }
-
+  
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
       if (!baseUrl) {
         return { valid: false, error: 'Ошибка конфигурации приложения' };
       }
-
+  
       const response = await Promise.race([
         fetch(`${baseUrl}/api/promocodes/validate/${normalizedCode}`),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Validation timeout')), 5000)
         )
       ]);
-
+  
       const result = await response.json();
-
+  
       const validationResult = {
         valid: result?.success && result.valid,
         data: result.data || null,
@@ -1898,26 +1897,26 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
           ? `Промокод действителен! Предоставляет: ${result.data?.grantsPlan?.toUpperCase()} план`
           : result?.error || 'Промокод недействителен'
       };
-
+  
       // Cache the result
       state.promocodes.validationCache.set(normalizedCode, {
         result: validationResult,
         timestamp: Date.now()
       });
-
+  
       // Limit cache size
       if (state.promocodes.validationCache.size > 50) {
         const firstKey = state.promocodes.validationCache.keys().next().value;
         state.promocodes.validationCache.delete(firstKey);
       }
-
+  
       return validationResult;
-
+  
     } catch (error) {
       console.error('❌ Promocode validation failed:', error);
-
+  
       let userFriendlyError = 'Ошибка проверки промокода';
-
+  
       if (error.message === 'Validation timeout') {
         userFriendlyError = 'Истекло время ожидания проверки';
       } else if (error.status) {
@@ -1928,7 +1927,7 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
         };
         userFriendlyError = errorMessages[error.status] || userFriendlyError;
       }
-
+  
       return {
         valid: false,
         error: userFriendlyError
@@ -1936,156 +1935,154 @@ async updateUserStatus({ commit, state, dispatch }, newStatus) {
     }
   },
 
-  // ✅ ENHANCED: Update subscription with comprehensive state management
-  // ✅ ALSO ADD: Enhanced updateSubscription action (if it doesn't exist or needs fixing)
-async updateSubscription({ commit, dispatch, state }, { plan, source = 'payment', details = {} }) {
-  const startTime = Date.now();
-
-  console.log('🔄 updateSubscription called with:', { plan, source, detailsKeys: Object.keys(details) });
-
-  try {
-    // Validate plan
-    const validPlans = ['free', 'start', 'pro', 'premium'];
-    const validatedPlan = validPlans.includes(plan) ? plan : 'free';
-
-    if (plan !== validatedPlan) {
-      console.warn(`⚠️ Invalid plan "${plan}" normalized to "${validatedPlan}"`);
-    }
-
-    // Get old status for comparison
-    const oldStatus = state.userStatus || 'free';
-    console.log(`📊 Status change: ${oldStatus} → ${validatedPlan}`);
-
-    // Calculate expiry dates based on source
-    let expiryDate = null;
-    if (validatedPlan !== 'free') {
-      const now = new Date();
-      switch (source) {
-        case 'promocode':
-          expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
-          break;
-        case 'payment':
-          expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
-          break;
-        case 'gift':
-          expiryDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days
-          break;
-        default:
-          expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // Default 30 days
-      }
-    }
-
-    const subscriptionData = {
-      plan: validatedPlan,
-      status: (validatedPlan !== 'free') ? 'active' : 'inactive',
-      source,
-      startDate: new Date().toISOString(),
-      expiryDate: expiryDate ? expiryDate.toISOString() : null,
-      isAutoRenew: source === 'payment',
-      details: {
-        ...details,
-        updatedAt: new Date().toISOString(),
-        updatedBy: 'updateSubscription'
-      },
-      lastSync: new Date().toISOString()
-    };
-
-    console.log('📋 Subscription data prepared:', subscriptionData);
-
-    // Update all related state atomically
-    commit('SET_USER_STATUS', validatedPlan);
-    commit('UPDATE_SUBSCRIPTION', subscriptionData);
-    commit('UPDATE_FEATURES'); // Recalculate features based on new plan
-    commit('FORCE_UPDATE');
-
-    console.log('✅ Store mutations completed');
-
-    // Persistent storage (don't let this fail the whole operation)
+  async updateSubscription({ commit, dispatch, state }, { plan, source = 'payment', details = {} }) {
+    const startTime = Date.now();
+  
+    console.log('🔄 updateSubscription called with:', { plan, source, detailsKeys: Object.keys(details) });
+  
     try {
-      localStorage.setItem('userStatus', validatedPlan);
-      localStorage.setItem('subscriptionDetails', JSON.stringify(subscriptionData));
-      localStorage.setItem('lastSubscriptionUpdate', Date.now().toString());
-      console.log('✅ LocalStorage updated');
-    } catch (storageError) {
-      console.warn('⚠️ Failed to persist subscription data:', storageError);
-      // Don't fail the operation due to storage issues
-    }
-
-    // Enhanced global event broadcasting
-    const eventData = {
-      oldStatus,
-      newStatus: validatedPlan,
-      source,
-      subscriptionData: { ...subscriptionData },
-      timestamp: Date.now(),
-      duration: Date.now() - startTime
-    };
-
-    // Multiple event types for different listeners
-    const events = [
-      'userStatusChanged',
-      'subscriptionUpdated',
-      'userSubscriptionChanged', // Legacy compatibility
-      'planChanged'
-    ];
-
-    events.forEach(eventName => {
-      try {
-        if (typeof window !== 'undefined' && window.eventBus) {
-          window.eventBus.emit(eventName, eventData);
-        }
-      } catch (eventError) {
-        console.warn(`⚠️ Failed to trigger ${eventName}:`, eventError);
+      // Validate plan
+      const validPlans = ['free', 'start', 'pro', 'premium'];
+      const validatedPlan = validPlans.includes(plan) ? plan : 'free';
+  
+      if (plan !== validatedPlan) {
+        console.warn(`⚠️ Invalid plan "${plan}" normalized to "${validatedPlan}"`);
       }
-    });
-
-    console.log('✅ Events triggered');
-
-    const duration = Date.now() - startTime;
-    const successResult = {
-      success: true,
-      subscriptionData: { ...subscriptionData },
-      oldStatus,
-      newStatus: validatedPlan,
-      duration,
-      message: `Subscription updated successfully from ${oldStatus} to ${validatedPlan}`,
-      timestamp: Date.now()
-    };
-
-    console.log(`✅ updateSubscription completed successfully in ${duration}ms:`, successResult);
-
-    // ✅ CRITICAL: Always return the success result
-    return successResult;
-
-  } catch (error) {
-    const duration = Date.now() - startTime;
-
-    console.error('❌ updateSubscription failed:', error);
-
-    commit('SET_ERROR', {
-      message: 'Subscription update failed',
-      context: 'updateSubscription',
-      originalError: error.message,
-      plan,
-      source
-    });
-
-    const errorResult = {
-      success: false,
-      error: error.message || 'Subscription update failed',
-      duration,
-      plan,
-      source,
-      timestamp: Date.now(),
-      stack: error.stack
-    };
-
-    console.log('❌ updateSubscription returning error result:', errorResult);
-
-    // ✅ CRITICAL: Always return the error result
-    return errorResult;
-  }
-},
+  
+      // Get old status for comparison
+      const oldStatus = state.userStatus || 'free';
+      console.log(`📊 Status change: ${oldStatus} → ${validatedPlan}`);
+  
+      // Calculate expiry dates based on source
+      let expiryDate = null;
+      if (validatedPlan !== 'free') {
+        const now = new Date();
+        switch (source) {
+          case 'promocode':
+            expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+            break;
+          case 'payment':
+            expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
+            break;
+          case 'gift':
+            expiryDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days
+            break;
+          default:
+            expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // Default 30 days
+        }
+      }
+  
+      const subscriptionData = {
+        plan: validatedPlan,
+        status: (validatedPlan !== 'free') ? 'active' : 'inactive',
+        source,
+        startDate: new Date().toISOString(),
+        expiryDate: expiryDate ? expiryDate.toISOString() : null,
+        isAutoRenew: source === 'payment',
+        details: {
+          ...details,
+          updatedAt: new Date().toISOString(),
+          updatedBy: 'updateSubscription'
+        },
+        lastSync: new Date().toISOString()
+      };
+  
+      console.log('📋 Subscription data prepared:', subscriptionData);
+  
+      // Update all related state atomically
+      commit('SET_USER_STATUS', validatedPlan);
+      commit('UPDATE_SUBSCRIPTION', subscriptionData);
+      commit('UPDATE_FEATURES'); // Recalculate features based on new plan
+      commit('FORCE_UPDATE');
+  
+      console.log('✅ Store mutations completed');
+  
+      // Persistent storage (don't let this fail the whole operation)
+      try {
+        localStorage.setItem('userStatus', validatedPlan);
+        localStorage.setItem('subscriptionDetails', JSON.stringify(subscriptionData));
+        localStorage.setItem('lastSubscriptionUpdate', Date.now().toString());
+        console.log('✅ LocalStorage updated');
+      } catch (storageError) {
+        console.warn('⚠️ Failed to persist subscription data:', storageError);
+        // Don't fail the operation due to storage issues
+      }
+  
+      // Enhanced global event broadcasting
+      const eventData = {
+        oldStatus,
+        newStatus: validatedPlan,
+        source,
+        subscriptionData: { ...subscriptionData },
+        timestamp: Date.now(),
+        duration: Date.now() - startTime
+      };
+  
+      // Multiple event types for different listeners
+      const events = [
+        'userStatusChanged',
+        'subscriptionUpdated',
+        'userSubscriptionChanged', // Legacy compatibility
+        'planChanged'
+      ];
+  
+      events.forEach(eventName => {
+        try {
+          if (typeof window !== 'undefined' && window.eventBus) {
+            window.eventBus.emit(eventName, eventData);
+          }
+        } catch (eventError) {
+          console.warn(`⚠️ Failed to trigger ${eventName}:`, eventError);
+        }
+      });
+  
+      console.log('✅ Events triggered');
+  
+      const duration = Date.now() - startTime;
+      const successResult = {
+        success: true,
+        subscriptionData: { ...subscriptionData },
+        oldStatus,
+        newStatus: validatedPlan,
+        duration,
+        message: `Subscription updated successfully from ${oldStatus} to ${validatedPlan}`,
+        timestamp: Date.now()
+      };
+  
+      console.log(`✅ updateSubscription completed successfully in ${duration}ms:`, successResult);
+  
+      // ✅ CRITICAL: Always return the success result
+      return successResult;
+  
+    } catch (error) {
+      const duration = Date.now() - startTime;
+  
+      console.error('❌ updateSubscription failed:', error);
+  
+      commit('SET_ERROR', {
+        message: 'Subscription update failed',
+        context: 'updateSubscription',
+        originalError: error.message,
+        plan,
+        source
+      });
+  
+      const errorResult = {
+        success: false,
+        error: error.message || 'Subscription update failed',
+        duration,
+        plan,
+        source,
+        timestamp: Date.now(),
+        stack: error.stack
+      };
+  
+      console.log('❌ updateSubscription returning error result:', errorResult);
+  
+      // ✅ CRITICAL: Always return the error result
+      return errorResult;
+    }
+  },
 
 
 
