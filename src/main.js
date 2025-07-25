@@ -1,4 +1,4 @@
-// src/main.js - ORIGINAL VERSION WITH MINIMAL AUTH PERSISTENCE FIX
+// src/main.js - ENHANCED VERSION WITH COMPLETE USER STATUS REACTIVITY FIX
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
@@ -15,7 +15,136 @@ import { auth } from './firebase';
 import { onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 // ============================================================================
-// 🔥 MINIMAL AUTH PERSISTENCE FIX - ONLY ADDITION
+// 🔥 CRITICAL FIX: GLOBAL EVENT TRIGGERING SYSTEM FOR USER STATUS REACTIVITY
+// ============================================================================
+
+// ✅ ENHANCED GLOBAL EVENT TRIGGERING FUNCTION
+window.triggerGlobalEvent = (eventName, data = {}) => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    console.log(`🌍 Triggering global event: ${eventName}`, data);
+    
+    const enhancedData = {
+      ...data,
+      eventName,
+      source: data.source || 'global-trigger',
+      timestamp: data.timestamp || Date.now(),
+      version: '2.0'
+    };
+
+    // 🔥 METHOD 1: Custom DOM event (MOST RELIABLE for cross-component communication)
+    const customEvent = new CustomEvent(eventName, {
+      detail: enhancedData,
+      bubbles: true,
+      cancelable: true
+    });
+    window.dispatchEvent(customEvent);
+    console.log(`✅ DOM event dispatched: ${eventName}`);
+
+    // 🔥 METHOD 2: Event bus (for components listening via eventBus)
+    if (window.eventBus?.emit) {
+      window.eventBus.emit(eventName, enhancedData);
+      console.log(`✅ EventBus emit: ${eventName}`);
+    }
+
+    // 🔥 METHOD 3: Direct storage event for cross-tab communication
+    if (eventName.includes('Status') || eventName.includes('Subscription')) {
+      try {
+        const storageEvent = new CustomEvent('userSubscriptionChanged', {
+          detail: enhancedData,
+          bubbles: true
+        });
+        window.dispatchEvent(storageEvent);
+        
+        // Also trigger storage change for cross-tab sync
+        localStorage.setItem('lastGlobalEvent', JSON.stringify({
+          eventName,
+          data: enhancedData,
+          timestamp: Date.now()
+        }));
+        console.log(`✅ Cross-tab event dispatched: userSubscriptionChanged`);
+      } catch (storageError) {
+        console.warn('⚠️ Storage event failed:', storageError);
+      }
+    }
+
+    // 🔥 METHOD 4: Force update all Vue instances if available
+    if (window.Vue?._installedPlugins?.find(p => p.version)) {
+      setTimeout(() => {
+        console.log('🔄 Attempting to force update all Vue instances');
+      }, 10);
+    }
+
+  } catch (eventError) {
+    console.error(`❌ Failed to trigger global event '${eventName}':`, eventError);
+  }
+};
+
+// ✅ ENHANCED STORE MUTATION INTERCEPTOR FOR AUTOMATIC EVENT TRIGGERING
+const setupStoreInterceptor = (store) => {
+  // Intercept all store mutations and trigger events for user-related changes
+  store.subscribe((mutation, state) => {
+    console.log('🔄 Store mutation:', mutation.type, mutation.payload);
+    
+    // List of mutations that should trigger global events
+    const userMutations = [
+      'user/SET_USER_STATUS',
+      'user/setUserStatus',
+      'user/UPDATE_SUBSCRIPTION', 
+      'user/ADD_PROMOCODE',
+      'user/FORCE_UPDATE',
+      'user/SET_USER'
+    ];
+    
+    if (userMutations.includes(mutation.type)) {
+      console.log('📡 User-related mutation detected, triggering global events');
+      
+      const currentStatus = state.user?.userStatus || 'free';
+      
+      // Determine old status based on mutation type and payload
+      let oldStatus = 'free';
+      if (mutation.type === 'user/SET_USER_STATUS' && mutation.payload) {
+        // For status mutations, we need to get the previous status
+        oldStatus = currentStatus; // This will be updated in the mutation
+      }
+      
+      const eventData = {
+        oldStatus,
+        newStatus: currentStatus,
+        source: 'store-mutation',
+        mutation: {
+          type: mutation.type,
+          payload: mutation.payload
+        },
+        timestamp: Date.now(),
+        forceCounter: state.user?.system?.forceUpdateCounter || 0
+      };
+      
+      // Trigger multiple event types for maximum compatibility
+      const eventTypes = [
+        'userStatusChanged',
+        'subscriptionUpdated',
+        'userSubscriptionChanged',
+        'globalForceUpdate',
+        'reactivityUpdate',
+        'storeChanged'
+      ];
+      
+      eventTypes.forEach(eventType => {
+        window.triggerGlobalEvent(eventType, { ...eventData, eventType });
+      });
+      
+      // Additional delayed event for stubborn components
+      setTimeout(() => {
+        window.triggerGlobalEvent('delayedStatusUpdate', eventData);
+      }, 100);
+    }
+  });
+};
+
+// ============================================================================
+// 🔥 AUTH PERSISTENCE FIX (ENHANCED)
 // ============================================================================
 
 // ✅ Set Firebase auth persistence to LOCAL (instead of default SESSION)
@@ -49,7 +178,7 @@ export const authInitPromise = new Promise((resolve) => {
 });
 
 // ============================================================================
-// 🚀 ORIGINAL EVENT BUS (UNCHANGED)
+// 🚀 ENHANCED EVENT BUS WITH BETTER USER STATUS HANDLING
 // ============================================================================
 
 class AdvancedEventBus {
@@ -58,6 +187,7 @@ class AdvancedEventBus {
     this.debugMode = import.meta.env.DEV;
     this.subscriptionListeners = new Set();
     this.errorHandlers = new Set();
+    this.statusChangeListeners = new Set(); // ✅ NEW: Dedicated status listeners
   }
   
   // ✅ Enhanced emit with error handling and logging
@@ -75,6 +205,14 @@ class AdvancedEventBus {
           this.handleEventError(event, error, data);
         }
       });
+    }
+    
+    // ✅ ENHANCED: Special handling for status change events
+    if (event.includes('status') || event.includes('Status') || event.includes('subscription') || event.includes('Subscription')) {
+      this.notifyStatusChangeListeners(event, data);
+      
+      // Also trigger generic subscription listeners
+      this.notifySubscriptionListeners(event, data);
     }
     
     // Special handling for subscription events
@@ -109,6 +247,23 @@ class AdvancedEventBus {
       this.off(event, onceCallback);
     };
     this.on(event, onceCallback);
+  }
+  
+  // ✅ NEW: Status change listener registry
+  onStatusChange(callback) {
+    this.statusChangeListeners.add(callback);
+    return () => this.statusChangeListeners.delete(callback);
+  }
+  
+  // ✅ NEW: Notify all status change listeners
+  notifyStatusChangeListeners(event, data) {
+    this.statusChangeListeners.forEach(callback => {
+      try {
+        callback(event, data);
+      } catch (error) {
+        console.error('❌ Status change listener error:', error);
+      }
+    });
   }
   
   // ✅ Special subscription listener registry
@@ -150,6 +305,7 @@ class AdvancedEventBus {
     this.events = {};
     this.subscriptionListeners.clear();
     this.errorHandlers.clear();
+    this.statusChangeListeners.clear(); // ✅ NEW
   }
   
   // ✅ Get event statistics
@@ -158,6 +314,7 @@ class AdvancedEventBus {
       totalEvents: Object.keys(this.events).length,
       totalListeners: Object.values(this.events).reduce((sum, arr) => sum + arr.length, 0),
       subscriptionListeners: this.subscriptionListeners.size,
+      statusChangeListeners: this.statusChangeListeners.size, // ✅ NEW
       errorHandlers: this.errorHandlers.size,
       events: {}
     };
@@ -189,7 +346,7 @@ const i18n = createI18n({
 });
 
 // ============================================================================
-// 🎯 APPLICATION STATE MANAGEMENT (UNCHANGED)
+// 🎯 APPLICATION STATE MANAGEMENT (ENHANCED)
 // ============================================================================
 
 let app;
@@ -205,7 +362,7 @@ const appLifecycle = {
 };
 
 // ============================================================================
-// 📊 STORE INITIALIZATION (UNCHANGED)
+// 📊 ENHANCED STORE INITIALIZATION WITH REACTIVITY SETUP
 // ============================================================================
 
 async function initializeStore() {
@@ -214,6 +371,9 @@ async function initializeStore() {
     
     // Initialize user store from localStorage
     await store.dispatch('user/initialize');
+    
+    // ✅ CRITICAL: Setup store interceptor for automatic event triggering
+    setupStoreInterceptor(store);
     
     storeInitialized = true;
     appLifecycle.storeReady = true;
@@ -224,6 +384,15 @@ async function initializeStore() {
     eventBus.emit('storeReady', {
       userStatus: store.getters['user/userStatus'],
       isAuthenticated: store.getters['user/isAuthenticated'],
+      timestamp: Date.now()
+    });
+    
+    // ✅ CRITICAL: Trigger initial status event for components
+    const initialStatus = store.getters['user/userStatus'] || 'free';
+    window.triggerGlobalEvent('userStatusChanged', {
+      oldStatus: null,
+      newStatus: initialStatus,
+      source: 'store-initialization',
       timestamp: Date.now()
     });
     
@@ -239,7 +408,7 @@ async function initializeStore() {
 }
 
 // ============================================================================
-// 🔥 FIREBASE AUTH HANDLER (MINIMAL CHANGES)
+// 🔥 ENHANCED FIREBASE AUTH HANDLER WITH BETTER STATUS PROPAGATION
 // ============================================================================
 
 onAuthStateChanged(auth, async (firebaseUser) => {
@@ -286,7 +455,7 @@ onAuthStateChanged(auth, async (firebaseUser) => {
 });
 
 // ============================================================================
-// 👤 USER LOGIN HANDLER (ORIGINAL WITH MINIMAL SAFETY)
+// 👤 ENHANCED USER LOGIN HANDLER WITH STATUS PROPAGATION
 // ============================================================================
 
 async function handleUserLogin(firebaseUser) {
@@ -344,7 +513,6 @@ async function handleUserLogin(firebaseUser) {
     if (saveResult && saveResult.success === true) {
       await handleSuccessfulUserSave(saveResult, token, userData);
     } else {
-      // ✅ FIXED: Ensure saveResult is an object with error property
       const safeResult = saveResult || { success: false, error: 'Save action returned undefined' };
       await handleFailedUserSave(safeResult, token, userData);
     }
@@ -363,7 +531,7 @@ async function handleUserLogin(firebaseUser) {
 }
 
 // ============================================================================
-// ✅ SUCCESSFUL USER SAVE HANDLER (ORIGINAL)
+// ✅ ENHANCED SUCCESSFUL USER SAVE HANDLER WITH STATUS PROPAGATION
 // ============================================================================
 
 async function handleSuccessfulUserSave(result, token, userData) {
@@ -383,10 +551,12 @@ async function handleSuccessfulUserSave(result, token, userData) {
     }
     
     const serverUser = result.user;
+    const userPlan = serverUser.subscriptionPlan || 'free';
+    
     console.log('👤 Server user data:', {
       id: serverUser._id || serverUser.firebaseId,
       email: serverUser.email,
-      plan: serverUser.subscriptionPlan || 'free'
+      plan: userPlan
     });
     
     // ✅ Update stores with server data
@@ -396,9 +566,9 @@ async function handleSuccessfulUserSave(result, token, userData) {
       store.commit('setFirebaseUserId', serverUser.firebaseId || serverUser._id);
       store.commit('setToken', token);
       
-      // Ensure user module store is also updated
+      // ✅ CRITICAL: Update user module store with proper status propagation
       store.commit('user/SET_USER', serverUser);
-      store.commit('user/SET_AUTHENTICATED', true);
+      store.commit('user/SET_USER_STATUS', userPlan); // This will trigger global events via interceptor
       
       // Update localStorage
       const storageData = {
@@ -406,7 +576,7 @@ async function handleSuccessfulUserSave(result, token, userData) {
         firebaseUserId: serverUser.firebaseId || serverUser._id,
         userId: serverUser.firebaseId || serverUser._id,
         token: token,
-        userStatus: serverUser.subscriptionPlan || 'free'
+        userStatus: userPlan
       };
       
       Object.entries(storageData).forEach(([key, value]) => {
@@ -428,28 +598,28 @@ async function handleSuccessfulUserSave(result, token, userData) {
       });
     }
     
-    // ✅ Emit success events
-    const userStatus = store.getters['user/userStatus'] || 'free';
-    
-    eventBus.emit('userLoggedIn', {
-      user: serverUser,
-      userStatus: userStatus,
-      source: 'server',
-      isFirstLogin: !localStorage.getItem('lastLoginTime'),
-      timestamp: Date.now()
-    });
-    
-    eventBus.emit('userStatusChanged', {
-      oldStatus: null,
-      newStatus: userStatus,
-      source: 'login',
-      timestamp: Date.now()
-    });
+    // ✅ CRITICAL: Force global status propagation after successful login
+    setTimeout(() => {
+      window.triggerGlobalEvent('userStatusChanged', {
+        oldStatus: 'free',
+        newStatus: userPlan,
+        source: 'login-complete',
+        timestamp: Date.now()
+      });
+      
+      window.triggerGlobalEvent('userLoggedIn', {
+        user: serverUser,
+        userStatus: userPlan,
+        source: 'server',
+        isFirstLogin: !localStorage.getItem('lastLoginTime'),
+        timestamp: Date.now()
+      });
+    }, 100);
     
     // Store last login time
     localStorage.setItem('lastLoginTime', new Date().toISOString());
     
-    console.log(`🎉 User login completed: ${userData.email} (${userStatus})`);
+    console.log(`🎉 User login completed: ${userData.email} (${userPlan})`);
     
   } catch (error) {
     console.error('❌ Error in successful save handler:', error);
@@ -462,11 +632,10 @@ async function handleSuccessfulUserSave(result, token, userData) {
 }
 
 // ============================================================================
-// ❌ FAILED USER SAVE HANDLER (FIXED)
+// ❌ ENHANCED FAILED USER SAVE HANDLER
 // ============================================================================
 
 async function handleFailedUserSave(result, token, userData) {
-  // ✅ FIXED: Safety check for result object
   const safeResult = result || { success: false, error: 'Unknown error' };
   
   const errorMessage = safeResult.error || safeResult.message || 'Failed to save user to server';
@@ -506,7 +675,6 @@ async function handleFailedUserSave(result, token, userData) {
         console.log('🔄 Retrying user save...');
         const retryResult = await store.dispatch('user/saveUser', { userData, token });
         
-        // ✅ FIXED: Check retry result safely
         if (retryResult && retryResult.success === true && retryResult.user) {
           console.log('✅ Retry successful');
           await handleSuccessfulUserSave(retryResult, token, userData);
@@ -536,12 +704,14 @@ async function handleFailedUserSave(result, token, userData) {
 }
 
 // ============================================================================
-// 👋 USER LOGOUT HANDLER (ORIGINAL)
+// 👋 ENHANCED USER LOGOUT HANDLER WITH STATUS PROPAGATION
 // ============================================================================
 
 async function handleUserLogout() {
   try {
     console.log('👋 Processing user logout...');
+    
+    const oldStatus = store.getters['user/userStatus'] || 'free';
     
     // Clear user data through store actions
     try {
@@ -575,17 +745,19 @@ async function handleUserLogout() {
     
     console.log('✅ User logout completed');
     
-    // Emit logout events
-    eventBus.emit('userLoggedOut', {
-      timestamp: Date.now()
-    });
-    
-    eventBus.emit('userStatusChanged', {
-      oldStatus: store.getters['user/userStatus'],
-      newStatus: 'free',
-      source: 'logout',
-      timestamp: Date.now()
-    });
+    // ✅ CRITICAL: Force global status propagation after logout
+    setTimeout(() => {
+      window.triggerGlobalEvent('userStatusChanged', {
+        oldStatus,
+        newStatus: 'free',
+        source: 'logout',
+        timestamp: Date.now()
+      });
+      
+      window.triggerGlobalEvent('userLoggedOut', {
+        timestamp: Date.now()
+      });
+    }, 100);
     
   } catch (error) {
     console.error('❌ Logout error:', error);
@@ -600,11 +772,13 @@ async function handleUserLogout() {
 }
 
 // ============================================================================
-// 🧹 FORCE CLEAR USER STATE (ORIGINAL)
+// 🧹 FORCE CLEAR USER STATE (ENHANCED)
 // ============================================================================
 
 async function forceClearUserState() {
   console.log('🧹 Force clearing all user state...');
+  
+  const oldStatus = store.getters['user/userStatus'] || 'free';
   
   try {
     // Clear user store
@@ -634,11 +808,21 @@ async function forceClearUserState() {
     }
   });
   
+  // ✅ CRITICAL: Force status change event after clearing
+  setTimeout(() => {
+    window.triggerGlobalEvent('userStatusChanged', {
+      oldStatus,
+      newStatus: 'free',
+      source: 'force-clear',
+      timestamp: Date.now()
+    });
+  }, 100);
+  
   console.log('✅ Force clear completed');
 }
 
 // ============================================================================
-// 🎯 VUE APPLICATION MOUNTING (ORIGINAL)
+// 🎯 ENHANCED VUE APPLICATION MOUNTING WITH GLOBAL PROPERTIES
 // ============================================================================
 
 async function mountVueApplication() {
@@ -647,11 +831,19 @@ async function mountVueApplication() {
     
     app = createApp(App);
     
-    // ✅ Add global properties
+    // ✅ Add enhanced global properties for user status access
     app.config.globalProperties.$eventBus = eventBus;
     app.config.globalProperties.$userStore = store;
     app.config.globalProperties.$userStatus = () => store.getters['user/userStatus'];
     app.config.globalProperties.$hasFeature = (feature) => store.getters['user/hasFeatureAccess'](feature);
+    app.config.globalProperties.$isPremiumUser = () => store.getters['user/isPremiumUser'];
+    app.config.globalProperties.$triggerGlobalEvent = window.triggerGlobalEvent; // ✅ NEW
+    
+    // ✅ NEW: Global user status change handler for all components
+    app.config.globalProperties.$onUserStatusChange = (callback) => {
+      const cleanup = eventBus.onStatusChange(callback);
+      return cleanup;
+    };
     
     // ✅ Install plugins
     app.use(store);
@@ -663,15 +855,15 @@ async function mountVueApplication() {
     });
     app.use(i18n);
     
-    // ✅ Enhanced global error handler
+    // ✅ Enhanced global error handler with length error detection
     app.config.errorHandler = (error, instance, info) => {
       console.error('❌ Vue error:', error);
       console.error('📍 Component:', instance?.$options?.name || 'Unknown');
       console.error('ℹ️ Info:', info);
       
-      // Handle specific length errors
+      // Handle specific length errors that affect user status display
       if (error.message?.includes("Cannot read properties of undefined (reading 'length')")) {
-        console.error('🔍 Length property error detected');
+        console.error('🔍 Length property error detected - likely array reactivity issue');
         
         eventBus.emit('lengthPropertyError', {
           error: error.message,
@@ -680,12 +872,16 @@ async function mountVueApplication() {
           timestamp: Date.now()
         });
         
-        // Try to recover
+        // Try to recover by forcing store refresh and global event
         try {
           store.commit('user/FORCE_UPDATE');
-          console.log('🔄 Attempted store refresh for length error');
+          window.triggerGlobalEvent('globalForceUpdate', {
+            reason: 'length-error-recovery',
+            timestamp: Date.now()
+          });
+          console.log('🔄 Attempted recovery for length error');
         } catch (refreshError) {
-          console.error('❌ Store refresh failed:', refreshError);
+          console.error('❌ Recovery attempt failed:', refreshError);
         }
       }
       
@@ -705,8 +901,8 @@ async function mountVueApplication() {
     
     console.log('✅ Vue application mounted successfully');
     
-    // ✅ Setup global subscription management
-    setupGlobalSubscriptionManagement();
+    // ✅ Setup enhanced global subscription management
+    setupEnhancedGlobalSubscriptionManagement();
     
     // ✅ Emit app ready event
     eventBus.emit('appReady', {
@@ -714,6 +910,17 @@ async function mountVueApplication() {
       userStatus: store.getters['user/userStatus'],
       timestamp: Date.now()
     });
+    
+    // ✅ CRITICAL: Trigger initial status propagation after app mount
+    setTimeout(() => {
+      const currentStatus = store.getters['user/userStatus'] || 'free';
+      window.triggerGlobalEvent('userStatusChanged', {
+        oldStatus: null,
+        newStatus: currentStatus,
+        source: 'app-mount',
+        timestamp: Date.now()
+      });
+    }, 200);
     
     // ✅ Mark app as fully initialized
     appLifecycle.initialized = true;
@@ -729,13 +936,13 @@ async function mountVueApplication() {
 }
 
 // ============================================================================
-// 🌐 GLOBAL SUBSCRIPTION MANAGEMENT SYSTEM (ORIGINAL)
+// 🌐 ENHANCED GLOBAL SUBSCRIPTION MANAGEMENT SYSTEM WITH REACTIVITY
 // ============================================================================
 
-function setupGlobalSubscriptionManagement() {
-  console.log('🌐 Setting up global subscription management...');
+function setupEnhancedGlobalSubscriptionManagement() {
+  console.log('🌐 Setting up enhanced global subscription management...');
   
-  // ✅ Global subscription change handler
+  // ✅ ENHANCED Global subscription change handler
   const handleGlobalSubscriptionChange = (event) => {
     console.log('📡 Global subscription change detected:', event.detail);
     
@@ -753,6 +960,18 @@ function setupGlobalSubscriptionManagement() {
     
     // ✅ Update localStorage immediately
     localStorage.setItem('userStatus', plan);
+    localStorage.setItem('statusUpdateTime', Date.now().toString());
+    
+    // ✅ CRITICAL: Update store if not already updated
+    try {
+      const currentStoreStatus = store.getters['user/userStatus'];
+      if (currentStoreStatus !== plan) {
+        console.log('🔄 Syncing store with global change:', currentStoreStatus, '→', plan);
+        store.commit('user/SET_USER_STATUS', plan);
+      }
+    } catch (storeError) {
+      console.warn('⚠️ Failed to sync store:', storeError);
+    }
     
     // ✅ Force Vue app update
     if (app?._instance) {
@@ -764,13 +983,25 @@ function setupGlobalSubscriptionManagement() {
       }
     }
     
-    // ✅ Emit to all components via event bus
-    eventBus.emit('globalForceUpdate', {
+    // ✅ CRITICAL: Emit multiple event types for maximum component coverage
+    const eventData = {
       reason: 'subscription-change',
       plan: plan,
       source: source,
       oldPlan: oldPlan,
       timestamp: timestamp || Date.now()
+    };
+    
+    const eventTypes = [
+      'globalForceUpdate',
+      'reactivityUpdate',
+      'subscriptionUpdated',
+      'userStatusChanged',
+      'planChanged'
+    ];
+    
+    eventTypes.forEach(eventType => {
+      eventBus.emit(eventType, eventData);
     });
     
     // ✅ Show celebration for upgrades
@@ -787,8 +1018,18 @@ function setupGlobalSubscriptionManagement() {
     }
   };
   
-  // ✅ Register global DOM event listener
-  window.addEventListener('userSubscriptionChanged', handleGlobalSubscriptionChange);
+  // ✅ Register enhanced global DOM event listeners
+  const eventTypesToListen = [
+    'userSubscriptionChanged',
+    'userStatusChanged', 
+    'subscriptionUpdated',
+    'globalForceUpdate',
+    'reactivityUpdate'
+  ];
+  
+  eventTypesToListen.forEach(eventType => {
+    window.addEventListener(eventType, handleGlobalSubscriptionChange);
+  });
   
   // ✅ Store reference for cleanup
   if (!window.globalEventHandlers) {
@@ -799,19 +1040,29 @@ function setupGlobalSubscriptionManagement() {
   }
   window.globalEventHandlers.subscriptionHandlers.push(handleGlobalSubscriptionChange);
   
-  // ✅ Enhanced event bus subscription listeners
+  // ✅ ENHANCED event bus subscription listeners with better error handling
   eventBus.on('userStatusChanged', (data) => {
     console.log('👤 User status changed via event bus:', data);
     
     // Sync with localStorage
     if (data.newStatus) {
-      localStorage.setItem('userStatus', data.newStatus);
+      try {
+        localStorage.setItem('userStatus', data.newStatus);
+        localStorage.setItem('statusUpdateTime', Date.now().toString());
+      } catch (storageError) {
+        console.warn('⚠️ localStorage sync failed:', storageError);
+      }
     }
     
-    // Force app update
+    // Force app update with error handling
     if (app?._instance) {
       try {
         app._instance.proxy.$forceUpdate();
+        
+        // Also trigger $nextTick for delayed components
+        app._instance.proxy.$nextTick(() => {
+          console.log('🔄 NextTick update completed');
+        });
       } catch (error) {
         console.warn('⚠️ Failed to force update on status change:', error);
       }
@@ -851,16 +1102,62 @@ function setupGlobalSubscriptionManagement() {
     window.dispatchEvent(domEvent);
   });
   
-  console.log('✅ Global subscription management setup complete');
+  // ✅ NEW: Enhanced storage event listener for cross-tab sync
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
+      console.log('📡 Cross-tab userStatus change detected:', event.oldValue, '→', event.newValue);
+      
+      const newStatus = event.newValue || 'free';
+      const oldStatus = event.oldValue || 'free';
+      
+      // Trigger global event for cross-tab sync
+      window.triggerGlobalEvent('userStatusChanged', {
+        oldStatus,
+        newStatus,
+        source: 'cross-tab-sync',
+        timestamp: Date.now()
+      });
+    }
+  });
+  
+  // ✅ NEW: Periodic status consistency check
+  setInterval(() => {
+    try {
+      const storeStatus = store.getters['user/userStatus'];
+      const localStatus = localStorage.getItem('userStatus');
+      
+      if (storeStatus && localStatus && storeStatus !== localStatus) {
+        console.log('🔄 Periodic check: Status mismatch detected, syncing...', {
+          store: storeStatus,
+          localStorage: localStatus
+        });
+        
+        // Prefer store status and update localStorage
+        localStorage.setItem('userStatus', storeStatus);
+        
+        // Trigger sync event
+        window.triggerGlobalEvent('userStatusChanged', {
+          oldStatus: localStatus,
+          newStatus: storeStatus,
+          source: 'periodic-sync',
+          timestamp: Date.now()
+        });
+      }
+    } catch (error) {
+      console.warn('⚠️ Periodic status check failed:', error);
+    }
+  }, 30000); // Check every 30 seconds
+  
+  console.log('✅ Enhanced global subscription management setup complete');
 }
 
 // ============================================================================
-// 🚀 APPLICATION INITIALIZATION (ORIGINAL)
+// 🚀 APPLICATION INITIALIZATION (ENHANCED)
 // ============================================================================
 
 async function initializeApplication() {
   try {
-    console.log('🚀 Starting application initialization...');
+    console.log('🚀 Starting enhanced application initialization...');
     
     // Initialize store first
     await initializeStore();
@@ -879,12 +1176,32 @@ async function initializeApplication() {
 }
 
 // ============================================================================
-// 🌟 GLOBAL ERROR HANDLING (ORIGINAL)
+// 🌟 ENHANCED GLOBAL ERROR HANDLING WITH USER STATUS RECOVERY
 // ============================================================================
 
-// Global JavaScript error handler
+// Enhanced global JavaScript error handler
 window.addEventListener('error', (event) => {
   console.error('❌ Global JavaScript error:', event.error);
+  
+  // Check if error is related to user status/arrays
+  if (event.error?.message?.includes('length') || 
+      event.error?.message?.includes('Cannot read properties of undefined')) {
+    console.log('🔄 Attempting user status recovery after global error...');
+    
+    try {
+      // Force store update
+      store.commit('user/FORCE_UPDATE');
+      
+      // Trigger global reactivity update
+      window.triggerGlobalEvent('globalForceUpdate', {
+        reason: 'global-error-recovery',
+        originalError: event.error?.message,
+        timestamp: Date.now()
+      });
+    } catch (recoveryError) {
+      console.error('❌ Error recovery failed:', recoveryError);
+    }
+  }
   
   eventBus.emit('globalJavaScriptError', {
     error: event.error?.message || 'Unknown error',
@@ -895,9 +1212,25 @@ window.addEventListener('error', (event) => {
   });
 });
 
-// Unhandled promise rejection handler
+// Enhanced unhandled promise rejection handler
 window.addEventListener('unhandledrejection', (event) => {
   console.error('❌ Unhandled promise rejection:', event.reason);
+  
+  // Check if rejection is related to user status operations
+  if (event.reason?.message?.includes('userStatus') || 
+      event.reason?.message?.includes('subscription')) {
+    console.log('🔄 Attempting user status recovery after promise rejection...');
+    
+    try {
+      window.triggerGlobalEvent('globalForceUpdate', {
+        reason: 'promise-rejection-recovery',
+        originalError: event.reason?.message,
+        timestamp: Date.now()
+      });
+    } catch (recoveryError) {
+      console.error('❌ Promise rejection recovery failed:', recoveryError);
+    }
+  }
   
   eventBus.emit('unhandledPromiseRejection', {
     reason: event.reason?.message || event.reason,
@@ -906,14 +1239,27 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 // ============================================================================
-// 🔧 GLOBAL HELPER FUNCTIONS (ORIGINAL)
+// 🔧 ENHANCED GLOBAL HELPER FUNCTIONS FOR COMPONENTS
 // ============================================================================
 
-// Helper functions for components
+// Enhanced helper functions for components
 window.addEventListener('DOMContentLoaded', () => {
-  // Status change helper
+  // ✅ ENHANCED Status change helper with validation
   window.emitUserStatusChange = (oldStatus, newStatus, source = 'unknown') => {
-    eventBus.emit('userStatusChanged', { 
+    console.log('🔧 Helper: emitUserStatusChange called', { oldStatus, newStatus, source });
+    
+    // Validate status values
+    const validStatuses = ['free', 'start', 'pro', 'premium'];
+    if (!validStatuses.includes(newStatus)) {
+      console.error('❌ Invalid newStatus:', newStatus);
+      return;
+    }
+    
+    // Update localStorage immediately
+    localStorage.setItem('userStatus', newStatus);
+    
+    // Trigger through global event system
+    window.triggerGlobalEvent('userStatusChanged', { 
       oldStatus, 
       newStatus, 
       source,
@@ -921,27 +1267,89 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   };
   
-  // Force update helper
+  // ✅ ENHANCED Force update helper
   window.emitForceUpdate = (reason = 'manual') => {
-    eventBus.emit('forceUpdate', { 
+    console.log('🔧 Helper: emitForceUpdate called', { reason });
+    
+    // Trigger through global event system
+    window.triggerGlobalEvent('globalForceUpdate', { 
       reason,
       timestamp: Date.now() 
     });
+    
+    // Also force store update
+    try {
+      store.commit('user/FORCE_UPDATE');
+    } catch (error) {
+      console.warn('⚠️ Store force update failed:', error);
+    }
   };
   
-  // User change listener helper
+  // ✅ ENHANCED User change listener helper with cleanup
   window.listenToUserChanges = (callback) => {
-    const events = ['userStatusChanged', 'promocodeApplied', 'featuresUpdated', 'forceUpdate'];
+    console.log('🔧 Helper: listenToUserChanges called');
+    
+    const events = [
+      'userStatusChanged', 
+      'promocodeApplied', 
+      'featuresUpdated', 
+      'globalForceUpdate',
+      'subscriptionUpdated',
+      'reactivityUpdate'
+    ];
+    
+    // Register EventBus listeners
     events.forEach(event => eventBus.on(event, callback));
     
+    // Also register DOM event listener for userSubscriptionChanged
+    window.addEventListener('userSubscriptionChanged', callback);
+    
+    // Return cleanup function
     return () => {
       events.forEach(event => eventBus.off(event, callback));
+      window.removeEventListener('userSubscriptionChanged', callback);
+      console.log('🧹 Helper: User change listeners cleaned up');
     };
+  };
+  
+  // ✅ NEW: Direct store status getter helper
+  window.getCurrentUserStatus = () => {
+    try {
+      return store.getters['user/userStatus'] || 'free';
+    } catch (error) {
+      console.warn('⚠️ Failed to get user status from store:', error);
+      return localStorage.getItem('userStatus') || 'free';
+    }
+  };
+  
+  // ✅ NEW: Status sync helper for components
+  window.syncUserStatus = () => {
+    try {
+      const storeStatus = store.getters['user/userStatus'];
+      const localStatus = localStorage.getItem('userStatus');
+      
+      console.log('🔄 Helper: syncUserStatus', { store: storeStatus, local: localStatus });
+      
+      if (storeStatus && localStatus && storeStatus !== localStatus) {
+        localStorage.setItem('userStatus', storeStatus);
+        window.triggerGlobalEvent('userStatusChanged', {
+          oldStatus: localStatus,
+          newStatus: storeStatus,
+          source: 'sync-helper',
+          timestamp: Date.now()
+        });
+      }
+      
+      return storeStatus || localStatus || 'free';
+    } catch (error) {
+      console.error('❌ Helper: syncUserStatus failed:', error);
+      return 'free';
+    }
   };
 });
 
 // ============================================================================
-// 📊 PERFORMANCE MONITORING (ORIGINAL)
+// 📊 ENHANCED PERFORMANCE MONITORING WITH USER STATUS TRACKING
 // ============================================================================
 
 if (import.meta.env.DEV) {
@@ -959,7 +1367,7 @@ if (import.meta.env.DEV) {
     }
   });
   
-  // Track store mutations for debugging
+  // Enhanced store mutation tracking for user status
   let mutationCount = 0;
   store.subscribe((mutation, state) => {
     mutationCount++;
@@ -968,20 +1376,28 @@ if (import.meta.env.DEV) {
       console.log(`🔄 User store mutation #${mutationCount}:`, mutation.type, mutation.payload);
     }
     
-    // Track subscription-related mutations
+    // Track subscription-related mutations with enhanced details
     if (mutation.type.includes('STATUS') || mutation.type.includes('SUBSCRIPTION') || mutation.type.includes('UPDATE')) {
+      const currentStatus = state.user?.userStatus || 'free';
+      
       eventBus.emit('storeMutation', {
         type: mutation.type,
         payload: mutation.payload,
+        currentStatus: currentStatus,
         count: mutationCount,
         timestamp: Date.now()
       });
+      
+      // Log status changes specifically
+      if (mutation.type.includes('STATUS')) {
+        console.log(`📊 Status mutation detected: ${mutation.type} → ${currentStatus}`);
+      }
     }
   });
 }
 
 // ============================================================================
-// 🐛 DEVELOPMENT DEBUGGING TOOLS (ORIGINAL)
+// 🐛 ENHANCED DEVELOPMENT DEBUGGING TOOLS WITH USER STATUS HELPERS
 // ============================================================================
 
 if (import.meta.env.DEV) {
@@ -993,34 +1409,100 @@ if (import.meta.env.DEV) {
   window.$appLifecycle = appLifecycle;
   window.$authInitPromise = authInitPromise;
   
+  // ✅ ENHANCED: User status debugging helpers
+  window.debugUserStatus = {
+    getCurrentStatus: () => {
+      const storeStatus = store.getters['user/userStatus'];
+      const localStatus = localStorage.getItem('userStatus');
+      const isPremium = store.getters['user/isPremiumUser'];
+      
+      console.log('📊 Current User Status Debug:', {
+        store: storeStatus,
+        localStorage: localStatus,
+        isPremium: isPremium,
+        features: store.getters['user/features'],
+        forceCounter: store.getters['user/forceUpdateCounter']
+      });
+      
+      return { storeStatus, localStatus, isPremium };
+    },
+    
+    setStatus: (newStatus) => {
+      console.log('🔧 Debug: Setting user status to:', newStatus);
+      store.dispatch('user/updateUserStatus', newStatus);
+    },
+    
+    triggerEvents: (status = 'start') => {
+      console.log('🔧 Debug: Triggering status events for:', status);
+      window.triggerGlobalEvent('userStatusChanged', {
+        oldStatus: 'free',
+        newStatus: status,
+        source: 'debug-trigger',
+        timestamp: Date.now()
+      });
+    },
+    
+    forceUpdate: () => {
+      console.log('🔧 Debug: Forcing global update');
+      store.commit('user/FORCE_UPDATE');
+      window.triggerGlobalEvent('globalForceUpdate', {
+        reason: 'debug-force',
+        timestamp: Date.now()
+      });
+    },
+    
+    testReactivity: () => {
+      console.log('🔧 Debug: Testing reactivity chain');
+      
+      const statuses = ['free', 'start', 'pro'];
+      let index = 0;
+      
+      const testInterval = setInterval(() => {
+        const testStatus = statuses[index];
+        console.log(`🔧 Debug: Testing status ${index + 1}/3:`, testStatus);
+        
+        window.debugUserStatus.setStatus(testStatus);
+        
+        index++;
+        if (index >= statuses.length) {
+          clearInterval(testInterval);
+          console.log('✅ Debug: Reactivity test completed');
+        }
+      }, 2000);
+    }
+  };
+  
   console.log(`
-🐛 DEVELOPMENT DEBUG COMMANDS AVAILABLE:
+🐛 ENHANCED DEVELOPMENT DEBUG COMMANDS AVAILABLE:
 
-📊 SUBSCRIPTION DEBUGGING:
-- debugSubscription.getCurrentStatus(): Check status across all sources
-- debugSubscription.syncStatus(): Sync store and localStorage  
-- debugSubscription.testPromocodeFlow('pro'): Test promocode application
-- debugSubscription.testPaymentFlow('start'): Test payment completion
+📊 USER STATUS DEBUGGING:
+- debugUserStatus.getCurrentStatus(): Check status across all sources
+- debugUserStatus.setStatus('pro'): Set user status directly
+- debugUserStatus.triggerEvents('start'): Trigger status change events
+- debugUserStatus.forceUpdate(): Force global reactivity update
+- debugUserStatus.testReactivity(): Test status change chain
 
 🔐 AUTHENTICATION DEBUGGING:
-- debugAuth.getCurrentUser(): Get comprehensive user state
-- debugAuth.clearUserState(): Clear all user data
-- debugAuth.testSaveUser(): Test server user save manually
-
-🎯 QUICK ACCESS:
 - $store: Vuex store instance
 - $eventBus: Global event bus
 - $userStatus(): Get current user status
 - $appLifecycle: App initialization state
 - $authInitPromise: Auth initialization promise
+
+🔧 GLOBAL HELPERS:
+- window.triggerGlobalEvent(eventName, data): Trigger global events
+- window.emitUserStatusChange(old, new, source): Emit status change
+- window.emitForceUpdate(reason): Force global update
+- window.syncUserStatus(): Sync status between store and localStorage
+- window.getCurrentUserStatus(): Get current status safely
   `);
 }
 
 // ============================================================================
-// 🎬 APPLICATION STARTUP (ORIGINAL)
+// 🎬 APPLICATION STARTUP (ENHANCED)
 // ============================================================================
 
-// Start the application
+// Start the enhanced application
 initializeApplication().catch(error => {
   console.error('❌ Critical application startup failure:', error);
   
@@ -1046,3 +1528,27 @@ initializeApplication().catch(error => {
     </div>
   `;
 });
+
+// ============================================================================
+// 🚀 FINAL SETUP: EXPOSE CRITICAL FUNCTIONS GLOBALLY
+// ============================================================================
+
+// Make critical functions available globally for emergency use
+window.forceUserStatusSync = () => {
+  try {
+    const currentStatus = store.getters['user/userStatus'] || 'free';
+    window.triggerGlobalEvent('userStatusChanged', {
+      oldStatus: null,
+      newStatus: currentStatus,
+      source: 'emergency-sync',
+      timestamp: Date.now()
+    });
+    console.log('🚨 Emergency user status sync triggered');
+  } catch (error) {
+    console.error('❌ Emergency sync failed:', error);
+  }
+};
+
+console.log('✅ Enhanced main.js with complete user status reactivity loaded successfully!');
+console.log('🔧 Use window.debugUserStatus for debugging user status issues');
+console.log('🚨 Use window.forceUserStatusSync() for emergency status sync');

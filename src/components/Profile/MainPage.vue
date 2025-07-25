@@ -258,6 +258,7 @@
 
 <script>
 import { mapGetters } from 'vuex';
+import { userStatusMixin } from '@/composables/useUserStatus';
 import { 
   getTopics, 
   getTopicById, 
@@ -268,9 +269,6 @@ import {
   addToStudyList,
   removeFromStudyList 
 } from '@/api';
-// Assuming 'auth' from '@/firebase' is used for user authentication logic,
-// but it's not directly used in the provided methods, so keeping it commented if not needed.
-// import { auth } from '@/firebase';
 import StudyCard from '@/components/Profile/StudyCard.vue';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
 import { eventBus } from '@/main.js';
@@ -281,6 +279,9 @@ export default {
     StudyCard, 
     PaymentModal 
   },
+  
+  // ✅ ENHANCED: Add the comprehensive user status mixin
+  mixins: [userStatusMixin],
   
   data() {
     return {
@@ -293,10 +294,10 @@ export default {
       // ============================================================================
       // 📚 RECOMMENDATIONS DATA
       // ============================================================================
-      allRecommendations: [], // All available recommendations from API
-      displayedRecommendations: [], // Currently displayed subset (10 random)
+      allRecommendations: [],
+      displayedRecommendations: [],
       recommendationsLastFetch: null,
-      recommendationsSource: null, // 'lessons' | 'topics' | 'fallback'
+      recommendationsSource: null,
       
       // ============================================================================
       // 📖 STUDY LIST DATA
@@ -323,10 +324,10 @@ export default {
       loadingRecommendations: true,
       loadingStudyList: true,
       loadingOperations: {
-        add: new Set(),    // Topics being added to study list
-        start: new Set(),  // Topics being started
-        remove: new Set(), // Topics being removed
-        refresh: new Set() // Data being refreshed
+        add: new Set(),
+        start: new Set(),
+        remove: new Set(),
+        refresh: new Set()
       },
       
       // ============================================================================
@@ -355,27 +356,11 @@ export default {
       lastErrorTime: null,
       
       // ============================================================================
-      // 🔄 REACTIVITY & PERFORMANCE
-      // ============================================================================
-      componentKey: 0,
-      updateTimer: null,
-      lastFilterChange: Date.now(),
-      // forceUpdateCounter is now mapped from Vuex, remove from data
-      // forceUpdateCounter: 0, 
-      
-      // ============================================================================
       // 🔔 NOTIFICATION SYSTEM
       // ============================================================================
       notifications: [],
       notificationCounter: 0,
       maxNotifications: 5,
-      
-      // ============================================================================
-      // 🧹 EVENT CLEANUP TRACKING
-      // ============================================================================
-      unsubscribeStore: null,
-      eventCleanupFunctions: [],
-      globalEventListeners: new Map(),
       
       // ============================================================================
       // 📊 PERFORMANCE & ANALYTICS
@@ -393,7 +378,7 @@ export default {
       // ============================================================================
       config: {
         enableAutoRefresh: true,
-        autoRefreshInterval: 300000, // 5 minutes
+        autoRefreshInterval: 300000,
         maxRecommendations: 10,
         enableNotifications: true,
         enableProgressTracking: true,
@@ -404,9 +389,8 @@ export default {
   
   computed: {
     // ============================================================================
-    // 👤 USER STATUS COMPUTED PROPERTIES
+    // 👤 USER STATUS COMPUTED PROPERTIES (Enhanced with mixin)
     // ============================================================================
-    // ✅ ENHANCED: Reactive user status tracking
     ...mapGetters('user', [
       'userStatus',
       'isPremiumUser', 
@@ -414,39 +398,19 @@ export default {
       'isProUser',
       'isFreeUser',
       'hasActiveSubscription',
-      'getUser', // Keep if still used directly in template or other methods
+      'getUser',
       'subscriptionDetails',
-      'forceUpdateCounter' // Mapped from Vuex
+      'forceUpdateCounter'
     ]),
     
-    // ✅ NEW: Reactive current user status with multiple triggers
+    // ✅ ENHANCED: Reactive current user status with multiple triggers (from mixin)
     currentUserStatus() {
-      // The `counter` variable explicitly uses `this.forceUpdateCounter` from Vuex
-      // to ensure this computed property reacts to changes in the Vuex store's counter.
-      const counter = this.forceUpdateCounter || 0; 
-      const storeStatus = this.userStatus;
-      const localStatus = localStorage.getItem('userStatus');
-      const computedStatus = storeStatus || localStatus || 'free';
-      
-      // Auto-fix inconsistencies
-      if (storeStatus && localStatus && storeStatus !== localStatus) {
-        console.log(`🔧 MainPage: Auto-fixing status inconsistency: store(${storeStatus}) !== localStorage(${localStatus})`);
-        localStorage.setItem('userStatus', storeStatus);
-      }
-      
-      return computedStatus;
+      return this.reactiveUserStatus || 'free';
     },
     
-    // ✅ ENHANCED: User status label with reactivity
+    // ✅ ENHANCED: User status label with reactivity (from mixin)
     userStatusLabel() {
-      const status = this.currentUserStatus;
-      const labels = {
-        'pro': 'Pro',
-        'start': 'Start', 
-        'premium': 'Start', // Alias
-        'free': 'Free'
-      };
-      return labels[status] || 'Free';
+      return this.userStatusLabel || 'Free';
     },
     
     // ============================================================================
@@ -528,56 +492,6 @@ export default {
   },
   
   // ============================================================================
-  // 👀 WATCHERS
-  // ============================================================================
-  
-  watch: {
-    // ✅ NEW: Watch for user status changes from store (using `userStatus` from Vuex)
-    userStatus: {
-      handler(newStatus, oldStatus) {
-        console.log('📊 MainPage: User status changed from', oldStatus, 'to:', newStatus);
-        this.handleUserStatusChange(newStatus, oldStatus);
-      },
-      immediate: true
-    },
-    
-    // ✅ NEW: Watch for force update counter changes (from Vuex getter)
-    forceUpdateCounter: {
-      handler(newCounter, oldCounter) {
-        console.log('📊 MainPage: Force update counter changed:', oldCounter, '→', newCounter);
-        this.forceReactivityUpdate(); // Call the force reactivity method
-      },
-      immediate: true
-    },
-    
-    // ✅ NEW: Watch for subscription details changes (from Vuex getter)
-    subscriptionDetails: {
-      handler(newSub, oldSub) {
-        if (newSub !== oldSub) {
-          console.log('💳 MainPage: Subscription details changed:', newSub);
-          this.forceReactivityUpdate(); // Call the force reactivity method
-        }
-      },
-      deep: true,
-      immediate: true
-    },
-
-    // Watch for search query changes
-    searchQuery: {
-      handler() {
-        this.debouncedFilterUpdate();
-      }
-    },
-    
-    // Watch for filter changes
-    filterSubject() { this.debouncedFilterUpdate(); },
-    filterLevel() { this.debouncedFilterUpdate(); },
-    filterType() { this.debouncedFilterUpdate(); },
-    filterProgress() { this.debouncedFilterUpdate(); },
-    sortBy() { this.debouncedFilterUpdate(); }
-  },
-  
-  // ============================================================================
   // 🔄 LIFECYCLE HOOKS
   // ============================================================================
   
@@ -586,24 +500,15 @@ export default {
     console.log('📱 MainPage: Component mounted');
     
     try {
-      // Record mount time
       this.performanceMetrics.mountTime = startTime;
       
-      // Validate user authentication
       await this.validateUserAuthentication();
-      
-      // ✅ ENHANCED: Setup comprehensive global event system
-      this.setupGlobalEventSystem();
-      
-      // Initialize data loading
       await this.initializeDataLoading();
       
-      // Setup auto-refresh if enabled
       if (this.config.enableAutoRefresh) {
         this.setupAutoRefresh();
       }
       
-      // Setup performance monitoring
       if (this.config.enableAnalytics) {
         this.setupPerformanceMonitoring();
       }
@@ -611,7 +516,6 @@ export default {
       const mountTime = Date.now() - startTime;
       console.log(`✅ MainPage: Mounted successfully in ${mountTime}ms`);
       
-      // Show welcome notification
       if (this.config.enableNotifications && !this.hasErrors) {
         this.showNotification('Добро пожаловать! Данные загружены.', 'success', 3000);
       }
@@ -628,6 +532,18 @@ export default {
   },
   
   methods: {
+    // ✅ ENHANCED: Override mixin method for status change notifications
+    onUserStatusChanged(newStatus, oldStatus) {
+      console.log(`🔔 MainPage: User status changed from ${oldStatus} to ${newStatus}`);
+      
+      if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
+        const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
+        if (this.$toast) {
+          this.$toast.success(`🎉 ${planLabel} подписка активирована!`, { duration: 5000 });
+        }
+      }
+    },
+    
     // ============================================================================
     // 🚀 INITIALIZATION METHODS
     // ============================================================================
@@ -650,117 +566,16 @@ export default {
       console.log('✅ User authentication validated:', this.userId);
     },
     
-    // ✅ NEW: Enhanced global event system setup (like UserSection)
-    setupGlobalEventSystem() {
-      console.log('🔗 MainPage: Setting up global event system...');
-      
-      // ===== SUBSCRIPTION CHANGE HANDLERS =====
-      // Event handler for custom DOM event 'userSubscriptionChanged'
-      this.handleSubscriptionChange = (event) => {
-        console.log('📡 MainPage: Subscription change received:', event.detail);
-        
-        const { plan, source, oldPlan } = event.detail;
-        
-        // Force immediate UI update
-        this.forceReactivityUpdate();
-        
-        // Update performance metrics
-        this.performanceMetrics.successfulOperations++;
-        
-        // Show celebration for upgrades
-        if (plan && plan !== 'free' && oldPlan === 'free') {
-          const planLabel = plan === 'pro' ? 'Pro' : 'Start';
-          const sourceText = source === 'promocode' ? 'промокоду' : 'оплате';
-          
-          this.showNotification(
-            `🎉 Поздравляем! ${planLabel} подписка активирована по ${sourceText}!`,
-            'success',
-            5000
-          );
-        }
-      };
-      
-      // Event handler for EventBus 'userStatusChanged'
-      this.handleUserStatusChange = (data) => {
-        console.log('📡 MainPage: User status changed via event bus:', data);
-        this.forceReactivityUpdate();
-      };
-      
-      // Event handler for EventBus 'promocodeApplied'
-      this.handlePromocodeApplied = (data) => {
-        console.log('📡 MainPage: Promocode applied:', data);
-        
-        if (data.newStatus && data.newStatus !== 'free') {
-          const planLabel = data.newStatus === 'pro' ? 'Pro' : 'Start';
-          this.showNotification(
-            `🎟️ Промокод применён! ${planLabel} план активирован!`,
-            'success',
-            5000
-          );
-        }
-        
-        this.forceReactivityUpdate();
-      };
-      
-      // Event handler for EventBus 'globalForceUpdate'
-      this.handleGlobalForceUpdate = (data) => {
-        console.log('📡 MainPage: Global force update:', data);
-        this.forceReactivityUpdate();
-      };
-      
-      // Event handler for EventBus 'paymentCompleted'
-      this.handlePaymentCompleted = (data) => {
-        console.log('📡 MainPage: Payment completed:', data);
-        this.handleSubscriptionChange({ detail: data });
-      };
-      
-      // ===== REGISTER EVENT LISTENERS =====
-      
-      // DOM event listeners (if applicable to window object)
-      if (typeof window !== 'undefined') {
-        window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
-        this.globalEventListeners.set('userSubscriptionChanged', this.handleSubscriptionChange);
-      }
-      
-      // Event bus listeners
-      const eventBusEvents = [
-        ['userStatusChanged', this.handleUserStatusChange],
-        ['promocodeApplied', this.handlePromocodeApplied],
-        ['globalForceUpdate', this.handleGlobalForceUpdate],
-        ['subscriptionUpgrade', this.handlePromocodeApplied], // This seems to be a duplicate or alias of promocodeApplied
-        ['paymentCompleted', this.handlePaymentCompleted]
-      ];
-      
-      eventBusEvents.forEach(([event, handler]) => {
-        eventBus.on(event, handler);
-        this.eventCleanupFunctions.push(() => {
-          eventBus.off(event, handler);
-        });
-      });
-      
-      // ===== STORE MUTATION LISTENER =====
-      this.unsubscribeStore = this.$store.subscribe((mutation) => {
-        if (this.isUserRelatedMutation(mutation)) {
-          console.log('📊 MainPage: Store mutation detected:', mutation.type);
-          this.forceReactivityUpdate();
-        }
-      });
-      
-      console.log('✅ MainPage: Global event system setup complete');
-    },
-    
     async initializeDataLoading() {
       console.log('📊 Initializing data loading...');
       
       const startTime = Date.now();
       
-      // Load both datasets in parallel with comprehensive error handling
       const results = await Promise.allSettled([
         this.fetchRecommendations(),
         this.fetchStudyList()
       ]);
       
-      // Process results
       const [recommendationsResult, studyListResult] = results;
       
       if (recommendationsResult.status === 'fulfilled') {
@@ -782,7 +597,6 @@ export default {
       
       console.log(`⚡ Data loading completed in ${loadTime}ms`);
       
-      // Update performance counters
       this.performanceMetrics.totalApiCalls += 2;
       if (!this.hasErrors) {
         this.performanceMetrics.successfulOperations++;
@@ -812,7 +626,6 @@ export default {
         }
       }, this.config.autoRefreshInterval);
       
-      // Cleanup function
       this.eventCleanupFunctions.push(() => {
         if (this.autoRefreshInterval) {
           clearInterval(this.autoRefreshInterval);
@@ -825,13 +638,11 @@ export default {
       
       console.log('📈 Setting up performance monitoring...');
       
-      // Track visibility changes
       this.handleVisibilityChange = () => {
         if (document.hidden) {
           console.log('📱 MainPage: Hidden');
         } else {
           console.log('📱 MainPage: Visible');
-          // Refresh data when page becomes visible again
           setTimeout(() => {
             if (this.hasData && Date.now() - this.performanceMetrics.lastDataFetch > 60000) {
               this.refreshAllData();
@@ -847,87 +658,6 @@ export default {
     },
     
     // ============================================================================
-    // 🔄 REACTIVITY & UPDATE METHODS
-    // ============================================================================
-    
-    // ✅ NEW: Enhanced reactivity update
-    forceReactivityUpdate() {
-      this.componentKey++;
-      // It's important that `forceUpdateCounter` is a reactive property (e.g., from Vuex or `data`).
-      // Since it's now mapped from Vuex, ensure your Vuex store has a mutation to increment it.
-      // For this example, I'm assuming such a mutation exists and the getter reflects it.
-      // If it was a local data property, it would be `this.forceUpdateCounter++;`.
-      // Given your original snippet for `forceReactivityUpdate` already had `this.forceUpdateCounter++`,
-      // and it's also in the proposed enhanced snippet, I'll keep it as a local state update.
-      // However, it's generally better to commit a mutation if `forceUpdateCounter` is truly in Vuex.
-      // For strict adherence to the provided code, I'll keep it as `this.forceUpdateCounter++` in data,
-      // and map the Vuex one as `mappedForceUpdateCounter` if both are needed, but that seems redundant.
-      // For simplicity and based on the instruction to "remove from data" if mapped, I'll assume
-      // the mapped `forceUpdateCounter` itself is the source of truth, and this method just triggers
-      // Vue's reactivity. If you *intended* for `forceUpdateCounter` to be a local counter *in addition*
-      // to the Vuex one, please clarify. Assuming `forceUpdateCounter` is purely from Vuex here.
-      
-      // Trigger Vue's reactivity system
-      this.$forceUpdate();
-      
-      // Additional delayed updates for maximum compatibility
-      this.$nextTick(() => {
-        this.$forceUpdate();
-        
-        setTimeout(() => {
-          this.$forceUpdate();
-        }, 100);
-      });
-      
-      console.log(`🔄 MainPage: Force update (key: ${this.componentKey})`);
-    },
-    
-    debouncedFilterUpdate() {
-      clearTimeout(this.updateTimer);
-      this.lastFilterChange = Date.now();
-      
-      this.updateTimer = setTimeout(() => {
-        this.forceReactivityUpdate();
-        console.log('🎯 Filters updated');
-      }, 300);
-    },
-    
-    // ✅ NEW: Handle user status changes (this method is now a standalone one, called by watcher and eventBus handler)
-    handleUserStatusChange(newStatus, oldStatus) {
-      if (!newStatus || newStatus === oldStatus) return;
-      
-      console.log(`👤 MainPage: Handling status change ${oldStatus} → ${newStatus}`);
-      
-      // Update localStorage immediately
-      localStorage.setItem('userStatus', newStatus);
-      
-      // Force reactivity update
-      this.forceReactivityUpdate();
-      
-      // Update performance metrics
-      this.performanceMetrics.successfulOperations++;
-      
-      // Show status change notification
-      if (oldStatus && oldStatus !== 'free' && newStatus === 'free') {
-        this.showNotification('Подписка истекла', 'warning');
-      }
-    },
-    
-    // ✅ NEW: Check if mutation is user-related
-    isUserRelatedMutation(mutation) {
-      return mutation.type.includes('user/') && 
-             (mutation.type.includes('STATUS') || 
-              mutation.type.includes('SUBSCRIPTION') ||
-              mutation.type.includes('UPDATE') || // e.g., USER_INFO_UPDATE
-              mutation.type.includes('FORCE')); // e.g., INCREMENT_FORCE_UPDATE_COUNTER
-    },
-
-    // A method to trigger reactivity update when `forceUpdateCounter` changes (used by watcher)
-    triggerReactivityUpdate() {
-      this.forceReactivityUpdate(); // Simply call the main force update method
-    },
-
-    // ============================================================================
     // 📊 DATA FETCHING METHODS
     // ============================================================================
     
@@ -941,21 +671,18 @@ export default {
         console.log('🔍 Fetching recommendations...');
         this.performanceMetrics.totalApiCalls++;
         
-        // Strategy 1: Build from lessons (primary approach)
         let lessonsResult;
         try {
           lessonsResult = await getAllLessons();
           this.performanceMetrics.totalApiCalls++;
         } catch (apiError) {
           console.error('❌ getAllLessons failed:', apiError);
-          // Fallback to direct topics if primary strategy fails
           return this.fetchRecommendationsFallback(); 
         }
         
         if (lessonsResult?.success && lessonsResult.data?.length > 0) {
           console.log(`📚 Got ${lessonsResult.data.length} lessons for building recommendations`);
           
-          // Build topics from lessons
           const topics = this.buildTopicsFromLessons(lessonsResult.data);
           
           if (topics.length > 0) {
@@ -967,11 +694,10 @@ export default {
             
             console.log(`✅ Built ${topics.length} recommendations from lessons in ${Date.now() - startTime}ms`);
             this.performanceMetrics.successfulOperations++;
-            return; // Successfully fetched from lessons, exit
+            return;
           }
         }
         
-        // Fallback to direct topics if lessons method didn't yield results
         return this.fetchRecommendationsFallback();
         
       } catch (error) {
@@ -1000,7 +726,6 @@ export default {
         if (topicsResult?.success && topicsResult.data?.length > 0) {
           console.log(`📚 Found ${topicsResult.data.length} topics directly`);
           
-          // Enrich topics with lessons
           const enrichedTopics = await this.enrichTopicsWithLessons(
             topicsResult.data.slice(0, 20)
           );
@@ -1014,7 +739,7 @@ export default {
             
             console.log(`✅ Loaded ${enrichedTopics.length} enriched topics in ${Date.now() - startTime}ms`);
             this.performanceMetrics.successfulOperations++;
-            return; // Successfully fetched from topics, exit
+            return;
           }
         }
         
@@ -1066,7 +791,6 @@ export default {
         
         console.log(`📚 Found ${studyListData.length} study list entries`);
         
-        // Get user progress for calculating completion
         let userProgressData = [];
         try {
           const progressResult = await getUserProgress(this.userId);
@@ -1080,9 +804,8 @@ export default {
           console.warn('⚠️ Failed to load progress data:', progressError.message);
         }
         
-        // Process each study list entry with comprehensive error handling
         const validTopics = [];
-        const processingPromises = studyListData.map(async (entry) => { // Removed index as it's not used
+        const processingPromises = studyListData.map(async (entry) => {
           if (!entry?.topicId) {
             this.invalidTopicsCleanedUp++;
             return null;
@@ -1180,7 +903,6 @@ export default {
           topic.totalTime += this.calculateLessonTime(lesson);
           topic.metadata.originalLessonCount++;
           
-          // Update description with lesson count
           topic.description = `Курс по теме "${topicName}" содержит ${topic.lessonCount} уроков`;
         }
       });
@@ -1197,7 +919,6 @@ export default {
           hasProLessons: topic.lessons.some(l => l.type === 'pro'),
         }))
         .sort((a, b) => {
-          // Sort by subject first, then by level
           if (a.subject !== b.subject) {
             return a.subject.localeCompare(b.subject);
           }
@@ -1250,7 +971,6 @@ export default {
       try {
         console.log(`🔍 Processing study list entry: ${entry.topicId}`);
         
-        // Build comprehensive base topic data from the entry itself (for initial display)
         let topicData = {
           _id: entry.topicId,
           id: entry.topicId,
@@ -1274,7 +994,6 @@ export default {
           }
         };
         
-        // Try to get fresh topic data from API
         try {
           const topicResult = await getTopicById(entry.topicId);
           this.performanceMetrics.totalApiCalls++;
@@ -1283,7 +1002,6 @@ export default {
             const freshData = topicResult.data;
             console.log(`📊 Got fresh data for topic ${entry.topicId}`);
             
-            // Smart merge: preserve study list names if API data lacks them
             const shouldKeepStudyListNames = this.shouldPreserveStudyListNames(freshData);
             
             if (shouldKeepStudyListNames) {
@@ -1324,7 +1042,6 @@ export default {
           topicData.metadata.freshDataError = topicError.message;
         }
         
-        // Get lessons for this topic
         let lessons = entry.lessons || [];
         
         if (lessons.length === 0) {
@@ -1341,10 +1058,8 @@ export default {
           }
         }
         
-        // Calculate comprehensive progress
         const progress = this.calculateTopicProgress(lessons, userProgressData);
         
-        // Build final topic object
         const finalTopic = {
           ...topicData,
           lessons: lessons,
@@ -1403,7 +1118,6 @@ export default {
       const progressPercent = Math.round((completedLessons / lessons.length) * 100);
       const estimatedTimeRemaining = Math.max(0, totalTime - completedTime);
       
-      // Calculate medal based on completion and average stars
       let medal = 'none';
       if (progressPercent === 100 && lessons.length > 0) {
         const avgStars = totalStars / lessons.length;
@@ -1464,7 +1178,6 @@ export default {
         this.performanceMetrics.totalApiCalls++;
         
         if (result?.success !== false) {
-          // Add to local state immediately for responsive UI
           const newStudyItem = {
             _id: topic._id,
             ...studyListData,
@@ -1491,20 +1204,16 @@ export default {
           
           this.studyList.push(newStudyItem);
           
-          // Remove from recommendations
           this.allRecommendations = this.allRecommendations.filter(t => t._id !== topic._id);
           this.displayedRecommendations = this.displayedRecommendations.filter(t => t._id !== topic._id);
           
-          // Refill displayed recommendations if needed
           this.refillDisplayedRecommendations();
           
-          // Update performance metrics
           this.performanceMetrics.successfulOperations++;
           
           this.showNotification('✅ Курс добавлен в ваш список!', 'success');
           console.log(`✅ Topic "${this.getTopicName(topic)}" added successfully`);
           
-          // Background refresh to sync with server
           setTimeout(() => {
             this.fetchStudyList();
           }, 1000);
@@ -1546,7 +1255,6 @@ export default {
       try {
         console.log('🚀 Starting topic:', this.getTopicName(topic));
         
-        // Check access permissions
         const hasAccess = this.hasTopicAccess(topic);
         
         if (!hasAccess) {
@@ -1556,7 +1264,6 @@ export default {
           return;
         }
         
-        // Find the best lesson to start with
         const startingLesson = this.findStartingLesson(topic);
         
         if (startingLesson) {
@@ -1576,7 +1283,6 @@ export default {
           throw new Error('No valid navigation target found');
         }
         
-        // Update performance metrics
         this.performanceMetrics.successfulOperations++;
         
       } catch (error) {
@@ -1598,16 +1304,12 @@ export default {
       try {
         console.log('🗑️ Removing study card:', topicId);
         
-        // Find the topic before removal for undo functionality
         const topicToRemove = this.studyList.find(t => t._id === topicId);
         
-        // Remove from local state immediately for responsive UI
         this.studyList = this.studyList.filter(topic => topic._id !== topicId);
         
-        // Force UI update
         this.forceReactivityUpdate();
         
-        // Try to remove from backend
         try {
           const result = await removeFromStudyList(this.userId, topicId);
           this.performanceMetrics.totalApiCalls++;
@@ -1622,7 +1324,6 @@ export default {
           console.warn('⚠️ Backend removal failed:', backendError.message);
           this.performanceMetrics.failedOperations++;
           
-          // Optionally restore the item on backend failure
           if (topicToRemove) {
             this.studyList.push(topicToRemove);
             this.forceReactivityUpdate();
@@ -1636,7 +1337,6 @@ export default {
         console.error('❌ Remove study card error:', error);
         this.showNotification('Не удалось удалить курс', 'error');
         
-        // Reload study list on critical error
         setTimeout(() => {
           this.fetchStudyList();
         }, 1000);
@@ -1649,7 +1349,6 @@ export default {
     // 🎨 UI HELPER METHODS
     // ============================================================================
     
-    // Topic name extraction with comprehensive fallback strategies
     getTopicName(topic) {
       if (!topic) {
         console.warn('⚠️ getTopicName: No topic provided');
@@ -1657,17 +1356,14 @@ export default {
       }
       
       try {
-        // Priority order for name fields
         const nameFields = ['name', 'topicName', 'topic', 'title'];
         
         for (const field of nameFields) {
           if (topic[field]) {
-            // Handle string values
             if (typeof topic[field] === 'string' && topic[field].trim()) {
               return topic[field].trim();
             }
             
-            // Handle localized object values
             if (typeof topic[field] === 'object' && topic[field] !== null) {
               const localizedName = this.extractLocalizedString(topic[field]);
               if (localizedName) {
@@ -1677,7 +1373,6 @@ export default {
           }
         }
         
-        // Fallback strategies
         return this.generateTopicNameFallback(topic);
         
       } catch (error) {
@@ -1690,7 +1385,6 @@ export default {
       if (!topic) return 'Описание отсутствует';
       
       try {
-        // Try description fields
         const descFields = ['description', 'topicDescription'];
         
         for (const field of descFields) {
@@ -1707,7 +1401,6 @@ export default {
           }
         }
         
-        // Generate description from available data
         return this.generateTopicDescription(topic);
         
       } catch (error) {
@@ -1720,12 +1413,10 @@ export default {
       if (!lesson) return 'Без темы';
       
       try {
-        // Direct topic field
         if (typeof lesson.topic === 'string' && lesson.topic.trim()) {
           return lesson.topic.trim();
         }
         
-        // Localized topic field
         if (lesson.topic && typeof lesson.topic === 'object') {
           const localizedTopic = this.extractLocalizedString(lesson.topic);
           if (localizedTopic) {
@@ -1733,12 +1424,10 @@ export default {
           }
         }
         
-        // Translation field
         if (lesson.translations?.[this.lang]?.topic) {
           return String(lesson.translations[this.lang].topic).trim();
         }
         
-        // Fallback to lesson name
         if (lesson.lessonName?.trim()) {
           return `Тема: ${lesson.lessonName.trim()}`;
         }
@@ -1755,13 +1444,11 @@ export default {
       }
     },
     
-    // Topic type and access control methods
     getTopicType(topic) {
       if (!topic) return 'free';
       
       const type = topic.type || topic.accessType || topic.pricing || topic.plan || topic.tier;
       
-      // Normalize type values
       const normalizedType = String(type).toLowerCase();
       
       if (!normalizedType || normalizedType === 'free' || normalizedType === 'public') {
@@ -1807,17 +1494,14 @@ export default {
     
     hasTopicAccess(topic) {
       const topicType = this.getTopicType(topic);
-      const currentStatus = this.currentUserStatus;
+      const currentStatus = this.reactiveUserStatus;
       
-      // Free topics are always accessible
       if (topicType === 'free') return true;
       
-      // Premium topics require Start or Pro
       if (topicType === 'premium' && (currentStatus === 'start' || currentStatus === 'pro')) {
         return true;
       }
       
-      // Pro topics require Pro subscription
       if (topicType === 'pro' && currentStatus === 'pro') {
         return true;
       }
@@ -1825,28 +1509,8 @@ export default {
       return false;
     },
     
-    // Button state methods
     isInStudyList(topic) {
       return this.studyList.some(t => t._id === topic._id);
-    },
-    
-    getAddButtonIcon(topic) {
-      if (this.loadingOperations.add.has(topic._id)) return '⏳';
-      if (this.isInStudyList(topic)) return '✓';
-      return '+';
-    },
-    
-    getAddButtonText(topic) {
-      if (this.loadingOperations.add.has(topic._id)) return 'Добавление...';
-      if (this.isInStudyList(topic)) return 'Добавлено';
-      return 'Добавить';
-    },
-    
-    getAddButtonTitle(topic) {
-      if (this.isInStudyList(topic)) {
-        return 'Уже в списке изучения';
-      }
-      return `Добавить "${this.getTopicName(topic)}" в мои курсы`;
     },
     
     getStartButtonClass(topic) {
@@ -1895,7 +1559,6 @@ export default {
         const topicType = this.getTopicType(topic);
         const progress = topic.progress?.percent || 0;
         
-        // Text search filter
         if (this.searchQuery?.trim()) {
           const query = this.searchQuery.toLowerCase();
           const searchTargets = [
@@ -1908,24 +1571,20 @@ export default {
           if (!matchesSearch) return false;
         }
         
-        // Subject filter
         if (this.filterSubject && topic.subject !== this.filterSubject) {
           return false;
         }
         
-        // Level filter
         if (this.filterLevel) {
           const topicLevel = parseInt(topic.level) || 1;
           const filterLevel = parseInt(this.filterLevel);
           if (topicLevel !== filterLevel) return false;
         }
         
-        // Type filter
         if (this.filterType && topicType !== this.filterType) {
           return false;
         }
         
-        // Progress filter (only applies to study list)
         if (this.filterProgress && topic.progress) {
           switch (this.filterProgress) {
             case 'not-started':
@@ -1944,7 +1603,7 @@ export default {
         
       } catch (error) {
         console.error('❌ Error in passesAllFilters:', error);
-        return true; // Include item if filter check fails
+        return true;
       }
     },
     
@@ -1988,7 +1647,7 @@ export default {
         
       } catch (error) {
         console.error('❌ Error in applySorting:', error);
-        return items; // Return unsorted if sorting fails
+        return items;
       }
     },
     
@@ -1997,7 +1656,7 @@ export default {
       this.debouncedFilterUpdate();
     },
     
-    clearAllFilters() { // Renamed from clearFilters to avoid confusion with `clearSearch`
+    clearAllFilters() {
       this.searchQuery = '';
       this.filterSubject = '';
       this.filterLevel = '';
@@ -2009,7 +1668,6 @@ export default {
       this.showNotification('Фильтры очищены', 'info');
     },
     
-    // Filter label helpers
     getTypeIcon(type) {
       const icons = { 
         free: '💚', 
@@ -2046,6 +1704,16 @@ export default {
       return labels[progress] || '';
     },
     
+    debouncedFilterUpdate() {
+      clearTimeout(this.updateTimer);
+      this.lastFilterChange = Date.now();
+      
+      this.updateTimer = setTimeout(() => {
+        this.triggerReactivityUpdate();
+        console.log('🎯 Filters updated');
+      }, 300);
+    },
+    
     // ============================================================================
     // 🎠 CAROUSEL METHODS
     // ============================================================================
@@ -2055,7 +1723,6 @@ export default {
         return [...this.allRecommendations];
       }
       
-      // Use crypto.getRandomValues for better randomness if available
       const shuffled = [...this.allRecommendations];
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -2075,7 +1742,6 @@ export default {
       
       this.displayedRecommendations = this.getRandomRecommendations(this.config.maxRecommendations);
       
-      // Reset carousel position
       this.$nextTick(() => {
         if (this.$refs.carouselContainer) {
           this.$refs.carouselContainer.scrollLeft = 0;
@@ -2091,7 +1757,7 @@ export default {
       const container = this.$refs.carouselContainer;
       if (!container) return;
       
-      const scrollAmount = 320; // Width of one card + gap
+      const scrollAmount = 320;
       const currentScroll = container.scrollLeft;
       
       const targetScroll = direction === 'left' 
@@ -2103,7 +1769,6 @@ export default {
         behavior: 'smooth'
       });
       
-      // Update scroll position after animation
       setTimeout(() => {
         this.updateScrollPosition();
       }, 300);
@@ -2232,7 +1897,7 @@ export default {
       
       if (failed === 0) {
         this.showNotification('Данные успешно загружены', 'success');
-        this.retryCount = 0; // Reset retry count on success
+        this.retryCount = 0;
       } else if (successful > 0) {
         this.showNotification('Некоторые данные загружены', 'warning');
       } else {
@@ -2250,18 +1915,14 @@ export default {
       console.log('💳 Paywall closed');
     },
     
-    handlePaymentSuccess(newStatus) { // This method is called from PaymentModal via @unlocked
+    handlePaymentSuccess(newStatus) {
       console.log('💳 Payment successful, new status:', newStatus);
       
-      // The store should already be updated by the payment modal
-      // Force a reactivity update and close modal
-      this.forceReactivityUpdate();
+      this.triggerReactivityUpdate();
       this.closePaywall();
       
-      // Update performance metrics
       this.performanceMetrics.successfulOperations++;
       
-      // Show success message
       const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
       this.showNotification(
         `🎉 Поздравляем! ${planLabel} подписка активирована!`,
@@ -2269,7 +1930,6 @@ export default {
         5000
       );
       
-      // If there was a requested topic, try to start it after a delay
       if (this.requestedTopicId) {
         setTimeout(() => {
           const topic = this.allRecommendations.find(t => t._id === this.requestedTopicId) ||
@@ -2286,7 +1946,6 @@ export default {
     handleProgressUpdate(topicId, newProgress) {
       console.log('📊 Progress updated:', topicId, newProgress);
       
-      // Update local state
       const topicIndex = this.studyList.findIndex(t => t._id === topicId);
       if (topicIndex !== -1) {
         this.studyList[topicIndex].progress = {
@@ -2295,15 +1954,12 @@ export default {
           lastUpdated: new Date().toISOString()
         };
         
-        // Force reactivity update
-        this.forceReactivityUpdate();
+        this.triggerReactivityUpdate();
         
-        // Show progress notification for significant milestones
         if (newProgress.percent === 100) {
           const topicName = this.getTopicName(this.studyList[topicIndex]);
           this.showNotification(`🎉 Курс "${topicName}" завершен!`, 'success');
         } else if (newProgress.percent >= 50 && newProgress.percent < 100) {
-          // Show milestone notification only once
           const topic = this.studyList[topicIndex];
           if (!topic.milestoneNotified) {
             topic.milestoneNotified = true;
@@ -2320,7 +1976,6 @@ export default {
     showNotification(message, type = 'info', duration = 4000) {
       if (!this.config.enableNotifications) return;
       
-      // Prevent duplicate notifications
       const isDuplicate = this.notifications.some(n => 
         n.message === message && n.type === type && 
         Date.now() - n.timestamp < 1000
@@ -2337,14 +1992,12 @@ export default {
         duration
       };
       
-      // Limit number of notifications
       if (this.notifications.length >= this.maxNotifications) {
-        this.notifications.shift(); // Remove oldest
+        this.notifications.shift();
       }
       
       this.notifications.push(notification);
       
-      // Auto-dismiss
       setTimeout(() => {
         this.dismissNotification(notification.id);
       }, duration);
@@ -2378,7 +2031,6 @@ export default {
       if (!Array.isArray(items)) return;
       
       try {
-        // Extract unique subjects
         const subjects = new Set();
         const levels = new Set();
         
@@ -2452,7 +2104,6 @@ export default {
       
       this.errors[context] = errorMessage;
       
-      // Show notification for critical errors
       if (context === 'api' || error?.response?.status >= 500) {
         this.showNotification(errorMessage, 'error');
       }
@@ -2469,11 +2120,9 @@ export default {
         10000
       );
       
-      // Update performance metrics
       this.performanceMetrics.failedOperations++;
     },
     
-    // Helper methods for data processing
     extractTopicId(topicId) {
       if (!topicId) return null;
       
@@ -2491,12 +2140,10 @@ export default {
     extractLocalizedString(obj) {
       if (!obj || typeof obj !== 'object') return null;
       
-      // Try current language first
       if (obj[this.lang] && typeof obj[this.lang] === 'string' && obj[this.lang].trim()) {
         return obj[this.lang].trim();
       }
       
-      // Try fallback languages
       const fallbackLanguages = ['ru', 'en', 'uz'];
       for (const lang of fallbackLanguages) {
         if (obj[lang] && typeof obj[lang] === 'string' && obj[lang].trim()) {
@@ -2504,7 +2151,6 @@ export default {
         }
       }
       
-      // Try any string value
       const stringValue = Object.values(obj).find(val => 
         val && typeof val === 'string' && val.trim()
       );
@@ -2513,14 +2159,12 @@ export default {
     },
     
     generateTopicNameFallback(topic) {
-      // Try to construct from available data
       if (topic.subject) {
         const subject = typeof topic.subject === 'string' ? topic.subject : String(topic.subject);
         const level = topic.level ? ` (Уровень ${topic.level})` : '';
         return `${subject}${level}`;
       }
       
-      // Use lesson name if this is built from lessons
       if (topic.metadata?.source === 'built-from-lessons' && topic.lessons?.length > 0) {
         const firstLesson = topic.lessons[0];
         if (firstLesson.lessonName) {
@@ -2531,7 +2175,6 @@ export default {
         }
       }
       
-      // Use ID as readable name
       if (topic._id || topic.id) {
         const id = (topic._id || topic.id).toString();
         return `Курс ${id.substring(Math.max(0, id.length - 6))}`;
@@ -2559,12 +2202,10 @@ export default {
     },
     
     calculateLessonTime(lesson) {
-      // Calculate estimated time for a lesson
       if (lesson.estimatedTime) return parseInt(lesson.estimatedTime);
       if (lesson.duration) return parseInt(lesson.duration);
       if (lesson.timeToComplete) return parseInt(lesson.timeToComplete);
       
-      // Default to 10 minutes per lesson
       return 10;
     },
     
@@ -2573,30 +2214,27 @@ export default {
       if (topic.lessons?.length) {
         return topic.lessons.reduce((sum, lesson) => sum + this.calculateLessonTime(lesson), 0);
       }
-      return (topic.lessonCount || 1) * 10; // Default to 10 minutes per lesson
+      return (topic.lessonCount || 1) * 10;
     },
     
     calculateTopicDifficulty(topic) {
       const level = parseInt(topic.level) || 1;
       
-      if (level <= 2) return 1; // Beginner
-      if (level <= 4) return 2; // Intermediate
-      if (level <= 6) return 3; // Advanced
-      return 4; // Expert
+      if (level <= 2) return 1;
+      if (level <= 4) return 2;
+      if (level <= 6) return 3;
+      return 4;
     },
     
     findStartingLesson(topic) {
       if (!topic.lessons || topic.lessons.length === 0) return null;
       
-      // Try to find the first lesson based on order or name
       const lessons = [...topic.lessons];
       
-      // Sort by order if available
       if (lessons[0].order !== undefined) {
         lessons.sort((a, b) => (a.order || 0) - (b.order || 0));
       }
       
-      // Return first valid lesson
       return lessons.find(lesson => lesson && lesson._id) || null;
     },
     
@@ -2615,7 +2253,6 @@ export default {
     performCleanup() {
       console.log('🧹 MainPage: Performing cleanup...');
       
-      // Clear timers
       if (this.updateTimer) {
         clearTimeout(this.updateTimer);
         this.updateTimer = null;
@@ -2626,57 +2263,22 @@ export default {
         this.autoRefreshInterval = null;
       }
       
-      // Clean up global event listeners
-      // Ensure globalEventListeners map exists before iterating
-      if (this.globalEventListeners) {
-        this.globalEventListeners.forEach((handler, event) => {
-          try {
-            // Check if window object exists (for SSR compatibility)
-            if (typeof window !== 'undefined') {
-              window.removeEventListener(event, handler);
-            }
-          } catch (error) {
-            console.warn(`⚠️ Failed to remove ${event} listener:`, error);
-          }
-        });
-        this.globalEventListeners.clear();
-      }
+      this.eventCleanupFunctions.forEach(cleanup => {
+        try {
+          cleanup();
+        } catch (error) {
+          console.warn('⚠️ Event cleanup error:', error);
+        }
+      });
+      this.eventCleanupFunctions = [];
       
-      // Clean up event bus listeners
-      // Ensure eventCleanupFunctions array exists before iterating
-      if (this.eventCleanupFunctions) {
-        this.eventCleanupFunctions.forEach(cleanup => {
-          try {
-            cleanup();
-          } catch (error) {
-            console.warn('⚠️ Event cleanup error:', error);
-          }
-        });
-        this.eventCleanupFunctions = [];
-      }
+      this.loadingOperations.add.clear();
+      this.loadingOperations.start.clear();
+      this.loadingOperations.remove.clear();
+      this.loadingOperations.refresh.clear();
       
-      // Unsubscribe from store
-      if (this.unsubscribeStore) {
-        this.unsubscribeStore();
-        this.unsubscribeStore = null;
-      }
+      this.dismissAllNotifications();
       
-      // Clear loading operations
-      // Ensure loadingOperations object exists before accessing its properties
-      if (this.loadingOperations) {
-        this.loadingOperations.add.clear();
-        this.loadingOperations.start.clear();
-        this.loadingOperations.remove.clear();
-        this.loadingOperations.refresh.clear();
-      }
-      
-      // Clear notifications
-      // Ensure dismissAllNotifications method exists before calling
-      if (this.dismissAllNotifications) {
-        this.dismissAllNotifications();
-      }
-      
-      // Log final performance metrics
       if (this.config.enableAnalytics) {
         console.log('📊 Final performance metrics:', this.performanceMetrics);
       }

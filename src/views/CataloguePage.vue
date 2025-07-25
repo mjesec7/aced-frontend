@@ -3,9 +3,9 @@
     <div class="page-header">
       <div class="header-content">
         <div class="breadcrumb">
-          <button 
-            v-if="currentView !== 'subjects'" 
-            @click="goBack" 
+          <button
+            v-if="currentView !== 'subjects'"
+            @click="goBack"
             class="back-btn"
           >
             ← Назад
@@ -15,29 +15,29 @@
               Предметы
             </span>
             <span v-if="selectedSubject" class="breadcrumb-separator">›</span>
-            <span 
-              v-if="selectedSubject" 
-              class="breadcrumb-item" 
+            <span
+              v-if="selectedSubject"
+              class="breadcrumb-item"
               :class="{ active: currentView === 'levels' }"
             >
               {{ selectedSubject }}
             </span>
             <span v-if="selectedLevel" class="breadcrumb-separator">›</span>
-            <span 
-              v-if="selectedLevel" 
-              class="breadcrumb-item" 
+            <span
+              v-if="selectedLevel"
+              class="breadcrumb-item"
               :class="{ active: currentView === 'topics' }"
             >
               {{ selectedLevel }}
             </span>
           </div>
         </div>
-        
+
         <span class="subscription-badge" :class="subscriptionClass">
           {{ subscriptionText }}
         </span>
       </div>
-      
+
       <h1 class="page-title">
         <span v-if="currentView === 'subjects'">Каталог Предметов</span>
         <span v-else-if="currentView === 'levels'">Выберите Уровень</span>
@@ -112,8 +112,8 @@
         </div>
 
         <div v-else-if="currentView === 'subjects'" class="subjects-grid">
-          <div 
-            v-for="subject in filteredSubjects" 
+          <div
+            v-for="subject in filteredSubjects"
             :key="subject.name"
             @click="selectSubject(subject.name)"
             class="subject-card"
@@ -128,8 +128,8 @@
         </div>
 
         <div v-else-if="currentView === 'levels'" class="levels-grid">
-          <div 
-            v-for="level in filteredLevels" 
+          <div
+            v-for="level in filteredLevels"
             :key="level.name"
             @click="selectLevel(level.name)"
             class="level-card"
@@ -148,8 +148,8 @@
             </div>
             <div class="progress-info" v-if="level.progress !== undefined">
               <div class="progress-bar">
-                <div 
-                  class="progress-fill" 
+                <div
+                  class="progress-fill"
                   :style="{ width: level.progress + '%' }"
                   :class="getProgressClass(level.progress)"
                 ></div>
@@ -165,23 +165,23 @@
         </div>
 
         <div v-else-if="currentView === 'topics'" class="topics-grid">
-          <div 
-            v-for="topic in filteredTopics" 
+          <div
+            v-for="topic in filteredTopics"
             :key="topic.topicId"
             class="topic-card"
           >
             <div class="card-header">
               <h3 class="topic-title">{{ topic.name }}</h3>
-              <button 
-                class="add-btn" 
-                @click="addToStudyPlan(topic)" 
+              <button
+                class="add-btn"
+                @click="addToStudyPlan(topic)"
                 :disabled="topic.inStudyPlan"
                 :title="topic.inStudyPlan ? 'Уже в плане' : 'Добавить в план'"
               >
                 {{ topic.inStudyPlan ? '✓' : '＋' }}
               </button>
             </div>
-            
+
             <div class="topic-meta">
               <span class="level-badge" :class="getLevelClass(topic.level)">
                 {{ topic.level }}
@@ -202,8 +202,8 @@
                 <span class="progress-percentage">{{ Math.round(topic.progress) }}%</span>
               </div>
               <div class="progress-bar">
-                <div 
-                  class="progress-fill" 
+                <div
+                  class="progress-fill"
                   :style="{ width: topic.progress + '%' }"
                   :class="getProgressClass(topic.progress)"
                 ></div>
@@ -211,16 +211,16 @@
             </div>
 
             <div class="status-section">
-              <span 
-                class="status-badge" 
+              <span
+                class="status-badge"
                 :class="getStatusClass(topic.progress)"
               >
                 {{ getStatusText(topic.progress) }}
               </span>
             </div>
 
-            <button 
-              class="action-btn" 
+            <button
+              class="action-btn"
               @click="handleTopicAccess(topic.topicId, topic.type)"
               :class="getButtonClass(topic.progress)"
             >
@@ -289,75 +289,82 @@
     />
   </div>
 </template>
+
 <script>
 import axios from 'axios';
 import { mapGetters } from 'vuex';
 import { auth } from '@/firebase';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
+import { userStatusMixin } from '@/composables/useUserStatus';
 
 export default {
   name: 'CataloguePage',
-  components: { 
-    PaymentModal 
+  components: {
+    PaymentModal
   },
+
+  // ✅ ENHANCED: Add the comprehensive user status mixin
+  mixins: [userStatusMixin],
+
   data() {
     return {
       // Navigation state
-      currentView: 'subjects', // 'subjects' | 'levels' | 'topics'
+      currentView: 'subjects',
       selectedSubject: null,
       selectedLevel: null,
-      
+
       // Data
       lessons: [],
       subjects: [],
       levels: [],
       topics: [],
       userProgress: {},
-      lessonProgress: {}, // This variable is declared but not used in the provided code
+      lessonProgress: {},
       studyPlanTopics: [],
-      
+
       // UI state
       loading: true,
       userId: null,
       lang: '',
-      
+
       // Filter state - ALL INITIALIZED AS EMPTY/FALSE
       searchQuery: '',
       filterSubject: '',
       filterLevel: '',
-      showFree: false,        
-      showPremium: false,     
-      showNotStarted: false,  
-      showInProgress: false,  
-      showCompleted: false,   
-      
+      showFree: false,
+      showPremium: false,
+      showNotStarted: false,
+      showInProgress: false,
+      showCompleted: false,
+
       // Modal state
       showAddModal: false,
       showSuccessModal: false,
       showPaywall: false,
       selectedTopic: null,
       requestedTopicId: null,
-      plan: null, // This variable is declared but not used for display
-      
+      plan: null,
+
       // ✅ ENHANCED: Add comprehensive reactivity tracking
       componentKey: 0,
       lastUpdateTime: Date.now(),
       eventCleanupFunctions: [],
       globalEventHandlers: {},
       statusChangeTimeout: null,
-      forceUpdateInterval: null, // This variable is declared but not used
-      
+      forceUpdateInterval: null,
+      storeUnsubscribe: null,
+
       // ✅ NEW: Status sync tracking
       lastStatusSync: Date.now(),
       statusSyncInterval: null
     };
   },
-  
+
   computed: {
-    // ✅ ADD THESE TO YOUR EXISTING COMPUTED PROPERTIES
+    // ✅ ENHANCED: Map user status getters with mixin integration
     ...mapGetters('user', [
       'userStatus',
-      'isPremiumUser', // Already in initial code, but explicitly included here for clarity
+      'isPremiumUser',
       'isStartUser',
       'isProUser',
       'isFreeUser',
@@ -365,59 +372,27 @@ export default {
       'forceUpdateCounter',
       'subscriptionDetails'
     ]),
-    
-    // ✅ ENHANCED: Reactive subscription class with multiple triggers
+
+    // ✅ ENHANCED: Reactive subscription class with multiple triggers (from mixin)
     subscriptionClass() {
-      const counter = this.forceUpdateCounter || 0; // Force reactivity via Vuex counter
-      const updateTime = this.lastUpdateTime; // Additional trigger for local changes
-      const status = this.userStatus || 'free';
-      const syncTime = this.lastStatusSync; // Additional trigger for periodic sync
-      
-      console.log('📊 Catalogue: Computing subscription class:', {
-        status,
-        counter,
-        updateTime,
-        syncTime
-      });
-      
-      return status === 'pro' ? 'badge-pro'
-        : status === 'start' || status === 'premium' ? 'badge-start'
-        : 'badge-free';
-    },
-    
-    // ✅ ENHANCED: Reactive subscription text with multiple triggers  
-    subscriptionText() {
-      const counter = this.forceUpdateCounter || 0; // Force reactivity via Vuex counter
-      const updateTime = this.lastUpdateTime; // Additional trigger for local changes
-      const status = this.userStatus || 'free';
-      const syncTime = this.lastStatusSync; // Additional trigger for periodic sync
-      
-      console.log('📊 Catalogue: Computing subscription text:', {
-        status,
-        counter,
-        updateTime,
-        syncTime
-      });
-      
-      return status === 'pro' ? 'Pro подписка'
-        : status === 'start' || status === 'premium' ? 'Start подписка'
-        : 'Бесплатный доступ';
+      return this.subscriptionClass || 'badge-free';
     },
 
-    // ✅ NEW: Current reactive user status with comprehensive fallbacks
+    // ✅ ENHANCED: Reactive subscription text with multiple triggers (from mixin)
+    subscriptionText() {
+      return this.subscriptionText || 'Бесплатный доступ';
+    },
+
+    // ✅ NEW: Current reactive user status with comprehensive fallbacks (from mixin)
     currentUserStatus() {
-      const counter = this.forceUpdateCounter || 0; // Depend on Vuex counter for reactivity
-      const storeStatus = this.userStatus;
-      const localStatus = localStorage.getItem('userStatus');
-      const computedStatus = storeStatus || localStatus || 'free';
-      
-      // Auto-fix inconsistencies
-      if (storeStatus && localStatus && storeStatus !== localStatus) {
-        console.log(`🔧 Catalogue: Auto-fixing status inconsistency: store(${storeStatus}) !== localStorage(${localStatus})`);
-        localStorage.setItem('userStatus', storeStatus);
-      }
-      
-      return computedStatus;
+      return this.reactiveUserStatus || 'free';
+    },
+
+    // ✅ NEW: Reactive available count based on user status (from mixin)
+    reactiveAvailableCount() {
+      return this.lessons.filter(lesson =>
+        lesson && (lesson.type !== 'premium' || this.reactiveIsPremiumUser)
+      ).length;
     },
 
     currentItems() {
@@ -456,20 +431,18 @@ export default {
       if (!Array.isArray(this.subjects)) return [];
       return this.subjects.filter(subject => {
         if (!subject || !subject.name) return false;
-        
+
         const subjectName = String(subject.name || '');
         const searchTerm = String(this.searchQuery || '').toLowerCase();
-        
-        // Search filter
+
         const matchesSearch = !this.searchQuery || subjectName.toLowerCase().includes(searchTerm);
-        
-        // Access filter - if no access type is selected, show all
+
         let matchesAccess = true;
         if (this.showFree || this.showPremium) {
-          matchesAccess = (this.showFree && subject.hasFreeLessons) || 
+          matchesAccess = (this.showFree && subject.hasFreeLessons) ||
                          (this.showPremium && subject.hasPremiumLessons);
         }
-        
+
         return matchesSearch && matchesAccess;
       });
     },
@@ -478,20 +451,18 @@ export default {
       if (!Array.isArray(this.levels)) return [];
       return this.levels.filter(level => {
         if (!level || (!level.name && level.name !== 0)) return false;
-        
+
         const levelName = String(level.name || '');
         const searchTerm = String(this.searchQuery || '').toLowerCase();
-        
-        // Search filter
+
         const matchesSearch = !this.searchQuery || levelName.toLowerCase().includes(searchTerm);
-        
-        // Access filter - if no access type is selected, show all
+
         let matchesAccess = true;
         if (this.showFree || this.showPremium) {
-          matchesAccess = (this.showFree && level.hasFreeLessons) || 
+          matchesAccess = (this.showFree && level.hasFreeLessons) ||
                          (this.showPremium && level.hasPremiumLessons);
         }
-        
+
         return matchesSearch && matchesAccess;
       });
     },
@@ -500,27 +471,22 @@ export default {
       if (!Array.isArray(this.topics)) return [];
       return this.topics.filter(topic => {
         if (!topic || !topic.name) return false;
-        
+
         const topicName = String(topic.name || '');
         const searchTerm = String(this.searchQuery || '').toLowerCase();
-        
-        // Search filter
+
         const matchesSearch = !this.searchQuery || topicName.toLowerCase().includes(searchTerm);
-        
-        // Subject filter
+
         const matchesSubject = !this.filterSubject || String(topic.subject || '') === String(this.filterSubject);
-        
-        // Level filter
+
         const matchesLevel = !this.filterLevel || String(topic.level || '') === String(this.filterLevel);
-        
-        // Access filter - if no access type is selected, show all
+
         let matchesAccess = true;
         if (this.showFree || this.showPremium) {
-          matchesAccess = (this.showFree && topic.type === 'free') || 
+          matchesAccess = (this.showFree && topic.type === 'free') ||
                          (this.showPremium && topic.type === 'premium');
         }
-        
-        // Progress filter - if no progress filter is selected, show all
+
         let matchesProgress = true;
         if (this.showNotStarted || this.showInProgress || this.showCompleted) {
           if (typeof topic.progress === 'number') {
@@ -528,16 +494,15 @@ export default {
             const isNotStarted = progress === 0;
             const isInProgress = progress > 0 && progress < 100;
             const isCompleted = progress === 100;
-            
+
             matchesProgress = (this.showNotStarted && isNotStarted) ||
                              (this.showInProgress && isInProgress) ||
                              (this.showCompleted && isCompleted);
           } else {
-            // If progress is undefined, treat as not started
             matchesProgress = this.showNotStarted;
           }
         }
-        
+
         return matchesSearch && matchesSubject && matchesLevel && matchesAccess && matchesProgress;
       });
     }
@@ -553,7 +518,7 @@ export default {
       },
       immediate: true
     },
-    
+
     // ✅ NEW: Watch for force update counter changes
     forceUpdateCounter: {
       handler(newCounter, oldCounter) {
@@ -562,7 +527,7 @@ export default {
       },
       immediate: true
     },
-    
+
     // ✅ NEW: Watch for subscription details changes
     subscriptionDetails: {
       handler(newSub, oldSub) {
@@ -574,7 +539,7 @@ export default {
       deep: true,
       immediate: true
     },
-    
+
     // ✅ NEW: Watch current user status computed property
     currentUserStatus: {
       handler(newStatus, oldStatus) {
@@ -589,19 +554,19 @@ export default {
 
   async mounted() {
     console.log('📱 Catalogue: Component mounted');
-    
+
     try {
       // Initialize component
       await this.initializeComponent();
-      
+
       // ✅ ENHANCED: Setup comprehensive event listeners
       this.setupEventListeners();
-      
+
       // ✅ NEW: Setup periodic status sync
       this.setupPeriodicStatusSync();
-      
+
       console.log('✅ Catalogue: Component mounted successfully');
-      
+
     } catch (error) {
       console.error('❌ Catalogue: Mount error:', error);
     }
@@ -613,12 +578,26 @@ export default {
   },
 
   methods: {
+    // ✅ ENHANCED: Override mixin method for status change notifications
+    onUserStatusChanged(newStatus, oldStatus) {
+      console.log(`🔔 Catalogue: User status changed from ${oldStatus} to ${newStatus}`);
+
+      this.plan = newStatus;
+
+      if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
+        const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
+        if (this.$toast) {
+          this.$toast.success(`🎉 ${planLabel} подписка активирована!`, { duration: 5000 });
+        }
+      }
+    },
+
     // ===== INITIALIZATION =====
     async initializeComponent() {
       try {
         this.loading = true;
         this.lang = localStorage.getItem('lang') || 'en';
-        
+
         const storedId = localStorage.getItem('firebaseUserId') || localStorage.getItem('userId');
         if (!storedId) {
           console.warn('⚠️ No user ID found in localStorage');
@@ -632,13 +611,13 @@ export default {
           this.loadUserProgress(),
           this.loadStudyPlan()
         ]);
-        
+
         this.processSubjects();
       } catch (error) {
         console.error('❌ Ошибка инициализации:', error);
         this.loading = false;
       } finally {
-        this.loading = false; // Ensure loading is false even on partial failure
+        this.loading = false;
       }
     },
 
@@ -659,12 +638,11 @@ export default {
         console.warn('⚠️ No userId available for loading progress');
         return;
       }
-      
+
       try {
         const currentUser = auth.currentUser;
         if (!currentUser) {
           console.warn('⚠️ No current user authenticated');
-          // If no user, progress is empty, not an error
           this.userProgress = {};
           return;
         }
@@ -676,13 +654,12 @@ export default {
           return;
         }
 
-        // Try topics-progress endpoint first
         try {
           const response = await axios.get(
             `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/topics-progress`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
-          
+
           if (response.data && typeof response.data === 'object') {
             this.userProgress = response.data;
             console.log('✅ Loaded topics progress:', Object.keys(this.userProgress).length);
@@ -692,13 +669,12 @@ export default {
           console.warn('⚠️ Topics-progress endpoint failed, falling back:', topicProgressError.response?.status);
         }
 
-        // Fallback: try user progress endpoint (lesson-level progress)
         try {
           const response = await axios.get(
             `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/progress`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
-          
+
           const progressData = response.data?.data || response.data || [];
           if (Array.isArray(progressData)) {
             await this.calculateTopicProgressFromLessons(progressData);
@@ -724,13 +700,12 @@ export default {
       }
 
       const topicProgressMap = {};
-      const topicLessonsCount = {}; // To store total lessons per topic
-      
-      // Group lessons by topicId and count totals
+      const topicLessonsCount = {};
+
       if (Array.isArray(this.lessons)) {
         this.lessons.forEach(lesson => {
           if (!lesson || !lesson.topicId) return;
-          
+
           const topicId = String(lesson.topicId);
           if (!topicLessonsCount[topicId]) {
             topicLessonsCount[topicId] = { total: 0, completed: 0 };
@@ -739,17 +714,16 @@ export default {
         });
       }
 
-      // Count completed lessons per topic
       progressData.forEach(progress => {
         if (!progress || !progress.completed || !progress.lessonId) return;
-        
+
         const lessonId = progress.lessonId._id || progress.lessonId;
         if (!lessonId) return;
-        
-        const lesson = this.lessons.find(l => 
+
+        const lesson = this.lessons.find(l =>
           l && (String(l._id) === String(lessonId))
         );
-        
+
         if (lesson && lesson.topicId) {
           const topicId = String(lesson.topicId);
           if (topicLessonsCount[topicId]) {
@@ -758,7 +732,6 @@ export default {
         }
       });
 
-      // Calculate percentages
       Object.keys(topicLessonsCount).forEach(topicId => {
         const topic = topicLessonsCount[topicId];
         if (topic.total > 0) {
@@ -777,19 +750,19 @@ export default {
         console.warn('⚠️ No userId available for loading study plan');
         return;
       }
-      
+
       try {
         const currentUser = auth.currentUser;
         if (!currentUser) {
           console.warn('⚠️ No current user authenticated for study plan');
-          this.studyPlanTopics = []; // Ensure it's cleared if no user
+          this.studyPlanTopics = [];
           return;
         }
 
         const token = await currentUser.getIdToken();
         if (!token) {
           console.warn('⚠️ No auth token available for study plan');
-          this.studyPlanTopics = []; // Ensure it's cleared if no token
+          this.studyPlanTopics = [];
           return;
         }
 
@@ -797,7 +770,7 @@ export default {
           `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        
+
         const data = response.data;
         if (Array.isArray(data)) {
           this.studyPlanTopics = data.map(item => {
@@ -805,7 +778,7 @@ export default {
             const topicId = item.topicId || item._id || item.id;
             return topicId ? String(topicId) : '';
           }).filter(id => id);
-          
+
           console.log('✅ Loaded study plan with', this.studyPlanTopics.length, 'topics');
         } else {
           console.warn('⚠️ Study plan data is not an array:', typeof data);
@@ -820,19 +793,19 @@ export default {
     // ===== DATA PROCESSING =====
     processSubjects() {
       console.log('🔄 Processing subjects from', this.lessons.length, 'lessons');
-      
+
       if (!Array.isArray(this.lessons)) {
         console.warn('⚠️ Lessons is not an array');
         this.subjects = [];
         this.loading = false;
         return;
       }
-      
+
       const subjectsMap = new Map();
-      
+
       this.lessons.forEach(lesson => {
         if (!lesson || !lesson.subject) return;
-        
+
         const subjectName = String(lesson.subject);
         if (!subjectsMap.has(subjectName)) {
           subjectsMap.set(subjectName, {
@@ -846,28 +819,26 @@ export default {
             topics: new Set()
           });
         }
-        
+
         const subject = subjectsMap.get(subjectName);
-        
-        // Add level
+
         if (lesson.level !== null && lesson.level !== undefined) {
           subject.levels.add(String(lesson.level));
         }
-        
-        // Add topic to count
+
         if (lesson.topicId || lesson.topic) {
           const topicKey = lesson.topicId || this.getTopicName(lesson);
           if (topicKey) {
             subject.topics.add(String(topicKey));
           }
         }
-        
+
         subject.lessonCount++;
-        
+
         if (lesson.type === 'free') subject.hasFreeLessons = true;
         if (lesson.type === 'premium') subject.hasPremiumLessons = true;
       });
-      
+
       this.subjects = Array.from(subjectsMap.values()).map(subject => ({
         ...subject,
         levels: Array.from(subject.levels).sort((a, b) => {
@@ -880,30 +851,30 @@ export default {
         }),
         topicCount: subject.topics.size
       }));
-      
+
       console.log('✅ Processed', this.subjects.length, 'subjects');
       this.loading = false;
     },
 
     processLevels() {
       console.log('🔄 Processing levels for subject:', this.selectedSubject);
-      
+
       if (!Array.isArray(this.lessons) || !this.selectedSubject) {
         this.levels = [];
         return;
       }
-      
+
       const levelsMap = new Map();
-      
-      const subjectLessons = this.lessons.filter(lesson => 
+
+      const subjectLessons = this.lessons.filter(lesson =>
         lesson && lesson.subject === this.selectedSubject
       );
-      
+
       console.log('📚 Found', subjectLessons.length, 'lessons for subject');
-      
+
       subjectLessons.forEach(lesson => {
         if (!lesson || (lesson.level === null || lesson.level === undefined)) return;
-        
+
         const levelName = String(lesson.level);
         if (!levelsMap.has(levelName)) {
           levelsMap.set(levelName, {
@@ -914,27 +885,26 @@ export default {
             hasFreeLessons: false,
             hasPremiumLessons: false,
             topics: new Set(),
-            progress: 0 // Will be calculated after all topics are processed
+            progress: 0
           });
         }
-        
+
         const level = levelsMap.get(levelName);
-        
-        // Add topic
+
         if (lesson.topicId || lesson.topic) {
           const topicKey = lesson.topicId || this.getTopicName(lesson);
           if (topicKey) {
             level.topics.add(String(topicKey));
           }
         }
-        
+
         level.lessonCount++;
-        level.totalTime += 10; // Estimate
-        
+        level.totalTime += 10;
+
         if (lesson.type === 'free') level.hasFreeLessons = true;
         if (lesson.type === 'premium') level.hasPremiumLessons = true;
       });
-      
+
       this.levels = Array.from(levelsMap.values()).map(level => ({
         ...level,
         topicCount: level.topics.size,
@@ -947,38 +917,38 @@ export default {
         }
         return String(a.name).localeCompare(String(b.name));
       });
-      
+
       console.log('✅ Processed', this.levels.length, 'levels');
     },
 
     processTopics() {
       console.log('🔄 Processing topics for:', this.selectedSubject, this.selectedLevel);
-      
+
       if (!Array.isArray(this.lessons) || !this.selectedSubject || !this.selectedLevel) {
         this.topics = [];
         return;
       }
-      
+
       const topicsMap = new Map();
-      
-      const levelLessons = this.lessons.filter(lesson => 
-        lesson && 
-        lesson.subject === this.selectedSubject && 
+
+      const levelLessons = this.lessons.filter(lesson =>
+        lesson &&
+        lesson.subject === this.selectedSubject &&
         String(lesson.level) === String(this.selectedLevel)
       );
-      
+
       console.log('📚 Found', levelLessons.length, 'lessons for level');
-      
+
       levelLessons.forEach(lesson => {
         if (!lesson) return;
-        
+
         let topicId = lesson.topicId;
         if (typeof topicId === 'object' && topicId !== null) {
           topicId = topicId._id || topicId.id || String(topicId);
         } else if (topicId) {
           topicId = String(topicId);
         }
-        
+
         const name = this.getTopicName(lesson);
         if (!topicId || !name) return;
 
@@ -990,13 +960,13 @@ export default {
             level: String(lesson.level || ''),
             type: lesson.type || 'free',
             lessonCount: 1,
-            totalTime: 10, // Estimate, could be more precise if lesson durations are available
-            lessons: [lesson] // Store actual lesson objects if needed later
+            totalTime: 10,
+            lessons: [lesson]
           });
         } else {
           const entry = topicsMap.get(topicId);
           entry.lessonCount += 1;
-          entry.totalTime += 10; // Add to estimated time
+          entry.totalTime += 10;
           entry.lessons.push(lesson);
         }
       });
@@ -1006,7 +976,7 @@ export default {
         progress: Number(this.userProgress[topic.topicId]) || 0,
         inStudyPlan: Array.isArray(this.studyPlanTopics) && this.studyPlanTopics.includes(topic.topicId)
       }));
-      
+
       console.log('✅ Processed', this.topics.length, 'topics');
     },
 
@@ -1014,17 +984,17 @@ export default {
       if (!this.selectedSubject || !levelName || !Array.isArray(this.lessons)) {
         return 0;
       }
-      
-      const levelTopics = this.lessons.filter(l => 
+
+      const levelTopics = this.lessons.filter(l =>
         l && l.subject === this.selectedSubject && String(l.level) === String(levelName)
       );
-      
+
       if (levelTopics.length === 0) return 0;
-      
+
       let totalProgress = 0;
       let topicCount = 0;
-      const seenTopics = new Set(); // Use a Set to count unique topics
-      
+      const seenTopics = new Set();
+
       levelTopics.forEach(lesson => {
         if (lesson && lesson.topicId && !seenTopics.has(lesson.topicId)) {
           seenTopics.add(lesson.topicId);
@@ -1033,7 +1003,7 @@ export default {
           topicCount++;
         }
       });
-      
+
       return topicCount > 0 ? Math.round(totalProgress / topicCount) : 0;
     },
 
@@ -1043,10 +1013,9 @@ export default {
       this.selectedSubject = String(subjectName);
       this.currentView = 'levels';
       this.processLevels();
-      
-      // Reset filters when changing context
+
       this.searchQuery = '';
-      this.filterSubject = ''; // Clear subject filter as it's now implied by selectedSubject
+      this.filterSubject = '';
       this.filterLevel = '';
     },
 
@@ -1055,8 +1024,7 @@ export default {
       this.selectedLevel = String(levelName);
       this.currentView = 'topics';
       this.processTopics();
-      
-      // Reset search when changing context
+
       this.searchQuery = '';
     },
 
@@ -1065,16 +1033,15 @@ export default {
       if (this.currentView === 'topics') {
         this.currentView = 'levels';
         this.selectedLevel = null;
-        this.topics = []; // Clear topics
+        this.topics = [];
       } else if (this.currentView === 'levels') {
         this.currentView = 'subjects';
         this.selectedSubject = null;
         this.selectedLevel = null;
-        this.levels = []; // Clear levels
-        this.topics = []; // Clear topics
+        this.levels = [];
+        this.topics = [];
       }
-      
-      // Reset search when going back
+
       this.searchQuery = '';
     },
 
@@ -1114,36 +1081,30 @@ export default {
 
     getTopicName(lesson) {
       if (!lesson) return 'Без темы';
-      
-      // Prioritize explicit topic field, then localized, then fallback to lessonName/title
+
       try {
-        // Try direct `topic` string field
         if (typeof lesson.topic === 'string' && lesson.topic.trim()) {
           return lesson.topic.trim();
         }
-        
-        // Try localized `topic` object field (e.g., { ru: 'Тема', en: 'Topic' })
+
         if (lesson.topic && typeof lesson.topic === 'object' && lesson.topic !== null) {
           if (lesson.topic[this.lang] && typeof lesson.topic[this.lang] === 'string') {
             return String(lesson.topic[this.lang]).trim();
           }
-          if (lesson.topic.en && typeof lesson.topic.en === 'string') { // Fallback to English
+          if (lesson.topic.en && typeof lesson.topic.en === 'string') {
             return String(lesson.topic.en).trim();
           }
-          // If topic object exists but no matching lang field found, try any string value
           const anyLangTopic = Object.values(lesson.topic).find(val => typeof val === 'string' && val.trim());
           if (anyLangTopic) return anyLangTopic.trim();
         }
-        
-        // Try `translations` object for topic name
-        if (lesson.translations && 
-            lesson.translations[this.lang] && 
+
+        if (lesson.translations &&
+            lesson.translations[this.lang] &&
             lesson.translations[this.lang].topic &&
             typeof lesson.translations[this.lang].topic === 'string') {
           return String(lesson.translations[this.lang].topic).trim();
         }
 
-        // Finally, fallback to lesson name or title
         if (lesson.lessonName && typeof lesson.lessonName === 'string' && lesson.lessonName.trim()) {
             return `Тема: ${lesson.lessonName.trim()}`;
         }
@@ -1151,25 +1112,23 @@ export default {
             return `Тема: ${lesson.title.trim()}`;
         }
 
-        return 'Без темы'; // Default fallback
+        return 'Без темы';
       } catch (error) {
         console.error('❌ Error getting topic name:', error);
-        return 'Ошибка названия темы'; // More descriptive error fallback
+        return 'Ошибка названия темы';
       }
     },
 
     getLevelClass(level) {
       const levelStr = String(level || '').toLowerCase();
-      
-      // Handle numeric levels (1-10)
+
       const levelNum = parseInt(levelStr);
       if (!isNaN(levelNum)) {
         if (levelNum >= 1 && levelNum <= 3) return 'level-beginner';
         if (levelNum >= 4 && levelNum <= 6) return 'level-intermediate';
         if (levelNum >= 7 && levelNum <= 10) return 'level-advanced';
       }
-      
-      // Handle text levels
+
       switch (levelStr) {
         case 'beginner':
         case 'начинающий':
@@ -1182,7 +1141,7 @@ export default {
         case 'продвинутый':
           return 'level-advanced';
         default:
-          return 'level-beginner'; // Default for unknown text levels
+          return 'level-beginner';
       }
     },
 
@@ -1190,9 +1149,9 @@ export default {
       const levelNum = parseInt(level);
       if (!isNaN(levelNum)) {
         const icons = ['🌱', '🌿', '🍃', '🌳', '🌲', '🏔️', '⭐', '💎', '👑', '🏆'];
-        return icons[Math.min(levelNum - 1, icons.length - 1)] || '📚'; // Ensure index is within bounds
+        return icons[Math.min(levelNum - 1, icons.length - 1)] || '📚';
       }
-      
+
       const icons = {
         'beginner': '🌱', 'начинающий': '🌱', 'базовый': '🌱',
         'intermediate': '🌿', 'средний': '🌿',
@@ -1218,7 +1177,7 @@ export default {
         };
         return descriptions[levelNum] || `Изучение предмета на уровне ${levelNum}`;
       }
-      
+
       const descriptions = {
         'beginner': 'Начальный уровень для новичков',
         'начинающий': 'Начальный уровень для новичков',
@@ -1274,13 +1233,12 @@ export default {
         console.error('❌ No topic ID provided');
         return;
       }
-      
-      // Use currentUserStatus for access check
-      if ((type === 'premium' || type === 'pro') && !this.isPremiumUser && !this.isProUser) {
+
+      // Enhanced topic access check using mixin property
+      if ((type === 'premium' || type === 'pro') && !this.reactiveIsPremiumUser) {
         this.requestedTopicId = topicId;
         this.showPaywall = true;
       } else {
-        // Assuming TopicOverview route needs topicId and it navigates to the first lesson or overview
         this.$router.push({ name: 'TopicOverview', params: { id: topicId } });
       }
     },
@@ -1307,7 +1265,7 @@ export default {
       try {
         const token = await currentUser.getIdToken();
         const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`;
-        
+
         let topicId = this.selectedTopic.topicId;
         if (typeof topicId === 'object' && topicId !== null) {
           topicId = topicId._id || topicId.id || String(topicId);
@@ -1317,7 +1275,7 @@ export default {
           console.error('❌ No valid topicId found');
           throw new Error('No valid topicId provided');
         }
-        
+
         const body = {
           subject: String(this.selectedTopic.subject || ''),
           level: String(this.selectedTopic.level || ''),
@@ -1327,34 +1285,32 @@ export default {
           totalTime: Number(this.selectedTopic.totalTime) || 0,
           type: this.selectedTopic.type || 'free'
         };
-        
-        await axios.post(url, body, { 
-          headers: { 
+
+        await axios.post(url, body, {
+          headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
-          } 
+          }
         });
-        
-        // Update local state
+
         this.selectedTopic.inStudyPlan = true;
         if (Array.isArray(this.studyPlanTopics) && !this.studyPlanTopics.includes(topicId)) {
           this.studyPlanTopics.push(topicId);
         }
-        
-        // Update the topic in the topics array for immediate UI refresh
+
         if (Array.isArray(this.topics)) {
           const topicIndex = this.topics.findIndex(t => t && t.topicId === topicId);
           if (topicIndex !== -1) {
             this.topics[topicIndex].inStudyPlan = true;
           }
         }
-        
+
         this.showAddModal = false;
         this.showSuccessModal = true;
-        
+
       } catch (error) {
         console.error('❌ Error adding to study plan:', error);
-        
+
         let errorMessage = '❌ Не удалось добавить тему';
         if (error.response?.status === 400) {
           errorMessage = '❌ Неверные данные. Проверьте правильность заполнения.';
@@ -1365,55 +1321,55 @@ export default {
         } else if (error.response?.status === 409) {
           errorMessage = '❌ Тема уже добавлена в учебный план.';
         }
-        
+
         alert(errorMessage);
         this.showAddModal = false;
       }
     },
 
     handlePlanUpdate(newPlan) {
-      this.plan = newPlan; // Update local `plan` data property if needed elsewhere
+      this.plan = newPlan;
       console.log('💳 Catalogue: Plan updated to:', newPlan);
-      
+
       // Trigger reactivity update to reflect new plan status
       this.triggerReactivityUpdate();
     },
 
-    // ✅ ENHANCED: Setup comprehensive event listeners (like UserSection)
+    // ✅ ENHANCED: Setup comprehensive event listeners
     setupEventListeners() {
       console.log('🔧 Catalogue: Setting up event listeners');
-      
+
       // ===== SUBSCRIPTION CHANGE HANDLERS =====
       this.globalEventHandlers.subscriptionChange = (event) => {
         console.log('📡 Catalogue: Subscription change received:', event.detail);
-        
+
         const { plan, source, oldPlan } = event.detail;
-        
+
         // Force immediate UI update
         this.triggerReactivityUpdate();
-        
-        // Show celebration for upgrades (assuming a global notification system)
+
+        // Show celebration for upgrades
         if (plan && plan !== 'free' && oldPlan === 'free') {
           const planLabel = plan === 'pro' ? 'Pro' : 'Start';
           const sourceText = source === 'promocode' ? 'промокоду' : 'оплате';
-          
-          if (this.$toast) { // Example using a toast notification system
+
+          if (this.$toast) {
             this.$toast.success(`🎉 ${planLabel} подписка активирована по ${sourceText}!`, { duration: 5000 });
           } else {
             console.log(`🎉 Catalogue: ${planLabel} подписка активирована по ${sourceText}!`);
           }
         }
       };
-      
+
       this.globalEventHandlers.userStatusChange = (data) => {
         console.log('📡 Catalogue: Status change event received:', data);
         this.handleUserStatusChange(data.newStatus, data.oldStatus);
       };
-      
+
       this.globalEventHandlers.promocodeApplied = (data) => {
         console.log('📡 Catalogue: Promocode applied event:', data);
         this.handleUserStatusChange(data.newStatus, data.oldStatus);
-        
+
         if (data.newStatus && data.newStatus !== 'free') {
           const planLabel = data.newStatus === 'pro' ? 'Pro' : 'Start';
           if (this.$toast) {
@@ -1423,24 +1379,23 @@ export default {
           }
         }
       };
-      
+
       this.globalEventHandlers.forceUpdate = (data) => {
         console.log('📡 Catalogue: Force update event received:', data);
         this.triggerReactivityUpdate();
       };
-      
+
       this.globalEventHandlers.paymentCompleted = (data) => {
         console.log('📡 Catalogue: Payment completed event:', data);
-        // This effectively mirrors the logic of subscriptionChange
         this.globalEventHandlers.subscriptionChange({ detail: data });
       };
-      
+
       // ===== REGISTER EVENT LISTENERS =====
-      
+
       // DOM event listeners
       if (typeof window !== 'undefined') {
         window.addEventListener('userSubscriptionChanged', this.globalEventHandlers.subscriptionChange);
-        
+
         // ✅ NEW: Listen for localStorage changes (cross-tab sync)
         this.globalEventHandlers.storageChange = (event) => {
           if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
@@ -1448,10 +1403,10 @@ export default {
             this.handleUserStatusChange(event.newValue, event.oldValue);
           }
         };
-        
+
         window.addEventListener('storage', this.globalEventHandlers.storageChange);
       }
-      
+
       // Event bus listeners
       if (typeof window !== 'undefined' && window.eventBus) {
         const eventBusEvents = [
@@ -1459,23 +1414,22 @@ export default {
           ['promocodeApplied', this.globalEventHandlers.promocodeApplied],
           ['forceUpdate', this.globalEventHandlers.forceUpdate],
           ['globalForceUpdate', this.globalEventHandlers.forceUpdate],
-          ['subscriptionUpdated', this.globalEventHandlers.userStatusChange], // Alias/duplicate from original
+          ['subscriptionUpdated', this.globalEventHandlers.userStatusChange],
           ['paymentCompleted', this.globalEventHandlers.paymentCompleted]
         ];
-        
+
         eventBusEvents.forEach(([event, handler]) => {
           window.eventBus.on(event, handler);
-          this.eventCleanupFunctions.push(() => { // Store cleanup function
+          this.eventCleanupFunctions.push(() => {
             window.eventBus.off(event, handler);
           });
         });
-        
+
         console.log('✅ Catalogue: Event bus listeners registered');
       }
-      
+
       // ===== STORE MUTATION LISTENER =====
       if (this.$store) {
-        // Use `this.storeUnsubscribe` for consistency with cleanup
         this.storeUnsubscribe = this.$store.subscribe((mutation) => {
           if (this.isUserRelatedMutation(mutation)) {
             console.log('📊 Catalogue: Store mutation detected:', mutation.type);
@@ -1483,7 +1437,7 @@ export default {
           }
         });
       }
-      
+
       console.log('✅ Catalogue: Event listeners setup complete');
     },
 
@@ -1497,7 +1451,7 @@ export default {
       this.statusSyncInterval = setInterval(() => {
         this.syncStatusWithStore();
       }, 30000);
-      
+
       console.log('✅ Catalogue: Periodic status sync setup');
     },
 
@@ -1507,7 +1461,7 @@ export default {
         const storeStatus = this.$store?.getters['user/userStatus'];
         const localStatus = localStorage.getItem('userStatus');
         const currentTime = Date.now();
-        
+
         console.log('🔄 Catalogue: Performing status sync check.', {
             store: storeStatus,
             local: localStatus,
@@ -1520,12 +1474,11 @@ export default {
           this.triggerReactivityUpdate();
         } else if (!storeStatus && localStatus && localStatus !== 'free') {
             console.log('⚠️ Catalogue: Store status missing/free, but local is higher. Updating store.');
-            // Dispatch a mutation to update the store with local status
-            this.$store.commit('user/SET_USER_STATUS', localStatus); 
+            this.$store.commit('user/SET_USER_STATUS', localStatus);
             this.triggerReactivityUpdate();
         }
-        
-        this.lastStatusSync = currentTime; // Update last sync time
+
+        this.lastStatusSync = currentTime;
 
       } catch (error) {
         console.error('❌ Catalogue: Error during status sync:', error);
@@ -1535,28 +1488,31 @@ export default {
     // ✅ NEW: Handle user status changes (centralized logic)
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
-      
+
       console.log(`👤 Catalogue: Handling status change ${oldStatus} → ${newStatus}`);
-      
+
       // Clear any pending status change timeout
       if (this.statusChangeTimeout) {
         clearTimeout(this.statusChangeTimeout);
       }
-      
+
       // Update localStorage immediately
       localStorage.setItem('userStatus', newStatus);
-      
+
       // Trigger immediate reactivity update
       this.triggerReactivityUpdate();
-      
+
       // Additional delayed update for stubborn cases
       this.statusChangeTimeout = setTimeout(() => {
         this.triggerReactivityUpdate();
       }, 100);
-      
+
       // Update last sync time
       this.lastStatusSync = Date.now();
-      
+
+      // Call mixin method for additional handling
+      this.onUserStatusChanged(newStatus, oldStatus);
+
       console.log(`✅ Catalogue: Status change handled: ${oldStatus} → ${newStatus}`);
     },
 
@@ -1564,19 +1520,19 @@ export default {
     triggerReactivityUpdate() {
       this.componentKey++;
       this.lastUpdateTime = Date.now();
-      
+
       // Force Vue reactivity with multiple strategies
       this.$forceUpdate();
-      
+
       // Additional delayed updates for maximum compatibility
       this.$nextTick(() => {
         this.$forceUpdate();
-        
+
         setTimeout(() => {
           this.$forceUpdate();
-        }, 50); // Small delay for rendering
+        }, 50);
       });
-      
+
       console.log('🔄 Catalogue: Reactivity update triggered:', {
         componentKey: this.componentKey,
         userStatus: this.userStatus,
@@ -1586,44 +1542,44 @@ export default {
 
     // ✅ NEW: Check if mutation is user-related
     isUserRelatedMutation(mutation) {
-      return mutation.type.includes('user/') && 
-             (mutation.type.includes('STATUS') || 
+      return mutation.type.includes('user/') &&
+             (mutation.type.includes('STATUS') ||
               mutation.type.includes('SUBSCRIPTION') ||
-              mutation.type.includes('UPDATE') || // e.g., SET_USER
-              mutation.type.includes('FORCE')); // e.g., INCREMENT_FORCE_UPDATE_COUNTER
+              mutation.type.includes('UPDATE') ||
+              mutation.type.includes('FORCE'));
     },
 
     // ✅ ENHANCED: Cleanup method for all listeners and intervals
     cleanup() {
       console.log('🧹 Catalogue: Performing cleanup...');
-      
+
       // Clear timeouts and intervals
       if (this.statusChangeTimeout) {
         clearTimeout(this.statusChangeTimeout);
         this.statusChangeTimeout = null;
       }
-      
-      if (this.forceUpdateInterval) { // If this was ever set, clear it
+
+      if (this.forceUpdateInterval) {
         clearInterval(this.forceUpdateInterval);
         this.forceUpdateInterval = null;
       }
-      
+
       if (this.statusSyncInterval) {
         clearInterval(this.statusSyncInterval);
         this.statusSyncInterval = null;
       }
-      
-      // Clean up global DOM event listeners (from `window.addEventListener`)
+
+      // Clean up global DOM event listeners
       if (typeof window !== 'undefined') {
         if (this.globalEventHandlers.subscriptionChange) {
           window.removeEventListener('userSubscriptionChanged', this.globalEventHandlers.subscriptionChange);
         }
-        
+
         if (this.globalEventHandlers.storageChange) {
           window.removeEventListener('storage', this.globalEventHandlers.storageChange);
         }
       }
-      
+
       // Clean up event bus listeners using stored cleanup functions
       this.eventCleanupFunctions.forEach(cleanup => {
         try {
@@ -1632,23 +1588,22 @@ export default {
           console.warn('⚠️ Catalogue: Event cleanup function failed:', error);
         }
       });
-      this.eventCleanupFunctions = []; // Clear the array after cleanup
+      this.eventCleanupFunctions = [];
 
       // Clean up store subscription
       if (this.storeUnsubscribe) {
         this.storeUnsubscribe();
         this.storeUnsubscribe = null;
       }
-      
+
       // Clear global event handlers object
       this.globalEventHandlers = {};
-      
+
       console.log('✅ Catalogue: Cleanup completed');
     }
   }
 };
 </script>
-
 <style scoped>
 /* ===== CONTENT AREA ===== */
 .content-area {

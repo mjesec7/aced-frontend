@@ -117,22 +117,42 @@
 import { removeFromStudyList } from '@/api';
 import { auth } from '@/firebase';
 import { mapGetters } from 'vuex';
+import { userStatusMixin } from '@/composables/useUserStatus';
 
 export default {
   name: 'StudyCard',
+  
+  // ✅ ENHANCED: Add the comprehensive user status mixin
+  mixins: [userStatusMixin],
+  
   props: {
     topic: { type: Object, required: true },
     progress: { type: Object, default: () => ({ percent: 0, medal: 'none', stars: 0, points: 0 }) },
     lessons: { type: Array, default: () => [] }
   },
+  
   data() {
     return {
       showDeleteModal: false,
-      lang: localStorage.getItem('lang') || 'ru'
+      lang: localStorage.getItem('lang') || 'ru',
+      
+      // ✅ ENHANCED: Add reactivity tracking
+      componentKey: 0,
+      lastStatusUpdate: Date.now()
     };
   },
+  
   computed: {
-    ...mapGetters('user', ['userStatus']),
+    // ✅ ENHANCED: Map user status getters with mixin integration
+    ...mapGetters('user', [
+      'userStatus',
+      'isPremiumUser',
+      'isStartUser',
+      'isProUser',
+      'isFreeUser',
+      'hasActiveSubscription',
+      'forceUpdateCounter'
+    ]),
     
     displayName() {
       if (!this.topic) return 'Курс без названия';
@@ -249,7 +269,43 @@ export default {
     }
   },
   
+  // ✅ ENHANCED: Watch for user status changes
+  watch: {
+    userStatus: {
+      handler(newStatus, oldStatus) {
+        console.log('📊 StudyCard: User status changed from', oldStatus, 'to:', newStatus);
+        this.triggerReactivityUpdate();
+      },
+      immediate: true
+    },
+    
+    forceUpdateCounter: {
+      handler(newCounter, oldCounter) {
+        console.log('📊 StudyCard: Force update counter changed:', oldCounter, '→', newCounter);
+        this.triggerReactivityUpdate();
+      },
+      immediate: true
+    }
+  },
+  
+  mounted() {
+    console.log('📱 StudyCard: Component mounted for topic:', this.displayName);
+  },
+  
   methods: {
+    // ✅ ENHANCED: Add reactivity update method
+    triggerReactivityUpdate() {
+      this.componentKey++;
+      this.lastStatusUpdate = Date.now();
+      this.$forceUpdate();
+      
+      console.log('🔄 StudyCard: Reactivity update triggered:', {
+        componentKey: this.componentKey,
+        topicName: this.displayName,
+        userStatus: this.userStatus
+      });
+    },
+    
     getTopicType(topic) {
       if (!topic) return 'free';
       
@@ -338,12 +394,13 @@ export default {
       return 'Начать изучение курса';
     },
 
+    // ✅ ENHANCED: Use mixin property for access check
     hasTopicAccess(topic) {
       const topicType = this.getTopicType(topic);
       
       if (topicType === 'free') return true;
-      if (topicType === 'premium' && (this.userStatus === 'start' || this.userStatus === 'pro')) return true;
-      if (topicType === 'pro' && this.userStatus === 'pro') return true;
+      if (topicType === 'premium' && this.reactiveIsPremiumUser) return true;
+      if (topicType === 'pro' && this.reactiveIsProUser) return true;
       
       return false;
     },

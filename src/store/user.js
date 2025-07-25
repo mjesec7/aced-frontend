@@ -2,6 +2,8 @@
 
 import { checkPaymentStatus } from '@/api/payments';
 import { getUserUsage, resetMonthlyUsage } from '@/services/GPTService';
+import { updateUserStatusAction } from '@/composables/useUserStatus';
+
 
 // ✅ CENTRALIZED STATE MANAGEMENT WITH ENHANCED STRUCTURE
 const state = () => ({
@@ -810,9 +812,7 @@ const mutations = {
 
 // ✅ ENHANCED ACTIONS WITH COMPREHENSIVE ERROR HANDLING
 const actions = {
-  // ✅ COMPLETELY BULLETPROOFED: saveUser action
-  // ✅ COMPLETELY FIXED saveUser action for src/store/user.js
-// Replace the existing saveUser action with this bulletproof version:
+
 
 async saveUser({ commit, dispatch, state }, { userData, token }) {
   const startTime = Date.now();
@@ -1234,7 +1234,7 @@ async saveUser({ commit, dispatch, state }, { userData, token }) {
     }
   }
 },
-// ✅ URGENT FIX: Replace your updateUserStatus action with this exact code
+updateUserStatus: updateUserStatusAction,
 
 async updateUserStatus({ commit, state, dispatch }, newStatus) {
   const startTime = Date.now();

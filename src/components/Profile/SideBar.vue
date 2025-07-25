@@ -72,15 +72,21 @@
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase';
 import { mapState, mapMutations, mapGetters } from 'vuex';
+import { userStatusMixin } from '@/composables/useUserStatus';
 
 export default {
   name: 'SideBar',
+  
+  // ✅ ENHANCED: Add the comprehensive user status mixin
+  mixins: [userStatusMixin],
+  
   props: {
     isOpen: {
       type: Boolean,
       default: true
     }
   },
+  
   data() {
     return {
       showLogoutModal: false,
@@ -95,24 +101,27 @@ export default {
         { name: 'settings', label: 'Настройки' }
       ],
       isMobile: false,
+      
       // ✅ ENHANCED: More comprehensive reactivity tracking
       componentKey: 0,
       reactivityKey: 0,
       lastStatusUpdate: Date.now(),
-      unsubscribeStore: null, // Initial name from the original code
+      
+      // ✅ Enhanced: Event cleanup tracking
+      eventCleanupFunctions: [],
+      storeUnsubscribe: null,
       globalEventHandlers: {},
       
-      // ✅ NEW: Event cleanup tracking (keeping the original `eventCleanupFunctions` for consistency)
-      eventCleanupFunctions: [], // This was already present in the original code, moved to correct data section
-      storeUnsubscribe: null, // This is the preferred name for the Vuex unsubscribe function
-
       // ✅ NEW: Status sync tracking
       lastSyncTime: Date.now(),
-      syncCheckInterval: null
+      syncCheckInterval: null,
+      notificationTimeout: null
     };
   },
+  
   computed: {
     ...mapState(['user']),
+    
     // ✅ ENHANCED: Map all needed user getters from store with reactivity
     ...mapGetters('user', [
       'userStatus',
@@ -125,39 +134,9 @@ export default {
       'forceUpdateCounter'
     ]),
     
-    // ✅ ENHANCED: Better plan label with comprehensive reactivity
+    // ✅ ENHANCED: Better plan label with comprehensive reactivity (from mixin)
     planLabel() {
-      // Force reactivity with multiple triggers
-      const status = this.userStatus || 'free';
-      const counter = this.forceUpdateCounter || 0;
-      const key = this.reactivityKey;
-      const timestamp = this.lastStatusUpdate;
-      const syncTime = this.lastSyncTime; // Additional trigger
-      
-      console.log('📊 Sidebar: Computing plan label:', { 
-        status, 
-        counter, 
-        key, 
-        timestamp,
-        syncTime,
-        raw: this.$store?.state?.user?.userStatus 
-      });
-      
-      // Multiple fallback checks for maximum reliability
-      const finalStatus = status || 
-                         this.$store?.getters['user/userStatus'] || 
-                         this.$store?.state?.user?.userStatus ||
-                         localStorage.getItem('userStatus') || 
-                         'free';
-      
-      const labels = {
-        'pro': 'Pro',
-        'start': 'Start',
-        'premium': 'Start', // Alias
-        'free': 'Free'
-      };
-      
-      return labels[finalStatus] || 'Free';
+      return this.userStatusLabel || 'Free';
     },
     
     // ✅ NEW: Computed property to track user info changes with reactivity
@@ -167,18 +146,9 @@ export default {
       return this.user.name || this.user.displayName || this.user.email?.split('@')[0] || 'Пользователь';
     },
     
-    // ✅ NEW: Enhanced user status badge class
+    // ✅ NEW: Enhanced user status badge class (from mixin)
     userStatusBadgeClass() {
-      const status = this.userStatus || 'free';
-      const counter = this.forceUpdateCounter || 0; // Force reactivity
-      
-      return {
-        'status-free': status === 'free',
-        'status-start': status === 'start' || status === 'premium', 
-        'status-pro': status === 'pro',
-        'plan-updated': this.lastStatusUpdate > Date.now() - 5000, // Recently updated
-        'reactive-update': counter > 0 // Placeholder class, could be used for animation
-      };
+      return this.getStatusBadgeClass();
     }
   },
   
@@ -188,10 +158,7 @@ export default {
     userStatus: {
       handler(newStatus, oldStatus) {
         console.log('📊 Sidebar: User status changed from', oldStatus, 'to:', newStatus);
-        
         this.handleStatusChange(newStatus, oldStatus);
-        
-        // ✅ NEW: Also update sync time
         this.lastSyncTime = Date.now();
       },
       immediate: true
@@ -247,9 +214,7 @@ export default {
       immediate: true
     },
 
-    // ✅ NEW: Watch for localStorage changes (for cross-tab sync) - This is for direct store state changes, not localStorage
-    // The previous implementation was watching $store.state.user.userStatus, which is appropriate.
-    // If you literally meant localStorage, that's covered by `setupGlobalListeners` already.
+    // ✅ Watch for direct store state changes
     '$store.state.user.userStatus': {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
@@ -303,7 +268,6 @@ export default {
     this.setupGlobalListeners();
     
     // ✅ ENHANCED: Store subscription listener with enhanced mutation tracking
-    // Using `this.storeUnsubscribe` as the variable name for consistency with cleanup
     this.storeUnsubscribe = this.$store.subscribe((mutation) => {
       const relevantMutations = [
         'user/SET_USER_STATUS',
@@ -336,22 +300,41 @@ export default {
     this.cleanupGlobalListeners();
     
     // Remove store subscription
-    if (this.storeUnsubscribe) { // Use the correct variable name
+    if (this.storeUnsubscribe) {
       this.storeUnsubscribe();
-      this.storeUnsubscribe = null; // Clear reference
+      this.storeUnsubscribe = null;
     }
     
     // Clear sync interval
     if (this.syncCheckInterval) {
       clearInterval(this.syncCheckInterval);
-      this.syncCheckInterval = null; // Clear reference
+      this.syncCheckInterval = null;
+    }
+    
+    // Clear notification timeout
+    if (this.notificationTimeout) {
+      clearTimeout(this.notificationTimeout);
+      this.notificationTimeout = null;
     }
     
     console.log('✅ Sidebar: Cleanup completed');
   },
   
   methods: {
-    ...mapMutations(['setUser', 'clearUser']), // Ensure these mutations are available
+    ...mapMutations(['setUser', 'clearUser']),
+    
+    // ✅ ENHANCED: Override mixin method for status change notifications
+    onUserStatusChanged(newStatus, oldStatus) {
+      console.log(`🔔 Sidebar: User status changed from ${oldStatus} to ${newStatus}`);
+      
+      if (oldStatus && oldStatus !== newStatus && newStatus && newStatus !== 'free') {
+        // Delay notification to avoid showing multiple times
+        clearTimeout(this.notificationTimeout);
+        this.notificationTimeout = setTimeout(() => {
+          this.showUpgradeNotification(newStatus, 'subscription-change');
+        }, 500);
+      }
+    },
     
     // ✅ NEW: Setup periodic sync check
     setupPeriodicSync() {
@@ -419,7 +402,7 @@ export default {
         // ✅ NEW: Store change event handler for EventBus
         this.globalEventHandlers.storeChanged = (data) => {
           console.log('📡 Sidebar: Store changed event (EventBus):', data);
-          this.syncStatusWithStore(); // Trigger a sync check on store change
+          this.syncStatusWithStore();
           this.triggerReactivityUpdate();
         };
         
@@ -453,7 +436,7 @@ export default {
           if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
             console.log('📡 Sidebar: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
             this.handleStatusChange(event.newValue, event.oldValue);
-            this.syncStatusWithStore(); // Trigger sync to update Vuex store
+            this.syncStatusWithStore();
           }
         };
         
@@ -500,14 +483,8 @@ export default {
       // Trigger multiple reactivity updates
       this.triggerReactivityUpdate();
       
-      // Optional: Show notification for subscription changes
-      if (oldStatus && oldStatus !== newStatus && newStatus && newStatus !== 'free') {
-        // Delay notification to avoid showing multiple times, especially from rapid events
-        clearTimeout(this.notificationTimeout);
-        this.notificationTimeout = setTimeout(() => {
-          this.showUpgradeNotification(newStatus, 'subscription-change');
-        }, 500);
-      }
+      // Call mixin method for additional handling
+      this.onUserStatusChanged(newStatus, oldStatus);
     },
     
     // ✅ NEW: Store update handler
@@ -531,7 +508,7 @@ export default {
       this.componentKey++;
       this.reactivityKey++;
       this.lastStatusUpdate = Date.now();
-      this.lastSyncTime = Date.now(); // Also update last sync time with every trigger
+      this.lastSyncTime = Date.now();
       
       // Force Vue reactivity
       this.$forceUpdate();
@@ -542,7 +519,7 @@ export default {
         
         setTimeout(() => {
           this.$forceUpdate();
-        }, 50); // Small delay for rendering
+        }, 50);
       });
       
       console.log('🔄 Sidebar: Reactivity update triggered:', {
@@ -579,7 +556,7 @@ export default {
         if (!storeStatus || storeStatus === 'free') {
           if (localStatus && localStatus !== 'free' && localStatus !== storeStatus) {
             console.log('⚠️ Sidebar: Store missing higher status, updating from localStorage');
-            this.$store.commit('user/SET_USER_STATUS', localStatus); // Assuming this mutation exists
+            this.$store.commit('user/SET_USER_STATUS', localStatus);
             this.triggerReactivityUpdate();
             this.lastSyncTime = currentTime;
           }
@@ -597,7 +574,7 @@ export default {
       }
     },
     
-    // ✅ NEW: Show upgrade notification (assuming this.$toast is available globally)
+    // ✅ NEW: Show upgrade notification
     showUpgradeNotification(plan, source) {
       const planLabels = {
         start: 'Start',
@@ -650,10 +627,10 @@ export default {
         // Sign out from Firebase
         await signOut(auth);
         
-        // Clear all store data (assuming user module has CLEAR_USER)
-        this.clearUser(); // from mapMutations
-        this.$store.commit('user/CLEAR_USER'); // Explicitly clear user module state if present
-        this.$store.commit('setFirebaseUserId', null); // Clear global firebase user ID
+        // Clear all store data
+        this.clearUser();
+        this.$store.commit('user/CLEAR_USER');
+        this.$store.commit('setFirebaseUserId', null);
         
         // Clear relevant local storage items
         const keysToRemove = ['firebaseUserId', 'userId', 'userStatus', 'subscriptionDetails', 'appliedPromocodes'];
@@ -708,9 +685,9 @@ export default {
         settings: ['/settings']
       };
       
-      // Handle routes that can have sub-paths (e.g., /profile/homeworks/123)
+      // Handle routes that can have sub-paths
       const startsWithMatches = {
-        homework: '/profile/homework', // Covers /profile/homework and its sub-routes
+        homework: '/profile/homework',
         homeworks: '/profile/homeworks',
         tests: '/profile/tests',
         vocabulary: '/profile/vocabulary'
@@ -723,15 +700,13 @@ export default {
       
       // Check startsWith matches
       if (startsWithMatches[name] && path.startsWith(startsWithMatches[name])) {
-        // Ensure it's not a partial match of a different link name (e.g., "home" for "homework")
-        // This is a simple check, could be more robust with regex if needed.
         if (name === 'homework') {
           return path === '/profile/homework' || path.startsWith('/profile/homework/');
         }
         return true;
       }
       
-      // Fallback to generic match (less precise, use as last resort)
+      // Fallback to generic match
       return path.includes(`/profile/${name}`);
     }
   }
@@ -827,19 +802,19 @@ export default {
   text-transform: uppercase;
 }
 
-/* New/Enhanced styles for user-plan based on status */
+/* Enhanced styles for user-plan based on status */
 .user-plan.status-free {
-  background: #cbd5e1; /* Light gray */
+  background: #cbd5e1;
   color: #4a5568;
 }
 
 .user-plan.status-start {
-  background: #a78bfa; /* Light purple */
+  background: #a78bfa;
   color: #ffffff;
 }
 
 .user-plan.status-pro {
-  background: #1f2937; /* Dark charcoal */
+  background: #1f2937;
   color: #ffffff;
 }
 
@@ -852,7 +827,6 @@ export default {
   50% { transform: scale(1.05); opacity: 0.8; }
   100% { transform: scale(1); opacity: 1; }
 }
-
 
 .nav-links {
   flex: 1;
@@ -949,7 +923,7 @@ export default {
   font-size: 0.8rem;
   border-radius: 8px;
   cursor: pointer;
-  font-family: 'Inter', sans-serif; /* Changed from Unbounded to Inter for consistency */
+  font-family: 'Inter', sans-serif;
   transition: all 0.2s ease;
   width: 100%;
   font-weight: 600;
@@ -980,7 +954,7 @@ export default {
   border-radius: 12px;
   text-align: center;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  font-family: 'Inter', sans-serif; /* Changed from Unbounded to Inter for consistency */
+  font-family: 'Inter', sans-serif;
   max-width: 380px;
   width: 90%;
   animation: fadeIn 0.3s ease-in-out;
