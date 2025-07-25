@@ -1000,7 +1000,7 @@ export default {
 // This version has extensive logging to track down the exact issue
 
 async applyPromo() {
-  console.log('🚀🚀🚀 ===== SUPER DEBUG APPLY PROMO START =====');
+  console.log('🚀🚀🚀 ===== APPLY PROMO START =====');
   console.log('🔍 DEBUG 1: Method called');
   
   // Initial validation with debug
@@ -1052,220 +1052,196 @@ async applyPromo() {
     console.log('🔍 DEBUG 9: Server response received');
     console.log('🔍 DEBUG 9a: Response status:', response.status);
     console.log('🔍 DEBUG 9b: Response ok:', response.ok);
-    console.log('🔍 DEBUG 9c: Response headers:', Object.fromEntries(response.headers.entries()));
 
     const result = await response.json();
     console.log('🔍 DEBUG 10: Response parsed as JSON');
     console.log('🔍 DEBUG 10a: Full result object:', result);
     console.log('🔍 DEBUG 10b: result.success:', result.success);
-    console.log('🔍 DEBUG 10c: result.data:', result.data);
-    console.log('🔍 DEBUG 10d: result.error:', result.error);
-    console.log('🔍 DEBUG 10e: typeof result:', typeof result);
-    console.log('🔍 DEBUG 10f: Object.keys(result):', Object.keys(result));
 
     console.log('📡 Server response:', { success: result.success, hasData: !!result.data });
 
     if (result.success) {
       console.log('✅ DEBUG 11: Server returned success=true');
       
-      // Step 2: Update user status via store
+      // Step 2: Update user status via store - WITH PROPER ERROR CHECKING
       try {
         console.log('🔍 DEBUG 12: About to update user status via store');
-        console.log('🔍 DEBUG 12a: Checking store availability...');
-        console.log('🔍 DEBUG 12b: this.$store exists:', !!this.$store);
-        console.log('🔍 DEBUG 12c: this.$store.dispatch exists:', typeof this.$store?.dispatch);
+        console.log('🔍 DEBUG 12a: this.$store exists:', !!this.$store);
+        console.log('🔍 DEBUG 12b: this.$store.dispatch exists:', typeof this.$store?.dispatch);
         
         if (!this.$store) {
-          console.error('❌ DEBUG 12d: $store is not available!');
           throw new Error('Store not available');
         }
         
         if (typeof this.$store.dispatch !== 'function') {
-          console.error('❌ DEBUG 12e: $store.dispatch is not a function!');
-          console.log('🔍 DEBUG 12f: $store.dispatch type:', typeof this.$store.dispatch);
           throw new Error('Store dispatch not available');
         }
         
-        console.log('🔍 DEBUG 13: Checking store getters before dispatch...');
-        try {
-          const currentUserStatus = this.$store.getters['user/userStatus'];
-          console.log('🔍 DEBUG 13a: Current user status from getter:', currentUserStatus);
-        } catch (getterError) {
-          console.warn('⚠️ DEBUG 13b: Error getting current status:', getterError);
-        }
-        
-        console.log('🔍 DEBUG 14: Checking available actions...');
-        try {
-          const userModule = this.$store._modules?.root?._children?.user;
-          const actions = userModule?._rawModule?.actions;
-          console.log('🔍 DEBUG 14a: User module exists:', !!userModule);
-          console.log('🔍 DEBUG 14b: Actions object exists:', !!actions);
-          console.log('🔍 DEBUG 14c: Available actions:', actions ? Object.keys(actions) : 'none');
-          console.log('🔍 DEBUG 14d: updateUserStatus exists:', actions ? ('updateUserStatus' in actions) : 'unknown');
-          
-          if (actions && 'updateUserStatus' in actions) {
-            const actionFn = actions.updateUserStatus;
-            console.log('🔍 DEBUG 14e: updateUserStatus type:', typeof actionFn);
-            console.log('🔍 DEBUG 14f: updateUserStatus length:', actionFn.length);
-          }
-        } catch (actionCheckError) {
-          console.warn('⚠️ DEBUG 14g: Error checking actions:', actionCheckError);
-        }
-        
-        console.log('🔄 DEBUG 15: Updating user status via existing store action...');
-        console.log('🔍 DEBUG 15a: Dispatching with plan:', this.selectedPlan);
-        console.log('🔍 DEBUG 15b: Dispatch action name: "user/updateUserStatus"');
-        
-        // ✅ The critical dispatch call with extensive debugging
-        console.log('🔍 DEBUG 16: About to call $store.dispatch...');
+        console.log('🔍 DEBUG 13: Dispatching user/updateUserStatus with plan:', this.selectedPlan);
         console.time('updateUserStatus-duration');
         
+        // ✅ THE CRITICAL STORE CALL WITH EXTENSIVE DEBUGGING
         let updateResult;
         try {
           updateResult = await this.$store.dispatch('user/updateUserStatus', this.selectedPlan);
           console.timeEnd('updateUserStatus-duration');
-          console.log('🔍 DEBUG 17: Store dispatch completed');
+          console.log('🔍 DEBUG 14: Store dispatch completed');
         } catch (dispatchError) {
           console.timeEnd('updateUserStatus-duration');
-          console.error('❌ DEBUG 17a: Store dispatch threw error:', dispatchError);
-          console.log('🔍 DEBUG 17b: Dispatch error name:', dispatchError.name);
-          console.log('🔍 DEBUG 17c: Dispatch error message:', dispatchError.message);
-          console.log('🔍 DEBUG 17d: Dispatch error stack:', dispatchError.stack);
+          console.error('❌ DEBUG 14a: Store dispatch threw error:', dispatchError);
           throw dispatchError;
         }
         
-        console.log('🔍 DEBUG 18: Analyzing dispatch result...');
-        console.log('🔍 DEBUG 18a: updateResult received:', updateResult);
-        console.log('🔍 DEBUG 18b: updateResult type:', typeof updateResult);
-        console.log('🔍 DEBUG 18c: updateResult is null:', updateResult === null);
-        console.log('🔍 DEBUG 18d: updateResult is undefined:', updateResult === undefined);
-        console.log('🔍 DEBUG 18e: updateResult is object:', typeof updateResult === 'object');
+        console.log('🔍 DEBUG 15: Analyzing dispatch result...');
+        console.log('🔍 DEBUG 15a: updateResult received:', updateResult);
+        console.log('🔍 DEBUG 15b: updateResult type:', typeof updateResult);
+        console.log('🔍 DEBUG 15c: updateResult is null:', updateResult === null);
+        console.log('🔍 DEBUG 15d: updateResult is undefined:', updateResult === undefined);
+        console.log('🔍 DEBUG 15e: updateResult is object:', typeof updateResult === 'object');
         
+        // ✅ BULLETPROOF: Handle ALL possible return values
         if (updateResult === undefined) {
-          console.error('❌ DEBUG 19: updateResult is UNDEFINED!');
-          console.log('🔍 DEBUG 19a: This means the action exists but returns undefined');
-          console.log('🔍 DEBUG 19b: The action probably lacks a return statement');
+          console.error('❌ DEBUG 16: updateResult is UNDEFINED!');
+          console.log('🔍 DEBUG 16a: This means the action exists but returns undefined');
+          console.log('🔍 DEBUG 16b: The action probably lacks a return statement');
+          
+          // ✅ FALLBACK: Treat as success but warn user
+          this.showNotification('Промокод применён, но возникла ошибка синхронизации. Обновите страницу.', 'warning');
+          
+          // Still try to update UI manually
+          this.handleManualSuccess();
+          return;
+          
         } else if (updateResult === null) {
-          console.error('❌ DEBUG 20: updateResult is NULL!');
-        } else if (typeof updateResult === 'object') {
-          console.log('✅ DEBUG 21: updateResult is an object, analyzing...');
-          console.log('🔍 DEBUG 21a: Object.keys(updateResult):', Object.keys(updateResult));
-          console.log('🔍 DEBUG 21b: updateResult.success:', updateResult.success);
-          console.log('🔍 DEBUG 21c: updateResult.success type:', typeof updateResult.success);
-          console.log('🔍 DEBUG 21d: updateResult.error:', updateResult.error);
-          console.log('🔍 DEBUG 21e: updateResult.message:', updateResult.message);
-          console.log('🔍 DEBUG 21f: updateResult.oldStatus:', updateResult.oldStatus);
-          console.log('🔍 DEBUG 21g: updateResult.newStatus:', updateResult.newStatus);
-        } else {
-          console.log('🔍 DEBUG 22: updateResult is unexpected type:', typeof updateResult);
-          console.log('🔍 DEBUG 22a: updateResult value:', updateResult);
-        }
-        
-        console.log('📊 Store update result:', updateResult);
-        
-        // ✅ BULLETPROOF: Check for successful result with extensive debugging
-        console.log('🔍 DEBUG 23: Checking success condition...');
-        console.log('🔍 DEBUG 23a: updateResult exists check:', !!updateResult);
-        console.log('🔍 DEBUG 23b: updateResult.success exists check:', 'success' in (updateResult || {}));
-        console.log('🔍 DEBUG 23c: updateResult.success === true check:', (updateResult || {}).success === true);
-        console.log('🔍 DEBUG 23d: Combined condition result:', updateResult && updateResult.success === true);
-        
-        if (updateResult && updateResult.success === true) {
-          console.log('✅ DEBUG 24: Store user status updated successfully');
-          console.log('🔍 DEBUG 24a: Success branch entered');
+          console.error('❌ DEBUG 17: updateResult is NULL!');
+          this.showNotification('Промокод применён, но возникла ошибка обновления. Обновите страницу.', 'warning');
+          this.handleManualSuccess();
+          return;
           
-          // Step 3: Add the promocode to the applied list
-          console.log('🔍 DEBUG 25: Adding promocode to store...');
-          try {
-            this.$store.commit('user/ADD_PROMOCODE', {
-              code: this.promoCode.toUpperCase(),
-              plan: this.selectedPlan,
-              oldPlan: updateResult.oldStatus || this.currentPlan,
-              source: 'api',
-              details: result.data || {}
-            });
-            console.log('✅ DEBUG 25a: Promocode added to store successfully');
-          } catch (commitError) {
-            console.error('❌ DEBUG 25b: Error adding promocode to store:', commitError);
-          }
+        } else if (typeof updateResult === 'object' && updateResult.success === true) {
+          console.log('✅ DEBUG 18: Store user status updated successfully');
+          console.log('🔍 DEBUG 18a: Success branch entered');
+          console.log('🔍 DEBUG 18b: updateResult.oldStatus:', updateResult.oldStatus);
+          console.log('🔍 DEBUG 18c: updateResult.newStatus:', updateResult.newStatus);
           
-          // Step 4: Success feedback
-          console.log('🔍 DEBUG 26: Showing success notification...');
-          this.showNotification(`🎉 Промокод применён! Подписка ${this.selectedPlan.toUpperCase()} активирована!`, 'success');
+          // ✅ SUCCESS FLOW
+          this.handlePromoSuccess(updateResult);
+          return;
           
-          // Step 5: Reset form
-          console.log('🔍 DEBUG 27: Resetting form...');
-          this.promoCode = '';
-          this.selectedPlan = '';
-          this.promoValidation = null;
+        } else if (typeof updateResult === 'object' && updateResult.success === false) {
+          console.warn('⚠️ DEBUG 19: Store update returned success=false');
+          console.log('🔍 DEBUG 19a: updateResult.error:', updateResult.error);
           
-          // Step 6: Force component reactivity
-          console.log('🔍 DEBUG 28: Forcing reactivity update...');
-          this.forceReactivityUpdate();
-          
-          console.log('✅ DEBUG 29: Promocode application completed successfully');
-          
-        } else {
-          // ✅ FIXED: Handle undefined or falsy updateResult with EXTENSIVE debugging
-          console.warn('⚠️ DEBUG 30: Store update returned unsuccessful result');
-          console.log('🔍 DEBUG 30a: updateResult value:', updateResult);
-          console.log('🔍 DEBUG 30b: updateResult type:', typeof updateResult);
-          console.log('🔍 DEBUG 30c: updateResult truthiness:', !!updateResult);
-          
-          if (updateResult === undefined) {
-            console.error('❌ DEBUG 30d: Result is UNDEFINED - action missing return statement!');
-          } else if (updateResult === null) {
-            console.error('❌ DEBUG 30e: Result is NULL');
-          } else if (typeof updateResult === 'object') {
-            console.log('🔍 DEBUG 30f: Result is object but success !== true');
-            console.log('🔍 DEBUG 30g: Result.success value:', updateResult.success);
-            console.log('🔍 DEBUG 30h: Result.success type:', typeof updateResult.success);
-            console.log('🔍 DEBUG 30i: Result.error value:', updateResult.error);
-          }
-          
-          // Check if there's a specific error message
-          const errorMessage = updateResult?.error || 'Неизвестная ошибка обновления статуса';
-          console.log('🔍 DEBUG 31: Error message determined:', errorMessage);
-          
+          const errorMessage = updateResult.error || 'Неизвестная ошибка обновления статуса';
           this.showNotification(`Промокод применён на сервере, но: ${errorMessage}`, 'warning');
+          this.handleManualSuccess();
+          return;
           
-          // Try manual refresh
-          console.log('🔍 DEBUG 32: Attempting manual refresh...');
-          this.attemptManualRefresh();
+        } else {
+          console.warn('⚠️ DEBUG 20: Unexpected updateResult format');
+          console.log('🔍 DEBUG 20a: updateResult value:', updateResult);
+          console.log('🔍 DEBUG 20b: updateResult type:', typeof updateResult);
+          
+          this.showNotification('Промокод применён, но статус обновления неясен. Обновите страницу.', 'warning');
+          this.handleManualSuccess();
+          return;
         }
         
       } catch (storeError) {
-        console.error('❌ DEBUG 33: Store update failed with exception:', storeError);
-        console.log('🔍 DEBUG 33a: Store error name:', storeError.name);
-        console.log('🔍 DEBUG 33b: Store error message:', storeError.message);
-        console.log('🔍 DEBUG 33c: Store error stack:', storeError.stack);
+        console.error('❌ DEBUG 21: Store update failed with exception:', storeError);
+        console.log('🔍 DEBUG 21a: Store error name:', storeError.name);
+        console.log('🔍 DEBUG 21b: Store error message:', storeError.message);
         
         this.showNotification('Промокод применён, но возникла ошибка обновления интерфейса', 'warning');
-        this.attemptManualRefresh();
+        this.handleManualSuccess();
+        return;
       }
       
     } else {
       // Server returned error
-      console.error('❌ DEBUG 34: Promocode application failed - server returned success=false');
-      console.log('🔍 DEBUG 34a: Server error:', result.error);
-      console.log('🔍 DEBUG 34b: Server message:', result.message);
+      console.error('❌ DEBUG 22: Promocode application failed - server returned success=false');
+      console.log('🔍 DEBUG 22a: Server error:', result.error);
       this.showNotification(result.error || 'Неверный промокод', 'error');
+      return;
     }
     
   } catch (networkError) {
-    console.error('❌ DEBUG 35: Network error during promocode application:', networkError);
-    console.log('🔍 DEBUG 35a: Network error name:', networkError.name);
-    console.log('🔍 DEBUG 35b: Network error message:', networkError.message);
-    console.log('🔍 DEBUG 35c: Network error stack:', networkError.stack);
+    console.error('❌ DEBUG 23: Network error during promocode application:', networkError);
     this.showNotification('Ошибка соединения с сервером', 'error');
+    return;
     
   } finally {
-    console.log('🔍 DEBUG 36: Finally block - cleaning up...');
+    console.log('🔍 DEBUG 24: Finally block - cleaning up...');
     this.isProcessingPromo = false;
-    console.log('🔍 DEBUG 37: Set processing flag to false');
+    console.log('🔍 DEBUG 25: Set processing flag to false');
   }
   
-  console.log('🚀🚀🚀 ===== SUPER DEBUG APPLY PROMO END =====');
+  console.log('🚀🚀🚀 ===== APPLY PROMO END =====');
+},
+
+// ✅ ADD THESE HELPER METHODS TO YOUR COMPONENT:
+
+handlePromoSuccess(updateResult) {
+  console.log('🎉 handlePromoSuccess called with:', updateResult);
+  
+  try {
+    // Add to store if available
+    if (this.$store && typeof this.$store.commit === 'function') {
+      try {
+        this.$store.commit('user/ADD_PROMOCODE', {
+          code: this.promoCode.toUpperCase(),
+          plan: this.selectedPlan,
+          oldPlan: updateResult.oldStatus || 'free',
+          source: 'api',
+          details: { appliedAt: new Date().toISOString() }
+        });
+        console.log('✅ Promocode added to store successfully');
+      } catch (commitError) {
+        console.error('❌ Error adding promocode to store:', commitError);
+      }
+    }
+    
+    // Success feedback
+    const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
+    this.showNotification(`🎉 Промокод применён! Подписка ${planLabel} активирована!`, 'success');
+    
+    // Reset form
+    this.promoCode = '';
+    this.selectedPlan = '';
+    this.promoValidation = null;
+    
+    // Force component reactivity
+    this.forceReactivityUpdate();
+    
+    console.log('✅ Promocode application completed successfully');
+    
+  } catch (error) {
+    console.error('❌ Error in handlePromoSuccess:', error);
+    this.showNotification('Промокод применён, но возникла ошибка интерфейса', 'warning');
+  }
+},
+
+handleManualSuccess() {
+  console.log('🔄 handleManualSuccess: Attempting manual refresh...');
+  
+  // Show success message
+  const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
+  this.showNotification(`🎉 Промокод применён! Подписка ${planLabel} активирована! Обновите страницу.`, 'success');
+  
+  // Reset form
+  this.promoCode = '';
+  this.selectedPlan = '';
+  this.promoValidation = null;
+  
+  // Force reactivity
+  this.forceReactivityUpdate();
+  
+  // Delayed page refresh suggestion
+  setTimeout(() => {
+    if (confirm('Промокод успешно применён! Обновить страницу для отображения изменений?')) {
+      window.location.reload();
+    }
+  }, 2000);
 },
 
 // ✅ ENHANCED: Manual refresh helper method with debug
