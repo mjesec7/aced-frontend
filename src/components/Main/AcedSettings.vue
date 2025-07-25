@@ -828,9 +828,9 @@ export default {
           try {
             const promocodeCode = this.promoCode.trim().toUpperCase();
             const endpoints = [
-              `/promocodes/validate/${promocodeCode}`,
-              `/api/promocodes/validate/${promocodeCode}`
-            ];
+  `/promocodes/validate/${promocodeCode}`,
+  `/promocodes/validate/${promocodeCode}`
+];
             
             const apiResult = await this.tryMultipleApiEndpoints(endpoints, {
               method: 'GET',
