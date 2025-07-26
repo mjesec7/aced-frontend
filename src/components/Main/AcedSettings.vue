@@ -74,7 +74,7 @@
     <div class="settings-content">
       <h2 class="section-title">💳 Подписка и оплата</h2>
 
-      <!-- Current Plan Display -->
+      <!-- ✅ ENHANCED: Current Plan Display with comprehensive details -->
       <div class="current-plan-section">
         <div class="plan-info">
           <h3>Текущий тариф</h3>
@@ -84,12 +84,95 @@
             </span>
             <div class="plan-details">
               <p class="plan-description">{{ currentPlanDescription }}</p>
-              <p v-if="subscriptionExpiryDate" class="plan-expiry">
-                Активен до: {{ formatDate(subscriptionExpiryDate) }}
-              </p>
-              <p v-if="isPromocodeActive" class="plan-source">
-                🎟️ Активирован по промокоду: {{ lastPromocode?.code || 'N/A' }}
-              </p>
+              
+              <!-- ✅ ENHANCED: Comprehensive subscription expiry information -->
+              <div v-if="subscriptionExpiryInfo" class="expiry-section">
+                <div class="expiry-main" :class="{ 
+                  'expiry-warning': subscriptionExpiryInfo.isExpiring,
+                  'expiry-expired': subscriptionExpiryInfo.isExpired 
+                }">
+                  <div class="expiry-row">
+                    <span class="expiry-label">
+                      {{ subscriptionExpiryInfo.isExpired ? '❌ Срок действия истёк:' : '📅 Активен до:' }}
+                    </span>
+                    <span class="expiry-date">{{ subscriptionExpiryInfo.formattedDate }}</span>
+                  </div>
+                  
+                  <div v-if="!subscriptionExpiryInfo.isExpired" class="expiry-countdown">
+                    <span class="countdown-icon">⏰</span>
+                    <span class="countdown-text">
+                      Осталось: {{ subscriptionExpiryInfo.timeRemaining }}
+                      ({{ subscriptionExpiryInfo.daysRemaining }} дней)
+                    </span>
+                  </div>
+                  
+                  <div v-else class="expiry-expired-message">
+                    <span class="expired-icon">⚠️</span>
+                    <span class="expired-text">Подписка истекла. Продлите для продолжения доступа.</span>
+                  </div>
+                </div>
+                
+                <!-- ✅ ENHANCED: Expiry warning alerts -->
+                <div v-if="subscriptionExpiryInfo.isExpiring && !subscriptionExpiryInfo.isExpired" class="expiry-warning-alert">
+                  <div class="warning-content">
+                    <span class="warning-icon">⚠️</span>
+                    <div class="warning-text">
+                      <strong>Внимание!</strong> Ваша подписка истекает через {{ subscriptionExpiryInfo.daysRemaining }} дней.
+                      <br>
+                      <small>Продлите подписку, чтобы не потерять доступ к премиум-функциям.</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- ✅ ENHANCED: Subscription source information -->
+              <div v-if="subscriptionSourceInfo" class="subscription-source">
+                <div class="source-info" :class="`source-${subscriptionSourceInfo.color}`">
+                  <span class="source-icon">{{ subscriptionSourceInfo.icon }}</span>
+                  <span class="source-text">{{ subscriptionSourceInfo.text }}</span>
+                </div>
+              </div>
+              
+              <!-- ✅ ENHANCED: Additional subscription details -->
+              <div v-if="currentPlan !== 'free'" class="subscription-benefits">
+                <div class="benefits-header">
+                  <span class="benefits-icon">✨</span>
+                  <span class="benefits-title">Активные возможности:</span>
+                </div>
+                <ul class="benefits-list">
+                  <li v-if="currentPlan === 'start' || currentPlan === 'pro'">
+                    ✅ Безлимитные сообщения
+                  </li>
+                  <li v-if="currentPlan === 'start' || currentPlan === 'pro'">
+                    ✅ Доступ к премиум курсам
+                  </li>
+                  <li v-if="currentPlan === 'pro'">
+                    ✅ Безлимитные изображения
+                  </li>
+                  <li v-if="currentPlan === 'pro'">
+                    ✅ Персональная аналитика
+                  </li>
+                  <li v-if="currentPlan === 'pro'">
+                    ✅ Эксклюзивные материалы
+                  </li>
+                </ul>
+              </div>
+              
+              <!-- ✅ ENHANCED: Free plan limitations -->
+              <div v-else class="free-plan-limitations">
+                <div class="limitations-header">
+                  <span class="limitations-icon">ℹ️</span>
+                  <span class="limitations-title">Ограничения бесплатного плана:</span>
+                </div>
+                <ul class="limitations-list">
+                  <li>⭕ Ограниченное количество сообщений</li>
+                  <li>⭕ Базовый доступ к курсам</li>
+                  <li>⭕ Ограниченная аналитика</li>
+                </ul>
+                <div class="upgrade-suggestion">
+                  <p>Хотите больше возможностей? Рассмотрите <strong>Start</strong> или <strong>Pro</strong> план!</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -385,50 +468,201 @@ export default {
       notificationClass: "",
       notificationIcon: "",
       
-      // Force reactivity keys
+      // ✅ ENHANCED: Add comprehensive reactivity tracking
       reactivityKey: 0,
       lastUpdateTime: Date.now(),
-      
-      // Component update tracking
       componentMounted: false,
-      statusEventListeners: []
+      statusEventListeners: [],
+      storeUnsubscribe: null
     };
   },
   
   computed: {
-    // ✅ BULLETPROOF: Enhanced reactive getters with null safety
+    // ✅ ENHANCED: Map both user state and getters properly
+    ...mapGetters('user', [
+      'userStatus',
+      'isPremiumUser', 
+      'isStartUser',
+      'isProUser',
+      'isFreeUser',
+      'hasActiveSubscription',
+      'getUser',
+      'subscriptionDetails',
+      'appliedPromocodes',
+      'paymentHistory',
+      'currentUsage',
+      'usageLimits',
+      'forceUpdateCounter'
+    ]),
+
+    // ✅ BULLETPROOF: Enhanced reactive getters with multiple data sources
     currentPlan() {
       const reactKey = this.reactivityKey; // Force reactivity
       const updateTime = this.lastUpdateTime; // Force reactivity
       
       try {
-        const status = this.$store.getters['user/userStatus'];
-        console.log('🔍 currentPlan computed:', status, { reactKey, updateTime });
-        return status || 'free';
+        // Try multiple sources for the most up-to-date status
+        const storeStatus = this.$store.state.user?.subscriptionPlan || this.$store.getters['user/userStatus'];
+        const localStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
+        const userObjectStatus = this.getUser?.subscriptionPlan;
+        
+        // Use the most recent non-free status or fallback
+        const statuses = [storeStatus, localStatus, userObjectStatus].filter(s => s && s !== 'free');
+        const status = statuses[0] || storeStatus || localStatus || userObjectStatus || 'free';
+        
+        console.log('🔍 AcedSettings currentPlan computed:', {
+          final: status,
+          store: storeStatus,
+          local: localStatus,
+          userObject: userObjectStatus,
+          reactKey, 
+          updateTime
+        });
+        
+        return status;
       } catch (e) {
         console.warn('⚠️ Error getting userStatus:', e);
-        return 'free';
+        return localStorage.getItem('userStatus') || 'free';
       }
     },
     
-    // ✅ BULLETPROOF: Enhanced reactive subscription details
+    // ✅ BULLETPROOF: Enhanced reactive subscription details with comprehensive info
     subscriptionDetails() {
       const reactKey = this.reactivityKey; // Force reactivity
       const updateTime = this.lastUpdateTime; // Force reactivity
       
       try {
-        const details = this.$store.getters['user/subscriptionDetails'];
-        console.log('🔍 subscriptionDetails computed:', details, { reactKey, updateTime });
-        return (details && typeof details === 'object') ? details : {
-          plan: 'free',
-          status: 'inactive',
+        const storeDetails = this.$store.getters['user/subscriptionDetails'];
+        const userObject = this.getUser || {};
+        
+        // Merge multiple data sources for comprehensive details
+        const details = {
+          plan: this.currentPlan,
+          status: this.currentPlan !== 'free' ? 'active' : 'inactive',
           expiryDate: null,
-          source: null
+          source: null,
+          activatedAt: null,
+          daysRemaining: null,
+          autoRenew: false,
+          ...storeDetails,
+          ...userObject.subscription
         };
+        
+        // Calculate expiry details if we have activation date
+        if (details.activatedAt && !details.expiryDate) {
+          const activationDate = new Date(details.activatedAt);
+          const expiryDate = new Date(activationDate);
+          expiryDate.setDate(expiryDate.getDate() + 30); // Default 30 days
+          details.expiryDate = expiryDate.toISOString();
+        }
+        
+        // Calculate days remaining
+        if (details.expiryDate) {
+          const now = new Date();
+          const expiry = new Date(details.expiryDate);
+          const diffTime = expiry - now;
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          details.daysRemaining = Math.max(0, diffDays);
+        }
+        
+        console.log('🔍 AcedSettings subscriptionDetails computed:', details, { reactKey, updateTime });
+        return details;
       } catch (e) {
         console.warn('⚠️ Error getting subscriptionDetails:', e);
-        return { plan: 'free', status: 'inactive', expiryDate: null, source: null };
+        return { 
+          plan: this.currentPlan,
+          status: this.currentPlan !== 'free' ? 'active' : 'inactive',
+          expiryDate: null,
+          source: null,
+          daysRemaining: null
+        };
       }
+    },
+    
+    // ✅ ENHANCED: More detailed subscription status display
+    currentPlanDescription() {
+      const plan = this.currentPlan;
+      const details = this.subscriptionDetails;
+      
+      const baseDescriptions = {
+        pro: 'Полный доступ ко всем курсам и функциям',
+        start: 'Доступ к базовым курсам и безлимитным сообщениям',
+        free: 'Бесплатный доступ с ограниченным функционалом'
+      };
+      
+      let description = baseDescriptions[plan] || 'Бесплатный доступ';
+      
+      // Add expiry information if available
+      if (plan !== 'free' && details.daysRemaining !== null) {
+        if (details.daysRemaining > 0) {
+          description += ` (осталось ${details.daysRemaining} дней)`;
+        } else {
+          description += ' (срок действия истёк)';
+        }
+      }
+      
+      return description;
+    },
+    
+    // ✅ ENHANCED: Detailed subscription expiry information
+    subscriptionExpiryInfo() {
+      const details = this.subscriptionDetails;
+      
+      if (!details.expiryDate || this.currentPlan === 'free') {
+        return null;
+      }
+      
+      const expiryDate = new Date(details.expiryDate);
+      const now = new Date();
+      const diffTime = expiryDate - now;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      return {
+        expiryDate: expiryDate,
+        daysRemaining: Math.max(0, diffDays),
+        isExpiring: diffDays <= 7 && diffDays > 0,
+        isExpired: diffDays <= 0,
+        formattedDate: this.formatDate(details.expiryDate),
+        timeRemaining: this.getTimeRemaining(diffTime)
+      };
+    },
+    
+    // ✅ ENHANCED: Subscription source display
+    subscriptionSourceInfo() {
+      const details = this.subscriptionDetails;
+      const lastPromo = this.lastPromocode;
+      
+      if (details.source === 'promocode' && lastPromo) {
+        return {
+          type: 'promocode',
+          text: `🎟️ Активирован по промокоду: ${lastPromo.code}`,
+          icon: '🎟️',
+          color: 'success'
+        };
+      } else if (details.source === 'payment') {
+        return {
+          type: 'payment',
+          text: '💳 Приобретено через оплату',
+          icon: '💳',
+          color: 'primary'
+        };
+      } else if (details.source === 'gift') {
+        return {
+          type: 'gift',
+          text: '🎁 Подарочная подписка',
+          icon: '🎁',
+          color: 'warning'
+        };
+      } else if (this.currentPlan !== 'free') {
+        return {
+          type: 'unknown',
+          text: '📋 Активная подписка',
+          icon: '📋',
+          color: 'info'
+        };
+      }
+      
+      return null;
     },
     
     // ✅ BULLETPROOF: Enhanced reactive promocodes
@@ -569,15 +803,6 @@ export default {
       return classes[this.currentPlan] || 'badge-free';
     },
     
-    currentPlanDescription() {
-      const descriptions = {
-        pro: 'Полный доступ ко всем курсам и функциям',
-        start: 'Доступ к базовым курсам и безлимитным сообщениям',
-        free: 'Бесплатный доступ с ограниченным функционалом'
-      };
-      return descriptions[this.currentPlan] || 'Бесплатный доступ';
-    },
-    
     userId() {
       return this.currentUser?.uid;
     },
@@ -639,46 +864,53 @@ export default {
     }
   },
   
+  // ✅ ENHANCED: Add comprehensive watchers
   watch: {
-    // ✅ BULLETPROOF: Enhanced watchers
-    '$store.state.user.userStatus': {
-      handler(newStatus, oldStatus) {
-        if (newStatus !== oldStatus) {
-          console.log(`👀 Watched userStatus change: ${oldStatus} → ${newStatus}`);
-          this.forceReactivityUpdate();
-        }
-      },
-      immediate: false
-    },
-    
-    '$store.state.user.subscription': {
-      handler(newSub, oldSub) {
-        if (newSub !== oldSub) {
-          console.log('👀 Subscription details changed');
-          this.forceReactivityUpdate();
-        }
-      },
-      deep: true
-    },
-    
-    '$store.state.user.promocodes.applied': {
-      handler(newPromocodes, oldPromocodes) {
-        const newLength = Array.isArray(newPromocodes) ? newPromocodes.length : 0;
-        const oldLength = Array.isArray(oldPromocodes) ? oldPromocodes.length : 0;
+    // ✅ FIXED: Watch the user object from store (same as other components)
+    '$store.state.user': {
+      handler(newUser, oldUser) {
+        const newPlan = newUser?.subscriptionPlan;
+        const oldPlan = oldUser?.subscriptionPlan;
         
-        if (newLength !== oldLength) {
-          console.log(`👀 Applied promocodes changed: ${oldLength} → ${newLength}`);
+        if (newPlan !== oldPlan) {
+          console.log('👤 AcedSettings: User plan changed:', oldPlan, '→', newPlan);
+          this.handleUserStatusChange(newPlan, oldPlan);
+        }
+      },
+      deep: true,
+      immediate: true
+    },
+
+    // ✅ FIXED: Watch the getUser getter
+    getUser: {
+      handler(newUser, oldUser) {
+        const newPlan = newUser?.subscriptionPlan;
+        const oldPlan = oldUser?.subscriptionPlan;
+        
+        if (newPlan !== oldPlan) {
+          console.log('👤 AcedSettings: GetUser plan changed:', oldPlan, '→', newPlan);
+          this.handleUserStatusChange(newPlan, oldPlan);
+        }
+      },
+      deep: true,
+      immediate: true
+    },
+
+    // ✅ FIXED: Watch current plan changes
+    currentPlan: {
+      handler(newPlan, oldPlan) {
+        if (newPlan !== oldPlan) {
+          console.log('📊 AcedSettings: Current plan computed changed:', oldPlan, '→', newPlan);
           this.forceReactivityUpdate();
         }
       },
-      deep: true
+      immediate: true
     }
   },
   
   async mounted() {
     console.log('🔧 AcedSettings: Component mounting...');
     await this.initializeComponent();
-    this.setupEnhancedEventListeners();
     this.componentMounted = true;
   },
   
@@ -687,23 +919,290 @@ export default {
   },
   
   methods: {
-    // ✅ BULLETPROOF: Enhanced initialization
+    // ============================================================================
+    // 🔄 STATUS CHANGE HANDLING
+    // ============================================================================
+    
+    // ✅ FIXED: Handle user status changes
+    handleUserStatusChange(newStatus, oldStatus) {
+      if (!newStatus || newStatus === oldStatus) return;
+
+      console.log(`👤 AcedSettings: Handling status change ${oldStatus} → ${newStatus}`);
+
+      // Update localStorage immediately
+      localStorage.setItem('userStatus', newStatus);
+      localStorage.setItem('plan', newStatus);
+
+      // Trigger immediate reactivity update
+      this.forceReactivityUpdate();
+
+      // Show celebration for upgrades
+      if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
+        const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
+        this.showNotification(`🎉 ${planLabel} подписка активирована!`, 'success', 5000);
+      }
+
+      console.log(`✅ AcedSettings: Status change handled: ${oldStatus} → ${newStatus}`);
+    },
+
+    // ✅ ENHANCED: Setup comprehensive event listeners (replace existing setupEnhancedEventListeners)
+    setupEnhancedEventListeners() {
+      console.log('🔧 AcedSettings: Setting up enhanced event listeners...');
+      
+      // Clear existing listeners
+      this.cleanupEventListeners();
+      
+      // ===== DOM EVENT LISTENERS =====
+      if (typeof window !== 'undefined') {
+        // Listen for user subscription changes
+        this.handleSubscriptionChange = (event) => {
+          console.log('📡 AcedSettings: Subscription change received:', event.detail);
+          const { plan, oldPlan } = event.detail;
+          this.handleUserStatusChange(plan, oldPlan);
+        };
+        
+        window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
+        this.statusEventListeners.push(() => {
+          window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
+        });
+
+        // Listen for localStorage changes (cross-tab sync)
+        this.handleStorageChange = (event) => {
+          if ((event.key === 'userStatus' || event.key === 'plan') && event.newValue !== event.oldValue) {
+            console.log('📡 AcedSettings: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
+            this.handleUserStatusChange(event.newValue, event.oldValue);
+          }
+        };
+        
+        window.addEventListener('storage', this.handleStorageChange);
+        this.statusEventListeners.push(() => {
+          window.removeEventListener('storage', this.handleStorageChange);
+        });
+
+        // Additional comprehensive events
+        const eventTypes = [
+          'userStatusChanged',
+          'subscriptionUpdated', 
+          'promocodeApplied',
+          'paymentCompleted',
+          'globalForceUpdate',
+          'reactivityUpdate'
+        ];
+
+        const handleGenericStatusChange = (event) => {
+          console.log('📡 AcedSettings: Generic status event received:', event.type, event.detail);
+          this.forceReactivityUpdate();
+          
+          // Check localStorage for updates
+          const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
+          if (currentStatus && currentStatus !== this.currentPlan) {
+            this.handleUserStatusChange(currentStatus, this.currentPlan);
+          }
+        };
+
+        eventTypes.forEach(eventType => {
+          window.addEventListener(eventType, handleGenericStatusChange);
+          this.statusEventListeners.push(() => {
+            window.removeEventListener(eventType, handleGenericStatusChange);
+          });
+        });
+      }
+
+      // ===== EVENT BUS LISTENERS =====
+      if (typeof window !== 'undefined' && window.eventBus) {
+        // User status change events
+        this.handleUserStatusEvent = (data) => {
+          console.log('📡 AcedSettings: User status event received:', data);
+          this.handleUserStatusChange(data.newStatus || data.plan, data.oldStatus || data.oldPlan);
+        };
+
+        // Promocode applied events
+        this.handlePromocodeEvent = (data) => {
+          console.log('📡 AcedSettings: Promocode applied event:', data);
+          this.handleUserStatusChange(data.newStatus, data.oldStatus);
+        };
+
+        // Force update events
+        this.handleForceUpdateEvent = () => {
+          console.log('📡 AcedSettings: Force update event received');
+          this.forceReactivityUpdate();
+          
+          // Also check for status updates
+          const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
+          if (currentStatus && currentStatus !== this.currentPlan) {
+            this.handleUserStatusChange(currentStatus, this.currentPlan);
+          }
+        };
+
+        // Register event bus listeners
+        const eventBusEvents = [
+          'userStatusChanged',
+          'promocodeApplied',
+          'subscriptionUpdated',
+          'paymentCompleted', 
+          'forceUpdate',
+          'globalForceUpdate'
+        ];
+
+        eventBusEvents.forEach(eventType => {
+          if (eventType.includes('Status') || eventType.includes('promocode') || eventType.includes('payment') || eventType.includes('subscription')) {
+            window.eventBus.on(eventType, this.handleUserStatusEvent);
+            this.statusEventListeners.push(() => {
+              window.eventBus.off(eventType, this.handleUserStatusEvent);
+            });
+          } else {
+            window.eventBus.on(eventType, this.handleForceUpdateEvent);
+            this.statusEventListeners.push(() => {
+              window.eventBus.off(eventType, this.handleForceUpdateEvent);
+            });
+          }
+        });
+
+        console.log('✅ AcedSettings: Event bus listeners registered');
+      }
+
+      // ===== STORE MUTATION LISTENER =====
+      if (this.$store) {
+        this.storeUnsubscribe = this.$store.subscribe((mutation) => {
+          if (this.isUserRelatedMutation(mutation)) {
+            console.log('📊 AcedSettings: Store mutation detected:', mutation.type);
+            this.forceReactivityUpdate();
+            
+            // Check for status changes in mutation payload
+            if (mutation.payload && mutation.payload.subscriptionPlan) {
+              const newStatus = mutation.payload.subscriptionPlan;
+              if (newStatus !== this.currentPlan) {
+                this.handleUserStatusChange(newStatus, this.currentPlan);
+              }
+            }
+          }
+        });
+        
+        this.statusEventListeners.push(() => {
+          if (this.storeUnsubscribe) {
+            this.storeUnsubscribe();
+            this.storeUnsubscribe = null;
+          }
+        });
+      }
+
+      console.log('✅ AcedSettings: Enhanced event listeners setup complete');
+    },
+
+    // ✅ FIXED: Check if mutation is user-related
+    isUserRelatedMutation(mutation) {
+      const userMutations = [
+        'setUser',
+        'SET_USER',
+        'updateUser', 
+        'UPDATE_USER',
+        'user/SET_USER_STATUS',
+        'user/setUserStatus',
+        'user/UPDATE_SUBSCRIPTION',
+        'user/FORCE_UPDATE',
+        'user/ADD_PROMOCODE'
+      ];
+      
+      return userMutations.some(type => mutation.type.includes(type)) ||
+             mutation.type.includes('user/') ||
+             mutation.type.toLowerCase().includes('status') ||
+             mutation.type.toLowerCase().includes('subscription') ||
+             mutation.type.toLowerCase().includes('plan');
+    },
+
+    // ✅ ENHANCED: Enhanced forceReactivityUpdate (replace existing)
+    forceReactivityUpdate() {
+      try {
+        this.reactivityKey++;
+        this.lastUpdateTime = Date.now();
+        
+        // Multiple Vue reactivity triggers
+        this.$forceUpdate();
+        
+        this.$nextTick(() => {
+          this.$forceUpdate();
+          
+          setTimeout(() => {
+            this.$forceUpdate();
+          }, 50);
+          
+          setTimeout(() => {
+            this.$forceUpdate();
+          }, 200);
+        });
+        
+        console.log('🔄 AcedSettings: Reactivity updated:', {
+          reactivityKey: this.reactivityKey,
+          lastUpdateTime: this.lastUpdateTime,
+          currentPlan: this.currentPlan
+        });
+      } catch (error) {
+        console.warn('⚠️ AcedSettings: Reactivity update failed:', error);
+      }
+    },
+
+    // ✅ NEW: Helper method to get time remaining display
+    getTimeRemaining(diffTime) {
+      if (diffTime <= 0) return 'Истёк';
+      
+      const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      
+      if (days > 0) {
+        return `${days} дн. ${hours} ч.`;
+      } else if (hours > 0) {
+        return `${hours} ч.`;
+      } else {
+        const minutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+        return `${minutes} мин.`;
+      }
+    },
+
+    // ✅ ENHANCED: Enhanced cleanup (replace existing cleanupEventListeners)
+    cleanupEventListeners() {
+      this.statusEventListeners.forEach(cleanup => {
+        try {
+          cleanup();
+        } catch (error) {
+          console.warn('⚠️ AcedSettings: Cleanup error:', error);
+        }
+      });
+      this.statusEventListeners = [];
+      
+      if (this.storeUnsubscribe) {
+        this.storeUnsubscribe();
+        this.storeUnsubscribe = null;
+      }
+    },
+
+    // ============================================================================
+    // 🚀 INITIALIZATION METHODS
+    // ============================================================================
+    
+    // ✅ ENHANCED: Enhanced initialization (replace existing initializeComponent)
     async initializeComponent() {
       this.loading = true;
       this.loadingText = 'Загрузка настроек...';
       
       try {
         await this.checkAuthState();
+        
+        // ✅ CRITICAL: Setup event listeners BEFORE loading data
+        this.setupEnhancedEventListeners();
+        
         await this.loadInitialData();
+        
+        // ✅ CRITICAL: Force initial reactivity update
         this.forceReactivityUpdate();
+        
       } catch (error) {
-        console.error('❌ Settings initialization error:', error);
+        console.error('❌ AcedSettings initialization error:', error);
         this.showNotification('Ошибка загрузки настроек', 'error');
       } finally {
         this.loading = false;
       }
     },
-    
+
     async loadInitialData() {
       try {
         if (this.$store && this.$store.dispatch) {
@@ -751,126 +1250,17 @@ export default {
         this.showNotification("Ошибка загрузки данных пользователя", 'error');
       }
     },
-    
-    // ✅ ENHANCED: Setup comprehensive event listeners
-    setupEnhancedEventListeners() {
-      console.log('🔧 Setting up enhanced event listeners...');
-      
-      // Clear existing listeners
-      this.cleanupEventListeners();
-      
-      // ✅ METHOD 1: DOM event listeners (most reliable)
-      const handleStatusChange = (event) => {
-        console.log('📡 AcedSettings: DOM event received:', event.type, event.detail);
-        this.forceReactivityUpdate();
-      };
 
-      const domEvents = [
-        'userStatusChanged',
-        'userSubscriptionChanged',
-        'subscriptionUpdated',
-        'globalForceUpdate',
-        'reactivityUpdate',
-        'promocodeApplied'
-      ];
-
-      domEvents.forEach(eventType => {
-        window.addEventListener(eventType, handleStatusChange);
-        this.statusEventListeners.push(() => {
-          window.removeEventListener(eventType, handleStatusChange);
-        });
-      });
-
-      // ✅ METHOD 2: Event Bus listeners
-      if (window.eventBus) {
-        const eventBusHandler = (data) => {
-          console.log('📡 AcedSettings: EventBus event received:', data);
-          this.forceReactivityUpdate();
-        };
-
-        const eventBusEvents = [
-          'userStatusChanged',
-          'subscriptionUpdated',
-          'promocodeApplied',
-          'globalForceUpdate',
-          'forceUpdate'
-        ];
-
-        eventBusEvents.forEach(eventType => {
-          window.eventBus.on(eventType, eventBusHandler);
-          this.statusEventListeners.push(() => {
-            window.eventBus.off(eventType, eventBusHandler);
-          });
-        });
-      }
-
-      // ✅ METHOD 3: Store subscription
-      if (this.$store && typeof this.$store.subscribe === 'function') {
-        const storeUnsubscribe = this.$store.subscribe((mutation) => {
-          const relevantMutations = [
-            'user/SET_USER_STATUS',
-            'user/setUserStatus',
-            'user/UPDATE_SUBSCRIPTION',
-            'user/FORCE_UPDATE',
-            'user/ADD_PROMOCODE'
-          ];
-          
-          if (relevantMutations.includes(mutation.type)) {
-            console.log('📊 AcedSettings: Store mutation:', mutation.type);
-            this.forceReactivityUpdate();
-          }
-        });
-        
-        this.statusEventListeners.push(storeUnsubscribe);
-      }
-
-      console.log('✅ Enhanced event listeners setup complete');
-    },
-    
-    cleanupEventListeners() {
-      this.statusEventListeners.forEach(cleanup => {
-        try {
-          cleanup();
-        } catch (error) {
-          console.warn('⚠️ Cleanup error:', error);
-        }
-      });
-      this.statusEventListeners = [];
-    },
-    
     cleanup() {
       if (this.promoValidationTimeout) {
         clearTimeout(this.promoValidationTimeout);
       }
       this.cleanupEventListeners();
     },
-    
-    // ✅ ENHANCED: Force reactivity update
-    forceReactivityUpdate() {
-      try {
-        this.reactivityKey++;
-        this.lastUpdateTime = Date.now();
-        
-        // Multiple Vue reactivity triggers
-        this.$forceUpdate();
-        
-        this.$nextTick(() => {
-          this.$forceUpdate();
-          
-          setTimeout(() => {
-            this.$forceUpdate();
-          }, 50);
-        });
-        
-        console.log('🔄 AcedSettings: Reactivity updated:', {
-          reactivityKey: this.reactivityKey,
-          lastUpdateTime: this.lastUpdateTime,
-          currentPlan: this.currentPlan
-        });
-      } catch (error) {
-        console.warn('⚠️ Reactivity update failed:', error);
-      }
-    },
+
+    // ============================================================================
+    // 🎟️ PROMOCODE METHODS
+    // ============================================================================
     
     // ✅ FIXED: Enhanced promocode input handling
     handlePromoCodeInput() {
@@ -882,11 +1272,11 @@ export default {
       
       if (this.promoCode.length <= 3) {
         this.promoValidation = null;
-        this.isValidatingPromo = false;
+        this.isValidatingPromo = false; // Reset validation state if too short
         return;
       }
       
-      this.isValidatingPromo = true;
+      this.isValidatingPromo = true; // Set to true when a valid length is reached
       
       this.promoValidationTimeout = setTimeout(() => {
         this.validatePromoCodeLocal();
@@ -1366,8 +1756,30 @@ export default {
         this.isProcessingPromo = false;
       }
     },
+
+    // ============================================================================
+    // 💳 PAYMENT METHODS
+    // ============================================================================
     
-    // Your existing methods...
+    selectPaymentPlan(plan) {
+      if (this.currentPlan === plan) return;
+      this.paymentPlan = plan;
+    },
+
+    async goToPayment() {
+      this.$router.push(`/payment?plan=${this.paymentPlan}`);
+    },
+
+    getPaymentButtonText() {
+      if (!this.paymentPlan) return 'Выберите тариф';
+      if (this.currentPlan === this.paymentPlan) return 'Уже активен';
+      return `Оплатить ${this.paymentPlan.toUpperCase()}`;
+    },
+
+    // ============================================================================
+    // 👤 USER PROFILE METHODS
+    // ============================================================================
+    
     async saveChanges() {
       this.loading = true;
       this.loadingText = 'Сохранение изменений...';
@@ -1464,21 +1876,10 @@ export default {
       this.$router.push('/profile');
     },
 
-    selectPaymentPlan(plan) {
-      if (this.currentPlan === plan) return;
-      this.paymentPlan = plan;
-    },
-
-    async goToPayment() {
-      this.$router.push(`/payment?plan=${this.paymentPlan}`);
-    },
-
-    getPaymentButtonText() {
-      if (!this.paymentPlan) return 'Выберите тариф';
-      if (this.currentPlan === this.paymentPlan) return 'Уже активен';
-      return `Оплатить ${this.paymentPlan.toUpperCase()}`;
-    },
-
+    // ============================================================================
+    // 🛠️ UTILITY METHODS
+    // ============================================================================
+    
     formatDate(date) {
       if (!date) return '';
       try {
