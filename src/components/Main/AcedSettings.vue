@@ -340,8 +340,6 @@
   </div>
 </template>
 
-// Replace your AcedSettings.vue script section with this enhanced version:
-
 <script>
 import { auth, db } from "@/firebase";
 import { mapGetters, mapActions } from 'vuex';
@@ -874,7 +872,7 @@ export default {
       }
     },
     
-    // Your existing methods (handlePromoCodeInput, validatePromoCodeLocal, etc.)
+    // ✅ FIXED: Enhanced promocode input handling
     handlePromoCodeInput() {
       if (this.promoValidationTimeout) {
         clearTimeout(this.promoValidationTimeout);
@@ -895,8 +893,8 @@ export default {
       }, 800);
     },
     
+    // ✅ FIXED: Pure backend promocode validation - NO HARDCODED CODES
     async validatePromoCodeLocal() {
-      // Your existing validation logic...
       if (!this.promoCode.trim() || this.promoCode.length <= 3) {
         this.promoValidation = null;
         this.isValidatingPromo = false;
@@ -904,50 +902,260 @@ export default {
       }
       
       try {
-        console.log('🔍 Validating promocode:', this.promoCode);
-        
-        // Hardcoded validation for common promocodes (fallback)
-        const hardcodedPromocodes = {
-          'ACEDPROMOCODE2406': { valid: true, grantsPlan: 'start', description: 'Start план доступ' },
-          'FREE2024': { valid: true, grantsPlan: 'start', description: 'Бесплатный Start план' },
-          'TESTCODE': { valid: true, grantsPlan: 'pro', description: 'Тестовый Pro план' },
-          'START2024': { valid: true, grantsPlan: 'start', description: 'Start план промо' },
-          'PRO2024': { valid: true, grantsPlan: 'pro', description: 'Pro план промо' }
-        };
+        console.log('🔍 Validating promocode via backend:', this.promoCode);
         
         const promocodeUpper = this.promoCode.trim().toUpperCase();
-        const hardcodedData = hardcodedPromocodes[promocodeUpper];
         
-        if (hardcodedData) {
-          this.promoValidation = {
-            valid: true,
-            data: {
-              code: promocodeUpper,
-              grantsPlan: hardcodedData.grantsPlan,
-              description: hardcodedData.description,
-              subscriptionDays: 30
-            },
-            message: `Промокод действителен! Предоставляет: ${hardcodedData.grantsPlan.toUpperCase()} план`
-          };
-          console.log('✅ Hardcoded validation successful:', promocodeUpper);
-          
-          if (!this.selectedPlan && this.promoValidation.data.grantsPlan) {
-            this.selectedPlan = this.promoValidation.data.grantsPlan;
+        // ✅ METHOD 1: Try store action first (uses backend API)
+        try {
+          if (this.$store && this.$store.dispatch) {
+            console.log('📡 Using store validatePromocode action...');
+            
+            const storeResult = await this.$store.dispatch('user/validatePromocode', promocodeUpper);
+            console.log('🔍 Store validation result:', storeResult);
+            
+            if (storeResult && typeof storeResult === 'object') {
+              this.promoValidation = storeResult;
+              
+              // Auto-select plan if valid
+              if (storeResult.valid && storeResult.data?.grantsPlan && !this.selectedPlan) {
+                this.selectedPlan = storeResult.data.grantsPlan;
+                console.log('✅ Auto-selected plan from store:', this.selectedPlan);
+              }
+              
+              this.isValidatingPromo = false;
+              return;
+            }
           }
-        } else {
-          this.promoValidation = {
-            valid: false,
-            error: 'Промокод не найден'
-          };
+        } catch (storeError) {
+          console.warn('⚠️ Store validation failed:', storeError.message);
         }
-      } catch (error) {
-        console.warn('⚠️ Promocode validation error:', error);
+        
+        // ✅ METHOD 2: Direct API call fallback
+        try {
+          const baseUrl = import.meta.env.VITE_API_BASE_URL;
+          if (!baseUrl) {
+            throw new Error('API base URL not configured');
+          }
+          
+          console.log('📡 Direct API validation...');
+          
+          // Try multiple endpoints for validation
+          const validationEndpoints = [
+            `${baseUrl}/api/promocodes/validate/${promocodeUpper}`,
+            `${baseUrl}/api/payments/validate-promo-code`,
+            `${baseUrl}/promocodes/validate/${promocodeUpper}`
+          ];
+          
+          let validationResult = null;
+          
+          for (const endpoint of validationEndpoints) {
+            try {
+              console.log(`🔄 Trying endpoint: ${endpoint}`);
+              
+              let response;
+              
+              if (endpoint.includes('validate-promo-code')) {
+                // POST endpoint
+                response = await Promise.race([
+                  fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': await this.getAuthHeader()
+                    },
+                    body: JSON.stringify({
+                      promoCode: promocodeUpper,
+                      userId: this.userId
+                    })
+                  }),
+                  new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('API timeout')), 8000)
+                  )
+                ]);
+              } else {
+                // GET endpoint
+                response = await Promise.race([
+                  fetch(endpoint, {
+                    method: 'GET',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': await this.getAuthHeader()
+                    }
+                  }),
+                  new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('API timeout')), 8000)
+                  )
+                ]);
+              }
+              
+              if (response.ok) {
+                const apiResult = await response.json();
+                console.log(`✅ API response from ${endpoint}:`, apiResult);
+                
+                // Handle different response formats
+                if (apiResult && typeof apiResult === 'object') {
+                  validationResult = this.normalizeValidationResponse(apiResult, promocodeUpper);
+                  break; // Success, stop trying other endpoints
+                }
+              } else {
+                console.warn(`⚠️ API endpoint ${endpoint} failed with status:`, response.status);
+                
+                // If 404, try next endpoint
+                if (response.status === 404) {
+                  continue;
+                }
+                
+                // For other errors, try to get error message
+                try {
+                  const errorData = await response.json();
+                  console.warn('API error details:', errorData);
+                  
+                  if (response.status === 400 || response.status === 422) {
+                    // Bad request or validation error - promocode doesn't exist
+                    validationResult = {
+                      valid: false,
+                      error: errorData.message || errorData.error || `Промокод "${promocodeUpper}" не найден`
+                    };
+                    break;
+                  }
+                } catch (jsonError) {
+                  console.warn('Failed to parse error response:', jsonError);
+                }
+              }
+            } catch (endpointError) {
+              console.warn(`⚠️ Endpoint ${endpoint} failed:`, endpointError.message);
+              continue;
+            }
+          }
+          
+          if (validationResult) {
+            this.promoValidation = validationResult;
+            
+            // Auto-select plan if valid
+            if (validationResult.valid && validationResult.data?.grantsPlan && !this.selectedPlan) {
+              this.selectedPlan = validationResult.data.grantsPlan;
+              console.log('✅ Auto-selected plan from API:', this.selectedPlan);
+            }
+            
+            this.isValidatingPromo = false;
+            return;
+          }
+          
+        } catch (apiError) {
+          console.warn('⚠️ All API validation attempts failed:', apiError.message);
+        }
+        
+        // ✅ If all backend attempts fail, show appropriate error
         this.promoValidation = {
           valid: false,
-          error: 'Ошибка проверки промокода'
+          error: `Не удалось проверить промокод "${promocodeUpper}". Проверьте подключение к интернету или попробуйте позже.`
+        };
+        
+        console.log('❌ All validation methods failed for:', promocodeUpper);
+        
+      } catch (error) {
+        console.error('❌ Promocode validation error:', error);
+        this.promoValidation = {
+          valid: false,
+          error: 'Ошибка проверки промокода. Попробуйте позже.'
         };
       } finally {
         this.isValidatingPromo = false;
+      }
+    },
+    
+    // ✅ NEW: Helper method to normalize different API response formats
+    normalizeValidationResponse(apiResult, promocodeUpper) {
+      try {
+        // Handle different response structures from your backend
+        let isValid = false;
+        let grantsPlan = null;
+        let description = null;
+        let errorMessage = null;
+        
+        // Structure 1: { success: true, valid: true, data: {...} }
+        if (apiResult.success === true && apiResult.valid === true) {
+          isValid = true;
+          grantsPlan = apiResult.data?.grantsPlan || apiResult.data?.plan;
+          description = apiResult.data?.description || apiResult.message;
+        }
+        // Structure 2: { valid: true, data: {...} }
+        else if (apiResult.valid === true) {
+          isValid = true;
+          grantsPlan = apiResult.data?.grantsPlan || apiResult.data?.plan;
+          description = apiResult.data?.description || apiResult.message;
+        }
+        // Structure 3: { success: false, error: "..." }
+        else if (apiResult.success === false) {
+          isValid = false;
+          errorMessage = apiResult.error || apiResult.message || 'Промокод недействителен';
+        }
+        // Structure 4: Direct data object { grantsPlan: "start", description: "..." }
+        else if (apiResult.grantsPlan || apiResult.plan) {
+          isValid = true;
+          grantsPlan = apiResult.grantsPlan || apiResult.plan;
+          description = apiResult.description || 'Промокод действителен';
+        }
+        // Structure 5: Error object { error: "..." }
+        else if (apiResult.error) {
+          isValid = false;
+          errorMessage = apiResult.error;
+        }
+        // Structure 6: Invalid response
+        else {
+          isValid = false;
+          errorMessage = 'Неизвестный формат ответа сервера';
+        }
+        
+        if (isValid) {
+          return {
+            valid: true,
+            data: {
+              code: promocodeUpper,
+              grantsPlan: grantsPlan,
+              description: description,
+              subscriptionDays: apiResult.data?.subscriptionDays || apiResult.subscriptionDays || 30
+            },
+            message: `Промокод действителен! Предоставляет: ${(grantsPlan || 'неизвестный').toUpperCase()} план`
+          };
+        } else {
+          return {
+            valid: false,
+            error: errorMessage || `Промокод "${promocodeUpper}" не найден или недействителен`
+          };
+        }
+        
+      } catch (normalizationError) {
+        console.error('❌ Failed to normalize API response:', normalizationError);
+        return {
+          valid: false,
+          error: 'Ошибка обработки ответа сервера'
+        };
+      }
+    },
+    
+    // ✅ NEW: Helper method to get authorization header
+    async getAuthHeader() {
+      try {
+        // Try to get token from current user
+        if (this.currentUser) {
+          const token = await this.currentUser.getIdToken();
+          if (token) {
+            return `Bearer ${token}`;
+          }
+        }
+        
+        // Fallback to localStorage
+        const storedToken = localStorage.getItem('authToken') || localStorage.getItem('token');
+        if (storedToken) {
+          return `Bearer ${storedToken}`;
+        }
+        
+        return '';
+      } catch (error) {
+        console.warn('⚠️ Failed to get auth header:', error);
+        return '';
       }
     },
     
@@ -963,7 +1171,7 @@ export default {
       }
     },
     
-    // ✅ FIXED: Enhanced applyPromo method
+    // ✅ ENHANCED: Apply promocode with pure backend validation
     async applyPromo() {
       console.log('🚀 AcedSettings: applyPromo called');
       
@@ -975,96 +1183,281 @@ export default {
       this.isProcessingPromo = true;
       
       try {
-        // Step 1: Apply promocode via API
-        const response = await fetch('https://api.aced.live/api/payments/promo-code', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: this.userId,
-            plan: this.selectedPlan,
-            promoCode: this.promoCode.toUpperCase()
-          })
-        });
-
-        const result = await response.json();
-        console.log('📡 Server response:', result);
-
-        if (result.success) {
-          // Step 2: Update user status via store
-          console.log('🔄 Updating user status via store...');
-          
-          const updateResult = await this.$store.dispatch('user/updateUserStatus', this.selectedPlan);
-          console.log('📊 Store update result:', updateResult);
-          
-          if (updateResult && updateResult.success === true) {
-            console.log('✅ Store user status updated successfully');
+        const normalizedCode = this.promoCode.trim().toUpperCase();
+        
+        // ✅ STEP 1: Apply via backend API
+        console.log('📡 Applying promocode via backend API...');
+        
+        let serverResult = null;
+        let serverSuccess = false;
+        
+        // Try multiple endpoints for applying promocode
+        const applyEndpoints = [
+          {
+            url: 'https://api.aced.live/api/payments/promo-code',
+            method: 'POST'
+          },
+          {
+            url: `${import.meta.env.VITE_API_BASE_URL}/api/payments/promo-code`,
+            method: 'POST'
+          },
+          {
+            url: `${import.meta.env.VITE_API_BASE_URL}/api/promocodes/apply`,
+            method: 'POST'
+          },
+          {
+            url: `${import.meta.env.VITE_API_BASE_URL}/promocodes/apply`,
+            method: 'POST'
+          }
+        ];
+        
+        for (const endpoint of applyEndpoints) {
+          try {
+            console.log(`🔄 Trying apply endpoint: ${endpoint.url}`);
             
-            // Add promocode to store
-            this.$store.commit('user/ADD_PROMOCODE', {
-              code: this.promoCode.toUpperCase(),
+            const requestBody = {
+              userId: this.userId,
               plan: this.selectedPlan,
-              oldPlan: updateResult.oldStatus || 'free',
-              source: 'api',
-              details: { appliedAt: new Date().toISOString() }
+              promoCode: normalizedCode
+            };
+            
+            const response = await Promise.race([
+              fetch(endpoint.url, {
+                method: endpoint.method,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': await this.getAuthHeader()
+                },
+                body: JSON.stringify(requestBody)
+              }),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Request timeout')), 10000)
+              )
+            ]);
+
+            serverResult = await response.json();
+            console.log(`📡 Server response from ${endpoint.url}:`, serverResult);
+
+            if (response.ok && serverResult?.success) {
+              serverSuccess = true;
+              console.log('✅ Server application successful');
+              break; // Success, stop trying other endpoints
+            } else {
+              console.warn(`⚠️ Endpoint ${endpoint.url} failed:`, serverResult?.error || 'Unknown error');
+              
+              // If this is a validation error (promocode doesn't exist), don't try other endpoints
+              if (response.status === 400 || response.status === 422) {
+                const errorMsg = serverResult?.error || serverResult?.message || 'Неверный промокод';
+                this.showNotification(errorMsg, 'error');
+                return;
+              }
+              
+              // For 404, try next endpoint
+              if (response.status === 404) {
+                continue;
+              }
+            }
+          } catch (endpointError) {
+            console.warn(`⚠️ Apply endpoint ${endpoint.url} failed:`, endpointError.message);
+            continue;
+          }
+        }
+        
+        // ✅ STEP 2: If no server success, show error
+        if (!serverSuccess) {
+          const errorMsg = serverResult?.error || 
+                          serverResult?.message || 
+                          'Не удалось применить промокод. Проверьте правильность кода или попробуйте позже.';
+          this.showNotification(errorMsg, 'error');
+          return;
+        }
+        
+        // ✅ STEP 3: Update local store after successful server application
+        console.log('🔄 Updating user status via store...');
+        
+        const updateResult = await this.$store.dispatch('user/updateUserStatus', this.selectedPlan);
+        console.log('📊 Store update result:', updateResult);
+        
+        if (updateResult && updateResult.success === true) {
+          console.log('✅ Store user status updated successfully');
+          
+          // ✅ Add promocode to store
+          this.$store.commit('user/ADD_PROMOCODE', {
+            code: normalizedCode,
+            plan: this.selectedPlan,
+            oldPlan: updateResult.oldStatus || 'free',
+            source: 'api',
+            details: { 
+              appliedAt: new Date().toISOString(),
+              serverResponse: serverResult || null
+            }
+          });
+          
+          // ✅ CRITICAL: Update localStorage immediately (same as UserSection)
+          localStorage.setItem('userStatus', this.selectedPlan);
+          localStorage.setItem('plan', this.selectedPlan);
+          
+          // ✅ Success feedback
+          const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
+          this.showNotification(`🎉 Промокод применён! ${planLabel} подписка активирована!`, 'success');
+          
+          // ✅ Reset form
+          this.promoCode = '';
+          this.selectedPlan = '';
+          this.promoValidation = null;
+          
+          // ✅ Force reactivity update
+          this.forceReactivityUpdate();
+          
+          // ✅ CRITICAL: Trigger global events (same as UserSection)
+          if (typeof window !== 'undefined') {
+            // Method 1: Custom DOM event
+            const event = new CustomEvent('userSubscriptionChanged', {
+              detail: {
+                plan: this.selectedPlan,
+                oldPlan: updateResult.oldStatus || 'free',
+                source: 'promocode',
+                timestamp: Date.now()
+              },
+              bubbles: true
             });
+            window.dispatchEvent(event);
             
-            // Success feedback
-            const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
-            this.showNotification(`🎉 Промокод применён! Подписка ${planLabel} активирована!`, 'success');
-            
-            // Reset form
-            this.promoCode = '';
-            this.selectedPlan = '';
-            this.promoValidation = null;
-            
-            // Force reactivity update
-            this.forceReactivityUpdate();
-            
-          } else {
-            console.warn('⚠️ Store update failed or returned invalid result:', updateResult);
-            this.showNotification('Промокод применён, но возникла ошибка обновления. Обновите страницу.', 'warning');
-            this.handleManualRefresh();
+            // Method 2: Event bus
+            if (window.eventBus) {
+              window.eventBus.emit('promocodeApplied', {
+                newStatus: this.selectedPlan,
+                oldStatus: updateResult.oldStatus || 'free',
+                code: normalizedCode
+              });
+            }
           }
           
         } else {
-          console.error('❌ Server returned error:', result.error);
-          this.showNotification(result.error || 'Неверный промокод', 'error');
+          console.warn('⚠️ Store update failed after successful server application:', updateResult);
+          
+          // Even if store update fails, the server has applied the promocode successfully
+          this.showNotification('Промокод применён успешно! Обновите страницу если изменения не отобразились.', 'warning');
+          
+          // Force page refresh after delay
+          setTimeout(() => {
+            if (confirm('Промокод успешно применён на сервере! Обновить страницу для синхронизации?')) {
+              window.location.reload();
+            }
+          }, 2000);
         }
         
       } catch (error) {
-        console.error('❌ Network error:', error);
-        this.showNotification('Ошибка соединения с сервером', 'error');
+        console.error('❌ Promocode application failed:', error);
+        
+        let userFriendlyError = 'Произошла ошибка при применении промокода';
+        
+        if (error.message === 'Request timeout') {
+          userFriendlyError = 'Истекло время ожидания. Попробуйте снова.';
+        } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          userFriendlyError = 'Ошибка сети. Проверьте подключение к интернету.';
+        } else if (error.message.includes('API base URL')) {
+          userFriendlyError = 'Ошибка конфигурации приложения. Обратитесь к администратору.';
+        }
+        
+        this.showNotification(userFriendlyError, 'error');
         
       } finally {
         this.isProcessingPromo = false;
       }
     },
     
-    handleManualRefresh() {
-      console.log('🔄 Manual refresh suggested');
-      
-      // Force multiple reactivity updates
-      this.forceReactivityUpdate();
-      
-      setTimeout(() => {
-        this.forceReactivityUpdate();
-        
-        // Suggest page refresh
-        setTimeout(() => {
-          if (confirm('Промокод успешно применён! Обновить страницу для отображения изменений?')) {
-            window.location.reload();
-          }
-        }, 1000);
-      }, 500);
-    },
-    
-    // Your other existing methods...
+    // Your existing methods...
     async saveChanges() {
-      // Your existing implementation
+      this.loading = true;
+      this.loadingText = 'Сохранение изменений...';
+      
+      try {
+        if (!this.currentUser) {
+          this.showNotification('Пользователь не найден', 'error');
+          return;
+        }
+
+        // Update user profile
+        const userRef = doc(db, "users", this.currentUser.uid);
+        await updateDoc(userRef, {
+          name: this.user.name,
+          surname: this.user.surname,
+          email: this.user.email,
+          updatedAt: new Date().toISOString()
+        });
+
+        // Update email if changed
+        if (this.user.email !== this.currentUser.email) {
+          await updateEmail(this.currentUser, this.user.email);
+        }
+
+        // Update password if provided
+        if (this.newPassword && this.oldPassword) {
+          if (this.newPassword !== this.confirmPassword) {
+            this.showNotification('Пароли не совпадают', 'error');
+            return;
+          }
+
+          const credential = EmailAuthProvider.credential(
+            this.currentUser.email,
+            this.oldPassword
+          );
+
+          await reauthenticateWithCredential(this.currentUser, credential);
+          await updatePassword(this.currentUser, this.newPassword);
+
+          // Clear password fields
+          this.oldPassword = '';
+          this.newPassword = '';
+          this.confirmPassword = '';
+        }
+
+        this.showNotification('Изменения сохранены успешно!', 'success');
+
+      } catch (error) {
+        console.error('❌ Save changes error:', error);
+        
+        let errorMessage = 'Ошибка сохранения изменений';
+        
+        if (error.code === 'auth/wrong-password') {
+          errorMessage = 'Неверный текущий пароль';
+        } else if (error.code === 'auth/weak-password') {
+          errorMessage = 'Пароль слишком слабый';
+        } else if (error.code === 'auth/email-already-in-use') {
+          errorMessage = 'Email уже используется';
+        } else if (error.code === 'auth/invalid-email') {
+          errorMessage = 'Неверный формат email';
+        }
+        
+        this.showNotification(errorMessage, 'error');
+      } finally {
+        this.loading = false;
+      }
     },
 
     async sendPasswordReset() {
-      // Your existing implementation  
+      if (!this.user.email) {
+        this.showNotification('Введите email адрес', 'error');
+        return;
+      }
+
+      try {
+        await sendPasswordResetEmail(auth, this.user.email);
+        this.showNotification('Письмо для сброса пароля отправлено!', 'success');
+      } catch (error) {
+        console.error('❌ Password reset error:', error);
+        
+        let errorMessage = 'Ошибка отправки письма';
+        
+        if (error.code === 'auth/user-not-found') {
+          errorMessage = 'Пользователь с таким email не найден';
+        } else if (error.code === 'auth/invalid-email') {
+          errorMessage = 'Неверный формат email';
+        }
+        
+        this.showNotification(errorMessage, 'error');
+      }
     },
 
     goToProfile() {
@@ -1143,879 +1536,6 @@ export default {
 }
 </script>
 <style scoped>
-.settings-page {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: clamp(20px, 5vw, 40px) clamp(15px, 4vw, 20px);
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  color: #1f2937;
-  min-height: 100vh;
-  gap: clamp(25px, 5vw, 40px);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-}
+@import "@/assets/css/AcedSettings.css";
 
-.section-title {
-  font-size: clamp(1.4rem, 4vw, 1.75rem);
-  font-weight: 800;
-  margin-bottom: clamp(20px, 4vw, 24px);
-  text-align: center;
-  color: #4c1d95;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.settings-content {
-  width: 100%;
-  max-width: clamp(350px, 90vw, 600px);
-  background: #ffffff;
-  padding: clamp(25px, 5vw, 40px);
-  border-radius: clamp(16px, 3vw, 24px);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-  border: 1px solid #f1f5f9;
-}
-
-.settings-content:hover {
-  box-shadow: 0 20px 60px rgba(124, 58, 237, 0.15);
-  transform: translateY(-2px);
-}
-
-label {
-  display: block;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: clamp(6px, 1.5vw, 8px);
-  font-size: clamp(0.9rem, 2.2vw, 0.95rem);
-}
-
-input, select {
-  width: 100%;
-  padding: clamp(12px, 3vw, 14px) clamp(14px, 3.5vw, 16px);
-  margin-bottom: clamp(16px, 3.5vw, 20px);
-  border: 2px solid #e5e7eb;
-  border-radius: clamp(10px, 2.5vw, 12px);
-  background: #f9fafb;
-  color: #1f2937;
-  font-size: clamp(0.9rem, 2.2vw, 1rem);
-  transition: all 0.3s ease;
-  font-family: inherit;
-  box-sizing: border-box;
-}
-
-input:focus, select:focus {
-  outline: none;
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
-  background: #ffffff;
-}
-
-input:disabled, select:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: #f3f4f6;
-}
-
-.current-plan-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: clamp(20px, 4vw, 24px);
-  border-radius: clamp(12px, 3vw, 16px);
-  margin-bottom: clamp(24px, 5vw, 32px);
-}
-
-.plan-info h3 {
-  font-size: clamp(1.1rem, 2.8vw, 1.2rem);
-  font-weight: 700;
-  margin-bottom: clamp(12px, 3vw, 16px);
-}
-
-.plan-display {
-  display: flex;
-  align-items: center;
-  gap: clamp(12px, 3vw, 16px);
-  flex-wrap: wrap;
-}
-
-.plan-badge {
-  padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px);
-  border-radius: 20px;
-  font-weight: 700;
-  font-size: clamp(0.8rem, 2vw, 0.9rem);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-}
-
-.badge-free {
-  background-color: #ef4444;
-  color: white;
-}
-
-.badge-start {
-  background-color: #f59e0b;
-  color: white;
-}
-
-.badge-pro {
-  background-color: #10b981;
-  color: white;
-}
-
-.plan-details {
-  flex: 1;
-  min-width: 200px;
-}
-
-.plan-description {
-  margin: 0 0 clamp(6px, 1.5vw, 8px) 0;
-  font-size: clamp(0.9rem, 2.2vw, 0.95rem);
-  opacity: 0.9;
-}
-
-.plan-expiry, .plan-source {
-  margin: 0;
-  font-size: clamp(0.8rem, 2vw, 0.85rem);
-  opacity: 0.8;
-}
-
-.promo-section {
-  background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%);
-  border: 2px solid #e879f9;
-  padding: clamp(20px, 4vw, 24px);
-  border-radius: clamp(12px, 3vw, 16px);
-  margin-bottom: clamp(24px, 5vw, 32px);
-}
-
-.promo-section h4 {
-  color: #7c3aed;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: clamp(1rem, 2.5vw, 1.1rem);
-  font-weight: 600;
-  margin-bottom: clamp(12px, 3vw, 16px);
-}
-
-.promo-code-input {
-  position: relative;
-  margin-bottom: clamp(12px, 3vw, 16px);
-}
-
-.promo-input {
-  transition: all 0.3s ease;
-  margin-bottom: 0;
-}
-
-.promo-input.promo-valid {
-  border-color: #10b981;
-  background-color: #ecfdf5;
-}
-
-.promo-input.promo-invalid {
-  border-color: #ef4444;
-  background-color: #fef2f2;
-}
-
-.promo-input.promo-loading {
-  border-color: #f59e0b;
-  background-color: #fffbeb;
-}
-
-.promo-validation {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 10;
-  margin-top: 4px;
-  padding: clamp(8px, 2vw, 12px);
-  border-radius: clamp(6px, 1.5vw, 8px);
-  font-size: clamp(0.8rem, 2vw, 0.875rem);
-  font-weight: 500;
-  animation: fadeIn 0.3s ease-out;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.promo-valid-message {
-  background-color: #d1fae5;
-  color: #065f46;
-  border: 1px solid #10b981;
-}
-
-.promo-invalid-message {
-  background-color: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #ef4444;
-}
-
-.promo-loading-message {
-  background-color: #fffbeb;
-  color: #92400e;
-  border: 1px solid #f59e0b;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.spinner-small {
-  width: 14px;
-  height: 14px;
-  border: 2px solid #fbbf24;
-  border-left: 2px solid #92400e;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-.plan-select {
-  margin-top: clamp(8px, 2vw, 12px);
-  margin-bottom: clamp(12px, 3vw, 16px);
-}
-
-.plan-warning {
-  background-color: #fef3c7;
-  color: #92400e;
-  padding: clamp(8px, 2vw, 12px);
-  border-radius: clamp(6px, 1.5vw, 8px);
-  border: 1px solid #f59e0b;
-  font-size: clamp(0.8rem, 2vw, 0.875rem);
-  margin-bottom: clamp(12px, 3vw, 16px);
-}
-
-.promo-button {
-  width: 100%;
-  padding: clamp(12px, 3vw, 14px) clamp(20px, 4vw, 24px);
-  border: none;
-  border-radius: clamp(10px, 2.5vw, 12px);
-  font-size: clamp(0.9rem, 2.2vw, 1rem);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: linear-gradient(135deg, #e879f9, #c084fc);
-  color: white;
-  min-height: clamp(44px, 10vw, 48px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(6px, 1.5vw, 8px);
-}
-
-.promo-button-ready {
-  background: linear-gradient(135deg, #10b981, #059669) !important;
-  transform: scale(1.02);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
-}
-
-.promo-button-loading {
-  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
-  cursor: not-allowed;
-}
-
-.promo-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.promo-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(232, 121, 249, 0.3);
-}
-
-.promo-button-ready:hover {
-  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.4);
-}
-
-.applied-promocodes {
-  background: #f8fafc;
-  padding: clamp(16px, 3vw, 20px);
-  border-radius: clamp(10px, 2.5vw, 12px);
-  border: 1px solid #e2e8f0;
-  margin-bottom: clamp(20px, 4vw, 24px);
-}
-
-.applied-promocodes h4 {
-  font-size: clamp(0.9rem, 2.2vw, 1rem);
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: clamp(10px, 2.5vw, 12px);
-}
-
-.promocodes-list {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(8px, 2vw, 10px);
-}
-
-.promocode-item {
-  background: white;
-  padding: clamp(10px, 2.5vw, 12px);
-  border-radius: clamp(8px, 2vw, 10px);
-  border: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: clamp(8px, 2vw, 10px);
-}
-
-.promocode-info {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(2px, 0.5vw, 3px);
-}
-
-.promocode-code {
-  font-family: monospace;
-  font-weight: 600;
-  color: #7c3aed;
-  font-size: clamp(0.8rem, 2vw, 0.9rem);
-}
-
-.promocode-plan {
-  font-size: clamp(0.75rem, 1.8vw, 0.8rem);
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.promocode-date {
-  font-size: clamp(0.75rem, 1.8vw, 0.8rem);
-  color: #9ca3af;
-}
-
-.plans-section {
-  margin-bottom: clamp(24px, 5vw, 32px);
-  padding: clamp(20px, 4vw, 24px);
-  background: #f8fafc;
-  border-radius: clamp(12px, 3vw, 16px);
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
-}
-
-.plans-section.plans-disabled {
-  opacity: 0.8;
-  background: #f3f4f6;
-}
-
-.plans-section h4 {
-  font-size: clamp(1rem, 2.5vw, 1.1rem);
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: clamp(12px, 3vw, 16px);
-}
-
-.promocode-notice {
-  background: linear-gradient(135deg, #ddd6fe 0%, #e0e7ff 100%);
-  border: 2px solid #8b5cf6;
-  border-radius: clamp(10px, 2.5vw, 12px);
-  padding: clamp(12px, 3vw, 16px);
-  margin-bottom: clamp(16px, 3.5vw, 20px);
-}
-
-.notice-content {
-  text-align: center;
-  color: #5b21b6;
-  font-weight: 500;
-  font-size: clamp(0.9rem, 2.2vw, 0.95rem);
-}
-
-.plans-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: clamp(15px, 3vw, 20px);
-  margin-bottom: clamp(20px, 4vw, 24px);
-}
-
-.plan-card {
-  border: 2px solid #e5e7eb;
-  border-radius: clamp(12px, 3vw, 16px);
-  padding: clamp(20px, 4vw, 24px);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  background: white;
-}
-
-.plan-card:hover:not(.disabled) {
-  border-color: #7c3aed;
-  transform: translateY(-4px);
-  box-shadow: 0 10px 30px rgba(124, 58, 237, 0.2);
-}
-
-.plan-card.active {
-  border-color: #7c3aed;
-  background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%);
-  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.2);
-}
-
-.plan-card.current-plan {
-  border-color: #10b981;
-  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
-}
-
-.plan-card.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background: #f9fafb;
-}
-
-.plan-card.recommended {
-  border-color: #10b981;
-}
-
-.plan-card.recommended.active {
-  border-color: #10b981;
-  background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
-}
-
-.plan-card .plan-badge {
-  position: absolute;
-  top: -10px;
-  right: 16px;
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: clamp(0.7rem, 1.8vw, 0.75rem);
-  font-weight: 600;
-}
-
-.plan-header h5 {
-  font-size: clamp(1.1rem, 2.8vw, 1.25rem);
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: clamp(6px, 1.5vw, 8px);
-}
-
-.plan-price {
-  font-size: clamp(1.2rem, 3vw, 1.4rem);
-  font-weight: 800;
-  color: #7c3aed;
-  margin-bottom: clamp(12px, 3vw, 16px);
-}
-
-.plan-features {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.plan-features li {
-  padding: clamp(3px, 1vw, 4px) 0;
-  font-size: clamp(0.85rem, 2.1vw, 0.9rem);
-  color: #4b5563;
-}
-
-.plan-status {
-  margin-top: clamp(12px, 3vw, 16px);
-  padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px);
-  background: #d1fae5;
-  color: #065f46;
-  border-radius: clamp(6px, 1.5vw, 8px);
-  text-align: center;
-  font-weight: 600;
-  font-size: clamp(0.85rem, 2.1vw, 0.9rem);
-}
-
-.usage-summary {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(16px, 3.5vw, 20px);
-}
-
-.usage-item {
-  background: #f8fafc;
-  padding: clamp(16px, 3.5vw, 20px);
-  border-radius: clamp(10px, 2.5vw, 12px);
-  border: 1px solid #e2e8f0;
-}
-
-.usage-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: clamp(8px, 2vw, 10px);
-}
-
-.usage-label {
-  font-weight: 600;
-  color: #374151;
-  font-size: clamp(0.9rem, 2.2vw, 1rem);
-}
-
-.usage-value {
-  font-weight: 700;
-  color: #7c3aed;
-  font-size: clamp(0.9rem, 2.2vw, 1rem);
-}
-
-.usage-bar {
-  width: 100%;
-  height: 8px;
-  background: #e5e7eb;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.usage-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #10b981, #059669);
-  transition: width 0.3s ease;
-  border-radius: 4px;
-}
-
-.button-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: clamp(12px, 3vw, 16px);
-  justify-content: space-between;
-  margin-top: clamp(24px, 5vw, 32px);
-}
-
-.save-button,
-.back-button,
-.payment-button {
-  flex: 1 1 clamp(120px, 45%, 200px);
-  padding: clamp(12px, 3vw, 14px) clamp(20px, 4vw, 24px);
-  border: none;
-  border-radius: clamp(10px, 2.5vw, 12px);
-  font-size: clamp(0.9rem, 2.2vw, 1rem);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(6px, 1.5vw, 8px);
-  white-space: nowrap;
-  min-height: clamp(44px, 10vw, 48px);
-}
-
-.save-button {
-  background: linear-gradient(135deg, #9333ea, #a855f7);
-  color: white;
-}
-
-.save-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7e22ce, #9333ea);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(147, 51, 234, 0.3);
-}
-
-.back-button {
-  background: #f3f4f6;
-  color: #4c1d95;
-  border: 2px solid #e5e7eb;
-}
-
-.back-button:hover {
-  background: #e5e7eb;
-  transform: translateY(-2px);
-  border-color: #d1d5db;
-}
-
-.payment-button {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  width: 100%;
-  font-size: clamp(1rem, 2.5vw, 1.1rem);
-  padding: clamp(14px, 3.5vw, 16px) clamp(20px, 4vw, 24px);
-}
-
-.payment-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
-}
-
-.save-button:disabled,
-.payment-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.payment-history {
-  background: #f8fafc;
-  padding: clamp(20px, 4vw, 24px);
-  border-radius: clamp(12px, 3vw, 16px);
-  border: 1px solid #e2e8f0;
-}
-
-.payment-history h4 {
-  font-size: clamp(1rem, 2.5vw, 1.1rem);
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: clamp(12px, 3vw, 16px);
-}
-
-.history-list {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(10px, 2.5vw, 12px);
-}
-
-.payment-item {
-  background: white;
-  padding: clamp(12px, 3vw, 16px);
-  border-radius: clamp(10px, 2.5vw, 12px);
-  border: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: clamp(8px, 2vw, 10px);
-}
-
-.payment-info {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(3px, 1vw, 4px);
-}
-
-.payment-id {
-  font-family: monospace;
-  font-size: clamp(0.8rem, 2vw, 0.85rem);
-  color: #6b7280;
-}
-
-.payment-amount {
-  font-weight: 600;
-  color: #1f2937;
-  font-size: clamp(0.9rem, 2.2vw, 1rem);
-}
-
-.payment-status {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: clamp(3px, 1vw, 4px);
-}
-
-.status-badge {
-  padding: clamp(3px, 1vw, 4px) clamp(10px, 2.5vw, 12px);
-  border-radius: 20px;
-  font-size: clamp(0.75rem, 1.8vw, 0.8rem);
-  font-weight: 600;
-}
-
-.status-success {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.status-warning {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.status-error {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.payment-date {
-  font-size: clamp(0.75rem, 1.8vw, 0.8rem);
-  color: #6b7280;
-}
-
-.forgot-password {
-  color: #7c3aed;
-  cursor: pointer;
-  text-align: right;
-  font-size: clamp(0.85rem, 2.1vw, 0.9rem);
-  margin-bottom: clamp(12px, 3vw, 16px);
-  transition: color 0.2s ease;
-}
-
-.forgot-password:hover {
-  text-decoration: underline;
-  color: #6d28d9;
-}
-
-.notification {
-  position: fixed;
-  bottom: clamp(20px, 5vw, 30px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: #1f2937;
-  color: white;
-  padding: clamp(12px, 3vw, 16px) clamp(20px, 4vw, 24px);
-  border-radius: clamp(10px, 2.5vw, 12px);
-  font-size: clamp(0.9rem, 2.2vw, 0.95rem);
-  font-weight: 500;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  animation: slideUp 0.4s ease-out;
-  z-index: 1000;
-  max-width: 90%;
-  display: flex;
-  align-items: center;
-  gap: clamp(10px, 2.5vw, 12px);
-}
-
-.notification-success {
-  background: linear-gradient(135deg, #10b981, #059669);
-}
-
-.notification-error {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-}
-
-.notification-warning {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-}
-
-.notification-icon {
-  font-size: clamp(1.1rem, 2.8vw, 1.2rem);
-}
-
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.95);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-  backdrop-filter: blur(4px);
-}
-
-.spinner {
-  width: clamp(40px, 10vw, 50px);
-  height: clamp(40px, 10vw, 50px);
-  border: 4px solid #e5e7eb;
-  border-left: 4px solid #7c3aed;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: clamp(15px, 4vw, 20px);
-}
-
-.loading-overlay p {
-  font-size: clamp(1rem, 2.5vw, 1.1rem);
-  font-weight: 600;
-  color: #374151;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 20px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
-  .settings-page {
-    padding: 20px 15px;
-    gap: 25px;
-  }
-  
-  .settings-content {
-    padding: 20px;
-  }
-  
-  .plans-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .button-group {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .save-button,
-  .back-button {
-    flex: 1 1 auto;
-    width: 100%;
-  }
-  
-  .plan-display {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  
-  .payment-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  
-  .payment-status {
-    align-items: flex-start;
-  }
-  
-  .promo-validation {
-    position: static;
-    margin-top: 8px;
-  }
-  
-  .promocode-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-}
-
-@media (max-width: 480px) {
-  .settings-content {
-    padding: 16px;
-  }
-  
-  .plan-card {
-    padding: 16px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .settings-content,
-  .plan-card,
-  .save-button,
-  .back-button,
-  .promo-button,
-  .payment-button,
-  .promo-validation,
-  .spinner,
-  .spinner-small {
-    transition: none;
-    animation: none;
-  }
-  
-  .settings-content:hover,
-  .plan-card:hover,
-  .save-button:hover,
-  .back-button:hover,
-  .promo-button:hover,
-  .payment-button:hover {
-    transform: none;
-  }
-}
 </style>
