@@ -786,13 +786,25 @@ window.triggerGlobalEvent = (eventName, data = {}) => {
   try {
     console.log(`🌍 Triggering global event: ${eventName}`, data);
     
+    // ✅ CRITICAL FIX: Ensure status values are properly preserved
+    const { newStatus, plan, userStatus, subscriptionPlan, oldStatus } = data;
+    const actualNewStatus = newStatus || plan || userStatus || subscriptionPlan;
+    
     const enhancedData = {
       ...data,
       eventName,
       source: data.source || 'global-trigger',
       timestamp: data.timestamp || Date.now(),
-      version: '2.0'
+      version: '2.0',
+      // ✅ CRITICAL: Add all status field variations
+      newStatus: actualNewStatus,
+      plan: actualNewStatus,
+      userStatus: actualNewStatus,
+      subscriptionPlan: actualNewStatus,
+      oldStatus: oldStatus || 'free'
     };
+
+    console.log(`🔍 Enhanced event data for ${eventName}:`, enhancedData);
 
     // Multiple event dispatch methods for maximum compatibility
     const customEvent = new CustomEvent(eventName, {
@@ -825,7 +837,7 @@ window.triggerGlobalEvent = (eventName, data = {}) => {
       }
     }
 
-    console.log(`✅ Global event dispatched: ${eventName}`);
+    console.log(`✅ Global event dispatched: ${eventName} with status: ${actualNewStatus}`);
 
   } catch (eventError) {
     console.error(`❌ Failed to trigger global event '${eventName}':`, eventError);
@@ -1047,28 +1059,59 @@ function setupEnhancedGlobalSubscriptionManagement() {
   const handleGlobalSubscriptionChange = (event) => {
     console.log('📡 Global subscription change detected:', event.detail);
     
-    const { plan, source, oldPlan, timestamp } = event.detail;
+    // ✅ CRITICAL FIX: Extract plan from event detail with multiple fallbacks
+    const { plan, newStatus, userStatus, subscriptionPlan } = event.detail || {};
+    const actualPlan = plan || newStatus || userStatus || subscriptionPlan || 'free';
+    const { source, oldPlan, timestamp } = event.detail || {};
+    
+    console.log('🔍 Extracted plan values:', {
+      plan,
+      newStatus,
+      userStatus,
+      subscriptionPlan,
+      actualPlan,
+      eventDetail: event.detail
+    });
+    
+    // ✅ CRITICAL: Validate the plan before proceeding
+    if (!['free', 'start', 'pro', 'premium'].includes(actualPlan)) {
+      console.warn('⚠️ Invalid plan detected, defaulting to free:', actualPlan);
+      actualPlan = 'free';
+    }
     
     // Update page title
-    const planLabel = plan === 'pro' ? 'Pro' : plan === 'start' ? 'Start' : 'Free';
+    const planLabel = actualPlan === 'pro' ? 'Pro' : actualPlan === 'start' ? 'Start' : 'Free';
     if (document.title && !document.title.includes('|')) {
       document.title = `ACED | ${planLabel}`;
     }
     
     // Update body classes for CSS styling
     document.body.className = document.body.className.replace(/user-plan-\w+/g, '');
-    document.body.classList.add(`user-plan-${plan}`);
+    document.body.classList.add(`user-plan-${actualPlan}`);
     
-    // Update localStorage immediately
-    localStorage.setItem('userStatus', plan);
+    // Update localStorage immediately with all variations
+    localStorage.setItem('userStatus', actualPlan);
+    localStorage.setItem('userPlan', actualPlan);
+    localStorage.setItem('subscriptionPlan', actualPlan);
     localStorage.setItem('statusUpdateTime', Date.now().toString());
+    
+    console.log('💾 localStorage updated with plan:', actualPlan);
     
     // Update store if not already updated
     try {
       const currentStoreStatus = store.getters['user/userStatus'];
-      if (currentStoreStatus !== plan) {
-        console.log('🔄 Syncing store with global change:', currentStoreStatus, '→', plan);
-        store.commit('user/SET_USER_STATUS', plan);
+      console.log('🔍 Store status comparison:', { current: currentStoreStatus, new: actualPlan });
+      
+      if (currentStoreStatus !== actualPlan) {
+        console.log('🔄 Syncing store with global change:', currentStoreStatus, '→', actualPlan);
+        store.commit('user/SET_USER_STATUS', actualPlan);
+        
+        // Also try legacy mutations
+        try {
+          store.commit('user/setUserStatus', actualPlan);
+        } catch (e) {
+          console.log('Legacy setUserStatus not available');
+        }
       }
     } catch (storeError) {
       console.warn('⚠️ Failed to sync store:', storeError);
@@ -1084,14 +1127,19 @@ function setupEnhancedGlobalSubscriptionManagement() {
       }
     }
     
-    // Emit multiple event types for maximum component coverage
+    // ✅ CRITICAL: Emit multiple event types with the ACTUAL plan value
     const eventData = {
       reason: 'subscription-change',
-      plan: plan,
-      source: source,
-      oldPlan: oldPlan,
+      plan: actualPlan,
+      newStatus: actualPlan,
+      userStatus: actualPlan,
+      subscriptionPlan: actualPlan,
+      source: source || 'global-change',
+      oldPlan: oldPlan || 'free',
       timestamp: timestamp || Date.now()
     };
+    
+    console.log('📡 Emitting events with data:', eventData);
     
     const eventTypes = [
       'globalForceUpdate',
@@ -1106,13 +1154,14 @@ function setupEnhancedGlobalSubscriptionManagement() {
     });
     
     // Show celebration for upgrades
-    if (plan !== 'free' && oldPlan === 'free') {
+    if (actualPlan !== 'free' && (oldPlan === 'free' || !oldPlan)) {
       const sourceText = source === 'promocode' ? 'промокоду' : 'оплате';
       console.log(`🎉 Subscription upgraded to ${planLabel} via ${sourceText}!`);
       
       eventBus.emit('subscriptionUpgrade', {
-        plan: plan,
-        source: source,
+        plan: actualPlan,
+        newStatus: actualPlan,
+        source: source || 'upgrade',
         message: `Поздравляем! ${planLabel} подписка активирована по ${sourceText}!`,
         timestamp: Date.now()
       });
@@ -1145,14 +1194,52 @@ function setupEnhancedGlobalSubscriptionManagement() {
   eventBus.on('userStatusChanged', (data) => {
     console.log('👤 User status changed via event bus:', data);
     
-    // Sync with localStorage
-    if (data.newStatus) {
-      try {
-        localStorage.setItem('userStatus', data.newStatus);
-        localStorage.setItem('statusUpdateTime', Date.now().toString());
-      } catch (storageError) {
-        console.warn('⚠️ localStorage sync failed:', storageError);
+    // ✅ CRITICAL FIX: Extract the actual status value with multiple fallbacks
+    const { newStatus, plan, userStatus, subscriptionPlan } = data || {};
+    const actualStatus = newStatus || plan || userStatus || subscriptionPlan || 'free';
+    
+    console.log('🔍 Extracted status values:', {
+      newStatus,
+      plan,
+      userStatus,
+      subscriptionPlan,
+      actualStatus,
+      originalData: data
+    });
+    
+    // ✅ CRITICAL: Validate the status
+    if (!['free', 'start', 'pro', 'premium'].includes(actualStatus)) {
+      console.warn('⚠️ Invalid status in event bus, defaulting to free:', actualStatus);
+      actualStatus = 'free';
+    }
+    
+    // Sync with localStorage using all field variations
+    try {
+      localStorage.setItem('userStatus', actualStatus);
+      localStorage.setItem('userPlan', actualStatus);
+      localStorage.setItem('subscriptionPlan', actualStatus);
+      localStorage.setItem('statusUpdateTime', Date.now().toString());
+      console.log('💾 localStorage synced with status:', actualStatus);
+    } catch (storageError) {
+      console.warn('⚠️ localStorage sync failed:', storageError);
+    }
+    
+    // ✅ CRITICAL: Also update the store to ensure consistency
+    try {
+      const currentStoreStatus = store.getters['user/userStatus'];
+      if (currentStoreStatus !== actualStatus) {
+        console.log('🔄 Updating store via event bus:', currentStoreStatus, '→', actualStatus);
+        store.commit('user/SET_USER_STATUS', actualStatus);
+        
+        // Try legacy mutations too
+        try {
+          store.commit('user/setUserStatus', actualStatus);
+        } catch (e) {
+          console.log('Legacy setUserStatus not available in event bus handler');
+        }
       }
+    } catch (storeError) {
+      console.warn('⚠️ Store update failed in event bus:', storeError);
     }
     
     // Force app update with error handling
@@ -1162,7 +1249,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
         
         // Also trigger $nextTick for delayed components
         app._instance.proxy.$nextTick(() => {
-          console.log('🔄 NextTick update completed');
+          console.log('🔄 NextTick update completed with status:', actualStatus);
         });
       } catch (error) {
         console.warn('⚠️ Failed to force update on status change:', error);
@@ -1573,28 +1660,66 @@ if (import.meta.env.DEV) {
       
       console.log('🔧 Forcing status update to:', status);
       
-      // Update store
-      store.commit('user/SET_USER_STATUS', status);
+      // Update store with multiple mutations
+      try {
+        store.commit('user/SET_USER_STATUS', status);
+        console.log('✅ Store updated via SET_USER_STATUS');
+      } catch (e) {
+        console.warn('⚠️ SET_USER_STATUS failed:', e);
+      }
       
-      // Update localStorage
+      try {
+        store.commit('user/setUserStatus', status);
+        console.log('✅ Store updated via setUserStatus');
+      } catch (e) {
+        console.log('Legacy setUserStatus not available');
+      }
+      
+      // Update localStorage with all variations
       localStorage.setItem('userStatus', status);
       localStorage.setItem('userPlan', status);
       localStorage.setItem('subscriptionPlan', status);
+      localStorage.setItem('statusUpdateTime', Date.now().toString());
+      console.log('✅ localStorage updated with all status variations');
       
-      // Trigger all events
-      window.triggerGlobalEvent('userStatusChanged', {
+      // Trigger all events with proper data structure
+      const eventData = {
         oldStatus: null,
         newStatus: status,
+        plan: status,
+        userStatus: status,
+        subscriptionPlan: status,
         source: 'debug-force',
+        timestamp: Date.now()
+      };
+      
+      window.triggerGlobalEvent('userStatusChanged', eventData);
+      window.triggerGlobalEvent('userSubscriptionChanged', eventData);
+      window.triggerGlobalEvent('subscriptionUpdated', eventData);
+      window.triggerGlobalEvent('globalForceUpdate', {
+        reason: 'debug-force-update',
+        plan: status,
+        newStatus: status,
         timestamp: Date.now()
       });
       
       // Force Vue update
       if (app?._instance) {
-        app._instance.proxy.$forceUpdate();
+        try {
+          app._instance.proxy.$forceUpdate();
+          console.log('✅ Vue app force updated');
+        } catch (error) {
+          console.warn('⚠️ Vue force update failed:', error);
+        }
       }
       
       console.log('✅ Status forced to:', status);
+      
+      // Verify the change worked
+      setTimeout(() => {
+        const verification = window.testUserStatus.getCurrentStatus();
+        console.log('🔍 Status change verification:', verification);
+      }, 100);
     }
   };
   
@@ -1764,6 +1889,7 @@ if (import.meta.env.DEV) {
   `);
 }
 
+}
 
 console.log('✅ UNIFIED main.js with perfect authentication + user status updates loaded successfully!');
 console.log('🔧 Authentication will complete BEFORE router navigation begins');
