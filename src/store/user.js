@@ -1061,20 +1061,210 @@ const mutations = {
 };
 
 // ✅ ENHANCED ACTIONS WITH COMPREHENSIVE ERROR HANDLING
+// FIXED USER STORE ACTIONS - src/store/user.js actions section
+
 const actions = {
+  // ✅ CRITICAL FIX: updateUserStatus action that ALWAYS returns a result
+  async updateUserStatus({ commit, state, dispatch }, newStatus) {
+    const startTime = Date.now();
+    console.log('🚀 updateUserStatus action called with:', newStatus);
+    
+    try {
+      // ✅ CRITICAL: Input validation with early return
+      const validStatuses = ['free', 'start', 'pro', 'premium'];
+      if (!validStatuses.includes(newStatus)) {
+        console.error('❌ Invalid status provided:', newStatus);
+        const errorResult = { 
+          success: false, 
+          error: 'Invalid status',
+          validStatuses,
+          providedStatus: newStatus,
+          timestamp: Date.now()
+        };
+        console.log('❌ updateUserStatus returning error result:', errorResult);
+        return errorResult;
+      }
 
+      const oldStatus = state.userStatus;
+      console.log('🔍 Status change:', oldStatus, '→', newStatus);
 
+      // ✅ CRITICAL: Handle no-change case with success result
+      if (oldStatus === newStatus) {
+        console.log('ℹ️ Status unchanged, but triggering updates');
+        commit('FORCE_UPDATE');
+        
+        const noChangeResult = { 
+          success: true, 
+          message: 'Status unchanged', 
+          noChange: true,
+          oldStatus,
+          newStatus,
+          timestamp: Date.now(),
+          duration: Date.now() - startTime
+        };
+        console.log('✅ updateUserStatus returning no-change result:', noChangeResult);
+        return noChangeResult;
+      }
+
+      // ✅ CRITICAL: Update store state with error handling
+      try {
+        console.log('🔄 Committing SET_USER_STATUS...');
+        commit('SET_USER_STATUS', newStatus);
+        console.log('✅ SET_USER_STATUS committed successfully');
+      } catch (commitError) {
+        console.error('❌ SET_USER_STATUS commit failed:', commitError);
+        const commitErrorResult = {
+          success: false,
+          error: 'Failed to update store status',
+          originalError: commitError.message,
+          timestamp: Date.now(),
+          duration: Date.now() - startTime
+        };
+        console.log('❌ updateUserStatus returning commit error result:', commitErrorResult);
+        return commitErrorResult;
+      }
+
+      // ✅ CRITICAL: Update subscription with error handling
+      try {
+        console.log('🔄 Committing UPDATE_SUBSCRIPTION...');
+        commit('UPDATE_SUBSCRIPTION', {
+          plan: newStatus,
+          status: newStatus !== 'free' ? 'active' : 'inactive',
+          source: 'status-update',
+          lastSync: new Date().toISOString()
+        });
+        console.log('✅ UPDATE_SUBSCRIPTION committed successfully');
+      } catch (subscriptionError) {
+        console.error('❌ UPDATE_SUBSCRIPTION commit failed:', subscriptionError);
+        // Don't fail the entire operation for subscription update failure
+      }
+
+      // ✅ CRITICAL: Force update with error handling
+      try {
+        console.log('🔄 Committing FORCE_UPDATE...');
+        commit('FORCE_UPDATE');
+        console.log('✅ FORCE_UPDATE committed successfully');
+      } catch (forceError) {
+        console.error('❌ FORCE_UPDATE commit failed:', forceError);
+        // Don't fail the entire operation for force update failure
+      }
+
+      // ✅ CRITICAL: Update localStorage immediately
+      try {
+        localStorage.setItem('userStatus', newStatus);
+        localStorage.setItem('statusUpdateTime', Date.now().toString());
+        localStorage.setItem('plan', newStatus); // Legacy compatibility
+        console.log('✅ localStorage updated successfully');
+      } catch (storageError) {
+        console.warn('⚠️ Failed to update localStorage:', storageError);
+        // Don't fail the entire operation for storage failure
+      }
+
+      // ✅ CRITICAL: Trigger global events with error handling
+      try {
+        const eventData = {
+          oldStatus,
+          newStatus,
+          timestamp: Date.now(),
+          source: 'updateUserStatus-action',
+          duration: Date.now() - startTime
+        };
+
+        // Multiple event triggering strategies
+        if (typeof window !== 'undefined') {
+          // Method 1: Direct window function
+          if (window.triggerGlobalEvent) {
+            window.triggerGlobalEvent('userStatusChanged', eventData);
+            window.triggerGlobalEvent('subscriptionUpdated', eventData);
+            console.log('✅ Global events triggered via window.triggerGlobalEvent');
+          }
+
+          // Method 2: EventBus
+          if (window.eventBus?.emit) {
+            window.eventBus.emit('userStatusChanged', eventData);
+            window.eventBus.emit('subscriptionUpdated', eventData);
+            console.log('✅ Global events triggered via window.eventBus');
+          }
+
+          // Method 3: Custom DOM events
+          try {
+            const customEvent = new CustomEvent('userSubscriptionChanged', {
+              detail: eventData,
+              bubbles: true
+            });
+            window.dispatchEvent(customEvent);
+            console.log('✅ DOM event dispatched: userSubscriptionChanged');
+          } catch (domEventError) {
+            console.warn('⚠️ DOM event dispatch failed:', domEventError);
+          }
+        }
+
+        console.log('✅ All global events triggered successfully');
+      } catch (eventError) {
+        console.warn('⚠️ Global event triggering failed:', eventError);
+        // Don't fail the entire operation for event failure
+      }
+
+      const duration = Date.now() - startTime;
+      console.log(`✅ updateUserStatus completed: ${oldStatus} → ${newStatus} (${duration}ms)`);
+
+      // ✅ CRITICAL: ALWAYS return success result object
+      const successResult = {
+        success: true,
+        oldStatus,
+        newStatus,
+        duration,
+        message: `Status updated from ${oldStatus} to ${newStatus}`,
+        timestamp: Date.now(),
+        eventsTriggered: true,
+        localStorageUpdated: true,
+        storeUpdated: true
+      };
+
+      console.log('✅ updateUserStatus returning success result:', successResult);
+      return successResult;
+
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      console.error('❌ updateUserStatus failed with exception:', error);
+
+      // ✅ CRITICAL: Try to commit error to store
+      try {
+        commit('SET_ERROR', {
+          message: 'Status update failed',
+          context: 'updateUserStatus',
+          originalError: error.message
+        });
+      } catch (commitError) {
+        console.error('❌ Failed to commit error:', commitError);
+      }
+
+      // ✅ CRITICAL: ALWAYS return error result object
+      const errorResult = {
+        success: false,
+        error: error.message || 'Unknown error occurred',
+        duration,
+        timestamp: Date.now(),
+        originalError: error.message,
+        stack: error.stack
+      };
+
+      console.log('❌ updateUserStatus returning exception result:', errorResult);
+      return errorResult;
+    }
+  },
+
+  // ✅ ENHANCED: Bulletproof saveUser action with comprehensive error handling
   async saveUser({ commit, dispatch, state }, { userData, token }) {
     const startTime = Date.now();
-  
     console.log('💾 🔥 ENHANCED saveUser starting...', {
       hasUserData: !!userData,
       hasToken: !!token,
       tokenLength: token?.length || 0,
       userEmail: userData?.email || 'unknown'
     });
-  
-    // ✅ BULLETPROOF: Always return a result object
+
+    // ✅ CRITICAL: Helper functions for consistent result objects
     const createSuccessResult = (user, message = 'User saved successfully') => {
       const result = {
         success: true,
@@ -1086,7 +1276,7 @@ const actions = {
       console.log('✅ createSuccessResult:', result);
       return result;
     };
-  
+
     const createErrorResult = (error, details = {}) => {
       const result = {
         success: false,
@@ -1099,27 +1289,27 @@ const actions = {
       console.log('❌ createErrorResult:', result);
       return result;
     };
-  
-    // ✅ BULLETPROOF: Input validation with detailed feedback
+
+    // ✅ CRITICAL: Input validation with detailed feedback
     if (!userData || typeof userData !== 'object') {
       const error = 'Missing or invalid user data';
       console.error('❌', error, { hasUserData: !!userData, userDataType: typeof userData });
       commit('SET_ERROR', { message: error, context: 'saveUser-validation' });
       return createErrorResult(error, { validationError: true });
     }
-  
+
     if (!token || typeof token !== 'string' || token.length < 10) {
       const error = 'Missing or invalid authentication token';
       console.error('❌', error, { hasToken: !!token, tokenLength: token?.length || 0 });
       commit('SET_ERROR', { message: error, context: 'saveUser-validation' });
       return createErrorResult(error, { validationError: true });
     }
-  
+
     try {
       console.log('🔄 Setting loading state and initializing...');
       commit('SET_LOADING', { type: 'saving', loading: true });
-  
-      // ✅ BULLETPROOF: Environment validation
+
+      // ✅ CRITICAL: Environment validation
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
       if (!baseUrl || typeof baseUrl !== 'string') {
         const error = 'Application configuration error - API base URL not set';
@@ -1127,24 +1317,24 @@ const actions = {
         commit('SET_ERROR', { message: error, context: 'saveUser-config' });
         return createErrorResult(error, { configError: true });
       }
-  
+
       console.log('📤 Loading API module...');
-  
-      // ✅ BULLETPROOF: API module loading with timeout
+
+      // ✅ CRITICAL: API module loading with timeout
       let api;
       try {
         const apiLoadPromise = import('@/api');
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('API module load timeout')), 5000)
         );
-  
+
         const apiModule = await Promise.race([apiLoadPromise, timeoutPromise]);
         api = apiModule.default || apiModule;
-  
+
         if (!api || typeof api.post !== 'function') {
           throw new Error('API module does not have post method');
         }
-  
+
         console.log('✅ API module loaded successfully');
       } catch (apiImportError) {
         const error = 'Failed to load API module - application error';
@@ -1152,8 +1342,8 @@ const actions = {
         commit('SET_ERROR', { message: error, context: 'saveUser-api-import', originalError: apiImportError.message });
         return createErrorResult(error, { apiImportError: true });
       }
-  
-      // ✅ BULLETPROOF: Payload preparation with validation
+
+      // ✅ CRITICAL: Payload preparation with validation
       const payload = {
         firebaseUserId: userData.uid || userData.firebaseId || userData.firebaseUserId,
         email: userData.email || '',
@@ -1170,8 +1360,8 @@ const actions = {
           version: '2.0'
         }
       };
-  
-      // ✅ BULLETPROOF: Validate essential payload fields
+
+      // ✅ CRITICAL: Validate essential payload fields
       if (!payload.firebaseUserId || !payload.email) {
         const error = 'Missing essential user information (ID or email)';
         console.error('❌', error, {
@@ -1182,18 +1372,18 @@ const actions = {
         commit('SET_ERROR', { message: error, context: 'saveUser-payload-validation' });
         return createErrorResult(error, { payloadValidationError: true });
       }
-  
+
       console.log('📤 Sending user data to server...', {
         url: '/users/save',
         firebaseUserId: payload.firebaseUserId.substring(0, 8) + '...',
         email: payload.email,
         plan: payload.subscriptionPlan
       });
-  
-      // ✅ BULLETPROOF: API call with comprehensive error handling and timeout
+
+      // ✅ CRITICAL: API call with comprehensive error handling and timeout
       let response;
       const apiStartTime = Date.now();
-  
+
       try {
         const requestConfig = {
           timeout: 15000,
@@ -1204,16 +1394,16 @@ const actions = {
             'X-App-Version': '2.0'
           }
         };
-  
+
         console.log('📡 Making API request to /users/save...');
-  
+
         const requestPromise = api.post('/users/save', payload, requestConfig);
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Request timeout')), 20000)
         );
-  
+
         response = await Promise.race([requestPromise, timeoutPromise]);
-  
+
         // Track API response time
         const apiResponseTime = Date.now() - apiStartTime;
         console.log('📥 Server response received:', {
@@ -1222,15 +1412,15 @@ const actions = {
           responseTime: apiResponseTime + 'ms',
           hasData: !!response?.data
         });
-  
+
       } catch (networkError) {
         console.error('❌ Network error during user save:', networkError);
-  
-        // ✅ BULLETPROOF: Detailed network error handling
+
+        // ✅ CRITICAL: Detailed network error handling
         let userFriendlyError = 'Network error occurred';
         let statusCode = null;
         let errorDetails = { isNetworkError: true };
-  
+
         if (networkError.message === 'Request timeout') {
           userFriendlyError = 'Request timed out. Please check your connection and try again.';
           errorDetails.isTimeout = true;
@@ -1244,7 +1434,7 @@ const actions = {
           statusCode = networkError.response.status;
           const serverError = networkError.response.data || {};
           errorDetails.statusCode = statusCode;
-  
+
           switch (statusCode) {
             case 400:
               userFriendlyError = serverError.message || serverError.error || 'Invalid user data provided';
@@ -1285,25 +1475,25 @@ const actions = {
           userFriendlyError = 'Unable to connect to server. Please try again.';
           errorDetails.isConnectionError = true;
         }
-  
+
         commit('SET_ERROR', {
           message: userFriendlyError,
           context: 'saveUser-network',
           originalError: networkError.message,
           statusCode
         });
-  
+
         return createErrorResult(userFriendlyError, errorDetails);
       }
-  
-      // ✅ BULLETPROOF: Response validation
+
+      // ✅ CRITICAL: Response validation
       if (!response || typeof response !== 'object') {
         const error = 'Invalid response from server';
         console.error('❌', error, { hasResponse: !!response, responseType: typeof response });
         commit('SET_ERROR', { message: error, context: 'saveUser-response-validation' });
         return createErrorResult(error, { responseValidationError: true });
       }
-  
+
       const responseData = response.data;
       if (!responseData || typeof responseData !== 'object') {
         const error = 'Empty or invalid response from server';
@@ -1311,17 +1501,17 @@ const actions = {
         commit('SET_ERROR', { message: error, context: 'saveUser-response-data' });
         return createErrorResult(error, { responseDataError: true });
       }
-  
+
       console.log('📊 Processing server response...', {
         hasSuccess: 'success' in responseData,
         hasData: 'data' in responseData,
         hasUser: 'user' in responseData,
         responseKeys: Object.keys(responseData)
       });
-  
-      // ✅ BULLETPROOF: Handle different response structures
+
+      // ✅ CRITICAL: Handle different response structures
       let savedUser = null;
-  
+
       if (responseData.success === true) {
         if (responseData.data && typeof responseData.data === 'object') {
           savedUser = responseData.data;
@@ -1356,16 +1546,16 @@ const actions = {
         commit('SET_ERROR', { message: error, context: 'saveUser-unknown-response' });
         return createErrorResult(error, { unknownResponseError: true, rawResponse: responseData });
       }
-  
-      // ✅ BULLETPROOF: Validate saved user object
+
+      // ✅ CRITICAL: Validate saved user object
       if (!savedUser || typeof savedUser !== 'object') {
         const error = 'Server returned invalid user data';
         console.error('❌', error, { savedUserType: typeof savedUser, hasSavedUser: !!savedUser });
         commit('SET_ERROR', { message: error, context: 'saveUser-user-validation' });
         return createErrorResult(error, { userValidationError: true });
       }
-  
-      // ✅ BULLETPROOF: Ensure user has all required fields
+
+      // ✅ CRITICAL: Ensure user has all required fields
       const completeUser = {
         ...savedUser,
         firebaseId: savedUser.firebaseId || savedUser.firebaseUserId || savedUser._id || userData.uid,
@@ -1383,8 +1573,8 @@ const actions = {
           syncSource: 'saveUser'
         }
       };
-  
-      // ✅ BULLETPROOF: Final validation of complete user
+
+      // ✅ CRITICAL: Final validation of complete user
       if (!completeUser.firebaseId || !completeUser.email) {
         const error = 'Server user data missing essential fields';
         console.error('❌', error, {
@@ -1395,7 +1585,7 @@ const actions = {
         commit('SET_ERROR', { message: error, context: 'saveUser-final-validation' });
         return createErrorResult(error, { finalValidationError: true });
       }
-  
+
       console.log('✅ User saved successfully to server:', {
         id: completeUser._id || completeUser.firebaseId,
         email: completeUser.email,
@@ -1403,12 +1593,12 @@ const actions = {
         firebaseId: completeUser.firebaseId,
         duration: Date.now() - startTime + 'ms'
       });
-  
-      // ✅ BULLETPROOF: Update local store with server data
+
+      // ✅ CRITICAL: Update local store with server data
       try {
         commit('SET_USER', completeUser);
         commit('SET_USER_STATUS', completeUser.subscriptionPlan || 'free');
-  
+
         // Store user ID for future API calls
         const userId = completeUser.firebaseId || completeUser._id;
         if (userId) {
@@ -1416,28 +1606,26 @@ const actions = {
           localStorage.setItem('firebaseUserId', userId);
           localStorage.setItem('lastUserSync', Date.now().toString());
         }
-  
+
         console.log('✅ Local store updated with server data');
       } catch (storeError) {
         console.error('❌ Failed to update local store:', storeError);
         commit('SET_ERROR', { message: 'Store update failed', context: 'saveUser-store-update', originalError: storeError.message });
         // Don't fail the entire operation if store update fails
       }
-  
-      // ✅ CRITICAL: Always return success result
+
+      // ✅ CRITICAL: ALWAYS return success result
       const finalResult = createSuccessResult(completeUser, 'User saved and synchronized successfully');
       console.log('🎉 saveUser returning success result:', finalResult);
-      
-      // 🔥 FIX: This line solves the error - ALWAYS return the result
       return finalResult;
-  
+
     } catch (error) {
       console.error('❌ Unexpected error in saveUser:', error);
-  
-      // ✅ BULLETPROOF: Comprehensive error categorization
+
+      // ✅ CRITICAL: Comprehensive error categorization
       let userFriendlyError = 'An unexpected error occurred while saving user data.';
       let errorCategory = 'unexpected';
-  
+
       if (error.message?.includes('API module')) {
         userFriendlyError = 'Application configuration error. Please refresh the page.';
         errorCategory = 'config';
@@ -1454,7 +1642,7 @@ const actions = {
         userFriendlyError = 'Server returned invalid response. Please try again.';
         errorCategory = 'parsing';
       }
-  
+
       commit('SET_ERROR', {
         message: userFriendlyError,
         context: 'saveUser-unexpected',
@@ -1462,7 +1650,7 @@ const actions = {
         stack: error.stack,
         category: errorCategory
       });
-  
+
       console.error('❌ Detailed error info:', {
         message: error.message,
         stack: error.stack,
@@ -1470,8 +1658,8 @@ const actions = {
         category: errorCategory,
         duration: Date.now() - startTime + 'ms'
       });
-  
-      // ✅ CRITICAL: Always return error result
+
+      // ✅ CRITICAL: ALWAYS return error result
       const finalResult = createErrorResult(userFriendlyError, {
         isUnexpectedError: true,
         originalError: error.message,
@@ -1479,9 +1667,9 @@ const actions = {
       });
       console.log('❌ saveUser returning error result:', finalResult);
       return finalResult;
-  
+
     } finally {
-      // ✅ BULLETPROOF: Always clear loading state
+      // ✅ CRITICAL: Always clear loading state
       try {
         commit('SET_LOADING', { type: 'saving', loading: false });
         console.log(`⏱️ saveUser completed in ${Date.now() - startTime}ms`);
@@ -1489,100 +1677,14 @@ const actions = {
         console.warn('⚠️ Failed to clear loading state:', loadingError);
       }
     }
-  }, 
-  async updateUserStatus({ commit, state, dispatch }, newStatus) {
-    const startTime = Date.now();
-    console.log('🚀 updateUserStatus action called with:', newStatus);
-    try {
-      // Validate input
-      const validStatuses = ['free', 'start', 'pro', 'premium'];
-      if (!validStatuses.includes(newStatus)) {
-        console.error('❌ Invalid status provided:', newStatus);
-        return { success: false, error: 'Invalid status' }; // ✅ CRITICAL: Added return
-      }
-      const oldStatus = state.userStatus;
-      console.log('🔍 Status change:', oldStatus, '→', newStatus);
-      // Skip if no change but still return success
-      if (oldStatus === newStatus) {
-        console.log('ℹ️ Status unchanged');
-        commit('FORCE_UPDATE');
-        return { success: true, message: 'Status unchanged', noChange: true }; // ✅ CRITICAL: Added return
-      }
-      // Update store state
-      commit('SET_USER_STATUS', newStatus);
-      commit('UPDATE_SUBSCRIPTION', {
-        plan: newStatus,
-        status: newStatus !== 'free' ? 'active' : 'inactive',
-        source: 'status-update',
-        lastSync: new Date().toISOString()
-      });
-      commit('FORCE_UPDATE');
-      // Update localStorage
-      try {
-        localStorage.setItem('userStatus', newStatus);
-        localStorage.setItem('statusUpdateTime', Date.now().toString());
-      } catch (storageError) {
-        console.warn('⚠️ Failed to update localStorage:', storageError);
-      }
-      // Trigger global events
-      const eventData = {
-        oldStatus,
-        newStatus,
-        timestamp: Date.now(),
-        source: 'updateUserStatus-action'
-      };
-      // Use the global trigger function if available
-      if (typeof window !== 'undefined' && window.triggerGlobalEvent) {
-        window.triggerGlobalEvent('userStatusChanged', eventData);
-        window.triggerGlobalEvent('subscriptionUpdated', eventData);
-      }
-      const duration = Date.now() - startTime;
-      console.log(`✅ updateUserStatus completed: ${oldStatus} → ${newStatus} (${duration}ms)`);
-      // ✅ CRITICAL: Always return success result
-      return {
-        success: true,
-        oldStatus,
-        newStatus,
-        duration,
-        message: `Status updated from ${oldStatus} to ${newStatus}`,
-        timestamp: Date.now()
-      };
-    } catch (error) {
-      console.error('❌ updateUserStatus failed:', error);
-      try {
-        commit('SET_ERROR', {
-          message: 'Status update failed',
-          context: 'updateUserStatus',
-          originalError: error.message
-        });
-      } catch (commitError) {
-        console.error('❌ Failed to commit error:', commitError);
-      }
-      // ✅ CRITICAL: Always return error result
-      return {
-        success: false,
-        error: error.message || 'Unknown error occurred',
-        duration: Date.now() - startTime,
-        timestamp: Date.now()
-      };
-    }
   },
 
-  // ✅ ENHANCED: Load user status with caching and validation
+  // ✅ ENHANCED: Other actions remain the same but with better error handling
   async loadUserStatus({ commit, state }) {
     const startTime = Date.now();
 
     try {
       commit('SET_LOADING', { type: 'status', loading: true });
-
-      // Check cache first
-      const now = Date.now();
-      if (state.cache.userStatusCache &&
-        state.cache.lastCacheUpdate &&
-        (now - state.cache.lastCacheUpdate) < state.cache.cacheExpiry) {
-        console.log('✅ Using cached user status:', state.cache.userStatusCache);
-        return { success: true, status: state.cache.userStatusCache, cached: true };
-      }
 
       const userId = getUserId(state);
       if (!userId) {
@@ -1601,7 +1703,6 @@ const actions = {
 
         commit('SET_USER_STATUS', status);
 
-        // Update subscription details if available
         if (result.data?.subscriptionDetails) {
           commit('UPDATE_SUBSCRIPTION', {
             ...result.data.subscriptionDetails,
@@ -1610,10 +1711,6 @@ const actions = {
             lastSync: new Date().toISOString()
           });
         }
-
-        // Update cache
-        state.cache.userStatusCache = status;
-        state.cache.lastCacheUpdate = now;
 
         const duration = Date.now() - startTime;
         console.log(`✅ User status loaded from server: ${status} (${duration}ms)`);
@@ -1645,7 +1742,455 @@ const actions = {
     }
   },
 
-  // ✅ ENHANCED: Initialize with comprehensive error handling and performance tracking
+  // ✅ CRITICAL: updateSubscription that ALWAYS returns a result
+  async updateSubscription({ commit, dispatch, state }, { plan, source = 'payment', details = {} }) {
+    const startTime = Date.now();
+
+    console.log('🔄 updateSubscription called with:', { plan, source, detailsKeys: Object.keys(details) });
+
+    try {
+      // Validate plan
+      const validPlans = ['free', 'start', 'pro', 'premium'];
+      const validatedPlan = validPlans.includes(plan) ? plan : 'free';
+
+      if (plan !== validatedPlan) {
+        console.warn(`⚠️ Invalid plan "${plan}" normalized to "${validatedPlan}"`);
+      }
+
+      // Get old status for comparison
+      const oldStatus = state.userStatus || 'free';
+      console.log(`📊 Status change: ${oldStatus} → ${validatedPlan}`);
+
+      // Calculate expiry dates based on source
+      let expiryDate = null;
+      if (validatedPlan !== 'free') {
+        const now = new Date();
+        switch (source) {
+          case 'promocode':
+            expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+            break;
+          case 'payment':
+            expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
+            break;
+          case 'gift':
+            expiryDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days
+            break;
+          default:
+            expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // Default 30 days
+        }
+      }
+
+      const subscriptionData = {
+        plan: validatedPlan,
+        status: (validatedPlan !== 'free') ? 'active' : 'inactive',
+        startDate: new Date().toISOString(),
+        expiryDate: expiryDate ? expiryDate.toISOString() : null,
+        isAutoRenew: source === 'payment',
+        details: {
+          ...details,
+          updatedAt: new Date().toISOString(),
+          updatedBy: 'updateSubscription'
+        },
+        lastSync: new Date().toISOString()
+      };
+
+      console.log('📋 Subscription data prepared:', subscriptionData);
+
+      // ✅ CRITICAL: Update all related state atomically with error handling
+      try {
+        commit('SET_USER_STATUS', validatedPlan);
+        console.log('✅ SET_USER_STATUS committed successfully');
+      } catch (statusError) {
+        console.error('❌ SET_USER_STATUS failed:', statusError);
+        return {
+          success: false,
+          error: 'Failed to update user status',
+          originalError: statusError.message,
+          duration: Date.now() - startTime
+        };
+      }
+
+      try {
+        commit('UPDATE_SUBSCRIPTION', subscriptionData);
+        console.log('✅ UPDATE_SUBSCRIPTION committed successfully');
+      } catch (subscriptionError) {
+        console.error('❌ UPDATE_SUBSCRIPTION failed:', subscriptionError);
+        return {
+          success: false,
+          error: 'Failed to update subscription',
+          originalError: subscriptionError.message,
+          duration: Date.now() - startTime
+        };
+      }
+
+      try {
+        commit('UPDATE_FEATURES'); // Recalculate features based on new plan
+        console.log('✅ UPDATE_FEATURES committed successfully');
+      } catch (featuresError) {
+        console.warn('⚠️ UPDATE_FEATURES failed:', featuresError);
+        // Don't fail for features update
+      }
+
+      try {
+        commit('FORCE_UPDATE');
+        console.log('✅ FORCE_UPDATE committed successfully');
+      } catch (forceError) {
+        console.warn('⚠️ FORCE_UPDATE failed:', forceError);
+        // Don't fail for force update
+      }
+
+      console.log('✅ Store mutations completed');
+
+      // ✅ CRITICAL: Persistent storage (don't let this fail the whole operation)
+      try {
+        localStorage.setItem('userStatus', validatedPlan);
+        localStorage.setItem('subscriptionDetails', JSON.stringify(subscriptionData));
+        localStorage.setItem('lastSubscriptionUpdate', Date.now().toString());
+        console.log('✅ LocalStorage updated');
+      } catch (storageError) {
+        console.warn('⚠️ Failed to persist subscription data:', storageError);
+        // Don't fail the operation due to storage issues
+      }
+
+      // ✅ CRITICAL: Enhanced global event broadcasting
+      const eventData = {
+        oldStatus,
+        newStatus: validatedPlan,
+        source,
+        subscriptionData: { ...subscriptionData },
+        timestamp: Date.now(),
+        duration: Date.now() - startTime
+      };
+
+      // Multiple event types for different listeners
+      const events = [
+        'userStatusChanged',
+        'subscriptionUpdated',
+        'userSubscriptionChanged', // Legacy compatibility
+        'planChanged'
+      ];
+
+      events.forEach(eventName => {
+        try {
+          if (typeof window !== 'undefined') {
+            // Method 1: triggerGlobalEvent function
+            if (window.triggerGlobalEvent) {
+              window.triggerGlobalEvent(eventName, eventData);
+            }
+            
+            // Method 2: eventBus
+            if (window.eventBus?.emit) {
+              window.eventBus.emit(eventName, eventData);
+            }
+
+            // Method 3: DOM events
+            const customEvent = new CustomEvent(eventName, {
+              detail: eventData,
+              bubbles: true
+            });
+            window.dispatchEvent(customEvent);
+          }
+        } catch (eventError) {
+          console.warn(`⚠️ Failed to trigger ${eventName}:`, eventError);
+        }
+      });
+
+      console.log('✅ Events triggered');
+
+      const duration = Date.now() - startTime;
+      const successResult = {
+        success: true,
+        subscriptionData: { ...subscriptionData },
+        oldStatus,
+        newStatus: validatedPlan,
+        duration,
+        message: `Subscription updated successfully from ${oldStatus} to ${validatedPlan}`,
+        timestamp: Date.now()
+      };
+
+      console.log(`✅ updateSubscription completed successfully in ${duration}ms:`, successResult);
+
+      // ✅ CRITICAL: ALWAYS return the success result
+      return successResult;
+
+    } catch (error) {
+      const duration = Date.now() - startTime;
+
+      console.error('❌ updateSubscription failed:', error);
+
+      try {
+        commit('SET_ERROR', {
+          message: 'Subscription update failed',
+          context: 'updateSubscription',
+          originalError: error.message,
+          plan,
+          source
+        });
+      } catch (commitError) {
+        console.error('❌ Failed to commit error:', commitError);
+      }
+
+      const errorResult = {
+        success: false,
+        error: error.message || 'Subscription update failed',
+        duration,
+        plan,
+        source,
+        timestamp: Date.now(),
+        stack: error.stack
+      };
+
+      console.log('❌ updateSubscription returning error result:', errorResult);
+
+      // ✅ CRITICAL: ALWAYS return the error result
+      return errorResult;
+    }
+  },
+
+  // ✅ ENHANCED: Apply promocode with comprehensive validation and error handling
+  async applyPromocode({ commit, state, dispatch }, { promoCode, plan }) {
+    const startTime = Date.now();
+
+    try {
+      // Input validation
+      if (!promoCode || typeof promoCode !== 'string' || promoCode.trim().length < 3) {
+        return { success: false, error: 'Промокод должен содержать не менее 3 символов' };
+      }
+
+      if (!plan || !['start', 'pro', 'premium'].includes(plan)) {
+        return { success: false, error: 'Неверный план подписки' };
+      }
+
+      const userId = getUserId(state);
+      if (!userId) {
+        return { success: false, error: 'Пользователь не найден' };
+      }
+
+      const normalizedCode = promoCode.trim().toUpperCase();
+
+      // Check if already applied
+      const existingPromocode = state.promocodes.applied.find(p => p.code === normalizedCode);
+      if (existingPromocode) {
+        return {
+          success: false,
+          error: 'Этот промокод уже был применён',
+          alreadyApplied: true
+        };
+      }
+
+      console.log('🎟️ Applying promocode to server:', { code: normalizedCode, plan, userId: userId.substring(0, 8) + '...' });
+
+      const token = await getUserToken();
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      if (!baseUrl) {
+        commit('SET_ERROR', { message: 'API configuration error', context: 'applyPromocode' });
+        return { success: false, error: 'Ошибка конфигурации приложения' };
+      }
+
+      const response = await Promise.race([
+        fetch(`${baseUrl}/api/payments/promo-code`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            userId,
+            plan,
+            promoCode: normalizedCode
+          })
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timeout')), 10000)
+        )
+      ]);
+
+      const result = await response.json();
+
+      if (result?.success) {
+        const oldStatus = state.userStatus;
+
+        // ✅ CRITICAL: Update subscription through dedicated action
+        const updateResult = await dispatch('updateSubscription', {
+          plan,
+          source: 'promocode',
+          details: {
+            promocode: normalizedCode,
+            appliedAt: new Date().toISOString(),
+            originalResponse: result.data || {},
+            ...result.data?.subscriptionDetails
+          }
+        });
+
+        // ✅ CRITICAL: Check if update was successful
+        if (!updateResult || updateResult.success !== true) {
+          console.error('❌ Subscription update failed after promocode application:', updateResult);
+          return {
+            success: false,
+            error: 'Промокод применён на сервере, но локальное обновление не удалось',
+            serverSuccess: true,
+            updateResult
+          };
+        }
+
+        // Track promocode application
+        commit('ADD_PROMOCODE', {
+          code: normalizedCode,
+          plan,
+          oldPlan: oldStatus,
+          source: 'api',
+          details: result.data || {}
+        });
+
+        // Force global update
+        commit('FORCE_UPDATE');
+
+        const duration = Date.now() - startTime;
+        console.log(`✅ Promocode applied successfully: ${oldStatus} → ${plan} (${duration}ms)`);
+
+        return {
+          success: true,
+          message: result.message || `Промокод успешно применён! Подписка "${plan.toUpperCase()}" активирована.`,
+          oldPlan: oldStatus,
+          newPlan: plan,
+          duration,
+          updateResult
+        };
+      }
+
+      // Handle server errors
+      const serverError = result?.error || 'Не удалось применить промокод';
+      console.warn('⚠️ Promocode application failed:', serverError);
+
+      commit('SET_ERROR', {
+        message: serverError,
+        context: 'applyPromocode-server',
+        promocode: normalizedCode,
+        plan
+      });
+
+      return { success: false, error: serverError };
+
+    } catch (error) {
+      console.error('❌ Promocode application failed:', error);
+
+      let userFriendlyError = 'Произошла ошибка при применении промокода';
+
+      if (error.message === 'Request timeout') {
+        userFriendlyError = 'Истекло время ожидания. Попробуйте снова.';
+      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        userFriendlyError = 'Ошибка сети. Проверьте подключение к интернету.';
+      }
+
+      // Map HTTP status codes to user-friendly messages
+      if (error.status) {
+        const errorMessages = {
+          400: 'Неверный промокод или данные',
+          401: 'Необходимо войти в систему',
+          403: 'Промокод недоступен или уже использован',
+          404: 'Промокод не найден',
+          409: 'Промокод уже был применён',
+          429: 'Слишком много запросов. Попробуйте позже.',
+          500: 'Ошибка сервера. Попробуйте позже.'
+        };
+        userFriendlyError = errorMessages[error.status] || userFriendlyError;
+      }
+
+      commit('SET_ERROR', {
+        message: userFriendlyError,
+        context: 'applyPromocode-exception',
+        originalError: error.message,
+        statusCode: error.status
+      });
+
+      return {
+        success: false,
+        error: userFriendlyError,
+        technical: error.message
+      };
+    }
+  },
+
+  // ✅ ENHANCED: Validate promocode
+  async validatePromocode({ state, commit }, promoCode) {
+    try {
+      if (!promoCode || typeof promoCode !== 'string' || promoCode.trim().length < 3) {
+        return { valid: false, error: 'Промокод должен содержать не менее 3 символов' };
+      }
+
+      const normalizedCode = promoCode.trim().toUpperCase();
+
+      // Check cache first
+      if (state.promocodes.validationCache.has(normalizedCode)) {
+        const cached = state.promocodes.validationCache.get(normalizedCode);
+        const age = Date.now() - cached.timestamp;
+        if (age < 300000) { // 5 minutes cache
+          console.log('✅ Using cached promocode validation:', normalizedCode);
+          return cached.result;
+        }
+      }
+
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      if (!baseUrl) {
+        return { valid: false, error: 'Ошибка конфигурации приложения' };
+      }
+
+      const response = await Promise.race([
+        fetch(`${baseUrl}/api/promocodes/validate/${normalizedCode}`),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Validation timeout')), 5000)
+        )
+      ]);
+
+      const result = await response.json();
+
+      const validationResult = {
+        valid: result?.success && result.valid,
+        data: result.data || null,
+        error: result?.error || null,
+        message: result?.success && result.valid
+          ? `Промокод действителен! Предоставляет: ${result.data?.grantsPlan?.toUpperCase()} план`
+          : result?.error || 'Промокод недействителен'
+      };
+
+      // Cache the result
+      state.promocodes.validationCache.set(normalizedCode, {
+        result: validationResult,
+        timestamp: Date.now()
+      });
+
+      // Limit cache size
+      if (state.promocodes.validationCache.size > 50) {
+        const firstKey = state.promocodes.validationCache.keys().next().value;
+        state.promocodes.validationCache.delete(firstKey);
+      }
+
+      return validationResult;
+
+    } catch (error) {
+      console.error('❌ Promocode validation failed:', error);
+
+      let userFriendlyError = 'Ошибка проверки промокода';
+
+      if (error.message === 'Validation timeout') {
+        userFriendlyError = 'Истекло время ожидания проверки';
+      } else if (error.status) {
+        const errorMessages = {
+          404: 'Промокод не найден',
+          400: 'Неверный формат промокода',
+          429: 'Слишком много запросов проверки'
+        };
+        userFriendlyError = errorMessages[error.status] || userFriendlyError;
+      }
+
+      return {
+        valid: false,
+        error: userFriendlyError
+      };
+    }
+  },
+
+  // ✅ Keep all other actions from the original file...
   async initialize({ commit, dispatch, state }) {
     const startTime = Date.now();
 
@@ -1741,846 +2286,6 @@ const actions = {
     }
   },
 
-  // ✅ ENHANCED: Load usage with better caching and error handling
-  async loadUsage({ commit, state }) {
-    const startTime = Date.now();
-
-    try {
-      commit('SET_LOADING', { type: 'usage', loading: true });
-
-      // Check cache first
-      const now = Date.now();
-      if (state.cache.usageCache &&
-        state.cache.lastCacheUpdate &&
-        (now - state.cache.lastCacheUpdate) < state.cache.cacheExpiry) {
-        console.log('✅ Using cached usage data');
-        return { success: true, usage: state.cache.usageCache, cached: true };
-      }
-
-      const userId = getUserId(state);
-      if (!userId) {
-        console.warn('⚠️ No user ID found for usage loading');
-        return { success: false, error: 'No user ID' };
-      }
-
-      console.log('📊 Loading usage data from server...');
-
-      const usageInfo = await getUserUsage();
-
-      if (usageInfo?.success) {
-        commit('SET_USAGE', usageInfo.usage);
-
-        // Auto-sync status if different
-        if (usageInfo.plan && usageInfo.plan !== state.userStatus) {
-          console.log(`🔄 Auto-syncing status from usage: ${state.userStatus} → ${usageInfo.plan}`);
-          commit('SET_USER_STATUS', usageInfo.plan);
-        }
-
-        // Update limits if provided
-        if (usageInfo.limits) {
-          commit('SET_USAGE_LIMITS', { [usageInfo.plan || state.userStatus]: usageInfo.limits });
-        }
-
-        const duration = Date.now() - startTime;
-        console.log(`✅ Usage data loaded from server (${duration}ms):`, {
-          messages: usageInfo.usage?.messages || 0,
-          images: usageInfo.usage?.images || 0,
-          plan: usageInfo.plan || state.userStatus
-        });
-
-        return { success: true, usage: usageInfo.usage, duration };
-      }
-
-      console.warn('⚠️ Failed to load usage from server:', usageInfo?.error);
-      commit('SET_ERROR', {
-        message: 'Usage loading failed',
-        context: 'loadUsage',
-        originalError: usageInfo?.error
-      });
-
-      return { success: false, error: usageInfo?.error || 'Unknown error' };
-
-    } catch (error) {
-      console.error('❌ Failed to load usage:', error);
-      commit('SET_ERROR', {
-        message: 'Usage loading exception',
-        context: 'loadUsage',
-        originalError: error.message
-      });
-      return { success: false, error: error.message };
-
-    } finally {
-      commit('SET_LOADING', { type: 'usage', loading: false });
-    }
-  },
-
-  // ✅ ENHANCED: Apply promocode with comprehensive validation and error handling
-  async applyPromocode({ commit, state, dispatch }, { promoCode, plan }) {
-    const startTime = Date.now();
-
-    try {
-      // Input validation
-      if (!promoCode || typeof promoCode !== 'string' || promoCode.trim().length < 3) {
-        return { success: false, error: 'Промокод должен содержать не менее 3 символов' };
-      }
-
-      if (!plan || !['start', 'pro', 'premium'].includes(plan)) {
-        return { success: false, error: 'Неверный план подписки' };
-      }
-
-      const userId = getUserId(state);
-      if (!userId) {
-        return { success: false, error: 'Пользователь не найден' };
-      }
-
-      const normalizedCode = promoCode.trim().toUpperCase();
-
-      // Check if already applied
-      const existingPromocode = state.promocodes.applied.find(p => p.code === normalizedCode);
-      if (existingPromocode) {
-        return {
-          success: false,
-          error: 'Этот промокод уже был применён',
-          alreadyApplied: true
-        };
-      }
-
-      console.log('🎟️ Applying promocode to server:', { code: normalizedCode, plan, userId: userId.substring(0, 8) + '...' });
-
-      const token = await getUserToken();
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const baseUrl = import.meta.env.VITE_API_BASE_URL;
-      if (!baseUrl) {
-        commit('SET_ERROR', { message: 'API configuration error', context: 'applyPromocode' });
-        return { success: false, error: 'Ошибка конфигурации приложения' };
-      }
-
-      const response = await Promise.race([
-        fetch(`${baseUrl}/api/payments/promo-code`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            userId,
-            plan,
-            promoCode: normalizedCode
-          })
-        }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Request timeout')), 10000)
-        )
-      ]);
-
-      const result = await response.json();
-
-      if (result?.success) {
-        const oldStatus = state.userStatus;
-
-        // Update subscription through dedicated action
-        await dispatch('updateSubscription', {
-          plan,
-          source: 'promocode',
-          details: {
-            promocode: normalizedCode,
-            appliedAt: new Date().toISOString(),
-            originalResponse: result.data || {},
-            ...result.data?.subscriptionDetails
-          }
-        });
-
-        // Track promocode application
-        commit('ADD_PROMOCODE', {
-          code: normalizedCode,
-          plan,
-          oldPlan: oldStatus,
-          source: 'api',
-          details: result.data || {}
-        });
-
-        // Force global update
-        commit('FORCE_UPDATE');
-
-        const duration = Date.now() - startTime;
-        console.log(`✅ Promocode applied successfully: ${oldStatus} → ${plan} (${duration}ms)`);
-
-        return {
-          success: true,
-          message: result.message || `Промокод успешно применён! Подписка "${plan.toUpperCase()}" активирована.`,
-          oldPlan: oldStatus,
-          newPlan: plan,
-          duration
-        };
-      }
-
-      // Handle server errors
-      const serverError = result?.error || 'Не удалось применить промокод';
-      console.warn('⚠️ Promocode application failed:', serverError);
-
-      commit('SET_ERROR', {
-        message: serverError,
-        context: 'applyPromocode-server',
-        promocode: normalizedCode,
-        plan
-      });
-
-      return { success: false, error: serverError };
-
-    } catch (error) {
-      console.error('❌ Promocode application failed:', error);
-
-      let userFriendlyError = 'Произошла ошибка при применении промокода';
-
-      if (error.message === 'Request timeout') {
-        userFriendlyError = 'Истекло время ожидания. Попробуйте снова.';
-      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        userFriendlyError = 'Ошибка сети. Проверьте подключение к интернету.';
-      }
-
-      // Map HTTP status codes to user-friendly messages
-      if (error.status) {
-        const errorMessages = {
-          400: 'Неверный промокод или данные',
-          401: 'Необходимо войти в систему',
-          403: 'Промокод недоступен или уже использован',
-          404: 'Промокод не найден',
-          409: 'Промокод уже был применён',
-          429: 'Слишком много запросов. Попробуйте позже.',
-          500: 'Ошибка сервера. Попробуйте позже.'
-        };
-        userFriendlyError = errorMessages[error.status] || userFriendlyError;
-      }
-
-      commit('SET_ERROR', {
-        message: userFriendlyError,
-        context: 'applyPromocode-exception',
-        originalError: error.message,
-        statusCode: error.status
-      });
-
-      return {
-        success: false,
-        error: userFriendlyError,
-        technical: error.message
-      };
-    }
-  },
-
-  async validatePromocode({ state, commit }, promoCode) {
-    try {
-      if (!promoCode || typeof promoCode !== 'string' || promoCode.trim().length < 3) {
-        return { valid: false, error: 'Промокод должен содержать не менее 3 символов' };
-      }
-
-      const normalizedCode = promoCode.trim().toUpperCase();
-
-      // Check cache first
-      if (state.promocodes.validationCache.has(normalizedCode)) {
-        const cached = state.promocodes.validationCache.get(normalizedCode);
-        const age = Date.now() - cached.timestamp;
-        if (age < 300000) { // 5 minutes cache
-          console.log('✅ Using cached promocode validation:', normalizedCode);
-          return cached.result;
-        }
-      }
-
-      const baseUrl = import.meta.env.VITE_API_BASE_URL;
-      if (!baseUrl) {
-        return { valid: false, error: 'Ошибка конфигурации приложения' };
-      }
-
-      const response = await Promise.race([
-        fetch(`${baseUrl}/api/promocodes/validate/${normalizedCode}`),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Validation timeout')), 5000)
-        )
-      ]);
-
-      const result = await response.json();
-
-      const validationResult = {
-        valid: result?.success && result.valid,
-        data: result.data || null,
-        error: result?.error || null,
-        message: result?.success && result.valid
-          ? `Промокод действителен! Предоставляет: ${result.data?.grantsPlan?.toUpperCase()} план`
-          : result?.error || 'Промокод недействителен'
-      };
-
-      // Cache the result
-      state.promocodes.validationCache.set(normalizedCode, {
-        result: validationResult,
-        timestamp: Date.now()
-      });
-
-      // Limit cache size
-      if (state.promocodes.validationCache.size > 50) {
-        const firstKey = state.promocodes.validationCache.keys().next().value;
-        state.promocodes.validationCache.delete(firstKey);
-      }
-
-      return validationResult;
-
-    } catch (error) {
-      console.error('❌ Promocode validation failed:', error);
-
-      let userFriendlyError = 'Ошибка проверки промокода';
-
-      if (error.message === 'Validation timeout') {
-        userFriendlyError = 'Истекло время ожидания проверки';
-      } else if (error.status) {
-        const errorMessages = {
-          404: 'Промокод не найден',
-          400: 'Неверный формат промокода',
-          429: 'Слишком много запросов проверки'
-        };
-        userFriendlyError = errorMessages[error.status] || userFriendlyError;
-      }
-
-      return {
-        valid: false,
-        error: userFriendlyError
-      };
-    }
-  },
-
-  async updateSubscription({ commit, dispatch, state }, { plan, source = 'payment', details = {} }) {
-    const startTime = Date.now();
-
-    console.log('🔄 updateSubscription called with:', { plan, source, detailsKeys: Object.keys(details) });
-
-    try {
-      // Validate plan
-      const validPlans = ['free', 'start', 'pro', 'premium'];
-      const validatedPlan = validPlans.includes(plan) ? plan : 'free';
-
-      if (plan !== validatedPlan) {
-        console.warn(`⚠️ Invalid plan "${plan}" normalized to "${validatedPlan}"`);
-      }
-
-      // Get old status for comparison
-      const oldStatus = state.userStatus || 'free';
-      console.log(`📊 Status change: ${oldStatus} → ${validatedPlan}`);
-
-      // Calculate expiry dates based on source
-      let expiryDate = null;
-      if (validatedPlan !== 'free') {
-        const now = new Date();
-        switch (source) {
-          case 'promocode':
-            expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
-            break;
-          case 'payment':
-            expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
-            break;
-          case 'gift':
-            expiryDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days
-            break;
-          default:
-            expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // Default 30 days
-        }
-      }
-
-      const subscriptionData = {
-        plan: validatedPlan,
-        status: (validatedPlan !== 'free') ? 'active' : 'inactive',
-        startDate: new Date().toISOString(),
-        expiryDate: expiryDate ? expiryDate.toISOString() : null,
-        isAutoRenew: source === 'payment',
-        details: {
-          ...details,
-          updatedAt: new Date().toISOString(),
-          updatedBy: 'updateSubscription'
-        },
-        lastSync: new Date().toISOString()
-      };
-
-      console.log('📋 Subscription data prepared:', subscriptionData);
-
-      // Update all related state atomically
-      commit('SET_USER_STATUS', validatedPlan);
-      commit('UPDATE_SUBSCRIPTION', subscriptionData);
-      commit('UPDATE_FEATURES'); // Recalculate features based on new plan
-      commit('FORCE_UPDATE');
-
-      console.log('✅ Store mutations completed');
-
-      // Persistent storage (don't let this fail the whole operation)
-      try {
-        localStorage.setItem('userStatus', validatedPlan);
-        localStorage.setItem('subscriptionDetails', JSON.stringify(subscriptionData));
-        localStorage.setItem('lastSubscriptionUpdate', Date.now().toString());
-        console.log('✅ LocalStorage updated');
-      } catch (storageError) {
-        console.warn('⚠️ Failed to persist subscription data:', storageError);
-        // Don't fail the operation due to storage issues
-      }
-
-      // Enhanced global event broadcasting
-      const eventData = {
-        oldStatus,
-        newStatus: validatedPlan,
-        source,
-        subscriptionData: { ...subscriptionData },
-        timestamp: Date.now(),
-        duration: Date.now() - startTime
-      };
-
-      // Multiple event types for different listeners
-      const events = [
-        'userStatusChanged',
-        'subscriptionUpdated',
-        'userSubscriptionChanged', // Legacy compatibility
-        'planChanged'
-      ];
-
-      events.forEach(eventName => {
-        try {
-          if (typeof window !== 'undefined' && window.eventBus) {
-            window.eventBus.emit(eventName, eventData);
-          }
-        } catch (eventError) {
-          console.warn(`⚠️ Failed to trigger ${eventName}:`, eventError);
-        }
-      });
-
-      console.log('✅ Events triggered');
-
-      const duration = Date.now() - startTime;
-      const successResult = {
-        success: true,
-        subscriptionData: { ...subscriptionData },
-        oldStatus,
-        newStatus: validatedPlan,
-        duration,
-        message: `Subscription updated successfully from ${oldStatus} to ${validatedPlan}`,
-        timestamp: Date.now()
-      };
-
-      console.log(`✅ updateSubscription completed successfully in ${duration}ms:`, successResult);
-
-      // ✅ CRITICAL: Always return the success result
-      return successResult;
-
-    } catch (error) {
-      const duration = Date.now() - startTime;
-
-      console.error('❌ updateSubscription failed:', error);
-
-      commit('SET_ERROR', {
-        message: 'Subscription update failed',
-        context: 'updateSubscription',
-        originalError: error.message,
-        plan,
-        source
-      });
-
-      const errorResult = {
-        success: false,
-        error: error.message || 'Subscription update failed',
-        duration,
-        plan,
-        source,
-        timestamp: Date.now(),
-        stack: error.stack
-      };
-
-      console.log('❌ updateSubscription returning error result:', errorResult);
-
-      // ✅ CRITICAL: Always return the error result
-      return errorResult;
-    }
-  },
-
-
-
-  // ✅ NEW: Update user preferences
-  async updatePreferences({ commit, state }, preferences) {
-    try {
-      if (!preferences || typeof preferences !== 'object') {
-        return { success: false, error: 'Invalid preferences data' };
-      }
-
-      console.log('⚙️ Updating user preferences:', Object.keys(preferences));
-
-      const oldPreferences = { ...state.preferences };
-
-      commit('SET_PREFERENCES', preferences);
-
-      // Optional: Sync with server
-      const userId = getUserId(state);
-      if (userId) {
-        try {
-          // This would be implemented based on your API
-          // await syncPreferencesToServer(userId, state.preferences);
-        } catch (syncError) {
-          console.warn('⚠️ Failed to sync preferences to server:', syncError);
-        }
-      }
-
-      console.log('✅ Preferences updated successfully');
-
-      return {
-        success: true,
-        oldPreferences,
-        newPreferences: { ...state.preferences }
-      };
-
-    } catch (error) {
-      console.error('❌ Failed to update preferences:', error);
-
-      commit('SET_ERROR', {
-        message: 'Preferences update failed',
-        context: 'updatePreferences',
-        originalError: error.message
-      });
-
-      return { success: false, error: error.message };
-    }
-  },
-
-  // ✅ NEW: Increment usage with validation and limits check
-  async incrementUsage({ commit, state, dispatch }, { messages = 0, images = 0 }) {
-    try {
-      const messageIncrement = Math.max(0, parseInt(messages) || 0);
-      const imageIncrement = Math.max(0, parseInt(images) || 0);
-
-      if (messageIncrement === 0 && imageIncrement === 0) {
-        return { success: true, message: 'No usage to increment' };
-      }
-
-      // Check limits before incrementing
-      const currentUsage = state.usage.current || { messages: 0, images: 0 };
-      const limits = getCurrentLimits(state);
-
-      const newMessageCount = currentUsage.messages + messageIncrement;
-      const newImageCount = currentUsage.images + imageIncrement;
-
-      // Check if increment would exceed limits (for free users)
-      const warnings = [];
-      if (state.userStatus === 'free') {
-        if (limits.messages > 0 && newMessageCount > limits.messages) {
-          warnings.push(`Message limit exceeded: ${newMessageCount}/${limits.messages}`);
-        }
-        if (limits.images > 0 && newImageCount > limits.images) {
-          warnings.push(`Image limit exceeded: ${newImageCount}/${limits.images}`);
-        }
-      }
-
-      // Increment usage
-      commit('INCREMENT_USAGE', { messages: messageIncrement, images: imageIncrement });
-
-      // Try to sync with server (non-blocking)
-      try {
-        // This would typically update usage on the server
-        // await syncUsageToServer(getUserId(state), state.usage.current);
-      } catch (syncError) {
-        console.warn('⚠️ Failed to sync usage to server:', syncError);
-      }
-
-      const result = {
-        success: true,
-        incremented: { messages: messageIncrement, images: imageIncrement },
-        newTotals: { ...state.usage.current },
-        limits,
-        warnings
-      };
-
-      if (warnings.length > 0) {
-        console.warn('⚠️ Usage warnings:', warnings);
-        result.limitWarnings = warnings;
-      }
-
-      return result;
-
-    } catch (error) {
-      console.error('❌ Failed to increment usage:', error);
-
-      commit('SET_ERROR', {
-        message: 'Usage increment failed',
-        context: 'incrementUsage',
-        originalError: error.message
-      });
-
-      return { success: false, error: error.message };
-    }
-  },
-
-  // ✅ ENHANCED: Check monthly reset with better date handling
-  async checkMonthlyReset({ commit, dispatch, state }) {
-    try {
-      const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
-      const userId = getUserId(state);
-      const lastResetKey = `lastMonthlyReset_${userId}`;
-      const lastReset = localStorage.getItem(lastResetKey);
-
-      console.log('🗓️ Checking monthly usage reset:', { currentMonth, lastReset, hasUserId: !!userId });
-
-      if (!lastReset || lastReset !== currentMonth) {
-        console.log('🔄 Monthly reset triggered for month:', currentMonth);
-
-        // Reset local usage
-        commit('RESET_USAGE');
-
-        // Update localStorage
-        if (userId) {
-          localStorage.setItem(lastResetKey, currentMonth);
-        }
-
-        // Try backend reset (non-blocking)
-        try {
-          const resetResult = await resetMonthlyUsage();
-          if (resetResult?.success) {
-            console.log('✅ Backend monthly reset successful');
-          } else {
-            console.warn('⚠️ Backend monthly reset failed:', resetResult?.error);
-          }
-        } catch (resetError) {
-          console.warn('⚠️ Backend reset error (non-critical):', resetError.message);
-        }
-
-        // Reload fresh usage data
-        try {
-          await dispatch('loadUsage');
-        } catch (loadError) {
-          console.warn('⚠️ Failed to reload usage after reset:', loadError);
-        }
-
-        // Trigger global event
-        triggerGlobalEvent('monthlyUsageReset', {
-          month: currentMonth,
-          userId,
-          timestamp: Date.now()
-        });
-
-        return { success: true, reset: true, month: currentMonth };
-      }
-
-      return { success: true, reset: false, month: currentMonth };
-
-    } catch (error) {
-      console.error('❌ Monthly reset check failed:', error);
-
-      commit('SET_ERROR', {
-        message: 'Monthly reset check failed',
-        context: 'checkMonthlyReset',
-        originalError: error.message
-      });
-
-      return { success: false, error: error.message };
-    }
-  },
-
-  // ✅ ENHANCED: Check pending payments with better error handling and retry logic
-  async checkPendingPayments({ commit, state, dispatch }) {
-    const startTime = Date.now();
-
-    try {
-      commit('SET_LOADING', { type: 'payments', loading: true });
-
-      const userId = getUserId(state);
-      if (!userId) {
-        console.warn('⚠️ No user ID for pending payments check');
-        return { success: false, error: 'No user ID' };
-      }
-
-      // Rate limiting - avoid too frequent checks
-      const now = Date.now();
-      const lastCheck = state.payments.lastCheck;
-      const minInterval = 300000; // 5 minutes
-
-      if (lastCheck && (now - lastCheck) < minInterval) {
-        const remaining = Math.ceil((minInterval - (now - lastCheck)) / 60000);
-        console.log(`ℹ️ Payment check rate limited, ${remaining} minutes remaining`);
-        return { success: true, message: `Recently checked, wait ${remaining} minutes`, rateLimited: true };
-      }
-
-      console.log('🔍 Checking pending payments on server...');
-
-      // Get pending payment IDs from localStorage
-      const pendingStorageKey = `pendingPayments_${userId}`;
-      let pendingIds = [];
-
-      try {
-        const stored = localStorage.getItem(pendingStorageKey);
-        pendingIds = stored ? JSON.parse(stored) : [];
-        if (!Array.isArray(pendingIds)) {
-          pendingIds = [];
-        }
-      } catch (parseError) {
-        console.warn('⚠️ Failed to parse pending payments from localStorage:', parseError);
-        pendingIds = [];
-      }
-
-      console.log(`📋 Found ${pendingIds.length} pending payments to check`);
-
-      if (pendingIds.length === 0) {
-        commit('SET_PENDING_PAYMENTS', []);
-        return { success: true, message: 'No pending payments', checkedTransactions: 0 };
-      }
-
-      let statusChanged = false;
-      let completedPayments = 0;
-      let failedChecks = 0;
-      const completedTransactionIds = [];
-
-      // Check each pending payment
-      for (const transactionId of pendingIds) {
-        try {
-          console.log('🔍 Checking transaction:', transactionId);
-
-          const result = await Promise.race([
-            checkPaymentStatus(transactionId, userId),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Payment check timeout')), 10000)
-            )
-          ]);
-
-          if (result?.success && result.transaction) {
-            const transaction = result.transaction;
-
-            // Payment completed successfully
-            if (transaction.state === 2) {
-              console.log('✅ Payment completed:', transactionId, 'Amount:', transaction.amount);
-
-              // Determine plan based on amount
-              let newPlan = 'free';
-              if (transaction.amount === 260000) newPlan = 'start'; // 260,000 UZS
-              else if (transaction.amount === 455000) newPlan = 'pro'; // 455,000 UZS
-              else if (transaction.amount >= 100000) newPlan = 'start'; // Fallback for any significant amount
-
-              // Update subscription if plan changed
-              if (newPlan !== 'free' && newPlan !== state.userStatus) {
-                const updateResult = await dispatch('updateSubscription', {
-                  plan: newPlan,
-                  source: 'payment',
-                  details: {
-                    transactionId,
-                    amount: transaction.amount,
-                    currency: 'UZS',
-                    completedAt: new Date(transaction.perform_time || Date.now()).toISOString()
-                  }
-                });
-
-                if (updateResult.success) {
-                  statusChanged = true;
-                  console.log(`🔄 Subscription upgraded: ${state.userStatus} → ${newPlan}`);
-                }
-              }
-
-              // Add to payment history
-              commit('ADD_PAYMENT', {
-                id: transactionId,
-                amount: transaction.amount,
-                currency: 'UZS',
-                status: 'completed',
-                plan: newPlan,
-                method: 'payme',
-                timestamp: transaction.perform_time || Date.now(),
-                details: {
-                  ...transaction,
-                  processedAt: new Date().toISOString()
-                }
-              });
-
-              completedTransactionIds.push(transactionId);
-              completedPayments++;
-
-            } else if (transaction.state === -1 || transaction.state === -2) {
-              // Payment failed or cancelled
-              console.log('❌ Payment failed/cancelled:', transactionId, 'State:', transaction.state);
-
-              commit('ADD_PAYMENT', {
-                id: transactionId,
-                amount: transaction.amount || 0,
-                currency: 'UZS',
-                status: transaction.state === -1 ? 'cancelled' : 'failed',
-                plan: 'free',
-                method: 'payme',
-                timestamp: transaction.cancel_time || Date.now(),
-                details: {
-                  ...transaction,
-                  processedAt: new Date().toISOString()
-                }
-              });
-
-              completedTransactionIds.push(transactionId); // Remove from pending
-            }
-            // If state is 1 (pending), keep in pending list
-          } else {
-            console.warn('⚠️ Invalid payment check response for:', transactionId);
-            failedChecks++;
-          }
-
-        } catch (checkError) {
-          console.warn(`⚠️ Failed to check transaction ${transactionId}:`, checkError.message);
-          failedChecks++;
-
-          // Don't remove from pending on temporary failures
-          if (checkError.message !== 'Payment check timeout') {
-            // For persistent errors, consider removing after multiple attempts
-            // This would require more sophisticated retry logic
-          }
-        }
-      }
-
-      // Update pending payments list
-      const updatedPendingIds = pendingIds.filter(id => !completedTransactionIds.includes(id));
-
-      try {
-        localStorage.setItem(pendingStorageKey, JSON.stringify(updatedPendingIds));
-      } catch (storageError) {
-        console.warn('⚠️ Failed to update pending payments in localStorage:', storageError);
-      }
-
-      commit('SET_PENDING_PAYMENTS', updatedPendingIds);
-
-      const duration = Date.now() - startTime;
-      const summary = {
-        success: true,
-        statusChanged,
-        checkedTransactions: pendingIds.length,
-        completedPayments,
-        failedChecks,
-        remainingPending: updatedPendingIds.length,
-        duration
-      };
-
-      console.log(`✅ Pending payments check completed (${duration}ms):`, summary);
-
-      // Trigger global event if status changed
-      if (statusChanged) {
-        triggerGlobalEvent('paymentStatusChanged', {
-          completedPayments,
-          newStatus: state.userStatus,
-          timestamp: Date.now()
-        });
-      }
-
-      return summary;
-
-    } catch (error) {
-      console.error('❌ Failed to check pending payments:', error);
-
-      commit('SET_ERROR', {
-        message: 'Pending payments check failed',
-        context: 'checkPendingPayments',
-        originalError: error.message
-      });
-
-      return {
-        success: false,
-        error: error.message,
-        duration: Date.now() - startTime
-      };
-
-    } finally {
-      commit('SET_LOADING', { type: 'payments', loading: false });
-    }
-  },
-
   // ✅ ENHANCED: Force update with better event coordination
   async forceUpdate({ commit, state }) {
     try {
@@ -2601,12 +2306,18 @@ const actions = {
         ];
 
         events.forEach(eventName => {
-          triggerGlobalEvent(eventName, {
-            source: 'forceUpdate-action',
-            counter: state.system.forceUpdateCounter,
-            oldCounter,
-            timestamp
-          });
+          try {
+            if (window.triggerGlobalEvent) {
+              window.triggerGlobalEvent(eventName, {
+                source: 'forceUpdate-action',
+                counter: state.system.forceUpdateCounter,
+                oldCounter,
+                timestamp
+              });
+            }
+          } catch (eventError) {
+            console.warn(`⚠️ Failed to trigger ${eventName}:`, eventError);
+          }
         });
 
         // Try to trigger Vue reactivity if available
@@ -2631,17 +2342,21 @@ const actions = {
     } catch (error) {
       console.error('❌ Force update failed:', error);
 
-      commit('SET_ERROR', {
-        message: 'Force update failed',
-        context: 'forceUpdate',
-        originalError: error.message
-      });
+      try {
+        commit('SET_ERROR', {
+          message: 'Force update failed',
+          context: 'forceUpdate',
+          originalError: error.message
+        });
+      } catch (commitError) {
+        console.error('❌ Failed to commit force update error:', commitError);
+      }
 
       return { success: false, error: error.message };
     }
   },
 
-  // ✅ ENHANCED: Logout with comprehensive cleanup
+  // ✅ Enhanced logout with comprehensive cleanup
   async logout({ commit, state }) {
     const startTime = Date.now();
 
@@ -2690,36 +2405,6 @@ const actions = {
         }
       }
 
-      // Clear any remaining user-specific keys
-      try {
-        Object.keys(localStorage).forEach(key => {
-          const userSpecificPatterns = [
-            /^pendingPayments_/,
-            /^lastMonthlyReset_/,
-            /^promocodeCache_/,
-            /^userSession_/
-          ];
-
-          if (userSpecificPatterns.some(pattern => pattern.test(key))) {
-            localStorage.removeItem(key);
-          }
-        });
-      } catch (error) {
-        console.warn('⚠️ Failed to clear pattern-based localStorage keys:', error);
-      }
-
-      // Clear any cached data
-      if (state.cache) {
-        state.cache.userStatusCache = null;
-        state.cache.usageCache = null;
-        state.cache.lastCacheUpdate = null;
-      }
-
-      // Clear validation cache
-      if (state.promocodes?.validationCache) {
-        state.promocodes.validationCache.clear();
-      }
-
       // Enhanced global event broadcasting
       const logoutData = {
         userId: userId ? userId.substring(0, 8) + '...' : null,
@@ -2736,7 +2421,13 @@ const actions = {
       ];
 
       logoutEvents.forEach(eventName => {
-        triggerGlobalEvent(eventName, logoutData);
+        try {
+          if (window.triggerGlobalEvent) {
+            window.triggerGlobalEvent(eventName, logoutData);
+          }
+        } catch (eventError) {
+          console.warn(`⚠️ Failed to trigger logout event ${eventName}:`, eventError);
+        }
       });
 
       const duration = Date.now() - startTime;
@@ -2770,169 +2461,8 @@ const actions = {
         duration: Date.now() - startTime
       };
     }
-  },
-
-  // ✅ NEW: Sync user data from server
-  async syncUserData({ commit, dispatch, state }) {
-    const startTime = Date.now();
-
-    try {
-      commit('SET_LOADING', { type: 'sync', loading: true });
-      state.system.syncInProgress = true;
-
-      const userId = getUserId(state);
-      if (!userId) {
-        return { success: false, error: 'No user ID for sync' };
-      }
-
-      console.log('🔄 Syncing user data from server...');
-
-      // Sync multiple data sources in parallel
-      const syncTasks = [
-        { name: 'status', task: () => dispatch('loadUserStatus') },
-        { name: 'usage', task: () => dispatch('loadUsage') },
-        { name: 'payments', task: () => dispatch('checkPendingPayments') },
-        { name: 'monthlyReset', task: () => dispatch('checkMonthlyReset') }
-      ];
-
-      const results = await Promise.allSettled(
-        syncTasks.map(({ name, task }) =>
-          task().then(result => ({ name, result }))
-        )
-      );
-
-      const successes = results.filter(r => r.status === 'fulfilled').length;
-      const failures = results.filter(r => r.status === 'rejected');
-
-      const syncSummary = {
-        success: successes > 0,
-        totalTasks: syncTasks.length,
-        successful: successes,
-        failed: failures.length,
-        duration: Date.now() - startTime
-      };
-
-      if (failures.length > 0) {
-        console.warn(`⚠️ Sync partially failed: ${successes}/${syncTasks.length} successful`);
-        failures.forEach(f => console.warn('  - Sync failure:', f.reason));
-      } else {
-        console.log(`✅ Full sync completed successfully (${syncSummary.duration}ms)`);
-      }
-
-      commit('FORCE_UPDATE');
-
-      triggerGlobalEvent('userDataSynced', {
-        ...syncSummary,
-        timestamp: Date.now()
-      });
-
-      return syncSummary;
-
-    } catch (error) {
-      console.error('❌ User data sync failed:', error);
-
-      commit('SET_ERROR', {
-        message: 'User data sync failed',
-        context: 'syncUserData',
-        originalError: error.message
-      });
-
-      return {
-        success: false,
-        error: error.message,
-        duration: Date.now() - startTime
-      };
-
-    } finally {
-      commit('SET_LOADING', { type: 'sync', loading: false });
-      state.system.syncInProgress = false;
-    }
-  },
-
-  // ✅ NEW: Add pending payment for tracking
-  async addPendingPayment({ commit, state }, { transactionId, amount, plan }) {
-    try {
-      if (!transactionId || !amount) {
-        return { success: false, error: 'Missing transaction details' };
-      }
-
-      const userId = getUserId(state);
-      if (!userId) {
-        return { success: false, error: 'No user ID' };
-      }
-
-      console.log('💳 Adding pending payment:', { transactionId, amount, plan });
-
-      // Add to pending list
-      const pendingStorageKey = `pendingPayments_${userId}`;
-      let pendingIds = [];
-
-      try {
-        const stored = localStorage.getItem(pendingStorageKey);
-        pendingIds = stored ? JSON.parse(stored) : [];
-        if (!Array.isArray(pendingIds)) {
-          pendingIds = [];
-        }
-      } catch (parseError) {
-        console.warn('⚠️ Failed to parse existing pending payments:', parseError);
-        pendingIds = [];
-      }
-
-      // Avoid duplicates
-      if (!pendingIds.includes(transactionId)) {
-        pendingIds.push(transactionId);
-
-        try {
-          localStorage.setItem(pendingStorageKey, JSON.stringify(pendingIds));
-        } catch (storageError) {
-          console.warn('⚠️ Failed to save pending payment:', storageError);
-        }
-      }
-
-      // Add to payment history as pending
-      commit('ADD_PAYMENT', {
-        id: transactionId,
-        amount,
-        currency: 'UZS',
-        status: 'pending',
-        plan: plan || 'unknown',
-        method: 'payme',
-        timestamp: Date.now(),
-        details: {
-          addedAt: new Date().toISOString(),
-          source: 'addPendingPayment'
-        }
-      });
-
-      // Update pending payments in state
-      commit('SET_PENDING_PAYMENTS', pendingIds);
-
-      console.log('✅ Pending payment added successfully');
-
-      triggerGlobalEvent('pendingPaymentAdded', {
-        transactionId,
-        amount,
-        plan,
-        totalPending: pendingIds.length,
-        timestamp: Date.now()
-      });
-
-      return { success: true, transactionId, pendingCount: pendingIds.length };
-
-    } catch (error) {
-      console.error('❌ Failed to add pending payment:', error);
-
-      commit('SET_ERROR', {
-        message: 'Failed to add pending payment',
-        context: 'addPendingPayment',
-        originalError: error.message
-      });
-
-      return { success: false, error: error.message };
-    }
   }
 };
-
 // Assuming handleSuccessfulUserSave and eventBus are defined elsewhere or passed in scope.
 // This block is typically outside the store module or in a related utility file.
 const handleSuccessfulUserSave = async (result, token, userData) => {
