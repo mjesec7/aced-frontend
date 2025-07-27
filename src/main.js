@@ -1,4 +1,4 @@
-// src/main.js - ENHANCED VERSION WITH COMPLETE USER STATUS REACTIVITY FIX
+// src/main.js - ENHANCED AND CORRECTED FOR RELIABLE AUTHENTICATION
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
@@ -15,13 +15,11 @@ import { auth } from './firebase';
 import { onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 // ============================================================================
-// 🔥 CRITICAL FIX: AUTHENTICATION PRIORITY & INITIALIZATION
+// 🔥 CRITICAL FIX: RESTRUCTURED AUTHENTICATION & INITIALIZATION
 // ============================================================================
 
 // ✅ Auth state tracking
 let authStateResolved = false;
-let authCheckComplete = false;
-let currentUser = null;
 
 // ✅ Set Firebase auth persistence IMMEDIATELY (BEFORE EVERYTHING ELSE)
 setPersistence(auth, browserLocalPersistence).then(() => {
@@ -30,43 +28,47 @@ setPersistence(auth, browserLocalPersistence).then(() => {
   console.error('❌ Failed to set auth persistence:', error);
 });
 
-// ✅ Create authentication promise that resolves IMMEDIATELY on first check
+// ✅ THIS IS THE CORRECTED AUTHENTICATION PROMISE
+// It now waits for the entire app initialization to complete before resolving.
 export const authInitPromise = new Promise((resolve) => {
   console.log('🔐 Starting PRIORITY authentication check...');
-    
-  // Set up auth state listener with immediate resolution
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    console.log('🔐 Auth state determined:', user ? `${user.email} (authenticated)` : 'not authenticated');
-        
-    currentUser = user;
-        
-    // Resolve IMMEDIATELY on first auth state determination
+
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    // We only want this to run ONCE on the initial page load to resolve the promise.
     if (!authStateResolved) {
       authStateResolved = true;
-      authCheckComplete = true;
-      unsubscribe(); // Stop listening after first resolution
-      resolve(user);
-      console.log('✅ PRIORITY authentication check completed');
-            
-      // Now proceed with app initialization
-      initializeApplicationAfterAuth(user);
+      // After this first check, we don't need the listener for this promise anymore.
+      unsubscribe();
+      console.log('🔐 Auth state determined:', user ? `${user.email} (authenticated)` : 'not authenticated');
+      
+      try {
+        // We now AWAIT the entire application initialization, which includes
+        // saving the user to the store, BEFORE resolving the promise.
+        await initializeApplicationAfterAuth(user);
+        
+        console.log('✅ PRIORITY authentication check and app initialization complete.');
+        // Now, and only now, do we resolve the promise, allowing the router to proceed.
+        resolve();
+      } catch (error) {
+        console.error('❌ Critical initialization failed during auth check:', error);
+        // Resolve anyway to prevent the app from being stuck in a loading state.
+        resolve();
+      }
     }
   });
-    
-  // Shorter timeout for faster resolution
+
+  // A reasonable timeout to prevent the app from getting stuck if Firebase is unresponsive.
   setTimeout(() => {
     if (!authStateResolved) {
-      console.warn('⚠️ Auth check timeout - proceeding without user');
+      console.warn('⚠️ Auth check timed out - proceeding without user');
       authStateResolved = true;
-      authCheckComplete = true;
       unsubscribe();
-      resolve(null);
-            
-      // Proceed anyway
-      initializeApplicationAfterAuth(null);
+      // Even on timeout, we must initialize the app and resolve the promise.
+      initializeApplicationAfterAuth(null).finally(resolve);
     }
-  }, 3000); // Reduced from 8000ms to 3000ms
+  }, 5000); // 5-second timeout is reasonable
 });
+
 
 // ============================================================================
 // 🔥 MAIN INITIALIZATION FUNCTION (CALLED AFTER AUTH CHECK)
@@ -101,6 +103,8 @@ async function initializeApplicationAfterAuth(firebaseUser) {
       error: error.message,
       timestamp: Date.now()
     });
+    // We throw the error so the main promise can catch it if needed.
+    throw error;
   }
 }
 
