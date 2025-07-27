@@ -1097,16 +1097,62 @@ function setupEnhancedGlobalSubscriptionManagement() {
   const handleGlobalSubscriptionChange = (event) => {
     console.log('📡 Global subscription change detected:', event.detail);
     
-    // ✅ CRITICAL FIX: Extract plan from event detail with multiple fallbacks
-    const { plan, newStatus, userStatus, subscriptionPlan } = event.detail || {};
-    const actualPlan = plan || newStatus || userStatus || subscriptionPlan || 'free';
+    // ✅ CRITICAL FIX: Extract plan from event detail with multiple fallbacks AND message parsing
+    const { plan, newStatus, userStatus, subscriptionPlan, message } = event.detail || {};
+    let actualPlan = plan || newStatus || userStatus || subscriptionPlan;
     const { source, oldPlan, timestamp } = event.detail || {};
+    
+    // ✅ CRITICAL: If plan is empty/undefined but we have a success message, parse it
+    if ((!actualPlan || actualPlan === '' || actualPlan === 'undefined') && message) {
+      console.log('🔍 Plan is empty, parsing from message:', message);
+      
+      // Parse plan from success messages
+      if (message.includes('START') || message.includes('start')) {
+        actualPlan = 'start';
+        console.log('✅ Extracted plan from message: start');
+      } else if (message.includes('PRO') || message.includes('pro')) {
+        actualPlan = 'pro';
+        console.log('✅ Extracted plan from message: pro');
+      } else if (message.includes('FREE') || message.includes('free')) {
+        actualPlan = 'free';
+        console.log('✅ Extracted plan from message: free');
+      }
+    }
+    
+    // ✅ CRITICAL: Check if this is a promocode success and localStorage was updated
+    if (source === 'promocode' && (!actualPlan || actualPlan === '')) {
+      const localStatus = localStorage.getItem('userStatus');
+      const localPlan = localStorage.getItem('userPlan');
+      const localSubscription = localStorage.getItem('subscriptionPlan');
+      
+      console.log('🔍 Promocode detected with empty plan, checking localStorage:', {
+        userStatus: localStatus,
+        userPlan: localPlan,
+        subscriptionPlan: localSubscription
+      });
+      
+      // Use localStorage value if it's valid and not 'free'
+      const possiblePlans = [localStatus, localPlan, localSubscription];
+      for (const possiblePlan of possiblePlans) {
+        if (possiblePlan && possiblePlan !== 'free' && ['start', 'pro'].includes(possiblePlan)) {
+          actualPlan = possiblePlan;
+          console.log('✅ Using localStorage plan:', actualPlan);
+          break;
+        }
+      }
+    }
+    
+    // Final fallback
+    if (!actualPlan || actualPlan === '' || actualPlan === 'undefined') {
+      actualPlan = 'free';
+    }
     
     console.log('🔍 Extracted plan values:', {
       plan,
       newStatus,
       userStatus,
       subscriptionPlan,
+      message,
       actualPlan,
       eventDetail: event.detail
     });
@@ -1150,6 +1196,13 @@ function setupEnhancedGlobalSubscriptionManagement() {
         } catch (e) {
           console.log('Legacy setUserStatus not available');
         }
+        
+        // Direct state update as backup
+        if (store.state.user) {
+          store.state.user.userStatus = actualPlan;
+          store.state.user.subscriptionPlan = actualPlan;
+          store.state.user.plan = actualPlan;
+        }
       }
     } catch (storeError) {
       console.warn('⚠️ Failed to sync store:', storeError);
@@ -1174,7 +1227,8 @@ function setupEnhancedGlobalSubscriptionManagement() {
       subscriptionPlan: actualPlan,
       source: source || 'global-change',
       oldPlan: oldPlan || 'free',
-      timestamp: timestamp || Date.now()
+      timestamp: timestamp || Date.now(),
+      message: message // Preserve original message
     };
     
     console.log('📡 Emitting events with data:', eventData);
@@ -1200,7 +1254,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
         plan: actualPlan,
         newStatus: actualPlan,
         source: source || 'upgrade',
-        message: `Поздравляем! ${planLabel} подписка активирована по ${sourceText}!`,
+        message: message || `Поздравляем! ${planLabel} подписка активирована по ${sourceText}!`,
         timestamp: Date.now()
       });
     }
@@ -2140,7 +2194,7 @@ if (import.meta.env.DEV) {
   `);
 }
 
-
+}
 
 console.log('✅ UNIFIED main.js with perfect authentication + user status updates loaded successfully!');
 console.log('🔧 Authentication will complete BEFORE router navigation begins');
@@ -2256,6 +2310,48 @@ window.fixPromocodeStatus = (targetPlan) => {
   console.log('✅ Promocode status fixed to:', targetPlan);
   return true;
 };
+
+// ✅ CRITICAL: Add smart promocode detection based on your logs
+window.smartPromocodeDetection = () => {
+  console.log('🎯 Running smart promocode detection...');
+  
+  // Check if there was a recent promocode success message
+  const recentLogs = console.log.toString();
+  
+  // Check localStorage for any signs of promocode success
+  const checkLocalStorage = () => {
+    const keys = ['userStatus', 'userPlan', 'subscriptionPlan'];
+    for (const key of keys) {
+      const value = localStorage.getItem(key);
+      if (value && ['start', 'pro'].includes(value)) {
+        console.log('🔍 Found non-free plan in localStorage:', key, '=', value);
+        return value;
+      }
+    }
+    return null;
+  };
+  
+  const detectedPlan = checkLocalStorage();
+  
+  if (detectedPlan && detectedPlan !== 'free') {
+    console.log('🎯 Smart detection found plan:', detectedPlan);
+    
+    // Check if store is synced
+    const storeStatus = store.getters['user/userStatus'];
+    if (!storeStatus || storeStatus === 'undefined' || storeStatus !== detectedPlan) {
+      console.log('🔧 Store is out of sync, fixing...');
+      window.fixPromocodeStatus(detectedPlan);
+      return detectedPlan;
+    }
+  }
+  
+  return null;
+};
+
+// Run smart detection on a timer
+setInterval(() => {
+  window.smartPromocodeDetection();
+}, 5000); // Check every 5 seconds
 
 // Hook for payment completions
 window.paymentCompleted = (transactionId, plan, amount) => {
