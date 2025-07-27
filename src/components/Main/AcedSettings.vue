@@ -1566,7 +1566,7 @@ export default {
 
 // ✅ ENHANCED: Apply promocode with proper result handling
 async applyPromo() {
-  console.log('🚀 AcedSettings: applyPromo called');
+  console.log('🚀 AcedSettings: FIXED applyPromo called');
   
   if (!this.promoCode || !this.selectedPlan || !this.userId) {
     this.showNotification('Заполните все поля', 'error');
@@ -1578,30 +1578,186 @@ async applyPromo() {
   try {
     const normalizedCode = this.promoCode.trim().toUpperCase();
     
-    // ✅ STEP 1: Apply via backend API through store action
-    console.log('📡 Applying promocode via store action...');
+    // ✅ STEP 1: Apply via backend API FIRST
+    console.log('📡 Applying promocode via backend API...');
     
-    const storeResult = await this.$store.dispatch('user/applyPromocode', {
-      promoCode: normalizedCode,
-      plan: this.selectedPlan
-    });
+    let serverSuccess = false;
+    let serverResult = null;
     
-    console.log('📊 Store action result:', storeResult);
+    // Try multiple endpoints for applying promocode
+    const applyEndpoints = [
+      'https://api.aced.live/api/payments/promo-code',
+      `${import.meta.env.VITE_API_BASE_URL}/api/payments/promo-code`
+    ];
     
-    // ✅ CRITICAL: Check if storeResult exists and has success property
-    if (!storeResult || typeof storeResult !== 'object') {
-      console.error('❌ Store action returned invalid result:', storeResult);
-      this.showNotification('Внутренняя ошибка приложения. Попробуйте перезагрузить страницу.', 'error');
+    for (const endpoint of applyEndpoints) {
+      try {
+        console.log(`🔄 Trying apply endpoint: ${endpoint}`);
+        
+        const requestBody = {
+          userId: this.userId,
+          plan: this.selectedPlan,
+          promoCode: normalizedCode
+        };
+        
+        const response = await Promise.race([
+          fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': await this.getAuthHeader()
+            },
+            body: JSON.stringify(requestBody)
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), 10000)
+          )
+        ]);
+
+        serverResult = await response.json();
+        console.log(`📡 Server response from ${endpoint}:`, serverResult);
+
+        if (response.ok && serverResult?.success) {
+          serverSuccess = true;
+          console.log('✅ Server application successful');
+          break; // Success, stop trying other endpoints
+        } else {
+          console.warn(`⚠️ Endpoint ${endpoint} failed:`, serverResult?.error || 'Unknown error');
+          
+          // If this is a validation error (promocode doesn't exist), don't try other endpoints
+          if (response.status === 400 || response.status === 422) {
+            const errorMsg = serverResult?.error || serverResult?.message || 'Неверный промокод';
+            this.showNotification(errorMsg, 'error');
+            return;
+          }
+          
+          // For 404, try next endpoint
+          if (response.status === 404) {
+            continue;
+          }
+        }
+      } catch (endpointError) {
+        console.warn(`⚠️ Apply endpoint ${endpoint} failed:`, endpointError.message);
+        continue;
+      }
+    }
+    
+    // ✅ STEP 2: Check if server application was successful
+    if (!serverSuccess) {
+      const errorMsg = serverResult?.error || 
+                      serverResult?.message || 
+                      'Не удалось применить промокод. Проверьте правильность кода или попробуйте позже.';
+      this.showNotification(errorMsg, 'error');
       return;
     }
     
-    // ✅ STEP 2: Handle successful promocode application
-    if (storeResult.success === true) {
-      console.log('✅ Promocode applied successfully via store');
+    // ✅ STEP 3: Update local store using the store action
+    console.log('🔄 Updating user status via store...');
+    
+    // ✅ CRITICAL: Try the store action but handle undefined result
+    let updateResult;
+    try {
+      updateResult = await this.$store.dispatch('user/updateUserStatus', this.selectedPlan);
+      console.log('📊 Store update result:', updateResult);
+    } catch (storeError) {
+      console.error('❌ Store action threw error:', storeError);
+      updateResult = {
+        success: false,
+        error: storeError.message || 'Store action failed'
+      };
+    }
+    
+    // ✅ CRITICAL: Handle undefined or invalid result
+    if (!updateResult) {
+      console.error('❌ Store action returned undefined result');
       
-      // ✅ SUCCESS: Show celebration and reset form
+      // ✅ FALLBACK: Update directly via localStorage and force update
+      console.log('🔧 Using fallback: direct localStorage update');
+      
+      try {
+        // Update localStorage directly
+        localStorage.setItem('userStatus', this.selectedPlan);
+        localStorage.setItem('plan', this.selectedPlan);
+        localStorage.setItem('statusUpdateTime', Date.now().toString());
+        
+        // Force store mutation directly
+        this.$store.commit('user/SET_USER_STATUS', this.selectedPlan);
+        this.$store.commit('user/UPDATE_SUBSCRIPTION', {
+          plan: this.selectedPlan,
+          status: this.selectedPlan !== 'free' ? 'active' : 'inactive',
+          source: 'promocode',
+          lastSync: new Date().toISOString()
+        });
+        this.$store.commit('user/FORCE_UPDATE');
+        
+        console.log('✅ Fallback localStorage and store update completed');
+        
+        // Treat as success
+        updateResult = {
+          success: true,
+          message: 'Updated via fallback method',
+          oldStatus: 'free',
+          newStatus: this.selectedPlan,
+          fallback: true
+        };
+        
+      } catch (fallbackError) {
+        console.error('❌ Even fallback method failed:', fallbackError);
+        
+        // Ultimate fallback: page reload
+        this.showNotification('Промокод применён на сервере! Страница обновится для синхронизации...', 'warning');
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+        return;
+      }
+    }
+    
+    // ✅ STEP 4: Check if updateResult is a valid object
+    if (typeof updateResult !== 'object') {
+      console.error('❌ Store action returned non-object result:', typeof updateResult, updateResult);
+      
+      // Use fallback method (same as above)
+      localStorage.setItem('userStatus', this.selectedPlan);
+      localStorage.setItem('plan', this.selectedPlan);
+      this.$store.commit('user/SET_USER_STATUS', this.selectedPlan);
+      this.$store.commit('user/FORCE_UPDATE');
+      
+      updateResult = {
+        success: true,
+        message: 'Updated via fallback method',
+        fallback: true
+      };
+    }
+    
+    // ✅ STEP 5: Handle successful update
+    if (updateResult.success === true) {
+      console.log('✅ Store user status updated successfully');
+      
+      // ✅ Add promocode to store
+      try {
+        this.$store.commit('user/ADD_PROMOCODE', {
+          code: normalizedCode,
+          plan: this.selectedPlan,
+          oldPlan: updateResult.oldStatus || 'free',
+          source: 'api',
+          details: { 
+            appliedAt: new Date().toISOString(),
+            serverResponse: serverResult || null,
+            fallbackUsed: updateResult.fallback || false
+          }
+        });
+      } catch (promocodeCommitError) {
+        console.warn('⚠️ Failed to add promocode to store:', promocodeCommitError);
+      }
+      
+      // ✅ CRITICAL: Update localStorage immediately (insurance)
+      localStorage.setItem('userStatus', this.selectedPlan);
+      localStorage.setItem('plan', this.selectedPlan);
+      
+      // ✅ Success feedback
       const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
-      this.showNotification(`🎉 Промокод применён! ${planLabel} подписка активирована!`, 'success', 5000);
+      this.showNotification(`🎉 Промокод применён! ${planLabel} подписка активирована!`, 'success');
       
       // ✅ Reset form
       this.promoCode = '';
@@ -1614,57 +1770,74 @@ async applyPromo() {
       // ✅ CRITICAL: Trigger global events for component updates
       if (typeof window !== 'undefined') {
         // Method 1: Custom DOM event
-        const event = new CustomEvent('userSubscriptionChanged', {
-          detail: {
-            plan: this.selectedPlan,
-            oldPlan: storeResult.oldPlan || 'free',
-            source: 'promocode',
-            promocode: normalizedCode,
-            timestamp: Date.now()
-          },
-          bubbles: true
-        });
-        window.dispatchEvent(event);
+        try {
+          const event = new CustomEvent('userSubscriptionChanged', {
+            detail: {
+              plan: this.selectedPlan,
+              oldPlan: updateResult.oldStatus || 'free',
+              source: 'promocode',
+              promocode: normalizedCode,
+              timestamp: Date.now()
+            },
+            bubbles: true
+          });
+          window.dispatchEvent(event);
+          console.log('✅ DOM event dispatched');
+        } catch (domEventError) {
+          console.warn('⚠️ DOM event failed:', domEventError);
+        }
         
         // Method 2: Event bus
-        if (window.eventBus) {
-          window.eventBus.emit('promocodeApplied', {
-            newStatus: this.selectedPlan,
-            oldStatus: storeResult.oldPlan || 'free',
-            code: normalizedCode,
-            success: true
-          });
+        try {
+          if (window.eventBus?.emit) {
+            window.eventBus.emit('promocodeApplied', {
+              newStatus: this.selectedPlan,
+              oldStatus: updateResult.oldStatus || 'free',
+              code: normalizedCode,
+              success: true
+            });
+            console.log('✅ Event bus emission completed');
+          }
+        } catch (eventBusError) {
+          console.warn('⚠️ Event bus failed:', eventBusError);
         }
         
         // Method 3: Global trigger function
-        if (window.triggerGlobalEvent) {
-          window.triggerGlobalEvent('userStatusChanged', {
-            oldStatus: storeResult.oldPlan || 'free',
-            newStatus: this.selectedPlan,
-            source: 'promocode-applied',
-            timestamp: Date.now()
-          });
+        try {
+          if (window.triggerGlobalEvent) {
+            window.triggerGlobalEvent('userStatusChanged', {
+              oldStatus: updateResult.oldStatus || 'free',
+              newStatus: this.selectedPlan,
+              source: 'promocode-applied',
+              timestamp: Date.now()
+            });
+            console.log('✅ Global trigger completed');
+          }
+        } catch (globalTriggerError) {
+          console.warn('⚠️ Global trigger failed:', globalTriggerError);
         }
       }
       
       console.log('✅ Promocode application completed successfully');
       return;
+      
+    } else {
+      // ✅ STEP 6: Handle store update failure
+      console.warn('⚠️ Store update failed after successful server application:', updateResult);
+      
+      const errorMessage = updateResult.error || 'Не удалось обновить локальное состояние';
+      this.showNotification(`Промокод применён на сервере, но ${errorMessage}`, 'warning');
+      
+      // Force page refresh after delay as fallback
+      setTimeout(() => {
+        if (confirm('Промокод успешно применён на сервере! Обновить страницу для синхронизации?')) {
+          window.location.reload();
+        }
+      }, 2000);
     }
-    
-    // ✅ STEP 3: Handle store action failure
-    if (storeResult.success === false) {
-      const errorMessage = storeResult.error || 'Не удалось применить промокод';
-      console.warn('⚠️ Store action failed:', errorMessage);
-      this.showNotification(errorMessage, 'error');
-      return;
-    }
-    
-    // ✅ STEP 4: Handle undefined success property (should not happen with fixed store)
-    console.error('❌ Store action returned result without success property:', storeResult);
-    this.showNotification('Неожиданная ошибка. Попробуйте снова или обратитесь в поддержку.', 'error');
     
   } catch (error) {
-    console.error('❌ Promocode application exception:', error);
+    console.error('❌ Promocode application failed:', error);
     
     let userFriendlyError = 'Произошла ошибка при применении промокода';
     
@@ -1680,6 +1853,30 @@ async applyPromo() {
     
   } finally {
     this.isProcessingPromo = false;
+  }
+},
+
+// ✅ Add this helper method if it doesn't exist:
+async getAuthHeader() {
+  try {
+    // Try to get token from current user
+    if (this.currentUser) {
+      const token = await this.currentUser.getIdToken();
+      if (token) {
+        return `Bearer ${token}`;
+      }
+    }
+    
+    // Fallback to localStorage
+    const storedToken = localStorage.getItem('authToken') || localStorage.getItem('token');
+    if (storedToken) {
+      return `Bearer ${storedToken}`;
+    }
+    
+    return '';
+  } catch (error) {
+    console.warn('⚠️ Failed to get auth header:', error);
+    return '';
   }
 },
 
