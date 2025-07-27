@@ -1427,8 +1427,15 @@ const actions = {
     // ✅ CRITICAL: Always return success result
     const finalResult = createSuccessResult(completeUser, 'User saved and synchronized successfully');
     console.log('🎉 saveUser returning success result:', finalResult);
+    // ... previous code
+    console.log('🎉 saveUser returning success result:', finalResult);
+
+    // ✅ ADD THIS LINE FOR TESTING
+    console.log('>>>>>>> MY FIX IS DEFINITELY HERE! <<<<<<<');
+    
     // 🔥 FIX: This line solves the error.
     return finalResult;
+    
 
     } catch (error) {
       console.error('❌ Unexpected error in saveUser:', error);
