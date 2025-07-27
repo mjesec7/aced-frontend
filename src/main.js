@@ -697,7 +697,7 @@ async function handleFailedUserSave(result, token, userData) {
           eventBus.emit('userLoginRetryFailed', {
             error: retryResult?.error || 'Retry failed - no valid result',
             finalFailure: true,
-            timestamp: Date.Now()
+            timestamp: Date.now()
           });
         }
       } catch (retryError) {
@@ -705,7 +705,7 @@ async function handleFailedUserSave(result, token, userData) {
         eventBus.emit('userLoginRetryFailed', {
           error: retryError.message,
           isException: true,
-          timestamp: Date.Now()
+          timestamp: Date.now()
         });
       }
     }, 3000);
@@ -899,7 +899,7 @@ async function mountVueApplication() {
         error: error.message,
         component: instance?.$options?.name || 'Unknown',
         info,
-        timestamp: Date.Now()
+        timestamp: Date.now()
       });
     };
     
@@ -917,7 +917,7 @@ async function mountVueApplication() {
     eventBus.emit('appReady', {
       userAuthenticated: !!store.getters['user/isAuthenticated'],
       userStatus: store.getters['user/userStatus'],
-      timestamp: Date.Now()
+      timestamp: Date.now()
     });
     
     // ✅ CRITICAL: Trigger initial status propagation after app mount
@@ -927,7 +927,7 @@ async function mountVueApplication() {
         oldStatus: null,
         newStatus: currentStatus,
         source: 'app-mount',
-        timestamp: Date.Now()
+        timestamp: Date.now()
       });
     }, 200);
     
@@ -939,7 +939,7 @@ async function mountVueApplication() {
     
     eventBus.emit('appMountError', {
       error: error.message,
-      timestamp: Date.Now()
+      timestamp: Date.now()
     });
   }
 }
@@ -998,7 +998,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
       plan: plan,
       source: source,
       oldPlan: oldPlan,
-      timestamp: timestamp || Date.Now()
+      timestamp: timestamp || Date.now()
     };
     
     const eventTypes = [
@@ -1022,7 +1022,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
         plan: plan,
         source: source,
         message: `Поздравляем! ${planLabel} подписка активирована по ${sourceText}!`,
-        timestamp: Date.Now()
+        timestamp: Date.now()
       });
     }
   };
@@ -1057,7 +1057,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
     if (data.newStatus) {
       try {
         localStorage.setItem('userStatus', data.newStatus);
-        localStorage.setItem('statusUpdateTime', Date.Now().toString());
+        localStorage.setItem('statusUpdateTime', Date.now().toString());
       } catch (storageError) {
         console.warn('⚠️ localStorage sync failed:', storageError);
       }
@@ -1088,7 +1088,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
         source: 'promocode',
         oldPlan: data.oldStatus,
         promocode: data.promocode,
-        timestamp: Date.Now()
+        timestamp: Date.now()
       }
     });
     window.dispatchEvent(domEvent);
@@ -1105,7 +1105,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
         oldPlan: 'free',
         transactionId: data.transactionId,
         amount: data.amount,
-        timestamp: Date.Now()
+        timestamp: Date.now()
       }
     });
     window.dispatchEvent(domEvent);
@@ -1124,7 +1124,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
         oldStatus,
         newStatus,
         source: 'cross-tab-sync',
-        timestamp: Date.Now()
+        timestamp: Date.now()
       });
     }
   });
@@ -1149,7 +1149,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
           oldStatus: localStatus,
           newStatus: storeStatus,
           source: 'periodic-sync',
-          timestamp: Date.Now()
+          timestamp: Date.now()
         });
       }
     } catch (error) {
@@ -1181,7 +1181,7 @@ window.addEventListener('error', (event) => {
       window.triggerGlobalEvent('globalForceUpdate', {
         reason: 'global-error-recovery',
         originalError: event.error?.message,
-        timestamp: Date.Now()
+        timestamp: Date.now()
       });
     } catch (recoveryError) {
       console.error('❌ Error recovery failed:', recoveryError);
@@ -1193,7 +1193,7 @@ window.addEventListener('error', (event) => {
     filename: event.filename,
     lineno: event.lineno,
     colno: event.colno,
-    timestamp: Date.Now()
+    timestamp: Date.now()
   });
 });
 
@@ -1210,7 +1210,7 @@ window.addEventListener('unhandledrejection', (event) => {
       window.triggerGlobalEvent('globalForceUpdate', {
         reason: 'promise-rejection-recovery',
         originalError: event.reason?.message,
-        timestamp: Date.Now()
+        timestamp: Date.now()
       });
     } catch (recoveryError) {
       console.error('❌ Promise rejection recovery failed:', recoveryError);
@@ -1219,7 +1219,7 @@ window.addEventListener('unhandledrejection', (event) => {
   
   eventBus.emit('unhandledPromiseRejection', {
     reason: event.reason?.message || event.reason,
-    timestamp: Date.Now()
+    timestamp: Date.now()
   });
 });
 
@@ -1248,7 +1248,7 @@ window.addEventListener('DOMContentLoaded', () => {
       oldStatus, 
       newStatus, 
       source,
-      timestamp: Date.Now() 
+      timestamp: Date.now() 
     });
   };
   
@@ -1259,7 +1259,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Trigger through global event system
     window.triggerGlobalEvent('globalForceUpdate', { 
       reason,
-      timestamp: Date.Now() 
+      timestamp: Date.now() 
     });
     
     // Also force store update
@@ -1321,7 +1321,7 @@ window.addEventListener('DOMContentLoaded', () => {
           oldStatus: localStatus,
           newStatus: storeStatus,
           source: 'sync-helper',
-          timestamp: Date.Now()
+          timestamp: Date.now()
         });
       }
       
@@ -1347,7 +1347,7 @@ if (import.meta.env.DEV) {
       
       eventBus.emit('appPerformance', {
         loadTime: loadTime,
-        timestamp: Date.Now()
+        timestamp: Date.now()
       });
     }
   });
@@ -1370,7 +1370,7 @@ if (import.meta.env.DEV) {
         payload: mutation.payload,
         currentStatus: currentStatus,
         count: mutationCount,
-        timestamp: Date.Now()
+        timestamp: Date.now()
       });
       
       // Log status changes specifically
@@ -1423,7 +1423,7 @@ if (import.meta.env.DEV) {
         oldStatus: 'free',
         newStatus: status,
         source: 'debug-trigger',
-        timestamp: Date.Now()
+        timestamp: Date.now()
       });
     },
     
@@ -1432,7 +1432,7 @@ if (import.meta.env.DEV) {
       store.commit('user/FORCE_UPDATE');
       window.triggerGlobalEvent('globalForceUpdate', {
         reason: 'debug-force',
-        timestamp: Date.Now()
+        timestamp: Date.now()
       });
     },
     
@@ -1495,7 +1495,7 @@ window.forceUserStatusSync = () => {
       oldStatus: null,
       newStatus: currentStatus,
       source: 'emergency-sync',
-      timestamp: Date.Now()
+      timestamp: Date.now()
     });
     console.log('🚨 Emergency user status sync triggered');
   } catch (error) {
