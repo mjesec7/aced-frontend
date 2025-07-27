@@ -78,8 +78,8 @@
     ></div>
 
     <!-- ✅ NEW: Upgrade Modal -->
-    <div class="upgrade-modal" v-if="showUpgradeModal">
-      <div class="upgrade-modal-content">
+    <div class="upgrade-modal" v-if="showUpgradeModal" @click.self="closeUpgradeModal">
+      <div class="upgrade-modal-content" @click.stop>
         <div class="upgrade-header">
           <h3>✨ Премиум функция</h3>
           <button class="close-btn" @click="closeUpgradeModal">×</button>
@@ -98,6 +98,9 @@
               <li v-if="selectedFeature?.name === 'homework'">🤖 ИИ-помощник для ДЗ</li>
               <li v-if="selectedFeature?.name === 'tests'">📝 Безлимитные тесты</li>
             </ul>
+          </div>
+          <div class="debug-info" v-if="$store.state.isDev">
+            <small>Debug: Current plan = {{ currentPlan }}</small>
           </div>
         </div>
         <div class="upgrade-actions">
@@ -235,14 +238,22 @@ export default {
       'forceUpdateCounter'
     ]),
     
-    // ✅ NEW: Current effective user plan with reactivity
+    // ✅ NEW: Current effective user plan with better detection
     currentPlan() {
       const key = this.reactivityKey; // Force reactivity
+      
+      // Try multiple sources for the current plan
       const storeStatus = this.userStatus;
       const localStatus = localStorage.getItem('userStatus');
       const workingStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : null;
       
-      const effectiveStatus = storeStatus || workingStatus || localStatus || 'free';
+      // Priority: store > working > localStorage > default
+      let effectiveStatus = storeStatus || workingStatus || localStatus || 'free';
+      
+      // ✅ CRITICAL: Handle string 'undefined' and null cases
+      if (effectiveStatus === 'undefined' || effectiveStatus === null || effectiveStatus === undefined) {
+        effectiveStatus = localStatus || 'free';
+      }
       
       console.log('🔍 Sidebar currentPlan computed:', {
         storeStatus,
@@ -438,7 +449,12 @@ export default {
       const linkConfig = this.links.find(link => link.feature === feature);
       if (!linkConfig) {
         console.warn('⚠️ Unknown feature:', feature);
-        return false;
+        return true; // Default to allowing access for unknown features
+      }
+      
+      // ✅ CRITICAL: Always allow access if not premium OR if user has required plan
+      if (!linkConfig.premium) {
+        return true; // Non-premium features are always accessible
       }
       
       // Check if current plan is in the required plans
@@ -448,7 +464,8 @@ export default {
         feature,
         plan,
         requiredPlans: linkConfig.requiredPlans,
-        hasAccess
+        hasAccess,
+        isPremium: linkConfig.premium
       });
       
       return hasAccess;
@@ -456,19 +473,22 @@ export default {
     
     // ✅ NEW: Handle link clicks with access control
     handleLinkClick(link) {
+      console.log('🔗 Sidebar: Link clicked:', link.label, 'Premium:', link.premium);
+      
+      // ✅ CRITICAL: Only show modal for premium features that user can't access
       if (link.premium && !this.hasAccessToFeature(link.feature)) {
-        // Prevent navigation and show upgrade modal
-        this.showUpgradeModal(link);
+        console.log('🔒 Showing upgrade modal for:', link.label);
+        this.showUpgradeModalForFeature(link);
         return false;
       }
       
-      // Allow normal navigation
+      console.log('✅ Allowing navigation to:', link.label);
       this.closeSidebarOnMobile();
       return true;
     },
     
-    // ✅ NEW: Show upgrade modal for premium features
-    showUpgradeModal(link) {
+    // ✅ FIXED: Rename method to avoid conflict
+    showUpgradeModalForFeature(link) {
       console.log('💎 Sidebar: Showing upgrade modal for:', link.label);
       this.selectedFeature = link;
       this.showUpgradeModal = true;
