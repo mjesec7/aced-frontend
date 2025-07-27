@@ -1,8 +1,3 @@
-Understood. I will apply the specified changes to your `main.js` file to address the authentication priority issue.
-
-Here is the full, modified `main.js` file:
-
-```javascript
 // src/main.js - ENHANCED VERSION WITH COMPLETE USER STATUS REACTIVITY FIX
 import { createApp } from 'vue';
 import App from './App.vue';
@@ -1511,4 +1506,3 @@ window.forceUserStatusSync = () => {
 console.log('✅ Enhanced main.js with complete user status reactivity loaded successfully!');
 console.log('🔧 Use window.debugUserStatus for debugging user status issues');
 console.log('🚨 Use window.forceUserStatusSync() for emergency status sync');
-```
