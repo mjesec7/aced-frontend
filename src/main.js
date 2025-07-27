@@ -1,5 +1,4 @@
-// src/main.js - REFINED FOR STABLE AUTHENTICATION
-
+// src/main.js - ENHANCED AND FIXED FOR RELIABLE AUTHENTICATION
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
@@ -16,77 +15,127 @@ import { auth } from './firebase';
 import { onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 // ============================================================================
-// 🔥 CRITICAL FIX: RESTRUCTURED AUTHENTICATION & INITIALIZATION (APPLIED)
+// 🔥 CRITICAL FIX: RESTRUCTURED AUTHENTICATION & INITIALIZATION
 // ============================================================================
 
+// ✅ Auth state tracking with enhanced promises
 let authStateResolved = false;
+let authResolveFunction = null;
+let authRejectFunction = null;
 
-// Set Firebase auth persistence immediately. This helps maintain the user's session across browser restarts.
-setPersistence(auth, browserLocalPersistence)
-  .then(() => {
-      console.log('✅ Firebase auth persistence set to LOCAL.');
-  })
-  .catch((error) => {
-      console.error('❌ Failed to set auth persistence:', error);
-  });
+// ✅ Set Firebase auth persistence IMMEDIATELY (BEFORE EVERYTHING ELSE)
+setPersistence(auth, browserLocalPersistence).then(() => {
+  console.log('✅ Firebase auth persistence set to LOCAL');
+}).catch((error) => {
+  console.error('❌ Failed to set auth persistence:', error);
+});
 
-// Create a promise that resolves once the authentication state is known.
-// The router can wait for this promise before performing initial navigation to prevent race conditions.
-export const authInitPromise = new Promise((resolve) => {
+// ✅ CRITICAL: Enhanced authentication promise that waits for COMPLETE initialization
+export const authInitPromise = new Promise((resolve, reject) => {
+  authResolveFunction = resolve;
+  authRejectFunction = reject;
+  
+  console.log('🔐 Starting ENHANCED authentication check...');
+
   const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-    // This listener should only run once on the initial application load to prevent re-initialization.
+    // We only want this to run ONCE on the initial page load to resolve the promise.
     if (!authStateResolved) {
       authStateResolved = true;
-      unsubscribe(); // Detach the listener after the first check.
-
-      console.log('🔐 Auth state determined:', firebaseUser ? firebaseUser.email : 'not authenticated');
+      // After this first check, we don't need the listener for this promise anymore.
+      unsubscribe();
+      
+      console.log('🔐 Auth state determined:', firebaseUser ? `${firebaseUser.email} (authenticated)` : 'not authenticated');
       
       try {
-        // 1. Initialize the Vuex store from localStorage or default state.
-        // This ensures the store is ready before any auth-dependent logic runs.
-        await store.dispatch('user/initialize');
+        // 🔥 CRITICAL: Complete initialization BEFORE resolving
+        console.log('🚀 Starting complete application initialization...');
         
-        // 2. Handle the user's authentication status based on the result from Firebase.
+        // First, ensure store is initialized
+        await ensureStoreInitialized();
+        
+        // Then handle the authentication result
         if (firebaseUser) {
-          // A user is signed in according to Firebase.
-          // We'll sync this state with our Vuex store to ensure consistency.
-          const localUser = store.getters['user/getUser'];
-          
-          // If the local store is out of sync with Firebase, update it.
-          if (!localUser || localUser.uid !== firebaseUser.uid) {
-            const userData = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              name: firebaseUser.displayName,
-              // Add other essential fields from firebaseUser as needed
-            };
-            store.commit('user/SET_USER', userData);
-            console.log('🔄 Synced Firebase user to local store.');
-          }
+          await handleUserAuthenticated(firebaseUser);
         } else {
-          // No user is signed in. Ensure the local store is cleared.
-          // The 'logout' action will clear user data and reset the state.
-          await store.dispatch('user/logout');
-          console.log('🧹 Cleared local store due to no authenticated user.');
+          await handleUserNotAuthenticated();
         }
-
-        // 3. Now that auth is handled and the store is initialized, mount the Vue application.
-        mountVueApplication();
         
-        console.log('✅ Application initialization finished successfully.');
-        resolve({ authenticated: !!firebaseUser, user: firebaseUser });
-
+        // Finally, mount the Vue application
+        await mountVueApplication();
+        
+        console.log('✅ COMPLETE authentication and app initialization finished');
+        
+        // Small delay to ensure everything is settled
+        setTimeout(() => {
+          console.log('🎉 Authentication promise resolving...');
+          resolve({
+            authenticated: !!firebaseUser,
+            user: firebaseUser,
+            appReady: true,
+            timestamp: Date.now()
+          });
+        }, 50);
+        
       } catch (error) {
-        console.error('❌ Critical initialization failed:', error);
+        console.error('❌ Critical initialization failed during auth check:', error);
         
-        // Even if initialization fails, we attempt to mount the app in a degraded state.
-        mountVueApplication();
-        resolve({ authenticated: false, error });
+        // Still try to mount the app in basic state
+        try {
+          await mountVueApplicationBasic();
+        } catch (mountError) {
+          console.error('❌ Basic app mount also failed:', mountError);
+        }
+        
+        // Resolve anyway to prevent app from being stuck, but indicate error
+        setTimeout(() => {
+          resolve({
+            authenticated: false,
+            user: null,
+            appReady: false,
+            error: error.message,
+            timestamp: Date.now()
+          });
+        }, 50);
       }
     }
   });
-});
 
+  // Enhanced timeout with better error handling
+  setTimeout(() => {
+    if (!authStateResolved) {
+      console.warn('⚠️ Auth check timed out - proceeding with fallback initialization');
+      authStateResolved = true;
+      unsubscribe();
+      
+      // Fallback initialization
+      Promise.resolve()
+        .then(() => ensureStoreInitialized())
+        .then(() => handleUserNotAuthenticated())
+        .then(() => mountVueApplicationBasic())
+        .then(() => {
+          console.log('✅ Fallback initialization completed');
+          resolve({
+            authenticated: false,
+            user: null,
+            appReady: true,
+            timedOut: true,
+            timestamp: Date.now()
+          });
+        })
+        .catch((fallbackError) => {
+          console.error('❌ Even fallback initialization failed:', fallbackError);
+          resolve({
+            authenticated: false,
+            user: null,
+            appReady: false,
+            error: fallbackError.message,
+            fallbackFailed: true,
+            timestamp: Date.now()
+          });
+        });
+    }
+  }, 8000); // Increased timeout to 8 seconds
+});
 
 // ============================================================================
 // 🔥 ENHANCED STORE INITIALIZATION WITH BULLETPROOF ERROR HANDLING
@@ -613,6 +662,26 @@ window.debugAuth = {
   }
 };
 
+console.log(`
+🔧 ENHANCED AUTHENTICATION DEBUG COMMANDS:
+
+🧪 TESTING:
+- debugAuth.testSaveUser(): Test the saveUser action
+- debugAuth.forceBasicAuth(): Force basic authentication mode
+- debugAuth.recoverUserStatus(): Attempt status recovery
+
+🔍 INSPECTION:
+- debugAuth.getDetailedAuthState(): Get complete auth state
+- debugAuth.getAuthState(): Get basic auth state
+
+🛠️ RECOVERY:
+- debugAuth.clearAuthState(): Clear all auth data
+- debugAuth.forceAuthComplete(): Force auth completion
+- debugAuth.recoverUserStatus(): Recover from cache
+
+Use these commands if you encounter authentication issues.
+`);
+
 // ============================================================================
 // 🔥 ENHANCED USER NOT AUTHENTICATED HANDLER
 // ============================================================================
@@ -673,36 +742,15 @@ async function handleUserNotAuthenticated() {
   }
 }
 
-let app; // To hold the Vue app instance.
-let isApplicationMounted = false;
-
-/**
- * Creates and mounts the Vue application.
- * This function is called only after authentication and store initialization are complete.
- * It also prevents the app from being mounted more than once.
- */
-function mountVueApplication() {
-    if (app) {
-        console.warn('⚠️ Attempted to mount Vue application multiple times.');
-        return; // Prevent double mounting.
-    }
-
+// ============================================================================
+// 🔥 ENHANCED VUE APPLICATION MOUNTING
+// ============================================================================
+async function mountVueApplication() {
+  console.log('🎯 Mounting Vue application with full features...');
+  
+  try {
     app = createApp(App);
-
-    // Setup i18n for internationalization.
-    const i18n = createI18n({
-        legacy: false, // Use the new Composition API mode.
-        locale: localStorage.getItem('lang') || 'ru', // Default to 'ru' or saved language.
-        fallbackLocale: 'en', // Fallback to English if a translation is missing.
-        messages,
-    });
     
-    // Register plugins with the Vue app.
-    app.use(store);
-    app.use(router);
-    app.use(VueToast, { position: 'top-center', duration: 4000, dismissible: true });
-    app.use(i18n);
-
     // Add enhanced global properties
     app.config.globalProperties.$eventBus = eventBus;
     app.config.globalProperties.$userStore = store;
@@ -714,22 +762,61 @@ function mountVueApplication() {
       const cleanup = eventBus.onStatusChange(callback);
       return cleanup;
     };
-
-    // Global error handler to catch unhandled errors in any component.
-    app.config.errorHandler = (err, instance, info) => {
-        console.error('❌ Vue Error:', err);
-        console.error('📍 Component:', instance?.$options?.name || 'Unknown');
-        console.error('ℹ️ Info:', info);
-        // In a production environment, you would log this to a service like Sentry or Datadog.
+    
+    // Install plugins
+    app.use(store);
+    app.use(router);
+    app.use(VueToast, {
+      position: 'top-center',
+      duration: 4000,
+      dismissible: true
+    });
+    app.use(i18n);
+    
+    // Enhanced error handler
+    app.config.errorHandler = (error, instance, info) => {
+      console.error('❌ Vue error:', error);
+      console.error('📍 Component:', instance?.$options?.name || 'Unknown');
+      console.error('ℹ️ Info:', info);
+      
+      // Handle specific length errors
+      if (error.message?.includes("Cannot read properties of undefined (reading 'length')")) {
+        console.error('🔍 Length property error detected - likely array reactivity issue');
+        
+        eventBus.emit('lengthPropertyError', {
+          error: error.message,
+          component: instance?.$options?.name || 'Unknown',
+          info,
+          timestamp: Date.now()
+        });
+        
+        // Try to recover
+        try {
+          store.commit('user/FORCE_UPDATE');
+          window.triggerGlobalEvent('globalForceUpdate', {
+            reason: 'length-error-recovery',
+            timestamp: Date.now()
+          });
+        } catch (recoveryError) {
+          console.error('❌ Recovery attempt failed:', recoveryError);
+        }
+      }
+      
+      eventBus.emit('vueError', {
+        error: error.message,
+        component: instance?.$options?.name || 'Unknown',
+        info,
+        timestamp: Date.now()
+      });
     };
-
-    // Mount the app to the DOM.
+    
+    // Mount the application
     app.mount('#app');
     isApplicationMounted = true;
     appLifecycle.mounted = true;
-
-    console.log('🚀 Vue application mounted.');
-
+    
+    console.log('✅ Vue application mounted successfully');
+    
     // Setup global subscription management
     setupEnhancedGlobalSubscriptionManagement();
     
@@ -742,8 +829,65 @@ function mountVueApplication() {
       userStatus: store.getters['user/userStatus'],
       timestamp: Date.now()
     });
+    
+    // Final status propagation
+    setTimeout(() => {
+      const currentStatus = store.getters['user/userStatus'] || 'free';
+      window.triggerGlobalEvent('userStatusChanged', {
+        oldStatus: null,
+        newStatus: currentStatus,
+        source: 'app-mount-complete',
+        timestamp: Date.now()
+      });
+    }, 200);
+    
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Failed to mount Vue app:', error);
+    
+    eventBus.emit('appMountError', {
+      error: error.message,
+      timestamp: Date.now()
+    });
+    
+    throw error;
+  }
 }
 
+// ============================================================================
+// 🔥 BASIC VUE APPLICATION MOUNTING (FALLBACK)
+// ============================================================================
+async function mountVueApplicationBasic() {
+  console.log('🎯 Mounting Vue application in basic mode...');
+  
+  try {
+    app = createApp(App);
+    
+    // Basic plugins only
+    app.use(store);
+    app.use(router);
+    app.use(i18n);
+    
+    // Basic error handler
+    app.config.errorHandler = (error, instance, info) => {
+      console.error('❌ Vue error (basic mode):', error);
+    };
+    
+    // Mount the application
+    app.mount('#app');
+    isApplicationMounted = true;
+    appLifecycle.mounted = true;
+    
+    console.log('✅ Vue application mounted in basic mode');
+    
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Failed to mount Vue app even in basic mode:', error);
+    throw error;
+  }
+}
 
 // ============================================================================
 // 🔥 ENHANCED GLOBAL EVENT TRIGGERING SYSTEM
@@ -983,10 +1127,22 @@ const eventBus = new AdvancedEventBus();
 window.eventBus = eventBus;
 export { eventBus };
 
+// ============================================================================
+// 🌐 INTERNATIONALIZATION SETUP
+// ============================================================================
+const i18n = createI18n({
+  legacy: false,
+  locale: localStorage.getItem('lang') || 'ru',
+  fallbackLocale: 'en',
+  messages,
+});
 
 // ============================================================================
 // 🎯 APPLICATION STATE MANAGEMENT
 // ============================================================================
+let app;
+let isApplicationMounted = false;
+
 // Track app lifecycle
 const appLifecycle = {
   initialized: false,
