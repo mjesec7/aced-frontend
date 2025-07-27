@@ -265,7 +265,6 @@ export default {
   watch: {
     userStatus: {
       handler(newStatus, oldStatus) {
-        console.log('📊 StudyCard: User status changed from', oldStatus, 'to:', newStatus);
         this.triggerReactivityUpdate();
       },
       immediate: true
@@ -273,7 +272,6 @@ export default {
     
     forceUpdateCounter: {
       handler(newCounter, oldCounter) {
-        console.log('📊 StudyCard: Force update counter changed:', oldCounter, '→', newCounter);
         this.triggerReactivityUpdate();
       },
       immediate: true
@@ -281,7 +279,6 @@ export default {
   },
   
   mounted() {
-    console.log('📱 StudyCard: Component mounted for topic:', this.displayName);
   },
   
   methods: {
@@ -290,11 +287,7 @@ export default {
       this.lastStatusUpdate = Date.now();
       this.$forceUpdate();
       
-      console.log('🔄 StudyCard: Reactivity update triggered:', {
-        componentKey: this.componentKey,
-        topicName: this.displayName,
-        userStatus: this.userStatus
-      });
+       
     },
     
     getTopicType(topic) {
@@ -411,7 +404,6 @@ export default {
           throw new Error('Topic ID not found');
         }
         
-        console.log(`📚 StudyCard: Navigating to topic overview: ${topicId}`);
         
         // ✅ FIXED: Navigate to TopicOverview instead of LessonPage
         this.$router.push({ 
@@ -441,11 +433,9 @@ export default {
           return;
         }
 
-        console.log('🗑️ Deleting topic from study list:', { userId, topicId });
 
         try {
           const result = await removeFromStudyList(userId, topicId);
-          console.log('Backend deletion result:', result);
         } catch (backendError) {
           console.warn('Backend deletion failed, but continuing with UI update:', backendError);
         }

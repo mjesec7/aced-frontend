@@ -496,7 +496,6 @@ export default {
     currentUserStatus: {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
-          console.log('📊 MainPage: Current user status changed:', oldStatus, '→', newStatus);
           this.handleUserStatusChange(newStatus, oldStatus);
         }
       },
@@ -506,7 +505,6 @@ export default {
   
   async mounted() {
     const startTime = Date.now();
-    console.log('📱 MainPage: Component mounting...');
     
     try {
       this.performanceMetrics.mountTime = startTime;
@@ -528,7 +526,6 @@ export default {
       this.forceReactivityUpdate();
       
       const mountTime = Date.now() - startTime;
-      console.log(`✅ MainPage: Mounted successfully in ${mountTime}ms`);
       
       if (this.config.enableNotifications && !this.hasErrors) {
         this.showNotification('Добро пожаловать! Данные загружены.', 'success', 3000);
@@ -541,7 +538,6 @@ export default {
   },
   
   beforeUnmount() {
-    console.log('📱 MainPage: Component unmounting');
     this.componentMounted = false;
     this.performCleanup();
   },
@@ -572,7 +568,7 @@ export default {
         }
         
         this.updateSafeUserStatus(detectedStatus);
-        console.log('✅ Safe user status initialized:', this.safeUserStatus);
+        ('✅ Safe user status initialized:', this.safeUserStatus);
         
       } catch (error) {
         console.error('❌ Error initializing safe user status:', error);
@@ -601,7 +597,6 @@ export default {
         // Debounced update to prevent excessive updates
         this.userStatusUpdateTimer = setTimeout(() => {
           if (oldStatus !== normalizedStatus) {
-            console.log(`👤 Safe user status updated: ${oldStatus} → ${normalizedStatus}`);
             this.$forceUpdate();
           }
         }, 100);
@@ -614,7 +609,6 @@ export default {
       try {
         const newPlan = newUser?.subscriptionPlan;
         if (newPlan && newPlan !== this.safeUserStatus) {
-          console.log('👤 MainPage: Store user changed, plan:', newPlan);
           this.handleUserStatusChange(newPlan, this.safeUserStatus);
         }
       } catch (error) {
@@ -628,7 +622,6 @@ export default {
       try {
         const newPlan = newUser?.subscriptionPlan;
         if (newPlan && newPlan !== this.safeUserStatus) {
-          console.log('👤 MainPage: Vuex user changed, plan:', newPlan);
           this.handleUserStatusChange(newPlan, this.safeUserStatus);
         }
       } catch (error) {
@@ -639,7 +632,6 @@ export default {
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus || !this.componentMounted) return;
 
-      console.log(`👤 MainPage: Handling status change ${oldStatus} → ${newStatus}`);
 
       try {
         localStorage.setItem('userStatus', newStatus);
@@ -657,14 +649,12 @@ export default {
           }, 1000);
         }
 
-        console.log(`✅ MainPage: Status change handled: ${oldStatus} → ${newStatus}`);
       } catch (error) {
         console.error('❌ Error handling user status change:', error);
       }
     },
 
     setupEnhancedEventListeners() {
-      console.log('🔧 MainPage: Setting up enhanced event listeners...');
       
       this.cleanupEventListeners();
       
@@ -676,7 +666,6 @@ export default {
           try {
             const detail = event?.detail;
             if (detail && detail.plan) {
-              console.log('📡 MainPage: Subscription change received:', detail);
               this.handleUserStatusChange(detail.plan, detail.oldPlan || this.safeUserStatus);
             }
           } catch (error) {
@@ -696,7 +685,6 @@ export default {
           try {
             if ((event.key === 'userStatus' || event.key === 'plan') && 
                 event.newValue !== event.oldValue && event.newValue) {
-              console.log('📡 MainPage: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
               this.handleUserStatusChange(event.newValue, event.oldValue || this.safeUserStatus);
             }
           } catch (error) {
@@ -723,7 +711,6 @@ export default {
           if (!this.componentMounted) return;
           
           try {
-            console.log('📡 MainPage: Generic status event received:', event.type);
             
             const detail = event?.detail;
             if (detail) {
@@ -759,7 +746,6 @@ export default {
           if (!this.componentMounted) return;
           
           try {
-            console.log('📡 MainPage: User status event received:', data);
             const newStatus = data?.newStatus || data?.plan;
             const oldStatus = data?.oldStatus || data?.oldPlan || this.safeUserStatus;
             
@@ -775,7 +761,6 @@ export default {
           if (!this.componentMounted) return;
           
           try {
-            console.log('📡 MainPage: Force update event received');
             this.forceReactivityUpdate();
             
             const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
@@ -815,7 +800,6 @@ export default {
           }
         });
 
-        console.log('✅ MainPage: Event bus listeners registered');
       }
 
       // Store subscription with error handling
@@ -826,7 +810,6 @@ export default {
             
             try {
               if (this.isUserRelatedMutation(mutation)) {
-                console.log('📊 MainPage: Store mutation detected:', mutation.type);
                 this.forceReactivityUpdate();
                 
                 if (mutation.payload && mutation.payload.subscriptionPlan) {
@@ -852,7 +835,6 @@ export default {
         }
       }
 
-      console.log('✅ MainPage: Enhanced event listeners setup complete');
     },
 
     isUserRelatedMutation(mutation) {
@@ -891,11 +873,7 @@ export default {
           }
         });
         
-        console.log('🔄 MainPage: Reactivity updated:', {
-          reactivityKey: this.reactivityKey,
-          currentPlan: this.safeUserStatus,
-          forceUpdateCounter: this.forceUpdateCounter
-        });
+        
       } catch (error) {
         console.warn('⚠️ MainPage: Reactivity update failed:', error);
       }
@@ -927,7 +905,6 @@ export default {
     },
 
     async validateUserAuthentication() {
-      console.log('🔐 Validating user authentication...');
       
       const storedId = this.$store?.state?.firebaseUserId || 
                        localStorage.getItem('firebaseUserId') || 
@@ -941,11 +918,9 @@ export default {
       }
       
       this.userId = storedId;
-      console.log('✅ User authentication validated:', this.userId);
     },
     
     async initializeDataLoading() {
-      console.log('📊 Initializing data loading...');
       
       const startTime = Date.now();
       
@@ -957,14 +932,12 @@ export default {
       const [recommendationsResult, studyListResult] = results;
       
       if (recommendationsResult.status === 'fulfilled') {
-        console.log('✅ Recommendations loaded successfully');
       } else {
         console.error('❌ Recommendations failed:', recommendationsResult.reason);
         this.performanceMetrics.failedOperations++;
       }
       
       if (studyListResult.status === 'fulfilled') {
-        console.log('✅ Study list loaded successfully');
       } else {
         console.error('❌ Study list failed:', studyListResult.reason);
         this.performanceMetrics.failedOperations++;
@@ -973,7 +946,6 @@ export default {
       const loadTime = Date.now() - startTime;
       this.performanceMetrics.lastDataFetch = Date.now();
       
-      console.log(`⚡ Data loading completed in ${loadTime}ms`);
       
       this.performanceMetrics.totalApiCalls += 2;
       if (!this.hasErrors) {
@@ -984,11 +956,9 @@ export default {
     setupAutoRefresh() {
       if (!this.config.enableAutoRefresh) return;
       
-      console.log(`🔄 Setting up auto-refresh (${this.config.autoRefreshInterval}ms)`);
       
       this.autoRefreshInterval = setInterval(async () => {
         if (!document.hidden && this.hasData && this.componentMounted) {
-          console.log('🔄 Auto-refreshing data...');
           
           try {
             await Promise.allSettled([
@@ -996,7 +966,6 @@ export default {
               this.fetchStudyList()
             ]);
             
-            console.log('✅ Auto-refresh completed');
             
           } catch (error) {
             console.warn('⚠️ Auto-refresh failed:', error);
@@ -1014,15 +983,12 @@ export default {
     setupPerformanceMonitoring() {
       if (!this.config.enableAnalytics) return;
       
-      console.log('📈 Setting up performance monitoring...');
       
       this.handleVisibilityChange = () => {
         if (!this.componentMounted) return;
         
         if (document.hidden) {
-          console.log('📱 MainPage: Hidden');
         } else {
-          console.log('📱 MainPage: Visible');
           setTimeout(() => {
             if (this.hasData && Date.now() - this.performanceMetrics.lastDataFetch > 60000) {
               this.refreshAllData();
@@ -1044,7 +1010,6 @@ export default {
         this.loadingRecommendations = true;
         this.errors.recommendations = null;
         
-        console.log('🔍 Fetching recommendations...');
         this.performanceMetrics.totalApiCalls++;
         
         let lessonsResult;
@@ -1057,7 +1022,6 @@ export default {
         }
         
         if (lessonsResult?.success && Array.isArray(lessonsResult.data) && lessonsResult.data.length > 0) {
-          console.log(`📚 Got ${lessonsResult.data.length} lessons for building recommendations`);
           
           const topics = this.buildTopicsFromLessons(lessonsResult.data);
           
@@ -1068,7 +1032,6 @@ export default {
             this.recommendationsSource = 'lessons';
             this.recommendationsLastFetch = Date.now();
             
-            console.log(`✅ Built ${topics.length} recommendations from lessons in ${Date.now() - startTime}ms`);
             this.performanceMetrics.successfulOperations++;
             return;
           }
@@ -1096,13 +1059,12 @@ export default {
       const startTime = Date.now();
       
       try {
-        console.log('🔄 Fallback: Getting topics directly...');
         
         const topicsResult = await getTopics({ includeStats: true });
         this.performanceMetrics.totalApiCalls++;
         
         if (topicsResult?.success && Array.isArray(topicsResult.data) && topicsResult.data.length > 0) {
-          console.log(`📚 Found ${topicsResult.data.length} topics directly`);
+          (`📚 Found ${topicsResult.data.length} topics directly`);
           
           const enrichedTopics = await this.enrichTopicsWithLessons(
             topicsResult.data.slice(0, 20)
@@ -1115,13 +1077,11 @@ export default {
             this.recommendationsSource = 'topics';
             this.recommendationsLastFetch = Date.now();
             
-            console.log(`✅ Loaded ${enrichedTopics.length} enriched topics in ${Date.now() - startTime}ms`);
             this.performanceMetrics.successfulOperations++;
             return;
           }
         }
         
-        console.log('ℹ️ No recommendations available from any source');
         this.allRecommendations = [];
         this.displayedRecommendations = [];
         this.recommendationsSource = 'none';
@@ -1144,7 +1104,6 @@ export default {
         this.errors.studyList = null;
         this.invalidTopicsCleanedUp = 0;
         
-        console.log('🔍 Fetching study list for user:', this.userId);
         this.performanceMetrics.totalApiCalls++;
         
         if (!this.userId) {
@@ -1161,13 +1120,11 @@ export default {
         const studyListData = studyListResult.data;
         
         if (!Array.isArray(studyListData)) {
-          console.log('ℹ️ No study list data or invalid format');
           this.studyList = [];
           this.studyListLastFetch = Date.now();
           return;
         }
         
-        console.log(`📚 Found ${studyListData.length} study list entries`);
         
         let userProgressData = [];
         try {
@@ -1176,7 +1133,6 @@ export default {
           
           if (progressResult?.success && Array.isArray(progressResult.data)) {
             userProgressData = progressResult.data;
-            console.log(`📊 Loaded ${userProgressData.length} progress records`);
           }
         } catch (progressError) {
           console.warn('⚠️ Failed to load progress data:', progressError.message);
@@ -1212,10 +1168,8 @@ export default {
         this.studyListLastFetch = Date.now();
         
         const loadTime = Date.now() - startTime;
-        console.log(`✅ Loaded ${validTopics.length} study list topics in ${loadTime}ms`);
         
         if (this.invalidTopicsCleanedUp > 0) {
-          console.log(`🧹 Cleaned up ${this.invalidTopicsCleanedUp} invalid entries`);
         }
         
         this.performanceMetrics.successfulOperations++;
@@ -1411,7 +1365,6 @@ export default {
       this.loadingOperations.add.add(topic._id);
       
       try {
-        console.log('➕ Adding topic to study list:', this.getTopicName(topic));
         
         const studyListData = {
           topicId: topic._id,
@@ -1431,7 +1384,6 @@ export default {
           source: 'main-page-recommendations'
         };
         
-        console.log('📦 Sending study list data:', studyListData);
         
         const result = await addToStudyList(this.userId, studyListData);
         this.performanceMetrics.totalApiCalls++;
@@ -1471,7 +1423,6 @@ export default {
           this.performanceMetrics.successfulOperations++;
           
           this.showNotification('✅ Курс добавлен в ваш список!', 'success');
-          console.log(`✅ Topic "${this.getTopicName(topic)}" added successfully`);
           
           setTimeout(() => {
             this.fetchStudyList();
@@ -1512,18 +1463,15 @@ export default {
       this.loadingOperations.start.add(topic._id);
       
       try {
-        console.log('🚀 Starting topic:', this.getTopicName(topic));
         
         const hasAccess = this.hasTopicAccess(topic);
         
         if (!hasAccess) {
-          console.log('🔒 Topic requires subscription, showing paywall');
           this.requestedTopicId = topic._id;
           this.showPaywall = true;
           return;
         }
         
-        console.log(`📚 Navigating to topic overview: ${topic._id}`);
         await this.$router.push({ 
           name: 'TopicOverview',
           params: { id: topic._id },
@@ -1544,11 +1492,9 @@ export default {
     closePaywall() {
       this.showPaywall = false;
       this.requestedTopicId = null;
-      console.log('💳 Paywall closed');
     },
     
     handlePaymentSuccess(newStatus) {
-      console.log('💳 Payment successful, new status:', newStatus);
       
       this.handleUserStatusChange(newStatus, this.safeUserStatus);
       this.closePaywall();
@@ -1568,7 +1514,6 @@ export default {
                        this.studyList.find(t => t._id === this.requestedTopicId);
           
           if (topic && this.hasTopicAccess(topic)) {
-            console.log('🚀 Auto-starting requested topic after payment');
             this.handleStartTopic(topic);
           }
         }, 1000);
@@ -1604,7 +1549,6 @@ export default {
         this.dismissNotification(notification.id);
       }, duration);
       
-      console.log(`🔔 Notification [${type}]: ${message}`);
     },
     
     getNotificationIcon(type) {
@@ -1622,7 +1566,6 @@ export default {
     },
 
     performCleanup() {
-      console.log('🧹 MainPage: Performing cleanup...');
       
       this.componentMounted = false;
       
@@ -1655,10 +1598,8 @@ export default {
       this.dismissAllNotifications();
       
       if (this.config.enableAnalytics) {
-        console.log('📊 Final performance metrics:', this.performanceMetrics);
       }
       
-      console.log('✅ MainPage cleanup completed');
     },
 
     dismissAllNotifications() {
@@ -1918,7 +1859,6 @@ export default {
         return;
       }
       
-      console.log('🎲 Shuffling recommendations...');
       
       this.displayedRecommendations = this.getRandomRecommendations(this.config.maxRecommendations);
       
@@ -1931,7 +1871,6 @@ export default {
         });
       }
       
-      console.log(`🎲 Shuffled to ${this.displayedRecommendations.length} new recommendations`);
       this.showNotification('Новые рекомендации загружены', 'info', 2000);
     },
     
@@ -1986,7 +1925,6 @@ export default {
         const additional = available.slice(0, needed);
         this.displayedRecommendations.push(...additional);
         
-        console.log(`🔄 Refilled ${additional.length} recommendations`);
       }
     },
 
@@ -1998,7 +1936,6 @@ export default {
       try {
         await this.fetchRecommendations();
         this.showNotification('Рекомендации обновлены', 'success');
-        console.log('✅ Recommendations refreshed manually');
       } catch (error) {
         console.error('❌ Manual refresh recommendations failed:', error);
         this.showNotification('Не удалось обновить рекомендации', 'error');
@@ -2015,7 +1952,6 @@ export default {
       try {
         await this.fetchStudyList();
         this.showNotification('Список курсов обновлен', 'success');
-        console.log('✅ Study list refreshed manually');
       } catch (error) {
         console.error('❌ Manual refresh study list failed:', error);
         this.showNotification('Не удалось обновить список курсов', 'error');
@@ -2030,7 +1966,6 @@ export default {
       this.loadingOperations.refresh.add('all');
       
       try {
-        console.log('🔄 Refreshing all data...');
         
         await Promise.allSettled([
           this.fetchRecommendations(),
@@ -2038,7 +1973,6 @@ export default {
         ]);
         
         this.showNotification('Все данные обновлены', 'success');
-        console.log('✅ All data refreshed');
         
       } catch (error) {
         console.error('❌ Refresh all data failed:', error);
@@ -2055,7 +1989,6 @@ export default {
       }
       
       this.retryCount++;
-      console.log(`🔄 Retry attempt ${this.retryCount}/${this.maxRetries}`);
       
       const promises = [];
       
@@ -2140,7 +2073,6 @@ export default {
         }
       });
       
-      console.log(`🏗️ Built ${processedCount} unique topics from ${lessons.length} lessons`);
       
       return Array.from(topicsMap.values())
         .filter(topic => topic.lessons.length > 0)
@@ -2162,7 +2094,6 @@ export default {
     async enrichTopicsWithLessons(topics) {
       if (!Array.isArray(topics)) return [];
       
-      console.log(`🔍 Enriching ${topics.length} topics with lessons...`);
       
       const enrichmentPromises = topics.map(async (topic) => {
         try {
@@ -2195,7 +2126,6 @@ export default {
         .filter(result => result.status === 'fulfilled' && result.value !== null)
         .map(result => result.value);
       
-      console.log(`✅ Successfully enriched ${enrichedTopics.length}/${topics.length} topics`);
       
       return enrichedTopics;
     },
@@ -2204,7 +2134,6 @@ export default {
       if (!entry?.topicId) return null;
 
       try {
-        console.log(`🔍 Processing study list entry: ${entry.topicId}`);
         
         let topicData = {
           _id: entry.topicId,
@@ -2235,7 +2164,6 @@ export default {
           
           if (topicResult?.success && topicResult.data) {
             const freshData = topicResult.data;
-            console.log(`📊 Got fresh data for topic ${entry.topicId}`);
             
             const shouldKeepStudyListNames = this.shouldPreserveStudyListNames(freshData);
             
@@ -2286,7 +2214,6 @@ export default {
             
             if (lessonsResult?.success && Array.isArray(lessonsResult.data)) {
               lessons = lessonsResult.data;
-              console.log(`📚 Got ${lessons.length} lessons for topic ${entry.topicId}`);
             }
           } catch (lessonsError) {
             console.warn(`⚠️ Failed to get lessons for topic ${entry.topicId}:`, lessonsError.message);
@@ -2399,7 +2326,6 @@ export default {
         this.allSubjects = Array.from(subjects).sort((a, b) => a.localeCompare(b, 'ru'));
         this.allLevels = Array.from(levels).sort((a, b) => a - b);
         
-        console.log(`📊 Extracted ${this.allSubjects.length} subjects and ${this.allLevels.length} levels`);
         
       } catch (error) {
         console.error('❌ Error extracting subjects and levels:', error);
@@ -2546,7 +2472,6 @@ export default {
       this.loadingOperations.remove.add(topicId);
       
       try {
-        console.log('🗑️ Removing study card:', topicId);
         
         const topicToRemove = this.studyList.find(t => t._id === topicId);
         
@@ -2559,7 +2484,6 @@ export default {
           this.performanceMetrics.totalApiCalls++;
           
           if (result?.success) {
-            console.log('✅ Successfully removed from backend');
             this.performanceMetrics.successfulOperations++;
           } else {
             console.warn('⚠️ Backend removal failed but UI updated');

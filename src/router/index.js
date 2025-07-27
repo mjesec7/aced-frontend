@@ -72,7 +72,6 @@ const routes = [
       description: 'Персональный словарь с изученными словами'
     },
     beforeEnter: async (to, from, next) => {
-      console.log('🔍 Vocabulary route guard checking access...');
       
       // Check authentication first
       const isLoggedIn = store.getters.isLoggedIn;
@@ -93,7 +92,6 @@ const routes = [
       const hasVocabularyAccess = store.getters['user/hasVocabularyAccess'] || 
                                   ['start', 'pro', 'premium'].includes(userStatus);
       
-      console.log(`🔍 Vocabulary access check: status=${userStatus}, hasAccess=${hasVocabularyAccess}`);
       
       if (!hasVocabularyAccess) {
         console.warn('❌ Vocabulary requires subscription');
@@ -390,7 +388,6 @@ const routes = [
           const route = JSON.parse(intendedRoute);
           sessionStorage.removeItem('intendedRoute');
           
-          console.log('📍 Redirecting to intended route after payment:', route);
           
           // Small delay to ensure status is updated
           setTimeout(() => {
@@ -646,7 +643,6 @@ const router = createRouter({
 
 // ✅ ENHANCED Route Guard with Subscription Integration
 router.beforeEach(async (to, from, next) => {
-  console.log(`🔄 Router guard: ${from.path} → ${to.path}`);
   
   // Public routes that don't require authentication
   const publicRoutes = ['HomePage', 'NotFound', 'PaymentFailed', 'PaymeCheckout', 'PaymentSuccess', 'PaymentReturn'];
@@ -685,13 +681,11 @@ router.beforeEach(async (to, from, next) => {
     const userStatus = store.getters['user/userStatus'];
     const requiredLevel = to.meta.subscriptionLevel || 'start';
     
-    console.log(`🔍 Subscription check: route=${to.name}, required=${requiredLevel}, current=${userStatus}`);
     
     // Check subscription level
     const hasAccess = checkSubscriptionAccess(userStatus, requiredLevel);
     
     if (!hasAccess) {
-      console.log('❌ Insufficient subscription level');
       
       // Store the intended destination
       sessionStorage.setItem('intendedRoute', JSON.stringify({

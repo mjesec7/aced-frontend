@@ -255,13 +255,7 @@ export default {
         effectiveStatus = localStatus || 'free';
       }
       
-      console.log('🔍 Sidebar currentPlan computed:', {
-        storeStatus,
-        localStatus,
-        workingStatus,
-        effectiveStatus,
-        reactivityKey: this.reactivityKey
-      });
+      
       
       return effectiveStatus;
     },
@@ -292,7 +286,6 @@ export default {
   watch: {
     userStatus: {
       handler(newStatus, oldStatus) {
-        console.log('📊 Sidebar: User status changed from', oldStatus, 'to:', newStatus);
         this.handleStatusChange(newStatus, oldStatus);
         this.lastSyncTime = Date.now();
       },
@@ -301,7 +294,6 @@ export default {
     
     forceUpdateCounter: {
       handler(newCounter, oldCounter) {
-        console.log('📊 Sidebar: Force update counter changed:', oldCounter, '→', newCounter);
         this.triggerReactivityUpdate();
       },
       immediate: true
@@ -309,14 +301,9 @@ export default {
     
     user: {
       handler(newUser, oldUser) {
-        console.log('👤 Sidebar: User object changed:', { 
-          old: oldUser?.email, 
-          new: newUser?.email,
-          status: this.userStatus 
-        });
+         
         
         if (newUser && (!oldUser || oldUser.email !== newUser.email)) {
-          console.log('👤 Sidebar: New user logged in:', newUser.email);
           this.componentKey++;
         }
       },
@@ -327,7 +314,6 @@ export default {
     subscriptionDetails: {
       handler(newSub, oldSub) {
         if (newSub !== oldSub) {
-          console.log('💳 Sidebar: Subscription details changed:', newSub);
           this.triggerReactivityUpdate();
         }
       },
@@ -338,7 +324,6 @@ export default {
     hasActiveSubscription: {
       handler(hasSubscription, hadSubscription) {
         if (hasSubscription !== hadSubscription) {
-          console.log('💳 Sidebar: Subscription status changed to:', hasSubscription);
           this.triggerReactivityUpdate();
         }
       },
@@ -348,7 +333,7 @@ export default {
     '$store.state.user.userStatus': {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
-          console.log('📊 Sidebar: Store user status direct change (via $store.state):', oldStatus, '→', newStatus);
+          ('📊 Sidebar: Store user status direct change (via $store.state):', oldStatus, '→', newStatus);
           this.triggerReactivityUpdate();
           this.lastSyncTime = Date.now();
         }
@@ -358,15 +343,12 @@ export default {
   },
   
   mounted() {
-    console.log('🔧 Sidebar: Component mounted');
-    console.log('📊 Sidebar: Initial user status:', this.userStatus);
-    console.log('👤 Sidebar: Initial user:', this.user);
+   
     
     this.checkMobile();
     window.addEventListener('resize', this.checkMobile);
     
     onAuthStateChanged(auth, (firebaseUser) => {
-      console.log('🔥 Sidebar: Firebase auth state changed:', firebaseUser?.email);
       
       if (firebaseUser) {
         const userData = {
@@ -378,13 +360,11 @@ export default {
           photoURL: firebaseUser.photoURL
         };
         
-        console.log('👤 Sidebar: Setting user data:', userData);
         this.setUser(userData);
         this.$store.commit('setFirebaseUserId', firebaseUser.uid);
         localStorage.setItem('firebaseUserId', firebaseUser.uid);
         
       } else {
-        console.log('👤 Sidebar: User logged out, clearing data');
         this.clearUser();
         this.$store.commit('setFirebaseUserId', null);
         localStorage.removeItem('firebaseUserId');
@@ -404,7 +384,6 @@ export default {
       ];
       
       if (relevantMutations.includes(mutation.type)) {
-        console.log('📊 Sidebar: Store mutation detected:', mutation.type, mutation.payload);
         this.handleStoreUpdate(mutation);
       }
     });
@@ -414,7 +393,6 @@ export default {
   },
   
   beforeUnmount() {
-    console.log('🔧 Sidebar: Component unmounting');
     window.removeEventListener('resize', this.checkMobile);
     this.cleanupGlobalListeners();
     
@@ -433,7 +411,6 @@ export default {
       this.notificationTimeout = null;
     }
     
-    console.log('✅ Sidebar: Cleanup completed');
   },
   
   methods: {
@@ -443,7 +420,6 @@ export default {
     hasAccessToFeature(feature) {
       const plan = this.currentPlan;
       
-      console.log('🔒 Sidebar: Checking access for feature:', feature, 'with plan:', plan);
       
       // Find the link configuration for this feature
       const linkConfig = this.links.find(link => link.feature === feature);
@@ -460,36 +436,26 @@ export default {
       // Check if current plan is in the required plans
       const hasAccess = linkConfig.requiredPlans.includes(plan);
       
-      console.log('🔒 Access check result:', {
-        feature,
-        plan,
-        requiredPlans: linkConfig.requiredPlans,
-        hasAccess,
-        isPremium: linkConfig.premium
-      });
+      
       
       return hasAccess;
     },
     
     // ✅ NEW: Handle link clicks with access control
     handleLinkClick(link) {
-      console.log('🔗 Sidebar: Link clicked:', link.label, 'Premium:', link.premium);
       
       // ✅ CRITICAL: Only show modal for premium features that user can't access
       if (link.premium && !this.hasAccessToFeature(link.feature)) {
-        console.log('🔒 Showing upgrade modal for:', link.label);
         this.showUpgradeModalForFeature(link);
         return false;
       }
       
-      console.log('✅ Allowing navigation to:', link.label);
       this.closeSidebarOnMobile();
       return true;
     },
     
     // ✅ FIXED: Rename method to avoid conflict
     showUpgradeModalForFeature(link) {
-      console.log('💎 Sidebar: Showing upgrade modal for:', link.label);
       this.selectedFeature = link;
       this.showUpgradeModal = true;
     },
@@ -508,7 +474,6 @@ export default {
     },
     
     onUserStatusChanged(newStatus, oldStatus) {
-      console.log(`🔔 Sidebar: User status changed from ${oldStatus} to ${newStatus}`);
       
       if (oldStatus && oldStatus !== newStatus && newStatus && newStatus !== 'free') {
         clearTimeout(this.notificationTimeout);
@@ -527,14 +492,11 @@ export default {
         this.syncStatusWithStore();
       }, 30000);
       
-      console.log('✅ Sidebar: Periodic sync check setup');
     },
 
     setupGlobalListeners() {
-      console.log('🔧 Sidebar: Setting up global event listeners');
       
       this.globalEventHandlers.subscriptionChange = (event) => {
-        console.log('📡 Sidebar: Global subscription change received (DOM event):', event.detail);
         
         const { plan, source, oldPlan } = event.detail;
         this.handleStatusChange(plan, oldPlan);
@@ -548,32 +510,26 @@ export default {
       
       if (typeof window !== 'undefined' && window.eventBus) {
         this.globalEventHandlers.statusChanged = (data) => {
-          console.log('📡 Sidebar: Status change event (EventBus):', data);
           this.handleStatusChange(data.newStatus, data.oldStatus);
         };
         
         this.globalEventHandlers.promocodeApplied = (data) => {
-          console.log('📡 Sidebar: Promocode applied event (EventBus):', data);
           this.handleStatusChange(data.newStatus, data.oldStatus);
           
           if (data.promocode && data.newStatus) {
             const planLabel = data.newStatus === 'pro' ? 'Pro' : 'Start';
-            console.log(`🎉 Sidebar: Promocode ${data.promocode} activated ${planLabel} plan`);
           }
         };
         
         this.globalEventHandlers.subscriptionUpdated = (data) => {
-          console.log('📡 Sidebar: Subscription updated event (EventBus):', data);
           this.handleStatusChange(data.plan, data.oldPlan);
         };
         
         this.globalEventHandlers.forceUpdate = (data) => {
-          console.log('📡 Sidebar: Force update event (EventBus):', data);
           this.triggerReactivityUpdate();
         };
         
         this.globalEventHandlers.storeChanged = (data) => {
-          console.log('📡 Sidebar: Store changed event (EventBus):', data);
           this.syncStatusWithStore();
           this.triggerReactivityUpdate();
         };
@@ -594,16 +550,13 @@ export default {
           });
         });
         
-        console.log('✅ Sidebar: Event bus listeners registered');
       }
       
       if (typeof window !== 'undefined') {
         window.addEventListener('userSubscriptionChanged', this.globalEventHandlers.subscriptionChange);
-        console.log('✅ Sidebar: DOM event listener registered');
         
         this.globalEventHandlers.storageChange = (event) => {
           if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
-            console.log('📡 Sidebar: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
             this.handleStatusChange(event.newValue, event.oldValue);
             this.syncStatusWithStore();
           }
@@ -614,7 +567,6 @@ export default {
     },
 
     cleanupGlobalListeners() {
-      console.log('🧹 Sidebar: Cleaning up global event listeners');
       
       if (typeof window !== 'undefined') {
         if (this.globalEventHandlers.subscriptionChange) {
@@ -639,14 +591,12 @@ export default {
     },
     
     handleStatusChange(newStatus, oldStatus) {
-      console.log('🔄 Sidebar: Handling status change:', oldStatus, '→', newStatus);
       this.lastStatusUpdate = Date.now();
       this.triggerReactivityUpdate();
       this.onUserStatusChanged(newStatus, oldStatus);
     },
     
     handleStoreUpdate(mutation) {
-      console.log('🔄 Sidebar: Handling store update:', mutation.type);
       this.triggerReactivityUpdate();
       
       this.$nextTick(() => {
@@ -672,13 +622,7 @@ export default {
         }, 50);
       });
       
-      console.log('🔄 Sidebar: Reactivity update triggered:', {
-        componentKey: this.componentKey,
-        reactivityKey: this.reactivityKey,
-        currentStatus: this.userStatus,
-        currentPlan: this.currentPlan,
-        timestamp: this.lastStatusUpdate
-      });
+     
     },
     
     syncStatusWithStore() {
@@ -687,15 +631,9 @@ export default {
         const localStatus = localStorage.getItem('userStatus');
         const currentTime = Date.now();
         
-        console.log('🔄 Sidebar: Syncing status:', {
-          store: storeStatus,
-          localStorage: localStatus,
-          computed: this.userStatus,
-          timeSinceLastSync: currentTime - this.lastSyncTime
-        });
+        
         
         if (storeStatus && storeStatus !== localStatus) {
-          console.log('⚠️ Sidebar: Status mismatch detected, syncing localStorage to store');
           localStorage.setItem('userStatus', storeStatus);
           this.triggerReactivityUpdate();
           this.lastSyncTime = currentTime;
@@ -703,7 +641,6 @@ export default {
         
         if (!storeStatus || storeStatus === 'free') {
           if (localStatus && localStatus !== 'free' && localStatus !== storeStatus) {
-            console.log('⚠️ Sidebar: Store missing higher status, updating from localStorage');
             this.$store.commit('user/SET_USER_STATUS', localStatus);
             this.triggerReactivityUpdate();
             this.lastSyncTime = currentTime;
@@ -711,7 +648,6 @@ export default {
         }
         
         if (currentTime - this.lastSyncTime > 60000) {
-          console.log('🔄 Sidebar: Periodic reactivity refresh (long idle)');
           this.triggerReactivityUpdate();
           this.lastSyncTime = currentTime;
         }
@@ -744,7 +680,6 @@ export default {
           position: 'top-center'
         });
       } else {
-        console.log('🎉 Sidebar:', message);
       }
     },
     
@@ -764,7 +699,6 @@ export default {
     
     async logout() {
       try {
-        console.log('🚪 Sidebar: Starting logout process...');
         this.showLogoutModal = false;
         
         await signOut(auth);
@@ -778,7 +712,6 @@ export default {
           localStorage.removeItem(key);
         });
         
-        console.log('✅ Sidebar: Logout successful');
         
         if (this.$toast) {
           this.$toast.success('Вы успешно вышли из аккаунта.', {

@@ -510,14 +510,7 @@ export default {
         const statuses = [storeStatus, localStatus, userObjectStatus].filter(s => s && s !== 'free');
         const status = statuses[0] || storeStatus || localStatus || userObjectStatus || 'free';
         
-        console.log('🔍 AcedSettings currentPlan computed:', {
-          final: status,
-          store: storeStatus,
-          local: localStatus,
-          userObject: userObjectStatus,
-          reactKey, 
-          updateTime
-        });
+        
         
         return status;
       } catch (e) {
@@ -565,7 +558,6 @@ export default {
           details.daysRemaining = Math.max(0, diffDays);
         }
         
-        console.log('🔍 AcedSettings subscriptionDetails computed:', details, { reactKey, updateTime });
         return details;
       } catch (e) {
         console.warn('⚠️ Error getting subscriptionDetails:', e);
@@ -672,7 +664,6 @@ export default {
       
       try {
         const promocodes = this.$store.getters['user/appliedPromocodes'];
-        console.log('🔍 appliedPromocodes computed:', promocodes, { reactKey, updateTime });
         return Array.isArray(promocodes) ? promocodes : [];
       } catch (e) {
         console.warn('⚠️ Error getting appliedPromocodes:', e);
@@ -695,7 +686,6 @@ export default {
       
       try {
         const history = this.$store.getters['user/paymentHistory'];
-        console.log('🔍 paymentHistory computed:', history, { reactKey, updateTime });
         return Array.isArray(history) ? history : [];
       } catch (e) {
         console.warn('⚠️ Error getting paymentHistory:', e);
@@ -718,7 +708,6 @@ export default {
       
       try {
         const usage = this.$store.getters['user/currentUsage'];
-        console.log('🔍 currentUsage computed:', usage, { reactKey, updateTime });
         return (usage && typeof usage === 'object') ? usage : { messages: 0, images: 0 };
       } catch (e) {
         console.warn('⚠️ Error getting currentUsage:', e);
@@ -740,7 +729,6 @@ export default {
       
       try {
         const limits = this.$store.getters['user/usageLimits'];
-        console.log('🔍 usageLimits computed:', limits, { reactKey, updateTime });
         return (limits && typeof limits === 'object') ? limits : { messages: 50, images: 5 };
       } catch (e) {
         console.warn('⚠️ Error getting usageLimits:', e);
@@ -873,7 +861,6 @@ export default {
         const oldPlan = oldUser?.subscriptionPlan;
         
         if (newPlan !== oldPlan) {
-          console.log('👤 AcedSettings: User plan changed:', oldPlan, '→', newPlan);
           this.handleUserStatusChange(newPlan, oldPlan);
         }
       },
@@ -888,7 +875,6 @@ export default {
         const oldPlan = oldUser?.subscriptionPlan;
         
         if (newPlan !== oldPlan) {
-          console.log('👤 AcedSettings: GetUser plan changed:', oldPlan, '→', newPlan);
           this.handleUserStatusChange(newPlan, oldPlan);
         }
       },
@@ -900,7 +886,6 @@ export default {
     currentPlan: {
       handler(newPlan, oldPlan) {
         if (newPlan !== oldPlan) {
-          console.log('📊 AcedSettings: Current plan computed changed:', oldPlan, '→', newPlan);
           this.forceReactivityUpdate();
         }
       },
