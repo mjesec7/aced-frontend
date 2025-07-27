@@ -786,9 +786,47 @@ window.triggerGlobalEvent = (eventName, data = {}) => {
   try {
     console.log(`🌍 Triggering global event: ${eventName}`, data);
     
-    // ✅ CRITICAL FIX: Ensure status values are properly preserved
+    // ✅ CRITICAL FIX: Handle empty string and extract actual status
     const { newStatus, plan, userStatus, subscriptionPlan, oldStatus } = data;
-    const actualNewStatus = newStatus || plan || userStatus || subscriptionPlan;
+    
+    // ✅ CRITICAL: Filter out empty strings and invalid values
+    const validStatus = (status) => {
+      return status && 
+             status !== '' && 
+             status !== 'undefined' && 
+             status !== undefined && 
+             status !== null &&
+             ['free', 'start', 'pro', 'premium'].includes(status);
+    };
+    
+    // Find the first valid status or default to preserving current
+    let actualNewStatus = null;
+    const possibleStatuses = [newStatus, plan, userStatus, subscriptionPlan];
+    
+    for (const status of possibleStatuses) {
+      if (validStatus(status)) {
+        actualNewStatus = status;
+        break;
+      }
+    }
+    
+    // If no valid status found, get current status from localStorage
+    if (!actualNewStatus) {
+      const currentLocalStatus = localStorage.getItem('userStatus');
+      if (validStatus(currentLocalStatus)) {
+        actualNewStatus = currentLocalStatus;
+      } else {
+        actualNewStatus = 'free'; // Ultimate fallback
+      }
+    }
+    
+    console.log(`🔍 Status resolution for ${eventName}:`, {
+      originalNewStatus: newStatus,
+      originalPlan: plan,
+      possibleStatuses,
+      actualNewStatus,
+      dataReceived: data
+    });
     
     const enhancedData = {
       ...data,
@@ -796,7 +834,7 @@ window.triggerGlobalEvent = (eventName, data = {}) => {
       source: data.source || 'global-trigger',
       timestamp: data.timestamp || Date.now(),
       version: '2.0',
-      // ✅ CRITICAL: Add all status field variations
+      // ✅ CRITICAL: Use the resolved valid status
       newStatus: actualNewStatus,
       plan: actualNewStatus,
       userStatus: actualNewStatus,
@@ -2102,7 +2140,7 @@ if (import.meta.env.DEV) {
   `);
 }
 
-
+}
 
 console.log('✅ UNIFIED main.js with perfect authentication + user status updates loaded successfully!');
 console.log('🔧 Authentication will complete BEFORE router navigation begins');
@@ -2133,24 +2171,89 @@ window.updateUserSubscription = (newPlan, source = 'external') => {
 window.applyPromocode = (promocode, newPlan) => {
   console.log('🎟️ Promocode application requested:', { promocode, newPlan });
   
-  if (!['free', 'start', 'pro'].includes(newPlan)) {
-    console.error('❌ Invalid plan for promocode');
+  // ✅ CRITICAL: Validate the plan properly
+  if (!newPlan || !['free', 'start', 'pro'].includes(newPlan)) {
+    console.error('❌ Invalid or missing plan for promocode:', newPlan);
     return false;
   }
   
   const oldStatus = window.getCurrentUserStatus();
+  console.log('🔍 Promocode status change:', oldStatus, '→', newPlan);
   
-  // Update the status
+  // ✅ CRITICAL: Update the status with proper validation
   window.emitUserStatusChange(oldStatus, newPlan, 'promocode');
   
-  // Trigger promocode-specific events
-  eventBus.emit('promocodeApplied', {
+  // Trigger promocode-specific events with validated data
+  const eventData = {
     promocode: promocode,
     oldStatus: oldStatus,
     newStatus: newPlan,
+    plan: newPlan,
+    userStatus: newPlan,
+    subscriptionPlan: newPlan,
+    source: 'promocode',
     timestamp: Date.now()
-  });
+  };
   
+  console.log('🎟️ Emitting promocode events with data:', eventData);
+  
+  eventBus.emit('promocodeApplied', eventData);
+  
+  // Also trigger global events
+  window.triggerGlobalEvent('userSubscriptionChanged', eventData);
+  window.triggerGlobalEvent('subscriptionUpdated', eventData);
+  
+  return true;
+};
+
+// ✅ CRITICAL: Add a direct promocode fix function
+window.fixPromocodeStatus = (targetPlan) => {
+  if (!['start', 'pro'].includes(targetPlan)) {
+    console.error('❌ Invalid target plan:', targetPlan);
+    return false;
+  }
+  
+  console.log('🔧 Emergency promocode status fix to:', targetPlan);
+  
+  // Force update all storage locations
+  localStorage.setItem('userStatus', targetPlan);
+  localStorage.setItem('userPlan', targetPlan);
+  localStorage.setItem('subscriptionPlan', targetPlan);
+  
+  // Force update store
+  window.repairStoreStatus();
+  
+  try {
+    store.commit('user/SET_USER_STATUS', targetPlan);
+  } catch (e) {
+    console.warn('Store update failed, using direct state:', e);
+    if (store.state.user) {
+      store.state.user.userStatus = targetPlan;
+      store.state.user.subscriptionPlan = targetPlan;
+    }
+  }
+  
+  // Trigger all events
+  const eventData = {
+    oldStatus: 'free',
+    newStatus: targetPlan,
+    plan: targetPlan,
+    userStatus: targetPlan,
+    subscriptionPlan: targetPlan,
+    source: 'promocode-fix',
+    timestamp: Date.now()
+  };
+  
+  window.triggerGlobalEvent('userStatusChanged', eventData);
+  window.triggerGlobalEvent('userSubscriptionChanged', eventData);
+  window.triggerGlobalEvent('globalForceUpdate', eventData);
+  
+  // Force Vue update
+  if (app?._instance) {
+    app._instance.proxy.$forceUpdate();
+  }
+  
+  console.log('✅ Promocode status fixed to:', targetPlan);
   return true;
 };
 
