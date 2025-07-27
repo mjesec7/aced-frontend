@@ -318,6 +318,14 @@ async function handleBasicUserAuthentication(firebaseUser, token = null) {
   console.log('🔧 Using basic user authentication fallback...');
   
   try {
+    // ✅ CRITICAL: Try to get actual user status from localStorage first
+    const existingStatus = localStorage.getItem('userStatus') || 
+                          localStorage.getItem('userPlan') || 
+                          localStorage.getItem('subscriptionPlan') || 
+                          'free';
+    
+    console.log('🔍 Existing status found:', existingStatus);
+    
     // Create basic user object
     const basicUser = {
       firebaseId: firebaseUser.uid,
@@ -326,7 +334,11 @@ async function handleBasicUserAuthentication(firebaseUser, token = null) {
       email: firebaseUser.email,
       name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
       displayName: firebaseUser.displayName || '',
-      subscriptionPlan: 'free',
+      // ✅ CRITICAL: Use existing status if available, don't default to 'free'
+      subscriptionPlan: existingStatus,
+      userStatus: existingStatus,
+      plan: existingStatus,
+      subscription: existingStatus,
       emailVerified: firebaseUser.emailVerified,
       photoURL: firebaseUser.photoURL,
       lastLoginAt: new Date().toISOString(),
@@ -344,11 +356,18 @@ async function handleBasicUserAuthentication(firebaseUser, token = null) {
       store.commit('setToken', token);
     }
     
-    // Update user module store
+    // Update user module store with multiple mutations
     store.commit('user/SET_USER', basicUser);
-    store.commit('user/SET_USER_STATUS', 'free');
+    store.commit('user/SET_USER_STATUS', existingStatus);
     
-    // Update localStorage
+    // ✅ CRITICAL: Try legacy mutations too
+    try {
+      store.commit('user/setUserStatus', existingStatus);
+    } catch (e) {
+      console.log('Legacy setUserStatus not available');
+    }
+    
+    // Update localStorage with all possible status fields
     try {
       localStorage.setItem('user', JSON.stringify(basicUser));
       localStorage.setItem('firebaseUserId', basicUser.firebaseId);
@@ -356,7 +375,9 @@ async function handleBasicUserAuthentication(firebaseUser, token = null) {
       if (token) {
         localStorage.setItem('token', token);
       }
-      localStorage.setItem('userStatus', 'free');
+      localStorage.setItem('userStatus', existingStatus);
+      localStorage.setItem('userPlan', existingStatus);
+      localStorage.setItem('subscriptionPlan', existingStatus);
       localStorage.setItem('lastLoginTime', new Date().toISOString());
       localStorage.setItem('authMode', 'basic');
     } catch (storageError) {
@@ -369,26 +390,38 @@ async function handleBasicUserAuthentication(firebaseUser, token = null) {
     console.log('✅ Basic user authentication completed:', {
       email: basicUser.email,
       id: basicUser.firebaseId,
+      status: existingStatus,
       mode: 'basic'
     });
     
-    // Trigger events
+    // ✅ CRITICAL: Trigger events immediately for status propagation
+    const eventData = {
+      oldStatus: 'free',
+      newStatus: existingStatus,
+      source: 'basic-auth',
+      user: basicUser,
+      timestamp: Date.now()
+    };
+    
+    triggerGlobalEvent('userStatusChanged', eventData);
+    triggerGlobalEvent('userSubscriptionChanged', eventData);
+    triggerGlobalEvent('userLoggedIn', {
+      user: basicUser,
+      userStatus: existingStatus,
+      source: 'basic',
+      mode: 'fallback',
+      timestamp: Date.now()
+    });
+    
+    // Also trigger with delay for any stubborn components
     setTimeout(() => {
-      triggerGlobalEvent('userStatusChanged', {
-        oldStatus: 'free',
-        newStatus: 'free',
-        source: 'basic-auth',
+      triggerGlobalEvent('userStatusChanged', eventData);
+      triggerGlobalEvent('globalForceUpdate', {
+        reason: 'basic-auth-status-update',
+        plan: existingStatus,
         timestamp: Date.now()
       });
-      
-      triggerGlobalEvent('userLoggedIn', {
-        user: basicUser,
-        userStatus: 'free',
-        source: 'basic',
-        mode: 'fallback',
-        timestamp: Date.now()
-      });
-    }, 100);
+    }, 50);
     
   } catch (error) {
     console.error('❌ Basic authentication also failed:', error);
@@ -402,32 +435,64 @@ async function handleSuccessfulUserSave(result, token, userData) {
     console.log('✅ User saved to server successfully');
     
     const serverUser = result.user;
-    const userPlan = serverUser.subscriptionPlan || 'free';
+    // ✅ CRITICAL FIX: Handle multiple possible status field names
+    const userPlan = serverUser.subscriptionPlan || 
+                     serverUser.userStatus || 
+                     serverUser.plan || 
+                     serverUser.subscription || 
+                     'free';
     
     console.log('👤 Server user data:', {
       id: serverUser._id || serverUser.firebaseId,
       email: serverUser.email,
-      plan: userPlan
+      plan: userPlan,
+      rawServerUser: serverUser // Debug: see full server response
     });
+    
+    // ✅ CRITICAL: Enhanced user object with all possible status fields
+    const enhancedUser = {
+      ...serverUser,
+      subscriptionPlan: userPlan,
+      userStatus: userPlan,
+      plan: userPlan,
+      subscription: userPlan
+    };
     
     // Update stores with server data
     try {
       // Update main store (legacy compatibility)
-      store.commit('setUser', serverUser);
-      store.commit('setFirebaseUserId', serverUser.firebaseId || serverUser._id);
+      store.commit('setUser', enhancedUser);
+      store.commit('setFirebaseUserId', enhancedUser.firebaseId || enhancedUser._id);
       store.commit('setToken', token);
       
-      // Update user module store
-      store.commit('user/SET_USER', serverUser);
+      // Update user module store with multiple mutations to ensure it sticks
+      store.commit('user/SET_USER', enhancedUser);
       store.commit('user/SET_USER_STATUS', userPlan);
       
-      // Update localStorage
+      // ✅ CRITICAL: Also update any legacy status fields
+      if (store.hasModule('user')) {
+        try {
+          store.commit('user/setUserStatus', userPlan);
+        } catch (e) {
+          console.log('Legacy setUserStatus mutation not available');
+        }
+        
+        try {
+          store.commit('user/UPDATE_SUBSCRIPTION', { plan: userPlan });
+        } catch (e) {
+          console.log('UPDATE_SUBSCRIPTION mutation not available');
+        }
+      }
+      
+      // Update localStorage immediately and forcefully
       const storageData = {
-        user: serverUser,
-        firebaseUserId: serverUser.firebaseId || serverUser._id,
-        userId: serverUser.firebaseId || serverUser._id,
+        user: enhancedUser,
+        firebaseUserId: enhancedUser.firebaseId || enhancedUser._id,
+        userId: enhancedUser.firebaseId || enhancedUser._id,
         token: token,
         userStatus: userPlan,
+        userPlan: userPlan,
+        subscriptionPlan: userPlan,
         authMode: 'server'
       };
       
@@ -439,7 +504,7 @@ async function handleSuccessfulUserSave(result, token, userData) {
         }
       });
       
-      console.log('✅ User state updated successfully');
+      console.log('✅ User state updated successfully with plan:', userPlan);
       
     } catch (storeUpdateError) {
       console.error('❌ Failed to update stores:', storeUpdateError);
@@ -453,22 +518,35 @@ async function handleSuccessfulUserSave(result, token, userData) {
     // Mark auth as ready
     appLifecycle.authReady = true;
     
-    // Force global status propagation after successful login
+    // ✅ CRITICAL: Immediate status propagation with multiple event types
+    const eventData = {
+      oldStatus: 'free',
+      newStatus: userPlan,
+      source: 'login-complete',
+      user: enhancedUser,
+      timestamp: Date.now()
+    };
+    
+    // Trigger immediately (no delay)
+    triggerGlobalEvent('userStatusChanged', eventData);
+    triggerGlobalEvent('userSubscriptionChanged', eventData);
+    triggerGlobalEvent('subscriptionUpdated', eventData);
+    triggerGlobalEvent('userLoggedIn', {
+      user: enhancedUser,
+      userStatus: userPlan,
+      source: 'server',
+      timestamp: Date.now()
+    });
+    
+    // Also trigger with small delay for any stubborn components
     setTimeout(() => {
-      triggerGlobalEvent('userStatusChanged', {
-        oldStatus: 'free',
-        newStatus: userPlan,
-        source: 'login-complete',
+      triggerGlobalEvent('userStatusChanged', eventData);
+      triggerGlobalEvent('globalForceUpdate', {
+        reason: 'user-login-status-update',
+        plan: userPlan,
         timestamp: Date.now()
       });
-      
-      triggerGlobalEvent('userLoggedIn', {
-        user: serverUser,
-        userStatus: userPlan,
-        source: 'server',
-        timestamp: Date.now()
-      });
-    }, 100);
+    }, 50);
     
     // Store last login time
     localStorage.setItem('lastLoginTime', new Date().toISOString());
@@ -1254,16 +1332,52 @@ window.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
-    // Update localStorage immediately
-    localStorage.setItem('userStatus', newStatus);
+    // ✅ CRITICAL: Update store immediately
+    try {
+      store.commit('user/SET_USER_STATUS', newStatus);
+      console.log('✅ Store updated with new status:', newStatus);
+    } catch (storeError) {
+      console.error('❌ Failed to update store:', storeError);
+    }
     
-    // Trigger through global event system
-    window.triggerGlobalEvent('userStatusChanged', { 
+    // Update localStorage immediately with all variations
+    try {
+      localStorage.setItem('userStatus', newStatus);
+      localStorage.setItem('userPlan', newStatus);
+      localStorage.setItem('subscriptionPlan', newStatus);
+      localStorage.setItem('statusUpdateTime', Date.now().toString());
+    } catch (storageError) {
+      console.warn('⚠️ localStorage update failed:', storageError);
+    }
+    
+    // ✅ CRITICAL: Trigger multiple events immediately
+    const eventData = { 
       oldStatus, 
       newStatus, 
       source,
       timestamp: Date.now() 
+    };
+    
+    window.triggerGlobalEvent('userStatusChanged', eventData);
+    window.triggerGlobalEvent('userSubscriptionChanged', eventData);
+    window.triggerGlobalEvent('subscriptionUpdated', eventData);
+    window.triggerGlobalEvent('globalForceUpdate', { 
+      reason: 'manual-status-change',
+      plan: newStatus,
+      timestamp: Date.now() 
     });
+    
+    // Force Vue app update if available
+    if (app?._instance) {
+      try {
+        app._instance.proxy.$forceUpdate();
+        console.log('🔄 Forced Vue update after manual status change');
+      } catch (error) {
+        console.warn('⚠️ Failed to force Vue update:', error);
+      }
+    }
+    
+    console.log('✅ Status change completed:', oldStatus, '→', newStatus);
   };
   
   // Enhanced Force update helper
@@ -1438,7 +1552,53 @@ if (import.meta.env.DEV) {
   window.$appLifecycle = appLifecycle;
   window.$authInitPromise = authInitPromise;
   
-  // Enhanced debugging helpers
+  // ✅ CRITICAL: Add direct status testing functions
+  window.testUserStatus = {
+    setFree: () => window.emitUserStatusChange('pro', 'free', 'debug-test'),
+    setStart: () => window.emitUserStatusChange('free', 'start', 'debug-test'),
+    setPro: () => window.emitUserStatusChange('free', 'pro', 'debug-test'),
+    
+    getCurrentStatus: () => {
+      const storeStatus = store.getters['user/userStatus'];
+      const localStatus = localStorage.getItem('userStatus');
+      console.log('📊 Status comparison:', { store: storeStatus, localStorage: localStatus });
+      return { store: storeStatus, localStorage: localStatus };
+    },
+    
+    forceStatusUpdate: (status) => {
+      if (!['free', 'start', 'pro'].includes(status)) {
+        console.error('❌ Invalid status. Use: free, start, pro');
+        return;
+      }
+      
+      console.log('🔧 Forcing status update to:', status);
+      
+      // Update store
+      store.commit('user/SET_USER_STATUS', status);
+      
+      // Update localStorage
+      localStorage.setItem('userStatus', status);
+      localStorage.setItem('userPlan', status);
+      localStorage.setItem('subscriptionPlan', status);
+      
+      // Trigger all events
+      window.triggerGlobalEvent('userStatusChanged', {
+        oldStatus: null,
+        newStatus: status,
+        source: 'debug-force',
+        timestamp: Date.now()
+      });
+      
+      // Force Vue update
+      if (app?._instance) {
+        app._instance.proxy.$forceUpdate();
+      }
+      
+      console.log('✅ Status forced to:', status);
+    }
+  };
+  
+// Enhanced debugging helpers
   window.debugAuth = {
     getAuthState: () => ({
       authStateResolved,
@@ -1604,7 +1764,81 @@ if (import.meta.env.DEV) {
   `);
 }
 
+}
+
 console.log('✅ UNIFIED main.js with perfect authentication + user status updates loaded successfully!');
 console.log('🔧 Authentication will complete BEFORE router navigation begins');
 console.log('🌟 User status changes (free ↔ start ↔ pro) will propagate globally');
-console.log('🚨 Use debugAuth.* functions for authentication debugging');
+console.log('🚨 Use debugAuth.* and testUserStatus.* functions for debugging');
+console.log('🧪 Quick test: testUserStatus.setPro() then testUserStatus.setFree()');
+
+// ============================================================================
+// 🚀 ADDITIONAL STATUS CHANGE HOOKS FOR EXTERNAL INTEGRATIONS
+// ============================================================================
+
+// Global hook for external scripts to trigger status changes
+window.updateUserSubscription = (newPlan, source = 'external') => {
+  console.log('🔗 External subscription update requested:', { newPlan, source });
+  
+  if (!['free', 'start', 'pro'].includes(newPlan)) {
+    console.error('❌ Invalid plan. Must be: free, start, pro');
+    return false;
+  }
+  
+  const oldStatus = window.getCurrentUserStatus();
+  window.emitUserStatusChange(oldStatus, newPlan, source);
+  
+  return true;
+};
+
+// Hook for promocode applications
+window.applyPromocode = (promocode, newPlan) => {
+  console.log('🎟️ Promocode application requested:', { promocode, newPlan });
+  
+  if (!['free', 'start', 'pro'].includes(newPlan)) {
+    console.error('❌ Invalid plan for promocode');
+    return false;
+  }
+  
+  const oldStatus = window.getCurrentUserStatus();
+  
+  // Update the status
+  window.emitUserStatusChange(oldStatus, newPlan, 'promocode');
+  
+  // Trigger promocode-specific events
+  eventBus.emit('promocodeApplied', {
+    promocode: promocode,
+    oldStatus: oldStatus,
+    newStatus: newPlan,
+    timestamp: Date.now()
+  });
+  
+  return true;
+};
+
+// Hook for payment completions
+window.paymentCompleted = (transactionId, plan, amount) => {
+  console.log('💳 Payment completion reported:', { transactionId, plan, amount });
+  
+  if (!['start', 'pro'].includes(plan)) {
+    console.error('❌ Invalid paid plan');
+    return false;
+  }
+  
+  const oldStatus = window.getCurrentUserStatus();
+  
+  // Update the status
+  window.emitUserStatusChange(oldStatus, plan, 'payment');
+  
+  // Trigger payment-specific events
+  eventBus.emit('paymentCompleted', {
+    transactionId: transactionId,
+    plan: plan,
+    amount: amount,
+    oldStatus: oldStatus,
+    newStatus: plan,
+    timestamp: Date.now()
+  });
+  
+  return true;
+};
