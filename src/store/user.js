@@ -1341,7 +1341,7 @@ const actions = {
       } else if ((responseData._id || responseData.firebaseId || responseData.firebaseUserId) && responseData.email) {
         savedUser = responseData;
         console.log('✅ Using direct object response structure');
-      } else if (!responseData.success && !responseData.error && responseData.email) { // 🔥 Fix 1: Add missing case
+      } else if (!responseData.success && !responseData.error && responseData.email) {
         // Handle case where server returns user data directly without success wrapper
         savedUser = responseData;
         console.log('✅ Using direct server response (no wrapper)');
@@ -1427,7 +1427,8 @@ const actions = {
       // ✅ CRITICAL: Always return success result
       const finalResult = createSuccessResult(completeUser, 'User saved and synchronized successfully');
       console.log('🎉 saveUser returning success result:', finalResult);
-      return finalResult; // 🔥 Fix 4: Add missing return statement
+      // 🔥 FIX: The missing return statement that caused the error.
+      return finalResult;
 
     } catch (error) {
       console.error('❌ Unexpected error in saveUser:', error);
@@ -1489,7 +1490,6 @@ const actions = {
     }
   },
 
-  // 🔥 Fix 2: Ensure updateUserStatus always returns a result
   async updateUserStatus({ commit, state, dispatch }, newStatus) {
     const startTime = Date.now();
     console.log('🚀 updateUserStatus action called with:', newStatus);
@@ -2933,13 +2933,8 @@ const actions = {
   }
 };
 
-// 🔥 Fix 3: Fix the retry logic in handleFailedUserSave
 // Assuming handleSuccessfulUserSave and eventBus are defined elsewhere or passed in scope.
 // This block is typically outside the store module or in a related utility file.
-// For the purpose of this update, I'm including it as a standalone function.
-// If this function is part of a larger file, ensure its context is correct.
-
-// Placeholder for handleSuccessfulUserSave and eventBus if not defined globally
 const handleSuccessfulUserSave = async (result, token, userData) => {
   console.log('Simulating handleSuccessfulUserSave:', result);
   // In a real app, this would perform actions like setting auth token,
@@ -2954,8 +2949,6 @@ const eventBus = {
 };
 
 // This function needs to be aware of the store instance, typically passed as an argument.
-// For demonstration, let's assume 'store' is available in its scope.
-// If this function is part of a larger file, ensure its context is correct.
 const handleFailedUserSave = (store, { userData, token }) => {
   setTimeout(async () => {
     try {
@@ -3001,22 +2994,6 @@ const handleFailedUserSave = (store, { userData, token }) => {
 // ========================================
 // 🔧 CRITICAL FIXES FOR USER STORE REACTIVITY
 // ========================================
-
-// ✅ ISSUE 1: Store mutations not triggering global events
-
-// ✅ ISSUE 2: Enhanced SET_USER_STATUS mutation with GUARANTEED reactivity
-// Note: The original file had a duplicate SET_USER_STATUS mutation.
-// The enhanced version is now correctly placed in `mutations` object.
-// The global `SET_USER_STATUS` function previously existing here (outside mutations)
-// has been removed to avoid conflict and ensure mutations are properly dispatched.
-
-// ✅ ISSUE 3: Enhanced updateUserStatus action with GUARANTEED success
-// Note: The original file had a duplicate updateUserStatus action.
-// The enhanced version is now correctly placed in `actions` object.
-// The global `updateUserStatus` function previously existing here (outside actions)
-// has been removed to avoid conflict and ensure actions are properly dispatched.
-
-// ✅ ISSUE 4: Component-side fixes for guaranteed listening
 
 // ADD THIS TO EVERY COMPONENT'S MOUNTED LIFECYCLE:
 const setupUniversalStatusListener = function() {
@@ -3177,8 +3154,6 @@ const universalTriggerReactivityUpdate = function() {
 
 export {
   triggerGlobalEvent,
-  // SET_USER_STATUS, // Removed as it's a mutation now
-  // updateUserStatus, // Removed as it's an action now
   setupUniversalStatusListener,
   cleanupUniversalStatusListener,
   universalTriggerReactivityUpdate
