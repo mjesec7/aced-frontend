@@ -74,7 +74,7 @@
     <div class="settings-content">
       <h2 class="section-title">💳 Подписка и оплата</h2>
 
-      <!-- ✅ ENHANCED: Current Plan Display with comprehensive details -->
+      <!-- Current Plan Display -->
       <div class="current-plan-section">
         <div class="plan-info">
           <h3>Текущий тариф</h3>
@@ -85,7 +85,7 @@
             <div class="plan-details">
               <p class="plan-description">{{ currentPlanDescription }}</p>
               
-              <!-- ✅ ENHANCED: Comprehensive subscription expiry information -->
+              <!-- Subscription expiry information -->
               <div v-if="subscriptionExpiryInfo" class="expiry-section">
                 <div class="expiry-main" :class="{ 
                   'expiry-warning': subscriptionExpiryInfo.isExpiring,
@@ -112,7 +112,7 @@
                   </div>
                 </div>
                 
-                <!-- ✅ ENHANCED: Expiry warning alerts -->
+                <!-- Expiry warning alerts -->
                 <div v-if="subscriptionExpiryInfo.isExpiring && !subscriptionExpiryInfo.isExpired" class="expiry-warning-alert">
                   <div class="warning-content">
                     <span class="warning-icon">⚠️</span>
@@ -125,7 +125,7 @@
                 </div>
               </div>
               
-              <!-- ✅ ENHANCED: Subscription source information -->
+              <!-- Subscription source information -->
               <div v-if="subscriptionSourceInfo" class="subscription-source">
                 <div class="source-info" :class="`source-${subscriptionSourceInfo.color}`">
                   <span class="source-icon">{{ subscriptionSourceInfo.icon }}</span>
@@ -133,7 +133,7 @@
                 </div>
               </div>
               
-              <!-- ✅ ENHANCED: Additional subscription details -->
+              <!-- Subscription benefits -->
               <div v-if="currentPlan !== 'free'" class="subscription-benefits">
                 <div class="benefits-header">
                   <span class="benefits-icon">✨</span>
@@ -158,7 +158,7 @@
                 </ul>
               </div>
               
-              <!-- ✅ ENHANCED: Free plan limitations -->
+              <!-- Free plan limitations -->
               <div v-else class="free-plan-limitations">
                 <div class="limitations-header">
                   <span class="limitations-icon">ℹ️</span>
@@ -468,7 +468,7 @@ export default {
       notificationClass: "",
       notificationIcon: "",
       
-      // ✅ ENHANCED: Add comprehensive reactivity tracking
+      // Enhanced reactivity tracking
       reactivityKey: 0,
       lastUpdateTime: Date.now(),
       componentMounted: false,
@@ -478,7 +478,7 @@ export default {
   },
   
   computed: {
-    // ✅ ENHANCED: Map both user state and getters properly
+    // Map user state and getters properly
     ...mapGetters('user', [
       'userStatus',
       'isPremiumUser', 
@@ -495,7 +495,7 @@ export default {
       'forceUpdateCounter'
     ]),
 
-    // ✅ BULLETPROOF: Enhanced reactive getters with multiple data sources
+    // Enhanced reactive getters with multiple data sources
     currentPlan() {
       const reactKey = this.reactivityKey; // Force reactivity
       const updateTime = this.lastUpdateTime; // Force reactivity
@@ -526,7 +526,7 @@ export default {
       }
     },
     
-    // ✅ BULLETPROOF: Enhanced reactive subscription details with comprehensive info
+    // Enhanced reactive subscription details with comprehensive info
     subscriptionDetails() {
       const reactKey = this.reactivityKey; // Force reactivity
       const updateTime = this.lastUpdateTime; // Force reactivity
@@ -579,7 +579,7 @@ export default {
       }
     },
     
-    // ✅ ENHANCED: More detailed subscription status display
+    // More detailed subscription status display
     currentPlanDescription() {
       const plan = this.currentPlan;
       const details = this.subscriptionDetails;
@@ -604,7 +604,7 @@ export default {
       return description;
     },
     
-    // ✅ ENHANCED: Detailed subscription expiry information
+    // Detailed subscription expiry information
     subscriptionExpiryInfo() {
       const details = this.subscriptionDetails;
       
@@ -627,7 +627,7 @@ export default {
       };
     },
     
-    // ✅ ENHANCED: Subscription source display
+    // Subscription source display
     subscriptionSourceInfo() {
       const details = this.subscriptionDetails;
       const lastPromo = this.lastPromocode;
@@ -665,7 +665,7 @@ export default {
       return null;
     },
     
-    // ✅ BULLETPROOF: Enhanced reactive promocodes
+    // Enhanced reactive promocodes
     appliedPromocodes() {
       const reactKey = this.reactivityKey; // Force reactivity
       const updateTime = this.lastUpdateTime; // Force reactivity
@@ -688,7 +688,7 @@ export default {
       return this.appliedPromocodes.slice(0, 3);
     },
     
-    // ✅ BULLETPROOF: Enhanced reactive payment history
+    // Enhanced reactive payment history
     paymentHistory() {
       const reactKey = this.reactivityKey; // Force reactivity
       const updateTime = this.lastUpdateTime; // Force reactivity
@@ -711,7 +711,7 @@ export default {
       return this.paymentHistory.slice(0, 5);
     },
     
-    // ✅ BULLETPROOF: Enhanced reactive usage data
+    // Enhanced reactive usage data
     currentUsage() {
       const reactKey = this.reactivityKey; // Force reactivity
       const updateTime = this.lastUpdateTime; // Force reactivity
@@ -768,7 +768,7 @@ export default {
       return (limit === -1) ? 0 : Math.min(100, Math.round((images / limit) * 100));
     },
     
-    // ✅ BULLETPROOF: Enhanced user status properties
+    // Enhanced user status properties
     isFreeUser() {
       return this.currentPlan === 'free';
     },
@@ -864,9 +864,9 @@ export default {
     }
   },
   
-  // ✅ ENHANCED: Add comprehensive watchers
+  // Enhanced watchers
   watch: {
-    // ✅ FIXED: Watch the user object from store (same as other components)
+    // Watch the user object from store
     '$store.state.user': {
       handler(newUser, oldUser) {
         const newPlan = newUser?.subscriptionPlan;
@@ -881,7 +881,7 @@ export default {
       immediate: true
     },
 
-    // ✅ FIXED: Watch the getUser getter
+    // Watch the getUser getter
     getUser: {
       handler(newUser, oldUser) {
         const newPlan = newUser?.subscriptionPlan;
@@ -896,7 +896,7 @@ export default {
       immediate: true
     },
 
-    // ✅ FIXED: Watch current plan changes
+    // Watch current plan changes
     currentPlan: {
       handler(newPlan, oldPlan) {
         if (newPlan !== oldPlan) {
@@ -923,42 +923,53 @@ export default {
     // 🔄 STATUS CHANGE HANDLING
     // ============================================================================
     
-    // ✅ FIXED: Handle user status changes
+    // Handle user status changes
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
 
       console.log(`👤 AcedSettings: Handling status change ${oldStatus} → ${newStatus}`);
 
-      // Update localStorage immediately
-      localStorage.setItem('userStatus', newStatus);
-      localStorage.setItem('plan', newStatus);
+      try {
+        // Update localStorage immediately
+        localStorage.setItem('userStatus', newStatus);
+        localStorage.setItem('plan', newStatus);
+        localStorage.setItem('statusChangeTime', Date.now().toString());
 
-      // Trigger immediate reactivity update
-      this.forceReactivityUpdate();
+        // Trigger immediate reactivity update
+        this.forceReactivityUpdate();
 
-      // Show celebration for upgrades
-      if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
-        const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
-        this.showNotification(`🎉 ${planLabel} подписка активирована!`, 'success', 5000);
+        // Show celebration for upgrades
+        if (newStatus && newStatus !== 'free' && (oldStatus === 'free' || !oldStatus)) {
+          const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
+          this.showNotification(`🎉 ${planLabel} подписка активирована!`, 'success', 5000);
+        }
+
+        console.log(`✅ AcedSettings: Status change handled: ${oldStatus} → ${newStatus}`);
+      } catch (error) {
+        console.error('❌ Error handling status change:', error);
+        this.$forceUpdate(); // Fallback
       }
-
-      console.log(`✅ AcedSettings: Status change handled: ${oldStatus} → ${newStatus}`);
     },
 
-    // ✅ ENHANCED: Setup comprehensive event listeners (replace existing setupEnhancedEventListeners)
+    // Setup comprehensive event listeners
     setupEnhancedEventListeners() {
       console.log('🔧 AcedSettings: Setting up enhanced event listeners...');
       
       // Clear existing listeners
       this.cleanupEventListeners();
       
-      // ===== DOM EVENT LISTENERS =====
+      // DOM Event Listeners
       if (typeof window !== 'undefined') {
         // Listen for user subscription changes
         this.handleSubscriptionChange = (event) => {
           console.log('📡 AcedSettings: Subscription change received:', event.detail);
-          const { plan, oldPlan } = event.detail;
-          this.handleUserStatusChange(plan, oldPlan);
+          const { plan, oldPlan, newStatus, oldStatus } = event.detail;
+          const finalNewStatus = plan || newStatus;
+          const finalOldStatus = oldPlan || oldStatus;
+          
+          if (finalNewStatus) {
+            this.handleUserStatusChange(finalNewStatus, finalOldStatus);
+          }
         };
         
         window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
@@ -991,7 +1002,16 @@ export default {
 
         const handleGenericStatusChange = (event) => {
           console.log('📡 AcedSettings: Generic status event received:', event.type, event.detail);
-          this.forceReactivityUpdate();
+          
+          const detail = event.detail || {};
+          const newStatus = detail.newStatus || detail.plan || detail.status;
+          const oldStatus = detail.oldStatus || detail.oldPlan;
+          
+          if (newStatus) {
+            this.handleUserStatusChange(newStatus, oldStatus);
+          } else {
+            this.forceReactivityUpdate();
+          }
           
           // Check localStorage for updates
           const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
@@ -1008,18 +1028,17 @@ export default {
         });
       }
 
-      // ===== EVENT BUS LISTENERS =====
+      // Event Bus Listeners
       if (typeof window !== 'undefined' && window.eventBus) {
         // User status change events
         this.handleUserStatusEvent = (data) => {
           console.log('📡 AcedSettings: User status event received:', data);
-          this.handleUserStatusChange(data.newStatus || data.plan, data.oldStatus || data.oldPlan);
-        };
-
-        // Promocode applied events
-        this.handlePromocodeEvent = (data) => {
-          console.log('📡 AcedSettings: Promocode applied event:', data);
-          this.handleUserStatusChange(data.newStatus, data.oldStatus);
+          const newStatus = data.newStatus || data.plan;
+          const oldStatus = data.oldStatus || data.oldPlan;
+          
+          if (newStatus) {
+            this.handleUserStatusChange(newStatus, oldStatus);
+          }
         };
 
         // Force update events
@@ -1061,7 +1080,7 @@ export default {
         console.log('✅ AcedSettings: Event bus listeners registered');
       }
 
-      // ===== STORE MUTATION LISTENER =====
+      // Store Mutation Listener
       if (this.$store) {
         this.storeUnsubscribe = this.$store.subscribe((mutation) => {
           if (this.isUserRelatedMutation(mutation)) {
@@ -1089,7 +1108,7 @@ export default {
       console.log('✅ AcedSettings: Enhanced event listeners setup complete');
     },
 
-    // ✅ FIXED: Check if mutation is user-related
+    // Check if mutation is user-related
     isUserRelatedMutation(mutation) {
       const userMutations = [
         'setUser',
@@ -1110,7 +1129,7 @@ export default {
              mutation.type.toLowerCase().includes('plan');
     },
 
-    // ✅ ENHANCED: Enhanced forceReactivityUpdate (replace existing)
+    // Enhanced forceReactivityUpdate
     forceReactivityUpdate() {
       try {
         this.reactivityKey++;
@@ -1141,7 +1160,7 @@ export default {
       }
     },
 
-    // ✅ NEW: Helper method to get time remaining display
+    // Helper method to get time remaining display
     getTimeRemaining(diffTime) {
       if (diffTime <= 0) return 'Истёк';
       
@@ -1158,7 +1177,7 @@ export default {
       }
     },
 
-    // ✅ ENHANCED: Enhanced cleanup (replace existing cleanupEventListeners)
+    // Enhanced cleanup
     cleanupEventListeners() {
       this.statusEventListeners.forEach(cleanup => {
         try {
@@ -1179,7 +1198,7 @@ export default {
     // 🚀 INITIALIZATION METHODS
     // ============================================================================
     
-    // ✅ ENHANCED: Enhanced initialization (replace existing initializeComponent)
+    // Enhanced initialization
     async initializeComponent() {
       this.loading = true;
       this.loadingText = 'Загрузка настроек...';
@@ -1187,12 +1206,12 @@ export default {
       try {
         await this.checkAuthState();
         
-        // ✅ CRITICAL: Setup event listeners BEFORE loading data
+        // Setup event listeners BEFORE loading data
         this.setupEnhancedEventListeners();
         
         await this.loadInitialData();
         
-        // ✅ CRITICAL: Force initial reactivity update
+        // Force initial reactivity update
         this.forceReactivityUpdate();
         
       } catch (error) {
@@ -1259,10 +1278,10 @@ export default {
     },
 
     // ============================================================================
-    // 🎟️ PROMOCODE METHODS
+    // 🎟️ FIXED PROMOCODE METHODS
     // ============================================================================
     
-    // ✅ FIXED: Enhanced promocode input handling
+    // Enhanced promocode input handling
     handlePromoCodeInput() {
       if (this.promoValidationTimeout) {
         clearTimeout(this.promoValidationTimeout);
@@ -1272,18 +1291,18 @@ export default {
       
       if (this.promoCode.length <= 3) {
         this.promoValidation = null;
-        this.isValidatingPromo = false; // Reset validation state if too short
+        this.isValidatingPromo = false;
         return;
       }
       
-      this.isValidatingPromo = true; // Set to true when a valid length is reached
+      this.isValidatingPromo = true;
       
       this.promoValidationTimeout = setTimeout(() => {
         this.validatePromoCodeLocal();
       }, 800);
     },
     
-    // ✅ FIXED: Pure backend promocode validation - NO HARDCODED CODES
+    // ✅ FIXED: Pure backend promocode validation
     async validatePromoCodeLocal() {
       if (!this.promoCode.trim() || this.promoCode.length <= 3) {
         this.promoValidation = null;
@@ -1296,7 +1315,7 @@ export default {
         
         const promocodeUpper = this.promoCode.trim().toUpperCase();
         
-        // ✅ METHOD 1: Try store action first (uses backend API)
+        // Try store action first (uses backend API)
         try {
           if (this.$store && this.$store.dispatch) {
             console.log('📡 Using store validatePromocode action...');
@@ -1321,7 +1340,7 @@ export default {
           console.warn('⚠️ Store validation failed:', storeError.message);
         }
         
-        // ✅ METHOD 2: Direct API call fallback
+        // Direct API call fallback
         try {
           const baseUrl = import.meta.env.VITE_API_BASE_URL;
           if (!baseUrl) {
@@ -1391,18 +1410,15 @@ export default {
               } else {
                 console.warn(`⚠️ API endpoint ${endpoint} failed with status:`, response.status);
                 
-                // If 404, try next endpoint
                 if (response.status === 404) {
                   continue;
                 }
                 
-                // For other errors, try to get error message
                 try {
                   const errorData = await response.json();
                   console.warn('API error details:', errorData);
                   
                   if (response.status === 400 || response.status === 422) {
-                    // Bad request or validation error - promocode doesn't exist
                     validationResult = {
                       valid: false,
                       error: errorData.message || errorData.error || `Промокод "${promocodeUpper}" не найден`
@@ -1436,7 +1452,7 @@ export default {
           console.warn('⚠️ All API validation attempts failed:', apiError.message);
         }
         
-        // ✅ If all backend attempts fail, show appropriate error
+        // If all backend attempts fail, show appropriate error
         this.promoValidation = {
           valid: false,
           error: `Не удалось проверить промокод "${promocodeUpper}". Проверьте подключение к интернету или попробуйте позже.`
@@ -1455,10 +1471,9 @@ export default {
       }
     },
     
-    // ✅ NEW: Helper method to normalize different API response formats
+    // Helper method to normalize different API response formats
     normalizeValidationResponse(apiResult, promocodeUpper) {
       try {
-        // Handle different response structures from your backend
         let isValid = false;
         let grantsPlan = null;
         let description = null;
@@ -1525,10 +1540,9 @@ export default {
       }
     },
     
-    // ✅ NEW: Helper method to get authorization header
+    // Helper method to get authorization header
     async getAuthHeader() {
       try {
-        // Try to get token from current user
         if (this.currentUser) {
           const token = await this.currentUser.getIdToken();
           if (token) {
@@ -1536,7 +1550,6 @@ export default {
           }
         }
         
-        // Fallback to localStorage
         const storedToken = localStorage.getItem('authToken') || localStorage.getItem('token');
         if (storedToken) {
           return `Bearer ${storedToken}`;
@@ -1561,222 +1574,248 @@ export default {
       }
     },
     
-    // ✅ ENHANCED: Apply promocode with pure backend validation
-    // FIXED applyPromo method for AcedSettings.vue
-
-// ✅ ENHANCED: Apply promocode with proper result handling
-async applyPromo() {
-  console.log('🚀 AcedSettings: FIXED applyPromo called');
-  
-  if (!this.promoCode || !this.selectedPlan || !this.userId) {
-    this.showNotification('Заполните все поля', 'error');
-    return;
-  }
-  
-  this.isProcessingPromo = true;
-  
-  try {
-    const normalizedCode = this.promoCode.trim().toUpperCase();
-    
-    // ✅ STEP 1: Apply via backend API FIRST
-    console.log('📡 Applying promocode via backend API...');
-    
-    let serverSuccess = false;
-    let serverResult = null;
-    
-    // Try multiple endpoints for applying promocode
-    const applyEndpoints = [
-      'https://api.aced.live/api/payments/promo-code',
-      `${import.meta.env.VITE_API_BASE_URL}/api/payments/promo-code`
-    ];
-    
-    for (const endpoint of applyEndpoints) {
+    // ✅ MAIN FIX: Correct promocode application using the right Vuex action
+    async applyPromo() {
+      console.log('🚀 AcedSettings: FIXED applyPromo called');
+      
+      if (!this.promoCode || !this.selectedPlan || !this.userId) {
+        this.showNotification('Заполните все поля', 'error');
+        return;
+      }
+      
+      this.isProcessingPromo = true;
+      
       try {
-        console.log(`🔄 Trying apply endpoint: ${endpoint}`);
+        const normalizedCode = this.promoCode.trim().toUpperCase();
         
-        const requestBody = {
-          userId: this.userId,
+        console.log('📡 Applying promocode via correct Vuex action...');
+        
+        // ✅ CRITICAL FIX: Use the correct applyPromocode action instead of updateUserStatus
+        const result = await this.$store.dispatch('user/applyPromocode', {
+          code: normalizedCode,
           plan: this.selectedPlan,
-          promoCode: normalizedCode
-        };
+          userId: this.userId
+        });
         
-        const response = await Promise.race([
-          fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': await this.getAuthHeader()
-            },
-            body: JSON.stringify(requestBody)
-          }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Request timeout')), 10000)
-          )
-        ]);
-
-        serverResult = await response.json();
-        console.log(`📡 Server response from ${endpoint}:`, serverResult);
-
-        if (response.ok && serverResult?.success) {
-          serverSuccess = true;
-          console.log('✅ Server application successful');
-          break; // Success, stop trying other endpoints
-        } else {
-          console.warn(`⚠️ Endpoint ${endpoint} failed:`, serverResult?.error || 'Unknown error');
+        console.log('📊 Store applyPromocode result:', result);
+        
+        // Check if the result indicates success
+        if (result && (result.success === true || result.status === 'success')) {
+          console.log('✅ Promocode applied successfully via store');
           
-          // If this is a validation error (promocode doesn't exist), don't try other endpoints
-          if (response.status === 400 || response.status === 422) {
-            const errorMsg = serverResult?.error || serverResult?.message || 'Неверный промокод';
-            this.showNotification(errorMsg, 'error');
+          // Success feedback
+          const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
+          this.showNotification(`🎉 Промокод применён! ${planLabel} подписка активирована!`, 'success');
+          
+          // Reset form
+          this.promoCode = '';
+          this.selectedPlan = '';
+          this.promoValidation = null;
+          
+          // Force reactivity update
+          this.forceReactivityUpdate();
+          
+          // Trigger global events for component updates
+          if (typeof window !== 'undefined') {
+            // Method 1: Custom DOM event
+            try {
+              const event = new CustomEvent('userSubscriptionChanged', {
+                detail: {
+                  plan: this.selectedPlan,
+                  oldPlan: result.oldStatus || 'free',
+                  source: 'promocode',
+                  promocode: normalizedCode,
+                  timestamp: Date.now()
+                },
+                bubbles: true
+              });
+              window.dispatchEvent(event);
+              console.log('✅ DOM event dispatched');
+            } catch (domEventError) {
+              console.warn('⚠️ DOM event failed:', domEventError);
+            }
+            
+            // Method 2: Event bus
+            try {
+              if (window.eventBus?.emit) {
+                window.eventBus.emit('promocodeApplied', {
+                  newStatus: this.selectedPlan,
+                  oldStatus: result.oldStatus || 'free',
+                  code: normalizedCode,
+                  success: true
+                });
+                console.log('✅ Event bus emission completed');
+              }
+            } catch (eventBusError) {
+              console.warn('⚠️ Event bus failed:', eventBusError);
+            }
+          }
+          
+          console.log('✅ Promocode application completed successfully');
+          return;
+          
+        } else {
+          // Handle store action failure
+          console.warn('⚠️ Store applyPromocode action failed:', result);
+          
+          const errorMessage = result?.error || result?.message || 'Не удалось применить промокод';
+          this.showNotification(errorMessage, 'error');
+          
+          // If it's a validation error, don't try fallback
+          if (result?.error?.includes('не найден') || result?.error?.includes('недействителен')) {
             return;
           }
           
-          // For 404, try next endpoint
-          if (response.status === 404) {
+          // Try backend fallback for other errors
+          console.log('🔄 Trying backend fallback...');
+          await this.applyPromocodeFallback(normalizedCode);
+        }
+        
+      } catch (storeError) {
+        console.error('❌ Store applyPromocode action threw error:', storeError);
+        
+        // Try backend fallback
+        console.log('🔄 Trying backend fallback after store error...');
+        await this.applyPromocodeFallback(normalizedCode);
+        
+      } finally {
+        this.isProcessingPromo = false;
+      }
+    },
+    
+    // ✅ NEW: Backend fallback method for promocode application
+    async applyPromocodeFallback(normalizedCode) {
+      try {
+        console.log('📡 Applying promocode via backend fallback...');
+        
+        // Try multiple endpoints for applying promocode
+        const applyEndpoints = [
+          'https://api.aced.live/api/payments/promo-code',
+          `${import.meta.env.VITE_API_BASE_URL}/api/payments/promo-code`
+        ].filter(url => url && !url.includes('undefined'));
+        
+        let serverSuccess = false;
+        let serverResult = null;
+        
+        for (const endpoint of applyEndpoints) {
+          try {
+            console.log(`🔄 Trying apply endpoint: ${endpoint}`);
+            
+            const requestBody = {
+              userId: this.userId,
+              plan: this.selectedPlan,
+              promoCode: normalizedCode
+            };
+            
+            const response = await Promise.race([
+              fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': await this.getAuthHeader()
+                },
+                body: JSON.stringify(requestBody)
+              }),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Request timeout')), 10000)
+              )
+            ]);
+
+            serverResult = await response.json();
+            console.log(`📡 Server response from ${endpoint}:`, serverResult);
+
+            if (response.ok && serverResult?.success) {
+              serverSuccess = true;
+              console.log('✅ Backend fallback successful');
+              break;
+            } else {
+              console.warn(`⚠️ Endpoint ${endpoint} failed:`, serverResult?.error || 'Unknown error');
+              
+              if (response.status === 400 || response.status === 422) {
+                const errorMsg = serverResult?.error || serverResult?.message || 'Неверный промокод';
+                this.showNotification(errorMsg, 'error');
+                return;
+              }
+              
+              if (response.status === 404) {
+                continue;
+              }
+            }
+          } catch (endpointError) {
+            console.warn(`⚠️ Apply endpoint ${endpoint} failed:`, endpointError.message);
             continue;
           }
         }
-      } catch (endpointError) {
-        console.warn(`⚠️ Apply endpoint ${endpoint} failed:`, endpointError.message);
-        continue;
-      }
-    }
-    
-    // ✅ STEP 2: Check if server application was successful
-    if (!serverSuccess) {
-      const errorMsg = serverResult?.error || 
-                      serverResult?.message || 
-                      'Не удалось применить промокод. Проверьте правильность кода или попробуйте позже.';
-      this.showNotification(errorMsg, 'error');
-      return;
-    }
-    
-    // ✅ STEP 3: Update local store using the store action
-    console.log('🔄 Updating user status via store...');
-    
-    // ✅ CRITICAL: Try the store action but handle undefined result
-    let updateResult;
-    try {
-      updateResult = await this.$store.dispatch('user/updateUserStatus', this.selectedPlan);
-      console.log('📊 Store update result:', updateResult);
-    } catch (storeError) {
-      console.error('❌ Store action threw error:', storeError);
-      updateResult = {
-        success: false,
-        error: storeError.message || 'Store action failed'
-      };
-    }
-    
-    // ✅ CRITICAL: Handle undefined or invalid result
-    if (!updateResult) {
-      console.error('❌ Store action returned undefined result');
-      
-      // ✅ FALLBACK: Update directly via localStorage and force update
-      console.log('🔧 Using fallback: direct localStorage update');
-      
-      try {
-        // Update localStorage directly
-        localStorage.setItem('userStatus', this.selectedPlan);
-        localStorage.setItem('plan', this.selectedPlan);
-        localStorage.setItem('statusUpdateTime', Date.now().toString());
         
-        // Force store mutation directly
-        this.$store.commit('user/SET_USER_STATUS', this.selectedPlan);
-        this.$store.commit('user/UPDATE_SUBSCRIPTION', {
-          plan: this.selectedPlan,
-          status: this.selectedPlan !== 'free' ? 'active' : 'inactive',
-          source: 'promocode',
-          lastSync: new Date().toISOString()
-        });
-        this.$store.commit('user/FORCE_UPDATE');
-        
-        console.log('✅ Fallback localStorage and store update completed');
-        
-        // Treat as success
-        updateResult = {
-          success: true,
-          message: 'Updated via fallback method',
-          oldStatus: 'free',
-          newStatus: this.selectedPlan,
-          fallback: true
-        };
+        if (serverSuccess) {
+          // Backend success - update local state
+          console.log('🔄 Backend success - updating local state...');
+          
+          // Update localStorage
+          localStorage.setItem('userStatus', this.selectedPlan);
+          localStorage.setItem('plan', this.selectedPlan);
+          
+          // Force store mutation
+          this.$store.commit('user/SET_USER_STATUS', this.selectedPlan);
+          this.$store.commit('user/UPDATE_SUBSCRIPTION', {
+            plan: this.selectedPlan,
+            status: 'active',
+            source: 'promocode'
+          });
+          this.$store.commit('user/ADD_PROMOCODE', {
+            code: normalizedCode,
+            plan: this.selectedPlan,
+            appliedAt: new Date().toISOString()
+          });
+          
+          // Success feedback
+          const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
+          this.showNotification(`🎉 Промокод применён! ${planLabel} подписка активирована!`, 'success');
+          
+          // Reset form
+          this.promoCode = '';
+          this.selectedPlan = '';
+          this.promoValidation = null;
+          
+          // Force reactivity update
+          this.forceReactivityUpdate();
+          
+          // Trigger events
+          this.triggerSubscriptionChangeEvents(normalizedCode);
+          
+        } else {
+          const errorMsg = serverResult?.error || 
+                          serverResult?.message || 
+                          'Не удалось применить промокод. Проверьте правильность кода или попробуйте позже.';
+          this.showNotification(errorMsg, 'error');
+        }
         
       } catch (fallbackError) {
-        console.error('❌ Even fallback method failed:', fallbackError);
+        console.error('❌ Backend fallback failed:', fallbackError);
         
-        // Ultimate fallback: page reload
-        this.showNotification('Промокод применён на сервере! Страница обновится для синхронизации...', 'warning');
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-        return;
+        let userFriendlyError = 'Произошла ошибка при применении промокода';
+        
+        if (fallbackError.message === 'Request timeout') {
+          userFriendlyError = 'Истекло время ожидания. Попробуйте снова.';
+        } else if (fallbackError.name === 'TypeError' && fallbackError.message.includes('fetch')) {
+          userFriendlyError = 'Ошибка сети. Проверьте подключение к интернету.';
+        }
+        
+        this.showNotification(userFriendlyError, 'error');
       }
-    }
+    },
     
-    // ✅ STEP 4: Check if updateResult is a valid object
-    if (typeof updateResult !== 'object') {
-      console.error('❌ Store action returned non-object result:', typeof updateResult, updateResult);
-      
-      // Use fallback method (same as above)
-      localStorage.setItem('userStatus', this.selectedPlan);
-      localStorage.setItem('plan', this.selectedPlan);
-      this.$store.commit('user/SET_USER_STATUS', this.selectedPlan);
-      this.$store.commit('user/FORCE_UPDATE');
-      
-      updateResult = {
-        success: true,
-        message: 'Updated via fallback method',
-        fallback: true
-      };
-    }
-    
-    // ✅ STEP 5: Handle successful update
-    if (updateResult.success === true) {
-      console.log('✅ Store user status updated successfully');
-      
-      // ✅ Add promocode to store
-      try {
-        this.$store.commit('user/ADD_PROMOCODE', {
-          code: normalizedCode,
-          plan: this.selectedPlan,
-          oldPlan: updateResult.oldStatus || 'free',
-          source: 'api',
-          details: { 
-            appliedAt: new Date().toISOString(),
-            serverResponse: serverResult || null,
-            fallbackUsed: updateResult.fallback || false
-          }
-        });
-      } catch (promocodeCommitError) {
-        console.warn('⚠️ Failed to add promocode to store:', promocodeCommitError);
-      }
-      
-      // ✅ CRITICAL: Update localStorage immediately (insurance)
-      localStorage.setItem('userStatus', this.selectedPlan);
-      localStorage.setItem('plan', this.selectedPlan);
-      
-      // ✅ Success feedback
-      const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
-      this.showNotification(`🎉 Промокод применён! ${planLabel} подписка активирована!`, 'success');
-      
-      // ✅ Reset form
-      this.promoCode = '';
-      this.selectedPlan = '';
-      this.promoValidation = null;
-      
-      // ✅ Force reactivity update
-      this.forceReactivityUpdate();
-      
-      // ✅ CRITICAL: Trigger global events for component updates
+    // ✅ NEW: Helper method to trigger subscription change events
+    triggerSubscriptionChangeEvents(promocode) {
       if (typeof window !== 'undefined') {
         // Method 1: Custom DOM event
         try {
           const event = new CustomEvent('userSubscriptionChanged', {
             detail: {
               plan: this.selectedPlan,
-              oldPlan: updateResult.oldStatus || 'free',
+              oldPlan: 'free',
               source: 'promocode',
-              promocode: normalizedCode,
+              promocode: promocode,
               timestamp: Date.now()
             },
             bubbles: true
@@ -1792,8 +1831,8 @@ async applyPromo() {
           if (window.eventBus?.emit) {
             window.eventBus.emit('promocodeApplied', {
               newStatus: this.selectedPlan,
-              oldStatus: updateResult.oldStatus || 'free',
-              code: normalizedCode,
+              oldStatus: 'free',
+              code: promocode,
               success: true
             });
             console.log('✅ Event bus emission completed');
@@ -1806,7 +1845,7 @@ async applyPromo() {
         try {
           if (window.triggerGlobalEvent) {
             window.triggerGlobalEvent('userStatusChanged', {
-              oldStatus: updateResult.oldStatus || 'free',
+              oldStatus: 'free',
               newStatus: this.selectedPlan,
               source: 'promocode-applied',
               timestamp: Date.now()
@@ -1817,500 +1856,18 @@ async applyPromo() {
           console.warn('⚠️ Global trigger failed:', globalTriggerError);
         }
       }
-      
-      console.log('✅ Promocode application completed successfully');
-      return;
-      
-    } else {
-      // ✅ STEP 6: Handle store update failure
-      console.warn('⚠️ Store update failed after successful server application:', updateResult);
-      
-      const errorMessage = updateResult.error || 'Не удалось обновить локальное состояние';
-      this.showNotification(`Промокод применён на сервере, но ${errorMessage}`, 'warning');
-      
-      // Force page refresh after delay as fallback
-      setTimeout(() => {
-        if (confirm('Промокод успешно применён на сервере! Обновить страницу для синхронизации?')) {
-          window.location.reload();
-        }
-      }, 2000);
-    }
-    
-  } catch (error) {
-    console.error('❌ Promocode application failed:', error);
-    
-    let userFriendlyError = 'Произошла ошибка при применении промокода';
-    
-    if (error.message === 'Request timeout') {
-      userFriendlyError = 'Истекло время ожидания. Попробуйте снова.';
-    } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      userFriendlyError = 'Ошибка сети. Проверьте подключение к интернету.';
-    } else if (error.message.includes('API base URL')) {
-      userFriendlyError = 'Ошибка конфигурации приложения. Обратитесь к администратору.';
-    }
-    
-    this.showNotification(userFriendlyError, 'error');
-    
-  } finally {
-    this.isProcessingPromo = false;
-  }
-},
+    },
 
-// ✅ Add this helper method if it doesn't exist:
-async getAuthHeader() {
-  try {
-    // Try to get token from current user
-    if (this.currentUser) {
-      const token = await this.currentUser.getIdToken();
-      if (token) {
-        return `Bearer ${token}`;
+    // ============================================================================
+    // 💳 PAYMENT METHODS
+    // ============================================================================
+    
+    selectPaymentPlan(plan) {
+      if (this.currentPlan === plan || (this.currentPlan === 'pro' && plan === 'start')) {
+        return; // Don't allow selecting current plan or downgrade
       }
-    }
-    
-    // Fallback to localStorage
-    const storedToken = localStorage.getItem('authToken') || localStorage.getItem('token');
-    if (storedToken) {
-      return `Bearer ${storedToken}`;
-    }
-    
-    return '';
-  } catch (error) {
-    console.warn('⚠️ Failed to get auth header:', error);
-    return '';
-  }
-},
-
-// ✅ ENHANCED: Reactivity update method with error handling
-forceReactivityUpdate() {
-  try {
-    // ✅ CRITICAL: Safe reactivity updates with error handling
-    this.componentKey = (this.componentKey || 0) + 1;
-    this.lastUpdateTime = Date.now();
-    
-    // ✅ STEP 1: Vue force update with error handling
-    try {
-      this.$forceUpdate();
-      console.log('✅ $forceUpdate completed');
-    } catch (forceUpdateError) {
-      console.warn('⚠️ $forceUpdate failed:', forceUpdateError);
-    }
-    
-    // ✅ STEP 2: NextTick updates with error handling
-    this.$nextTick(() => {
-      try {
-        this.$forceUpdate();
-        console.log('✅ NextTick $forceUpdate completed');
-        
-        // Additional delayed updates
-        setTimeout(() => {
-          try {
-            this.$forceUpdate();
-            console.log('✅ Delayed $forceUpdate completed');
-          } catch (delayedError) {
-            console.warn('⚠️ Delayed $forceUpdate failed:', delayedError);
-          }
-        }, 50);
-        
-        setTimeout(() => {
-          try {
-            this.$forceUpdate();
-            console.log('✅ Final delayed $forceUpdate completed');
-          } catch (finalError) {
-            console.warn('⚠️ Final delayed $forceUpdate failed:', finalError);
-          }
-        }, 200);
-        
-      } catch (nextTickError) {
-        console.warn('⚠️ NextTick $forceUpdate failed:', nextTickError);
-      }
-    });
-    
-    console.log('🔄 AcedSettings: Reactivity updated:', {
-      componentKey: this.componentKey,
-      lastUpdateTime: this.lastUpdateTime,
-      currentPlan: this.currentPlan
-    });
-    
-  } catch (error) {
-    console.warn('⚠️ AcedSettings: Reactivity update failed:', error);
-    
-    // ✅ FALLBACK: Try basic component key update
-    try {
-      this.componentKey = Date.now();
-      console.log('✅ Fallback componentKey update completed');
-    } catch (fallbackError) {
-      console.error('❌ Even fallback reactivity update failed:', fallbackError);
-    }
-  }
-},
-
-// ✅ ENHANCED: Handle user status changes with comprehensive error handling
-handleUserStatusChange(newStatus, oldStatus) {
-  if (!newStatus || newStatus === oldStatus) return;
-
-  console.log(`👤 AcedSettings: Handling status change ${oldStatus} → ${newStatus}`);
-
-  try {
-    // ✅ STEP 1: Update localStorage immediately
-    try {
-      localStorage.setItem('userStatus', newStatus);
-      localStorage.setItem('plan', newStatus);
-      localStorage.setItem('statusChangeTime', Date.now().toString());
-      console.log('✅ localStorage updated successfully');
-    } catch (storageError) {
-      console.warn('⚠️ localStorage update failed:', storageError);
-    }
-
-    // ✅ STEP 2: Update internal state safely
-    try {
-      this.internalCurrentPlan = newStatus;
-      console.log('✅ Internal state updated');
-    } catch (internalError) {
-      console.warn('⚠️ Internal state update failed:', internalError);
-    }
-
-    // ✅ STEP 3: Trigger reactivity update
-    this.forceReactivityUpdate();
-
-    // ✅ STEP 4: Show celebration for upgrades
-    if (newStatus && newStatus !== 'free' && (oldStatus === 'free' || !oldStatus)) {
-      try {
-        const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
-        this.showNotification(`🎉 ${planLabel} подписка активирована!`, 'success', 5000);
-        console.log('✅ Success notification shown');
-      } catch (notificationError) {
-        console.warn('⚠️ Success notification failed:', notificationError);
-      }
-    }
-
-    console.log(`✅ AcedSettings: Status change handled: ${oldStatus} → ${newStatus}`);
-
-  } catch (error) {
-    console.error('❌ Error handling status change:', error);
-    
-    // ✅ FALLBACK: Force basic update
-    try {
-      this.$forceUpdate();
-      console.log('✅ Fallback force update completed');
-    } catch (fallbackError) {
-      console.error('❌ Even fallback update failed:', fallbackError);
-    }
-  }
-},
-
-// ✅ ENHANCED: Setup event listeners with comprehensive error handling
-setupEnhancedEventListeners() {
-  console.log('🔧 AcedSettings: Setting up enhanced event listeners...');
-  
-  // Clear existing listeners first
-  this.cleanupEventListeners();
-  
-  try {
-    // ✅ METHOD 1: DOM Event Listeners (most reliable)
-    if (typeof window !== 'undefined') {
-      // Handle subscription changes
-      this.handleSubscriptionChange = (event) => {
-        try {
-          console.log('📡 AcedSettings: Subscription change received:', event.detail);
-          const { plan, oldPlan, newStatus, oldStatus } = event.detail;
-          const finalNewStatus = plan || newStatus;
-          const finalOldStatus = oldPlan || oldStatus;
-          
-          if (finalNewStatus) {
-            this.handleUserStatusChange(finalNewStatus, finalOldStatus);
-          }
-        } catch (handlerError) {
-          console.warn('⚠️ Subscription change handler error:', handlerError);
-        }
-      };
-      
-      window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
-      this.statusEventListeners.push(() => {
-        window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
-      });
-
-      // Handle localStorage changes (cross-tab sync)
-      this.handleStorageChange = (event) => {
-        try {
-          if ((event.key === 'userStatus' || event.key === 'plan') && event.newValue !== event.oldValue) {
-            console.log('📡 AcedSettings: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
-            this.handleUserStatusChange(event.newValue, event.oldValue);
-          }
-        } catch (storageHandlerError) {
-          console.warn('⚠️ Storage change handler error:', storageHandlerError);
-        }
-      };
-      
-      window.addEventListener('storage', this.handleStorageChange);
-      this.statusEventListeners.push(() => {
-        window.removeEventListener('storage', this.handleStorageChange);
-      });
-
-      // Additional comprehensive events
-      const eventTypes = [
-        'userStatusChanged',
-        'subscriptionUpdated', 
-        'promocodeApplied',
-        'paymentCompleted',
-        'globalForceUpdate',
-        'reactivityUpdate'
-      ];
-
-      const handleGenericStatusChange = (event) => {
-        try {
-          console.log('📡 AcedSettings: Generic status event received:', event.type, event.detail);
-          
-          // Extract status information from various event formats
-          const detail = event.detail || {};
-          const newStatus = detail.newStatus || detail.plan || detail.status;
-          const oldStatus = detail.oldStatus || detail.oldPlan;
-          
-          if (newStatus) {
-            this.handleUserStatusChange(newStatus, oldStatus);
-          } else {
-            // Force reactivity update even without status change
-            this.forceReactivityUpdate();
-          }
-          
-          // Check localStorage for updates as fallback
-          try {
-            const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
-            if (currentStatus && currentStatus !== this.currentPlan) {
-              this.handleUserStatusChange(currentStatus, this.currentPlan);
-            }
-          } catch (storageCheckError) {
-            console.warn('⚠️ Storage check error:', storageCheckError);
-          }
-        } catch (genericHandlerError) {
-          console.warn('⚠️ Generic status change handler error:', genericHandlerError);
-        }
-      };
-
-      eventTypes.forEach(eventType => {
-        window.addEventListener(eventType, handleGenericStatusChange);
-        this.statusEventListeners.push(() => {
-          window.removeEventListener(eventType, handleGenericStatusChange);
-        });
-      });
-
-      console.log('✅ DOM event listeners registered');
-    }
-
-    // ✅ METHOD 2: Event Bus Listeners
-    if (typeof window !== 'undefined' && window.eventBus) {
-      // User status change events
-      this.handleUserStatusEvent = (data) => {
-        try {
-          console.log('📡 AcedSettings: User status event received:', data);
-          const newStatus = data.newStatus || data.plan;
-          const oldStatus = data.oldStatus || data.oldPlan;
-          
-          if (newStatus) {
-            this.handleUserStatusChange(newStatus, oldStatus);
-          }
-        } catch (eventBusError) {
-          console.warn('⚠️ Event bus handler error:', eventBusError);
-        }
-      };
-
-      // Force update events
-      this.handleForceUpdateEvent = () => {
-        try {
-          console.log('📡 AcedSettings: Force update event received');
-          this.forceReactivityUpdate();
-          
-          // Also check for status updates
-          const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
-          if (currentStatus && currentStatus !== this.currentPlan) {
-            this.handleUserStatusChange(currentStatus, this.currentPlan);
-          }
-        } catch (forceUpdateError) {
-          console.warn('⚠️ Force update event handler error:', forceUpdateError);
-        }
-      };
-
-      // Register event bus listeners
-      const eventBusEvents = [
-        'userStatusChanged',
-        'promocodeApplied',
-        'subscriptionUpdated',
-        'paymentCompleted', 
-        'forceUpdate',
-        'globalForceUpdate'
-      ];
-
-      eventBusEvents.forEach(eventType => {
-        try {
-          if (eventType.includes('Status') || eventType.includes('promocode') || eventType.includes('payment') || eventType.includes('subscription')) {
-            window.eventBus.on(eventType, this.handleUserStatusEvent);
-            this.statusEventListeners.push(() => {
-              window.eventBus.off(eventType, this.handleUserStatusEvent);
-            });
-          } else {
-            window.eventBus.on(eventType, this.handleForceUpdateEvent);
-            this.statusEventListeners.push(() => {
-              window.eventBus.off(eventType, this.handleForceUpdateEvent);
-            });
-          }
-        } catch (eventBusRegisterError) {
-          console.warn(`⚠️ Failed to register event bus listener for ${eventType}:`, eventBusRegisterError);
-        }
-      });
-
-      console.log('✅ Event bus listeners registered');
-    }
-
-    // ✅ METHOD 3: Store Mutation Listener
-    if (this.$store) {
-      try {
-        this.storeUnsubscribe = this.$store.subscribe((mutation) => {
-          try {
-            if (this.isUserRelatedMutation(mutation)) {
-              console.log('📊 AcedSettings: Store mutation detected:', mutation.type);
-              this.forceReactivityUpdate();
-              
-              // Check for status changes in mutation payload
-              if (mutation.payload && mutation.payload.subscriptionPlan) {
-                const newStatus = mutation.payload.subscriptionPlan;
-                if (newStatus !== this.currentPlan) {
-                  this.handleUserStatusChange(newStatus, this.currentPlan);
-                }
-              } else if (mutation.payload && typeof mutation.payload === 'string') {
-                // Handle direct status mutations
-                const validStatuses = ['free', 'start', 'pro', 'premium'];
-                if (validStatuses.includes(mutation.payload) && mutation.payload !== this.currentPlan) {
-                  this.handleUserStatusChange(mutation.payload, this.currentPlan);
-                }
-              }
-            }
-          } catch (mutationHandlerError) {
-            console.warn('⚠️ Store mutation handler error:', mutationHandlerError);
-          }
-        });
-        
-        this.statusEventListeners.push(() => {
-          if (this.storeUnsubscribe) {
-            this.storeUnsubscribe();
-            this.storeUnsubscribe = null;
-          }
-        });
-
-        console.log('✅ Store mutation listener registered');
-      } catch (storeListenerError) {
-        console.warn('⚠️ Failed to setup store listener:', storeListenerError);
-      }
-    }
-
-    console.log('✅ AcedSettings: Enhanced event listeners setup complete');
-
-  } catch (error) {
-    console.error('❌ Failed to setup enhanced event listeners:', error);
-    
-    // ✅ FALLBACK: Basic periodic check
-    try {
-      this.setupBasicPeriodicCheck();
-      console.log('✅ Fallback periodic check setup completed');
-    } catch (fallbackError) {
-      console.error('❌ Even fallback setup failed:', fallbackError);
-    }
-  }
-},
-
-// ✅ NEW: Basic periodic check as fallback
-setupBasicPeriodicCheck() {
-  this.periodicCheckInterval = setInterval(() => {
-    try {
-      const storeStatus = this.$store?.getters?.['user/userStatus'];
-      const localStatus = localStorage.getItem('userStatus');
-      
-      if (storeStatus && localStatus && storeStatus !== localStatus) {
-        console.log('🔄 Periodic check found status mismatch, syncing...', {
-          store: storeStatus,
-          localStorage: localStatus
-        });
-        this.handleUserStatusChange(storeStatus, localStatus);
-      }
-    } catch (periodicError) {
-      console.warn('⚠️ Periodic check error:', periodicError);
-    }
-  }, 10000); // Check every 10 seconds
-  
-  this.statusEventListeners.push(() => {
-    if (this.periodicCheckInterval) {
-      clearInterval(this.periodicCheckInterval);
-      this.periodicCheckInterval = null;
-    }
-  });
-},
-
-// ✅ ENHANCED: Check if mutation is user-related
-isUserRelatedMutation(mutation) {
-  try {
-    const userMutations = [
-      'setUser',
-      'SET_USER',
-      'updateUser', 
-      'UPDATE_USER',
-      'user/SET_USER_STATUS',
-      'user/setUserStatus',
-      'user/UPDATE_SUBSCRIPTION',
-      'user/FORCE_UPDATE',
-      'user/ADD_PROMOCODE'
-    ];
-    
-    return userMutations.some(type => 
-      mutation.type === type || 
-      mutation.type.includes(type) ||
-      mutation.type.includes('user/') ||
-      mutation.type.toLowerCase().includes('status') ||
-      mutation.type.toLowerCase().includes('subscription') ||
-      mutation.type.toLowerCase().includes('plan')
-    );
-  } catch (error) {
-    console.warn('⚠️ Error checking mutation type:', error);
-    return false;
-  }
-},
-
-// ✅ ENHANCED: Cleanup event listeners
-cleanupEventListeners() {
-  try {
-    if (this.statusEventListeners && Array.isArray(this.statusEventListeners)) {
-      this.statusEventListeners.forEach(cleanup => {
-        try {
-          if (typeof cleanup === 'function') {
-            cleanup();
-          }
-        } catch (cleanupError) {
-          console.warn('⚠️ AcedSettings: Individual cleanup error:', cleanupError);
-        }
-      });
-    }
-    this.statusEventListeners = [];
-    
-    if (this.storeUnsubscribe && typeof this.storeUnsubscribe === 'function') {
-      try {
-        this.storeUnsubscribe();
-        this.storeUnsubscribe = null;
-      } catch (storeCleanupError) {
-        console.warn('⚠️ Store unsubscribe error:', storeCleanupError);
-      }
-    }
-    
-    if (this.periodicCheckInterval) {
-      try {
-        clearInterval(this.periodicCheckInterval);
-        this.periodicCheckInterval = null;
-      } catch (intervalCleanupError) {
-        console.warn('⚠️ Interval cleanup error:', intervalCleanupError);
-      }
-    }
-    
-    console.log('✅ AcedSettings: Event listeners cleaned up');
-  } catch (error) {
-    console.error('❌ Cleanup event listeners failed:', error);
-  }
-},
+      this.paymentPlan = plan;
+    },
 
     async goToPayment() {
       this.$router.push(`/payment?plan=${this.paymentPlan}`);
@@ -2460,7 +2017,7 @@ cleanupEventListeners() {
       return classes[state] || 'status-warning';
     },
 
-    showNotification(message, type = 'info') {
+    showNotification(message, type = 'info', duration = 5000) {
       this.notification = message;
       this.notificationClass = `notification-${type}`;
       
@@ -2477,12 +2034,12 @@ cleanupEventListeners() {
         this.notification = '';
         this.notificationClass = '';
         this.notificationIcon = '';
-      }, 5000);
+      }, duration);
     }
   }
 }
 </script>
+
 <style scoped>
 @import "@/assets/css/AcedSettings.css";
-
 </style>
