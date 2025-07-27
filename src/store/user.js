@@ -1066,14 +1066,14 @@ const actions = {
 
   async saveUser({ commit, dispatch, state }, { userData, token }) {
     const startTime = Date.now();
-
+  
     console.log('💾 🔥 ENHANCED saveUser starting...', {
       hasUserData: !!userData,
       hasToken: !!token,
       tokenLength: token?.length || 0,
       userEmail: userData?.email || 'unknown'
     });
-
+  
     // ✅ BULLETPROOF: Always return a result object
     const createSuccessResult = (user, message = 'User saved successfully') => {
       const result = {
@@ -1086,7 +1086,7 @@ const actions = {
       console.log('✅ createSuccessResult:', result);
       return result;
     };
-
+  
     const createErrorResult = (error, details = {}) => {
       const result = {
         success: false,
@@ -1099,7 +1099,7 @@ const actions = {
       console.log('❌ createErrorResult:', result);
       return result;
     };
-
+  
     // ✅ BULLETPROOF: Input validation with detailed feedback
     if (!userData || typeof userData !== 'object') {
       const error = 'Missing or invalid user data';
@@ -1107,18 +1107,18 @@ const actions = {
       commit('SET_ERROR', { message: error, context: 'saveUser-validation' });
       return createErrorResult(error, { validationError: true });
     }
-
+  
     if (!token || typeof token !== 'string' || token.length < 10) {
       const error = 'Missing or invalid authentication token';
       console.error('❌', error, { hasToken: !!token, tokenLength: token?.length || 0 });
       commit('SET_ERROR', { message: error, context: 'saveUser-validation' });
       return createErrorResult(error, { validationError: true });
     }
-
+  
     try {
       console.log('🔄 Setting loading state and initializing...');
       commit('SET_LOADING', { type: 'saving', loading: true });
-
+  
       // ✅ BULLETPROOF: Environment validation
       const baseUrl = import.meta.env.VITE_API_BASE_URL;
       if (!baseUrl || typeof baseUrl !== 'string') {
@@ -1127,9 +1127,9 @@ const actions = {
         commit('SET_ERROR', { message: error, context: 'saveUser-config' });
         return createErrorResult(error, { configError: true });
       }
-
+  
       console.log('📤 Loading API module...');
-
+  
       // ✅ BULLETPROOF: API module loading with timeout
       let api;
       try {
@@ -1137,14 +1137,14 @@ const actions = {
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('API module load timeout')), 5000)
         );
-
+  
         const apiModule = await Promise.race([apiLoadPromise, timeoutPromise]);
         api = apiModule.default || apiModule;
-
+  
         if (!api || typeof api.post !== 'function') {
           throw new Error('API module does not have post method');
         }
-
+  
         console.log('✅ API module loaded successfully');
       } catch (apiImportError) {
         const error = 'Failed to load API module - application error';
@@ -1152,7 +1152,7 @@ const actions = {
         commit('SET_ERROR', { message: error, context: 'saveUser-api-import', originalError: apiImportError.message });
         return createErrorResult(error, { apiImportError: true });
       }
-
+  
       // ✅ BULLETPROOF: Payload preparation with validation
       const payload = {
         firebaseUserId: userData.uid || userData.firebaseId || userData.firebaseUserId,
@@ -1170,7 +1170,7 @@ const actions = {
           version: '2.0'
         }
       };
-
+  
       // ✅ BULLETPROOF: Validate essential payload fields
       if (!payload.firebaseUserId || !payload.email) {
         const error = 'Missing essential user information (ID or email)';
@@ -1182,18 +1182,18 @@ const actions = {
         commit('SET_ERROR', { message: error, context: 'saveUser-payload-validation' });
         return createErrorResult(error, { payloadValidationError: true });
       }
-
+  
       console.log('📤 Sending user data to server...', {
         url: '/users/save',
         firebaseUserId: payload.firebaseUserId.substring(0, 8) + '...',
         email: payload.email,
         plan: payload.subscriptionPlan
       });
-
+  
       // ✅ BULLETPROOF: API call with comprehensive error handling and timeout
       let response;
       const apiStartTime = Date.now();
-
+  
       try {
         const requestConfig = {
           timeout: 15000,
@@ -1204,16 +1204,16 @@ const actions = {
             'X-App-Version': '2.0'
           }
         };
-
+  
         console.log('📡 Making API request to /users/save...');
-
+  
         const requestPromise = api.post('/users/save', payload, requestConfig);
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Request timeout')), 20000)
         );
-
+  
         response = await Promise.race([requestPromise, timeoutPromise]);
-
+  
         // Track API response time
         const apiResponseTime = Date.now() - apiStartTime;
         console.log('📥 Server response received:', {
@@ -1222,15 +1222,15 @@ const actions = {
           responseTime: apiResponseTime + 'ms',
           hasData: !!response?.data
         });
-
+  
       } catch (networkError) {
         console.error('❌ Network error during user save:', networkError);
-
+  
         // ✅ BULLETPROOF: Detailed network error handling
         let userFriendlyError = 'Network error occurred';
         let statusCode = null;
         let errorDetails = { isNetworkError: true };
-
+  
         if (networkError.message === 'Request timeout') {
           userFriendlyError = 'Request timed out. Please check your connection and try again.';
           errorDetails.isTimeout = true;
@@ -1244,7 +1244,7 @@ const actions = {
           statusCode = networkError.response.status;
           const serverError = networkError.response.data || {};
           errorDetails.statusCode = statusCode;
-
+  
           switch (statusCode) {
             case 400:
               userFriendlyError = serverError.message || serverError.error || 'Invalid user data provided';
@@ -1285,17 +1285,17 @@ const actions = {
           userFriendlyError = 'Unable to connect to server. Please try again.';
           errorDetails.isConnectionError = true;
         }
-
+  
         commit('SET_ERROR', {
           message: userFriendlyError,
           context: 'saveUser-network',
           originalError: networkError.message,
           statusCode
         });
-
+  
         return createErrorResult(userFriendlyError, errorDetails);
       }
-
+  
       // ✅ BULLETPROOF: Response validation
       if (!response || typeof response !== 'object') {
         const error = 'Invalid response from server';
@@ -1303,7 +1303,7 @@ const actions = {
         commit('SET_ERROR', { message: error, context: 'saveUser-response-validation' });
         return createErrorResult(error, { responseValidationError: true });
       }
-
+  
       const responseData = response.data;
       if (!responseData || typeof responseData !== 'object') {
         const error = 'Empty or invalid response from server';
@@ -1311,17 +1311,17 @@ const actions = {
         commit('SET_ERROR', { message: error, context: 'saveUser-response-data' });
         return createErrorResult(error, { responseDataError: true });
       }
-
+  
       console.log('📊 Processing server response...', {
         hasSuccess: 'success' in responseData,
         hasData: 'data' in responseData,
         hasUser: 'user' in responseData,
         responseKeys: Object.keys(responseData)
       });
-
+  
       // ✅ BULLETPROOF: Handle different response structures
       let savedUser = null;
-
+  
       if (responseData.success === true) {
         if (responseData.data && typeof responseData.data === 'object') {
           savedUser = responseData.data;
@@ -1356,7 +1356,7 @@ const actions = {
         commit('SET_ERROR', { message: error, context: 'saveUser-unknown-response' });
         return createErrorResult(error, { unknownResponseError: true, rawResponse: responseData });
       }
-
+  
       // ✅ BULLETPROOF: Validate saved user object
       if (!savedUser || typeof savedUser !== 'object') {
         const error = 'Server returned invalid user data';
@@ -1364,7 +1364,7 @@ const actions = {
         commit('SET_ERROR', { message: error, context: 'saveUser-user-validation' });
         return createErrorResult(error, { userValidationError: true });
       }
-
+  
       // ✅ BULLETPROOF: Ensure user has all required fields
       const completeUser = {
         ...savedUser,
@@ -1383,7 +1383,7 @@ const actions = {
           syncSource: 'saveUser'
         }
       };
-
+  
       // ✅ BULLETPROOF: Final validation of complete user
       if (!completeUser.firebaseId || !completeUser.email) {
         const error = 'Server user data missing essential fields';
@@ -1395,7 +1395,7 @@ const actions = {
         commit('SET_ERROR', { message: error, context: 'saveUser-final-validation' });
         return createErrorResult(error, { finalValidationError: true });
       }
-
+  
       console.log('✅ User saved successfully to server:', {
         id: completeUser._id || completeUser.firebaseId,
         email: completeUser.email,
@@ -1403,12 +1403,12 @@ const actions = {
         firebaseId: completeUser.firebaseId,
         duration: Date.now() - startTime + 'ms'
       });
-
+  
       // ✅ BULLETPROOF: Update local store with server data
       try {
         commit('SET_USER', completeUser);
         commit('SET_USER_STATUS', completeUser.subscriptionPlan || 'free');
-
+  
         // Store user ID for future API calls
         const userId = completeUser.firebaseId || completeUser._id;
         if (userId) {
@@ -1416,34 +1416,28 @@ const actions = {
           localStorage.setItem('firebaseUserId', userId);
           localStorage.setItem('lastUserSync', Date.now().toString());
         }
-
+  
         console.log('✅ Local store updated with server data');
       } catch (storeError) {
         console.error('❌ Failed to update local store:', storeError);
         commit('SET_ERROR', { message: 'Store update failed', context: 'saveUser-store-update', originalError: storeError.message });
         // Don't fail the entire operation if store update fails
       }
-
-    // ✅ CRITICAL: Always return success result
-    const finalResult = createSuccessResult(completeUser, 'User saved and synchronized successfully');
-    console.log('🎉 saveUser returning success result:', finalResult);
-    // ... previous code
-    console.log('🎉 saveUser returning success result:', finalResult);
-
-    // ✅ ADD THIS LINE FOR TESTING
-    console.log('>>>>>>> MY FIX IS DEFINITELY HERE! <<<<<<<');
-    
-    // 🔥 FIX: This line solves the error.
-    return finalResult;
-    
-
+  
+      // ✅ CRITICAL: Always return success result
+      const finalResult = createSuccessResult(completeUser, 'User saved and synchronized successfully');
+      console.log('🎉 saveUser returning success result:', finalResult);
+      
+      // 🔥 FIX: This line solves the error - ALWAYS return the result
+      return finalResult;
+  
     } catch (error) {
       console.error('❌ Unexpected error in saveUser:', error);
-
+  
       // ✅ BULLETPROOF: Comprehensive error categorization
       let userFriendlyError = 'An unexpected error occurred while saving user data.';
       let errorCategory = 'unexpected';
-
+  
       if (error.message?.includes('API module')) {
         userFriendlyError = 'Application configuration error. Please refresh the page.';
         errorCategory = 'config';
@@ -1460,7 +1454,7 @@ const actions = {
         userFriendlyError = 'Server returned invalid response. Please try again.';
         errorCategory = 'parsing';
       }
-
+  
       commit('SET_ERROR', {
         message: userFriendlyError,
         context: 'saveUser-unexpected',
@@ -1468,7 +1462,7 @@ const actions = {
         stack: error.stack,
         category: errorCategory
       });
-
+  
       console.error('❌ Detailed error info:', {
         message: error.message,
         stack: error.stack,
@@ -1476,7 +1470,7 @@ const actions = {
         category: errorCategory,
         duration: Date.now() - startTime + 'ms'
       });
-
+  
       // ✅ CRITICAL: Always return error result
       const finalResult = createErrorResult(userFriendlyError, {
         isUnexpectedError: true,
@@ -1485,7 +1479,7 @@ const actions = {
       });
       console.log('❌ saveUser returning error result:', finalResult);
       return finalResult;
-
+  
     } finally {
       // ✅ BULLETPROOF: Always clear loading state
       try {
@@ -1495,8 +1489,7 @@ const actions = {
         console.warn('⚠️ Failed to clear loading state:', loadingError);
       }
     }
-  },
-
+  }, 
   async updateUserStatus({ commit, state, dispatch }, newStatus) {
     const startTime = Date.now();
     console.log('🚀 updateUserStatus action called with:', newStatus);
