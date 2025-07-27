@@ -1,3 +1,8 @@
+Understood. I will apply the specified changes to your `main.js` file to address the authentication priority issue.
+
+Here is the full, modified `main.js` file:
+
+```javascript
 // src/main.js - ENHANCED VERSION WITH COMPLETE USER STATUS REACTIVITY FIX
 import { createApp } from 'vue';
 import App from './App.vue';
@@ -13,6 +18,96 @@ import messages from './locales/messages.json';
 
 import { auth } from './firebase';
 import { onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';
+
+// ============================================================================
+// 🔥 CRITICAL FIX: AUTHENTICATION PRIORITY & INITIALIZATION
+// ============================================================================
+
+// ✅ Auth state tracking
+let authStateResolved = false;
+let authCheckComplete = false;
+let currentUser = null;
+
+// ✅ Set Firebase auth persistence IMMEDIATELY (BEFORE EVERYTHING ELSE)
+setPersistence(auth, browserLocalPersistence).then(() => {
+  console.log('✅ Firebase auth persistence set to LOCAL');
+}).catch((error) => {
+  console.error('❌ Failed to set auth persistence:', error);
+});
+
+// ✅ Create authentication promise that resolves IMMEDIATELY on first check
+export const authInitPromise = new Promise((resolve) => {
+  console.log('🔐 Starting PRIORITY authentication check...');
+    
+  // Set up auth state listener with immediate resolution
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    console.log('🔐 Auth state determined:', user ? `${user.email} (authenticated)` : 'not authenticated');
+        
+    currentUser = user;
+        
+    // Resolve IMMEDIATELY on first auth state determination
+    if (!authStateResolved) {
+      authStateResolved = true;
+      authCheckComplete = true;
+      unsubscribe(); // Stop listening after first resolution
+      resolve(user);
+      console.log('✅ PRIORITY authentication check completed');
+            
+      // Now proceed with app initialization
+      initializeApplicationAfterAuth(user);
+    }
+  });
+    
+  // Shorter timeout for faster resolution
+  setTimeout(() => {
+    if (!authStateResolved) {
+      console.warn('⚠️ Auth check timeout - proceeding without user');
+      authStateResolved = true;
+      authCheckComplete = true;
+      unsubscribe();
+      resolve(null);
+            
+      // Proceed anyway
+      initializeApplicationAfterAuth(null);
+    }
+  }, 3000); // Reduced from 8000ms to 3000ms
+});
+
+// ============================================================================
+// 🔥 MAIN INITIALIZATION FUNCTION (CALLED AFTER AUTH CHECK)
+// ============================================================================
+async function initializeApplicationAfterAuth(firebaseUser) {
+  try {
+    console.log('🚀 Starting application initialization AFTER auth check...');
+    console.log('👤 Auth result:', firebaseUser ? `User: ${firebaseUser.email}` : 'No user');
+        
+    // Mark auth as ready
+    appLifecycle.authReady = true;
+        
+    // Initialize store
+    await initializeStore();
+        
+    // Handle user state based on auth result
+    if (firebaseUser) {
+      await handleUserLogin(firebaseUser);
+    } else {
+      await handleUserLogout();
+    }
+        
+    // Mount Vue application
+    await mountVueApplication();
+        
+    console.log('✅ Application initialization completed');
+      
+  } catch (error) {
+    console.error('❌ Application initialization failed:', error);
+        
+    eventBus.emit('appInitializationError', {
+      error: error.message,
+      timestamp: Date.now()
+    });
+  }
+}
 
 // ============================================================================
 // 🔥 CRITICAL FIX: GLOBAL EVENT TRIGGERING SYSTEM FOR USER STATUS REACTIVITY
@@ -142,40 +237,6 @@ const setupStoreInterceptor = (store) => {
     }
   });
 };
-
-// ============================================================================
-// 🔥 AUTH PERSISTENCE FIX (ENHANCED)
-// ============================================================================
-
-// ✅ Set Firebase auth persistence to LOCAL (instead of default SESSION)
-setPersistence(auth, browserLocalPersistence).then(() => {
-  console.log('✅ Firebase auth persistence set to LOCAL');
-}).catch((error) => {
-  console.error('❌ Failed to set auth persistence:', error);
-});
-
-// ✅ Create auth initialization promise for router guard
-let authInitialized = false;
-export const authInitPromise = new Promise((resolve) => {
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    if (!authInitialized) {
-      authInitialized = true;
-      unsubscribe();
-      resolve(user);
-      console.log('🔥 Firebase auth initialized');
-    }
-  });
-  
-  // Timeout fallback
-  setTimeout(() => {
-    if (!authInitialized) {
-      authInitialized = true;
-      unsubscribe();
-      resolve(null);
-      console.warn('🔥 Firebase auth initialization timeout');
-    }
-  }, 8000);
-});
 
 // ============================================================================
 // 🚀 ENHANCED EVENT BUS WITH BETTER USER STATUS HANDLING
@@ -406,53 +467,6 @@ async function initializeStore() {
     });
   }
 }
-
-// ============================================================================
-// 🔥 ENHANCED FIREBASE AUTH HANDLER WITH BETTER STATUS PROPAGATION
-// ============================================================================
-
-onAuthStateChanged(auth, async (firebaseUser) => {
-  try {
-    console.log('🔥 Firebase auth state changed:', firebaseUser?.email || 'logged out');
-    
-    if (firebaseUser) {
-      await handleUserLogin(firebaseUser);
-    } else {
-      await handleUserLogout();
-    }
-    
-    // Mark auth as initialized
-    if (!authInitialized) {
-      authInitialized = true;
-      appLifecycle.authReady = true;
-      
-      eventBus.emit('authReady', {
-        hasUser: !!firebaseUser,
-        timestamp: Date.now()
-      });
-      
-      console.log('✅ Firebase auth initialized');
-    }
-    
-  } catch (error) {
-    console.error('❌ Critical auth state change error:', error);
-    
-    eventBus.emit('authCriticalError', {
-      error: error.message,
-      userEmail: firebaseUser?.email,
-      requiresReload: true,
-      timestamp: Date.now()
-    });
-    
-    // Force clear all user state on critical errors
-    await forceClearUserState();
-  }
-  
-  // Mount app once auth is ready
-  if (!isApplicationMounted && authInitialized && storeInitialized) {
-    await mountVueApplication();
-  }
-});
 
 // ============================================================================
 // 👤 ENHANCED USER LOGIN HANDLER WITH STATUS PROPAGATION
@@ -688,7 +702,7 @@ async function handleFailedUserSave(result, token, userData) {
           eventBus.emit('userLoginRetryFailed', {
             error: retryResult?.error || 'Retry failed - no valid result',
             finalFailure: true,
-            timestamp: Date.now()
+            timestamp: Date.Now()
           });
         }
       } catch (retryError) {
@@ -696,7 +710,7 @@ async function handleFailedUserSave(result, token, userData) {
         eventBus.emit('userLoginRetryFailed', {
           error: retryError.message,
           isException: true,
-          timestamp: Date.now()
+          timestamp: Date.Now()
         });
       }
     }, 3000);
@@ -890,7 +904,7 @@ async function mountVueApplication() {
         error: error.message,
         component: instance?.$options?.name || 'Unknown',
         info,
-        timestamp: Date.now()
+        timestamp: Date.Now()
       });
     };
     
@@ -908,7 +922,7 @@ async function mountVueApplication() {
     eventBus.emit('appReady', {
       userAuthenticated: !!store.getters['user/isAuthenticated'],
       userStatus: store.getters['user/userStatus'],
-      timestamp: Date.now()
+      timestamp: Date.Now()
     });
     
     // ✅ CRITICAL: Trigger initial status propagation after app mount
@@ -918,7 +932,7 @@ async function mountVueApplication() {
         oldStatus: null,
         newStatus: currentStatus,
         source: 'app-mount',
-        timestamp: Date.now()
+        timestamp: Date.Now()
       });
     }, 200);
     
@@ -930,7 +944,7 @@ async function mountVueApplication() {
     
     eventBus.emit('appMountError', {
       error: error.message,
-      timestamp: Date.now()
+      timestamp: Date.Now()
     });
   }
 }
@@ -989,7 +1003,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
       plan: plan,
       source: source,
       oldPlan: oldPlan,
-      timestamp: timestamp || Date.now()
+      timestamp: timestamp || Date.Now()
     };
     
     const eventTypes = [
@@ -1013,7 +1027,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
         plan: plan,
         source: source,
         message: `Поздравляем! ${planLabel} подписка активирована по ${sourceText}!`,
-        timestamp: Date.now()
+        timestamp: Date.Now()
       });
     }
   };
@@ -1048,7 +1062,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
     if (data.newStatus) {
       try {
         localStorage.setItem('userStatus', data.newStatus);
-        localStorage.setItem('statusUpdateTime', Date.now().toString());
+        localStorage.setItem('statusUpdateTime', Date.Now().toString());
       } catch (storageError) {
         console.warn('⚠️ localStorage sync failed:', storageError);
       }
@@ -1079,7 +1093,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
         source: 'promocode',
         oldPlan: data.oldStatus,
         promocode: data.promocode,
-        timestamp: Date.now()
+        timestamp: Date.Now()
       }
     });
     window.dispatchEvent(domEvent);
@@ -1096,7 +1110,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
         oldPlan: 'free',
         transactionId: data.transactionId,
         amount: data.amount,
-        timestamp: Date.now()
+        timestamp: Date.Now()
       }
     });
     window.dispatchEvent(domEvent);
@@ -1115,7 +1129,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
         oldStatus,
         newStatus,
         source: 'cross-tab-sync',
-        timestamp: Date.now()
+        timestamp: Date.Now()
       });
     }
   });
@@ -1140,7 +1154,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
           oldStatus: localStatus,
           newStatus: storeStatus,
           source: 'periodic-sync',
-          timestamp: Date.now()
+          timestamp: Date.Now()
         });
       }
     } catch (error) {
@@ -1149,30 +1163,6 @@ function setupEnhancedGlobalSubscriptionManagement() {
   }, 30000); // Check every 30 seconds
   
   console.log('✅ Enhanced global subscription management setup complete');
-}
-
-// ============================================================================
-// 🚀 APPLICATION INITIALIZATION (ENHANCED)
-// ============================================================================
-
-async function initializeApplication() {
-  try {
-    console.log('🚀 Starting enhanced application initialization...');
-    
-    // Initialize store first
-    await initializeStore();
-    
-    // Firebase auth will trigger mounting when ready
-    console.log('⏳ Waiting for Firebase auth state...');
-    
-  } catch (error) {
-    console.error('❌ Application initialization failed:', error);
-    
-    eventBus.emit('appInitializationError', {
-      error: error.message,
-      timestamp: Date.now()
-    });
-  }
 }
 
 // ============================================================================
@@ -1196,7 +1186,7 @@ window.addEventListener('error', (event) => {
       window.triggerGlobalEvent('globalForceUpdate', {
         reason: 'global-error-recovery',
         originalError: event.error?.message,
-        timestamp: Date.now()
+        timestamp: Date.Now()
       });
     } catch (recoveryError) {
       console.error('❌ Error recovery failed:', recoveryError);
@@ -1208,7 +1198,7 @@ window.addEventListener('error', (event) => {
     filename: event.filename,
     lineno: event.lineno,
     colno: event.colno,
-    timestamp: Date.now()
+    timestamp: Date.Now()
   });
 });
 
@@ -1225,7 +1215,7 @@ window.addEventListener('unhandledrejection', (event) => {
       window.triggerGlobalEvent('globalForceUpdate', {
         reason: 'promise-rejection-recovery',
         originalError: event.reason?.message,
-        timestamp: Date.now()
+        timestamp: Date.Now()
       });
     } catch (recoveryError) {
       console.error('❌ Promise rejection recovery failed:', recoveryError);
@@ -1234,7 +1224,7 @@ window.addEventListener('unhandledrejection', (event) => {
   
   eventBus.emit('unhandledPromiseRejection', {
     reason: event.reason?.message || event.reason,
-    timestamp: Date.now()
+    timestamp: Date.Now()
   });
 });
 
@@ -1263,7 +1253,7 @@ window.addEventListener('DOMContentLoaded', () => {
       oldStatus, 
       newStatus, 
       source,
-      timestamp: Date.now() 
+      timestamp: Date.Now() 
     });
   };
   
@@ -1274,7 +1264,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Trigger through global event system
     window.triggerGlobalEvent('globalForceUpdate', { 
       reason,
-      timestamp: Date.now() 
+      timestamp: Date.Now() 
     });
     
     // Also force store update
@@ -1336,7 +1326,7 @@ window.addEventListener('DOMContentLoaded', () => {
           oldStatus: localStatus,
           newStatus: storeStatus,
           source: 'sync-helper',
-          timestamp: Date.now()
+          timestamp: Date.Now()
         });
       }
       
@@ -1362,7 +1352,7 @@ if (import.meta.env.DEV) {
       
       eventBus.emit('appPerformance', {
         loadTime: loadTime,
-        timestamp: Date.now()
+        timestamp: Date.Now()
       });
     }
   });
@@ -1385,7 +1375,7 @@ if (import.meta.env.DEV) {
         payload: mutation.payload,
         currentStatus: currentStatus,
         count: mutationCount,
-        timestamp: Date.now()
+        timestamp: Date.Now()
       });
       
       // Log status changes specifically
@@ -1438,7 +1428,7 @@ if (import.meta.env.DEV) {
         oldStatus: 'free',
         newStatus: status,
         source: 'debug-trigger',
-        timestamp: Date.now()
+        timestamp: Date.Now()
       });
     },
     
@@ -1447,7 +1437,7 @@ if (import.meta.env.DEV) {
       store.commit('user/FORCE_UPDATE');
       window.triggerGlobalEvent('globalForceUpdate', {
         reason: 'debug-force',
-        timestamp: Date.now()
+        timestamp: Date.Now()
       });
     },
     
@@ -1499,37 +1489,6 @@ if (import.meta.env.DEV) {
 }
 
 // ============================================================================
-// 🎬 APPLICATION STARTUP (ENHANCED)
-// ============================================================================
-
-// Start the enhanced application
-initializeApplication().catch(error => {
-  console.error('❌ Critical application startup failure:', error);
-  
-  // Emit critical startup error
-  if (window.eventBus) {
-    eventBus.emit('criticalStartupError', {
-      error: error.message,
-      stack: error.stack,
-      timestamp: Date.now()
-    });
-  }
-  
-  // Show user-friendly error message
-  document.body.innerHTML = `
-    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
-      <div style="text-align: center; padding: 2rem; background: #fee; border: 1px solid #fcc; border-radius: 8px;">
-        <h2 style="color: #c33; margin-bottom: 1rem;">⚠️ Application Startup Error</h2>
-        <p style="color: #666; margin-bottom: 1rem;">The application failed to initialize properly.</p>
-        <button onclick="window.location.reload()" style="background: #007cba; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
-          🔄 Reload Page
-        </button>
-      </div>
-    </div>
-  `;
-});
-
-// ============================================================================
 // 🚀 FINAL SETUP: EXPOSE CRITICAL FUNCTIONS GLOBALLY
 // ============================================================================
 
@@ -1541,7 +1500,7 @@ window.forceUserStatusSync = () => {
       oldStatus: null,
       newStatus: currentStatus,
       source: 'emergency-sync',
-      timestamp: Date.now()
+      timestamp: Date.Now()
     });
     console.log('🚨 Emergency user status sync triggered');
   } catch (error) {
@@ -1552,3 +1511,4 @@ window.forceUserStatusSync = () => {
 console.log('✅ Enhanced main.js with complete user status reactivity loaded successfully!');
 console.log('🔧 Use window.debugUserStatus for debugging user status issues');
 console.log('🚨 Use window.forceUserStatusSync() for emergency status sync');
+```
