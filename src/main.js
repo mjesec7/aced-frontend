@@ -2488,4 +2488,5 @@ window.testUserStatus = {
     localStorage.setItem('subscriptionPlan', 'free');
     
   }
+}
 };
