@@ -2336,13 +2336,8 @@ window.debugAuth = {
       
       const testToken = 'test-token-' + Date.now();
       
-      console.log('🧪 Testing saveUser action...');
-      const result = await store.dispatch('user/saveUser', { 
-        userData: testUser, 
-        token: testToken 
-      });
+  
       
-      console.log('🧪 Test result:', result);
       return result;
       
     } catch (error) {
@@ -2352,7 +2347,6 @@ window.debugAuth = {
   },
   
   forceBasicAuth: () => {
-    console.log('🔧 Forcing basic authentication mode...');
     
     const mockUser = {
       uid: 'mock-user-' + Date.now(),
@@ -2454,13 +2448,7 @@ console.log(`
 `);
 }
 
-}
 
-console.log('✅ UNIFIED main.js with perfect authentication + user status updates loaded successfully!');
-console.log('🔧 Authentication will complete BEFORE router navigation begins');
-console.log('🌟 User status changes (free ↔ start ↔ pro) will propagate globally');
-console.log('🚨 Use debugAuth.* and testUserStatus.* functions for debugging');
-console.log('🧪 Quick test: testUserStatus.setPro() then testUserStatus.setFree()');
 
 // ============================================================================
 // 🚀 ADDITIONAL STATUS CHANGE HOOKS FOR EXTERNAL INTEGRATIONS
@@ -2468,7 +2456,6 @@ console.log('🧪 Quick test: testUserStatus.setPro() then testUserStatus.setFre
 
 // Global hook for external scripts to trigger status changes
 window.updateUserSubscription = (newPlan, source = 'external') => {
-console.log('🔗 External subscription update requested:', { newPlan, source });
 
 if (!['free', 'start', 'pro'].includes(newPlan)) {
   console.error('❌ Invalid plan. Must be: free, start, pro');
