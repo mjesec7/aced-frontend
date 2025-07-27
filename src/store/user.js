@@ -1066,67 +1066,68 @@ const mutations = {
 const actions = {
   // ✅ CRITICAL FIX: updateUserStatus action that ALWAYS returns a result
   async updateUserStatus({ commit, state, dispatch }, newStatus) {
+    console.log('🚀 FIXED updateUserStatus action called with:', newStatus);
+    
+    // ✅ CRITICAL: Create result object FIRST - this ensures we ALWAYS return something
+    const result = {
+      success: false,
+      oldStatus: state.userStatus || 'free',
+      newStatus: newStatus,
+      timestamp: Date.now(),
+      duration: 0,
+      error: null,
+      message: null
+    };
+    
     const startTime = Date.now();
-    console.log('🚀 updateUserStatus action called with:', newStatus);
     
     try {
-      // ✅ CRITICAL: Input validation with early return
+      // Step 1: Validate input
       const validStatuses = ['free', 'start', 'pro', 'premium'];
-      if (!validStatuses.includes(newStatus)) {
-        console.error('❌ Invalid status provided:', newStatus);
-        const errorResult = { 
-          success: false, 
-          error: 'Invalid status',
-          validStatuses,
-          providedStatus: newStatus,
-          timestamp: Date.now()
-        };
-        console.log('❌ updateUserStatus returning error result:', errorResult);
-        return errorResult;
+      if (!newStatus || !validStatuses.includes(newStatus)) {
+        result.error = 'Invalid status provided';
+        result.validStatuses = validStatuses;
+        result.duration = Date.now() - startTime;
+        console.log('❌ updateUserStatus returning validation error:', result);
+        return result; // ✅ RETURN RESULT OBJECT
       }
-
-      const oldStatus = state.userStatus;
+  
+      const oldStatus = state.userStatus || 'free';
       console.log('🔍 Status change:', oldStatus, '→', newStatus);
-
-      // ✅ CRITICAL: Handle no-change case with success result
+  
+      // Step 2: Handle no-change case
       if (oldStatus === newStatus) {
         console.log('ℹ️ Status unchanged, but triggering updates');
-        commit('FORCE_UPDATE');
         
-        const noChangeResult = { 
-          success: true, 
-          message: 'Status unchanged', 
-          noChange: true,
-          oldStatus,
-          newStatus,
-          timestamp: Date.now(),
-          duration: Date.now() - startTime
-        };
-        console.log('✅ updateUserStatus returning no-change result:', noChangeResult);
-        return noChangeResult;
+        try {
+          commit('FORCE_UPDATE');
+        } catch (forceError) {
+          console.warn('⚠️ FORCE_UPDATE failed:', forceError);
+        }
+        
+        result.success = true;
+        result.message = 'Status unchanged';
+        result.noChange = true;
+        result.duration = Date.now() - startTime;
+        
+        console.log('✅ updateUserStatus returning no-change result:', result);
+        return result; // ✅ RETURN RESULT OBJECT
       }
-
-      // ✅ CRITICAL: Update store state with error handling
+  
+      // Step 3: Update store state with error handling
+      console.log('🔄 Updating store state...');
+      
       try {
-        console.log('🔄 Committing SET_USER_STATUS...');
         commit('SET_USER_STATUS', newStatus);
         console.log('✅ SET_USER_STATUS committed successfully');
-      } catch (commitError) {
-        console.error('❌ SET_USER_STATUS commit failed:', commitError);
-        const commitErrorResult = {
-          success: false,
-          error: 'Failed to update store status',
-          originalError: commitError.message,
-          timestamp: Date.now(),
-          duration: Date.now() - startTime
-        };
-        console.log('❌ updateUserStatus returning commit error result:', commitErrorResult);
-        return commitErrorResult;
+      } catch (statusError) {
+        console.error('❌ SET_USER_STATUS failed:', statusError);
+        result.error = 'Failed to update store status: ' + statusError.message;
+        result.duration = Date.now() - startTime;
+        return result; // ✅ RETURN RESULT OBJECT
       }
-
-      // ✅ CRITICAL: Update subscription with error handling
+  
       try {
-        console.log('🔄 Committing UPDATE_SUBSCRIPTION...');
         commit('UPDATE_SUBSCRIPTION', {
           plan: newStatus,
           status: newStatus !== 'free' ? 'active' : 'inactive',
@@ -1135,32 +1136,30 @@ const actions = {
         });
         console.log('✅ UPDATE_SUBSCRIPTION committed successfully');
       } catch (subscriptionError) {
-        console.error('❌ UPDATE_SUBSCRIPTION commit failed:', subscriptionError);
-        // Don't fail the entire operation for subscription update failure
+        console.warn('⚠️ UPDATE_SUBSCRIPTION failed:', subscriptionError);
+        // Don't fail the entire operation for this
       }
-
-      // ✅ CRITICAL: Force update with error handling
+  
       try {
-        console.log('🔄 Committing FORCE_UPDATE...');
         commit('FORCE_UPDATE');
         console.log('✅ FORCE_UPDATE committed successfully');
       } catch (forceError) {
-        console.error('❌ FORCE_UPDATE commit failed:', forceError);
-        // Don't fail the entire operation for force update failure
+        console.warn('⚠️ FORCE_UPDATE failed:', forceError);
+        // Don't fail the entire operation for this
       }
-
-      // ✅ CRITICAL: Update localStorage immediately
+  
+      // Step 4: Update localStorage
       try {
         localStorage.setItem('userStatus', newStatus);
         localStorage.setItem('statusUpdateTime', Date.now().toString());
         localStorage.setItem('plan', newStatus); // Legacy compatibility
         console.log('✅ localStorage updated successfully');
       } catch (storageError) {
-        console.warn('⚠️ Failed to update localStorage:', storageError);
-        // Don't fail the entire operation for storage failure
+        console.warn('⚠️ localStorage update failed:', storageError);
+        // Don't fail the entire operation for this
       }
-
-      // ✅ CRITICAL: Trigger global events with error handling
+  
+      // Step 5: Trigger global events
       try {
         const eventData = {
           oldStatus,
@@ -1169,28 +1168,29 @@ const actions = {
           source: 'updateUserStatus-action',
           duration: Date.now() - startTime
         };
-
-        // Multiple event triggering strategies
+  
+        // Multiple event triggering methods for maximum compatibility
         if (typeof window !== 'undefined') {
-          // Method 1: Direct window function
-          if (window.triggerGlobalEvent) {
+          // Method 1: Global trigger function
+          if (window.triggerGlobalEvent && typeof window.triggerGlobalEvent === 'function') {
             window.triggerGlobalEvent('userStatusChanged', eventData);
             window.triggerGlobalEvent('subscriptionUpdated', eventData);
-            console.log('✅ Global events triggered via window.triggerGlobalEvent');
+            console.log('✅ Global events triggered via triggerGlobalEvent');
           }
-
-          // Method 2: EventBus
-          if (window.eventBus?.emit) {
+  
+          // Method 2: Event bus
+          if (window.eventBus && window.eventBus.emit && typeof window.eventBus.emit === 'function') {
             window.eventBus.emit('userStatusChanged', eventData);
             window.eventBus.emit('subscriptionUpdated', eventData);
-            console.log('✅ Global events triggered via window.eventBus');
+            console.log('✅ Global events triggered via eventBus');
           }
-
+  
           // Method 3: Custom DOM events
           try {
             const customEvent = new CustomEvent('userSubscriptionChanged', {
               detail: eventData,
-              bubbles: true
+              bubbles: true,
+              cancelable: true
             });
             window.dispatchEvent(customEvent);
             console.log('✅ DOM event dispatched: userSubscriptionChanged');
@@ -1198,37 +1198,32 @@ const actions = {
             console.warn('⚠️ DOM event dispatch failed:', domEventError);
           }
         }
-
+  
         console.log('✅ All global events triggered successfully');
       } catch (eventError) {
         console.warn('⚠️ Global event triggering failed:', eventError);
-        // Don't fail the entire operation for event failure
+        // Don't fail the entire operation for this
       }
-
-      const duration = Date.now() - startTime;
-      console.log(`✅ updateUserStatus completed: ${oldStatus} → ${newStatus} (${duration}ms)`);
-
-      // ✅ CRITICAL: ALWAYS return success result object
-      const successResult = {
-        success: true,
-        oldStatus,
-        newStatus,
-        duration,
-        message: `Status updated from ${oldStatus} to ${newStatus}`,
-        timestamp: Date.now(),
-        eventsTriggered: true,
-        localStorageUpdated: true,
-        storeUpdated: true
-      };
-
-      console.log('✅ updateUserStatus returning success result:', successResult);
-      return successResult;
-
+  
+      // Step 6: Build final success result
+      result.success = true;
+      result.error = null;
+      result.message = `Status updated successfully from ${oldStatus} to ${newStatus}`;
+      result.duration = Date.now() - startTime;
+      result.eventsTriggered = true;
+      result.localStorageUpdated = true;
+      result.storeUpdated = true;
+  
+      console.log(`✅ updateUserStatus completed: ${oldStatus} → ${newStatus} (${result.duration}ms)`);
+      console.log('✅ updateUserStatus returning SUCCESS result:', result);
+      
+      return result; // ✅ RETURN RESULT OBJECT
+  
     } catch (error) {
-      const duration = Date.now() - startTime;
+      // Step 7: Handle any unexpected exceptions
       console.error('❌ updateUserStatus failed with exception:', error);
-
-      // ✅ CRITICAL: Try to commit error to store
+  
+      // Try to commit error to store (don't let this fail the return)
       try {
         commit('SET_ERROR', {
           message: 'Status update failed',
@@ -1236,22 +1231,25 @@ const actions = {
           originalError: error.message
         });
       } catch (commitError) {
-        console.error('❌ Failed to commit error:', commitError);
+        console.error('❌ Failed to commit error to store:', commitError);
       }
-
-      // ✅ CRITICAL: ALWAYS return error result object
-      const errorResult = {
-        success: false,
-        error: error.message || 'Unknown error occurred',
-        duration,
-        timestamp: Date.now(),
-        originalError: error.message,
-        stack: error.stack
-      };
-
-      console.log('❌ updateUserStatus returning exception result:', errorResult);
-      return errorResult;
+  
+      // Build error result
+      result.success = false;
+      result.error = error.message || 'Unknown error occurred during status update';
+      result.duration = Date.now() - startTime;
+      result.originalError = error.message;
+      result.stack = error.stack;
+  
+      console.log('❌ updateUserStatus returning EXCEPTION result:', result);
+      return result; // ✅ RETURN RESULT OBJECT
     }
+    
+    // ✅ SAFETY NET: This should never be reached, but just in case
+    console.error('🚨 CRITICAL: Reached end of updateUserStatus without returning!');
+    result.error = 'Reached end of function without returning';
+    result.duration = Date.now() - startTime;
+    return result; // ✅ RETURN RESULT OBJECT
   },
 
   // ✅ ENHANCED: Bulletproof saveUser action with comprehensive error handling
