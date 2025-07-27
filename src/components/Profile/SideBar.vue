@@ -31,17 +31,38 @@
             Каталог
           </router-link>
 
-          <router-link
-            v-for="link in links"
-            :key="link.name"
-            :to="getRoutePath(link.name)"
-            class="nav-item"
-            :class="{ active: isActive(link.name) }"
-            @click="closeSidebarOnMobile"
-          >
-            <span class="highlight"></span>
-            {{ link.label }}
-          </router-link>
+          <!-- ✅ ENHANCED: Dynamic links with access control -->
+          <template v-for="link in filteredLinks" :key="link.name">
+            <router-link
+              v-if="hasAccessToFeature(link.feature)"
+              :to="getRoutePath(link.name)"
+              class="nav-item"
+              :class="{ 
+                active: isActive(link.name),
+                'premium-feature': link.premium && !hasAccessToFeature(link.feature)
+              }"
+              @click="handleLinkClick(link)"
+            >
+              <span class="highlight"></span>
+              <span class="link-content">
+                {{ link.label }}
+                <span v-if="link.premium && !hasAccessToFeature(link.feature)" class="premium-badge">✨</span>
+              </span>
+            </router-link>
+            
+            <!-- ✅ NEW: Locked feature item for premium features -->
+            <div
+              v-else-if="link.premium"
+              class="nav-item locked-feature"
+              @click="showUpgradeModal(link)"
+            >
+              <span class="highlight"></span>
+              <span class="link-content">
+                {{ link.label }}
+                <span class="lock-icon">🔒</span>
+              </span>
+            </div>
+          </template>
         </div>
 
         <div class="bottom-logout">
@@ -56,6 +77,41 @@
       @click="closeSidebar"
     ></div>
 
+    <!-- ✅ NEW: Upgrade Modal -->
+    <div class="upgrade-modal" v-if="showUpgradeModal">
+      <div class="upgrade-modal-content">
+        <div class="upgrade-header">
+          <h3>✨ Премиум функция</h3>
+          <button class="close-btn" @click="closeUpgradeModal">×</button>
+        </div>
+        <div class="upgrade-body">
+          <p><strong>{{ selectedFeature?.label }}</strong> доступно только в Start и Pro планах.</p>
+          <div class="feature-benefits">
+            <p>С Start или Pro планом вы получите:</p>
+            <ul>
+              <li>✅ Полный доступ к аналитике</li>
+              <li>✅ Расширенные цели и планирование</li>
+              <li>✅ Помощь с домашними заданиями</li>
+              <li>✅ Продвинутые тесты</li>
+              <li>✅ Персональный словарь</li>
+              <li v-if="selectedFeature?.name === 'analytics'">📊 Детальная статистика прогресса</li>
+              <li v-if="selectedFeature?.name === 'homework'">🤖 ИИ-помощник для ДЗ</li>
+              <li v-if="selectedFeature?.name === 'tests'">📝 Безлимитные тесты</li>
+            </ul>
+          </div>
+        </div>
+        <div class="upgrade-actions">
+          <button class="upgrade-btn" @click="goToUpgrade">
+            Обновить план
+          </button>
+          <button class="cancel-upgrade-btn" @click="closeUpgradeModal">
+            Может позже
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ EXISTING: Logout Modal -->
     <div class="logout-modal" v-if="showLogoutModal">
       <div class="logout-modal-content">
         <p>Вы уверены, что хотите выйти?</p>
@@ -77,7 +133,6 @@ import { userStatusMixin } from '@/composables/useUserStatus';
 export default {
   name: 'SideBar',
   
-  // ✅ ENHANCED: Add the comprehensive user status mixin
   mixins: [userStatusMixin],
   
   props: {
@@ -90,29 +145,76 @@ export default {
   data() {
     return {
       showLogoutModal: false,
-      links: [
-        { name: 'analytics', label: 'Аналитика' },
-        { name: 'goal', label: 'Цели' },
-        { name: 'diary', label: 'Дневник' },
-        { name: 'homework', label: 'Помощь с ДЗ' },
-        { name: 'homeworks', label: 'Домашние задания' },
-        { name: 'tests', label: 'Тесты' },
-        { name: 'vocabulary', label: 'Словарь' },
-        { name: 'settings', label: 'Настройки' }
-      ],
-      isMobile: false,
+      showUpgradeModal: false,
+      selectedFeature: null,
       
-      // ✅ ENHANCED: More comprehensive reactivity tracking
+      // ✅ ENHANCED: Links with access control configuration
+      links: [
+        { 
+          name: 'analytics', 
+          label: 'Аналитика', 
+          feature: 'analytics',
+          premium: true, // Requires Start or Pro
+          requiredPlans: ['start', 'pro']
+        },
+        { 
+          name: 'goal', 
+          label: 'Цели', 
+          feature: 'goals',
+          premium: true, // Requires Start or Pro
+          requiredPlans: ['start', 'pro']
+        },
+        { 
+          name: 'diary', 
+          label: 'Дневник', 
+          feature: 'diary',
+          premium: false, // Free for everyone
+          requiredPlans: ['free', 'start', 'pro']
+        },
+        { 
+          name: 'homework', 
+          label: 'Помощь с ДЗ', 
+          feature: 'homework_help',
+          premium: true, // Requires Start or Pro
+          requiredPlans: ['start', 'pro']
+        },
+        { 
+          name: 'homeworks', 
+          label: 'Домашние задания', 
+          feature: 'homeworks',
+          premium: false, // Free for everyone
+          requiredPlans: ['free', 'start', 'pro']
+        },
+        { 
+          name: 'tests', 
+          label: 'Тесты', 
+          feature: 'tests',
+          premium: true, // Requires Start or Pro
+          requiredPlans: ['start', 'pro']
+        },
+        { 
+          name: 'vocabulary', 
+          label: 'Словарь', 
+          feature: 'vocabulary',
+          premium: true, // Requires Start or Pro
+          requiredPlans: ['start', 'pro']
+        },
+        { 
+          name: 'settings', 
+          label: 'Настройки', 
+          feature: 'settings',
+          premium: false, // Free for everyone
+          requiredPlans: ['free', 'start', 'pro']
+        }
+      ],
+      
+      isMobile: false,
       componentKey: 0,
       reactivityKey: 0,
       lastStatusUpdate: Date.now(),
-      
-      // ✅ Enhanced: Event cleanup tracking
       eventCleanupFunctions: [],
       storeUnsubscribe: null,
       globalEventHandlers: {},
-      
-      // ✅ NEW: Status sync tracking
       lastSyncTime: Date.now(),
       syncCheckInterval: null,
       notificationTimeout: null
@@ -122,7 +224,6 @@ export default {
   computed: {
     ...mapState(['user']),
     
-    // ✅ ENHANCED: Map all needed user getters from store with reactivity
     ...mapGetters('user', [
       'userStatus',
       'isPremiumUser',
@@ -134,27 +235,50 @@ export default {
       'forceUpdateCounter'
     ]),
     
-    // ✅ ENHANCED: Better plan label with comprehensive reactivity (from mixin)
+    // ✅ NEW: Current effective user plan with reactivity
+    currentPlan() {
+      const key = this.reactivityKey; // Force reactivity
+      const storeStatus = this.userStatus;
+      const localStatus = localStorage.getItem('userStatus');
+      const workingStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : null;
+      
+      const effectiveStatus = storeStatus || workingStatus || localStatus || 'free';
+      
+      console.log('🔍 Sidebar currentPlan computed:', {
+        storeStatus,
+        localStatus,
+        workingStatus,
+        effectiveStatus,
+        reactivityKey: this.reactivityKey
+      });
+      
+      return effectiveStatus;
+    },
+    
+    // ✅ NEW: Filtered links based on access control
+    filteredLinks() {
+      return this.links.filter(link => {
+        // Always show all links, but we'll handle access in the template
+        return true;
+      });
+    },
+    
     planLabel() {
       return this.userStatusLabel || 'Free';
     },
     
-    // ✅ NEW: Computed property to track user info changes with reactivity
     userDisplayName() {
-      const key = this.componentKey; // Force reactivity by depending on componentKey
+      const key = this.componentKey;
       if (!this.user) return 'Пользователь';
       return this.user.name || this.user.displayName || this.user.email?.split('@')[0] || 'Пользователь';
     },
     
-    // ✅ NEW: Enhanced user status badge class (from mixin)
     userStatusBadgeClass() {
       return this.getStatusBadgeClass();
     }
   },
   
-  // ✅ ENHANCED: Comprehensive watchers for all possible changes
   watch: {
-    // ✅ Watch for user status changes from store with immediate feedback
     userStatus: {
       handler(newStatus, oldStatus) {
         console.log('📊 Sidebar: User status changed from', oldStatus, 'to:', newStatus);
@@ -164,7 +288,6 @@ export default {
       immediate: true
     },
     
-    // ✅ Watch store force update counter
     forceUpdateCounter: {
       handler(newCounter, oldCounter) {
         console.log('📊 Sidebar: Force update counter changed:', oldCounter, '→', newCounter);
@@ -173,7 +296,6 @@ export default {
       immediate: true
     },
     
-    // ✅ Watch for user object changes
     user: {
       handler(newUser, oldUser) {
         console.log('👤 Sidebar: User object changed:', { 
@@ -184,14 +306,13 @@ export default {
         
         if (newUser && (!oldUser || oldUser.email !== newUser.email)) {
           console.log('👤 Sidebar: New user logged in:', newUser.email);
-          this.componentKey++; // Trigger userDisplayName reactivity
+          this.componentKey++;
         }
       },
       deep: true,
       immediate: true
     },
     
-    // ✅ Watch for subscription details changes
     subscriptionDetails: {
       handler(newSub, oldSub) {
         if (newSub !== oldSub) {
@@ -203,7 +324,6 @@ export default {
       immediate: true
     },
     
-    // ✅ Watch for subscription status changes
     hasActiveSubscription: {
       handler(hasSubscription, hadSubscription) {
         if (hasSubscription !== hadSubscription) {
@@ -214,7 +334,6 @@ export default {
       immediate: true
     },
 
-    // ✅ Watch for direct store state changes
     '$store.state.user.userStatus': {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
@@ -235,7 +354,6 @@ export default {
     this.checkMobile();
     window.addEventListener('resize', this.checkMobile);
     
-    // ✅ ENHANCED: Better Firebase auth state handling
     onAuthStateChanged(auth, (firebaseUser) => {
       console.log('🔥 Sidebar: Firebase auth state changed:', firebaseUser?.email);
       
@@ -251,8 +369,6 @@ export default {
         
         console.log('👤 Sidebar: Setting user data:', userData);
         this.setUser(userData);
-        
-        // ✅ Store user ID for API calls
         this.$store.commit('setFirebaseUserId', firebaseUser.uid);
         localStorage.setItem('firebaseUserId', firebaseUser.uid);
         
@@ -264,10 +380,8 @@ export default {
       }
     });
     
-    // ✅ ENHANCED: Setup all global listeners
     this.setupGlobalListeners();
     
-    // ✅ ENHANCED: Store subscription listener with enhanced mutation tracking
     this.storeUnsubscribe = this.$store.subscribe((mutation) => {
       const relevantMutations = [
         'user/SET_USER_STATUS',
@@ -284,34 +398,25 @@ export default {
       }
     });
     
-    // ✅ Initial status sync check
     this.syncStatusWithStore();
-    
-    // ✅ NEW: Setup periodic sync check
     this.setupPeriodicSync();
   },
   
   beforeUnmount() {
     console.log('🔧 Sidebar: Component unmounting');
-    // Remove resize listener
     window.removeEventListener('resize', this.checkMobile);
-    
-    // Clean up global event listeners
     this.cleanupGlobalListeners();
     
-    // Remove store subscription
     if (this.storeUnsubscribe) {
       this.storeUnsubscribe();
       this.storeUnsubscribe = null;
     }
     
-    // Clear sync interval
     if (this.syncCheckInterval) {
       clearInterval(this.syncCheckInterval);
       this.syncCheckInterval = null;
     }
     
-    // Clear notification timeout
     if (this.notificationTimeout) {
       clearTimeout(this.notificationTimeout);
       this.notificationTimeout = null;
@@ -323,12 +428,69 @@ export default {
   methods: {
     ...mapMutations(['setUser', 'clearUser']),
     
-    // ✅ ENHANCED: Override mixin method for status change notifications
+    // ✅ NEW: Check if user has access to a specific feature
+    hasAccessToFeature(feature) {
+      const plan = this.currentPlan;
+      
+      console.log('🔒 Sidebar: Checking access for feature:', feature, 'with plan:', plan);
+      
+      // Find the link configuration for this feature
+      const linkConfig = this.links.find(link => link.feature === feature);
+      if (!linkConfig) {
+        console.warn('⚠️ Unknown feature:', feature);
+        return false;
+      }
+      
+      // Check if current plan is in the required plans
+      const hasAccess = linkConfig.requiredPlans.includes(plan);
+      
+      console.log('🔒 Access check result:', {
+        feature,
+        plan,
+        requiredPlans: linkConfig.requiredPlans,
+        hasAccess
+      });
+      
+      return hasAccess;
+    },
+    
+    // ✅ NEW: Handle link clicks with access control
+    handleLinkClick(link) {
+      if (link.premium && !this.hasAccessToFeature(link.feature)) {
+        // Prevent navigation and show upgrade modal
+        this.showUpgradeModal(link);
+        return false;
+      }
+      
+      // Allow normal navigation
+      this.closeSidebarOnMobile();
+      return true;
+    },
+    
+    // ✅ NEW: Show upgrade modal for premium features
+    showUpgradeModal(link) {
+      console.log('💎 Sidebar: Showing upgrade modal for:', link.label);
+      this.selectedFeature = link;
+      this.showUpgradeModal = true;
+    },
+    
+    // ✅ NEW: Close upgrade modal
+    closeUpgradeModal() {
+      this.showUpgradeModal = false;
+      this.selectedFeature = null;
+    },
+    
+    // ✅ NEW: Navigate to upgrade/settings page
+    goToUpgrade() {
+      this.closeUpgradeModal();
+      this.$router.push('/settings');
+      this.closeSidebarOnMobile();
+    },
+    
     onUserStatusChanged(newStatus, oldStatus) {
       console.log(`🔔 Sidebar: User status changed from ${oldStatus} to ${newStatus}`);
       
       if (oldStatus && oldStatus !== newStatus && newStatus && newStatus !== 'free') {
-        // Delay notification to avoid showing multiple times
         clearTimeout(this.notificationTimeout);
         this.notificationTimeout = setTimeout(() => {
           this.showUpgradeNotification(newStatus, 'subscription-change');
@@ -336,14 +498,11 @@ export default {
       }
     },
     
-    // ✅ NEW: Setup periodic sync check
     setupPeriodicSync() {
-      // Clear any existing interval to prevent duplicates
       if (this.syncCheckInterval) {
         clearInterval(this.syncCheckInterval);
       }
 
-      // Check for status consistency every 30 seconds
       this.syncCheckInterval = setInterval(() => {
         this.syncStatusWithStore();
       }, 30000);
@@ -351,20 +510,15 @@ export default {
       console.log('✅ Sidebar: Periodic sync check setup');
     },
 
-    // ✅ ENHANCED: More comprehensive global listeners setup
     setupGlobalListeners() {
       console.log('🔧 Sidebar: Setting up global event listeners');
       
-      // ✅ Enhanced subscription change handler (for custom DOM event)
       this.globalEventHandlers.subscriptionChange = (event) => {
         console.log('📡 Sidebar: Global subscription change received (DOM event):', event.detail);
         
         const { plan, source, oldPlan } = event.detail;
-        
-        // Force immediate update with multiple triggers
         this.handleStatusChange(plan, oldPlan);
         
-        // Show celebration for upgrades
         this.$nextTick(() => {
           if (plan && plan !== 'free' && oldPlan === 'free') {
             this.showUpgradeNotification(plan, source);
@@ -372,7 +526,6 @@ export default {
         });
       };
       
-      // ✅ Enhanced event bus listeners with error handling
       if (typeof window !== 'undefined' && window.eventBus) {
         this.globalEventHandlers.statusChanged = (data) => {
           console.log('📡 Sidebar: Status change event (EventBus):', data);
@@ -399,14 +552,12 @@ export default {
           this.triggerReactivityUpdate();
         };
         
-        // ✅ NEW: Store change event handler for EventBus
         this.globalEventHandlers.storeChanged = (data) => {
           console.log('📡 Sidebar: Store changed event (EventBus):', data);
           this.syncStatusWithStore();
           this.triggerReactivityUpdate();
         };
         
-        // Register all event bus listeners and push cleanup functions
         const eventsToRegister = [
           ['userStatusChanged', this.globalEventHandlers.statusChanged],
           ['promocodeApplied', this.globalEventHandlers.promocodeApplied],
@@ -426,12 +577,10 @@ export default {
         console.log('✅ Sidebar: Event bus listeners registered');
       }
       
-      // ✅ Enhanced DOM event listener
       if (typeof window !== 'undefined') {
         window.addEventListener('userSubscriptionChanged', this.globalEventHandlers.subscriptionChange);
         console.log('✅ Sidebar: DOM event listener registered');
         
-        // ✅ NEW: Listen for localStorage changes (for cross-tab sync)
         this.globalEventHandlers.storageChange = (event) => {
           if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
             console.log('📡 Sidebar: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
@@ -444,12 +593,10 @@ export default {
       }
     },
 
-    // ✅ ENHANCED: Better comprehensive cleanup for global listeners
     cleanupGlobalListeners() {
       console.log('🧹 Sidebar: Cleaning up global event listeners');
       
       if (typeof window !== 'undefined') {
-        // Remove specific DOM event listeners
         if (this.globalEventHandlers.subscriptionChange) {
           window.removeEventListener('userSubscriptionChanged', this.globalEventHandlers.subscriptionChange);
         }
@@ -458,7 +605,6 @@ export default {
           window.removeEventListener('storage', this.globalEventHandlers.storageChange);
         }
         
-        // Remove event bus listeners using stored cleanup functions
         this.eventCleanupFunctions.forEach(cleanup => {
           try {
             cleanup();
@@ -468,33 +614,21 @@ export default {
         });
       }
       
-      // Clear handlers object and cleanup array
       this.globalEventHandlers = {};
       this.eventCleanupFunctions = [];
     },
     
-    // ✅ NEW: Centralized status change handler
     handleStatusChange(newStatus, oldStatus) {
       console.log('🔄 Sidebar: Handling status change:', oldStatus, '→', newStatus);
-      
-      // Update local tracking
       this.lastStatusUpdate = Date.now();
-      
-      // Trigger multiple reactivity updates
       this.triggerReactivityUpdate();
-      
-      // Call mixin method for additional handling
       this.onUserStatusChanged(newStatus, oldStatus);
     },
     
-    // ✅ NEW: Store update handler
     handleStoreUpdate(mutation) {
       console.log('🔄 Sidebar: Handling store update:', mutation.type);
-      
-      // Force component update with multiple strategies
       this.triggerReactivityUpdate();
       
-      // Additional delayed update for stubborn cases
       this.$nextTick(() => {
         setTimeout(() => {
           this.triggerReactivityUpdate();
@@ -502,18 +636,14 @@ export default {
       });
     },
     
-    // ✅ NEW: Comprehensive reactivity update
     triggerReactivityUpdate() {
-      // Multiple reactivity triggers for maximum reliability
       this.componentKey++;
       this.reactivityKey++;
       this.lastStatusUpdate = Date.now();
       this.lastSyncTime = Date.now();
       
-      // Force Vue reactivity
       this.$forceUpdate();
       
-      // Additional delayed updates
       this.$nextTick(() => {
         this.$forceUpdate();
         
@@ -526,11 +656,11 @@ export default {
         componentKey: this.componentKey,
         reactivityKey: this.reactivityKey,
         currentStatus: this.userStatus,
+        currentPlan: this.currentPlan,
         timestamp: this.lastStatusUpdate
       });
     },
     
-    // ✅ ENHANCED: Better sync with store
     syncStatusWithStore() {
       try {
         const storeStatus = this.$store?.getters['user/userStatus'];
@@ -544,7 +674,6 @@ export default {
           timeSinceLastSync: currentTime - this.lastSyncTime
         });
         
-        // If there's a mismatch between store and localStorage, prefer store and update localStorage
         if (storeStatus && storeStatus !== localStatus) {
           console.log('⚠️ Sidebar: Status mismatch detected, syncing localStorage to store');
           localStorage.setItem('userStatus', storeStatus);
@@ -552,7 +681,6 @@ export default {
           this.lastSyncTime = currentTime;
         }
         
-        // If store is empty/default but localStorage has a higher status, update store
         if (!storeStatus || storeStatus === 'free') {
           if (localStatus && localStatus !== 'free' && localStatus !== storeStatus) {
             console.log('⚠️ Sidebar: Store missing higher status, updating from localStorage');
@@ -562,8 +690,7 @@ export default {
           }
         }
         
-        // Force reactivity if it's been a while since last update (as a fallback)
-        if (currentTime - this.lastSyncTime > 60000) { // 1 minute
+        if (currentTime - this.lastSyncTime > 60000) {
           console.log('🔄 Sidebar: Periodic reactivity refresh (long idle)');
           this.triggerReactivityUpdate();
           this.lastSyncTime = currentTime;
@@ -574,7 +701,6 @@ export default {
       }
     },
     
-    // ✅ NEW: Show upgrade notification
     showUpgradeNotification(plan, source) {
       const planLabels = {
         start: 'Start',
@@ -616,23 +742,17 @@ export default {
       }
     },
     
-    // ✅ ENHANCED: Better logout handling
     async logout() {
       try {
         console.log('🚪 Sidebar: Starting logout process...');
-        
-        // Hide modal immediately for better UX
         this.showLogoutModal = false;
         
-        // Sign out from Firebase
         await signOut(auth);
         
-        // Clear all store data
         this.clearUser();
         this.$store.commit('user/CLEAR_USER');
         this.$store.commit('setFirebaseUserId', null);
         
-        // Clear relevant local storage items
         const keysToRemove = ['firebaseUserId', 'userId', 'userStatus', 'subscriptionDetails', 'appliedPromocodes'];
         keysToRemove.forEach(key => {
           localStorage.removeItem(key);
@@ -640,7 +760,6 @@ export default {
         
         console.log('✅ Sidebar: Logout successful');
         
-        // Show success message
         if (this.$toast) {
           this.$toast.success('Вы успешно вышли из аккаунта.', {
             duration: 3000,
@@ -648,7 +767,6 @@ export default {
           });
         }
         
-        // Redirect after a short delay for toast to show
         setTimeout(() => {
           this.$router.push('/');
         }, 1500);
@@ -671,11 +789,9 @@ export default {
       return `/profile/${linkName}`;
     },
     
-    // ✅ ENHANCED: Better route matching for active state
     isActive(name) {
       const path = this.$route.path;
       
-      // Handle exact route matches
       const exactMatches = {
         main: ['/profile/main', '/profile', '/profile/'],
         catalogue: ['/profile/catalogue'],
@@ -685,7 +801,6 @@ export default {
         settings: ['/settings']
       };
       
-      // Handle routes that can have sub-paths
       const startsWithMatches = {
         homework: '/profile/homework',
         homeworks: '/profile/homeworks',
@@ -693,12 +808,10 @@ export default {
         vocabulary: '/profile/vocabulary'
       };
       
-      // Check exact matches first
       if (exactMatches[name] && exactMatches[name].includes(path)) {
         return true;
       }
       
-      // Check startsWith matches
       if (startsWithMatches[name] && path.startsWith(startsWithMatches[name])) {
         if (name === 'homework') {
           return path === '/profile/homework' || path.startsWith('/profile/homework/');
@@ -706,7 +819,6 @@ export default {
         return true;
       }
       
-      // Fallback to generic match
       return path.includes(`/profile/${name}`);
     }
   }
@@ -909,6 +1021,42 @@ export default {
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
 }
 
+/* ✅ NEW: Locked feature styles */
+.nav-item.locked-feature {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  cursor: pointer;
+  border: 1px dashed #cbd5e1;
+}
+
+.nav-item.locked-feature:hover {
+  background: linear-gradient(to right, #fef3c7, #fde68a);
+  color: #92400e;
+  border-color: #f59e0b;
+  transform: translateX(2px);
+}
+
+.nav-item.locked-feature .highlight {
+  background: linear-gradient(to bottom, #f59e0b, #d97706);
+}
+
+.link-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.premium-badge {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.lock-icon {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
 .bottom-logout {
   padding: 16px;
   border-top: 1px solid #e5e7eb;
@@ -935,6 +1083,162 @@ export default {
   transform: translateY(-1px);
 }
 
+/* ✅ NEW: Upgrade Modal Styles */
+.upgrade-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+}
+
+.upgrade-modal-content {
+  background: white;
+  border-radius: 16px;
+  max-width: 480px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  font-family: 'Inter', sans-serif;
+  animation: upgradeModalAppear 0.3s ease-out;
+}
+
+@keyframes upgradeModalAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.upgrade-header {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+}
+
+.upgrade-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.upgrade-body {
+  padding: 24px;
+}
+
+.upgrade-body p {
+  margin: 0 0 16px;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.feature-benefits {
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 12px;
+  margin-top: 16px;
+}
+
+.feature-benefits p {
+  margin: 0 0 12px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.feature-benefits ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.feature-benefits li {
+  padding: 6px 0;
+  color: #4b5563;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.upgrade-actions {
+  padding: 16px 24px 24px;
+  display: flex;
+  gap: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.upgrade-btn {
+  flex: 1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.upgrade-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.cancel-upgrade-btn {
+  flex: 1;
+  background: #f3f4f6;
+  color: #6b7280;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-upgrade-btn:hover {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+/* ✅ EXISTING: Logout Modal */
 .logout-modal {
   position: fixed;
   top: 0;
@@ -1011,6 +1315,24 @@ export default {
 @media (max-width: 768px) {
   .sidebar {
     z-index: 1001;
+  }
+  
+  .upgrade-modal-content {
+    max-width: 95%;
+    margin: 20px;
+  }
+  
+  .upgrade-header {
+    padding: 20px 20px 16px;
+  }
+  
+  .upgrade-body {
+    padding: 20px;
+  }
+  
+  .upgrade-actions {
+    padding: 16px 20px 20px;
+    flex-direction: column;
   }
 }
 
