@@ -1889,7 +1889,7 @@ if (import.meta.env.DEV) {
   `);
 }
 
-}
+
 
 console.log('✅ UNIFIED main.js with perfect authentication + user status updates loaded successfully!');
 console.log('🔧 Authentication will complete BEFORE router navigation begins');
