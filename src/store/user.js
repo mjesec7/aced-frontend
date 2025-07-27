@@ -1424,11 +1424,11 @@ const actions = {
         // Don't fail the entire operation if store update fails
       }
 
-      // ✅ CRITICAL: Always return success result
-      const finalResult = createSuccessResult(completeUser, 'User saved and synchronized successfully');
-      console.log('🎉 saveUser returning success result:', finalResult);
-      // 🔥 FIX: The missing return statement that caused the error.
-      return finalResult;
+    // ✅ CRITICAL: Always return success result
+    const finalResult = createSuccessResult(completeUser, 'User saved and synchronized successfully');
+    console.log('🎉 saveUser returning success result:', finalResult);
+    // 🔥 FIX: This line solves the error.
+    return finalResult;
 
     } catch (error) {
       console.error('❌ Unexpected error in saveUser:', error);
