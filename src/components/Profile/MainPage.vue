@@ -52,7 +52,7 @@
           <button v-if="hasActiveFilters" @click="clearAllFilters" class="clear-all-btn">
             🗑️ Очистить
           </button>
-          <span class="user-badge" :class="currentUserStatus">{{ userStatusLabel }}</span>
+          <span v-if="safeUserStatus" class="user-badge" :class="safeUserStatus">{{ userStatusLabel }}</span>
         </div>
       </div>
       
@@ -247,6 +247,7 @@
     </div>
 
     <PaymentModal
+      v-if="userId"
       :user-id="userId"
       :visible="showPaywall"
       :requested-topic-id="requestedTopicId"
@@ -356,49 +357,61 @@ export default {
       forceUpdateCounter: 0,
       componentMounted: false,
       statusEventListeners: [],
-      eventCleanupFunctions: []
+      eventCleanupFunctions: [],
+      
+      // Safe user status tracking
+      safeUserStatus: 'free',
+      lastKnownUserStatus: 'free',
+      userStatusUpdateTimer: null
     };
   },
   
   computed: {
-    ...mapGetters('user', [
-      'userStatus',
-      'isPremiumUser', 
-      'isStartUser',
-      'isProUser',
-      'isFreeUser',
-      'hasActiveSubscription',
-      'getUser',
-      'subscriptionDetails',
-      'forceUpdateCounter'
-    ]),
+    ...mapGetters('user', {
+      vuexUserStatus: 'userStatus',
+      vuexIsPremiumUser: 'isPremiumUser', 
+      vuexIsStartUser: 'isStartUser',
+      vuexIsProUser: 'isProUser',
+      vuexIsFreeUser: 'isFreeUser',
+      vuexHasActiveSubscription: 'hasActiveSubscription',
+      vuexGetUser: 'getUser',
+      vuexSubscriptionDetails: 'subscriptionDetails',
+      vuexForceUpdateCounter: 'forceUpdateCounter'
+    }),
     
     currentUserStatus() {
-      const storeStatus = this.$store.state.user?.subscriptionPlan || this.$store.getters['user/userStatus'];
-      const localStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
-      const userObjectStatus = this.getUser?.subscriptionPlan;
-      
-      const statuses = [storeStatus, localStatus, userObjectStatus].filter(s => s && s !== 'free');
-      const currentStatus = statuses[0] || storeStatus || localStatus || userObjectStatus || 'free';
-      
-      const updateKey = this.reactivityKey + this.forceUpdateCounter + this.lastUpdateTime;
-      
-      console.log('🔍 MainPage currentUserStatus:', {
-        computed: currentStatus,
-        store: storeStatus,
-        local: localStatus,
-        userObject: userObjectStatus,
-        updateKey
-      });
-      
-      return currentStatus;
+      // Safely get user status with multiple fallbacks and error handling
+      try {
+        const storeUser = this.$store?.state?.user;
+        const storeStatus = storeUser?.subscriptionPlan || this.vuexUserStatus;
+        const localStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
+        const userObjectStatus = this.vuexGetUser?.subscriptionPlan;
+        
+        // Filter out invalid statuses
+        const validStatuses = ['free', 'start', 'premium', 'pro'];
+        const candidateStatuses = [storeStatus, localStatus, userObjectStatus]
+          .filter(s => s && validStatuses.includes(String(s).toLowerCase()));
+        
+        const finalStatus = candidateStatuses[0] || 'free';
+        
+        // Update safe status if it changed
+        if (finalStatus !== this.safeUserStatus) {
+          this.updateSafeUserStatus(finalStatus);
+        }
+        
+        return finalStatus;
+      } catch (error) {
+        console.warn('⚠️ Error in currentUserStatus computed:', error);
+        return this.safeUserStatus || 'free';
+      }
     },
     
     userStatusLabel() {
-      const status = this.currentUserStatus;
+      const status = this.safeUserStatus || 'free';
       const labels = {
         'pro': 'Pro',
         'start': 'Start',
+        'premium': 'Start',
         'free': 'Free'
       };
       return labels[status] || 'Free';
@@ -406,6 +419,10 @@ export default {
     
     filteredRecommendations() {
       try {
+        if (!Array.isArray(this.displayedRecommendations)) {
+          return [];
+        }
+        
         return this.applySorting(
           this.displayedRecommendations
             .filter(t => t?.lessons?.length > 0)
@@ -419,6 +436,10 @@ export default {
     
     filteredStudyList() {
       try {
+        if (!Array.isArray(this.studyList)) {
+          return [];
+        }
+        
         return this.applySorting(
           this.studyList.filter(t => this.passesAllFilters(t))
         );
@@ -452,67 +473,34 @@ export default {
     
     isLoading() {
       return this.loadingRecommendations || this.loadingStudyList;
-    },
-    
-    totalTopicsAvailable() {
-      return this.allRecommendations.length + this.studyList.length;
-    },
-    
-    completionRate() {
-      const completedCourses = this.studyList.filter(t => t.progress?.percent === 100).length;
-      return this.studyList.length > 0 ? Math.round((completedCourses / this.studyList.length) * 100) : 0;
-    },
-    
-    averageProgress() {
-      if (this.studyList.length === 0) return 0;
-      const totalProgress = this.studyList.reduce((sum, t) => sum + (t.progress?.percent || 0), 0);
-      return Math.round(totalProgress / this.studyList.length);
     }
   },
   
   watch: {
     '$store.state.user': {
-      handler(newUser, oldUser) {
-        const newPlan = newUser?.subscriptionPlan;
-        const oldPlan = oldUser?.subscriptionPlan;
-        
-        if (newPlan !== oldPlan) {
-          console.log('👤 MainPage: User plan changed:', oldPlan, '→', newPlan);
-          this.handleUserStatusChange(newPlan, oldPlan);
-        }
+      handler(newUser) {
+        this.handleStoreUserChange(newUser);
       },
       deep: true,
-      immediate: true
+      immediate: false
     },
 
-    getUser: {
-      handler(newUser, oldUser) {
-        const newPlan = newUser?.subscriptionPlan;
-        const oldPlan = oldUser?.subscriptionPlan;
-        
-        if (newPlan !== oldPlan) {
-          console.log('👤 MainPage: GetUser plan changed:', oldPlan, '→', newPlan);
-          this.handleUserStatusChange(newPlan, oldPlan);
-        }
+    vuexGetUser: {
+      handler(newUser) {
+        this.handleVuexUserChange(newUser);
       },
       deep: true,
-      immediate: true
+      immediate: false
     },
 
     currentUserStatus: {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
           console.log('📊 MainPage: Current user status changed:', oldStatus, '→', newStatus);
-          this.forceReactivityUpdate();
-          
-          if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
-            setTimeout(() => {
-              this.refreshAllData();
-            }, 500);
-          }
+          this.handleUserStatusChange(newStatus, oldStatus);
         }
       },
-      immediate: true
+      immediate: false
     }
   },
   
@@ -522,8 +510,10 @@ export default {
     
     try {
       this.performanceMetrics.mountTime = startTime;
+      this.componentMounted = true;
       
       await this.validateUserAuthentication();
+      await this.initializeSafeUserStatus();
       this.setupEnhancedEventListeners();
       await this.initializeDataLoading();
       
@@ -552,30 +542,125 @@ export default {
   
   beforeUnmount() {
     console.log('📱 MainPage: Component unmounting');
+    this.componentMounted = false;
     this.performCleanup();
   },
   
   methods: {
+    async initializeSafeUserStatus() {
+      try {
+        // Get status from multiple sources safely
+        const sources = [
+          () => this.$store?.state?.user?.subscriptionPlan,
+          () => localStorage.getItem('userStatus'),
+          () => localStorage.getItem('plan'),
+          () => this.vuexGetUser?.subscriptionPlan
+        ];
+        
+        let detectedStatus = 'free';
+        
+        for (const getStatus of sources) {
+          try {
+            const status = getStatus();
+            if (status && ['free', 'start', 'premium', 'pro'].includes(status)) {
+              detectedStatus = status;
+              break;
+            }
+          } catch (error) {
+            console.warn('⚠️ Error getting status from source:', error);
+          }
+        }
+        
+        this.updateSafeUserStatus(detectedStatus);
+        console.log('✅ Safe user status initialized:', this.safeUserStatus);
+        
+      } catch (error) {
+        console.error('❌ Error initializing safe user status:', error);
+        this.safeUserStatus = 'free';
+      }
+    },
+
+    updateSafeUserStatus(newStatus) {
+      if (!newStatus || typeof newStatus !== 'string') {
+        return;
+      }
+      
+      const validStatuses = ['free', 'start', 'premium', 'pro'];
+      const normalizedStatus = newStatus.toLowerCase();
+      
+      if (validStatuses.includes(normalizedStatus)) {
+        const oldStatus = this.safeUserStatus;
+        this.safeUserStatus = normalizedStatus;
+        this.lastKnownUserStatus = normalizedStatus;
+        
+        // Clear any existing timer
+        if (this.userStatusUpdateTimer) {
+          clearTimeout(this.userStatusUpdateTimer);
+        }
+        
+        // Debounced update to prevent excessive updates
+        this.userStatusUpdateTimer = setTimeout(() => {
+          if (oldStatus !== normalizedStatus) {
+            console.log(`👤 Safe user status updated: ${oldStatus} → ${normalizedStatus}`);
+            this.$forceUpdate();
+          }
+        }, 100);
+      }
+    },
+
+    handleStoreUserChange(newUser) {
+      if (!this.componentMounted) return;
+      
+      try {
+        const newPlan = newUser?.subscriptionPlan;
+        if (newPlan && newPlan !== this.safeUserStatus) {
+          console.log('👤 MainPage: Store user changed, plan:', newPlan);
+          this.handleUserStatusChange(newPlan, this.safeUserStatus);
+        }
+      } catch (error) {
+        console.warn('⚠️ Error handling store user change:', error);
+      }
+    },
+
+    handleVuexUserChange(newUser) {
+      if (!this.componentMounted) return;
+      
+      try {
+        const newPlan = newUser?.subscriptionPlan;
+        if (newPlan && newPlan !== this.safeUserStatus) {
+          console.log('👤 MainPage: Vuex user changed, plan:', newPlan);
+          this.handleUserStatusChange(newPlan, this.safeUserStatus);
+        }
+      } catch (error) {
+        console.warn('⚠️ Error handling vuex user change:', error);
+      }
+    },
+
     handleUserStatusChange(newStatus, oldStatus) {
-      if (!newStatus || newStatus === oldStatus) return;
+      if (!newStatus || newStatus === oldStatus || !this.componentMounted) return;
 
       console.log(`👤 MainPage: Handling status change ${oldStatus} → ${newStatus}`);
 
-      localStorage.setItem('userStatus', newStatus);
-      localStorage.setItem('plan', newStatus);
+      try {
+        localStorage.setItem('userStatus', newStatus);
+        localStorage.setItem('plan', newStatus);
 
-      this.forceReactivityUpdate();
+        this.updateSafeUserStatus(newStatus);
+        this.forceReactivityUpdate();
 
-      if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
-        const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
-        this.showNotification(`🎉 ${planLabel} подписка активирована!`, 'success', 5000);
-        
-        setTimeout(() => {
-          this.refreshAllData();
-        }, 1000);
+        if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
+          const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
+          this.showNotification(`🎉 ${planLabel} подписка активирована!`, 'success', 5000);
+          
+          setTimeout(() => {
+            this.refreshAllData();
+          }, 1000);
+        }
+
+        console.log(`✅ MainPage: Status change handled: ${oldStatus} → ${newStatus}`);
+      } catch (error) {
+        console.error('❌ Error handling user status change:', error);
       }
-
-      console.log(`✅ MainPage: Status change handled: ${oldStatus} → ${newStatus}`);
     },
 
     setupEnhancedEventListeners() {
@@ -584,10 +669,19 @@ export default {
       this.cleanupEventListeners();
       
       if (typeof window !== 'undefined') {
+        // Subscription change handler
         this.handleSubscriptionChange = (event) => {
-          console.log('📡 MainPage: Subscription change received:', event.detail);
-          const { plan, oldPlan } = event.detail;
-          this.handleUserStatusChange(plan, oldPlan);
+          if (!this.componentMounted) return;
+          
+          try {
+            const detail = event?.detail;
+            if (detail && detail.plan) {
+              console.log('📡 MainPage: Subscription change received:', detail);
+              this.handleUserStatusChange(detail.plan, detail.oldPlan || this.safeUserStatus);
+            }
+          } catch (error) {
+            console.warn('⚠️ Error handling subscription change:', error);
+          }
         };
         
         window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
@@ -595,10 +689,18 @@ export default {
           window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
         });
 
+        // Storage change handler
         this.handleStorageChange = (event) => {
-          if ((event.key === 'userStatus' || event.key === 'plan') && event.newValue !== event.oldValue) {
-            console.log('📡 MainPage: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
-            this.handleUserStatusChange(event.newValue, event.oldValue);
+          if (!this.componentMounted) return;
+          
+          try {
+            if ((event.key === 'userStatus' || event.key === 'plan') && 
+                event.newValue !== event.oldValue && event.newValue) {
+              console.log('📡 MainPage: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
+              this.handleUserStatusChange(event.newValue, event.oldValue || this.safeUserStatus);
+            }
+          } catch (error) {
+            console.warn('⚠️ Error handling storage change:', error);
           }
         };
         
@@ -607,9 +709,10 @@ export default {
           window.removeEventListener('storage', this.handleStorageChange);
         });
 
+        // Generic event handler with proper error handling
         const eventTypes = [
           'userStatusChanged',
-          'subscriptionUpdated',
+          'subscriptionUpdated', 
           'promocodeApplied',
           'paymentCompleted',
           'globalForceUpdate',
@@ -617,12 +720,28 @@ export default {
         ];
 
         const handleGenericStatusChange = (event) => {
-          console.log('📡 MainPage: Generic status event received:', event.type, event.detail);
-          this.forceReactivityUpdate();
+          if (!this.componentMounted) return;
           
-          const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
-          if (currentStatus && currentStatus !== this.currentUserStatus) {
-            this.handleUserStatusChange(currentStatus, this.currentUserStatus);
+          try {
+            console.log('📡 MainPage: Generic status event received:', event.type);
+            
+            const detail = event?.detail;
+            if (detail) {
+              if (detail.plan || detail.newStatus) {
+                const newStatus = detail.plan || detail.newStatus;
+                this.handleUserStatusChange(newStatus, detail.oldPlan || detail.oldStatus || this.safeUserStatus);
+              }
+            }
+            
+            this.forceReactivityUpdate();
+            
+            // Check localStorage for updates
+            const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
+            if (currentStatus && currentStatus !== this.safeUserStatus) {
+              this.handleUserStatusChange(currentStatus, this.safeUserStatus);
+            }
+          } catch (error) {
+            console.warn('⚠️ Error handling generic status change:', error);
           }
         };
 
@@ -634,24 +753,37 @@ export default {
         });
       }
 
+      // EventBus listeners with error handling
       if (typeof window !== 'undefined' && window.eventBus) {
         this.handleUserStatusEvent = (data) => {
-          console.log('📡 MainPage: User status event received:', data);
-          this.handleUserStatusChange(data.newStatus || data.plan, data.oldStatus || data.oldPlan);
-        };
-
-        this.handlePromocodeEvent = (data) => {
-          console.log('📡 MainPage: Promocode applied event:', data);
-          this.handleUserStatusChange(data.newStatus, data.oldStatus);
+          if (!this.componentMounted) return;
+          
+          try {
+            console.log('📡 MainPage: User status event received:', data);
+            const newStatus = data?.newStatus || data?.plan;
+            const oldStatus = data?.oldStatus || data?.oldPlan || this.safeUserStatus;
+            
+            if (newStatus) {
+              this.handleUserStatusChange(newStatus, oldStatus);
+            }
+          } catch (error) {
+            console.warn('⚠️ Error handling user status event:', error);
+          }
         };
 
         this.handleForceUpdateEvent = () => {
-          console.log('📡 MainPage: Force update event received');
-          this.forceReactivityUpdate();
+          if (!this.componentMounted) return;
           
-          const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
-          if (currentStatus && currentStatus !== this.currentUserStatus) {
-            this.handleUserStatusChange(currentStatus, this.currentUserStatus);
+          try {
+            console.log('📡 MainPage: Force update event received');
+            this.forceReactivityUpdate();
+            
+            const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
+            if (currentStatus && currentStatus !== this.safeUserStatus) {
+              this.handleUserStatusChange(currentStatus, this.safeUserStatus);
+            }
+          } catch (error) {
+            console.warn('⚠️ Error handling force update event:', error);
           }
         };
 
@@ -665,43 +797,59 @@ export default {
         ];
 
         eventBusEvents.forEach(eventType => {
-          if (eventType.includes('Status') || eventType.includes('promocode') || eventType.includes('payment') || eventType.includes('subscription')) {
-            window.eventBus.on(eventType, this.handleUserStatusEvent);
-            this.statusEventListeners.push(() => {
-              window.eventBus.off(eventType, this.handleUserStatusEvent);
-            });
-          } else {
-            window.eventBus.on(eventType, this.handleForceUpdateEvent);
-            this.statusEventListeners.push(() => {
-              window.eventBus.off(eventType, this.handleForceUpdateEvent);
-            });
+          try {
+            if (eventType.includes('Status') || eventType.includes('promocode') || 
+                eventType.includes('payment') || eventType.includes('subscription')) {
+              window.eventBus.on(eventType, this.handleUserStatusEvent);
+              this.statusEventListeners.push(() => {
+                window.eventBus.off(eventType, this.handleUserStatusEvent);
+              });
+            } else {
+              window.eventBus.on(eventType, this.handleForceUpdateEvent);
+              this.statusEventListeners.push(() => {
+                window.eventBus.off(eventType, this.handleForceUpdateEvent);
+              });
+            }
+          } catch (error) {
+            console.warn('⚠️ Error setting up eventBus listener:', eventType, error);
           }
         });
 
         console.log('✅ MainPage: Event bus listeners registered');
       }
 
+      // Store subscription with error handling
       if (this.$store) {
-        this.storeUnsubscribe = this.$store.subscribe((mutation) => {
-          if (this.isUserRelatedMutation(mutation)) {
-            console.log('📊 MainPage: Store mutation detected:', mutation.type);
-            this.forceReactivityUpdate();
+        try {
+          this.storeUnsubscribe = this.$store.subscribe((mutation) => {
+            if (!this.componentMounted) return;
             
-            if (mutation.payload && mutation.payload.subscriptionPlan) {
-              const newStatus = mutation.payload.subscriptionPlan;
-              if (newStatus !== this.currentUserStatus) {
-                this.handleUserStatusChange(newStatus, this.currentUserStatus);
+            try {
+              if (this.isUserRelatedMutation(mutation)) {
+                console.log('📊 MainPage: Store mutation detected:', mutation.type);
+                this.forceReactivityUpdate();
+                
+                if (mutation.payload && mutation.payload.subscriptionPlan) {
+                  const newStatus = mutation.payload.subscriptionPlan;
+                  if (newStatus !== this.safeUserStatus) {
+                    this.handleUserStatusChange(newStatus, this.safeUserStatus);
+                  }
+                }
               }
+            } catch (error) {
+              console.warn('⚠️ Error handling store mutation:', error);
             }
-          }
-        });
-        
-        this.statusEventListeners.push(() => {
-          if (this.storeUnsubscribe) {
-            this.storeUnsubscribe();
-            this.storeUnsubscribe = null;
-          }
-        });
+          });
+          
+          this.statusEventListeners.push(() => {
+            if (this.storeUnsubscribe) {
+              this.storeUnsubscribe();
+              this.storeUnsubscribe = null;
+            }
+          });
+        } catch (error) {
+          console.warn('⚠️ Error setting up store subscription:', error);
+        }
       }
 
       console.log('✅ MainPage: Enhanced event listeners setup complete');
@@ -728,6 +876,8 @@ export default {
     },
 
     forceReactivityUpdate() {
+      if (!this.componentMounted) return;
+      
       try {
         this.reactivityKey++;
         this.lastUpdateTime = Date.now();
@@ -736,21 +886,14 @@ export default {
         this.$forceUpdate();
         
         this.$nextTick(() => {
-          this.$forceUpdate();
-          
-          setTimeout(() => {
+          if (this.componentMounted) {
             this.$forceUpdate();
-          }, 50);
-          
-          setTimeout(() => {
-            this.$forceUpdate();
-          }, 200);
+          }
         });
         
         console.log('🔄 MainPage: Reactivity updated:', {
           reactivityKey: this.reactivityKey,
-          lastUpdateTime: this.lastUpdateTime,
-          currentPlan: this.currentUserStatus,
+          currentPlan: this.safeUserStatus,
           forceUpdateCounter: this.forceUpdateCounter
         });
       } catch (error) {
@@ -769,15 +912,24 @@ export default {
       this.statusEventListeners = [];
       
       if (this.storeUnsubscribe) {
-        this.storeUnsubscribe();
+        try {
+          this.storeUnsubscribe();
+        } catch (error) {
+          console.warn('⚠️ Error unsubscribing from store:', error);
+        }
         this.storeUnsubscribe = null;
+      }
+      
+      if (this.userStatusUpdateTimer) {
+        clearTimeout(this.userStatusUpdateTimer);
+        this.userStatusUpdateTimer = null;
       }
     },
 
     async validateUserAuthentication() {
       console.log('🔐 Validating user authentication...');
       
-      const storedId = this.$store.state.firebaseUserId || 
+      const storedId = this.$store?.state?.firebaseUserId || 
                        localStorage.getItem('firebaseUserId') || 
                        localStorage.getItem('userId');
       
@@ -835,7 +987,7 @@ export default {
       console.log(`🔄 Setting up auto-refresh (${this.config.autoRefreshInterval}ms)`);
       
       this.autoRefreshInterval = setInterval(async () => {
-        if (!document.hidden && this.hasData) {
+        if (!document.hidden && this.hasData && this.componentMounted) {
           console.log('🔄 Auto-refreshing data...');
           
           try {
@@ -865,6 +1017,8 @@ export default {
       console.log('📈 Setting up performance monitoring...');
       
       this.handleVisibilityChange = () => {
+        if (!this.componentMounted) return;
+        
         if (document.hidden) {
           console.log('📱 MainPage: Hidden');
         } else {
@@ -902,7 +1056,7 @@ export default {
           return this.fetchRecommendationsFallback(); 
         }
         
-        if (lessonsResult?.success && lessonsResult.data?.length > 0) {
+        if (lessonsResult?.success && Array.isArray(lessonsResult.data) && lessonsResult.data.length > 0) {
           console.log(`📚 Got ${lessonsResult.data.length} lessons for building recommendations`);
           
           const topics = this.buildTopicsFromLessons(lessonsResult.data);
@@ -930,9 +1084,11 @@ export default {
         this.displayedRecommendations = [];
       } finally {
         this.loadingRecommendations = false;
-        this.$nextTick(() => {
-          this.updateScrollPosition();
-        });
+        if (this.componentMounted) {
+          this.$nextTick(() => {
+            this.updateScrollPosition();
+          });
+        }
       }
     },
     
@@ -945,7 +1101,7 @@ export default {
         const topicsResult = await getTopics({ includeStats: true });
         this.performanceMetrics.totalApiCalls++;
         
-        if (topicsResult?.success && topicsResult.data?.length > 0) {
+        if (topicsResult?.success && Array.isArray(topicsResult.data) && topicsResult.data.length > 0) {
           console.log(`📚 Found ${topicsResult.data.length} topics directly`);
           
           const enrichedTopics = await this.enrichTopicsWithLessons(
@@ -1018,8 +1174,8 @@ export default {
           const progressResult = await getUserProgress(this.userId);
           this.performanceMetrics.totalApiCalls++;
           
-          if (progressResult?.success) {
-            userProgressData = progressResult.data || [];
+          if (progressResult?.success && Array.isArray(progressResult.data)) {
+            userProgressData = progressResult.data;
             console.log(`📊 Loaded ${userProgressData.length} progress records`);
           }
         } catch (progressError) {
@@ -1076,7 +1232,7 @@ export default {
 
     hasTopicAccess(topic) {
       const topicType = this.getTopicType(topic);
-      const currentStatus = this.currentUserStatus;
+      const currentStatus = this.safeUserStatus;
       
       console.log('🔐 Checking topic access:', {
         topicName: this.getTopicName(topic),
@@ -1214,7 +1370,7 @@ export default {
     },
 
     isInStudyList(topic) {
-      return this.studyList.some(t => t._id === topic._id);
+      return Array.isArray(this.studyList) && this.studyList.some(t => t._id === topic._id);
     },
     
     getStartButtonClass(topic) {
@@ -1353,7 +1509,6 @@ export default {
       }
     },
     
-    // ✅ FIXED: Navigate to TopicOverview instead of LessonPage
     async handleStartTopic(topic) {
       if (!topic?._id || this.loadingOperations.start.has(topic._id)) {
         return;
@@ -1373,9 +1528,8 @@ export default {
           return;
         }
         
-        // ✅ FIXED: Always navigate to TopicOverview instead of LessonPage
         console.log(`📚 Navigating to topic overview: ${topic._id}`);
-        this.$router.push({ 
+        await this.$router.push({ 
           name: 'TopicOverview',
           params: { id: topic._id },
           query: { source: 'main-page-recommendations' }
@@ -1401,7 +1555,7 @@ export default {
     handlePaymentSuccess(newStatus) {
       console.log('💳 Payment successful, new status:', newStatus);
       
-      this.handleUserStatusChange(newStatus, this.currentUserStatus);
+      this.handleUserStatusChange(newStatus, this.safeUserStatus);
       this.closePaywall();
       
       this.performanceMetrics.successfulOperations++;
@@ -1475,6 +1629,8 @@ export default {
     performCleanup() {
       console.log('🧹 MainPage: Performing cleanup...');
       
+      this.componentMounted = false;
+      
       if (this.updateTimer) {
         clearTimeout(this.updateTimer);
         this.updateTimer = null;
@@ -1484,6 +1640,8 @@ export default {
         clearInterval(this.autoRefreshInterval);
         this.autoRefreshInterval = null;
       }
+      
+      this.cleanupEventListeners();
       
       this.eventCleanupFunctions.forEach(cleanup => {
         try {
@@ -1746,8 +1904,8 @@ export default {
     },
 
     getRandomRecommendations(count = 10) {
-      if (this.allRecommendations.length <= count) {
-        return [...this.allRecommendations];
+      if (!Array.isArray(this.allRecommendations) || this.allRecommendations.length <= count) {
+        return [...(this.allRecommendations || [])];
       }
       
       const shuffled = [...this.allRecommendations];
@@ -1760,7 +1918,7 @@ export default {
     },
     
     shuffleRecommendations() {
-      if (this.allRecommendations.length === 0) {
+      if (!Array.isArray(this.allRecommendations) || this.allRecommendations.length === 0) {
         this.fetchRecommendations();
         return;
       }
@@ -1769,12 +1927,14 @@ export default {
       
       this.displayedRecommendations = this.getRandomRecommendations(this.config.maxRecommendations);
       
-      this.$nextTick(() => {
-        if (this.$refs.carouselContainer) {
-          this.$refs.carouselContainer.scrollLeft = 0;
-          this.updateScrollPosition();
-        }
-      });
+      if (this.componentMounted) {
+        this.$nextTick(() => {
+          if (this.$refs.carouselContainer) {
+            this.$refs.carouselContainer.scrollLeft = 0;
+            this.updateScrollPosition();
+          }
+        });
+      }
       
       console.log(`🎲 Shuffled to ${this.displayedRecommendations.length} new recommendations`);
       this.showNotification('Новые рекомендации загружены', 'info', 2000);
@@ -1813,6 +1973,10 @@ export default {
     },
     
     refillDisplayedRecommendations() {
+      if (!Array.isArray(this.displayedRecommendations) || !Array.isArray(this.allRecommendations)) {
+        return;
+      }
+      
       const currentCount = this.displayedRecommendations.length;
       const targetCount = this.config.maxRecommendations;
       
@@ -1929,6 +2093,8 @@ export default {
     },
 
     buildTopicsFromLessons(lessons) {
+      if (!Array.isArray(lessons)) return [];
+      
       const topicsMap = new Map();
       let processedCount = 0;
       
@@ -1999,6 +2165,8 @@ export default {
     },
 
     async enrichTopicsWithLessons(topics) {
+      if (!Array.isArray(topics)) return [];
+      
       console.log(`🔍 Enriching ${topics.length} topics with lessons...`);
       
       const enrichmentPromises = topics.map(async (topic) => {
@@ -2006,7 +2174,7 @@ export default {
           const lessonsResult = await getLessonsByTopic(topic._id);
           this.performanceMetrics.totalApiCalls++;
           
-          if (lessonsResult?.success && lessonsResult.data?.length > 0) {
+          if (lessonsResult?.success && Array.isArray(lessonsResult.data) && lessonsResult.data.length > 0) {
             return {
               ...topic,
               lessons: lessonsResult.data,
@@ -2152,7 +2320,7 @@ export default {
     },
 
     calculateTopicProgress(lessons, userProgressData) {
-      if (!lessons || lessons.length === 0) {
+      if (!Array.isArray(lessons) || lessons.length === 0) {
         return {
           percent: 0,
           medal: 'none',
@@ -2162,6 +2330,10 @@ export default {
           points: 0,
           estimatedTimeRemaining: 0
         };
+      }
+      
+      if (!Array.isArray(userProgressData)) {
+        userProgressData = [];
       }
       
       let completedLessons = 0;
