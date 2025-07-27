@@ -206,17 +206,31 @@ const state = () => ({
   currentUser: null,
   userStatus: 'free', // 'free', 'start', 'pro', 'premium'
 
-  // Subscription management with enhanced tracking
-  subscription: {
-    plan: 'free',
-    status: 'inactive',
-    source: null,
-    startDate: null,
-    expiryDate: null,
-    isAutoRenew: false,
-    details: {},
-    lastSync: null
-  },
+  // 🔥 FIX 1: Use Vue.observable for guaranteed reactivity in Vue 2 environments.
+  // This pattern checks if Vue 2's observable is available and uses it,
+  // otherwise it falls back to a plain object for Vue 3 / other environments.
+  subscription: (typeof window !== 'undefined' && window.Vue?.observable)
+    ? window.Vue.observable({
+        plan: 'free',
+        status: 'inactive',
+        source: null,
+        startDate: null,
+        expiryDate: null,
+        isAutoRenew: false,
+        details: {},
+        lastSync: null
+      })
+    : {
+        plan: 'free',
+        status: 'inactive',
+        source: null,
+        startDate: null,
+        expiryDate: null,
+        isAutoRenew: false,
+        details: {},
+        lastSync: null
+      },
+
 
   // Enhanced usage tracking
   usage: {
@@ -282,30 +296,56 @@ const state = () => ({
     reducedMotion: false
   },
 
-  // Enhanced system state with better tracking
-  system: {
-    initialized: false,
-    initializationTime: null,
-    lastUpdate: null,
-    forceUpdateCounter: 0,
-    syncInProgress: false,
-    loading: {
-      status: false,
-      usage: false,
-      payments: false,
-      saving: false,
-      sync: false
-    },
-    errors: {
-      lastError: null,
-      errorCount: 0,
-      recoveryAttempts: 0
-    },
-    performance: {
-      loadTime: 0,
-      apiResponseTimes: []
-    }
-  },
+  // 🔥 FIX 1: Use Vue.observable and add reactivityKey for enhanced system state tracking.
+  system: (typeof window !== 'undefined' && window.Vue?.observable)
+    ? window.Vue.observable({
+        initialized: false,
+        initializationTime: null,
+        lastUpdate: Date.now(),
+        forceUpdateCounter: 0,
+        reactivityKey: 0, // NEW: For manual reactivity triggers
+        syncInProgress: false,
+        loading: {
+          status: false,
+          usage: false,
+          payments: false,
+          saving: false,
+          sync: false
+        },
+        errors: {
+          lastError: null,
+          errorCount: 0,
+          recoveryAttempts: 0
+        },
+        performance: {
+          loadTime: 0,
+          apiResponseTimes: []
+        }
+      })
+    : {
+        initialized: false,
+        initializationTime: null,
+        lastUpdate: Date.now(),
+        forceUpdateCounter: 0,
+        reactivityKey: 0, // NEW: For manual reactivity triggers
+        syncInProgress: false,
+        loading: {
+          status: false,
+          usage: false,
+          payments: false,
+          saving: false,
+          sync: false
+        },
+        errors: {
+          lastError: null,
+          errorCount: 0,
+          recoveryAttempts: 0
+        },
+        performance: {
+          loadTime: 0,
+          apiResponseTimes: []
+        }
+      },
 
   // Cache for better performance
   cache: {
@@ -315,6 +355,7 @@ const state = () => ({
     cacheExpiry: 5 * 60 * 1000 // 5 minutes
   }
 });
+
 
 // ✅ ENHANCED MUTATIONS WITH BULLETPROOF SAFETY AND LOGGING
 const mutations = {
@@ -454,7 +495,7 @@ const mutations = {
     triggerGlobalEvent('userCleared', { timestamp });
   },
 
-  // Enhanced status management with validation and caching
+  // 🔥 FIX 2: Enhanced status management with multiple reactivity strategies
   SET_USER_STATUS(state, status) {
     const startTime = Date.now();
     const oldStatus = state.userStatus;
@@ -478,7 +519,7 @@ const mutations = {
       return;
     }
 
-    // 🚨 CRITICAL: Use Vue.set for guaranteed reactivity (Vue 2)
+    // 🚨 STRATEGY 1: Use Vue.set for guaranteed reactivity (Vue 2)
     if (window.Vue?.set) {
       window.Vue.set(state, 'userStatus', newStatus);
       console.log('✅ Used Vue.set for userStatus');
@@ -504,9 +545,10 @@ const mutations = {
       };
     }
 
-    // Update system tracking
+    // 🚨 STRATEGY 2: Force reactivity with counters
     state.system.lastUpdate = Date.now();
     state.system.forceUpdateCounter = (state.system.forceUpdateCounter || 0) + 1;
+    state.system.reactivityKey = Date.now(); // Update dedicated reactivity key
 
     // Update cache with Vue.set if available
     if (window.Vue?.set) {
@@ -520,7 +562,7 @@ const mutations = {
     // Update feature matrix
     updateFeatureMatrix(state);
 
-    // 🚨 CRITICAL: Update localStorage IMMEDIATELY
+    // 🚨 STRATEGY 3: Update localStorage IMMEDIATELY
     try {
       localStorage.setItem('userStatus', newStatus);
       localStorage.setItem('statusUpdateTime', Date.now().toString());
@@ -531,7 +573,7 @@ const mutations = {
 
     console.log(`✅ Status updated successfully: ${oldStatus} → ${newStatus} (${Date.now() - startTime}ms)`);
 
-    // 🚨 CRITICAL: Enhanced global event broadcasting with multiple triggers
+    // 🚨 STRATEGY 4: Enhanced global event broadcasting with multiple triggers
     const eventData = {
       oldStatus,
       newStatus,
