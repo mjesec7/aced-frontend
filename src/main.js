@@ -1515,10 +1515,141 @@ window.addEventListener('DOMContentLoaded', () => {
   // Direct store status getter helper
   window.getCurrentUserStatus = () => {
     try {
-      return store.getters['user/userStatus'] || 'free';
+      const storeStatus = store.getters['user/userStatus'];
+      const localStatus = localStorage.getItem('userStatus');
+      
+      console.log('🔍 getCurrentUserStatus debug:', {
+        storeStatus,
+        storeStatusType: typeof storeStatus,
+        localStatus,
+        localStatusType: typeof localStatus,
+        storeState: store.state.user,
+        availableGetters: Object.keys(store.getters).filter(g => g.includes('user'))
+      });
+      
+      // Return local storage if store is undefined/null
+      return storeStatus || localStatus || 'free';
     } catch (error) {
       console.warn('⚠️ Failed to get user status from store:', error);
       return localStorage.getItem('userStatus') || 'free';
+    }
+  };
+  
+  // ✅ NEW: Store status repair function
+  window.repairStoreStatus = () => {
+    console.log('🔧 Attempting to repair store status...');
+    
+    const localStatus = localStorage.getItem('userStatus') || 
+                       localStorage.getItem('userPlan') || 
+                       localStorage.getItem('subscriptionPlan') || 
+                       'free';
+    console.log('📦 Local status to restore:', localStatus);
+    
+    try {
+      // ✅ CRITICAL: Check if store.state.user exists at all
+      console.log('🔍 Store state inspection:', {
+        hasUserState: !!store.state.user,
+        userState: store.state.user,
+        availableModules: Object.keys(store.state),
+        availableGetters: Object.keys(store.getters).filter(g => g.includes('user'))
+      });
+      
+      // ✅ CRITICAL: Initialize user state if it doesn't exist
+      if (!store.state.user) {
+        console.log('🏗️ Creating missing user state...');
+        
+        // Try to register the user module if it's missing
+        try {
+          store.registerModule('user', {
+            namespaced: true,
+            state: {
+              user: null,
+              userStatus: localStatus,
+              subscriptionPlan: localStatus,
+              isAuthenticated: false,
+              isInitialized: true
+            },
+            getters: {
+              userStatus: state => state.userStatus,
+              getUser: state => state.user,
+              isAuthenticated: state => !!state.user,
+              isInitialized: state => state.isInitialized
+            },
+            mutations: {
+              SET_USER_STATUS: (state, status) => { state.userStatus = status; },
+              SET_USER: (state, user) => { state.user = user; },
+              CLEAR_USER: (state) => { state.user = null; state.userStatus = 'free'; }
+            }
+          });
+          console.log('✅ User module registered successfully');
+        } catch (moduleError) {
+          console.warn('⚠️ Module registration failed:', moduleError);
+          
+          // Manual state creation as last resort
+          store.state.user = {
+            user: null,
+            userStatus: localStatus,
+            subscriptionPlan: localStatus,
+            isAuthenticated: false,
+            isInitialized: true
+          };
+          console.log('✅ Manual user state created');
+        }
+      }
+      
+      // Try different possible mutations
+      const mutations = [
+        'user/SET_USER_STATUS',
+        'user/setUserStatus', 
+        'user/SET_STATUS',
+        'user/UPDATE_USER_STATUS',
+        'setUserStatus'
+      ];
+      
+      mutations.forEach(mutation => {
+        try {
+          store.commit(mutation, localStatus);
+          console.log(`✅ Successfully used mutation: ${mutation}`);
+        } catch (e) {
+          console.log(`⚠️ Mutation ${mutation} not available:`, e.message);
+        }
+      });
+      
+      // ✅ CRITICAL: Direct state update regardless of mutations
+      if (store.state.user) {
+        store.state.user.userStatus = localStatus;
+        store.state.user.subscriptionPlan = localStatus;
+        store.state.user.plan = localStatus;
+        console.log('✅ Direct state update completed');
+      }
+      
+      // Check the result
+      const newStoreStatus = store.getters['user/userStatus'];
+      console.log('🔍 Store status after repair:', {
+        getter: newStoreStatus,
+        directState: store.state.user?.userStatus,
+        localStatus: localStatus
+      });
+      
+      // ✅ CRITICAL: If getter still fails, create a working getter
+      if (!newStoreStatus || newStoreStatus === 'undefined') {
+        console.log('🔧 Getter is broken, creating backup...');
+        
+        // Create backup getter function
+        window.getWorkingUserStatus = () => {
+          return store.state.user?.userStatus || 
+                 localStorage.getItem('userStatus') || 
+                 'free';
+        };
+        
+        console.log('✅ Backup getter created: window.getWorkingUserStatus()');
+      }
+      
+      return newStoreStatus || localStatus;
+      
+    } catch (error) {
+      console.error('❌ Store repair failed:', error);
+      return localStatus;
     }
   };
   
@@ -1641,15 +1772,47 @@ if (import.meta.env.DEV) {
   
   // ✅ CRITICAL: Add direct status testing functions
   window.testUserStatus = {
-    setFree: () => window.emitUserStatusChange('pro', 'free', 'debug-test'),
-    setStart: () => window.emitUserStatusChange('free', 'start', 'debug-test'),
-    setPro: () => window.emitUserStatusChange('free', 'pro', 'debug-test'),
+    setFree: () => {
+      const currentStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unknown';
+      window.emitUserStatusChange(currentStatus, 'free', 'debug-test');
+    },
+    setStart: () => {
+      const currentStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unknown';
+      window.emitUserStatusChange(currentStatus, 'start', 'debug-test');
+    },
+    setPro: () => {
+      const currentStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unknown';
+      window.emitUserStatusChange(currentStatus, 'pro', 'debug-test');
+    },
     
     getCurrentStatus: () => {
       const storeStatus = store.getters['user/userStatus'];
       const localStatus = localStorage.getItem('userStatus');
-      console.log('📊 Status comparison:', { store: storeStatus, localStorage: localStatus });
-      return { store: storeStatus, localStorage: localStatus };
+      const workingStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unavailable';
+      
+      console.log('📊 Status comparison:', { 
+        store: storeStatus, 
+        storeType: typeof storeStatus,
+        localStorage: localStatus,
+        localType: typeof localStatus,
+        workingGetter: workingStatus,
+        storeState: store.state.user?.userStatus,
+        storeExists: !!store.state.user,
+        storeRaw: store.state.user
+      });
+      
+      // ✅ NEW: Check if store status is literally the string 'undefined'
+      if (storeStatus === 'undefined' || storeStatus === undefined || storeStatus === null) {
+        console.warn('⚠️ Store status is invalid, attempting repair...');
+        window.repairStoreStatus();
+      }
+      
+      return { 
+        store: storeStatus, 
+        localStorage: localStatus,
+        working: workingStatus,
+        effective: workingStatus !== 'unavailable' ? workingStatus : (localStatus || 'free')
+      };
     },
     
     forceStatusUpdate: (status) => {
@@ -1660,19 +1823,52 @@ if (import.meta.env.DEV) {
       
       console.log('🔧 Forcing status update to:', status);
       
-      // Update store with multiple mutations
-      try {
-        store.commit('user/SET_USER_STATUS', status);
-        console.log('✅ Store updated via SET_USER_STATUS');
-      } catch (e) {
-        console.warn('⚠️ SET_USER_STATUS failed:', e);
+      // ✅ CRITICAL: First repair the store if needed
+      window.repairStoreStatus();
+      
+      // Update store with multiple mutations and verify each one
+      const mutations = [
+        'user/SET_USER_STATUS',
+        'user/setUserStatus',
+        'user/SET_STATUS', 
+        'user/UPDATE_USER_STATUS',
+        'setUserStatus'
+      ];
+      
+      mutations.forEach(mutation => {
+        try {
+          store.commit(mutation, status);
+          const newValue = store.getters['user/userStatus'];
+          console.log(`✅ ${mutation}: ${newValue}`);
+        } catch (e) {
+          console.log(`⚠️ ${mutation} not available`);
+        }
+      });
+      
+      // ✅ CRITICAL: Direct state update if getters still fail
+      if (store.state.user) {
+        store.state.user.userStatus = status;
+        store.state.user.subscriptionPlan = status;
+        store.state.user.plan = status;
+        console.log('✅ Direct state update completed');
       }
       
-      try {
-        store.commit('user/setUserStatus', status);
-        console.log('✅ Store updated via setUserStatus');
-      } catch (e) {
-        console.log('Legacy setUserStatus not available');
+      // Update user object if it exists
+      if (store.state.user && typeof store.state.user === 'object') {
+        const userObj = store.getters['user/getUser'] || store.state.user;
+        if (userObj) {
+          userObj.userStatus = status;
+          userObj.subscriptionPlan = status;
+          userObj.plan = status;
+          
+          // Update user object in store
+          try {
+            store.commit('user/SET_USER', userObj);
+            console.log('✅ User object updated with new status');
+          } catch (e) {
+            console.warn('⚠️ Failed to update user object:', e);
+          }
+        }
       }
       
       // Update localStorage with all variations
@@ -1681,6 +1877,14 @@ if (import.meta.env.DEV) {
       localStorage.setItem('subscriptionPlan', status);
       localStorage.setItem('statusUpdateTime', Date.now().toString());
       console.log('✅ localStorage updated with all status variations');
+      
+      // ✅ CRITICAL: Force store reactivity
+      try {
+        store.commit('user/FORCE_UPDATE');
+        console.log('✅ Store reactivity forced');
+      } catch (e) {
+        console.log('⚠️ FORCE_UPDATE not available');
+      }
       
       // Trigger all events with proper data structure
       const eventData = {
@@ -1719,6 +1923,15 @@ if (import.meta.env.DEV) {
       setTimeout(() => {
         const verification = window.testUserStatus.getCurrentStatus();
         console.log('🔍 Status change verification:', verification);
+        
+        // Additional verification
+        const finalStoreStatus = store.getters['user/userStatus'];
+        const finalLocalStatus = localStorage.getItem('userStatus');
+        console.log('🔍 Final verification:', {
+          store: finalStoreStatus,
+          localStorage: finalLocalStatus,
+          storeState: store.state.user?.userStatus
+        });
       }, 100);
     }
   };
