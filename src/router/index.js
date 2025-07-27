@@ -655,17 +655,20 @@ router.beforeEach(async (to, from, next) => {
   // Check if route requires authentication
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
 
+  // 🔥 CRITICAL FIX: Wait for our auth initialization from main.js
   try {
-    // Wait for Firebase auth initialization
-    await store.dispatch('waitForAuthInit');
+    // Dynamically import main.js to get authInitPromise
+    const { authInitPromise } = await import('@/main.js'); 
+    await authInitPromise;
+    console.log('✅ Router: Auth initialization complete');
   } catch (err) {
-    console.warn('⚠️ Firebase auth wait failed:', err);
+    console.warn('⚠️ Router: Auth wait failed, proceeding anyway:', err);
   }
 
   const isLoggedIn = store.getters.isLoggedIn;
   const userId = store.getters['user/getUserId'];
 
-  // ✅ AUTHENTICATION CHECKS
+  // ✅ AUTHENTICATION CHECKS (only after auth is ready)
   if (requiresAuth && !isLoggedIn) {
     console.warn('❌ Authentication required. Redirecting to home with Login prompt.');
     return next({ 
