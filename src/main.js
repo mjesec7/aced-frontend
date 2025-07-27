@@ -1,4 +1,4 @@
-// src/main.js - ENHANCED AND CORRECTED FOR RELIABLE AUTHENTICATION
+// src/main.js - ENHANCED AND FIXED FOR RELIABLE AUTHENTICATION
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
@@ -18,8 +18,10 @@ import { onAuthStateChanged, setPersistence, browserLocalPersistence } from 'fir
 // 🔥 CRITICAL FIX: RESTRUCTURED AUTHENTICATION & INITIALIZATION
 // ============================================================================
 
-// ✅ Auth state tracking
+// ✅ Auth state tracking with enhanced promises
 let authStateResolved = false;
+let authResolveFunction = null;
+let authRejectFunction = null;
 
 // ✅ Set Firebase auth persistence IMMEDIATELY (BEFORE EVERYTHING ELSE)
 setPersistence(auth, browserLocalPersistence).then(() => {
@@ -28,91 +30,516 @@ setPersistence(auth, browserLocalPersistence).then(() => {
   console.error('❌ Failed to set auth persistence:', error);
 });
 
-// ✅ THIS IS THE CORRECTED AUTHENTICATION PROMISE
-// It now waits for the entire app initialization to complete before resolving.
-export const authInitPromise = new Promise((resolve) => {
-  console.log('🔐 Starting PRIORITY authentication check...');
+// ✅ CRITICAL: Enhanced authentication promise that waits for COMPLETE initialization
+export const authInitPromise = new Promise((resolve, reject) => {
+  authResolveFunction = resolve;
+  authRejectFunction = reject;
+  
+  console.log('🔐 Starting ENHANCED authentication check...');
 
-  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+  const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
     // We only want this to run ONCE on the initial page load to resolve the promise.
     if (!authStateResolved) {
       authStateResolved = true;
       // After this first check, we don't need the listener for this promise anymore.
       unsubscribe();
-      console.log('🔐 Auth state determined:', user ? `${user.email} (authenticated)` : 'not authenticated');
+      
+      console.log('🔐 Auth state determined:', firebaseUser ? `${firebaseUser.email} (authenticated)` : 'not authenticated');
       
       try {
-        // We now AWAIT the entire application initialization, which includes
-        // saving the user to the store, BEFORE resolving the promise.
-        await initializeApplicationAfterAuth(user);
+        // 🔥 CRITICAL: Complete initialization BEFORE resolving
+        console.log('🚀 Starting complete application initialization...');
         
-        console.log('✅ PRIORITY authentication check and app initialization complete.');
-        // Now, and only now, do we resolve the promise, allowing the router to proceed.
-        resolve();
+        // First, ensure store is initialized
+        await ensureStoreInitialized();
+        
+        // Then handle the authentication result
+        if (firebaseUser) {
+          await handleUserAuthenticated(firebaseUser);
+        } else {
+          await handleUserNotAuthenticated();
+        }
+        
+        // Finally, mount the Vue application
+        await mountVueApplication();
+        
+        console.log('✅ COMPLETE authentication and app initialization finished');
+        
+        // Small delay to ensure everything is settled
+        setTimeout(() => {
+          console.log('🎉 Authentication promise resolving...');
+          resolve({
+            authenticated: !!firebaseUser,
+            user: firebaseUser,
+            appReady: true,
+            timestamp: Date.now()
+          });
+        }, 50);
+        
       } catch (error) {
         console.error('❌ Critical initialization failed during auth check:', error);
-        // Resolve anyway to prevent the app from being stuck in a loading state.
-        resolve();
+        
+        // Still try to mount the app in basic state
+        try {
+          await mountVueApplicationBasic();
+        } catch (mountError) {
+          console.error('❌ Basic app mount also failed:', mountError);
+        }
+        
+        // Resolve anyway to prevent app from being stuck, but indicate error
+        setTimeout(() => {
+          resolve({
+            authenticated: false,
+            user: null,
+            appReady: false,
+            error: error.message,
+            timestamp: Date.now()
+          });
+        }, 50);
       }
     }
   });
 
-  // A reasonable timeout to prevent the app from getting stuck if Firebase is unresponsive.
+  // Enhanced timeout with better error handling
   setTimeout(() => {
     if (!authStateResolved) {
-      console.warn('⚠️ Auth check timed out - proceeding without user');
+      console.warn('⚠️ Auth check timed out - proceeding with fallback initialization');
       authStateResolved = true;
       unsubscribe();
-      // Even on timeout, we must initialize the app and resolve the promise.
-      initializeApplicationAfterAuth(null).finally(resolve);
+      
+      // Fallback initialization
+      Promise.resolve()
+        .then(() => ensureStoreInitialized())
+        .then(() => handleUserNotAuthenticated())
+        .then(() => mountVueApplicationBasic())
+        .then(() => {
+          console.log('✅ Fallback initialization completed');
+          resolve({
+            authenticated: false,
+            user: null,
+            appReady: true,
+            timedOut: true,
+            timestamp: Date.now()
+          });
+        })
+        .catch((fallbackError) => {
+          console.error('❌ Even fallback initialization failed:', fallbackError);
+          resolve({
+            authenticated: false,
+            user: null,
+            appReady: false,
+            error: fallbackError.message,
+            fallbackFailed: true,
+            timestamp: Date.now()
+          });
+        });
     }
-  }, 5000); // 5-second timeout is reasonable
+  }, 8000); // Increased timeout to 8 seconds
 });
 
-
 // ============================================================================
-// 🔥 MAIN INITIALIZATION FUNCTION (CALLED AFTER AUTH CHECK)
+// 🔥 ENHANCED STORE INITIALIZATION WITH BULLETPROOF ERROR HANDLING
 // ============================================================================
-async function initializeApplicationAfterAuth(firebaseUser) {
+async function ensureStoreInitialized() {
+  console.log('🏪 Ensuring Vuex store is initialized...');
+  
   try {
-    console.log('🚀 Starting application initialization AFTER auth check...');
-    console.log('👤 Auth result:', firebaseUser ? `User: ${firebaseUser.email}` : 'No user');
-        
-    // Mark auth as ready
-    appLifecycle.authReady = true;
-        
-    // Initialize store
-    await initializeStore();
-        
-    // Handle user state based on auth result
-    if (firebaseUser) {
-      await handleUserLogin(firebaseUser);
-    } else {
-      await handleUserLogout();
+    // Check if store is already initialized
+    if (store.getters['user/isInitialized']) {
+      console.log('✅ Store already initialized');
+      return true;
     }
-        
-    // Mount Vue application
-    await mountVueApplication();
-        
-    console.log('✅ Application initialization completed');
-      
+    
+    // Initialize the user store module
+    await store.dispatch('user/initialize');
+    
+    // Setup store mutation interceptor for global events
+    setupStoreInterceptor(store);
+    
+    // Mark as ready
+    appLifecycle.storeReady = true;
+    
+    console.log('✅ Store initialization completed successfully');
+    return true;
+    
   } catch (error) {
-    console.error('❌ Application initialization failed:', error);
-        
-    eventBus.emit('appInitializationError', {
-      error: error.message,
-      timestamp: Date.now()
-    });
-    // We throw the error so the main promise can catch it if needed.
+    console.error('❌ Store initialization failed:', error);
+    
+    // Try to set basic store state manually
+    try {
+      store.commit('user/SET_INITIALIZED', false);
+      console.log('⚠️ Set basic store state after initialization failure');
+    } catch (commitError) {
+      console.error('❌ Even basic store commit failed:', commitError);
+    }
+    
     throw error;
   }
 }
 
 // ============================================================================
-// 🔥 CRITICAL FIX: GLOBAL EVENT TRIGGERING SYSTEM FOR USER STATUS REACTIVITY
+// 🔥 ENHANCED USER AUTHENTICATION HANDLER
+// ============================================================================
+async function handleUserAuthenticated(firebaseUser) {
+  console.log('👤 Processing authenticated user:', firebaseUser.email);
+  
+  try {
+    // Get Firebase ID token with retry
+    let token;
+    let tokenRetries = 3;
+    
+    while (tokenRetries > 0) {
+      try {
+        token = await firebaseUser.getIdToken(true); // Force refresh
+        if (token && token.length > 20) {
+          console.log('🔑 Firebase token obtained successfully');
+          break;
+        }
+        throw new Error('Invalid token received');
+      } catch (tokenError) {
+        tokenRetries--;
+        console.warn(`⚠️ Token attempt failed, ${tokenRetries} retries left:`, tokenError.message);
+        
+        if (tokenRetries === 0) {
+          throw new Error('Failed to get authentication token after retries');
+        }
+        
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    
+    // Prepare user data
+    const userData = {
+      uid: firebaseUser.uid,
+      email: firebaseUser.email,
+      displayName: firebaseUser.displayName,
+      name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+      emailVerified: firebaseUser.emailVerified,
+      photoURL: firebaseUser.photoURL,
+      lastLoginAt: new Date().toISOString()
+    };
+    
+    console.log('💾 Saving authenticated user to server...', {
+      email: userData.email,
+      uid: userData.uid
+    });
+    
+    // Save user to server with enhanced error handling
+    let saveResult;
+    let saveRetries = 2;
+    
+    while (saveRetries > 0) {
+      try {
+        saveResult = await store.dispatch('user/saveUser', { userData, token });
+        
+        // Check if we got a valid result
+        if (saveResult && typeof saveResult === 'object') {
+          if (saveResult.success === true && saveResult.user) {
+            console.log('✅ User saved successfully on attempt', 3 - saveRetries);
+            break;
+          } else if (saveResult.success === false) {
+            console.warn('⚠️ Server returned failure:', saveResult.error);
+            throw new Error(saveResult.error || 'Server returned failure');
+          } else {
+            console.warn('⚠️ Invalid save result:', saveResult);
+            throw new Error('Invalid server response');
+          }
+        } else {
+          console.warn('⚠️ Save returned undefined or invalid result:', saveResult);
+          throw new Error('Save action returned invalid result');
+        }
+        
+      } catch (saveError) {
+        saveRetries--;
+        console.warn(`⚠️ Save attempt failed, ${saveRetries} retries left:`, saveError.message);
+        
+        if (saveRetries === 0) {
+          throw new Error(`Failed to save user after retries: ${saveError.message}`);
+        }
+        
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+    
+    // Handle successful save
+    if (saveResult && saveResult.success && saveResult.user) {
+      const serverUser = saveResult.user;
+      const userPlan = serverUser.subscriptionPlan || 'free';
+      
+      console.log('✅ User authentication completed successfully:', {
+        email: serverUser.email,
+        plan: userPlan,
+        id: serverUser._id || serverUser.firebaseId
+      });
+      
+      // Update stores
+      store.commit('setUser', serverUser);
+      store.commit('setFirebaseUserId', serverUser.firebaseId || serverUser._id);
+      store.commit('setToken', token);
+      
+      // Update user module store
+      store.commit('user/SET_USER', serverUser);
+      store.commit('user/SET_USER_STATUS', userPlan);
+      
+      // Update localStorage
+      try {
+        localStorage.setItem('user', JSON.stringify(serverUser));
+        localStorage.setItem('firebaseUserId', serverUser.firebaseId || serverUser._id);
+        localStorage.setItem('userId', serverUser.firebaseId || serverUser._id);
+        localStorage.setItem('token', token);
+        localStorage.setItem('userStatus', userPlan);
+        localStorage.setItem('lastLoginTime', new Date().toISOString());
+      } catch (storageError) {
+        console.warn('⚠️ Failed to update localStorage:', storageError);
+      }
+      
+      // Mark auth as ready
+      appLifecycle.authReady = true;
+      
+      // Trigger global events after a short delay to ensure everything is ready
+      setTimeout(() => {
+        triggerGlobalEvent('userStatusChanged', {
+          oldStatus: 'free',
+          newStatus: userPlan,
+          source: 'login-complete',
+          timestamp: Date.now()
+        });
+        
+        triggerGlobalEvent('userLoggedIn', {
+          user: serverUser,
+          userStatus: userPlan,
+          source: 'server',
+          timestamp: Date.now()
+        });
+      }, 100);
+      
+    } else {
+      throw new Error('User save completed but returned invalid result');
+    }
+    
+  } catch (error) {
+    console.error('❌ User authentication handling failed:', error);
+    
+    // Clear any partial state
+    await handleUserNotAuthenticated();
+    
+    throw error;
+  }
+}
+
+// ============================================================================
+// 🔥 ENHANCED USER NOT AUTHENTICATED HANDLER
+// ============================================================================
+async function handleUserNotAuthenticated() {
+  console.log('👋 Processing non-authenticated state...');
+  
+  try {
+    // Clear user data through store actions
+    await store.dispatch('user/logout');
+    
+    // Also clear legacy main store
+    store.commit('logout');
+    
+    // Clear localStorage
+    const keysToRemove = [
+      'user', 'firebaseUserId', 'userId', 'token', 
+      'userStatus', 'lastLoginTime', 'subscriptionDetails'
+    ];
+    
+    keysToRemove.forEach(key => {
+      try {
+        localStorage.removeItem(key);
+      } catch (error) {
+        console.warn(`⚠️ Failed to remove ${key}:`, error);
+      }
+    });
+    
+    // Set default state
+    store.commit('user/SET_USER_STATUS', 'free');
+    
+    // Mark auth as ready (even for non-authenticated users)
+    appLifecycle.authReady = true;
+    
+    console.log('✅ Non-authenticated state processed successfully');
+    
+    // Trigger events
+    setTimeout(() => {
+      triggerGlobalEvent('userStatusChanged', {
+        oldStatus: null,
+        newStatus: 'free',
+        source: 'not-authenticated',
+        timestamp: Date.now()
+      });
+    }, 100);
+    
+  } catch (error) {
+    console.error('❌ Error handling non-authenticated state:', error);
+    
+    // Force basic state
+    try {
+      store.commit('user/CLEAR_USER');
+      localStorage.clear();
+    } catch (clearError) {
+      console.error('❌ Even force clear failed:', clearError);
+    }
+    
+    appLifecycle.authReady = true; // Always mark as ready to prevent hanging
+  }
+}
+
+// ============================================================================
+// 🔥 ENHANCED VUE APPLICATION MOUNTING
+// ============================================================================
+async function mountVueApplication() {
+  console.log('🎯 Mounting Vue application with full features...');
+  
+  try {
+    app = createApp(App);
+    
+    // Add enhanced global properties
+    app.config.globalProperties.$eventBus = eventBus;
+    app.config.globalProperties.$userStore = store;
+    app.config.globalProperties.$userStatus = () => store.getters['user/userStatus'];
+    app.config.globalProperties.$hasFeature = (feature) => store.getters['user/hasFeatureAccess'](feature);
+    app.config.globalProperties.$isPremiumUser = () => store.getters['user/isPremiumUser'];
+    app.config.globalProperties.$triggerGlobalEvent = window.triggerGlobalEvent;
+    app.config.globalProperties.$onUserStatusChange = (callback) => {
+      const cleanup = eventBus.onStatusChange(callback);
+      return cleanup;
+    };
+    
+    // Install plugins
+    app.use(store);
+    app.use(router);
+    app.use(VueToast, {
+      position: 'top-center',
+      duration: 4000,
+      dismissible: true
+    });
+    app.use(i18n);
+    
+    // Enhanced error handler
+    app.config.errorHandler = (error, instance, info) => {
+      console.error('❌ Vue error:', error);
+      console.error('📍 Component:', instance?.$options?.name || 'Unknown');
+      console.error('ℹ️ Info:', info);
+      
+      // Handle specific length errors
+      if (error.message?.includes("Cannot read properties of undefined (reading 'length')")) {
+        console.error('🔍 Length property error detected - likely array reactivity issue');
+        
+        eventBus.emit('lengthPropertyError', {
+          error: error.message,
+          component: instance?.$options?.name || 'Unknown',
+          info,
+          timestamp: Date.now()
+        });
+        
+        // Try to recover
+        try {
+          store.commit('user/FORCE_UPDATE');
+          window.triggerGlobalEvent('globalForceUpdate', {
+            reason: 'length-error-recovery',
+            timestamp: Date.now()
+          });
+        } catch (recoveryError) {
+          console.error('❌ Recovery attempt failed:', recoveryError);
+        }
+      }
+      
+      eventBus.emit('vueError', {
+        error: error.message,
+        component: instance?.$options?.name || 'Unknown',
+        info,
+        timestamp: Date.now()
+      });
+    };
+    
+    // Mount the application
+    app.mount('#app');
+    isApplicationMounted = true;
+    appLifecycle.mounted = true;
+    
+    console.log('✅ Vue application mounted successfully');
+    
+    // Setup global subscription management
+    setupEnhancedGlobalSubscriptionManagement();
+    
+    // Mark app as fully initialized
+    appLifecycle.initialized = true;
+    
+    // Emit app ready event
+    eventBus.emit('appReady', {
+      userAuthenticated: !!store.getters['user/isAuthenticated'],
+      userStatus: store.getters['user/userStatus'],
+      timestamp: Date.now()
+    });
+    
+    // Final status propagation
+    setTimeout(() => {
+      const currentStatus = store.getters['user/userStatus'] || 'free';
+      window.triggerGlobalEvent('userStatusChanged', {
+        oldStatus: null,
+        newStatus: currentStatus,
+        source: 'app-mount-complete',
+        timestamp: Date.now()
+      });
+    }, 200);
+    
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Failed to mount Vue app:', error);
+    
+    eventBus.emit('appMountError', {
+      error: error.message,
+      timestamp: Date.now()
+    });
+    
+    throw error;
+  }
+}
+
+// ============================================================================
+// 🔥 BASIC VUE APPLICATION MOUNTING (FALLBACK)
+// ============================================================================
+async function mountVueApplicationBasic() {
+  console.log('🎯 Mounting Vue application in basic mode...');
+  
+  try {
+    app = createApp(App);
+    
+    // Basic plugins only
+    app.use(store);
+    app.use(router);
+    app.use(i18n);
+    
+    // Basic error handler
+    app.config.errorHandler = (error, instance, info) => {
+      console.error('❌ Vue error (basic mode):', error);
+    };
+    
+    // Mount the application
+    app.mount('#app');
+    isApplicationMounted = true;
+    appLifecycle.mounted = true;
+    
+    console.log('✅ Vue application mounted in basic mode');
+    
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Failed to mount Vue app even in basic mode:', error);
+    throw error;
+  }
+}
+
+// ============================================================================
+// 🔥 ENHANCED GLOBAL EVENT TRIGGERING SYSTEM
 // ============================================================================
 
-// ✅ ENHANCED GLOBAL EVENT TRIGGERING FUNCTION
 window.triggerGlobalEvent = (eventName, data = {}) => {
   if (typeof window === 'undefined') return;
 
@@ -127,22 +554,19 @@ window.triggerGlobalEvent = (eventName, data = {}) => {
       version: '2.0'
     };
 
-    // 🔥 METHOD 1: Custom DOM event (MOST RELIABLE for cross-component communication)
+    // Multiple event dispatch methods for maximum compatibility
     const customEvent = new CustomEvent(eventName, {
       detail: enhancedData,
       bubbles: true,
       cancelable: true
     });
     window.dispatchEvent(customEvent);
-    console.log(`✅ DOM event dispatched: ${eventName}`);
 
-    // 🔥 METHOD 2: Event bus (for components listening via eventBus)
     if (window.eventBus?.emit) {
       window.eventBus.emit(eventName, enhancedData);
-      console.log(`✅ EventBus emit: ${eventName}`);
     }
 
-    // 🔥 METHOD 3: Direct storage event for cross-tab communication
+    // Cross-tab communication for important events
     if (eventName.includes('Status') || eventName.includes('Subscription')) {
       try {
         const storageEvent = new CustomEvent('userSubscriptionChanged', {
@@ -151,37 +575,31 @@ window.triggerGlobalEvent = (eventName, data = {}) => {
         });
         window.dispatchEvent(storageEvent);
         
-        // Also trigger storage change for cross-tab sync
         localStorage.setItem('lastGlobalEvent', JSON.stringify({
           eventName,
           data: enhancedData,
           timestamp: Date.now()
         }));
-        console.log(`✅ Cross-tab event dispatched: userSubscriptionChanged`);
       } catch (storageError) {
         console.warn('⚠️ Storage event failed:', storageError);
       }
     }
 
-    // 🔥 METHOD 4: Force update all Vue instances if available
-    if (window.Vue?._installedPlugins?.find(p => p.version)) {
-      setTimeout(() => {
-        console.log('🔄 Attempting to force update all Vue instances');
-      }, 10);
-    }
+    console.log(`✅ Global event dispatched: ${eventName}`);
 
   } catch (eventError) {
     console.error(`❌ Failed to trigger global event '${eventName}':`, eventError);
   }
 };
 
-// ✅ ENHANCED STORE MUTATION INTERCEPTOR FOR AUTOMATIC EVENT TRIGGERING
+// ============================================================================
+// 🔥 STORE MUTATION INTERCEPTOR FOR AUTOMATIC EVENT TRIGGERING
+// ============================================================================
 const setupStoreInterceptor = (store) => {
-  // Intercept all store mutations and trigger events for user-related changes
   store.subscribe((mutation, state) => {
     console.log('🔄 Store mutation:', mutation.type, mutation.payload);
     
-    // List of mutations that should trigger global events
+    // User-related mutations that should trigger global events
     const userMutations = [
       'user/SET_USER_STATUS',
       'user/setUserStatus',
@@ -195,12 +613,10 @@ const setupStoreInterceptor = (store) => {
       console.log('📡 User-related mutation detected, triggering global events');
       
       const currentStatus = state.user?.userStatus || 'free';
-      
-      // Determine old status based on mutation type and payload
       let oldStatus = 'free';
+      
       if (mutation.type === 'user/SET_USER_STATUS' && mutation.payload) {
-        // For status mutations, we need to get the previous status
-        oldStatus = currentStatus; // This will be updated in the mutation
+        oldStatus = currentStatus;
       }
       
       const eventData = {
@@ -215,7 +631,7 @@ const setupStoreInterceptor = (store) => {
         forceCounter: state.user?.system?.forceUpdateCounter || 0
       };
       
-      // Trigger multiple event types for maximum compatibility
+      // Trigger multiple event types for compatibility
       const eventTypes = [
         'userStatusChanged',
         'subscriptionUpdated',
@@ -229,7 +645,7 @@ const setupStoreInterceptor = (store) => {
         window.triggerGlobalEvent(eventType, { ...eventData, eventType });
       });
       
-      // Additional delayed event for stubborn components
+      // Delayed event for stubborn components
       setTimeout(() => {
         window.triggerGlobalEvent('delayedStatusUpdate', eventData);
       }, 100);
@@ -238,19 +654,17 @@ const setupStoreInterceptor = (store) => {
 };
 
 // ============================================================================
-// 🚀 ENHANCED EVENT BUS WITH BETTER USER STATUS HANDLING
+// 🚀 ENHANCED EVENT BUS
 // ============================================================================
-
 class AdvancedEventBus {
   constructor() {
     this.events = {};
     this.debugMode = import.meta.env.DEV;
     this.subscriptionListeners = new Set();
     this.errorHandlers = new Set();
-    this.statusChangeListeners = new Set(); // ✅ NEW: Dedicated status listeners
+    this.statusChangeListeners = new Set();
   }
   
-  // ✅ Enhanced emit with error handling and logging
   emit(event, data) {
     if (this.debugMode) {
       console.log(`📡 EventBus: Emitting "${event}"`, data);
@@ -267,21 +681,16 @@ class AdvancedEventBus {
       });
     }
     
-    // ✅ ENHANCED: Special handling for status change events
     if (event.includes('status') || event.includes('Status') || event.includes('subscription') || event.includes('Subscription')) {
       this.notifyStatusChangeListeners(event, data);
-      
-      // Also trigger generic subscription listeners
       this.notifySubscriptionListeners(event, data);
     }
     
-    // Special handling for subscription events
     if (event.includes('subscription') || event.includes('promocode') || event.includes('payment')) {
       this.notifySubscriptionListeners(event, data);
     }
   }
   
-  // ✅ Standard event listener registration
   on(event, callback) {
     if (!this.events[event]) {
       this.events[event] = [];
@@ -293,14 +702,12 @@ class AdvancedEventBus {
     }
   }
   
-  // ✅ Remove event listener
   off(event, callback) {
     if (this.events[event]) {
       this.events[event] = this.events[event].filter(cb => cb !== callback);
     }
   }
   
-  // ✅ One-time event listener
   once(event, callback) {
     const onceCallback = (data) => {
       callback(data);
@@ -309,13 +716,11 @@ class AdvancedEventBus {
     this.on(event, onceCallback);
   }
   
-  // ✅ NEW: Status change listener registry
   onStatusChange(callback) {
     this.statusChangeListeners.add(callback);
     return () => this.statusChangeListeners.delete(callback);
   }
   
-  // ✅ NEW: Notify all status change listeners
   notifyStatusChangeListeners(event, data) {
     this.statusChangeListeners.forEach(callback => {
       try {
@@ -326,13 +731,11 @@ class AdvancedEventBus {
     });
   }
   
-  // ✅ Special subscription listener registry
   onSubscriptionChange(callback) {
     this.subscriptionListeners.add(callback);
     return () => this.subscriptionListeners.delete(callback);
   }
   
-  // ✅ Notify all subscription listeners
   notifySubscriptionListeners(event, data) {
     this.subscriptionListeners.forEach(callback => {
       try {
@@ -343,13 +746,11 @@ class AdvancedEventBus {
     });
   }
   
-  // ✅ Error handler registration
   onError(callback) {
     this.errorHandlers.add(callback);
     return () => this.errorHandlers.delete(callback);
   }
   
-  // ✅ Handle event errors
   handleEventError(event, error, data) {
     this.errorHandlers.forEach(handler => {
       try {
@@ -360,44 +761,22 @@ class AdvancedEventBus {
     });
   }
   
-  // ✅ Clear all events
   clear() {
     this.events = {};
     this.subscriptionListeners.clear();
     this.errorHandlers.clear();
-    this.statusChangeListeners.clear(); // ✅ NEW
-  }
-  
-  // ✅ Get event statistics
-  getStats() {
-    const stats = {
-      totalEvents: Object.keys(this.events).length,
-      totalListeners: Object.values(this.events).reduce((sum, arr) => sum + arr.length, 0),
-      subscriptionListeners: this.subscriptionListeners.size,
-      statusChangeListeners: this.statusChangeListeners.size, // ✅ NEW
-      errorHandlers: this.errorHandlers.size,
-      events: {}
-    };
-    
-    Object.keys(this.events).forEach(event => {
-      stats.events[event] = this.events[event].length;
-    });
-    
-    return stats;
+    this.statusChangeListeners.clear();
   }
 }
 
-// Create enhanced global event bus and EXPORT it
+// Create and export global event bus
 const eventBus = new AdvancedEventBus();
 window.eventBus = eventBus;
-
-// ✅ EXPORT the eventBus for component imports
 export { eventBus };
 
 // ============================================================================
-// 🌐 INTERNATIONALIZATION SETUP (UNCHANGED)
+// 🌐 INTERNATIONALIZATION SETUP
 // ============================================================================
-
 const i18n = createI18n({
   legacy: false,
   locale: localStorage.getItem('lang') || 'ru',
@@ -406,12 +785,10 @@ const i18n = createI18n({
 });
 
 // ============================================================================
-// 🎯 APPLICATION STATE MANAGEMENT (ENHANCED)
+// 🎯 APPLICATION STATE MANAGEMENT
 // ============================================================================
-
 let app;
 let isApplicationMounted = false;
-let storeInitialized = false;
 
 // Track app lifecycle
 const appLifecycle = {
@@ -422,560 +799,31 @@ const appLifecycle = {
 };
 
 // ============================================================================
-// 📊 ENHANCED STORE INITIALIZATION WITH REACTIVITY SETUP
+// 🌐 ENHANCED GLOBAL SUBSCRIPTION MANAGEMENT
 // ============================================================================
-
-async function initializeStore() {
-  try {
-    console.log('🏪 Initializing Vuex store...');
-    
-    // Initialize user store from localStorage
-    await store.dispatch('user/initialize');
-    
-    // ✅ CRITICAL: Setup store interceptor for automatic event triggering
-    setupStoreInterceptor(store);
-    
-    storeInitialized = true;
-    appLifecycle.storeReady = true;
-    
-    console.log('✅ Vuex store initialized successfully');
-    
-    // Emit store ready event
-    eventBus.emit('storeReady', {
-      userStatus: store.getters['user/userStatus'],
-      isAuthenticated: store.getters['user/isAuthenticated'],
-      timestamp: Date.now()
-    });
-    
-    // ✅ CRITICAL: Trigger initial status event for components
-    const initialStatus = store.getters['user/userStatus'] || 'free';
-    window.triggerGlobalEvent('userStatusChanged', {
-      oldStatus: null,
-      newStatus: initialStatus,
-      source: 'store-initialization',
-      timestamp: Date.now()
-    });
-    
-  } catch (error) {
-    console.error('❌ Store initialization failed:', error);
-    storeInitialized = false;
-    
-    eventBus.emit('storeInitializationError', {
-      error: error.message,
-      timestamp: Date.now()
-    });
-  }
-}
-
-// ============================================================================
-// 👤 ENHANCED USER LOGIN HANDLER WITH STATUS PROPAGATION
-// ============================================================================
-
-async function handleUserLogin(firebaseUser) {
-  try {
-    console.log('👤 Processing user login for:', firebaseUser.email);
-    
-    // ✅ Get Firebase ID token
-    let token;
-    try {
-      token = await firebaseUser.getIdToken();
-      console.log('🔑 Firebase token obtained');
-    } catch (tokenError) {
-      console.error('❌ Failed to get Firebase token:', tokenError);
-      
-      eventBus.emit('userLoginError', {
-        error: 'Failed to get authentication token. Please try logging in again.',
-        isTokenError: true,
-        canRetry: true,
-        timestamp: Date.now()
-      });
-      
-      await forceClearUserState();
-      return;
-    }
-    
-    // ✅ Prepare user data
-    const userData = {
-      uid: firebaseUser.uid,
-      email: firebaseUser.email,
-      displayName: firebaseUser.displayName,
-      name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-      emailVerified: firebaseUser.emailVerified,
-      photoURL: firebaseUser.photoURL
-    };
-    
-    console.log('💾 Saving user to server...', { 
-      email: userData.email, 
-      uid: userData.uid 
-    });
-    
-    // ✅ Save user to server
-    let saveResult;
-    try {
-      saveResult = await store.dispatch('user/saveUser', { userData, token });
-    } catch (dispatchError) {
-      console.error('❌ Store dispatch error:', dispatchError);
-      saveResult = {
-        success: false,
-        error: dispatchError.message || 'Failed to save user to server',
-        isDispatchError: true
-      };
-    }
-    
-    // ✅ Handle save result with safety check
-    if (saveResult && saveResult.success === true) {
-      await handleSuccessfulUserSave(saveResult, token, userData);
-    } else {
-      const safeResult = saveResult || { success: false, error: 'Save action returned undefined' };
-      await handleFailedUserSave(safeResult, token, userData);
-    }
-    
-  } catch (error) {
-    console.error('❌ User login handler error:', error);
-    
-    eventBus.emit('userLoginError', {
-      error: error.message || 'Login process failed',
-      isCritical: true,
-      timestamp: Date.now()
-    });
-    
-    await forceClearUserState();
-  }
-}
-
-// ============================================================================
-// ✅ ENHANCED SUCCESSFUL USER SAVE HANDLER WITH STATUS PROPAGATION
-// ============================================================================
-
-async function handleSuccessfulUserSave(result, token, userData) {
-  try {
-    console.log('✅ User saved to server successfully');
-    
-    // Validate user data in result
-    if (!result.user || typeof result.user !== 'object') {
-      console.error('❌ Success response missing user data:', result);
-      
-      eventBus.emit('userLoginError', {
-        error: 'Server saved user but returned invalid data. Please refresh the page.',
-        isDataError: true,
-        timestamp: Date.now()
-      });
-      return;
-    }
-    
-    const serverUser = result.user;
-    const userPlan = serverUser.subscriptionPlan || 'free';
-    
-    console.log('👤 Server user data:', {
-      id: serverUser._id || serverUser.firebaseId,
-      email: serverUser.email,
-      plan: userPlan
-    });
-    
-    // ✅ Update stores with server data
-    try {
-      // Update main store (legacy compatibility)
-      store.commit('setUser', serverUser);
-      store.commit('setFirebaseUserId', serverUser.firebaseId || serverUser._id);
-      store.commit('setToken', token);
-      
-      // ✅ CRITICAL: Update user module store with proper status propagation
-      store.commit('user/SET_USER', serverUser);
-      store.commit('user/SET_USER_STATUS', userPlan); // This will trigger global events via interceptor
-      
-      // Update localStorage
-      const storageData = {
-        user: serverUser,
-        firebaseUserId: serverUser.firebaseId || serverUser._id,
-        userId: serverUser.firebaseId || serverUser._id,
-        token: token,
-        userStatus: userPlan
-      };
-      
-      Object.entries(storageData).forEach(([key, value]) => {
-        try {
-          localStorage.setItem(key, typeof value === 'object' ? JSON.stringify(value) : value);
-        } catch (storageError) {
-          console.warn(`⚠️ Failed to store ${key}:`, storageError);
-        }
-      });
-      
-      console.log('✅ User state updated successfully');
-      
-    } catch (storeUpdateError) {
-      console.error('❌ Failed to update stores:', storeUpdateError);
-      // Don't fail login for store update errors, but emit warning
-      eventBus.emit('storeUpdateWarning', {
-        error: storeUpdateError.message,
-        timestamp: Date.now()
-      });
-    }
-    
-    // ✅ CRITICAL: Force global status propagation after successful login
-    setTimeout(() => {
-      window.triggerGlobalEvent('userStatusChanged', {
-        oldStatus: 'free',
-        newStatus: userPlan,
-        source: 'login-complete',
-        timestamp: Date.now()
-      });
-      
-      window.triggerGlobalEvent('userLoggedIn', {
-        user: serverUser,
-        userStatus: userPlan,
-        source: 'server',
-        isFirstLogin: !localStorage.getItem('lastLoginTime'),
-        timestamp: Date.now()
-      });
-    }, 100);
-    
-    // Store last login time
-    localStorage.setItem('lastLoginTime', new Date().toISOString());
-    
-    console.log(`🎉 User login completed: ${userData.email} (${userPlan})`);
-    
-  } catch (error) {
-    console.error('❌ Error in successful save handler:', error);
-    eventBus.emit('userLoginError', {
-      error: 'Failed to complete login process',
-      originalError: error.message,
-      timestamp: Date.now()
-    });
-  }
-}
-
-// ============================================================================
-// ❌ ENHANCED FAILED USER SAVE HANDLER
-// ============================================================================
-
-async function handleFailedUserSave(result, token, userData) {
-  const safeResult = result || { success: false, error: 'Unknown error' };
-  
-  const errorMessage = safeResult.error || safeResult.message || 'Failed to save user to server';
-  console.error('❌ Failed to save user to server:', {
-    error: errorMessage,
-    statusCode: safeResult.statusCode,
-    isDispatchError: safeResult.isDispatchError,
-    hasResult: !!result
-  });
-  
-  // Clear any inconsistent state
-  await forceClearUserState();
-  
-  // Emit detailed error
-  eventBus.emit('userLoginError', {
-    error: errorMessage,
-    isServerError: true,
-    canRetry: true,
-    statusCode: safeResult.statusCode,
-    isDispatchError: safeResult.isDispatchError,
-    timestamp: Date.now()
-  });
-  
-  // ✅ AUTO-RETRY for server/network errors
-  const shouldRetry = (
-    safeResult.statusCode >= 500 || 
-    !safeResult.statusCode || 
-    safeResult.isDispatchError ||
-    errorMessage.includes('undefined')
-  );
-  
-  if (shouldRetry) {
-    console.log('🔄 Will retry user save in 3 seconds...');
-    
-    setTimeout(async () => {
-      try {
-        console.log('🔄 Retrying user save...');
-        const retryResult = await store.dispatch('user/saveUser', { userData, token });
-        
-        if (retryResult && retryResult.success === true && retryResult.user) {
-          console.log('✅ Retry successful');
-          await handleSuccessfulUserSave(retryResult, token, userData);
-          
-          eventBus.emit('userLoginRetrySuccess', {
-            message: 'Successfully connected after retry',
-            timestamp: Date.now()
-          });
-        } else {
-          console.error('❌ Retry failed:', retryResult);
-          eventBus.emit('userLoginRetryFailed', {
-            error: retryResult?.error || 'Retry failed - no valid result',
-            finalFailure: true,
-            timestamp: Date.now()
-          });
-        }
-      } catch (retryError) {
-        console.error('❌ Retry exception:', retryError);
-        eventBus.emit('userLoginRetryFailed', {
-          error: retryError.message,
-          isException: true,
-          timestamp: Date.now()
-        });
-      }
-    }, 3000);
-  }
-}
-
-// ============================================================================
-// 👋 ENHANCED USER LOGOUT HANDLER WITH STATUS PROPAGATION
-// ============================================================================
-
-async function handleUserLogout() {
-  try {
-    console.log('👋 Processing user logout...');
-    
-    const oldStatus = store.getters['user/userStatus'] || 'free';
-    
-    // Clear user data through store actions
-    try {
-      await store.dispatch('user/logout');
-    } catch (logoutError) {
-      console.warn('⚠️ Store logout error:', logoutError);
-      // Force clear if action fails
-      await forceClearUserState();
-    }
-    
-    // Also clear legacy main store
-    try {
-      store.commit('logout');
-    } catch (mainStoreError) {
-      console.warn('⚠️ Main store logout warning:', mainStoreError);
-    }
-    
-    // Clear localStorage
-    const keysToRemove = [
-      'user', 'firebaseUserId', 'userId', 'token', 
-      'userStatus', 'lastLoginTime', 'subscriptionDetails'
-    ];
-    
-    keysToRemove.forEach(key => {
-      try {
-        localStorage.removeItem(key);
-      } catch (storageError) {
-        console.warn(`⚠️ Failed to remove ${key}:`, storageError);
-      }
-    });
-    
-    console.log('✅ User logout completed');
-    
-    // ✅ CRITICAL: Force global status propagation after logout
-    setTimeout(() => {
-      window.triggerGlobalEvent('userStatusChanged', {
-        oldStatus,
-        newStatus: 'free',
-        source: 'logout',
-        timestamp: Date.now()
-      });
-      
-      window.triggerGlobalEvent('userLoggedOut', {
-        timestamp: Date.now()
-      });
-    }, 100);
-    
-  } catch (error) {
-    console.error('❌ Logout error:', error);
-    // Force clear on any logout error
-    await forceClearUserState();
-    
-    eventBus.emit('logoutError', {
-      error: error.message,
-      timestamp: Date.now()
-    });
-  }
-}
-
-// ============================================================================
-// 🧹 FORCE CLEAR USER STATE (ENHANCED)
-// ============================================================================
-
-async function forceClearUserState() {
-  console.log('🧹 Force clearing all user state...');
-  
-  const oldStatus = store.getters['user/userStatus'] || 'free';
-  
-  try {
-    // Clear user store
-    store.commit('user/CLEAR_USER');
-  } catch (error) {
-    console.warn('⚠️ Failed to clear user store:', error);
-  }
-  
-  try {
-    // Clear main store
-    store.commit('logout');
-  } catch (error) {
-    console.warn('⚠️ Failed to clear main store:', error);
-  }
-  
-  // Force clear localStorage
-  const keysToRemove = [
-    'user', 'firebaseUserId', 'userId', 'token', 
-    'userStatus', 'lastLoginTime', 'subscriptionDetails'
-  ];
-  
-  keysToRemove.forEach(key => {
-    try {
-      localStorage.removeItem(key);
-    } catch (error) {
-      console.warn(`⚠️ Failed to remove ${key}:`, error);
-    }
-  });
-  
-  // ✅ CRITICAL: Force status change event after clearing
-  setTimeout(() => {
-    window.triggerGlobalEvent('userStatusChanged', {
-      oldStatus,
-      newStatus: 'free',
-      source: 'force-clear',
-      timestamp: Date.now()
-    });
-  }, 100);
-  
-  console.log('✅ Force clear completed');
-}
-
-// ============================================================================
-// 🎯 ENHANCED VUE APPLICATION MOUNTING WITH GLOBAL PROPERTIES
-// ============================================================================
-
-async function mountVueApplication() {
-  try {
-    console.log('🎯 Mounting Vue application...');
-    
-    app = createApp(App);
-    
-    // ✅ Add enhanced global properties for user status access
-    app.config.globalProperties.$eventBus = eventBus;
-    app.config.globalProperties.$userStore = store;
-    app.config.globalProperties.$userStatus = () => store.getters['user/userStatus'];
-    app.config.globalProperties.$hasFeature = (feature) => store.getters['user/hasFeatureAccess'](feature);
-    app.config.globalProperties.$isPremiumUser = () => store.getters['user/isPremiumUser'];
-    app.config.globalProperties.$triggerGlobalEvent = window.triggerGlobalEvent; // ✅ NEW
-    
-    // ✅ NEW: Global user status change handler for all components
-    app.config.globalProperties.$onUserStatusChange = (callback) => {
-      const cleanup = eventBus.onStatusChange(callback);
-      return cleanup;
-    };
-    
-    // ✅ Install plugins
-    app.use(store);
-    app.use(router);
-    app.use(VueToast, {
-      position: 'top-center',
-      duration: 4000,
-      dismissible: true
-    });
-    app.use(i18n);
-    
-    // ✅ Enhanced global error handler with length error detection
-    app.config.errorHandler = (error, instance, info) => {
-      console.error('❌ Vue error:', error);
-      console.error('📍 Component:', instance?.$options?.name || 'Unknown');
-      console.error('ℹ️ Info:', info);
-      
-      // Handle specific length errors that affect user status display
-      if (error.message?.includes("Cannot read properties of undefined (reading 'length')")) {
-        console.error('🔍 Length property error detected - likely array reactivity issue');
-        
-        eventBus.emit('lengthPropertyError', {
-          error: error.message,
-          component: instance?.$options?.name || 'Unknown',
-          info,
-          timestamp: Date.now()
-        });
-        
-        // Try to recover by forcing store refresh and global event
-        try {
-          store.commit('user/FORCE_UPDATE');
-          window.triggerGlobalEvent('globalForceUpdate', {
-            reason: 'length-error-recovery',
-            timestamp: Date.now()
-          });
-          console.log('🔄 Attempted recovery for length error');
-        } catch (refreshError) {
-          console.error('❌ Recovery attempt failed:', refreshError);
-        }
-      }
-      
-      // Emit global error
-      eventBus.emit('vueError', {
-        error: error.message,
-        component: instance?.$options?.name || 'Unknown',
-        info,
-        timestamp: Date.now()
-      });
-    };
-    
-    // ✅ Mount the application
-    app.mount('#app');
-    isApplicationMounted = true;
-    appLifecycle.mounted = true;
-    
-    console.log('✅ Vue application mounted successfully');
-    
-    // ✅ Setup enhanced global subscription management
-    setupEnhancedGlobalSubscriptionManagement();
-    
-    // ✅ Emit app ready event
-    eventBus.emit('appReady', {
-      userAuthenticated: !!store.getters['user/isAuthenticated'],
-      userStatus: store.getters['user/userStatus'],
-      timestamp: Date.now()
-    });
-    
-    // ✅ CRITICAL: Trigger initial status propagation after app mount
-    setTimeout(() => {
-      const currentStatus = store.getters['user/userStatus'] || 'free';
-      window.triggerGlobalEvent('userStatusChanged', {
-        oldStatus: null,
-        newStatus: currentStatus,
-        source: 'app-mount',
-        timestamp: Date.now()
-      });
-    }, 200);
-    
-    // ✅ Mark app as fully initialized
-    appLifecycle.initialized = true;
-    
-  } catch (error) {
-    console.error('❌ Failed to mount Vue app:', error);
-    
-    eventBus.emit('appMountError', {
-      error: error.message,
-      timestamp: Date.now()
-    });
-  }
-}
-
-// ============================================================================
-// 🌐 ENHANCED GLOBAL SUBSCRIPTION MANAGEMENT SYSTEM WITH REACTIVITY
-// ============================================================================
-
 function setupEnhancedGlobalSubscriptionManagement() {
   console.log('🌐 Setting up enhanced global subscription management...');
   
-  // ✅ ENHANCED Global subscription change handler
   const handleGlobalSubscriptionChange = (event) => {
     console.log('📡 Global subscription change detected:', event.detail);
     
     const { plan, source, oldPlan, timestamp } = event.detail;
     
-    // ✅ Update page title
+    // Update page title
     const planLabel = plan === 'pro' ? 'Pro' : plan === 'start' ? 'Start' : 'Free';
     if (document.title && !document.title.includes('|')) {
       document.title = `ACED | ${planLabel}`;
     }
     
-    // ✅ Update body classes for CSS styling
+    // Update body classes for CSS styling
     document.body.className = document.body.className.replace(/user-plan-\w+/g, '');
     document.body.classList.add(`user-plan-${plan}`);
     
-    // ✅ Update localStorage immediately
+    // Update localStorage immediately
     localStorage.setItem('userStatus', plan);
     localStorage.setItem('statusUpdateTime', Date.now().toString());
     
-    // ✅ CRITICAL: Update store if not already updated
+    // Update store if not already updated
     try {
       const currentStoreStatus = store.getters['user/userStatus'];
       if (currentStoreStatus !== plan) {
@@ -986,7 +834,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
       console.warn('⚠️ Failed to sync store:', storeError);
     }
     
-    // ✅ Force Vue app update
+    // Force Vue app update
     if (app?._instance) {
       try {
         app._instance.proxy.$forceUpdate();
@@ -996,7 +844,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
       }
     }
     
-    // ✅ CRITICAL: Emit multiple event types for maximum component coverage
+    // Emit multiple event types for maximum component coverage
     const eventData = {
       reason: 'subscription-change',
       plan: plan,
@@ -1017,7 +865,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
       eventBus.emit(eventType, eventData);
     });
     
-    // ✅ Show celebration for upgrades
+    // Show celebration for upgrades
     if (plan !== 'free' && oldPlan === 'free') {
       const sourceText = source === 'promocode' ? 'промокоду' : 'оплате';
       console.log(`🎉 Subscription upgraded to ${planLabel} via ${sourceText}!`);
@@ -1031,7 +879,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
     }
   };
   
-  // ✅ Register enhanced global DOM event listeners
+  // Register enhanced global DOM event listeners
   const eventTypesToListen = [
     'userSubscriptionChanged',
     'userStatusChanged', 
@@ -1044,7 +892,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
     window.addEventListener(eventType, handleGlobalSubscriptionChange);
   });
   
-  // ✅ Store reference for cleanup
+  // Store reference for cleanup
   if (!window.globalEventHandlers) {
     window.globalEventHandlers = {
       subscriptionHandlers: [],
@@ -1053,7 +901,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
   }
   window.globalEventHandlers.subscriptionHandlers.push(handleGlobalSubscriptionChange);
   
-  // ✅ ENHANCED event bus subscription listeners with better error handling
+  // Enhanced event bus subscription listeners
   eventBus.on('userStatusChanged', (data) => {
     console.log('👤 User status changed via event bus:', data);
     
@@ -1115,7 +963,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
     window.dispatchEvent(domEvent);
   });
   
-  // ✅ NEW: Enhanced storage event listener for cross-tab sync
+  // Enhanced storage event listener for cross-tab sync
   window.addEventListener('storage', (event) => {
     if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
       console.log('📡 Cross-tab userStatus change detected:', event.oldValue, '→', event.newValue);
@@ -1133,7 +981,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
     }
   });
   
-  // ✅ NEW: Periodic status consistency check
+  // Periodic status consistency check
   setInterval(() => {
     try {
       const storeStatus = store.getters['user/userStatus'];
@@ -1165,7 +1013,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
 }
 
 // ============================================================================
-// 🌟 ENHANCED GLOBAL ERROR HANDLING WITH USER STATUS RECOVERY
+// 🌟 ENHANCED GLOBAL ERROR HANDLING
 // ============================================================================
 
 // Enhanced global JavaScript error handler
@@ -1228,12 +1076,12 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 // ============================================================================
-// 🔧 ENHANCED GLOBAL HELPER FUNCTIONS FOR COMPONENTS
+// 🔧 ENHANCED GLOBAL HELPER FUNCTIONS
 // ============================================================================
 
 // Enhanced helper functions for components
 window.addEventListener('DOMContentLoaded', () => {
-  // ✅ ENHANCED Status change helper with validation
+  // Enhanced Status change helper with validation
   window.emitUserStatusChange = (oldStatus, newStatus, source = 'unknown') => {
     console.log('🔧 Helper: emitUserStatusChange called', { oldStatus, newStatus, source });
     
@@ -1256,7 +1104,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   };
   
-  // ✅ ENHANCED Force update helper
+  // Enhanced Force update helper
   window.emitForceUpdate = (reason = 'manual') => {
     console.log('🔧 Helper: emitForceUpdate called', { reason });
     
@@ -1274,7 +1122,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   };
   
-  // ✅ ENHANCED User change listener helper with cleanup
+  // Enhanced User change listener helper with cleanup
   window.listenToUserChanges = (callback) => {
     console.log('🔧 Helper: listenToUserChanges called');
     
@@ -1301,7 +1149,7 @@ window.addEventListener('DOMContentLoaded', () => {
     };
   };
   
-  // ✅ NEW: Direct store status getter helper
+  // Direct store status getter helper
   window.getCurrentUserStatus = () => {
     try {
       return store.getters['user/userStatus'] || 'free';
@@ -1311,7 +1159,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   };
   
-  // ✅ NEW: Status sync helper for components
+  // Status sync helper for components
   window.syncUserStatus = () => {
     try {
       const storeStatus = store.getters['user/userStatus'];
@@ -1338,156 +1186,6 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================================
-// 📊 ENHANCED PERFORMANCE MONITORING WITH USER STATUS TRACKING
-// ============================================================================
-
-if (import.meta.env.DEV) {
-  // Track app load performance
-  window.addEventListener('load', () => {
-    if (performance.mark) {
-      performance.mark('app-loaded');
-      const loadTime = performance.now();
-      console.log(`⚡ App loaded in: ${loadTime.toFixed(2)}ms`);
-      
-      eventBus.emit('appPerformance', {
-        loadTime: loadTime,
-        timestamp: Date.now()
-      });
-    }
-  });
-  
-  // Enhanced store mutation tracking for user status
-  let mutationCount = 0;
-  store.subscribe((mutation, state) => {
-    mutationCount++;
-    
-    if (mutation.type.startsWith('user/')) {
-      console.log(`🔄 User store mutation #${mutationCount}:`, mutation.type, mutation.payload);
-    }
-    
-    // Track subscription-related mutations with enhanced details
-    if (mutation.type.includes('STATUS') || mutation.type.includes('SUBSCRIPTION') || mutation.type.includes('UPDATE')) {
-      const currentStatus = state.user?.userStatus || 'free';
-      
-      eventBus.emit('storeMutation', {
-        type: mutation.type,
-        payload: mutation.payload,
-        currentStatus: currentStatus,
-        count: mutationCount,
-        timestamp: Date.now()
-      });
-      
-      // Log status changes specifically
-      if (mutation.type.includes('STATUS')) {
-        console.log(`📊 Status mutation detected: ${mutation.type} → ${currentStatus}`);
-      }
-    }
-  });
-}
-
-// ============================================================================
-// 🐛 ENHANCED DEVELOPMENT DEBUGGING TOOLS WITH USER STATUS HELPERS
-// ============================================================================
-
-if (import.meta.env.DEV) {
-  // Expose core objects for debugging
-  window.$store = store;
-  window.$eventBus = eventBus;
-  window.$userStatus = () => store.getters['user/userStatus'];
-  window.$userFeatures = () => store.getters['user/features'];
-  window.$appLifecycle = appLifecycle;
-  window.$authInitPromise = authInitPromise;
-  
-  // ✅ ENHANCED: User status debugging helpers
-  window.debugUserStatus = {
-    getCurrentStatus: () => {
-      const storeStatus = store.getters['user/userStatus'];
-      const localStatus = localStorage.getItem('userStatus');
-      const isPremium = store.getters['user/isPremiumUser'];
-      
-      console.log('📊 Current User Status Debug:', {
-        store: storeStatus,
-        localStorage: localStatus,
-        isPremium: isPremium,
-        features: store.getters['user/features'],
-        forceCounter: store.getters['user/forceUpdateCounter']
-      });
-      
-      return { storeStatus, localStatus, isPremium };
-    },
-    
-    setStatus: (newStatus) => {
-      console.log('🔧 Debug: Setting user status to:', newStatus);
-      store.dispatch('user/updateUserStatus', newStatus);
-    },
-    
-    triggerEvents: (status = 'start') => {
-      console.log('🔧 Debug: Triggering status events for:', status);
-      window.triggerGlobalEvent('userStatusChanged', {
-        oldStatus: 'free',
-        newStatus: status,
-        source: 'debug-trigger',
-        timestamp: Date.now()
-      });
-    },
-    
-    forceUpdate: () => {
-      console.log('🔧 Debug: Forcing global update');
-      store.commit('user/FORCE_UPDATE');
-      window.triggerGlobalEvent('globalForceUpdate', {
-        reason: 'debug-force',
-        timestamp: Date.now()
-      });
-    },
-    
-    testReactivity: () => {
-      console.log('🔧 Debug: Testing reactivity chain');
-      
-      const statuses = ['free', 'start', 'pro'];
-      let index = 0;
-      
-      const testInterval = setInterval(() => {
-        const testStatus = statuses[index];
-        console.log(`🔧 Debug: Testing status ${index + 1}/3:`, testStatus);
-        
-        window.debugUserStatus.setStatus(testStatus);
-        
-        index++;
-        if (index >= statuses.length) {
-          clearInterval(testInterval);
-          console.log('✅ Debug: Reactivity test completed');
-        }
-      }, 2000);
-    }
-  };
-  
-  console.log(`
-🐛 ENHANCED DEVELOPMENT DEBUG COMMANDS AVAILABLE:
-
-📊 USER STATUS DEBUGGING:
-- debugUserStatus.getCurrentStatus(): Check status across all sources
-- debugUserStatus.setStatus('pro'): Set user status directly
-- debugUserStatus.triggerEvents('start'): Trigger status change events
-- debugUserStatus.forceUpdate(): Force global reactivity update
-- debugUserStatus.testReactivity(): Test status change chain
-
-🔐 AUTHENTICATION DEBUGGING:
-- $store: Vuex store instance
-- $eventBus: Global event bus
-- $userStatus(): Get current user status
-- $appLifecycle: App initialization state
-- $authInitPromise: Auth initialization promise
-
-🔧 GLOBAL HELPERS:
-- window.triggerGlobalEvent(eventName, data): Trigger global events
-- window.emitUserStatusChange(old, new, source): Emit status change
-- window.emitForceUpdate(reason): Force global update
-- window.syncUserStatus(): Sync status between store and localStorage
-- window.getCurrentUserStatus(): Get current status safely
-  `);
-}
-
-// ============================================================================
 // 🚀 FINAL SETUP: EXPOSE CRITICAL FUNCTIONS GLOBALLY
 // ============================================================================
 
@@ -1507,6 +1205,77 @@ window.forceUserStatusSync = () => {
   }
 };
 
-console.log('✅ Enhanced main.js with complete user status reactivity loaded successfully!');
-console.log('🔧 Use window.debugUserStatus for debugging user status issues');
-console.log('🚨 Use window.forceUserStatusSync() for emergency status sync');
+// Development debugging tools
+if (import.meta.env.DEV) {
+  // Expose core objects for debugging
+  window.$store = store;
+  window.$eventBus = eventBus;
+  window.$userStatus = () => store.getters['user/userStatus'];
+  window.$appLifecycle = appLifecycle;
+  window.$authInitPromise = authInitPromise;
+  
+  // Enhanced debugging helpers
+  window.debugAuth = {
+    getAuthState: () => ({
+      authStateResolved,
+      appLifecycle,
+      currentUser: store.getters['user/getUser'],
+      userStatus: store.getters['user/userStatus'],
+      isAuthenticated: store.getters['user/isAuthenticated']
+    }),
+    
+    forceAuthComplete: () => {
+      if (!authStateResolved && authResolveFunction) {
+        authStateResolved = true;
+        authResolveFunction({
+          authenticated: false,
+          user: null,
+          appReady: true,
+          forced: true,
+          timestamp: Date.now()
+        });
+        console.log('🔧 Debug: Forced auth completion');
+      }
+    },
+    
+    testAuthFlow: async () => {
+      console.log('🔧 Debug: Testing auth flow...');
+      try {
+        await authInitPromise;
+        console.log('✅ Debug: Auth promise resolved successfully');
+      } catch (error) {
+        console.error('❌ Debug: Auth promise failed:', error);
+      }
+    }
+  };
+  
+  console.log(`
+🐛 ENHANCED DEVELOPMENT DEBUG COMMANDS AVAILABLE:
+
+🔐 AUTHENTICATION DEBUGGING:
+- debugAuth.getAuthState(): Check current auth state
+- debugAuth.forceAuthComplete(): Force auth completion (emergency)
+- debugAuth.testAuthFlow(): Test auth promise resolution
+- $authInitPromise: Auth initialization promise
+
+📊 USER STATUS DEBUGGING:
+- $userStatus(): Get current user status
+- window.getCurrentUserStatus(): Safe status getter
+- window.syncUserStatus(): Sync status between store and localStorage
+- window.forceUserStatusSync(): Emergency status sync
+
+🔧 GLOBAL HELPERS:
+- window.triggerGlobalEvent(eventName, data): Trigger global events
+- window.emitUserStatusChange(old, new, source): Emit status change
+- window.emitForceUpdate(reason): Force global update
+- window.listenToUserChanges(callback): Listen to user changes
+
+⚠️ EMERGENCY FUNCTIONS:
+- window.forceUserStatusSync(): Emergency status sync
+- debugAuth.forceAuthComplete(): Force auth completion
+  `);
+}
+
+console.log('✅ Enhanced main.js with bulletproof authentication loaded successfully!');
+console.log('🔧 Authentication will complete BEFORE router navigation begins');
+console.log('🚨 Use debugAuth.* functions for authentication debugging');
