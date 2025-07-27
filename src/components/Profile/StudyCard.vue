@@ -76,7 +76,7 @@
         <button 
           v-if="hasLessons" 
           class="continue-btn" 
-          @click="goToLesson" 
+          @click="goToTopicOverview" 
           :class="getContinueButtonClass()"
           :title="getContinueButtonTitle()"
         >
@@ -122,7 +122,6 @@ import { userStatusMixin } from '@/composables/useUserStatus';
 export default {
   name: 'StudyCard',
   
-  // ✅ ENHANCED: Add the comprehensive user status mixin
   mixins: [userStatusMixin],
   
   props: {
@@ -136,14 +135,12 @@ export default {
       showDeleteModal: false,
       lang: localStorage.getItem('lang') || 'ru',
       
-      // ✅ ENHANCED: Add reactivity tracking
       componentKey: 0,
       lastStatusUpdate: Date.now()
     };
   },
   
   computed: {
-    // ✅ ENHANCED: Map user status getters with mixin integration
     ...mapGetters('user', [
       'userStatus',
       'isPremiumUser',
@@ -158,7 +155,6 @@ export default {
       if (!this.topic) return 'Курс без названия';
       
       try {
-        // Enhanced name extraction with comprehensive fallbacks
         if (this.topic.name && typeof this.topic.name === 'string' && this.topic.name.trim()) {
           return this.topic.name.trim();
         }
@@ -189,7 +185,6 @@ export default {
           }
         }
         
-        // Fallback to subject + level
         if (this.topic.subject) {
           const level = this.topic.level ? ` (Уровень ${this.topic.level})` : '';
           return `${this.topic.subject}${level}`;
@@ -218,7 +213,6 @@ export default {
           }
         }
         
-        // Construct description from available data
         const name = this.displayName;
         const subject = this.topic.subject || 'Общий предмет';
         const level = this.topic.level || 1;
@@ -254,13 +248,12 @@ export default {
     
     estimatedDuration() {
       const lessonCount = this.totalLessons;
-      const timePerLesson = 8; // minutes
+      const timePerLesson = 8;
       return Math.max(lessonCount * timePerLesson, 10);
     },
     
-    // Progress ring calculations
     circumference() {
-      return 2 * Math.PI * 16; // radius = 16
+      return 2 * Math.PI * 16;
     },
     
     progressOffset() {
@@ -269,7 +262,6 @@ export default {
     }
   },
   
-  // ✅ ENHANCED: Watch for user status changes
   watch: {
     userStatus: {
       handler(newStatus, oldStatus) {
@@ -293,7 +285,6 @@ export default {
   },
   
   methods: {
-    // ✅ ENHANCED: Add reactivity update method
     triggerReactivityUpdate() {
       this.componentKey++;
       this.lastStatusUpdate = Date.now();
@@ -343,11 +334,11 @@ export default {
 
     getProgressColor() {
       const progress = this.lessonProgress;
-      if (progress === 100) return '#10b981'; // green
-      if (progress >= 70) return '#3b82f6'; // blue
-      if (progress >= 30) return '#f59e0b'; // yellow
-      if (progress > 0) return '#ef4444'; // red
-      return '#e5e7eb'; // gray
+      if (progress === 100) return '#10b981';
+      if (progress >= 70) return '#3b82f6';
+      if (progress >= 30) return '#f59e0b';
+      if (progress > 0) return '#ef4444';
+      return '#e5e7eb';
     },
     
     getProgressBadgeClass() {
@@ -394,7 +385,6 @@ export default {
       return 'Начать изучение курса';
     },
 
-    // ✅ ENHANCED: Use mixin property for access check
     hasTopicAccess(topic) {
       const topicType = this.getTopicType(topic);
       
@@ -405,7 +395,8 @@ export default {
       return false;
     },
 
-    goToLesson() {
+    // ✅ FIXED: Navigate to TopicOverview instead of LessonPage
+    goToTopicOverview() {
       if (!this.hasLessons) {
         this.$nextTick(() => {
           alert('❌ Уроки для этого курса ещё готовятся. Попробуйте позже!');
@@ -414,32 +405,25 @@ export default {
       }
       
       try {
-        // Find the first available lesson
-        const availableLesson = this.lessons.find(
-          l => l && l._id && this.hasTopicAccess(l)
-        );
+        const topicId = this.topic._id || this.topic.topicId || this.topic.id;
         
-        if (!availableLesson) {
-          // Just take the first lesson if no access check passes
-          const firstLesson = this.lessons.find(l => l && l._id);
-          if (firstLesson) {
-            this.$router.push({ 
-              name: 'LessonPage', 
-              params: { id: firstLesson._id } 
-            });
-            return;
-          }
-          throw new Error('Нет доступных уроков.');
+        if (!topicId) {
+          throw new Error('Topic ID not found');
         }
         
+        console.log(`📚 StudyCard: Navigating to topic overview: ${topicId}`);
+        
+        // ✅ FIXED: Navigate to TopicOverview instead of LessonPage
         this.$router.push({ 
-          name: 'LessonPage', 
-          params: { id: availableLesson._id } 
+          name: 'TopicOverview', 
+          params: { id: topicId },
+          query: { source: 'study-card' }
         });
+        
       } catch (err) {
-        console.error('❌ Ошибка перехода к уроку:', err);
+        console.error('❌ StudyCard: Error navigating to topic overview:', err);
         this.$nextTick(() => {
-          alert('❌ Не удалось открыть урок: ' + err.message);
+          alert('❌ Не удалось открыть курс: ' + err.message);
         });
       }
     },
@@ -459,7 +443,6 @@ export default {
 
         console.log('🗑️ Deleting topic from study list:', { userId, topicId });
 
-        // Try to remove from backend
         try {
           const result = await removeFromStudyList(userId, topicId);
           console.log('Backend deletion result:', result);
@@ -467,7 +450,6 @@ export default {
           console.warn('Backend deletion failed, but continuing with UI update:', backendError);
         }
 
-        // Always emit deletion event to update UI
         this.showDeleteModal = false;
         this.$emit('deleted', topicId);
         
@@ -487,8 +469,6 @@ export default {
 </script>
 
 <style scoped>
-/* StudyCard.vue - Matching Recommendation Card Design */
-
 .study-card {
   flex: 0 0 280px;
   background: #ffffff;
@@ -522,7 +502,6 @@ export default {
   border-left: 3px solid #1e293b;
 }
 
-/* Topic Badge */
 .topic-badge {
   position: absolute;
   top: 8px;
@@ -555,7 +534,6 @@ export default {
   border: 1px solid #1f2937;
 }
 
-/* Progress Ring */
 .progress-ring {
   position: absolute;
   top: 8px;
@@ -577,7 +555,6 @@ export default {
   color: #1a1a1a;
 }
 
-/* Topic Content */
 .topic-content {
   display: flex;
   flex-direction: column;
@@ -708,7 +685,6 @@ export default {
   font-weight: 600;
 }
 
-/* Card Actions */
 .card-actions {
   display: flex;
   gap: 8px;
@@ -811,7 +787,6 @@ export default {
   font-weight: 600;
 }
 
-/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -929,7 +904,6 @@ export default {
   transform: translateY(-1px);
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
   .study-card {
     flex: 0 0 260px;

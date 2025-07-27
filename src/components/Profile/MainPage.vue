@@ -280,35 +280,22 @@ export default {
     PaymentModal 
   },
   
-  // ✅ ENHANCED: Add the comprehensive user status mixin
   mixins: [userStatusMixin],
   
   data() {
     return {
-      // ============================================================================
-      // 👤 USER & AUTHENTICATION DATA
-      // ============================================================================
       userId: null,
       lang: localStorage.getItem('lang') || 'ru',
       
-      // ============================================================================
-      // 📚 RECOMMENDATIONS DATA
-      // ============================================================================
       allRecommendations: [],
       displayedRecommendations: [],
       recommendationsLastFetch: null,
       recommendationsSource: null,
       
-      // ============================================================================
-      // 📖 STUDY LIST DATA
-      // ============================================================================
       studyList: [],
       studyListLastFetch: null,
       invalidTopicsCleanedUp: 0,
       
-      // ============================================================================
-      // 🎛️ FILTER & SEARCH STATE
-      // ============================================================================
       allSubjects: [],
       allLevels: [],
       searchQuery: '',
@@ -318,9 +305,6 @@ export default {
       filterProgress: '',
       sortBy: 'name',
       
-      // ============================================================================
-      // ⏳ LOADING STATES
-      // ============================================================================
       loadingRecommendations: true,
       loadingStudyList: true,
       loadingOperations: {
@@ -330,22 +314,13 @@ export default {
         refresh: new Set()
       },
       
-      // ============================================================================
-      // 🎠 CAROUSEL STATE
-      // ============================================================================
       isAtStart: true,
       isAtEnd: false,
       carouselScrollPosition: 0,
       
-      // ============================================================================
-      // 💳 MODAL & PAYWALL STATE
-      // ============================================================================
       showPaywall: false,
       requestedTopicId: null,
       
-      // ============================================================================
-      // ❌ ERROR HANDLING STATE
-      // ============================================================================
       errors: {
         recommendations: null,
         studyList: null,
@@ -355,16 +330,10 @@ export default {
       maxRetries: 3,
       lastErrorTime: null,
       
-      // ============================================================================
-      // 🔔 NOTIFICATION SYSTEM
-      // ============================================================================
       notifications: [],
       notificationCounter: 0,
       maxNotifications: 5,
       
-      // ============================================================================
-      // 📊 PERFORMANCE & ANALYTICS
-      // ============================================================================
       performanceMetrics: {
         mountTime: null,
         lastDataFetch: null,
@@ -373,9 +342,6 @@ export default {
         failedOperations: 0
       },
       
-      // ============================================================================
-      // 🎯 FEATURE FLAGS & CONFIGURATION
-      // ============================================================================
       config: {
         enableAutoRefresh: true,
         autoRefreshInterval: 300000,
@@ -385,9 +351,6 @@ export default {
         enableAnalytics: import.meta.env.DEV
       },
       
-      // ============================================================================
-      // 🔄 REACTIVITY TRACKING
-      // ============================================================================
       reactivityKey: 0,
       lastUpdateTime: Date.now(),
       forceUpdateCounter: 0,
@@ -398,9 +361,6 @@ export default {
   },
   
   computed: {
-    // ============================================================================
-    // 👤 USER STATUS COMPUTED PROPERTIES (Enhanced with immediate reactivity)
-    // ============================================================================
     ...mapGetters('user', [
       'userStatus',
       'isPremiumUser', 
@@ -413,18 +373,14 @@ export default {
       'forceUpdateCounter'
     ]),
     
-    // ✅ FIXED: Reactive current user status with multiple data sources
     currentUserStatus() {
-      // Try multiple sources to get the most up-to-date status
       const storeStatus = this.$store.state.user?.subscriptionPlan || this.$store.getters['user/userStatus'];
       const localStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
       const userObjectStatus = this.getUser?.subscriptionPlan;
       
-      // Use the most recent non-free status or fallback
       const statuses = [storeStatus, localStatus, userObjectStatus].filter(s => s && s !== 'free');
       const currentStatus = statuses[0] || storeStatus || localStatus || userObjectStatus || 'free';
       
-      // Force reactivity with counter
       const updateKey = this.reactivityKey + this.forceUpdateCounter + this.lastUpdateTime;
       
       console.log('🔍 MainPage currentUserStatus:', {
@@ -438,7 +394,6 @@ export default {
       return currentStatus;
     },
     
-    // ✅ FIXED: User status label with immediate updates
     userStatusLabel() {
       const status = this.currentUserStatus;
       const labels = {
@@ -448,10 +403,6 @@ export default {
       };
       return labels[status] || 'Free';
     },
-    
-    // ============================================================================
-    // 📊 FILTERED DATA COMPUTED PROPERTIES
-    // ============================================================================
     
     filteredRecommendations() {
       try {
@@ -476,10 +427,6 @@ export default {
         return [];
       }
     },
-    
-    // ============================================================================
-    // 🎛️ UI STATE COMPUTED PROPERTIES
-    // ============================================================================
     
     hasActiveFilters() {
       return !!(
@@ -507,10 +454,6 @@ export default {
       return this.loadingRecommendations || this.loadingStudyList;
     },
     
-    // ============================================================================
-    // 📈 ANALYTICS COMPUTED PROPERTIES
-    // ============================================================================
-    
     totalTopicsAvailable() {
       return this.allRecommendations.length + this.studyList.length;
     },
@@ -527,12 +470,7 @@ export default {
     }
   },
   
-  // ============================================================================
-  // 🔄 WATCHERS
-  // ============================================================================
-  
   watch: {
-    // ✅ FIXED: Watch the user object from store (same as Catalogue)
     '$store.state.user': {
       handler(newUser, oldUser) {
         const newPlan = newUser?.subscriptionPlan;
@@ -547,7 +485,6 @@ export default {
       immediate: true
     },
 
-    // ✅ FIXED: Watch the getUser getter
     getUser: {
       handler(newUser, oldUser) {
         const newPlan = newUser?.subscriptionPlan;
@@ -562,14 +499,12 @@ export default {
       immediate: true
     },
 
-    // ✅ FIXED: Watch localStorage changes
     currentUserStatus: {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
           console.log('📊 MainPage: Current user status changed:', oldStatus, '→', newStatus);
           this.forceReactivityUpdate();
           
-          // Refresh data if status changed to premium
           if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
             setTimeout(() => {
               this.refreshAllData();
@@ -581,10 +516,6 @@ export default {
     }
   },
   
-  // ============================================================================
-  // 🔄 LIFECYCLE HOOKS
-  // ============================================================================
-  
   async mounted() {
     const startTime = Date.now();
     console.log('📱 MainPage: Component mounting...');
@@ -593,10 +524,7 @@ export default {
       this.performanceMetrics.mountTime = startTime;
       
       await this.validateUserAuthentication();
-      
-      // ✅ CRITICAL: Setup event listeners BEFORE loading data
       this.setupEnhancedEventListeners();
-      
       await this.initializeDataLoading();
       
       if (this.config.enableAutoRefresh) {
@@ -607,7 +535,6 @@ export default {
         this.setupPerformanceMonitoring();
       }
       
-      // ✅ CRITICAL: Force initial reactivity update
       this.forceReactivityUpdate();
       
       const mountTime = Date.now() - startTime;
@@ -629,29 +556,20 @@ export default {
   },
   
   methods: {
-    // ============================================================================
-    // 🔄 STATUS CHANGE HANDLING
-    // ============================================================================
-    
-    // ✅ FIXED: Handle user status changes
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
 
       console.log(`👤 MainPage: Handling status change ${oldStatus} → ${newStatus}`);
 
-      // Update localStorage immediately
       localStorage.setItem('userStatus', newStatus);
       localStorage.setItem('plan', newStatus);
 
-      // Trigger immediate reactivity update
       this.forceReactivityUpdate();
 
-      // Show celebration for upgrades
       if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
         const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
         this.showNotification(`🎉 ${planLabel} подписка активирована!`, 'success', 5000);
         
-        // Refresh recommendations and study list
         setTimeout(() => {
           this.refreshAllData();
         }, 1000);
@@ -660,16 +578,12 @@ export default {
       console.log(`✅ MainPage: Status change handled: ${oldStatus} → ${newStatus}`);
     },
 
-    // ✅ ENHANCED: Setup comprehensive event listeners
     setupEnhancedEventListeners() {
       console.log('🔧 MainPage: Setting up enhanced event listeners...');
       
-      // Clear existing listeners
       this.cleanupEventListeners();
       
-      // ===== DOM EVENT LISTENERS =====
       if (typeof window !== 'undefined') {
-        // Listen for user subscription changes
         this.handleSubscriptionChange = (event) => {
           console.log('📡 MainPage: Subscription change received:', event.detail);
           const { plan, oldPlan } = event.detail;
@@ -681,7 +595,6 @@ export default {
           window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
         });
 
-        // Listen for localStorage changes (cross-tab sync)
         this.handleStorageChange = (event) => {
           if ((event.key === 'userStatus' || event.key === 'plan') && event.newValue !== event.oldValue) {
             console.log('📡 MainPage: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
@@ -694,7 +607,6 @@ export default {
           window.removeEventListener('storage', this.handleStorageChange);
         });
 
-        // Additional comprehensive events
         const eventTypes = [
           'userStatusChanged',
           'subscriptionUpdated',
@@ -708,7 +620,6 @@ export default {
           console.log('📡 MainPage: Generic status event received:', event.type, event.detail);
           this.forceReactivityUpdate();
           
-          // Check localStorage for updates
           const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
           if (currentStatus && currentStatus !== this.currentUserStatus) {
             this.handleUserStatusChange(currentStatus, this.currentUserStatus);
@@ -723,33 +634,27 @@ export default {
         });
       }
 
-      // ===== EVENT BUS LISTENERS =====
       if (typeof window !== 'undefined' && window.eventBus) {
-        // User status change events
         this.handleUserStatusEvent = (data) => {
           console.log('📡 MainPage: User status event received:', data);
           this.handleUserStatusChange(data.newStatus || data.plan, data.oldStatus || data.oldPlan);
         };
 
-        // Promocode applied events
         this.handlePromocodeEvent = (data) => {
           console.log('📡 MainPage: Promocode applied event:', data);
           this.handleUserStatusChange(data.newStatus, data.oldStatus);
         };
 
-        // Force update events
         this.handleForceUpdateEvent = () => {
           console.log('📡 MainPage: Force update event received');
           this.forceReactivityUpdate();
           
-          // Also check for status updates
           const currentStatus = localStorage.getItem('userStatus') || localStorage.getItem('plan');
           if (currentStatus && currentStatus !== this.currentUserStatus) {
             this.handleUserStatusChange(currentStatus, this.currentUserStatus);
           }
         };
 
-        // Register event bus listeners
         const eventBusEvents = [
           'userStatusChanged',
           'promocodeApplied', 
@@ -776,14 +681,12 @@ export default {
         console.log('✅ MainPage: Event bus listeners registered');
       }
 
-      // ===== STORE MUTATION LISTENER =====
       if (this.$store) {
         this.storeUnsubscribe = this.$store.subscribe((mutation) => {
           if (this.isUserRelatedMutation(mutation)) {
             console.log('📊 MainPage: Store mutation detected:', mutation.type);
             this.forceReactivityUpdate();
             
-            // Check for status changes in mutation payload
             if (mutation.payload && mutation.payload.subscriptionPlan) {
               const newStatus = mutation.payload.subscriptionPlan;
               if (newStatus !== this.currentUserStatus) {
@@ -804,7 +707,6 @@ export default {
       console.log('✅ MainPage: Enhanced event listeners setup complete');
     },
 
-    // ✅ FIXED: Check if mutation is user-related
     isUserRelatedMutation(mutation) {
       const userMutations = [
         'setUser',
@@ -825,14 +727,12 @@ export default {
              mutation.type.toLowerCase().includes('plan');
     },
 
-    // ✅ ENHANCED: Enhanced forceReactivityUpdate
     forceReactivityUpdate() {
       try {
         this.reactivityKey++;
         this.lastUpdateTime = Date.now();
         this.forceUpdateCounter++;
         
-        // Multiple Vue reactivity triggers
         this.$forceUpdate();
         
         this.$nextTick(() => {
@@ -858,7 +758,6 @@ export default {
       }
     },
 
-    // ✅ ENHANCED: Enhanced cleanup
     cleanupEventListeners() {
       this.statusEventListeners.forEach(cleanup => {
         try {
@@ -875,10 +774,6 @@ export default {
       }
     },
 
-    // ============================================================================
-    // 🚀 INITIALIZATION METHODS
-    // ============================================================================
-    
     async validateUserAuthentication() {
       console.log('🔐 Validating user authentication...');
       
@@ -987,10 +882,6 @@ export default {
         document.removeEventListener('visibilitychange', this.handleVisibilityChange);
       });
     },
-    
-    // ============================================================================
-    // 📊 DATA FETCHING METHODS
-    // ============================================================================
     
     async fetchRecommendations() {
       const startTime = Date.now();
@@ -1183,11 +1074,6 @@ export default {
       }
     },
 
-    // ============================================================================
-    // 🎯 TOPIC ACCESS CONTROL
-    // ============================================================================
-    
-    // ✅ ENHANCED: Improved hasTopicAccess method
     hasTopicAccess(topic) {
       const topicType = this.getTopicType(topic);
       const currentStatus = this.currentUserStatus;
@@ -1212,7 +1098,6 @@ export default {
       return false;
     },
 
-    // ✅ NEW: Helper method for topic access checking
     checkTopicAccess(topicType, userStatus) {
       if (topicType === 'free') return true;
       if (topicType === 'premium' && (userStatus === 'start' || userStatus === 'pro')) return true;
@@ -1220,14 +1105,6 @@ export default {
       return false;
     },
 
-    // Continue with all the remaining methods from the original file...
-    // [The rest of the methods would continue here with all the data processing, UI helpers, etc.]
-    // Due to length constraints, I'll provide the key remaining methods:
-
-    // ============================================================================
-    // 🎨 UI HELPER METHODS
-    // ============================================================================
-    
     getTopicName(topic) {
       if (!topic) {
         console.warn('⚠️ getTopicName: No topic provided');
@@ -1375,10 +1252,6 @@ export default {
       return `Начать изучение курса "${this.getTopicName(topic)}"`;
     },
 
-    // ============================================================================
-    // 🎯 TOPIC MANAGEMENT METHODS  
-    // ============================================================================
-    
     async handleAddTopic(topic) {
       if (!topic?._id || this.loadingOperations.add.has(topic._id)) {
         return;
@@ -1480,6 +1353,7 @@ export default {
       }
     },
     
+    // ✅ FIXED: Navigate to TopicOverview instead of LessonPage
     async handleStartTopic(topic) {
       if (!topic?._id || this.loadingOperations.start.has(topic._id)) {
         return;
@@ -1499,24 +1373,13 @@ export default {
           return;
         }
         
-        const startingLesson = this.findStartingLesson(topic);
-        
-        if (startingLesson) {
-          console.log(`📖 Navigating to lesson: ${startingLesson._id}`);
-          this.$router.push({ 
-            name: 'LessonPage', 
-            params: { id: startingLesson._id },
-            query: { source: 'main-page' }
-          });
-        } else if (topic._id) {
-          console.log(`📚 Navigating to topic overview: ${topic._id}`);
-          this.$router.push({ 
-            path: `/topic/${topic._id}/overview`,
-            query: { source: 'main-page' }
-          });
-        } else {
-          throw new Error('No valid navigation target found');
-        }
+        // ✅ FIXED: Always navigate to TopicOverview instead of LessonPage
+        console.log(`📚 Navigating to topic overview: ${topic._id}`);
+        this.$router.push({ 
+          name: 'TopicOverview',
+          params: { id: topic._id },
+          query: { source: 'main-page-recommendations' }
+        });
         
         this.performanceMetrics.successfulOperations++;
         
@@ -1529,10 +1392,6 @@ export default {
       }
     },
 
-    // ============================================================================
-    // 💳 PAYMENT & MODAL METHODS
-    // ============================================================================
-    
     closePaywall() {
       this.showPaywall = false;
       this.requestedTopicId = null;
@@ -1567,10 +1426,6 @@ export default {
       }
     },
 
-    // ============================================================================
-    // 🔔 NOTIFICATION SYSTEM
-    // ============================================================================
-    
     showNotification(message, type = 'info', duration = 4000) {
       if (!this.config.enableNotifications) return;
       
@@ -1617,10 +1472,6 @@ export default {
       this.notifications = this.notifications.filter(n => n.id !== id);
     },
 
-    // ============================================================================
-    // 🧹 CLEANUP METHODS
-    // ============================================================================
-    
     performCleanup() {
       console.log('🧹 MainPage: Performing cleanup...');
       
@@ -1634,7 +1485,7 @@ export default {
         this.autoRefreshInterval = null;
       }
       
-              this.eventCleanupFunctions.forEach(cleanup => {
+      this.eventCleanupFunctions.forEach(cleanup => {
         try {
           cleanup();
         } catch (error) {
@@ -1661,10 +1512,6 @@ export default {
       this.notifications = [];
     },
 
-    // ============================================================================
-    // 🛠️ UTILITY METHODS  
-    // ============================================================================
-    
     extractLocalizedString(obj) {
       if (!obj || typeof obj !== 'object') return null;
       
@@ -1752,10 +1599,6 @@ export default {
       return lessons.find(lesson => lesson && lesson._id) || null;
     },
 
-    // ============================================================================
-    // 🎛️ FILTER & SEARCH METHODS
-    // ============================================================================
-    
     passesAllFilters(topic) {
       try {
         const name = this.getTopicName(topic);
@@ -1902,10 +1745,6 @@ export default {
       return labels[progress] || '';
     },
 
-    // ============================================================================
-    // 🎠 CAROUSEL METHODS
-    // ============================================================================
-    
     getRandomRecommendations(count = 10) {
       if (this.allRecommendations.length <= count) {
         return [...this.allRecommendations];
@@ -1992,10 +1831,6 @@ export default {
       }
     },
 
-    // ============================================================================
-    // 🔄 REFRESH METHODS
-    // ============================================================================
-    
     async refreshRecommendations() {
       if (this.loadingOperations.refresh.has('recommendations')) return;
       
@@ -2093,10 +1928,6 @@ export default {
       }
     },
 
-    // ============================================================================
-    // 🏗️ DATA PROCESSING METHODS (Additional methods needed)
-    // ============================================================================
-    
     buildTopicsFromLessons(lessons) {
       const topicsMap = new Map();
       let processedCount = 0;
@@ -2596,5 +2427,4 @@ export default {
 
 <style scoped>
 @import "@/assets/css/MainPage.css";
-
 </style>
