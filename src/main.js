@@ -1,4 +1,5 @@
 
+
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
@@ -312,18 +313,33 @@ try {
 }
 }
 
-// ✅ NEW: Basic user authentication fallback
+// ✅ NEW: Basic user authentication fallback with subscription preservation
 async function handleBasicUserAuthentication(firebaseUser, token = null) {
 console.log('🔧 Using basic user authentication fallback...');
 
 try {
-  // ✅ CRITICAL: Try to get actual user status from localStorage first
-  const existingStatus = localStorage.getItem('userStatus') || 
-                        localStorage.getItem('userPlan') || 
-                        localStorage.getItem('subscriptionPlan') || 
-                        'free';
+  // ✅ CRITICAL: Check for valid subscription first, then fallback to localStorage
+  const subscription = getStoredSubscription();
+  let existingStatus = 'free';
   
-  console.log('🔍 Existing status found:', existingStatus);
+  if (subscription && subscription.plan !== 'free') {
+    if (isSubscriptionValid()) {
+      existingStatus = subscription.plan;
+      console.log('✅ Valid subscription preserved during basic auth:', existingStatus);
+    } else {
+      console.log('❌ Expired subscription during basic auth');
+      handleSubscriptionExpiry(subscription);
+      existingStatus = 'free';
+    }
+  } else {
+    // Fallback to localStorage
+    existingStatus = localStorage.getItem('userStatus') || 
+                    localStorage.getItem('userPlan') || 
+                    localStorage.getItem('subscriptionPlan') || 
+                    'free';
+  }
+  
+  console.log('🔍 Basic auth using status:', existingStatus);
   
   // Create basic user object
   const basicUser = {
@@ -333,7 +349,7 @@ try {
     email: firebaseUser.email,
     name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
     displayName: firebaseUser.displayName || '',
-    // ✅ CRITICAL: Use existing status if available, don't default to 'free'
+    // ✅ CRITICAL: Use determined status (including valid subscriptions)
     subscriptionPlan: existingStatus,
     userStatus: existingStatus,
     plan: existingStatus,
@@ -390,7 +406,8 @@ try {
     email: basicUser.email,
     id: basicUser.firebaseId,
     status: existingStatus,
-    mode: 'basic'
+    mode: 'basic',
+    hasSubscription: !!subscription && subscription.plan !== 'free'
   });
   
   // ✅ CRITICAL: Trigger events immediately for status propagation
@@ -2199,7 +2216,6 @@ console.log(`
 }
 
 
-
 console.log('✅ UNIFIED main.js with perfect authentication + user status updates loaded successfully!');
 console.log('🔧 Authentication will complete BEFORE router navigation begins');
 console.log('🌟 User status changes (free ↔ start ↔ pro) will propagate globally');
@@ -2773,4 +2789,4 @@ window.testUserStatus = {
     
     console.log('🧹 All subscription data cleared');
   }
-};// src/main.js - UNIFIED FIX: PERFECT AUTHENTICATION + USER STATUS UPDATES
+};

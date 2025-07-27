@@ -1234,12 +1234,7 @@ export default {
       const topicType = this.getTopicType(topic);
       const currentStatus = this.safeUserStatus;
       
-      console.log('🔐 Checking topic access:', {
-        topicName: this.getTopicName(topic),
-        topicType,
-        currentStatus,
-        hasAccess: this.checkTopicAccess(topicType, currentStatus)
-      });
+   
       
       if (topicType === 'free') return true;
       
