@@ -1800,6 +1800,65 @@ window.$userStatus = () => store.getters['user/userStatus'];
 window.$appLifecycle = appLifecycle;
 window.$authInitPromise = authInitPromise;
 
+// ✅ NEW: Add emergency fix function to dev tools
+window.emergencyFixSubscription = function() {
+  console.log('🚨 Running emergency subscription fix...');
+  
+  // 1. Clear all broken subscription data
+  localStorage.removeItem('subscriptionData');
+  localStorage.removeItem('subscriptionExpiry');
+  localStorage.removeItem('subscriptionActivated');
+  
+  // 2. Set up proper START subscription with 1-year expiry
+  const now = new Date();
+  const expiryDate = new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000)); // 1 year from now
+  
+  const subscriptionData = {
+    plan: 'start',
+    activatedAt: now.toISOString(),
+    expiryDate: expiryDate.toISOString(),
+    lastUpdated: now.toISOString(),
+    source: 'emergency-fix',
+    status: 'active'
+  };
+  
+  // 3. Store the fixed subscription data
+  localStorage.setItem('subscriptionData', JSON.stringify(subscriptionData));
+  localStorage.setItem('subscriptionPlan', 'start');
+  localStorage.setItem('subscriptionExpiry', subscriptionData.expiryDate);
+  localStorage.setItem('subscriptionActivated', subscriptionData.activatedAt);
+  localStorage.setItem('userStatus', 'start');
+  localStorage.setItem('userPlan', 'start');
+  
+  console.log('✅ Emergency fix applied:', subscriptionData);
+  
+  // 4. Trigger status update events
+  if (window.triggerGlobalEvent) {
+    window.triggerGlobalEvent('userStatusChanged', {
+      oldStatus: 'free',
+      newStatus: 'start',
+      source: 'emergency-fix',
+      timestamp: Date.now()
+    });
+  }
+  
+  // 5. Update store if available
+  if (window.$store) {
+    try {
+      window.$store.commit('user/SET_USER_STATUS', 'start');
+      console.log('✅ Store updated to START status');
+    } catch (error) {
+      console.warn('⚠️ Store update failed:', error);
+    }
+  }
+  
+  console.log('🎉 Emergency fix complete! Your START subscription is now active for 1 year.');
+  console.log('📅 Expiry date:', expiryDate.toLocaleDateString());
+  console.log('🔄 Please refresh the page to see the changes.');
+  
+  return subscriptionData;
+};
+
 // ✅ CRITICAL: Add direct status testing functions
 window.testUserStatus = {
   setFree: () => {
@@ -2119,6 +2178,7 @@ console.log(`
 - window.getCurrentUserStatus(): Safe status getter
 - window.syncUserStatus(): Sync status between store and localStorage
 - window.forceUserStatusSync(): Emergency status sync
+- window.emergencyFixSubscription(): 🚨 FIXES CORRUPTED SUBSCRIPTION
 
 🔧 GLOBAL HELPERS:
 - window.triggerGlobalEvent(eventName, data): Trigger global events
@@ -2267,38 +2327,49 @@ setupSubscriptionExpiryCheck();
 return subscriptionData;
 }
 
-// ✅ CRITICAL: Get stored subscription data
+// ✅ CRITICAL & FIXED: Get stored subscription data and prevent corruption
 function getStoredSubscription() {
-try {
-  const subscriptionJson = localStorage.getItem('subscriptionData');
-  if (subscriptionJson) {
-    const subscription = JSON.parse(subscriptionJson);
-    console.log('📥 Retrieved stored subscription:', subscription);
-    return subscription;
+  try {
+    const subscriptionJson = localStorage.getItem('subscriptionData');
+    if (subscriptionJson) {
+      const subscription = JSON.parse(subscriptionJson);
+      // ✅ NEW: Add validation to parsed subscription data
+      if (subscription && subscription.plan && subscription.expiryDate) {
+          console.log('📥 Retrieved and validated stored subscription:', subscription);
+          return subscription;
+      } else {
+          console.warn('⚠️ Found corrupted subscriptionData in localStorage. Clearing it.', subscriptionJson);
+          localStorage.removeItem('subscriptionData');
+      }
+    }
+    
+    // Fallback: try to reconstruct from individual keys
+    const plan = localStorage.getItem('subscriptionPlan') || localStorage.getItem('userStatus');
+    const expiry = localStorage.getItem('subscriptionExpiry');
+    const activated = localStorage.getItem('subscriptionActivated');
+    
+    // ✅ FIXED: Only reconstruct if plan AND expiry are valid.
+    if (plan && plan !== 'free' && expiry) {
+      const fallbackSubscription = {
+        plan: plan,
+        expiryDate: expiry,
+        activatedAt: activated || new Date().toISOString(), // Provide a default if missing
+        status: 'active',
+        source: 'fallback-reconstruction'
+      };
+      console.log('📥 Reconstructed subscription from fallback keys:', fallbackSubscription);
+      // ✅ Store the reconstructed data in the proper format to fix it for the future
+      localStorage.setItem('subscriptionData', JSON.stringify(fallbackSubscription));
+      return fallbackSubscription;
+    }
+    
+  } catch (error) {
+    console.error('❌ Failed to retrieve or parse subscription data:', error);
+    // Clear potentially corrupted data on parsing error
+    localStorage.removeItem('subscriptionData');
   }
-  
-  // Fallback: try to reconstruct from individual keys
-  const plan = localStorage.getItem('subscriptionPlan') || localStorage.getItem('userStatus');
-  const expiry = localStorage.getItem('subscriptionExpiry');
-  const activated = localStorage.getItem('subscriptionActivated');
-  
-  if (plan && plan !== 'free') {
-    const fallbackSubscription = {
-      plan: plan,
-      expiryDate: expiry,
-      activatedAt: activated,
-      status: 'active',
-      source: 'fallback-reconstruction'
-    };
-    console.log('📥 Reconstructed subscription from fallback:', fallbackSubscription);
-    return fallbackSubscription;
-  }
-  
-} catch (error) {
-  console.error('❌ Failed to retrieve subscription data:', error);
-}
 
-return null;
+  return null;
 }
 
 // ✅ CRITICAL: Check if subscription is still valid
