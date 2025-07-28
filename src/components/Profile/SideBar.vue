@@ -757,8 +757,7 @@ export default {
   color: #ffffff;
 }
 
-.user-plan.status-pro,
-.user-plan.status-premium {
+.user-plan.status-pro {
   background: #1f2937;
   color: #ffffff;
 }
