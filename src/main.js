@@ -2012,7 +2012,7 @@ function immediateSubscriptionRestore() {
     
     // 2. Set up proper START subscription with 1-year expiry
     const now = new Date();
-    const expiryDate = new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000)); // 1 year from now
+    const expiryDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
     
     const subscriptionData = {
       plan: 'start',
@@ -2469,7 +2469,7 @@ function immediateSubscriptionRestore() {
   
   const now = new Date();
   // ✅ FIXED: Set expiry to 1 year instead of 30 days
-  const expiryDate = new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000)); // 365 days
+  const expiryDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
   
   // Check if we already have a valid subscription
   const existingSubscription = getStoredSubscription();
