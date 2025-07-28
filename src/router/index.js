@@ -458,7 +458,7 @@ const routes = [
       // ✅ LEGACY VOCABULARY REDIRECT - Under profile (deprecated)
       { 
         path: 'vocabulary', 
-        redirect: '/vocabulary'
+        redirect: '/profile/vocabulary'
       }
     ],
   },
