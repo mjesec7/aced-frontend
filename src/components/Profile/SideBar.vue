@@ -54,7 +54,7 @@
             <div
               v-else-if="link.premium"
               class="nav-item locked-feature"
-              @click="showUpgradeModal(link)"
+              @click="showUpgradeModalForFeature(link)"
             >
               <span class="highlight"></span>
               <span class="link-content">
@@ -151,14 +151,14 @@ export default {
       showUpgradeModal: false,
       selectedFeature: null,
       
-      // ✅ ENHANCED: Links with access control configuration
+      // ✅ ENHANCED: Links with fixed access control configuration
       links: [
         { 
           name: 'analytics', 
           label: 'Аналитика', 
           feature: 'analytics',
-          premium: true, // Requires Start or Pro
-          requiredPlans: ['start', 'pro']
+          premium: true, // Requires Pro only
+          requiredPlans: ['pro'] // Changed to match router - analytics requires Pro
         },
         { 
           name: 'goal', 
@@ -200,7 +200,7 @@ export default {
           label: 'Словарь', 
           feature: 'vocabulary',
           premium: true, // Requires Start or Pro
-          requiredPlans: ['start', 'pro']
+          requiredPlans: ['start', 'pro'] // Match router requirement
         },
         { 
           name: 'settings', 
@@ -245,19 +245,17 @@ export default {
       // Try multiple sources for the current plan with priority order
       const storeStatus = this.userStatus;
       const localStatus = localStorage.getItem('userStatus');
-      const workingStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : null;
       const subscriptionData = localStorage.getItem('subscriptionData');
       
       console.log('🔍 Sidebar: Plan detection sources:', {
         storeStatus,
         storeStatusType: typeof storeStatus,
         localStatus,
-        workingStatus,
         subscriptionData: subscriptionData ? 'EXISTS' : 'NONE',
         reactivityKey: key
       });
       
-      // ✅ CRITICAL: Check subscription data first if other sources fail
+      // ✅ CRITICAL: Check subscription data first for active subscriptions
       let subscriptionPlan = null;
       if (subscriptionData) {
         try {
@@ -265,9 +263,11 @@ export default {
           if (parsed.plan && parsed.expiryDate) {
             const now = new Date();
             const expiry = new Date(parsed.expiryDate);
-            if (now < expiry) {
+            if (now < expiry && parsed.plan !== 'free') {
               subscriptionPlan = parsed.plan;
               console.log('✅ Sidebar: Valid subscription found:', subscriptionPlan);
+            } else {
+              console.log('⚠️ Sidebar: Subscription expired or free plan');
             }
           }
         } catch (e) {
@@ -275,8 +275,8 @@ export default {
         }
       }
       
-      // Priority: subscription > store > working > localStorage > default
-      let effectiveStatus = subscriptionPlan || storeStatus || workingStatus || localStatus || 'free';
+      // Priority: subscription > store > localStorage > default
+      let effectiveStatus = subscriptionPlan || storeStatus || localStatus || 'free';
       
       // ✅ CRITICAL: Handle string 'undefined' and null cases
       if (effectiveStatus === 'undefined' || effectiveStatus === null || effectiveStatus === undefined || effectiveStatus === '') {
@@ -483,13 +483,19 @@ export default {
         requiredPlans: linkConfig.requiredPlans
       });
       
-      // ✅ CRITICAL: Always allow access if not premium
+      // ✅ CRITICAL FIX: Always allow access if not premium
       if (!linkConfig.premium) {
         console.log('✅ Sidebar: Non-premium feature - access granted');
         return true;
       }
       
-      // ✅ CRITICAL: Check if current plan is in the required plans
+      // ✅ CRITICAL FIX: Handle 'free' status properly
+      if (plan === 'free' || !plan || plan === 'undefined' || plan === null) {
+        console.log('🚫 Sidebar: Free user trying to access premium feature');
+        return false;
+      }
+      
+      // ✅ CRITICAL FIX: Check if current plan is in the required plans
       const hasAccess = linkConfig.requiredPlans && linkConfig.requiredPlans.includes(plan);
       
       console.log('🔐 Sidebar: Access result:', {
@@ -502,7 +508,7 @@ export default {
       return hasAccess;
     },
     
-    // ✅ ENHANCED: Handle link clicks with better logging
+    // ✅ ENHANCED: Handle link clicks with proper access control
     handleLinkClick(link) {
       console.log('🖱️ Sidebar: Link clicked:', link.name, 'feature:', link.feature);
       
@@ -518,6 +524,14 @@ export default {
       
       console.log('✅ Sidebar: Access granted, proceeding with navigation');
       this.closeSidebarOnMobile();
+      
+      // ✅ ENHANCED: Handle special navigation cases
+      if (link.name === 'vocabulary') {
+        // Navigate to standalone vocabulary route
+        this.$router.push('/vocabulary');
+        return true;
+      }
+      
       return true;
     },
     
@@ -907,6 +921,9 @@ export default {
       if (linkName === 'settings') {
         return '/settings';
       }
+      if (linkName === 'vocabulary') {
+        return '/vocabulary';
+      }
       return `/profile/${linkName}`;
     },
     
@@ -919,14 +936,14 @@ export default {
         analytics: ['/profile/analytics'],
         goal: ['/profile/goal'],
         diary: ['/profile/diary'],
-        settings: ['/settings']
+        settings: ['/settings'],
+        vocabulary: ['/vocabulary']
       };
       
       const startsWithMatches = {
         homework: '/profile/homework',
         homeworks: '/profile/homeworks',
-        tests: '/profile/tests',
-        vocabulary: '/profile/vocabulary'
+        tests: '/profile/tests'
       };
       
       if (exactMatches[name] && exactMatches[name].includes(path)) {
