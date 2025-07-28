@@ -291,9 +291,16 @@ export default {
       'forceUpdateCounter'
     ]),
     
-    // Simple and reliable plan detection
+    // NUCLEAR OPTION: Force plan detection bypassing broken store getter
     currentPlan() {
-      // Check subscription data first
+      // PRIORITY 1: Check localStorage directly (most reliable)
+      const localStatus = localStorage.getItem('userStatus');
+      if (localStatus && ['free', 'start', 'pro'].includes(localStatus)) {
+        console.log('✅ Sidebar: Using localStorage plan (priority 1):', localStatus);
+        return localStatus;
+      }
+      
+      // PRIORITY 2: Check subscription data
       const subscriptionData = localStorage.getItem('subscriptionData');
       if (subscriptionData) {
         try {
@@ -302,20 +309,25 @@ export default {
             const now = new Date();
             const expiry = new Date(parsed.expiryDate);
             if (now < expiry) {
+              console.log('✅ Sidebar: Using subscription plan (priority 2):', parsed.plan);
               return parsed.plan;
             }
           }
         } catch (e) {
-          console.warn('Failed to parse subscription data');
+          console.warn('⚠️ Sidebar: Failed to parse subscription data');
         }
       }
       
-      // Check localStorage userStatus
-      const localStatus = localStorage.getItem('userStatus');
-      if (localStatus && ['free', 'start', 'pro'].includes(localStatus)) {
-        return localStatus;
+      // PRIORITY 3: Check backup getter if store is broken
+      if (window.getWorkingUserStatus) {
+        const backupStatus = window.getWorkingUserStatus();
+        if (backupStatus && ['free', 'start', 'pro'].includes(backupStatus)) {
+          console.log('✅ Sidebar: Using backup getter (priority 3):', backupStatus);
+          return backupStatus;
+        }
       }
       
+      console.log('⚠️ Sidebar: All methods failed, defaulting to free');
       return 'free';
     },
     
@@ -465,6 +477,24 @@ export default {
     ...mapMutations(['setUser', 'clearUser']),
     
     showUpgradeModalForFeature(link) {
+      const currentPlan = this.currentPlan;
+      
+      console.log('🚨 MODAL TRIGGERED:', {
+        linkName: link.name,
+        currentPlan: currentPlan,
+        shouldShow: currentPlan === 'free',
+        userStatus: this.userStatus,
+        localStorage: localStorage.getItem('userStatus'),
+        subscription: localStorage.getItem('subscriptionData') ? 'EXISTS' : 'NULL'
+      });
+      
+      // EMERGENCY: Don't show modal if user has paid plan
+      if (currentPlan === 'start' || currentPlan === 'pro') {
+        console.log('🛑 BLOCKING MODAL - User has paid plan:', currentPlan);
+        return; // Don't show modal
+      }
+      
+      console.log('💰 SHOWING MODAL - User on free plan');
       this.selectedFeature = link;
       this.showUpgradeModal = true;
     },
