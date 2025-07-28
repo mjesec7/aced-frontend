@@ -31,30 +31,29 @@
             Каталог
           </router-link>
 
-          <!-- ✅ ENHANCED: Dynamic links with access control -->
-          <template v-for="link in filteredLinks" :key="link.name">
+          <!-- ✅ FIXED: Dynamic links with proper access control -->
+          <template v-for="link in filteredLinks" :key="`${link.name}-${reactivityKey}`">
+            <!-- Show accessible links -->
             <router-link
-              v-if="hasAccessToFeature(link.feature)"
+              v-if="!link.premium || hasAccessToFeature(link.feature)"
               :to="getRoutePath(link.name)"
-              class="nav-item"
-              :class="{ 
-                active: isActive(link.name),
-                'premium-feature': link.premium && !hasAccessToFeature(link.feature)
-              }"
-              @click="handleLinkClick(link)"
+              class="nav-item accessible-feature"
+              :class="{ active: isActive(link.name) }"
+              @click="closeSidebarOnMobile"
             >
               <span class="highlight"></span>
               <span class="link-content">
                 {{ link.label }}
-                <span v-if="link.premium && !hasAccessToFeature(link.feature)" class="premium-badge">✨</span>
+                <span v-if="link.premium" class="premium-badge">✨</span>
               </span>
             </router-link>
             
-            <!-- ✅ NEW: Locked feature item for premium features -->
+            <!-- Show locked feature item for premium features user can't access -->
             <div
-              v-else-if="link.premium"
+              v-else
               class="nav-item locked-feature"
-              @click="showUpgradeModal(link)"
+              @click="showUpgradeModalForFeature(link)"
+              :title="`${link.label} доступно в Start и Pro планах`"
             >
               <span class="highlight"></span>
               <span class="link-content">
@@ -77,7 +76,7 @@
       @click="closeSidebar"
     ></div>
 
-    <!-- ✅ NEW: Upgrade Modal -->
+    <!-- ✅ Upgrade Modal -->
     <div class="upgrade-modal" v-if="showUpgradeModal" @click.self="closeUpgradeModal">
       <div class="upgrade-modal-content" @click.stop>
         <div class="upgrade-header">
@@ -99,9 +98,6 @@
               <li v-if="selectedFeature?.name === 'tests'">📝 Безлимитные тесты</li>
             </ul>
           </div>
-          <div class="debug-info" v-if="$store.state.isDev">
-            <small>Debug: Current plan = {{ currentPlan }}</small>
-          </div>
         </div>
         <div class="upgrade-actions">
           <button class="upgrade-btn" @click="goToUpgrade">
@@ -114,7 +110,7 @@
       </div>
     </div>
 
-    <!-- ✅ EXISTING: Logout Modal -->
+    <!-- ✅ Logout Modal -->
     <div class="logout-modal" v-if="showLogoutModal">
       <div class="logout-modal-content">
         <p>Вы уверены, что хотите выйти?</p>
@@ -151,62 +147,62 @@ export default {
       showUpgradeModal: false,
       selectedFeature: null,
       
-      // ✅ ENHANCED: Links with access control configuration
+      // ✅ FIXED: Links configuration matching router requirements
       links: [
         { 
           name: 'analytics', 
           label: 'Аналитика', 
           feature: 'analytics',
-          premium: true, // Requires Start or Pro
-          requiredPlans: ['start', 'pro']
+          premium: true,
+          requiredPlans: ['start', 'pro'] // Analytics requires start minimum
         },
         { 
           name: 'goal', 
           label: 'Цели', 
           feature: 'goals',
-          premium: true, // Requires Start or Pro
+          premium: true,
           requiredPlans: ['start', 'pro']
         },
         { 
           name: 'diary', 
           label: 'Дневник', 
           feature: 'diary',
-          premium: false, // Free for everyone
+          premium: false,
           requiredPlans: ['free', 'start', 'pro']
         },
         { 
           name: 'homework', 
           label: 'Помощь с ДЗ', 
           feature: 'homework_help',
-          premium: true, // Requires Start or Pro
+          premium: true,
           requiredPlans: ['start', 'pro']
         },
         { 
           name: 'homeworks', 
           label: 'Домашние задания', 
           feature: 'homeworks',
-          premium: false, // Free for everyone
+          premium: false,
           requiredPlans: ['free', 'start', 'pro']
         },
         { 
           name: 'tests', 
           label: 'Тесты', 
           feature: 'tests',
-          premium: true, // Requires Start or Pro
+          premium: true,
           requiredPlans: ['start', 'pro']
         },
         { 
           name: 'vocabulary', 
           label: 'Словарь', 
           feature: 'vocabulary',
-          premium: true, // Requires Start or Pro
-          requiredPlans: ['start', 'pro']
+          premium: true,
+          requiredPlans: ['start', 'pro'] // Vocabulary requires start minimum
         },
         { 
           name: 'settings', 
           label: 'Настройки', 
           feature: 'settings',
-          premium: false, // Free for everyone
+          premium: false,
           requiredPlans: ['free', 'start', 'pro']
         }
       ],
@@ -238,78 +234,56 @@ export default {
       'forceUpdateCounter'
     ]),
     
-    // ✅ ENHANCED: Current effective user plan with multiple sources and validation
+    // ✅ FIXED: Reliable plan detection
     currentPlan() {
       const key = this.reactivityKey; // Force reactivity
       
-      // Try multiple sources for the current plan with priority order
-      const storeStatus = this.userStatus;
-      const localStatus = localStorage.getItem('userStatus');
-      const workingStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : null;
+      // Check subscription data first (most reliable source)
       const subscriptionData = localStorage.getItem('subscriptionData');
-      
-      console.log('🔍 Sidebar: Plan detection sources:', {
-        storeStatus,
-        storeStatusType: typeof storeStatus,
-        localStatus,
-        workingStatus,
-        subscriptionData: subscriptionData ? 'EXISTS' : 'NONE',
-        reactivityKey: key
-      });
-      
-      // ✅ CRITICAL: Check subscription data first if other sources fail
-      let subscriptionPlan = null;
       if (subscriptionData) {
         try {
           const parsed = JSON.parse(subscriptionData);
           if (parsed.plan && parsed.expiryDate) {
             const now = new Date();
             const expiry = new Date(parsed.expiryDate);
-            if (now < expiry) {
-              subscriptionPlan = parsed.plan;
-              console.log('✅ Sidebar: Valid subscription found:', subscriptionPlan);
+            if (now < expiry && ['start', 'pro'].includes(parsed.plan)) {
+              return parsed.plan;
             }
           }
         } catch (e) {
-          console.warn('⚠️ Sidebar: Failed to parse subscription data');
+          console.warn('⚠️ Sidebar: Subscription data parse error');
         }
       }
       
-      // Priority: subscription > store > working > localStorage > default
-      let effectiveStatus = subscriptionPlan || storeStatus || workingStatus || localStatus || 'free';
-      
-      // ✅ CRITICAL: Handle string 'undefined' and null cases
-      if (effectiveStatus === 'undefined' || effectiveStatus === null || effectiveStatus === undefined || effectiveStatus === '') {
-        effectiveStatus = subscriptionPlan || localStatus || 'free';
-        console.warn('⚠️ Sidebar: Invalid status detected, using fallback:', effectiveStatus);
+      // Check localStorage status
+      const localStatus = localStorage.getItem('userStatus');
+      if (localStatus && ['free', 'start', 'pro'].includes(localStatus)) {
+        return localStatus;
       }
       
-      // ✅ CRITICAL: Validate the plan value
-      const validPlans = ['free', 'start', 'pro'];
-      if (!validPlans.includes(effectiveStatus)) {
-        console.warn('⚠️ Sidebar: Invalid plan value:', effectiveStatus);
-        effectiveStatus = localStatus && validPlans.includes(localStatus) ? localStatus : 'free';
+      // Check store status
+      const storeStatus = this.userStatus;
+      if (storeStatus && ['free', 'start', 'pro'].includes(storeStatus)) {
+        return storeStatus;
       }
       
-      console.log('✅ Sidebar: Final effective plan:', effectiveStatus);
-      
-      return effectiveStatus;
+      return 'free';
     },
     
-    // ✅ NEW: Filtered links based on access control
     filteredLinks() {
-      return this.links.filter(link => {
-        // Always show all links, but we'll handle access in the template
-        return true;
-      });
+      return this.links;
     },
     
     planLabel() {
-      return this.userStatusLabel || 'Free';
+      const labels = {
+        free: 'Free',
+        start: 'Start', 
+        pro: 'Pro'
+      };
+      return labels[this.currentPlan] || 'Free';
     },
     
     userDisplayName() {
-      const key = this.componentKey;
       if (!this.user) return 'Пользователь';
       return this.user.name || this.user.displayName || this.user.email?.split('@')[0] || 'Пользователь';
     },
@@ -367,7 +341,6 @@ export default {
     '$store.state.user.userStatus': {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
-          console.log('📊 Sidebar: Store user status direct change (via $store.state):', oldStatus, '→', newStatus);
           this.triggerReactivityUpdate();
           this.lastSyncTime = Date.now();
         }
@@ -377,8 +350,6 @@ export default {
   },
   
   mounted() {
-    console.log('🚀 Sidebar: Component mounting...');
-    
     this.checkMobile();
     window.addEventListener('resize', this.checkMobile);
     
@@ -423,21 +394,6 @@ export default {
     
     this.syncStatusWithStore();
     this.setupPeriodicSync();
-    
-    // ✅ NEW: Add immediate status check and sync on mount
-    this.$nextTick(() => {
-      console.log('🚀 Sidebar: Component mounted, checking status...');
-      this.forceSyncStatus();
-      
-      // Small delay to ensure reactivity
-      setTimeout(() => {
-        console.log('🔍 Sidebar: Initial access debug:');
-        this.debugAccessStatus();
-      }, 100);
-    });
-    
-    // ✅ NEW: Setup debug tools
-    this.setupDebugTools();
   },
   
   beforeUnmount() {
@@ -458,199 +414,57 @@ export default {
       clearTimeout(this.notificationTimeout);
       this.notificationTimeout = null;
     }
-    
-    console.log('🧹 Sidebar: Component unmounting, cleaned up all listeners');
   },
   
   methods: {
     ...mapMutations(['setUser', 'clearUser']),
     
-    // ✅ ENHANCED: Check if user has access to a specific feature with better logging
+    // ✅ FIXED: Simple and reliable access check
     hasAccessToFeature(feature) {
       const plan = this.currentPlan;
       
-      console.log('🔐 Sidebar: Access check for feature:', feature, 'with plan:', plan);
-      
-      // Find the link configuration for this feature
+      // Find the link configuration
       const linkConfig = this.links.find(link => link.feature === feature);
       if (!linkConfig) {
-        console.warn('⚠️ Sidebar: Unknown feature:', feature);
-        return true; // Default to allowing access for unknown features
+        return true; // Unknown features allowed
       }
       
-      console.log('🔗 Sidebar: Link config for', feature, ':', {
-        premium: linkConfig.premium,
-        requiredPlans: linkConfig.requiredPlans
-      });
-      
-      // ✅ CRITICAL: Always allow access if not premium
+      // Non-premium features are always accessible
       if (!linkConfig.premium) {
-        console.log('✅ Sidebar: Non-premium feature - access granted');
         return true;
       }
       
-      // ✅ CRITICAL: Check if current plan is in the required plans
-      const hasAccess = linkConfig.requiredPlans && linkConfig.requiredPlans.includes(plan);
-      
-      console.log('🔐 Sidebar: Access result:', {
-        feature,
-        plan,
-        requiredPlans: linkConfig.requiredPlans,
-        hasAccess
-      });
-      
-      return hasAccess;
+      // For premium features, check if user has start or pro
+      return plan === 'start' || plan === 'pro';
     },
     
-    // ✅ ENHANCED: Handle link clicks with better logging
+    // ✅ FIXED: Handle link clicks without interference
     handleLinkClick(link) {
-      console.log('🖱️ Sidebar: Link clicked:', link.name, 'feature:', link.feature);
-      
-      const hasAccess = this.hasAccessToFeature(link.feature);
-      console.log('🔐 Sidebar: Access check result:', hasAccess);
-      
-      // ✅ CRITICAL: Only show modal for premium features that user can't access
-      if (link.premium && !hasAccess) {
-        console.log('🚫 Sidebar: Access denied, showing upgrade modal');
+      // For premium features, check access
+      if (link.premium && !this.hasAccessToFeature(link.feature)) {
         this.showUpgradeModalForFeature(link);
         return false;
       }
       
-      console.log('✅ Sidebar: Access granted, proceeding with navigation');
+      // Otherwise allow navigation
       this.closeSidebarOnMobile();
       return true;
     },
     
-    // ✅ FIXED: Rename method to avoid conflict
     showUpgradeModalForFeature(link) {
       this.selectedFeature = link;
       this.showUpgradeModal = true;
     },
     
-    // ✅ NEW: Close upgrade modal
     closeUpgradeModal() {
       this.showUpgradeModal = false;
       this.selectedFeature = null;
     },
     
-    // ✅ NEW: Navigate to upgrade/settings page
     goToUpgrade() {
       this.closeUpgradeModal();
       this.$router.push('/settings');
       this.closeSidebarOnMobile();
-    },
-    
-    // ✅ ENHANCED: Force status sync and update
-    forceSyncStatus() {
-      console.log('🔄 Sidebar: Force syncing status...');
-      
-      // Get all possible status sources
-      const storeStatus = this.$store?.getters['user/userStatus'];
-      const localStatus = localStorage.getItem('userStatus');
-      const subscriptionData = localStorage.getItem('subscriptionData');
-      
-      console.log('📊 Sidebar: Status sources before sync:', {
-        store: storeStatus,
-        local: localStatus,
-        subscription: subscriptionData ? 'EXISTS' : 'NONE'
-      });
-      
-      // If we have subscription data but statuses don't match, fix it
-      if (subscriptionData) {
-        try {
-          const parsed = JSON.parse(subscriptionData);
-          if (parsed.plan && parsed.expiryDate) {
-            const now = new Date();
-            const expiry = new Date(parsed.expiryDate);
-            if (now < expiry && parsed.plan !== 'free') {
-              // We have a valid subscription, ensure all statuses match
-              if (localStatus !== parsed.plan) {
-                console.log('🔧 Sidebar: Syncing localStorage to subscription plan:', parsed.plan);
-                localStorage.setItem('userStatus', parsed.plan);
-                localStorage.setItem('userPlan', parsed.plan);
-                localStorage.setItem('subscriptionPlan', parsed.plan);
-              }
-              
-              if (storeStatus !== parsed.plan) {
-                console.log('🔧 Sidebar: Syncing store to subscription plan:', parsed.plan);
-                this.$store.commit('user/SET_USER_STATUS', parsed.plan);
-              }
-              
-              this.triggerReactivityUpdate();
-            }
-          }
-        } catch (error) {
-          console.error('❌ Sidebar: Error parsing subscription data:', error);
-        }
-      }
-    },
-    
-    // ✅ ENHANCED: Add debug method to check current access status
-    debugAccessStatus() {
-      console.log('🐛 Sidebar: DEBUG - Current access status:');
-      console.log('📊 Current plan:', this.currentPlan);
-      console.log('📋 Feature access check:');
-      
-      this.links.forEach(link => {
-        const hasAccess = this.hasAccessToFeature(link.feature);
-        console.log(`  ${link.name} (${link.feature}): ${hasAccess ? '✅ GRANTED' : '🚫 DENIED'} [Premium: ${link.premium}]`);
-      });
-      
-      return {
-        currentPlan: this.currentPlan,
-        storeStatus: this.$store?.getters['user/userStatus'],
-        localStatus: localStorage.getItem('userStatus'),
-        subscriptionExists: !!localStorage.getItem('subscriptionData')
-      };
-    },
-    
-    // ✅ NEW: Setup debug tools
-    setupDebugTools() {
-      // Make debug tools available globally
-      window.sidebarDebug = {
-        // Check current sidebar access status
-        checkAccess: () => {
-          return this.debugAccessStatus();
-        },
-        
-        // Force sync sidebar status
-        forceSync: () => {
-          this.forceSyncStatus();
-          return 'Status synced';
-        },
-        
-        // Get detailed plan information
-        getPlanInfo: () => {
-          return {
-            currentPlan: this.currentPlan,
-            userStatus: this.userStatus,
-            storeGetter: this.$store.getters['user/userStatus'],
-            localStorage: localStorage.getItem('userStatus'),
-            subscription: localStorage.getItem('subscriptionData'),
-            reactivityKey: this.reactivityKey
-          };
-        },
-        
-        // Test specific feature access
-        testFeature: (featureName) => {
-          const hasAccess = this.hasAccessToFeature(featureName);
-          console.log(`🔐 Feature '${featureName}' access:`, hasAccess ? '✅ GRANTED' : '🚫 DENIED');
-          return hasAccess;
-        },
-        
-        // Force reactivity update
-        forceUpdate: () => {
-          this.triggerReactivityUpdate();
-          return 'Reactivity updated';
-        }
-      };
-      
-      console.log('🧪 Sidebar Debug Tools Available:');
-      console.log('- window.sidebarDebug.checkAccess() - Check all feature access');
-      console.log('- window.sidebarDebug.forceSync() - Force status sync');
-      console.log('- window.sidebarDebug.getPlanInfo() - Get detailed plan info');
-      console.log('- window.sidebarDebug.testFeature("analytics") - Test specific feature');
-      console.log('- window.sidebarDebug.forceUpdate() - Force reactivity update');
     },
     
     onUserStatusChanged(newStatus, oldStatus) {
@@ -691,10 +505,6 @@ export default {
         
         this.globalEventHandlers.promocodeApplied = (data) => {
           this.handleStatusChange(data.newStatus, data.oldStatus);
-          
-          if (data.promocode && data.newStatus) {
-            const planLabel = data.newStatus === 'pro' ? 'Pro' : 'Start';
-          }
         };
         
         this.globalEventHandlers.subscriptionUpdated = (data) => {
@@ -907,6 +717,9 @@ export default {
       if (linkName === 'settings') {
         return '/settings';
       }
+      if (linkName === 'vocabulary') {
+        return '/vocabulary'; // Use standalone vocabulary route
+      }
       return `/profile/${linkName}`;
     },
     
@@ -919,14 +732,14 @@ export default {
         analytics: ['/profile/analytics'],
         goal: ['/profile/goal'],
         diary: ['/profile/diary'],
-        settings: ['/settings']
+        settings: ['/settings'],
+        vocabulary: ['/vocabulary']
       };
       
       const startsWithMatches = {
         homework: '/profile/homework',
         homeworks: '/profile/homeworks',
-        tests: '/profile/tests',
-        vocabulary: '/profile/vocabulary'
+        tests: '/profile/tests'
       };
       
       if (exactMatches[name] && exactMatches[name].includes(path)) {
