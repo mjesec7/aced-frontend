@@ -452,36 +452,32 @@ export default {
   methods: {
     ...mapMutations(['setUser', 'clearUser']),
     
-    // ✅ CRITICAL FIX: Absolutely bulletproof access check
+    // ✅ FIXED: Direct plan-based access check (bypassing feature config)
     hasAccessToFeature(feature) {
       const currentPlan = this.currentPlan;
       
       console.log('🔐 Sidebar: Checking access for feature:', feature, 'with plan:', currentPlan);
       
-      // Find link configuration
-      const linkConfig = this.links.find(link => link.feature === feature);
-      if (!linkConfig) {
-        console.log('✅ Sidebar: Unknown feature, allowing access');
-        return true;
-      }
+      // ✅ DIRECT ACCESS LOGIC: Skip link config, just check plan for premium features
+      const premiumFeatures = ['analytics', 'vocabulary', 'homework_help', 'tests', 'goals'];
       
-      // Non-premium features are always accessible
-      if (!linkConfig.premium) {
+      if (premiumFeatures.includes(feature)) {
+        // Premium features require start or pro
+        const hasAccess = currentPlan === 'start' || currentPlan === 'pro';
+        
+        console.log('📊 Sidebar: Premium feature access result:', {
+          feature: feature,
+          currentPlan: currentPlan,
+          hasAccess: hasAccess,
+          isPremiumFeature: true
+        });
+        
+        return hasAccess;
+      } else {
+        // Non-premium features (diary, homeworks, settings) are always accessible
         console.log('✅ Sidebar: Non-premium feature, access granted');
         return true;
       }
-      
-      // For premium features: ONLY grant access if user has start or pro
-      const hasAccess = currentPlan === 'start' || currentPlan === 'pro';
-      
-      console.log('📊 Sidebar: Premium feature access check:', {
-        feature: feature,
-        currentPlan: currentPlan,
-        hasAccess: hasAccess,
-        reason: hasAccess ? 'User has paid plan' : 'User on free plan'
-      });
-      
-      return hasAccess;
     },
     
     // ✅ FIXED: Handle link clicks - show modal for FREE users, allow navigation for START/PRO users
