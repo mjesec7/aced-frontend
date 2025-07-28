@@ -911,7 +911,6 @@ export default {
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
 
-      console.log(`👤 AcedSettings: Handling status change ${oldStatus} → ${newStatus}`);
 
       try {
         // Update localStorage immediately
@@ -928,7 +927,6 @@ export default {
           this.showNotification(`🎉 ${planLabel} подписка активирована!`, 'success', 5000);
         }
 
-        console.log(`✅ AcedSettings: Status change handled: ${oldStatus} → ${newStatus}`);
       } catch (error) {
         console.error('❌ Error handling status change:', error);
         this.$forceUpdate(); // Fallback
@@ -937,7 +935,6 @@ export default {
 
     // Setup comprehensive event listeners
     setupEnhancedEventListeners() {
-      console.log('🔧 AcedSettings: Setting up enhanced event listeners...');
       
       // Clear existing listeners
       this.cleanupEventListeners();
@@ -946,7 +943,6 @@ export default {
       if (typeof window !== 'undefined') {
         // Listen for user subscription changes
         this.handleSubscriptionChange = (event) => {
-          console.log('📡 AcedSettings: Subscription change received:', event.detail);
           const { plan, oldPlan, newStatus, oldStatus } = event.detail;
           const finalNewStatus = plan || newStatus;
           const finalOldStatus = oldPlan || oldStatus;
@@ -964,7 +960,6 @@ export default {
         // Listen for localStorage changes (cross-tab sync)
         this.handleStorageChange = (event) => {
           if ((event.key === 'userStatus' || event.key === 'plan') && event.newValue !== event.oldValue) {
-            console.log('📡 AcedSettings: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
             this.handleUserStatusChange(event.newValue, event.oldValue);
           }
         };
@@ -985,7 +980,6 @@ export default {
         ];
 
         const handleGenericStatusChange = (event) => {
-          console.log('📡 AcedSettings: Generic status event received:', event.type, event.detail);
           
           const detail = event.detail || {};
           const newStatus = detail.newStatus || detail.plan || detail.status;
@@ -1016,7 +1010,6 @@ export default {
       if (typeof window !== 'undefined' && window.eventBus) {
         // User status change events
         this.handleUserStatusEvent = (data) => {
-          console.log('📡 AcedSettings: User status event received:', data);
           const newStatus = data.newStatus || data.plan;
           const oldStatus = data.oldStatus || data.oldPlan;
           
@@ -1027,7 +1020,6 @@ export default {
 
         // Force update events
         this.handleForceUpdateEvent = () => {
-          console.log('📡 AcedSettings: Force update event received');
           this.forceReactivityUpdate();
           
           // Also check for status updates
@@ -1061,14 +1053,12 @@ export default {
           }
         });
 
-        console.log('✅ AcedSettings: Event bus listeners registered');
       }
 
       // Store Mutation Listener
       if (this.$store) {
         this.storeUnsubscribe = this.$store.subscribe((mutation) => {
           if (this.isUserRelatedMutation(mutation)) {
-            console.log('📊 AcedSettings: Store mutation detected:', mutation.type);
             this.forceReactivityUpdate();
             
             // Check for status changes in mutation payload
@@ -1089,7 +1079,6 @@ export default {
         });
       }
 
-      console.log('✅ AcedSettings: Enhanced event listeners setup complete');
     },
 
     // Check if mutation is user-related
@@ -1134,11 +1123,7 @@ export default {
           }, 200);
         });
         
-        console.log('🔄 AcedSettings: Reactivity updated:', {
-          reactivityKey: this.reactivityKey,
-          lastUpdateTime: this.lastUpdateTime,
-          currentPlan: this.currentPlan
-        });
+        
       } catch (error) {
         console.warn('⚠️ AcedSettings: Reactivity update failed:', error);
       }
@@ -1210,7 +1195,6 @@ export default {
       try {
         if (this.$store && this.$store.dispatch) {
           await this.$store.dispatch('user/loadUserStatus');
-          console.log('✅ Store data loaded');
         }
       } catch (error) {
         console.warn('⚠️ Failed to load initial data:', error);
@@ -1295,17 +1279,14 @@ export default {
       }
       
       try {
-        console.log('🔍 Validating promocode via backend:', this.promoCode);
         
         const promocodeUpper = this.promoCode.trim().toUpperCase();
         
         // Try store action first (uses backend API)
         try {
           if (this.$store && this.$store.dispatch) {
-            console.log('📡 Using store validatePromocode action...');
             
             const storeResult = await this.$store.dispatch('user/validatePromocode', promocodeUpper);
-            console.log('🔍 Store validation result:', storeResult);
             
             if (storeResult && typeof storeResult === 'object') {
               this.promoValidation = storeResult;
@@ -1313,7 +1294,6 @@ export default {
               // Auto-select plan if valid
               if (storeResult.valid && storeResult.data?.grantsPlan && !this.selectedPlan) {
                 this.selectedPlan = storeResult.data.grantsPlan;
-                console.log('✅ Auto-selected plan from store:', this.selectedPlan);
               }
               
               this.isValidatingPromo = false;
@@ -1331,7 +1311,6 @@ export default {
             throw new Error('API base URL not configured');
           }
           
-          console.log('📡 Direct API validation...');
           
           // Try multiple endpoints for validation
           const validationEndpoints = [
@@ -1344,7 +1323,6 @@ export default {
           
           for (const endpoint of validationEndpoints) {
             try {
-              console.log(`🔄 Trying endpoint: ${endpoint}`);
               
               let response;
               
@@ -1384,7 +1362,6 @@ export default {
               
               if (response.ok) {
                 const apiResult = await response.json();
-                console.log(`✅ API response from ${endpoint}:`, apiResult);
                 
                 // Handle different response formats
                 if (apiResult && typeof apiResult === 'object') {
@@ -1425,7 +1402,6 @@ export default {
             // Auto-select plan if valid
             if (validationResult.valid && validationResult.data?.grantsPlan && !this.selectedPlan) {
               this.selectedPlan = validationResult.data.grantsPlan;
-              console.log('✅ Auto-selected plan from API:', this.selectedPlan);
             }
             
             this.isValidatingPromo = false;
@@ -1442,7 +1418,6 @@ export default {
           error: `Не удалось проверить промокод "${promocodeUpper}". Проверьте подключение к интернету или попробуйте позже.`
         };
         
-        console.log('❌ All validation methods failed for:', promocodeUpper);
         
       } catch (error) {
         console.error('❌ Promocode validation error:', error);
@@ -1560,7 +1535,6 @@ export default {
     
     // ✅ MAIN FIX: Correct promocode application using the right Vuex action
     async applyPromo() {
-      console.log('🚀 AcedSettings: FIXED applyPromo called');
       
       if (!this.promoCode || !this.selectedPlan || !this.userId) {
         this.showNotification('Заполните все поля', 'error');
@@ -1572,7 +1546,6 @@ export default {
       try {
         const normalizedCode = this.promoCode.trim().toUpperCase();
         
-        console.log('📡 Applying promocode via correct Vuex action...');
         
         // ✅ CRITICAL FIX: Use the correct applyPromocode action instead of updateUserStatus
         const result = await this.$store.dispatch('user/applyPromocode', {
@@ -1581,11 +1554,9 @@ export default {
           userId: this.userId
         });
         
-        console.log('📊 Store applyPromocode result:', result);
         
         // Check if the result indicates success
         if (result && (result.success === true || result.status === 'success')) {
-          console.log('✅ Promocode applied successfully via store');
           
           // Success feedback
           const planLabel = this.selectedPlan === 'pro' ? 'Pro' : 'Start';
@@ -1614,7 +1585,6 @@ export default {
                 bubbles: true
               });
               window.dispatchEvent(event);
-              console.log('✅ DOM event dispatched');
             } catch (domEventError) {
               console.warn('⚠️ DOM event failed:', domEventError);
             }
@@ -1628,14 +1598,12 @@ export default {
                   code: normalizedCode,
                   success: true
                 });
-                console.log('✅ Event bus emission completed');
               }
             } catch (eventBusError) {
               console.warn('⚠️ Event bus failed:', eventBusError);
             }
           }
           
-          console.log('✅ Promocode application completed successfully');
           return;
           
         } else {
@@ -1651,7 +1619,6 @@ export default {
           }
           
           // Try backend fallback for other errors
-          console.log('🔄 Trying backend fallback...');
           await this.applyPromocodeFallback(normalizedCode);
         }
         
@@ -1659,7 +1626,6 @@ export default {
         console.error('❌ Store applyPromocode action threw error:', storeError);
         
         // Try backend fallback
-        console.log('🔄 Trying backend fallback after store error...');
         await this.applyPromocodeFallback(normalizedCode);
         
       } finally {
@@ -1670,7 +1636,6 @@ export default {
     // ✅ NEW: Backend fallback method for promocode application
     async applyPromocodeFallback(normalizedCode) {
       try {
-        console.log('📡 Applying promocode via backend fallback...');
         
         // Try multiple endpoints for applying promocode
         const applyEndpoints = [
@@ -1683,7 +1648,6 @@ export default {
         
         for (const endpoint of applyEndpoints) {
           try {
-            console.log(`🔄 Trying apply endpoint: ${endpoint}`);
             
             const requestBody = {
               userId: this.userId,
@@ -1706,11 +1670,9 @@ export default {
             ]);
 
             serverResult = await response.json();
-            console.log(`📡 Server response from ${endpoint}:`, serverResult);
 
             if (response.ok && serverResult?.success) {
               serverSuccess = true;
-              console.log('✅ Backend fallback successful');
               break;
             } else {
               console.warn(`⚠️ Endpoint ${endpoint} failed:`, serverResult?.error || 'Unknown error');
@@ -1733,7 +1695,6 @@ export default {
         
         if (serverSuccess) {
           // Backend success - update local state
-          console.log('🔄 Backend success - updating local state...');
           
           // Update localStorage
           localStorage.setItem('userStatus', this.selectedPlan);
@@ -1805,7 +1766,6 @@ export default {
             bubbles: true
           });
           window.dispatchEvent(event);
-          console.log('✅ DOM event dispatched');
         } catch (domEventError) {
           console.warn('⚠️ DOM event failed:', domEventError);
         }

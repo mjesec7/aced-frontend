@@ -39,11 +39,7 @@ const getEffectiveUserPlan = () => {
   const localStatus = localStorage.getItem('userStatus');
   const subscriptionData = localStorage.getItem('subscriptionData');
   
-  console.log('🔍 Router: Plan detection sources:', {
-    storeStatus,
-    localStatus,
-    hasSubscriptionData: !!subscriptionData
-  });
+
   
   // Check subscription data first for active subscriptions
   let subscriptionPlan = null;
@@ -55,9 +51,7 @@ const getEffectiveUserPlan = () => {
         const expiry = new Date(parsed.expiryDate);
         if (now < expiry && parsed.plan !== 'free') {
           subscriptionPlan = parsed.plan;
-          console.log('✅ Router: Valid subscription found:', subscriptionPlan);
         } else {
-          console.log('⚠️ Router: Subscription expired or free plan');
         }
       }
     } catch (e) {
@@ -81,7 +75,6 @@ const getEffectiveUserPlan = () => {
     effectiveStatus = localStatus && validPlans.includes(localStatus) ? localStatus : 'free';
   }
   
-  console.log('✅ Router: Final effective plan:', effectiveStatus);
   return effectiveStatus;
 };
 
@@ -95,13 +88,7 @@ const hasFeatureAccess = (feature, requiredPlans = ['start', 'pro']) => {
   }
   
   const hasAccess = requiredPlans.includes(effectiveStatus);
-  
-  console.log('🔐 Router: Feature access check:', {
-    feature,
-    effectiveStatus,
-    requiredPlans,
-    hasAccess
-  });
+ 
   
   return hasAccess;
 };
@@ -159,7 +146,6 @@ const routes = [
           title: 'Аналитика'
         },
         beforeEnter: async (to, from, next) => {
-          console.log('🔍 Router: Analytics route guard triggered');
           
           // ✅ CRITICAL FIX: Use consistent access checking logic  
           const hasAccess = hasFeatureAccess('analytics', ['pro']); // Analytics requires Pro only
@@ -186,7 +172,6 @@ const routes = [
             });
           }
           
-          console.log('✅ Router: Analytics access granted');
           next();
         }
       },
@@ -406,7 +391,6 @@ const routes = [
           description: 'Персональный словарь с изученными словами'
         },
         beforeEnter: async (to, from, next) => {
-          console.log('🔍 Router: Profile Vocabulary route guard triggered');
           
           // ✅ CRITICAL FIX: Use consistent access checking logic
           const hasAccess = hasFeatureAccess('vocabulary', ['start', 'pro']);
@@ -435,7 +419,6 @@ const routes = [
             });
           }
           
-          console.log('✅ Router: Profile Vocabulary access granted');
           next();
         }
       }
@@ -883,7 +866,6 @@ router.afterEach((to, from) => {
   
   // Log params if any
   if (Object.keys(to.params).length > 0) {
-    console.log('📄 Router: Route params:', to.params);
   }
   
   // ✅ AUTO-CHECK SUBSCRIPTION STATUS on navigation (for authenticated users)
@@ -945,7 +927,6 @@ export const navigateToPayment = (plan = 'start', options = {}) => {
     ...(Object.keys(query).length > 0 && { query })
   };
   
-  console.log('💳 Router: Navigating to payment:', route);
   
   if (routerInstance) {
     return routerInstance.push(route);
@@ -962,7 +943,6 @@ export const navigateToSettings = (options = {}) => {
     ...(returnTo && { query: { returnTo } })
   };
   
-  console.log('⚙️ Router: Navigating to settings:', route);
   
   if (routerInstance) {
     return routerInstance.push(route);
@@ -988,13 +968,7 @@ export const checkSubscriptionAccess = (userStatus, requiredPlan = 'start') => {
   const userLevel = planHierarchy[userStatus] || 0;
   const requiredLevel = planHierarchy[requiredPlan] || 1;
   
-  console.log('🔐 checkSubscriptionAccess:', {
-    userStatus,
-    userLevel,
-    requiredPlan,
-    requiredLevel,
-    hasAccess: userLevel >= requiredLevel
-  });
+
   
   return userLevel >= requiredLevel;
 };
@@ -1007,7 +981,6 @@ export const navigateToIntendedRoute = (router) => {
       const route = JSON.parse(intendedRoute);
       sessionStorage.removeItem('intendedRoute');
       
-      console.log('🎯 Router: Navigating to intended route:', route);
       router.push(route);
       return true;
     }
@@ -1054,14 +1027,12 @@ if (typeof window !== 'undefined') {
     // Test feature access
     testFeature: (feature) => {
       const hasAccess = getFeatureAccess(feature);
-      console.log(`🔐 Router: Feature '${feature}' access:`, hasAccess ? '✅ GRANTED' : '🚫 DENIED');
       return hasAccess;
     },
     
     // Check vocabulary access specifically
     checkVocabulary: () => {
       const hasAccess = checkVocabularyAccess();
-      console.log('📚 Router: Vocabulary access:', hasAccess ? '✅ GRANTED' : '🚫 DENIED');
       return hasAccess;
     },
     
@@ -1094,12 +1065,7 @@ if (typeof window !== 'undefined') {
     }
   };
   
-  console.log('🧪 Router Debug Tools Available:');
-  console.log('- window.routerDebug.getCurrentPlan() - Get current effective plan');
-  console.log('- window.routerDebug.testFeature("vocabulary") - Test feature access');
-  console.log('- window.routerDebug.checkVocabulary() - Check vocabulary access');
-  console.log('- window.routerDebug.getAllSources() - Get all status sources');
-  console.log('- window.routerDebug.goToVocabulary() - Force navigate to profile vocabulary');
+
 }
 
 export default router;

@@ -45,7 +45,6 @@ const triggerGlobalEvent = (eventName, data = {}) => {
         bubbles: true
       });
       window.dispatchEvent(storageEvent);
-      console.log(`✅ Cross-tab event dispatched: userSubscriptionChanged`);
     }
 
     // 🔥 METHOD 5: Force update all Vue instances
@@ -53,7 +52,6 @@ const triggerGlobalEvent = (eventName, data = {}) => {
       // Try to force update all Vue instances
       setTimeout(() => {
         if (window.__VUE_DEVTOOLS_GLOBAL_HOOK__?.Vue) {
-          console.log('🔄 Attempting to force update all Vue instances');
         }
       }, 10);
     }
@@ -127,7 +125,6 @@ const updateFeatureMatrix = (state) => {
 
   if (featuresChanged) {
     state.features = newFeatures;
-    console.log(`🔧 Features updated for ${userStatus}:`, Object.entries(newFeatures).filter(([k, v]) => v).map(([k]) => k));
   }
 
   return featuresChanged;
@@ -368,11 +365,7 @@ const mutations = {
       try {
         localStorage.setItem('currentUser', JSON.stringify(user));
         localStorage.setItem('lastUserUpdate', timestamp.toString());
-        console.log('👤 User set successfully:', {
-          id: user.firebaseId || user._id,
-          email: user.email,
-          plan: user.subscriptionPlan || 'free'
-        });
+      
       } catch (storageError) {
         console.warn('⚠️ Failed to store user in localStorage:', storageError);
         state.system.errors.lastError = 'localStorage write failed';
@@ -392,7 +385,6 @@ const mutations = {
   CLEAR_USER(state) {
     const timestamp = Date.now();
 
-    console.log('🧹 Clearing all user data...');
 
     // Clear core data
     state.currentUser = null;
@@ -487,7 +479,6 @@ const mutations = {
       console.warn('⚠️ Failed to clear dynamic localStorage keys:', error);
     }
 
-    console.log('✅ User data cleared completely');
     triggerGlobalEvent('userCleared', { timestamp });
   },
 
@@ -496,14 +487,12 @@ const mutations = {
     const startTime = Date.now();
     const oldStatus = state.userStatus;
 
-    console.log(`🔄 SET_USER_STATUS: ${oldStatus} → ${status}`);
 
     // ✅ BULLETPROOF: Validate status
     const validStatuses = ['free', 'start', 'pro', 'premium'];
     const newStatus = validStatuses.includes(status) ? status : 'free';
 
     if (oldStatus === newStatus) {
-      console.log('ℹ️ Status unchanged, but forcing reactivity update');
 
       // Still trigger events for consistency
       triggerGlobalEvent('userStatusChanged', {
@@ -518,7 +507,6 @@ const mutations = {
     // 🚨 STRATEGY 1: Use Vue.set for guaranteed reactivity (Vue 2)
     if (window.Vue?.set) {
       window.Vue.set(state, 'userStatus', newStatus);
-      console.log('✅ Used Vue.set for userStatus');
     } else {
       // Vue 3 or fallback
       state.userStatus = newStatus;
@@ -562,12 +550,10 @@ const mutations = {
     try {
       localStorage.setItem('userStatus', newStatus);
       localStorage.setItem('statusUpdateTime', Date.now().toString());
-      console.log('✅ localStorage updated immediately');
     } catch (storageError) {
       console.warn('⚠️ Failed to persist status to localStorage:', storageError);
     }
 
-    console.log(`✅ Status updated successfully: ${oldStatus} → ${newStatus} (${Date.now() - startTime}ms)`);
 
     // 🚨 STRATEGY 4: Enhanced global event broadcasting with multiple triggers
     const eventData = {
@@ -642,7 +628,6 @@ const mutations = {
     // Check for duplicates
     const existingIndex = state.promocodes.applied.findIndex(p => p.code === promocode.code);
     if (existingIndex >= 0) {
-      console.log('ℹ️ Updating existing promocode:', promocode.code);
       state.promocodes.applied[existingIndex] = { ...state.promocodes.applied[existingIndex], ...promocode };
     } else {
       state.promocodes.applied.unshift(promocode);
@@ -664,11 +649,7 @@ const mutations = {
     state.system.lastUpdate = timestamp;
     state.system.forceUpdateCounter++;
 
-    console.log('🎟️ Promocode added successfully:', {
-      code: promocode.code,
-      plan: promocode.plan,
-      timestamp: promocode.appliedAt
-    });
+   
 
     triggerGlobalEvent('promocodeApplied', {
       promocode,
@@ -709,7 +690,6 @@ const mutations = {
     // Check for duplicates
     const existingIndex = state.payments.history.findIndex(p => p.id === payment.id);
     if (existingIndex >= 0) {
-      console.log('ℹ️ Updating existing payment:', payment.id);
       state.payments.history[existingIndex] = { ...state.payments.history[existingIndex], ...payment };
     } else {
       state.payments.history.unshift(payment);
@@ -737,12 +717,7 @@ const mutations = {
     state.system.lastUpdate = timestamp;
     state.system.forceUpdateCounter++;
 
-    console.log('💳 Payment added successfully:', {
-      id: payment.id,
-      amount: payment.amount,
-      status: payment.status,
-      plan: payment.plan
-    });
+  
 
     triggerGlobalEvent('paymentUpdated', { payment, timestamp });
   },
@@ -759,7 +734,6 @@ const mutations = {
     state.payments.lastCheck = timestamp;
     state.system.lastUpdate = timestamp;
 
-    console.log(`📋 Pending payments updated: ${validPendingIds.length} items`);
 
     triggerGlobalEvent('pendingPaymentsUpdated', {
       pendingIds: validPendingIds,
@@ -800,12 +774,7 @@ const mutations = {
       console.warn('⚠️ Failed to persist subscription:', storageError);
     }
 
-    console.log('📋 Subscription updated:', {
-      plan: state.subscription.plan,
-      status: state.subscription.status,
-      source: state.subscription.source
-    });
-
+  
     triggerGlobalEvent('subscriptionUpdated', {
       oldSubscription,
       newSubscription: { ...state.subscription },
@@ -847,12 +816,7 @@ const mutations = {
 
     state.system.lastUpdate = timestamp;
 
-    console.log('📊 Usage updated:', {
-      messages: state.usage.current.messages,
-      images: state.usage.current.images,
-      month: currentMonth
-    });
-
+   
     triggerGlobalEvent('usageUpdated', {
       usage: { ...state.usage.current },
       limits: getCurrentLimits(state),
@@ -894,10 +858,7 @@ const mutations = {
 
     // Only log if there was actual usage
     if (messageIncrement > 0 || imageIncrement > 0) {
-      console.log('📈 Usage incremented:', {
-        messages: `${oldUsage.messages} → ${state.usage.current.messages} (+${messageIncrement})`,
-        images: `${oldUsage.images} → ${state.usage.current.images} (+${imageIncrement})`
-      });
+     
 
       triggerGlobalEvent('usageIncremented', {
         oldUsage,
@@ -918,7 +879,6 @@ const mutations = {
       const oldFeatures = { ...state.features };
       state.features = { ...state.features, ...features };
 
-      console.log('🔧 Features updated manually:', features);
 
       triggerGlobalEvent('featuresUpdated', {
         oldFeatures,
@@ -947,7 +907,6 @@ const mutations = {
 
     // Log significant loading state changes
     if (wasLoading !== Boolean(loading)) {
-      console.log(`⏳ Loading ${type}: ${wasLoading} → ${Boolean(loading)}`);
     }
 
     state.system.lastUpdate = Date.now();
@@ -965,11 +924,7 @@ const mutations = {
       state.system.initializationTime = timestamp;
       state.system.performance.loadTime = timestamp - (state.system.performance.startTime || timestamp);
 
-      console.log('✅ User store initialized successfully', {
-        loadTime: state.system.performance.loadTime,
-        userStatus: state.userStatus,
-        hasUser: !!state.currentUser
-      });
+    
 
       triggerGlobalEvent('storeInitialized', {
         userStatus: state.userStatus,
@@ -978,7 +933,6 @@ const mutations = {
         timestamp
       });
     } else if (!initialized && wasInitialized) {
-      console.log('🔄 User store reset to uninitialized state');
       triggerGlobalEvent('storeReset', { timestamp });
     }
   },
@@ -991,7 +945,6 @@ const mutations = {
     state.system.forceUpdateCounter++;
     state.system.lastUpdate = timestamp;
 
-    console.log(`🔄 Force update triggered: ${oldCounter} → ${state.system.forceUpdateCounter}`);
 
     triggerGlobalEvent('forceUpdate', {
       counter: state.system.forceUpdateCounter,
@@ -1047,7 +1000,6 @@ const mutations = {
       console.warn('⚠️ Failed to persist preferences:', storageError);
     }
 
-    console.log('⚙️ Preferences updated:', Object.keys(preferences));
 
     triggerGlobalEvent('preferencesUpdated', {
       oldPreferences,
@@ -1062,7 +1014,6 @@ const mutations = {
     const timestamp = Date.now();
     const currentMonth = new Date().toISOString().slice(0, 7);
 
-    console.log('🔄 Resetting usage for new month:', currentMonth);
 
     state.usage.current = {
       messages: 0,
@@ -1094,7 +1045,6 @@ const mutations = {
     state.usage.limits = { ...state.usage.limits, ...limits };
     state.system.lastUpdate = Date.now();
 
-    console.log('📊 Usage limits updated:', limits);
   }
 };
 
@@ -1104,7 +1054,6 @@ const mutations = {
 const actions = {
   // ✅ CRITICAL FIX: updateUserStatus action that ALWAYS returns a result
   async updateUserStatus({ commit, state, dispatch }, newStatus) {
-    console.log('🚀 FIXED updateUserStatus action called with:', newStatus);
     
     // ✅ CRITICAL: Create result object FIRST - this ensures we ALWAYS return something
     const result = {
@@ -1126,16 +1075,13 @@ const actions = {
         result.error = 'Invalid status provided';
         result.validStatuses = validStatuses;
         result.duration = Date.now() - startTime;
-        console.log('❌ updateUserStatus returning validation error:', result);
         return result; // ✅ RETURN RESULT OBJECT
       }
   
       const oldStatus = state.userStatus || 'free';
-      console.log('🔍 Status change:', oldStatus, '→', newStatus);
   
       // Step 2: Handle no-change case
       if (oldStatus === newStatus) {
-        console.log('ℹ️ Status unchanged, but triggering updates');
         
         try {
           commit('FORCE_UPDATE');
@@ -1148,16 +1094,13 @@ const actions = {
         result.noChange = true;
         result.duration = Date.now() - startTime;
         
-        console.log('✅ updateUserStatus returning no-change result:', result);
         return result; // ✅ RETURN RESULT OBJECT
       }
   
       // Step 3: Update store state with error handling
-      console.log('🔄 Updating store state...');
       
       try {
         commit('SET_USER_STATUS', newStatus);
-        console.log('✅ SET_USER_STATUS committed successfully');
       } catch (statusError) {
         console.error('❌ SET_USER_STATUS failed:', statusError);
         result.error = 'Failed to update store status: ' + statusError.message;
@@ -1172,7 +1115,6 @@ const actions = {
           source: 'status-update',
           lastSync: new Date().toISOString()
         });
-        console.log('✅ UPDATE_SUBSCRIPTION committed successfully');
       } catch (subscriptionError) {
         console.warn('⚠️ UPDATE_SUBSCRIPTION failed:', subscriptionError);
         // Don't fail the entire operation for this
@@ -1180,7 +1122,6 @@ const actions = {
   
       try {
         commit('FORCE_UPDATE');
-        console.log('✅ FORCE_UPDATE committed successfully');
       } catch (forceError) {
         console.warn('⚠️ FORCE_UPDATE failed:', forceError);
         // Don't fail the entire operation for this
@@ -1191,7 +1132,6 @@ const actions = {
         localStorage.setItem('userStatus', newStatus);
         localStorage.setItem('statusUpdateTime', Date.now().toString());
         localStorage.setItem('plan', newStatus); // Legacy compatibility
-        console.log('✅ localStorage updated successfully');
       } catch (storageError) {
         console.warn('⚠️ localStorage update failed:', storageError);
         // Don't fail the entire operation for this
@@ -1213,14 +1153,12 @@ const actions = {
           if (window.triggerGlobalEvent && typeof window.triggerGlobalEvent === 'function') {
             window.triggerGlobalEvent('userStatusChanged', eventData);
             window.triggerGlobalEvent('subscriptionUpdated', eventData);
-            console.log('✅ Global events triggered via triggerGlobalEvent');
           }
   
           // Method 2: Event bus
           if (window.eventBus && window.eventBus.emit && typeof window.eventBus.emit === 'function') {
             window.eventBus.emit('userStatusChanged', eventData);
             window.eventBus.emit('subscriptionUpdated', eventData);
-            console.log('✅ Global events triggered via eventBus');
           }
   
           // Method 3: Custom DOM events
@@ -1231,13 +1169,11 @@ const actions = {
               cancelable: true
             });
             window.dispatchEvent(customEvent);
-            console.log('✅ DOM event dispatched: userSubscriptionChanged');
           } catch (domEventError) {
             console.warn('⚠️ DOM event dispatch failed:', domEventError);
           }
         }
   
-        console.log('✅ All global events triggered successfully');
       } catch (eventError) {
         console.warn('⚠️ Global event triggering failed:', eventError);
         // Don't fail the entire operation for this
@@ -1252,8 +1188,6 @@ const actions = {
       result.localStorageUpdated = true;
       result.storeUpdated = true;
   
-      console.log(`✅ updateUserStatus completed: ${oldStatus} → ${newStatus} (${result.duration}ms)`);
-      console.log('✅ updateUserStatus returning SUCCESS result:', result);
       
       return result; // ✅ RETURN RESULT OBJECT
   
@@ -1279,7 +1213,6 @@ const actions = {
       result.originalError = error.message;
       result.stack = error.stack;
   
-      console.log('❌ updateUserStatus returning EXCEPTION result:', result);
       return result; // ✅ RETURN RESULT OBJECT
     }
     
@@ -1293,12 +1226,7 @@ const actions = {
   // ✅ ENHANCED: Bulletproof saveUser action with comprehensive error handling
   async saveUser({ commit, dispatch, state }, { userData, token }) {
     const startTime = Date.now();
-    console.log('💾 🔥 ENHANCED saveUser starting...', {
-      hasUserData: !!userData,
-      hasToken: !!token,
-      tokenLength: token?.length || 0,
-      userEmail: userData?.email || 'unknown'
-    });
+    
 
     // ✅ CRITICAL: Helper functions for consistent result objects
     const createSuccessResult = (user, message = 'User saved successfully') => {
@@ -1309,7 +1237,6 @@ const actions = {
         timestamp: new Date().toISOString(),
         duration: Date.now() - startTime
       };
-      console.log('✅ createSuccessResult:', result);
       return result;
     };
 
@@ -1322,7 +1249,6 @@ const actions = {
         duration: Date.now() - startTime,
         ...details
       };
-      console.log('❌ createErrorResult:', result);
       return result;
     };
 
@@ -1342,7 +1268,6 @@ const actions = {
     }
 
     try {
-      console.log('🔄 Setting loading state and initializing...');
       commit('SET_LOADING', { type: 'saving', loading: true });
 
       // ✅ CRITICAL: Environment validation
@@ -1354,7 +1279,6 @@ const actions = {
         return createErrorResult(error, { configError: true });
       }
 
-      console.log('📤 Loading API module...');
 
       // ✅ CRITICAL: API module loading with timeout
       let api;
@@ -1371,7 +1295,6 @@ const actions = {
           throw new Error('API module does not have post method');
         }
 
-        console.log('✅ API module loaded successfully');
       } catch (apiImportError) {
         const error = 'Failed to load API module - application error';
         console.error('❌', error, apiImportError);
@@ -1409,12 +1332,7 @@ const actions = {
         return createErrorResult(error, { payloadValidationError: true });
       }
 
-      console.log('📤 Sending user data to server...', {
-        url: '/users/save',
-        firebaseUserId: payload.firebaseUserId.substring(0, 8) + '...',
-        email: payload.email,
-        plan: payload.subscriptionPlan
-      });
+      
 
       // ✅ CRITICAL: API call with comprehensive error handling and timeout
       let response;
@@ -1431,7 +1349,6 @@ const actions = {
           }
         };
 
-        console.log('📡 Making API request to /users/save...');
 
         const requestPromise = api.post('/users/save', payload, requestConfig);
         const timeoutPromise = new Promise((_, reject) =>
@@ -1442,12 +1359,7 @@ const actions = {
 
         // Track API response time
         const apiResponseTime = Date.now() - apiStartTime;
-        console.log('📥 Server response received:', {
-          status: response?.status,
-          statusText: response?.statusText,
-          responseTime: apiResponseTime + 'ms',
-          hasData: !!response?.data
-        });
+       
 
       } catch (networkError) {
         console.error('❌ Network error during user save:', networkError);
@@ -1538,12 +1450,6 @@ const actions = {
         return createErrorResult(error, { responseDataError: true });
       }
 
-      console.log('📊 Processing server response...', {
-        hasSuccess: 'success' in responseData,
-        hasData: 'data' in responseData,
-        hasUser: 'user' in responseData,
-        responseKeys: Object.keys(responseData)
-      });
 
       // ✅ CRITICAL: Handle different response structures
       let savedUser = null;
@@ -1551,10 +1457,8 @@ const actions = {
       if (responseData.success === true) {
         if (responseData.data && typeof responseData.data === 'object') {
           savedUser = responseData.data;
-          console.log('✅ Using success+data response structure');
         } else if (responseData.user && typeof responseData.user === 'object') {
           savedUser = responseData.user;
-          console.log('✅ Using success+user response structure');
         } else {
           const error = 'Server returned success but no user data';
           console.error('❌', error, { responseStructure: Object.keys(responseData) });
@@ -1563,14 +1467,11 @@ const actions = {
         }
       } else if (responseData.user && typeof responseData.user === 'object') {
         savedUser = responseData.user;
-        console.log('✅ Using direct user response structure');
       } else if ((responseData._id || responseData.firebaseId || responseData.firebaseUserId) && responseData.email) {
         savedUser = responseData;
-        console.log('✅ Using direct object response structure');
       } else if (!responseData.success && !responseData.error && responseData.email) {
         // Handle case where server returns user data directly without success wrapper
         savedUser = responseData;
-        console.log('✅ Using direct server response (no wrapper)');
       } else if (responseData.success === false) {
         const error = responseData.message || responseData.error || 'Server returned failure status';
         console.error('❌ Server returned success: false:', error);
@@ -1622,13 +1523,7 @@ const actions = {
         return createErrorResult(error, { finalValidationError: true });
       }
 
-      console.log('✅ User saved successfully to server:', {
-        id: completeUser._id || completeUser.firebaseId,
-        email: completeUser.email,
-        plan: completeUser.subscriptionPlan,
-        firebaseId: completeUser.firebaseId,
-        duration: Date.now() - startTime + 'ms'
-      });
+    
 
       // ✅ CRITICAL: Update local store with server data
       try {
@@ -1643,7 +1538,6 @@ const actions = {
           localStorage.setItem('lastUserSync', Date.now().toString());
         }
 
-        console.log('✅ Local store updated with server data');
       } catch (storeError) {
         console.error('❌ Failed to update local store:', storeError);
         commit('SET_ERROR', { message: 'Store update failed', context: 'saveUser-store-update', originalError: storeError.message });
@@ -1652,7 +1546,6 @@ const actions = {
 
       // ✅ CRITICAL: ALWAYS return success result
       const finalResult = createSuccessResult(completeUser, 'User saved and synchronized successfully');
-      console.log('🎉 saveUser returning success result:', finalResult);
       return finalResult;
 
     } catch (error) {
@@ -1727,7 +1620,6 @@ const actions = {
         return { success: false, error: 'No user ID', defaulted: true };
       }
 
-      console.log('🔍 Loading user status from server for:', userId.substring(0, 8) + '...');
 
       const { getUserStatus } = await import('@/api');
       const result = await getUserStatus(userId);
@@ -1747,7 +1639,6 @@ const actions = {
         }
 
         const duration = Date.now() - startTime;
-        console.log(`✅ User status loaded from server: ${status} (${duration}ms)`);
 
         return { success: true, status, duration };
       } else {
@@ -1780,7 +1671,6 @@ const actions = {
   async updateSubscription({ commit, dispatch, state }, { plan, source = 'payment', details = {} }) {
     const startTime = Date.now();
 
-    console.log('🔄 updateSubscription called with:', { plan, source, detailsKeys: Object.keys(details) });
 
     try {
       // Validate plan
@@ -1793,7 +1683,6 @@ const actions = {
 
       // Get old status for comparison
       const oldStatus = state.userStatus || 'free';
-      console.log(`📊 Status change: ${oldStatus} → ${validatedPlan}`);
 
       // Calculate expiry dates based on source
       let expiryDate = null;
@@ -1828,12 +1717,10 @@ const actions = {
         lastSync: new Date().toISOString()
       };
 
-      console.log('📋 Subscription data prepared:', subscriptionData);
 
       // ✅ CRITICAL: Update all related state atomically with error handling
       try {
         commit('SET_USER_STATUS', validatedPlan);
-        console.log('✅ SET_USER_STATUS committed successfully');
       } catch (statusError) {
         console.error('❌ SET_USER_STATUS failed:', statusError);
         return {
@@ -1846,7 +1733,6 @@ const actions = {
 
       try {
         commit('UPDATE_SUBSCRIPTION', subscriptionData);
-        console.log('✅ UPDATE_SUBSCRIPTION committed successfully');
       } catch (subscriptionError) {
         console.error('❌ UPDATE_SUBSCRIPTION failed:', subscriptionError);
         return {
@@ -1859,7 +1745,6 @@ const actions = {
 
       try {
         commit('UPDATE_FEATURES'); // Recalculate features based on new plan
-        console.log('✅ UPDATE_FEATURES committed successfully');
       } catch (featuresError) {
         console.warn('⚠️ UPDATE_FEATURES failed:', featuresError);
         // Don't fail for features update
@@ -1867,20 +1752,17 @@ const actions = {
 
       try {
         commit('FORCE_UPDATE');
-        console.log('✅ FORCE_UPDATE committed successfully');
       } catch (forceError) {
         console.warn('⚠️ FORCE_UPDATE failed:', forceError);
         // Don't fail for force update
       }
 
-      console.log('✅ Store mutations completed');
 
       // ✅ CRITICAL: Persistent storage (don't let this fail the whole operation)
       try {
         localStorage.setItem('userStatus', validatedPlan);
         localStorage.setItem('subscriptionDetails', JSON.stringify(subscriptionData));
         localStorage.setItem('lastSubscriptionUpdate', Date.now().toString());
-        console.log('✅ LocalStorage updated');
       } catch (storageError) {
         console.warn('⚠️ Failed to persist subscription data:', storageError);
         // Don't fail the operation due to storage issues
@@ -1929,7 +1811,6 @@ const actions = {
         }
       });
 
-      console.log('✅ Events triggered');
 
       const duration = Date.now() - startTime;
       const successResult = {
@@ -1942,7 +1823,6 @@ const actions = {
         timestamp: Date.now()
       };
 
-      console.log(`✅ updateSubscription completed successfully in ${duration}ms:`, successResult);
 
       // ✅ CRITICAL: ALWAYS return the success result
       return successResult;
@@ -1974,7 +1854,6 @@ const actions = {
         stack: error.stack
       };
 
-      console.log('❌ updateSubscription returning error result:', errorResult);
 
       // ✅ CRITICAL: ALWAYS return the error result
       return errorResult;
@@ -2012,7 +1891,6 @@ const actions = {
         };
       }
 
-      console.log('🎟️ Applying promocode to server:', { code: normalizedCode, plan, userId: userId.substring(0, 8) + '...' });
 
       const token = await getUserToken();
       const headers = { 'Content-Type': 'application/json' };
@@ -2080,7 +1958,6 @@ const actions = {
         commit('FORCE_UPDATE');
 
         const duration = Date.now() - startTime;
-        console.log(`✅ Promocode applied successfully: ${oldStatus} → ${plan} (${duration}ms)`);
 
         return {
           success: true,
@@ -2159,7 +2036,6 @@ const actions = {
         const cached = state.promocodes.validationCache.get(normalizedCode);
         const age = Date.now() - cached.timestamp;
         if (age < 300000) { // 5 minutes cache
-          console.log('✅ Using cached promocode validation:', normalizedCode);
           return cached.result;
         }
       }
@@ -2229,11 +2105,9 @@ const actions = {
     const startTime = Date.now();
 
     if (state.system?.initialized) {
-      console.log('ℹ️ Store already initialized, skipping...');
       return { success: true, cached: true };
     }
 
-    console.log('🚀 Initializing user store...');
 
     try {
       // ✅ CRITICAL: Set basic initialized state first to prevent auth issues
@@ -2266,7 +2140,6 @@ const actions = {
           const userData = JSON.parse(storedData.user);
           if (userData && typeof userData === 'object' && userData.email) {
             commit('SET_USER', userData);
-            console.log('✅ User data restored:', { email: userData.email, id: userData.firebaseId?.substring(0, 8) });
           }
         } catch (parseError) {
           console.warn('⚠️ Failed to parse stored user data:', parseError);
@@ -2279,7 +2152,6 @@ const actions = {
         const validStatuses = ['free', 'start', 'pro', 'premium'];
         if (validStatuses.includes(storedData.status)) {
           commit('SET_USER_STATUS', storedData.status);
-          console.log('✅ User status restored:', storedData.status);
         }
       }
 
@@ -2289,7 +2161,6 @@ const actions = {
           const subscription = JSON.parse(storedData.subscription);
           if (subscription && typeof subscription === 'object') {
             commit('UPDATE_SUBSCRIPTION', subscription);
-            console.log('✅ Subscription data restored');
           }
         } catch (parseError) {
           console.warn('⚠️ Invalid stored subscription:', parseError);
@@ -2297,7 +2168,6 @@ const actions = {
       }
 
       const initDuration = Date.now() - startTime;
-      console.log(`✅ Store initialized successfully in ${initDuration}ms`);
 
       return {
         success: true,
@@ -2358,13 +2228,11 @@ const actions = {
         setTimeout(() => {
           if (window.Vue?.nextTick) {
             window.Vue.nextTick(() => {
-              console.log('🔄 Vue nextTick reactivity triggered');
             });
           }
         }, 10);
       }
 
-      console.log(`🔄 Force update completed: ${oldCounter} → ${state.system.forceUpdateCounter}`);
 
       return {
         success: true,
@@ -2395,7 +2263,6 @@ const actions = {
     const startTime = Date.now();
 
     try {
-      console.log('👋 Enhanced logout process starting...');
 
       const userId = getUserId(state);
 
@@ -2465,10 +2332,7 @@ const actions = {
       });
 
       const duration = Date.now() - startTime;
-      console.log(`✅ Enhanced logout completed successfully (${duration}ms)`, {
-        clearedUserId: userId ? userId.substring(0, 8) + '...' : 'none',
-        keysRemoved: keysToRemove.length
-      });
+        
 
       return {
         success: true,
@@ -2500,14 +2364,12 @@ const actions = {
 // Assuming handleSuccessfulUserSave and eventBus are defined elsewhere or passed in scope.
 // This block is typically outside the store module or in a related utility file.
 const handleSuccessfulUserSave = async (result, token, userData) => {
-  console.log('Simulating handleSuccessfulUserSave:', result);
   // In a real app, this would perform actions like setting auth token,
   // dispatching other store actions, etc.
 };
 
 const eventBus = {
   emit: (eventName, data) => {
-    console.log(`EventBus: Emitting ${eventName} with data:`, data);
     // In a real app, this would emit events to listeners
   }
 };
@@ -2516,14 +2378,11 @@ const eventBus = {
 const handleFailedUserSave = (store, { userData, token }) => {
   setTimeout(async () => {
     try {
-      console.log('🔄 Retrying user save...');
       const retryResult = await store.dispatch('user/saveUser', { userData, token });
 
       // ✅ CRITICAL: Check for valid result object
-      console.log('🔍 Retry result received:', retryResult);
 
       if (retryResult && typeof retryResult === 'object' && retryResult.success === true && retryResult.user) {
-        console.log('✅ Retry successful');
         await handleSuccessfulUserSave(retryResult, token, userData);
 
         eventBus.emit('userLoginRetrySuccess', {
@@ -2561,14 +2420,12 @@ const handleFailedUserSave = (store, { userData, token }) => {
 
 // ADD THIS TO EVERY COMPONENT'S MOUNTED LIFECYCLE:
 const setupUniversalStatusListener = function() {
-  console.log('🔧 Setting up universal status listener...');
 
   // Store all cleanup functions
   this.statusEventCleanup = this.statusEventCleanup || [];
 
   // ✅ METHOD 1: Direct DOM event listener (most reliable)
   const handleStatusChange = (event) => {
-    console.log('📡 Component received status change:', event.detail);
 
     if (this.handleUserStatusChange) {
       this.handleUserStatusChange(event.detail.newStatus, event.detail.oldStatus);
@@ -2611,7 +2468,6 @@ const setupUniversalStatusListener = function() {
       ];
 
       if (statusMutations.includes(mutation.type)) {
-        console.log('📊 Component detected store mutation:', mutation.type);
 
         if (this.triggerReactivityUpdate) {
           this.triggerReactivityUpdate();
@@ -2629,7 +2485,6 @@ const setupUniversalStatusListener = function() {
     this.statusWatcher = this.$watch(
       () => this.$store.getters['user/userStatus'],
       (newStatus, oldStatus) => {
-        console.log('👀 Component watching store getter change:', oldStatus, '→', newStatus);
 
         if (this.handleUserStatusChange) {
           this.handleUserStatusChange(newStatus, oldStatus);
@@ -2653,7 +2508,6 @@ const setupUniversalStatusListener = function() {
     const localStatus = localStorage.getItem('userStatus');
 
     if (storeStatus && localStatus && storeStatus !== localStatus) {
-      console.log('🔄 Periodic check found status mismatch, fixing...');
       handleStatusChange({
         detail: {
           newStatus: storeStatus,
@@ -2670,12 +2524,10 @@ const setupUniversalStatusListener = function() {
     }
   });
 
-  console.log('✅ Universal status listener setup complete');
 };
 
 // ADD THIS TO EVERY COMPONENT'S beforeUnmount LIFECYCLE:
 const cleanupUniversalStatusListener = function() {
-  console.log('🧹 Cleaning up universal status listener...');
 
   if (this.statusEventCleanup) {
     this.statusEventCleanup.forEach(cleanup => {
@@ -2688,7 +2540,6 @@ const cleanupUniversalStatusListener = function() {
     this.statusEventCleanup = [];
   }
 
-  console.log('✅ Universal status listener cleanup complete');
 };
 
 // ✅ ISSUE 5: Force reactivity update function for all components
@@ -3327,7 +3178,6 @@ export const setupUserStoreEvents = (app, store) => {
   const initializeStore = async () => {
     try {
       await store.dispatch('user/initialize');
-      console.log('✅ User store initialized automatically');
     } catch (error) {
       console.error('❌ Auto-initialization failed:', error);
     }
@@ -3366,11 +3216,9 @@ export const setupUserStoreEvents = (app, store) => {
     }
   });
 
-  console.log('✅ User store events initialized');
 
   return () => {
     clearInterval(syncInterval);
-    console.log('🧹 User store events cleaned up');
   };
 };
 
@@ -3458,12 +3306,3 @@ export const performanceMonitor = {
   }
 };
 
-console.log('✅ Enhanced User Store v2.0 loaded successfully!');
-console.log('📚 Available exports:', {
-  default: 'Enhanced Vuex store module',
-  createUserStatusComposable: 'Vue 3 composable factory',
-  userStatusMixin: 'Vue 2 mixin',
-  setupUserStoreEvents: 'Global event setup',
-  userValidation: 'Validation utilities',
-  performanceMonitor: 'Performance monitoring'
-});

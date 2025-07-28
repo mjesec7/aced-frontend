@@ -2,257 +2,224 @@
 
 // 🛡️ IMMEDIATE SUBSCRIPTION RESTORATION (RUNS BEFORE EVERYTHING)
 function immediateSubscriptionRestore() {
-    console.log('🚀 IMMEDIATE: Running subscription restoration before auth...');
-    
-    try {
-      const subscriptionJson = localStorage.getItem('subscriptionData');
-      if (subscriptionJson) {
-        const subscription = JSON.parse(subscriptionJson);
-        const now = new Date();
-        const expiry = new Date(subscription.expiryDate);
-        const isValid = now < expiry;
-        
-        console.log('🔍 IMMEDIATE: Subscription check:', {
-          plan: subscription.plan,
-          expiry: subscription.expiryDate,
-          isValid: isValid,
-          daysRemaining: Math.ceil((expiry - now) / (1000 * 60 * 60 * 24))
-        });
-        
-        if (isValid && subscription.plan !== 'free') {
-          // Force all status fields immediately
-          localStorage.setItem('userStatus', subscription.plan);
-          localStorage.setItem('userPlan', subscription.plan);
-          localStorage.setItem('subscriptionPlan', subscription.plan);
-          localStorage.setItem('preservedStatus', subscription.plan); // Backup field
-          
-          console.log('✅ IMMEDIATE: Status restored to:', subscription.plan);
-          
-          // Set a flag that auth flow should preserve this
-          localStorage.setItem('validSubscriptionDetected', 'true');
-          localStorage.setItem('preserveStatusDuringAuth', subscription.plan);
-          
-          return subscription.plan;
-        } else if (!isValid) {
-          console.log('❌ IMMEDIATE: Subscription expired, clearing...');
-          localStorage.removeItem('subscriptionData');
-          localStorage.removeItem('validSubscriptionDetected');
-          localStorage.removeItem('preserveStatusDuringAuth');
-        }
-      }
-      
-      return 'free';
-    } catch (error) {
-      console.error('❌ IMMEDIATE: Restoration failed:', error);
-      return 'free';
-    }
+  try {
+    const subscriptionJson = localStorage.getItem('subscriptionData');
+    if (subscriptionJson) {
+      const subscription = JSON.parse(subscriptionJson);
+      const now = new Date();
+      const expiry = new Date(subscription.expiryDate);
+      const isValid = now < expiry;
+
+      if (isValid && subscription.plan !== 'free') {
+        // Force all status fields immediately
+        localStorage.setItem('userStatus', subscription.plan);
+        localStorage.setItem('userPlan', subscription.plan);
+        localStorage.setItem('subscriptionPlan', subscription.plan);
+        localStorage.setItem('preservedStatus', subscription.plan); // Backup field
+
+        // Set a flag that auth flow should preserve this
+        localStorage.setItem('validSubscriptionDetected', 'true');
+        localStorage.setItem('preserveStatusDuringAuth', subscription.plan);
+
+        return subscription.plan;
+      } else if (!isValid) {
+        localStorage.removeItem('subscriptionData');
+        localStorage.removeItem('validSubscriptionDetected');
+        localStorage.removeItem('preserveStatusDuringAuth');
+      }
+    }
+
+    return 'free';
+  } catch (error) {
+    return 'free';
   }
-  
-  // Run immediate restoration
-  const preservedStatus = immediateSubscriptionRestore();
-  
-  
-  import { createApp } from 'vue';
-  import App from './App.vue';
-  import router from './router';
-  import store from './store';
-  
-  import './assets/css/responsive.css';
-  import 'vue-toast-notification/dist/theme-sugar.css';
-  import VueToast from 'vue-toast-notification';
-  
-  import { createI18n } from 'vue-i18n';
-  import messages from './locales/messages.json';
-  
-  import { auth } from './firebase';
-  import { onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';
-  
-  // 🔥 NEW: Continuous subscription monitoring during auth
-  function setupAuthSubscriptionMonitoring() {
-    let monitoringActive = true;
-    
-    const monitor = () => {
-      if (!monitoringActive) return;
-      
-      try {
-        const subscriptionJson = localStorage.getItem('subscriptionData');
-        const currentStatus = localStorage.getItem('userStatus');
-        
-        if (subscriptionJson) {
-          const subscription = JSON.parse(subscriptionJson);
-          const now = new Date();
-          const expiry = new Date(subscription.expiryDate);
-          const isValid = now < expiry;
-          
-          if (isValid && subscription.plan !== 'free' && currentStatus !== subscription.plan) {
-            console.log('🔧 AUTH MONITOR: Status drift detected, restoring...', {
-              subscription: subscription.plan,
-              current: currentStatus
-            });
-            
-            localStorage.setItem('userStatus', subscription.plan);
-            localStorage.setItem('userPlan', subscription.plan);
-            localStorage.setItem('subscriptionPlan', subscription.plan);
-            
-            // Trigger restoration event
-            if (window.triggerGlobalEvent) {
-              window.triggerGlobalEvent('userStatusChanged', {
-                oldStatus: currentStatus,
-                newStatus: subscription.plan,
-                source: 'auth-monitoring-restore',
-                timestamp: Date.now()
-              });
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('⚠️ Auth monitoring error:', error);
-      }
-      
-      // Continue monitoring
-      setTimeout(monitor, 100); // Check every 100ms during auth
-    };
-    
-    // Start monitoring
-    monitor();
-    
-    // Stop monitoring after 10 seconds (auth should be complete by then)
-    setTimeout(() => {
-      monitoringActive = false;
-      console.log('✅ Auth subscription monitoring completed');
-    }, 10000);
-  }
-  
-  // Start auth monitoring immediately
-  setupAuthSubscriptionMonitoring();
-  
-  // ============================================================================
-  // 🔥 CRITICAL FIX: RESTRUCTURED AUTHENTICATION & INITIALIZATION
-  // ============================================================================
-  
-  // ✅ Auth state tracking with enhanced promises
-  let authStateResolved = false;
-  let authResolveFunction = null;
-  let authRejectFunction = null;
-  
-  // ✅ Set Firebase auth persistence IMMEDIATELY (BEFORE EVERYTHING ELSE)
-  setPersistence(auth, browserLocalPersistence).then(() => {
-  console.log('✅ Firebase auth persistence set to LOCAL');
-  }).catch((error) => {
-  console.error('❌ Failed to set auth persistence:', error);
+}
+
+// Run immediate restoration
+const preservedStatus = immediateSubscriptionRestore();
+
+
+import { createApp } from 'vue';
+import App from './App.vue';
+import router from './router';
+import store from './store';
+
+import './assets/css/responsive.css';
+import 'vue-toast-notification/dist/theme-sugar.css';
+import VueToast from 'vue-toast-notification';
+
+import { createI18n } from 'vue-i18n';
+import messages from './locales/messages.json';
+
+import { auth } from './firebase';
+import { onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';
+
+// 🔥 NEW: Continuous subscription monitoring during auth
+function setupAuthSubscriptionMonitoring() {
+  let monitoringActive = true;
+
+  const monitor = () => {
+    if (!monitoringActive) return;
+
+    try {
+      const subscriptionJson = localStorage.getItem('subscriptionData');
+      const currentStatus = localStorage.getItem('userStatus');
+
+      if (subscriptionJson) {
+        const subscription = JSON.parse(subscriptionJson);
+        const now = new Date();
+        const expiry = new Date(subscription.expiryDate);
+        const isValid = now < expiry;
+
+        if (isValid && subscription.plan !== 'free' && currentStatus !== subscription.plan) {
+
+
+          localStorage.setItem('userStatus', subscription.plan);
+          localStorage.setItem('userPlan', subscription.plan);
+          localStorage.setItem('subscriptionPlan', subscription.plan);
+
+          // Trigger restoration event
+          if (window.triggerGlobalEvent) {
+            window.triggerGlobalEvent('userStatusChanged', {
+              oldStatus: currentStatus,
+              newStatus: subscription.plan,
+              source: 'auth-monitoring-restore',
+              timestamp: Date.now()
+            });
+          }
+        }
+      }
+    } catch (error) {
+    }
+
+    // Continue monitoring
+    setTimeout(monitor, 100); // Check every 100ms during auth
+  };
+
+  // Start monitoring
+  monitor();
+
+  // Stop monitoring after 10 seconds (auth should be complete by then)
+  setTimeout(() => {
+    monitoringActive = false;
+  }, 10000);
+}
+
+// Start auth monitoring immediately
+setupAuthSubscriptionMonitoring();
+
+// ============================================================================
+// 🔥 CRITICAL FIX: RESTRUCTURED AUTHENTICATION & INITIALIZATION
+// ============================================================================
+
+// ✅ Auth state tracking with enhanced promises
+let authStateResolved = false;
+let authResolveFunction = null;
+let authRejectFunction = null;
+
+// ✅ Set Firebase auth persistence IMMEDIATELY (BEFORE EVERYTHING ELSE)
+setPersistence(auth, browserLocalPersistence).then(() => {
+}).catch((error) => {
+});
+
+// ✅ CRITICAL: Enhanced authentication promise that waits for COMPLETE initialization
+export const authInitPromise = new Promise((resolve, reject) => {
+  authResolveFunction = resolve;
+  authRejectFunction = reject;
+
+
+  // 🛡️ CRITICAL: Final subscription check before auth starts
+  const finalSubscriptionCheck = () => {
+    try {
+      const subscriptionJson = localStorage.getItem('subscriptionData');
+      if (subscriptionJson) {
+        const subscription = JSON.parse(subscriptionJson);
+        const now = new Date();
+        const expiry = new Date(subscription.expiryDate);
+        const isValid = now < expiry;
+
+        if (isValid && subscription.plan !== 'free') {
+          localStorage.setItem('userStatus', subscription.plan);
+          localStorage.setItem('userPlan', subscription.plan);
+          localStorage.setItem('subscriptionPlan', subscription.plan);
+          localStorage.setItem('authPreserveStatus', subscription.plan);
+
+
+          return subscription.plan;
+        }
+      }
+    } catch (error) {
+    }
+
+    return 'free';
+  };
+
+  const authStartStatus = finalSubscriptionCheck();
+
+  const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    if (!authStateResolved) {
+      authStateResolved = true;
+      unsubscribe();
+
+      try {
+
+        await ensureStoreInitialized();
+
+        if (firebaseUser) {
+          await handleUserAuthenticated(firebaseUser);
+        } else {
+          await handleUserNotAuthenticated();
+        }
+
+        await mountVueApplication();
+
+
+        // Clean up any remaining preservation flags
+        localStorage.removeItem('authPreserveStatus');
+
+        setTimeout(() => {
+          resolve({
+            authenticated: !!firebaseUser,
+            user: firebaseUser,
+            appReady: true,
+            preservedStatus: authStartStatus,
+            timestamp: Date.now()
+          });
+        }, 50);
+
+      } catch (error) {
+
+        try {
+          await mountVueApplicationBasic();
+        } catch (mountError) {
+        }
+
+        setTimeout(() => {
+          resolve({
+            authenticated: false,
+            user: null,
+            appReady: false,
+            error: error.message,
+            preservedStatus: authStartStatus,
+            timestamp: Date.now()
+          });
+        }, 50);
+      }
+    }
   });
-  
-  // ✅ CRITICAL: Enhanced authentication promise that waits for COMPLETE initialization
-  export const authInitPromise = new Promise((resolve, reject) => {
-    authResolveFunction = resolve;
-    authRejectFunction = reject;
-  
-    console.log('🔐 Starting ENHANCED authentication check with subscription preservation...');
-    
-    // 🛡️ CRITICAL: Final subscription check before auth starts
-    const finalSubscriptionCheck = () => {
-      try {
-        const subscriptionJson = localStorage.getItem('subscriptionData');
-        if (subscriptionJson) {
-          const subscription = JSON.parse(subscriptionJson);
-          const now = new Date();
-          const expiry = new Date(subscription.expiryDate);
-          const isValid = now < expiry;
-          
-          if (isValid && subscription.plan !== 'free') {
-            localStorage.setItem('userStatus', subscription.plan);
-            localStorage.setItem('userPlan', subscription.plan);
-            localStorage.setItem('subscriptionPlan', subscription.plan);
-            localStorage.setItem('authPreserveStatus', subscription.plan);
-            
-            console.log('🛡️ AUTH START: Subscription preserved:', subscription.plan);
-            
-            return subscription.plan;
-          }
-        }
-      } catch (error) {
-        console.error('❌ Final subscription check failed:', error);
-      }
-      
-      return 'free';
-    };
-    
-    const authStartStatus = finalSubscriptionCheck();
-  
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (!authStateResolved) {
-        authStateResolved = true;
-        unsubscribe();
-        
-        console.log('🔐 Auth state determined:', firebaseUser ? `${firebaseUser.email} (authenticated)` : 'not authenticated');
-        console.log('🛡️ Auth start status was:', authStartStatus);
-        
-        try {
-          console.log('🚀 Starting complete application initialization...');
-          
-          await ensureStoreInitialized();
-          
-          if (firebaseUser) {
-            await handleUserAuthenticated(firebaseUser);
-          } else {
-            await handleUserNotAuthenticated();
-          }
-          
-          await mountVueApplication();
-          
-          console.log('✅ COMPLETE authentication and app initialization finished');
-          
-          // Clean up any remaining preservation flags
-          localStorage.removeItem('authPreserveStatus');
-          
-          setTimeout(() => {
-            console.log('🎉 Authentication promise resolving...');
-            resolve({
-              authenticated: !!firebaseUser,
-              user: firebaseUser,
-              appReady: true,
-              preservedStatus: authStartStatus,
-              timestamp: Date.now()
-            });
-          }, 50);
-          
-        } catch (error) {
-          console.error('❌ Critical initialization failed during auth check:', error);
-          
-          try {
-            await mountVueApplicationBasic();
-          } catch (mountError) {
-            console.error('❌ Basic app mount also failed:', mountError);
-          }
-          
-          setTimeout(() => {
-            resolve({
-              authenticated: false,
-              user: null,
-              appReady: false,
-              error: error.message,
-              preservedStatus: authStartStatus,
-              timestamp: Date.now()
-            });
-          }, 50);
-        }
-      }
-    });
-  
+
   // Enhanced timeout with better error handling
   setTimeout(() => {
     if (!authStateResolved) {
-      console.warn('⚠️ Auth check timed out - proceeding with fallback initialization');
       authStateResolved = true;
       unsubscribe();
-      
+
       // Fallback initialization
       Promise.resolve()
         .then(() => ensureStoreInitialized())
         .then(() => handleUserNotAuthenticated())
         .then(() => mountVueApplicationBasic())
         .then(() => {
-          console.log('✅ Fallback initialization completed');
           resolve({
             authenticated: false,
             user: null,
@@ -262,7 +229,6 @@ function immediateSubscriptionRestore() {
           });
         })
         .catch((fallbackError) => {
-          console.error('❌ Even fallback initialization failed:', fallbackError);
           resolve({
             authenticated: false,
             user: null,
@@ -274,102 +240,90 @@ function immediateSubscriptionRestore() {
         });
     }
   }, 8000); // Increased timeout to 8 seconds
-  });
-  
-  // ============================================================================
-  // 🔥 ENHANCED STORE INITIALIZATION WITH BULLETPROOF ERROR HANDLING
-  // ============================================================================
-  async function ensureStoreInitialized() {
-    console.log('🏪 Ensuring Vuex store is initialized with subscription awareness...');
-  
-    try {
-      if (store.getters['user/isInitialized']) {
-        console.log('✅ Store already initialized');
-        
-        // But check if subscription needs restoration
-        const preserveStatus = localStorage.getItem('authPreserveStatus');
-        if (preserveStatus && preserveStatus !== 'free') {
-          const currentStoreStatus = store.getters['user/userStatus'];
-          if (currentStoreStatus !== preserveStatus) {
-            console.log('🛡️ STORE INIT: Restoring subscription to store:', preserveStatus);
-            store.commit('user/SET_USER_STATUS', preserveStatus);
-          }
-        }
-        
-        return true;
-      }
-      
-      await store.dispatch('user/initialize');
-      
-      // After initialization, restore subscription if needed
-      const preserveStatus = localStorage.getItem('authPreserveStatus') || localStorage.getItem('userStatus');
-      if (preserveStatus && preserveStatus !== 'free') {
-        console.log('🛡️ STORE INIT: Setting initial subscription status:', preserveStatus);
-        store.commit('user/SET_USER_STATUS', preserveStatus);
-      }
-      
-      setupStoreInterceptor(store);
-      appLifecycle.storeReady = true;
-      
-      console.log('✅ Store initialization completed successfully with subscription awareness');
-      return true;
-      
-    } catch (error) {
-      console.error('❌ Store initialization failed:', error);
-      
-      try {
-        store.commit('user/SET_INITIALIZED', false);
-        
-        // Still try to restore subscription even after init failure
-        const preserveStatus = localStorage.getItem('authPreserveStatus') || localStorage.getItem('userStatus');
-        if (preserveStatus && preserveStatus !== 'free') {
-          store.commit('user/SET_USER_STATUS', preserveStatus);
-        }
-        
-        console.log('⚠️ Set basic store state after initialization failure');
-      } catch (commitError) {
-        console.error('❌ Even basic store commit failed:', commitError);
-      }
-      
-      throw error;
-    }
+});
+
+// ============================================================================
+// 🔥 ENHANCED STORE INITIALIZATION WITH BULLETPROOF ERROR HANDLING
+// ============================================================================
+async function ensureStoreInitialized() {
+
+  try {
+    if (store.getters['user/isInitialized']) {
+
+      // But check if subscription needs restoration
+      const preserveStatus = localStorage.getItem('authPreserveStatus');
+      if (preserveStatus && preserveStatus !== 'free') {
+        const currentStoreStatus = store.getters['user/userStatus'];
+        if (currentStoreStatus !== preserveStatus) {
+          store.commit('user/SET_USER_STATUS', preserveStatus);
+        }
+      }
+
+      return true;
+    }
+
+    await store.dispatch('user/initialize');
+
+    // After initialization, restore subscription if needed
+    const preserveStatus = localStorage.getItem('authPreserveStatus') || localStorage.getItem('userStatus');
+    if (preserveStatus && preserveStatus !== 'free') {
+      store.commit('user/SET_USER_STATUS', preserveStatus);
+    }
+
+    setupStoreInterceptor(store);
+    appLifecycle.storeReady = true;
+
+    return true;
+
+  } catch (error) {
+
+    try {
+      store.commit('user/SET_INITIALIZED', false);
+
+      // Still try to restore subscription even after init failure
+      const preserveStatus = localStorage.getItem('authPreserveStatus') || localStorage.getItem('userStatus');
+      if (preserveStatus && preserveStatus !== 'free') {
+        store.commit('user/SET_USER_STATUS', preserveStatus);
+      }
+
+    } catch (commitError) {
+    }
+
+    throw error;
   }
-  
-  // ============================================================================
-  // 🔥 ENHANCED USER AUTHENTICATION HANDLER
-  // ============================================================================
-  async function handleUserAuthenticated(firebaseUser) {
-  console.log('👤 Processing authenticated user:', firebaseUser.email);
-  
+}
+
+// ============================================================================
+// 🔥 ENHANCED USER AUTHENTICATION HANDLER
+// ============================================================================
+async function handleUserAuthenticated(firebaseUser) {
+
   try {
     // Get Firebase ID token with retry
     let token;
     let tokenRetries = 3;
-    
+
     while (tokenRetries > 0) {
       try {
         token = await firebaseUser.getIdToken(true); // Force refresh
         if (token && token.length > 20) {
-          console.log('🔑 Firebase token obtained successfully');
           break;
         }
         throw new Error('Invalid token received');
       } catch (tokenError) {
         tokenRetries--;
-        console.warn(`⚠️ Token attempt failed, ${tokenRetries} retries left:`, tokenError.message);
-        
+
         if (tokenRetries === 0) {
-          console.error('❌ Failed to get token, proceeding with basic auth...');
           // Don't fail the entire auth process, continue with basic user data
           await handleBasicUserAuthentication(firebaseUser);
           return;
         }
-        
+
         // Wait before retry
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
-    
+
     // Prepare user data
     const userData = {
       uid: firebaseUser.uid,
@@ -380,236 +334,209 @@ function immediateSubscriptionRestore() {
       photoURL: firebaseUser.photoURL,
       lastLoginAt: new Date().toISOString()
     };
-    
-    console.log('💾 Saving authenticated user to server...', {
-      email: userData.email,
-      uid: userData.uid
-    });
-    
+
+
     // ✅ ENHANCED: Try to save user with better error handling
     let saveResult;
     let saveRetries = 2;
-    
+
     while (saveRetries > 0) {
       try {
-        console.log(`🔄 Save attempt ${3 - saveRetries + 1}/3...`);
-        
+
         saveResult = await store.dispatch('user/saveUser', { userData, token });
-        
-        console.log('📊 Save result received:', {
-          hasResult: !!saveResult,
-          resultType: typeof saveResult,
-          success: saveResult?.success,
-          hasUser: !!saveResult?.user,
-          error: saveResult?.error
-        });
-        
+
+
+
         // ✅ CRITICAL: Check if we got a valid result
         if (!saveResult) {
-          console.error('❌ Save returned undefined result');
           throw new Error('Save action returned undefined result');
         }
-        
+
         if (typeof saveResult !== 'object') {
-          console.error('❌ Save returned non-object result:', typeof saveResult);
           throw new Error(`Save action returned ${typeof saveResult} instead of object`);
         }
-        
+
         if (saveResult.success === true && saveResult.user) {
-          console.log('✅ User saved successfully on attempt', 3 - saveRetries + 1);
           break;
         } else if (saveResult.success === false) {
-          console.warn('⚠️ Server returned failure:', saveResult.error);
-          
+
           // For server failures, try basic auth instead of retrying
           if (saveRetries === 1) {
-            console.log('🔄 Server save failed, falling back to basic auth...');
             await handleBasicUserAuthentication(firebaseUser, token);
             return;
           }
-          
+
           throw new Error(saveResult.error || 'Server returned failure');
         } else {
-          console.warn('⚠️ Invalid save result structure:', saveResult);
           throw new Error('Invalid server response structure');
         }
-        
+
       } catch (saveError) {
         saveRetries--;
-        console.warn(`⚠️ Save attempt failed, ${saveRetries} retries left:`, saveError.message);
-        
+
         if (saveRetries === 0) {
-          console.error('❌ All save attempts failed, falling back to basic auth...');
           await handleBasicUserAuthentication(firebaseUser, token);
           return;
         }
-        
+
         // Wait before retry
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
-    
+
     // ✅ ENHANCED: Handle successful save
     if (saveResult && saveResult.success && saveResult.user) {
       await handleSuccessfulUserSave(saveResult, token, userData);
     } else {
-      console.error('❌ Unexpected save result state:', saveResult);
       await handleBasicUserAuthentication(firebaseUser, token);
     }
-    
+
   } catch (error) {
-    console.error('❌ User authentication handling failed:', error);
-    
+
     // Last resort: try basic authentication
     try {
       await handleBasicUserAuthentication(firebaseUser);
     } catch (basicError) {
-      console.error('❌ Even basic authentication failed:', basicError);
       await handleUserNotAuthenticated();
     }
   }
-  }
-  
-  // 🔥 MODIFIED: Enhanced handleBasicUserAuthentication to preserve subscriptions
-  async function handleBasicUserAuthentication(firebaseUser, token = null) {
-    try {
-      // 🛡️ CRITICAL: Check for preserved subscription status FIRST
-      let existingStatus = 'free';
-      
-      // Check preservation flag first
-      const preserveStatus = localStorage.getItem('preserveStatusDuringAuth');
-      if (preserveStatus && preserveStatus !== 'free') {
-        existingStatus = preserveStatus;
-        console.log('🛡️ Using preserved status during basic auth:', existingStatus);
-      } else {
-        // Original subscription checking logic
-        const subscription = getStoredSubscription();
-        if (subscription && subscription.plan !== 'free') {
-          if (isSubscriptionValid()) {
-            existingStatus = subscription.plan;
-            console.log('✅ Found valid subscription:', existingStatus);
-          }
-        } else {
-          const localStatus = localStorage.getItem('userStatus');
-          if (localStatus && ['start', 'pro'].includes(localStatus)) {
-            existingStatus = localStatus;
-            await setupSubscriptionPersistence(existingStatus, 'basic-auth-preserve');
-          }
-        }
-      }
-      
-      // Create basic user object with preserved status
-      const basicUser = {
-        firebaseId: firebaseUser.uid,
-        _id: firebaseUser.uid,
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-        displayName: firebaseUser.displayName || '',
-        subscriptionPlan: existingStatus,
-        userStatus: existingStatus,
-        plan: existingStatus,
-        subscription: existingStatus,
-        emailVerified: firebaseUser.emailVerified,
-        photoURL: firebaseUser.photoURL,
-        lastLoginAt: new Date().toISOString(),
-        metadata: {
-          lastSync: new Date().toISOString(),
-          syncSource: 'basic-auth',
-          fallback: true,
-          preservedSubscription: preserveStatus ? true : false
-        }
-      };
-      
-      // Update stores with preserved status
-      store.commit('setUser', basicUser);
-      store.commit('setFirebaseUserId', basicUser.firebaseId);
-      if (token) {
-        store.commit('setToken', token);
-      }
-      
-      store.commit('user/SET_USER', basicUser);
-      store.commit('user/SET_USER_STATUS', existingStatus);
-      
-      try {
-        store.commit('user/setUserStatus', existingStatus);
-      } catch (e) {
-        // Ignore if not present
-      }
-      
-      // Update localStorage with preserved status
-      try {
-        localStorage.setItem('user', JSON.stringify(basicUser));
-        localStorage.setItem('firebaseUserId', basicUser.firebaseId);
-        localStorage.setItem('userId', basicUser.firebaseId);
-        if (token) {
-          localStorage.setItem('token', token);
-        }
-        localStorage.setItem('userStatus', existingStatus);
-        localStorage.setItem('userPlan', existingStatus);
-        localStorage.setItem('subscriptionPlan', existingStatus);
-        localStorage.setItem('lastLoginTime', new Date().toISOString());
-        localStorage.setItem('authMode', 'basic');
-        
-        // Clean up preservation flags
-        localStorage.removeItem('validSubscriptionDetected');
-        localStorage.removeItem('preserveStatusDuringAuth');
-        
-      } catch (storageError) {
-        console.warn('⚠️ Failed to update localStorage in basic mode:', storageError);
-      }
-      
-      appLifecycle.authReady = true;
-      
-      // Trigger events with preserved status
-      const eventData = {
-        oldStatus: 'free',
-        newStatus: existingStatus,
-        source: 'basic-auth-preserved',
-        user: basicUser,
-        timestamp: Date.now()
-      };
-      
-      window.triggerGlobalEvent('userStatusChanged', eventData);
-      window.triggerGlobalEvent('userSubscriptionChanged', eventData);
-      window.triggerGlobalEvent('userLoggedIn', {
-        user: basicUser,
-        userStatus: existingStatus,
-        source: 'basic',
-        mode: 'fallback-preserved',
-        timestamp: Date.now()
-      });
-      
-      // Delayed propagation for stubborn components
-      setTimeout(() => {
-        window.triggerGlobalEvent('userStatusChanged', eventData);
-        window.triggerGlobalEvent('globalForceUpdate', {
-          reason: 'basic-auth-status-preserved',
-          plan: existingStatus,
-          timestamp: Date.now()
-        });
-      }, 50);
-      
-      console.log('✅ Basic auth completed with preserved subscription:', existingStatus);
-      
-    } catch (error) {
-      console.error('❌ Basic authentication failed:', error);
-      throw error;
-    }
-  }
-  
-  // ✅ ENHANCED: Successful user save handler with subscription persistence
-  async function handleSuccessfulUserSave(result, token, userData) {
+}
+
+// 🔥 MODIFIED: Enhanced handleBasicUserAuthentication to preserve subscriptions
+async function handleBasicUserAuthentication(firebaseUser, token = null) {
   try {
-    
+    // 🛡️ CRITICAL: Check for preserved subscription status FIRST
+    let existingStatus = 'free';
+
+    // Check preservation flag first
+    const preserveStatus = localStorage.getItem('preserveStatusDuringAuth');
+    if (preserveStatus && preserveStatus !== 'free') {
+      existingStatus = preserveStatus;
+    } else {
+      // Original subscription checking logic
+      const subscription = getStoredSubscription();
+      if (subscription && subscription.plan !== 'free') {
+        if (isSubscriptionValid()) {
+          existingStatus = subscription.plan;
+        }
+      } else {
+        const localStatus = localStorage.getItem('userStatus');
+        if (localStatus && ['start', 'pro'].includes(localStatus)) {
+          existingStatus = localStatus;
+          await setupSubscriptionPersistence(existingStatus, 'basic-auth-preserve');
+        }
+      }
+    }
+
+    // Create basic user object with preserved status
+    const basicUser = {
+      firebaseId: firebaseUser.uid,
+      _id: firebaseUser.uid,
+      uid: firebaseUser.uid,
+      email: firebaseUser.email,
+      name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+      displayName: firebaseUser.displayName || '',
+      subscriptionPlan: existingStatus,
+      userStatus: existingStatus,
+      plan: existingStatus,
+      subscription: existingStatus,
+      emailVerified: firebaseUser.emailVerified,
+      photoURL: firebaseUser.photoURL,
+      lastLoginAt: new Date().toISOString(),
+      metadata: {
+        lastSync: new Date().toISOString(),
+        syncSource: 'basic-auth',
+        fallback: true,
+        preservedSubscription: preserveStatus ? true : false
+      }
+    };
+
+    // Update stores with preserved status
+    store.commit('setUser', basicUser);
+    store.commit('setFirebaseUserId', basicUser.firebaseId);
+    if (token) {
+      store.commit('setToken', token);
+    }
+
+    store.commit('user/SET_USER', basicUser);
+    store.commit('user/SET_USER_STATUS', existingStatus);
+
+    try {
+      store.commit('user/setUserStatus', existingStatus);
+    } catch (e) {
+      // Ignore if not present
+    }
+
+    // Update localStorage with preserved status
+    try {
+      localStorage.setItem('user', JSON.stringify(basicUser));
+      localStorage.setItem('firebaseUserId', basicUser.firebaseId);
+      localStorage.setItem('userId', basicUser.firebaseId);
+      if (token) {
+        localStorage.setItem('token', token);
+      }
+      localStorage.setItem('userStatus', existingStatus);
+      localStorage.setItem('userPlan', existingStatus);
+      localStorage.setItem('subscriptionPlan', existingStatus);
+      localStorage.setItem('lastLoginTime', new Date().toISOString());
+      localStorage.setItem('authMode', 'basic');
+
+      // Clean up preservation flags
+      localStorage.removeItem('validSubscriptionDetected');
+      localStorage.removeItem('preserveStatusDuringAuth');
+
+    } catch (storageError) {
+    }
+
+    appLifecycle.authReady = true;
+
+    // Trigger events with preserved status
+    const eventData = {
+      oldStatus: 'free',
+      newStatus: existingStatus,
+      source: 'basic-auth-preserved',
+      user: basicUser,
+      timestamp: Date.now()
+    };
+
+    window.triggerGlobalEvent('userStatusChanged', eventData);
+    window.triggerGlobalEvent('userSubscriptionChanged', eventData);
+    window.triggerGlobalEvent('userLoggedIn', {
+      user: basicUser,
+      userStatus: existingStatus,
+      source: 'basic',
+      mode: 'fallback-preserved',
+      timestamp: Date.now()
+    });
+
+    // Delayed propagation for stubborn components
+    setTimeout(() => {
+      window.triggerGlobalEvent('userStatusChanged', eventData);
+      window.triggerGlobalEvent('globalForceUpdate', {
+        reason: 'basic-auth-status-preserved',
+        plan: existingStatus,
+        timestamp: Date.now()
+      });
+    }, 50);
+
+
+  } catch (error) {
+    throw error;
+  }
+}
+
+// ✅ ENHANCED: Successful user save handler with subscription persistence
+async function handleSuccessfulUserSave(result, token, userData) {
+  try {
+
     const serverUser = result.user;
     // ✅ CRITICAL FIX: Handle multiple possible status field names
-    const userPlan = serverUser.subscriptionPlan || 
-                     serverUser.userStatus || 
-                     serverUser.plan || 
-                     serverUser.subscription || 
-                     'free';
-    
+    const userPlan = serverUser.subscriptionPlan ||
+      serverUser.userStatus ||
+      serverUser.plan ||
+      serverUser.subscription ||
+      'free';
+
     // ✅ CRITICAL: Enhanced user object with all possible status fields AND subscription tracking
     const enhancedUser = {
       ...serverUser,
@@ -618,23 +545,23 @@ function immediateSubscriptionRestore() {
       plan: userPlan,
       subscription: userPlan
     };
-    
+
     // ✅ CRITICAL: Set up subscription persistence if it's a paid plan
     if (userPlan && userPlan !== 'free') {
       await setupSubscriptionPersistence(userPlan, 'server-sync');
     }
-    
+
     // Update stores with server data
     try {
       // Update main store (legacy compatibility)
       store.commit('setUser', enhancedUser);
       store.commit('setFirebaseUserId', enhancedUser.firebaseId || enhancedUser._id);
       store.commit('setToken', token);
-      
+
       // Update user module store with multiple mutations to ensure it sticks
       store.commit('user/SET_USER', enhancedUser);
       store.commit('user/SET_USER_STATUS', userPlan);
-      
+
       // ✅ CRITICAL: Also update any legacy status fields
       if (store.hasModule('user')) {
         try {
@@ -642,14 +569,14 @@ function immediateSubscriptionRestore() {
         } catch (e) {
           // Ignore if not present
         }
-        
+
         try {
           store.commit('user/UPDATE_SUBSCRIPTION', { plan: userPlan });
         } catch (e) {
           // Ignore if not present
         }
       }
-      
+
       // Update localStorage immediately and forcefully
       const storageData = {
         user: enhancedUser,
@@ -661,27 +588,25 @@ function immediateSubscriptionRestore() {
         subscriptionPlan: userPlan,
         authMode: 'server'
       };
-      
+
       Object.entries(storageData).forEach(([key, value]) => {
         try {
           localStorage.setItem(key, typeof value === 'object' ? JSON.stringify(value) : value);
         } catch (storageError) {
-          console.warn(`⚠️ Failed to store ${key}:`, storageError);
         }
       });
-      
+
     } catch (storeUpdateError) {
-      console.error('❌ Failed to update stores:', storeUpdateError);
       // Don't fail login for store update errors, but emit warning
       eventBus.emit('storeUpdateWarning', {
         error: storeUpdateError.message,
         timestamp: Date.now()
       });
     }
-    
+
     // Mark auth as ready
     appLifecycle.authReady = true;
-    
+
     // ✅ CRITICAL: Immediate status propagation with multiple event types
     const eventData = {
       oldStatus: 'free',
@@ -690,7 +615,7 @@ function immediateSubscriptionRestore() {
       user: enhancedUser,
       timestamp: Date.now()
     };
-    
+
     // Trigger immediately (no delay)
     window.triggerGlobalEvent('userStatusChanged', eventData);
     window.triggerGlobalEvent('userSubscriptionChanged', eventData);
@@ -701,7 +626,7 @@ function immediateSubscriptionRestore() {
       source: 'server',
       timestamp: Date.now()
     });
-    
+
     // Also trigger with small delay for any stubborn components
     setTimeout(() => {
       window.triggerGlobalEvent('userStatusChanged', eventData);
@@ -711,16 +636,15 @@ function immediateSubscriptionRestore() {
         timestamp: Date.now()
       });
     }, 50);
-    
+
     // Store last login time
     localStorage.setItem('lastLoginTime', new Date().toISOString());
-    
+
   } catch (error) {
-    console.error('❌ Error in successful save handler:', error);
-    
+
     // Fallback to basic auth even after successful save
     try {
-      await handleBasicUserAuthentication({ 
+      await handleBasicUserAuthentication({
         uid: result.user?.firebaseId || result.user?._id,
         email: result.user?.email || userData.email,
         displayName: result.user?.name || userData.name,
@@ -728,111 +652,103 @@ function immediateSubscriptionRestore() {
         photoURL: result.user?.photoURL || userData.photoURL
       }, token);
     } catch (fallbackError) {
-      console.error('❌ Fallback authentication failed:', fallbackError);
     }
   }
+}
+
+// 🔥 MODIFIED: Enhanced handleUserNotAuthenticated to preserve subscriptions
+async function handleUserNotAuthenticated() {
+
+  try {
+    // 🛡️ CRITICAL: Check for valid subscription BEFORE clearing anything
+    const validSubscription = localStorage.getItem('validSubscriptionDetected');
+    const preserveStatus = localStorage.getItem('preserveStatusDuringAuth');
+
+    if (validSubscription === 'true' && preserveStatus && preserveStatus !== 'free') {
+
+      // Don't clear subscription-related data, but clear other auth data
+      const keysToRemove = [
+        'user', 'firebaseUserId', 'userId', 'token', 'lastLoginTime'
+        // NOTE: NOT clearing userStatus, subscriptionData, etc.
+      ];
+
+      keysToRemove.forEach(key => {
+        try {
+          localStorage.removeItem(key);
+        } catch (error) {
+        }
+      });
+
+      // Set preserved status in store
+      store.commit('user/SET_USER_STATUS', preserveStatus);
+
+      // Clean up preservation flags
+      localStorage.removeItem('validSubscriptionDetected');
+      localStorage.removeItem('preserveStatusDuringAuth');
+
+
+    } else {
+      // Normal clearing for truly free users
+      await store.dispatch('user/logout');
+      store.commit('logout');
+
+      const keysToRemove = [
+        'user', 'firebaseUserId', 'userId', 'token',
+        'userStatus', 'lastLoginTime', 'subscriptionDetails'
+      ];
+
+      keysToRemove.forEach(key => {
+        try {
+          localStorage.removeItem(key);
+        } catch (error) {
+        }
+      });
+
+      store.commit('user/SET_USER_STATUS', 'free');
+    }
+
+    // Mark auth as ready
+    appLifecycle.authReady = true;
+
+    // Trigger events with current status (might be preserved subscription)
+    const currentStatus = localStorage.getItem('userStatus') || 'free';
+    setTimeout(() => {
+      window.triggerGlobalEvent('userStatusChanged', {
+        oldStatus: 'free',
+        newStatus: currentStatus,
+        source: 'not-authenticated-preserved',
+        timestamp: Date.now()
+      });
+    }, 100);
+
+  } catch (error) {
+
+    // Force basic state but preserve subscriptions
+    try {
+      const preserveStatus = localStorage.getItem('preserveStatusDuringAuth');
+      if (preserveStatus && preserveStatus !== 'free') {
+        store.commit('user/SET_USER_STATUS', preserveStatus);
+        localStorage.setItem('userStatus', preserveStatus);
+      } else {
+        store.commit('user/CLEAR_USER');
+        localStorage.setItem('userStatus', 'free');
+      }
+    } catch (clearError) {
+    }
+
+    appLifecycle.authReady = true;
   }
-  
-  // 🔥 MODIFIED: Enhanced handleUserNotAuthenticated to preserve subscriptions
-  async function handleUserNotAuthenticated() {
-    console.log('👋 Processing non-authenticated state...');
-  
-    try {
-      // 🛡️ CRITICAL: Check for valid subscription BEFORE clearing anything
-      const validSubscription = localStorage.getItem('validSubscriptionDetected');
-      const preserveStatus = localStorage.getItem('preserveStatusDuringAuth');
-      
-      if (validSubscription === 'true' && preserveStatus && preserveStatus !== 'free') {
-        console.log('🛡️ PRESERVING subscription during non-auth state:', preserveStatus);
-        
-        // Don't clear subscription-related data, but clear other auth data
-        const keysToRemove = [
-          'user', 'firebaseUserId', 'userId', 'token', 'lastLoginTime'
-          // NOTE: NOT clearing userStatus, subscriptionData, etc.
-        ];
-        
-        keysToRemove.forEach(key => {
-          try {
-            localStorage.removeItem(key);
-          } catch (error) {
-            console.warn(`⚠️ Failed to remove ${key}:`, error);
-          }
-        });
-        
-        // Set preserved status in store
-        store.commit('user/SET_USER_STATUS', preserveStatus);
-        
-        // Clean up preservation flags
-        localStorage.removeItem('validSubscriptionDetected');
-        localStorage.removeItem('preserveStatusDuringAuth');
-        
-        console.log('✅ Subscription preserved during non-auth state');
-        
-      } else {
-        // Normal clearing for truly free users
-        await store.dispatch('user/logout');
-        store.commit('logout');
-        
-        const keysToRemove = [
-          'user', 'firebaseUserId', 'userId', 'token', 
-          'userStatus', 'lastLoginTime', 'subscriptionDetails'
-        ];
-        
-        keysToRemove.forEach(key => {
-          try {
-            localStorage.removeItem(key);
-          } catch (error) {
-            console.warn(`⚠️ Failed to remove ${key}:`, error);
-          }
-        });
-        
-        store.commit('user/SET_USER_STATUS', 'free');
-      }
-      
-      // Mark auth as ready
-      appLifecycle.authReady = true;
-      
-      // Trigger events with current status (might be preserved subscription)
-      const currentStatus = localStorage.getItem('userStatus') || 'free';
-      setTimeout(() => {
-        window.triggerGlobalEvent('userStatusChanged', {
-          oldStatus: 'free',
-          newStatus: currentStatus,
-          source: 'not-authenticated-preserved',
-          timestamp: Date.now()
-        });
-      }, 100);
-      
-    } catch (error) {
-      console.error('❌ Error handling non-authenticated state:', error);
-      
-      // Force basic state but preserve subscriptions
-      try {
-        const preserveStatus = localStorage.getItem('preserveStatusDuringAuth');
-        if (preserveStatus && preserveStatus !== 'free') {
-          store.commit('user/SET_USER_STATUS', preserveStatus);
-          localStorage.setItem('userStatus', preserveStatus);
-        } else {
-          store.commit('user/CLEAR_USER');
-          localStorage.setItem('userStatus', 'free');
-        }
-      } catch (clearError) {
-        console.error('❌ Even preservation fallback failed:', clearError);
-      }
-      
-      appLifecycle.authReady = true;
-    }
-  }
-  
-  
-  // ============================================================================
-  // 🔥 ENHANCED VUE APPLICATION MOUNTING
-  // ============================================================================
-  async function mountVueApplication() {
-  
+}
+
+
+// ============================================================================
+// 🔥 ENHANCED VUE APPLICATION MOUNTING
+// ============================================================================
+async function mountVueApplication() {
+
   try {
     app = createApp(App);
-    
+
     // Add enhanced global properties
     app.config.globalProperties.$eventBus = eventBus;
     app.config.globalProperties.$userStore = store;
@@ -844,7 +760,7 @@ function immediateSubscriptionRestore() {
       const cleanup = eventBus.onStatusChange(callback);
       return cleanup;
     };
-    
+
     // Install plugins
     app.use(store);
     app.use(router);
@@ -854,24 +770,20 @@ function immediateSubscriptionRestore() {
       dismissible: true
     });
     app.use(i18n);
-    
+
     // Enhanced error handler
     app.config.errorHandler = (error, instance, info) => {
-      console.error('❌ Vue error:', error);
-      console.error('📍 Component:', instance?.$options?.name || 'Unknown');
-      console.error('ℹ️ Info:', info);
-      
+
       // Handle specific length errors
       if (error.message?.includes("Cannot read properties of undefined (reading 'length')")) {
-        console.error('🔍 Length property error detected - likely array reactivity issue');
-        
+
         eventBus.emit('lengthPropertyError', {
           error: error.message,
           component: instance?.$options?.name || 'Unknown',
           info,
           timestamp: Date.now()
         });
-        
+
         // Try to recover
         try {
           store.commit('user/FORCE_UPDATE');
@@ -880,10 +792,9 @@ function immediateSubscriptionRestore() {
             timestamp: Date.now()
           });
         } catch (recoveryError) {
-          console.error('❌ Recovery attempt failed:', recoveryError);
         }
       }
-      
+
       eventBus.emit('vueError', {
         error: error.message,
         component: instance?.$options?.name || 'Unknown',
@@ -891,25 +802,25 @@ function immediateSubscriptionRestore() {
         timestamp: Date.now()
       });
     };
-    
+
     // Mount the application
     app.mount('#app');
     isApplicationMounted = true;
     appLifecycle.mounted = true;
-    
+
     // Setup global subscription management
     setupEnhancedGlobalSubscriptionManagement();
-    
+
     // Mark app as fully initialized
     appLifecycle.initialized = true;
-    
+
     // Emit app ready event
     eventBus.emit('appReady', {
       userAuthenticated: !!store.getters['user/isAuthenticated'],
       userStatus: store.getters['user/userStatus'],
       timestamp: Date.now()
     });
-    
+
     // Final status propagation
     setTimeout(() => {
       const currentStatus = store.getters['user/userStatus'] || 'free';
@@ -920,85 +831,82 @@ function immediateSubscriptionRestore() {
         timestamp: Date.now()
       });
     }, 200);
-    
+
     return true;
-    
+
   } catch (error) {
-    console.error('❌ Failed to mount Vue app:', error);
-    
+
     eventBus.emit('appMountError', {
       error: error.message,
       timestamp: Date.now()
     });
-    
+
     throw error;
   }
-  }
-  
-  // ============================================================================
-  // 🔥 BASIC VUE APPLICATION MOUNTING (FALLBACK)
-  // ============================================================================
-  async function mountVueApplicationBasic() {
-  
+}
+
+// ============================================================================
+// 🔥 BASIC VUE APPLICATION MOUNTING (FALLBACK)
+// ============================================================================
+async function mountVueApplicationBasic() {
+
   try {
     app = createApp(App);
-    
+
     // Basic plugins only
     app.use(store);
     app.use(router);
     app.use(i18n);
-    
+
     // Basic error handler
     app.config.errorHandler = (error, instance, info) => {
-      console.error('❌ Vue error (basic mode):', error);
     };
-    
+
     // Mount the application
     app.mount('#app');
     isApplicationMounted = true;
     appLifecycle.mounted = true;
-    
+
     return true;
-    
+
   } catch (error) {
-    console.error('❌ Failed to mount Vue app even in basic mode:', error);
     throw error;
   }
-  }
-  
-  // ============================================================================
-  // 🔥 ENHANCED GLOBAL EVENT TRIGGERING SYSTEM (MOVED UP)
-  // ============================================================================
-  
-  window.triggerGlobalEvent = (eventName, data = {}) => {
+}
+
+// ============================================================================
+// 🔥 ENHANCED GLOBAL EVENT TRIGGERING SYSTEM (MOVED UP)
+// ============================================================================
+
+window.triggerGlobalEvent = (eventName, data = {}) => {
   if (typeof window === 'undefined') return;
-  
+
   try {
-    
+
     // ✅ CRITICAL FIX: Handle empty string and extract actual status
     const { newStatus, plan, userStatus, subscriptionPlan, oldStatus } = data;
-    
+
     // ✅ CRITICAL: Filter out empty strings and invalid values
     const validStatus = (status) => {
-      return status && 
-             status !== '' && 
-             status !== 'undefined' && 
-             status !== undefined && 
-             status !== null &&
-             ['free', 'start', 'pro', 'premium'].includes(status);
+      return status &&
+        status !== '' &&
+        status !== 'undefined' &&
+        status !== undefined &&
+        status !== null &&
+        ['free', 'start', 'pro', 'premium'].includes(status);
     };
-    
+
     // Find the first valid status or default to preserving current
     let actualNewStatus = null;
     const possibleStatuses = [newStatus, plan, userStatus, subscriptionPlan];
-    
+
     for (const status of possibleStatuses) {
       if (validStatus(status)) {
         actualNewStatus = status;
         break;
       }
     }
-    
+
     // If no valid status found, get current status from localStorage
     if (!actualNewStatus) {
       const currentLocalStatus = localStorage.getItem('userStatus');
@@ -1008,7 +916,7 @@ function immediateSubscriptionRestore() {
         actualNewStatus = 'free'; // Ultimate fallback
       }
     }
-    
+
     const enhancedData = {
       ...data,
       eventName,
@@ -1022,8 +930,8 @@ function immediateSubscriptionRestore() {
       subscriptionPlan: actualNewStatus,
       oldStatus: oldStatus || 'free'
     };
-  
-  
+
+
     // Multiple event dispatch methods for maximum compatibility
     const customEvent = new CustomEvent(eventName, {
       detail: enhancedData,
@@ -1031,11 +939,11 @@ function immediateSubscriptionRestore() {
       cancelable: true
     });
     window.dispatchEvent(customEvent);
-  
+
     if (window.eventBus?.emit) {
       window.eventBus.emit(eventName, enhancedData);
     }
-  
+
     // Cross-tab communication for important events
     if (eventName.includes('Status') || eventName.includes('Subscription')) {
       try {
@@ -1044,26 +952,24 @@ function immediateSubscriptionRestore() {
           bubbles: true
         });
         window.dispatchEvent(storageEvent);
-        
+
         localStorage.setItem('lastGlobalEvent', JSON.stringify({
           eventName,
           data: enhancedData,
           timestamp: Date.now()
         }));
       } catch (storageError) {
-        console.warn('⚠️ Storage event failed:', storageError);
       }
     }
-  
+
   } catch (eventError) {
-    console.error(`❌ Failed to trigger global event '${eventName}':`, eventError);
   }
-  };
-  
-  // ============================================================================
-  // 🚀 ENHANCED EVENT BUS (MOVED UP)
-  // ============================================================================
-  class AdvancedEventBus {
+};
+
+// ============================================================================
+// 🚀 ENHANCED EVENT BUS (MOVED UP)
+// ============================================================================
+class AdvancedEventBus {
   constructor() {
     this.events = {};
     this.debugMode = import.meta.env.DEV;
@@ -1071,46 +977,44 @@ function immediateSubscriptionRestore() {
     this.errorHandlers = new Set();
     this.statusChangeListeners = new Set();
   }
-  
+
   emit(event, data) {
     if (this.debugMode) {
-      console.log(`📡 EventBus: Emitting "${event}"`, data);
     }
-    
+
     if (this.events[event]) {
       this.events[event].forEach(callback => {
         try {
           callback(data);
         } catch (error) {
-          console.error(`❌ EventBus error in "${event}" handler:`, error);
           this.handleEventError(event, error, data);
         }
       });
     }
-    
+
     if (event.includes('status') || event.includes('Status') || event.includes('subscription') || event.includes('Subscription')) {
       this.notifyStatusChangeListeners(event, data);
       this.notifySubscriptionListeners(event, data);
     }
-    
+
     if (event.includes('subscription') || event.includes('promocode') || event.includes('payment')) {
       this.notifySubscriptionListeners(event, data);
     }
   }
-  
+
   on(event, callback) {
     if (!this.events[event]) {
       this.events[event] = [];
     }
     this.events[event].push(callback);
   }
-  
+
   off(event, callback) {
     if (this.events[event]) {
       this.events[event] = this.events[event].filter(cb => cb !== callback);
     }
   }
-  
+
   once(event, callback) {
     const onceCallback = (data) => {
       callback(data);
@@ -1118,86 +1022,82 @@ function immediateSubscriptionRestore() {
     };
     this.on(event, onceCallback);
   }
-  
+
   onStatusChange(callback) {
     this.statusChangeListeners.add(callback);
     return () => this.statusChangeListeners.delete(callback);
   }
-  
+
   notifyStatusChangeListeners(event, data) {
     this.statusChangeListeners.forEach(callback => {
       try {
         callback(event, data);
       } catch (error) {
-        console.error('❌ Status change listener error:', error);
       }
     });
   }
-  
+
   onSubscriptionChange(callback) {
     this.subscriptionListeners.add(callback);
     return () => this.subscriptionListeners.delete(callback);
   }
-  
+
   notifySubscriptionListeners(event, data) {
     this.subscriptionListeners.forEach(callback => {
       try {
         callback(event, data);
       } catch (error) {
-        console.error('❌ Subscription listener error:', error);
       }
     });
   }
-  
+
   onError(callback) {
     this.errorHandlers.add(callback);
     return () => this.errorHandlers.delete(callback);
   }
-  
+
   handleEventError(event, error, data) {
     this.errorHandlers.forEach(handler => {
       try {
         handler(event, error, data);
       } catch (handlerError) {
-        console.error('❌ Error handler failed:', handlerError);
       }
     });
   }
-  
+
   clear() {
     this.events = {};
     this.subscriptionListeners.clear();
     this.errorHandlers.clear();
     this.statusChangeListeners.clear();
   }
-  }
-  
-  // ============================================================================
-  // 🔥 STORE MUTATION INTERCEPTOR FOR AUTOMATIC EVENT TRIGGERING
-  // ============================================================================
-  const setupStoreInterceptor = (store) => {
+}
+
+// ============================================================================
+// 🔥 STORE MUTATION INTERCEPTOR FOR AUTOMATIC EVENT TRIGGERING
+// ============================================================================
+const setupStoreInterceptor = (store) => {
   store.subscribe((mutation, state) => {
-    
+
     // User-related mutations that should trigger global events
     const userMutations = [
       'user/SET_USER_STATUS',
       'user/setUserStatus',
-      'user/UPDATE_SUBSCRIPTION', 
+      'user/UPDATE_SUBSCRIPTION',
       'user/ADD_PROMOCODE',
       'user/FORCE_UPDATE',
       'user/SET_USER'
     ];
-    
+
     if (userMutations.includes(mutation.type)) {
-      console.log('📡 User-related mutation detected, triggering global events');
-      
+
       const currentStatus = state.user?.userStatus || 'free';
       let oldStatus = 'free';
-      
+
       if (mutation.type === 'user/SET_USER_STATUS' && mutation.payload) {
         oldStatus = currentStatus;
       }
-      
+
       const eventData = {
         oldStatus,
         newStatus: currentStatus,
@@ -1209,7 +1109,7 @@ function immediateSubscriptionRestore() {
         timestamp: Date.now(),
         forceCounter: state.user?.system?.forceUpdateCounter || 0
       };
-      
+
       // Trigger multiple event types for compatibility
       const eventTypes = [
         'userStatusChanged',
@@ -1219,63 +1119,63 @@ function immediateSubscriptionRestore() {
         'reactivityUpdate',
         'storeChanged'
       ];
-      
+
       eventTypes.forEach(eventType => {
         window.triggerGlobalEvent(eventType, { ...eventData, eventType });
       });
-      
+
       // Delayed event for stubborn components
       setTimeout(() => {
         window.triggerGlobalEvent('delayedStatusUpdate', eventData);
       }, 100);
     }
   });
-  };
-  
-  // Create and export global event bus
-  const eventBus = new AdvancedEventBus();
-  window.eventBus = eventBus;
-  export { eventBus };
-  
-  // ============================================================================
-  // 🌐 INTERNATIONALIZATION SETUP
-  // ============================================================================
-  const i18n = createI18n({
+};
+
+// Create and export global event bus
+const eventBus = new AdvancedEventBus();
+window.eventBus = eventBus;
+export { eventBus };
+
+// ============================================================================
+// 🌐 INTERNATIONALIZATION SETUP
+// ============================================================================
+const i18n = createI18n({
   legacy: false,
   locale: localStorage.getItem('lang') || 'ru',
   fallbackLocale: 'en',
   messages,
-  });
-  
-  // ============================================================================
-  // 🎯 APPLICATION STATE MANAGEMENT
-  // ============================================================================
-  let app;
-  let isApplicationMounted = false;
-  
-  // Track app lifecycle
-  const appLifecycle = {
+});
+
+// ============================================================================
+// 🎯 APPLICATION STATE MANAGEMENT
+// ============================================================================
+let app;
+let isApplicationMounted = false;
+
+// Track app lifecycle
+const appLifecycle = {
   initialized: false,
   mounted: false,
   authReady: false,
   storeReady: false
-  };
-  
-  // ============================================================================
-  // 🌐 ENHANCED GLOBAL SUBSCRIPTION MANAGEMENT
-  // ============================================================================
-  function setupEnhancedGlobalSubscriptionManagement() {
-  
+};
+
+// ============================================================================
+// 🌐 ENHANCED GLOBAL SUBSCRIPTION MANAGEMENT
+// ============================================================================
+function setupEnhancedGlobalSubscriptionManagement() {
+
   const handleGlobalSubscriptionChange = (event) => {
-    
+
     // ✅ CRITICAL FIX: Extract plan from event detail with multiple fallbacks AND message parsing
     const { plan, newStatus, userStatus, subscriptionPlan, message } = event.detail || {};
     let actualPlan = plan || newStatus || userStatus || subscriptionPlan;
     const { source, oldPlan, timestamp } = event.detail || {};
-    
+
     // ✅ CRITICAL: If plan is empty/undefined but we have a success message, parse it
     if ((!actualPlan || actualPlan === '' || actualPlan === 'undefined') && message) {
-      
+
       // Parse plan from success messages
       if (message.includes('START') || message.includes('start')) {
         actualPlan = 'start';
@@ -1285,13 +1185,13 @@ function immediateSubscriptionRestore() {
         actualPlan = 'free';
       }
     }
-    
+
     // ✅ CRITICAL: Check if this is a promocode success and localStorage was updated
     if (source === 'promocode' && (!actualPlan || actualPlan === '')) {
       const localStatus = localStorage.getItem('userStatus');
       const localPlan = localStorage.getItem('userPlan');
       const localSubscription = localStorage.getItem('subscriptionPlan');
-      
+
       // Use localStorage value if it's valid and not 'free'
       const possiblePlans = [localStatus, localPlan, localSubscription];
       for (const possiblePlan of possiblePlans) {
@@ -1301,58 +1201,47 @@ function immediateSubscriptionRestore() {
         }
       }
     }
-    
+
     // Final fallback
     if (!actualPlan || actualPlan === '' || actualPlan === 'undefined') {
       actualPlan = 'free';
     }
-    
-    console.log('🔍 Extracted plan values:', {
-      plan,
-      newStatus,
-      userStatus,
-      subscriptionPlan,
-      message,
-      actualPlan,
-      eventDetail: event.detail
-    });
-    
+
+
     // ✅ CRITICAL: Validate the plan before proceeding
     if (!['free', 'start', 'pro', 'premium'].includes(actualPlan)) {
-      console.warn('⚠️ Invalid plan detected, defaulting to free:', actualPlan);
       actualPlan = 'free';
     }
-    
+
     // Update page title
     const planLabel = actualPlan === 'pro' ? 'Pro' : actualPlan === 'start' ? 'Start' : 'Free';
     if (document.title && !document.title.includes('|')) {
       document.title = `ACED | ${planLabel}`;
     }
-    
+
     // Update body classes for CSS styling
     document.body.className = document.body.className.replace(/user-plan-\w+/g, '');
     document.body.classList.add(`user-plan-${actualPlan}`);
-    
+
     // Update localStorage immediately with all variations
     localStorage.setItem('userStatus', actualPlan);
     localStorage.setItem('userPlan', actualPlan);
     localStorage.setItem('subscriptionPlan', actualPlan);
     localStorage.setItem('statusUpdateTime', Date.now().toString());
-    
+
     // Update store if not already updated
     try {
       const currentStoreStatus = store.getters['user/userStatus'];
-      
+
       if (currentStoreStatus !== actualPlan) {
         store.commit('user/SET_USER_STATUS', actualPlan);
-        
+
         // Also try legacy mutations
         try {
           store.commit('user/setUserStatus', actualPlan);
         } catch (e) {
-          console.log('Legacy setUserStatus not available');
         }
-        
+
         // Direct state update as backup
         if (store.state.user) {
           store.state.user.userStatus = actualPlan;
@@ -1361,18 +1250,16 @@ function immediateSubscriptionRestore() {
         }
       }
     } catch (storeError) {
-      console.warn('⚠️ Failed to sync store:', storeError);
     }
-    
+
     // Force Vue app update
     if (app?._instance) {
       try {
         app._instance.proxy.$forceUpdate();
       } catch (error) {
-        console.warn('⚠️ Failed to force Vue update:', error);
       }
     }
-    
+
     // ✅ CRITICAL: Emit multiple event types with the ACTUAL plan value
     const eventData = {
       reason: 'subscription-change',
@@ -1385,7 +1272,7 @@ function immediateSubscriptionRestore() {
       timestamp: timestamp || Date.now(),
       message: message // Preserve original message
     };
-    
+
     const eventTypes = [
       'globalForceUpdate',
       'reactivityUpdate',
@@ -1393,16 +1280,15 @@ function immediateSubscriptionRestore() {
       'userStatusChanged',
       'planChanged'
     ];
-    
+
     eventTypes.forEach(eventType => {
       eventBus.emit(eventType, eventData);
     });
-    
+
     // Show celebration for upgrades
     if (actualPlan !== 'free' && (oldPlan === 'free' || !oldPlan)) {
       const sourceText = source === 'promocode' ? 'промокоду' : 'оплате';
-      console.log(`🎉 Subscription upgraded to ${planLabel} via ${sourceText}!`);
-      
+
       eventBus.emit('subscriptionUpgrade', {
         plan: actualPlan,
         newStatus: actualPlan,
@@ -1412,20 +1298,20 @@ function immediateSubscriptionRestore() {
       });
     }
   };
-  
+
   // Register enhanced global DOM event listeners
   const eventTypesToListen = [
     'userSubscriptionChanged',
-    'userStatusChanged', 
+    'userStatusChanged',
     'subscriptionUpdated',
     'globalForceUpdate',
     'reactivityUpdate'
   ];
-  
+
   eventTypesToListen.forEach(eventType => {
     window.addEventListener(eventType, handleGlobalSubscriptionChange);
   });
-  
+
   // Store reference for cleanup
   if (!window.globalEventHandlers) {
     window.globalEventHandlers = {
@@ -1434,20 +1320,19 @@ function immediateSubscriptionRestore() {
     };
   }
   window.globalEventHandlers.subscriptionHandlers.push(handleGlobalSubscriptionChange);
-  
+
   // Enhanced event bus subscription listeners
   eventBus.on('userStatusChanged', (data) => {
-    
+
     // ✅ CRITICAL FIX: Extract the actual status value with multiple fallbacks
     const { newStatus, plan, userStatus, subscriptionPlan } = data || {};
-    const actualStatus = newStatus || plan || userStatus || subscriptionPlan || 'free';
-    
+    let actualStatus = newStatus || plan || userStatus || subscriptionPlan || 'free';
+
     // ✅ CRITICAL: Validate the status
     if (!['free', 'start', 'pro', 'premium'].includes(actualStatus)) {
-      console.warn('⚠️ Invalid status in event bus, defaulting to free:', actualStatus);
       actualStatus = 'free';
     }
-    
+
     // Sync with localStorage using all field variations
     try {
       localStorage.setItem('userStatus', actualStatus);
@@ -1455,15 +1340,14 @@ function immediateSubscriptionRestore() {
       localStorage.setItem('subscriptionPlan', actualStatus);
       localStorage.setItem('statusUpdateTime', Date.now().toString());
     } catch (storageError) {
-      console.warn('⚠️ localStorage sync failed:', storageError);
     }
-    
+
     // ✅ CRITICAL: Also update the store to ensure consistency
     try {
       const currentStoreStatus = store.getters['user/userStatus'];
       if (currentStoreStatus !== actualStatus) {
         store.commit('user/SET_USER_STATUS', actualStatus);
-        
+
         // Try legacy mutations too
         try {
           store.commit('user/setUserStatus', actualStatus);
@@ -1472,26 +1356,24 @@ function immediateSubscriptionRestore() {
         }
       }
     } catch (storeError) {
-      console.warn('⚠️ Store update failed in event bus:', storeError);
     }
-    
+
     // Force app update with error handling
     if (app?._instance) {
       try {
         app._instance.proxy.$forceUpdate();
-        
+
         // Also trigger $nextTick for delayed components
         app._instance.proxy.$nextTick(() => {
           // Do nothing, just trigger the tick
         });
       } catch (error) {
-        console.warn('⚠️ Failed to force update on status change:', error);
       }
     }
   });
-  
+
   eventBus.on('promocodeApplied', (data) => {
-    
+
     // Create DOM event for global propagation
     const domEvent = new CustomEvent('userSubscriptionChanged', {
       detail: {
@@ -1504,10 +1386,9 @@ function immediateSubscriptionRestore() {
     });
     window.dispatchEvent(domEvent);
   });
-  
+
   eventBus.on('paymentCompleted', (data) => {
-    console.log('💳 Payment completed:', data);
-    
+
     // Create DOM event for global propagation
     const domEvent = new CustomEvent('userSubscriptionChanged', {
       detail: {
@@ -1521,15 +1402,14 @@ function immediateSubscriptionRestore() {
     });
     window.dispatchEvent(domEvent);
   });
-  
+
   // Enhanced storage event listener for cross-tab sync
   window.addEventListener('storage', (event) => {
     if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
-      console.log('📡 Cross-tab userStatus change detected:', event.oldValue, '→', event.newValue);
-      
+
       const newStatus = event.newValue || 'free';
       const oldStatus = event.oldValue || 'free';
-      
+
       // Trigger global event for cross-tab sync
       window.triggerGlobalEvent('userStatusChanged', {
         oldStatus,
@@ -1539,22 +1419,19 @@ function immediateSubscriptionRestore() {
       });
     }
   });
-  
+
   // Periodic status consistency check
   setInterval(() => {
     try {
       const storeStatus = store.getters['user/userStatus'];
       const localStatus = localStorage.getItem('userStatus');
-      
+
       if (storeStatus && localStatus && storeStatus !== localStatus) {
-        console.log('🔄 Periodic check: Status mismatch detected, syncing...', {
-          store: storeStatus,
-          localStorage: localStatus
-        });
-        
+
+
         // Prefer store status and update localStorage
         localStorage.setItem('userStatus', storeStatus);
-        
+
         // Trigger sync event
         window.triggerGlobalEvent('userStatusChanged', {
           oldStatus: localStatus,
@@ -1564,29 +1441,26 @@ function immediateSubscriptionRestore() {
         });
       }
     } catch (error) {
-      console.warn('⚠️ Periodic status check failed:', error);
     }
   }, 30000); // Check every 30 seconds
-  
-  console.log('✅ Enhanced global subscription management setup complete');
-  }
-  
-  // ============================================================================
-  // 🌟 ENHANCED GLOBAL ERROR HANDLING
-  // ============================================================================
-  
-  // Enhanced global JavaScript error handler
-  window.addEventListener('error', (event) => {
-  console.error('❌ Global JavaScript error:', event.error);
-  
+
+}
+
+// ============================================================================
+// 🌟 ENHANCED GLOBAL ERROR HANDLING
+// ============================================================================
+
+// Enhanced global JavaScript error handler
+window.addEventListener('error', (event) => {
+
   // Check if error is related to user status/arrays
-  if (event.error?.message?.includes('length') || 
-      event.error?.message?.includes('Cannot read properties of undefined')) {
-    
+  if (event.error?.message?.includes('length') ||
+    event.error?.message?.includes('Cannot read properties of undefined')) {
+
     try {
       // Force store update
       store.commit('user/FORCE_UPDATE');
-      
+
       // Trigger global reactivity update
       window.triggerGlobalEvent('globalForceUpdate', {
         reason: 'global-error-recovery',
@@ -1594,10 +1468,9 @@ function immediateSubscriptionRestore() {
         timestamp: Date.now()
       });
     } catch (recoveryError) {
-      console.error('❌ Error recovery failed:', recoveryError);
     }
   }
-  
+
   eventBus.emit('globalJavaScriptError', {
     error: event.error?.message || 'Unknown error',
     filename: event.filename,
@@ -1605,17 +1478,15 @@ function immediateSubscriptionRestore() {
     colno: event.colno,
     timestamp: Date.now()
   });
-  });
-  
-  // Enhanced unhandled promise rejection handler
-  window.addEventListener('unhandledrejection', (event) => {
-  console.error('❌ Unhandled promise rejection:', event.reason);
-  
+});
+
+// Enhanced unhandled promise rejection handler
+window.addEventListener('unhandledrejection', (event) => {
+
   // Check if rejection is related to user status operations
-  if (event.reason?.message?.includes('userStatus') || 
-      event.reason?.message?.includes('subscription')) {
-    console.log('🔄 Attempting user status recovery after promise rejection...');
-    
+  if (event.reason?.message?.includes('userStatus') ||
+    event.reason?.message?.includes('subscription')) {
+
     try {
       window.triggerGlobalEvent('globalForceUpdate', {
         reason: 'promise-rejection-recovery',
@@ -1623,41 +1494,36 @@ function immediateSubscriptionRestore() {
         timestamp: Date.now()
       });
     } catch (recoveryError) {
-      console.error('❌ Promise rejection recovery failed:', recoveryError);
     }
   }
-  
+
   eventBus.emit('unhandledPromiseRejection', {
     reason: event.reason?.message || event.reason,
     timestamp: Date.now()
   });
-  });
-  
-  // ============================================================================
-  // 🔧 ENHANCED GLOBAL HELPER FUNCTIONS
-  // ============================================================================
-  
-  // Enhanced helper functions for components
-  window.addEventListener('DOMContentLoaded', () => {
+});
+
+// ============================================================================
+// 🔧 ENHANCED GLOBAL HELPER FUNCTIONS
+// ============================================================================
+
+// Enhanced helper functions for components
+window.addEventListener('DOMContentLoaded', () => {
   // Enhanced Status change helper with validation
   window.emitUserStatusChange = (oldStatus, newStatus, source = 'unknown') => {
-    console.log('🔧 Helper: emitUserStatusChange called', { oldStatus, newStatus, source });
-    
+
     // Validate status values
     const validStatuses = ['free', 'start', 'pro', 'premium'];
     if (!validStatuses.includes(newStatus)) {
-      console.error('❌ Invalid newStatus:', newStatus);
       return;
     }
-    
+
     // ✅ CRITICAL: Update store immediately
     try {
       store.commit('user/SET_USER_STATUS', newStatus);
-      console.log('✅ Store updated with new status:', newStatus);
     } catch (storeError) {
-      console.error('❌ Failed to update store:', storeError);
     }
-    
+
     // Update localStorage immediately with all variations
     try {
       localStorage.setItem('userStatus', newStatus);
@@ -1665,130 +1531,104 @@ function immediateSubscriptionRestore() {
       localStorage.setItem('subscriptionPlan', newStatus);
       localStorage.setItem('statusUpdateTime', Date.now().toString());
     } catch (storageError) {
-      console.warn('⚠️ localStorage update failed:', storageError);
     }
-    
+
     // ✅ CRITICAL: Trigger multiple events immediately
-    const eventData = { 
-      oldStatus, 
-      newStatus, 
+    const eventData = {
+      oldStatus,
+      newStatus,
       source,
-      timestamp: Date.now() 
+      timestamp: Date.now()
     };
-    
+
     window.triggerGlobalEvent('userStatusChanged', eventData);
     window.triggerGlobalEvent('userSubscriptionChanged', eventData);
     window.triggerGlobalEvent('subscriptionUpdated', eventData);
-    window.triggerGlobalEvent('globalForceUpdate', { 
+    window.triggerGlobalEvent('globalForceUpdate', {
       reason: 'manual-status-change',
       plan: newStatus,
-      timestamp: Date.now() 
+      timestamp: Date.now()
     });
-    
+
     // Force Vue app update if available
     if (app?._instance) {
       try {
         app._instance.proxy.$forceUpdate();
-        console.log('🔄 Forced Vue update after manual status change');
       } catch (error) {
-        console.warn('⚠️ Failed to force Vue update:', error);
       }
     }
-    
-    console.log('✅ Status change completed:', oldStatus, '→', newStatus);
+
   };
-  
+
   // Enhanced Force update helper
   window.emitForceUpdate = (reason = 'manual') => {
-    console.log('🔧 Helper: emitForceUpdate called', { reason });
-    
+
     // Trigger through global event system
-    window.triggerGlobalEvent('globalForceUpdate', { 
+    window.triggerGlobalEvent('globalForceUpdate', {
       reason,
-      timestamp: Date.now() 
+      timestamp: Date.now()
     });
-    
+
     // Also force store update
     try {
       store.commit('user/FORCE_UPDATE');
     } catch (error) {
-      console.warn('⚠️ Store force update failed:', error);
     }
   };
-  
+
   // Enhanced User change listener helper with cleanup
   window.listenToUserChanges = (callback) => {
-    console.log('🔧 Helper: listenToUserChanges called');
-    
+
     const events = [
-      'userStatusChanged', 
-      'promocodeApplied', 
-      'featuresUpdated', 
+      'userStatusChanged',
+      'promocodeApplied',
+      'featuresUpdated',
       'globalForceUpdate',
       'subscriptionUpdated',
       'reactivityUpdate'
     ];
-    
+
     // Register EventBus listeners
     events.forEach(event => eventBus.on(event, callback));
-    
+
     // Also register DOM event listener for userSubscriptionChanged
     window.addEventListener('userSubscriptionChanged', callback);
-    
+
     // Return cleanup function
     return () => {
       events.forEach(event => eventBus.off(event, callback));
       window.removeEventListener('userSubscriptionChanged', callback);
-      console.log('🧹 Helper: User change listeners cleaned up');
     };
   };
-  
+
   // Direct store status getter helper
   window.getCurrentUserStatus = () => {
     try {
       const storeStatus = store.getters['user/userStatus'];
       const localStatus = localStorage.getItem('userStatus');
-      
-      console.log('🔍 getCurrentUserStatus debug:', {
-        storeStatus,
-        storeStatusType: typeof storeStatus,
-        localStatus,
-        localStatusType: typeof localStatus,
-        storeState: store.state.user,
-        availableGetters: Object.keys(store.getters).filter(g => g.includes('user'))
-      });
-      
+
+
+
       // Return local storage if store is undefined/null
       return storeStatus || localStatus || 'free';
     } catch (error) {
-      console.warn('⚠️ Failed to get user status from store:', error);
       return localStorage.getItem('userStatus') || 'free';
     }
   };
-  
+
   // ✅ NEW: Store status repair function
   window.repairStoreStatus = () => {
-    console.log('🔧 Attempting to repair store status...');
-    
-    const localStatus = localStorage.getItem('userStatus') || 
-                       localStorage.getItem('userPlan') || 
-                       localStorage.getItem('subscriptionPlan') || 
-                       'free';
-    console.log('📦 Local status to restore:', localStatus);
-    
+
+    const localStatus = localStorage.getItem('userStatus') ||
+      localStorage.getItem('userPlan') ||
+      localStorage.getItem('subscriptionPlan') ||
+      'free';
+
     try {
-      // ✅ CRITICAL: Check if store.state.user exists at all
-      console.log('🔍 Store state inspection:', {
-        hasUserState: !!store.state.user,
-        userState: store.state.user,
-        availableModules: Object.keys(store.state),
-        availableGetters: Object.keys(store.getters).filter(g => g.includes('user'))
-      });
-      
+
       // ✅ CRITICAL: Initialize user state if it doesn't exist
       if (!store.state.user) {
-        console.log('🏗️ Creating missing user state...');
-        
+
         // Try to register the user module if it's missing
         try {
           store.registerModule('user', {
@@ -1812,10 +1652,8 @@ function immediateSubscriptionRestore() {
               CLEAR_USER: (state) => { state.user = null; state.userStatus = 'free'; }
             }
           });
-          console.log('✅ User module registered successfully');
         } catch (moduleError) {
-          console.warn('⚠️ Module registration failed:', moduleError);
-          
+
           // Manual state creation as last resort
           store.state.user = {
             user: null,
@@ -1824,74 +1662,61 @@ function immediateSubscriptionRestore() {
             isAuthenticated: false,
             isInitialized: true
           };
-          console.log('✅ Manual user state created');
         }
       }
-      
+
       // Try different possible mutations
       const mutations = [
         'user/SET_USER_STATUS',
-        'user/setUserStatus', 
+        'user/setUserStatus',
         'user/SET_STATUS',
         'user/UPDATE_USER_STATUS',
         'setUserStatus'
       ];
-      
+
       mutations.forEach(mutation => {
         try {
           store.commit(mutation, localStatus);
-          console.log(`✅ Successfully used mutation: ${mutation}`);
         } catch (e) {
-          console.log(`⚠️ Mutation ${mutation} not available:`, e.message);
         }
       });
-      
+
       // ✅ CRITICAL: Direct state update regardless of mutations
       if (store.state.user) {
         store.state.user.userStatus = localStatus;
         store.state.user.subscriptionPlan = localStatus;
         store.state.user.plan = localStatus;
-        console.log('✅ Direct state update completed');
       }
-      
+
       // Check the result
       const newStoreStatus = store.getters['user/userStatus'];
-      console.log('🔍 Store status after repair:', {
-        getter: newStoreStatus,
-        directState: store.state.user?.userStatus,
-        localStatus: localStatus
-      });
-      
+
       // ✅ CRITICAL: If getter still fails, create a working getter
       if (!newStoreStatus || newStoreStatus === 'undefined') {
-        console.log('🔧 Getter is broken, creating backup...');
-        
+
         // Create backup getter function
         window.getWorkingUserStatus = () => {
-          return store.state.user?.userStatus || 
-                 localStorage.getItem('userStatus') || 
-                 'free';
+          return store.state.user?.userStatus ||
+            localStorage.getItem('userStatus') ||
+            'free';
         };
-        
-        console.log('✅ Backup getter created: window.getWorkingUserStatus()');
+
       }
-      
+
       return newStoreStatus || localStatus;
-      
+
     } catch (error) {
-      console.error('❌ Store repair failed:', error);
       return localStatus;
     }
   };
-  
+
   // Status sync helper for components
   window.syncUserStatus = () => {
     try {
       const storeStatus = store.getters['user/userStatus'];
       const localStatus = localStorage.getItem('userStatus');
-      
-      console.log('🔄 Helper: syncUserStatus', { store: storeStatus, local: localStatus });
-      
+
+
       if (storeStatus && localStatus && storeStatus !== localStatus) {
         localStorage.setItem('userStatus', storeStatus);
         window.triggerGlobalEvent('userStatusChanged', {
@@ -1901,21 +1726,20 @@ function immediateSubscriptionRestore() {
           timestamp: Date.now()
         });
       }
-      
+
       return storeStatus || localStatus || 'free';
     } catch (error) {
-      console.error('❌ Helper: syncUserStatus failed:', error);
       return 'free';
     }
   };
-  });
-  
-  // ============================================================================
-  // 🚀 FINAL SETUP: EXPOSE CRITICAL FUNCTIONS GLOBALLY
-  // ============================================================================
-  
-  // Make critical functions available globally for emergency use
-  window.forceUserStatusSync = () => {
+});
+
+// ============================================================================
+// 🚀 FINAL SETUP: EXPOSE CRITICAL FUNCTIONS GLOBALLY
+// ============================================================================
+
+// Make critical functions available globally for emergency use
+window.forceUserStatusSync = () => {
   try {
     const currentStatus = store.getters['user/userStatus'] || 'free';
     window.triggerGlobalEvent('userStatusChanged', {
@@ -1924,34 +1748,27 @@ function immediateSubscriptionRestore() {
       source: 'emergency-sync',
       timestamp: Date.now()
     });
-    console.log('🚨 Emergency user status sync triggered');
   } catch (error) {
-    console.error('❌ Emergency sync failed:', error);
   }
-  };
-  
-  // ✅ Enhanced Error recovery with user status sync
-  async function recoverUserStatus() {
-  console.log('🔧 Attempting user status recovery...');
-  
+};
+
+// ✅ Enhanced Error recovery with user status sync
+async function recoverUserStatus() {
+
   try {
     // Try to get status from localStorage first
     const localStatus = localStorage.getItem('userStatus') || 'free';
     const localUser = localStorage.getItem('user');
-    
+
     if (localUser) {
       try {
         const parsedUser = JSON.parse(localUser);
-        
+
         // Update store with cached data
         store.commit('user/SET_USER', parsedUser);
         store.commit('user/SET_USER_STATUS', localStatus);
-        
-        console.log('✅ User status recovered from cache:', {
-          email: parsedUser.email,
-          status: localStatus
-        });
-        
+
+
         // Trigger status change event
         setTimeout(() => {
           triggerGlobalEvent('userStatusChanged', {
@@ -1961,20 +1778,18 @@ function immediateSubscriptionRestore() {
             timestamp: Date.now()
           });
         }, 100);
-        
+
         return true;
-        
+
       } catch (parseError) {
-        console.warn('⚠️ Failed to parse cached user:', parseError);
       }
     }
-    
+
     // If no cached data, set default state
     store.commit('user/SET_USER_STATUS', 'free');
     store.commit('user/CLEAR_USER');
-    
-    console.log('⚠️ No recoverable user data, set to default state');
-    
+
+
     setTimeout(() => {
       triggerGlobalEvent('userStatusChanged', {
         oldStatus: null,
@@ -1983,37 +1798,35 @@ function immediateSubscriptionRestore() {
         timestamp: Date.now()
       });
     }, 100);
-    
+
     return false;
-    
+
   } catch (error) {
-    console.error('❌ User status recovery failed:', error);
     return false;
   }
-  }
-  
-  // Development debugging tools
-  if (import.meta.env.DEV) {
+}
+
+// Development debugging tools
+if (import.meta.env.DEV) {
   // Expose core objects for debugging
   window.$store = store;
   window.$eventBus = eventBus;
   window.$userStatus = () => store.getters['user/userStatus'];
   window.$appLifecycle = appLifecycle;
   window.$authInitPromise = authInitPromise;
-  
+
   // ✅ NEW: Add emergency fix function to dev tools
   window.emergencyFixSubscription = function() {
-    console.log('🚨 Running emergency subscription fix...');
-    
+
     // 1. Clear all broken subscription data
     localStorage.removeItem('subscriptionData');
     localStorage.removeItem('subscriptionExpiry');
     localStorage.removeItem('subscriptionActivated');
-    
+
     // 2. Set up proper START subscription with 1-year expiry
     const now = new Date();
     const expiryDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
-    
+
     const subscriptionData = {
       plan: 'start',
       activatedAt: now.toISOString(),
@@ -2022,7 +1835,7 @@ function immediateSubscriptionRestore() {
       source: 'emergency-fix',
       status: 'active'
     };
-    
+
     // 3. Store the fixed subscription data
     localStorage.setItem('subscriptionData', JSON.stringify(subscriptionData));
     localStorage.setItem('subscriptionPlan', 'start');
@@ -2030,9 +1843,8 @@ function immediateSubscriptionRestore() {
     localStorage.setItem('subscriptionActivated', subscriptionData.activatedAt);
     localStorage.setItem('userStatus', 'start');
     localStorage.setItem('userPlan', 'start');
-    
-    console.log('✅ Emergency fix applied:', subscriptionData);
-    
+
+
     // 4. Trigger status update events
     if (window.triggerGlobalEvent) {
       window.triggerGlobalEvent('userStatusChanged', {
@@ -2042,24 +1854,20 @@ function immediateSubscriptionRestore() {
         timestamp: Date.now()
       });
     }
-    
+
     // 5. Update store if available
     if (window.$store) {
       try {
         window.$store.commit('user/SET_USER_STATUS', 'start');
-        console.log('✅ Store updated to START status');
       } catch (error) {
-        console.warn('⚠️ Store update failed:', error);
       }
     }
-    
-    console.log('🎉 Emergency fix complete! Your START subscription is now active for 1 year.');
-    console.log('📅 Expiry date:', expiryDate.toLocaleDateString());
-    console.log('🔄 Please refresh the page to see the changes.');
-    
+
+
+
     return subscriptionData;
   };
-  
+
   // ✅ CRITICAL: Add direct status testing functions
   window.testUserStatus = {
     setFree: () => {
@@ -2074,75 +1882,60 @@ function immediateSubscriptionRestore() {
       const currentStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unknown';
       window.emitUserStatusChange(currentStatus, 'pro', 'debug-test');
     },
-    
+
     getCurrentStatus: () => {
       const storeStatus = store.getters['user/userStatus'];
       const localStatus = localStorage.getItem('userStatus');
       const workingStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unavailable';
-      
-      console.log('📊 Status comparison:', { 
-        store: storeStatus, 
-        storeType: typeof storeStatus,
-        localStorage: localStatus,
-        localType: typeof localStatus,
-        workingGetter: workingStatus,
-        storeState: store.state.user?.userStatus,
-        storeExists: !!store.state.user,
-        storeRaw: store.state.user
-      });
-      
+
+
+
       // ✅ NEW: Check if store status is literally the string 'undefined'
       if (storeStatus === 'undefined' || storeStatus === undefined || storeStatus === null) {
-        console.warn('⚠️ Store status is invalid, attempting repair...');
         window.repairStoreStatus();
       }
-      
-      return { 
-        store: storeStatus, 
+
+      return {
+        store: storeStatus,
         localStorage: localStatus,
         working: workingStatus,
-        effective: workingStatus !== 'unavailable' ? workingStatus : (localStatus || 'free')
+        effective: workingStatus !== 'unavailable' ? (localStatus || 'free') : 'unknown'
       };
     },
-    
+
     forceStatusUpdate: (status) => {
       if (!['free', 'start', 'pro'].includes(status)) {
-        console.error('❌ Invalid status. Use: free, start, pro');
         return;
       }
-      
-      console.log('🔧 Forcing status update to:', status);
-      
+
+
       // ✅ CRITICAL: First repair the store if needed
       window.repairStoreStatus();
-      
+
       // Update store with multiple mutations and verify each one
       const mutations = [
         'user/SET_USER_STATUS',
         'user/setUserStatus',
-        'user/SET_STATUS', 
+        'user/SET_STATUS',
         'user/UPDATE_USER_STATUS',
         'setUserStatus'
       ];
-      
+
       mutations.forEach(mutation => {
         try {
           store.commit(mutation, status);
           const newValue = store.getters['user/userStatus'];
-          console.log(`✅ ${mutation}: ${newValue}`);
         } catch (e) {
-          console.log(`⚠️ ${mutation} not available`);
         }
       });
-      
+
       // ✅ CRITICAL: Direct state update if getters still fail
       if (store.state.user) {
         store.state.user.userStatus = status;
         store.state.user.subscriptionPlan = status;
         store.state.user.plan = status;
-        console.log('✅ Direct state update completed');
       }
-      
+
       // Update user object if it exists
       if (store.state.user && typeof store.state.user === 'object') {
         const userObj = store.getters['user/getUser'] || store.state.user;
@@ -2150,32 +1943,27 @@ function immediateSubscriptionRestore() {
           userObj.userStatus = status;
           userObj.subscriptionPlan = status;
           userObj.plan = status;
-          
+
           // Update user object in store
           try {
             store.commit('user/SET_USER', userObj);
-            console.log('✅ User object updated with new status');
           } catch (e) {
-            console.warn('⚠️ Failed to update user object:', e);
           }
         }
       }
-      
+
       // Update localStorage with all variations
       localStorage.setItem('userStatus', status);
       localStorage.setItem('userPlan', status);
       localStorage.setItem('subscriptionPlan', status);
       localStorage.setItem('statusUpdateTime', Date.now().toString());
-      console.log('✅ localStorage updated with all status variations');
-      
+
       // ✅ CRITICAL: Force store reactivity
       try {
         store.commit('user/FORCE_UPDATE');
-        console.log('✅ Store reactivity forced');
       } catch (e) {
-        console.log('⚠️ FORCE_UPDATE not available');
       }
-      
+
       // Trigger all events with proper data structure
       const eventData = {
         oldStatus: null,
@@ -2186,7 +1974,7 @@ function immediateSubscriptionRestore() {
         source: 'debug-force',
         timestamp: Date.now()
       };
-      
+
       window.triggerGlobalEvent('userStatusChanged', eventData);
       window.triggerGlobalEvent('userSubscriptionChanged', eventData);
       window.triggerGlobalEvent('subscriptionUpdated', eventData);
@@ -2196,36 +1984,27 @@ function immediateSubscriptionRestore() {
         newStatus: status,
         timestamp: Date.now()
       });
-      
+
       // Force Vue update
       if (app?._instance) {
         try {
           app._instance.proxy.$forceUpdate();
-          console.log('✅ Vue app force updated');
         } catch (error) {
-          console.warn('⚠️ Vue force update failed:', error);
         }
       }
-      
-      console.log('✅ Status forced to:', status);
-      
+
+
       // Verify the change worked
       setTimeout(() => {
         const verification = window.testUserStatus.getCurrentStatus();
-        console.log('🔍 Status change verification:', verification);
-        
+
         // Additional verification
         const finalStoreStatus = store.getters['user/userStatus'];
         const finalLocalStatus = localStorage.getItem('userStatus');
-        console.log('🔍 Final verification:', {
-          store: finalStoreStatus,
-          localStorage: finalLocalStatus,
-          storeState: store.state.user?.userStatus
-        });
       }, 100);
     }
   };
-  
+
   // Enhanced debugging helpers
   window.debugAuth = {
     getAuthState: () => ({
@@ -2235,7 +2014,7 @@ function immediateSubscriptionRestore() {
       userStatus: store.getters['user/userStatus'],
       isAuthenticated: store.getters['user/isAuthenticated']
     }),
-    
+
     forceAuthComplete: () => {
       if (!authStateResolved && authResolveFunction) {
         authStateResolved = true;
@@ -2246,24 +2025,20 @@ function immediateSubscriptionRestore() {
           forced: true,
           timestamp: Date.now()
         });
-        console.log('🔧 Debug: Forced auth completion');
       }
     },
-    
+
     testAuthFlow: async () => {
-      console.log('🔧 Debug: Testing auth flow...');
       try {
         await authInitPromise;
-        console.log('✅ Debug: Auth promise resolved successfully');
       } catch (error) {
-        console.error('❌ Debug: Auth promise failed:', error);
       }
     },
-    
+
     recoverUserStatus: () => {
       return recoverUserStatus();
     },
-    
+
     testSaveUser: async () => {
       try {
         const testUser = {
@@ -2271,27 +2046,23 @@ function immediateSubscriptionRestore() {
           email: 'test@example.com',
           displayName: 'Test User'
         };
-        
+
         const testToken = 'test-token-' + Date.now();
-        
-        console.log('🧪 Testing saveUser action...');
-        const result = await store.dispatch('user/saveUser', { 
-          userData: testUser, 
-          token: testToken 
+
+        const result = await store.dispatch('user/saveUser', {
+          userData: testUser,
+          token: testToken
         });
-        
-        console.log('🧪 Test result:', result);
+
         return result;
-        
+
       } catch (error) {
-        console.error('🧪 Test failed:', error);
         return { success: false, error: error.message };
       }
     },
-    
+
     forceBasicAuth: () => {
-      console.log('🔧 Forcing basic authentication mode...');
-      
+
       const mockUser = {
         uid: 'mock-user-' + Date.now(),
         email: 'mock@example.com',
@@ -2299,30 +2070,28 @@ function immediateSubscriptionRestore() {
         emailVerified: true,
         photoURL: null
       };
-      
+
       return handleBasicUserAuthentication(mockUser);
     },
-    
+
     clearAuthState: () => {
-      console.log('🧹 Clearing all authentication state...');
-      
+
       try {
         // Clear store
         store.commit('user/CLEAR_USER');
         store.commit('logout');
-        
+
         // Clear localStorage
         const keysToRemove = [
-          'user', 'firebaseUserId', 'userId', 'token', 
+          'user', 'firebaseUserId', 'userId', 'token',
           'userStatus', 'lastLoginTime', 'authMode'
         ];
-        
+
         keysToRemove.forEach(key => {
           localStorage.removeItem(key);
         });
-        
-        console.log('✅ Authentication state cleared');
-        
+
+
         // Trigger events
         setTimeout(() => {
           triggerGlobalEvent('userStatusChanged', {
@@ -2332,15 +2101,14 @@ function immediateSubscriptionRestore() {
             timestamp: Date.now()
           });
         }, 100);
-        
+
         return true;
-        
+
       } catch (error) {
-        console.error('❌ Failed to clear auth state:', error);
         return false;
       }
     },
-    
+
     getDetailedAuthState: () => {
       return {
         store: {
@@ -2360,81 +2128,41 @@ function immediateSubscriptionRestore() {
       };
     }
   };
-  
-  console.log(`
-  🐛 ENHANCED DEVELOPMENT DEBUG COMMANDS AVAILABLE:
-  
-  🔐 AUTHENTICATION DEBUGGING:
-  - debugAuth.getAuthState(): Check current auth state
-  - debugAuth.forceAuthComplete(): Force auth completion (emergency)
-  - debugAuth.testAuthFlow(): Test auth promise resolution
-  - debugAuth.testSaveUser(): Test the saveUser action
-  - debugAuth.forceBasicAuth(): Force basic authentication mode
-  - debugAuth.clearAuthState(): Clear all auth data
-  - debugAuth.recoverUserStatus(): Recover from cache
-  - $authInitPromise: Auth initialization promise
-  
-  📊 USER STATUS DEBUGGING:
-  - $userStatus(): Get current user status
-  - window.getCurrentUserStatus(): Safe status getter
-  - window.syncUserStatus(): Sync status between store and localStorage
-  - window.forceUserStatusSync(): Emergency status sync
-  - window.emergencyFixSubscription(): 🚨 FIXES CORRUPTED SUBSCRIPTION
-  
-  🔧 GLOBAL HELPERS:
-  - window.triggerGlobalEvent(eventName, data): Trigger global events
-  - window.emitUserStatusChange(old, new, source): Emit status change
-  - window.emitForceUpdate(reason): Force global update
-  - window.listenToUserChanges(callback): Listen to user changes
-  
-  ⚠️ EMERGENCY FUNCTIONS:
-  - window.forceUserStatusSync(): Emergency status sync
-  - debugAuth.forceAuthComplete(): Force auth completion
-  `);
-  }
-  
-  
-  console.log('✅ UNIFIED main.js with perfect authentication + user status updates loaded successfully!');
-  console.log('🔧 Authentication will complete BEFORE router navigation begins');
-  console.log('🌟 User status changes (free ↔ start ↔ pro) will propagate globally');
-  console.log('🚨 Use debugAuth.* and testUserStatus.* functions for debugging');
-  console.log('🧪 Quick test: testUserStatus.setPro() then testUserStatus.setFree()');
-  
-  // ============================================================================
-  // 🚀 ADDITIONAL STATUS CHANGE HOOKS FOR EXTERNAL INTEGRATIONS
-  // ============================================================================
-  
-  // Global hook for external scripts to trigger status changes
-  window.updateUserSubscription = (newPlan, source = 'external') => {
-  console.log('🔗 External subscription update requested:', { newPlan, source });
-  
+
+}
+
+
+
+// ============================================================================
+// 🚀 ADDITIONAL STATUS CHANGE HOOKS FOR EXTERNAL INTEGRATIONS
+// ============================================================================
+
+// Global hook for external scripts to trigger status changes
+window.updateUserSubscription = (newPlan, source = 'external') => {
+
   if (!['free', 'start', 'pro'].includes(newPlan)) {
-    console.error('❌ Invalid plan. Must be: free, start, pro');
     return false;
   }
-  
+
   const oldStatus = window.getCurrentUserStatus();
   window.emitUserStatusChange(oldStatus, newPlan, source);
-  
+
   return true;
-  };
-  
-  // Hook for promocode applications
-  window.applyPromocode = (promocode, newPlan) => {
-  console.log('🎟️ Promocode application requested:', { promocode, newPlan });
-  
+};
+
+// Hook for promocode applications
+window.applyPromocode = (promocode, newPlan) => {
+
   // ✅ CRITICAL: Validate the plan properly
   if (!newPlan || !['free', 'start', 'pro'].includes(newPlan)) {
-    console.error('❌ Invalid or missing plan for promocode:', newPlan);
     return false;
   }
-  
+
   const oldStatus = window.getCurrentUserStatus();
-  console.log('🔍 Promocode status change:', oldStatus, '→', newPlan);
-  
+
   // ✅ CRITICAL: Update the status with proper validation
   window.emitUserStatusChange(oldStatus, newPlan, 'promocode');
-  
+
   // Trigger promocode-specific events with validated data
   const eventData = {
     promocode: promocode,
@@ -2446,54 +2174,49 @@ function immediateSubscriptionRestore() {
     source: 'promocode',
     timestamp: Date.now()
   };
-  
-  console.log('🎟️ Emitting promocode events with data:', eventData);
-  
+
+
   eventBus.emit('promocodeApplied', eventData);
-  
+
   // Also trigger global events
   window.triggerGlobalEvent('userSubscriptionChanged', eventData);
   window.triggerGlobalEvent('subscriptionUpdated', eventData);
-  
+
   return true;
-  };
-  
-  // ✅ CRITICAL: Add comprehensive subscription persistence system
-  async function setupSubscriptionPersistence(plan, source = 'manual') {
+};
+
+// ✅ CRITICAL: Add comprehensive subscription persistence system
+async function setupSubscriptionPersistence(plan, source = 'manual') {
   if (!plan || plan === 'free') {
-    console.log('🔧 No subscription persistence needed for free plan');
     return;
   }
-  
-  console.log('💾 Setting up subscription persistence for plan:', plan, 'source:', source);
-  
+
+
   const now = new Date();
   // ✅ FIXED: Set expiry to 1 year instead of 30 days
   const expiryDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
-  
+
   // Check if we already have a valid subscription
   const existingSubscription = getStoredSubscription();
-  
+
   let subscriptionData;
-  
+
   // ✅ FIXED: Preserve existing valid subscriptions properly
   if (existingSubscription && existingSubscription.plan === plan && existingSubscription.expiryDate) {
     const existingExpiry = new Date(existingSubscription.expiryDate);
     if (existingExpiry > now) {
       // Keep existing expiry if still valid
       subscriptionData = { ...existingSubscription, lastUpdated: now.toISOString(), source: source };
-      console.log('💾 Keeping existing subscription expiry:', existingSubscription.expiryDate);
     } else {
       // If expired, create a new one
       subscriptionData = {
-          plan: plan,
-          activatedAt: now.toISOString(),
-          expiryDate: expiryDate.toISOString(),
-          lastUpdated: now.toISOString(),
-          source: source,
-          status: 'active'
+        plan: plan,
+        activatedAt: now.toISOString(),
+        expiryDate: expiryDate.toISOString(),
+        lastUpdated: now.toISOString(),
+        source: source,
+        status: 'active'
       };
-      console.log('💾 Creating new subscription (old one expired):', expiryDate.toISOString());
     }
   } else {
     // Create new subscription or update plan
@@ -2505,9 +2228,8 @@ function immediateSubscriptionRestore() {
       source: source,
       status: 'active'
     };
-    console.log('💾 Creating new subscription expiry:', expiryDate.toISOString());
   }
-  
+
   // Store in localStorage with multiple keys for reliability
   try {
     localStorage.setItem('subscriptionData', JSON.stringify(subscriptionData));
@@ -2516,133 +2238,112 @@ function immediateSubscriptionRestore() {
     localStorage.setItem('subscriptionActivated', subscriptionData.activatedAt);
     localStorage.setItem('userStatus', plan);
     localStorage.setItem('userPlan', plan);
-    
-    console.log('✅ Subscription persistence data stored:', subscriptionData);
+
   } catch (error) {
-    console.error('❌ Failed to store subscription data:', error);
   }
-  
+
   // Setup expiry check
   setupSubscriptionExpiryCheck();
-  
+
   return subscriptionData;
-  }
-  
-  // ✅ CRITICAL & FIXED: Get stored subscription data and prevent corruption
-  function getStoredSubscription() {
-    try {
-      const subscriptionJson = localStorage.getItem('subscriptionData');
-      if (subscriptionJson) {
-        const subscription = JSON.parse(subscriptionJson);
-        // ✅ NEW: Add validation to parsed subscription data
-        if (subscription && subscription.plan && subscription.expiryDate) {
-            console.log('📥 Retrieved and validated stored subscription:', subscription);
-            return subscription;
-        } else {
-            console.warn('⚠️ Found corrupted subscriptionData in localStorage. Clearing it.', subscriptionJson);
-            localStorage.removeItem('subscriptionData');
-        }
+}
+
+// ✅ CRITICAL & FIXED: Get stored subscription data and prevent corruption
+function getStoredSubscription() {
+  try {
+    const subscriptionJson = localStorage.getItem('subscriptionData');
+    if (subscriptionJson) {
+      const subscription = JSON.parse(subscriptionJson);
+      // ✅ NEW: Add validation to parsed subscription data
+      if (subscription && subscription.plan && subscription.expiryDate) {
+        return subscription;
+      } else {
+        localStorage.removeItem('subscriptionData');
       }
-      
-      // Fallback: try to reconstruct from individual keys
-      const plan = localStorage.getItem('subscriptionPlan') || localStorage.getItem('userStatus');
-      const expiry = localStorage.getItem('subscriptionExpiry');
-      const activated = localStorage.getItem('subscriptionActivated');
-      
-      // ✅ FIXED: Only reconstruct if plan AND expiry are valid.
-      if (plan && plan !== 'free' && expiry) {
-        const fallbackSubscription = {
-          plan: plan,
-          expiryDate: expiry,
-          activatedAt: activated || new Date().toISOString(), // Provide a default if missing
-          status: 'active',
-          source: 'fallback-reconstruction'
-        };
-        console.log('📥 Reconstructed subscription from fallback keys:', fallbackSubscription);
-        // ✅ Store the reconstructed data in the proper format to fix it for the future
-        localStorage.setItem('subscriptionData', JSON.stringify(fallbackSubscription));
-        return fallbackSubscription;
-      }
-      
-    } catch (error) {
-      console.error('❌ Failed to retrieve or parse subscription data:', error);
-      // Clear potentially corrupted data on parsing error
-      localStorage.removeItem('subscriptionData');
     }
-  
-    return null;
+
+    // Fallback: try to reconstruct from individual keys
+    const plan = localStorage.getItem('subscriptionPlan') || localStorage.getItem('userStatus');
+    const expiry = localStorage.getItem('subscriptionExpiry');
+    const activated = localStorage.getItem('subscriptionActivated');
+
+    // ✅ FIXED: Only reconstruct if plan AND expiry are valid.
+    if (plan && plan !== 'free' && expiry) {
+      const fallbackSubscription = {
+        plan: plan,
+        expiryDate: expiry,
+        activatedAt: activated || new Date().toISOString(), // Provide a default if missing
+        status: 'active',
+        source: 'fallback-reconstruction'
+      };
+      // ✅ Store the reconstructed data in the proper format to fix it for the future
+      localStorage.setItem('subscriptionData', JSON.stringify(fallbackSubscription));
+      return fallbackSubscription;
+    }
+
+  } catch (error) {
+    // Clear potentially corrupted data on parsing error
+    localStorage.removeItem('subscriptionData');
   }
-  
-  // ✅ CRITICAL: Check if subscription is still valid
-  function isSubscriptionValid() {
+
+  return null;
+}
+
+// ✅ CRITICAL: Check if subscription is still valid
+function isSubscriptionValid() {
   const subscription = getStoredSubscription();
-  
+
   if (!subscription || !subscription.expiryDate) {
-    console.log('🔍 No subscription or expiry date found');
     return false;
   }
-  
+
   const now = new Date();
   const expiryDate = new Date(subscription.expiryDate);
   const isValid = now < expiryDate;
-  
-  console.log('🔍 Subscription validity check:', {
-    plan: subscription.plan,
-    expiryDate: subscription.expiryDate,
-    now: now.toISOString(),
-    isValid: isValid,
-    daysRemaining: Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24))
-  });
-  
+
+
   return isValid;
-  }
-  
-  // ✅ CRITICAL: Setup automatic expiry checking
-  function setupSubscriptionExpiryCheck() {
+}
+
+// ✅ CRITICAL: Setup automatic expiry checking
+function setupSubscriptionExpiryCheck() {
   // Clear any existing interval
   if (window.subscriptionCheckInterval) {
     clearInterval(window.subscriptionCheckInterval);
   }
-  
+
   // ✅ FIXED: Reduced frequency from 5 minutes to 1 hour
   window.subscriptionCheckInterval = setInterval(() => {
-    console.log('⏰ Running hourly subscription validity check...');
-    
+
     const subscription = getStoredSubscription();
     if (!subscription || subscription.plan === 'free') {
       return; // No need to check free subscriptions
     }
-    
+
     if (!isSubscriptionValid()) {
-      console.log('❌ Subscription expired, reverting to free');
       handleSubscriptionExpiry(subscription);
     } else {
-      console.log('✅ Subscription still valid');
     }
   }, 60 * 60 * 1000); // Check every hour instead of every 5 minutes
-  
+
   // ✅ FIXED: Delayed initial check by 30 seconds (was 5 seconds)
   setTimeout(() => {
-    console.log('🔍 Initial subscription validity check (delayed)...');
     const subscription = getStoredSubscription();
     if (subscription && subscription.plan !== 'free' && !isSubscriptionValid()) {
-      console.log('❌ Subscription expired on startup, reverting to free');
       handleSubscriptionExpiry(subscription);
     }
   }, 30000); // Wait 30 seconds before initial check
-  
-  console.log('✅ Subscription expiry check setup completed (1hr interval, 30s initial delay)');
-  }
-  
-  // ✅ CRITICAL: Handle subscription expiry
-  function handleSubscriptionExpiry(expiredSubscription) {
-  console.log('⏰ Handling subscription expiry for:', expiredSubscription);
-  
+
+}
+
+// ✅ CRITICAL: Handle subscription expiry
+function handleSubscriptionExpiry(expiredSubscription) {
+
   // Update all storage to free
   localStorage.setItem('userStatus', 'free');
   localStorage.setItem('userPlan', 'free');
   localStorage.setItem('subscriptionPlan', 'free');
-  
+
   // Mark subscription as expired
   const expiredData = {
     ...expiredSubscription,
@@ -2650,14 +2351,13 @@ function immediateSubscriptionRestore() {
     expiredAt: new Date().toISOString()
   };
   localStorage.setItem('subscriptionData', JSON.stringify(expiredData));
-  
+
   // Update store
   try {
     store.commit('user/SET_USER_STATUS', 'free');
   } catch (error) {
-    console.warn('⚠️ Failed to update store on expiry:', error);
   }
-  
+
   // ✅ FIXED: Use window.triggerGlobalEvent since it's now defined
   window.triggerGlobalEvent('userStatusChanged', {
     oldStatus: expiredSubscription.plan,
@@ -2665,13 +2365,13 @@ function immediateSubscriptionRestore() {
     source: 'subscription-expired',
     timestamp: Date.now()
   });
-  
+
   window.triggerGlobalEvent('subscriptionExpired', {
     expiredPlan: expiredSubscription.plan,
     expiryDate: expiredSubscription.expiryDate,
     timestamp: Date.now()
   });
-  
+
   // Show notification
   if (window.eventBus) {
     eventBus.emit('subscriptionExpired', {
@@ -2680,62 +2380,55 @@ function immediateSubscriptionRestore() {
       timestamp: Date.now()
     });
   }
-  
-  console.log('✅ Subscription expiry handled');
-  }
-  
-  // ✅ CRITICAL: Add smart promocode detection based on your logs
-  window.smartPromocodeDetection = () => {
-  console.log('🎯 Running smart promocode detection...');
-  
+
+}
+
+// ✅ CRITICAL: Add smart promocode detection based on your logs
+window.smartPromocodeDetection = () => {
+
   // Check localStorage for any signs of promocode success
   const checkLocalStorage = () => {
     const keys = ['userStatus', 'userPlan', 'subscriptionPlan'];
     for (const key of keys) {
       const value = localStorage.getItem(key);
       if (value && ['start', 'pro'].includes(value)) {
-        console.log('🔍 Found non-free plan in localStorage:', key, '=', value);
         return value;
       }
     }
     return null;
   };
-  
+
   const detectedPlan = checkLocalStorage();
-  
+
   if (detectedPlan && detectedPlan !== 'free') {
-    console.log('🎯 Smart detection found plan:', detectedPlan);
-    
+
     // Check if store is synced
     const storeStatus = store.getters['user/userStatus'];
     if (!storeStatus || storeStatus === 'undefined' || storeStatus !== detectedPlan) {
-      console.log('🔧 Store is out of sync, fixing...');
       window.repairStoreStatus();
     }
   }
-  
+
   return null;
-  };
-  
-  // Run smart detection on a timer
-  setInterval(() => {
+};
+
+// Run smart detection on a timer
+setInterval(() => {
   window.smartPromocodeDetection();
-  }, 5000); // Check every 5 seconds
-  
-  // Hook for payment completions
-  window.paymentCompleted = (transactionId, plan, amount) => {
-  console.log('💳 Payment completion reported:', { transactionId, plan, amount });
-  
+}, 5000); // Check every 5 seconds
+
+// Hook for payment completions
+window.paymentCompleted = (transactionId, plan, amount) => {
+
   if (!['start', 'pro'].includes(plan)) {
-    console.error('❌ Invalid paid plan');
     return false;
   }
-  
+
   const oldStatus = window.getCurrentUserStatus();
-  
+
   // Update the status
   window.emitUserStatusChange(oldStatus, plan, 'payment');
-  
+
   // Trigger payment-specific events
   eventBus.emit('paymentCompleted', {
     transactionId: transactionId,
@@ -2745,247 +2438,207 @@ function immediateSubscriptionRestore() {
     newStatus: plan,
     timestamp: Date.now()
   });
-  
+
   return true;
-  };
-  // ✅ CRITICAL: Initialize subscription system
-  console.log('💾 Initializing subscription persistence system...');
-    
-  // Setup subscription expiry checking
-  setupSubscriptionExpiryCheck();
-  
-  // Check if user has a valid subscription on startup
-  const existingSubscription = getStoredSubscription();
-  if (existingSubscription && existingSubscription.plan !== 'free') {
-    if (isSubscriptionValid()) {
-      console.log('✅ Valid subscription found on startup:', existingSubscription.plan);
-      // Ensure store and localStorage are synced with valid subscription
-      localStorage.setItem('userStatus', existingSubscription.plan);
-      localStorage.setItem('userPlan', existingSubscription.plan);
-      localStorage.setItem('subscriptionPlan', existingSubscription.plan);
-    } else {
-      console.log('❌ Expired subscription found on startup, cleaning up');
-      handleSubscriptionExpiry(existingSubscription);
-    }
+};
+// ✅ CRITICAL: Initialize subscription system
+
+// Setup subscription expiry checking
+setupSubscriptionExpiryCheck();
+
+// Check if user has a valid subscription on startup
+const existingSubscription = getStoredSubscription();
+if (existingSubscription && existingSubscription.plan !== 'free') {
+  if (isSubscriptionValid()) {
+    // Ensure store and localStorage are synced with valid subscription
+    localStorage.setItem('userStatus', existingSubscription.plan);
+    localStorage.setItem('userPlan', existingSubscription.plan);
+    localStorage.setItem('subscriptionPlan', existingSubscription.plan);
+  } else {
+    handleSubscriptionExpiry(existingSubscription);
   }
-  
-  // ✅ CRITICAL: Add direct status testing functions
-  window.testUserStatus = {
-    setFree: () => {
-      const currentStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unknown';
-      window.emitUserStatusChange(currentStatus, 'free', 'debug-test');
-    },
-    setStart: () => {
-      const currentStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unknown';
-      setupSubscriptionPersistence('start', 'debug-test');
-      window.emitUserStatusChange(currentStatus, 'start', 'debug-test');
-    },
-    setPro: () => {
-      const currentStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unknown';
-      setupSubscriptionPersistence('pro', 'debug-test');
-      window.emitUserStatusChange(currentStatus, 'pro', 'debug-test');
-    },
-    
-    getCurrentStatus: () => {
-      const storeStatus = store.getters['user/userStatus'];
-      const localStatus = localStorage.getItem('userStatus');
-      const workingStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unavailable';
-      const subscription = getStoredSubscription();
-      
-      console.log('📊 Status comparison:', { 
-        store: storeStatus, 
-        storeType: typeof storeStatus,
-        localStorage: localStatus,
-        localType: typeof localStatus,
-        workingGetter: workingStatus,
-        subscription: subscription,
-        subscriptionValid: subscription ? isSubscriptionValid() : 'N/A',
-        storeState: store.state.user?.userStatus,
-        storeExists: !!store.state.user
-      });
-      
-      // ✅ NEW: Check if store status is literally the string 'undefined'
-      if (storeStatus === 'undefined' || storeStatus === undefined || storeStatus === null) {
-        console.warn('⚠️ Store status is invalid, attempting repair...');
-        window.repairStoreStatus();
-      }
-      
-      return { 
-        store: storeStatus, 
-        localStorage: localStatus,
-        working: workingStatus,
-        subscription: subscription,
-        subscriptionValid: subscription ? isSubscriptionValid() : false,
-        effective: workingStatus !== 'unavailable' ? workingStatus : (localStatus || 'free')
-      };
-    },
-  
-    forceStatusUpdate: (status) => {
-      if (!['free', 'start', 'pro'].includes(status)) {
-        console.error('❌ Invalid status. Use: free, start, pro');
-        return;
-      }
-      
-      console.log('🔧 Forcing status update to:', status);
-      
-      // ✅ CRITICAL: Set up subscription persistence for paid plans
-      if (status !== 'free') {
-        setupSubscriptionPersistence(status, 'debug-force');
-      }
-      
-      // ✅ CRITICAL: First repair the store if needed
+}
+
+// ✅ CRITICAL: Add direct status testing functions
+window.testUserStatus = {
+  setFree: () => {
+    const currentStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unknown';
+    window.emitUserStatusChange(currentStatus, 'free', 'debug-test');
+  },
+  setStart: () => {
+    const currentStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unknown';
+    setupSubscriptionPersistence('start', 'debug-test');
+    window.emitUserStatusChange(currentStatus, 'start', 'debug-test');
+  },
+  setPro: () => {
+    const currentStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unknown';
+    setupSubscriptionPersistence('pro', 'debug-test');
+    window.emitUserStatusChange(currentStatus, 'pro', 'debug-test');
+  },
+
+  getCurrentStatus: () => {
+    const storeStatus = store.getters['user/userStatus'];
+    const localStatus = localStorage.getItem('userStatus');
+    const workingStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : 'unavailable';
+    const subscription = getStoredSubscription();
+
+
+    // ✅ NEW: Check if store status is literally the string 'undefined'
+    if (storeStatus === 'undefined' || storeStatus === undefined || storeStatus === null) {
       window.repairStoreStatus();
-      
-      // Update store with multiple mutations and verify each one
-      const mutations = [
-        'user/SET_USER_STATUS',
-        'user/setUserStatus',
-        'user/SET_STATUS', 
-        'user/UPDATE_USER_STATUS',
-        'setUserStatus'
-      ];
-      
-      mutations.forEach(mutation => {
-        try {
-          store.commit(mutation, status);
-          const newValue = store.getters['user/userStatus'];
-          console.log(`✅ ${mutation}: ${newValue}`);
-        } catch (e) {
-          console.log(`⚠️ ${mutation} not available`);
-        }
-      });
-      
-      // ✅ CRITICAL: Direct state update if getters still fail
-      if (store.state.user) {
-        store.state.user.userStatus = status;
-        store.state.user.subscriptionPlan = status;
-        store.state.user.plan = status;
-        console.log('✅ Direct state update completed');
-      }
-      
-      // Update user object if it exists
-      if (store.state.user && typeof store.state.user === 'object') {
-        const userObj = store.getters['user/getUser'] || store.state.user;
-        if (userObj) {
-          userObj.userStatus = status;
-          userObj.subscriptionPlan = status;
-          userObj.plan = status;
-          
-          // Update user object in store
-          try {
-            store.commit('user/SET_USER', userObj);
-            console.log('✅ User object updated with new status');
-          } catch (e) {
-            console.warn('⚠️ Failed to update user object:', e);
-          }
-        }
-      }
-      
-      // Update localStorage with all variations
-      localStorage.setItem('userStatus', status);
-      localStorage.setItem('userPlan', status);
-      localStorage.setItem('subscriptionPlan', status);
-      localStorage.setItem('statusUpdateTime', Date.now().toString());
-      console.log('✅ localStorage updated with all status variations');
-      
-      // ✅ CRITICAL: Force store reactivity
-      try {
-        store.commit('user/FORCE_UPDATE');
-        console.log('✅ Store reactivity forced');
-      } catch (e) {
-        console.log('⚠️ FORCE_UPDATE not available');
-      }
-      
-      // Trigger all events with proper data structure
-      const eventData = {
-        oldStatus: null,
-        newStatus: status,
-        plan: status,
-        userStatus: status,
-        subscriptionPlan: status,
-        source: 'debug-force',
-        timestamp: Date.now()
-      };
-      
-      window.triggerGlobalEvent('userStatusChanged', eventData);
-      window.triggerGlobalEvent('userSubscriptionChanged', eventData);
-      window.triggerGlobalEvent('subscriptionUpdated', eventData);
-      window.triggerGlobalEvent('globalForceUpdate', {
-        reason: 'debug-force-update',
-        plan: status,
-        newStatus: status,
-        timestamp: Date.now()
-      });
-      
-      // Force Vue update
-      if (app?._instance) {
-        try {
-          app._instance.proxy.$forceUpdate();
-          console.log('✅ Vue app force updated');
-        } catch (error) {
-          console.warn('⚠️ Vue force update failed:', error);
-        }
-      }
-      
-      console.log('✅ Status forced to:', status);
-      
-      // Verify the change worked
-      setTimeout(() => {
-        const verification = window.testUserStatus.getCurrentStatus();
-        console.log('🔍 Status change verification:', verification);
-        
-        // Additional verification
-        const finalStoreStatus = store.getters['user/userStatus'];
-        const finalLocalStatus = localStorage.getItem('userStatus');
-        const finalSubscription = getStoredSubscription();
-        console.log('🔍 Final verification:', {
-          store: finalStoreStatus,
-          localStorage: finalLocalStatus,
-          subscription: finalSubscription,
-          subscriptionValid: finalSubscription ? isSubscriptionValid() : false,
-          storeState: store.state.user?.userStatus
-        });
-      }, 100);
-    },
-    
-    // ✅ NEW: Subscription management functions
-    getSubscription: () => {
-      return getStoredSubscription();
-    },
-    
-    checkSubscriptionValidity: () => {
-      return isSubscriptionValid();
-    },
-    
-    extendSubscription: (days = 30) => {
-      const subscription = getStoredSubscription();
-      if (!subscription || subscription.plan === 'free') {
-        console.error('❌ No active subscription to extend');
-        return false;
-      }
-      
-      const currentExpiry = new Date(subscription.expiryDate);
-      const newExpiry = new Date(currentExpiry.getTime() + (days * 24 * 60 * 60 * 1000));
-      
-      subscription.expiryDate = newExpiry.toISOString();
-      subscription.lastUpdated = new Date().toISOString();
-      
-      localStorage.setItem('subscriptionData', JSON.stringify(subscription));
-      localStorage.setItem('subscriptionExpiry', subscription.expiryDate);
-      
-      console.log('✅ Subscription extended by', days, 'days. New expiry:', newExpiry.toISOString());
-      return true;
-    },
-    
-    clearSubscription: () => {
-      localStorage.removeItem('subscriptionData');
-      localStorage.removeItem('subscriptionExpiry');
-      localStorage.removeItem('subscriptionActivated');
-      localStorage.setItem('userStatus', 'free');
-      localStorage.setItem('userPlan', 'free');
-      localStorage.setItem('subscriptionPlan', 'free');
-      
-      console.log('🧹 All subscription data cleared');
     }
-  };
-  
+
+    return {
+      store: storeStatus,
+      localStorage: localStatus,
+      working: workingStatus,
+      subscription: subscription,
+      subscriptionValid: subscription ? isSubscriptionValid() : false,
+      effective: workingStatus !== 'unavailable' ? (localStatus || 'free') : 'unknown'
+    };
+  },
+
+  forceStatusUpdate: (status) => {
+    if (!['free', 'start', 'pro'].includes(status)) {
+      return;
+    }
+
+
+    // ✅ CRITICAL: Set up subscription persistence for paid plans
+    if (status !== 'free') {
+      setupSubscriptionPersistence(status, 'debug-force');
+    }
+
+    // ✅ CRITICAL: First repair the store if needed
+    window.repairStoreStatus();
+
+    // Update store with multiple mutations and verify each one
+    const mutations = [
+      'user/SET_USER_STATUS',
+      'user/setUserStatus',
+      'user/SET_STATUS',
+      'user/UPDATE_USER_STATUS',
+      'setUserStatus'
+    ];
+
+    mutations.forEach(mutation => {
+      try {
+        store.commit(mutation, status);
+        const newValue = store.getters['user/userStatus'];
+      } catch (e) {
+      }
+    });
+
+    // ✅ CRITICAL: Direct state update if getters still fail
+    if (store.state.user) {
+      store.state.user.userStatus = status;
+      store.state.user.subscriptionPlan = status;
+      store.state.user.plan = status;
+    }
+
+    // Update user object if it exists
+    if (store.state.user && typeof store.state.user === 'object') {
+      const userObj = store.getters['user/getUser'] || store.state.user;
+      if (userObj) {
+        userObj.userStatus = status;
+        userObj.subscriptionPlan = status;
+        userObj.plan = status;
+
+        // Update user object in store
+        try {
+          store.commit('user/SET_USER', userObj);
+        } catch (e) {
+        }
+      }
+    }
+
+    // Update localStorage with all variations
+    localStorage.setItem('userStatus', status);
+    localStorage.setItem('userPlan', status);
+    localStorage.setItem('subscriptionPlan', status);
+    localStorage.setItem('statusUpdateTime', Date.now().toString());
+
+    // ✅ CRITICAL: Force store reactivity
+    try {
+      store.commit('user/FORCE_UPDATE');
+    } catch (e) {
+    }
+
+    // Trigger all events with proper data structure
+    const eventData = {
+      oldStatus: null,
+      newStatus: status,
+      plan: status,
+      userStatus: status,
+      subscriptionPlan: status,
+      source: 'debug-force',
+      timestamp: Date.now()
+    };
+
+    window.triggerGlobalEvent('userStatusChanged', eventData);
+    window.triggerGlobalEvent('userSubscriptionChanged', eventData);
+    window.triggerGlobalEvent('subscriptionUpdated', eventData);
+    window.triggerGlobalEvent('globalForceUpdate', {
+      reason: 'debug-force-update',
+      plan: status,
+      newStatus: status,
+      timestamp: Date.now()
+    });
+
+    // Force Vue update
+    if (app?._instance) {
+      try {
+        app._instance.proxy.$forceUpdate();
+      } catch (error) {
+      }
+    }
+
+
+    // Verify the change worked
+    setTimeout(() => {
+      const verification = window.testUserStatus.getCurrentStatus();
+
+      // Additional verification
+      const finalStoreStatus = store.getters['user/userStatus'];
+      const finalLocalStatus = localStorage.getItem('userStatus');
+      const finalSubscription = getStoredSubscription();
+    }, 100);
+  },
+
+  // ✅ NEW: Subscription management functions
+  getSubscription: () => {
+    return getStoredSubscription();
+  },
+
+  checkSubscriptionValidity: () => {
+    return isSubscriptionValid();
+  },
+
+  extendSubscription: (days = 30) => {
+    const subscription = getStoredSubscription();
+    if (!subscription || subscription.plan === 'free') {
+      return false;
+    }
+
+    const currentExpiry = new Date(subscription.expiryDate);
+    const newExpiry = new Date(currentExpiry.getTime() + (days * 24 * 60 * 60 * 1000));
+
+    subscription.expiryDate = newExpiry.toISOString();
+    subscription.lastUpdated = new Date().toISOString();
+
+    localStorage.setItem('subscriptionData', JSON.stringify(subscription));
+    localStorage.setItem('subscriptionExpiry', subscription.expiryDate);
+
+    return true;
+  },
+
+  clearSubscription: () => {
+    localStorage.removeItem('subscriptionData');
+    localStorage.removeItem('subscriptionExpiry');
+    localStorage.removeItem('subscriptionActivated');
+    localStorage.setItem('userStatus', 'free');
+    localStorage.setItem('userPlan', 'free');
+    localStorage.setItem('subscriptionPlan', 'free');
+
+  }
+};
