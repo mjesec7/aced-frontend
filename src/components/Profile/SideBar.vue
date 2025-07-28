@@ -1247,30 +1247,4 @@ export default {
     transform: scale(1);
   }
 }
-</style>8px rgba(124, 58, 237, 0.12);
-}
-
-.nav-item .highlight {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 3px;
-  background: linear-gradient(to bottom, #6366f1, #8b5cf6);
-  border-radius: 1px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.nav-item.active .highlight,
-.nav-item:hover .highlight {
-  opacity: 1;
-}
-
-.nav-item.active {
-  background: linear-gradient(to right, #ede9fe, #f0f5ff);
-  color: #4f46e5;
-  transform: translateX(4px);
-  font-weight: 700;
-  box-shadow: 0 2px
 </style>
