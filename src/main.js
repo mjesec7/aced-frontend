@@ -317,25 +317,25 @@ try {
 async function handleBasicUserAuthentication(firebaseUser, token = null) {
 
 try {
-  // ✅ CRITICAL: Check for valid subscription first, then fallback to localStorage
-  const subscription = getStoredSubscription();
+  // ✅ FIXED: Preserve paid status during basic auth fallback
   let existingStatus = 'free';
-  
+
+  // First check for valid subscription
+  const subscription = getStoredSubscription();
   if (subscription && subscription.plan !== 'free') {
     if (isSubscriptionValid()) {
       existingStatus = subscription.plan;
-    } else {
-      handleSubscriptionExpiry(subscription);
-      existingStatus = 'free';
+      console.log('✅ Found valid subscription:', existingStatus);
     }
   } else {
-    // Fallback to localStorage
-    existingStatus = localStorage.getItem('userStatus') || 
-                    localStorage.getItem('userPlan') || 
-                    localStorage.getItem('subscriptionPlan') || 
-                    'free';
+    // Check localStorage and preserve temporarily if paid status found
+    const localStatus = localStorage.getItem('userStatus');
+    if (localStatus && ['start', 'pro'].includes(localStatus)) {
+      existingStatus = localStatus;
+      // Create minimal subscription to prevent immediate expiry
+      await setupSubscriptionPersistence(existingStatus, 'basic-auth-preserve');
+    }
   }
-  
   
   // Create basic user object
   const basicUser = {
@@ -375,6 +375,7 @@ try {
   try {
     store.commit('user/setUserStatus', existingStatus);
   } catch (e) {
+    // Ignore if not present
   }
   
   // Update localStorage with all possible status fields
@@ -396,8 +397,6 @@ try {
   
   // Mark auth as ready
   appLifecycle.authReady = true;
-  
-  
   
   // ✅ CRITICAL: Trigger events immediately for status propagation
   const eventData = {
@@ -446,8 +445,6 @@ try {
                    serverUser.subscription || 
                    'free';
   
- 
-  
   // ✅ CRITICAL: Enhanced user object with all possible status fields AND subscription tracking
   const enhancedUser = {
     ...serverUser,
@@ -478,11 +475,13 @@ try {
       try {
         store.commit('user/setUserStatus', userPlan);
       } catch (e) {
+        // Ignore if not present
       }
       
       try {
         store.commit('user/UPDATE_SUBSCRIPTION', { plan: userPlan });
       } catch (e) {
+        // Ignore if not present
       }
     }
     
@@ -505,7 +504,6 @@ try {
         console.warn(`⚠️ Failed to store ${key}:`, storageError);
       }
     });
-    
     
   } catch (storeUpdateError) {
     console.error('❌ Failed to update stores:', storeUpdateError);
@@ -551,7 +549,6 @@ try {
   
   // Store last login time
   localStorage.setItem('lastLoginTime', new Date().toISOString());
-  
   
 } catch (error) {
   console.error('❌ Error in successful save handler:', error);
@@ -601,7 +598,6 @@ try {
   
   // Mark auth as ready (even for non-authenticated users)
   appLifecycle.authReady = true;
-  
   
   // Trigger events
   setTimeout(() => {
@@ -700,7 +696,6 @@ try {
   isApplicationMounted = true;
   appLifecycle.mounted = true;
   
-  
   // Setup global subscription management
   setupEnhancedGlobalSubscriptionManagement();
   
@@ -762,7 +757,6 @@ try {
   isApplicationMounted = true;
   appLifecycle.mounted = true;
   
-  
   return true;
   
 } catch (error) {
@@ -814,8 +808,6 @@ try {
     }
   }
   
- 
-  
   const enhancedData = {
     ...data,
     eventName,
@@ -861,7 +853,6 @@ try {
       console.warn('⚠️ Storage event failed:', storageError);
     }
   }
-
 
 } catch (eventError) {
   console.error(`❌ Failed to trigger global event '${eventName}':`, eventError);
@@ -911,9 +902,6 @@ on(event, callback) {
     this.events[event] = [];
   }
   this.events[event].push(callback);
-  
-  if (this.debugMode) {
-  }
 }
 
 off(event, callback) {
@@ -983,8 +971,6 @@ clear() {
 }
 }
 
-
-
 // ============================================================================
 // 🔥 STORE MUTATION INTERCEPTOR FOR AUTOMATIC EVENT TRIGGERING
 // ============================================================================
@@ -1044,8 +1030,6 @@ store.subscribe((mutation, state) => {
   }
 });
 };
-
-
 
 // Create and export global event bus
 const eventBus = new AdvancedEventBus();
@@ -1107,7 +1091,6 @@ const handleGlobalSubscriptionChange = (event) => {
     const localPlan = localStorage.getItem('userPlan');
     const localSubscription = localStorage.getItem('subscriptionPlan');
     
-    
     // Use localStorage value if it's valid and not 'free'
     const possiblePlans = [localStatus, localPlan, localSubscription];
     for (const possiblePlan of possiblePlans) {
@@ -1155,7 +1138,6 @@ const handleGlobalSubscriptionChange = (event) => {
   localStorage.setItem('subscriptionPlan', actualPlan);
   localStorage.setItem('statusUpdateTime', Date.now().toString());
   
-  
   // Update store if not already updated
   try {
     const currentStoreStatus = store.getters['user/userStatus'];
@@ -1202,7 +1184,6 @@ const handleGlobalSubscriptionChange = (event) => {
     timestamp: timestamp || Date.now(),
     message: message // Preserve original message
   };
-  
   
   const eventTypes = [
     'globalForceUpdate',
@@ -1260,8 +1241,6 @@ eventBus.on('userStatusChanged', (data) => {
   const { newStatus, plan, userStatus, subscriptionPlan } = data || {};
   const actualStatus = newStatus || plan || userStatus || subscriptionPlan || 'free';
   
-
-  
   // ✅ CRITICAL: Validate the status
   if (!['free', 'start', 'pro', 'premium'].includes(actualStatus)) {
     console.warn('⚠️ Invalid status in event bus, defaulting to free:', actualStatus);
@@ -1288,6 +1267,7 @@ eventBus.on('userStatusChanged', (data) => {
       try {
         store.commit('user/setUserStatus', actualStatus);
       } catch (e) {
+        // Ignore if not present
       }
     }
   } catch (storeError) {
@@ -1301,6 +1281,7 @@ eventBus.on('userStatusChanged', (data) => {
       
       // Also trigger $nextTick for delayed components
       app._instance.proxy.$nextTick(() => {
+        // Do nothing, just trigger the tick
       });
     } catch (error) {
       console.warn('⚠️ Failed to force update on status change:', error);
@@ -2226,21 +2207,33 @@ if (!plan || plan === 'free') {
 console.log('💾 Setting up subscription persistence for plan:', plan, 'source:', source);
 
 const now = new Date();
-const expiryDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days from now
+// ✅ FIXED: Set expiry to 1 year instead of 30 days
+const expiryDate = new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000)); // 365 days
 
 // Check if we already have a valid subscription
 const existingSubscription = getStoredSubscription();
 
 let subscriptionData;
 
+// ✅ FIXED: Preserve existing valid subscriptions properly
 if (existingSubscription && existingSubscription.plan === plan && existingSubscription.expiryDate) {
-  // Keep existing expiry date if same plan
-  subscriptionData = {
-    ...existingSubscription,
-    lastUpdated: now.toISOString(),
-    source: source
-  };
-  console.log('💾 Keeping existing subscription expiry:', existingSubscription.expiryDate);
+  const existingExpiry = new Date(existingSubscription.expiryDate);
+  if (existingExpiry > now) {
+    // Keep existing expiry if still valid
+    subscriptionData = { ...existingSubscription, lastUpdated: now.toISOString(), source: source };
+    console.log('💾 Keeping existing subscription expiry:', existingSubscription.expiryDate);
+  } else {
+    // If expired, create a new one
+    subscriptionData = {
+        plan: plan,
+        activatedAt: now.toISOString(),
+        expiryDate: expiryDate.toISOString(),
+        lastUpdated: now.toISOString(),
+        source: source,
+        status: 'active'
+    };
+    console.log('💾 Creating new subscription (old one expired):', expiryDate.toISOString());
+  }
 } else {
   // Create new subscription or update plan
   subscriptionData = {
@@ -2339,9 +2332,9 @@ if (window.subscriptionCheckInterval) {
   clearInterval(window.subscriptionCheckInterval);
 }
 
-// Check subscription validity every 5 minutes
+// ✅ FIXED: Reduced frequency from 5 minutes to 1 hour
 window.subscriptionCheckInterval = setInterval(() => {
-  console.log('⏰ Running subscription validity check...');
+  console.log('⏰ Running hourly subscription validity check...');
   
   const subscription = getStoredSubscription();
   if (!subscription || subscription.plan === 'free') {
@@ -2354,18 +2347,19 @@ window.subscriptionCheckInterval = setInterval(() => {
   } else {
     console.log('✅ Subscription still valid');
   }
-}, 5 * 60 * 1000); // Check every 5 minutes
+}, 60 * 60 * 1000); // Check every hour instead of every 5 minutes
 
-// Also check immediately
+// ✅ FIXED: Delayed initial check by 30 seconds (was 5 seconds)
 setTimeout(() => {
+  console.log('🔍 Initial subscription validity check (delayed)...');
   const subscription = getStoredSubscription();
   if (subscription && subscription.plan !== 'free' && !isSubscriptionValid()) {
     console.log('❌ Subscription expired on startup, reverting to free');
     handleSubscriptionExpiry(subscription);
   }
-}, 5000); // Check 5 seconds after setup
+}, 30000); // Wait 30 seconds before initial check
 
-console.log('✅ Subscription expiry check setup completed');
+console.log('✅ Subscription expiry check setup completed (1hr interval, 30s initial delay)');
 }
 
 // ✅ CRITICAL: Handle subscription expiry
@@ -2422,9 +2416,6 @@ console.log('✅ Subscription expiry handled');
 window.smartPromocodeDetection = () => {
 console.log('🎯 Running smart promocode detection...');
 
-// Check if there was a recent promocode success message
-const recentLogs = console.log.toString();
-
 // Check localStorage for any signs of promocode success
 const checkLocalStorage = () => {
   const keys = ['userStatus', 'userPlan', 'subscriptionPlan'];
@@ -2447,8 +2438,7 @@ if (detectedPlan && detectedPlan !== 'free') {
   const storeStatus = store.getters['user/userStatus'];
   if (!storeStatus || storeStatus === 'undefined' || storeStatus !== detectedPlan) {
     console.log('🔧 Store is out of sync, fixing...');
-    window.fixPromocodeStatus(detectedPlan);
-    return detectedPlan;
+    window.repairStoreStatus();
   }
 }
 
