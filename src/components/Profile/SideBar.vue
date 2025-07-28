@@ -31,29 +31,30 @@
             Каталог
           </router-link>
 
-          <!-- ✅ FIXED: Dynamic links with proper access control -->
-          <template v-for="link in filteredLinks" :key="`${link.name}-${reactivityKey}`">
-            <!-- Show accessible links -->
+          <!-- ✅ ENHANCED: Dynamic links with access control -->
+          <template v-for="link in filteredLinks" :key="link.name">
             <router-link
-              v-if="!link.premium || hasAccessToFeature(link.feature)"
+              v-if="hasAccessToFeature(link.feature)"
               :to="getRoutePath(link.name)"
-              class="nav-item accessible-feature"
-              :class="{ active: isActive(link.name) }"
-              @click="closeSidebarOnMobile"
+              class="nav-item"
+              :class="{ 
+                active: isActive(link.name),
+                'premium-feature': link.premium && !hasAccessToFeature(link.feature)
+              }"
+              @click="handleLinkClick(link)"
             >
               <span class="highlight"></span>
               <span class="link-content">
                 {{ link.label }}
-                <span v-if="link.premium" class="premium-badge">✨</span>
+                <span v-if="link.premium && !hasAccessToFeature(link.feature)" class="premium-badge">✨</span>
               </span>
             </router-link>
             
-            <!-- Show locked feature item for premium features user can't access -->
+            <!-- ✅ NEW: Locked feature item for premium features -->
             <div
-              v-else
+              v-else-if="link.premium"
               class="nav-item locked-feature"
-              @click="showUpgradeModalForFeature(link)"
-              :title="`${link.label} доступно в Start и Pro планах`"
+              @click="showUpgradeModal(link)"
             >
               <span class="highlight"></span>
               <span class="link-content">
@@ -76,7 +77,7 @@
       @click="closeSidebar"
     ></div>
 
-    <!-- ✅ Upgrade Modal -->
+    <!-- ✅ NEW: Upgrade Modal -->
     <div class="upgrade-modal" v-if="showUpgradeModal" @click.self="closeUpgradeModal">
       <div class="upgrade-modal-content" @click.stop>
         <div class="upgrade-header">
@@ -98,6 +99,9 @@
               <li v-if="selectedFeature?.name === 'tests'">📝 Безлимитные тесты</li>
             </ul>
           </div>
+          <div class="debug-info" v-if="$store.state.isDev">
+            <small>Debug: Current plan = {{ currentPlan }}</small>
+          </div>
         </div>
         <div class="upgrade-actions">
           <button class="upgrade-btn" @click="goToUpgrade">
@@ -110,7 +114,7 @@
       </div>
     </div>
 
-    <!-- ✅ Logout Modal -->
+    <!-- ✅ EXISTING: Logout Modal -->
     <div class="logout-modal" v-if="showLogoutModal">
       <div class="logout-modal-content">
         <p>Вы уверены, что хотите выйти?</p>
@@ -147,14 +151,14 @@ export default {
       showUpgradeModal: false,
       selectedFeature: null,
       
-      // ✅ FIXED: Links configuration matching router requirements
+      // ✅ CRITICAL: Links configuration - premium features should NOT show modal for start/pro users
       links: [
         { 
           name: 'analytics', 
           label: 'Аналитика', 
           feature: 'analytics',
           premium: true,
-          requiredPlans: ['start', 'pro'] // Analytics requires start minimum
+          requiredPlans: ['start', 'pro']
         },
         { 
           name: 'goal', 
@@ -196,7 +200,7 @@ export default {
           label: 'Словарь', 
           feature: 'vocabulary',
           premium: true,
-          requiredPlans: ['start', 'pro'] // Vocabulary requires start minimum
+          requiredPlans: ['start', 'pro']
         },
         { 
           name: 'settings', 
@@ -234,39 +238,55 @@ export default {
       'forceUpdateCounter'
     ]),
     
-    // ✅ FIXED: Reliable plan detection
+    // ✅ BULLETPROOF: Get current plan with absolute reliability
     currentPlan() {
-      const key = this.reactivityKey; // Force reactivity
+      // Force reactivity trigger
+      const reactivityTrigger = this.reactivityKey;
       
-      // Check subscription data first (most reliable source)
+      // Method 1: Check subscription data (most reliable)
       const subscriptionData = localStorage.getItem('subscriptionData');
       if (subscriptionData) {
         try {
           const parsed = JSON.parse(subscriptionData);
-          if (parsed.plan && parsed.expiryDate) {
+          if (parsed && parsed.plan && parsed.expiryDate) {
             const now = new Date();
             const expiry = new Date(parsed.expiryDate);
-            if (now < expiry && ['start', 'pro'].includes(parsed.plan)) {
+            if (now < expiry) {
+              console.log('✅ Sidebar: Using valid subscription plan:', parsed.plan);
               return parsed.plan;
+            } else {
+              console.log('⚠️ Sidebar: Subscription expired');
             }
           }
         } catch (e) {
-          console.warn('⚠️ Sidebar: Subscription data parse error');
+          console.warn('⚠️ Sidebar: Failed to parse subscription data');
         }
       }
       
-      // Check localStorage status
+      // Method 2: Check localStorage userStatus
       const localStatus = localStorage.getItem('userStatus');
       if (localStatus && ['free', 'start', 'pro'].includes(localStatus)) {
+        console.log('✅ Sidebar: Using localStorage plan:', localStatus);
         return localStatus;
       }
       
-      // Check store status
+      // Method 3: Check store status
       const storeStatus = this.userStatus;
       if (storeStatus && ['free', 'start', 'pro'].includes(storeStatus)) {
+        console.log('✅ Sidebar: Using store plan:', storeStatus);
         return storeStatus;
       }
       
+      // Method 4: Check backup getter if available
+      if (window.getWorkingUserStatus) {
+        const backupStatus = window.getWorkingUserStatus();
+        if (backupStatus && ['free', 'start', 'pro'].includes(backupStatus)) {
+          console.log('✅ Sidebar: Using backup plan:', backupStatus);
+          return backupStatus;
+        }
+      }
+      
+      console.log('⚠️ Sidebar: Defaulting to free plan');
       return 'free';
     },
     
@@ -296,6 +316,7 @@ export default {
   watch: {
     userStatus: {
       handler(newStatus, oldStatus) {
+        console.log('👀 Sidebar: userStatus changed:', oldStatus, '→', newStatus);
         this.handleStatusChange(newStatus, oldStatus);
         this.lastSyncTime = Date.now();
       },
@@ -304,6 +325,7 @@ export default {
     
     forceUpdateCounter: {
       handler(newCounter, oldCounter) {
+        console.log('🔄 Sidebar: forceUpdateCounter changed:', oldCounter, '→', newCounter);
         this.triggerReactivityUpdate();
       },
       immediate: true
@@ -341,6 +363,7 @@ export default {
     '$store.state.user.userStatus': {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
+          console.log('📊 Sidebar: Direct store status change:', oldStatus, '→', newStatus);
           this.triggerReactivityUpdate();
           this.lastSyncTime = Date.now();
         }
@@ -350,6 +373,8 @@ export default {
   },
   
   mounted() {
+    console.log('🚀 Sidebar: Component mounted');
+    
     this.checkMobile();
     window.addEventListener('resize', this.checkMobile);
     
@@ -388,12 +413,18 @@ export default {
       ];
       
       if (relevantMutations.includes(mutation.type)) {
+        console.log('🔄 Sidebar: Relevant store mutation:', mutation.type);
         this.handleStoreUpdate(mutation);
       }
     });
     
     this.syncStatusWithStore();
     this.setupPeriodicSync();
+    
+    // Initial status check
+    this.$nextTick(() => {
+      console.log('📊 Sidebar: Initial plan check:', this.currentPlan);
+    });
   },
   
   beforeUnmount() {
@@ -414,54 +445,93 @@ export default {
       clearTimeout(this.notificationTimeout);
       this.notificationTimeout = null;
     }
+    
+    console.log('🧹 Sidebar: Component unmounted');
   },
   
   methods: {
     ...mapMutations(['setUser', 'clearUser']),
     
-    // ✅ FIXED: Simple and reliable access check
+    // ✅ CRITICAL FIX: Absolutely bulletproof access check
     hasAccessToFeature(feature) {
-      const plan = this.currentPlan;
+      const currentPlan = this.currentPlan;
       
-      // Find the link configuration
+      console.log('🔐 Sidebar: Checking access for feature:', feature, 'with plan:', currentPlan);
+      
+      // Find link configuration
       const linkConfig = this.links.find(link => link.feature === feature);
       if (!linkConfig) {
-        return true; // Unknown features allowed
+        console.log('✅ Sidebar: Unknown feature, allowing access');
+        return true;
       }
       
       // Non-premium features are always accessible
       if (!linkConfig.premium) {
+        console.log('✅ Sidebar: Non-premium feature, access granted');
         return true;
       }
       
-      // For premium features, check if user has start or pro
-      return plan === 'start' || plan === 'pro';
+      // For premium features: ONLY grant access if user has start or pro
+      const hasAccess = currentPlan === 'start' || currentPlan === 'pro';
+      
+      console.log('📊 Sidebar: Premium feature access check:', {
+        feature: feature,
+        currentPlan: currentPlan,
+        hasAccess: hasAccess,
+        reason: hasAccess ? 'User has paid plan' : 'User on free plan'
+      });
+      
+      return hasAccess;
     },
     
-    // ✅ FIXED: Handle link clicks without interference
+    // ✅ FIXED: Handle link clicks - show modal for FREE users, allow navigation for START/PRO users
     handleLinkClick(link) {
-      // For premium features, check access
-      if (link.premium && !this.hasAccessToFeature(link.feature)) {
-        this.showUpgradeModalForFeature(link);
-        return false;
+      console.log('🖱️ Sidebar: Link clicked:', link.name, 'premium:', link.premium);
+      
+      // For premium features, check if user has access
+      if (link.premium) {
+        const currentPlan = this.currentPlan;
+        const hasAccess = this.hasAccessToFeature(link.feature);
+        
+        console.log('🔐 Sidebar: Premium feature access check:', {
+          link: link.name,
+          feature: link.feature,
+          currentPlan: currentPlan,
+          hasAccess: hasAccess
+        });
+        
+        // If user is on FREE plan, show upgrade modal
+        if (currentPlan === 'free' || !hasAccess) {
+          console.log('🚫 Sidebar: User on free plan, showing upgrade modal');
+          this.showUpgradeModalForFeature(link);
+          return false; // Prevent navigation
+        }
+        
+        // If user has START or PRO, allow navigation
+        console.log('✅ Sidebar: User has paid plan, allowing navigation');
+      } else {
+        console.log('✅ Sidebar: Non-premium feature, allowing navigation');
       }
       
-      // Otherwise allow navigation
+      // Close sidebar on mobile and allow navigation
       this.closeSidebarOnMobile();
       return true;
     },
     
     showUpgradeModalForFeature(link) {
+      console.log('💰 Sidebar: Showing upgrade modal for:', link.name);
       this.selectedFeature = link;
       this.showUpgradeModal = true;
     },
     
     closeUpgradeModal() {
+      console.log('❌ Sidebar: Closing upgrade modal');
       this.showUpgradeModal = false;
       this.selectedFeature = null;
     },
     
     goToUpgrade() {
+      console.log('🔄 Sidebar: Navigating to upgrade page');
       this.closeUpgradeModal();
       this.$router.push('/settings');
       this.closeSidebarOnMobile();
@@ -489,6 +559,7 @@ export default {
     setupGlobalListeners() {
       this.globalEventHandlers.subscriptionChange = (event) => {
         const { plan, source, oldPlan } = event.detail;
+        console.log('📡 Sidebar: Global subscription change event:', { plan, source, oldPlan });
         this.handleStatusChange(plan, oldPlan);
         
         this.$nextTick(() => {
@@ -500,22 +571,27 @@ export default {
       
       if (typeof window !== 'undefined' && window.eventBus) {
         this.globalEventHandlers.statusChanged = (data) => {
+          console.log('📡 Sidebar: EventBus status changed:', data);
           this.handleStatusChange(data.newStatus, data.oldStatus);
         };
         
         this.globalEventHandlers.promocodeApplied = (data) => {
+          console.log('🎟️ Sidebar: Promocode applied:', data);
           this.handleStatusChange(data.newStatus, data.oldStatus);
         };
         
         this.globalEventHandlers.subscriptionUpdated = (data) => {
+          console.log('💳 Sidebar: Subscription updated:', data);
           this.handleStatusChange(data.plan, data.oldPlan);
         };
         
         this.globalEventHandlers.forceUpdate = (data) => {
+          console.log('🔄 Sidebar: Force update event:', data);
           this.triggerReactivityUpdate();
         };
         
         this.globalEventHandlers.storeChanged = (data) => {
+          console.log('🏪 Sidebar: Store changed event:', data);
           this.syncStatusWithStore();
           this.triggerReactivityUpdate();
         };
@@ -542,6 +618,7 @@ export default {
         
         this.globalEventHandlers.storageChange = (event) => {
           if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
+            console.log('💾 Sidebar: Storage change detected:', event.oldValue, '→', event.newValue);
             this.handleStatusChange(event.newValue, event.oldValue);
             this.syncStatusWithStore();
           }
@@ -575,12 +652,14 @@ export default {
     },
     
     handleStatusChange(newStatus, oldStatus) {
+      console.log('🔄 Sidebar: Handling status change:', oldStatus, '→', newStatus);
       this.lastStatusUpdate = Date.now();
       this.triggerReactivityUpdate();
       this.onUserStatusChanged(newStatus, oldStatus);
     },
     
     handleStoreUpdate(mutation) {
+      console.log('🏪 Sidebar: Store update:', mutation.type);
       this.triggerReactivityUpdate();
       
       this.$nextTick(() => {
@@ -595,6 +674,8 @@ export default {
       this.reactivityKey++;
       this.lastStatusUpdate = Date.now();
       this.lastSyncTime = Date.now();
+      
+      console.log('🔄 Sidebar: Triggering reactivity update, reactivityKey:', this.reactivityKey);
       
       this.$forceUpdate();
       
@@ -613,7 +694,10 @@ export default {
         const localStatus = localStorage.getItem('userStatus');
         const currentTime = Date.now();
         
+        console.log('🔄 Sidebar: Syncing status - Store:', storeStatus, 'Local:', localStatus);
+        
         if (storeStatus && storeStatus !== localStatus) {
+          console.log('📝 Sidebar: Updating localStorage from store:', storeStatus);
           localStorage.setItem('userStatus', storeStatus);
           this.triggerReactivityUpdate();
           this.lastSyncTime = currentTime;
@@ -621,6 +705,7 @@ export default {
         
         if (!storeStatus || storeStatus === 'free') {
           if (localStatus && localStatus !== 'free' && localStatus !== storeStatus) {
+            console.log('📝 Sidebar: Updating store from localStorage:', localStatus);
             this.$store.commit('user/SET_USER_STATUS', localStatus);
             this.triggerReactivityUpdate();
             this.lastSyncTime = currentTime;
@@ -718,7 +803,7 @@ export default {
         return '/settings';
       }
       if (linkName === 'vocabulary') {
-        return '/vocabulary'; // Use standalone vocabulary route
+        return '/vocabulary'; // Standalone vocabulary route
       }
       return `/profile/${linkName}`;
     },
