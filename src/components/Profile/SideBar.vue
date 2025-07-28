@@ -238,24 +238,60 @@ export default {
       'forceUpdateCounter'
     ]),
     
-    // ✅ NEW: Current effective user plan with better detection
+    // ✅ ENHANCED: Current effective user plan with multiple sources and validation
     currentPlan() {
       const key = this.reactivityKey; // Force reactivity
       
-      // Try multiple sources for the current plan
+      // Try multiple sources for the current plan with priority order
       const storeStatus = this.userStatus;
       const localStatus = localStorage.getItem('userStatus');
       const workingStatus = window.getWorkingUserStatus ? window.getWorkingUserStatus() : null;
+      const subscriptionData = localStorage.getItem('subscriptionData');
       
-      // Priority: store > working > localStorage > default
-      let effectiveStatus = storeStatus || workingStatus || localStatus || 'free';
+      console.log('🔍 Sidebar: Plan detection sources:', {
+        storeStatus,
+        storeStatusType: typeof storeStatus,
+        localStatus,
+        workingStatus,
+        subscriptionData: subscriptionData ? 'EXISTS' : 'NONE',
+        reactivityKey: key
+      });
       
-      // ✅ CRITICAL: Handle string 'undefined' and null cases
-      if (effectiveStatus === 'undefined' || effectiveStatus === null || effectiveStatus === undefined) {
-        effectiveStatus = localStatus || 'free';
+      // ✅ CRITICAL: Check subscription data first if other sources fail
+      let subscriptionPlan = null;
+      if (subscriptionData) {
+        try {
+          const parsed = JSON.parse(subscriptionData);
+          if (parsed.plan && parsed.expiryDate) {
+            const now = new Date();
+            const expiry = new Date(parsed.expiryDate);
+            if (now < expiry) {
+              subscriptionPlan = parsed.plan;
+              console.log('✅ Sidebar: Valid subscription found:', subscriptionPlan);
+            }
+          }
+        } catch (e) {
+          console.warn('⚠️ Sidebar: Failed to parse subscription data');
+        }
       }
       
+      // Priority: subscription > store > working > localStorage > default
+      let effectiveStatus = subscriptionPlan || storeStatus || workingStatus || localStatus || 'free';
       
+      // ✅ CRITICAL: Handle string 'undefined' and null cases
+      if (effectiveStatus === 'undefined' || effectiveStatus === null || effectiveStatus === undefined || effectiveStatus === '') {
+        effectiveStatus = subscriptionPlan || localStatus || 'free';
+        console.warn('⚠️ Sidebar: Invalid status detected, using fallback:', effectiveStatus);
+      }
+      
+      // ✅ CRITICAL: Validate the plan value
+      const validPlans = ['free', 'start', 'pro'];
+      if (!validPlans.includes(effectiveStatus)) {
+        console.warn('⚠️ Sidebar: Invalid plan value:', effectiveStatus);
+        effectiveStatus = localStatus && validPlans.includes(localStatus) ? localStatus : 'free';
+      }
+      
+      console.log('✅ Sidebar: Final effective plan:', effectiveStatus);
       
       return effectiveStatus;
     },
@@ -301,8 +337,6 @@ export default {
     
     user: {
       handler(newUser, oldUser) {
-         
-        
         if (newUser && (!oldUser || oldUser.email !== newUser.email)) {
           this.componentKey++;
         }
@@ -333,7 +367,7 @@ export default {
     '$store.state.user.userStatus': {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
-          ('📊 Sidebar: Store user status direct change (via $store.state):', oldStatus, '→', newStatus);
+          console.log('📊 Sidebar: Store user status direct change (via $store.state):', oldStatus, '→', newStatus);
           this.triggerReactivityUpdate();
           this.lastSyncTime = Date.now();
         }
@@ -343,13 +377,12 @@ export default {
   },
   
   mounted() {
-   
+    console.log('🚀 Sidebar: Component mounting...');
     
     this.checkMobile();
     window.addEventListener('resize', this.checkMobile);
     
     onAuthStateChanged(auth, (firebaseUser) => {
-      
       if (firebaseUser) {
         const userData = {
           name: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
@@ -390,6 +423,21 @@ export default {
     
     this.syncStatusWithStore();
     this.setupPeriodicSync();
+    
+    // ✅ NEW: Add immediate status check and sync on mount
+    this.$nextTick(() => {
+      console.log('🚀 Sidebar: Component mounted, checking status...');
+      this.forceSyncStatus();
+      
+      // Small delay to ensure reactivity
+      setTimeout(() => {
+        console.log('🔍 Sidebar: Initial access debug:');
+        this.debugAccessStatus();
+      }, 100);
+    });
+    
+    // ✅ NEW: Setup debug tools
+    this.setupDebugTools();
   },
   
   beforeUnmount() {
@@ -411,45 +459,64 @@ export default {
       this.notificationTimeout = null;
     }
     
+    console.log('🧹 Sidebar: Component unmounting, cleaned up all listeners');
   },
   
   methods: {
     ...mapMutations(['setUser', 'clearUser']),
     
-    // ✅ NEW: Check if user has access to a specific feature
+    // ✅ ENHANCED: Check if user has access to a specific feature with better logging
     hasAccessToFeature(feature) {
       const plan = this.currentPlan;
       
+      console.log('🔐 Sidebar: Access check for feature:', feature, 'with plan:', plan);
       
       // Find the link configuration for this feature
       const linkConfig = this.links.find(link => link.feature === feature);
       if (!linkConfig) {
-        console.warn('⚠️ Unknown feature:', feature);
+        console.warn('⚠️ Sidebar: Unknown feature:', feature);
         return true; // Default to allowing access for unknown features
       }
       
-      // ✅ CRITICAL: Always allow access if not premium OR if user has required plan
+      console.log('🔗 Sidebar: Link config for', feature, ':', {
+        premium: linkConfig.premium,
+        requiredPlans: linkConfig.requiredPlans
+      });
+      
+      // ✅ CRITICAL: Always allow access if not premium
       if (!linkConfig.premium) {
-        return true; // Non-premium features are always accessible
+        console.log('✅ Sidebar: Non-premium feature - access granted');
+        return true;
       }
       
-      // Check if current plan is in the required plans
-      const hasAccess = linkConfig.requiredPlans.includes(plan);
+      // ✅ CRITICAL: Check if current plan is in the required plans
+      const hasAccess = linkConfig.requiredPlans && linkConfig.requiredPlans.includes(plan);
       
-      
+      console.log('🔐 Sidebar: Access result:', {
+        feature,
+        plan,
+        requiredPlans: linkConfig.requiredPlans,
+        hasAccess
+      });
       
       return hasAccess;
     },
     
-    // ✅ NEW: Handle link clicks with access control
+    // ✅ ENHANCED: Handle link clicks with better logging
     handleLinkClick(link) {
+      console.log('🖱️ Sidebar: Link clicked:', link.name, 'feature:', link.feature);
+      
+      const hasAccess = this.hasAccessToFeature(link.feature);
+      console.log('🔐 Sidebar: Access check result:', hasAccess);
       
       // ✅ CRITICAL: Only show modal for premium features that user can't access
-      if (link.premium && !this.hasAccessToFeature(link.feature)) {
+      if (link.premium && !hasAccess) {
+        console.log('🚫 Sidebar: Access denied, showing upgrade modal');
         this.showUpgradeModalForFeature(link);
         return false;
       }
       
+      console.log('✅ Sidebar: Access granted, proceeding with navigation');
       this.closeSidebarOnMobile();
       return true;
     },
@@ -473,8 +540,120 @@ export default {
       this.closeSidebarOnMobile();
     },
     
-    onUserStatusChanged(newStatus, oldStatus) {
+    // ✅ ENHANCED: Force status sync and update
+    forceSyncStatus() {
+      console.log('🔄 Sidebar: Force syncing status...');
       
+      // Get all possible status sources
+      const storeStatus = this.$store?.getters['user/userStatus'];
+      const localStatus = localStorage.getItem('userStatus');
+      const subscriptionData = localStorage.getItem('subscriptionData');
+      
+      console.log('📊 Sidebar: Status sources before sync:', {
+        store: storeStatus,
+        local: localStatus,
+        subscription: subscriptionData ? 'EXISTS' : 'NONE'
+      });
+      
+      // If we have subscription data but statuses don't match, fix it
+      if (subscriptionData) {
+        try {
+          const parsed = JSON.parse(subscriptionData);
+          if (parsed.plan && parsed.expiryDate) {
+            const now = new Date();
+            const expiry = new Date(parsed.expiryDate);
+            if (now < expiry && parsed.plan !== 'free') {
+              // We have a valid subscription, ensure all statuses match
+              if (localStatus !== parsed.plan) {
+                console.log('🔧 Sidebar: Syncing localStorage to subscription plan:', parsed.plan);
+                localStorage.setItem('userStatus', parsed.plan);
+                localStorage.setItem('userPlan', parsed.plan);
+                localStorage.setItem('subscriptionPlan', parsed.plan);
+              }
+              
+              if (storeStatus !== parsed.plan) {
+                console.log('🔧 Sidebar: Syncing store to subscription plan:', parsed.plan);
+                this.$store.commit('user/SET_USER_STATUS', parsed.plan);
+              }
+              
+              this.triggerReactivityUpdate();
+            }
+          }
+        } catch (error) {
+          console.error('❌ Sidebar: Error parsing subscription data:', error);
+        }
+      }
+    },
+    
+    // ✅ ENHANCED: Add debug method to check current access status
+    debugAccessStatus() {
+      console.log('🐛 Sidebar: DEBUG - Current access status:');
+      console.log('📊 Current plan:', this.currentPlan);
+      console.log('📋 Feature access check:');
+      
+      this.links.forEach(link => {
+        const hasAccess = this.hasAccessToFeature(link.feature);
+        console.log(`  ${link.name} (${link.feature}): ${hasAccess ? '✅ GRANTED' : '🚫 DENIED'} [Premium: ${link.premium}]`);
+      });
+      
+      return {
+        currentPlan: this.currentPlan,
+        storeStatus: this.$store?.getters['user/userStatus'],
+        localStatus: localStorage.getItem('userStatus'),
+        subscriptionExists: !!localStorage.getItem('subscriptionData')
+      };
+    },
+    
+    // ✅ NEW: Setup debug tools
+    setupDebugTools() {
+      // Make debug tools available globally
+      window.sidebarDebug = {
+        // Check current sidebar access status
+        checkAccess: () => {
+          return this.debugAccessStatus();
+        },
+        
+        // Force sync sidebar status
+        forceSync: () => {
+          this.forceSyncStatus();
+          return 'Status synced';
+        },
+        
+        // Get detailed plan information
+        getPlanInfo: () => {
+          return {
+            currentPlan: this.currentPlan,
+            userStatus: this.userStatus,
+            storeGetter: this.$store.getters['user/userStatus'],
+            localStorage: localStorage.getItem('userStatus'),
+            subscription: localStorage.getItem('subscriptionData'),
+            reactivityKey: this.reactivityKey
+          };
+        },
+        
+        // Test specific feature access
+        testFeature: (featureName) => {
+          const hasAccess = this.hasAccessToFeature(featureName);
+          console.log(`🔐 Feature '${featureName}' access:`, hasAccess ? '✅ GRANTED' : '🚫 DENIED');
+          return hasAccess;
+        },
+        
+        // Force reactivity update
+        forceUpdate: () => {
+          this.triggerReactivityUpdate();
+          return 'Reactivity updated';
+        }
+      };
+      
+      console.log('🧪 Sidebar Debug Tools Available:');
+      console.log('- window.sidebarDebug.checkAccess() - Check all feature access');
+      console.log('- window.sidebarDebug.forceSync() - Force status sync');
+      console.log('- window.sidebarDebug.getPlanInfo() - Get detailed plan info');
+      console.log('- window.sidebarDebug.testFeature("analytics") - Test specific feature');
+      console.log('- window.sidebarDebug.forceUpdate() - Force reactivity update');
+    },
+    
+    onUserStatusChanged(newStatus, oldStatus) {
       if (oldStatus && oldStatus !== newStatus && newStatus && newStatus !== 'free') {
         clearTimeout(this.notificationTimeout);
         this.notificationTimeout = setTimeout(() => {
@@ -491,13 +670,10 @@ export default {
       this.syncCheckInterval = setInterval(() => {
         this.syncStatusWithStore();
       }, 30000);
-      
     },
 
     setupGlobalListeners() {
-      
       this.globalEventHandlers.subscriptionChange = (event) => {
-        
         const { plan, source, oldPlan } = event.detail;
         this.handleStatusChange(plan, oldPlan);
         
@@ -549,7 +725,6 @@ export default {
             window.eventBus.off(eventName, handler);
           });
         });
-        
       }
       
       if (typeof window !== 'undefined') {
@@ -567,7 +742,6 @@ export default {
     },
 
     cleanupGlobalListeners() {
-      
       if (typeof window !== 'undefined') {
         if (this.globalEventHandlers.subscriptionChange) {
           window.removeEventListener('userSubscriptionChanged', this.globalEventHandlers.subscriptionChange);
@@ -621,8 +795,6 @@ export default {
           this.$forceUpdate();
         }, 50);
       });
-      
-     
     },
     
     syncStatusWithStore() {
@@ -630,8 +802,6 @@ export default {
         const storeStatus = this.$store?.getters['user/userStatus'];
         const localStatus = localStorage.getItem('userStatus');
         const currentTime = Date.now();
-        
-        
         
         if (storeStatus && storeStatus !== localStatus) {
           localStorage.setItem('userStatus', storeStatus);
@@ -679,7 +849,6 @@ export default {
           duration: 5000,
           position: 'top-center'
         });
-      } else {
       }
     },
     
@@ -711,7 +880,6 @@ export default {
         keysToRemove.forEach(key => {
           localStorage.removeItem(key);
         });
-        
         
         if (this.$toast) {
           this.$toast.success('Вы успешно вышли из аккаунта.', {
