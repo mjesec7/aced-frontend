@@ -525,13 +525,6 @@ export default {
       console.log('✅ Sidebar: Access granted, proceeding with navigation');
       this.closeSidebarOnMobile();
       
-      // ✅ ENHANCED: Handle special navigation cases
-      if (link.name === 'vocabulary') {
-        // Navigate to standalone vocabulary route
-        this.$router.push('/vocabulary');
-        return true;
-      }
-      
       return true;
     },
     
@@ -917,16 +910,19 @@ export default {
       }
     },
     
+    // ✅ UPDATED: Route path logic to handle vocabulary correctly
     getRoutePath(linkName) {
       if (linkName === 'settings') {
         return '/settings';
       }
+      // ✅ FIXED: Vocabulary now goes to profile vocabulary
       if (linkName === 'vocabulary') {
-        return '/vocabulary';
+        return '/profile/vocabulary';
       }
       return `/profile/${linkName}`;
     },
     
+    // ✅ UPDATED: Active check logic to handle vocabulary correctly
     isActive(name) {
       const path = this.$route.path;
       
@@ -937,7 +933,7 @@ export default {
         goal: ['/profile/goal'],
         diary: ['/profile/diary'],
         settings: ['/settings'],
-        vocabulary: ['/vocabulary']
+        vocabulary: ['/profile/vocabulary'] // ✅ FIXED: Updated to profile vocabulary path
       };
       
       const startsWithMatches = {

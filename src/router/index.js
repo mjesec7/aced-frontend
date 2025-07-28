@@ -133,65 +133,6 @@ const routes = [
     }
   },
 
-  // ✅ FIXED VOCABULARY ROUTE WITH CONSISTENT SUBSCRIPTION PROTECTION
-  {
-    path: '/vocabulary',
-    name: 'VocabularyPage',
-    component: VocabularyPage,
-    meta: { 
-      requiresAuth: true,
-      title: 'Словарь',
-      description: 'Персональный словарь с изученными словами'
-    },
-    beforeEnter: async (to, from, next) => {
-      console.log('🔍 Router: Vocabulary route guard triggered');
-      
-      // Check authentication first
-      const isLoggedIn = store.getters.isLoggedIn;
-      if (!isLoggedIn) {
-        console.warn('❌ Vocabulary requires authentication');
-        return next({ 
-          name: 'HomePage',
-          query: { 
-            redirect: to.fullPath,
-            LoginRequired: 'true',
-            message: 'Для доступа к словарю необходимо войти в систему'
-          }
-        });
-      }
-
-      // ✅ CRITICAL FIX: Use consistent access checking logic
-      const hasAccess = hasFeatureAccess('vocabulary', ['start', 'pro']);
-      
-      if (!hasAccess) {
-        console.warn('❌ Router: Vocabulary access denied - redirecting to payment');
-        
-        // Store the intended destination for after subscription
-        sessionStorage.setItem('intendedRoute', JSON.stringify({
-          path: to.path,
-          name: to.name,
-          params: to.params,
-          query: to.query
-        }));
-        
-        // Redirect to payment page with vocabulary context
-        return next({ 
-          name: 'PaymePayment',
-          params: { plan: 'start' },
-          query: { 
-            feature: 'vocabulary',
-            requiredPlan: 'start',
-            returnTo: to.path,
-            message: 'Словарь доступен с подпиской Start'
-          }
-        });
-      }
-      
-      console.log('✅ Router: Vocabulary access granted');
-      next();
-    }
-  },
-
   {
     path: '/profile',
     component: ProfilePage,
@@ -455,10 +396,48 @@ const routes = [
         }
       },
       
-      // ✅ LEGACY VOCABULARY REDIRECT - Under profile (deprecated)
+      // ✅ NEW: VOCABULARY ROUTE MOVED INSIDE PROFILE WITH FULL ACCESS CONTROL
       { 
         path: 'vocabulary', 
-        redirect: '/profile/vocabulary'
+        name: 'ProfileVocabularyPage', 
+        component: VocabularyPage,
+        meta: { 
+          title: 'Словарь',
+          description: 'Персональный словарь с изученными словами'
+        },
+        beforeEnter: async (to, from, next) => {
+          console.log('🔍 Router: Profile Vocabulary route guard triggered');
+          
+          // ✅ CRITICAL FIX: Use consistent access checking logic
+          const hasAccess = hasFeatureAccess('vocabulary', ['start', 'pro']);
+          
+          if (!hasAccess) {
+            console.warn('❌ Router: Vocabulary access denied - redirecting to payment');
+            
+            // Store the intended destination for after subscription
+            sessionStorage.setItem('intendedRoute', JSON.stringify({
+              path: to.path,
+              name: to.name,
+              params: to.params,
+              query: to.query
+            }));
+            
+            // Redirect to payment page with vocabulary context
+            return next({ 
+              name: 'PaymePayment',
+              params: { plan: 'start' },
+              query: { 
+                feature: 'vocabulary',
+                requiredPlan: 'start',
+                returnTo: to.path,
+                message: 'Словарь доступен с подпиской Start'
+              }
+            });
+          }
+          
+          console.log('✅ Router: Profile Vocabulary access granted');
+          next();
+        }
       }
     ],
   },
@@ -758,17 +737,13 @@ const routes = [
     }
   },
   
-  // ✅ LEGACY REDIRECTS: Redirect old vocabulary routes to new standalone vocabulary page
+  // ✅ REDIRECTS: Old vocabulary routes to new profile vocabulary
   {
-    path: '/vocabulary/:language',
-    redirect: '/vocabulary'
-  },
-  {
-    path: '/profile/vocabulary',
+    path: '/vocabulary',
     redirect: '/profile/vocabulary'
   },
   {
-    path: '/profile/vocabulary/:language',
+    path: '/vocabulary/:language',
     redirect: '/profile/vocabulary'
   },
   
@@ -846,8 +821,6 @@ router.beforeEach(async (to, from, next) => {
       }
     });
   }
-
-  // ✅ REMOVED GENERIC SUBSCRIPTION CHECKS - Let individual route guards handle their own logic
 
   // ✅ PAYMENT ROUTE SPECIFIC CHECKS
   if (to.name === 'PaymePayment') {
@@ -1044,7 +1017,7 @@ export const navigateToIntendedRoute = (router) => {
   return false;
 };
 
-// ✅ VOCABULARY ACCESS HELPER
+// ✅ VOCABULARY ACCESS HELPER - Updated for profile vocabulary
 export const checkVocabularyAccess = () => {
   const effectiveStatus = getEffectiveUserPlan();
   return ['start', 'pro', 'premium'].includes(effectiveStatus);
@@ -1115,9 +1088,9 @@ if (typeof window !== 'undefined') {
       };
     },
     
-    // Force navigation to vocabulary (for testing)
+    // Force navigation to vocabulary (for testing) - Updated to use profile path
     goToVocabulary: () => {
-      router.push('/vocabulary');
+      router.push('/profile/vocabulary');
     }
   };
   
@@ -1126,7 +1099,7 @@ if (typeof window !== 'undefined') {
   console.log('- window.routerDebug.testFeature("vocabulary") - Test feature access');
   console.log('- window.routerDebug.checkVocabulary() - Check vocabulary access');
   console.log('- window.routerDebug.getAllSources() - Get all status sources');
-  console.log('- window.routerDebug.goToVocabulary() - Force navigate to vocabulary');
+  console.log('- window.routerDebug.goToVocabulary() - Force navigate to profile vocabulary');
 }
 
 export default router;
