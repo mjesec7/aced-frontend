@@ -117,7 +117,6 @@ const routes = [
         });
       }
       
-      console.log('✅ Vocabulary access granted');
       next();
     }
   },
@@ -365,7 +364,6 @@ const routes = [
     path: '/payment-success',
     name: 'PaymentSuccess',
     beforeEnter: async (to, from, next) => {
-      console.log('✅ Payment success, updating user status...');
       
       // Update user subscription status
       if (store.getters['user/isAuthenticated']) {
@@ -456,7 +454,6 @@ const routes = [
     path: '/payme/return/success',
     name: 'PaymeReturnSuccess',
     beforeEnter: (to, from, next) => {
-      console.log('✅ PayMe success return, query:', to.query);
       
       // Extract transaction info from PayMe response
       const transactionId = to.query.transaction || to.query.id;
@@ -474,7 +471,6 @@ const routes = [
     path: '/payme/return/failure',
     name: 'PaymeReturnFailure', 
     beforeEnter: (to, from, next) => {
-      console.log('❌ PayMe failure return, query:', to.query);
       
       // Extract error info from PayMe response
       const transactionId = to.query.transaction || to.query.id;
@@ -656,7 +652,6 @@ router.beforeEach(async (to, from, next) => {
     // Dynamically import main.js to get authInitPromise
     const { authInitPromise } = await import('@/main.js'); 
     await authInitPromise;
-    console.log('✅ Router: Auth initialization complete');
   } catch (err) {
     console.warn('⚠️ Router: Auth wait failed, proceeding anyway:', err);
   }
@@ -707,7 +702,6 @@ router.beforeEach(async (to, from, next) => {
       });
     }
     
-    console.log('✅ Subscription access granted');
   }
 
   // ✅ PAYMENT ROUTE SPECIFIC CHECKS
@@ -765,15 +759,12 @@ router.afterEach((to, from) => {
   
   // Enhanced logging for specific route types
   if (to.name && (to.name.includes('Vocabulary') || to.name.includes('Analytics'))) {
-    console.log(`📚 Premium feature accessed: ${to.name}`);
   } 
   else if (to.name && (to.name.includes('Payme') || to.name.includes('Payment'))) {
-    console.log(`💳 Payment flow: ${to.name}`);
   }
   
   // Log params if any
   if (Object.keys(to.params).length > 0) {
-    console.log('📋 Route params:', to.params);
   }
   
   // ✅ AUTO-CHECK SUBSCRIPTION STATUS on navigation (for authenticated users)
@@ -835,7 +826,6 @@ export const navigateToPayment = (plan = 'start', options = {}) => {
     ...(Object.keys(query).length > 0 && { query })
   };
   
-  console.log('💳 Navigating to payment:', route);
   
   if (routerInstance) {
     return routerInstance.push(route);
@@ -852,7 +842,6 @@ export const navigateToSettings = (options = {}) => {
     ...(returnTo && { query: { returnTo } })
   };
   
-  console.log('⚙️ Navigating to settings:', route);
   
   if (routerInstance) {
     return routerInstance.push(route);
@@ -884,7 +873,6 @@ export const navigateToIntendedRoute = (router) => {
       const route = JSON.parse(intendedRoute);
       sessionStorage.removeItem('intendedRoute');
       
-      console.log('📍 Navigating to intended route:', route);
       router.push(route);
       return true;
     }

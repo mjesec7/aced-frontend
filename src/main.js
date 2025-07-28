@@ -315,7 +315,6 @@ try {
 
 // ✅ NEW: Basic user authentication fallback with subscription preservation
 async function handleBasicUserAuthentication(firebaseUser, token = null) {
-console.log('🔧 Using basic user authentication fallback...');
 
 try {
   // ✅ CRITICAL: Check for valid subscription first, then fallback to localStorage
@@ -325,9 +324,7 @@ try {
   if (subscription && subscription.plan !== 'free') {
     if (isSubscriptionValid()) {
       existingStatus = subscription.plan;
-      console.log('✅ Valid subscription preserved during basic auth:', existingStatus);
     } else {
-      console.log('❌ Expired subscription during basic auth');
       handleSubscriptionExpiry(subscription);
       existingStatus = 'free';
     }
@@ -339,7 +336,6 @@ try {
                     'free';
   }
   
-  console.log('🔍 Basic auth using status:', existingStatus);
   
   // Create basic user object
   const basicUser = {
@@ -379,7 +375,6 @@ try {
   try {
     store.commit('user/setUserStatus', existingStatus);
   } catch (e) {
-    console.log('Legacy setUserStatus not available');
   }
   
   // Update localStorage with all possible status fields
@@ -402,13 +397,7 @@ try {
   // Mark auth as ready
   appLifecycle.authReady = true;
   
-  console.log('✅ Basic user authentication completed:', {
-    email: basicUser.email,
-    id: basicUser.firebaseId,
-    status: existingStatus,
-    mode: 'basic',
-    hasSubscription: !!subscription && subscription.plan !== 'free'
-  });
+  
   
   // ✅ CRITICAL: Trigger events immediately for status propagation
   const eventData = {
@@ -448,7 +437,6 @@ try {
 // ✅ ENHANCED: Successful user save handler with subscription persistence
 async function handleSuccessfulUserSave(result, token, userData) {
 try {
-  console.log('✅ User saved to server successfully');
   
   const serverUser = result.user;
   // ✅ CRITICAL FIX: Handle multiple possible status field names
@@ -458,12 +446,7 @@ try {
                    serverUser.subscription || 
                    'free';
   
-  console.log('👤 Server user data:', {
-    id: serverUser._id || serverUser.firebaseId,
-    email: serverUser.email,
-    plan: userPlan,
-    rawServerUser: serverUser
-  });
+ 
   
   // ✅ CRITICAL: Enhanced user object with all possible status fields AND subscription tracking
   const enhancedUser = {
@@ -495,13 +478,11 @@ try {
       try {
         store.commit('user/setUserStatus', userPlan);
       } catch (e) {
-        console.log('Legacy setUserStatus mutation not available');
       }
       
       try {
         store.commit('user/UPDATE_SUBSCRIPTION', { plan: userPlan });
       } catch (e) {
-        console.log('UPDATE_SUBSCRIPTION mutation not available');
       }
     }
     
@@ -525,7 +506,6 @@ try {
       }
     });
     
-    console.log('✅ User state updated successfully with plan:', userPlan);
     
   } catch (storeUpdateError) {
     console.error('❌ Failed to update stores:', storeUpdateError);
@@ -572,7 +552,6 @@ try {
   // Store last login time
   localStorage.setItem('lastLoginTime', new Date().toISOString());
   
-  console.log(`🎉 User login completed: ${userData.email} (${userPlan})`);
   
 } catch (error) {
   console.error('❌ Error in successful save handler:', error);
@@ -623,7 +602,6 @@ try {
   // Mark auth as ready (even for non-authenticated users)
   appLifecycle.authReady = true;
   
-  console.log('✅ Non-authenticated state processed successfully');
   
   // Trigger events
   setTimeout(() => {
@@ -654,7 +632,6 @@ try {
 // 🔥 ENHANCED VUE APPLICATION MOUNTING
 // ============================================================================
 async function mountVueApplication() {
-console.log('🎯 Mounting Vue application with full features...');
 
 try {
   app = createApp(App);
@@ -723,7 +700,6 @@ try {
   isApplicationMounted = true;
   appLifecycle.mounted = true;
   
-  console.log('✅ Vue application mounted successfully');
   
   // Setup global subscription management
   setupEnhancedGlobalSubscriptionManagement();
@@ -767,7 +743,6 @@ try {
 // 🔥 BASIC VUE APPLICATION MOUNTING (FALLBACK)
 // ============================================================================
 async function mountVueApplicationBasic() {
-console.log('🎯 Mounting Vue application in basic mode...');
 
 try {
   app = createApp(App);
@@ -787,7 +762,6 @@ try {
   isApplicationMounted = true;
   appLifecycle.mounted = true;
   
-  console.log('✅ Vue application mounted in basic mode');
   
   return true;
   
@@ -805,7 +779,6 @@ window.triggerGlobalEvent = (eventName, data = {}) => {
 if (typeof window === 'undefined') return;
 
 try {
-  console.log(`🌍 Triggering global event: ${eventName}`, data);
   
   // ✅ CRITICAL FIX: Handle empty string and extract actual status
   const { newStatus, plan, userStatus, subscriptionPlan, oldStatus } = data;
@@ -841,13 +814,7 @@ try {
     }
   }
   
-  console.log(`🔍 Status resolution for ${eventName}:`, {
-    originalNewStatus: newStatus,
-    originalPlan: plan,
-    possibleStatuses,
-    actualNewStatus,
-    dataReceived: data
-  });
+ 
   
   const enhancedData = {
     ...data,
@@ -863,7 +830,6 @@ try {
     oldStatus: oldStatus || 'free'
   };
 
-  console.log(`🔍 Enhanced event data for ${eventName}:`, enhancedData);
 
   // Multiple event dispatch methods for maximum compatibility
   const customEvent = new CustomEvent(eventName, {
@@ -896,7 +862,6 @@ try {
     }
   }
 
-  console.log(`✅ Global event dispatched: ${eventName} with status: ${actualNewStatus}`);
 
 } catch (eventError) {
   console.error(`❌ Failed to trigger global event '${eventName}':`, eventError);
@@ -948,7 +913,6 @@ on(event, callback) {
   this.events[event].push(callback);
   
   if (this.debugMode) {
-    console.log(`🔗 EventBus: Registered listener for "${event}"`);
   }
 }
 
@@ -1026,7 +990,6 @@ clear() {
 // ============================================================================
 const setupStoreInterceptor = (store) => {
 store.subscribe((mutation, state) => {
-  console.log('🔄 Store mutation:', mutation.type, mutation.payload);
   
   // User-related mutations that should trigger global events
   const userMutations = [
@@ -1117,10 +1080,8 @@ storeReady: false
 // 🌐 ENHANCED GLOBAL SUBSCRIPTION MANAGEMENT
 // ============================================================================
 function setupEnhancedGlobalSubscriptionManagement() {
-console.log('🌐 Setting up enhanced global subscription management...');
 
 const handleGlobalSubscriptionChange = (event) => {
-  console.log('📡 Global subscription change detected:', event.detail);
   
   // ✅ CRITICAL FIX: Extract plan from event detail with multiple fallbacks AND message parsing
   const { plan, newStatus, userStatus, subscriptionPlan, message } = event.detail || {};
@@ -1129,18 +1090,14 @@ const handleGlobalSubscriptionChange = (event) => {
   
   // ✅ CRITICAL: If plan is empty/undefined but we have a success message, parse it
   if ((!actualPlan || actualPlan === '' || actualPlan === 'undefined') && message) {
-    console.log('🔍 Plan is empty, parsing from message:', message);
     
     // Parse plan from success messages
     if (message.includes('START') || message.includes('start')) {
       actualPlan = 'start';
-      console.log('✅ Extracted plan from message: start');
     } else if (message.includes('PRO') || message.includes('pro')) {
       actualPlan = 'pro';
-      console.log('✅ Extracted plan from message: pro');
     } else if (message.includes('FREE') || message.includes('free')) {
       actualPlan = 'free';
-      console.log('✅ Extracted plan from message: free');
     }
   }
   
@@ -1150,18 +1107,12 @@ const handleGlobalSubscriptionChange = (event) => {
     const localPlan = localStorage.getItem('userPlan');
     const localSubscription = localStorage.getItem('subscriptionPlan');
     
-    console.log('🔍 Promocode detected with empty plan, checking localStorage:', {
-      userStatus: localStatus,
-      userPlan: localPlan,
-      subscriptionPlan: localSubscription
-    });
     
     // Use localStorage value if it's valid and not 'free'
     const possiblePlans = [localStatus, localPlan, localSubscription];
     for (const possiblePlan of possiblePlans) {
       if (possiblePlan && possiblePlan !== 'free' && ['start', 'pro'].includes(possiblePlan)) {
         actualPlan = possiblePlan;
-        console.log('✅ Using localStorage plan:', actualPlan);
         break;
       }
     }
@@ -1204,15 +1155,12 @@ const handleGlobalSubscriptionChange = (event) => {
   localStorage.setItem('subscriptionPlan', actualPlan);
   localStorage.setItem('statusUpdateTime', Date.now().toString());
   
-  console.log('💾 localStorage updated with plan:', actualPlan);
   
   // Update store if not already updated
   try {
     const currentStoreStatus = store.getters['user/userStatus'];
-    console.log('🔍 Store status comparison:', { current: currentStoreStatus, new: actualPlan });
     
     if (currentStoreStatus !== actualPlan) {
-      console.log('🔄 Syncing store with global change:', currentStoreStatus, '→', actualPlan);
       store.commit('user/SET_USER_STATUS', actualPlan);
       
       // Also try legacy mutations
@@ -1237,7 +1185,6 @@ const handleGlobalSubscriptionChange = (event) => {
   if (app?._instance) {
     try {
       app._instance.proxy.$forceUpdate();
-      console.log('🔄 Forced Vue app update');
     } catch (error) {
       console.warn('⚠️ Failed to force Vue update:', error);
     }
@@ -1256,7 +1203,6 @@ const handleGlobalSubscriptionChange = (event) => {
     message: message // Preserve original message
   };
   
-  console.log('📡 Emitting events with data:', eventData);
   
   const eventTypes = [
     'globalForceUpdate',
@@ -1309,20 +1255,12 @@ window.globalEventHandlers.subscriptionHandlers.push(handleGlobalSubscriptionCha
 
 // Enhanced event bus subscription listeners
 eventBus.on('userStatusChanged', (data) => {
-  console.log('👤 User status changed via event bus:', data);
   
   // ✅ CRITICAL FIX: Extract the actual status value with multiple fallbacks
   const { newStatus, plan, userStatus, subscriptionPlan } = data || {};
   const actualStatus = newStatus || plan || userStatus || subscriptionPlan || 'free';
   
-  console.log('🔍 Extracted status values:', {
-    newStatus,
-    plan,
-    userStatus,
-    subscriptionPlan,
-    actualStatus,
-    originalData: data
-  });
+
   
   // ✅ CRITICAL: Validate the status
   if (!['free', 'start', 'pro', 'premium'].includes(actualStatus)) {
@@ -1336,7 +1274,6 @@ eventBus.on('userStatusChanged', (data) => {
     localStorage.setItem('userPlan', actualStatus);
     localStorage.setItem('subscriptionPlan', actualStatus);
     localStorage.setItem('statusUpdateTime', Date.now().toString());
-    console.log('💾 localStorage synced with status:', actualStatus);
   } catch (storageError) {
     console.warn('⚠️ localStorage sync failed:', storageError);
   }
@@ -1345,14 +1282,12 @@ eventBus.on('userStatusChanged', (data) => {
   try {
     const currentStoreStatus = store.getters['user/userStatus'];
     if (currentStoreStatus !== actualStatus) {
-      console.log('🔄 Updating store via event bus:', currentStoreStatus, '→', actualStatus);
       store.commit('user/SET_USER_STATUS', actualStatus);
       
       // Try legacy mutations too
       try {
         store.commit('user/setUserStatus', actualStatus);
       } catch (e) {
-        console.log('Legacy setUserStatus not available in event bus handler');
       }
     }
   } catch (storeError) {
@@ -1366,7 +1301,6 @@ eventBus.on('userStatusChanged', (data) => {
       
       // Also trigger $nextTick for delayed components
       app._instance.proxy.$nextTick(() => {
-        console.log('🔄 NextTick update completed with status:', actualStatus);
       });
     } catch (error) {
       console.warn('⚠️ Failed to force update on status change:', error);
@@ -1375,7 +1309,6 @@ eventBus.on('userStatusChanged', (data) => {
 });
 
 eventBus.on('promocodeApplied', (data) => {
-  console.log('🎟️ Promocode applied:', data);
   
   // Create DOM event for global propagation
   const domEvent = new CustomEvent('userSubscriptionChanged', {
@@ -1467,7 +1400,6 @@ console.error('❌ Global JavaScript error:', event.error);
 // Check if error is related to user status/arrays
 if (event.error?.message?.includes('length') || 
     event.error?.message?.includes('Cannot read properties of undefined')) {
-  console.log('🔄 Attempting user status recovery after global error...');
   
   try {
     // Force store update

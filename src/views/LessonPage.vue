@@ -549,7 +549,7 @@ export default {
       document.body.style.userSelect = 'none'
       document.body.style.cursor = resizeDirection.value === 'horizontal' ? 'col-resize' : 'row-resize'
       
-      console.log('🔧 Started resizing:', resizeDirection.value)
+       ('🔧 Started resizing:', resizeDirection.value)
     }
 
     const handleResize = (event) => {
@@ -631,7 +631,7 @@ export default {
         console.warn('Could not save split sizes to localStorage:', error)
       }
       
-      console.log('✅ Stopped resizing. Final sizes:', {
+       ('✅ Stopped resizing. Final sizes:', {
         left: Math.round(currentLeftWidth.value),
         right: Math.round(currentRightWidth.value)
       })
@@ -707,7 +707,7 @@ export default {
         console.warn('Could not remove saved sizes from localStorage:', error)
       }
       
-      console.log('🔄 Reset split sizes to default (50/50)')
+       ('🔄 Reset split sizes to default (50/50)')
     }
 
     // Function to load saved sizes from localStorage
@@ -722,7 +722,7 @@ export default {
           if (timestamp && timestamp > thirtyDaysAgo) {
             currentLeftWidth.value = Math.max(25, Math.min(75, left || 50))
             currentRightWidth.value = Math.max(25, Math.min(75, right || 50))
-            console.log('📊 Loaded saved split sizes:', { left: currentLeftWidth.value, right: currentRightWidth.value })
+             ('📊 Loaded saved split sizes:', { left: currentLeftWidth.value, right: currentRightWidth.value })
           } else {
             // Remove old data
             localStorage.removeItem('lessonPageSplitSizes')
@@ -740,7 +740,7 @@ export default {
       
       if (wasVertical !== isNowVertical) {
         resizeDirection.value = isNowVertical ? 'vertical' : 'horizontal'
-        console.log('📱 Resize direction changed to:', resizeDirection.value)
+         ('📱 Resize direction changed to:', resizeDirection.value)
       }
     }
 
@@ -748,7 +748,7 @@ export default {
     // NAVIGATION METHODS
     // ==========================================
     const handleReturnToCatalogue = () => {
-      console.log('🔄 Returning to catalogue...')
+       ('🔄 Returning to catalogue...')
       
       try {
         router.push({ 
@@ -774,7 +774,7 @@ export default {
     }
 
     const handleGoToHomework = () => {
-      console.log('📚 Navigating to homework...')
+       ('📚 Navigating to homework...')
       
       if (lessonOrchestrator.lesson.value?._id) {
         try {
@@ -814,7 +814,7 @@ export default {
     }
 
     const exitLesson = () => {
-      console.log('🚪 Exiting lesson...')
+       ('🚪 Exiting lesson...')
       
       try {
         if (lessonOrchestrator.saveProgress) {
@@ -932,7 +932,7 @@ export default {
         const encodedMessage = encodeURIComponent(reportMessage)
         const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`
         
-        console.log('📊 Problem Report Submitted:', {
+         ('📊 Problem Report Submitted:', {
           lessonId: getCurrentLessonInfo().lessonId,
           problemType: problemType.value,
           hasScreenshot: !!screenshotUrl.value,
@@ -1006,7 +1006,7 @@ export default {
     // VOCABULARY METHODS
     // ==========================================
     const initializeVocabularyModal = (step) => {
-      console.log('📚 Initializing vocabulary modal from LessonPage:', step)
+       ('📚 Initializing vocabulary modal from LessonPage:', step)
 
       let vocabularyStep = step
 
@@ -1025,7 +1025,7 @@ export default {
 
         const vocabularySteps = lessonOrchestrator.steps.value?.filter(s => s.type === 'vocabulary')
         if (vocabularySteps && vocabularySteps.length > 0) {
-          console.log('✅ Found vocabulary step in lesson, using first one:', vocabularySteps[0])
+           ('✅ Found vocabulary step in lesson, using first one:', vocabularySteps[0])
           vocabularyStep = vocabularySteps[0]
         } else {
           console.error('❌ No vocabulary steps found in entire lesson')
@@ -1037,7 +1037,7 @@ export default {
     }
 
     const jumpToVocabWord = (index) => {
-      console.log('🎯 Jumping to vocabulary word:', index)
+       ('🎯 Jumping to vocabulary word:', index)
 
       if (index >= 0 && index < vocabulary.vocabularyModal.words.length) {
         vocabulary.cardAnimation.isFlipping = false
@@ -1045,7 +1045,7 @@ export default {
 
         setTimeout(() => {
           vocabulary.vocabularyModal.currentIndex = index
-          console.log(`✅ Jumped to word ${index + 1}/${vocabulary.vocabularyModal.words.length}`)
+           (`✅ Jumped to word ${index + 1}/${vocabulary.vocabularyModal.words.length}`)
         }, 50)
       } else {
         console.warn('⚠️ Invalid vocabulary word index:', index)
@@ -1053,42 +1053,35 @@ export default {
     }
 
     const showVocabDefinition = () => {
-      console.log('🔄 Showing vocabulary definition')
+       ('🔄 Showing vocabulary definition')
       vocabulary.showVocabDefinition()
     }
 
     const hideVocabDefinition = () => {
-      console.log('🔄 Hiding vocabulary definition')
       vocabulary.hideVocabDefinition()
     }
 
     const markWordAsLearned = () => {
-      console.log('📚 Marking word as learned')
       vocabulary.markWordAsLearned()
     }
 
     const nextVocabWord = () => {
-      console.log('➡️ Going to next vocabulary word')
       vocabulary.nextVocabWord()
     }
 
     const previousVocabWord = () => {
-      console.log('⬅️ Going to previous vocabulary word')
       vocabulary.previousVocabWord()
     }
 
     const skipVocabularyModal = () => {
-      console.log('⏭️ Skipping vocabulary modal')
       vocabulary.skipVocabularyModal()
     }
 
     const restartVocabulary = () => {
-      console.log('🔄 Restarting vocabulary')
       vocabulary.restartVocabulary()
     }
 
     const pronounceWord = (word) => {
-      console.log('🔊 Pronouncing word:', word)
       if (!word || typeof word !== 'string') {
         console.warn('⚠️ Invalid word for pronunciation:', word)
         return
@@ -1100,8 +1093,6 @@ export default {
           utterance.lang = 'en-US'
           utterance.rate = 0.8
           utterance.pitch = 1
-          utterance.onstart = () => console.log('🎵 Started pronouncing:', word)
-          utterance.onend = () => console.log('✅ Finished pronouncing:', word)
           utterance.onerror = (event) => console.error('❌ Pronunciation error:', event.error)
           window.speechSynthesis.speak(utterance)
         } else {
@@ -1154,7 +1145,6 @@ export default {
     // DRAG AND DROP EVENT HANDLERS
     // ==========================================
     const handleDragItemStart = ({ item, event }) => {
-      console.log('🔥 LessonPage: Drag item start:', item)
       exercises.handleDragItemStart({ item, event })
       
       if (sound.playClickSound) {
@@ -1163,17 +1153,14 @@ export default {
     }
 
     const handleDragOverZone = (zoneId) => {
-      console.log('🔥 LessonPage: Drag over zone:', zoneId)
       exercises.handleDragOverZone(zoneId)
     }
 
     const handleDragLeaveZone = () => {
-      console.log('🔥 LessonPage: Drag leave zone')
       exercises.handleDragLeaveZone()
     }
 
     const handleDropInZone = ({ zoneId, item }) => {
-      console.log('🔥 LessonPage: Drop in zone:', zoneId, 'item:', item)
       exercises.handleDropInZone({ zoneId, item })
       
       if (sound.playSuccessSound) {
@@ -1188,7 +1175,6 @@ export default {
     }
 
     const handleRemoveDroppedItem = ({ zoneId, itemIndex, item }) => {
-      console.log('🔥 LessonPage: Remove dropped item:', { zoneId, itemIndex, item })
       exercises.handleRemoveDroppedItem({ zoneId, itemIndex, item })
       
       if (sound.playClickSound) {
@@ -1206,10 +1192,8 @@ export default {
         return
       }
       
-      console.log('🔧 Ensuring drag-drop initialization for:', currentExercise)
       
       if (exercises.availableDragItems.value.length === 0 || exercises.dropZones.value.length === 0) {
-        console.log('⚠️ Drag-drop not properly initialized, forcing re-init')
         exercises.initializeDragDropItems(currentExercise)
       }
     }
@@ -1218,7 +1202,6 @@ export default {
     // EVENT HANDLERS
     // ==========================================
     const handleAnswerChanged = (newAnswer) => {
-      console.log('📝 Answer changed:', newAnswer)
       exercises.updateUserAnswer(newAnswer, getCurrentExercise())
     }
     
@@ -1227,12 +1210,10 @@ export default {
     }
     
     const handleMatchingItemSelected = (selection) => {
-      console.log('🔗 Handling matching item selection:', selection)
       exercises.handleMatchingSelection(selection)
     }
     
     const handleRemoveMatchingPair = (pairIndex) => {
-      console.log('🗑️ Handling remove matching pair:', pairIndex)
       exercises.removeMatchingPair(pairIndex)
     }
 
@@ -1240,7 +1221,6 @@ export default {
     // SUBMISSION HANDLER
     // ==========================================
     const handleSubmitOrNext = async () => {
-      console.log('🎯 Submit/Next triggered, attempt:', attemptCount.value + 1)
       const currentStep = lessonOrchestrator.currentStep.value
       if (!currentStep) {
         console.warn('❌ No current step available')
@@ -1383,7 +1363,6 @@ export default {
     const startConfetti = () => {
       showConfetti.value = true
       nextTick(() => {
-        console.log('Starting confetti animation...')
         setTimeout(() => {
           showConfetti.value = false
         }, 5000)
@@ -1396,7 +1375,6 @@ export default {
     const migrateLessonContent = async () => {
       try {
         migrationLoading.value = true
-        console.log('🔄 Starting lesson content migration')
 
         if (!lessonOrchestrator.currentUser?.value?.uid) {
           throw new Error('User not found')
@@ -1457,17 +1435,14 @@ export default {
     // ==========================================
     const completeLessonWithExtraction = async () => {
       try {
-        console.log('🏁 Starting enhanced lesson completion with extraction')
 
         const completionResult = await lessonOrchestrator.completeLesson?.()
 
         if (completionResult?.success || lessonOrchestrator.lessonCompleted.value) {
-          console.log('✅ Lesson completed, triggering content extraction')
 
           const extractionResult = await extractLessonContent()
 
           if (extractionResult?.success) {
-            console.log('🎉 Content extraction successful:', extractionResult)
             showCompletionMessage(extractionResult)
           } else {
             console.warn('⚠️ Content extraction failed, but lesson still completed')
@@ -1482,7 +1457,6 @@ export default {
 
     const extractLessonContent = async () => {
       try {
-        console.log('📤 Extracting lesson content...')
 
         if (!lessonOrchestrator.currentUser?.value?.uid || !lessonOrchestrator.lesson.value?._id) {
           console.error('❌ Missing required data for extraction')
@@ -1508,7 +1482,6 @@ export default {
           throw new Error(result.error || 'Failed to extract content')
         }
 
-        console.log('✅ Content extraction response:', result)
         return result
 
       } catch (error) {
@@ -1518,7 +1491,6 @@ export default {
     }
 
     const showCompletionMessage = (extractionResult) => {
-      console.log('🎊 Showing enhanced completion message')
 
       let message = '🎉 Урок успешно завершён!'
 
@@ -1533,7 +1505,6 @@ export default {
       if (lessonOrchestrator.showToast) {
         lessonOrchestrator.showToast(message, 'success')
       } else {
-        console.log('📢 Completion message:', message)
       }
 
       lessonOrchestrator.lessonCompleted.value = true
@@ -1554,16 +1525,8 @@ export default {
       window.resetSplitSizes = resetSplitSizes
       window.loadSavedSizes = loadSavedSizes
       
-      console.log('🎮 LessonPage mounted with resizable split screen')
-      console.log('  - Current split sizes:', {
-        left: currentLeftWidth.value,
-        right: currentRightWidth.value
-      })
-      console.log('  - Available functions:')
-      console.log('    - resetSplitSizes() - Reset to 50/50 split')
-      console.log('    - Ctrl+Alt+R - Keyboard shortcut to reset')
-      console.log('    - Arrow keys on divider - Resize panels')
-      console.log('    - Drag divider - Resize panels')
+      
+     
     })
 
     onUnmounted(() => {
@@ -1585,7 +1548,6 @@ export default {
     // ==========================================
     watch(() => lessonOrchestrator.lessonCompleted.value, (newVal) => {
       if (newVal) {
-        console.log('Lesson completed watcher triggered!')
         startConfetti()
       }
     })
@@ -1607,7 +1569,6 @@ export default {
 
     // Watch for window size changes to update resize direction
     watch(() => resizeDirection.value, (newDirection) => {
-      console.log('📱 Resize direction changed to:', newDirection)
     })
 
     // ==========================================

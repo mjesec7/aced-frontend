@@ -894,7 +894,6 @@ export default {
   },
   
   async mounted() {
-    console.log('🔧 AcedSettings: Component mounting...');
     await this.initializeComponent();
     this.componentMounted = true;
   },
@@ -1820,7 +1819,6 @@ export default {
               code: promocode,
               success: true
             });
-            console.log('✅ Event bus emission completed');
           }
         } catch (eventBusError) {
           console.warn('⚠️ Event bus failed:', eventBusError);
@@ -1835,7 +1833,6 @@ export default {
               source: 'promocode-applied',
               timestamp: Date.now()
             });
-            console.log('✅ Global trigger completed');
           }
         } catch (globalTriggerError) {
           console.warn('⚠️ Global trigger failed:', globalTriggerError);

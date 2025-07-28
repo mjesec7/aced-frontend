@@ -10,7 +10,6 @@ const triggerGlobalEvent = (eventName, data = {}) => {
   if (typeof window === 'undefined') return;
 
   try {
-    console.log(`🌍 Triggering global event: ${eventName}`, data);
 
     // Enhanced event data with metadata
     const enhancedData = {
@@ -28,18 +27,15 @@ const triggerGlobalEvent = (eventName, data = {}) => {
       cancelable: true
     });
     window.dispatchEvent(customEvent);
-    console.log(`✅ DOM event dispatched: ${eventName}`);
 
     // 🔥 METHOD 2: Event bus (secondary)
     if (window.eventBus?.emit) {
       window.eventBus.emit(eventName, enhancedData);
-      console.log(`✅ EventBus emit: ${eventName}`);
     }
 
     // 🔥 METHOD 3: Vue event bus (tertiary)
     if (window.Vue?.$bus?.$emit) {
       window.Vue.$bus.$emit(eventName, enhancedData);
-      console.log(`✅ Vue $bus emit: ${eventName}`);
     }
 
     // 🔥 METHOD 4: Direct window event for cross-tab communication
@@ -1705,14 +1701,12 @@ const actions = {
         originalError: error.message,
         category: errorCategory
       });
-      console.log('❌ saveUser returning error result:', finalResult);
       return finalResult;
 
     } finally {
       // ✅ CRITICAL: Always clear loading state
       try {
         commit('SET_LOADING', { type: 'saving', loading: false });
-        console.log(`⏱️ saveUser completed in ${Date.now() - startTime}ms`);
       } catch (loadingError) {
         console.warn('⚠️ Failed to clear loading state:', loadingError);
       }
@@ -2715,7 +2709,6 @@ const universalTriggerReactivityUpdate = function() {
     }, 50);
   });
 
-  console.log('🔄 Universal reactivity update triggered');
 };
 
 // ========================================
