@@ -765,11 +765,11 @@ const routes = [
   },
   {
     path: '/profile/vocabulary',
-    redirect: '/vocabulary'
+    redirect: '/profile/vocabulary'
   },
   {
     path: '/profile/vocabulary/:language',
-    redirect: '/vocabulary'
+    redirect: '/profile/vocabulary'
   },
   
   // ✅ OLD PAYMENT REDIRECTS: Handle legacy payment URLs
@@ -904,10 +904,8 @@ router.afterEach((to, from) => {
   
   // Enhanced logging for specific route types
   if (to.name && (to.name.includes('Vocabulary') || to.name.includes('Analytics'))) {
-    console.log('🔍 Router: Navigated to premium feature:', to.name);
   } 
   else if (to.name && (to.name.includes('Payme') || to.name.includes('Payment'))) {
-    console.log('💳 Router: Navigated to payment:', to.name);
   }
   
   // Log params if any
