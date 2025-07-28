@@ -32,6 +32,80 @@ const TopicOverview = () => import('@/views/TopicOverview.vue');
 // ✅ Payment Views (Lazy-loaded)
 const PaymeCheckout = () => import('@/views/PaymeCheckout.vue');
 
+// ✅ ENHANCED HELPER: Get effective user plan from multiple sources
+const getEffectiveUserPlan = () => {
+  // Try multiple sources with priority order
+  const storeStatus = store.getters['user/userStatus'];
+  const localStatus = localStorage.getItem('userStatus');
+  const subscriptionData = localStorage.getItem('subscriptionData');
+  
+  console.log('🔍 Router: Plan detection sources:', {
+    storeStatus,
+    localStatus,
+    hasSubscriptionData: !!subscriptionData
+  });
+  
+  // Check subscription data first for active subscriptions
+  let subscriptionPlan = null;
+  if (subscriptionData) {
+    try {
+      const parsed = JSON.parse(subscriptionData);
+      if (parsed.plan && parsed.expiryDate) {
+        const now = new Date();
+        const expiry = new Date(parsed.expiryDate);
+        if (now < expiry && parsed.plan !== 'free') {
+          subscriptionPlan = parsed.plan;
+          console.log('✅ Router: Valid subscription found:', subscriptionPlan);
+        } else {
+          console.log('⚠️ Router: Subscription expired or free plan');
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ Router: Failed to parse subscription data');
+    }
+  }
+  
+  // Priority: subscription > store > localStorage > default
+  let effectiveStatus = subscriptionPlan || storeStatus || localStatus || 'free';
+  
+  // Handle invalid statuses
+  if (effectiveStatus === 'undefined' || effectiveStatus === null || effectiveStatus === undefined || effectiveStatus === '') {
+    effectiveStatus = subscriptionPlan || localStatus || 'free';
+    console.warn('⚠️ Router: Invalid status detected, using fallback:', effectiveStatus);
+  }
+  
+  // Validate the plan value
+  const validPlans = ['free', 'start', 'pro'];
+  if (!validPlans.includes(effectiveStatus)) {
+    console.warn('⚠️ Router: Invalid plan value:', effectiveStatus);
+    effectiveStatus = localStatus && validPlans.includes(localStatus) ? localStatus : 'free';
+  }
+  
+  console.log('✅ Router: Final effective plan:', effectiveStatus);
+  return effectiveStatus;
+};
+
+// ✅ ENHANCED HELPER: Check if user has access to specific feature
+const hasFeatureAccess = (feature, requiredPlans = ['start', 'pro']) => {
+  const effectiveStatus = getEffectiveUserPlan();
+  
+  // Handle free features
+  if (requiredPlans.includes('free')) {
+    return true;
+  }
+  
+  const hasAccess = requiredPlans.includes(effectiveStatus);
+  
+  console.log('🔐 Router: Feature access check:', {
+    feature,
+    effectiveStatus,
+    requiredPlans,
+    hasAccess
+  });
+  
+  return hasAccess;
+};
+
 const routes = [
   {
     path: '/',
@@ -59,19 +133,18 @@ const routes = [
     }
   },
 
-  // ✅ ENHANCED VOCABULARY ROUTE WITH SUBSCRIPTION PROTECTION
+  // ✅ FIXED VOCABULARY ROUTE WITH CONSISTENT SUBSCRIPTION PROTECTION
   {
     path: '/vocabulary',
     name: 'VocabularyPage',
     component: VocabularyPage,
     meta: { 
       requiresAuth: true,
-      requiresSubscription: true,
-      subscriptionLevel: 'start', // Minimum required level
       title: 'Словарь',
       description: 'Персональный словарь с изученными словами'
     },
     beforeEnter: async (to, from, next) => {
+      console.log('🔍 Router: Vocabulary route guard triggered');
       
       // Check authentication first
       const isLoggedIn = store.getters.isLoggedIn;
@@ -87,14 +160,11 @@ const routes = [
         });
       }
 
-      // Check subscription status
-      const userStatus = store.getters['user/userStatus'];
-      const hasVocabularyAccess = store.getters['user/hasVocabularyAccess'] || 
-                                  ['start', 'pro', 'premium'].includes(userStatus);
+      // ✅ CRITICAL FIX: Use consistent access checking logic
+      const hasAccess = hasFeatureAccess('vocabulary', ['start', 'pro']);
       
-      
-      if (!hasVocabularyAccess) {
-        console.warn('❌ Vocabulary requires subscription');
+      if (!hasAccess) {
+        console.warn('❌ Router: Vocabulary access denied - redirecting to payment');
         
         // Store the intended destination for after subscription
         sessionStorage.setItem('intendedRoute', JSON.stringify({
@@ -117,6 +187,7 @@ const routes = [
         });
       }
       
+      console.log('✅ Router: Vocabulary access granted');
       next();
     }
   },
@@ -144,15 +215,17 @@ const routes = [
         name: 'UserAnalyticsPanel', 
         component: UserAnalyticsPanel,
         meta: { 
-          title: 'Аналитика',
-          requiresSubscription: true,
-          subscriptionLevel: 'pro'
+          title: 'Аналитика'
         },
         beforeEnter: async (to, from, next) => {
-          const userStatus = store.getters['user/userStatus'];
-          const hasProAccess = ['pro', 'premium'].includes(userStatus);
+          console.log('🔍 Router: Analytics route guard triggered');
           
-          if (!hasProAccess) {
+          // ✅ CRITICAL FIX: Use consistent access checking logic  
+          const hasAccess = hasFeatureAccess('analytics', ['pro']); // Analytics requires Pro only
+          
+          if (!hasAccess) {
+            console.warn('❌ Router: Analytics access denied - redirecting to payment');
+            
             sessionStorage.setItem('intendedRoute', JSON.stringify({
               path: to.path,
               name: to.name,
@@ -172,6 +245,7 @@ const routes = [
             });
           }
           
+          console.log('✅ Router: Analytics access granted');
           next();
         }
       },
@@ -179,19 +253,70 @@ const routes = [
         path: 'goal', 
         name: 'StudyGoal', 
         component: StudyGoal,
-        meta: { title: 'Учебные цели' }
+        meta: { title: 'Учебные цели' },
+        beforeEnter: async (to, from, next) => {
+          const hasAccess = hasFeatureAccess('goals', ['start', 'pro']);
+          
+          if (!hasAccess) {
+            sessionStorage.setItem('intendedRoute', JSON.stringify({
+              path: to.path,
+              name: to.name,
+              params: to.params,
+              query: to.query
+            }));
+            
+            return next({ 
+              name: 'PaymePayment',
+              params: { plan: 'start' },
+              query: { 
+                feature: 'goals',
+                requiredPlan: 'start',
+                returnTo: to.path,
+                message: 'Цели доступны с подпиской Start'
+              }
+            });
+          }
+          
+          next();
+        }
       },
       { 
         path: 'homework', 
         name: 'HomeworkHelp', 
         component: HomeworkHelp,
-        meta: { title: 'Помощь с домашкой' }
+        meta: { title: 'Помощь с домашкой' },
+        beforeEnter: async (to, from, next) => {
+          const hasAccess = hasFeatureAccess('homework_help', ['start', 'pro']);
+          
+          if (!hasAccess) {
+            sessionStorage.setItem('intendedRoute', JSON.stringify({
+              path: to.path,
+              name: to.name,
+              params: to.params,
+              query: to.query
+            }));
+            
+            return next({ 
+              name: 'PaymePayment',
+              params: { plan: 'start' },
+              query: { 
+                feature: 'homework_help',
+                requiredPlan: 'start',
+                returnTo: to.path,
+                message: 'Помощь с ДЗ доступна с подпиской Start'
+              }
+            });
+          }
+          
+          next();
+        }
       },
       { 
         path: 'homeworks', 
         name: 'HomeworkList', 
         component: HomeworkList,
         meta: { title: 'Домашние задания' }
+        // No beforeEnter - free for everyone
       },
       
       // ✅ ENHANCED: Flexible homework routes that support both standalone and lesson-based homework
@@ -264,19 +389,70 @@ const routes = [
         name: 'DiaryPage', 
         component: DiaryPage,
         meta: { title: 'Дневник' }
+        // No beforeEnter - free for everyone
       },
       { 
         path: 'tests', 
         name: 'ProfileTestsPage', 
         component: TestsPage,
-        meta: { title: 'Тесты' }
+        meta: { title: 'Тесты' },
+        beforeEnter: async (to, from, next) => {
+          const hasAccess = hasFeatureAccess('tests', ['start', 'pro']);
+          
+          if (!hasAccess) {
+            sessionStorage.setItem('intendedRoute', JSON.stringify({
+              path: to.path,
+              name: to.name,
+              params: to.params,
+              query: to.query
+            }));
+            
+            return next({ 
+              name: 'PaymePayment',
+              params: { plan: 'start' },
+              query: { 
+                feature: 'tests',
+                requiredPlan: 'start',
+                returnTo: to.path,
+                message: 'Тесты доступны с подпиской Start'
+              }
+            });
+          }
+          
+          next();
+        }
       },
       { 
         path: 'tests/:id', 
         name: 'ProfileSingleTestPage', 
         component: TestsPage, 
         props: true,
-        meta: { title: 'Прохождение теста' }
+        meta: { title: 'Прохождение теста' },
+        beforeEnter: async (to, from, next) => {
+          const hasAccess = hasFeatureAccess('tests', ['start', 'pro']);
+          
+          if (!hasAccess) {
+            sessionStorage.setItem('intendedRoute', JSON.stringify({
+              path: to.path,
+              name: to.name,
+              params: to.params,
+              query: to.query
+            }));
+            
+            return next({ 
+              name: 'PaymePayment',
+              params: { plan: 'start' },
+              query: { 
+                feature: 'tests',
+                requiredPlan: 'start',
+                returnTo: to.path,
+                message: 'Тесты доступны с подпиской Start'
+              }
+            });
+          }
+          
+          next();
+        }
       },
       
       // ✅ LEGACY VOCABULARY REDIRECT - Under profile (deprecated)
@@ -671,38 +847,7 @@ router.beforeEach(async (to, from, next) => {
     });
   }
 
-  // ✅ SUBSCRIPTION CHECKS FOR PROTECTED ROUTES
-  if (to.meta.requiresSubscription && isLoggedIn) {
-    const userStatus = store.getters['user/userStatus'];
-    const requiredLevel = to.meta.subscriptionLevel || 'start';
-    
-    
-    // Check subscription level
-    const hasAccess = checkSubscriptionAccess(userStatus, requiredLevel);
-    
-    if (!hasAccess) {
-      
-      // Store the intended destination
-      sessionStorage.setItem('intendedRoute', JSON.stringify({
-        path: to.path,
-        name: to.name,
-        params: to.params,
-        query: to.query
-      }));
-      
-      // Redirect to payment page
-      return next({ 
-        name: 'PaymePayment',
-        params: { plan: requiredLevel },
-        query: { 
-          requiredPlan: requiredLevel,
-          returnTo: to.path,
-          feature: to.name?.toLowerCase()?.replace('page', '') || 'feature'
-        } 
-      });
-    }
-    
-  }
+  // ✅ REMOVED GENERIC SUBSCRIPTION CHECKS - Let individual route guards handle their own logic
 
   // ✅ PAYMENT ROUTE SPECIFIC CHECKS
   if (to.name === 'PaymePayment') {
@@ -759,12 +904,15 @@ router.afterEach((to, from) => {
   
   // Enhanced logging for specific route types
   if (to.name && (to.name.includes('Vocabulary') || to.name.includes('Analytics'))) {
+    console.log('🔍 Router: Navigated to premium feature:', to.name);
   } 
   else if (to.name && (to.name.includes('Payme') || to.name.includes('Payment'))) {
+    console.log('💳 Router: Navigated to payment:', to.name);
   }
   
   // Log params if any
   if (Object.keys(to.params).length > 0) {
+    console.log('📄 Router: Route params:', to.params);
   }
   
   // ✅ AUTO-CHECK SUBSCRIPTION STATUS on navigation (for authenticated users)
@@ -826,6 +974,7 @@ export const navigateToPayment = (plan = 'start', options = {}) => {
     ...(Object.keys(query).length > 0 && { query })
   };
   
+  console.log('💳 Router: Navigating to payment:', route);
   
   if (routerInstance) {
     return routerInstance.push(route);
@@ -842,6 +991,7 @@ export const navigateToSettings = (options = {}) => {
     ...(returnTo && { query: { returnTo } })
   };
   
+  console.log('⚙️ Router: Navigating to settings:', route);
   
   if (routerInstance) {
     return routerInstance.push(route);
@@ -850,8 +1000,13 @@ export const navigateToSettings = (options = {}) => {
   }
 };
 
-// ✅ SUBSCRIPTION CHECK HELPER
+// ✅ ENHANCED SUBSCRIPTION CHECK HELPER
 export const checkSubscriptionAccess = (userStatus, requiredPlan = 'start') => {
+  // Handle null/undefined/invalid statuses
+  if (!userStatus || userStatus === 'undefined' || userStatus === null) {
+    userStatus = 'free';
+  }
+  
   const planHierarchy = {
     free: 0,
     start: 1,
@@ -861,6 +1016,14 @@ export const checkSubscriptionAccess = (userStatus, requiredPlan = 'start') => {
   
   const userLevel = planHierarchy[userStatus] || 0;
   const requiredLevel = planHierarchy[requiredPlan] || 1;
+  
+  console.log('🔐 checkSubscriptionAccess:', {
+    userStatus,
+    userLevel,
+    requiredPlan,
+    requiredLevel,
+    hasAccess: userLevel >= requiredLevel
+  });
   
   return userLevel >= requiredLevel;
 };
@@ -873,6 +1036,7 @@ export const navigateToIntendedRoute = (router) => {
       const route = JSON.parse(intendedRoute);
       sessionStorage.removeItem('intendedRoute');
       
+      console.log('🎯 Router: Navigating to intended route:', route);
       router.push(route);
       return true;
     }
@@ -884,25 +1048,87 @@ export const navigateToIntendedRoute = (router) => {
 
 // ✅ VOCABULARY ACCESS HELPER
 export const checkVocabularyAccess = () => {
-  const userStatus = store.getters['user/userStatus'];
-  return ['start', 'pro', 'premium'].includes(userStatus);
+  const effectiveStatus = getEffectiveUserPlan();
+  return ['start', 'pro', 'premium'].includes(effectiveStatus);
 };
 
 // ✅ FEATURE ACCESS HELPERS
 export const getFeatureAccess = (feature) => {
-  const userStatus = store.getters['user/userStatus'];
+  const effectiveStatus = getEffectiveUserPlan();
   
   const featureRequirements = {
-    vocabulary: 'start',
-    analytics: 'pro',
-    advanced_lessons: 'start',
-    unlimited_practice: 'pro',
-    priority_support: 'start',
-    custom_courses: 'pro'
+    vocabulary: ['start', 'pro', 'premium'],
+    analytics: ['pro', 'premium'], // Analytics requires Pro only
+    goals: ['start', 'pro', 'premium'],
+    homework_help: ['start', 'pro', 'premium'],
+    tests: ['start', 'pro', 'premium'],
+    advanced_lessons: ['start', 'pro', 'premium'],
+    unlimited_practice: ['pro', 'premium'],
+    priority_support: ['start', 'pro', 'premium'],
+    custom_courses: ['pro', 'premium']
   };
   
-  const required = featureRequirements[feature] || 'start';
-  return checkSubscriptionAccess(userStatus, required);
+  const requiredPlans = featureRequirements[feature] || ['start', 'pro', 'premium'];
+  return requiredPlans.includes(effectiveStatus);
 };
+
+// ✅ DEBUG HELPERS FOR ROUTER
+if (typeof window !== 'undefined') {
+  window.routerDebug = {
+    // Check current effective plan
+    getCurrentPlan: () => {
+      return getEffectiveUserPlan();
+    },
+    
+    // Test feature access
+    testFeature: (feature) => {
+      const hasAccess = getFeatureAccess(feature);
+      console.log(`🔐 Router: Feature '${feature}' access:`, hasAccess ? '✅ GRANTED' : '🚫 DENIED');
+      return hasAccess;
+    },
+    
+    // Check vocabulary access specifically
+    checkVocabulary: () => {
+      const hasAccess = checkVocabularyAccess();
+      console.log('📚 Router: Vocabulary access:', hasAccess ? '✅ GRANTED' : '🚫 DENIED');
+      return hasAccess;
+    },
+    
+    // Get all status sources
+    getAllSources: () => {
+      const storeStatus = store.getters['user/userStatus'];
+      const localStatus = localStorage.getItem('userStatus');
+      const subscriptionData = localStorage.getItem('subscriptionData');
+      
+      let parsedSubscription = null;
+      if (subscriptionData) {
+        try {
+          parsedSubscription = JSON.parse(subscriptionData);
+        } catch (e) {
+          console.error('Failed to parse subscription data');
+        }
+      }
+      
+      return {
+        store: storeStatus,
+        localStorage: localStatus,
+        subscription: parsedSubscription,
+        effective: getEffectiveUserPlan()
+      };
+    },
+    
+    // Force navigation to vocabulary (for testing)
+    goToVocabulary: () => {
+      router.push('/vocabulary');
+    }
+  };
+  
+  console.log('🧪 Router Debug Tools Available:');
+  console.log('- window.routerDebug.getCurrentPlan() - Get current effective plan');
+  console.log('- window.routerDebug.testFeature("vocabulary") - Test feature access');
+  console.log('- window.routerDebug.checkVocabulary() - Check vocabulary access');
+  console.log('- window.routerDebug.getAllSources() - Get all status sources');
+  console.log('- window.routerDebug.goToVocabulary() - Force navigate to vocabulary');
+}
 
 export default router;
