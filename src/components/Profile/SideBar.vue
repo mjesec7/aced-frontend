@@ -2,39 +2,46 @@
   <div class="sidebar-wrapper">
     <div class="sidebar" :class="{ open: isOpen }">
       <div class="sidebar-content">
-        <div v-if="isAuthenticated" class="user-info">
-          <img :src="userPhoto || defaultUserIcon" alt="User Icon" class="user-icon" />
+        <div class="user-info" v-if="user">
+          <img src="@/assets/icons/user.png" alt="User Icon" class="user-icon" />
           <div class="user-details">
-            <span class="user-name">{{ userName }}</span>
-            <span class="user-plan" :class="userPlanBadgeClass">📦 {{ planLabel }}</span>
+            <span class="user-name">{{ userDisplayName }}</span>
+            <span class="user-plan" :class="userStatusBadgeClass" :key="reactivityKey">📦 {{ planLabel }}</span>
           </div>
         </div>
 
         <div class="nav-links scrollable">
-          <template v-for="item in navigationItems" :key="item.name">
-            <router-link
-              v-if="isFeatureAvailable(item.requiredPlan)"
-              :to="item.to"
-              class="nav-item"
-              :class="{ active: isActive(item.name) }"
-              @click="closeSidebarOnMobile"
-            >
-              <span class="highlight"></span>
-              {{ item.label }}
-            </router-link>
+          <router-link
+            to="/profile/main"
+            class="nav-item"
+            :class="{ active: isActive('main') }"
+            @click="closeSidebarOnMobile"
+          >
+            <span class="highlight"></span>
+            Главная
+          </router-link>
 
-            <div
-              v-else
-              class="nav-item locked-feature"
-              @click="showUpgradeModalForFeature(item)"
-            >
-              <span class="highlight"></span>
-              <span class="link-content">
-                {{ item.label }}
-                <span class="lock-icon">🔒</span>
-              </span>
-            </div>
-          </template>
+          <router-link
+            to="/profile/catalogue"
+            class="nav-item"
+            :class="{ active: isActive('catalogue') }"
+            @click="closeSidebarOnMobile"
+          >
+            <span class="highlight"></span>
+            Каталог
+          </router-link>
+
+          <router-link
+            v-for="link in links"
+            :key="link.name"
+            :to="getRoutePath(link.name)"
+            class="nav-item"
+            :class="{ active: isActive(link.name) }"
+            @click="closeSidebarOnMobile"
+          >
+            <span class="highlight"></span>
+            {{ link.label }}
+          </router-link>
         </div>
 
         <div class="bottom-logout">
@@ -43,43 +50,17 @@
       </div>
     </div>
 
-    <div
-      v-if="isOpen && isMobile"
-      class="sidebar-overlay"
+    <div 
+      class="sidebar-overlay" 
+      v-if="isOpen && isMobile" 
       @click="closeSidebar"
     ></div>
 
-    <div v-if="showUpgradeModal" class="upgrade-modal" @click.self="closeUpgradeModal">
-      <div class="upgrade-modal-content" @click.stop>
-        <div class="upgrade-header">
-          <h3>Премиум функция</h3>
-          <button class="close-btn" @click="closeUpgradeModal">×</button>
-        </div>
-        <div class="upgrade-body">
-          <p><strong>{{ selectedFeature?.label }}</strong> доступно только в Start и Pro планах.</p>
-          <div class="feature-benefits">
-            <p>С Start или Pro планом вы получите:</p>
-            <ul>
-              <li>Полный доступ к аналитике</li>
-              <li>Расширенные цели и планирование</li>
-              <li>Помощь с домашними заданиями</li>
-              <li>Продвинутые тесты</li>
-              <li>Персональный словарь</li>
-            </ul>
-          </div>
-        </div>
-        <div class="upgrade-actions">
-          <button class="upgrade-btn" @click="goToUpgrade">Обновить план</button>
-          <button class="cancel-upgrade-btn" @click="closeUpgradeModal">Может позже</button>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="showLogoutModal" class="logout-modal">
+    <div class="logout-modal" v-if="showLogoutModal">
       <div class="logout-modal-content">
         <p>Вы уверены, что хотите выйти?</p>
         <div class="logout-actions">
-          <button class="confirm-btn" @click="handleLogout">Да</button>
+          <button class="confirm-btn" @click="logout">Да</button>
           <button class="cancel-btn" @click="showLogoutModal = false">Нет</button>
         </div>
       </div>
@@ -88,65 +69,53 @@
 </template>
 
 <script>
-import { mapGetters, mapActions, mapState, mapMutations } from 'vuex';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase';
-import defaultUserIcon from '@/assets/icons/user.png';
-import { userStatusMixin } from '@/composables/useUserStatus';
+import { mapState, mapMutations, mapGetters } from 'vuex';
 
 export default {
   name: 'SideBar',
-
-  mixins: [userStatusMixin],
-
   props: {
     isOpen: {
       type: Boolean,
       default: true
     }
   },
-
   data() {
     return {
       showLogoutModal: false,
-      showUpgradeModal: false,
-      selectedFeature: null,
+      links: [
+        { name: 'analytics', label: 'Аналитика' },
+        { name: 'goal', label: 'Цели' },
+        { name: 'diary', label: 'Дневник' },
+        { name: 'homework', label: 'Помощь с ДЗ' },
+        { name: 'homeworks', label: 'Домашние задания' },
+        { name: 'tests', label: 'Тесты' },
+        { name: 'vocabulary', label: 'Словарь' },
+        { name: 'settings', label: 'Настройки' }
+      ],
       isMobile: false,
-      defaultUserIcon,
+      // ✅ ENHANCED: More comprehensive reactivity tracking
       componentKey: 0,
       reactivityKey: 0,
       lastStatusUpdate: Date.now(),
-      eventCleanupFunctions: [],
-      storeUnsubscribe: null,
+      unsubscribeStore: null, // Initial name from the original code
       globalEventHandlers: {},
-      lastSyncTime: Date.now(),
-      syncCheckInterval: null,
-      notificationTimeout: null,
       
-      // Navigation structure - single source of truth
-      navigationItems: [
-        { name: 'main',       to: '/profile/main',       label: 'Главная',          requiredPlan: 'free' },
-        { name: 'catalogue',  to: '/profile/catalogue',  label: 'Каталог',          requiredPlan: 'free' },
-        { name: 'analytics',  to: '/profile/analytics',  label: 'Аналитика',        requiredPlan: 'start' },
-        { name: 'goal',       to: '/profile/goal',       label: 'Цели',             requiredPlan: 'start' },
-        { name: 'diary',      to: '/profile/diary',      label: 'Дневник',          requiredPlan: 'free' },
-        { name: 'homework',   to: '/profile/homework',   label: 'Помощь с ДЗ',      requiredPlan: 'start' },
-        { name: 'homeworks',  to: '/profile/homeworks',  label: 'Домашние задания', requiredPlan: 'free' },
-        { name: 'tests',      to: '/profile/tests',      label: 'Тесты',            requiredPlan: 'start' },
-        { name: 'vocabulary', to: '/vocabulary',         label: 'Словарь',          requiredPlan: 'start' },
-        { name: 'settings',   to: '/settings',           label: 'Настройки',        requiredPlan: 'free' },
-      ]
+      // ✅ NEW: Event cleanup tracking (keeping the original `eventCleanupFunctions` for consistency)
+      eventCleanupFunctions: [], // This was already present in the original code, moved to correct data section
+      storeUnsubscribe: null, // This is the preferred name for the Vuex unsubscribe function
+
+      // ✅ NEW: Status sync tracking
+      lastSyncTime: Date.now(),
+      syncCheckInterval: null
     };
   },
-
   computed: {
     ...mapState(['user']),
-    
+    // ✅ ENHANCED: Map all needed user getters from store with reactivity
     ...mapGetters('user', [
-      'isAuthenticated',
       'userStatus',
-      'userName',
-      'userPhoto',
       'isPremiumUser',
       'isStartUser', 
       'isProUser',
@@ -155,97 +124,111 @@ export default {
       'subscriptionDetails',
       'forceUpdateCounter'
     ]),
-
-    // Enhanced plan detection with fallbacks
-    currentPlan() {
-      // Priority 1: Check localStorage directly (most reliable)
-      const localStatus = localStorage.getItem('userStatus');
-      if (localStatus && ['free', 'start', 'pro'].includes(localStatus)) {
-        console.log('✅ Sidebar: Using localStorage plan (priority 1):', localStatus);
-        return localStatus;
-      }
+    
+    // ✅ ENHANCED: Better plan label with comprehensive reactivity
+    planLabel() {
+      // Force reactivity with multiple triggers
+      const status = this.userStatus || 'free';
+      const counter = this.forceUpdateCounter || 0;
+      const key = this.reactivityKey;
+      const timestamp = this.lastStatusUpdate;
+      const syncTime = this.lastSyncTime; // Additional trigger
       
-      // Priority 2: Check subscription data
-      const subscriptionData = localStorage.getItem('subscriptionData');
-      if (subscriptionData) {
-        try {
-          const parsed = JSON.parse(subscriptionData);
-          if (parsed && parsed.plan && parsed.expiryDate) {
-            const now = new Date();
-            const expiry = new Date(parsed.expiryDate);
-            if (now < expiry) {
-              console.log('✅ Sidebar: Using subscription plan (priority 2):', parsed.plan);
-              return parsed.plan;
-            }
-          }
-        } catch (e) {
-          console.warn('⚠️ Sidebar: Failed to parse subscription data');
-        }
-      }
+      console.log('📊 Sidebar: Computing plan label:', { 
+        status, 
+        counter, 
+        key, 
+        timestamp,
+        syncTime,
+        raw: this.$store?.state?.user?.userStatus 
+      });
       
-      // Priority 3: Check store getter
-      if (this.userStatus && ['free', 'start', 'pro'].includes(this.userStatus)) {
-        console.log('✅ Sidebar: Using store getter (priority 3):', this.userStatus);
-        return this.userStatus;
-      }
+      // Multiple fallback checks for maximum reliability
+      const finalStatus = status || 
+                         this.$store?.getters['user/userStatus'] || 
+                         this.$store?.state?.user?.userStatus ||
+                         localStorage.getItem('userStatus') || 
+                         'free';
       
-      // Priority 4: Check backup getter if available
-      if (window.getWorkingUserStatus) {
-        const backupStatus = window.getWorkingUserStatus();
-        if (backupStatus && ['free', 'start', 'pro'].includes(backupStatus)) {
-          console.log('✅ Sidebar: Using backup getter (priority 4):', backupStatus);
-          return backupStatus;
-        }
-      }
+      const labels = {
+        'pro': 'Pro',
+        'start': 'Start',
+        'premium': 'Start', // Alias
+        'free': 'Free'
+      };
       
-      console.log('⚠️ Sidebar: All methods failed, defaulting to free');
-      return 'free';
-    },
-
-    userPlanBadgeClass() {
-      return `status-${this.currentPlan || 'free'}`;
+      return labels[finalStatus] || 'Free';
     },
     
-    planLabel() {
-      const labels = {
-        free: 'Free',
-        start: 'Start',
-        pro: 'Pro',
-        premium: 'Pro' // Assuming 'premium' and 'pro' have the same label
+    // ✅ NEW: Computed property to track user info changes with reactivity
+    userDisplayName() {
+      const key = this.componentKey; // Force reactivity by depending on componentKey
+      if (!this.user) return 'Пользователь';
+      return this.user.name || this.user.displayName || this.user.email?.split('@')[0] || 'Пользователь';
+    },
+    
+    // ✅ NEW: Enhanced user status badge class
+    userStatusBadgeClass() {
+      const status = this.userStatus || 'free';
+      const counter = this.forceUpdateCounter || 0; // Force reactivity
+      
+      return {
+        'status-free': status === 'free',
+        'status-start': status === 'start' || status === 'premium', 
+        'status-pro': status === 'pro',
+        'plan-updated': this.lastStatusUpdate > Date.now() - 5000, // Recently updated
+        'reactive-update': counter > 0 // Placeholder class, could be used for animation
       };
-      return labels[this.currentPlan] || 'Free';
     }
   },
-
+  
+  // ✅ ENHANCED: Comprehensive watchers for all possible changes
   watch: {
+    // ✅ Watch for user status changes from store with immediate feedback
     userStatus: {
       handler(newStatus, oldStatus) {
+        console.log('📊 Sidebar: User status changed from', oldStatus, 'to:', newStatus);
+        
         this.handleStatusChange(newStatus, oldStatus);
+        
+        // ✅ NEW: Also update sync time
         this.lastSyncTime = Date.now();
       },
       immediate: true
     },
     
+    // ✅ Watch store force update counter
     forceUpdateCounter: {
       handler(newCounter, oldCounter) {
+        console.log('📊 Sidebar: Force update counter changed:', oldCounter, '→', newCounter);
         this.triggerReactivityUpdate();
       },
       immediate: true
     },
     
+    // ✅ Watch for user object changes
     user: {
       handler(newUser, oldUser) {
+        console.log('👤 Sidebar: User object changed:', { 
+          old: oldUser?.email, 
+          new: newUser?.email,
+          status: this.userStatus 
+        });
+        
         if (newUser && (!oldUser || oldUser.email !== newUser.email)) {
-          this.componentKey++;
+          console.log('👤 Sidebar: New user logged in:', newUser.email);
+          this.componentKey++; // Trigger userDisplayName reactivity
         }
       },
       deep: true,
       immediate: true
     },
     
+    // ✅ Watch for subscription details changes
     subscriptionDetails: {
       handler(newSub, oldSub) {
         if (newSub !== oldSub) {
+          console.log('💳 Sidebar: Subscription details changed:', newSub);
           this.triggerReactivityUpdate();
         }
       },
@@ -253,18 +236,24 @@ export default {
       immediate: true
     },
     
+    // ✅ Watch for subscription status changes
     hasActiveSubscription: {
       handler(hasSubscription, hadSubscription) {
         if (hasSubscription !== hadSubscription) {
+          console.log('💳 Sidebar: Subscription status changed to:', hasSubscription);
           this.triggerReactivityUpdate();
         }
       },
       immediate: true
     },
 
+    // ✅ NEW: Watch for localStorage changes (for cross-tab sync) - This is for direct store state changes, not localStorage
+    // The previous implementation was watching $store.state.user.userStatus, which is appropriate.
+    // If you literally meant localStorage, that's covered by `setupGlobalListeners` already.
     '$store.state.user.userStatus': {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
+          console.log('📊 Sidebar: Store user status direct change (via $store.state):', oldStatus, '→', newStatus);
           this.triggerReactivityUpdate();
           this.lastSyncTime = Date.now();
         }
@@ -272,13 +261,19 @@ export default {
       immediate: true
     }
   },
-
-  created() {
+  
+  mounted() {
+    console.log('🔧 Sidebar: Component mounted');
+    console.log('📊 Sidebar: Initial user status:', this.userStatus);
+    console.log('👤 Sidebar: Initial user:', this.user);
+    
     this.checkMobile();
     window.addEventListener('resize', this.checkMobile);
-
-    // Firebase auth state listener
+    
+    // ✅ ENHANCED: Better Firebase auth state handling
     onAuthStateChanged(auth, (firebaseUser) => {
+      console.log('🔥 Sidebar: Firebase auth state changed:', firebaseUser?.email);
+      
       if (firebaseUser) {
         const userData = {
           name: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
@@ -289,19 +284,26 @@ export default {
           photoURL: firebaseUser.photoURL
         };
         
-        this.saveUser({ userData: firebaseUser, token: firebaseUser.accessToken });
+        console.log('👤 Sidebar: Setting user data:', userData);
+        this.setUser(userData);
+        
+        // ✅ Store user ID for API calls
+        this.$store.commit('setFirebaseUserId', firebaseUser.uid);
+        localStorage.setItem('firebaseUserId', firebaseUser.uid);
+        
       } else {
-        this.logout();
+        console.log('👤 Sidebar: User logged out, clearing data');
+        this.clearUser();
+        this.$store.commit('setFirebaseUserId', null);
+        localStorage.removeItem('firebaseUserId');
       }
     });
-
+    
+    // ✅ ENHANCED: Setup all global listeners
     this.setupGlobalListeners();
-    this.syncStatusWithStore();
-    this.setupPeriodicSync();
-  },
-
-  mounted() {
-    // Store subscription for watching mutations
+    
+    // ✅ ENHANCED: Store subscription listener with enhanced mutation tracking
+    // Using `this.storeUnsubscribe` as the variable name for consistency with cleanup
     this.storeUnsubscribe = this.$store.subscribe((mutation) => {
       const relevantMutations = [
         'user/SET_USER_STATUS',
@@ -313,265 +315,73 @@ export default {
       ];
       
       if (relevantMutations.includes(mutation.type)) {
+        console.log('📊 Sidebar: Store mutation detected:', mutation.type, mutation.payload);
         this.handleStoreUpdate(mutation);
       }
     });
+    
+    // ✅ Initial status sync check
+    this.syncStatusWithStore();
+    
+    // ✅ NEW: Setup periodic sync check
+    this.setupPeriodicSync();
   },
-
+  
   beforeUnmount() {
+    console.log('🔧 Sidebar: Component unmounting');
+    // Remove resize listener
     window.removeEventListener('resize', this.checkMobile);
+    
+    // Clean up global event listeners
     this.cleanupGlobalListeners();
     
-    if (this.storeUnsubscribe) {
+    // Remove store subscription
+    if (this.storeUnsubscribe) { // Use the correct variable name
       this.storeUnsubscribe();
-      this.storeUnsubscribe = null;
+      this.storeUnsubscribe = null; // Clear reference
     }
     
+    // Clear sync interval
     if (this.syncCheckInterval) {
       clearInterval(this.syncCheckInterval);
-      this.syncCheckInterval = null;
+      this.syncCheckInterval = null; // Clear reference
     }
     
-    if (this.notificationTimeout) {
-      clearTimeout(this.notificationTimeout);
-      this.notificationTimeout = null;
-    }
+    console.log('✅ Sidebar: Cleanup completed');
   },
-
+  
   methods: {
-    ...mapActions('user', [
-      'saveUser',
-      'logout',
-    ]),
-
-    ...mapMutations(['setUser', 'clearUser']),
-
-    // Core feature availability logic
-    isFeatureAvailable(requiredPlan) {
-      if (requiredPlan === 'free') return true;
-      
-      const currentPlan = this.currentPlan;
-      
-      // Pro and Premium users get access to everything above 'free'
-      if (currentPlan === 'pro' || currentPlan === 'premium') return true;
-      
-      // Start users get access to start-level features
-      return currentPlan === 'start' && requiredPlan === 'start';
-    },
-
-    // Route activity detection
-    isActive(routeName) {
-      const currentPath = this.$route.path;
-      const item = this.navigationItems.find(nav => nav.name === routeName);
-      if (!item) return false;
-
-      const startsWithMatches = ['homework', 'homeworks', 'tests'];
-      if (startsWithMatches.includes(routeName)) {
-        return currentPath.startsWith(item.to);
-      }
-      
-      if (routeName === 'main') {
-        return ['/profile/main', '/profile', '/profile/'].includes(currentPath);
-      }
-
-      return currentPath === item.to;
-    },
-
-    // Modal and UI Methods
-    showUpgradeModalForFeature(feature) {
-      const currentPlan = this.currentPlan;
-      
-      console.log('🚨 MODAL TRIGGERED:', {
-        featureName: feature.name,
-        currentPlan: currentPlan,
-        shouldShow: currentPlan === 'free',
-        userStatus: this.userStatus,
-        localStorage: localStorage.getItem('userStatus')
-      });
-      
-      // Don't show modal if user has paid plan
-      if (currentPlan === 'start' || currentPlan === 'pro') {
-        console.log('🛑 BLOCKING MODAL - User has paid plan:', currentPlan);
-        return;
-      }
-      
-      console.log('💰 SHOWING MODAL - User on free plan');
-      this.selectedFeature = feature;
-      this.showUpgradeModal = true;
-    },
-
-    closeUpgradeModal() {
-      this.showUpgradeModal = false;
-      this.selectedFeature = null;
-    },
-
-    goToUpgrade() {
-      this.closeUpgradeModal();
-      this.$router.push('/settings');
-      this.closeSidebarOnMobile();
-    },
-
-    async handleLogout() {
-      this.showLogoutModal = false;
-      
-      try {
-        await signOut(auth);
-        
-        // Clear user data
-        this.clearUser();
-        this.$store.commit('user/CLEAR_USER');
-        this.$store.commit('setFirebaseUserId', null);
-        
-        // Clear localStorage
-        const keysToRemove = ['firebaseUserId', 'userId', 'userStatus', 'subscriptionDetails', 'appliedPromocodes'];
-        keysToRemove.forEach(key => {
-          localStorage.removeItem(key);
-        });
-        
-        if (this.$toast) {
-          this.$toast.success('Вы успешно вышли из аккаунта.');
-        }
-        
-        setTimeout(() => {
-          this.$router.push('/');
-        }, 1500);
-        
-      } catch (error) {
-        console.error('Sidebar Logout Error:', error);
-        if (this.$toast) {
-          this.$toast.error('Ошибка при выходе. Пожалуйста, попробуйте еще раз.');
-        }
-      }
-    },
-
-    // Mobile Responsiveness
-    checkMobile() {
-      this.isMobile = window.innerWidth <= 768;
-    },
-
-    closeSidebar() {
-      this.$emit('toggle-sidebar', false);
-    },
-
-    closeSidebarOnMobile() {
-      if (this.isMobile) {
-        this.closeSidebar();
-      }
-    },
-
-    // Status management and reactivity
-    handleStatusChange(newStatus, oldStatus) {
-      this.lastStatusUpdate = Date.now();
-      this.triggerReactivityUpdate();
-      this.onUserStatusChanged(newStatus, oldStatus);
-    },
+    ...mapMutations(['setUser', 'clearUser']), // Ensure these mutations are available
     
-    handleStoreUpdate(mutation) {
-      this.triggerReactivityUpdate();
-      
-      this.$nextTick(() => {
-        setTimeout(() => {
-          this.triggerReactivityUpdate();
-        }, 100);
-      });
-    },
-    
-    triggerReactivityUpdate() {
-      this.componentKey++;
-      this.reactivityKey++;
-      this.lastStatusUpdate = Date.now();
-      this.lastSyncTime = Date.now();
-      
-      this.$forceUpdate();
-      
-      this.$nextTick(() => {
-        this.$forceUpdate();
-        
-        setTimeout(() => {
-          this.$forceUpdate();
-        }, 50);
-      });
-    },
-
-    syncStatusWithStore() {
-      try {
-        const storeStatus = this.$store?.getters['user/userStatus'];
-        const localStatus = localStorage.getItem('userStatus');
-        const currentTime = Date.now();
-        
-        if (storeStatus && storeStatus !== localStatus) {
-          localStorage.setItem('userStatus', storeStatus);
-          this.triggerReactivityUpdate();
-          this.lastSyncTime = currentTime;
-        }
-        
-        if (!storeStatus || storeStatus === 'free') {
-          if (localStatus && localStatus !== 'free' && localStatus !== storeStatus) {
-            this.$store.commit('user/SET_USER_STATUS', localStatus);
-            this.triggerReactivityUpdate();
-            this.lastSyncTime = currentTime;
-          }
-        }
-        
-        if (currentTime - this.lastSyncTime > 60000) {
-          this.triggerReactivityUpdate();
-          this.lastSyncTime = currentTime;
-        }
-        
-      } catch (error) {
-        console.error('Sidebar: Error syncing status:', error);
-      }
-    },
-
-    onUserStatusChanged(newStatus, oldStatus) {
-      if (oldStatus && oldStatus !== newStatus && newStatus && newStatus !== 'free') {
-        clearTimeout(this.notificationTimeout);
-        this.notificationTimeout = setTimeout(() => {
-          this.showUpgradeNotification(newStatus, 'subscription-change');
-        }, 500);
-      }
-    },
-
-    showUpgradeNotification(plan, source) {
-      const planLabels = {
-        start: 'Start',
-        pro: 'Pro'
-      };
-      
-      const sourceLabels = {
-        promocode: 'промокоду',
-        payment: 'оплате',
-        'subscription-change': 'обновлению'
-      };
-      
-      const planLabel = planLabels[plan] || plan.toUpperCase();
-      const sourceText = sourceLabels[source] || 'активации';
-      
-      const message = `Поздравляем! Теперь у вас ${planLabel} подписка по ${sourceText}!`;
-      
-      if (this.$toast) {
-        this.$toast.success(message, {
-          duration: 5000,
-          position: 'top-center'
-        });
-      }
-    },
-
+    // ✅ NEW: Setup periodic sync check
     setupPeriodicSync() {
+      // Clear any existing interval to prevent duplicates
       if (this.syncCheckInterval) {
         clearInterval(this.syncCheckInterval);
       }
 
+      // Check for status consistency every 30 seconds
       this.syncCheckInterval = setInterval(() => {
         this.syncStatusWithStore();
       }, 30000);
+      
+      console.log('✅ Sidebar: Periodic sync check setup');
     },
 
+    // ✅ ENHANCED: More comprehensive global listeners setup
     setupGlobalListeners() {
+      console.log('🔧 Sidebar: Setting up global event listeners');
+      
+      // ✅ Enhanced subscription change handler (for custom DOM event)
       this.globalEventHandlers.subscriptionChange = (event) => {
+        console.log('📡 Sidebar: Global subscription change received (DOM event):', event.detail);
+        
         const { plan, source, oldPlan } = event.detail;
+        
+        // Force immediate update with multiple triggers
         this.handleStatusChange(plan, oldPlan);
         
+        // Show celebration for upgrades
         this.$nextTick(() => {
           if (plan && plan !== 'free' && oldPlan === 'free') {
             this.showUpgradeNotification(plan, source);
@@ -579,28 +389,41 @@ export default {
         });
       };
       
+      // ✅ Enhanced event bus listeners with error handling
       if (typeof window !== 'undefined' && window.eventBus) {
         this.globalEventHandlers.statusChanged = (data) => {
+          console.log('📡 Sidebar: Status change event (EventBus):', data);
           this.handleStatusChange(data.newStatus, data.oldStatus);
         };
         
         this.globalEventHandlers.promocodeApplied = (data) => {
+          console.log('📡 Sidebar: Promocode applied event (EventBus):', data);
           this.handleStatusChange(data.newStatus, data.oldStatus);
+          
+          if (data.promocode && data.newStatus) {
+            const planLabel = data.newStatus === 'pro' ? 'Pro' : 'Start';
+            console.log(`🎉 Sidebar: Promocode ${data.promocode} activated ${planLabel} plan`);
+          }
         };
         
         this.globalEventHandlers.subscriptionUpdated = (data) => {
+          console.log('📡 Sidebar: Subscription updated event (EventBus):', data);
           this.handleStatusChange(data.plan, data.oldPlan);
         };
         
         this.globalEventHandlers.forceUpdate = (data) => {
+          console.log('📡 Sidebar: Force update event (EventBus):', data);
           this.triggerReactivityUpdate();
         };
         
+        // ✅ NEW: Store change event handler for EventBus
         this.globalEventHandlers.storeChanged = (data) => {
-          this.syncStatusWithStore();
+          console.log('📡 Sidebar: Store changed event (EventBus):', data);
+          this.syncStatusWithStore(); // Trigger a sync check on store change
           this.triggerReactivityUpdate();
         };
         
+        // Register all event bus listeners and push cleanup functions
         const eventsToRegister = [
           ['userStatusChanged', this.globalEventHandlers.statusChanged],
           ['promocodeApplied', this.globalEventHandlers.promocodeApplied],
@@ -616,15 +439,21 @@ export default {
             window.eventBus.off(eventName, handler);
           });
         });
+        
+        console.log('✅ Sidebar: Event bus listeners registered');
       }
       
+      // ✅ Enhanced DOM event listener
       if (typeof window !== 'undefined') {
         window.addEventListener('userSubscriptionChanged', this.globalEventHandlers.subscriptionChange);
+        console.log('✅ Sidebar: DOM event listener registered');
         
+        // ✅ NEW: Listen for localStorage changes (for cross-tab sync)
         this.globalEventHandlers.storageChange = (event) => {
           if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
+            console.log('📡 Sidebar: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
             this.handleStatusChange(event.newValue, event.oldValue);
-            this.syncStatusWithStore();
+            this.syncStatusWithStore(); // Trigger sync to update Vuex store
           }
         };
         
@@ -632,8 +461,12 @@ export default {
       }
     },
 
+    // ✅ ENHANCED: Better comprehensive cleanup for global listeners
     cleanupGlobalListeners() {
+      console.log('🧹 Sidebar: Cleaning up global event listeners');
+      
       if (typeof window !== 'undefined') {
+        // Remove specific DOM event listeners
         if (this.globalEventHandlers.subscriptionChange) {
           window.removeEventListener('userSubscriptionChanged', this.globalEventHandlers.subscriptionChange);
         }
@@ -642,17 +475,264 @@ export default {
           window.removeEventListener('storage', this.globalEventHandlers.storageChange);
         }
         
+        // Remove event bus listeners using stored cleanup functions
         this.eventCleanupFunctions.forEach(cleanup => {
           try {
             cleanup();
           } catch (error) {
-            console.warn('Event cleanup function failed:', error);
+            console.warn('⚠️ Event cleanup function failed:', error);
           }
         });
       }
       
+      // Clear handlers object and cleanup array
       this.globalEventHandlers = {};
       this.eventCleanupFunctions = [];
+    },
+    
+    // ✅ NEW: Centralized status change handler
+    handleStatusChange(newStatus, oldStatus) {
+      console.log('🔄 Sidebar: Handling status change:', oldStatus, '→', newStatus);
+      
+      // Update local tracking
+      this.lastStatusUpdate = Date.now();
+      
+      // Trigger multiple reactivity updates
+      this.triggerReactivityUpdate();
+      
+      // Optional: Show notification for subscription changes
+      if (oldStatus && oldStatus !== newStatus && newStatus && newStatus !== 'free') {
+        // Delay notification to avoid showing multiple times, especially from rapid events
+        clearTimeout(this.notificationTimeout);
+        this.notificationTimeout = setTimeout(() => {
+          this.showUpgradeNotification(newStatus, 'subscription-change');
+        }, 500);
+      }
+    },
+    
+    // ✅ NEW: Store update handler
+    handleStoreUpdate(mutation) {
+      console.log('🔄 Sidebar: Handling store update:', mutation.type);
+      
+      // Force component update with multiple strategies
+      this.triggerReactivityUpdate();
+      
+      // Additional delayed update for stubborn cases
+      this.$nextTick(() => {
+        setTimeout(() => {
+          this.triggerReactivityUpdate();
+        }, 100);
+      });
+    },
+    
+    // ✅ NEW: Comprehensive reactivity update
+    triggerReactivityUpdate() {
+      // Multiple reactivity triggers for maximum reliability
+      this.componentKey++;
+      this.reactivityKey++;
+      this.lastStatusUpdate = Date.now();
+      this.lastSyncTime = Date.now(); // Also update last sync time with every trigger
+      
+      // Force Vue reactivity
+      this.$forceUpdate();
+      
+      // Additional delayed updates
+      this.$nextTick(() => {
+        this.$forceUpdate();
+        
+        setTimeout(() => {
+          this.$forceUpdate();
+        }, 50); // Small delay for rendering
+      });
+      
+      console.log('🔄 Sidebar: Reactivity update triggered:', {
+        componentKey: this.componentKey,
+        reactivityKey: this.reactivityKey,
+        currentStatus: this.userStatus,
+        timestamp: this.lastStatusUpdate
+      });
+    },
+    
+    // ✅ ENHANCED: Better sync with store
+    syncStatusWithStore() {
+      try {
+        const storeStatus = this.$store?.getters['user/userStatus'];
+        const localStatus = localStorage.getItem('userStatus');
+        const currentTime = Date.now();
+        
+        console.log('🔄 Sidebar: Syncing status:', {
+          store: storeStatus,
+          localStorage: localStatus,
+          computed: this.userStatus,
+          timeSinceLastSync: currentTime - this.lastSyncTime
+        });
+        
+        // If there's a mismatch between store and localStorage, prefer store and update localStorage
+        if (storeStatus && storeStatus !== localStatus) {
+          console.log('⚠️ Sidebar: Status mismatch detected, syncing localStorage to store');
+          localStorage.setItem('userStatus', storeStatus);
+          this.triggerReactivityUpdate();
+          this.lastSyncTime = currentTime;
+        }
+        
+        // If store is empty/default but localStorage has a higher status, update store
+        if (!storeStatus || storeStatus === 'free') {
+          if (localStatus && localStatus !== 'free' && localStatus !== storeStatus) {
+            console.log('⚠️ Sidebar: Store missing higher status, updating from localStorage');
+            this.$store.commit('user/SET_USER_STATUS', localStatus); // Assuming this mutation exists
+            this.triggerReactivityUpdate();
+            this.lastSyncTime = currentTime;
+          }
+        }
+        
+        // Force reactivity if it's been a while since last update (as a fallback)
+        if (currentTime - this.lastSyncTime > 60000) { // 1 minute
+          console.log('🔄 Sidebar: Periodic reactivity refresh (long idle)');
+          this.triggerReactivityUpdate();
+          this.lastSyncTime = currentTime;
+        }
+        
+      } catch (error) {
+        console.error('❌ Sidebar: Error syncing status:', error);
+      }
+    },
+    
+    // ✅ NEW: Show upgrade notification (assuming this.$toast is available globally)
+    showUpgradeNotification(plan, source) {
+      const planLabels = {
+        start: 'Start',
+        pro: 'Pro'
+      };
+      
+      const sourceLabels = {
+        promocode: 'промокоду',
+        payment: 'оплате',
+        'subscription-change': 'обновлению'
+      };
+      
+      const planLabel = planLabels[plan] || plan.toUpperCase();
+      const sourceText = sourceLabels[source] || 'активации';
+      
+      const message = `🎉 Поздравляем! Теперь у вас ${planLabel} подписка по ${sourceText}!`;
+      
+      if (this.$toast) {
+        this.$toast.success(message, {
+          duration: 5000,
+          position: 'top-center'
+        });
+      } else {
+        console.log('🎉 Sidebar:', message);
+      }
+    },
+    
+    checkMobile() {
+      this.isMobile = window.innerWidth <= 768;
+    },
+    
+    closeSidebar() {
+      this.$emit('toggle-sidebar', false);
+    },
+    
+    closeSidebarOnMobile() {
+      if (this.isMobile) {
+        this.closeSidebar();
+      }
+    },
+    
+    // ✅ ENHANCED: Better logout handling
+    async logout() {
+      try {
+        console.log('🚪 Sidebar: Starting logout process...');
+        
+        // Hide modal immediately for better UX
+        this.showLogoutModal = false;
+        
+        // Sign out from Firebase
+        await signOut(auth);
+        
+        // Clear all store data (assuming user module has CLEAR_USER)
+        this.clearUser(); // from mapMutations
+        this.$store.commit('user/CLEAR_USER'); // Explicitly clear user module state if present
+        this.$store.commit('setFirebaseUserId', null); // Clear global firebase user ID
+        
+        // Clear relevant local storage items
+        const keysToRemove = ['firebaseUserId', 'userId', 'userStatus', 'subscriptionDetails', 'appliedPromocodes'];
+        keysToRemove.forEach(key => {
+          localStorage.removeItem(key);
+        });
+        
+        console.log('✅ Sidebar: Logout successful');
+        
+        // Show success message
+        if (this.$toast) {
+          this.$toast.success('Вы успешно вышли из аккаунта.', {
+            duration: 3000,
+            position: 'top-center'
+          });
+        }
+        
+        // Redirect after a short delay for toast to show
+        setTimeout(() => {
+          this.$router.push('/');
+        }, 1500);
+        
+      } catch (error) {
+        console.error('❌ Sidebar: Logout error:', error);
+        
+        if (this.$toast) {
+          this.$toast.error('Ошибка при выходе: попробуйте ещё раз.');
+        } else {
+          alert('Ошибка при выходе: попробуйте ещё раз.');
+        }
+      }
+    },
+    
+    getRoutePath(linkName) {
+      if (linkName === 'settings') {
+        return '/settings';
+      }
+      return `/profile/${linkName}`;
+    },
+    
+    // ✅ ENHANCED: Better route matching for active state
+    isActive(name) {
+      const path = this.$route.path;
+      
+      // Handle exact route matches
+      const exactMatches = {
+        main: ['/profile/main', '/profile', '/profile/'],
+        catalogue: ['/profile/catalogue'],
+        analytics: ['/profile/analytics'],
+        goal: ['/profile/goal'],
+        diary: ['/profile/diary'],
+        settings: ['/settings']
+      };
+      
+      // Handle routes that can have sub-paths (e.g., /profile/homeworks/123)
+      const startsWithMatches = {
+        homework: '/profile/homework', // Covers /profile/homework and its sub-routes
+        homeworks: '/profile/homeworks',
+        tests: '/profile/tests',
+        vocabulary: '/profile/vocabulary'
+      };
+      
+      // Check exact matches first
+      if (exactMatches[name] && exactMatches[name].includes(path)) {
+        return true;
+      }
+      
+      // Check startsWith matches
+      if (startsWithMatches[name] && path.startsWith(startsWithMatches[name])) {
+        // Ensure it's not a partial match of a different link name (e.g., "home" for "homework")
+        // This is a simple check, could be more robust with regex if needed.
+        if (name === 'homework') {
+          return path === '/profile/homework' || path.startsWith('/profile/homework/');
+        }
+        return true;
+      }
+      
+      // Fallback to generic match (less precise, use as last resort)
+      return path.includes(`/profile/${name}`);
     }
   }
 };
@@ -747,20 +827,32 @@ export default {
   text-transform: uppercase;
 }
 
+/* New/Enhanced styles for user-plan based on status */
 .user-plan.status-free {
-  background: #cbd5e1;
+  background: #cbd5e1; /* Light gray */
   color: #4a5568;
 }
 
 .user-plan.status-start {
-  background: #a78bfa;
+  background: #a78bfa; /* Light purple */
   color: #ffffff;
 }
 
 .user-plan.status-pro {
-  background: #1f2937;
+  background: #1f2937; /* Dark charcoal */
   color: #ffffff;
 }
+
+.user-plan.plan-updated {
+  animation: pulse-badge 1s forwards;
+}
+
+@keyframes pulse-badge {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 
 .nav-links {
   flex: 1;
@@ -815,37 +907,32 @@ export default {
   background: linear-gradient(to right, #ede9fe, #f0f5ff);
   color: #4f46e5;
   transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.12);
+}
+
+.nav-item .highlight {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: linear-gradient(to bottom, #6366f1, #8b5cf6);
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.nav-item.active .highlight,
+.nav-item:hover .highlight {
+  opacity: 1;
+}
+
+.nav-item.active {
+  background: linear-gradient(to right, #ede9fe, #f0f5ff);
+  color: #4f46e5;
+  transform: translateX(4px);
+  font-weight: 700;
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
-}
-
-.nav-item.locked-feature {
-  background-color: #f1f5f9;
-  color: #94a3b8;
-  cursor: pointer;
-  border: 1px dashed #cbd5e1;
-}
-
-.nav-item.locked-feature:hover {
-  background: linear-gradient(to right, #fef3c7, #fde68a);
-  color: #92400e;
-  border-color: #f59e0b;
-  transform: translateX(2px);
-}
-
-.nav-item.locked-feature .highlight {
-  background: linear-gradient(to bottom, #f59e0b, #d97706);
-}
-
-.link-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.lock-icon {
-  font-size: 0.75rem;
-  opacity: 0.7;
 }
 
 .bottom-logout {
@@ -862,7 +949,7 @@ export default {
   font-size: 0.8rem;
   border-radius: 8px;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', sans-serif; /* Changed from Unbounded to Inter for consistency */
   transition: all 0.2s ease;
   width: 100%;
   font-weight: 600;
@@ -872,160 +959,6 @@ export default {
 .logout-button:hover {
   background: #dc2626;
   transform: translateY(-1px);
-}
-
-.upgrade-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  backdrop-filter: blur(4px);
-}
-
-.upgrade-modal-content {
-  background: white;
-  border-radius: 16px;
-  max-width: 480px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  font-family: 'Inter', sans-serif;
-  animation: upgradeModalAppear 0.3s ease-out;
-}
-
-@keyframes upgradeModalAppear {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.upgrade-header {
-  padding: 24px 24px 16px;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 16px 16px 0 0;
-}
-
-.upgrade-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.close-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  font-size: 1.5rem;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s ease;
-}
-
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.upgrade-body {
-  padding: 24px;
-}
-
-.upgrade-body p {
-  margin: 0 0 16px;
-  color: #374151;
-  line-height: 1.6;
-}
-
-.feature-benefits {
-  background: #f8fafc;
-  padding: 20px;
-  border-radius: 12px;
-  margin-top: 16px;
-}
-
-.feature-benefits p {
-  margin: 0 0 12px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.feature-benefits ul {
-  margin: 0;
-  padding-left: 0;
-  list-style: none;
-}
-
-.feature-benefits li {
-  padding: 6px 0;
-  color: #4b5563;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.upgrade-actions {
-  padding: 16px 24px 24px;
-  display: flex;
-  gap: 12px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.upgrade-btn {
-  flex: 1;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.upgrade-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-}
-
-.cancel-upgrade-btn {
-  flex: 1;
-  background: #f3f4f6;
-  color: #6b7280;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cancel-upgrade-btn:hover {
-  background: #e5e7eb;
-  color: #4b5563;
 }
 
 .logout-modal {
@@ -1047,7 +980,7 @@ export default {
   border-radius: 12px;
   text-align: center;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', sans-serif; /* Changed from Unbounded to Inter for consistency */
   max-width: 380px;
   width: 90%;
   animation: fadeIn 0.3s ease-in-out;
@@ -1089,6 +1022,7 @@ export default {
   background: #d1d5db;
 }
 
+/* Desktop: Always show sidebar */
 @media (min-width: 769px) {
   .sidebar {
     transform: translateX(0) !important;
@@ -1099,27 +1033,10 @@ export default {
   }
 }
 
+/* Mobile: Hide sidebar by default */
 @media (max-width: 768px) {
   .sidebar {
     z-index: 1001;
-  }
-  
-  .upgrade-modal-content {
-    max-width: 95%;
-    margin: 20px;
-  }
-  
-  .upgrade-header {
-    padding: 20px 20px 16px;
-  }
-  
-  .upgrade-body {
-    padding: 20px;
-  }
-  
-  .upgrade-actions {
-    padding: 16px 20px 20px;
-    flex-direction: column;
   }
 }
 
