@@ -1103,6 +1103,7 @@
   min-height: 0;
   position: relative;
   background: #f8fafc;
+  padding: 8px;
   gap: 0;
 }
 
@@ -1113,16 +1114,26 @@
   }
 }
 
-.content-panel,
-.interactive-panel-container {
+.content-panel {
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  margin: 8px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+.interactive-panel-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid rgba(226, 232, 240, 0.6);
 }
 
 .right-panel-content {
@@ -1145,20 +1156,20 @@
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  margin: 8px 4px;
   transition: all 0.2s ease;
   z-index: 10;
   flex-shrink: 0;
   user-select: none;
+  margin: 0 4px;
 }
 
 /* Vertical divider for mobile/tablet */
 @media (max-width: 1023px) {
   .split-divider {
-    width: auto;
+    width: 100%;
     height: 8px;
     cursor: row-resize;
-    margin: 4px 8px;
+    margin: 4px 0;
   }
 }
 
@@ -1246,6 +1257,7 @@
     left: 50%;
     top: 120%;
     transform: translateX(-50%);
+    white-space: nowrap;
   }
 }
 
@@ -2044,13 +2056,13 @@
 
     .content-panel,
     .interactive-panel-container {
-      margin: 6px;
       border-radius: 10px;
     }
 
     .split-divider {
+      width: 100%;
       height: 6px;
-      margin: 3px 6px;
+      margin: 3px 0;
     }
 
     .resize-controls {
@@ -2182,13 +2194,13 @@
 
     .content-panel,
     .interactive-panel-container {
-      margin: 4px;
       border-radius: 8px;
     }
 
     .split-divider {
+      width: 100%;
       height: 5px;
-      margin: 2px 4px;
+      margin: 2px 0;
     }
 
     .resize-controls {
@@ -2365,13 +2377,13 @@
 
     .content-panel,
     .interactive-panel-container {
-      margin: 2px;
       border-radius: 6px;
     }
 
     .split-divider {
+      width: 100%;
       height: 4px;
-      margin: 1px 2px;
+      margin: 1px 0;
     }
 
     .resize-controls {
@@ -2565,9 +2577,9 @@
       color: #d1d5db;
     }
 
-    .lesson-page,
     .split-content {
       background: #0f172a;
+      padding: 8px;
     }
     
     .content-panel,
