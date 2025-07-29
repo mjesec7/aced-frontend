@@ -12,7 +12,7 @@
       </div>
 
       <!-- ✅ FIXED: Better Scrollable Body -->
-      <div class="exercise-body">
+      <div class="exercise-body" ref="exerciseBody">
         <!-- Short Answer Exercise -->
         <div v-if="exerciseType === 'short-answer'" class="exercise-type short-answer">
           <div class="question-text">
@@ -431,7 +431,7 @@
       </div>
 
       <!-- ✅ FIXED: Better Scrollable Body -->
-      <div class="quiz-body">
+      <div class="quiz-body" ref="quizBody">
         <div class="quiz-question">
           {{ currentQuiz?.question }}
         </div>
@@ -534,7 +534,7 @@
 </template>
 
 <script>
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, nextTick, onUnmounted } from 'vue'
 
 export default {
   name: 'InteractivePanel',
@@ -592,6 +592,8 @@ export default {
     // ==========================================
     // REACTIVE STATE
     // ==========================================
+    const exerciseBody = ref(null)
+    const quizBody = ref(null)
     const localUserAnswer = ref('')
     const localFillBlankAnswers = ref([])
     const draggedDragItem = ref(null)
@@ -751,6 +753,61 @@ export default {
           return false
       }
     })
+
+    // ==========================================
+    // SCROLL DETECTION & ENHANCEMENT
+    // ==========================================
+    const setupScrollDetection = () => {
+      nextTick(() => {
+        [exerciseBody, quizBody].forEach(bodyRef => {
+          if (bodyRef.value) {
+            const element = bodyRef.value
+            
+            const handleScroll = () => {
+              if (element.scrollTop > 10) {
+                element.classList.add('scrolled')
+              } else {
+                element.classList.remove('scrolled')
+              }
+            }
+            
+            element.addEventListener('scroll', handleScroll, { passive: true })
+            
+            // Initial check
+            handleScroll()
+            
+            // Store cleanup function
+            element._scrollCleanup = () => {
+              element.removeEventListener('scroll', handleScroll)
+            }
+          }
+        })
+      })
+    }
+
+    // ==========================================
+    // VISIBILITY ENFORCEMENT
+    // ==========================================
+    const enforceVisibility = () => {
+      nextTick(() => {
+        // Force visibility of the interactive panel
+        const panel = document.querySelector('.interactive-panel')
+        if (panel) {
+          panel.classList.add('force-visible')
+          
+          // Also force visibility of exercise/quiz content
+          const exerciseContent = panel.querySelector('.exercise-content')
+          const quizContent = panel.querySelector('.quiz-content')
+          
+          if (exerciseContent) {
+            exerciseContent.classList.add('force-visible')
+          }
+          if (quizContent) {
+            quizContent.classList.add('force-visible')
+          }
+        }
+      })
+    }
 
     // ==========================================
     // DRAG AND DROP METHODS
@@ -1185,6 +1242,52 @@ export default {
     }
 
     // ==========================================
+    // LIFECYCLE HOOKS
+    // ==========================================
+    
+    onMounted(() => {
+      console.log('🔧 InteractivePanel mounted - enforcing visibility')
+      
+      // Enforce visibility immediately
+      enforceVisibility()
+      
+      // Setup scroll detection
+      setupScrollDetection()
+      
+      // Initialize local state
+      localUserAnswer.value = props.userAnswer || ''
+      
+      // Initialize fill blank answers
+      if (exerciseType.value === 'fill-blank') {
+        nextTick(() => {
+          initializeFillBlankAnswers()
+        })
+      }
+      
+      // Initialize ordering items
+      if (props.currentExercise?.type === 'ordering') {
+        initializeOrderingItems()
+      }
+      
+      // Debug logging
+      console.log('🔧 InteractivePanel state:', {
+        isExerciseStep: isExerciseStep.value,
+        isQuizStep: isQuizStep.value,
+        exerciseType: exerciseType.value,
+        currentStep: props.currentStep?.type
+      })
+    })
+
+    onUnmounted(() => {
+      // Cleanup scroll listeners
+      [exerciseBody, quizBody].forEach(bodyRef => {
+        if (bodyRef.value && bodyRef.value._scrollCleanup) {
+          bodyRef.value._scrollCleanup()
+        }
+      })
+    })
+
+    // ==========================================
     // WATCHERS
     // ==========================================
     
@@ -1211,7 +1314,12 @@ export default {
 
     watch(() => props.currentExercise, (newExercise, oldExercise) => {
       if (newExercise && newExercise !== oldExercise) {
+        console.log('🔄 Exercise changed, enforcing visibility')
+        
         localUserAnswer.value = props.userAnswer || ''
+        
+        // Enforce visibility when exercise changes
+        enforceVisibility()
         
         if (newExercise.type === 'fill-blank') {
           nextTick(() => {
@@ -1228,6 +1336,17 @@ export default {
         if (newExercise.type === 'matching') {
           emit('matching-item-selected', null)
         }
+      }
+    }, { immediate: true })
+
+    // Watch for step changes and enforce visibility
+    watch(() => props.currentStep, (newStep) => {
+      if (newStep) {
+        console.log('🔄 Step changed to:', newStep.type, '- enforcing visibility')
+        nextTick(() => {
+          enforceVisibility()
+          setupScrollDetection()
+        })
       }
     }, { immediate: true })
 
@@ -1249,23 +1368,14 @@ export default {
     }
 
     // ==========================================
-    // LIFECYCLE
-    // ==========================================
-    
-    onMounted(() => {
-      localUserAnswer.value = props.userAnswer || ''
-      initializeFillBlankAnswers()
-      
-      if (props.currentExercise?.type === 'ordering') {
-        initializeOrderingItems()
-      }
-    })
-
-    // ==========================================
     // RETURN ALL METHODS AND STATE
     // ==========================================
     
     return {
+      // Refs
+      exerciseBody,
+      quizBody,
+      
       // State
       localUserAnswer,
       localFillBlankAnswers,
@@ -1289,6 +1399,10 @@ export default {
       isLastQuiz,
       blankCount,
       canSubmitAnswer,
+      
+      // Visibility & Scroll methods
+      enforceVisibility,
+      setupScrollDetection,
       
       // Drag-and-drop methods
       startDragItem,

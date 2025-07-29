@@ -1,16 +1,16 @@
 /* ================================
-   INTERACTIVE PANEL - SCROLLABLE EXERCISE AREA
-   Enhanced with perfect scrolling and exercise handling
+   INTERACTIVE PANEL - ALWAYS VISIBLE & SCROLLABLE
+   Enhanced with guaranteed visibility and perfect scrolling
    ================================ */
 
 /* ================================
-   MAIN INTERACTIVE PANEL CONTAINER
+   MAIN INTERACTIVE PANEL CONTAINER - ALWAYS VISIBLE
    ================================ */
 
    .interactive-panel {
     background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
     border-radius: 12px;
-    display: flex;
+    display: flex !important; /* Force display */
     flex-direction: column;
     height: 100%;
     overflow: hidden;
@@ -21,6 +21,22 @@
     position: relative;
     flex: 1;
     min-height: 0;
+    /* ✅ CRITICAL: Ensure always visible */
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 1;
+  }
+  
+  /* ✅ FORCE VISIBILITY for exercise and quiz content */
+  .exercise-content,
+  .quiz-content {
+    display: flex !important;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    visibility: visible !important;
+    opacity: 1 !important;
+    flex: 1;
   }
   
   .interactive-panel::before {
@@ -45,7 +61,7 @@
     color: white;
     padding: 12px 20px;
     border-radius: 12px 12px 0 0;
-    display: flex;
+    display: flex !important; /* Force display */
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
@@ -54,6 +70,9 @@
     position: sticky;
     top: 0;
     z-index: 10;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .exercise-header h3,
@@ -78,20 +97,23 @@
   }
   
   /* ================================
-     MAIN SCROLLABLE BODY - MAXIMUM COMFORT
+     MAIN SCROLLABLE BODY - ENHANCED SCROLLING
      ================================ */
   
   .exercise-body,
   .quiz-body {
     flex: 1;
     padding: 20px 24px;
-    display: flex;
+    display: flex !important; /* Force display */
     flex-direction: column;
     gap: 20px;
     overflow-y: auto;
     overflow-x: hidden;
     position: relative;
     min-height: 0;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
     
     /* Premium scrolling experience */
     scroll-behavior: smooth;
@@ -102,6 +124,18 @@
     /* Custom scrollbar */
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 transparent;
+  }
+  
+  /* ✅ FORCE VISIBILITY for all exercise types */
+  .exercise-type {
+    display: flex !important;
+    flex-direction: column;
+    gap: 20px;
+    min-height: 0;
+    position: relative;
+    visibility: visible !important;
+    opacity: 1 !important;
+    flex: 1;
   }
   
   /* Enhanced scrollbar design */
@@ -168,6 +202,10 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
     position: relative;
+    /* ✅ ENSURE VISIBILITY */
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .question-text::before,
@@ -181,26 +219,14 @@
   }
   
   /* ================================
-     EXERCISE TYPE CONTAINERS
-     ================================ */
-  
-  .exercise-type {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    min-height: 0;
-    position: relative;
-  }
-  
-  /* ================================
      SHORT ANSWER - EXPANDED TEXTAREA
      ================================ */
   
   .answer-input {
     flex: 1;
-    display: flex;
+    display: flex !important;
     flex-direction: column;
+    min-height: 0;
   }
   
   .answer-textarea {
@@ -236,17 +262,20 @@
   }
   
   /* ================================
-     OPTIONS - ENHANCED INTERACTION
+     OPTIONS - ENHANCED INTERACTION & VISIBILITY
      ================================ */
   
   .options-list,
   .quiz-options,
   .true-false-options {
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     gap: 16px;
     flex: 1;
     min-height: 0;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .option-item,
@@ -258,7 +287,7 @@
     padding: 16px 20px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
+    display: flex !important;
     align-items: center;
     gap: 16px;
     min-height: 60px;
@@ -266,6 +295,9 @@
     position: relative;
     overflow: hidden;
     flex-shrink: 0;
+    /* ✅ FORCE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .option-item::before,
@@ -349,6 +381,10 @@
     flex-shrink: 0;
     font-size: 1rem;
     position: relative;
+    /* ✅ ENSURE VISIBILITY */
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .statement-text::before {
@@ -361,7 +397,7 @@
   }
   
   .true-false-options {
-    display: grid;
+    display: grid !important;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
   }
@@ -381,6 +417,10 @@
     color: #475569;
     flex-shrink: 0;
     position: relative;
+    /* ✅ ENSURE VISIBILITY */
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .fill-blank-template::before {
@@ -393,7 +433,7 @@
   }
   
   .fill-blank-inputs {
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     gap: 16px;
     flex: 1;
@@ -401,10 +441,13 @@
     overflow-y: auto;
     max-height: 400px;
     padding-right: 8px;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .blank-input-group {
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     gap: 8px;
     flex-shrink: 0;
@@ -413,6 +456,9 @@
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .blank-label {
@@ -475,12 +521,15 @@
      ================================ */
   
   .matching-container {
-    display: grid;
+    display: grid !important;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
     flex: 1;
     min-height: 300px;
     max-height: 500px;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .matching-side {
@@ -488,11 +537,14 @@
     border: 2px solid #e2e8f0;
     border-radius: 16px;
     padding: 16px;
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     gap: 12px;
     overflow-y: auto;
     position: relative;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .matching-side h4 {
@@ -521,13 +573,16 @@
     text-align: center;
     position: relative;
     min-height: 52px;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     font-size: 0.95rem;
     line-height: 1.4;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .matching-item:hover:not(.disabled) {
@@ -587,6 +642,10 @@
     max-height: 160px;
     overflow-y: auto;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    /* ✅ ENSURE VISIBILITY */
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .matching-pairs h4 {
@@ -600,7 +659,7 @@
   }
   
   .pair-item {
-    display: flex;
+    display: flex !important;
     justify-content: space-between;
     align-items: center;
     padding: 10px 12px;
@@ -610,6 +669,9 @@
     border: 1px solid #e2e8f0;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     animation: slideIn 0.3s ease-out;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   @keyframes slideIn {
@@ -660,6 +722,10 @@
     border-radius: 12px;
     border-left: 4px solid #3b82f6;
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+    /* ✅ ENSURE VISIBILITY */
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .matching-instructions p {
@@ -688,12 +754,15 @@
      ================================ */
   
   .drag-drop-container {
-    display: grid;
+    display: grid !important;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
     flex: 1;
     min-height: 320px;
     max-height: 500px;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .drag-items,
@@ -702,11 +771,14 @@
     border: 2px solid #e2e8f0;
     border-radius: 16px;
     padding: 16px;
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     gap: 12px;
     overflow-y: auto;
     position: relative;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .drag-items h4,
@@ -735,7 +807,7 @@
     font-weight: 500;
     text-align: center;
     min-height: 48px;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
@@ -744,6 +816,9 @@
     position: relative;
     box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
     line-height: 1.4;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .drag-item:hover:not(.disabled) {
@@ -772,11 +847,14 @@
     padding: 16px;
     min-height: 120px;
     transition: all 0.3s ease;
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     gap: 12px;
     flex-shrink: 0;
     position: relative;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .drop-zone.drag-over {
@@ -802,12 +880,15 @@
   }
   
   .zone-items {
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     gap: 8px;
     flex: 1;
     overflow-y: auto;
     max-height: 160px;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .dropped-item {
@@ -845,7 +926,7 @@
   
   .no-dragdrop-data {
     flex: 1;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     color: #6b7280;
@@ -855,6 +936,9 @@
     background: #f9fafb;
     border-radius: 12px;
     border: 2px dashed #d1d5db;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   /* ================================
@@ -862,7 +946,7 @@
      ================================ */
   
   .ordering-container {
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     gap: 12px;
     flex: 1;
@@ -870,6 +954,9 @@
     overflow-y: auto;
     max-height: 500px;
     padding-right: 8px;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .ordering-instructions {
@@ -885,6 +972,10 @@
     flex-shrink: 0;
     font-weight: 500;
     box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+    /* ✅ ENSURE VISIBILITY */
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .ordering-item {
@@ -898,6 +989,10 @@
     flex-shrink: 0;
     min-height: 60px;
     position: relative;
+    /* ✅ ENSURE VISIBILITY */
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .ordering-item:hover:not(.disabled) {
@@ -925,9 +1020,12 @@
   }
   
   .ordering-item-content {
-    display: flex;
+    display: flex !important;
     align-items: center;
     gap: 16px;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .drag-handle {
@@ -976,10 +1074,13 @@
   }
   
   .ordering-controls {
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     gap: 4px;
     flex-shrink: 0;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .move-btn {
@@ -1022,7 +1123,7 @@
     border-top: 1px solid #e2e8f0;
     background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
     border-radius: 0 0 12px 12px;
-    display: flex;
+    display: flex !important;
     gap: 16px;
     justify-content: center;
     flex-wrap: wrap;
@@ -1032,6 +1133,9 @@
     bottom: 0;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
     z-index: 10;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .hint-btn,
@@ -1044,7 +1148,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
+    display: flex !important;
     align-items: center;
     gap: 8px;
     min-height: 48px;
@@ -1058,6 +1162,9 @@
     overflow: hidden;
     flex: 1;
     max-width: 200px;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .hint-btn::before,
@@ -1155,6 +1262,10 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
     animation: slideUp 0.3s ease-out;
+    /* ✅ ENSURE VISIBILITY */
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   @keyframes slideUp {
@@ -1170,10 +1281,14 @@
   
   .second-chance-indicator {
     margin-bottom: 12px;
+    /* ✅ ENSURE VISIBILITY */
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .attempt-counter {
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     gap: 12px;
@@ -1182,6 +1297,9 @@
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .attempt-text {
@@ -1191,8 +1309,11 @@
   }
   
   .attempt-dots {
-    display: flex;
+    display: flex !important;
     gap: 6px;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .attempt-dot {
@@ -1223,6 +1344,10 @@
     line-height: 1.5;
     margin-bottom: 12px;
     position: relative;
+    /* ✅ ENSURE VISIBILITY */
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .confirmation-message.correct {
@@ -1277,6 +1402,10 @@
     padding: 16px 20px;
     margin-top: 12px;
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+    /* ✅ ENSURE VISIBILITY */
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .correct-answer-label {
@@ -1308,16 +1437,23 @@
     flex-shrink: 0;
     box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
     animation: slideUp 0.3s ease-out;
+    /* ✅ ENSURE VISIBILITY */
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .hint {
-    display: flex;
+    display: flex !important;
     align-items: flex-start;
     gap: 12px;
     margin-bottom: 12px;
     padding: 12px;
     border-radius: 10px;
     background: rgba(245, 158, 11, 0.05);
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .hint:last-child {
@@ -1384,13 +1520,16 @@
   
   .no-content {
     flex: 1;
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
     color: #6b7280;
     padding: 60px 20px;
+    /* ✅ ENSURE VISIBILITY */
+    visibility: visible !important;
+    opacity: 1 !important;
   }
   
   .no-content-icon {
@@ -2251,17 +2390,6 @@
     animation: slideUp 0.3s ease-out;
   }
   
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(15px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
   /* Better text selection */
   ::selection {
     background-color: rgba(59, 130, 246, 0.2);
@@ -2322,4 +2450,173 @@
     border-radius: 12px;
     box-shadow: 0 8px 16px rgba(239, 68, 68, 0.2);
     font-size: 1rem;
+  }
+  
+  /* ================================
+     CRITICAL VISIBILITY OVERRIDES
+     ================================ */
+  
+  /* ✅ FORCE VISIBILITY - Override any hiding styles */
+  .interactive-panel,
+  .exercise-content,
+  .quiz-content,
+  .exercise-header,
+  .quiz-header,
+  .exercise-body,
+  .quiz-body,
+  .exercise-type,
+  .exercise-actions,
+  .quiz-actions {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  
+  /* Specific overrides for content types */
+  .exercise-type.short-answer,
+  .exercise-type.multiple-choice,
+  .exercise-type.fill-blank,
+  .exercise-type.true-false,
+  .exercise-type.matching,
+  .exercise-type.ordering,
+  .exercise-type.drag-drop {
+    display: flex !important;
+    flex-direction: column !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    flex: 1 !important;
+  }
+  
+  /* Force visibility for all interactive elements */
+  .question-text,
+  .quiz-question,
+  .options-list,
+  .quiz-options,
+  .true-false-options,
+  .answer-input,
+  .answer-textarea,
+  .option-item,
+  .quiz-option,
+  .tf-option,
+  .fill-blank-inputs,
+  .blank-input-group,
+  .blank-input,
+  .matching-container,
+  .matching-side,
+  .matching-item,
+  .drag-drop-container,
+  .drag-items,
+  .drop-zones,
+  .drag-item,
+  .drop-zone,
+  .ordering-container,
+  .ordering-item {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  /* Special cases for block elements */
+  .question-text,
+  .quiz-question,
+  .statement-text,
+  .fill-blank-template,
+  .ordering-instructions,
+  .matching-instructions,
+  .confirmation-section,
+  .hints-section,
+  .no-content {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  /* Grid layouts */
+  .true-false-options,
+  .matching-container,
+  .drag-drop-container {
+    display: grid !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  /* Ensure action buttons are always visible */
+  .hint-btn,
+  .submit-btn,
+  .next-btn {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  /* ================================
+     SCROLL BEHAVIOR ENHANCEMENTS
+     ================================ */
+  
+  /* Add scroll detection */
+  .exercise-body,
+  .quiz-body {
+    scroll-snap-type: y proximity;
+  }
+  
+  .exercise-body > *,
+  .quiz-body > * {
+    scroll-snap-align: start;
+  }
+  
+  /* Smooth transitions between exercise types */
+  .exercise-type {
+    transition: all 0.3s ease-in-out;
+  }
+  
+  /* Enhanced focus management */
+  .exercise-body:focus-within,
+  .quiz-body:focus-within {
+    outline: 2px solid rgba(59, 130, 246, 0.3);
+    outline-offset: 4px;
+    border-radius: 8px;
+  }
+  
+  /* ================================
+     FINAL CRITICAL OVERRIDES
+     ================================ */
+  
+  /* Override any potential hidden states */
+  .interactive-panel * {
+    max-width: 100% !important;
+  }
+  
+  /* Ensure flex containers work properly */
+  .exercise-content,
+  .quiz-content {
+    min-height: 100% !important;
+    height: 100% !important;
+  }
+  
+  /* Ensure scrollable areas work */
+  .exercise-body,
+  .quiz-body {
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Emergency visibility class */
+  .force-visible {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 1 !important;
+  }
+  
+  /* Debug helper (only use in development) */
+  .debug-outline * {
+    outline: 1px solid red !important;
+  }
+  
+  .debug-background * {
+    background-color: rgba(255, 0, 0, 0.1) !important;
   }
