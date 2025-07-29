@@ -780,37 +780,76 @@ export default {
 
     // Function to load saved sizes from localStorage
     const loadSavedSizes = () => {
-      try {
-        const saved = localStorage.getItem('lessonPageSplitSizes')
-        if (saved) {
-          const { left, right, timestamp } = JSON.parse(saved)
-          
-          // Check if saved data is recent (within 30 days)
-          const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000)
-          if (timestamp && timestamp > thirtyDaysAgo) {
-            currentLeftWidth.value = Math.max(25, Math.min(75, left || 50))
-            currentRightWidth.value = Math.max(25, Math.min(75, right || 50))
-             ('📊 Loaded saved split sizes:', { left: currentLeftWidth.value, right: currentRightWidth.value })
-          } else {
-            // Remove old data
-            localStorage.removeItem('lessonPageSplitSizes')
-          }
-        }
-      } catch (error) {
-        console.warn('Could not load saved sizes from localStorage:', error)
-      }
-    }
-
-    // Handle window resize
-    const handleWindowResize = () => {
-      const wasVertical = resizeDirection.value === 'vertical'
-      const isNowVertical = window.innerWidth <= 1023
+  try {
+    const saved = localStorage.getItem('lessonPageSplitSizes')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      const { left, right, timestamp } = parsed
       
-      if (wasVertical !== isNowVertical) {
-        resizeDirection.value = isNowVertical ? 'vertical' : 'horizontal'
-         ('📱 Resize direction changed to:', resizeDirection.value)
+      // Check if saved data is recent (within 30 days)
+      const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000)
+      if (timestamp && timestamp > thirtyDaysAgo) {
+        // ✅ FIX: Ensure values are numbers and provide fallbacks
+        const leftValue = (typeof left === 'number' && !isNaN(left)) ? left : 50
+        const rightValue = (typeof right === 'number' && !isNaN(right)) ? right : 50
+        
+        // ✅ FIX: Apply constraints safely
+        currentLeftWidth.value = Math.max(25, Math.min(75, leftValue))
+        currentRightWidth.value = Math.max(25, Math.min(75, rightValue))
+        
+        console.log('📊 Loaded saved split sizes:', { 
+          left: currentLeftWidth.value, 
+          right: currentRightWidth.value 
+        })
+      } else {
+        // Remove old data
+        localStorage.removeItem('lessonPageSplitSizes')
       }
     }
+  } catch (error) {
+    console.warn('Could not load saved sizes from localStorage:', error)
+    // Reset to safe defaults
+    currentLeftWidth.value = 50
+    currentRightWidth.value = 50
+    // Clear corrupted data
+    try {
+      localStorage.removeItem('lessonPageSplitSizes')
+    } catch (e) {
+      // Ignore cleanup errors
+    }
+  }
+}
+
+// 🚨 ALSO ADD: Emergency reset function (add this anywhere in your setup function)
+const emergencyReset = () => {
+  console.log('🚨 Emergency layout reset')
+  currentLeftWidth.value = 50
+  currentRightWidth.value = 50
+  try {
+    localStorage.removeItem('lessonPageSplitSizes')
+  } catch (e) {
+    // Ignore
+  }
+}
+
+// 🚨 ALSO UPDATE: onMounted to handle errors better
+onMounted(() => {
+  // Initialize with safe defaults FIRST
+  currentLeftWidth.value = 50
+  currentRightWidth.value = 50
+  
+  // Then try to load saved sizes
+  loadSavedSizes()
+  
+  // Add event listeners
+  document.addEventListener('keydown', handleKeyboardShortcuts)
+  window.addEventListener('resize', handleWindowResize)
+  
+  // Debug functions
+  window.resetSplitSizes = resetSplitSizes
+  window.loadSavedSizes = loadSavedSizes
+  window.emergencyReset = emergencyReset // Add this for debugging
+})
 
     // ==========================================
     // NAVIGATION METHODS
