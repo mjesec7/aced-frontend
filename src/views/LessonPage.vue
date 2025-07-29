@@ -1,7 +1,5 @@
 <template>
   <div class="lesson-page">
-    <!-- REMOVED: No floating button anymore -->
-
     <!-- Loading State -->
     <div v-if="loading" class="loading-screen">
       <div class="loading-spinner"></div>
@@ -157,7 +155,7 @@
       @jump-to-word="jumpToVocabWord"
     />
 
-    <!-- Intro Screen with Problem Report Button at Bottom -->
+    <!-- Intro Screen -->
     <LessonIntro
       v-if="!started && !showPaywallModal && !loading && !error"
       :lesson="lesson"
@@ -173,7 +171,7 @@
     <!-- Main Lesson Content -->
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
 
-      <!-- Top Header with Problem Report Strip Below -->
+      <!-- Top Header -->
       <LessonHeader
         :lesson="lesson"
         :current-step="currentIndex + 1"
@@ -192,99 +190,169 @@
         :total-steps="steps.length"
       />
 
-      <!-- Split Screen Content -->
-      <div class="split-content">
-        <!-- Left Panel - Clean Content Display -->
-        <ContentPanel
-          :current-step="currentStep"
-          :current-index="currentIndex"
-          :is-interactive-step="isInteractiveStep"
-          :current-exercise="getCurrentExercise()"
-          :current-quiz="getCurrentQuiz()"
-          :exercise-index="currentExerciseIndex"
-          :quiz-index="currentQuizIndex"
-          :total-exercises="getTotalExercises()"
-          :total-quizzes="getTotalQuizzes()"
-          :show-explanation-help="showExplanationHelp"
-          :explanation-question="explanationQuestion"
-          :explanation-ai-response="explanationAIResponse"
-          :is-loading-explanation="isLoadingExplanation"
-          :is-last-step="isLastStep"
-          @toggle-explanation-help="toggleExplanationHelp"
-          @update:explanation-question="explanationQuestion = $event"
-          @ask-explanation="askAboutExplanation"
-          @init-vocabulary="initializeVocabularyModal"
-          @pronounce="pronounceWord"
-          @next="goNext"
-          @previous="goPrevious"
-        />
-
-        <!-- Right Panel - Interactive Content OR AI Help -->
-        <div v-if="isInteractiveStep" class="interactive-panel-container">
-          <!-- Interactive Panel (Exercises/Quizzes) -->
-          <InteractivePanel
+      <!-- Split Screen Content with Resizable Divider -->
+      <div class="split-content" :class="{ 'is-resizing': isResizing }">
+        <!-- Left Panel - Content Display -->
+        <div class="content-panel-wrapper" :style="leftPanelStyle">
+          <ContentPanel
             :current-step="currentStep"
+            :current-index="currentIndex"
+            :is-interactive-step="isInteractiveStep"
             :current-exercise="getCurrentExercise()"
             :current-quiz="getCurrentQuiz()"
             :exercise-index="currentExerciseIndex"
             :quiz-index="currentQuizIndex"
             :total-exercises="getTotalExercises()"
             :total-quizzes="getTotalQuizzes()"
-            :user-answer="userAnswer"
-            :confirmation="confirmation"
-            :answer-was-correct="answerWasCorrect"
-            :current-hint="currentHint"
-            :smart-hint="smartHint"
-            :mistake-count="mistakeCount"
-            :fill-blank-answers="fillBlankAnswers"
-            :matching-pairs="matchingPairs"
-            :selected-matching-item="selectedMatchingItem"
-            :ordering-items="orderingItems"
-            :drag-drop-placements="dragDropPlacements"
-            :available-drag-items="availableDragItems"
-            :drop-zones="dropZones"
-            :attempt-count="attemptCount"
-            :max-attempts="maxAttempts"
-            :is-on-second-chance="isOnSecondChance"
-            :show-correct-answer="showCorrectAnswer"
-            :correct-answer-text="correctAnswerText"
-            @answer-changed="handleAnswerChanged"
-            @fill-blank-updated="updateFillBlankAnswer"
-            @submit="handleSubmitOrNext"
-            @next-exercise="goToNextExercise"
-            @next-quiz="goToNextQuiz"
-            @show-hint="showHint"
-            @clear-hint="clearSmartHint"
-            @matching-item-selected="handleMatchingItemSelected"
-            @remove-matching-pair="handleRemoveMatchingPair"
-            @drag-item-start="handleDragItemStart"
-            @drag-over-zone="handleDragOverZone"
-            @drag-leave-zone="handleDragLeaveZone"
-            @drop-in-zone="handleDropInZone"
-            @remove-dropped-item="handleRemoveDroppedItem"
-          />
-
-          <!-- AI Help Panel -->
-          <AIHelpPanel
-            :ai-suggestions="aiSuggestions"
-            :ai-chat-input="aiChatInput"
-            :ai-chat-history="aiChatHistory"
-            :ai-is-loading="aiIsLoading"
-            :ai-usage="aiUsage"
-            @send-message="sendAIMessage"
-            @ask-ai="askAI"
-            @clear-chat="clearAIChat"
+            :show-explanation-help="showExplanationHelp"
+            :explanation-question="explanationQuestion"
+            :explanation-ai-response="explanationAIResponse"
+            :is-loading-explanation="isLoadingExplanation"
+            :is-last-step="isLastStep"
+            @toggle-explanation-help="toggleExplanationHelp"
+            @update:explanation-question="explanationQuestion = $event"
+            @ask-explanation="askAboutExplanation"
+            @init-vocabulary="initializeVocabularyModal"
+            @pronounce="pronounceWord"
+            @next="goNext"
+            @previous="goPrevious"
           />
         </div>
 
-        <!-- Non-interactive step placeholder -->
-        <div v-else class="non-interactive-panel">
-          <div class="panel-placeholder">
-            <div class="placeholder-icon">📖</div>
-            <h4>Изучите материал слева</h4>
-            <p>Внимательно прочитайте объяснение и переходите к следующему шагу</p>
+        <!-- Resizable Divider -->
+        <div 
+          class="split-divider"
+          @mousedown="startResize"
+          @touchstart="startResize"
+          @keydown="handleResizeKeyboard"
+          tabindex="0"
+          role="separator"
+          :aria-label="resizeDirection === 'horizontal' ? 'Изменить ширину панелей' : 'Изменить высоту панелей'"
+          :aria-valuenow="Math.round(currentLeftWidth)"
+          aria-valuemin="25"
+          aria-valuemax="75"
+        >
+          <div class="divider-handle">
+            <div class="divider-dots">
+              <div class="dot"></div>
+              <div class="dot"></div>
+              <div class="dot"></div>
+            </div>
+          </div>
+          <div class="divider-tooltip">
+            {{ widthIndicatorText }}<br>
+            <small>{{ resizeDirection === 'horizontal' ? 'Перетащите или используйте ←/→' : 'Перетащите или используйте ↑/↓' }}</small>
           </div>
         </div>
+
+        <!-- Right Panel - Interactive Content OR AI Help -->
+        <div class="right-panel-wrapper" :style="rightPanelStyle">
+          <div v-if="isInteractiveStep" class="interactive-panel-container">
+            <!-- Interactive Panel (Exercises/Quizzes) -->
+            <InteractivePanel
+              :current-step="currentStep"
+              :current-exercise="getCurrentExercise()"
+              :current-quiz="getCurrentQuiz()"
+              :exercise-index="currentExerciseIndex"
+              :quiz-index="currentQuizIndex"
+              :total-exercises="getTotalExercises()"
+              :total-quizzes="getTotalQuizzes()"
+              :user-answer="userAnswer"
+              :confirmation="confirmation"
+              :answer-was-correct="answerWasCorrect"
+              :current-hint="currentHint"
+              :smart-hint="smartHint"
+              :mistake-count="mistakeCount"
+              :fill-blank-answers="fillBlankAnswers"
+              :matching-pairs="matchingPairs"
+              :selected-matching-item="selectedMatchingItem"
+              :ordering-items="orderingItems"
+              :drag-drop-placements="dragDropPlacements"
+              :available-drag-items="availableDragItems"
+              :drop-zones="dropZones"
+              :attempt-count="attemptCount"
+              :max-attempts="maxAttempts"
+              :is-on-second-chance="isOnSecondChance"
+              :show-correct-answer="showCorrectAnswer"
+              :correct-answer-text="correctAnswerText"
+              @answer-changed="handleAnswerChanged"
+              @fill-blank-updated="updateFillBlankAnswer"
+              @submit="handleSubmitOrNext"
+              @next-exercise="goToNextExercise"
+              @next-quiz="goToNextQuiz"
+              @show-hint="showHint"
+              @clear-hint="clearSmartHint"
+              @matching-item-selected="handleMatchingItemSelected"
+              @remove-matching-pair="handleRemoveMatchingPair"
+              @drag-item-start="handleDragItemStart"
+              @drag-over-zone="handleDragOverZone"
+              @drag-leave-zone="handleDragLeaveZone"
+              @drop-in-zone="handleDropInZone"
+              @remove-dropped-item="handleRemoveDroppedItem"
+            />
+
+            <!-- AI Help Panel -->
+            <AIHelpPanel
+              :ai-suggestions="aiSuggestions"
+              :ai-chat-input="aiChatInput"
+              :ai-chat-history="aiChatHistory"
+              :ai-is-loading="aiIsLoading"
+              :ai-usage="aiUsage"
+              @send-message="sendAIMessage"
+              @ask-ai="askAI"
+              @clear-chat="clearAIChat"
+            />
+          </div>
+
+          <!-- Non-interactive step placeholder -->
+          <div v-else class="non-interactive-panel">
+            <div class="panel-placeholder">
+              <div class="placeholder-icon">📖</div>
+              <h4>Изучите материал слева</h4>
+              <p>Внимательно прочитайте объяснение и переходите к следующему шагу</p>
+              <div class="resize-help">
+                <small>💡 Совет: Используйте разделитель для изменения размера панелей</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resize Controls (Quick Presets) -->
+      <div class="resize-controls">
+        <button 
+          @click="currentLeftWidth = 25; currentRightWidth = 75" 
+          class="resize-preset" 
+          title="25% / 75%"
+        >
+          ◐
+        </button>
+        <button 
+          @click="currentLeftWidth = 50; currentRightWidth = 50" 
+          class="resize-preset" 
+          title="50% / 50%"
+        >
+          ◑
+        </button>
+        <button 
+          @click="currentLeftWidth = 75; currentRightWidth = 25" 
+          class="resize-preset" 
+          title="75% / 25%"
+        >
+          ◒
+        </button>
+        <button 
+          @click="resetSplitSizes" 
+          class="resize-reset" 
+          title="Сброс"
+        >
+          ⟲
+        </button>
+      </div>
+
+      <!-- Resize Indicator (shows during resize) -->
+      <div v-if="isResizing" class="resize-indicator">
+        {{ widthIndicatorText }}
       </div>
     </div>
 
