@@ -189,14 +189,32 @@
         :total-steps="steps.length"
       />
 
+      <!-- DEBUG INFO (remove in production) -->
+      <div v-if="true" class="debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px; font-size: 12px;">
+        <strong>DEBUG:</strong><br>
+        Current Step Type: {{ currentStep?.type || 'none' }}<br>
+        Interactive Panel Visible: {{ interactivePanelVisible }}<br>
+        Show Interactive Panel: {{ showInteractivePanel }}<br>
+        Has Exercises: {{ hasExercises }}<br>
+        Has Quizzes: {{ hasQuizzes }}<br>
+        Current Exercise Index: {{ currentExerciseIndex }}<br>
+        Current Quiz Index: {{ currentQuizIndex }}<br>
+        Should Show Split Screen: {{ shouldShowSplitScreen }}
+      </div>
+
       <!-- Split Screen Content -->
-      <div class="split-content">
-        <!-- Left Panel - Clean Content Display -->
-        <div class="content-panel">
+      <div class="split-content" :class="{ 'split-screen': shouldShowSplitScreen, 'single-panel': !shouldShowSplitScreen }">
+        
+        <!-- Left Panel - Content Display -->
+        <div 
+          v-if="showContentPanel || !shouldShowSplitScreen" 
+          class="content-panel"
+          :style="shouldShowSplitScreen ? leftPanelStyle : { flex: '1' }"
+        >
           <ContentPanel
             :current-step="currentStep"
             :current-index="currentIndex"
-            :is-interactive-step="isInteractiveStep"
+            :is-interactive-step="interactivePanelVisible"
             :current-exercise="getCurrentExercise()"
             :current-quiz="getCurrentQuiz()"
             :exercise-index="currentExerciseIndex"
@@ -218,10 +236,43 @@
           />
         </div>
 
-        <!-- Right Panel - Interactive Content OR Placeholder -->
-        <div class="right-panel">
-          <!-- Interactive Panel (Exercises/Quizzes) -->
-          <div v-if="isInteractiveStep" class="interactive-panel-container">
+        <!-- Resizer Handle (only when split screen) -->
+        <div 
+          v-if="shouldShowSplitScreen" 
+          class="resize-handle"
+          :class="{ 
+            'resize-handle-horizontal': resizeDirection === 'horizontal',
+            'resize-handle-vertical': resizeDirection === 'vertical',
+            'resizing': isResizing
+          }"
+          @mousedown="startResize"
+          @touchstart="startResize"
+          @keydown="handleResizeKeyboard"
+          tabindex="0"
+          role="separator"
+          :aria-label="`Resize panels. Current split: ${widthIndicatorText}`"
+          :aria-valuenow="Math.round(currentLeftWidth)"
+          aria-valuemin="25"
+          aria-valuemax="75"
+        >
+          <div class="resize-indicator">
+            <span class="resize-icon">⋮⋮</span>
+            <div class="resize-tooltip">
+              {{ widthIndicatorText }}
+              <br>
+              <small>Drag to resize • Double-click to reset</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Panel - Interactive Content -->
+        <div 
+          v-if="interactivePanelVisible" 
+          class="right-panel"
+          :style="shouldShowSplitScreen ? rightPanelStyle : { flex: '1' }"
+        >
+          <div class="interactive-panel-container">
+            <!-- Interactive Panel (Exercises/Quizzes) -->
             <InteractivePanel
               :current-step="currentStep"
               :current-exercise="getCurrentExercise()"
@@ -276,13 +327,25 @@
               @clear-chat="clearAIChat"
             />
           </div>
+        </div>
 
-          <!-- Non-interactive step placeholder -->
-          <div v-else class="non-interactive-panel">
-            <div class="panel-placeholder">
-              <div class="placeholder-icon">📖</div>
-              <h4>Изучите материал слева</h4>
-              <p>Внимательно прочитайте объяснение и переходите к следующему шагу</p>
+        <!-- Fallback: Non-interactive step placeholder (when no interactive content) -->
+        <div 
+          v-else-if="started && !interactivePanelVisible && showContentPanel" 
+          class="non-interactive-panel"
+          :style="shouldShowSplitScreen ? rightPanelStyle : { display: 'none' }"
+        >
+          <div class="panel-placeholder">
+            <div class="placeholder-icon">📖</div>
+            <h4>Изучите материал слева</h4>
+            <p>Внимательно прочитайте объяснение и переходите к следующему шагу</p>
+            <div class="debug-step-info">
+              <small>
+                Step Type: {{ currentStep?.type }}<br>
+                Has Content: {{ !!currentStep?.content }}<br>
+                Has Exercises: {{ hasExercises }}<br>
+                Has Quizzes: {{ hasQuizzes }}
+              </small>
             </div>
           </div>
         </div>
