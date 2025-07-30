@@ -126,7 +126,7 @@
           />
         </div>
 
-        <!-- Resizable Divider -->
+        <!-- ✅ ENHANCED RESIZABLE DIVIDER - MORE VISIBLE -->
         <div 
           class="split-divider"
           @mousedown="startResize"
@@ -138,16 +138,53 @@
           :aria-valuenow="Math.round(currentLeftWidth)"
           aria-valuemin="25"
           aria-valuemax="75"
+          style="
+            width: 8px !important; 
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%) !important;
+            cursor: col-resize !important;
+            border-radius: 4px !important;
+            margin: 0 4px !important;
+            z-index: 100 !important;
+            position: relative !important;
+            flex-shrink: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+          "
         >
-          <div class="divider-handle">
-            <div class="divider-dots">
-              <div class="dot"></div>
-              <div class="dot"></div>
-              <div class="dot"></div>
+          <div class="divider-handle" style="
+            background: rgba(255, 255, 255, 0.9) !important;
+            border-radius: 8px !important;
+            padding: 4px 2px !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+          ">
+            <div class="divider-dots" style="
+              display: flex !important;
+              flex-direction: column !important;
+              gap: 2px !important;
+              align-items: center !important;
+            ">
+              <div class="dot" style="width: 3px !important; height: 3px !important; background: #64748b !important; border-radius: 50% !important;"></div>
+              <div class="dot" style="width: 3px !important; height: 3px !important; background: #64748b !important; border-radius: 50% !important;"></div>
+              <div class="dot" style="width: 3px !important; height: 3px !important; background: #64748b !important; border-radius: 50% !important;"></div>
             </div>
           </div>
-          <div class="divider-tooltip">
-            {{ widthIndicatorText }}<br>
+          <div class="divider-tooltip" style="
+            position: absolute !important;
+            background: rgba(0, 0, 0, 0.8) !important;
+            color: white !important;
+            padding: 6px 10px !important;
+            border-radius: 4px !important;
+            font-size: 0.7rem !important;
+            white-space: nowrap !important;
+            opacity: 0 !important;
+            transition: opacity 0.3s ease !important;
+            z-index: 200 !important;
+            left: 110% !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+          ">
+            {{ widthIndicatorText || '50% | 50%' }}<br>
             <small>{{ resizeDirection === 'horizontal' ? 'Перетащите или используйте ←/→' : 'Перетащите или используйте ↑/↓' }}</small>
           </div>
         </div>
@@ -223,41 +260,148 @@
         </div>
       </div>
 
-      <!-- Resize Controls -->
-      <div class="resize-controls">
+      <!-- ✅ ENHANCED RESIZE CONTROLS - MORE VISIBLE -->
+      <div class="resize-controls" style="
+        position: fixed !important;
+        bottom: 20px !important;
+        right: 20px !important;
+        display: flex !important;
+        gap: 8px !important;
+        background: rgba(255, 255, 255, 0.95) !important;
+        padding: 8px !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        backdrop-filter: blur(8px) !important;
+        border: 1px solid rgba(226, 232, 240, 0.6) !important;
+        z-index: 1000 !important;
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+        transition: all 0.3s ease !important;
+      ">
         <button 
           @click="currentLeftWidth = 25; currentRightWidth = 75" 
           class="resize-preset" 
-          title="25% / 75%"
+          title="25% / 75% - Больше для упражнений"
+          style="
+            width: 32px !important;
+            height: 32px !important;
+            border: none !important;
+            border-radius: 6px !important;
+            background: #f8fafc !important;
+            color: #64748b !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 0.9rem !important;
+            transition: all 0.2s ease !important;
+          "
         >
           ◐
         </button>
         <button 
           @click="currentLeftWidth = 50; currentRightWidth = 50" 
           class="resize-preset" 
-          title="50% / 50%"
+          title="50% / 50% - Равномерно"
+          style="
+            width: 32px !important;
+            height: 32px !important;
+            border: none !important;
+            border-radius: 6px !important;
+            background: #f8fafc !important;
+            color: #64748b !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 0.9rem !important;
+            transition: all 0.2s ease !important;
+          "
         >
           ◑
         </button>
         <button 
           @click="currentLeftWidth = 75; currentRightWidth = 25" 
           class="resize-preset" 
-          title="75% / 25%"
+          title="75% / 25% - Больше для контента"
+          style="
+            width: 32px !important;
+            height: 32px !important;
+            border: none !important;
+            border-radius: 6px !important;
+            background: #f8fafc !important;
+            color: #64748b !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 0.9rem !important;
+            transition: all 0.2s ease !important;
+          "
         >
           ◒
         </button>
         <button 
           @click="resetSplitSizes" 
           class="resize-reset" 
-          title="Сброс"
+          title="Сброс к 50/50"
+          style="
+            width: 32px !important;
+            height: 32px !important;
+            border: none !important;
+            border-radius: 6px !important;
+            background: #f8fafc !important;
+            color: #64748b !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 0.9rem !important;
+            transition: all 0.2s ease !important;
+          "
         >
           ⟲
         </button>
       </div>
 
-      <!-- Resize Indicator -->
-      <div v-if="isResizing" class="resize-indicator">
-        {{ widthIndicatorText }}
+      <!-- ✅ ENHANCED RESIZE INDICATOR - MORE VISIBLE -->
+      <div v-if="isResizing" class="resize-indicator" style="
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        background: rgba(0, 0, 0, 0.9) !important;
+        color: white !important;
+        padding: 12px 20px !important;
+        border-radius: 8px !important;
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+        z-index: 2000 !important;
+        pointer-events: none !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+        backdrop-filter: blur(8px) !important;
+        animation: pulse 1s ease-in-out infinite !important;
+      ">
+        {{ widthIndicatorText || '50% | 50%' }}
+      </div>
+
+      <!-- ✅ MOBILE RESIZE HELPER -->
+      <div v-if="window.innerWidth <= 768" class="mobile-resize-helper" style="
+        position: fixed !important;
+        bottom: 80px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        background: rgba(102, 126, 234, 0.9) !important;
+        color: white !important;
+        padding: 8px 16px !important;
+        border-radius: 20px !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        z-index: 999 !important;
+        pointer-events: none !important;
+        backdrop-filter: blur(8px) !important;
+      ">
+        📱 Используйте кнопки справа для изменения размера
       </div>
 
     </div>
