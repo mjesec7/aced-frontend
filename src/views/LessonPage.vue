@@ -1,14 +1,10 @@
 <template>
   <div class="lesson-page">
-    <!-- REMOVED: No floating button anymore -->
-
-    <!-- Loading State -->
     <div v-if="loading" class="loading-screen">
       <div class="loading-spinner"></div>
       <p>Загрузка урока...</p>
     </div>
 
-    <!-- Error State -->
     <div v-else-if="error" class="error-screen">
       <div class="error-icon">❌</div>
       <h3>Ошибка загрузки урока</h3>
@@ -19,7 +15,6 @@
       </div>
     </div>
 
-    <!-- Paywall Modal -->
     <div v-if="showPaywallModal" class="modal-overlay">
       <div class="modal-content">
         <h3>🔒 Платный контент</h3>
@@ -31,7 +26,6 @@
       </div>
     </div>
 
-    <!-- Exit Confirmation Modal -->
     <div v-if="showExitModal" class="modal-overlay">
       <div class="modal-content">
         <h3>Вы действительно хотите выйти?</h3>
@@ -43,7 +37,6 @@
       </div>
     </div>
 
-    <!-- Enhanced Problem Report Modal -->
     <div v-if="showProblemReportModal" class="modal-overlay" @click.self="closeProblemReportModal">
       <div class="problem-report-modal">
         <div class="modal-header">
@@ -125,7 +118,6 @@
       </div>
     </div>
 
-    <!-- Success notification -->
     <div v-if="showSuccessMessage" class="success-notification">
       <div class="success-content">
         <div class="success-icon">✅</div>
@@ -137,7 +129,6 @@
       </div>
     </div>
 
-    <!-- Vocabulary Learning Modal -->
     <VocabularyModal
       v-if="vocabularyModal.isVisible"
       :vocabulary-data="vocabularyModal"
@@ -157,7 +148,6 @@
       @jump-to-word="jumpToVocabWord"
     />
 
-    <!-- Intro Screen with Problem Report Button at Bottom -->
     <LessonIntro
       v-if="!started && !showPaywallModal && !loading && !error"
       :lesson="lesson"
@@ -170,10 +160,8 @@
       @report-problem="openProblemReportModal"
     />
 
-    <!-- Main Lesson Content -->
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
 
-      <!-- Top Header with Problem Report Strip Below -->
       <LessonHeader
         :lesson="lesson"
         :current-step="currentIndex + 1"
@@ -184,7 +172,6 @@
         @report-problem="openProblemReportModal"
       />
 
-      <!-- Progress Bar -->
       <ProgressBar
         :progress-percentage="progressPercentage"
         :stars="stars"
@@ -192,9 +179,7 @@
         :total-steps="steps.length"
       />
 
-      <!-- Split Screen Content -->
       <div class="split-content">
-        <!-- Left Panel - Clean Content Display -->
         <ContentPanel
           :current-step="currentStep"
           :current-index="currentIndex"
@@ -205,6 +190,7 @@
           :quiz-index="currentQuizIndex"
           :total-exercises="getTotalExercises()"
           :total-quizzes="getTotalQuizzes()"
+          :total-steps="steps.length"
           :show-explanation-help="showExplanationHelp"
           :explanation-question="explanationQuestion"
           :explanation-ai-response="explanationAIResponse"
@@ -219,76 +205,65 @@
           @previous="goPrevious"
         />
 
-        <!-- Right Panel - Interactive Content OR AI Help -->
-        <div v-if="isInteractiveStep" class="interactive-panel-container">
-          <!-- Interactive Panel (Exercises/Quizzes) -->
-          <InteractivePanel
-            :current-step="currentStep"
-            :current-exercise="getCurrentExercise()"
-            :current-quiz="getCurrentQuiz()"
-            :exercise-index="currentExerciseIndex"
-            :quiz-index="currentQuizIndex"
-            :total-exercises="getTotalExercises()"
-            :total-quizzes="getTotalQuizzes()"
-            :user-answer="userAnswer"
-            :confirmation="confirmation"
-            :answer-was-correct="answerWasCorrect"
-            :current-hint="currentHint"
-            :smart-hint="smartHint"
-            :mistake-count="mistakeCount"
-            :fill-blank-answers="fillBlankAnswers"
-            :matching-pairs="matchingPairs"
-            :selected-matching-item="selectedMatchingItem"
-            :ordering-items="orderingItems"
-            :drag-drop-placements="dragDropPlacements"
-            :available-drag-items="availableDragItems"
-            :drop-zones="dropZones"
-            :attempt-count="attemptCount"
-            :max-attempts="maxAttempts"
-            :is-on-second-chance="isOnSecondChance"
-            :show-correct-answer="showCorrectAnswer"
-            :correct-answer-text="correctAnswerText"
-            @answer-changed="handleAnswerChanged"
-            @fill-blank-updated="updateFillBlankAnswer"
-            @submit="handleSubmitOrNext"
-            @next-exercise="goToNextExercise"
-            @next-quiz="goToNextQuiz"
-            @show-hint="showHint"
-            @clear-hint="clearSmartHint"
-            @matching-item-selected="handleMatchingItemSelected"
-            @remove-matching-pair="handleRemoveMatchingPair"
-            @drag-item-start="handleDragItemStart"
-            @drag-over-zone="handleDragOverZone"
-            @drag-leave-zone="handleDragLeaveZone"
-            @drop-in-zone="handleDropInZone"
-            @remove-dropped-item="handleRemoveDroppedItem"
-          />
-
-          <!-- AI Help Panel -->
-          <AIHelpPanel
-            :ai-suggestions="aiSuggestions"
-            :ai-chat-input="aiChatInput"
-            :ai-chat-history="aiChatHistory"
-            :ai-is-loading="aiIsLoading"
-            :ai-usage="aiUsage"
-            @send-message="sendAIMessage"
-            @ask-ai="askAI"
-            @clear-chat="clearAIChat"
-          />
-        </div>
-
-        <!-- Non-interactive step placeholder -->
-        <div v-else class="non-interactive-panel">
-          <div class="panel-placeholder">
-            <div class="placeholder-icon">📖</div>
-            <h4>Изучите материал слева</h4>
-            <p>Внимательно прочитайте объяснение и переходите к следующему шагу</p>
-          </div>
+        <div class="right-panel-container">
+            <InteractivePanel
+              v-if="isInteractiveStep"
+              :current-step="currentStep"
+              :current-exercise="getCurrentExercise()"
+              :current-quiz="getCurrentQuiz()"
+              :exercise-index="currentExerciseIndex"
+              :quiz-index="currentQuizIndex"
+              :total-exercises="getTotalExercises()"
+              :total-quizzes="getTotalQuizzes()"
+              :user-answer="userAnswer"
+              :confirmation="confirmation"
+              :answer-was-correct="answerWasCorrect"
+              :current-hint="currentHint"
+              :smart-hint="smartHint"
+              :mistake-count="mistakeCount"
+              :fill-blank-answers="fillBlankAnswers"
+              :matching-pairs="matchingPairs"
+              :selected-matching-item="selectedMatchingItem"
+              :ordering-items="orderingItems"
+              :drag-drop-placements="dragDropPlacements"
+              :available-drag-items="availableDragItems"
+              :drop-zones="dropZones"
+              :attempt-count="attemptCount"
+              :max-attempts="maxAttempts"
+              :is-on-second-chance="isOnSecondChance"
+              :show-correct-answer="showCorrectAnswer"
+              :correct-answer-text="correctAnswerText"
+              @answer-changed="handleAnswerChanged"
+              @fill-blank-updated="updateFillBlankAnswer"
+              @submit="handleSubmitOrNext"
+              @next-exercise="goToNextExercise"
+              @next-quiz="goToNextQuiz"
+              @show-hint="showHint"
+              @clear-hint="clearSmartHint"
+              @matching-item-selected="handleMatchingItemSelected"
+              @remove-matching-pair="handleRemoveMatchingPair"
+              @drag-item-start="handleDragItemStart"
+              @drag-over-zone="handleDragOverZone"
+              @drag-leave-zone="handleDragLeaveZone"
+              @drop-in-zone="handleDropInZone"
+              @remove-dropped-item="handleRemoveDroppedItem"
+            />
+            
+            <AIHelpPanel
+              v-else
+              :ai-suggestions="aiSuggestions"
+              :ai-chat-input="aiChatInput"
+              :ai-chat-history="aiChatHistory"
+              :ai-is-loading="aiIsLoading"
+              :ai-usage="aiUsage"
+              @send-message="sendAIMessage"
+              @ask-ai="askAI"
+              @clear-chat="clearAIChat"
+            />
         </div>
       </div>
     </div>
 
-    <!-- Enhanced Lesson Completion Screen -->
     <CompletionScreen
       v-if="lessonCompleted"
       :lesson="lesson"
@@ -306,7 +281,6 @@
       @homework="handleGoToHomework"
       @vocabulary="goToVocabulary"
     >
-      <!-- Slot for additional buttons/content in CompletionScreen -->
       <template #extra-actions>
         <button @click="openProblemReportModal" class="btn-secondary">
           ⚠️ Сообщить о проблеме с уроком
@@ -314,7 +288,6 @@
       </template>
     </CompletionScreen>
 
-    <!-- Migration Panel (Admin/User) -->
     <div v-if="showMigrationPanel" class="migration-panel">
       <div class="migration-content">
         <h3>🔄 Обновление контента</h3>
@@ -332,31 +305,6 @@
       </div>
     </div>
 
-    <!-- Floating AI Assistant Toggle -->
-    <button
-      v-if="started && !lessonCompleted"
-      class="floating-ai-btn"
-      @click="toggleFloatingAI"
-      :class="{ active: showFloatingAI }"
-    >
-      🤖
-    </button>
-
-    <!-- Floating AI Assistant -->
-    <FloatingAIAssistant
-      v-if="showFloatingAI && started && !lessonCompleted"
-      :ai-usage="aiUsage"
-      :quick-suggestions="quickSuggestions"
-      :ai-chat-history="aiChatHistory"
-      :floating-ai-input="floatingAIInput"
-      :ai-is-loading="aiIsLoading"
-      @close="closeFloatingAI"
-      @send-message="sendFloatingAIMessage"
-      @ask-ai="askAI"
-      @clear-chat="clearAIChat"
-    />
-
-    <!-- Confetti Animation -->
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
@@ -383,7 +331,6 @@ import ContentPanel from '@/components/lesson/ContentPanel.vue'
 import InteractivePanel from '@/components/lesson/InteractivePanel.vue'
 import AIHelpPanel from '@/components/lesson/AIHelpPanel.vue'
 import CompletionScreen from '@/components/lesson/CompletionScreen.vue'
-import FloatingAIAssistant from '@/components/lesson/FloatingAIAssistant.vue'
 
 export default {
   name: 'LessonPage',
@@ -397,7 +344,6 @@ export default {
     InteractivePanel,
     AIHelpPanel,
     CompletionScreen,
-    FloatingAIAssistant
   },
 
   setup() {
@@ -1263,7 +1209,6 @@ export default {
         sound.playSuccessSound?.()
         isOnSecondChance.value = false
       } else {
-        exercises.answerWasCorrect.value = false
         if (attemptCount.value < maxAttempts.value) {
           isOnSecondChance.value = true
           exercises.confirmation.value = exercises.getSecondChanceMessage(exerciseOrQuiz)
@@ -1764,4 +1709,81 @@ export default {
 
 <style scoped>
 @import "@/assets/css/LessonPage.css";
+
+.lesson-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #f0f4f8;
+}
+
+.lesson-container {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.split-content {
+  display: flex;
+  flex-grow: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.right-panel-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 320px; /* Minimum width for the right panel */
+  background-color: #f8fafc;
+  border-left: 1px solid #e2e8f0;
+}
+
+/* Styles for when the right panel is not interactive */
+.non-interactive-panel .panel-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: #9ca3af;
+  padding: 20px;
+}
+
+.panel-placeholder .placeholder-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.7;
+}
+
+.panel-placeholder h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.2rem;
+  color: #4b5563;
+}
+
+.panel-placeholder p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 1023px) {
+  .split-content {
+    flex-direction: column;
+  }
+
+  .right-panel-container {
+    border-left: none;
+    border-top: 1px solid #e2e8f0;
+    min-height: 300px; /* Ensure it has some height on smaller screens */
+  }
+}
+
 </style>
