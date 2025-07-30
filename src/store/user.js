@@ -610,7 +610,7 @@ const mutations = {
 
     const promocode = {
       id: `promo_${timestamp}`,
-      code: promocodeData.code?.toUpperCase() || '',
+      code: (promocodeData.code || '').toUpperCase(),
       plan: promocodeData.plan || 'free',
       oldPlan: promocodeData.oldPlan || state.userStatus,
       appliedAt: new Date().toISOString(),
@@ -1879,7 +1879,7 @@ const actions = {
         return { success: false, error: 'Пользователь не найден' };
       }
 
-      const normalizedCode = promoCode.trim().toUpperCase();
+      const normalizedCode = (promoCode || '').trim().toUpperCase();
 
       // Check if already applied
       const existingPromocode = state.promocodes.applied.find(p => p.code === normalizedCode);
@@ -2029,7 +2029,7 @@ const actions = {
         return { valid: false, error: 'Промокод должен содержать не менее 3 символов' };
       }
 
-      const normalizedCode = promoCode.trim().toUpperCase();
+      const normalizedCode = (promoCode || '').trim().toUpperCase();
 
       // Check cache first
       if (state.promocodes.validationCache.has(normalizedCode)) {

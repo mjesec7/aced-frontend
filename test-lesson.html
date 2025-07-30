@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        .info { background-color: #d1ecf1; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Lesson API Test</h1>
+    
+    <div class="test-section info">
+        <h2>Server Status</h2>
+        <button onclick="testHealth()">Test Health</button>
+        <div id="health-result"></div>
+    </div>
+
+    <div class="test-section info">
+        <h2>Lesson Data</h2>
+        <button onclick="testLesson()">Test Lesson</button>
+        <div id="lesson-result"></div>
+    </div>
+
+    <div class="test-section info">
+        <h2>Progress API</h2>
+        <button onclick="testProgress()">Test Progress</button>
+        <div id="progress-result"></div>
+    </div>
+
+    <div class="test-section info">
+        <h2>Save Progress</h2>
+        <button onclick="testSaveProgress()">Test Save Progress</button>
+        <div id="save-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001';
+        const TEST_USER_ID = 'ba9kX3mIQdM1wgShGOxrRNkf7c22';
+        const TEST_LESSON_ID = '687c97c4fdbf61e51edb3f99';
+
+        async function testHealth() {
+            const resultDiv = document.getElementById('health-result');
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Health Check Passed</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Health Check Failed</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testLesson() {
+            const resultDiv = document.getElementById('lesson-result');
+            try {
+                const response = await fetch(`${API_BASE}/lessons/${TEST_LESSON_ID}`);
+                const data = await response.json();
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Lesson Data Retrieved</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Lesson Data Failed</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testProgress() {
+            const resultDiv = document.getElementById('progress-result');
+            try {
+                const response = await fetch(`${API_BASE}/users/${TEST_USER_ID}/progress/lesson/${TEST_LESSON_ID}`);
+                const data = await response.json();
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Progress Retrieved</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Progress Failed</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testSaveProgress() {
+            const resultDiv = document.getElementById('save-result');
+            try {
+                const progressData = {
+                    lessonId: TEST_LESSON_ID,
+                    topicId: 'js-basics',
+                    completedSteps: [0],
+                    progressPercent: 50,
+                    completed: false,
+                    mistakes: 0,
+                    stars: 1,
+                    points: 10,
+                    duration: 120,
+                    hintsUsed: 0,
+                    submittedHomework: false,
+                    medal: 'bronze'
+                };
+
+                const response = await fetch(`${API_BASE}/progress`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: TEST_USER_ID,
+                        ...progressData
+                    })
+                });
+                const data = await response.json();
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Progress Saved</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Progress Save Failed</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-run tests on page load
+        window.onload = function() {
+            setTimeout(testHealth, 1000);
+            setTimeout(testLesson, 2000);
+            setTimeout(testProgress, 3000);
+            setTimeout(testSaveProgress, 4000);
+        };
+    </script>
+</body>
+</html>
