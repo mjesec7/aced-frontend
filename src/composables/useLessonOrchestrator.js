@@ -132,7 +132,7 @@ export function useLessonOrchestrator() {
       let lessonData = null
       
       if (response.success) {
-        lessonData = response.lesson || response.data
+        lessonData = response.data || response.lesson
       } else if (response.lesson) {
         lessonData = response.lesson
       } else if (response._id || response.lessonName) {
@@ -152,14 +152,17 @@ export function useLessonOrchestrator() {
       processLessonSteps()
       
       if (!auth.currentUser) {
-        throw new Error('Authentication required')
+        console.warn('⚠️ No authenticated user, but continuing with lesson')
       }
       
       if (steps.value.length === 0) {
         console.warn('⚠️ No steps found in lesson, creating default step')
         steps.value = [{
           type: 'explanation',
-          data: { content: lesson.value.description || 'Lesson content not available' }
+          data: { 
+            content: lesson.value.description || 'Lesson content not available',
+            title: lesson.value.lessonName || 'Lesson'
+          }
         }]
       }
       
@@ -593,22 +596,24 @@ export function useLessonOrchestrator() {
     
     userId.value = localStorage.getItem('firebaseUserId') || 
                   localStorage.getItem('userId') || 
-                  auth.currentUser?.uid
+                  auth.currentUser?.uid ||
+                  'anonymous'
     
     if (!userId.value) {
-      console.error('❌ No user ID found')
-      router.push('/')
-      return
+      console.warn('⚠️ No user ID found, using anonymous mode')
+      userId.value = 'anonymous'
     }
     
     if (!auth.currentUser) {
-      console.error('❌ User not authenticated')
-      router.push('/Login')
-      return
+      console.warn('⚠️ User not authenticated, continuing in anonymous mode')
     }
     
     await loadLesson()
-    await loadPreviousProgress()
+    
+    // Only load previous progress if user is authenticated
+    if (auth.currentUser) {
+      await loadPreviousProgress()
+    }
   }
   
   const cleanup = () => {
