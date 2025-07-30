@@ -1,7 +1,5 @@
 <template>
   <div class="lesson-page">
-    <!-- REMOVED: No floating button anymore -->
-
     <!-- Loading State -->
     <div v-if="loading" class="loading-screen">
       <div class="loading-spinner"></div>
@@ -172,7 +170,6 @@
 
     <!-- Main Lesson Content -->
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
-
       <!-- Top Header with Problem Report Strip Below -->
       <LessonHeader
         :lesson="lesson"
@@ -195,94 +192,98 @@
       <!-- Split Screen Content -->
       <div class="split-content">
         <!-- Left Panel - Clean Content Display -->
-        <ContentPanel
-          :current-step="currentStep"
-          :current-index="currentIndex"
-          :is-interactive-step="isInteractiveStep"
-          :current-exercise="getCurrentExercise()"
-          :current-quiz="getCurrentQuiz()"
-          :exercise-index="currentExerciseIndex"
-          :quiz-index="currentQuizIndex"
-          :total-exercises="getTotalExercises()"
-          :total-quizzes="getTotalQuizzes()"
-          :show-explanation-help="showExplanationHelp"
-          :explanation-question="explanationQuestion"
-          :explanation-ai-response="explanationAIResponse"
-          :is-loading-explanation="isLoadingExplanation"
-          :is-last-step="isLastStep"
-          @toggle-explanation-help="toggleExplanationHelp"
-          @update:explanation-question="explanationQuestion = $event"
-          @ask-explanation="askAboutExplanation"
-          @init-vocabulary="initializeVocabularyModal"
-          @pronounce="pronounceWord"
-          @next="goNext"
-          @previous="goPrevious"
-        />
-
-        <!-- Right Panel - Interactive Content OR AI Help -->
-        <div v-if="isInteractiveStep" class="interactive-panel-container">
-          <!-- Interactive Panel (Exercises/Quizzes) -->
-          <InteractivePanel
+        <div class="content-panel">
+          <ContentPanel
             :current-step="currentStep"
+            :current-index="currentIndex"
+            :is-interactive-step="isInteractiveStep"
             :current-exercise="getCurrentExercise()"
             :current-quiz="getCurrentQuiz()"
             :exercise-index="currentExerciseIndex"
             :quiz-index="currentQuizIndex"
             :total-exercises="getTotalExercises()"
             :total-quizzes="getTotalQuizzes()"
-            :user-answer="userAnswer"
-            :confirmation="confirmation"
-            :answer-was-correct="answerWasCorrect"
-            :current-hint="currentHint"
-            :smart-hint="smartHint"
-            :mistake-count="mistakeCount"
-            :fill-blank-answers="fillBlankAnswers"
-            :matching-pairs="matchingPairs"
-            :selected-matching-item="selectedMatchingItem"
-            :ordering-items="orderingItems"
-            :drag-drop-placements="dragDropPlacements"
-            :available-drag-items="availableDragItems"
-            :drop-zones="dropZones"
-            :attempt-count="attemptCount"
-            :max-attempts="maxAttempts"
-            :is-on-second-chance="isOnSecondChance"
-            :show-correct-answer="showCorrectAnswer"
-            :correct-answer-text="correctAnswerText"
-            @answer-changed="handleAnswerChanged"
-            @fill-blank-updated="updateFillBlankAnswer"
-            @submit="handleSubmitOrNext"
-            @next-exercise="goToNextExercise"
-            @next-quiz="goToNextQuiz"
-            @show-hint="showHint"
-            @clear-hint="clearSmartHint"
-            @matching-item-selected="handleMatchingItemSelected"
-            @remove-matching-pair="handleRemoveMatchingPair"
-            @drag-item-start="handleDragItemStart"
-            @drag-over-zone="handleDragOverZone"
-            @drag-leave-zone="handleDragLeaveZone"
-            @drop-in-zone="handleDropInZone"
-            @remove-dropped-item="handleRemoveDroppedItem"
-          />
-
-          <!-- AI Help Panel -->
-          <AIHelpPanel
-            :ai-suggestions="aiSuggestions"
-            :ai-chat-input="aiChatInput"
-            :ai-chat-history="aiChatHistory"
-            :ai-is-loading="aiIsLoading"
-            :ai-usage="aiUsage"
-            @send-message="sendAIMessage"
-            @ask-ai="askAI"
-            @clear-chat="clearAIChat"
+            :show-explanation-help="showExplanationHelp"
+            :explanation-question="explanationQuestion"
+            :explanation-ai-response="explanationAIResponse"
+            :is-loading-explanation="isLoadingExplanation"
+            :is-last-step="isLastStep"
+            @toggle-explanation-help="toggleExplanationHelp"
+            @update:explanation-question="explanationQuestion = $event"
+            @ask-explanation="askAboutExplanation"
+            @init-vocabulary="initializeVocabularyModal"
+            @pronounce="pronounceWord"
+            @next="goNext"
+            @previous="goPrevious"
           />
         </div>
 
-        <!-- Non-interactive step placeholder -->
-        <div v-else class="non-interactive-panel">
-          <div class="panel-placeholder">
-            <div class="placeholder-icon">📖</div>
-            <h4>Изучите материал слева</h4>
-            <p>Внимательно прочитайте объяснение и переходите к следующему шагу</p>
+        <!-- Right Panel - Interactive Content OR Placeholder -->
+        <div class="right-panel">
+          <!-- Interactive Panel (Exercises/Quizzes) -->
+          <div v-if="isInteractiveStep" class="interactive-panel-container">
+            <InteractivePanel
+              :current-step="currentStep"
+              :current-exercise="getCurrentExercise()"
+              :current-quiz="getCurrentQuiz()"
+              :exercise-index="currentExerciseIndex"
+              :quiz-index="currentQuizIndex"
+              :total-exercises="getTotalExercises()"
+              :total-quizzes="getTotalQuizzes()"
+              :user-answer="userAnswer"
+              :confirmation="confirmation"
+              :answer-was-correct="answerWasCorrect"
+              :current-hint="currentHint"
+              :smart-hint="smartHint"
+              :mistake-count="mistakeCount"
+              :fill-blank-answers="fillBlankAnswers"
+              :matching-pairs="matchingPairs"
+              :selected-matching-item="selectedMatchingItem"
+              :ordering-items="orderingItems"
+              :drag-drop-placements="dragDropPlacements"
+              :available-drag-items="availableDragItems"
+              :drop-zones="dropZones"
+              :attempt-count="attemptCount"
+              :max-attempts="maxAttempts"
+              :is-on-second-chance="isOnSecondChance"
+              :show-correct-answer="showCorrectAnswer"
+              :correct-answer-text="correctAnswerText"
+              @answer-changed="handleAnswerChanged"
+              @fill-blank-updated="updateFillBlankAnswer"
+              @submit="handleSubmitOrNext"
+              @next-exercise="goToNextExercise"
+              @next-quiz="goToNextQuiz"
+              @show-hint="showHint"
+              @clear-hint="clearSmartHint"
+              @matching-item-selected="handleMatchingItemSelected"
+              @remove-matching-pair="handleRemoveMatchingPair"
+              @drag-item-start="handleDragItemStart"
+              @drag-over-zone="handleDragOverZone"
+              @drag-leave-zone="handleDragLeaveZone"
+              @drop-in-zone="handleDropInZone"
+              @remove-dropped-item="handleRemoveDroppedItem"
+            />
+
+            <!-- AI Help Panel -->
+            <AIHelpPanel
+              :ai-suggestions="aiSuggestions"
+              :ai-chat-input="aiChatInput"
+              :ai-chat-history="aiChatHistory"
+              :ai-is-loading="aiIsLoading"
+              :ai-usage="aiUsage"
+              @send-message="sendAIMessage"
+              @ask-ai="askAI"
+              @clear-chat="clearAIChat"
+            />
+          </div>
+
+          <!-- Non-interactive step placeholder -->
+          <div v-else class="non-interactive-panel">
+            <div class="panel-placeholder">
+              <div class="placeholder-icon">📖</div>
+              <h4>Изучите материал слева</h4>
+              <p>Внимательно прочитайте объяснение и переходите к следующему шагу</p>
+            </div>
           </div>
         </div>
       </div>
@@ -360,7 +361,6 @@
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
-
 <script>
 // ✅ COMPLETE LESSONPAGE.VUE SCRIPT with Enhanced Resizable Split Screen
 import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
