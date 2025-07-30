@@ -41,103 +41,9 @@
       </div>
     </div>
 
-    <!-- Enhanced Problem Report Modal -->
-    <div v-if="showProblemReportModal" class="modal-overlay" @click.self="closeProblemReportModal">
-      <div class="problem-report-modal">
-        <div class="modal-header">
-          <h3>⚠️ Сообщить о проблеме с уроком</h3>
-          <button @click="closeProblemReportModal" class="close-btn">✕</button>
-        </div>
-        
-        <div class="modal-body">
-          <p class="modal-description">
-            Помогите нам улучшить урок! Опишите проблему подробно и приложите скриншот, если это возможно.
-          </p>
-          
-          <div class="form-group">
-            <label for="problemType">Тип проблемы:</label>
-            <select id="problemType" v-model="problemType" class="form-select">
-              <option value="">Выберите тип проблемы</option>
-              <option value="content">Ошибка в содержании</option>
-              <option value="technical">Техническая проблема</option>
-              <option value="interface">Проблема с интерфейсом</option>
-              <option value="exercise">Ошибка в упражнении</option>
-              <option value="audio">Проблема со звуком</option>
-              <option value="other">Другое</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label for="problemDescription">Подробное описание проблемы: <span class="required">*</span></label>
-            <textarea 
-              id="problemDescription" 
-              v-model="problemDescription" 
-              rows="4" 
-              placeholder="Опишите проблему как можно подробнее: что произошло, на каком шаге, что вы ожидали увидеть..."
-              class="form-textarea"
-              :class="{ 'error': showValidationError && !problemDescription.trim() }"
-            ></textarea>
-            <div v-if="showValidationError && !problemDescription.trim()" class="error-message">
-              Пожалуйста, опишите проблему
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="screenshotUrl">Ссылка на скриншот или фото (необязательно):</label>
-            <input 
-              type="url" 
-              id="screenshotUrl" 
-              v-model="screenshotUrl" 
-              placeholder="https://example.com/screenshot.png или вставьте ссылку с облачного хранилища"
-              class="form-input"
-            >
-            <div class="help-text">
-              💡 Совет: Сделайте скриншот и загрузите его на imgbb.com, imgur.com или Google Drive, затем вставьте ссылку сюда
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="contactInfo">Ваш контакт для обратной связи (необязательно):</label>
-            <input 
-              type="text" 
-              id="contactInfo" 
-              v-model="contactInfo" 
-              placeholder="Telegram @username, email или телефон"
-              class="form-input"
-            >
-          </div>
-        </div>
-        
-        <div class="modal-footer">
-          <button @click="closeProblemReportModal" class="cancel-btn">
-            Отмена
-          </button>
-          <button 
-            @click="submitProblemReport" 
-            class="submit-btn"
-            :disabled="isSubmitting"
-          >
-            {{ isSubmitting ? '📤 Отправка...' : '📤 Отправить отчет' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Success notification -->
-    <div v-if="showSuccessMessage" class="success-notification">
-      <div class="success-content">
-        <div class="success-icon">✅</div>
-        <div class="success-text">
-          <h4>Спасибо за отчет!</h4>
-          <p>Мы получили вашу информацию и рассмотрим проблему в ближайшее время.</p>
-        </div>
-        <button @click="closeSuccessMessage" class="close-success">✕</button>
-      </div>
-    </div>
-
     <!-- Vocabulary Learning Modal -->
     <VocabularyModal
-      v-if="vocabularyModal.isVisible"
+      v-if="vocabularyModal && vocabularyModal.isVisible"
       :vocabulary-data="vocabularyModal"
       :card-animation="cardAnimation"
       :current-word="currentVocabWord"
@@ -168,7 +74,7 @@
       @report-problem="openProblemReportModal"
     />
 
-    <!-- Main Lesson Content with Split Screen -->
+    <!-- Main Lesson Content -->
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
 
       <!-- Top Header -->
@@ -190,8 +96,9 @@
         :total-steps="steps.length"
       />
 
-      <!-- Split Screen Content with Resizable Divider -->
+      <!-- Split Screen Content -->
       <div class="split-content" :class="{ 'is-resizing': isResizing }">
+        
         <!-- Left Panel - Content Display -->
         <div class="content-panel-wrapper" :style="leftPanelStyle">
           <ContentPanel
@@ -245,17 +152,19 @@
           </div>
         </div>
 
-        <!-- Right Panel - Interactive Content -->
+        <!-- Right Panel - Interactive Content (ALWAYS VISIBLE) -->
         <div class="right-panel-wrapper" :style="rightPanelStyle">
-          <div class="interactive-panel-container">
-            <!-- Interactive Panel - ALWAYS VISIBLE -->
+          
+          <!-- FORCE SHOW: Interactive Panel Container -->
+          <div class="interactive-panel-container" style="display: flex !important; flex-direction: column; height: 100%; visibility: visible !important; opacity: 1 !important;">
+            
+            <!-- ALWAYS RENDER: Interactive Panel -->
             <InteractivePanel
-              v-if="currentStep"
-              :current-step="currentStep"
+              :current-step="currentStep || {}"
               :current-exercise="getCurrentExercise()"
               :current-quiz="getCurrentQuiz()"
-              :exercise-index="currentExerciseIndex"
-              :quiz-index="currentQuizIndex"
+              :exercise-index="currentExerciseIndex || 0"
+              :quiz-index="currentQuizIndex || 0"
               :total-exercises="getTotalExercises()"
               :total-quizzes="getTotalQuizzes()"
               :user-answer="userAnswer"
@@ -297,9 +206,9 @@
               @complete="completeLessonWithExtraction"
             />
 
-            <!-- AI Help Panel -->
+            <!-- AI Help Panel (optional) -->
             <AIHelpPanel
-              v-if="showExplanationHelp || aiChatHistory.length > 0"
+              v-if="showExplanationHelp || (aiChatHistory && aiChatHistory.length > 0)"
               :ai-suggestions="aiSuggestions"
               :ai-chat-input="aiChatInput"
               :ai-chat-history="aiChatHistory"
@@ -309,37 +218,38 @@
               @ask-ai="askAI"
               @clear-chat="clearAIChat"
             />
+            
           </div>
         </div>
       </div>
 
-      <!-- Resize Controls (Quick Presets) -->
+      <!-- Resize Controls -->
       <div class="resize-controls">
         <button 
           @click="currentLeftWidth = 25; currentRightWidth = 75" 
           class="resize-preset" 
-          title="25% / 75% - Больше интерактива"
+          title="25% / 75%"
         >
           ◐
         </button>
         <button 
           @click="currentLeftWidth = 50; currentRightWidth = 50" 
           class="resize-preset" 
-          title="50% / 50% - Равномерно"
+          title="50% / 50%"
         >
           ◑
         </button>
         <button 
           @click="currentLeftWidth = 75; currentRightWidth = 25" 
           class="resize-preset" 
-          title="75% / 25% - Больше контента"
+          title="75% / 25%"
         >
           ◒
         </button>
         <button 
           @click="resetSplitSizes" 
           class="resize-reset" 
-          title="Сброс к 50/50"
+          title="Сброс"
         >
           ⟲
         </button>
@@ -350,16 +260,6 @@
         {{ widthIndicatorText }}
       </div>
 
-      <!-- Mobile Split Toggle -->
-      <div class="mobile-split-toggle" v-if="window.innerWidth <= 768">
-        <button 
-          @click="toggleMobileSplit" 
-          class="mobile-toggle-btn"
-          :class="{ active: showMobileContent }"
-        >
-          {{ showMobileContent ? '📝 Упражнения' : '📖 Содержание' }}
-        </button>
-      </div>
     </div>
 
     <!-- Lesson Completion Screen -->
@@ -371,7 +271,7 @@
       :mistake-count="mistakeCount"
       :earned-points="earnedPoints"
       :medal-label="medalLabel"
-      :medal-icon="getMedalIcon()"
+      :medal-icon="getMedalIcon && getMedalIcon()"
       :progress-insight="progressInsight"
       :total-steps="steps.length"
       :extraction-results="extractionResults"
@@ -387,21 +287,69 @@
       </template>
     </CompletionScreen>
 
-    <!-- Migration Panel -->
-    <div v-if="showMigrationPanel" class="migration-panel">
-      <div class="migration-content">
-        <h3>🔄 Обновление контента</h3>
-        <p>Хотите создать задания и словарь из уже пройденных уроков?</p>
-        <div class="migration-actions">
-          <button
-            @click="migrateLessonContent"
-            :disabled="migrationLoading"
-            class="migrate-btn"
-          >
-            {{ migrationLoading ? '⏳ Обработка...' : '🚀 Обновить контент' }}
-          </button>
-          <button @click="closeMigrationPanel" class="cancel-btn">❌ Закрыть</button>
+    <!-- Problem Report Modal -->
+    <div v-if="showProblemReportModal" class="modal-overlay" @click.self="closeProblemReportModal">
+      <div class="problem-report-modal">
+        <div class="modal-header">
+          <h3>⚠️ Сообщить о проблеме с уроком</h3>
+          <button @click="closeProblemReportModal" class="close-btn">✕</button>
         </div>
+        
+        <div class="modal-body">
+          <p class="modal-description">
+            Помогите нам улучшить урок! Опишите проблему подробно.
+          </p>
+          
+          <div class="form-group">
+            <label for="problemType">Тип проблемы:</label>
+            <select id="problemType" v-model="problemType" class="form-select">
+              <option value="">Выберите тип проблемы</option>
+              <option value="content">Ошибка в содержании</option>
+              <option value="technical">Техническая проблема</option>
+              <option value="interface">Проблема с интерфейсом</option>
+              <option value="exercise">Ошибка в упражнении</option>
+              <option value="other">Другое</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="problemDescription">Описание проблемы: <span class="required">*</span></label>
+            <textarea 
+              id="problemDescription" 
+              v-model="problemDescription" 
+              rows="4" 
+              placeholder="Опишите проблему подробно..."
+              class="form-textarea"
+              :class="{ 'error': showValidationError && !problemDescription.trim() }"
+            ></textarea>
+            <div v-if="showValidationError && !problemDescription.trim()" class="error-message">
+              Пожалуйста, опишите проблему
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button @click="closeProblemReportModal" class="cancel-btn">Отмена</button>
+          <button 
+            @click="submitProblemReport" 
+            class="submit-btn"
+            :disabled="isSubmitting"
+          >
+            {{ isSubmitting ? '📤 Отправка...' : '📤 Отправить отчет' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success notification -->
+    <div v-if="showSuccessMessage" class="success-notification">
+      <div class="success-content">
+        <div class="success-icon">✅</div>
+        <div class="success-text">
+          <h4>Спасибо за отчет!</h4>
+          <p>Мы получили вашу информацию и рассмотрим проблему.</p>
+        </div>
+        <button @click="closeSuccessMessage" class="close-success">✕</button>
       </div>
     </div>
 
@@ -411,7 +359,6 @@
       class="floating-ai-btn"
       @click="toggleFloatingAI"
       :class="{ active: showFloatingAI }"
-      :title="showFloatingAI ? 'Закрыть ИИ помощника' : 'Открыть ИИ помощника'"
     >
       🤖
     </button>
@@ -433,43 +380,6 @@
     <!-- Confetti Animation -->
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
 
-    <!-- Keyboard Shortcuts Help -->
-    <div v-if="showKeyboardHelp" class="keyboard-help-modal">
-      <div class="keyboard-help-content">
-        <h3>⌨️ Горячие клавиши</h3>
-        <div class="shortcuts-list">
-          <div class="shortcut-item">
-            <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd>
-            <span>Сообщить о проблеме</span>
-          </div>
-          <div class="shortcut-item">
-            <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>R</kbd>
-            <span>Сбросить размеры панелей</span>
-          </div>
-          <div class="shortcut-item">
-            <kbd>←</kbd> <kbd>→</kbd>
-            <span>Изменить размер панелей</span>
-          </div>
-          <div class="shortcut-item">
-            <kbd>Space</kbd>
-            <span>50/50 размер панелей</span>
-          </div>
-        </div>
-        <button @click="showKeyboardHelp = false" class="close-help-btn">
-          Закрыть
-        </button>
-      </div>
-    </div>
-
-    <!-- Help Button -->
-    <button 
-      v-if="started && !lessonCompleted"
-      @click="showKeyboardHelp = true"
-      class="help-btn"
-      title="Показать горячие клавиши"
-    >
-      ❓
-    </button>
   </div>
 </template>
 
