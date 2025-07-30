@@ -1,8 +1,8 @@
 <template>
-  <!-- ✅ FIXED: Interactive Panel with Better Layout and Visibility -->
-  <div class="interactive-panel">
+  <!-- ✅ FIXED: Interactive Panel with Guaranteed Visibility and Enhanced Scrolling -->
+  <div class="interactive-panel force-visible">
     <!-- Exercise Content -->
-    <div v-if="isExerciseStep" class="exercise-content">
+    <div v-if="isExerciseStep" class="exercise-content force-visible">
       <!-- Fixed Header -->
       <div class="exercise-header">
         <h3>{{ currentExercise?.title || 'Упражнение' }}</h3>
@@ -11,10 +11,10 @@
         </div>
       </div>
 
-      <!-- ✅ FIXED: Better Scrollable Body -->
+      <!-- ✅ ENHANCED: Scrollable Body with Better Touch Support -->
       <div class="exercise-body" ref="exerciseBody">
         <!-- Short Answer Exercise -->
-        <div v-if="exerciseType === 'short-answer'" class="exercise-type short-answer">
+        <div v-if="exerciseType === 'short-answer'" class="exercise-type short-answer force-visible">
           <div class="question-text">
             {{ currentExercise?.question }}
           </div>
@@ -23,7 +23,7 @@
               v-model="localUserAnswer"
               @input="updateAnswer"
               placeholder="Введите ваш ответ здесь..."
-              rows="4"
+              rows="3"
               class="answer-textarea"
               :disabled="showCorrectAnswer"
             />
@@ -31,7 +31,7 @@
         </div>
 
         <!-- Multiple Choice Exercise -->
-        <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc'" class="exercise-type multiple-choice">
+        <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc'" class="exercise-type multiple-choice force-visible">
           <div class="question-text">
             {{ currentExercise?.question }}
           </div>
@@ -61,7 +61,7 @@
         </div>
 
         <!-- Fill in the Blanks Exercise -->
-        <div v-else-if="exerciseType === 'fill-blank'" class="exercise-type fill-blank">
+        <div v-else-if="exerciseType === 'fill-blank'" class="exercise-type fill-blank force-visible">
           <div class="question-text">
             {{ currentExercise?.question }}
           </div>
@@ -96,7 +96,7 @@
         </div>
 
         <!-- True/False Exercise -->
-        <div v-else-if="exerciseType === 'true-false'" class="exercise-type true-false">
+        <div v-else-if="exerciseType === 'true-false'" class="exercise-type true-false force-visible">
           <div class="question-text">
             {{ currentExercise?.question }}
           </div>
@@ -144,7 +144,7 @@
         </div>
 
         <!-- Matching Exercise -->
-        <div v-else-if="exerciseType === 'matching'" class="exercise-type matching">
+        <div v-else-if="exerciseType === 'matching'" class="exercise-type matching force-visible">
           <div class="question-text">
             {{ currentExercise?.question }}
           </div>
@@ -220,7 +220,7 @@
         </div>
 
         <!-- Ordering Exercise -->
-        <div v-else-if="exerciseType === 'ordering'" class="exercise-type ordering">
+        <div v-else-if="exerciseType === 'ordering'" class="exercise-type ordering force-visible">
           <div class="question-text">
             {{ currentExercise?.question }}
           </div>
@@ -268,59 +268,74 @@
           </div>
         </div>
 
-        <!-- ✅ FIXED: Drag and Drop Exercise - Better Layout -->
-        <div v-else-if="exerciseType === 'drag-drop'" class="exercise-type drag-drop">
+        <!-- ✅ ENHANCED: Drag and Drop Exercise with Better Touch Support -->
+        <div v-else-if="exerciseType === 'drag-drop'" class="exercise-type drag-drop force-visible">
           <div class="question-text">
             {{ currentExercise?.question }}
+          </div>
+          
+          <!-- Mobile/Touch Instructions -->
+          <div class="touch-instructions">
+            <p>📱 <strong>На мобильных:</strong> Коснитесь элемента, затем коснитесь зоны назначения</p>
+            <p>🖱️ <strong>На компьютере:</strong> Перетащите элементы в нужные зоны</p>
           </div>
           
           <div v-if="availableDragItems.length > 0 && dropZones.length > 0" class="drag-drop-container">
             <!-- Available Items to Drag -->
             <div class="drag-items">
-              <h4>Перетащите элементы:</h4>
-              <div 
-                v-for="(item, index) in availableDragItems" 
-                :key="'drag-' + index"
-                class="drag-item"
-                :class="{ 
-                  dragging: draggedDragItem === item,
-                  disabled: showCorrectAnswer
-                }"
-                :draggable="!showCorrectAnswer"
-                @dragstart="startDragItem(item, $event)"
-                @dragend="endDragItem"
-                @touchstart="handleTouchStart($event, item)"
-                @touchmove.prevent="handleTouchMove"
-                @touchend="handleTouchEnd"
-              >
-                {{ getDragItemText(item) }}
+              <h4>Элементы для перемещения:</h4>
+              <div class="drag-items-scroll">
+                <div 
+                  v-for="(item, index) in availableDragItems" 
+                  :key="'drag-' + index"
+                  class="drag-item"
+                  :class="{ 
+                    dragging: draggedDragItem === item,
+                    disabled: showCorrectAnswer,
+                    selected: selectedTouchItem === item
+                  }"
+                  :draggable="!showCorrectAnswer && !isTouchDevice"
+                  @dragstart="startDragItem(item, $event)"
+                  @dragend="endDragItem"
+                  @click="handleTouchItemSelect(item)"
+                  @touchend.prevent="handleTouchItemSelect(item)"
+                >
+                  {{ getDragItemText(item) }}
+                  <span v-if="selectedTouchItem === item" class="touch-selected-indicator">👆</span>
+                </div>
               </div>
             </div>
 
             <!-- Drop Zones -->
             <div class="drop-zones">
-              <div 
-                v-for="(zone, index) in dropZones" 
-                :key="'zone-' + index"
-                class="drop-zone"
-                :class="{ 
-                  'drag-over': dropOverZone === getZoneId(zone),
-                  disabled: showCorrectAnswer
-                }"
-                @dragover.prevent="dragOverZone(getZoneId(zone), $event)"
-                @dragleave="dragLeaveZone($event)"
-                @drop="dropInZone(getZoneId(zone), $event)"
-              >
-                <div class="zone-label">{{ zone.label }}</div>
-                <div class="zone-items">
-                  <div 
-                    v-for="(item, itemIndex) in getDropZoneItems(getZoneId(zone))" 
-                    :key="'dropped-' + itemIndex"
-                    class="dropped-item"
-                    @click="!showCorrectAnswer && removeDroppedItem(getZoneId(zone), itemIndex)"
-                  >
-                    {{ getDragItemText(item) }}
-                    <span v-if="!showCorrectAnswer" class="remove-dropped">×</span>
+              <h4>Зоны назначения:</h4>
+              <div class="drop-zones-scroll">
+                <div 
+                  v-for="(zone, index) in dropZones" 
+                  :key="'zone-' + index"
+                  class="drop-zone"
+                  :class="{ 
+                    'drag-over': dropOverZone === getZoneId(zone),
+                    disabled: showCorrectAnswer,
+                    'touch-highlight': touchHighlightZone === getZoneId(zone)
+                  }"
+                  @dragover.prevent="dragOverZone(getZoneId(zone), $event)"
+                  @dragleave="dragLeaveZone($event)"
+                  @drop="dropInZone(getZoneId(zone), $event)"
+                  @click="handleTouchZoneSelect(getZoneId(zone))"
+                  @touchend.prevent="handleTouchZoneSelect(getZoneId(zone))"
+                >
+                  <div class="zone-label">{{ zone.label }}</div>
+                  <div class="zone-items">
+                    <div 
+                      v-for="(item, itemIndex) in getDropZoneItems(getZoneId(zone))" 
+                      :key="'dropped-' + itemIndex"
+                      class="dropped-item"
+                      @click="!showCorrectAnswer && removeDroppedItem(getZoneId(zone), itemIndex)"
+                    >
+                      {{ getDragItemText(item) }}
+                      <span v-if="!showCorrectAnswer" class="remove-dropped">×</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -385,7 +400,7 @@
         </div>
       </div>
 
-      <!-- ✅ FIXED: Better Action Buttons Layout -->
+      <!-- ✅ ENHANCED: Action Buttons with Better Layout -->
       <div class="exercise-actions">
         <button 
           v-if="!confirmation && attemptCount === 0"
@@ -421,7 +436,7 @@
     </div>
 
     <!-- Quiz Content -->
-    <div v-else-if="isQuizStep" class="quiz-content">
+    <div v-else-if="isQuizStep" class="quiz-content force-visible">
       <!-- Fixed Header -->
       <div class="quiz-header">
         <h3>{{ currentQuiz?.title || 'Вопрос' }}</h3>
@@ -430,7 +445,7 @@
         </div>
       </div>
 
-      <!-- ✅ FIXED: Better Scrollable Body -->
+      <!-- ✅ ENHANCED: Scrollable Body -->
       <div class="quiz-body" ref="quizBody">
         <div class="quiz-question">
           {{ currentQuiz?.question }}
@@ -497,7 +512,7 @@
         </div>
       </div>
 
-      <!-- ✅ FIXED: Better Action Buttons Layout -->
+      <!-- ✅ ENHANCED: Action Buttons -->
       <div class="quiz-actions">
         <button 
           v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
@@ -525,7 +540,7 @@
     </div>
 
     <!-- No Content State -->
-    <div v-else class="no-content">
+    <div v-else class="no-content force-visible">
       <div class="no-content-icon">📝</div>
       <h4>Нет интерактивного содержимого</h4>
       <p>Для этого шага нет упражнений или вопросов</p>
@@ -602,9 +617,10 @@ export default {
     const draggedOrderingItem = ref(null)
     const dropTargetIndex = ref(null)
     
-    // Touch handling for mobile drag-drop
-    const touchStartPos = ref({ x: 0, y: 0 })
-    const draggedTouchItem = ref(null)
+    // Enhanced touch support for drag-drop
+    const isTouchDevice = ref(false)
+    const selectedTouchItem = ref(null)
+    const touchHighlightZone = ref(null)
 
     // ==========================================
     // COMPUTED PROPERTIES  
@@ -755,6 +771,18 @@ export default {
     })
 
     // ==========================================
+    // DEVICE DETECTION
+    // ==========================================
+    const detectTouchDevice = () => {
+      isTouchDevice.value = (
+        'ontouchstart' in window ||
+        navigator.maxTouchPoints > 0 ||
+        navigator.msMaxTouchPoints > 0 ||
+        window.innerWidth <= 768
+      )
+    }
+
+    // ==========================================
     // SCROLL DETECTION & ENHANCEMENT
     // ==========================================
     const setupScrollDetection = () => {
@@ -793,6 +821,9 @@ export default {
         // Force visibility of the interactive panel
         const panel = document.querySelector('.interactive-panel')
         if (panel) {
+          panel.style.display = 'flex'
+          panel.style.visibility = 'visible'
+          panel.style.opacity = '1'
           panel.classList.add('force-visible')
           
           // Also force visibility of exercise/quiz content
@@ -800,17 +831,32 @@ export default {
           const quizContent = panel.querySelector('.quiz-content')
           
           if (exerciseContent) {
+            exerciseContent.style.display = 'flex'
+            exerciseContent.style.visibility = 'visible'
+            exerciseContent.style.opacity = '1'
             exerciseContent.classList.add('force-visible')
           }
           if (quizContent) {
+            quizContent.style.display = 'flex'
+            quizContent.style.visibility = 'visible'
+            quizContent.style.opacity = '1'
             quizContent.classList.add('force-visible')
           }
+          
+          // Force visibility of exercise types
+          const exerciseTypes = panel.querySelectorAll('.exercise-type')
+          exerciseTypes.forEach(type => {
+            type.style.display = 'flex'
+            type.style.visibility = 'visible'
+            type.style.opacity = '1'
+            type.classList.add('force-visible')
+          })
         }
       })
     }
 
     // ==========================================
-    // DRAG AND DROP METHODS
+    // ENHANCED DRAG AND DROP METHODS
     // ==========================================
     
     const startDragItem = (item, event) => {
@@ -822,6 +868,7 @@ export default {
       }
       
       draggedDragItem.value = item
+      selectedTouchItem.value = null // Clear touch selection when dragging
       
       if (event && event.dataTransfer) {
         event.dataTransfer.effectAllowed = 'move'
@@ -897,6 +944,45 @@ export default {
     }
 
     // ==========================================
+    // ENHANCED TOUCH SUPPORT FOR DRAG-DROP
+    // ==========================================
+    
+    const handleTouchItemSelect = (item) => {
+      if (props.showCorrectAnswer) return
+      
+      if (selectedTouchItem.value === item) {
+        // Deselect if clicking the same item
+        selectedTouchItem.value = null
+        touchHighlightZone.value = null
+        console.log('📱 Deselected touch item')
+      } else {
+        // Select new item
+        selectedTouchItem.value = item
+        touchHighlightZone.value = null
+        console.log('📱 Selected touch item:', getDragItemText(item))
+      }
+    }
+
+    const handleTouchZoneSelect = (zoneId) => {
+      if (props.showCorrectAnswer || !selectedTouchItem.value) return
+      
+      console.log('📱 Touch zone selected:', zoneId, 'with item:', getDragItemText(selectedTouchItem.value))
+      
+      // Highlight the zone briefly
+      touchHighlightZone.value = zoneId
+      
+      // Drop the selected item into this zone
+      emit('drop-in-zone', { zoneId, item: selectedTouchItem.value })
+      
+      // Clear selection
+      selectedTouchItem.value = null
+      
+      setTimeout(() => {
+        touchHighlightZone.value = null
+      }, 300)
+    }
+
+    // ==========================================
     // UTILITY METHODS FOR DRAG-AND-DROP
     // ==========================================
     
@@ -935,61 +1021,6 @@ export default {
     const removeDroppedItem = (zoneId, itemIndex) => {
       console.log('🗑️ Removing item from zone:', zoneId, 'index:', itemIndex)
       emit('remove-dropped-item', { zoneId, itemIndex })
-    }
-
-    // ==========================================
-    // MOBILE TOUCH SUPPORT
-    // ==========================================
-    
-    const handleTouchStart = (event, item) => {
-      if (props.showCorrectAnswer) return
-      
-      const touch = event.touches[0]
-      touchStartPos.value = { x: touch.clientX, y: touch.clientY }
-      draggedTouchItem.value = item
-      
-      event.preventDefault()
-      
-      console.log('📱 Touch drag started for:', getDragItemText(item))
-    }
-
-    const handleTouchMove = (event) => {
-      if (!draggedTouchItem.value) return
-      
-      event.preventDefault()
-      
-      const touch = event.touches[0]
-      const element = document.elementFromPoint(touch.clientX, touch.clientY)
-      
-      const dropZone = element?.closest('.drop-zone')
-      if (dropZone) {
-        const zoneLabel = dropZone.querySelector('.zone-label')?.textContent
-        if (zoneLabel) {
-          dropOverZone.value = zoneLabel
-        }
-      } else {
-        dropOverZone.value = null
-      }
-    }
-
-    const handleTouchEnd = (event) => {
-      if (!draggedTouchItem.value) return
-      
-      const touch = event.changedTouches[0]
-      const element = document.elementFromPoint(touch.clientX, touch.clientY)
-      
-      const dropZone = element?.closest('.drop-zone')
-      if (dropZone) {
-        const zoneLabel = dropZone.querySelector('.zone-label')?.textContent
-        if (zoneLabel) {
-          dropInZone(zoneLabel, null)
-        }
-      }
-      
-      draggedTouchItem.value = null
-      dropOverZone.value = null
-      
-      console.log('📱 Touch drag ended')
     }
 
     // ==========================================
@@ -1248,7 +1279,10 @@ export default {
     onMounted(() => {
       console.log('🔧 InteractivePanel mounted - enforcing visibility')
       
-      // Enforce visibility immediately
+      // Detect touch device
+      detectTouchDevice()
+      
+      // Enforce visibility immediately and repeatedly
       enforceVisibility()
       
       // Setup scroll detection
@@ -1269,12 +1303,29 @@ export default {
         initializeOrderingItems()
       }
       
+      // Periodic visibility enforcement (fallback)
+      const visibilityInterval = setInterval(() => {
+        enforceVisibility()
+      }, 1000)
+      
+      // Cleanup interval on unmount
+      onUnmounted(() => {
+        clearInterval(visibilityInterval)
+      })
+      
+      // Add window resize listener for touch device detection
+      const handleResize = () => {
+        detectTouchDevice()
+      }
+      window.addEventListener('resize', handleResize)
+      
       // Debug logging
       console.log('🔧 InteractivePanel state:', {
         isExerciseStep: isExerciseStep.value,
         isQuizStep: isQuizStep.value,
         exerciseType: exerciseType.value,
-        currentStep: props.currentStep?.type
+        currentStep: props.currentStep?.type,
+        isTouchDevice: isTouchDevice.value
       })
     })
 
@@ -1285,6 +1336,9 @@ export default {
           bodyRef.value._scrollCleanup()
         }
       })
+      
+      // Remove window resize listener
+      window.removeEventListener('resize', detectTouchDevice)
     })
 
     // ==========================================
@@ -1318,8 +1372,14 @@ export default {
         
         localUserAnswer.value = props.userAnswer || ''
         
+        // Clear touch selection when exercise changes
+        selectedTouchItem.value = null
+        touchHighlightZone.value = null
+        
         // Enforce visibility when exercise changes
-        enforceVisibility()
+        nextTick(() => {
+          enforceVisibility()
+        })
         
         if (newExercise.type === 'fill-blank') {
           nextTick(() => {
@@ -1384,8 +1444,11 @@ export default {
       localOrderingItems,
       draggedOrderingItem,
       dropTargetIndex,
-      touchStartPos,
-      draggedTouchItem,
+      
+      // Touch support
+      isTouchDevice,
+      selectedTouchItem,
+      touchHighlightZone,
       
       // Computed
       isExerciseStep,
@@ -1399,6 +1462,9 @@ export default {
       isLastQuiz,
       blankCount,
       canSubmitAnswer,
+      
+      // Device detection
+      detectTouchDevice,
       
       // Visibility & Scroll methods
       enforceVisibility,
@@ -1415,10 +1481,9 @@ export default {
       getDropZoneItems,
       removeDroppedItem,
       
-      // Touch support for mobile
-      handleTouchStart,
-      handleTouchMove,
-      handleTouchEnd,
+      // Touch support for drag-drop
+      handleTouchItemSelect,
+      handleTouchZoneSelect,
       
       // Answer methods
       updateAnswer,
