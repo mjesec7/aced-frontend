@@ -663,11 +663,19 @@ export function useLessonOrchestrator() {
         return true
       } else {
         console.warn('⚠️ Progress save returned success: false');
+<<<<<<< HEAD
+=======
+        // Don't treat this as a fatal error - the lesson can continue
+>>>>>>> 4185601a64fda97204a58083717f1f3773b0112f
         return true
       }
       
     } catch (err) {
       console.error('❌ Progress save error:', err.message)
+<<<<<<< HEAD
+=======
+      // Don't treat progress save errors as fatal - lesson can continue
+>>>>>>> 4185601a64fda97204a58083717f1f3773b0112f
       return true
     }
   }

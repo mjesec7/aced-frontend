@@ -846,7 +846,7 @@ export const userStatusMixin = {
         pro: 'Pro'
       };
       
-      const planLabel = planLabels[newStatus] || newStatus.toUpperCase();
+      const planLabel = planLabels[newStatus] || (newStatus && typeof newStatus === 'string' ? newStatus.toUpperCase() : 'Unknown');
       const message = `🎉 Поздравляем! ${planLabel} подписка активирована!`;
       
       this.showStatusNotification(message, 'success');
@@ -870,7 +870,8 @@ export const userStatusMixin = {
       } else if (window.showToast) {
         window.showToast(message, type);
       } else {
-        console.log(`🔔 [${this.$options.name}] ${type.toUpperCase()}: ${message}`);
+        const safeType = type && typeof type === 'string' ? type.toUpperCase() : 'INFO';
+        console.log(`🔔 [${this.$options.name}] ${safeType}: ${message}`);
       }
     },
     

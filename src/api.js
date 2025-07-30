@@ -149,7 +149,7 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (response) => {
     // Cache successful GET requests only
-    if (response.config?.method?.toLowerCase() === 'get') {
+    if (response.config?.method && typeof response.config.method === 'string' && response.config.method.toLowerCase() === 'get') {
       try {
         const requestKey = createRequestKey(response.config);
         if (requestKey && requestKey !== `unknown-${Date.now()}`) {
@@ -200,13 +200,15 @@ api.interceptors.response.use(
       }
     }
     
-    // Enhanced error logging
-    console.error('API Error:', {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      message: error.response?.data?.message || error.message
-    });
+    // Enhanced error logging with safe property access
+    const errorInfo = {
+      url: error.config?.url || 'unknown',
+      method: error.config?.method || 'unknown',
+      status: error.response?.status || 'unknown',
+      message: error.response?.data?.message || error.message || 'Unknown error'
+    };
+    
+    console.error('API Error:', errorInfo);
     
     // Handle 401 errors with token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -857,26 +859,45 @@ export const getLessonProgress = async (userId, lessonId) => {
       `/users/${userId}/progress/lesson/${lessonId}`,
       `/user-progress/user/${userId}/lesson/${lessonId}`,
       `/user/${userId}/lesson/${lessonId}`,
-      `/progress?userId=${userId}&lessonId=${lessonId}`
+      `/progress?userId=${userId}&lessonId=${lessonId}`,
+      `/api/progress/${userId}/${lessonId}`,
+      `/api/user-progress/${userId}/${lessonId}`
     ];
     
     for (const endpoint of endpoints) {
       try {
+        console.log(`🔍 Trying endpoint: ${endpoint}`);
         const { data } = await api.get(endpoint, { headers });
         
-        if (data && (data.success !== false)) {
-          return {
-            success: true,
-            data: data.data || data
-          };
+        // Safe check for data structure
+        if (data && typeof data === 'object') {
+          // Handle different response formats
+          const progressData = data.data || data;
+          
+          if (progressData && (data.success !== false)) {
+            console.log(`✅ Progress found via ${endpoint}:`, progressData);
+            return {
+              success: true,
+              data: progressData
+            };
+          }
         }
       } catch (endpointError) {
         console.warn(`⚠️ Endpoint ${endpoint} failed:`, endpointError.message);
+        
+        // If it's a 404, continue to next endpoint
+        if (endpointError.response?.status === 404) {
+          continue;
+        }
+        
+        // For other errors, log but continue
+        console.warn(`⚠️ Endpoint ${endpoint} error:`, endpointError.response?.status, endpointError.message);
         continue;
       }
     }
     
-    // If no endpoint worked, return null progress
+    // If no endpoint worked, return null progress (not an error)
+    console.log('ℹ️ No progress found for lesson, returning null');
     return {
       success: true,
       data: null
@@ -906,25 +927,44 @@ export const getUserProgress = async (userId) => {
     const endpoints = [
       `/users/${userId}/progress`,
       `/user-progress/user/${userId}`,
-      `/progress?userId=${userId}`
+      `/progress?userId=${userId}`,
+      `/api/progress/${userId}`,
+      `/api/user-progress/${userId}`
     ];
     
     for (const endpoint of endpoints) {
       try {
+        console.log(`🔍 Trying progress endpoint: ${endpoint}`);
         const { data } = await api.get(endpoint, { headers });
         
-        if (data && (data.success !== false)) {
-          return {
-            success: true,
-            data: data.data || data
-          };
+        // Safe check for data structure
+        if (data && typeof data === 'object') {
+          const progressData = data.data || data;
+          
+          if (progressData && (data.success !== false)) {
+            console.log(`✅ User progress found via ${endpoint}:`, progressData);
+            return {
+              success: true,
+              data: progressData
+            };
+          }
         }
       } catch (endpointError) {
         console.warn(`⚠️ Progress endpoint ${endpoint} failed:`, endpointError.message);
+        
+        // If it's a 404, continue to next endpoint
+        if (endpointError.response?.status === 404) {
+          continue;
+        }
+        
+        // For other errors, log but continue
+        console.warn(`⚠️ Progress endpoint ${endpoint} error:`, endpointError.response?.status, endpointError.message);
         continue;
       }
     }
     
+    // If no endpoint worked, return empty array (not an error)
+    console.log('ℹ️ No user progress found, returning empty array');
     return {
       success: true,
       data: []
