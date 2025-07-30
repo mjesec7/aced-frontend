@@ -191,9 +191,17 @@
       />
 
       <!-- Split Screen Content with Resizable Divider -->
-      <div class="split-content" :class="{ 'is-resizing': isResizing }">
+      <div 
+        class="split-content" 
+        :class="{ 'is-resizing': isResizing }"
+        ref="splitContainer"
+      >
         <!-- Left Panel - Content Display -->
-        <div class="content-panel-wrapper" :style="leftPanelStyle">
+        <div 
+          class="content-panel-wrapper" 
+          :style="leftPanelStyle"
+          ref="leftPanel"
+        >
           <ContentPanel
             :current-step="currentStep"
             :current-index="currentIndex"
@@ -219,34 +227,50 @@
           />
         </div>
 
-        <!-- Resizable Divider -->
+        <!-- Enhanced Resizable Divider -->
         <div 
           class="split-divider"
+          :class="{ 
+            'active': isResizing,
+            'hover': isDividerHovered 
+          }"
           @mousedown="startResize"
           @touchstart="startResize"
           @keydown="handleResizeKeyboard"
+          @mouseenter="isDividerHovered = true"
+          @mouseleave="isDividerHovered = false"
           tabindex="0"
           role="separator"
-          :aria-label="resizeDirection === 'horizontal' ? 'Изменить ширину панелей' : 'Изменить высоту панелей'"
-          :aria-valuenow="Math.round(currentLeftWidth)"
+          aria-label="Изменить ширину панелей"
+          :aria-valuenow="Math.round(leftPanelWidth)"
           aria-valuemin="25"
           aria-valuemax="75"
         >
           <div class="divider-handle">
-            <div class="divider-dots">
-              <div class="dot"></div>
-              <div class="dot"></div>
-              <div class="dot"></div>
+            <div class="divider-grip">
+              <div class="grip-line"></div>
+              <div class="grip-line"></div>
+              <div class="grip-line"></div>
+              <div class="grip-line"></div>
+              <div class="grip-line"></div>
             </div>
           </div>
-          <div class="divider-tooltip">
-            {{ widthIndicatorText }}<br>
-            <small>{{ resizeDirection === 'horizontal' ? 'Перетащите или используйте ←/→' : 'Перетащите или используйте ↑/↓' }}</small>
+          
+          <!-- Divider Tooltip -->
+          <div class="divider-tooltip" :class="{ 'visible': isDividerHovered || isResizing }">
+            <div class="tooltip-content">
+              <span class="percentage-display">{{ Math.round(leftPanelWidth) }}% | {{ Math.round(rightPanelWidth) }}%</span>
+              <small>Перетащите для изменения размера</small>
+            </div>
           </div>
         </div>
 
         <!-- Right Panel - Interactive Content OR AI Help -->
-        <div class="right-panel-wrapper" :style="rightPanelStyle">
+        <div 
+          class="right-panel-wrapper" 
+          :style="rightPanelStyle"
+          ref="rightPanel"
+        >
           <div v-if="isInteractiveStep" class="interactive-panel-container">
             <!-- Interactive Panel (Exercises/Quizzes) -->
             <InteractivePanel
@@ -318,41 +342,62 @@
         </div>
       </div>
 
-      <!-- Resize Controls (Quick Presets) -->
+      <!-- Enhanced Resize Controls (Quick Presets) -->
       <div class="resize-controls">
-        <button 
-          @click="currentLeftWidth = 25; currentRightWidth = 75" 
-          class="resize-preset" 
-          title="25% / 75%"
-        >
-          ◐
-        </button>
-        <button 
-          @click="currentLeftWidth = 50; currentRightWidth = 50" 
-          class="resize-preset" 
-          title="50% / 50%"
-        >
-          ◑
-        </button>
-        <button 
-          @click="currentLeftWidth = 75; currentRightWidth = 25" 
-          class="resize-preset" 
-          title="75% / 25%"
-        >
-          ◒
-        </button>
-        <button 
-          @click="resetSplitSizes" 
-          class="resize-reset" 
-          title="Сброс"
-        >
-          ⟲
-        </button>
+        <div class="controls-group">
+          <span class="controls-label">Быстрые настройки:</span>
+          <button 
+            @click="setQuickResize(25, 75)" 
+            class="resize-preset" 
+            :class="{ active: isQuickResizeActive(25, 75) }"
+            title="25% / 75% - Контент слева минимально"
+          >
+            ◐
+          </button>
+          <button 
+            @click="setQuickResize(50, 50)" 
+            class="resize-preset" 
+            :class="{ active: isQuickResizeActive(50, 50) }"
+            title="50% / 50% - Равномерно"
+          >
+            ◑
+          </button>
+          <button 
+            @click="setQuickResize(75, 25)" 
+            class="resize-preset" 
+            :class="{ active: isQuickResizeActive(75, 25) }"
+            title="75% / 25% - Контент слева максимально"
+          >
+            ◒
+          </button>
+          <button 
+            @click="resetToDefault" 
+            class="resize-reset" 
+            title="Сброс к значениям по умолчанию"
+          >
+            ⟲
+          </button>
+        </div>
       </div>
 
-      <!-- Resize Indicator (shows during resize) -->
+      <!-- Enhanced Resize Indicator -->
       <div v-if="isResizing" class="resize-indicator">
-        {{ widthIndicatorText }}
+        <div class="indicator-content">
+          <div class="size-display">
+            <div class="left-size">
+              <span class="label">Левая панель</span>
+              <span class="value">{{ Math.round(leftPanelWidth) }}%</span>
+            </div>
+            <div class="divider-icon">⟷</div>
+            <div class="right-size">
+              <span class="label">Правая панель</span>
+              <span class="value">{{ Math.round(rightPanelWidth) }}%</span>
+            </div>
+          </div>
+          <div class="resize-hint">
+            <small>Отпустите для применения • ESC для отмены</small>
+          </div>
+        </div>
       </div>
     </div>
 
