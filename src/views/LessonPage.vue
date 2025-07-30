@@ -465,43 +465,15 @@
             
             <!-- AI Help section at bottom -->
             <div class="ai-help-section">
-              <div class="ai-help-panel">
-                <h4>AI Assistant</h4>
-                
-                <!-- Quick Suggestions -->
-                <div v-if="quickSuggestions.length" class="quick-suggestions">
-                  <button 
-                    v-for="suggestion in quickSuggestions.slice(0, 3)" 
-                    :key="suggestion"
-                    @click="askAI(suggestion)"
-                    class="suggestion-btn"
-                  >
-                    {{ suggestion }}
-                  </button>
-                </div>
-
-                <!-- Chat Input -->
-                <div class="chat-input">
-                  <input 
-                    v-model="aiChatInput"
-                    @keyup.enter="sendAIMessage"
-                    placeholder="Ask for help..."
-                    class="form-control"
-                  />
-                  <button 
-                    @click="sendAIMessage"
-                    :disabled="!aiChatInput.trim() || aiIsLoading"
-                    class="btn btn-primary"
-                  >
-                    Send
-                  </button>
-                </div>
-
-                <!-- Usage Info -->
-                <div v-if="aiUsage" class="usage-info">
-                  <small>{{ aiUsage }}</small>
-                </div>
-              </div>
+              <AIHelpPanel
+                :ai-suggestions="aiSuggestions"
+                :ai-chat-history="aiChatHistory"
+                :ai-is-loading="aiIsLoading"
+                :ai-usage="aiUsage"
+                @send-message="handleAIMessage"
+                @ask-ai="askAI"
+                @clear-chat="handleClearAIChat"
+              />
             </div>
           </div>
         </div>
@@ -558,57 +530,18 @@
     </button>
 
     <!-- Floating AI Assistant -->
-    <div v-if="showFloatingAI && started && !lessonCompleted" class="floating-ai-modal">
-      <div class="floating-ai-content">
-        <div class="floating-ai-header">
-          <h4>AI Assistant</h4>
-          <button @click="closeFloatingAI" class="btn btn-icon">✕</button>
-        </div>
-        
-        <div class="floating-ai-body">
-          <!-- Quick Suggestions -->
-          <div v-if="quickSuggestions.length" class="quick-suggestions">
-            <h5>Quick Help:</h5>
-            <button 
-              v-for="suggestion in quickSuggestions" 
-              :key="suggestion"
-              @click="askAI(suggestion)"
-              class="suggestion-btn"
-            >
-              {{ suggestion }}
-            </button>
-          </div>
-
-          <!-- Chat Input -->
-          <div class="chat-input">
-            <input 
-              v-model="floatingAIInput"
-              @keyup.enter="sendFloatingAIMessage"
-              placeholder="Ask for help..."
-              class="form-control"
-            />
-            <button 
-              @click="sendFloatingAIMessage"
-              :disabled="!floatingAIInput.trim() || aiIsLoading"
-              class="btn btn-primary"
-            >
-              Send
-            </button>
-          </div>
-
-          <!-- Loading -->
-          <div v-if="aiIsLoading" class="ai-loading">
-            <div class="loading-spinner"></div>
-            <span>AI is thinking...</span>
-          </div>
-
-          <!-- Usage Info -->
-          <div v-if="aiUsage" class="usage-info">
-            <small>{{ aiUsage }}</small>
-          </div>
-        </div>
-      </div>
-    </div>
+    <FloatingAIAssistant
+      v-if="showFloatingAI && started && !lessonCompleted"
+      :usage="aiUsage"
+      :quick-suggestions="quickSuggestions"
+      :ai-chat-history="aiChatHistory"
+      :ai-is-loading="aiIsLoading"
+      :floating-a-i-input="floatingAIInput"
+      @close="closeFloatingAI"
+      @send-message="handleFloatingAIMessage"
+      @ask-ai="askAI"
+      @clear-chat="handleClearAIChat"
+    />
 
     <!-- Success Notifications -->
     <div v-if="notifications.length" class="notification-system">
@@ -1172,50 +1105,30 @@ export default {
     }
 
     // ==========================================
-    // AI METHODS
+    // AI METHODS WRAPPER (using composable methods)
     // ==========================================
-    const sendAIMessage = () => {
-      if (!aiChatInput.value.trim() || aiIsLoading.value) return
-      
-      const message = aiChatInput.value.trim()
-      aiChatInput.value = ''
-      
-      console.log('🤖 Sending AI message:', message)
-      
-      // Simulate AI response (replace with actual AI service)
-      setTimeout(() => {
-        const responses = [
-          "I understand you're working on this lesson. Let me help you with that.",
-          "That's a great question! Here's what I think...",
-          "Based on the current lesson content, I would suggest...",
-          "Let me break this down for you step by step."
-        ]
-        const response = responses[Math.floor(Math.random() * responses.length)]
-        
-        aiChatHistory.value.push({
-          type: 'user',
-          content: message,
-          timestamp: new Date().toISOString()
-        })
-        
-        aiChatHistory.value.push({
-          type: 'ai',
-          content: response,
-          timestamp: new Date().toISOString()
-        })
-      }, 1000)
+    const handleAIMessage = (message) => {
+      if (typeof sendAIMessage === 'function') {
+        sendAIMessage(lesson.value, userProgress.value, currentStep.value)
+      } else {
+        console.warn('AI service not available')
+      }
     }
 
-    const sendFloatingAIMessage = () => {
-      if (!floatingAIInput.value.trim() || aiIsLoading.value) return
-      
-      aiChatInput.value = floatingAIInput.value
-      floatingAIInput.value = ''
-      sendAIMessage()
+    const handleFloatingAIMessage = (message) => {
+      if (typeof sendFloatingAIMessage === 'function') {
+        sendFloatingAIMessage(lesson.value, userProgress.value, currentStep.value)
+      } else {
+        console.warn('AI service not available')
+      }
     }
 
-    const clearAIChat = () => {
-      aiChatHistory.value = []
+    const handleClearAIChat = () => {
+      if (typeof clearAIChat === 'function') {
+        clearAIChat()
+      } else {
+        aiChatHistory.value = []
+      }
     }
 
     // ==========================================
@@ -1497,14 +1410,18 @@ export default {
       restartVocabulary,
       extractWordProperty,
 
-      // AI methods
+      // AI methods (wrapped to avoid conflicts)
+      handleAIMessage,
+      handleFloatingAIMessage,
+      handleClearAIChat,
+      
+      // AI methods from composable (aliased)
       sendAIMessage,
       sendFloatingAIMessage,
       askAI,
       generateAISuggestions,
       toggleFloatingAI,
       closeFloatingAI,
-      clearAIChat,
 
       // Payment methods
       validateLessonAccess,
