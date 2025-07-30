@@ -168,7 +168,7 @@
       @report-problem="openProblemReportModal"
     />
 
-    <!-- Main Lesson Content -->
+    <!-- ✅ FIXED: Main Lesson Content - Always Show Interactive Panel -->
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
 
       <!-- Top Header -->
@@ -190,7 +190,7 @@
         :total-steps="steps.length"
       />
 
-      <!-- Split Screen Content with Resizable Divider -->
+      <!-- ✅ FIXED: Split Screen Content with Enhanced Layout -->
       <div class="split-content" :class="{ 'is-resizing': isResizing }">
         <!-- Left Panel - Content Display -->
         <div class="content-panel-wrapper" :style="leftPanelStyle">
@@ -245,11 +245,12 @@
           </div>
         </div>
 
-        <!-- Right Panel - Interactive Content OR AI Help -->
+        <!-- ✅ CRITICAL FIX: Right Panel - ALWAYS SHOW Interactive Panel -->
         <div class="right-panel-wrapper" :style="rightPanelStyle">
-          <div v-if="isInteractiveStep" class="interactive-panel-container">
-            <!-- Interactive Panel (Exercises/Quizzes) -->
+          <div class="interactive-panel-container">
+            <!-- ✅ ALWAYS SHOW: Interactive Panel for ALL steps (including exercises/quiz AND non-interactive) -->
             <InteractivePanel
+              v-if="currentStep"
               :current-step="currentStep"
               :current-exercise="getCurrentExercise()"
               :current-quiz="getCurrentQuiz()"
@@ -291,8 +292,9 @@
               @remove-dropped-item="handleRemoveDroppedItem"
             />
 
-            <!-- AI Help Panel -->
+            <!-- ✅ SECONDARY: AI Help Panel (shown below interactive panel when needed) -->
             <AIHelpPanel
+              v-if="showExplanationHelp || aiChatHistory.length > 0"
               :ai-suggestions="aiSuggestions"
               :ai-chat-input="aiChatInput"
               :ai-chat-history="aiChatHistory"
@@ -302,18 +304,6 @@
               @ask-ai="askAI"
               @clear-chat="clearAIChat"
             />
-          </div>
-
-          <!-- Non-interactive step placeholder -->
-          <div v-else class="non-interactive-panel">
-            <div class="panel-placeholder">
-              <div class="placeholder-icon">📖</div>
-              <h4>Изучите материал слева</h4>
-              <p>Внимательно прочитайте объяснение и переходите к следующему шагу</p>
-              <div class="resize-help">
-                <small>💡 Совет: Используйте разделитель для изменения размера панелей</small>
-              </div>
-            </div>
           </div>
         </div>
       </div>
