@@ -1,478 +1,553 @@
 <template>
-  <div class="lesson-page">
-    <!-- Loading State -->
-    <div v-if="loading" class="loading-screen">
-      <div class="loading-spinner"></div>
-      <p>Загрузка урока...</p>
-    </div>
-
-    <!-- Error State -->
-    <div v-else-if="error" class="error-screen">
-      <div class="error-icon">❌</div>
-      <h3>Ошибка загрузки урока</h3>
-      <p>{{ error }}</p>
-      <div class="error-actions">
-        <button @click="retryLoad" class="retry-btn">🔄 Попробовать снова</button>
-        <button @click="handleReturnToCatalogue" class="back-btn">⬅️ К каталогу</button>
-      </div>
-    </div>
-
-    <!-- Paywall Modal -->
-    <div v-if="showPaywallModal" class="modal-overlay">
-      <div class="modal-content">
-        <h3>🔒 Платный контент</h3>
-        <p>Этот урок доступен только для подписчиков.</p>
-        <div class="modal-actions">
-          <button @click="$router.push('/pay/start')" class="premium-btn">💳 Получить подписку</button>
-          <button @click="handleReturnToCatalogue" class="cancel-btn">⬅️ Назад к каталогу</button>
+  <!-- ✅ FIXED: Interactive Panel with Guaranteed Visibility and Enhanced Scrolling -->
+  <div class="interactive-panel force-visible">
+    <!-- Exercise Content -->
+    <div v-if="isExerciseStep" class="exercise-content force-visible">
+      <!-- Fixed Header -->
+      <div class="exercise-header">
+        <h3>{{ currentExercise?.title || 'Упражнение' }}</h3>
+        <div class="exercise-counter">
+          {{ exerciseIndex + 1 }} из {{ totalExercises }}
         </div>
       </div>
-    </div>
 
-    <!-- Exit Confirmation Modal -->
-    <div v-if="showExitModal" class="modal-overlay">
-      <div class="modal-content">
-        <h3>Вы действительно хотите выйти?</h3>
-        <p>Ваш прогресс будет сохранён автоматически.</p>
-        <div class="modal-actions">
-          <button @click="exitLesson" class="confirm-btn">Да, выйти</button>
-          <button @click="cancelExit" class="cancel-btn">Нет, остаться</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Enhanced Problem Report Modal -->
-    <div v-if="showProblemReportModal" class="modal-overlay" @click.self="closeProblemReportModal">
-      <div class="problem-report-modal">
-        <div class="modal-header">
-          <h3>⚠️ Сообщить о проблеме с уроком</h3>
-          <button @click="closeProblemReportModal" class="close-btn">✕</button>
-        </div>
-        
-        <div class="modal-body">
-          <p class="modal-description">
-            Помогите нам улучшить урок! Опишите проблему подробно и приложите скриншот, если это возможно.
-          </p>
-          
-          <div class="form-group">
-            <label for="problemType">Тип проблемы:</label>
-            <select id="problemType" v-model="problemType" class="form-select">
-              <option value="">Выберите тип проблемы</option>
-              <option value="content">Ошибка в содержании</option>
-              <option value="technical">Техническая проблема</option>
-              <option value="interface">Проблема с интерфейсом</option>
-              <option value="exercise">Ошибка в упражнении</option>
-              <option value="audio">Проблема со звуком</option>
-              <option value="other">Другое</option>
-            </select>
+      <!-- ✅ ENHANCED: Scrollable Body with Better Touch Support -->
+      <div class="exercise-body" ref="exerciseBody">
+        <!-- Short Answer Exercise -->
+        <div v-if="exerciseType === 'short-answer'" class="exercise-type short-answer force-visible">
+          <div class="question-text">
+            {{ currentExercise?.question }}
           </div>
-          
-          <div class="form-group">
-            <label for="problemDescription">Подробное описание проблемы: <span class="required">*</span></label>
-            <textarea 
-              id="problemDescription" 
-              v-model="problemDescription" 
-              rows="4" 
-              placeholder="Опишите проблему как можно подробнее: что произошло, на каком шаге, что вы ожидали увидеть..."
-              class="form-textarea"
-              :class="{ 'error': showValidationError && !problemDescription.trim() }"
-            ></textarea>
-            <div v-if="showValidationError && !problemDescription.trim()" class="error-message">
-              Пожалуйста, опишите проблему
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="screenshotUrl">Ссылка на скриншот или фото (необязательно):</label>
-            <input 
-              type="url" 
-              id="screenshotUrl" 
-              v-model="screenshotUrl" 
-              placeholder="https://example.com/screenshot.png или вставьте ссылку с облачного хранилища"
-              class="form-input"
-            >
-            <div class="help-text">
-              💡 Совет: Сделайте скриншот и загрузите его на imgbb.com, imgur.com или Google Drive, затем вставьте ссылку сюда
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="contactInfo">Ваш контакт для обратной связи (необязательно):</label>
-            <input 
-              type="text" 
-              id="contactInfo" 
-              v-model="contactInfo" 
-              placeholder="Telegram @username, email или телефон"
-              class="form-input"
-            >
-          </div>
-        </div>
-        
-        <div class="modal-footer">
-          <button @click="closeProblemReportModal" class="cancel-btn">
-            Отмена
-          </button>
-          <button 
-            @click="submitProblemReport" 
-            class="submit-btn"
-            :disabled="isSubmitting"
-          >
-            {{ isSubmitting ? '📤 Отправка...' : '📤 Отправить отчет' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Success notification -->
-    <div v-if="showSuccessMessage" class="success-notification">
-      <div class="success-content">
-        <div class="success-icon">✅</div>
-        <div class="success-text">
-          <h4>Спасибо за отчет!</h4>
-          <p>Мы получили вашу информацию и рассмотрим проблему в ближайшее время.</p>
-        </div>
-        <button @click="closeSuccessMessage" class="close-success">✕</button>
-      </div>
-    </div>
-
-    <!-- Vocabulary Learning Modal -->
-    <VocabularyModal
-      v-if="vocabularyModal.isVisible"
-      :vocabulary-data="vocabularyModal"
-      :card-animation="cardAnimation"
-      :current-word="currentVocabWord"
-      :progress="vocabProgress"
-      :is-last-word="isLastVocabWord"
-      @show-definition="showVocabDefinition"
-      @hide-definition="hideVocabDefinition"
-      @mark-learned="markWordAsLearned"
-      @next-word="nextVocabWord"
-      @previous-word="previousVocabWord"
-      @skip="skipVocabularyModal"
-      @restart="restartVocabulary"
-      @close="confirmExit"
-      @pronounce="pronounceWord"
-      @jump-to-word="jumpToVocabWord"
-    />
-
-    <!-- Intro Screen -->
-    <LessonIntro
-      v-if="!started && !showPaywallModal && !loading && !error"
-      :lesson="lesson"
-      :estimated-time="estimatedTime"
-      :steps="steps"
-      :previous-progress="previousProgress"
-      @start="startLesson"
-      @continue="continuePreviousProgress"
-      @exit="confirmExit"
-      @report-problem="openProblemReportModal"
-    />
-
-    <!-- Main Lesson Content -->
-    <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
-
-      <!-- Top Header -->
-      <LessonHeader
-        :lesson="lesson"
-        :current-step="currentIndex + 1"
-        :total-steps="steps.length"
-        :formatted-time="formattedTime"
-        :stars="stars"
-        @exit="confirmExit"
-        @report-problem="openProblemReportModal"
-      />
-
-      <!-- Progress Bar -->
-      <ProgressBar
-        :progress-percentage="progressPercentage"
-        :stars="stars"
-        :current-step="currentIndex"
-        :total-steps="steps.length"
-      />
-
-      <!-- Split Screen Content with Resizable Divider -->
-      <div 
-        class="split-content" 
-        :class="{ 'is-resizing': isResizing }"
-        ref="splitContainer"
-      >
-        <!-- Left Panel - Content Display -->
-        <div 
-          class="content-panel-wrapper" 
-          :style="leftPanelStyle"
-          ref="leftPanel"
-        >
-          <ContentPanel
-            :current-step="currentStep"
-            :current-index="currentIndex"
-            :is-interactive-step="isInteractiveStep"
-            :current-exercise="getCurrentExercise()"
-            :current-quiz="getCurrentQuiz()"
-            :exercise-index="currentExerciseIndex"
-            :quiz-index="currentQuizIndex"
-            :total-exercises="getTotalExercises()"
-            :total-quizzes="getTotalQuizzes()"
-            :show-explanation-help="showExplanationHelp"
-            :explanation-question="explanationQuestion"
-            :explanation-ai-response="explanationAIResponse"
-            :is-loading-explanation="isLoadingExplanation"
-            :is-last-step="isLastStep"
-            @toggle-explanation-help="toggleExplanationHelp"
-            @update:explanation-question="explanationQuestion = $event"
-            @ask-explanation="askAboutExplanation"
-            @init-vocabulary="initializeVocabularyModal"
-            @pronounce="pronounceWord"
-            @next="goNext"
-            @previous="goPrevious"
-          />
-        </div>
-
-        <!-- Enhanced Resizable Divider -->
-        <div 
-          class="split-divider"
-          :class="{ 
-            'active': isResizing,
-            'hover': isDividerHovered 
-          }"
-          @mousedown="startResize"
-          @touchstart="startResize"
-          @keydown="handleResizeKeyboard"
-          @mouseenter="isDividerHovered = true"
-          @mouseleave="isDividerHovered = false"
-          tabindex="0"
-          role="separator"
-          aria-label="Изменить ширину панелей"
-          :aria-valuenow="Math.round(leftPanelWidth)"
-          aria-valuemin="25"
-          aria-valuemax="75"
-        >
-          <div class="divider-handle">
-            <div class="divider-grip">
-              <div class="grip-line"></div>
-              <div class="grip-line"></div>
-              <div class="grip-line"></div>
-              <div class="grip-line"></div>
-              <div class="grip-line"></div>
-            </div>
-          </div>
-          
-          <!-- Divider Tooltip -->
-          <div class="divider-tooltip" :class="{ 'visible': isDividerHovered || isResizing }">
-            <div class="tooltip-content">
-              <span class="percentage-display">{{ Math.round(leftPanelWidth) }}% | {{ Math.round(rightPanelWidth) }}%</span>
-              <small>Перетащите для изменения размера</small>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right Panel - Interactive Content OR AI Help -->
-        <div 
-          class="right-panel-wrapper" 
-          :style="rightPanelStyle"
-          ref="rightPanel"
-        >
-          <div v-if="isInteractiveStep" class="interactive-panel-container">
-            <!-- Interactive Panel (Exercises/Quizzes) -->
-            <InteractivePanel
-              :current-step="currentStep"
-              :current-exercise="getCurrentExercise()"
-              :current-quiz="getCurrentQuiz()"
-              :exercise-index="currentExerciseIndex"
-              :quiz-index="currentQuizIndex"
-              :total-exercises="getTotalExercises()"
-              :total-quizzes="getTotalQuizzes()"
-              :user-answer="userAnswer"
-              :confirmation="confirmation"
-              :answer-was-correct="answerWasCorrect"
-              :current-hint="currentHint"
-              :smart-hint="smartHint"
-              :mistake-count="mistakeCount"
-              :fill-blank-answers="fillBlankAnswers"
-              :matching-pairs="matchingPairs"
-              :selected-matching-item="selectedMatchingItem"
-              :ordering-items="orderingItems"
-              :drag-drop-placements="dragDropPlacements"
-              :available-drag-items="availableDragItems"
-              :drop-zones="dropZones"
-              :attempt-count="attemptCount"
-              :max-attempts="maxAttempts"
-              :is-on-second-chance="isOnSecondChance"
-              :show-correct-answer="showCorrectAnswer"
-              :correct-answer-text="correctAnswerText"
-              @answer-changed="handleAnswerChanged"
-              @fill-blank-updated="updateFillBlankAnswer"
-              @submit="handleSubmitOrNext"
-              @next-exercise="goToNextExercise"
-              @next-quiz="goToNextQuiz"
-              @show-hint="showHint"
-              @clear-hint="clearSmartHint"
-              @matching-item-selected="handleMatchingItemSelected"
-              @remove-matching-pair="handleRemoveMatchingPair"
-              @drag-item-start="handleDragItemStart"
-              @drag-over-zone="handleDragOverZone"
-              @drag-leave-zone="handleDragLeaveZone"
-              @drop-in-zone="handleDropInZone"
-              @remove-dropped-item="handleRemoveDroppedItem"
-            />
-
-            <!-- AI Help Panel -->
-            <AIHelpPanel
-              :ai-suggestions="aiSuggestions"
-              :ai-chat-input="aiChatInput"
-              :ai-chat-history="aiChatHistory"
-              :ai-is-loading="aiIsLoading"
-              :ai-usage="aiUsage"
-              @send-message="sendAIMessage"
-              @ask-ai="askAI"
-              @clear-chat="clearAIChat"
+          <div class="answer-input">
+            <textarea
+              v-model="localUserAnswer"
+              @input="updateAnswer"
+              placeholder="Введите ваш ответ здесь..."
+              rows="3"
+              class="answer-textarea"
+              :disabled="showCorrectAnswer"
             />
           </div>
+        </div>
 
-          <!-- Non-interactive step placeholder -->
-          <div v-else class="non-interactive-panel">
-            <div class="panel-placeholder">
-              <div class="placeholder-icon">📖</div>
-              <h4>Изучите материал слева</h4>
-              <p>Внимательно прочитайте объяснение и переходите к следующему шагу</p>
-              <div class="resize-help">
-                <small>💡 Совет: Используйте разделитель для изменения размера панелей</small>
+        <!-- Multiple Choice Exercise -->
+        <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc'" class="exercise-type multiple-choice force-visible">
+          <div class="question-text">
+            {{ currentExercise?.question }}
+          </div>
+          <div class="options-list">
+            <div 
+              v-for="(option, index) in exerciseOptions" 
+              :key="index"
+              class="option-item"
+              :class="{ 
+                selected: localUserAnswer === option,
+                disabled: showCorrectAnswer
+              }"
+              @click="!showCorrectAnswer && selectOption(option)"
+            >
+              <input 
+                type="radio" 
+                :name="'exercise-' + exerciseIndex"
+                :value="option"
+                v-model="localUserAnswer"
+                @change="updateAnswer"
+                :disabled="showCorrectAnswer"
+                class="option-radio"
+              />
+              <div class="option-text">{{ option }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fill in the Blanks Exercise -->
+        <div v-else-if="exerciseType === 'fill-blank'" class="exercise-type fill-blank force-visible">
+          <div class="question-text">
+            {{ currentExercise?.question }}
+          </div>
+          <div v-if="currentExercise?.template" class="fill-blank-template">
+            <div v-html="renderFillBlankTemplate()" />
+          </div>
+          
+          <div class="fill-blank-inputs">
+            <div 
+              v-for="(blank, index) in blankCount" 
+              :key="`blank-${index}-${exerciseIndex}`"
+              class="blank-input-group"
+            >
+              <label :for="`blank-input-${index}`" class="blank-label">
+                Пропуск {{ index + 1 }}:
+              </label>
+              <input
+                :id="`blank-input-${index}`"
+                type="text"
+                class="blank-input"
+                :value="getFillBlankValue(index)"
+                @input="handleFillBlankInput(index, $event)"
+                :placeholder="`Введите ответ ${index + 1}`"
+                autocomplete="off"
+                :disabled="showCorrectAnswer"
+              />
+              <div v-if="getFillBlankValue(index)" class="input-preview">
+                Введено: "{{ getFillBlankValue(index) }}"
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Enhanced Resize Controls (Quick Presets) -->
-      <div class="resize-controls">
-        <div class="controls-group">
-          <span class="controls-label">Быстрые настройки:</span>
-          <button 
-            @click="setQuickResize(25, 75)" 
-            class="resize-preset" 
-            :class="{ active: isQuickResizeActive(25, 75) }"
-            title="25% / 75% - Контент слева минимально"
+        <!-- True/False Exercise -->
+        <div v-else-if="exerciseType === 'true-false'" class="exercise-type true-false force-visible">
+          <div class="question-text">
+            {{ currentExercise?.question }}
+          </div>
+          <div v-if="currentExercise?.statement" class="statement-text">
+            {{ currentExercise.statement }}
+          </div>
+          <div class="true-false-options">
+            <div 
+              class="tf-option"
+              :class="{ 
+                selected: localUserAnswer === 'true',
+                disabled: showCorrectAnswer
+              }"
+              @click="!showCorrectAnswer && selectTrueFalse('true')"
+            >
+              <input 
+                type="radio" 
+                name="true-false"
+                value="true"
+                v-model="localUserAnswer"
+                @change="updateAnswer"
+                :disabled="showCorrectAnswer"
+              />
+              <span>Правда</span>
+            </div>
+            <div 
+              class="tf-option"
+              :class="{ 
+                selected: localUserAnswer === 'false',
+                disabled: showCorrectAnswer
+              }"
+              @click="!showCorrectAnswer && selectTrueFalse('false')"
+            >
+              <input 
+                type="radio" 
+                name="true-false"
+                value="false"
+                v-model="localUserAnswer"
+                @change="updateAnswer"
+                :disabled="showCorrectAnswer"
+              />
+              <span>Ложь</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Matching Exercise -->
+        <div v-else-if="exerciseType === 'matching'" class="exercise-type matching force-visible">
+          <div class="question-text">
+            {{ currentExercise?.question }}
+          </div>
+          
+          <div class="matching-container">
+            <!-- Left Side -->
+            <div class="matching-side left-side">
+              <h4>Соедините:</h4>
+              <div 
+                v-for="(item, index) in leftItems" 
+                :key="`left-${index}`"
+                class="matching-item"
+                :class="{ 
+                  selected: selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === index,
+                  matched: isItemMatched('left', index),
+                  disabled: showCorrectAnswer
+                }"
+                @click="handleMatchingItemClick('left', index)"
+              >
+                {{ item }}
+                <span v-if="selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === index" class="selection-indicator">👆</span>
+              </div>
+            </div>
+            
+            <!-- Right Side -->
+            <div class="matching-side right-side">
+              <h4>С:</h4>
+              <div 
+                v-for="(item, index) in rightItems" 
+                :key="`right-${index}`"
+                class="matching-item"
+                :class="{ 
+                  selected: selectedMatchingItem?.side === 'right' && selectedMatchingItem?.index === index,
+                  matched: isItemMatched('right', index),
+                  disabled: showCorrectAnswer
+                }"
+                @click="handleMatchingItemClick('right', index)"
+              >
+                {{ item }}
+                <span v-if="selectedMatchingItem?.side === 'right' && selectedMatchingItem?.index === index" class="selection-indicator">👆</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Matching Pairs Display -->
+          <div v-if="matchingPairs && matchingPairs.length > 0" class="matching-pairs">
+            <h4>Соединения:</h4>
+            <div 
+              v-for="(pair, index) in matchingPairs" 
+              :key="`pair-${index}`"
+              class="pair-item"
+            >
+              <span class="pair-text">
+                {{ getLeftItemText(pair.leftIndex) }} ↔ {{ getRightItemText(pair.rightIndex) }}
+              </span>
+              <button 
+                v-if="!showCorrectAnswer"
+                @click="handleRemovePair(index)" 
+                class="remove-pair"
+                type="button"
+              >×</button>
+            </div>
+          </div>
+          
+          <!-- Instructions -->
+          <div class="matching-instructions">
+            <p>💡 <strong>Инструкция:</strong> Нажмите на элемент слева, затем на соответствующий элемент справа для создания связи.</p>
+            <p v-if="selectedMatchingItem" class="current-selection">
+              🎯 Выбран элемент: <strong>{{ selectedMatchingItem.side === 'left' ? 'слева' : 'справа' }}</strong> - 
+              "{{ selectedMatchingItem.side === 'left' ? leftItems[selectedMatchingItem.index] : rightItems[selectedMatchingItem.index] }}"
+            </p>
+          </div>
+        </div>
+
+        <!-- Ordering Exercise -->
+        <div v-else-if="exerciseType === 'ordering'" class="exercise-type ordering force-visible">
+          <div class="question-text">
+            {{ currentExercise?.question }}
+          </div>
+          <div class="ordering-instructions">
+            💡 <strong>Инструкция:</strong> Перетащите элементы в правильном порядке или используйте кнопки ↑↓ для перемещения
+          </div>
+          <div class="ordering-container">
+            <div 
+              v-for="(item, index) in localOrderingItems" 
+              :key="`ordering-${item.id || item.text || index}`"
+              class="ordering-item"
+              :class="{ 
+                dragging: draggedOrderingItem === index,
+                disabled: showCorrectAnswer,
+                'drop-target': dropTargetIndex === index && draggedOrderingItem !== index
+              }"
+              :draggable="!showCorrectAnswer"
+              @dragstart="startOrderingDrag($event, index)"
+              @dragend="endOrderingDrag"
+              @dragover.prevent="handleOrderingDragOver($event, index)"
+              @dragenter.prevent="handleOrderingDragEnter(index)"
+              @dragleave="handleOrderingDragLeave"
+              @drop.prevent="handleOrderingDrop($event, index)"
+            >
+              <div class="ordering-item-content">
+                <div class="drag-handle" :class="{ disabled: showCorrectAnswer }">≡</div>
+                <div class="item-text">{{ getOrderingItemText(item) }}</div>
+                <div class="item-number">{{ index + 1 }}</div>
+                <div v-if="!showCorrectAnswer" class="ordering-controls">
+                  <button 
+                    v-if="index > 0"
+                    @click="moveOrderingItem(index, index - 1)"
+                    class="move-btn move-up"
+                    title="Переместить вверх"
+                  >↑</button>
+                  <button 
+                    v-if="index < localOrderingItems.length - 1"
+                    @click="moveOrderingItem(index, index + 1)"
+                    class="move-btn move-down"
+                    title="Переместить вниз"
+                  >↓</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ✅ ENHANCED: Drag and Drop Exercise with Better Touch Support -->
+        <div v-else-if="exerciseType === 'drag-drop'" class="exercise-type drag-drop force-visible">
+          <div class="question-text">
+            {{ currentExercise?.question }}
+          </div>
+          
+          <!-- Mobile/Touch Instructions -->
+          <div class="touch-instructions">
+            <p>📱 <strong>На мобильных:</strong> Коснитесь элемента, затем коснитесь зоны назначения</p>
+            <p>🖱️ <strong>На компьютере:</strong> Перетащите элементы в нужные зоны</p>
+          </div>
+          
+          <div v-if="availableDragItems.length > 0 && dropZones.length > 0" class="drag-drop-container">
+            <!-- Available Items to Drag -->
+            <div class="drag-items">
+              <h4>Элементы для перемещения:</h4>
+              <div class="drag-items-scroll">
+                <div 
+                  v-for="(item, index) in availableDragItems" 
+                  :key="'drag-' + index"
+                  class="drag-item"
+                  :class="{ 
+                    dragging: draggedDragItem === item,
+                    disabled: showCorrectAnswer,
+                    selected: selectedTouchItem === item
+                  }"
+                  :draggable="!showCorrectAnswer && !isTouchDevice"
+                  @dragstart="startDragItem(item, $event)"
+                  @dragend="endDragItem"
+                  @click="handleTouchItemSelect(item)"
+                  @touchend.prevent="handleTouchItemSelect(item)"
+                >
+                  {{ getDragItemText(item) }}
+                  <span v-if="selectedTouchItem === item" class="touch-selected-indicator">👆</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Drop Zones -->
+            <div class="drop-zones">
+              <h4>Зоны назначения:</h4>
+              <div class="drop-zones-scroll">
+                <div 
+                  v-for="(zone, index) in dropZones" 
+                  :key="'zone-' + index"
+                  class="drop-zone"
+                  :class="{ 
+                    'drag-over': dropOverZone === getZoneId(zone),
+                    disabled: showCorrectAnswer,
+                    'touch-highlight': touchHighlightZone === getZoneId(zone)
+                  }"
+                  @dragover.prevent="dragOverZone(getZoneId(zone), $event)"
+                  @dragleave="dragLeaveZone($event)"
+                  @drop="dropInZone(getZoneId(zone), $event)"
+                  @click="handleTouchZoneSelect(getZoneId(zone))"
+                  @touchend.prevent="handleTouchZoneSelect(getZoneId(zone))"
+                >
+                  <div class="zone-label">{{ zone.label }}</div>
+                  <div class="zone-items">
+                    <div 
+                      v-for="(item, itemIndex) in getDropZoneItems(getZoneId(zone))" 
+                      :key="'dropped-' + itemIndex"
+                      class="dropped-item"
+                      @click="!showCorrectAnswer && removeDroppedItem(getZoneId(zone), itemIndex)"
+                    >
+                      {{ getDragItemText(item) }}
+                      <span v-if="!showCorrectAnswer" class="remove-dropped">×</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div v-else class="no-dragdrop-data">
+            <p>⚠️ Данные для перетаскивания не загружены</p>
+          </div>
+        </div>
+
+        <!-- Confirmation Section -->
+        <div v-if="confirmation" class="confirmation-section">
+          <!-- Second Chance Indicator -->
+          <div v-if="isOnSecondChance && !showCorrectAnswer" class="second-chance-indicator">
+            <div class="attempt-counter">
+              <span class="attempt-text">Попытка {{ attemptCount }} из {{ maxAttempts }}</span>
+              <div class="attempt-dots">
+                <div 
+                  v-for="n in maxAttempts" 
+                  :key="n"
+                  class="attempt-dot"
+                  :class="{ 
+                    filled: n <= attemptCount,
+                    current: n === attemptCount + 1 && !showCorrectAnswer
+                  }"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Confirmation Message -->
+          <div 
+            class="confirmation-message" 
+            :class="{ 
+              correct: answerWasCorrect, 
+              incorrect: !answerWasCorrect && !showCorrectAnswer,
+              'show-answer': showCorrectAnswer
+            }"
           >
-            ◐
-          </button>
-          <button 
-            @click="setQuickResize(50, 50)" 
-            class="resize-preset" 
-            :class="{ active: isQuickResizeActive(50, 50) }"
-            title="50% / 50% - Равномерно"
-          >
-            ◑
-          </button>
-          <button 
-            @click="setQuickResize(75, 25)" 
-            class="resize-preset" 
-            :class="{ active: isQuickResizeActive(75, 25) }"
-            title="75% / 25% - Контент слева максимально"
-          >
-            ◒
-          </button>
-          <button 
-            @click="resetToDefault" 
-            class="resize-reset" 
-            title="Сброс к значениям по умолчанию"
-          >
-            ⟲
-          </button>
+            {{ confirmation }}
+          </div>
+
+          <!-- Correct Answer Display -->
+          <div v-if="showCorrectAnswer && correctAnswerText" class="correct-answer-display">
+            <div class="correct-answer-label">💡 Правильный ответ:</div>
+            <div class="correct-answer-text">{{ correctAnswerText }}</div>
+          </div>
+        </div>
+
+        <!-- Hints and Feedback -->
+        <div v-if="(currentHint || smartHint) && !showCorrectAnswer" class="hints-section">
+          <div v-if="currentHint" class="hint basic-hint">
+            <div class="hint-icon">💡</div>
+            <div class="hint-text">{{ currentHint }}</div>
+          </div>
+          <div v-if="smartHint" class="hint smart-hint">
+            <div class="hint-icon">🤖</div>
+            <div class="hint-text">{{ smartHint }}</div>
+            <button @click="$emit('clear-hint')" class="clear-hint-btn">×</button>
+          </div>
         </div>
       </div>
 
-      <!-- Enhanced Resize Indicator -->
-      <div v-if="isResizing" class="resize-indicator">
-        <div class="indicator-content">
-          <div class="size-display">
-            <div class="left-size">
-              <span class="label">Левая панель</span>
-              <span class="value">{{ Math.round(leftPanelWidth) }}%</span>
-            </div>
-            <div class="divider-icon">⟷</div>
-            <div class="right-size">
-              <span class="label">Правая панель</span>
-              <span class="value">{{ Math.round(rightPanelWidth) }}%</span>
-            </div>
-          </div>
-          <div class="resize-hint">
-            <small>Отпустите для применения • ESC для отмены</small>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Enhanced Lesson Completion Screen -->
-    <CompletionScreen
-      v-if="lessonCompleted"
-      :lesson="lesson"
-      :readable-time="readableTime"
-      :stars="stars"
-      :mistake-count="mistakeCount"
-      :earned-points="earnedPoints"
-      :medal-label="medalLabel"
-      :medal-icon="getMedalIcon()"
-      :progress-insight="progressInsight"
-      :total-steps="steps.length"
-      :extraction-results="extractionResults"
-      @return-to-catalogue="handleReturnToCatalogue"
-      @share="shareResult"
-      @homework="handleGoToHomework"
-      @vocabulary="goToVocabulary"
-    >
-      <!-- Slot for additional buttons/content in CompletionScreen -->
-      <template #extra-actions>
-        <button @click="openProblemReportModal" class="btn-secondary">
-          ⚠️ Сообщить о проблеме с уроком
+      <!-- ✅ ENHANCED: Action Buttons with Better Layout -->
+      <div class="exercise-actions">
+        <button 
+          v-if="!confirmation && attemptCount === 0"
+          @click="$emit('show-hint')" 
+          class="hint-btn"
+        >
+          💡 Подсказка
         </button>
-      </template>
-    </CompletionScreen>
-
-    <!-- Migration Panel (Admin/User) -->
-    <div v-if="showMigrationPanel" class="migration-panel">
-      <div class="migration-content">
-        <h3>🔄 Обновление контента</h3>
-        <p>Хотите создать задания и словарь из уже пройденных уроков?</p>
-        <div class="migration-actions">
-          <button
-            @click="migrateLessonContent"
-            :disabled="migrationLoading"
-            class="migrate-btn"
-          >
-            {{ migrationLoading ? '⏳ Обработка...' : '🚀 Обновить контент' }}
-          </button>
-          <button @click="closeMigrationPanel" class="cancel-btn">❌ Закрыть</button>
-        </div>
+        
+        <button 
+          v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
+          @click="$emit('submit')"
+          :disabled="!canSubmitAnswer"
+          class="submit-btn"
+          :class="{ 
+            disabled: !canSubmitAnswer,
+            'second-chance': isOnSecondChance
+          }"
+        >
+          {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Проверить' }}
+          <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
+        </button>
+        
+        <button 
+          v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
+          @click="$emit('next-exercise')"
+          class="next-btn"
+        >
+          {{ isLastExercise ? 'Завершить' : 'Далее' }}
+          <span class="next-icon">→</span>
+        </button>
       </div>
     </div>
 
-    <!-- Floating AI Assistant Toggle -->
-    <button
-      v-if="started && !lessonCompleted"
-      class="floating-ai-btn"
-      @click="toggleFloatingAI"
-      :class="{ active: showFloatingAI }"
-    >
-      🤖
-    </button>
+    <!-- Quiz Content -->
+    <div v-else-if="isQuizStep" class="quiz-content force-visible">
+      <!-- Fixed Header -->
+      <div class="quiz-header">
+        <h3>{{ currentQuiz?.title || 'Вопрос' }}</h3>
+        <div class="quiz-counter">
+          {{ quizIndex + 1 }} из {{ totalQuizzes }}
+        </div>
+      </div>
 
-    <!-- Floating AI Assistant -->
-    <FloatingAIAssistant
-      v-if="showFloatingAI && started && !lessonCompleted"
-      :ai-usage="aiUsage"
-      :quick-suggestions="quickSuggestions"
-      :ai-chat-history="aiChatHistory"
-      :floating-ai-input="floatingAIInput"
-      :ai-is-loading="aiIsLoading"
-      @close="closeFloatingAI"
-      @send-message="sendFloatingAIMessage"
-      @ask-ai="askAI"
-      @clear-chat="clearAIChat"
-    />
+      <!-- ✅ ENHANCED: Scrollable Body -->
+      <div class="quiz-body" ref="quizBody">
+        <div class="quiz-question">
+          {{ currentQuiz?.question }}
+        </div>
 
-    <!-- Confetti Animation -->
-    <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
+        <div class="quiz-options">
+          <div 
+            v-for="(option, index) in quizOptions" 
+            :key="index"
+            class="quiz-option"
+            :class="{ 
+              selected: localUserAnswer === option,
+              disabled: showCorrectAnswer
+            }"
+            @click="!showCorrectAnswer && selectQuizOption(option)"
+          >
+            <input 
+              type="radio" 
+              :name="'quiz-' + quizIndex"
+              :value="option"
+              v-model="localUserAnswer"
+              @change="updateAnswer"
+              :disabled="showCorrectAnswer"
+              class="option-radio"
+            />
+            <div class="option-text">{{ option }}</div>
+          </div>
+        </div>
+
+        <!-- Quiz Confirmation Section -->
+        <div v-if="confirmation" class="confirmation-section">
+          <div v-if="isOnSecondChance && !showCorrectAnswer" class="second-chance-indicator">
+            <div class="attempt-counter">
+              <span class="attempt-text">Попытка {{ attemptCount }} из {{ maxAttempts }}</span>
+              <div class="attempt-dots">
+                <div 
+                  v-for="n in maxAttempts" 
+                  :key="n"
+                  class="attempt-dot"
+                  :class="{ 
+                    filled: n <= attemptCount,
+                    current: n === attemptCount + 1 && !showCorrectAnswer
+                  }"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div 
+            class="confirmation-message" 
+            :class="{ 
+              correct: answerWasCorrect, 
+              incorrect: !answerWasCorrect && !showCorrectAnswer,
+              'show-answer': showCorrectAnswer
+            }"
+          >
+            {{ confirmation }}
+          </div>
+
+          <div v-if="showCorrectAnswer && correctAnswerText" class="correct-answer-display">
+            <div class="correct-answer-label">💡 Правильный ответ:</div>
+            <div class="correct-answer-text">{{ correctAnswerText }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ✅ ENHANCED: Action Buttons -->
+      <div class="quiz-actions">
+        <button 
+          v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
+          @click="$emit('submit')"
+          :disabled="!canSubmitAnswer"
+          class="submit-btn"
+          :class="{ 
+            disabled: !canSubmitAnswer,
+            'second-chance': isOnSecondChance
+          }"
+        >
+          {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Ответить' }}
+          <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
+        </button>
+        
+        <button 
+          v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
+          @click="$emit('next-quiz')"
+          class="next-btn"
+        >
+          {{ isLastQuiz ? 'Завершить' : 'Следующий вопрос' }}
+          <span class="next-icon">→</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- No Content State -->
+    <div v-else class="no-content force-visible">
+      <div class="no-content-icon">📝</div>
+      <h4>Нет интерактивного содержимого</h4>
+      <p>Для этого шага нет упражнений или вопросов</p>
+    </div>
   </div>
 </template>
+
 
 <script>
 // ✅ COMPLETE LESSONPAGE.VUE SCRIPT with Enhanced Resizable Split Screen
