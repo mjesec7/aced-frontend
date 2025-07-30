@@ -1,5 +1,6 @@
 <template>
   <div class="lesson-page">
+    <!-- Loading Screen -->
     <div v-if="loading" class="loading-screen">
       <div class="loading-content">
         <div class="loading-spinner">
@@ -12,6 +13,7 @@
       </div>
     </div>
 
+    <!-- Error Screen -->
     <div v-else-if="error" class="error-screen">
       <div class="error-content">
         <div class="error-icon">⚠️</div>
@@ -30,6 +32,20 @@
       </div>
     </div>
 
+    <!-- Debug Info (Development Only) -->
+    <div v-if="isDevelopment && !loading && !error" class="debug-panel">
+      <details>
+        <summary>🐛 Debug Info</summary>
+        <div class="debug-content">
+          <h4>Lesson Data:</h4>
+          <pre>{{ JSON.stringify({ lessonName: lesson.lessonName, stepsCount: steps.length, currentIndex }, null, 2) }}</pre>
+          <h4>Current Step:</h4>
+          <pre>{{ JSON.stringify(currentStep, null, 2) }}</pre>
+        </div>
+      </details>
+    </div>
+
+    <!-- Modals -->
     <div v-if="showPaywallModal" class="modal-overlay">
       <div class="paywall-modal">
         <div class="modal-header">
@@ -97,6 +113,7 @@
       </div>
     </div>
 
+    <!-- Vocabulary Modal -->
     <VocabularyModal
       v-if="vocabularyModal.isVisible"
       :vocabulary-data="vocabularyModal"
@@ -114,6 +131,7 @@
       @pronounce="pronounceWord"
     />
 
+    <!-- Lesson Intro -->
     <LessonIntro
       v-if="!started && !showPaywallModal && !loading && !error"
       :lesson="lesson"
@@ -126,7 +144,9 @@
       @report-problem="openProblemReportModal"
     />
 
+    <!-- Main Lesson Content -->
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
+      <!-- Lesson Header -->
       <LessonHeader
         :lesson="lesson"
         :current-step="currentIndex + 1"
@@ -137,6 +157,7 @@
         @report-problem="openProblemReportModal"
       />
 
+      <!-- Progress Bar -->
       <ProgressBar
         :progress-percentage="progressPercentage"
         :stars="stars"
@@ -144,6 +165,7 @@
         :total-steps="steps.length"
       />
 
+      <!-- Split Screen Container -->
       <div class="split-container">
         <div 
           class="split-content"
@@ -154,6 +176,7 @@
             'vertical-layout': isVerticalLayout
           }"
         >
+          <!-- Content Panel (Left/Top) -->
           <ContentPanel
             v-if="showContentPanel"
             :current-step="currentStep"
@@ -168,6 +191,7 @@
             @init-vocabulary="initializeVocabularyModal"
           />
 
+          <!-- Resize Handle -->
           <div 
             v-if="showContentPanel && showInteractivePanel"
             class="resize-handle"
@@ -196,6 +220,7 @@
             </div>
           </div>
 
+          <!-- Interactive Panel (Right/Bottom) -->
           <InteractivePanel
             v-if="showInteractivePanel"
             :current-exercise="getCurrentExercise(currentStep)"
@@ -211,6 +236,7 @@
       </div>
     </div>
 
+    <!-- Completion Screen -->
     <CompletionScreen
       v-if="lessonCompleted"
       :readable-time="readableTime"
@@ -224,6 +250,7 @@
       @share-result="shareResult"
     />
 
+    <!-- Floating AI Button -->
     <button
       v-if="started && !lessonCompleted"
       class="floating-ai-btn"
@@ -235,6 +262,7 @@
       <span class="ai-emoji">🤖</span>
     </button>
 
+    <!-- Floating AI Assistant -->
     <FloatingAIAssistant
       v-if="showFloatingAI && started && !lessonCompleted"
       :usage="aiUsage"
@@ -248,6 +276,7 @@
       @clear-chat="handleClearAIChat"
     />
 
+    <!-- Notifications -->
     <div v-if="notifications.length" class="notification-system">
       <div 
         v-for="notification in notifications" 
@@ -269,6 +298,7 @@
       </div>
     </div>
 
+    <!-- Confetti Canvas -->
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
   </div>
 </template>
@@ -277,7 +307,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 
-// Import the actual composables from the correct path
+// Import the fixed composables
 import { useLessonOrchestrator } from '@/composables/useLessonOrchestrator'
 import { useExercises } from '@/composables/useExercises'
 import { useVocabulary } from '@/composables/useVocabulary'
@@ -313,167 +343,14 @@ export default {
     const router = useRouter()
 
     // ==========================================
-    // COMPOSABLES - Using the actual composables
+    // COMPOSABLES
     // ==========================================
-    const {
-      // Core lesson state
-      lesson,
-      steps,
-      currentIndex,
-      started,
-      loading,
-      error,
-      retryCount,
-      
-      // Progress state
-      mistakeCount,
-      stars,
-      earnedPoints,
-      hintsUsed,
-      mistakeLog,
-      previousProgress,
-      
-      // Completion state
-      lessonCompleted,
-      elapsedSeconds,
-      showConfetti,
-      showExitModal,
-      medalLabel,
-      
-      // User state
-      userId,
-      
-      // Computed
-      currentStep,
-      isInteractiveStep,
-      progressPercentage,
-      formattedTime,
-      readableTime,
-      isLastStep,
-      estimatedTime,
-      
-      // Methods
-      loadLesson,
-      saveProgress,
-      startLesson,
-      continuePreviousProgress,
-      goNext,
-      goPrevious,
-      completeLesson,
-      retryLoad,
-      confirmExit,
-      cancelExit,
-      exitLesson,
-      getStepIcon,
-      getStepTypeText,
-      getMedalIcon,
-      formatContent,
-      getLocalized,
-      initializeLesson,
-      cleanup
-    } = useLessonOrchestrator()
-
-    const {
-      // Exercise state
-      currentExerciseIndex,
-      currentQuizIndex,
-      userAnswer,
-      confirmation,
-      answerWasCorrect,
-      currentHint,
-      smartHint,
-      fillBlankAnswers,
-      matchingPairs,
-      selectedMatchingItem,
-      orderingItems,
-      dragDropPlacements,
-      availableDragItems,
-      dropZones,
-      
-      // Methods
-      getCurrentExercise,
-      getCurrentQuiz,
-      getTotalExercises,
-      getTotalQuizzes,
-      isLastExercise,
-      isLastQuiz,
-      goToNextExercise,
-      goToNextQuiz,
-      initializeCurrentExerciseData,
-      canSubmitAnswer,
-      resetExerciseState,
-      resetExerciseAnswers,
-      updateFillBlankAnswer,
-      getCurrentExerciseType,
-      getFormattedFillBlankTemplate,
-      validateCurrentAnswer,
-      validateQuizAnswer,
-      getCorrectAnswerDisplay,
-      getRandomSuccessMessage
-    } = useExercises()
-
-    const {
-      // Vocabulary state
-      vocabularyModal,
-      cardAnimation,
-      currentVocabWord,
-      vocabProgress,
-      isLastVocabWord,
-      
-      // Methods
-      initializeVocabularyModal,
-      showVocabDefinition,
-      hideVocabDefinition,
-      markWordAsLearned,
-      nextVocabWord,
-      previousVocabWord,
-      jumpToVocabWord,
-      skipVocabularyModal,
-      restartVocabulary,
-      extractWordProperty
-    } = useVocabulary()
-
-    const {
-      // AI state
-      aiChatHistory,
-      aiChatInput,
-      aiSuggestions,
-      aiIsLoading,
-      showFloatingAI,
-      floatingAIInput,
-      quickSuggestions,
-      aiUsage,
-      progressInsight,
-      
-      // Methods
-      sendAIMessage,
-      sendFloatingAIMessage,
-      askAI,
-      generateAISuggestions,
-      toggleFloatingAI,
-      closeFloatingAI
-    } = useExplanation()
-
-    const {
-      // Payment state
-      showPaywallModal,
-      userStatus,
-      isPremiumUser,
-      
-      // Methods
-      validateLessonAccess,
-      closePaywallModal
-    } = usePaymentValidation()
-
-    const {
-      // Sound state
-      isPlaying,
-      speechSupported,
-      
-      // Methods
-      initializeSpeech,
-      pronounceWord
-    } = useSound()
+    const orchestrator = useLessonOrchestrator()
+    const exercises = useExercises()
+    const vocabulary = useVocabulary()
+    const explanation = useExplanation()
+    const payment = usePaymentValidation()
+    const sound = useSound()
 
     // ==========================================
     // LOCAL STATE
@@ -484,8 +361,6 @@ export default {
     const resizeStartInfo = ref(null)
     const confettiCanvas = ref(null)
     const notifications = ref([])
-
-    // Problem report state
     const showProblemReportModal = ref(false)
     const problemType = ref('content')
     const problemDescription = ref('')
@@ -493,19 +368,23 @@ export default {
     // ==========================================
     // COMPUTED PROPERTIES
     // ==========================================
+    const isDevelopment = computed(() => {
+      return process.env.NODE_ENV === 'development'
+    })
+
     const showContentPanel = computed(() => {
-      if (!currentStep.value) return false
+      if (!orchestrator.currentStep.value) return false
       
       const contentTypes = ['explanation', 'example', 'reading', 'vocabulary']
-      return contentTypes.includes(currentStep.value.type) || 
-             (currentStep.value.data && currentStep.value.data.content)
+      return contentTypes.includes(orchestrator.currentStep.value.type) || 
+             (orchestrator.currentStep.value.data && orchestrator.currentStep.value.data.content)
     })
 
     const showInteractivePanel = computed(() => {
-      if (!currentStep.value) return false
+      if (!orchestrator.currentStep.value) return false
       
       const interactiveTypes = ['exercise', 'practice', 'quiz']
-      return interactiveTypes.includes(currentStep.value.type)
+      return interactiveTypes.includes(orchestrator.currentStep.value.type)
     })
 
     const isVerticalLayout = computed(() => {
@@ -563,14 +442,14 @@ export default {
 
     // Create user progress object for AI context
     const userProgress = computed(() => ({
-      currentStep: currentIndex.value,
-      totalSteps: steps.value.length,
-      completedSteps: Array.from({ length: currentIndex.value }, (_, i) => i),
-      stars: stars.value,
-      mistakes: mistakeCount.value,
-      points: earnedPoints.value,
-      accuracy: Math.max(0, 100 - mistakeCount.value * 10),
-      timeSpent: elapsedSeconds.value
+      currentStep: orchestrator.currentIndex.value,
+      totalSteps: orchestrator.steps.value.length,
+      completedSteps: Array.from({ length: orchestrator.currentIndex.value }, (_, i) => i),
+      stars: orchestrator.stars.value,
+      mistakes: orchestrator.mistakeCount.value,
+      points: orchestrator.earnedPoints.value,
+      accuracy: Math.max(0, 100 - orchestrator.mistakeCount.value * 10),
+      timeSpent: orchestrator.elapsedSeconds.value
     }))
 
     // ==========================================
@@ -741,12 +620,12 @@ export default {
     // NAVIGATION METHODS
     // ==========================================
     const handleReturnToCatalogue = () => {
-      saveProgress()
+      orchestrator.saveProgress()
       router.push('/profile/catalogue')
     }
 
     const handleGoToHomework = () => {
-      const lessonId = lesson.value?._id
+      const lessonId = orchestrator.lesson.value?._id
       if (lessonId) {
         router.push(`/lessons/${lessonId}/homework`)
       } else {
@@ -764,40 +643,40 @@ export default {
       let feedbackMessage = ''
       
       // Validate answer based on current step type
-      if (currentStep.value.type === 'exercise' || currentStep.value.type === 'practice') {
-        const exercise = getCurrentExercise(currentStep.value)
+      if (orchestrator.currentStep.value.type === 'exercise' || orchestrator.currentStep.value.type === 'practice') {
+        const exercise = exercises.getCurrentExercise(orchestrator.currentStep.value)
         if (exercise) {
-          isCorrect = validateCurrentAnswer(exercise)
+          isCorrect = exercises.validateCurrentAnswer(exercise)
           feedbackMessage = isCorrect ? 
-            getRandomSuccessMessage() : 
-            `Incorrect. The correct answer is: ${getCorrectAnswerDisplay(exercise)}`
+            exercises.getRandomSuccessMessage() : 
+            `Incorrect. The correct answer is: ${exercises.getCorrectAnswerDisplay(exercise)}`
         }
-      } else if (currentStep.value.type === 'quiz') {
-        const quiz = getCurrentQuiz(currentStep.value)
+      } else if (orchestrator.currentStep.value.type === 'quiz') {
+        const quiz = exercises.getCurrentQuiz(orchestrator.currentStep.value)
         if (quiz) {
-          isCorrect = validateQuizAnswer(quiz)
+          isCorrect = exercises.validateQuizAnswer(quiz)
           feedbackMessage = isCorrect ? 
             '✅ Correct!' : 
-            `❌ Incorrect. The correct answer is: ${getCorrectAnswerDisplay(quiz)}`
+            `❌ Incorrect. The correct answer is: ${exercises.getCorrectAnswerDisplay(quiz)}`
         }
       }
       
       // Update state
-      answerWasCorrect.value = isCorrect
-      confirmation.value = feedbackMessage
+      exercises.answerWasCorrect.value = isCorrect
+      exercises.confirmation.value = feedbackMessage
       
       // Update progress
       if (isCorrect) {
-        stars.value++
-        earnedPoints.value += 10
+        orchestrator.stars.value++
+        orchestrator.earnedPoints.value += 10
         addNotification('Great job! ⭐ +1 star earned', 'success')
       } else {
-        mistakeCount.value++
-        mistakeLog.value.push({
-          step: currentIndex.value,
-          question: getCurrentExercise(currentStep.value)?.question || getCurrentQuiz(currentStep.value)?.question || '',
+        orchestrator.mistakeCount.value++
+        orchestrator.mistakeLog.value.push({
+          step: orchestrator.currentIndex.value,
+          question: exercises.getCurrentExercise(orchestrator.currentStep.value)?.question || exercises.getCurrentQuiz(orchestrator.currentStep.value)?.question || '',
           userAnswer: answer,
-          correctAnswer: getCorrectAnswerDisplay(getCurrentExercise(currentStep.value) || getCurrentQuiz(currentStep.value)),
+          correctAnswer: exercises.getCorrectAnswerDisplay(exercises.getCurrentExercise(orchestrator.currentStep.value) || exercises.getCurrentQuiz(orchestrator.currentStep.value)),
           timestamp: new Date().toISOString()
         })
       }
@@ -805,17 +684,17 @@ export default {
       // Auto-advance after a delay if correct
       if (isCorrect) {
         setTimeout(() => {
-          if (currentStep.value.type === 'exercise' || currentStep.value.type === 'practice') {
-            if (!isLastExercise(currentStep.value)) {
-              goToNextExercise(currentStep.value, goNext)
+          if (orchestrator.currentStep.value.type === 'exercise' || orchestrator.currentStep.value.type === 'practice') {
+            if (!exercises.isLastExercise(orchestrator.currentStep.value)) {
+              exercises.goToNextExercise(orchestrator.currentStep.value, orchestrator.goNext)
             } else {
-              goNext()
+              orchestrator.goNext()
             }
-          } else if (currentStep.value.type === 'quiz') {
-            if (!isLastQuiz(currentStep.value)) {
-              goToNextQuiz(currentStep.value, goNext)
+          } else if (orchestrator.currentStep.value.type === 'quiz') {
+            if (!exercises.isLastQuiz(orchestrator.currentStep.value)) {
+              exercises.goToNextQuiz(orchestrator.currentStep.value, orchestrator.goNext)
             } else {
-              goNext()
+              orchestrator.goNext()
             }
           }
         }, 2000)
@@ -823,29 +702,29 @@ export default {
     }
 
     // ==========================================
-    // AI METHODS WRAPPER (using composable methods)
+    // AI METHODS WRAPPER
     // ==========================================
     const handleAIMessage = (message) => {
-      if (typeof sendAIMessage === 'function') {
-        sendAIMessage(lesson.value, userProgress.value, currentStep.value)
+      if (typeof explanation.sendAIMessage === 'function') {
+        explanation.sendAIMessage(orchestrator.lesson.value, userProgress.value, orchestrator.currentStep.value)
       } else {
         console.warn('AI service not available')
       }
     }
 
     const handleFloatingAIMessage = (message) => {
-      if (typeof sendFloatingAIMessage === 'function') {
-        sendFloatingAIMessage(lesson.value, userProgress.value, currentStep.value)
+      if (typeof explanation.sendFloatingAIMessage === 'function') {
+        explanation.sendFloatingAIMessage(orchestrator.lesson.value, userProgress.value, orchestrator.currentStep.value)
       } else {
         console.warn('AI service not available')
       }
     }
 
     const handleClearAIChat = () => {
-      if (typeof clearAIChat === 'function') {
-        clearAIChat()
+      if (typeof explanation.clearAIChat === 'function') {
+        explanation.clearAIChat()
       } else {
-        aiChatHistory.value = []
+        explanation.aiChatHistory.value = []
       }
     }
 
@@ -866,9 +745,9 @@ export default {
       console.log('📋 Problem report submitted:', {
         type: problemType.value,
         description: problemDescription.value,
-        lessonId: lesson.value?._id,
-        currentStep: currentIndex.value + 1,
-        totalSteps: steps.value?.length || 0
+        lessonId: orchestrator.lesson.value?._id,
+        currentStep: orchestrator.currentIndex.value + 1,
+        totalSteps: orchestrator.steps.value?.length || 0
       })
       
       addNotification('Problem report submitted successfully!', 'success')
@@ -904,15 +783,15 @@ export default {
     // ADDITIONAL METHODS
     // ==========================================
     const pronounceContent = () => {
-      if (currentStep.value?.data?.content) {
-        pronounceWord(currentStep.value.data.content.replace(/<[^>]*>/g, ''))
+      if (orchestrator.currentStep.value?.data?.content) {
+        sound.pronounceWord(orchestrator.currentStep.value.data.content.replace(/<[^>]*>/g, ''))
       }
     }
 
     const shareResult = () => {
       const shareData = {
-        title: `I completed "${getLocalized(lesson.value.lessonName)}"!`,
-        text: `Just finished this lesson with ${stars.value} stars and ${earnedPoints.value} points!`,
+        title: `I completed "${orchestrator.getLocalized(orchestrator.lesson.value.lessonName)}"!`,
+        text: `Just finished this lesson with ${orchestrator.stars.value} stars and ${orchestrator.earnedPoints.value} points!`,
         url: window.location.href
       }
       
@@ -994,11 +873,11 @@ export default {
       console.log('🔧 LessonPage mounted')
       
       // Initialize services
-      initializeSpeech()
+      sound.initializeSpeech()
       loadLayoutPreferences()
       
-      // Initialize lesson
-      await initializeLesson()
+      // Initialize lesson (this is done by the orchestrator)
+      // await orchestrator.initializeLesson() - this is called internally
       
       // Set up window resize listener
       window.addEventListener('resize', () => {
@@ -1008,7 +887,7 @@ export default {
       })
       
       // Launch confetti if lesson completed
-      if (lessonCompleted.value) {
+      if (orchestrator.lessonCompleted.value) {
         setTimeout(launchConfetti, 500)
       }
     })
@@ -1020,94 +899,33 @@ export default {
         stopResize()
       }
       
-      cleanup()
+      orchestrator.cleanup()
     })
 
     // ==========================================
     // RETURN - All state and methods for template
     // ==========================================
     return {
-      // Core lesson state
-      lesson,
-      steps,
-      currentIndex,
-      started,
-      loading,
-      error,
-      retryCount,
+      // Expose orchestrator state
+      ...orchestrator,
       
-      // Progress state
-      mistakeCount,
-      stars,
-      earnedPoints,
-      hintsUsed,
-      mistakeLog,
-      previousProgress,
+      // Expose exercise state
+      ...exercises,
       
-      // Completion state
-      lessonCompleted,
-      elapsedSeconds,
-      showConfetti,
-      showExitModal,
-      medalLabel,
+      // Expose vocabulary state  
+      ...vocabulary,
       
-      // User state
-      userId,
-      userProgress,
+      // Expose explanation/AI state
+      ...explanation,
       
-      // Computed
-      currentStep,
-      isInteractiveStep,
-      progressPercentage,
-      formattedTime,
-      readableTime,
-      isLastStep,
-      estimatedTime,
+      // Expose payment state
+      ...payment,
       
-      // Exercise state
-      currentExerciseIndex,
-      currentQuizIndex,
-      userAnswer,
-      confirmation,
-      answerWasCorrect,
-      currentHint,
-      smartHint,
-      fillBlankAnswers,
-      matchingPairs,
-      selectedMatchingItem,
-      orderingItems,
-      dragDropPlacements,
-      availableDragItems,
-      dropZones,
-      
-      // Vocabulary state
-      vocabularyModal,
-      cardAnimation,
-      currentVocabWord,
-      vocabProgress,
-      isLastVocabWord,
-      
-      // AI state
-      aiChatHistory,
-      aiChatInput,
-      aiSuggestions,
-      aiIsLoading,
-      showFloatingAI,
-      floatingAIInput,
-      quickSuggestions,
-      aiUsage,
-      progressInsight,
-      
-      // Payment state
-      showPaywallModal,
-      userStatus,
-      isPremiumUser,
-      
-      // Sound state
-      isPlaying,
-      speechSupported,
+      // Expose sound state
+      ...sound,
       
       // Local state
+      isDevelopment,
       isResizing,
       leftPanelWidth,
       showTooltip,
@@ -1125,81 +943,7 @@ export default {
       interactivePanelStyle,
       resizeAriaLabel,
       tooltipText,
-
-      // Core methods
-      loadLesson,
-      saveProgress,
-      startLesson,
-      continuePreviousProgress,
-      goNext,
-      goPrevious,
-      completeLesson,
-      retryLoad,
-      confirmExit,
-      cancelExit,
-      exitLesson,
-      getStepIcon,
-      getStepTypeText,
-      getMedalIcon,
-      formatContent,
-      getLocalized,
-      initializeLesson,
-      cleanup,
-
-      // Exercise methods
-      getCurrentExercise,
-      getCurrentQuiz,
-      getTotalExercises,
-      getTotalQuizzes,
-      isLastExercise,
-      isLastQuiz,
-      goToNextExercise,
-      goToNextQuiz,
-      initializeCurrentExerciseData,
-      canSubmitAnswer,
-      resetExerciseState,
-      resetExerciseAnswers,
-      updateFillBlankAnswer,
-      getCurrentExerciseType,
-      getFormattedFillBlankTemplate,
-      validateCurrentAnswer,
-      validateQuizAnswer,
-      getCorrectAnswerDisplay,
-      getRandomSuccessMessage,
-
-      // Vocabulary methods
-      initializeVocabularyModal,
-      showVocabDefinition,
-      hideVocabDefinition,
-      markWordAsLearned,
-      nextVocabWord,
-      previousVocabWord,
-      jumpToVocabWord,
-      skipVocabularyModal,
-      restartVocabulary,
-      extractWordProperty,
-
-      // AI methods (wrapped to avoid conflicts)
-      handleAIMessage,
-      handleFloatingAIMessage,
-      handleClearAIChat,
-      
-      // AI methods from composable (aliased)
-      sendAIMessage,
-      sendFloatingAIMessage,
-      askAI,
-      generateAISuggestions,
-      toggleFloatingAI,
-      closeFloatingAI,
-
-      // Payment methods
-      validateLessonAccess,
-      closePaywallModal,
-
-      // Sound methods
-      initializeSpeech,
-      pronounceWord,
-      pronounceContent,
+      userProgress,
 
       // Split screen methods
       startResize,
@@ -1214,13 +958,17 @@ export default {
       handleReturnToCatalogue,
       handleGoToHomework,
       handleSubmit,
+      handleAIMessage,
+      handleFloatingAIMessage,
+      handleClearAIChat,
       openProblemReportModal,
       closeProblemReportModal,
       submitProblemReport,
       closeNotification,
       addNotification,
       launchConfetti,
-      shareResult
+      shareResult,
+      pronounceContent
     }
   }
 }
@@ -1228,4 +976,57 @@ export default {
 
 <style scoped>
 @import "@/assets/css/LessonPage.css";
+
+/* Additional styles for debug panel */
+.debug-panel {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  max-width: 400px;
+  z-index: 1000;
+}
+
+.debug-panel details {
+  cursor: pointer;
+}
+
+.debug-panel summary {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.debug-content {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.debug-content h4 {
+  margin: 0.5rem 0 0.25rem 0;
+  color: #fbbf24;
+}
+
+.debug-content pre {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
 </style>

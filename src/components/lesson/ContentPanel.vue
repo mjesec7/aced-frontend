@@ -29,335 +29,72 @@
     </div>
 
     <div class="content-body" ref="contentBody">
-      <div v-if="contentType === 'component-lifecycle'" class="content-section lifecycle-content">
-        <div class="intro-section">
-          <h3 class="section-title">🔄 React Component Lifecycle</h3>
-          <p class="section-intro">
-            Understanding the React component lifecycle is crucial for building robust applications.
-            Let's explore what happens when components mount, update, and unmount.
-          </p>
+      <!-- Dynamic Content Rendering -->
+      <div class="content-section">
+        <!-- Explanation/Reading Content -->
+        <div v-if="isContentStep" class="explanation-content">
+          <div class="content-wrapper" v-html="getStepContent()"></div>
         </div>
 
-        <div class="lifecycle-phases">
-          <div class="phase-card mounting">
-            <div class="phase-header">
-              <div class="phase-icon">🚀</div>
-              <h4 class="phase-title">Mounting</h4>
-            </div>
-            <div class="phase-content">
-              <p class="phase-description">
-                When a component is being created and inserted into the DOM for the first time.
-              </p>
-              <ul class="phase-steps">
-                <li><code>constructor()</code> - Component initialization</li>
-                <li><code>render()</code> - Create virtual DOM</li>
-                <li><code>componentDidMount()</code> - Component is now in the DOM</li>
-              </ul>
-              <div class="phase-example">
-                <div class="example-header">
-                  <span class="example-label">💡 Use Case:</span>
+        <!-- Vocabulary Content -->
+        <div v-else-if="currentStep.type === 'vocabulary'" class="vocabulary-content">
+          <div class="vocab-intro">
+            <h3 class="section-title">📚 Vocabulary Learning</h3>
+            <p class="section-intro">Learn these important words and phrases.</p>
+          </div>
+          
+          <div class="vocab-grid">
+            <div 
+              v-for="(word, index) in getVocabularyData()" 
+              :key="index"
+              class="vocab-card"
+              @click="emit('pronounce', word.word || word.term || word.text)"
+            >
+              <div class="vocab-header">
+                <h4 class="vocab-word">{{ word.word || word.term || word.text }}</h4>
+                <button class="pronounce-btn" title="Pronounce">🔊</button>
+              </div>
+              <div class="vocab-content">
+                <p class="vocab-definition">{{ word.definition || word.meaning || 'Definition not available' }}</p>
+                <div v-if="word.pronunciation" class="vocab-pronunciation">
+                  <span class="pronunciation-label">Pronunciation:</span>
+                  <span class="pronunciation-text">{{ word.pronunciation }}</span>
                 </div>
-                <p class="example-text">
-                  Perfect for fetching data, setting up subscriptions, or initializing timers.
-                </p>
+                <div v-if="word.example" class="vocab-example">
+                  <span class="example-label">Example:</span>
+                  <span class="example-text">{{ word.example }}</span>
+                </div>
               </div>
             </div>
           </div>
-
-          <div class="phase-card updating">
-            <div class="phase-header">
-              <div class="phase-icon">🔄</div>
-              <h4 class="phase-title">Updating</h4>
-            </div>
-            <div class="phase-content">
-              <p class="phase-description">
-                When props or state change, causing the component to re-render.
-              </p>
-              <ul class="phase-steps">
-                <li><code>render()</code> - Create new virtual DOM</li>
-                <li><code>getSnapshotBeforeUpdate()</code> - Capture info before update</li>
-                <li><code>componentDidUpdate()</code> - Component has been updated</li>
-              </ul>
-              <div class="phase-example">
-                <div class="example-header">
-                  <span class="example-label">💡 Use Case:</span>
-                </div>
-                <p class="example-text">
-                  Ideal for responding to prop changes, updating derived state, or making network requests.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div class="phase-card unmounting">
-            <div class="phase-header">
-              <div class="phase-icon">🗑️</div>
-              <h4 class="phase-title">Unmounting</h4>
-            </div>
-            <div class="phase-content">
-              <p class="phase-description">
-                When a component is being removed from the DOM.
-              </p>
-              <ul class="phase-steps">
-                <li><code>componentWillUnmount()</code> - Cleanup before removal</li>
-              </ul>
-              <div class="phase-example">
-                <div class="example-header">
-                  <span class="example-label">💡 Use Case:</span>
-                </div>
-                <p class="example-text">
-                  Essential for cleaning up subscriptions, canceling network requests, or clearing timers.
-                </p>
-              </div>
-            </div>
+          
+          <div class="vocab-actions">
+            <button @click="emit('init-vocabulary')" class="vocab-practice-btn">
+              <span class="btn-icon">🎯</span>
+              <span class="btn-text">Practice Vocabulary</span>
+            </button>
           </div>
         </div>
 
-        <div class="modern-hooks-section">
-          <h4 class="hooks-title">🎣 Modern React Hooks Equivalent</h4>
-          <div class="hooks-comparison">
-            <div class="hook-example">
-              <h5 class="hook-name">useEffect Hook</h5>
-              <div class="code-example">
-                <pre><code>useEffect(() => {
-  // Mounting & Updating logic
-  fetchData();
-  
-  return () => {
-    // Unmounting cleanup
-    cleanup();
-  };
-}, [dependencies]);</code></pre>
-              </div>
-              <p class="hook-explanation">
-                The <code>useEffect</code> hook combines all lifecycle phases into one powerful hook.
-              </p>
+        <!-- Fallback for Unknown Content Types -->
+        <div v-else class="fallback-content">
+          <div class="fallback-header">
+            <div class="fallback-icon">{{ getStepIcon() }}</div>
+            <h3>{{ getStepTitle() }}</h3>
+          </div>
+          <div class="fallback-body">
+            <p>This step contains {{ currentStep.type }} content.</p>
+            <div v-if="currentStep.data" class="debug-info">
+              <details>
+                <summary>Step Data (Debug)</summary>
+                <pre>{{ JSON.stringify(currentStep.data, null, 2) }}</pre>
+              </details>
             </div>
           </div>
         </div>
       </div>
 
-      <div v-else-if="contentType === 'components-intro'" class="content-section components-content">
-        <div class="intro-section">
-          <h3 class="section-title">⚛️ Introduction to React Components</h3>
-          <p class="section-intro">
-            Components are the building blocks of React applications. Think of them as custom HTML elements
-            that encapsulate their own logic and styling.
-          </p>
-        </div>
-
-        <div class="concept-grid">
-          <div class="concept-card">
-            <div class="concept-header">
-              <div class="concept-icon">🧩</div>
-              <h4 class="concept-title">What is a Component?</h4>
-            </div>
-            <div class="concept-content">
-              <p>A React component is a JavaScript function that returns JSX (JavaScript XML) - a syntax extension that looks like HTML but is actually JavaScript.</p>
-              <div class="concept-example">
-                <div class="example-label">Simple Example:</div>
-                <div class="code-snippet">
-                  <pre><code>function Welcome(props) {
-  return &lt;h1&gt;Hello, {props.name}!&lt;/h1&gt;;
-}</code></pre>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="concept-card">
-            <div class="concept-header">
-              <div class="concept-icon">📦</div>
-              <h4 class="concept-title">Props</h4>
-            </div>
-            <div class="concept-content">
-              <p>Props (properties) are read-only data passed to components from their parent. They allow components to be dynamic and reusable.</p>
-              <div class="props-features">
-                <div class="feature-item">
-                  <span class="feature-icon">🔒</span>
-                  <span class="feature-text">Read-only</span>
-                </div>
-                <div class="feature-item">
-                  <span class="feature-icon">⬇️</span>
-                  <span class="feature-text">Passed down from parent</span>
-                </div>
-                <div class="feature-item">
-                  <span class="feature-icon">🔄</span>
-                  <span class="feature-text">Make components reusable</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="concept-card">
-            <div class="concept-header">
-              <div class="concept-icon">🏗️</div>
-              <h4 class="concept-title">JSX</h4>
-            </div>
-            <div class="concept-content">
-              <p>JSX is a syntax extension for JavaScript that allows you to write HTML-like code within JavaScript. It makes React components more readable and expressive.</p>
-              <div class="jsx-benefits">
-                <ul class="benefit-list">
-                  <li>Familiar HTML-like syntax</li>
-                  <li>JavaScript expressions with {}</li>
-                  <li>Component composition</li>
-                  <li>Type safety with TypeScript</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="practical-example">
-          <h4 class="example-title">🛠️ Putting It All Together</h4>
-          <div class="example-container">
-            <div class="example-code">
-              <div class="code-header">
-                <span class="file-name">UserCard.js</span>
-                <span class="code-type">React Component</span>
-              </div>
-              <div class="code-content">
-                <pre><code>function UserCard({ name, email, avatar }) {
-  return (
-    &lt;div className="user-card"&gt;
-      &lt;img src={avatar} alt={name} /&gt;
-      &lt;h3&gt;{name}&lt;/h3&gt;
-      &lt;p&gt;{email}&lt;/p&gt;
-    &lt;/div&gt;
-  );
-}
-
-// Usage
-&lt;UserCard 
-  name="Sarah Chen" 
-  email="sarah@example.com"
-  avatar="/sarah.jpg" 
-/&gt;</code></pre>
-              </div>
-            </div>
-            <div class="example-explanation">
-              <h5>Key Concepts Demonstrated:</h5>
-              <ul class="demo-points">
-                <li><strong>Component:</strong> <code>UserCard</code> is a reusable function component</li>
-                <li><strong>Props:</strong> <code>name</code>, <code>email</code>, and <code>avatar</code> are passed as props</li>
-                <li><strong>JSX:</strong> HTML-like syntax with JavaScript expressions in curly braces</li>
-                <li><strong>Reusability:</strong> Same component, different data</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div v-else-if="contentType === 'concepts-overview'" class="content-section concepts-content">
-        <div class="intro-section">
-          <h3 class="section-title">📚 React Concepts Overview</h3>
-          <p class="section-intro">
-            Let's explore the fundamental concepts that make React powerful and developer-friendly.
-          </p>
-        </div>
-
-        <div class="concepts-showcase">
-          <div class="concept-category">
-            <h4 class="category-title">🎣 Hooks</h4>
-            <p class="category-description">
-              Functions that let you use React features in functional components.
-            </p>
-            <div class="concept-items">
-              <div class="concept-item">
-                <div class="item-header">
-                  <span class="item-name">useState</span>
-                  <span class="item-badge hook-badge">Hook</span>
-                </div>
-                <p class="item-description">Manages component state in functional components</p>
-              </div>
-              <div class="concept-item">
-                <div class="item-header">
-                  <span class="item-name">useEffect</span>
-                  <span class="item-badge hook-badge">Hook</span>
-                </div>
-                <p class="item-description">Handles side effects and lifecycle events</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="concept-category">
-            <h4 class="category-title">🔤 Syntax</h4>
-            <p class="category-description">
-              Special syntax and patterns used in React development.
-            </p>
-            <div class="concept-items">
-              <div class="concept-item">
-                <div class="item-header">
-                  <span class="item-name">JSX</span>
-                  <span class="item-badge syntax-badge">Syntax</span>
-                </div>
-                <p class="item-description">JavaScript syntax extension for writing HTML-like code</p>
-              </div>
-              <div class="concept-item">
-                <div class="item-header">
-                  <span class="item-name">render()</span>
-                  <span class="item-badge syntax-badge">Syntax</span>
-                </div>
-                <p class="item-description">Method that returns the component's JSX</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="concept-category">
-            <h4 class="category-title">🏗️ Structure</h4>
-            <p class="category-description">
-              Core building blocks and architectural concepts.
-            </p>
-            <div class="concept-items">
-              <div class="concept-item">
-                <div class="item-header">
-                  <span class="item-name">Component</span>
-                  <span class="item-badge structure-badge">Structure</span>
-                </div>
-                <p class="item-description">Reusable pieces of UI with their own logic</p>
-              </div>
-              <div class="concept-item">
-                <div class="item-header">
-                  <span class="item-name">Props</span>
-                  <span class="item-badge structure-badge">Structure</span>
-                </div>
-                <p class="item-description">Read-only data passed to components</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="learning-path">
-          <h4 class="path-title">🛤️ Recommended Learning Path</h4>
-          <div class="path-steps">
-            <div class="path-step completed">
-              <div class="step-number">1</div>
-              <div class="step-content">
-                <h5 class="step-title">Components & JSX</h5>
-                <p class="step-description">Learn to create and use React components</p>
-              </div>
-              <div class="step-status">✅</div>
-            </div>
-            <div class="path-step current">
-              <div class="step-number">2</div>
-              <div class="step-content">
-                <h5 class="step-title">Props & State</h5>
-                <p class="step-description">Understand data flow and component state</p>
-              </div>
-              <div class="step-status">📍</div>
-            </div>
-            <div class="path-step">
-              <div class="step-number">3</div>
-              <div class="step-content">
-                <h5 class="step-title">Hooks & Effects</h5>
-                <p class="step-description">Master modern React patterns</p>
-              </div>
-              <div class="step-status">⏳</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      <!-- AI Help Section -->
       <div v-if="showAIHelp" class="ai-help-section">
         <div class="ai-help-header">
           <div class="ai-header-content">
@@ -390,7 +127,7 @@
               <input
                 v-model="aiQuestion"
                 @keyup.enter="askQuestion(aiQuestion)"
-                placeholder="Ask about React components, lifecycle, or any concept..."
+                placeholder="Ask about this lesson content..."
                 class="ai-input"
               />
               <button
@@ -500,83 +237,184 @@ const isLoadingAI = ref(false)
 // ==========================================
 // COMPUTED PROPERTIES
 // ==========================================
-const contentType = computed(() => {
-  if (!props.currentStep) return 'default'
-
-  // Determine content type based on step data
-  if (props.currentStep.type === 'explanation' && props.currentStep.topic === 'lifecycle') {
-    return 'component-lifecycle'
-  }
-  if (props.currentStep.type === 'explanation' && props.currentStep.topic === 'components') {
-    return 'components-intro'
-  }
-  if (props.currentStep.type === 'explanation' && props.currentStep.topic === 'concepts') {
-    return 'concepts-overview'
-  }
-
-  return props.currentStep.type || 'default'
+const isContentStep = computed(() => {
+  if (!props.currentStep) return false
+  const contentTypes = ['explanation', 'example', 'reading']
+  return contentTypes.includes(props.currentStep.type)
 })
 
 const canShowAIHelp = computed(() => {
-  return ['component-lifecycle', 'components-intro', 'concepts-overview'].includes(contentType.value)
+  return props.currentStep && ['explanation', 'example', 'reading', 'vocabulary'].includes(props.currentStep.type)
 })
 
 const suggestedQuestions = computed(() => {
+  if (!props.currentStep) return []
+  
   const questions = {
-    'component-lifecycle': [
-      'When should I use componentDidMount vs useEffect?',
-      'What happens if I forget to clean up in componentWillUnmount?',
-      'How do I prevent infinite re-renders?'
+    'explanation': [
+      'Can you explain this in simpler terms?',
+      'What are the key points to remember?',
+      'How does this relate to real-world examples?'
     ],
-    'components-intro': [
-      'What\'s the difference between props and state?',
-      'When should I create a new component?',
-      'How do I pass data between components?'
+    'example': [
+      'Can you provide another example?',
+      'How would this work in a different context?',
+      'What makes this example effective?'
     ],
-    'concepts-overview': [
-      'What are React Hooks and why use them?',
-      'How is JSX different from HTML?',
-      'What makes React components reusable?'
+    'reading': [
+      'What is the main idea of this text?',
+      'Can you summarize the key points?',
+      'What should I focus on while reading?'
+    ],
+    'vocabulary': [
+      'How do I pronounce these words correctly?',
+      'Can you give me more examples using these words?',
+      'What are some synonyms for these terms?'
     ]
   }
 
-  return questions[contentType.value] || []
+  return questions[props.currentStep.type] || []
 })
 
 // ==========================================
 // METHODS
 // ==========================================
 const getStepIcon = () => {
+  if (!props.currentStep) return '📄'
+  
   const icons = {
-    'component-lifecycle': '🔄',
-    'components-intro': '⚛️',
-    'concepts-overview': '📚',
-    'explanation': '📖',
-    'reading': '📄',
-    'vocabulary': '📝'
+    'explanation': '📚',
+    'example': '💡',
+    'reading': '📖',
+    'vocabulary': '📝',
+    'video': '🎬',
+    'audio': '🎵'
   }
-  return icons[contentType.value] || '📖'
+  return icons[props.currentStep.type] || '📄'
 }
 
 const getStepTitle = () => {
-  const titles = {
-    'component-lifecycle': 'Component Lifecycle',
-    'components-intro': 'React Components',
-    'concepts-overview': 'React Concepts',
-    'explanation': 'Explanation',
-    'reading': 'Reading Material',
-    'vocabulary': 'Vocabulary'
+  if (!props.currentStep) return 'Content'
+  
+  // Try to get title from step
+  if (props.currentStep.title) {
+    return props.currentStep.title
   }
-  return titles[contentType.value] || props.currentStep?.title || 'Content'
+  
+  // Generate title based on type
+  const titles = {
+    'explanation': 'Explanation',
+    'example': 'Example',
+    'reading': 'Reading Material',
+    'vocabulary': 'Vocabulary',
+    'video': 'Video Lesson',
+    'audio': 'Audio Content'
+  }
+  
+  const baseTitle = titles[props.currentStep.type] || 'Content'
+  return `${baseTitle} ${props.currentIndex + 1}`
 }
 
 const getStepDescription = () => {
-  const descriptions = {
-    'component-lifecycle': 'Learn about mounting, updating, and unmounting phases',
-    'components-intro': 'Understanding the building blocks of React applications',
-    'concepts-overview': 'Essential React concepts for modern development'
+  if (!props.currentStep) return 'Study the content carefully'
+  
+  // Try to get description from step
+  if (props.currentStep.description) {
+    return props.currentStep.description
   }
-  return descriptions[contentType.value] || props.currentStep?.description || 'Study the content carefully'
+  
+  // Generate description based on type
+  const descriptions = {
+    'explanation': 'Read through this explanation carefully',
+    'example': 'Study this example to understand the concept',
+    'reading': 'Read the following content',
+    'vocabulary': 'Learn these new words and phrases',
+    'video': 'Watch the video content',
+    'audio': 'Listen to the audio content'
+  }
+  
+  return descriptions[props.currentStep.type] || 'Study the content carefully'
+}
+
+const getStepContent = () => {
+  if (!props.currentStep || !props.currentStep.data) {
+    return '<p>Content is not available for this step.</p>'
+  }
+  
+  // Try different content sources
+  let content = ''
+  
+  if (typeof props.currentStep.data === 'string') {
+    content = props.currentStep.data
+  } else if (props.currentStep.data.content) {
+    content = props.currentStep.data.content
+  } else if (props.currentStep.data.text) {
+    content = props.currentStep.data.text
+  } else if (props.currentStep.content) {
+    content = props.currentStep.content
+  } else if (props.currentStep.text) {
+    content = props.currentStep.text
+  }
+  
+  // If still no content, try to extract from data object
+  if (!content && typeof props.currentStep.data === 'object') {
+    // Look for any string properties that might contain content
+    const stringProps = Object.values(props.currentStep.data).filter(value => 
+      typeof value === 'string' && value.length > 10
+    )
+    
+    if (stringProps.length > 0) {
+      content = stringProps[0]
+    }
+  }
+  
+  // Final fallback
+  if (!content) {
+    content = `
+      <div class="no-content">
+        <h3>📄 ${getStepTitle()}</h3>
+        <p>Content for this step is being prepared.</p>
+        <p><em>Please check back later or contact support if this issue persists.</em></p>
+      </div>
+    `
+  }
+  
+  return content
+}
+
+const getVocabularyData = () => {
+  if (!props.currentStep || !props.currentStep.data) {
+    return []
+  }
+  
+  // Try different vocabulary data sources
+  let vocabData = []
+  
+  if (Array.isArray(props.currentStep.data)) {
+    vocabData = props.currentStep.data
+  } else if (Array.isArray(props.currentStep.data.vocabulary)) {
+    vocabData = props.currentStep.data.vocabulary
+  } else if (Array.isArray(props.currentStep.data.words)) {
+    vocabData = props.currentStep.data.words
+  } else if (Array.isArray(props.currentStep.vocabulary)) {
+    vocabData = props.currentStep.vocabulary
+  } else if (Array.isArray(props.currentStep.words)) {
+    vocabData = props.currentStep.words
+  }
+  
+  // If no vocabulary found, create default ones
+  if (vocabData.length === 0) {
+    vocabData = [
+      {
+        word: 'Example',
+        definition: 'A representative form or pattern',
+        pronunciation: 'ig-ZAM-pul',
+        example: 'This is an example sentence.'
+      }
+    ]
+  }
+  
+  return vocabData
 }
 
 const toggleAIHelp = () => {
@@ -605,7 +443,7 @@ const askQuestion = async (question) => {
     await new Promise(resolve => setTimeout(resolve, 1500))
 
     // Mock AI responses based on content type and question
-    aiResponse.value = getMockAIResponse(question, contentType.value)
+    aiResponse.value = getMockAIResponse(question, props.currentStep.type)
   } catch (error) {
     aiResponse.value = 'Sorry, I encountered an error. Please try again.'
   } finally {
@@ -613,27 +451,27 @@ const askQuestion = async (question) => {
   }
 }
 
-const getMockAIResponse = (question, type) => {
+const getMockAIResponse = (question, stepType) => {
   const responses = {
-    'component-lifecycle': {
-      'componentDidMount': 'componentDidMount runs after the component is mounted to the DOM, while useEffect with an empty dependency array runs after every render. For one-time setup, use useEffect(() => {}, []).',
-      'cleanup': 'Forgetting cleanup can lead to memory leaks, especially with event listeners, timers, or subscriptions. Always return a cleanup function from useEffect.',
-      'infinite': 'Infinite re-renders usually happen when you update state without proper dependencies in useEffect, or when you mutate objects/arrays directly.'
+    'explanation': {
+      'simpler': 'Let me break this down into simpler terms: [explanation content would be analyzed and simplified here]',
+      'key points': 'The main points to remember are: 1) [point 1], 2) [point 2], 3) [point 3]',
+      'real-world': 'This concept applies in real life when [specific examples based on content]'
     },
-    'components-intro': {
-      'props vs state': 'Props are read-only data passed from parent components, while state is mutable data managed within the component itself.',
-      'new component': 'Create a new component when you have reusable UI logic, when a component becomes too complex, or when you need to separate concerns.',
-      'pass data': 'Data flows down through props and up through callback functions. For complex state, consider using Context API or state management libraries.'
+    'vocabulary': {
+      'pronounce': 'Here are the pronunciation guides for the words in this lesson: [pronunciation would be provided]',
+      'examples': 'Here are additional examples using these words: [examples would be generated]',
+      'synonyms': 'Here are some synonyms and related words: [synonyms would be provided]'
     }
   }
 
-  const typeResponses = responses[type] || {}
+  const typeResponses = responses[stepType] || {}
   const matchedKey = Object.keys(typeResponses).find(key =>
     question.toLowerCase().includes(key.toLowerCase())
   )
 
   return matchedKey ? typeResponses[matchedKey] :
-    'That\'s a great question! This concept relates to how React manages component behavior and data flow. Would you like me to explain a specific aspect in more detail?'
+    'That\'s a great question! Based on the content in this step, I can help explain the key concepts. What specific part would you like me to clarify?'
 }
 
 const scrollToAIHelp = () => {
@@ -650,7 +488,12 @@ watch(() => props.currentStep, () => {
   showAIHelp.value = false
   aiQuestion.value = ''
   aiResponse.value = ''
-})
+}, { immediate: true })
+
+// Debug log
+watch(() => props.currentStep, (newStep) => {
+  console.log('📍 ContentPanel: Current step changed:', newStep)
+}, { immediate: true })
 </script>
 
 <style scoped>
