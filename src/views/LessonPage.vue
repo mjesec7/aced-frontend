@@ -143,7 +143,6 @@
         :current-step="currentIndex"
         :total-steps="steps.length"
       />
-      </div>
 
       <div class="split-container">
         <div 
@@ -162,10 +161,11 @@
             :total-steps="steps.length"
             :is-last-step="isLastStep"
             :style="contentPanelStyle"
-            @go-previous="goPrevious"
-            @go-next="goNext"
-            @pronounce-content="pronounceContent"
-            @initialize-vocabulary="initializeVocabularyModal"
+            @previous="goPrevious"
+            @next="goNext"
+            @complete="goNext"
+            @pronounce="pronounceContent"
+            @init-vocabulary="initializeVocabularyModal"
           />
 
           <div 
@@ -198,20 +198,14 @@
 
           <InteractivePanel
             v-if="showInteractivePanel"
-            :current-step="currentStep"
-            :current-exercise-index="currentExerciseIndex"
-            :current-quiz-index="currentQuizIndex"
-            :user-answer="userAnswer"
-            :confirmation="confirmation"
-            :answer-was-correct="answerWasCorrect"
-            :fill-blank-answers="fillBlankAnswers"
+            :current-exercise="getCurrentExercise(currentStep)"
+            :exercise-index="currentExerciseIndex"
+            :total-exercises="getTotalExercises(currentStep)"
             :earned-points="earnedPoints"
             :style="interactivePanelStyle"
-            @update-answer="userAnswer = $event"
-            @submit-answer="handleSubmit"
+            @submit="handleSubmit"
             @next-exercise="goToNextExercise"
-            @next-quiz="goToNextQuiz"
-            @complete-step="goNext"
+            @show-hint="() => {}"
           />
         </div>
       </div>
