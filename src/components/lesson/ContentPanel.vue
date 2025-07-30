@@ -2180,4 +2180,5 @@ watch(() => props.currentStep, () => {
   outline: 3px solid #3b82f6;
   outline-offset: 2px;
 }
+/* smth */
 </style>
