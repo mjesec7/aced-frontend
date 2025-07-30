@@ -1,540 +1,616 @@
 <template>
-    <div class="content-panel">
-      <div class="step-header">
-        <h3 class="step-title">
-          <span class="step-number">{{ currentIndex + 1 }}</span>
-          <span class="step-type-icon">{{ getStepIcon(currentStep?.type) }}</span>
-          <span class="step-type-text">{{ getStepTypeText(currentStep?.type) }}</span>
-          
-          <!-- Exercise/quiz counter for interactive steps -->
-          <span v-if="isInteractiveStep && ['exercise', 'practice'].includes(currentStep?.type)" class="exercise-counter">
-            ({{ exerciseIndex + 1 }}/{{ totalExercises || 1 }})
-          </span>
-          <span v-else-if="isInteractiveStep && currentStep?.type === 'quiz'" class="quiz-counter">
-            ({{ quizIndex + 1 }}/{{ totalQuizzes || 1 }})
-          </span>
-        </h3>
+  <div class="content-panel">
+    <!-- Fixed Header with Modern Design -->
+    <div class="content-header">
+      <div class="step-info">
+        <div class="step-number">
+          <span class="step-badge">{{ currentIndex + 1 }}</span>
+        </div>
+        <div class="step-details">
+          <h3 class="step-title">
+            <span class="step-icon">{{ getStepIcon(currentStep?.type) }}</span>
+            <span class="step-type">{{ getStepTypeText(currentStep?.type) }}</span>
+          </h3>
+          <div class="step-meta">
+            <!-- Exercise/quiz counter for interactive steps -->
+            <span v-if="isInteractiveStep && ['exercise', 'practice'].includes(currentStep?.type)" class="step-counter">
+              Упражнение {{ exerciseIndex + 1 }} из {{ totalExercises || 1 }}
+            </span>
+            <span v-else-if="isInteractiveStep && currentStep?.type === 'quiz'" class="step-counter">
+              Вопрос {{ quizIndex + 1 }} из {{ totalQuizzes || 1 }}
+            </span>
+            <span v-else class="step-counter">
+              Шаг {{ currentIndex + 1 }} из {{ totalSteps || 1 }}
+            </span>
+          </div>
+        </div>
       </div>
-      
-      <!-- Step content shows ONLY clean questions -->
-      <div class="step-content">
-        <!-- FOR INTERACTIVE STEPS: Show ONLY the question, no instructions -->
-        <div v-if="isInteractiveStep" class="interactive-content">
-          
-          <!-- Exercise Content - ONLY the question -->
-          <div v-if="['exercise', 'practice'].includes(currentStep?.type)" class="current-exercise-content">
-            <div class="exercise-question-display">
-              <div class="clean-question">{{ getStepContent(currentStep) }}</div>
-              
-              <!-- Show exercise type badge ONLY if not default type -->
-              <div v-if="currentExercise?.type && currentExercise.type !== 'short-answer'" class="exercise-type-info">
-                <span class="type-badge">{{ getExerciseTypeName(currentExercise?.type) }}</span>
+    </div>
+
+    <!-- Scrollable Content Area -->
+    <div class="content-body" ref="contentBody">
+      <!-- Interactive Step Content -->
+      <div v-if="isInteractiveStep" class="interactive-content">
+        <!-- Exercise Content -->
+        <div v-if="['exercise', 'practice'].includes(currentStep?.type)" class="exercise-preview">
+          <div class="preview-card">
+            <div class="preview-header">
+              <div class="preview-icon">✏️</div>
+              <h4>Практическое задание</h4>
+            </div>
+            <div class="preview-content">
+              <div class="question-preview">{{ getStepContent(currentStep) }}</div>
+              <div v-if="currentExercise?.type && currentExercise.type !== 'short-answer'" class="exercise-type-badge">
+                <span class="type-label">{{ getExerciseTypeName(currentExercise?.type) }}</span>
               </div>
             </div>
           </div>
-          
-          <!-- Quiz Content - ONLY the question -->
-          <div v-else-if="currentStep?.type === 'quiz'" class="current-quiz-content">
-            <div class="quiz-question-display">
-              <div class="clean-question">{{ getStepContent(currentStep) }}</div>
+        </div>
+        
+        <!-- Quiz Content -->
+        <div v-else-if="currentStep?.type === 'quiz'" class="quiz-preview">
+          <div class="preview-card">
+            <div class="preview-header">
+              <div class="preview-icon">🧩</div>
+              <h4>Проверочный вопрос</h4>
+            </div>
+            <div class="preview-content">
+              <div class="question-preview">{{ getStepContent(currentStep) }}</div>
             </div>
           </div>
         </div>
-  
-        <!-- FOR NON-INTERACTIVE STEPS: Show regular content -->
-        <div v-else-if="['explanation', 'example', 'reading'].includes(currentStep?.type)" class="text-content">
-          <div class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
+      </div>
+
+      <!-- Text Content Steps -->
+      <div v-else-if="['explanation', 'example', 'reading'].includes(currentStep?.type)" class="text-content">
+        <article class="content-article">
+          <div class="article-content" v-html="formatContent(getStepContent(currentStep))"></div>
           
-          <!-- AI Help for Explanations -->
+          <!-- AI Help Section for Explanations -->
           <div v-if="showExplanationHelp" class="explanation-help">
-            <h4>🤖 Нужна помощь с пониманием?</h4>
-            <div class="explanation-help-input">
-              <input 
-                :value="explanationQuestion"
-                @input="updateExplanationQuestion"
-                placeholder="Задайте вопрос об этом объяснении..."
-                @keyup.enter="askExplanation"
-              />
-              <button @click="askExplanation" :disabled="!explanationQuestion?.trim()">
-                Спросить AI
-              </button>
+            <div class="help-header">
+              <div class="help-icon">🤖</div>
+              <h4>AI Помощник</h4>
             </div>
-            <div v-if="explanationAIResponse" class="ai-response">
-              <p>{{ explanationAIResponse }}</p>
+            <div class="help-content">
+              <div class="help-input">
+                <input 
+                  :value="explanationQuestion"
+                  @input="updateExplanationQuestion"
+                  placeholder="Задайте вопрос об этом материале..."
+                  @keyup.enter="askExplanation"
+                  class="help-input-field"
+                />
+                <button 
+                  @click="askExplanation" 
+                  :disabled="!explanationQuestion?.trim()"
+                  class="help-submit-btn"
+                >
+                  <span v-if="isLoadingExplanation" class="loading-spinner">⏳</span>
+                  <span v-else>📤</span>
+                </button>
+              </div>
+              <div v-if="explanationAIResponse" class="ai-response">
+                <div class="response-header">
+                  <div class="response-icon">🤖</div>
+                  <span>Ответ AI:</span>
+                </div>
+                <div class="response-content">{{ explanationAIResponse }}</div>
+              </div>
             </div>
           </div>
-        </div>
-  
-        <!-- Vocabulary Step -->
-        <div v-else-if="currentStep?.type === 'vocabulary'" class="vocabulary-content enhanced">
-          
-          <!-- Show modal trigger if not completed -->
-          <div v-if="!currentStep?.data?.modalCompleted" class="vocabulary-modal-trigger">
-            <div class="trigger-card">
+        </article>
+      </div>
+
+      <!-- Vocabulary Step -->
+      <div v-else-if="currentStep?.type === 'vocabulary'" class="vocabulary-content">
+        <!-- Vocabulary Modal Trigger -->
+        <div v-if="!currentStep?.data?.modalCompleted" class="vocabulary-trigger">
+          <div class="trigger-card">
+            <div class="trigger-visual">
               <div class="trigger-icon">📚</div>
-              <h3>Изучение словаря</h3>
-              <p>{{ Array.isArray(currentStep?.data) ? currentStep.data.length : 1 }} новых слов ждут вас!</p>
-              <button @click="$emit('init-vocabulary')" class="start-vocabulary-btn">
-                🚀 Начать изучение
+              <div class="trigger-particles">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+            <div class="trigger-content">
+              <h3>Изучение новых слов</h3>
+              <p>{{ getVocabularyWordsCount() }} новых терминов ждут изучения</p>
+              <button @click="$emit('init-vocabulary')" class="start-vocab-btn">
+                <span class="btn-icon">🚀</span>
+                <span class="btn-text">Начать изучение</span>
               </button>
-            </div>
-          </div>
-  
-          <!-- Show list view after modal completion -->
-          <div v-else class="vocabulary-list-view">
-            <div class="vocabulary-header">
-              <h3>📖 Изученные слова</h3>
-              <button @click="$emit('init-vocabulary')" class="review-btn">
-                🔄 Повторить
-              </button>
-            </div>
-            
-            <div class="vocabulary-list">
-              <div 
-                v-for="(vocab, vocabIndex) in (currentStep?.data?.allWords || currentStep?.data || [])" 
-                :key="vocab?.id || `vocab-list-${vocabIndex}`" 
-                class="vocabulary-item enhanced"
-                :class="{ learned: vocab?.learned }"
-              >
-                <div class="vocab-item-header">
-                  <div class="vocab-term">
-                    {{ vocab?.term || 'Term' }}
-                    <button 
-                      v-if="vocab?.term"
-                      @click="$emit('pronounce', vocab.term)"
-                      class="mini-pronunciation-btn"
-                      title="Произношение"
-                    >
-                      🔊
-                    </button>
-                  </div>
-                  <div v-if="vocab?.learned" class="learned-badge">✅</div>
-                </div>
-                
-                <div class="vocab-definition">{{ vocab?.definition || 'Definition' }}</div>
-                
-                <div v-if="vocab?.example" class="vocab-example">
-                  <strong>Пример:</strong> {{ vocab.example }}
-                </div>
-                
-                <div v-if="vocab?.pronunciation" class="vocab-pronunciation">
-                  Произношение: /{{ vocab.pronunciation }}/
-                </div>
-              </div>
-            </div>
-            
-            <!-- Summary Stats -->
-            <div class="vocabulary-summary">
-              <div class="summary-stat">
-                <span class="summary-number">{{ ((currentStep?.data?.allWords || []).filter(w => w?.learned) || []).length }}</span>
-                <span class="summary-label">изучено</span>
-              </div>
-              <div class="summary-stat">
-                <span class="summary-number">{{ (currentStep?.data?.allWords || []).length }}</span>
-                <span class="summary-label">всего</span>
-              </div>
             </div>
           </div>
         </div>
-  
-        <!-- Video/Audio Step -->
-        <div v-else-if="['video', 'audio'].includes(currentStep?.type)" class="media-content">
-          <div class="media-placeholder">
+
+        <!-- Vocabulary Summary -->
+        <div v-else class="vocabulary-summary">
+          <div class="summary-header">
+            <div class="header-icon">📖</div>
+            <h3>Изученные слова</h3>
+            <button @click="$emit('init-vocabulary')" class="review-vocab-btn">
+              <span class="btn-icon">🔄</span>
+              <span class="btn-text">Повторить</span>
+            </button>
+          </div>
+          
+          <div class="vocabulary-grid">
+            <div 
+              v-for="(vocab, vocabIndex) in getVocabularyWords()" 
+              :key="vocab?.id || `vocab-${vocabIndex}`" 
+              class="vocab-card"
+              :class="{ learned: vocab?.learned }"
+            >
+              <div class="vocab-card-header">
+                <div class="vocab-term">
+                  {{ vocab?.term || 'Term' }}
+                  <button 
+                    v-if="vocab?.term"
+                    @click="$emit('pronounce', vocab.term)"
+                    class="pronounce-btn"
+                    title="Произношение"
+                  >
+                    🔊
+                  </button>
+                </div>
+                <div v-if="vocab?.learned" class="learned-indicator">✅</div>
+              </div>
+              
+              <div class="vocab-definition">{{ vocab?.definition || 'Определение' }}</div>
+              
+              <div v-if="vocab?.example" class="vocab-example">
+                <strong>Пример:</strong> {{ vocab.example }}
+              </div>
+            </div>
+          </div>
+          
+          <!-- Vocabulary Stats -->
+          <div class="vocab-stats">
+            <div class="stat-item">
+              <div class="stat-number">{{ getLearnedCount() }}</div>
+              <div class="stat-label">изучено</div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <div class="stat-number">{{ getVocabularyWordsCount() }}</div>
+              <div class="stat-label">всего</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Media Content -->
+      <div v-else-if="['video', 'audio'].includes(currentStep?.type)" class="media-content">
+        <div class="media-card">
+          <div class="media-header">
             <div class="media-icon">{{ currentStep?.type === 'video' ? '🎬' : '🎵' }}</div>
             <h4>{{ currentStep?.type === 'video' ? 'Видео урок' : 'Аудио урок' }}</h4>
-            <p>{{ currentStep?.data?.description || 'Мультимедиа контент' }}</p>
-            <div class="media-url">{{ currentStep?.data?.url || 'URL недоступен' }}</div>
+          </div>
+          <div class="media-body">
+            <p class="media-description">{{ currentStep?.data?.description || 'Мультимедиа контент' }}</p>
+            <div class="media-placeholder">
+              <div class="placeholder-icon">{{ currentStep?.type === 'video' ? '📹' : '🎧' }}</div>
+              <p>Контент будет загружен</p>
+              <div class="media-url">{{ currentStep?.data?.url || 'URL недоступен' }}</div>
+            </div>
           </div>
         </div>
-  
-        <!-- Default content for other step types -->
-        <div v-else class="default-content">
-          <div class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
+      </div>
+
+      <!-- Default Content -->
+      <div v-else class="default-content">
+        <div class="default-card">
+          <div class="default-icon">📄</div>
+          <div class="default-text" v-html="formatContent(getStepContent(currentStep))"></div>
         </div>
       </div>
-      
-      <!-- Content Navigation -->
-      <div class="content-navigation">
-        <button v-if="currentIndex > 0" class="nav-btn prev-btn" @click="$emit('previous')">
-          ⬅️ Назад
+    </div>
+
+    <!-- Fixed Footer with Navigation -->
+    <div class="content-footer">
+      <div class="footer-actions">
+        <button 
+          v-if="currentIndex > 0" 
+          @click="$emit('previous')" 
+          class="nav-btn prev-btn"
+        >
+          <span class="btn-icon">⬅️</span>
+          <span class="btn-text">Назад</span>
         </button>
+        
+        <div class="footer-center">
+          <button 
+            v-if="['explanation', 'example', 'reading'].includes(currentStep?.type)"
+            @click="$emit('toggle-explanation-help')"
+            class="help-toggle-btn"
+            :class="{ active: showExplanationHelp }"
+          >
+            <span class="btn-icon">🤖</span>
+            <span class="btn-text">{{ showExplanationHelp ? 'Скрыть помощь' : 'AI помощь' }}</span>
+          </button>
+        </div>
+        
         <button 
           v-if="!isInteractiveStep" 
-          class="nav-btn next-btn" 
           @click="$emit('next')"
+          class="nav-btn next-btn"
         >
-          {{ isLastStep ? '🏁 Завершить' : '➡️ Далее' }}
-        </button>
-        <button 
-          v-if="['explanation', 'example', 'reading'].includes(currentStep?.type)"
-          class="help-btn" 
-          @click="$emit('toggle-explanation-help')"
-          :class="{ active: showExplanationHelp }"
-        >
-          🤖 {{ showExplanationHelp ? 'Скрыть помощь' : 'AI помощь' }}
+          <span class="btn-text">{{ isLastStep ? 'Завершить' : 'Далее' }}</span>
+          <span class="btn-icon">{{ isLastStep ? '🏁' : '➡️' }}</span>
         </button>
       </div>
     </div>
-  </template>
-  
-  <script>
-  export default {
-    name: 'ContentPanel',
-    props: {
-      currentStep: {
-        type: Object,
-        required: true
-      },
-      currentIndex: {
-        type: Number,
-        required: true
-      },
-      isInteractiveStep: {
-        type: Boolean,
-        default: false
-      },
-      currentExercise: {
-        type: Object,
-        default: null
-      },
-      currentQuiz: {
-        type: Object,
-        default: null
-      },
-      exerciseIndex: {
-        type: Number,
-        default: 0
-      },
-      quizIndex: {
-        type: Number,
-        default: 0
-      },
-      totalExercises: {
-        type: Number,
-        default: 0
-      },
-      totalQuizzes: {
-        type: Number,
-        default: 0
-      },
-      showExplanationHelp: {
-        type: Boolean,
-        default: false
-      },
-      explanationQuestion: {
-        type: String,
-        default: ''
-      },
-      explanationAIResponse: {
-        type: String,
-        default: ''
-      },
-      isLoadingExplanation: {
-        type: Boolean,
-        default: false
-      },
-      isLastStep: {
-        type: Boolean,
-        default: false
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'ContentPanel',
+  props: {
+    currentStep: {
+      type: Object,
+      required: true
+    },
+    currentIndex: {
+      type: Number,
+      required: true
+    },
+    isInteractiveStep: {
+      type: Boolean,
+      default: false
+    },
+    currentExercise: {
+      type: Object,
+      default: null
+    },
+    currentQuiz: {
+      type: Object,
+      default: null
+    },
+    exerciseIndex: {
+      type: Number,
+      default: 0
+    },
+    quizIndex: {
+      type: Number,
+      default: 0
+    },
+    totalExercises: {
+      type: Number,
+      default: 0
+    },
+    totalQuizzes: {
+      type: Number,
+      default: 0
+    },
+    totalSteps: {
+      type: Number,
+      default: 0
+    },
+    showExplanationHelp: {
+      type: Boolean,
+      default: false
+    },
+    explanationQuestion: {
+      type: String,
+      default: ''
+    },
+    explanationAIResponse: {
+      type: String,
+      default: ''
+    },
+    isLoadingExplanation: {
+      type: Boolean,
+      default: false
+    },
+    isLastStep: {
+      type: Boolean,
+      default: false
+    }
+  },
+  emits: [
+    'toggle-explanation-help',
+    'ask-explanation',
+    'init-vocabulary',
+    'pronounce',
+    'next',
+    'previous',
+    'update:explanation-question'
+  ],
+  mounted() {
+    this.setupScrollDetection()
+  },
+  methods: {
+    getStepIcon(stepType) {
+      const icons = {
+        explanation: '📚',
+        example: '💡',
+        reading: '📖',
+        exercise: '✏️',
+        practice: '🧪',
+        quiz: '🧩',
+        vocabulary: '📝',
+        video: '🎬',
+        audio: '🎵'
+      }
+      return icons[stepType] || '📄'
+    },
+
+    getStepTypeText(stepType) {
+      const texts = {
+        explanation: 'Объяснение',
+        example: 'Пример',
+        reading: 'Материал для чтения',
+        exercise: 'Упражнение',
+        practice: 'Практика',
+        quiz: 'Викторина',
+        vocabulary: 'Изучение словаря',
+        video: 'Видео урок',
+        audio: 'Аудио урок'
+      }
+      return texts[stepType] || 'Контент'
+    },
+
+    getExerciseTypeName(type) {
+      const typeNames = {
+        'short-answer': 'Короткий ответ',
+        'multiple-choice': 'Множественный выбор',
+        'abc': 'Выбор варианта',
+        'true-false': 'Верно/Неверно',
+        'fill-blank': 'Заполните пропуски',
+        'matching': 'Сопоставление',
+        'ordering': 'Упорядочивание',
+        'drag-drop': 'Перетащи и отпусти'
+      }
+      return typeNames[type] || 'Упражнение'
+    },
+
+    getStepContent(step) {
+      if (!step || !step.data) {
+        return 'Контент недоступен'
+      }
+      
+      // For interactive steps, show the question
+      if (['exercise', 'practice'].includes(step.type)) {
+        if (this.currentExercise && this.currentExercise.question) {
+          return this.getLocalized(this.currentExercise.question)
+        }
+        return 'Упражнение загружается...'
+      }
+      
+      if (step.type === 'quiz') {
+        if (this.currentQuiz && this.currentQuiz.question) {
+          return this.getLocalized(this.currentQuiz.question)
+        }
+        return 'Вопрос загружается...'
+      }
+      
+      // For other steps, show content
+      try {
+        if (typeof step.data === 'string' && step.data.trim()) {
+          return step.data.trim()
+        }
+        
+        if (step.data.content) {
+          const content = this.getLocalized(step.data.content)
+          if (content && content.trim()) {
+            return content.trim()
+          }
+        }
+        
+        if (step.data.text) {
+          const text = this.getLocalized(step.data.text)
+          if (text && text.trim()) {
+            return text.trim()
+          }
+        }
+        
+        if (step.type === 'vocabulary') {
+          const wordsCount = this.getVocabularyWordsCount()
+          return `Изучение словаря: ${wordsCount} новых слов`
+        }
+        
+        return `Контент для шага "${step.type}"`
+        
+      } catch (error) {
+        console.error('Error in getStepContent:', error)
+        return 'Ошибка загрузки контента'
       }
     },
-    emits: [
-      'toggle-explanation-help',
-      'ask-explanation',
-      'init-vocabulary',
-      'pronounce',
-      'next',
-      'previous',
-      'update:explanation-question'
-    ],
-    methods: {
-      getStepIcon(stepType) {
-        const icons = {
-          explanation: '📚',
-          example: '💡',
-          reading: '📖',
-          exercise: '✏️',
-          practice: '🧪',
-          quiz: '🧩',
-          vocabulary: '📝',
-          video: '🎬',
-          audio: '🎵'
-        };
-        return icons[stepType] || '📄';
-      },
-  
-      getStepTypeText(stepType) {
-        const texts = {
-          explanation: 'Объяснение',
-          example: 'Пример',
-          reading: 'Чтение',
-          exercise: 'Упражнение',
-          practice: 'Практика',
-          quiz: 'Викторина',
-          vocabulary: 'Словарь',
-          video: 'Видео',
-          audio: 'Аудио'
-        };
-        return texts[stepType] || 'Контент';
-      },
-  
-      getExerciseTypeName(type) {
-        const typeNames = {
-          'short-answer': 'Короткий ответ',
-          'multiple-choice': 'Множественный выбор',
-          'abc': 'Выбор варианта',
-          'true-false': 'Верно/Неверно',
-          'fill-blank': 'Заполните пропуски',
-          'matching': 'Сопоставление',
-          'ordering': 'Упорядочивание',
-          'drag-drop': 'Перетащите и отпустите'
-        };
-        return typeNames[type] || 'Упражнение';
-      },
-  
-      getStepContent(step) {
-        if (!step || !step.data) {
-          return 'Контент недоступен';
-        }
-        
-        // For interactive steps, show ONLY the question
-        if (['exercise', 'practice'].includes(step.type)) {
-          if (this.currentExercise && this.currentExercise.question) {
-            return this.getLocalized(this.currentExercise.question);
-          }
-          return 'Упражнение загружается...';
-        }
-        
-        if (step.type === 'quiz') {
-          if (this.currentQuiz && this.currentQuiz.question) {
-            return this.getLocalized(this.currentQuiz.question);
-          }
-          return 'Вопрос загружается...';
-        }
-        
-        // For non-interactive steps, show content
-        try {
-          if (typeof step.data === 'string' && step.data.trim()) {
-            return step.data.trim();
-          }
-          
-          if (step.data.content) {
-            const content = this.getLocalized(step.data.content);
-            if (content && content.trim()) {
-              return content.trim();
-            }
-          }
-          
-          if (step.data.text) {
-            const text = this.getLocalized(step.data.text);
-            if (text && text.trim()) {
-              return text.trim();
-            }
-          }
-          
-          if (step.type === 'vocabulary') {
-            if (Array.isArray(step.data) && step.data.length > 0) {
-              return `Изучение словаря: ${step.data.length} новых слов`;
-            }
-          }
-          
-          return `Контент для шага "${step.type}"`;
-          
-        } catch (error) {
-          console.error('Error in getStepContent:', error);
-          return 'Ошибка загрузки контента';
-        }
-      },
-  
-      formatContent(content) {
-        if (!content) return 'Контент недоступен';
-        return content.replace(/\n/g, '<br>');
-      },
-  
-      updateExplanationQuestion(event) {
-        this.$emit('update:explanation-question', event.target.value);
-      },
-  
-      askExplanation() {
-        if (this.explanationQuestion?.trim()) {
-          this.$emit('ask-explanation', this.explanationQuestion);
-        }
-      },
-  
-      getLocalized(field) {
-        if (typeof field === 'string') return field;
-        return (field?.en || field?.ru || field?.uz || '').replace(/^(en|ru|uz):/i, '').trim();
+
+    formatContent(content) {
+      if (!content) return 'Контент недоступен'
+      
+      // Convert markdown-like formatting
+      let formatted = content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br>')
+      
+      return formatted
+    },
+
+    getVocabularyWords() {
+      const data = this.currentStep?.data
+      if (Array.isArray(data)) return data
+      if (data?.allWords && Array.isArray(data.allWords)) return data.allWords
+      if (data?.words && Array.isArray(data.words)) return data.words
+      return []
+    },
+
+    getVocabularyWordsCount() {
+      return this.getVocabularyWords().length
+    },
+
+    getLearnedCount() {
+      return this.getVocabularyWords().filter(word => word?.learned).length
+    },
+
+    updateExplanationQuestion(event) {
+      this.$emit('update:explanation-question', event.target.value)
+    },
+
+    askExplanation() {
+      if (this.explanationQuestion?.trim()) {
+        this.$emit('ask-explanation', this.explanationQuestion)
       }
+    },
+
+    setupScrollDetection() {
+      this.$nextTick(() => {
+        const contentBody = this.$refs.contentBody
+        if (contentBody) {
+          const handleScroll = () => {
+            if (contentBody.scrollTop > 20) {
+              contentBody.classList.add('scrolled')
+            } else {
+              contentBody.classList.remove('scrolled')
+            }
+          }
+          
+          contentBody.addEventListener('scroll', handleScroll, { passive: true })
+          handleScroll() // Initial check
+        }
+      })
+    },
+
+    getLocalized(field) {
+      if (typeof field === 'string') return field
+      return (field?.en || field?.ru || field?.uz || '').replace(/^(en|ru|uz):/i, '').trim()
     }
   }
-  </script>
-  
-  <style scoped>
-/* ================================
-   CONTENT PANEL - SCROLLABLE READING AREA
-   Enhanced with perfect scrolling and readability
-   ================================ */
+}
+</script>
 
-/* ================================
-   MAIN CONTENT PANEL CONTAINER
-   ================================ */
-
-   .content-panel {
-  background: #ffffff;
+<style scoped>
+/* Modern Content Panel Design */
+.content-panel {
+  height: 100%;
   display: flex;
   flex-direction: column;
+  background: #ffffff;
   overflow: hidden;
-  position: relative;
-  height: 100%;
-  min-height: 0;
 }
 
-/* Add resize handle to content panel */
-.content-panel::after {
+/* Fixed Header */
+.content-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-bottom: 1px solid #e2e8f0;
+  padding: 20px 24px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.content-header::after {
   content: '';
   position: absolute;
-  top: 0;
-  right: -2px;
-  width: 4px;
-  height: 100%;
-  background: #3b82f6;
-  cursor: col-resize;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  z-index: 1000;
-}
-
-@media (max-width: 1023px) {
-  .content-panel::after {
-    top: auto;
-    bottom: -2px;
-    right: 0;
-    width: 100%;
-    height: 4px;
-    cursor: row-resize;
-  }
-}
-
-.content-panel:hover::after {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
   opacity: 0.6;
 }
 
-.content-panel.resizing::after {
-  opacity: 1;
-}
-
-/* ================================
-   STEP HEADER - FIXED AT TOP
-   ================================ */
-
-.step-header {
-  flex-shrink: 0;
-  padding: 20px 24px 16px 24px;
-  border-bottom: 1px solid #e2e8f0;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.step-title {
-  font-size: 1.3rem;
-  color: #1e293b;
-  margin: 0;
+.step-info {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  font-weight: 600;
-  line-height: 1.4;
+  align-items: flex-start;
+  gap: 16px;
 }
 
 .step-number {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  color: white;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.step-badge {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border-radius: 50%;
   font-weight: 700;
-  font-size: 0.9rem;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
-.step-type-icon {
-  font-size: 1.4rem;
-  flex-shrink: 0;
+.step-details {
+  flex: 1;
+  min-width: 0;
 }
 
-.step-type-text {
+.step-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 8px 0;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #1e293b;
-  font-size: 1.1rem;
 }
 
-.exercise-counter,
-.quiz-counter {
-  font-size: 0.9rem;
-  color: #64748b;
-  font-weight: 500;
-  background: rgba(100, 116, 139, 0.1);
+.step-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.step-type {
+  flex: 1;
+  min-width: 0;
+}
+
+.step-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.step-counter {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
   padding: 4px 12px;
   border-radius: 12px;
-  margin-left: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
-/* ================================
-   MAIN SCROLLABLE CONTENT AREA
-   ================================ */
-
-.step-content {
+/* Scrollable Content Body */
+.content-body {
   flex: 1;
-  padding: 24px;
   overflow-y: auto;
   overflow-x: hidden;
-  position: relative;
-  min-height: 0;
-  
-  /* Enhanced scrolling experience */
+  padding: 24px;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  scroll-padding-top: 20px;
-  
-  /* Custom scrollbar */
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
 }
 
-/* Enhanced scrollbar design */
-.step-content::-webkit-scrollbar {
-  width: 8px;
+.content-body::-webkit-scrollbar {
+  width: 6px;
 }
 
-.step-content::-webkit-scrollbar-track {
-  background: rgba(241, 245, 249, 0.8);
-  border-radius: 4px;
-  margin: 8px 0;
+.content-body::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
 }
 
-.step-content::-webkit-scrollbar-thumb {
+.content-body::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
   transition: all 0.2s ease;
 }
 
-.step-content::-webkit-scrollbar-thumb:hover {
+.content-body::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Scroll progress indicator */
-.step-content::before {
+/* Scroll indicator */
+.content-body::before {
   content: '';
   position: sticky;
   top: 0;
@@ -542,189 +618,250 @@
   background: linear-gradient(90deg, transparent 0%, #6366f1 50%, transparent 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
-  z-index: 5;
+  z-index: 10;
   margin: -24px -24px 22px;
 }
 
-.step-content.scrolled::before {
+.content-body.scrolled::before {
   opacity: 1;
 }
 
-/* Content animation */
-.step-content {
-  animation: contentFadeIn 0.4s ease-out;
-}
-
-@keyframes contentFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ================================
-   INTERACTIVE CONTENT STYLING
-   ================================ */
-
+/* Interactive Content Preview */
 .interactive-content {
-  padding: 0;
-  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.current-exercise-content,
-.current-quiz-content {
-  background: linear-gradient(135deg, #f8faff 0%, #f1f5f9 100%);
+.preview-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 2px solid #0ea5e9;
   border-radius: 16px;
   padding: 24px;
-  border: 2px solid #e1e8ff;
-  margin: 16px 0;
   position: relative;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
 }
 
-.current-exercise-content::before,
-.current-quiz-content::before {
+.preview-card::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #6366f1, #4f46e5);
-  border-radius: 16px 16px 0 0;
+  background: linear-gradient(90deg, #0ea5e9, #0284c7);
 }
 
-.exercise-question-display,
-.quiz-question-display {
-  text-align: left;
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
-.clean-question {
-  font-size: 1.25rem;
+.preview-icon {
+  font-size: 1.5rem;
+}
+
+.preview-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #0c4a6e;
+}
+
+.question-preview {
+  font-size: 1.125rem;
   line-height: 1.6;
   color: #1e293b;
-  margin: 0;
-  padding: 0;
-  font-weight: 600;
-  text-align: left;
+  margin-bottom: 16px;
+  font-weight: 500;
 }
 
-.exercise-type-info {
-  margin-top: 16px;
-  text-align: center;
+.exercise-type-badge {
+  display: inline-flex;
+  align-items: center;
 }
 
-.type-badge {
-  display: inline-block;
-  padding: 6px 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+.type-label {
+  background: rgba(14, 165, 233, 0.1);
+  color: #0c4a6e;
+  padding: 6px 12px;
   border-radius: 20px;
   font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  opacity: 0.9;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  font-weight: 500;
+  border: 1px solid rgba(14, 165, 233, 0.2);
 }
 
-/* ================================
-   TEXT CONTENT STYLING
-   ================================ */
-
+/* Text Content */
 .text-content {
-  line-height: 1.8;
-  font-size: 1rem;
-  color: #374151;
-}
-
-.content-text {
-  font-size: 1.05rem;
-  color: #374151;
-  margin: 0;
-  line-height: 1.8;
-  text-align: justify;
   max-width: none;
 }
 
-.content-text h1,
-.content-text h2,
-.content-text h3,
-.content-text h4,
-.content-text h5,
-.content-text h6 {
+.content-article {
+  line-height: 1.8;
+  color: #374151;
+}
+
+.article-content {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: #374151;
+}
+
+.article-content h1,
+.article-content h2,
+.article-content h3,
+.article-content h4 {
   color: #1e293b;
   margin: 24px 0 16px 0;
-  line-height: 1.4;
+  font-weight: 600;
 }
 
-.content-text h1 { font-size: 1.8rem; }
-.content-text h2 { font-size: 1.5rem; }
-.content-text h3 { font-size: 1.3rem; }
-.content-text h4 { font-size: 1.1rem; }
+.article-content h1 { font-size: 1.75rem; }
+.article-content h2 { font-size: 1.5rem; }
+.article-content h3 { font-size: 1.25rem; }
+.article-content h4 { font-size: 1.125rem; }
 
-.content-text p {
+.article-content p {
   margin: 0 0 16px 0;
-  line-height: 1.8;
 }
 
-.content-text ul,
-.content-text ol {
-  margin: 16px 0;
-  padding-left: 24px;
-}
-
-.content-text li {
-  margin: 8px 0;
-  line-height: 1.6;
-}
-
-.content-text strong {
+.article-content strong {
   color: #1e293b;
   font-weight: 600;
 }
 
-.content-text em {
+.article-content em {
   color: #6366f1;
   font-style: italic;
 }
 
-.content-text code {
+.article-content code {
   background: #f1f5f9;
   padding: 2px 6px;
   border-radius: 4px;
-  font-family: 'Monaco', 'Consolas', monospace;
+  font-family: Monaco, Consolas, monospace;
   font-size: 0.9em;
   color: #6366f1;
 }
 
-.content-text blockquote {
-  border-left: 4px solid #6366f1;
-  margin: 20px 0;
-  padding: 16px 20px;
-  background: #f8faff;
-  border-radius: 0 8px 8px 0;
-  font-style: italic;
-  color: #4f46e5;
+.article-content ul,
+.article-content ol {
+  margin: 16px 0;
+  padding-left: 24px;
 }
 
-/* ================================
-   VOCABULARY CONTENT STYLING
-   ================================ */
+.article-content li {
+  margin: 8px 0;
+}
 
-.vocabulary-content.enhanced {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  padding: 24px;
+/* AI Help Section */
+.explanation-help {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border: 2px solid rgba(139, 92, 246, 0.2);
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  margin-top: 24px;
 }
 
-.vocabulary-modal-trigger {
-  text-align: center;
+.help-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.help-icon {
+  font-size: 1.25rem;
+}
+
+.help-header h4 {
+  margin: 0;
+  color: #7c3aed;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.help-input {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.help-input-field {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid rgba(139, 92, 246, 0.2);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.help-input-field:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.help-submit-btn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.help-submit-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.help-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ai-response {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.response-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #7c3aed;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.response-content {
+  color: #374151;
+  line-height: 1.6;
+}
+
+/* Vocabulary Content */
+.vocabulary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.vocabulary-trigger {
+  display: flex;
+  justify-content: center;
   padding: 20px 0;
 }
 
@@ -733,27 +870,17 @@
   color: white;
   padding: 40px 32px;
   border-radius: 20px;
-  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.3);
+  text-align: center;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.3);
+  max-width: 400px;
+  width: 100%;
 }
 
-.trigger-card::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  transform: rotate(45deg);
-  animation: shimmer 3s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-  50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-  100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+.trigger-visual {
+  position: relative;
+  margin-bottom: 24px;
 }
 
 .trigger-icon {
@@ -768,150 +895,195 @@
   60% { transform: translateY(-5px); }
 }
 
-.trigger-card h3 {
+.trigger-particles {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.trigger-particles span {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  animation: float 3s ease-in-out infinite;
+}
+
+.trigger-particles span:nth-child(1) {
+  left: 20%;
+  animation-delay: 0s;
+}
+
+.trigger-particles span:nth-child(2) {
+  left: 50%;
+  animation-delay: 1s;
+}
+
+.trigger-particles span:nth-child(3) {
+  left: 80%;
+  animation-delay: 2s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); opacity: 0.7; }
+  50% { transform: translateY(-20px); opacity: 1; }
+}
+
+.trigger-content h3 {
   margin: 0 0 12px 0;
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 700;
 }
 
-.trigger-card p {
+.trigger-content p {
   margin: 0 0 24px 0;
-  opacity: 0.95;
+  opacity: 0.9;
   font-size: 1rem;
-  line-height: 1.5;
 }
 
-.start-vocabulary-btn {
+.start-vocab-btn {
   background: rgba(255, 255, 255, 0.2);
   color: white;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  padding: 16px 32px;
+  padding: 14px 28px;
   border-radius: 12px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 1.1rem;
-  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   backdrop-filter: blur(8px);
 }
 
-.start-vocabulary-btn:hover {
+.start-vocab-btn:hover {
   background: rgba(255, 255, 255, 0.3);
   border-color: rgba(255, 255, 255, 0.5);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
-.vocabulary-list-view {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+/* Vocabulary Summary */
+.vocabulary-summary {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.vocabulary-header {
+.summary-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 2px solid #e2e8f0;
 }
 
-.vocabulary-header h3 {
-  margin: 0;
-  color: #1e293b;
-  font-size: 1.4rem;
-  font-weight: 700;
+.header-icon {
+  font-size: 1.5rem;
+  margin-right: 8px;
 }
 
-.review-btn {
+.summary-header h3 {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  color: #1e293b;
+  font-size: 1.3rem;
+  font-weight: 700;
+  flex: 1;
+}
+
+.review-vocab-btn {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   color: white;
   border: none;
-  padding: 12px 24px;
+  padding: 10px 16px;
   border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 0.95rem;
-  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
 }
 
-.review-btn:hover {
+.review-vocab-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
 }
 
-.vocabulary-list {
-  display: flex;
-  flex-direction: column;
+.vocabulary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
-  max-height: 60vh;
-  overflow-y: auto;
-  padding-right: 8px;
+  margin-bottom: 24px;
 }
 
-.vocabulary-item {
+.vocab-card {
   background: white;
-  padding: 20px;
-  border-radius: 12px;
   border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
   transition: all 0.3s ease;
   position: relative;
 }
 
-.vocabulary-item.enhanced {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.vocabulary-item.learned {
-  border-color: #3b82f6;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0.02) 100%);
-}
-
-.vocabulary-item:hover {
+.vocab-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  border-color: #3b82f6;
+  border-color: #6366f1;
 }
 
-.vocab-item-header {
+.vocab-card.learned {
+  border-color: #10b981;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
+}
+
+.vocab-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 12px;
 }
 
-.vocab-item-header .vocab-term {
-  font-size: 1.3rem;
+.vocab-term {
+  font-size: 1.2rem;
   font-weight: 700;
   color: #1e293b;
-  margin: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex: 1;
 }
 
-.mini-pronunciation-btn {
+.pronounce-btn {
   background: #f1f5f9;
   border: none;
-  padding: 6px 10px;
-  border-radius: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   transition: all 0.2s ease;
   color: #6366f1;
 }
 
-.mini-pronunciation-btn:hover {
+.pronounce-btn:hover {
   background: #e2e8f0;
   transform: scale(1.1);
-  color: #4f46e5;
 }
 
-.learned-badge {
-  color: #3b82f6;
-  font-size: 1.3rem;
+.learned-indicator {
+  color: #10b981;
+  font-size: 1.2rem;
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -920,269 +1092,195 @@
   50% { opacity: 0.7; }
 }
 
-.vocabulary-item .vocab-definition {
-  font-size: 1rem;
+.vocab-definition {
   color: #4b5563;
+  line-height: 1.5;
   margin-bottom: 12px;
-  line-height: 1.6;
   font-weight: 500;
 }
 
-.vocabulary-item .vocab-example {
-  font-size: 0.95rem;
+.vocab-example {
   color: #6b7280;
   font-style: italic;
-  padding: 12px 0;
-  border-top: 1px solid #e5e7eb;
-  margin-top: 12px;
-  line-height: 1.5;
-}
-
-.vocabulary-item .vocab-pronunciation {
   font-size: 0.9rem;
-  color: #9ca3af;
-  margin-top: 8px;
-  font-family: 'Monaco', 'Consolas', monospace;
+  line-height: 1.4;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
 }
 
-.vocabulary-summary {
+.vocab-stats {
   display: flex;
   justify-content: center;
-  gap: 40px;
-  padding: 24px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0.02) 100%);
-  border-radius: 16px;
-  border: 1px solid rgba(59, 130, 246, 0.1);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.05);
+  align-items: center;
+  gap: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.1);
 }
 
-.summary-stat {
+.stat-item {
   text-align: center;
 }
 
-.summary-number {
-  font-size: 2rem;
+.stat-number {
+  font-size: 1.75rem;
   font-weight: 800;
-  color: #3b82f6;
+  color: #6366f1;
   display: block;
   line-height: 1;
 }
 
-.summary-label {
-  font-size: 0.9rem;
+.stat-label {
+  font-size: 0.875rem;
   color: #64748b;
-  margin-top: 8px;
+  margin-top: 4px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-/* ================================
-   MEDIA CONTENT STYLING
-   ================================ */
+.stat-divider {
+  width: 2px;
+  height: 40px;
+  background: linear-gradient(180deg, #6366f1, #8b5cf6);
+  border-radius: 1px;
+}
 
+/* Media Content */
 .media-content {
   display: flex;
   justify-content: center;
-  align-items: center;
-  flex: 1;
-  padding: 40px 0;
+  padding: 20px 0;
 }
 
-.media-placeholder {
+.media-card {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  padding: 48px 40px;
-  border-radius: 20px;
   border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 32px;
   text-align: center;
   max-width: 500px;
   width: 100%;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
   position: relative;
+  overflow: hidden;
 }
 
-.media-placeholder::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: linear-gradient(45deg, #3b82f6, #6366f1, #8b5cf6, #3b82f6);
-  border-radius: 20px;
-  z-index: -1;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  background-size: 300% 300%;
-  animation: gradientShift 4s ease infinite;
-}
-
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.media-placeholder:hover::before {
-  opacity: 0.1;
-}
-
-.media-icon {
-  font-size: 4rem;
-  margin-bottom: 20px;
-  opacity: 0.8;
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-
-.media-placeholder h4 {
-  margin: 0 0 12px 0;
-  color: #1e293b;
-  font-size: 1.3rem;
-  font-weight: 600;
-}
-
-.media-placeholder p {
-  margin: 0 0 16px 0;
-  color: #64748b;
-  line-height: 1.6;
-}
-
-.media-url {
-  font-size: 0.9rem;
-  color: #9ca3af;
-  font-family: 'Monaco', 'Consolas', monospace;
-  background: white;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  word-break: break-all;
-}
-
-/* ================================
-   AI EXPLANATION HELP
-   ================================ */
-
-.explanation-help {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
-  padding: 24px;
-  border-radius: 16px;
-  margin: 20px 0;
-  border: 2px solid rgba(139, 92, 246, 0.2);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1);
-}
-
-.explanation-help h4 {
-  margin: 0 0 16px 0;
-  color: #6d28d9;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.explanation-help-input {
+.media-header {
   display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 12px;
   margin-bottom: 16px;
 }
 
-.explanation-help-input input {
-  flex: 1;
-  padding: 12px 16px;
-  border: 2px solid rgba(139, 92, 246, 0.2);
-  border-radius: 10px;
-  font-size: 0.95rem;
-  background: white;
-  transition: all 0.2s ease;
+.media-icon {
+  font-size: 2rem;
 }
 
-.explanation-help-input input:focus {
-  outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-}
-
-.explanation-help-input button {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 10px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 120px;
-}
-
-.explanation-help-input button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-}
-
-.explanation-help-input button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.ai-response {
-  background: white;
-  padding: 16px 20px;
-  border-radius: 12px;
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  line-height: 1.6;
-  color: #374151;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.05);
-}
-
-.ai-response p {
+.media-header h4 {
   margin: 0;
+  color: #1e293b;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
-/* ================================
-   CONTENT NAVIGATION - FIXED AT BOTTOM
-   ================================ */
+.media-description {
+  color: #64748b;
+  margin: 0 0 20px 0;
+  line-height: 1.6;
+}
 
-.content-navigation {
-  flex-shrink: 0;
+.media-placeholder {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 16px;
+}
+
+.placeholder-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.media-url {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  font-family: Monaco, Consolas, monospace;
+  background: #f9fafb;
+  padding: 8px 12px;
+  border-radius: 6px;
+  word-break: break-all;
+  margin-top: 12px;
+}
+
+/* Default Content */
+.default-content {
   display: flex;
-  gap: 12px;
-  padding: 20px 24px;
-  border-top: 1px solid #e2e8f0;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.default-card {
+  text-align: center;
+  max-width: 600px;
+  width: 100%;
+}
+
+.default-icon {
+  font-size: 3rem;
+  margin-bottom: 20px;
+  opacity: 0.7;
+}
+
+.default-text {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #374151;
+}
+
+/* Fixed Footer */
+.content-footer {
   background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-  flex-wrap: wrap;
-  position: sticky;
-  bottom: 0;
+  border-top: 1px solid #e2e8f0;
+  padding: 16px 24px;
+  flex-shrink: 0;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
 }
 
+.footer-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.footer-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
 .nav-btn,
-.help-btn {
-  padding: 12px 24px;
+.help-toggle-btn {
+  padding: 10px 20px;
   border: none;
   border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  flex: 1;
-  min-width: 120px;
-  min-height: 48px;
-  font-size: 0.95rem;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
+  min-height: 44px;
   position: relative;
   overflow: hidden;
 }
 
 .nav-btn::before,
-.help-btn::before {
+.help-toggle-btn::before {
   content: '';
   position: absolute;
   top: 0;
@@ -1194,7 +1292,7 @@
 }
 
 .nav-btn:hover::before,
-.help-btn:hover::before {
+.help-toggle-btn:hover::before {
   left: 100%;
 }
 
@@ -1212,237 +1310,148 @@
 }
 
 .next-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
 }
 
 .next-btn:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
 }
 
-.help-btn {
+.help-toggle-btn {
   background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: white;
-  flex: 0 0 auto;
-  min-width: 160px;
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
 }
 
-.help-btn:hover,
-.help-btn.active {
+.help-toggle-btn:hover,
+.help-toggle-btn.active {
   background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
 }
 
-/* ================================
-   RESPONSIVE DESIGN - MOBILE OPTIMIZATIONS
-   ================================ */
-
-/* Large Desktop (1440px+) */
-@media (min-width: 1440px) {
-  .step-header {
-    padding: 24px 32px 20px 32px;
-  }
-  
-  .step-content {
-    padding: 32px;
-  }
-  
-  .content-navigation {
-    padding: 24px 32px;
-  }
-  
-  .step-title {
-    font-size: 1.4rem;
-  }
-  
-  .clean-question {
-    font-size: 1.4rem;
-  }
-  
-  .content-text {
-    font-size: 1.1rem;
-  }
+.btn-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 
-/* Standard Desktop (1024px - 1439px) */
-@media (min-width: 1024px) and (max-width: 1439px) {
-  .step-header {
-    padding: 20px 24px 16px 24px;
-  }
-  
-  .step-content {
-    padding: 24px;
-  }
-  
-  .content-navigation {
-    padding: 20px 24px;
-  }
+.btn-text {
+  font-size: 0.9rem;
 }
 
-/* Tablet (768px - 1023px) */
-@media (max-width: 1023px) and (min-width: 768px) {
-  .content-panel::after {
-    top: auto;
-    bottom: -2px;
-    right: 0;
-    width: 100%;
-    height: 4px;
-    cursor: row-resize;
-  }
-  
-  .step-header {
-    padding: 18px 20px 14px 20px;
-  }
-  
-  .step-content {
-    padding: 20px;
-  }
-  
-  .content-navigation {
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .content-header {
     padding: 16px 20px;
+  }
+  
+  .content-body {
+    padding: 20px;
+  }
+  
+  .content-footer {
+    padding: 14px 20px;
+  }
+  
+  .vocabulary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .content-header {
+    padding: 14px 16px;
+  }
+  
+  .step-info {
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+  }
+  
+  .step-badge {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
   }
   
   .step-title {
-    font-size: 1.2rem;
-    gap: 10px;
+    font-size: 1.1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
   
-  .step-number {
-    width: 32px;
-    height: 32px;
-    font-size: 0.85rem;
+  .content-body {
+    padding: 16px;
   }
   
-  .clean-question {
-    font-size: 1.15rem;
+  .content-footer {
+    padding: 12px 16px;
   }
   
-  .current-exercise-content,
-  .current-quiz-content {
-    padding: 20px;
+  .footer-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .footer-center {
+    order: -1;
   }
   
   .nav-btn,
-  .help-btn {
+  .help-toggle-btn {
     width: 100%;
-    min-width: auto;
-    flex: none;
-  }
-  
-  .vocabulary-list {
-    max-height: 50vh;
-  }
-  
-  .vocabulary-summary {
-    gap: 24px;
+    justify-content: center;
   }
   
   .trigger-card {
     padding: 32px 24px;
   }
   
-  .media-placeholder {
-    padding: 40px 32px;
+  .vocab-stats {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .stat-divider {
+    width: 40px;
+    height: 2px;
   }
 }
 
-/* Mobile (480px - 767px) */
-@media (max-width: 767px) {
-  .content-panel::after {
-    height: 6px;
-    bottom: -3px;
+@media (max-width: 480px) {
+  .content-header {
+    padding: 12px 14px;
   }
   
-  .step-header {
-    padding: 16px 18px 12px 18px;
-  }
-  
-  .step-content {
-    padding: 18px;
-  }
-  
-  .content-navigation {
-    padding: 14px 18px;
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .step-title {
-    font-size: 1.1rem;
-    gap: 8px;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .step-number {
-    width: 28px;
-    height: 28px;
+  .step-badge {
+    width: 32px;
+    height: 32px;
     font-size: 0.8rem;
   }
   
-  .step-type-icon {
-    font-size: 1.2rem;
-  }
-  
-  .step-type-text {
+  .step-title {
     font-size: 1rem;
   }
   
-  .clean-question {
-    font-size: 1.1rem;
-    line-height: 1.5;
+  .step-icon {
+    font-size: 1.3rem;
   }
   
-  .content-text {
+  .content-body {
+    padding: 14px;
+  }
+  
+  .preview-card {
+    padding: 20px;
+  }
+  
+  .question-preview {
     font-size: 1rem;
-    text-align: left;
-  }
-  
-  .current-exercise-content,
-  .current-quiz-content {
-    padding: 18px;
-    margin: 12px 0;
-  }
-  
-  .nav-btn,
-  .help-btn {
-    padding: 14px 20px;
-    font-size: 0.9rem;
-    min-height: 44px;
-  }
-  
-  .vocabulary-content.enhanced {
-    padding: 20px;
-  }
-  
-  .vocabulary-list {
-    max-height: 40vh;
-    gap: 12px;
-  }
-  
-  .vocabulary-item {
-    padding: 16px;
-  }
-  
-  .vocab-item-header .vocab-term {
-    font-size: 1.2rem;
-  }
-  
-  .vocabulary-summary {
-    flex-direction: column;
-    gap: 16px;
-    padding: 20px;
-  }
-  
-  .summary-number {
-    font-size: 1.8rem;
   }
   
   .trigger-card {
@@ -1453,191 +1462,61 @@
     font-size: 3rem;
   }
   
-  .trigger-card h3 {
-    font-size: 1.4rem;
+  .vocab-card {
+    padding: 14px;
   }
   
-  .start-vocabulary-btn {
-    padding: 14px 28px;
-    font-size: 1rem;
+  .vocab-term {
+    font-size: 1.1rem;
   }
   
-  .media-placeholder {
-    padding: 32px 24px;
-  }
-  
-  .media-icon {
-    font-size: 3rem;
-  }
-  
-  .explanation-help {
-    padding: 20px;
-  }
-  
-  .explanation-help-input {
+  .help-input {
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
   
-  .explanation-help-input button {
+  .help-submit-btn {
     width: 100%;
   }
 }
 
-/* Small Mobile (320px - 479px) */
-@media (max-width: 479px) {
-  .step-header {
-    padding: 12px 16px 10px 16px;
-  }
-  
-  .step-content {
-    padding: 16px;
-  }
-  
-  .content-navigation {
-    padding: 12px 16px;
-  }
-  
-  .step-title {
-    font-size: 1rem;
-    gap: 6px;
-  }
-  
-  .step-number {
-    width: 24px;
-    height: 24px;
-    font-size: 0.75rem;
-  }
-  
-  .step-type-icon {
-    font-size: 1.1rem;
-  }
-  
-  .step-type-text {
-    font-size: 0.95rem;
-  }
-  
-  .clean-question {
-    font-size: 1rem;
-  }
-  
-  .content-text {
-    font-size: 0.95rem;
-  }
-  
-  .current-exercise-content,
-  .current-quiz-content {
-    padding: 16px;
-    margin: 10px 0;
-  }
-  
-  .nav-btn,
-  .help-btn {
-    padding: 12px 16px;
-    font-size: 0.85rem;
-    min-height: 40px;
-  }
-  
-  .vocabulary-content.enhanced {
-    padding: 16px;
-  }
-  
-  .vocabulary-list {
-    max-height: 35vh;
-    gap: 10px;
-  }
-  
-  .vocabulary-item {
-    padding: 14px;
-  }
-  
-  .vocab-item-header .vocab-term {
-    font-size: 1.1rem;
-  }
-  
-  .vocabulary-item .vocab-definition {
-    font-size: 0.95rem;
-  }
-  
-  .trigger-card {
-    padding: 24px 16px;
-  }
-  
-  .trigger-icon {
-    font-size: 2.5rem;
-  }
-  
-  .trigger-card h3 {
-    font-size: 1.2rem;
-  }
-  
-  .trigger-card p {
-    font-size: 0.95rem;
-  }
-  
-  .start-vocabulary-btn {
-    padding: 12px 24px;
-    font-size: 0.95rem;
-  }
-  
-  .media-placeholder {
-    padding: 24px 16px;
-  }
-  
-  .media-icon {
-    font-size: 2.5rem;
-  }
-  
-  .explanation-help {
-    padding: 16px;
-  }
+/* Loading spinner animation */
+.loading-spinner {
+  animation: spin 1s linear infinite;
 }
 
-/* ================================
-   ACCESSIBILITY IMPROVEMENTS
-   ================================ */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
-/* Focus states for better keyboard navigation */
+/* Focus states for accessibility */
 .nav-btn:focus,
-.help-btn:focus,
-.start-vocabulary-btn:focus,
-.review-btn:focus,
-.mini-pronunciation-btn:focus {
+.help-toggle-btn:focus,
+.start-vocab-btn:focus,
+.review-vocab-btn:focus,
+.pronounce-btn:focus,
+.help-input-field:focus,
+.help-submit-btn:focus {
   outline: 3px solid #3b82f6;
   outline-offset: 2px;
 }
 
-.explanation-help-input input:focus,
-.explanation-help-input button:focus {
-  outline: 3px solid #8b5cf6;
-  outline-offset: 2px;
-}
-
-/* High contrast mode support */
+/* High contrast mode */
 @media (prefers-contrast: high) {
-  .content-panel {
-    border: 2px solid #000;
-  }
-  
-  .current-exercise-content,
-  .current-quiz-content,
-  .vocabulary-item,
-  .media-placeholder {
+  .content-panel,
+  .preview-card,
+  .vocab-card,
+  .media-card {
     border-width: 2px;
-    border-color: #000;
   }
   
-  .step-number {
+  .step-badge {
     border: 2px solid #fff;
   }
-  
-  .nav-btn,
-  .help-btn {
-    border: 2px solid #000;
-  }
 }
 
-/* Reduced motion support */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1648,21 +1527,35 @@
   }
   
   .trigger-icon,
-  .media-icon,
-  .learned-badge {
+  .learned-indicator {
     animation: none;
   }
   
   .nav-btn:hover,
-  .help-btn:hover,
-  .vocabulary-item:hover,
-  .start-vocabulary-btn:hover,
-  .review-btn:hover {
+  .help-toggle-btn:hover,
+  .vocab-card:hover {
     transform: none;
   }
+}
+
+/* Print styles */
+@media print {
+  .content-header,
+  .content-footer {
+    background: white !important;
+    box-shadow: none;
+  }
   
-  .step-content {
-    animation: none;
+  .content-body {
+    overflow: visible;
+  }
+  
+  .nav-btn,
+  .help-toggle-btn,
+  .start-vocab-btn,
+  .review-vocab-btn,
+  .pronounce-btn {
+    display: none;
   }
 }
 
@@ -1670,254 +1563,45 @@
 @media (prefers-color-scheme: dark) {
   .content-panel {
     background: #1e293b;
-    color: #e2e8f0;
   }
   
-  .step-header {
+  .content-header {
     background: linear-gradient(135deg, #334155 0%, #475569 100%);
     border-bottom-color: #475569;
   }
   
   .step-title,
-  .clean-question,
-  .content-text {
+  .question-preview,
+  .article-content {
     color: #e2e8f0;
   }
   
-  .content-text h1,
-  .content-text h2,
-  .content-text h3,
-  .content-text h4,
-  .content-text h5,
-  .content-text h6 {
-    color: #f1f5f9;
+  .step-counter {
+    background: rgba(139, 92, 246, 0.2);
+    color: #c4b5fd;
   }
   
-  .content-text strong {
-    color: #f1f5f9;
+  .preview-card {
+    background: rgba(14, 165, 233, 0.1);
+    border-color: #0ea5e9;
   }
   
-  .content-text code {
-    background: #475569;
-    color: #a5b4fc;
-  }
-  
-  .content-text blockquote {
-    background: #334155;
-    border-left-color: #a5b4fc;
-    color: #c7d2fe;
-  }
-  
-  .current-exercise-content,
-  .current-quiz-content {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.2);
-  }
-  
-  .vocabulary-content.enhanced {
+  .vocab-card {
     background: #334155;
     border-color: #475569;
   }
   
-  .vocabulary-item {
-    background: #475569;
-    border-color: #64748b;
-    color: #e2e8f0;
-  }
-  
-  .vocabulary-item.learned {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: #3b82f6;
-  }
-  
-  .vocab-item-header .vocab-term {
+  .vocab-term {
     color: #f1f5f9;
   }
   
-  .vocabulary-item .vocab-definition {
+  .vocab-definition {
     color: #cbd5e1;
   }
   
-  .vocabulary-item .vocab-example {
-    color: #94a3b8;
-    border-top-color: #64748b;
+  .content-footer {
+    background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+    border-top-color: #475569;
   }
-  
-  .mini-pronunciation-btn {
-    background: #64748b;
-    color: #a5b4fc;
-  }
-  
-  .mini-pronunciation-btn:hover {
-    background: #475569;
-    color: #c7d2fe;
-  }
-  
-  .vocabulary-summary {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.2);
-  }
-  
-  .media-placeholder {
-    background: #334155;
-    border-color: #64748b;
-    color: #cbd5e1;
-  }
-  
-  .media-url {
-    background: #475569;
-    color: #e2e8f0;
-    border-color: #64748b;
-  }
-  
-  .explanation-help {
-    background: rgba(139, 92, 246, 0.2);
-    border-color: rgba(139, 92, 246, 0.3);
-  }
-  
-  .explanation-help h4 {
-    color: #c4b5fd;
-  }
-  
-  .explanation-help-input input {
-    background: #475569;
-    border-color: rgba(139, 92, 246, 0.3);
-    color: #e2e8f0;
-  }
-  
-  .ai-response {
-    background: #475569;
-    color: #e2e8f0;
-    border-color: rgba(139, 92, 246, 0.3);
-  }
-  
-  .content-navigation {
-    background: linear-gradient(135deg, #334155 0%, #475569 100%);
-    border-top-color: #64748b;
-  }
-  
-  .prev-btn {
-    background: linear-gradient(135deg, #475569 0%, #64748b 100%);
-    color: #cbd5e1;
-    border-color: #64748b;
-  }
-  
-  .prev-btn:hover {
-    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
-    color: #e2e8f0;
-  }
-}
-
-/* ================================
-   PRINT STYLES
-   ================================ */
-
-@media print {
-  .content-panel {
-    background: white !important;
-    color: black !important;
-    box-shadow: none;
-    border: 1px solid #000;
-  }
-  
-  .step-content {
-    overflow: visible;
-    max-height: none;
-  }
-  
-  .content-navigation,
-  .help-btn,
-  .start-vocabulary-btn,
-  .review-btn,
-  .mini-pronunciation-btn {
-    display: none;
-  }
-  
-  .vocabulary-item,
-  .current-exercise-content,
-  .current-quiz-content {
-    background: white !important;
-    color: black !important;
-    border-color: #000;
-    page-break-inside: avoid;
-  }
-  
-  .step-header {
-    background: white !important;
-    color: black !important;
-    border-bottom: 2px solid #000;
-  }
-  
-  .step-number {
-    background: black !important;
-    color: white !important;
-  }
-}
-
-/* ================================
-   PERFORMANCE OPTIMIZATIONS
-   ================================ */
-
-.content-panel,
-.step-content,
-.vocabulary-item,
-.nav-btn,
-.help-btn {
-  will-change: transform;
-  transform: translateZ(0);
-}
-
-/* Smooth scrolling optimization */
-.step-content,
-.vocabulary-list {
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-}
-
-/* Better text rendering */
-.content-panel {
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* ================================
-   UTILITY CLASSES
-   ================================ */
-
-.fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.slide-up {
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(15px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Better text selection */
-::selection {
-  background-color: rgba(59, 130, 246, 0.2);
-  color: inherit;
-}
-
-::-moz-selection {
-  background-color: rgba(59, 130, 246, 0.2);
-  color: inherit;
 }
   </style>

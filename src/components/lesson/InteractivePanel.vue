@@ -1,357 +1,187 @@
 <template>
-  <!-- ✅ FIXED: Interactive Panel with Guaranteed Visibility and Enhanced Scrolling -->
-  <div class="interactive-panel force-visible">
-    <!-- Exercise Content -->
-    <div v-if="isExerciseStep" class="exercise-content force-visible">
-      <!-- Fixed Header -->
-      <div class="exercise-header">
-        <h3>{{ currentExercise?.title || 'Упражнение' }}</h3>
-        <div class="exercise-counter">
-          {{ exerciseIndex + 1 }} из {{ totalExercises }}
+  <div class="interactive-panel">
+    <!-- Header -->
+    <div class="interactive-header">
+      <div class="header-content">
+        <div class="header-info">
+          <div class="header-icon">🎯</div>
+          <div class="header-text">
+            <h3 class="header-title">Интерактивная практика</h3>
+            <p class="header-subtitle">Примените полученные знания</p>
+          </div>
+        </div>
+        <div class="header-stats">
+          <div class="progress-indicator">
+            <span class="progress-text">{{ getProgressText() }}</span>
+          </div>
         </div>
       </div>
 
-      <!-- ✅ ENHANCED: Scrollable Body with Better Touch Support -->
-      <div class="exercise-body" ref="exerciseBody">
-        <!-- Short Answer Exercise -->
-        <div v-if="exerciseType === 'short-answer'" class="exercise-type short-answer force-visible">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div class="answer-input">
-            <textarea
-              v-model="localUserAnswer"
-              @input="updateAnswer"
-              placeholder="Введите ваш ответ здесь..."
-              rows="3"
-              class="answer-textarea"
-              :disabled="showCorrectAnswer"
-            />
+      <!-- Tab Navigation -->
+      <div class="tab-navigation">
+        <button 
+          v-for="tab in availableTabs" 
+          :key="tab.id"
+          @click="activeTab = tab.id"
+          class="tab-btn"
+          :class="{ active: activeTab === tab.id }"
+        >
+          <span class="tab-icon">{{ tab.icon }}</span>
+          <span class="tab-label">{{ tab.label }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="interactive-content" ref="interactiveContent">
+      <!-- Exercise Content -->
+      <div v-if="activeTab === 'exercises' && isExerciseStep" class="exercise-container">
+        <!-- Exercise Header -->
+        <div class="exercise-header">
+          <div class="exercise-meta">
+            <span class="exercise-type">{{ getExerciseTypeText() }}</span>
+            <span class="exercise-counter">{{ exerciseIndex + 1 }} / {{ totalExercises }}</span>
           </div>
         </div>
 
-        <!-- Multiple Choice Exercise -->
-        <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc'" class="exercise-type multiple-choice force-visible">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div class="options-list">
-            <div 
-              v-for="(option, index) in exerciseOptions" 
-              :key="index"
-              class="option-item"
-              :class="{ 
-                selected: localUserAnswer === option,
-                disabled: showCorrectAnswer
-              }"
-              @click="!showCorrectAnswer && selectOption(option)"
-            >
-              <input 
-                type="radio" 
-                :name="'exercise-' + exerciseIndex"
-                :value="option"
-                v-model="localUserAnswer"
-                @change="updateAnswer"
-                :disabled="showCorrectAnswer"
-                class="option-radio"
-              />
-              <div class="option-text">{{ option }}</div>
+        <!-- Exercise Body -->
+        <div class="exercise-body">
+          <!-- Short Answer Exercise -->
+          <div v-if="exerciseType === 'short-answer'" class="exercise-type short-answer">
+            <div class="question-display">
+              <h4 class="question-text">{{ currentExercise?.question }}</h4>
             </div>
-          </div>
-        </div>
-
-        <!-- Fill in the Blanks Exercise -->
-        <div v-else-if="exerciseType === 'fill-blank'" class="exercise-type fill-blank force-visible">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div v-if="currentExercise?.template" class="fill-blank-template">
-            <div v-html="renderFillBlankTemplate()" />
-          </div>
-          
-          <div class="fill-blank-inputs">
-            <div 
-              v-for="(blank, index) in blankCount" 
-              :key="`blank-${index}-${exerciseIndex}`"
-              class="blank-input-group"
-            >
-              <label :for="`blank-input-${index}`" class="blank-label">
-                Пропуск {{ index + 1 }}:
-              </label>
-              <input
-                :id="`blank-input-${index}`"
-                type="text"
-                class="blank-input"
-                :value="getFillBlankValue(index)"
-                @input="handleFillBlankInput(index, $event)"
-                :placeholder="`Введите ответ ${index + 1}`"
-                autocomplete="off"
-                :disabled="showCorrectAnswer"
-              />
-              <div v-if="getFillBlankValue(index)" class="input-preview">
-                Введено: "{{ getFillBlankValue(index) }}"
+            <div class="answer-section">
+              <div class="input-wrapper">
+                <textarea
+                  v-model="localUserAnswer"
+                  @input="updateAnswer"
+                  placeholder="Введите ваш ответ здесь..."
+                  rows="4"
+                  class="answer-textarea"
+                  :disabled="showCorrectAnswer"
+                />
+                <div class="input-footer">
+                  <span class="char-counter">{{ getCharacterCount() }}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- True/False Exercise -->
-        <div v-else-if="exerciseType === 'true-false'" class="exercise-type true-false force-visible">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div v-if="currentExercise?.statement" class="statement-text">
-            {{ currentExercise.statement }}
-          </div>
-          <div class="true-false-options">
-            <div 
-              class="tf-option"
-              :class="{ 
-                selected: localUserAnswer === 'true',
-                disabled: showCorrectAnswer
-              }"
-              @click="!showCorrectAnswer && selectTrueFalse('true')"
-            >
-              <input 
-                type="radio" 
-                name="true-false"
-                value="true"
-                v-model="localUserAnswer"
-                @change="updateAnswer"
-                :disabled="showCorrectAnswer"
-              />
-              <span>Правда</span>
+          <!-- Multiple Choice Exercise -->
+          <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc'" class="exercise-type multiple-choice">
+            <div class="question-display">
+              <h4 class="question-text">{{ currentExercise?.question }}</h4>
             </div>
-            <div 
-              class="tf-option"
-              :class="{ 
-                selected: localUserAnswer === 'false',
-                disabled: showCorrectAnswer
-              }"
-              @click="!showCorrectAnswer && selectTrueFalse('false')"
-            >
-              <input 
-                type="radio" 
-                name="true-false"
-                value="false"
-                v-model="localUserAnswer"
-                @change="updateAnswer"
-                :disabled="showCorrectAnswer"
-              />
-              <span>Ложь</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Matching Exercise -->
-        <div v-else-if="exerciseType === 'matching'" class="exercise-type matching force-visible">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          
-          <div class="matching-container">
-            <!-- Left Side -->
-            <div class="matching-side left-side">
-              <h4>Соедините:</h4>
+            <div class="options-container">
               <div 
-                v-for="(item, index) in leftItems" 
-                :key="`left-${index}`"
-                class="matching-item"
+                v-for="(option, index) in exerciseOptions" 
+                :key="index"
+                class="option-item"
                 :class="{ 
-                  selected: selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === index,
-                  matched: isItemMatched('left', index),
-                  disabled: showCorrectAnswer
+                  selected: localUserAnswer === option,
+                  disabled: showCorrectAnswer,
+                  correct: showCorrectAnswer && isCorrectOption(option),
+                  incorrect: showCorrectAnswer && localUserAnswer === option && !isCorrectOption(option)
                 }"
-                @click="handleMatchingItemClick('left', index)"
+                @click="!showCorrectAnswer && selectOption(option)"
               >
-                {{ item }}
-                <span v-if="selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === index" class="selection-indicator">👆</span>
+                <div class="option-radio">
+                  <input 
+                    type="radio" 
+                    :name="'exercise-' + exerciseIndex"
+                    :value="option"
+                    v-model="localUserAnswer"
+                    @change="updateAnswer"
+                    :disabled="showCorrectAnswer"
+                  />
+                  <div class="radio-custom"></div>
+                </div>
+                <div class="option-content">
+                  <span class="option-letter">{{ String.fromCharCode(65 + index) }}</span>
+                  <span class="option-text">{{ option }}</span>
+                </div>
               </div>
             </div>
-            
-            <!-- Right Side -->
-            <div class="matching-side right-side">
-              <h4>С:</h4>
+          </div>
+
+          <!-- True/False Exercise -->
+          <div v-else-if="exerciseType === 'true-false'" class="exercise-type true-false">
+            <div class="question-display">
+              <h4 class="question-text">{{ currentExercise?.question }}</h4>
+              <div v-if="currentExercise?.statement" class="statement-text">
+                {{ currentExercise.statement }}
+              </div>
+            </div>
+            <div class="true-false-options">
               <div 
-                v-for="(item, index) in rightItems" 
-                :key="`right-${index}`"
-                class="matching-item"
+                class="tf-option true-option"
                 :class="{ 
-                  selected: selectedMatchingItem?.side === 'right' && selectedMatchingItem?.index === index,
-                  matched: isItemMatched('right', index),
-                  disabled: showCorrectAnswer
+                  selected: localUserAnswer === 'true',
+                  disabled: showCorrectAnswer,
+                  correct: showCorrectAnswer && isCorrectTrueFalse('true'),
+                  incorrect: showCorrectAnswer && localUserAnswer === 'true' && !isCorrectTrueFalse('true')
                 }"
-                @click="handleMatchingItemClick('right', index)"
+                @click="!showCorrectAnswer && selectTrueFalse('true')"
               >
-                {{ item }}
-                <span v-if="selectedMatchingItem?.side === 'right' && selectedMatchingItem?.index === index" class="selection-indicator">👆</span>
+                <div class="tf-icon">✅</div>
+                <span class="tf-label">Правда</span>
+              </div>
+              <div 
+                class="tf-option false-option"
+                :class="{ 
+                  selected: localUserAnswer === 'false',
+                  disabled: showCorrectAnswer,
+                  correct: showCorrectAnswer && isCorrectTrueFalse('false'),
+                  incorrect: showCorrectAnswer && localUserAnswer === 'false' && !isCorrectTrueFalse('false')
+                }"
+                @click="!showCorrectAnswer && selectTrueFalse('false')"
+              >
+                <div class="tf-icon">❌</div>
+                <span class="tf-label">Ложь</span>
               </div>
             </div>
           </div>
-          
-          <!-- Matching Pairs Display -->
-          <div v-if="matchingPairs && matchingPairs.length > 0" class="matching-pairs">
-            <h4>Соединения:</h4>
-            <div 
-              v-for="(pair, index) in matchingPairs" 
-              :key="`pair-${index}`"
-              class="pair-item"
-            >
-              <span class="pair-text">
-                {{ getLeftItemText(pair.leftIndex) }} ↔ {{ getRightItemText(pair.rightIndex) }}
-              </span>
-              <button 
-                v-if="!showCorrectAnswer"
-                @click="handleRemovePair(index)" 
-                class="remove-pair"
-                type="button"
-              >×</button>
-            </div>
-          </div>
-          
-          <!-- Instructions -->
-          <div class="matching-instructions">
-            <p>💡 <strong>Инструкция:</strong> Нажмите на элемент слева, затем на соответствующий элемент справа для создания связи.</p>
-            <p v-if="selectedMatchingItem" class="current-selection">
-              🎯 Выбран элемент: <strong>{{ selectedMatchingItem.side === 'left' ? 'слева' : 'справа' }}</strong> - 
-              "{{ selectedMatchingItem.side === 'left' ? leftItems[selectedMatchingItem.index] : rightItems[selectedMatchingItem.index] }}"
-            </p>
-          </div>
-        </div>
 
-        <!-- Ordering Exercise -->
-        <div v-else-if="exerciseType === 'ordering'" class="exercise-type ordering force-visible">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div class="ordering-instructions">
-            💡 <strong>Инструкция:</strong> Перетащите элементы в правильном порядке или используйте кнопки ↑↓ для перемещения
-          </div>
-          <div class="ordering-container">
-            <div 
-              v-for="(item, index) in localOrderingItems" 
-              :key="`ordering-${item.id || item.text || index}`"
-              class="ordering-item"
-              :class="{ 
-                dragging: draggedOrderingItem === index,
-                disabled: showCorrectAnswer,
-                'drop-target': dropTargetIndex === index && draggedOrderingItem !== index
-              }"
-              :draggable="!showCorrectAnswer"
-              @dragstart="startOrderingDrag($event, index)"
-              @dragend="endOrderingDrag"
-              @dragover.prevent="handleOrderingDragOver($event, index)"
-              @dragenter.prevent="handleOrderingDragEnter(index)"
-              @dragleave="handleOrderingDragLeave"
-              @drop.prevent="handleOrderingDrop($event, index)"
-            >
-              <div class="ordering-item-content">
-                <div class="drag-handle" :class="{ disabled: showCorrectAnswer }">≡</div>
-                <div class="item-text">{{ getOrderingItemText(item) }}</div>
-                <div class="item-number">{{ index + 1 }}</div>
-                <div v-if="!showCorrectAnswer" class="ordering-controls">
-                  <button 
-                    v-if="index > 0"
-                    @click="moveOrderingItem(index, index - 1)"
-                    class="move-btn move-up"
-                    title="Переместить вверх"
-                  >↑</button>
-                  <button 
-                    v-if="index < localOrderingItems.length - 1"
-                    @click="moveOrderingItem(index, index + 1)"
-                    class="move-btn move-down"
-                    title="Переместить вниз"
-                  >↓</button>
-                </div>
+          <!-- Fill in the Blanks Exercise -->
+          <div v-else-if="exerciseType === 'fill-blank'" class="exercise-type fill-blank">
+            <div class="question-display">
+              <h4 class="question-text">{{ currentExercise?.question }}</h4>
+            </div>
+            <div class="fill-blank-container">
+              <div v-if="currentExercise?.template" class="template-display">
+                <div v-html="renderFillBlankTemplate()" class="template-content"></div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ✅ ENHANCED: Drag and Drop Exercise with Better Touch Support -->
-        <div v-else-if="exerciseType === 'drag-drop'" class="exercise-type drag-drop force-visible">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          
-          <!-- Mobile/Touch Instructions -->
-          <div class="touch-instructions">
-            <p>📱 <strong>На мобильных:</strong> Коснитесь элемента, затем коснитесь зоны назначения</p>
-            <p>🖱️ <strong>На компьютере:</strong> Перетащите элементы в нужные зоны</p>
-          </div>
-          
-          <div v-if="availableDragItems.length > 0 && dropZones.length > 0" class="drag-drop-container">
-            <!-- Available Items to Drag -->
-            <div class="drag-items">
-              <h4>Элементы для перемещения:</h4>
-              <div class="drag-items-scroll">
+              <div class="blank-inputs">
                 <div 
-                  v-for="(item, index) in availableDragItems" 
-                  :key="'drag-' + index"
-                  class="drag-item"
-                  :class="{ 
-                    dragging: draggedDragItem === item,
-                    disabled: showCorrectAnswer,
-                    selected: selectedTouchItem === item
-                  }"
-                  :draggable="!showCorrectAnswer && !isTouchDevice"
-                  @dragstart="startDragItem(item, $event)"
-                  @dragend="endDragItem"
-                  @click="handleTouchItemSelect(item)"
-                  @touchend.prevent="handleTouchItemSelect(item)"
+                  v-for="(blank, index) in blankCount" 
+                  :key="`blank-${index}-${exerciseIndex}`"
+                  class="blank-input-group"
                 >
-                  {{ getDragItemText(item) }}
-                  <span v-if="selectedTouchItem === item" class="touch-selected-indicator">👆</span>
+                  <label :for="`blank-input-${index}`" class="blank-label">
+                    Пропуск {{ index + 1 }}:
+                  </label>
+                  <input
+                    :id="`blank-input-${index}`"
+                    type="text"
+                    class="blank-input"
+                    :value="getFillBlankValue(index)"
+                    @input="handleFillBlankInput(index, $event)"
+                    :placeholder="`Ответ ${index + 1}`"
+                    :disabled="showCorrectAnswer"
+                  />
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- Drop Zones -->
-            <div class="drop-zones">
-              <h4>Зоны назначения:</h4>
-              <div class="drop-zones-scroll">
-                <div 
-                  v-for="(zone, index) in dropZones" 
-                  :key="'zone-' + index"
-                  class="drop-zone"
-                  :class="{ 
-                    'drag-over': dropOverZone === getZoneId(zone),
-                    disabled: showCorrectAnswer,
-                    'touch-highlight': touchHighlightZone === getZoneId(zone)
-                  }"
-                  @dragover.prevent="dragOverZone(getZoneId(zone), $event)"
-                  @dragleave="dragLeaveZone($event)"
-                  @drop="dropInZone(getZoneId(zone), $event)"
-                  @click="handleTouchZoneSelect(getZoneId(zone))"
-                  @touchend.prevent="handleTouchZoneSelect(getZoneId(zone))"
-                >
-                  <div class="zone-label">{{ zone.label }}</div>
-                  <div class="zone-items">
-                    <div 
-                      v-for="(item, itemIndex) in getDropZoneItems(getZoneId(zone))" 
-                      :key="'dropped-' + itemIndex"
-                      class="dropped-item"
-                      @click="!showCorrectAnswer && removeDroppedItem(getZoneId(zone), itemIndex)"
-                    >
-                      {{ getDragItemText(item) }}
-                      <span v-if="!showCorrectAnswer" class="remove-dropped">×</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div v-else class="no-dragdrop-data">
-            <p>⚠️ Данные для перетаскивания не загружены</p>
-          </div>
+          <!-- Other exercise types can be added here -->
         </div>
 
-        <!-- Confirmation Section -->
-        <div v-if="confirmation" class="confirmation-section">
-          <!-- Second Chance Indicator -->
-          <div v-if="isOnSecondChance && !showCorrectAnswer" class="second-chance-indicator">
-            <div class="attempt-counter">
+        <!-- Exercise Feedback -->
+        <div v-if="confirmation" class="exercise-feedback">
+          <div v-if="isOnSecondChance && !showCorrectAnswer" class="attempt-indicator">
+            <div class="attempt-info">
               <span class="attempt-text">Попытка {{ attemptCount }} из {{ maxAttempts }}</span>
               <div class="attempt-dots">
                 <div 
@@ -367,118 +197,101 @@
             </div>
           </div>
 
-          <!-- Confirmation Message -->
           <div 
-            class="confirmation-message" 
+            class="feedback-message" 
             :class="{ 
               correct: answerWasCorrect, 
               incorrect: !answerWasCorrect && !showCorrectAnswer,
               'show-answer': showCorrectAnswer
             }"
           >
-            {{ confirmation }}
+            <div class="feedback-icon">
+              <span v-if="answerWasCorrect">✅</span>
+              <span v-else-if="showCorrectAnswer">💡</span>
+              <span v-else>❌</span>
+            </div>
+            <div class="feedback-text">{{ confirmation }}</div>
           </div>
 
-          <!-- Correct Answer Display -->
           <div v-if="showCorrectAnswer && correctAnswerText" class="correct-answer-display">
-            <div class="correct-answer-label">💡 Правильный ответ:</div>
-            <div class="correct-answer-text">{{ correctAnswerText }}</div>
+            <div class="correct-answer-header">
+              <div class="answer-icon">💡</div>
+              <span class="answer-label">Правильный ответ:</span>
+            </div>
+            <div class="correct-answer-content">{{ correctAnswerText }}</div>
           </div>
         </div>
 
-        <!-- Hints and Feedback -->
-        <div v-if="(currentHint || smartHint) && !showCorrectAnswer" class="hints-section">
+        <!-- Exercise Hints -->
+        <div v-if="(currentHint || smartHint) && !showCorrectAnswer" class="exercise-hints">
           <div v-if="currentHint" class="hint basic-hint">
-            <div class="hint-icon">💡</div>
-            <div class="hint-text">{{ currentHint }}</div>
+            <div class="hint-header">
+              <div class="hint-icon">💡</div>
+              <span class="hint-type">Подсказка</span>
+            </div>
+            <div class="hint-content">{{ currentHint }}</div>
           </div>
           <div v-if="smartHint" class="hint smart-hint">
-            <div class="hint-icon">🤖</div>
-            <div class="hint-text">{{ smartHint }}</div>
-            <button @click="$emit('clear-hint')" class="clear-hint-btn">×</button>
+            <div class="hint-header">
+              <div class="hint-icon">🤖</div>
+              <span class="hint-type">AI Подсказка</span>
+              <button @click="$emit('clear-hint')" class="clear-hint-btn">✕</button>
+            </div>
+            <div class="hint-content">{{ smartHint }}</div>
           </div>
         </div>
       </div>
 
-      <!-- ✅ ENHANCED: Action Buttons with Better Layout -->
-      <div class="exercise-actions">
-        <button 
-          v-if="!confirmation && attemptCount === 0"
-          @click="$emit('show-hint')" 
-          class="hint-btn"
-        >
-          💡 Подсказка
-        </button>
-        
-        <button 
-          v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
-          @click="$emit('submit')"
-          :disabled="!canSubmitAnswer"
-          class="submit-btn"
-          :class="{ 
-            disabled: !canSubmitAnswer,
-            'second-chance': isOnSecondChance
-          }"
-        >
-          {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Проверить' }}
-          <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
-        </button>
-        
-        <button 
-          v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
-          @click="$emit('next-exercise')"
-          class="next-btn"
-        >
-          {{ isLastExercise ? 'Завершить' : 'Далее' }}
-          <span class="next-icon">→</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Quiz Content -->
-    <div v-else-if="isQuizStep" class="quiz-content force-visible">
-      <!-- Fixed Header -->
-      <div class="quiz-header">
-        <h3>{{ currentQuiz?.title || 'Вопрос' }}</h3>
-        <div class="quiz-counter">
-          {{ quizIndex + 1 }} из {{ totalQuizzes }}
-        </div>
-      </div>
-
-      <!-- ✅ ENHANCED: Scrollable Body -->
-      <div class="quiz-body" ref="quizBody">
-        <div class="quiz-question">
-          {{ currentQuiz?.question }}
-        </div>
-
-        <div class="quiz-options">
-          <div 
-            v-for="(option, index) in quizOptions" 
-            :key="index"
-            class="quiz-option"
-            :class="{ 
-              selected: localUserAnswer === option,
-              disabled: showCorrectAnswer
-            }"
-            @click="!showCorrectAnswer && selectQuizOption(option)"
-          >
-            <input 
-              type="radio" 
-              :name="'quiz-' + quizIndex"
-              :value="option"
-              v-model="localUserAnswer"
-              @change="updateAnswer"
-              :disabled="showCorrectAnswer"
-              class="option-radio"
-            />
-            <div class="option-text">{{ option }}</div>
+      <!-- Quiz Content -->
+      <div v-else-if="activeTab === 'quiz' && isQuizStep" class="quiz-container">
+        <div class="quiz-header">
+          <div class="quiz-meta">
+            <span class="quiz-type">Викторина</span>
+            <span class="quiz-counter">{{ quizIndex + 1 }} / {{ totalQuizzes }}</span>
           </div>
         </div>
 
-        <!-- Quiz Confirmation Section -->
-        <div v-if="confirmation" class="confirmation-section">
-          <div v-if="isOnSecondChance && !showCorrectAnswer" class="second-chance-indicator">
-            <div class="attempt-counter">
+        <div class="quiz-body">
+          <div class="question-display">
+            <h4 class="question-text">{{ currentQuiz?.question }}</h4>
+          </div>
+
+          <div class="quiz-options">
+            <div 
+              v-for="(option, index) in quizOptions" 
+              :key="index"
+              class="quiz-option"
+              :class="{ 
+                selected: localUserAnswer === option,
+                disabled: showCorrectAnswer,
+                correct: showCorrectAnswer && isCorrectQuizOption(option),
+                incorrect: showCorrectAnswer && localUserAnswer === option && !isCorrectQuizOption(option)
+              }"
+              @click="!showCorrectAnswer && selectQuizOption(option)"
+            >
+              <div class="option-radio">
+                <input 
+                  type="radio" 
+                  :name="'quiz-' + quizIndex"
+                  :value="option"
+                  v-model="localUserAnswer"
+                  @change="updateAnswer"
+                  :disabled="showCorrectAnswer"
+                />
+                <div class="radio-custom"></div>
+              </div>
+              <div class="option-content">
+                <span class="option-letter">{{ String.fromCharCode(65 + index) }}</span>
+                <span class="option-text">{{ option }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quiz feedback (similar to exercise feedback) -->
+        <div v-if="confirmation" class="quiz-feedback">
+          <div v-if="isOnSecondChance && !showCorrectAnswer" class="attempt-indicator">
+            <div class="attempt-info">
               <span class="attempt-text">Попытка {{ attemptCount }} из {{ maxAttempts }}</span>
               <div class="attempt-dots">
                 <div 
@@ -495,61 +308,110 @@
           </div>
 
           <div 
-            class="confirmation-message" 
+            class="feedback-message" 
             :class="{ 
               correct: answerWasCorrect, 
               incorrect: !answerWasCorrect && !showCorrectAnswer,
               'show-answer': showCorrectAnswer
             }"
           >
-            {{ confirmation }}
+            <div class="feedback-icon">
+              <span v-if="answerWasCorrect">✅</span>
+              <span v-else-if="showCorrectAnswer">💡</span>
+              <span v-else>❌</span>
+            </div>
+            <div class="feedback-text">{{ confirmation }}</div>
           </div>
 
           <div v-if="showCorrectAnswer && correctAnswerText" class="correct-answer-display">
-            <div class="correct-answer-label">💡 Правильный ответ:</div>
-            <div class="correct-answer-text">{{ correctAnswerText }}</div>
+            <div class="correct-answer-header">
+              <div class="answer-icon">💡</div>
+              <span class="answer-label">Правильный ответ:</span>
+            </div>
+            <div class="correct-answer-content">{{ correctAnswerText }}</div>
           </div>
         </div>
       </div>
 
-      <!-- ✅ ENHANCED: Action Buttons -->
-      <div class="quiz-actions">
+      <!-- Practice Tab Content -->
+      <div v-else-if="activeTab === 'practice'" class="practice-container">
+        <div class="practice-placeholder">
+          <div class="placeholder-icon">🧪</div>
+          <h4>Дополнительная практика</h4>
+          <p>Здесь будут дополнительные упражнения для закрепления материала</p>
+        </div>
+      </div>
+
+      <!-- Examples Tab Content -->
+      <div v-else-if="activeTab === 'examples'" class="examples-container">
+        <div class="examples-placeholder">
+          <div class="placeholder-icon">💡</div>
+          <h4>Примеры и демонстрации</h4>
+          <p>Здесь будут практические примеры применения изученного материала</p>
+        </div>
+      </div>
+
+      <!-- No Content State -->
+      <div v-else class="no-content">
+        <div class="no-content-icon">📝</div>
+        <h4>Нет интерактивного содержимого</h4>
+        <p>Для этого шага нет упражнений или заданий</p>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="interactive-actions">
+      <div class="action-buttons">
         <button 
-          v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
+          v-if="!confirmation && attemptCount === 0 && (isExerciseStep || isQuizStep)"
+          @click="$emit('show-hint')" 
+          class="action-btn hint-btn"
+        >
+          <span class="btn-icon">💡</span>
+          <span class="btn-text">Подсказка</span>
+        </button>
+        
+        <button 
+          v-if="(!confirmation || (isOnSecondChance && !showCorrectAnswer)) && (isExerciseStep || isQuizStep)"
           @click="$emit('submit')"
           :disabled="!canSubmitAnswer"
-          class="submit-btn"
+          class="action-btn submit-btn"
           :class="{ 
             disabled: !canSubmitAnswer,
             'second-chance': isOnSecondChance
           }"
         >
-          {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Ответить' }}
-          <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
+          <span class="btn-icon">{{ isOnSecondChance ? '🔄' : '✅' }}</span>
+          <span class="btn-text">{{ isOnSecondChance ? 'Попробовать ещё раз' : 'Проверить' }}</span>
         </button>
         
         <button 
           v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
-          @click="$emit('next-quiz')"
-          class="next-btn"
+          @click="handleNext"
+          class="action-btn next-btn"
         >
-          {{ isLastQuiz ? 'Завершить' : 'Следующий вопрос' }}
-          <span class="next-icon">→</span>
+          <span class="btn-text">{{ isLastItem ? 'Завершить' : 'Далее' }}</span>
+          <span class="btn-icon">{{ isLastItem ? '🏁' : '→' }}</span>
         </button>
       </div>
     </div>
 
-    <!-- No Content State -->
-    <div v-else class="no-content force-visible">
-      <div class="no-content-icon">📝</div>
-      <h4>Нет интерактивного содержимого</h4>
-      <p>Для этого шага нет упражнений или вопросов</p>
+    <!-- AI Helper Integration -->
+    <div class="ai-helper-integration">
+      <button 
+        @click="toggleAIHelper" 
+        class="ai-helper-toggle"
+        :class="{ active: showAIHelper }"
+      >
+        <span class="ai-icon">🤖</span>
+        <span class="ai-text">AI Помощник</span>
+      </button>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, watch, onMounted, nextTick, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 
 export default {
   name: 'InteractivePanel',
@@ -604,27 +466,14 @@ export default {
   ],
   
   setup(props, { emit }) {
-    // ==========================================
-    // REACTIVE STATE
-    // ==========================================
-    const exerciseBody = ref(null)
-    const quizBody = ref(null)
+    // Reactive state
+    const interactiveContent = ref(null)
     const localUserAnswer = ref('')
     const localFillBlankAnswers = ref([])
-    const draggedDragItem = ref(null)
-    const dropOverZone = ref(null)
-    const localOrderingItems = ref([])
-    const draggedOrderingItem = ref(null)
-    const dropTargetIndex = ref(null)
-    
-    // Enhanced touch support for drag-drop
-    const isTouchDevice = ref(false)
-    const selectedTouchItem = ref(null)
-    const touchHighlightZone = ref(null)
+    const activeTab = ref('exercises')
+    const showAIHelper = ref(false)
 
-    // ==========================================
-    // COMPUTED PROPERTIES  
-    // ==========================================
+    // Computed properties
     const isExerciseStep = computed(() => 
       ['exercise', 'practice'].includes(props.currentStep?.type)
     )
@@ -655,60 +504,6 @@ export default {
       })
     })
     
-    const leftItems = computed(() => {
-      if (!props.currentExercise?.pairs) return []
-      
-      const pairs = props.currentExercise.pairs
-      
-      if (Array.isArray(pairs)) {
-        const leftItems = pairs.map((pair, index) => {
-          if (Array.isArray(pair)) {
-            return String(pair[0] || '')
-          } else if (pair && typeof pair === 'object') {
-            return String(pair.left || pair[0] || pair.question || pair.term || '')
-          } else {
-            return String(pair || '')
-          }
-        }).filter(item => item.trim() !== '')
-        
-        return leftItems
-      }
-      
-      return []
-    })
-    
-    const rightItems = computed(() => {
-      if (!props.currentExercise?.pairs) return []
-      
-      const pairs = props.currentExercise.pairs
-      
-      if (Array.isArray(pairs)) {
-        const rightItems = pairs.map((pair, index) => {
-          if (Array.isArray(pair)) {
-            return String(pair[1] || '')
-          } else if (pair && typeof pair === 'object') {
-            return String(pair.right || pair[1] || pair.answer || pair.definition || '')
-          } else {
-            return String(pair || '')
-          }
-        }).filter(item => item.trim() !== '')
-        
-        // Shuffle for challenge
-        const shuffledRightItems = [...rightItems].sort(() => Math.random() - 0.5)
-        return shuffledRightItems
-      }
-      
-      return []
-    })
-    
-    const isLastExercise = computed(() => 
-      props.exerciseIndex >= props.totalExercises - 1
-    )
-    
-    const isLastQuiz = computed(() => 
-      props.quizIndex >= props.totalQuizzes - 1
-    )
-
     const blankCount = computed(() => {
       if (!props.currentExercise) return 0
       
@@ -720,23 +515,10 @@ export default {
         return props.currentExercise.correctAnswers.length
       }
       
-      if (props.currentExercise.answers && Array.isArray(props.currentExercise.answers)) {
-        return props.currentExercise.answers.length
-      }
-      
       const template = props.currentExercise.template || props.currentExercise.question || ''
-      const asteriskMatches = template.match(/\*/g) || []
-      const underscoreMatches = template.match(/_+/g) || []
-      const blankMatches = template.match(/\[blank\]/gi) || []
-      const curlyBraceMatches = template.match(/\{[^}]*\}/g) || []
+      const matches = template.match(/\*/g) || template.match(/_+/g) || template.match(/\[blank\]/gi) || []
       
-      return Math.max(
-        asteriskMatches.length,
-        underscoreMatches.length, 
-        blankMatches.length, 
-        curlyBraceMatches.length,
-        1
-      )
+      return Math.max(matches.length, 1)
     })
     
     const canSubmitAnswer = computed(() => {
@@ -755,280 +537,56 @@ export default {
             : props.fillBlankAnswers
           return answersToCheck.some(answer => String(answer || '').trim().length >= 1)
           
-        case 'matching':
-          return props.matchingPairs.length > 0
-          
-        case 'ordering':
-          return localOrderingItems.value.length > 0
-          
-        case 'drag-drop':
-          const placements = Object.values(props.dragDropPlacements || {})
-          return placements.some(items => Array.isArray(items) && items.length > 0)
-          
         default:
-          return false
+          return localUserAnswer.value !== ''
       }
     })
 
-    // ==========================================
-    // DEVICE DETECTION
-    // ==========================================
-    const detectTouchDevice = () => {
-      isTouchDevice.value = (
-        'ontouchstart' in window ||
-        navigator.maxTouchPoints > 0 ||
-        navigator.msMaxTouchPoints > 0 ||
-        window.innerWidth <= 768
-      )
-    }
+    const isLastItem = computed(() => {
+      if (isExerciseStep.value) {
+        return props.exerciseIndex >= props.totalExercises - 1
+      }
+      if (isQuizStep.value) {
+        return props.quizIndex >= props.totalQuizzes - 1
+      }
+      return false
+    })
 
-    // ==========================================
-    // SCROLL DETECTION & ENHANCEMENT
-    // ==========================================
-    const setupScrollDetection = () => {
-      nextTick(() => {
-        [exerciseBody, quizBody].forEach(bodyRef => {
-          if (bodyRef.value) {
-            const element = bodyRef.value
-            
-            const handleScroll = () => {
-              if (element.scrollTop > 10) {
-                element.classList.add('scrolled')
-              } else {
-                element.classList.remove('scrolled')
-              }
-            }
-            
-            element.addEventListener('scroll', handleScroll, { passive: true })
-            
-            // Initial check
-            handleScroll()
-            
-            // Store cleanup function
-            element._scrollCleanup = () => {
-              element.removeEventListener('scroll', handleScroll)
-            }
-          }
-        })
-      })
-    }
-
-    // ==========================================
-    // VISIBILITY ENFORCEMENT
-    // ==========================================
-    const enforceVisibility = () => {
-      nextTick(() => {
-        // Force visibility of the interactive panel
-        const panel = document.querySelector('.interactive-panel')
-        if (panel) {
-          panel.style.display = 'flex'
-          panel.style.visibility = 'visible'
-          panel.style.opacity = '1'
-          panel.classList.add('force-visible')
-          
-          // Also force visibility of exercise/quiz content
-          const exerciseContent = panel.querySelector('.exercise-content')
-          const quizContent = panel.querySelector('.quiz-content')
-          
-          if (exerciseContent) {
-            exerciseContent.style.display = 'flex'
-            exerciseContent.style.visibility = 'visible'
-            exerciseContent.style.opacity = '1'
-            exerciseContent.classList.add('force-visible')
-          }
-          if (quizContent) {
-            quizContent.style.display = 'flex'
-            quizContent.style.visibility = 'visible'
-            quizContent.style.opacity = '1'
-            quizContent.classList.add('force-visible')
-          }
-          
-          // Force visibility of exercise types
-          const exerciseTypes = panel.querySelectorAll('.exercise-type')
-          exerciseTypes.forEach(type => {
-            type.style.display = 'flex'
-            type.style.visibility = 'visible'
-            type.style.opacity = '1'
-            type.classList.add('force-visible')
-          })
-        }
-      })
-    }
-
-    // ==========================================
-    // ENHANCED DRAG AND DROP METHODS
-    // ==========================================
-    
-    const startDragItem = (item, event) => {
-      console.log('🔥 Starting drag for item:', item)
+    const availableTabs = computed(() => {
+      const tabs = []
       
-      if (!item || props.showCorrectAnswer) {
-        console.warn('⚠️ Cannot start drag - invalid item or answers shown')
-        return
+      if (isExerciseStep.value) {
+        tabs.push({ id: 'exercises', label: 'Упражнения', icon: '✏️' })
+        tabs.push({ id: 'practice', label: 'Практика', icon: '🧪' })
       }
       
-      draggedDragItem.value = item
-      selectedTouchItem.value = null // Clear touch selection when dragging
-      
-      if (event && event.dataTransfer) {
-        event.dataTransfer.effectAllowed = 'move'
-        event.dataTransfer.setData('text/plain', JSON.stringify(item))
+      if (isQuizStep.value) {
+        tabs.push({ id: 'quiz', label: 'Викторина', icon: '🧩' })
       }
       
-      // Emit to parent for coordination
-      emit('drag-item-start', { item, event })
+      tabs.push({ id: 'examples', label: 'Примеры', icon: '💡' })
       
-      console.log('✅ Drag started for:', getDragItemText(item))
-    }
+      return tabs
+    })
 
-    const endDragItem = () => {
-      console.log('🏁 Ending drag operation')
-      draggedDragItem.value = null
-      dropOverZone.value = null
-    }
-
-    const dragOverZone = (zoneId, event) => {
-      if (!draggedDragItem.value || props.showCorrectAnswer) return
-      
-      if (event) {
-        event.preventDefault()
-        event.dataTransfer.dropEffect = 'move'
-      }
-      
-      dropOverZone.value = zoneId
-      emit('drag-over-zone', zoneId)
-    }
-
-    const dragLeaveZone = (event) => {
-      // Only clear if we're actually leaving the zone (not entering a child element)
-      if (!event || !event.currentTarget.contains(event.relatedTarget)) {
-        dropOverZone.value = null
-        emit('drag-leave-zone')
-      }
-    }
-
-    const dropInZone = (zoneId, event) => {
-      console.log('💧 Dropping item in zone:', zoneId)
-      
-      if (event) {
-        event.preventDefault()
-      }
-      
-      let droppedItem = draggedDragItem.value
-      
-      // Try to get item from dataTransfer if drag item is null
-      if (!droppedItem && event && event.dataTransfer) {
-        try {
-          const transferData = event.dataTransfer.getData('text/plain')
-          if (transferData) {
-            droppedItem = JSON.parse(transferData)
-          }
-        } catch (e) {
-          console.warn('⚠️ Could not parse transfer data:', e)
-        }
-      }
-      
-      if (!droppedItem) {
-        console.warn('⚠️ No item to drop')
-        return
-      }
-      
-      console.log('✅ Dropping item:', getDragItemText(droppedItem), 'into zone:', zoneId)
-      
-      // Emit to parent to handle the actual drop logic
-      emit('drop-in-zone', { zoneId, item: droppedItem })
-      
-      // Clean up
-      draggedDragItem.value = null
-      dropOverZone.value = null
-    }
-
-    // ==========================================
-    // ENHANCED TOUCH SUPPORT FOR DRAG-DROP
-    // ==========================================
-    
-    const handleTouchItemSelect = (item) => {
-      if (props.showCorrectAnswer) return
-      
-      if (selectedTouchItem.value === item) {
-        // Deselect if clicking the same item
-        selectedTouchItem.value = null
-        touchHighlightZone.value = null
-        console.log('📱 Deselected touch item')
-      } else {
-        // Select new item
-        selectedTouchItem.value = item
-        touchHighlightZone.value = null
-        console.log('📱 Selected touch item:', getDragItemText(item))
-      }
-    }
-
-    const handleTouchZoneSelect = (zoneId) => {
-      if (props.showCorrectAnswer || !selectedTouchItem.value) return
-      
-      console.log('📱 Touch zone selected:', zoneId, 'with item:', getDragItemText(selectedTouchItem.value))
-      
-      // Highlight the zone briefly
-      touchHighlightZone.value = zoneId
-      
-      // Drop the selected item into this zone
-      emit('drop-in-zone', { zoneId, item: selectedTouchItem.value })
-      
-      // Clear selection
-      selectedTouchItem.value = null
-      
-      setTimeout(() => {
-        touchHighlightZone.value = null
-      }, 300)
-    }
-
-    // ==========================================
-    // UTILITY METHODS FOR DRAG-AND-DROP
-    // ==========================================
-    
-    const getDragItemText = (item) => {
-      if (!item) return ''
-      
-      if (typeof item === 'string') return item
-      
-      if (item.text) return item.text
-      if (item.label) return item.label
-      if (item.name) return item.name
-      if (item.title) return item.title
-      if (item.content) return item.content
-      
-      return String(item)
-    }
-
-    const getZoneId = (zone) => {
-      if (!zone) return 'default'
-      
-      if (typeof zone === 'string') return zone
-      
-      if (zone.id) return zone.id
-      if (zone.label) return zone.label
-      if (zone.name) return zone.name
-      if (zone.title) return zone.title
-      
-      return String(zone)
-    }
-
-    const getDropZoneItems = (zoneId) => {
-      const placements = props.dragDropPlacements || {}
-      return placements[zoneId] || []
-    }
-
-    const removeDroppedItem = (zoneId, itemIndex) => {
-      console.log('🗑️ Removing item from zone:', zoneId, 'index:', itemIndex)
-      emit('remove-dropped-item', { zoneId, itemIndex })
-    }
-
-    // ==========================================
-    // OTHER EXERCISE METHODS
-    // ==========================================
-    
+    // Methods
     const updateAnswer = () => {
       emit('answer-changed', localUserAnswer.value)
+    }
+
+    const selectOption = (option) => {
+      localUserAnswer.value = option
+      emit('answer-changed', option)
+    }
+
+    const selectQuizOption = (option) => {
+      localUserAnswer.value = option
+      emit('answer-changed', option)
+    }
+
+    const selectTrueFalse = (value) => {
+      localUserAnswer.value = value
+      emit('answer-changed', value)
     }
 
     const getFillBlankValue = (index) => {
@@ -1050,207 +608,6 @@ export default {
       emit('fill-blank-updated', { index, value })
     }
 
-    const selectOption = (option) => {
-      localUserAnswer.value = option
-      emit('answer-changed', option)
-    }
-
-    const selectQuizOption = (option) => {
-      localUserAnswer.value = option
-      emit('answer-changed', option)
-    }
-
-    const selectTrueFalse = (value) => {
-      localUserAnswer.value = value
-      emit('answer-changed', value)
-    }
-
-    // ==========================================
-    // MATCHING METHODS
-    // ==========================================
-    
-    const handleMatchingItemClick = (side, index) => {
-      if (props.showCorrectAnswer) return
-      selectMatchingItem(side, index)
-    }
-
-    const handleRemovePair = (pairIndex) => {
-      if (props.showCorrectAnswer) return
-      removeMatchingPair(pairIndex)
-    }
-    
-    const selectMatchingItem = (side, index) => {
-      const currentSelection = props.selectedMatchingItem
-      
-      if (!currentSelection) {
-        emit('matching-item-selected', { side, index })
-        return
-      }
-      
-      if (currentSelection.side === side && currentSelection.index === index) {
-        emit('matching-item-selected', null)
-        return
-      }
-      
-      if (currentSelection.side === side) {
-        emit('matching-item-selected', { side, index })
-        return
-      }
-      
-      let leftIndex, rightIndex
-      
-      if (side === 'left') {
-        leftIndex = index
-        rightIndex = currentSelection.index
-      } else {
-        leftIndex = currentSelection.index
-        rightIndex = index
-      }
-      
-      const newPair = { leftIndex, rightIndex }
-      
-      const currentPairs = props.matchingPairs || []
-      const pairExists = currentPairs.some(pair => 
-        pair.leftIndex === newPair.leftIndex && pair.rightIndex === newPair.rightIndex
-      )
-      
-      if (!pairExists) {
-        const updatedPairs = currentPairs.filter(pair => 
-          pair.leftIndex !== newPair.leftIndex && pair.rightIndex !== newPair.rightIndex
-        )
-        
-        updatedPairs.push(newPair)
-        emit('answer-changed', updatedPairs)
-      }
-      
-      emit('matching-item-selected', null)
-    }
-    
-    const removeMatchingPair = (pairIndex) => {
-      const currentPairs = props.matchingPairs || []
-      
-      if (pairIndex >= 0 && pairIndex < currentPairs.length) {
-        const updatedPairs = currentPairs.filter((_, index) => index !== pairIndex)
-        emit('answer-changed', updatedPairs)
-        emit('remove-matching-pair', pairIndex)
-      }
-    }
-    
-    const isItemMatched = (side, index) => {
-      const currentPairs = props.matchingPairs || []
-      
-      if (currentPairs.length === 0) {
-        return false
-      }
-      
-      if (side === 'left') {
-        return currentPairs.some(pair => pair.leftIndex === index)
-      } else {
-        return currentPairs.some(pair => pair.rightIndex === index)
-      }
-    }
-    
-    const getLeftItemText = (index) => {
-      if (index >= 0 && index < leftItems.value.length) {
-        return leftItems.value[index]
-      }
-      return `Left Item ${index + 1}`
-    }
-    
-    const getRightItemText = (index) => {
-      if (index >= 0 && index < rightItems.value.length) {
-        return rightItems.value[index]
-      }
-      return `Right Item ${index + 1}`
-    }
-
-    // ==========================================
-    // ORDERING METHODS
-    // ==========================================
-    
-    const initializeOrderingItems = () => {
-      if (props.currentExercise?.items && Array.isArray(props.currentExercise.items)) {
-        const items = props.currentExercise.items.map((item, index) => ({
-          id: item.id || `item_${index}`,
-          text: typeof item === 'string' ? item : (item.text || String(item)),
-          originalIndex: index
-        }))
-        
-        const shuffledItems = [...items].sort(() => Math.random() - 0.5)
-        localOrderingItems.value = shuffledItems
-        
-        emit('answer-changed', localOrderingItems.value)
-      }
-    }
-
-    const getOrderingItemText = (item) => {
-      if (typeof item === 'string') return item
-      if (item && item.text) return item.text
-      return String(item || '')
-    }
-
-    const moveOrderingItem = (fromIndex, toIndex) => {
-      if (fromIndex === toIndex || 
-          fromIndex < 0 || fromIndex >= localOrderingItems.value.length ||
-          toIndex < 0 || toIndex >= localOrderingItems.value.length) {
-        return
-      }
-      
-      const newItems = [...localOrderingItems.value]
-      const [movedItem] = newItems.splice(fromIndex, 1)
-      newItems.splice(toIndex, 0, movedItem)
-      
-      localOrderingItems.value = newItems
-      emit('answer-changed', localOrderingItems.value)
-    }
-
-    const startOrderingDrag = (event, index) => {
-      draggedOrderingItem.value = index
-      
-      if (event.dataTransfer) {
-        event.dataTransfer.effectAllowed = 'move'
-        event.dataTransfer.setData('text/plain', index.toString())
-      }
-    }
-
-    const endOrderingDrag = () => {
-      draggedOrderingItem.value = null
-      dropTargetIndex.value = null
-    }
-
-    const handleOrderingDragOver = (event, index) => {
-      if (draggedOrderingItem.value !== null && draggedOrderingItem.value !== index) {
-        event.preventDefault()
-        dropTargetIndex.value = index
-      }
-    }
-
-    const handleOrderingDragEnter = (index) => {
-      if (draggedOrderingItem.value !== null && draggedOrderingItem.value !== index) {
-        dropTargetIndex.value = index
-      }
-    }
-
-    const handleOrderingDragLeave = () => {
-      // Only clear if we're leaving the container
-    }
-
-    const handleOrderingDrop = (event, dropIndex) => {
-      event.preventDefault()
-      
-      const dragIndex = draggedOrderingItem.value
-      
-      if (dragIndex !== null && dragIndex !== dropIndex) {
-        moveOrderingItem(dragIndex, dropIndex)
-      }
-      
-      endOrderingDrag()
-    }
-
-    // ==========================================
-    // RENDER METHODS
-    // ==========================================
-    
     const renderFillBlankTemplate = () => {
       if (!props.currentExercise?.template) return ''
       
@@ -1258,95 +615,102 @@ export default {
       let blankIndex = 0
       
       template = template.replace(/\*/g, () => {
-        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
+        return `<span class="blank-placeholder">[Пропуск ${++blankIndex}]</span>`
       })
       
       template = template.replace(/_+/g, () => {
-        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
+        return `<span class="blank-placeholder">[Пропуск ${++blankIndex}]</span>`
       })
       
       template = template.replace(/\[blank\]/gi, () => {
-        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
+        return `<span class="blank-placeholder">[Пропуск ${++blankIndex}]</span>`
       })
       
       return template
     }
 
-    // ==========================================
-    // LIFECYCLE HOOKS
-    // ==========================================
-    
-    onMounted(() => {
-      console.log('🔧 InteractivePanel mounted - enforcing visibility')
-      
-      // Detect touch device
-      detectTouchDevice()
-      
-      // Enforce visibility immediately and repeatedly
-      enforceVisibility()
-      
-      // Setup scroll detection
-      setupScrollDetection()
-      
-      // Initialize local state
-      localUserAnswer.value = props.userAnswer || ''
-      
-      // Initialize fill blank answers
-      if (exerciseType.value === 'fill-blank') {
-        nextTick(() => {
-          initializeFillBlankAnswers()
-        })
+    const isCorrectOption = (option) => {
+      const correctAnswer = props.currentExercise?.correctAnswer
+      if (Array.isArray(correctAnswer)) {
+        return correctAnswer.includes(option)
       }
-      
-      // Initialize ordering items
-      if (props.currentExercise?.type === 'ordering') {
-        initializeOrderingItems()
-      }
-      
-      // Periodic visibility enforcement (fallback)
-      const visibilityInterval = setInterval(() => {
-        enforceVisibility()
-      }, 1000)
-      
-      // Cleanup interval on unmount
-      onUnmounted(() => {
-        clearInterval(visibilityInterval)
-      })
-      
-      // Add window resize listener for touch device detection
-      const handleResize = () => {
-        detectTouchDevice()
-      }
-      window.addEventListener('resize', handleResize)
-      
-      // Debug logging
-      console.log('🔧 InteractivePanel state:', {
-        isExerciseStep: isExerciseStep.value,
-        isQuizStep: isQuizStep.value,
-        exerciseType: exerciseType.value,
-        currentStep: props.currentStep?.type,
-        isTouchDevice: isTouchDevice.value
-      })
-    })
+      return correctAnswer === option
+    }
 
-    onUnmounted(() => {
-      // Cleanup scroll listeners
-      [exerciseBody, quizBody].forEach(bodyRef => {
-        if (bodyRef.value && bodyRef.value._scrollCleanup) {
-          bodyRef.value._scrollCleanup()
+    const isCorrectQuizOption = (option) => {
+      const correctAnswer = props.currentQuiz?.correctAnswer
+      if (Array.isArray(correctAnswer)) {
+        return correctAnswer.includes(option)
+      }
+      return correctAnswer === option
+    }
+
+    const isCorrectTrueFalse = (value) => {
+      const correctAnswer = props.currentExercise?.correctAnswer
+      return String(correctAnswer).toLowerCase() === value
+    }
+
+    const getExerciseTypeText = () => {
+      const typeNames = {
+        'short-answer': 'Короткий ответ',
+        'multiple-choice': 'Множественный выбор',
+        'abc': 'Выбор варианта',
+        'true-false': 'Верно/Неверно',
+        'fill-blank': 'Заполните пропуски',
+        'matching': 'Сопоставление',
+        'ordering': 'Упорядочивание',
+        'drag-drop': 'Перетащи и отпусти'
+      }
+      return typeNames[exerciseType.value] || 'Упражнение'
+    }
+
+    const getProgressText = () => {
+      if (isExerciseStep.value) {
+        return `${props.exerciseIndex + 1} / ${props.totalExercises} упражнений`
+      }
+      if (isQuizStep.value) {
+        return `${props.quizIndex + 1} / ${props.totalQuizzes} вопросов`
+      }
+      return 'Практика'
+    }
+
+    const getCharacterCount = () => {
+      return String(localUserAnswer.value || '').length
+    }
+
+    const handleNext = () => {
+      if (isExerciseStep.value) {
+        emit('next-exercise')
+      } else if (isQuizStep.value) {
+        emit('next-quiz')
+      }
+    }
+
+    const toggleAIHelper = () => {
+      showAIHelper.value = !showAIHelper.value
+    }
+
+    const setupScrollDetection = () => {
+      nextTick(() => {
+        const content = interactiveContent.value
+        if (content) {
+          const handleScroll = () => {
+            if (content.scrollTop > 20) {
+              content.classList.add('scrolled')
+            } else {
+              content.classList.remove('scrolled')
+            }
+          }
+          
+          content.addEventListener('scroll', handleScroll, { passive: true })
+          handleScroll()
         }
       })
-      
-      // Remove window resize listener
-      window.removeEventListener('resize', detectTouchDevice)
-    })
+    }
 
-    // ==========================================
-    // WATCHERS
-    // ==========================================
-    
+    // Watchers
     watch(() => props.userAnswer, (newValue) => {
-      if (exerciseType.value !== 'fill-blank' && exerciseType.value !== 'ordering') {
+      if (exerciseType.value !== 'fill-blank') {
         localUserAnswer.value = newValue || ''
       }
     }, { immediate: true })
@@ -1360,61 +724,40 @@ export default {
       }
     }, { immediate: true, deep: true })
 
-    watch(() => props.orderingItems, (newValue) => {
-      if (Array.isArray(newValue) && newValue.length > 0) {
-        localOrderingItems.value = [...newValue]
-      }
-    }, { immediate: true, deep: true })
-
     watch(() => props.currentExercise, (newExercise, oldExercise) => {
       if (newExercise && newExercise !== oldExercise) {
-        console.log('🔄 Exercise changed, enforcing visibility')
-        
         localUserAnswer.value = props.userAnswer || ''
-        
-        // Clear touch selection when exercise changes
-        selectedTouchItem.value = null
-        touchHighlightZone.value = null
-        
-        // Enforce visibility when exercise changes
-        nextTick(() => {
-          enforceVisibility()
-        })
         
         if (newExercise.type === 'fill-blank') {
           nextTick(() => {
-            initializeFillBlankAnswers()
+            const count = blankCount.value
+            localFillBlankAnswers.value = new Array(count).fill('')
           })
-        }
-        
-        if (newExercise.type === 'ordering') {
-          nextTick(() => {
-            initializeOrderingItems()
-          })
-        }
-        
-        if (newExercise.type === 'matching') {
-          emit('matching-item-selected', null)
         }
       }
     }, { immediate: true })
 
-    // Watch for step changes and enforce visibility
     watch(() => props.currentStep, (newStep) => {
       if (newStep) {
-        console.log('🔄 Step changed to:', newStep.type, '- enforcing visibility')
-        nextTick(() => {
-          enforceVisibility()
-          setupScrollDetection()
-        })
+        // Set appropriate active tab
+        if (isExerciseStep.value) {
+          activeTab.value = 'exercises'
+        } else if (isQuizStep.value) {
+          activeTab.value = 'quiz'
+        } else {
+          activeTab.value = 'examples'
+        }
       }
     }, { immediate: true })
 
-    // ==========================================
-    // INITIALIZATION
-    // ==========================================
-    
-    const initializeFillBlankAnswers = () => {
+    // Lifecycle
+    onMounted(() => {
+      setupScrollDetection()
+      
+      // Initialize local state
+      localUserAnswer.value = props.userAnswer || ''
+      
+      // Initialize fill blank answers
       if (exerciseType.value === 'fill-blank') {
         const count = blankCount.value
         localFillBlankAnswers.value = new Array(count).fill('')
@@ -1425,30 +768,17 @@ export default {
           }
         }
       }
-    }
+    })
 
-    // ==========================================
-    // RETURN ALL METHODS AND STATE
-    // ==========================================
-    
     return {
       // Refs
-      exerciseBody,
-      quizBody,
+      interactiveContent,
       
       // State
       localUserAnswer,
       localFillBlankAnswers,
-      draggedDragItem,
-      dropOverZone,
-      localOrderingItems,
-      draggedOrderingItem,
-      dropTargetIndex,
-      
-      // Touch support
-      isTouchDevice,
-      selectedTouchItem,
-      touchHighlightZone,
+      activeTab,
+      showAIHelper,
       
       // Computed
       isExerciseStep,
@@ -1456,68 +786,28 @@ export default {
       exerciseType,
       exerciseOptions,
       quizOptions,
-      leftItems,
-      rightItems,
-      isLastExercise,
-      isLastQuiz,
       blankCount,
       canSubmitAnswer,
+      isLastItem,
+      availableTabs,
       
-      // Device detection
-      detectTouchDevice,
-      
-      // Visibility & Scroll methods
-      enforceVisibility,
-      setupScrollDetection,
-      
-      // Drag-and-drop methods
-      startDragItem,
-      endDragItem,
-      dragOverZone,
-      dragLeaveZone,
-      dropInZone,
-      getDragItemText,
-      getZoneId,
-      getDropZoneItems,
-      removeDroppedItem,
-      
-      // Touch support for drag-drop
-      handleTouchItemSelect,
-      handleTouchZoneSelect,
-      
-      // Answer methods
+      // Methods
       updateAnswer,
-      
-      // Fill-blank methods
-      getFillBlankValue,
-      handleFillBlankInput,
-      renderFillBlankTemplate,
-      initializeFillBlankAnswers,
-      
-      // Option selection methods
       selectOption,
       selectQuizOption,
       selectTrueFalse,
-      
-      // Matching methods
-      handleMatchingItemClick,
-      handleRemovePair,
-      selectMatchingItem,
-      removeMatchingPair,
-      isItemMatched,
-      getLeftItemText,
-      getRightItemText,
-      
-      // Ordering methods
-      initializeOrderingItems,
-      getOrderingItemText,
-      moveOrderingItem,
-      startOrderingDrag,
-      endOrderingDrag,
-      handleOrderingDragOver,
-      handleOrderingDragEnter,
-      handleOrderingDragLeave,
-      handleOrderingDrop
+      getFillBlankValue,
+      handleFillBlankInput,
+      renderFillBlankTemplate,
+      isCorrectOption,
+      isCorrectQuizOption,
+      isCorrectTrueFalse,
+      getExerciseTypeText,
+      getProgressText,
+      getCharacterCount,
+      handleNext,
+      toggleAIHelper,
+      setupScrollDetection
     }
   }
 }
