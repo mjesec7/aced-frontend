@@ -120,8 +120,8 @@
       :steps="steps"
       :estimated-time="estimatedTime"
       :previous-progress="previousProgress"
-      @start-lesson="startLesson"
-      @continue-progress="continuePreviousProgress"
+      @start="startLesson"
+      @continue="continuePreviousProgress"
       @exit="confirmExit"
       @report-problem="openProblemReportModal"
     />
