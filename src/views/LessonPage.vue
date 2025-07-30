@@ -316,7 +316,7 @@
 
 <script>
 // Import your existing components
-import ContentPanel from '../components/lesson/ContentPanel'
+import ContentPanel from '../components/lesson/ContentPanel.vue'
 import InteractivePanel from '../components/lesson/InteractivePanel.vue'
 import VocabularyModal from '../components/lesson/VocabularyModal.vue'
 import LessonIntro from '../components/lesson/LessonIntro.vue'
