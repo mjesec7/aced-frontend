@@ -168,7 +168,7 @@
       @report-problem="openProblemReportModal"
     />
 
-    <!-- ✅ FIXED: Main Lesson Content - Always Show Interactive Panel -->
+    <!-- Main Lesson Content with Split Screen -->
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
 
       <!-- Top Header -->
@@ -190,7 +190,7 @@
         :total-steps="steps.length"
       />
 
-      <!-- ✅ FIXED: Split Screen Content with Enhanced Layout -->
+      <!-- Split Screen Content with Resizable Divider -->
       <div class="split-content" :class="{ 'is-resizing': isResizing }">
         <!-- Left Panel - Content Display -->
         <div class="content-panel-wrapper" :style="leftPanelStyle">
@@ -245,10 +245,10 @@
           </div>
         </div>
 
-        <!-- ✅ CRITICAL FIX: Right Panel - ALWAYS SHOW Interactive Panel -->
+        <!-- Right Panel - Interactive Content -->
         <div class="right-panel-wrapper" :style="rightPanelStyle">
           <div class="interactive-panel-container">
-            <!-- ✅ ALWAYS SHOW: Interactive Panel for ALL steps (including exercises/quiz AND non-interactive) -->
+            <!-- Interactive Panel - ALWAYS VISIBLE -->
             <InteractivePanel
               v-if="currentStep"
               :current-step="currentStep"
@@ -276,6 +276,8 @@
               :is-on-second-chance="isOnSecondChance"
               :show-correct-answer="showCorrectAnswer"
               :correct-answer-text="correctAnswerText"
+              :current-index="currentIndex"
+              :is-last-step="isLastStep"
               @answer-changed="handleAnswerChanged"
               @fill-blank-updated="updateFillBlankAnswer"
               @submit="handleSubmitOrNext"
@@ -290,9 +292,12 @@
               @drag-leave-zone="handleDragLeaveZone"
               @drop-in-zone="handleDropInZone"
               @remove-dropped-item="handleRemoveDroppedItem"
+              @previous="goPrevious"
+              @next="goNext"
+              @complete="completeLessonWithExtraction"
             />
 
-            <!-- ✅ SECONDARY: AI Help Panel (shown below interactive panel when needed) -->
+            <!-- AI Help Panel -->
             <AIHelpPanel
               v-if="showExplanationHelp || aiChatHistory.length > 0"
               :ai-suggestions="aiSuggestions"
@@ -313,40 +318,51 @@
         <button 
           @click="currentLeftWidth = 25; currentRightWidth = 75" 
           class="resize-preset" 
-          title="25% / 75%"
+          title="25% / 75% - Больше интерактива"
         >
           ◐
         </button>
         <button 
           @click="currentLeftWidth = 50; currentRightWidth = 50" 
           class="resize-preset" 
-          title="50% / 50%"
+          title="50% / 50% - Равномерно"
         >
           ◑
         </button>
         <button 
           @click="currentLeftWidth = 75; currentRightWidth = 25" 
           class="resize-preset" 
-          title="75% / 25%"
+          title="75% / 25% - Больше контента"
         >
           ◒
         </button>
         <button 
           @click="resetSplitSizes" 
           class="resize-reset" 
-          title="Сброс"
+          title="Сброс к 50/50"
         >
           ⟲
         </button>
       </div>
 
-      <!-- Resize Indicator (shows during resize) -->
+      <!-- Resize Indicator -->
       <div v-if="isResizing" class="resize-indicator">
         {{ widthIndicatorText }}
       </div>
+
+      <!-- Mobile Split Toggle -->
+      <div class="mobile-split-toggle" v-if="window.innerWidth <= 768">
+        <button 
+          @click="toggleMobileSplit" 
+          class="mobile-toggle-btn"
+          :class="{ active: showMobileContent }"
+        >
+          {{ showMobileContent ? '📝 Упражнения' : '📖 Содержание' }}
+        </button>
+      </div>
     </div>
 
-    <!-- Enhanced Lesson Completion Screen -->
+    <!-- Lesson Completion Screen -->
     <CompletionScreen
       v-if="lessonCompleted"
       :lesson="lesson"
@@ -364,7 +380,6 @@
       @homework="handleGoToHomework"
       @vocabulary="goToVocabulary"
     >
-      <!-- Slot for additional buttons/content in CompletionScreen -->
       <template #extra-actions>
         <button @click="openProblemReportModal" class="btn-secondary">
           ⚠️ Сообщить о проблеме с уроком
@@ -372,7 +387,7 @@
       </template>
     </CompletionScreen>
 
-    <!-- Migration Panel (Admin/User) -->
+    <!-- Migration Panel -->
     <div v-if="showMigrationPanel" class="migration-panel">
       <div class="migration-content">
         <h3>🔄 Обновление контента</h3>
@@ -396,6 +411,7 @@
       class="floating-ai-btn"
       @click="toggleFloatingAI"
       :class="{ active: showFloatingAI }"
+      :title="showFloatingAI ? 'Закрыть ИИ помощника' : 'Открыть ИИ помощника'"
     >
       🤖
     </button>
@@ -416,6 +432,44 @@
 
     <!-- Confetti Animation -->
     <canvas v-if="showConfetti" ref="confettiCanvas" class="confetti-canvas"></canvas>
+
+    <!-- Keyboard Shortcuts Help -->
+    <div v-if="showKeyboardHelp" class="keyboard-help-modal">
+      <div class="keyboard-help-content">
+        <h3>⌨️ Горячие клавиши</h3>
+        <div class="shortcuts-list">
+          <div class="shortcut-item">
+            <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd>
+            <span>Сообщить о проблеме</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>R</kbd>
+            <span>Сбросить размеры панелей</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>←</kbd> <kbd>→</kbd>
+            <span>Изменить размер панелей</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>Space</kbd>
+            <span>50/50 размер панелей</span>
+          </div>
+        </div>
+        <button @click="showKeyboardHelp = false" class="close-help-btn">
+          Закрыть
+        </button>
+      </div>
+    </div>
+
+    <!-- Help Button -->
+    <button 
+      v-if="started && !lessonCompleted"
+      @click="showKeyboardHelp = true"
+      class="help-btn"
+      title="Показать горячие клавиши"
+    >
+      ❓
+    </button>
   </div>
 </template>
 
