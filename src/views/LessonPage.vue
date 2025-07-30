@@ -362,7 +362,7 @@
   </div>
 </template>
 <script>
-// ✅ COMPLETE LESSONPAGE.VUE SCRIPT with Enhanced Resizable Split Screen
+// ✅ COMPLETE LESSONPAGE.VUE SCRIPT with Enhanced Resizable Split Screen - FIXED
 import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -462,6 +462,98 @@ export default {
     const showConfetti = ref(false)
 
     // ==========================================
+    // MISSING COMPUTED PROPERTIES (CRITICAL FIXES)
+    // ==========================================
+    
+    // Check if current step should show interactive panel
+    const showInteractivePanel = computed(() => {
+      const step = lessonOrchestrator.currentStep.value
+      if (!step) return false
+      
+      const interactiveTypes = ['exercise', 'practice', 'quiz', 'vocabulary']
+      return interactiveTypes.includes(step.type) && lessonOrchestrator.started.value
+    })
+
+    // Check if current step should show content panel
+    const showContentPanel = computed(() => {
+      const step = lessonOrchestrator.currentStep.value
+      if (!step) return false
+      
+      const contentTypes = ['content', 'text', 'reading', 'explanation']
+      return contentTypes.includes(step.type) || (step.content && step.content.trim().length > 0)
+    })
+
+    // Determine if we should show split screen or single panel
+    const shouldShowSplitScreen = computed(() => {
+      return showContentPanel.value && showInteractivePanel.value
+    })
+
+    // Current exercise data
+    const currentExerciseData = computed(() => {
+      const step = lessonOrchestrator.currentStep.value
+      if (!step || !['exercise', 'practice'].includes(step.type)) return null
+      
+      return getCurrentExercise()
+    })
+
+    // Current quiz data
+    const currentQuizData = computed(() => {
+      const step = lessonOrchestrator.currentStep.value
+      if (!step || step.type !== 'quiz') return null
+      
+      return getCurrentQuiz()
+    })
+
+    // Check if current step has exercises
+    const hasExercises = computed(() => {
+      const step = lessonOrchestrator.currentStep.value
+      return step && (step.exercises?.length > 0 || step.type === 'exercise' || step.type === 'practice')
+    })
+
+    // Check if current step has quizzes
+    const hasQuizzes = computed(() => {
+      const step = lessonOrchestrator.currentStep.value
+      return step && (step.quizzes?.length > 0 || step.type === 'quiz')
+    })
+
+    // Get current step type for UI decisions
+    const currentStepType = computed(() => {
+      return lessonOrchestrator.currentStep.value?.type || 'content'
+    })
+
+    // Check if lesson is ready to display
+    const isLessonReady = computed(() => {
+      return lessonOrchestrator.lesson.value && 
+             lessonOrchestrator.steps.value && 
+             lessonOrchestrator.steps.value.length > 0 &&
+             !lessonOrchestrator.loading.value
+    })
+
+    // Interactive panel visibility with better logic
+    const interactivePanelVisible = computed(() => {
+      if (!lessonOrchestrator.started.value) return false
+      if (lessonOrchestrator.lessonCompleted.value) return false
+      if (!lessonOrchestrator.currentStep.value) return false
+      
+      const step = lessonOrchestrator.currentStep.value
+      
+      // Show for vocabulary steps
+      if (step.type === 'vocabulary') return true
+      
+      // Show for exercise steps
+      if (step.type === 'exercise' || step.type === 'practice') {
+        return hasExercises.value
+      }
+      
+      // Show for quiz steps
+      if (step.type === 'quiz') {
+        return hasQuizzes.value
+      }
+      
+      return false
+    })
+
+    // ==========================================
     // RESIZABLE SPLIT SCREEN COMPUTED PROPERTIES
     // ==========================================
     const leftPanelStyle = computed(() => {
@@ -549,7 +641,7 @@ export default {
       document.body.style.userSelect = 'none'
       document.body.style.cursor = resizeDirection.value === 'horizontal' ? 'col-resize' : 'row-resize'
       
-       ('🔧 Started resizing:', resizeDirection.value)
+      console.log('🔧 Started resizing:', resizeDirection.value)
     }
 
     const handleResize = (event) => {
@@ -631,7 +723,7 @@ export default {
         console.warn('Could not save split sizes to localStorage:', error)
       }
       
-       ('✅ Stopped resizing. Final sizes:', {
+      console.log('✅ Stopped resizing. Final sizes:', {
         left: Math.round(currentLeftWidth.value),
         right: Math.round(currentRightWidth.value)
       })
@@ -707,7 +799,7 @@ export default {
         console.warn('Could not remove saved sizes from localStorage:', error)
       }
       
-       ('🔄 Reset split sizes to default (50/50)')
+      console.log('🔄 Reset split sizes to default (50/50)')
     }
 
     // Function to load saved sizes from localStorage
@@ -722,7 +814,7 @@ export default {
           if (timestamp && timestamp > thirtyDaysAgo) {
             currentLeftWidth.value = Math.max(25, Math.min(75, left || 50))
             currentRightWidth.value = Math.max(25, Math.min(75, right || 50))
-             ('📊 Loaded saved split sizes:', { left: currentLeftWidth.value, right: currentRightWidth.value })
+            console.log('📊 Loaded saved split sizes:', { left: currentLeftWidth.value, right: currentRightWidth.value })
           } else {
             // Remove old data
             localStorage.removeItem('lessonPageSplitSizes')
@@ -740,7 +832,7 @@ export default {
       
       if (wasVertical !== isNowVertical) {
         resizeDirection.value = isNowVertical ? 'vertical' : 'horizontal'
-         ('📱 Resize direction changed to:', resizeDirection.value)
+        console.log('📱 Resize direction changed to:', resizeDirection.value)
       }
     }
 
@@ -748,7 +840,7 @@ export default {
     // NAVIGATION METHODS
     // ==========================================
     const handleReturnToCatalogue = () => {
-       ('🔄 Returning to catalogue...')
+      console.log('🔄 Returning to catalogue...')
       
       try {
         router.push({ 
@@ -774,7 +866,7 @@ export default {
     }
 
     const handleGoToHomework = () => {
-       ('📚 Navigating to homework...')
+      console.log('📚 Navigating to homework...')
       
       if (lessonOrchestrator.lesson.value?._id) {
         try {
@@ -814,7 +906,7 @@ export default {
     }
 
     const exitLesson = () => {
-       ('🚪 Exiting lesson...')
+      console.log('🚪 Exiting lesson...')
       
       try {
         if (lessonOrchestrator.saveProgress) {
@@ -932,7 +1024,7 @@ export default {
         const encodedMessage = encodeURIComponent(reportMessage)
         const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`
         
-         ('📊 Problem Report Submitted:', {
+        console.log('📊 Problem Report Submitted:', {
           lessonId: getCurrentLessonInfo().lessonId,
           problemType: problemType.value,
           hasScreenshot: !!screenshotUrl.value,
@@ -1006,7 +1098,7 @@ export default {
     // VOCABULARY METHODS
     // ==========================================
     const initializeVocabularyModal = (step) => {
-       ('📚 Initializing vocabulary modal from LessonPage:', step)
+      console.log('📚 Initializing vocabulary modal from LessonPage:', step)
 
       let vocabularyStep = step
 
@@ -1025,7 +1117,7 @@ export default {
 
         const vocabularySteps = lessonOrchestrator.steps.value?.filter(s => s.type === 'vocabulary')
         if (vocabularySteps && vocabularySteps.length > 0) {
-           ('✅ Found vocabulary step in lesson, using first one:', vocabularySteps[0])
+          console.log('✅ Found vocabulary step in lesson, using first one:', vocabularySteps[0])
           vocabularyStep = vocabularySteps[0]
         } else {
           console.error('❌ No vocabulary steps found in entire lesson')
@@ -1037,7 +1129,7 @@ export default {
     }
 
     const jumpToVocabWord = (index) => {
-       ('🎯 Jumping to vocabulary word:', index)
+      console.log('🎯 Jumping to vocabulary word:', index)
 
       if (index >= 0 && index < vocabulary.vocabularyModal.words.length) {
         vocabulary.cardAnimation.isFlipping = false
@@ -1045,7 +1137,7 @@ export default {
 
         setTimeout(() => {
           vocabulary.vocabularyModal.currentIndex = index
-           (`✅ Jumped to word ${index + 1}/${vocabulary.vocabularyModal.words.length}`)
+          console.log(`✅ Jumped to word ${index + 1}/${vocabulary.vocabularyModal.words.length}`)
         }, 50)
       } else {
         console.warn('⚠️ Invalid vocabulary word index:', index)
@@ -1053,7 +1145,7 @@ export default {
     }
 
     const showVocabDefinition = () => {
-       ('🔄 Showing vocabulary definition')
+      console.log('🔄 Showing vocabulary definition')
       vocabulary.showVocabDefinition()
     }
 
@@ -1191,7 +1283,6 @@ export default {
       if (!currentExercise || currentExercise.type !== 'drag-drop') {
         return
       }
-      
       
       if (exercises.availableDragItems.value.length === 0 || exercises.dropZones.value.length === 0) {
         exercises.initializeDragDropItems(currentExercise)
@@ -1435,11 +1526,9 @@ export default {
     // ==========================================
     const completeLessonWithExtraction = async () => {
       try {
-
         const completionResult = await lessonOrchestrator.completeLesson?.()
 
         if (completionResult?.success || lessonOrchestrator.lessonCompleted.value) {
-
           const extractionResult = await extractLessonContent()
 
           if (extractionResult?.success) {
@@ -1457,7 +1546,6 @@ export default {
 
     const extractLessonContent = async () => {
       try {
-
         if (!lessonOrchestrator.currentUser?.value?.uid || !lessonOrchestrator.lesson.value?._id) {
           console.error('❌ Missing required data for extraction')
           return { success: false, error: 'Missing user or lesson data' }
@@ -1491,7 +1579,6 @@ export default {
     }
 
     const showCompletionMessage = (extractionResult) => {
-
       let message = '🎉 Урок успешно завершён!'
 
       if (extractionResult.homeworkCreated) {
@@ -1504,7 +1591,6 @@ export default {
 
       if (lessonOrchestrator.showToast) {
         lessonOrchestrator.showToast(message, 'success')
-      } else {
       }
 
       lessonOrchestrator.lessonCompleted.value = true
@@ -1515,6 +1601,8 @@ export default {
     // LIFECYCLE HOOKS
     // ==========================================
     onMounted(() => {
+      console.log('🚀 LessonPage mounted')
+      
       document.addEventListener('keydown', handleKeyboardShortcuts)
       window.addEventListener('resize', handleWindowResize)
       
@@ -1525,11 +1613,19 @@ export default {
       window.resetSplitSizes = resetSplitSizes
       window.loadSavedSizes = loadSavedSizes
       
-      
-     
+      // Debug the interactive panel visibility
+      console.log('🔍 Interactive Panel Debug:', {
+        started: lessonOrchestrator.started.value,
+        currentStep: lessonOrchestrator.currentStep.value,
+        interactivePanelVisible: interactivePanelVisible.value,
+        showInteractivePanel: showInteractivePanel.value,
+        currentStepType: currentStepType.value
+      })
     })
 
     onUnmounted(() => {
+      console.log('🏁 LessonPage unmounted')
+      
       document.removeEventListener('keydown', handleKeyboardShortcuts)
       window.removeEventListener('resize', handleWindowResize)
       
@@ -1569,6 +1665,32 @@ export default {
 
     // Watch for window size changes to update resize direction
     watch(() => resizeDirection.value, (newDirection) => {
+      console.log('📐 Resize direction changed:', newDirection)
+    })
+
+    // Watch for interactive panel visibility changes (DEBUG)
+    watch(() => interactivePanelVisible.value, (newVal, oldVal) => {
+      console.log('👁️ Interactive panel visibility changed:', { from: oldVal, to: newVal })
+      console.log('🔍 Current step details:', {
+        step: lessonOrchestrator.currentStep.value,
+        started: lessonOrchestrator.started.value,
+        completed: lessonOrchestrator.lessonCompleted.value
+      })
+    })
+
+    // Watch for lesson start
+    watch(() => lessonOrchestrator.started.value, (newVal) => {
+      console.log('▶️ Lesson started state changed:', newVal)
+    })
+
+    // Watch for current step changes
+    watch(() => lessonOrchestrator.currentStep.value, (newVal, oldVal) => {
+      console.log('📍 Current step changed:', { from: oldVal?.type, to: newVal?.type })
+      
+      // Reset attempts when step changes
+      if (newVal !== oldVal) {
+        resetAttempts()
+      }
     })
 
     // ==========================================
@@ -1592,6 +1714,18 @@ export default {
       resetSplitSizes,
       loadSavedSizes,
       handleWindowResize,
+
+      // CRITICAL: Missing computed properties that are likely used in template
+      showInteractivePanel,
+      showContentPanel,
+      shouldShowSplitScreen,
+      currentExerciseData,
+      currentQuizData,
+      hasExercises,
+      hasQuizzes,
+      currentStepType,
+      isLessonReady,
+      interactivePanelVisible,
 
       // Data and state from lessonOrchestrator
       loading: lessonOrchestrator.loading,
@@ -1761,7 +1895,6 @@ export default {
   }
 }
 </script>
-
 <style scoped>
 @import "@/assets/css/LessonPage.css";
 </style>
