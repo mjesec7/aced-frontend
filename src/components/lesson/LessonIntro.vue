@@ -107,13 +107,30 @@ export default {
 .intro-screen {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: 40px 20px;
+  padding: 40px 20px 60px;
   text-align: center;
   position: relative;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, #fafaf9 0%, #f5f5f4 50%, #e7e5e4 100%);
+  background-attachment: fixed;
+  overflow-y: auto;
+  justify-content: flex-start;
+  padding-top: 100px;
+}
+
+.intro-screen::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(139, 92, 246, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(167, 139, 250, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .exit-btn {
@@ -135,6 +152,7 @@ export default {
   justify-content: center;
   min-width: 44px;
   min-height: 44px;
+  z-index: 10;
 }
 
 .exit-btn:hover {
@@ -146,6 +164,12 @@ export default {
   max-width: 600px;
   width: 100%;
   animation: fadeInUp 0.6s ease-out;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 1;
 }
 
 @keyframes fadeInUp {
@@ -343,7 +367,7 @@ export default {
 }
 
 .continue-btn {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
   color: white;
   border: none;
   padding: 14px 28px;
@@ -352,12 +376,14 @@ export default {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  z-index: 1;
+  position: relative;
 }
 
 .continue-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
 }
 
 .intro-actions {
@@ -369,7 +395,7 @@ export default {
 }
 
 .start-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 50%, #c4b5fd 100%);
   color: white;
   border: none;
   padding: 18px 36px;
@@ -380,9 +406,10 @@ export default {
   transition: all 0.3s ease;
   min-width: 200px;
   min-height: 56px;
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.3);
   position: relative;
   overflow: hidden;
+  z-index: 1;
 }
 
 .start-btn::before {
@@ -398,7 +425,7 @@ export default {
 
 .start-btn:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 28px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 12px 28px rgba(139, 92, 246, 0.4);
 }
 
 .start-btn:hover::before {
@@ -481,7 +508,8 @@ export default {
 
 @media (max-width: 480px) {
   .intro-screen {
-    padding: 15px 12px;
+    padding: 15px 12px 40px;
+    padding-top: 80px;
   }
 
   .exit-btn {
@@ -491,6 +519,11 @@ export default {
     height: 36px;
     font-size: 1rem;
     padding: 8px;
+  }
+  
+  .intro-content {
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
   }
 
   .lesson-title {
