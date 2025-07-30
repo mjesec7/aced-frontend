@@ -97,249 +97,52 @@
       </div>
     </div>
 
-    <div v-if="vocabularyModal.isVisible" class="modal-overlay vocabulary-overlay">
-      <div class="vocabulary-modal">
-        <div class="vocab-header">
-          <div class="vocab-progress-info">
-            <h2>📚 Vocabulary Learning</h2>
-            <span class="vocab-counter">{{ currentIndex + 1 }} / {{ vocabularyModal.words.length }}</span>
-          </div>
-          <div class="vocab-progress-bar">
-            <div class="progress-fill" :style="{ width: vocabProgress + '%' }"></div>
-          </div>
-        </div>
-        
-        <div v-if="currentVocabWord" class="vocab-card-container">
-          <div class="vocab-card" :class="{ flipped: cardAnimation.showDefinition, flipping: cardAnimation.isFlipping }">
-            <div class="card-face card-front">
-              <div class="word-main">
-                <h3 class="word-term">{{ extractWordProperty(currentVocabWord, 'term') }}</h3>
-                <p v-if="extractWordProperty(currentVocabWord, 'pronunciation')" class="pronunciation">
-                  🔊 {{ extractWordProperty(currentVocabWord, 'pronunciation') }}
-                </p>
-              </div>
-              <div class="card-actions">
-                <button @click="showVocabDefinition" class="btn btn-primary">
-                  <span class="btn-icon">👁️</span>
-                  Show Definition
-                </button>
-                <button @click="pronounceWord(extractWordProperty(currentVocabWord, 'term'))" class="btn btn-icon-only">
-                  🔊
-                </button>
-              </div>
-            </div>
-            
-            <div class="card-face card-back">
-              <div class="definition-content">
-                <h3 class="word-term">{{ extractWordProperty(currentVocabWord, 'term') }}</h3>
-                <p class="definition">{{ extractWordProperty(currentVocabWord, 'definition') }}</p>
-                <p v-if="extractWordProperty(currentVocabWord, 'example')" class="example">
-                  <strong>Example:</strong> {{ extractWordProperty(currentVocabWord, 'example') }}
-                </p>
-              </div>
-              <div class="card-actions">
-                <button 
-                  @click="markWordAsLearned" 
-                  class="btn"
-                  :class="currentVocabWord.learned ? 'btn-success' : 'btn-primary'"
-                >
-                  <span class="btn-icon">{{ currentVocabWord.learned ? '✅' : '📖' }}</span>
-                  {{ currentVocabWord.learned ? 'Learned!' : 'Mark as Learned' }}
-                </button>
-                <button @click="hideVocabDefinition" class="btn btn-secondary">
-                  <span class="btn-icon">🔄</span>
-                  Flip Back
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="vocab-controls">
-          <button 
-            @click="previousVocabWord" 
-            :disabled="currentIndex === 0"
-            class="btn btn-secondary"
-          >
-            <span class="btn-icon">⬅️</span>
-            Previous
-          </button>
-          
-          <button @click="skipVocabularyModal" class="btn btn-ghost">
-            Skip Vocabulary
-          </button>
-          
-          <button @click="nextVocabWord" class="btn btn-primary">
-            <span class="btn-icon">{{ isLastVocabWord ? '🎉' : '➡️' }}</span>
-            {{ isLastVocabWord ? 'Complete' : 'Next' }}
-          </button>
-        </div>
-      </div>
-    </div>
+    <VocabularyModal
+      v-if="vocabularyModal.isVisible"
+      :vocabulary-data="vocabularyModal"
+      :card-animation="cardAnimation"
+      :current-vocab-word="currentVocabWord"
+      :vocab-progress="vocabProgress"
+      :is-last-vocab-word="isLastVocabWord"
+      @close="skipVocabularyModal"
+      @skip="skipVocabularyModal"
+      @show-definition="showVocabDefinition"
+      @hide-definition="hideVocabDefinition"
+      @mark-learned="markWordAsLearned"
+      @next-word="nextVocabWord"
+      @previous-word="previousVocabWord"
+      @pronounce="pronounceWord"
+    />
 
-    <div v-if="!started && !showPaywallModal && !loading && !error" class="lesson-intro">
-      <div class="intro-background">
-        <div class="background-pattern"></div>
-        <div class="floating-elements">
-          <div class="floating-element" style="--delay: 0s">📚</div>
-          <div class="floating-element" style="--delay: 2s">⭐</div>
-          <div class="floating-element" style="--delay: 4s">🎯</div>
-          <div class="floating-element" style="--delay: 6s">💡</div>
-        </div>
-      </div>
-      
-      <div class="intro-content">
-        <div class="lesson-badge">
-          <span class="badge-icon">🔥</span>
-          <span class="badge-text">Ready to Learn</span>
-        </div>
-        
-        <h1 class="lesson-title">{{ getLocalized(lesson.lessonName) }}</h1>
-        <p class="lesson-description">{{ getLocalized(lesson.description) }}</p>
-        
-        <div class="lesson-preview">
-          <div class="preview-stats">
-            <div class="stat-card">
-              <div class="stat-icon">⏱️</div>
-              <div class="stat-content">
-                <span class="stat-value">{{ estimatedTime }}</span>
-                <span class="stat-label">minutes</span>
-              </div>
-            </div>
-            
-            <div class="stat-card">
-              <div class="stat-icon">📋</div>
-              <div class="stat-content">
-                <span class="stat-value">{{ steps.length }}</span>
-                <span class="stat-label">steps</span>
-              </div>
-            </div>
-            
-            <div class="stat-card">
-              <div class="stat-icon">🎯</div>
-              <div class="stat-content">
-                <span class="stat-value">{{ lesson.difficulty || 'Medium' }}</span>
-                <span class="stat-label">difficulty</span>
-              </div>
-            </div>
-          </div>
-          
-          <div v-if="previousProgress" class="continue-section">
-            <div class="continue-card">
-              <div class="continue-info">
-                <h3>📈 Continue your progress</h3>
-                <p>You're {{ Math.round(((previousProgress.completedSteps?.length || 0) / steps.length) * 100) }}% through this lesson</p>
-              </div>
-              <div class="continue-progress">
-                <div class="progress-ring">
-                  <div class="ring-background"></div>
-                  <div class="ring-progress" :style="{ '--progress': ((previousProgress.completedSteps?.length || 0) / steps.length) * 100 }"></div>
-                  <div class="ring-content">
-                    <span class="ring-percentage">{{ Math.round(((previousProgress.completedSteps?.length || 0) / steps.length) * 100) }}%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="intro-actions">
-          <button 
-            v-if="!previousProgress" 
-            @click="startLesson" 
-            class="btn btn-primary btn-hero"
-          >
-            <span class="btn-icon">🚀</span>
-            <span class="btn-text">Start Learning</span>
-            <div class="btn-glow"></div>
-          </button>
-          
-          <div v-else class="continue-options">
-            <button @click="continuePreviousProgress" class="btn btn-primary btn-hero">
-              <span class="btn-icon">▶️</span>
-              <span class="btn-text">Continue from Step {{ (previousProgress.completedSteps?.length || 0) + 1 }}</span>
-              <div class="btn-glow"></div>
-            </button>
-            <button @click="startLesson" class="btn btn-secondary">
-              <span class="btn-icon">🔄</span>
-              Start Over
-            </button>
-          </div>
-          
-          <button @click="confirmExit" class="btn btn-ghost">
-            <span class="btn-icon">⬅️</span>
-            Back to Catalogue
-          </button>
-        </div>
-      </div>
-    </div>
+    <LessonIntro
+      v-if="!started && !showPaywallModal && !loading && !error"
+      :lesson="lesson"
+      :steps="steps"
+      :estimated-time="estimatedTime"
+      :previous-progress="previousProgress"
+      @start-lesson="startLesson"
+      @continue-progress="continuePreviousProgress"
+      @exit="confirmExit"
+      @report-problem="openProblemReportModal"
+    />
 
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
-      <div class="lesson-header">
-        <div class="header-content">
-          <div class="lesson-info">
-            <h2 class="lesson-name">{{ getLocalized(lesson.lessonName) }}</h2>
-            <div class="lesson-meta">
-              <div class="meta-item">
-                <span class="meta-icon">📍</span>
-                <span class="meta-text">Step {{ currentIndex + 1 }} of {{ steps.length }}</span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-icon">⏱️</span>
-                <span class="meta-text">{{ formattedTime }}</span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-icon">⭐</span>
-                <span class="meta-text">{{ stars }} stars</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="header-actions">
-            <button @click="openProblemReportModal" class="btn btn-ghost btn-sm" title="Report Problem">
-              <span class="btn-icon">⚠️</span>
-            </button>
-            <button @click="confirmExit" class="btn btn-secondary btn-sm">
-              <span class="btn-icon">🚪</span>
-              Exit
-            </button>
-          </div>
-        </div>
+      <LessonHeader
+        :lesson="lesson"
+        :current-step="currentIndex + 1"
+        :total-steps="steps.length"
+        :formatted-time="formattedTime"
+        :stars="stars"
+        @exit="confirmExit"
+        @report-problem="openProblemReportModal"
+      />
 
-        <div class="progress-section">
-          <div class="progress-track">
-            <div 
-              class="progress-fill" 
-              :style="{ width: progressPercentage + '%' }"
-            ></div>
-            <div class="progress-steps">
-              <div 
-                v-for="(step, index) in steps" 
-                :key="index"
-                class="progress-step"
-                :class="{
-                  completed: index < currentIndex,
-                  current: index === currentIndex,
-                  upcoming: index > currentIndex
-                }"
-                :style="{ left: (index / (steps.length - 1)) * 100 + '%' }"
-              >
-                <div class="step-dot">
-                  <span v-if="index < currentIndex">✓</span>
-                  <span v-else-if="index === currentIndex">{{ getStepIcon(step.type) }}</span>
-                  <span v-else>{{ index + 1 }}</span>
-                </div>
-                <div class="step-tooltip">
-                  {{ getStepTypeText(step.type) }}
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="progress-info">
-            <span class="progress-text">{{ progressPercentage }}% Complete</span>
-            <span class="progress-remaining">{{ steps.length - currentIndex - 1 }} steps remaining</span>
-          </div>
-        </div>
+      <ProgressBar
+        :progress-percentage="progressPercentage"
+        :stars="stars"
+        :current-step="currentIndex"
+        :total-steps="steps.length"
+      />
       </div>
 
       <div class="split-container">
@@ -352,82 +155,18 @@
             'vertical-layout': isVerticalLayout
           }"
         >
-          <div 
+          <ContentPanel
             v-if="showContentPanel"
-            class="content-panel"
+            :current-step="currentStep"
+            :current-index="currentIndex"
+            :total-steps="steps.length"
+            :is-last-step="isLastStep"
             :style="contentPanelStyle"
-          >
-            <div class="panel-header">
-              <div class="panel-title">
-                <span class="panel-icon">{{ getStepIcon(currentStep.type) }}</span>
-                <span class="panel-text">{{ getStepTypeText(currentStep.type) }}</span>
-              </div>
-              <div class="panel-tools">
-                <button class="tool-btn" @click="pronounceContent" title="Read aloud">
-                  🔊
-                </button>
-              </div>
-            </div>
-
-            <div class="panel-content">
-              <div v-if="currentStep.type === 'explanation'" class="explanation-step">
-                <div class="step-content" v-html="formatContent(currentStep.data?.content || '')"></div>
-              </div>
-
-              <div v-else-if="currentStep.type === 'example'" class="example-step">
-                <div class="example-badge">
-                  <span class="badge-icon">💡</span>
-                  <span class="badge-text">Example</span>
-                </div>
-                <div class="step-content" v-html="formatContent(currentStep.data?.content || '')"></div>
-              </div>
-
-              <div v-else-if="currentStep.type === 'reading'" class="reading-step">
-                <div class="reading-badge">
-                  <span class="badge-icon">📖</span>
-                  <span class="badge-text">Reading</span>
-                </div>
-                <div class="step-content" v-html="formatContent(currentStep.data?.content || '')"></div>
-              </div>
-
-              <div v-else-if="currentStep.type === 'vocabulary'" class="vocabulary-step">
-                <div class="vocabulary-trigger">
-                  <div class="trigger-icon">📚</div>
-                  <h3>Vocabulary Learning</h3>
-                  <p>Ready to learn new words and expand your vocabulary?</p>
-                  <button @click="initializeVocabularyModal(currentStep)" class="btn btn-primary">
-                    <span class="btn-icon">🚀</span>
-                    Start Vocabulary
-                  </button>
-                </div>
-              </div>
-
-              <div v-else class="default-step">
-                <div class="step-content" v-html="formatContent(currentStep.data?.content || 'Content loading...')"></div>
-              </div>
-            </div>
-
-            <div class="panel-navigation">
-              <button 
-                @click="goPrevious" 
-                :disabled="currentIndex === 0"
-                class="btn btn-secondary"
-              >
-                <span class="btn-icon">⬅️</span>
-                Previous
-              </button>
-              
-              <div class="nav-spacer"></div>
-              
-              <button 
-                @click="goNext"
-                class="btn btn-primary"
-              >
-                <span class="btn-text">{{ isLastStep ? 'Complete' : 'Next' }}</span>
-                <span class="btn-icon">{{ isLastStep ? '🎉' : '➡️' }}</span>
-              </button>
-            </div>
-          </div>
+            @go-previous="goPrevious"
+            @go-next="goNext"
+            @pronounce-content="pronounceContent"
+            @initialize-vocabulary="initializeVocabularyModal"
+          />
 
           <div 
             v-if="showContentPanel && showInteractivePanel"
@@ -457,321 +196,39 @@
             </div>
           </div>
 
-          <div 
+          <InteractivePanel
             v-if="showInteractivePanel"
-            class="interactive-panel"
+            :current-step="currentStep"
+            :current-exercise-index="currentExerciseIndex"
+            :current-quiz-index="currentQuizIndex"
+            :user-answer="userAnswer"
+            :confirmation="confirmation"
+            :answer-was-correct="answerWasCorrect"
+            :fill-blank-answers="fillBlankAnswers"
+            :earned-points="earnedPoints"
             :style="interactivePanelStyle"
-          >
-            <div class="panel-header">
-              <div class="panel-title">
-                <span class="panel-icon">⚡</span>
-                <span class="panel-text">Interactive Exercise</span>
-              </div>
-              <div class="panel-tools">
-                <button class="tool-btn" title="Hint">
-                  💡
-                </button>
-              </div>
-            </div>
-
-            <div class="panel-content">
-              <div v-if="currentStep.type === 'exercise' || currentStep.type === 'practice'">
-                <div v-if="getCurrentExercise(currentStep)" class="exercise-container">
-                  <div class="exercise-header">
-                    <div class="exercise-badge">
-                      <span class="badge-icon">✏️</span>
-                      <span class="badge-text">Exercise {{ currentExerciseIndex + 1 }} of {{ getTotalExercises(currentStep) }}</span>
-                    </div>
-                  </div>
-                  
-                  <div class="exercise-content">
-                    <h3 class="exercise-question">{{ getCurrentExercise(currentStep).question || getCurrentExercise(currentStep).title }}</h3>
-                    
-                    <div v-if="getCurrentExercise(currentStep).type === 'short-answer'" class="exercise-input-group">
-                      <div class="input-wrapper">
-                        <input 
-                          v-model="userAnswer" 
-                          type="text" 
-                          placeholder="Type your answer here..."
-                          class="exercise-input"
-                          @keyup.enter="handleSubmit(userAnswer)"
-                        />
-                        <div class="input-decoration"></div>
-                      </div>
-                    </div>
-
-                    <div v-else-if="getCurrentExercise(currentStep).type === 'multiple-choice'" class="exercise-options">
-                      <div 
-                        v-for="(option, index) in getCurrentExercise(currentStep).options" 
-                        :key="index"
-                        class="option-card"
-                        :class="{ selected: userAnswer === index }"
-                        @click="userAnswer = index"
-                      >
-                        <div class="option-marker">{{ String.fromCharCode(65 + index) }}</div>
-                        <div class="option-text">{{ option }}</div>
-                        <div class="option-indicator"></div>
-                      </div>
-                    </div>
-
-                    <div v-else-if="getCurrentExercise(currentStep).type === 'true-false'" class="exercise-options">
-                      <div 
-                        class="option-card true-false"
-                        :class="{ selected: userAnswer === 'true' }"
-                        @click="userAnswer = 'true'"
-                      >
-                        <div class="option-marker">✓</div>
-                        <div class="option-text">True</div>
-                        <div class="option-indicator"></div>
-                      </div>
-                      <div 
-                        class="option-card true-false"
-                        :class="{ selected: userAnswer === 'false' }"
-                        @click="userAnswer = 'false'"
-                      >
-                        <div class="option-marker">✗</div>
-                        <div class="option-text">False</div>
-                        <div class="option-indicator"></div>
-                      </div>
-                    </div>
-
-                    <div v-else-if="getCurrentExercise(currentStep).type === 'fill-blank'" class="fill-blank-exercise">
-                      <div class="template-display" v-html="getFormattedFillBlankTemplate(getCurrentExercise(currentStep))"></div>
-                      <div class="blank-inputs">
-                        <div 
-                          v-for="(blank, index) in fillBlankAnswers" 
-                          :key="index"
-                          class="blank-input-group"
-                        >
-                          <label class="blank-label">Blank {{ index + 1 }}</label>
-                          <input 
-                            v-model="fillBlankAnswers[index]"
-                            type="text"
-                            :placeholder="`Answer for blank ${index + 1}`"
-                            class="blank-input"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div v-else class="exercise-input-group">
-                      <div class="input-wrapper">
-                        <input 
-                          v-model="userAnswer" 
-                          type="text" 
-                          placeholder="Type your answer here..."
-                          class="exercise-input"
-                          @keyup.enter="handleSubmit(userAnswer)"
-                        />
-                        <div class="input-decoration"></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="exercise-submit">
-                    <button 
-                      @click="handleSubmit(userAnswer)"
-                      :disabled="!canSubmitAnswer(getCurrentExercise(currentStep))"
-                      class="btn btn-primary btn-submit"
-                    >
-                      <span class="btn-icon">🎯</span>
-                      <span class="btn-text">Submit Answer</span>
-                      <div class="btn-shine"></div>
-                    </button>
-                  </div>
-
-                  <div 
-                    v-if="confirmation" 
-                    class="exercise-feedback" 
-                    :class="{ 
-                      correct: answerWasCorrect, 
-                      incorrect: !answerWasCorrect,
-                      'fade-in': confirmation
-                    }"
-                  >
-                    <div class="feedback-icon">
-                      <span v-if="answerWasCorrect">🎉</span>
-                      <span v-else>💭</span>
-                    </div>
-                    <div class="feedback-content">
-                      <p class="feedback-text">{{ confirmation }}</p>
-                    </div>
-                  </div>
-
-                  <div class="exercise-navigation">
-                    <button 
-                      v-if="!isLastExercise(currentStep)"
-                      @click="goToNextExercise(currentStep, goNext)"
-                      class="btn btn-primary"
-                    >
-                      <span class="btn-text">Next Exercise</span>
-                      <span class="btn-icon">➡️</span>
-                    </button>
-                    <button 
-                      v-else
-                      @click="goNext"
-                      class="btn btn-success"
-                    >
-                      <span class="btn-text">Complete Exercises</span>
-                      <span class="btn-icon">🎉</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div v-else-if="currentStep.type === 'quiz'">
-                <div v-if="getCurrentQuiz(currentStep)" class="quiz-container">
-                  <div class="quiz-header">
-                    <div class="quiz-badge">
-                      <span class="badge-icon">🧩</span>
-                      <span class="badge-text">Quiz {{ currentQuizIndex + 1 }} of {{ getTotalQuizzes(currentStep) }}</span>
-                    </div>
-                  </div>
-                  
-                  <div class="quiz-content">
-                    <h3 class="quiz-question">{{ getCurrentQuiz(currentStep).question }}</h3>
-                    
-                    <div class="quiz-options">
-                      <div 
-                        v-for="(option, index) in getCurrentQuiz(currentStep).options" 
-                        :key="index"
-                        class="option-card"
-                        :class="{ selected: userAnswer === index }"
-                        @click="userAnswer = index"
-                      >
-                        <div class="option-marker">{{ String.fromCharCode(65 + index) }}</div>
-                        <div class="option-text">{{ option }}</div>
-                        <div class="option-indicator"></div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="quiz-submit">
-                    <button 
-                      @click="handleSubmit(userAnswer)"
-                      :disabled="userAnswer === null || userAnswer === undefined"
-                      class="btn btn-primary btn-submit"
-                    >
-                      <span class="btn-icon">🎯</span>
-                      <span class="btn-text">Submit Answer</span>
-                      <div class="btn-shine"></div>
-                    </button>
-                  </div>
-
-                  <div 
-                    v-if="confirmation" 
-                    class="quiz-feedback" 
-                    :class="{ 
-                      correct: answerWasCorrect, 
-                      incorrect: !answerWasCorrect,
-                      'fade-in': confirmation
-                    }"
-                  >
-                    <div class="feedback-icon">
-                      <span v-if="answerWasCorrect">🎉</span>
-                      <span v-else>💭</span>
-                    </div>
-                    <div class="feedback-content">
-                      <p class="feedback-text">{{ confirmation }}</p>
-                    </div>
-                  </div>
-
-                  <div class="quiz-navigation">
-                    <button 
-                      v-if="!isLastQuiz(currentStep)"
-                      @click="goToNextQuiz(currentStep, goNext)"
-                      class="btn btn-primary"
-                    >
-                      <span class="btn-text">Next Question</span>
-                      <span class="btn-icon">➡️</span>
-                    </button>
-                    <button 
-                      v-else
-                      @click="goNext"
-                      class="btn btn-success"
-                    >
-                      <span class="btn-text">Complete Quiz</span>
-                      <span class="btn-icon">🎉</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            @update-answer="userAnswer = $event"
+            @submit-answer="handleSubmit"
+            @next-exercise="goToNextExercise"
+            @next-quiz="goToNextQuiz"
+            @complete-step="goNext"
+          />
         </div>
       </div>
     </div>
 
-    <div v-if="lessonCompleted" class="completion-screen">
-      <div class="completion-background">
-        <div class="celebration-particles">
-          <div class="particle" v-for="i in 20" :key="i"></div>
-        </div>
-      </div>
-      
-      <div class="completion-content">
-        <div class="completion-header">
-          <div class="medal-container">
-            <div class="medal-glow"></div>
-            <div class="medal">{{ getMedalIcon() }}</div>
-          </div>
-          <h1 class="completion-title">🎉 Lesson Complete!</h1>
-          <p class="completion-subtitle">{{ medalLabel }}</p>
-        </div>
-
-        <div class="completion-stats">
-          <div class="stat-card large">
-            <div class="stat-icon">⏱️</div>
-            <div class="stat-content">
-              <span class="stat-value">{{ readableTime }}</span>
-              <span class="stat-label">Time Spent</span>
-            </div>
-          </div>
-          
-          <div class="stat-card large">
-            <div class="stat-icon">⭐</div>
-            <div class="stat-content">
-              <span class="stat-value">{{ stars }}</span>
-              <span class="stat-label">Stars Earned</span>
-            </div>
-          </div>
-          
-          <div class="stat-card large">
-            <div class="stat-icon">💯</div>
-            <div class="stat-content">
-              <span class="stat-value">{{ earnedPoints }}</span>
-              <span class="stat-label">Points</span>
-            </div>
-          </div>
-          
-          <div class="stat-card large">
-            <div class="stat-icon">🎯</div>
-            <div class="stat-content">
-              <span class="stat-value">{{ Math.max(0, 100 - mistakeCount * 10) }}%</span>
-              <span class="stat-label">Accuracy</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="completion-actions">
-          <button @click="handleReturnToCatalogue" class="btn btn-primary btn-hero">
-            <span class="btn-icon">📚</span>
-            <span class="btn-text">Continue Learning</span>
-            <div class="btn-glow"></div>
-          </button>
-          
-          <button @click="handleGoToHomework" class="btn btn-secondary">
-            <span class="btn-icon">📝</span>
-            Practice & Homework
-          </button>
-          
-          <button @click="shareResult" class="btn btn-ghost">
-            <span class="btn-icon">🔗</span>
-            Share Progress
-          </button>
-        </div>
-      </div>
-    </div>
+    <CompletionScreen
+      v-if="lessonCompleted"
+      :readable-time="readableTime"
+      :stars="stars"
+      :mistake-count="mistakeCount"
+      :earned-points="earnedPoints"
+      :medal-label="medalLabel"
+      :medal-icon="getMedalIcon()"
+      @return-to-catalogue="handleReturnToCatalogue"
+      @go-to-homework="handleGoToHomework"
+      @share-result="shareResult"
+    />
 
     <button
       v-if="started && !lessonCompleted"
@@ -834,13 +291,27 @@ import { useExplanation } from '@/composables/useExplanation'
 import { usePaymentValidation } from '@/composables/usePaymentValidation'
 import { useSound } from '@/composables/useSound'
 
-// Import components (removed AIHelpPanel)
+// Import components
+import VocabularyModal from '@/components/lesson/VocabularyModal.vue'
+import LessonIntro from '@/components/lesson/LessonIntro.vue'
+import LessonHeader from '@/components/lesson/LessonHeader.vue'
+import ProgressBar from '@/components/lesson/ProgressBar.vue'
+import ContentPanel from '@/components/lesson/ContentPanel.vue'
+import InteractivePanel from '@/components/lesson/InteractivePanel.vue'
+import CompletionScreen from '@/components/lesson/CompletionScreen.vue'
 import FloatingAIAssistant from '@/components/lesson/FloatingAIAssistant.vue'
 
 export default {
   name: 'LessonPage',
 
   components: {
+    VocabularyModal,
+    LessonIntro,
+    LessonHeader,
+    ProgressBar,
+    ContentPanel,
+    InteractivePanel,
+    CompletionScreen,
     FloatingAIAssistant
   },
 
