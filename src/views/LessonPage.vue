@@ -321,7 +321,7 @@ import InteractivePanel from '../components/lesson/InteractivePanel.vue'
 import VocabularyModal from '../components/lesson/VocabularyModal.vue'
 import LessonIntro from '../components/lesson/LessonIntro.vue'
 import CompletionScreen from '../components/lesson/CompletionScreen.vue'
-import AIHelper from '../components/lesson/AIHelper.vue'
+import AIHelper from '../components/lesson/AIHelpPanel.vue'
 
 export default {
   name: 'LessonPage',
