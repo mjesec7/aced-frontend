@@ -340,15 +340,20 @@ export function useLessonOrchestrator() {
   
   // ✅ Progress management
   const loadPreviousProgress = async () => {
-    if (!lesson.value._id || !userId.value) return
+    if (!lesson.value._id || !userId.value) {
+      console.log('ℹ️ Skipping progress load - missing lessonId or userId');
+      return;
+    }
     
     try {
+      console.log(`🔍 Loading progress for lesson: ${lesson.value._id}, user: ${userId.value}`);
       const progressResult = await getLessonProgress(userId.value, lesson.value._id)
       
-      if (progressResult.success && progressResult.data) {
+      if (progressResult.success) {
         const progressData = progressResult.data
         
-        if (progressData.completedSteps && progressData.completedSteps.length > 0) {
+        if (progressData && progressData.completedSteps && progressData.completedSteps.length > 0) {
+          console.log('✅ Found previous progress:', progressData);
           previousProgress.value = {
             _id: progressData._id,
             userId: progressData.userId,
@@ -364,14 +369,17 @@ export function useLessonOrchestrator() {
             medal: progressData.medal || 'none'
           }
         } else {
+          console.log('ℹ️ No previous progress found or progress is empty');
           previousProgress.value = null
         }
       } else {
+        console.log('ℹ️ Progress request failed, starting fresh');
         previousProgress.value = null
       }
       
     } catch (err) {
-      console.warn('⚠️ Failed to load previous progress:', err)
+      console.warn('⚠️ Failed to load previous progress:', err.message)
+      console.log('ℹ️ Starting lesson without previous progress');
       previousProgress.value = null
     }
   }
@@ -411,18 +419,29 @@ export function useLessonOrchestrator() {
         submittedHomework: false
       }
 
+      console.log('💾 Saving progress:', {
+        lessonId: lesson.value._id,
+        userId: userId.value,
+        completedSteps: completedSteps.length,
+        progressPercent,
+        completed
+      });
+
       const result = await submitProgress(userId.value, progressData)
       
       if (result.success) {
+        console.log('✅ Progress saved successfully');
         return true
       } else {
-        console.warn('⚠️ Progress save returned success: false')
-        return false
+        console.warn('⚠️ Progress save returned success: false');
+        // Don't treat this as a fatal error - the lesson can continue
+        return true
       }
       
     } catch (err) {
-      console.error('❌ Progress save error:', err)
-      return false
+      console.error('❌ Progress save error:', err.message)
+      // Don't treat progress save errors as fatal - lesson can continue
+      return true
     }
   }
   
