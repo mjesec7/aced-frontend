@@ -305,14 +305,29 @@ export function useLessonOrchestrator() {
     }
     
     if (!content.trim()) {
-      content = `Content for ${step.type} step ${index + 1}`
+      // Create better default content in Russian
+      const defaultContent = {
+        'explanation': `Это объяснение для шага ${index + 1}. Здесь вы изучите основные концепции и принципы.`,
+        'reading': `Читайте внимательно материал для шага ${index + 1}. Обратите внимание на ключевые моменты.`,
+        'vocabulary': `Изучите новые слова и термины для шага ${index + 1}. Запомните их значения и использование.`,
+        'example': `Рассмотрите примеры для шага ${index + 1}. Они помогут лучше понять материал.`,
+        'exercise': `Выполните упражнение для закрепления материала шага ${index + 1}.`,
+        'practice': `Практикуйтесь в применении знаний из шага ${index + 1}.`,
+        'quiz': `Пройдите тест по материалу шага ${index + 1}.`
+      }
+      
+      content = defaultContent[step.type] || `Содержание для ${step.type} шага ${index + 1}`
     }
     
     return {
       type: step.type,
       data: {
         content: content,
-        questions: step.questions || step.data?.questions || []
+        questions: step.questions || step.data?.questions || [
+          'Что вы поняли из этого материала?',
+          'Как можно применить эти знания на практике?',
+          'Какие вопросы у вас остались?'
+        ]
       }
     }
   }
@@ -322,18 +337,86 @@ export function useLessonOrchestrator() {
     
     // Add explanations
     if (Array.isArray(lesson.value.explanations)) {
-      lesson.value.explanations.forEach(explanation => {
+      lesson.value.explanations.forEach((explanation, index) => {
         steps.value.push({
           type: 'explanation',
           data: {
-            content: typeof explanation === 'string' ? explanation : explanation.content || ''
+            content: typeof explanation === 'string' ? explanation : explanation.content || `Объяснение ${index + 1}`,
+            questions: [
+              'Что вы поняли из этого объяснения?',
+              'Как можно применить эти знания?',
+              'Какие вопросы у вас остались?'
+            ]
           }
         })
       })
     }
     
-    // Add examples, exercises, quiz, etc.
-    // ... similar to original implementation
+    // Add examples
+    if (Array.isArray(lesson.value.examples)) {
+      lesson.value.examples.forEach((example, index) => {
+        steps.value.push({
+          type: 'example',
+          data: {
+            content: typeof example === 'string' ? example : example.content || `Пример ${index + 1}`,
+            questions: [
+              'Что демонстрирует этот пример?',
+              'Как можно использовать этот подход?',
+              'Какие выводы можно сделать?'
+            ]
+          }
+        })
+      })
+    }
+    
+    // Add exercises
+    if (Array.isArray(lesson.value.exercises)) {
+      lesson.value.exercises.forEach((exercise, index) => {
+        steps.value.push({
+          type: 'exercise',
+          data: {
+            content: typeof exercise === 'string' ? exercise : exercise.content || `Упражнение ${index + 1}`,
+            questions: [
+              'Как вы будете решать эту задачу?',
+              'Какие знания вам понадобятся?',
+              'Какой результат вы ожидаете?'
+            ]
+          }
+        })
+      })
+    }
+    
+    // Add vocabulary
+    if (Array.isArray(lesson.value.vocabulary)) {
+      lesson.value.vocabulary.forEach((vocab, index) => {
+        steps.value.push({
+          type: 'vocabulary',
+          data: {
+            content: typeof vocab === 'string' ? vocab : vocab.content || `Словарь ${index + 1}`,
+            questions: [
+              'Запомнили ли вы эти термины?',
+              'Как вы будете использовать эти слова?',
+              'Какие ассоциации у вас возникают?'
+            ]
+          }
+        })
+      })
+    }
+    
+    // If no steps were created, create a default explanation
+    if (steps.value.length === 0) {
+      steps.value.push({
+        type: 'explanation',
+        data: {
+          content: lesson.value.description || 'Добро пожаловать в урок! Изучите материал внимательно.',
+          questions: [
+            'Что вы ожидаете от этого урока?',
+            'Какие цели вы ставите перед собой?',
+            'Как вы планируете применять полученные знания?'
+          ]
+        }
+      })
+    }
     
     console.log(`✅ Processed ${steps.value.length} steps from legacy format`)
   }

@@ -295,6 +295,35 @@
         </div>
       </div>
 
+      <!-- Fallback for no exercise data -->
+      <div v-else class="exercise-container fallback-exercise">
+        <div class="question-section">
+          <h4 class="question-title">Интерактивная панель</h4>
+          <div class="question-content">
+            <p class="question-text">
+              Здесь будут отображаться упражнения и интерактивные задания для закрепления материала.
+            </p>
+            <div class="points-info">
+              <span class="points-badge">+0 pts</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="answer-section">
+          <div class="placeholder-content">
+            <div class="placeholder-icon">🎯</div>
+            <p class="placeholder-text">
+              Упражнения будут доступны по мере изучения материала
+            </p>
+            <div class="placeholder-actions">
+              <button class="placeholder-btn" @click="emit('next-exercise')">
+                Следующий шаг
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Feedback Section -->
       <div v-if="showFeedback" class="feedback-section">
         <div class="feedback-card" :class="feedbackType">
@@ -1819,6 +1848,89 @@ export default {
 
 .btn-text {
   font-size: 0.9rem;
+}
+
+/* ==========================================
+   FALLBACK EXERCISE
+   ========================================== */
+.fallback-exercise {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+}
+
+.placeholder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 24px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  min-height: 200px;
+}
+
+.placeholder-icon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.placeholder-text {
+  font-size: 1.125rem;
+  color: #64748b;
+  margin-bottom: 24px;
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+.placeholder-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.placeholder-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.placeholder-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+}
+
+.placeholder-btn:active {
+  transform: translateY(0);
+}
+
+/* Dark mode for fallback */
+@media (prefers-color-scheme: dark) {
+  .placeholder-content {
+    background: linear-gradient(135deg, #334155 0%, #475569 100%);
+    border-color: #64748b;
+  }
+
+  .placeholder-text {
+    color: #cbd5e1;
+  }
+
+  .placeholder-btn {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  }
 }
 
 /* ==========================================

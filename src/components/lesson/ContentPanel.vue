@@ -29,7 +29,27 @@
     </div>
 
     <div class="content-body" ref="contentBody">
-      <div v-if="contentType === 'component-lifecycle'" class="content-section lifecycle-content">
+      <!-- Dynamic Content Section -->
+      <div v-if="contentType === 'dynamic-content'" class="content-section dynamic-content">
+        <div class="intro-section">
+          <h3 class="section-title">{{ getStepTitle() }}</h3>
+          <p class="section-intro">{{ getStepDescription() }}</p>
+        </div>
+        
+        <div class="lesson-content" v-html="formatContent(props.currentStep.data.content)"></div>
+        
+        <!-- Questions section if available -->
+        <div v-if="props.currentStep.data.questions && props.currentStep.data.questions.length > 0" class="questions-section">
+          <h4 class="questions-title">Вопросы для размышления:</h4>
+          <ul class="questions-list">
+            <li v-for="(question, index) in props.currentStep.data.questions" :key="index" class="question-item">
+              {{ question }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div v-else-if="contentType === 'component-lifecycle'" class="content-section lifecycle-content">
         <div class="intro-section">
           <h3 class="section-title">🔄 React Component Lifecycle</h3>
           <p class="section-intro">
@@ -503,6 +523,11 @@ const isLoadingAI = ref(false)
 const contentType = computed(() => {
   if (!props.currentStep) return 'default'
 
+  // Check if we have actual content data
+  if (props.currentStep.data && props.currentStep.data.content) {
+    return 'dynamic-content'
+  }
+
   // Determine content type based on step data
   if (props.currentStep.type === 'explanation' && props.currentStep.topic === 'lifecycle') {
     return 'component-lifecycle'
@@ -518,7 +543,7 @@ const contentType = computed(() => {
 })
 
 const canShowAIHelp = computed(() => {
-  return ['component-lifecycle', 'components-intro', 'concepts-overview'].includes(contentType.value)
+  return ['component-lifecycle', 'components-intro', 'concepts-overview', 'dynamic-content'].includes(contentType.value)
 })
 
 const suggestedQuestions = computed(() => {
@@ -537,6 +562,11 @@ const suggestedQuestions = computed(() => {
       'What are React Hooks and why use them?',
       'How is JSX different from HTML?',
       'What makes React components reusable?'
+    ],
+    'dynamic-content': [
+      'Можете объяснить это подробнее?',
+      'Как это связано с предыдущим материалом?',
+      'Какие практические примеры можно привести?'
     ]
   }
 
@@ -553,7 +583,11 @@ const getStepIcon = () => {
     'concepts-overview': '📚',
     'explanation': '📖',
     'reading': '📄',
-    'vocabulary': '📝'
+    'vocabulary': '📝',
+    'exercise': '💪',
+    'practice': '🎯',
+    'quiz': '🧩',
+    'dynamic-content': '📖'
   }
   return icons[contentType.value] || '📖'
 }
@@ -563,20 +597,50 @@ const getStepTitle = () => {
     'component-lifecycle': 'Component Lifecycle',
     'components-intro': 'React Components',
     'concepts-overview': 'React Concepts',
-    'explanation': 'Explanation',
-    'reading': 'Reading Material',
-    'vocabulary': 'Vocabulary'
+    'explanation': 'Объяснение',
+    'reading': 'Чтение',
+    'vocabulary': 'Словарь',
+    'exercise': 'Упражнение',
+    'practice': 'Практика',
+    'quiz': 'Тест',
+    'dynamic-content': props.currentStep?.title || 'Содержание урока'
   }
-  return titles[contentType.value] || props.currentStep?.title || 'Content'
+  return titles[contentType.value] || props.currentStep?.title || 'Содержание'
 }
 
 const getStepDescription = () => {
   const descriptions = {
     'component-lifecycle': 'Learn about mounting, updating, and unmounting phases',
     'components-intro': 'Understanding the building blocks of React applications',
-    'concepts-overview': 'Essential React concepts for modern development'
+    'concepts-overview': 'Essential React concepts for modern development',
+    'explanation': 'Изучите материал внимательно',
+    'reading': 'Прочитайте материал',
+    'vocabulary': 'Изучите новые слова',
+    'exercise': 'Выполните упражнение',
+    'practice': 'Практикуйтесь',
+    'quiz': 'Пройдите тест',
+    'dynamic-content': props.currentStep?.description || 'Изучите материал внимательно'
   }
-  return descriptions[contentType.value] || props.currentStep?.description || 'Study the content carefully'
+  return descriptions[contentType.value] || props.currentStep?.description || 'Изучите материал внимательно'
+}
+
+const formatContent = (content) => {
+  if (!content) return ''
+  
+  // Convert markdown-like formatting to HTML
+  let formatted = content
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+    .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
+    .replace(/`(.*?)`/g, '<code>$1</code>') // Inline code
+    .replace(/\n\n/g, '</p><p>') // Paragraphs
+    .replace(/\n/g, '<br>') // Line breaks
+  
+  // Wrap in paragraph if not already wrapped
+  if (!formatted.startsWith('<')) {
+    formatted = `<p>${formatted}</p>`
+  }
+  
+  return formatted
 }
 
 const toggleAIHelp = () => {
@@ -1708,6 +1772,211 @@ watch(() => props.currentStep, () => {
 
 .progress-dot.completed {
   background: #10b981;
+}
+
+/* ==========================================
+   DYNAMIC CONTENT
+   ========================================== */
+.dynamic-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.lesson-content {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  line-height: 1.7;
+  font-size: 1rem;
+  color: #374151;
+}
+
+.lesson-content h1,
+.lesson-content h2,
+.lesson-content h3,
+.lesson-content h4,
+.lesson-content h5,
+.lesson-content h6 {
+  color: #1f2937;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.lesson-content h1 {
+  font-size: 1.75rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+.lesson-content h2 {
+  font-size: 1.5rem;
+  color: #374151;
+}
+
+.lesson-content h3 {
+  font-size: 1.25rem;
+  color: #4b5563;
+}
+
+.lesson-content p {
+  margin-bottom: 16px;
+}
+
+.lesson-content ul,
+.lesson-content ol {
+  margin-bottom: 16px;
+  padding-left: 24px;
+}
+
+.lesson-content li {
+  margin-bottom: 8px;
+}
+
+.lesson-content code {
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  color: #dc2626;
+}
+
+.lesson-content pre {
+  background: #1f2937;
+  color: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 16px 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.lesson-content pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+.lesson-content blockquote {
+  border-left: 4px solid #6366f1;
+  padding-left: 16px;
+  margin: 16px 0;
+  font-style: italic;
+  color: #6b7280;
+}
+
+.questions-section {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 24px;
+}
+
+.questions-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.questions-title::before {
+  content: '💭';
+  font-size: 1.25rem;
+}
+
+.questions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.question-item {
+  background: #ffffff;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  color: #78350f;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  position: relative;
+  padding-left: 32px;
+}
+
+.question-item::before {
+  content: '❓';
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  font-size: 1rem;
+}
+
+.question-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Dark mode for dynamic content */
+@media (prefers-color-scheme: dark) {
+  .lesson-content {
+    background: #1f2937;
+    border-color: #374151;
+    color: #d1d5db;
+  }
+
+  .lesson-content h1,
+  .lesson-content h2,
+  .lesson-content h3,
+  .lesson-content h4,
+  .lesson-content h5,
+  .lesson-content h6 {
+    color: #f9fafb;
+  }
+
+  .lesson-content h2 {
+    color: #e5e7eb;
+  }
+
+  .lesson-content h3 {
+    color: #d1d5db;
+  }
+
+  .lesson-content code {
+    background: #374151;
+    color: #fbbf24;
+  }
+
+  .lesson-content pre {
+    background: #111827;
+    color: #f9fafb;
+  }
+
+  .lesson-content blockquote {
+    border-left-color: #8b5cf6;
+    color: #9ca3af;
+  }
+
+  .questions-section {
+    background: linear-gradient(135deg, #451a03 0%, #78350f 100%);
+    border-color: #f59e0b;
+  }
+
+  .questions-title {
+    color: #fde68a;
+  }
+
+  .question-item {
+    background: #1f2937;
+    border-color: #f59e0b;
+    color: #fde68a;
+  }
 }
 
 /* ==========================================

@@ -496,6 +496,11 @@ export default {
     const showContentPanel = computed(() => {
       if (!currentStep.value) return false
       
+      // Always show content panel when lesson is started
+      if (started.value) {
+        return true
+      }
+      
       const contentTypes = ['explanation', 'example', 'reading', 'vocabulary']
       return contentTypes.includes(currentStep.value.type) || 
              (currentStep.value.data && currentStep.value.data.content)
@@ -503,6 +508,11 @@ export default {
 
     const showInteractivePanel = computed(() => {
       if (!currentStep.value) return false
+      
+      // Always show interactive panel when lesson is started
+      if (started.value) {
+        return true
+      }
       
       const interactiveTypes = ['exercise', 'practice', 'quiz']
       return interactiveTypes.includes(currentStep.value.type)
