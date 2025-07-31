@@ -1,9 +1,8 @@
 <template>
-  <!-- ✅ FIXED: Interactive Panel with Better Layout and Visibility -->
   <div class="interactive-panel">
     <!-- Exercise Content -->
     <div v-if="isExerciseStep" class="exercise-content">
-      <!-- Fixed Header -->
+      <!-- ✅ FIXED: Header - Never Scrolls -->
       <div class="exercise-header">
         <h3>{{ currentExercise?.title || 'Упражнение' }}</h3>
         <div class="exercise-counter">
@@ -11,386 +10,422 @@
         </div>
       </div>
 
-      <!-- ✅ FIXED: Better Scrollable Body -->
+      <!-- ✅ ENHANCED: Body with Perfect Internal Scrolling -->
       <div class="exercise-body">
-        <!-- Short Answer Exercise -->
-        <div v-if="exerciseType === 'short-answer'" class="exercise-type short-answer">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div class="answer-input">
-            <textarea
-              v-model="localUserAnswer"
-              @input="updateAnswer"
-              placeholder="Введите ваш ответ здесь..."
-              rows="4"
-              class="answer-textarea"
-              :disabled="showCorrectAnswer"
-            />
-          </div>
-        </div>
-
-        <!-- Multiple Choice Exercise -->
-        <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc'" class="exercise-type multiple-choice">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div class="options-list">
-            <div 
-              v-for="(option, index) in exerciseOptions" 
-              :key="index"
-              class="option-item"
-              :class="{ 
-                selected: localUserAnswer === option,
-                disabled: showCorrectAnswer
-              }"
-              @click="!showCorrectAnswer && selectOption(option)"
-            >
-              <input 
-                type="radio" 
-                :name="'exercise-' + exerciseIndex"
-                :value="option"
+        <div class="exercise-content-scroll">
+          <!-- Short Answer Exercise -->
+          <div v-if="exerciseType === 'short-answer'" class="exercise-type short-answer">
+            <div class="question-text">
+              {{ currentExercise?.question }}
+            </div>
+            <div class="answer-input">
+              <textarea
                 v-model="localUserAnswer"
-                @change="updateAnswer"
+                @input="updateAnswer"
+                placeholder="Введите ваш ответ здесь..."
+                rows="4"
+                class="answer-textarea"
                 :disabled="showCorrectAnswer"
-                class="option-radio"
               />
-              <div class="option-text">{{ option }}</div>
             </div>
           </div>
-        </div>
 
-        <!-- Fill in the Blanks Exercise -->
-        <div v-else-if="exerciseType === 'fill-blank'" class="exercise-type fill-blank">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div v-if="currentExercise?.template" class="fill-blank-template">
-            <div v-html="renderFillBlankTemplate()" />
-          </div>
-          
-          <div class="fill-blank-inputs">
-            <div 
-              v-for="(blank, index) in blankCount" 
-              :key="`blank-${index}-${exerciseIndex}`"
-              class="blank-input-group"
-            >
-              <label :for="`blank-input-${index}`" class="blank-label">
-                Пропуск {{ index + 1 }}:
-              </label>
-              <input
-                :id="`blank-input-${index}`"
-                type="text"
-                class="blank-input"
-                :value="getFillBlankValue(index)"
-                @input="handleFillBlankInput(index, $event)"
-                :placeholder="`Введите ответ ${index + 1}`"
-                autocomplete="off"
-                :disabled="showCorrectAnswer"
-              />
-              <div v-if="getFillBlankValue(index)" class="input-preview">
-                Введено: "{{ getFillBlankValue(index) }}"
-              </div>
+          <!-- Multiple Choice Exercise -->
+          <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc'" class="exercise-type multiple-choice">
+            <div class="question-text">
+              {{ currentExercise?.question }}
             </div>
-          </div>
-        </div>
-
-        <!-- True/False Exercise -->
-        <div v-else-if="exerciseType === 'true-false'" class="exercise-type true-false">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div v-if="currentExercise?.statement" class="statement-text">
-            {{ currentExercise.statement }}
-          </div>
-          <div class="true-false-options">
-            <div 
-              class="tf-option"
-              :class="{ 
-                selected: localUserAnswer === 'true',
-                disabled: showCorrectAnswer
-              }"
-              @click="!showCorrectAnswer && selectTrueFalse('true')"
-            >
-              <input 
-                type="radio" 
-                name="true-false"
-                value="true"
-                v-model="localUserAnswer"
-                @change="updateAnswer"
-                :disabled="showCorrectAnswer"
-              />
-              <span>Правда</span>
-            </div>
-            <div 
-              class="tf-option"
-              :class="{ 
-                selected: localUserAnswer === 'false',
-                disabled: showCorrectAnswer
-              }"
-              @click="!showCorrectAnswer && selectTrueFalse('false')"
-            >
-              <input 
-                type="radio" 
-                name="true-false"
-                value="false"
-                v-model="localUserAnswer"
-                @change="updateAnswer"
-                :disabled="showCorrectAnswer"
-              />
-              <span>Ложь</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Matching Exercise -->
-        <div v-else-if="exerciseType === 'matching'" class="exercise-type matching">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          
-          <div class="matching-container">
-            <!-- Left Side -->
-            <div class="matching-side left-side">
-              <h4>Соедините:</h4>
+            <div class="options-list">
               <div 
-                v-for="(item, index) in leftItems" 
-                :key="`left-${index}`"
-                class="matching-item"
+                v-for="(option, index) in exerciseOptions" 
+                :key="index"
+                class="option-item"
                 :class="{ 
-                  selected: selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === index,
-                  matched: isItemMatched('left', index),
+                  selected: localUserAnswer === option,
                   disabled: showCorrectAnswer
                 }"
-                @click="handleMatchingItemClick('left', index)"
+                @click="!showCorrectAnswer && selectOption(option)"
+                tabindex="0"
+                @keypress.enter="!showCorrectAnswer && selectOption(option)"
+                @keypress.space.prevent="!showCorrectAnswer && selectOption(option)"
               >
-                {{ item }}
-                <span v-if="selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === index" class="selection-indicator">👆</span>
+                <input 
+                  type="radio" 
+                  :name="'exercise-' + exerciseIndex"
+                  :value="option"
+                  v-model="localUserAnswer"
+                  @change="updateAnswer"
+                  :disabled="showCorrectAnswer"
+                  class="option-radio"
+                />
+                <div class="option-text">{{ option }}</div>
               </div>
+            </div>
+          </div>
+
+          <!-- Fill in the Blanks Exercise -->
+          <div v-else-if="exerciseType === 'fill-blank'" class="exercise-type fill-blank">
+            <div class="question-text">
+              {{ currentExercise?.question }}
+            </div>
+            <div v-if="currentExercise?.template" class="fill-blank-template">
+              <div v-html="renderFillBlankTemplate()" />
             </div>
             
-            <!-- Right Side -->
-            <div class="matching-side right-side">
-              <h4>С:</h4>
+            <div class="fill-blank-inputs">
               <div 
-                v-for="(item, index) in rightItems" 
-                :key="`right-${index}`"
-                class="matching-item"
-                :class="{ 
-                  selected: selectedMatchingItem?.side === 'right' && selectedMatchingItem?.index === index,
-                  matched: isItemMatched('right', index),
-                  disabled: showCorrectAnswer
-                }"
-                @click="handleMatchingItemClick('right', index)"
+                v-for="(blank, index) in blankCount" 
+                :key="`blank-${index}-${exerciseIndex}`"
+                class="blank-input-group"
               >
-                {{ item }}
-                <span v-if="selectedMatchingItem?.side === 'right' && selectedMatchingItem?.index === index" class="selection-indicator">👆</span>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Matching Pairs Display -->
-          <div v-if="matchingPairs && matchingPairs.length > 0" class="matching-pairs">
-            <h4>Соединения:</h4>
-            <div 
-              v-for="(pair, index) in matchingPairs" 
-              :key="`pair-${index}`"
-              class="pair-item"
-            >
-              <span class="pair-text">
-                {{ getLeftItemText(pair.leftIndex) }} ↔ {{ getRightItemText(pair.rightIndex) }}
-              </span>
-              <button 
-                v-if="!showCorrectAnswer"
-                @click="handleRemovePair(index)" 
-                class="remove-pair"
-                type="button"
-              >×</button>
-            </div>
-          </div>
-          
-          <!-- Instructions -->
-          <div class="matching-instructions">
-            <p>💡 <strong>Инструкция:</strong> Нажмите на элемент слева, затем на соответствующий элемент справа для создания связи.</p>
-            <p v-if="selectedMatchingItem" class="current-selection">
-              🎯 Выбран элемент: <strong>{{ selectedMatchingItem.side === 'left' ? 'слева' : 'справа' }}</strong> - 
-              "{{ selectedMatchingItem.side === 'left' ? leftItems[selectedMatchingItem.index] : rightItems[selectedMatchingItem.index] }}"
-            </p>
-          </div>
-        </div>
-
-        <!-- Ordering Exercise -->
-        <div v-else-if="exerciseType === 'ordering'" class="exercise-type ordering">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          <div class="ordering-instructions">
-            💡 <strong>Инструкция:</strong> Перетащите элементы в правильном порядке или используйте кнопки ↑↓ для перемещения
-          </div>
-          <div class="ordering-container">
-            <div 
-              v-for="(item, index) in localOrderingItems" 
-              :key="`ordering-${item.id || item.text || index}`"
-              class="ordering-item"
-              :class="{ 
-                dragging: draggedOrderingItem === index,
-                disabled: showCorrectAnswer,
-                'drop-target': dropTargetIndex === index && draggedOrderingItem !== index
-              }"
-              :draggable="!showCorrectAnswer"
-              @dragstart="startOrderingDrag($event, index)"
-              @dragend="endOrderingDrag"
-              @dragover.prevent="handleOrderingDragOver($event, index)"
-              @dragenter.prevent="handleOrderingDragEnter(index)"
-              @dragleave="handleOrderingDragLeave"
-              @drop.prevent="handleOrderingDrop($event, index)"
-            >
-              <div class="ordering-item-content">
-                <div class="drag-handle" :class="{ disabled: showCorrectAnswer }">≡</div>
-                <div class="item-text">{{ getOrderingItemText(item) }}</div>
-                <div class="item-number">{{ index + 1 }}</div>
-                <div v-if="!showCorrectAnswer" class="ordering-controls">
-                  <button 
-                    v-if="index > 0"
-                    @click="moveOrderingItem(index, index - 1)"
-                    class="move-btn move-up"
-                    title="Переместить вверх"
-                  >↑</button>
-                  <button 
-                    v-if="index < localOrderingItems.length - 1"
-                    @click="moveOrderingItem(index, index + 1)"
-                    class="move-btn move-down"
-                    title="Переместить вниз"
-                  >↓</button>
+                <label :for="`blank-input-${index}`" class="blank-label">
+                  Пропуск {{ index + 1 }}:
+                </label>
+                <input
+                  :id="`blank-input-${index}`"
+                  type="text"
+                  class="blank-input"
+                  :value="getFillBlankValue(index)"
+                  @input="handleFillBlankInput(index, $event)"
+                  :placeholder="`Введите ответ ${index + 1}`"
+                  autocomplete="off"
+                  :disabled="showCorrectAnswer"
+                />
+                <div v-if="getFillBlankValue(index)" class="input-preview">
+                  Введено: "{{ getFillBlankValue(index) }}"
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- ✅ FIXED: Drag and Drop Exercise - Better Layout -->
-        <div v-else-if="exerciseType === 'drag-drop'" class="exercise-type drag-drop">
-          <div class="question-text">
-            {{ currentExercise?.question }}
-          </div>
-          
-          <div v-if="availableDragItems.length > 0 && dropZones.length > 0" class="drag-drop-container">
-            <!-- Available Items to Drag -->
-            <div class="drag-items">
-              <h4>Перетащите элементы:</h4>
+          <!-- True/False Exercise -->
+          <div v-else-if="exerciseType === 'true-false'" class="exercise-type true-false">
+            <div class="question-text">
+              {{ currentExercise?.question }}
+            </div>
+            <div v-if="currentExercise?.statement" class="statement-text">
+              {{ currentExercise.statement }}
+            </div>
+            <div class="true-false-options">
               <div 
-                v-for="(item, index) in availableDragItems" 
-                :key="'drag-' + index"
-                class="drag-item"
+                class="tf-option"
                 :class="{ 
-                  dragging: draggedDragItem === item,
+                  selected: localUserAnswer === 'true',
                   disabled: showCorrectAnswer
                 }"
-                :draggable="!showCorrectAnswer"
-                @dragstart="startDragItem(item, $event)"
-                @dragend="endDragItem"
-                @touchstart="handleTouchStart($event, item)"
-                @touchmove.prevent="handleTouchMove"
-                @touchend="handleTouchEnd"
+                @click="!showCorrectAnswer && selectTrueFalse('true')"
+                tabindex="0"
+                @keypress.enter="!showCorrectAnswer && selectTrueFalse('true')"
+                @keypress.space.prevent="!showCorrectAnswer && selectTrueFalse('true')"
               >
-                {{ getDragItemText(item) }}
+                <input 
+                  type="radio" 
+                  name="true-false"
+                  value="true"
+                  v-model="localUserAnswer"
+                  @change="updateAnswer"
+                  :disabled="showCorrectAnswer"
+                />
+                <span>Правда</span>
+              </div>
+              <div 
+                class="tf-option"
+                :class="{ 
+                  selected: localUserAnswer === 'false',
+                  disabled: showCorrectAnswer
+                }"
+                @click="!showCorrectAnswer && selectTrueFalse('false')"
+                tabindex="0"
+                @keypress.enter="!showCorrectAnswer && selectTrueFalse('false')"
+                @keypress.space.prevent="!showCorrectAnswer && selectTrueFalse('false')"
+              >
+                <input 
+                  type="radio" 
+                  name="true-false"
+                  value="false"
+                  v-model="localUserAnswer"
+                  @change="updateAnswer"
+                  :disabled="showCorrectAnswer"
+                />
+                <span>Ложь</span>
               </div>
             </div>
+          </div>
 
-            <!-- Drop Zones -->
-            <div class="drop-zones">
+          <!-- Matching Exercise -->
+          <div v-else-if="exerciseType === 'matching'" class="exercise-type matching">
+            <div class="question-text">
+              {{ currentExercise?.question }}
+            </div>
+            
+            <div class="matching-container">
+              <!-- Left Side -->
+              <div class="matching-side left-side">
+                <h4>Соедините:</h4>
+                <div 
+                  v-for="(item, index) in leftItems" 
+                  :key="`left-${index}`"
+                  class="matching-item"
+                  :class="{ 
+                    selected: selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === index,
+                    matched: isItemMatched('left', index),
+                    disabled: showCorrectAnswer
+                  }"
+                  @click="handleMatchingItemClick('left', index)"
+                  tabindex="0"
+                  @keypress.enter="handleMatchingItemClick('left', index)"
+                  @keypress.space.prevent="handleMatchingItemClick('left', index)"
+                >
+                  {{ item }}
+                  <span v-if="selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === index" class="selection-indicator">👆</span>
+                </div>
+              </div>
+              
+              <!-- Right Side -->
+              <div class="matching-side right-side">
+                <h4>С:</h4>
+                <div 
+                  v-for="(item, index) in rightItems" 
+                  :key="`right-${index}`"
+                  class="matching-item"
+                  :class="{ 
+                    selected: selectedMatchingItem?.side === 'right' && selectedMatchingItem?.index === index,
+                    matched: isItemMatched('right', index),
+                    disabled: showCorrectAnswer
+                  }"
+                  @click="handleMatchingItemClick('right', index)"
+                  tabindex="0"
+                  @keypress.enter="handleMatchingItemClick('right', index)"
+                  @keypress.space.prevent="handleMatchingItemClick('right', index)"
+                >
+                  {{ item }}
+                  <span v-if="selectedMatchingItem?.side === 'right' && selectedMatchingItem?.index === index" class="selection-indicator">👆</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Matching Pairs Display -->
+            <div v-if="matchingPairs && matchingPairs.length > 0" class="matching-pairs">
+              <h4>Соединения:</h4>
               <div 
-                v-for="(zone, index) in dropZones" 
-                :key="'zone-' + index"
-                class="drop-zone"
-                :class="{ 
-                  'drag-over': dropOverZone === getZoneId(zone),
-                  disabled: showCorrectAnswer
-                }"
-                @dragover.prevent="dragOverZone(getZoneId(zone), $event)"
-                @dragleave="dragLeaveZone($event)"
-                @drop="dropInZone(getZoneId(zone), $event)"
+                v-for="(pair, index) in matchingPairs" 
+                :key="`pair-${index}`"
+                class="pair-item"
               >
-                <div class="zone-label">{{ zone.label }}</div>
-                <div class="zone-items">
-                  <div 
-                    v-for="(item, itemIndex) in getDropZoneItems(getZoneId(zone))" 
-                    :key="'dropped-' + itemIndex"
-                    class="dropped-item"
-                    @click="!showCorrectAnswer && removeDroppedItem(getZoneId(zone), itemIndex)"
-                  >
-                    {{ getDragItemText(item) }}
-                    <span v-if="!showCorrectAnswer" class="remove-dropped">×</span>
+                <span class="pair-text">
+                  {{ getLeftItemText(pair.leftIndex) }} ↔ {{ getRightItemText(pair.rightIndex) }}
+                </span>
+                <button 
+                  v-if="!showCorrectAnswer"
+                  @click="handleRemovePair(index)" 
+                  class="remove-pair"
+                  type="button"
+                  :aria-label="`Удалить связь ${index + 1}`"
+                >×</button>
+              </div>
+            </div>
+            
+            <!-- Instructions -->
+            <div class="matching-instructions">
+              <p>💡 <strong>Инструкция:</strong> Нажмите на элемент слева, затем на соответствующий элемент справа для создания связи.</p>
+              <p v-if="selectedMatchingItem" class="current-selection">
+                🎯 Выбран элемент: <strong>{{ selectedMatchingItem.side === 'left' ? 'слева' : 'справа' }}</strong> - 
+                "{{ selectedMatchingItem.side === 'left' ? leftItems[selectedMatchingItem.index] : rightItems[selectedMatchingItem.index] }}"
+              </p>
+            </div>
+          </div>
+
+          <!-- Ordering Exercise -->
+          <div v-else-if="exerciseType === 'ordering'" class="exercise-type ordering">
+            <div class="question-text">
+              {{ currentExercise?.question }}
+            </div>
+            <div class="ordering-instructions">
+              💡 <strong>Инструкция:</strong> Перетащите элементы в правильном порядке или используйте кнопки ↑↓ для перемещения
+            </div>
+            <div class="ordering-container">
+              <div 
+                v-for="(item, index) in localOrderingItems" 
+                :key="`ordering-${item.id || item.text || index}`"
+                class="ordering-item"
+                :class="{ 
+                  dragging: draggedOrderingItem === index,
+                  disabled: showCorrectAnswer,
+                  'drop-target': dropTargetIndex === index && draggedOrderingItem !== index
+                }"
+                :draggable="!showCorrectAnswer"
+                @dragstart="startOrderingDrag($event, index)"
+                @dragend="endOrderingDrag"
+                @dragover.prevent="handleOrderingDragOver($event, index)"
+                @dragenter.prevent="handleOrderingDragEnter(index)"
+                @dragleave="handleOrderingDragLeave"
+                @drop.prevent="handleOrderingDrop($event, index)"
+                tabindex="0"
+              >
+                <div class="ordering-item-content">
+                  <div class="drag-handle" :class="{ disabled: showCorrectAnswer }">≡</div>
+                  <div class="item-text">{{ getOrderingItemText(item) }}</div>
+                  <div class="item-number">{{ index + 1 }}</div>
+                  <div v-if="!showCorrectAnswer" class="ordering-controls">
+                    <button 
+                      v-if="index > 0"
+                      @click="moveOrderingItem(index, index - 1)"
+                      class="move-btn move-up"
+                      :aria-label="`Переместить ${getOrderingItemText(item)} вверх`"
+                      title="Переместить вверх"
+                    >↑</button>
+                    <button 
+                      v-if="index < localOrderingItems.length - 1"
+                      @click="moveOrderingItem(index, index + 1)"
+                      class="move-btn move-down"
+                      :aria-label="`Переместить ${getOrderingItemText(item)} вниз`"
+                      title="Переместить вниз"
+                    >↓</button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          
-          <div v-else class="no-dragdrop-data">
-            <p>⚠️ Данные для перетаскивания не загружены</p>
-          </div>
-        </div>
 
-        <!-- Confirmation Section -->
-        <div v-if="confirmation" class="confirmation-section">
-          <!-- Second Chance Indicator -->
-          <div v-if="isOnSecondChance && !showCorrectAnswer" class="second-chance-indicator">
-            <div class="attempt-counter">
-              <span class="attempt-text">Попытка {{ attemptCount }} из {{ maxAttempts }}</span>
-              <div class="attempt-dots">
+          <!-- ✅ ENHANCED: Drag and Drop Exercise - Better Layout -->
+          <div v-else-if="exerciseType === 'drag-drop'" class="exercise-type drag-drop">
+            <div class="question-text">
+              {{ currentExercise?.question }}
+            </div>
+            
+            <div v-if="availableDragItems.length > 0 && dropZones.length > 0" class="drag-drop-container">
+              <!-- Available Items to Drag -->
+              <div class="drag-items">
+                <h4>Перетащите элементы:</h4>
                 <div 
-                  v-for="n in maxAttempts" 
-                  :key="n"
-                  class="attempt-dot"
+                  v-for="(item, index) in availableDragItems" 
+                  :key="'drag-' + index"
+                  class="drag-item"
                   :class="{ 
-                    filled: n <= attemptCount,
-                    current: n === attemptCount + 1 && !showCorrectAnswer
+                    dragging: draggedDragItem === item,
+                    disabled: showCorrectAnswer
                   }"
-                />
+                  :draggable="!showCorrectAnswer"
+                  @dragstart="startDragItem(item, $event)"
+                  @dragend="endDragItem"
+                  @touchstart="handleTouchStart($event, item)"
+                  @touchmove.prevent="handleTouchMove"
+                  @touchend="handleTouchEnd"
+                  tabindex="0"
+                  :aria-label="`Перетащить ${getDragItemText(item)}`"
+                >
+                  {{ getDragItemText(item) }}
+                </div>
               </div>
+
+              <!-- Drop Zones -->
+              <div class="drop-zones">
+                <div 
+                  v-for="(zone, index) in dropZones" 
+                  :key="'zone-' + index"
+                  class="drop-zone"
+                  :class="{ 
+                    'drag-over': dropOverZone === getZoneId(zone),
+                    disabled: showCorrectAnswer
+                  }"
+                  @dragover.prevent="dragOverZone(getZoneId(zone), $event)"
+                  @dragleave="dragLeaveZone($event)"
+                  @drop="dropInZone(getZoneId(zone), $event)"
+                  :aria-label="`Зона ${zone.label}`"
+                >
+                  <div class="zone-label">{{ zone.label }}</div>
+                  <div class="zone-items">
+                    <div 
+                      v-for="(item, itemIndex) in getDropZoneItems(getZoneId(zone))" 
+                      :key="'dropped-' + itemIndex"
+                      class="dropped-item"
+                      @click="!showCorrectAnswer && removeDroppedItem(getZoneId(zone), itemIndex)"
+                      tabindex="0"
+                      @keypress.enter="!showCorrectAnswer && removeDroppedItem(getZoneId(zone), itemIndex)"
+                      @keypress.space.prevent="!showCorrectAnswer && removeDroppedItem(getZoneId(zone), itemIndex)"
+                      :aria-label="`Удалить ${getDragItemText(item)} из ${zone.label}`"
+                    >
+                      {{ getDragItemText(item) }}
+                      <span v-if="!showCorrectAnswer" class="remove-dropped">×</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div v-else class="no-dragdrop-data">
+              <p>⚠️ Данные для перетаскивания не загружены</p>
             </div>
           </div>
 
-          <!-- Confirmation Message -->
-          <div 
-            class="confirmation-message" 
-            :class="{ 
-              correct: answerWasCorrect, 
-              incorrect: !answerWasCorrect && !showCorrectAnswer,
-              'show-answer': showCorrectAnswer
-            }"
-          >
-            {{ confirmation }}
+          <!-- Confirmation Section -->
+          <div v-if="confirmation" class="confirmation-section">
+            <!-- Second Chance Indicator -->
+            <div v-if="isOnSecondChance && !showCorrectAnswer" class="second-chance-indicator">
+              <div class="attempt-counter">
+                <span class="attempt-text">Попытка {{ attemptCount }} из {{ maxAttempts }}</span>
+                <div class="attempt-dots">
+                  <div 
+                    v-for="n in maxAttempts" 
+                    :key="n"
+                    class="attempt-dot"
+                    :class="{ 
+                      filled: n <= attemptCount,
+                      current: n === attemptCount + 1 && !showCorrectAnswer
+                    }"
+                    :aria-label="`Попытка ${n}`"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Confirmation Message -->
+            <div 
+              class="confirmation-message" 
+              :class="{ 
+                correct: answerWasCorrect, 
+                incorrect: !answerWasCorrect && !showCorrectAnswer,
+                'show-answer': showCorrectAnswer
+              }"
+              role="alert"
+              :aria-live="answerWasCorrect ? 'polite' : 'assertive'"
+            >
+              {{ confirmation }}
+            </div>
+
+            <!-- Correct Answer Display -->
+            <div v-if="showCorrectAnswer && correctAnswerText" class="correct-answer-display">
+              <div class="correct-answer-label">💡 Правильный ответ:</div>
+              <div class="correct-answer-text">{{ correctAnswerText }}</div>
+            </div>
           </div>
 
-          <!-- Correct Answer Display -->
-          <div v-if="showCorrectAnswer && correctAnswerText" class="correct-answer-display">
-            <div class="correct-answer-label">💡 Правильный ответ:</div>
-            <div class="correct-answer-text">{{ correctAnswerText }}</div>
-          </div>
-        </div>
-
-        <!-- Hints and Feedback -->
-        <div v-if="(currentHint || smartHint) && !showCorrectAnswer" class="hints-section">
-          <div v-if="currentHint" class="hint basic-hint">
-            <div class="hint-icon">💡</div>
-            <div class="hint-text">{{ currentHint }}</div>
-          </div>
-          <div v-if="smartHint" class="hint smart-hint">
-            <div class="hint-icon">🤖</div>
-            <div class="hint-text">{{ smartHint }}</div>
-            <button @click="$emit('clear-hint')" class="clear-hint-btn">×</button>
+          <!-- Hints and Feedback -->
+          <div v-if="(currentHint || smartHint) && !showCorrectAnswer" class="hints-section">
+            <div v-if="currentHint" class="hint basic-hint">
+              <div class="hint-icon">💡</div>
+              <div class="hint-text">{{ currentHint }}</div>
+            </div>
+            <div v-if="smartHint" class="hint smart-hint">
+              <div class="hint-icon">🤖</div>
+              <div class="hint-text">{{ smartHint }}</div>
+              <button 
+                @click="$emit('clear-hint')" 
+                class="clear-hint-btn"
+                :aria-label="Очистить подсказку"
+              >×</button>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- ✅ FIXED: Better Action Buttons Layout -->
+      <!-- ✅ FIXED: Action Buttons - Never Scroll, Always Visible -->
       <div class="exercise-actions">
         <button 
           v-if="!confirmation && attemptCount === 0"
           @click="$emit('show-hint')" 
           class="hint-btn"
+          :aria-label="Показать подсказку"
         >
           💡 Подсказка
         </button>
@@ -404,6 +439,7 @@
             disabled: !canSubmitAnswer,
             'second-chance': isOnSecondChance
           }"
+          :aria-label="isOnSecondChance ? 'Попробовать ещё раз' : 'Проверить ответ'"
         >
           {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Проверить' }}
           <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
@@ -413,6 +449,7 @@
           v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
           @click="$emit('next-exercise')"
           class="next-btn"
+          :aria-label="isLastExercise ? 'Завершить упражнения' : 'Следующее упражнение'"
         >
           {{ isLastExercise ? 'Завершить' : 'Далее' }}
           <span class="next-icon">→</span>
@@ -422,7 +459,7 @@
 
     <!-- Quiz Content -->
     <div v-else-if="isQuizStep" class="quiz-content">
-      <!-- Fixed Header -->
+      <!-- ✅ FIXED: Header - Never Scrolls -->
       <div class="quiz-header">
         <h3>{{ currentQuiz?.title || 'Вопрос' }}</h3>
         <div class="quiz-counter">
@@ -430,74 +467,82 @@
         </div>
       </div>
 
-      <!-- ✅ FIXED: Better Scrollable Body -->
+      <!-- ✅ ENHANCED: Body with Perfect Internal Scrolling -->
       <div class="quiz-body">
-        <div class="quiz-question">
-          {{ currentQuiz?.question }}
-        </div>
-
-        <div class="quiz-options">
-          <div 
-            v-for="(option, index) in quizOptions" 
-            :key="index"
-            class="quiz-option"
-            :class="{ 
-              selected: localUserAnswer === option,
-              disabled: showCorrectAnswer
-            }"
-            @click="!showCorrectAnswer && selectQuizOption(option)"
-          >
-            <input 
-              type="radio" 
-              :name="'quiz-' + quizIndex"
-              :value="option"
-              v-model="localUserAnswer"
-              @change="updateAnswer"
-              :disabled="showCorrectAnswer"
-              class="option-radio"
-            />
-            <div class="option-text">{{ option }}</div>
+        <div class="quiz-content-scroll">
+          <div class="quiz-question">
+            {{ currentQuiz?.question }}
           </div>
-        </div>
 
-        <!-- Quiz Confirmation Section -->
-        <div v-if="confirmation" class="confirmation-section">
-          <div v-if="isOnSecondChance && !showCorrectAnswer" class="second-chance-indicator">
-            <div class="attempt-counter">
-              <span class="attempt-text">Попытка {{ attemptCount }} из {{ maxAttempts }}</span>
-              <div class="attempt-dots">
-                <div 
-                  v-for="n in maxAttempts" 
-                  :key="n"
-                  class="attempt-dot"
-                  :class="{ 
-                    filled: n <= attemptCount,
-                    current: n === attemptCount + 1 && !showCorrectAnswer
-                  }"
-                />
-              </div>
+          <div class="quiz-options">
+            <div 
+              v-for="(option, index) in quizOptions" 
+              :key="index"
+              class="quiz-option"
+              :class="{ 
+                selected: localUserAnswer === option,
+                disabled: showCorrectAnswer
+              }"
+              @click="!showCorrectAnswer && selectQuizOption(option)"
+              tabindex="0"
+              @keypress.enter="!showCorrectAnswer && selectQuizOption(option)"
+              @keypress.space.prevent="!showCorrectAnswer && selectQuizOption(option)"
+            >
+              <input 
+                type="radio" 
+                :name="'quiz-' + quizIndex"
+                :value="option"
+                v-model="localUserAnswer"
+                @change="updateAnswer"
+                :disabled="showCorrectAnswer"
+                class="option-radio"
+              />
+              <div class="option-text">{{ option }}</div>
             </div>
           </div>
 
-          <div 
-            class="confirmation-message" 
-            :class="{ 
-              correct: answerWasCorrect, 
-              incorrect: !answerWasCorrect && !showCorrectAnswer,
-              'show-answer': showCorrectAnswer
-            }"
-          >
-            {{ confirmation }}
-          </div>
+          <!-- Quiz Confirmation Section -->
+          <div v-if="confirmation" class="confirmation-section">
+            <div v-if="isOnSecondChance && !showCorrectAnswer" class="second-chance-indicator">
+              <div class="attempt-counter">
+                <span class="attempt-text">Попытка {{ attemptCount }} из {{ maxAttempts }}</span>
+                <div class="attempt-dots">
+                  <div 
+                    v-for="n in maxAttempts" 
+                    :key="n"
+                    class="attempt-dot"
+                    :class="{ 
+                      filled: n <= attemptCount,
+                      current: n === attemptCount + 1 && !showCorrectAnswer
+                    }"
+                    :aria-label="`Попытка ${n}`"
+                  />
+                </div>
+              </div>
+            </div>
 
-          <div v-if="showCorrectAnswer && correctAnswerText" class="correct-answer-display">
-            <div class="correct-answer-label">💡 Правильный ответ:</div>
-            <div class="correct-answer-text">{{ correctAnswerText }}</div>
+            <div 
+              class="confirmation-message" 
+              :class="{ 
+                correct: answerWasCorrect, 
+                incorrect: !answerWasCorrect && !showCorrectAnswer,
+                'show-answer': showCorrectAnswer
+              }"
+              role="alert"
+              :aria-live="answerWasCorrect ? 'polite' : 'assertive'"
+            >
+              {{ confirmation }}
+            </div>
+
+            <div v-if="showCorrectAnswer && correctAnswerText" class="correct-answer-display">
+              <div class="correct-answer-label">💡 Правильный ответ:</div>
+              <div class="correct-answer-text">{{ correctAnswerText }}</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- ✅ FIXED: Better Action Buttons Layout -->
+      <!-- ✅ FIXED: Action Buttons - Never Scroll, Always Visible -->
       <div class="quiz-actions">
         <button 
           v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
@@ -508,6 +553,7 @@
             disabled: !canSubmitAnswer,
             'second-chance': isOnSecondChance
           }"
+          :aria-label="isOnSecondChance ? 'Попробовать ещё раз' : 'Ответить на вопрос'"
         >
           {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Ответить' }}
           <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
@@ -517,6 +563,7 @@
           v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
           @click="$emit('next-quiz')"
           class="next-btn"
+          :aria-label="isLastQuiz ? 'Завершить викторину' : 'Следующий вопрос'"
         >
           {{ isLastQuiz ? 'Завершить' : 'Следующий вопрос' }}
           <span class="next-icon">→</span>
@@ -1345,6 +1392,6 @@ export default {
 </script>
 
 <style scoped>
-/* ✅ Use the improved CSS file */
+/* ✅ Use the enhanced CSS file with perfect scrolling and responsive design */
 @import "@/assets/css/InteractivePanel.css";
 </style>
