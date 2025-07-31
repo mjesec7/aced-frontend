@@ -412,7 +412,7 @@
               <button 
                 @click="$emit('clear-hint')" 
                 class="clear-hint-btn"
-                :aria-label="Очистить подсказку"
+                aria-label="Очистить подсказку"
               >×</button>
             </div>
           </div>
@@ -425,7 +425,7 @@
           v-if="!confirmation && attemptCount === 0"
           @click="$emit('show-hint')" 
           class="hint-btn"
-          :aria-label="Показать подсказку"
+          aria-label="Показать подсказку"
         >
           💡 Подсказка
         </button>

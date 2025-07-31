@@ -370,9 +370,11 @@ export default {
 </script>
 
 <style scoped>
+/* IMPROVED CONTENT PANEL STYLES - MORE SPACE & NO DARK MODE */
+
 .content-panel {
   background: white;
-  padding: 32px;
+  padding: 20px 28px; /* REDUCED padding from 32px to give more content space */
   display: flex;
   flex-direction: column;
   border-right: 1px solid #e2e8f0;
@@ -393,8 +395,8 @@ export default {
 }
 
 .step-header {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+  margin-bottom: 20px; /* REDUCED from 24px */
+  padding-bottom: 12px; /* REDUCED from 16px */
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -442,7 +444,7 @@ export default {
 
 .step-content {
   flex: 1;
-  margin-bottom: 24px;
+  margin-bottom: 20px; /* REDUCED from 24px */
   animation: stepFadeIn 0.3s ease-out;
 }
 
@@ -457,9 +459,9 @@ export default {
   }
 }
 
-/* Clean question display */
+/* Clean question display - MORE PROMINENT */
 .clean-question {
-  font-size: 1.2rem;
+  font-size: 1.3rem; /* INCREASED from 1.2rem */
   line-height: 1.6;
   color: #2c3e50;
   margin: 0;
@@ -478,7 +480,7 @@ export default {
 .current-quiz-content {
   background: linear-gradient(135deg, #f8f9ff 0%, #f1f5f9 100%);
   border-radius: 16px;
-  padding: 2rem;
+  padding: 2rem; /* ADEQUATE padding for content readability */
   border: 2px solid #e1e8ff;
   margin-top: 1rem;
   position: relative;
@@ -519,13 +521,13 @@ export default {
   opacity: 0.8;
 }
 
-/* Text Content */
+/* Text Content - MORE READABLE */
 .text-content {
-  line-height: 1.7;
+  line-height: 1.8; /* INCREASED from 1.7 */
 }
 
 .content-text {
-  font-size: 1rem;
+  font-size: 1.1rem; /* INCREASED from 1rem */
   color: #374151;
   margin: 0;
   line-height: 1.8;
@@ -780,7 +782,7 @@ export default {
 
 /* Default Content */
 .default-content {
-  line-height: 1.7;
+  line-height: 1.8; /* INCREASED */
 }
 
 /* AI Help Panel */
@@ -896,6 +898,7 @@ export default {
   .content-panel {
     border-right: none;
     border-bottom: 1px solid #e2e8f0;
+    padding: 16px 20px; /* REDUCED padding for tablets */
   }
   
   .content-panel::before {
@@ -905,7 +908,7 @@ export default {
 
 @media (max-width: 768px) {
   .content-panel {
-    padding: 20px 16px;
+    padding: 16px; /* OPTIMIZED for mobile */
   }
 
   .step-title {
@@ -925,7 +928,11 @@ export default {
   }
 
   .clean-question {
-    font-size: 1.1rem;
+    font-size: 1.2rem; /* STILL PROMINENT on mobile */
+  }
+
+  .content-text {
+    font-size: 1rem; /* STILL READABLE on mobile */
   }
 
   .content-navigation {
@@ -953,7 +960,7 @@ export default {
 
 @media (max-width: 480px) {
   .content-panel {
-    padding: 16px;
+    padding: 12px; /* MINIMAL but sufficient padding */
   }
 
   .step-title {
@@ -975,7 +982,11 @@ export default {
   }
 
   .clean-question {
-    font-size: 1rem;
+    font-size: 1.1rem; /* STILL READABLE on small screens */
+  }
+
+  .content-text {
+    font-size: 0.95rem;
   }
 
   .vocabulary-content.enhanced {
@@ -1054,44 +1065,5 @@ export default {
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .content-panel {
-    background: #1e293b;
-    border-right-color: #374151;
-  }
-
-  .step-title,
-  .clean-question,
-  .content-text {
-    color: #e2e8f0;
-  }
-
-  .current-exercise-content,
-  .current-quiz-content {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.2);
-  }
-
-  .vocabulary-item {
-    background: #374151;
-    border-color: #4b5563;
-    color: #e2e8f0;
-  }
-
-  .media-placeholder {
-    background: #374151;
-    border-color: #4b5563;
-  }
-
-  .explanation-help {
-    background: rgba(139, 92, 246, 0.2);
-    border-color: rgba(139, 92, 246, 0.3);
-  }
-
-  .ai-response {
-    background: #374151;
-    color: #e2e8f0;
-  }
-}
+/* REMOVED ALL DARK MODE STYLES - CONTENT PANEL STAYS LIGHT */
 </style>
