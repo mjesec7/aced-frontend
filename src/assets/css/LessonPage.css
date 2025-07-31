@@ -1,6 +1,6 @@
 /* ================================
-   COMPLETE LESSONPAGE.CSS - SPLIT SCREEN WITH PROPER SCROLLING
-   Full responsive design + resizable split screen + all features + FIXED SCROLLING
+   COMPLETE LESSONPAGE.CSS - SPLIT SCREEN LIKE CLAUDE INTERFACE
+   Full responsive design + resizable split screen + all features
    ================================ */
 
    .lesson-page {
@@ -9,8 +9,7 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
     contain: layout style paint;
     position: relative;
-    overflow: auto; /* ✅ FIXED: Allow page-level scrolling */
-    max-height: 100vh; /* ✅ FIXED: Prevent page overflow */
+    overflow: hidden;
   }
   
   /* ================================
@@ -129,7 +128,6 @@
     z-index: 1000;
     padding: 20px;
     animation: modalOverlayAppear 0.3s ease-out;
-    overflow-y: auto; /* ✅ FIXED: Allow modal scrolling */
   }
   
   @keyframes modalOverlayAppear {
@@ -150,14 +148,11 @@
     text-align: center;
     max-width: 500px;
     width: 100%;
-    max-height: 90vh; /* ✅ FIXED: Prevent modal overflow */
-    overflow-y: auto; /* ✅ FIXED: Allow modal content scrolling */
     box-shadow: 
       0 25px 50px rgba(0, 0, 0, 0.25),
       0 8px 16px rgba(0, 0, 0, 0.1);
     animation: modalContentAppear 0.3s ease-out;
     position: relative;
-    margin: auto; /* ✅ FIXED: Center modal in overlay */
   }
   
   @keyframes modalContentAppear {
@@ -229,57 +224,49 @@
   }
   
   /* ================================
-     LESSON CONTAINER - PROPER HEIGHT MANAGEMENT
+     LESSON CONTAINER - FIXED HEIGHT FOR SPLIT SCREEN
      ================================ */
   
   .lesson-container {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    max-height: 100vh; /* ✅ FIXED: Constrain container height */
+    max-height: 100vh;
     background: #ffffff;
     margin: 0;
-    overflow: hidden; /* ✅ FIXED: Let children handle scrolling */
+    overflow: hidden;
   }
   
   /* ================================
-     SPLIT SCREEN CONTENT - PROPER FLEX AND SCROLLING
+     SPLIT SCREEN CONTENT - LIKE CLAUDE INTERFACE
      ================================ */
   
   .split-content {
-    flex: 1; /* ✅ FIXED: Take remaining space after header/progress */
+    flex: 1;
     display: flex;
     flex-direction: row;
-    min-height: 0; /* ✅ CRITICAL: Allow flex children to shrink */
+    min-height: 0;
     background: #f3f4f6;
     position: relative;
-    overflow: hidden; /* ✅ FIXED: Let panels handle their own scrolling */
+    overflow: hidden;
   }
   
   /* ================================
-     LEFT PANEL - CONTENT (PROPER SCROLLING)
+     LEFT PANEL - CONTENT (LIKE CLAUDE'S LEFT SIDE)
      ================================ */
   
   .content-panel {
     background: #ffffff;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* ✅ FIXED: Let step-content handle scrolling */
+    overflow-y: auto;
     position: relative;
     width: 50%; /* Default 50% like Claude */
     min-width: 300px;
     max-width: 75%;
     border-right: 1px solid #e5e7eb;
     resize: horizontal;
-  }
-  
-  /* ✅ FIXED: Make step-content scrollable */
-  .content-panel .step-content {
-    flex: 1;
-    overflow-y: auto; /* ✅ CRITICAL: Enable scrolling for content */
     overflow-x: hidden;
-    padding: 16px; /* Add some padding for content */
-    min-height: 0; /* Allow shrinking */
   }
   
   .content-panel::-webkit-scrollbar {
@@ -357,24 +344,18 @@
   }
   
   /* ================================
-     RIGHT PANEL - INTERACTIVE (PROPER SCROLLING)
+     RIGHT PANEL - INTERACTIVE (LIKE CLAUDE'S RIGHT SIDE)
      ================================ */
   
   .interactive-panel-container {
     background: #ffffff;
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* ✅ FIXED: Let interactive-panel handle scrolling */
+    overflow: hidden;
     position: relative;
     flex: 1;
     min-width: 300px;
-  }
-  
-  /* ✅ FIXED: Make sure interactive panel can scroll */
-  .interactive-panel-container .interactive-panel {
-    flex: 1;
-    overflow: hidden; /* Let children handle scrolling */
-    min-height: 0; /* Allow shrinking */
+    padding: 0; /* CRITICAL: No padding for interactive panel space */
   }
   
   .non-interactive-panel {
@@ -386,7 +367,6 @@
     position: relative;
     flex: 1;
     min-width: 300px;
-    overflow-y: auto; /* ✅ FIXED: Allow scrolling for non-interactive content */
   }
   
   .panel-placeholder {
@@ -498,7 +478,6 @@
     z-index: 3000;
     padding: 20px;
     animation: modalFadeIn 0.4s ease-out;
-    overflow-y: auto; /* ✅ FIXED: Allow vocabulary modal scrolling */
   }
   
   @keyframes modalFadeIn {
@@ -519,13 +498,12 @@
     max-width: 900px;
     width: 100%;
     max-height: 95vh;
-    overflow-y: auto; /* ✅ FIXED: Allow vocabulary content scrolling */
+    overflow-y: auto;
     box-shadow: 
       0 25px 50px rgba(0, 0, 0, 0.25),
       0 0 0 1px rgba(255, 255, 255, 0.1);
     position: relative;
     animation: modalSlideUp 0.4s ease-out;
-    margin: auto; /* ✅ FIXED: Center in overlay */
   }
   
   @keyframes modalSlideUp {
@@ -857,12 +835,12 @@
     width: 100%;
     max-width: 700px;
     max-height: 90vh;
-    overflow-y: auto; /* ✅ FIXED: Allow problem report modal scrolling */
+    overflow-y: auto;
     box-shadow: 
       0 25px 50px rgba(0, 0, 0, 0.3),
       0 8px 16px rgba(0, 0, 0, 0.1);
     animation: modalSlideIn 0.3s ease-out;
-    margin: auto; /* ✅ FIXED: Center in overlay */
+    margin: 20px;
   }
   
   @keyframes modalSlideIn {
@@ -988,7 +966,7 @@
   }
   
   /* ================================
-     RESPONSIVE DESIGN - SPLIT SCREEN ADAPTATIONS WITH PROPER SCROLLING
+     RESPONSIVE DESIGN - SPLIT SCREEN ADAPTATIONS
      ================================ */
   
   /* Large screens - keep split screen */
@@ -1026,7 +1004,7 @@
     }
   }
   
-  /* Tablets and smaller - stack vertically with proper scrolling */
+  /* Tablets and smaller - stack vertically */
   @media (max-width: 1023px) {
     .split-content {
       flex-direction: column;
@@ -1040,15 +1018,6 @@
       border-right: none;
       border-bottom: 1px solid #e5e7eb;
       resize: vertical;
-    }
-    
-    /* ✅ FIXED: Ensure step-content still scrolls in mobile */
-    .content-panel .step-content {
-      flex: 1;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding: 16px;
-      min-height: 0;
     }
     
     .resize-divider {
@@ -1086,20 +1055,7 @@
     .non-interactive-panel {
       flex: 1;
       min-height: 250px;
-      overflow-y: auto; /* ✅ FIXED: Enable scrolling in mobile */
-    }
-    
-    /* ✅ FIXED: Ensure interactive panel scrolls in mobile */
-    .interactive-panel-container .interactive-panel {
-      overflow: hidden;
-      height: 100%;
-    }
-    
-    .interactive-panel-container .interactive-panel .exercise-body,
-    .interactive-panel-container .interactive-panel .quiz-body {
-      overflow-y: auto;
-      flex: 1;
-      min-height: 0;
+      padding: 0;
     }
     
     .non-interactive-panel {
@@ -1119,11 +1075,8 @@
   /* Mobile phones */
   @media (max-width: 768px) {
     .content-panel {
+      padding: 16px;
       min-height: 200px;
-    }
-    
-    .content-panel .step-content {
-      padding: 12px; /* Reduce padding on mobile */
     }
     
     .resize-divider {
@@ -1135,9 +1088,8 @@
       height: 16px;
     }
     
-    .interactive-panel-container,
-    .non-interactive-panel {
-      min-height: 200px;
+    .interactive-panel-container {
+      padding: 0;
     }
     
     .non-interactive-panel {
@@ -1196,11 +1148,8 @@
   /* Small mobile phones */
   @media (max-width: 480px) {
     .content-panel {
+      padding: 12px;
       min-height: 180px;
-    }
-    
-    .content-panel .step-content {
-      padding: 8px; /* Further reduce padding on small mobile */
     }
     
     .resize-divider {
@@ -1210,11 +1159,6 @@
     .resize-divider:hover,
     .resize-divider:active {
       height: 20px;
-    }
-    
-    .interactive-panel-container,
-    .non-interactive-panel {
-      min-height: 180px;
     }
     
     .non-interactive-panel {
@@ -1603,18 +1547,15 @@
   
     .lesson-page {
       background: white !important;
-      overflow: visible !important;
     }
   
     .lesson-container {
       background: white !important;
-      max-height: none !important;
     }
   
     .split-content {
       display: block !important;
       background: white !important;
-      overflow: visible !important;
     }
   
     .content-panel,
@@ -1627,7 +1568,6 @@
       width: 100% !important;
       height: auto !important;
       page-break-inside: avoid;
-      overflow: visible !important;
     }
   
     .vocabulary-card {
@@ -1697,78 +1637,4 @@
   
   .lesson-container.resizing * {
     user-select: none;
-  }
-  
-  /* ================================
-     CRITICAL SCROLLING FIXES
-     ================================ */
-  
-  /* ✅ CRITICAL: Ensure all scrollable areas have proper webkit scrollbar styling */
-  .content-panel .step-content::-webkit-scrollbar,
-  .interactive-panel .exercise-body::-webkit-scrollbar,
-  .interactive-panel .quiz-body::-webkit-scrollbar,
-  .modal-content::-webkit-scrollbar,
-  .vocabulary-modal-container::-webkit-scrollbar,
-  .problem-report-modal::-webkit-scrollbar {
-    width: 8px;
-  }
-  
-  .content-panel .step-content::-webkit-scrollbar-track,
-  .interactive-panel .exercise-body::-webkit-scrollbar-track,
-  .interactive-panel .quiz-body::-webkit-scrollbar-track,
-  .modal-content::-webkit-scrollbar-track,
-  .vocabulary-modal-container::-webkit-scrollbar-track,
-  .problem-report-modal::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 4px;
-  }
-  
-  .content-panel .step-content::-webkit-scrollbar-thumb,
-  .interactive-panel .exercise-body::-webkit-scrollbar-thumb,
-  .interactive-panel .quiz-body::-webkit-scrollbar-thumb,
-  .modal-content::-webkit-scrollbar-thumb,
-  .vocabulary-modal-container::-webkit-scrollbar-thumb,
-  .problem-report-modal::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-  }
-  
-  .content-panel .step-content::-webkit-scrollbar-thumb:hover,
-  .interactive-panel .exercise-body::-webkit-scrollbar-thumb:hover,
-  .interactive-panel .quiz-body::-webkit-scrollbar-thumb:hover,
-  .modal-content::-webkit-scrollbar-thumb:hover,
-  .vocabulary-modal-container::-webkit-scrollbar-thumb:hover,
-  .problem-report-modal::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.4);
-  }
-  
-  /* ✅ CRITICAL: Force smooth scrolling behavior */
-  .content-panel .step-content,
-  .interactive-panel .exercise-body,
-  .interactive-panel .quiz-body,
-  .non-interactive-panel {
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
-  }
-  
-  /* ✅ CRITICAL: Fix any remaining scroll issues */
-  .lesson-page * {
-    box-sizing: border-box;
-  }
-  
-  /* ✅ CRITICAL: Ensure proper flex behavior for scrolling */
-  .content-panel,
-  .interactive-panel-container {
-    display: flex;
-    flex-direction: column;
-    min-height: 0; /* Critical for flex scrolling */
-  }
-  
-  .content-panel .step-content,
-  .interactive-panel .exercise-body,
-  .interactive-panel .quiz-body {
-    flex: 1;
-    min-height: 0; /* Critical for flex scrolling */
-    overflow-y: auto;
-    overflow-x: hidden;
   }
