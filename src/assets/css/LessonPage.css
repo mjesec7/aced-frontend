@@ -1,7 +1,7 @@
 /* ================================
    COMPLETE LESSONPAGE.CSS - SPLIT SCREEN LIKE CLAUDE INTERFACE
    Full responsive design + resizable split screen + all features
-   MORE SPACE FOR CONTENT PANEL + NO DARK MODE
+   MAXIMUM SPACE FOR CONTENT PANEL + NO DARK MODE
    ================================ */
 
    .lesson-page {
@@ -253,40 +253,26 @@
   }
   
   /* ================================
-     LEFT PANEL - CONTENT (LIKE CLAUDE'S LEFT SIDE) - MORE SPACE
+     LEFT PANEL - CONTENT (LIKE CLAUDE'S LEFT SIDE) - MAXIMUM SPACE
      ================================ */
   
   .content-panel {
     background: #ffffff;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    overflow: hidden; /* ✅ CHANGED: Remove scrolling to maximize space usage */
     position: relative;
-    width: 70%; /* INCREASED FROM 65% TO 70% for even more space */
-    min-width: 400px; /* INCREASED from 350px */
-    max-width: 85%; /* INCREASED from 80% */
+    width: 75%; /* ✅ INCREASED: Even more space - 75% by default */
+    min-width: 300px; /* ✅ REDUCED: Lower minimum for maximum flexibility */
+    max-width: none; /* ✅ REMOVED: No maximum width limit - can expand fully */
     border-right: 1px solid #e5e7eb;
     resize: horizontal;
     overflow-x: hidden;
-    padding: 16px 24px; /* FURTHER REDUCED padding for maximum content space */
+    padding: 0; /* ✅ REMOVED: No padding - maximum content space */
+    margin: 0; /* ✅ ENSURE: No margins */
   }
   
-  .content-panel::-webkit-scrollbar {
-    width: 8px;
-  }
-  
-  .content-panel::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  .content-panel::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 4px;
-  }
-  
-  .content-panel::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
-  }
+  /* ✅ REMOVED ALL SCROLLBARS FROM CONTENT PANEL TO MAXIMIZE SPACE */
   
   /* ================================
      RESIZE DIVIDER - LIKE CLAUDE'S DIVIDER
@@ -346,18 +332,18 @@
   }
   
   /* ================================
-     RIGHT PANEL - INTERACTIVE (LIKE CLAUDE'S RIGHT SIDE) - ADJUSTED
+     RIGHT PANEL - INTERACTIVE (LIKE CLAUDE'S RIGHT SIDE) - ADJUSTED FOR MAX CONTENT SPACE
      ================================ */
   
   .interactive-panel-container {
     background: #ffffff;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: hidden; /* ✅ ENSURE: No overflow on container */
     position: relative;
-    flex: 1;
-    min-width: 250px; /* REDUCED from 300px to accommodate larger left panel */
-    padding: 0; /* CRITICAL: No padding for interactive panel space */
+    flex: 1; /* ✅ TAKE REMAINING SPACE */
+    min-width: 200px; /* ✅ FURTHER REDUCED: Even less minimum to allow max content space */
+    padding: 0; /* ✅ CRITICAL: No padding for interactive panel space */
   }
   
   .non-interactive-panel {
@@ -365,10 +351,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 48px;
+    padding: 24px; /* ✅ REDUCED: Less padding */
     position: relative;
     flex: 1;
-    min-width: 250px; /* REDUCED from 300px */
+    min-width: 200px; /* ✅ REDUCED: Allow more content space */
   }
   
   .panel-placeholder {
@@ -971,14 +957,14 @@
      RESPONSIVE DESIGN - SPLIT SCREEN ADAPTATIONS
      ================================ */
   
-  /* Large screens - keep split screen with improved default sizes */
+  /* Large screens - keep split screen with MAXIMUM content space */
   @media (min-width: 1024px) {
     .split-content {
       flex-direction: row;
     }
     
     .content-panel {
-      width: 70%; /* DEFAULT TO 70% instead of 65% */
+      width: 75%; /* ✅ INCREASED: 75% by default instead of 70% */
       border-right: 1px solid #e5e7eb;
       border-bottom: none;
     }
@@ -1006,7 +992,7 @@
     }
   }
   
-  /* Tablets and smaller - stack vertically */
+  /* Tablets and smaller - stack vertically with MAXIMUM content space */
   @media (max-width: 1023px) {
     .split-content {
       flex-direction: column;
@@ -1014,13 +1000,13 @@
     
     .content-panel {
       width: 100%;
-      height: 65%; /* INCREASED from 60% to 65% for even more content space on mobile */
-      min-height: 350px; /* INCREASED from 300px */
-      max-height: 80%; /* INCREASED from 75% */
+      height: 70%; /* ✅ INCREASED: Even more space for content on mobile - 70% */
+      min-height: 400px; /* ✅ INCREASED: More minimum height */
+      max-height: 85%; /* ✅ INCREASED: Allow even more space if needed */
       border-right: none;
       border-bottom: 1px solid #e5e7eb;
       resize: vertical;
-      padding: 12px 16px; /* REDUCED padding on mobile for more content space */
+      padding: 0; /* ✅ NO PADDING: Maximum content space */
     }
     
     .resize-divider {
@@ -1057,12 +1043,12 @@
     .interactive-panel-container,
     .non-interactive-panel {
       flex: 1;
-      min-height: 180px; /* FURTHER REDUCED to make room for larger content panel */
+      min-height: 150px; /* ✅ REDUCED: Less minimum height for interactive panel */
       padding: 0;
     }
     
     .non-interactive-panel {
-      padding: 16px; /* REDUCED padding */
+      padding: 16px; /* ✅ MINIMAL: Less padding for non-interactive */
     }
     
     /* Dragging in vertical mode */
@@ -1075,11 +1061,12 @@
     }
   }
   
-  /* Mobile phones */
+  /* Mobile phones - MAXIMUM content space priority */
   @media (max-width: 768px) {
     .content-panel {
-      padding: 12px 16px; /* OPTIMIZED padding for mobile - more content space */
-      min-height: 280px; /* INCREASED from 250px */
+      padding: 0; /* ✅ ZERO PADDING: Maximum space for content */
+      min-height: 350px; /* ✅ INCREASED: More space for content */
+      height: 75%; /* ✅ INCREASED: Even more space on mobile */
     }
     
     .resize-divider {
@@ -1096,7 +1083,7 @@
     }
     
     .non-interactive-panel {
-      padding: 12px; /* REDUCED padding */
+      padding: 8px; /* ✅ MINIMAL: Very small padding */
     }
     
     .floating-ai-btn {
@@ -1148,11 +1135,12 @@
     }
   }
   
-  /* Small mobile phones */
+  /* Small mobile phones - ULTIMATE content space priority */
   @media (max-width: 480px) {
     .content-panel {
-      padding: 12px 16px; /* MINIMAL padding for small screens */
-      min-height: 200px; /* INCREASED from 180px */
+      padding: 0; /* ✅ ABSOLUTELY NO PADDING: Every pixel for content */
+      min-height: 300px; /* ✅ ADEQUATE: Still good space */
+      height: 80%; /* ✅ MAXIMUM: 80% of screen for content */
     }
     
     .resize-divider {
@@ -1165,7 +1153,7 @@
     }
     
     .non-interactive-panel {
-      padding: 8px; /* MINIMAL padding */
+      padding: 4px; /* ✅ ULTRA MINIMAL: Just enough */
     }
     
     .floating-ai-btn {
@@ -1405,7 +1393,7 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
-  
+
     .loading-spinner {
       animation: none;
       border: 4px solid #3b82f6;
@@ -1465,20 +1453,20 @@
     .resize-divider {
       display: none !important;
     }
-  
+
     .lesson-page {
       background: white !important;
     }
-  
+
     .lesson-container {
       background: white !important;
     }
-  
+
     .split-content {
       display: block !important;
       background: white !important;
     }
-  
+
     .content-panel,
     .interactive-panel-container,
     .non-interactive-panel {
@@ -1490,13 +1478,13 @@
       height: auto !important;
       page-break-inside: avoid;
     }
-  
+
     .vocabulary-card {
       background: white !important;
       border: 2px solid #000;
       color: black !important;
     }
-  
+
     * {
       background: white !important;
       color: black !important;

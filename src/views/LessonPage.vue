@@ -421,15 +421,15 @@ export default {
     explanation.initializeAI?.()
 
     // ==========================================
-    // RESIZABLE SPLIT SCREEN STATE
+    // RESIZABLE SPLIT SCREEN STATE - MAXIMUM CONTENT SPACE
     // ==========================================
     const isResizing = ref(false)
     const startX = ref(0)
     const startY = ref(0)
-    const startWidthLeft = ref(50)
-    const startWidthRight = ref(50)
-    const currentLeftWidth = ref(50)
-    const currentRightWidth = ref(50)
+    const startWidthLeft = ref(75)  // ✅ NEW DEFAULT: 75% for content
+    const startWidthRight = ref(25) // ✅ NEW DEFAULT: 25% for interactive
+    const currentLeftWidth = ref(75)  // ✅ INCREASED: 75% by default instead of 50%
+    const currentRightWidth = ref(25) // ✅ DECREASED: 25% for interactive panel
     const resizeDirection = ref('horizontal') // 'horizontal' or 'vertical'
 
     // ==========================================
@@ -465,21 +465,23 @@ export default {
     const showConfetti = ref(false)
 
     // ==========================================
-    // RESIZABLE SPLIT SCREEN COMPUTED PROPERTIES
+    // RESIZABLE SPLIT SCREEN COMPUTED PROPERTIES - MAXIMUM CONTENT SPACE
     // ==========================================
     const leftPanelStyle = computed(() => {
       const isVertical = window.innerWidth <= 1023
       if (isVertical) {
         return { 
           flex: `1 1 ${currentLeftWidth.value}%`,
-          minHeight: '200px',
-          maxHeight: currentLeftWidth.value >= 75 ? '75%' : 'none'
+          minHeight: '300px', // ✅ INCREASED: More space for content
+          maxHeight: currentLeftWidth.value >= 80 ? '80%' : 'none' // ✅ UPDATED: New constraint
         }
       }
       return { 
         flex: `0 0 ${currentLeftWidth.value}%`,
-        minWidth: '300px',
-        maxWidth: currentLeftWidth.value >= 75 ? '75%' : 'none'
+        minWidth: '300px', // ✅ MAINTAINED: Adequate minimum
+        maxWidth: currentLeftWidth.value >= 85 ? '85%' : 'none', // ✅ UPDATED: New constraint
+        height: '100%', // ✅ ENSURE: Full height usage
+        overflow: 'hidden' // ✅ ENSURE: No overflow on container
       }
     })
 
@@ -488,19 +490,21 @@ export default {
       if (isVertical) {
         return { 
           flex: `1 1 ${currentRightWidth.value}%`,
-          minHeight: '200px',
+          minHeight: '150px', // ✅ REDUCED: Allow more space for content
           maxHeight: currentRightWidth.value >= 75 ? '75%' : 'none'
         }
       }
       return { 
         flex: `0 0 ${currentRightWidth.value}%`,
-        minWidth: '300px',
-        maxWidth: currentRightWidth.value >= 75 ? '75%' : 'none'
+        minWidth: '200px', // ✅ REDUCED: Lower minimum for max content space
+        maxWidth: currentRightWidth.value >= 80 ? '80%' : 'none',
+        height: '100%', // ✅ ENSURE: Full height usage
+        overflow: 'hidden' // ✅ ENSURE: Container doesn't overflow
       }
     })
 
     const widthIndicatorText = computed(() => {
-      return `${Math.round(currentLeftWidth.value)}% | ${Math.round(currentRightWidth.value)}%`
+      return `Content: ${Math.round(currentLeftWidth.value)}% | Interactive: ${Math.round(currentRightWidth.value)}%`
     })
 
     // ==========================================
@@ -523,7 +527,7 @@ export default {
     })
 
     // ==========================================
-    // RESIZABLE SPLIT SCREEN METHODS
+    // RESIZABLE SPLIT SCREEN METHODS - MAXIMUM CONTENT SPACE
     // ==========================================
     const startResize = (event) => {
       event.preventDefault()
@@ -552,7 +556,7 @@ export default {
       document.body.style.userSelect = 'none'
       document.body.style.cursor = resizeDirection.value === 'horizontal' ? 'col-resize' : 'row-resize'
       
-       ('🔧 Started resizing:', resizeDirection.value)
+      console.log('🔧 Started resizing:', resizeDirection.value)
     }
 
     const handleResize = (event) => {
@@ -583,23 +587,25 @@ export default {
       let newLeftWidth = startWidthLeft.value + deltaPercentage
       let newRightWidth = startWidthRight.value - deltaPercentage
       
-      // Apply constraints (25% minimum, 75% maximum)
-      const minWidth = 25
-      const maxWidth = 75
+      // ✅ UPDATED: New constraints for maximum content space
+      const minLeftWidth = 20   // ✅ REDUCED: Allow content to shrink to 20%
+      const maxLeftWidth = 85   // ✅ INCREASED: Allow content to expand to 85%
+      const minRightWidth = 15  // ✅ REDUCED: Interactive can be as small as 15%
+      const maxRightWidth = 80  // ✅ INCREASED: Interactive can be as large as 80%
       
-      if (newLeftWidth < minWidth) {
-        newLeftWidth = minWidth
+      if (newLeftWidth < minLeftWidth) {
+        newLeftWidth = minLeftWidth
         newRightWidth = 100 - newLeftWidth
-      } else if (newLeftWidth > maxWidth) {
-        newLeftWidth = maxWidth
+      } else if (newLeftWidth > maxLeftWidth) {
+        newLeftWidth = maxLeftWidth
         newRightWidth = 100 - newLeftWidth
       }
       
-      if (newRightWidth < minWidth) {
-        newRightWidth = minWidth
+      if (newRightWidth < minRightWidth) {
+        newRightWidth = minRightWidth
         newLeftWidth = 100 - newRightWidth
-      } else if (newRightWidth > maxWidth) {
-        newRightWidth = maxWidth
+      } else if (newRightWidth > maxRightWidth) {
+        newRightWidth = maxRightWidth
         newLeftWidth = 100 - newRightWidth
       }
       
@@ -634,13 +640,13 @@ export default {
         console.warn('Could not save split sizes to localStorage:', error)
       }
       
-       ('✅ Stopped resizing. Final sizes:', {
+      console.log('✅ Stopped resizing. Final sizes:', {
         left: Math.round(currentLeftWidth.value),
         right: Math.round(currentRightWidth.value)
       })
     }
 
-    // Keyboard support for accessibility
+    // Keyboard support for accessibility with new constraints
     const handleResizeKeyboard = (event) => {
       const step = 5 // 5% step size
       let newLeftWidth = currentLeftWidth.value
@@ -648,36 +654,36 @@ export default {
       switch (event.key) {
         case 'ArrowLeft':
           event.preventDefault()
-          newLeftWidth = Math.max(25, currentLeftWidth.value - step)
+          newLeftWidth = Math.max(20, currentLeftWidth.value - step) // ✅ UPDATED: New minimum
           break
         case 'ArrowRight':
           event.preventDefault()
-          newLeftWidth = Math.min(75, currentLeftWidth.value + step)
+          newLeftWidth = Math.min(85, currentLeftWidth.value + step) // ✅ UPDATED: New maximum
           break
         case 'ArrowUp':
           if (resizeDirection.value === 'vertical') {
             event.preventDefault()
-            newLeftWidth = Math.max(25, currentLeftWidth.value - step)
+            newLeftWidth = Math.max(20, currentLeftWidth.value - step)
           }
           break
         case 'ArrowDown':
           if (resizeDirection.value === 'vertical') {
             event.preventDefault()
-            newLeftWidth = Math.min(75, currentLeftWidth.value + step)
+            newLeftWidth = Math.min(85, currentLeftWidth.value + step)
           }
           break
         case 'Home':
           event.preventDefault()
-          newLeftWidth = 25
+          newLeftWidth = 20 // ✅ UPDATED: New minimum
           break
         case 'End':
           event.preventDefault()
-          newLeftWidth = 75
+          newLeftWidth = 85 // ✅ UPDATED: New maximum
           break
         case ' ':
         case 'Enter':
           event.preventDefault()
-          newLeftWidth = 50
+          newLeftWidth = 75 // ✅ UPDATED: New default
           break
         default:
           return
@@ -698,10 +704,10 @@ export default {
       }
     }
 
-    // Function to reset to default sizes
+    // Function to reset to new default sizes
     const resetSplitSizes = () => {
-      currentLeftWidth.value = 50
-      currentRightWidth.value = 50
+      currentLeftWidth.value = 75  // ✅ NEW DEFAULT: 75% for content
+      currentRightWidth.value = 25 // ✅ NEW DEFAULT: 25% for interactive
       
       // Remove saved sizes from localStorage
       try {
@@ -710,10 +716,10 @@ export default {
         console.warn('Could not remove saved sizes from localStorage:', error)
       }
       
-       ('🔄 Reset split sizes to default (50/50)')
+      console.log('🔄 Reset split sizes to new defaults (75/25)')
     }
 
-    // Function to load saved sizes from localStorage
+    // Function to load saved sizes from localStorage with new defaults
     const loadSavedSizes = () => {
       try {
         const saved = localStorage.getItem('lessonPageSplitSizes')
@@ -723,27 +729,46 @@ export default {
           // Check if saved data is recent (within 30 days)
           const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000)
           if (timestamp && timestamp > thirtyDaysAgo) {
-            currentLeftWidth.value = Math.max(25, Math.min(75, left || 50))
-            currentRightWidth.value = Math.max(25, Math.min(75, right || 50))
-             ('📊 Loaded saved split sizes:', { left: currentLeftWidth.value, right: currentRightWidth.value })
+            currentLeftWidth.value = Math.max(20, Math.min(85, left || 75)) // ✅ UPDATED: New ranges
+            currentRightWidth.value = Math.max(15, Math.min(80, right || 25)) // ✅ UPDATED: New ranges
+            console.log('📊 Loaded saved split sizes:', { left: currentLeftWidth.value, right: currentRightWidth.value })
           } else {
-            // Remove old data
+            // Remove old data and use new defaults
             localStorage.removeItem('lessonPageSplitSizes')
+            currentLeftWidth.value = 75  // ✅ NEW DEFAULT
+            currentRightWidth.value = 25 // ✅ NEW DEFAULT
           }
+        } else {
+          // Use new defaults
+          currentLeftWidth.value = 75
+          currentRightWidth.value = 25
         }
       } catch (error) {
         console.warn('Could not load saved sizes from localStorage:', error)
+        // Fallback to new defaults
+        currentLeftWidth.value = 75
+        currentRightWidth.value = 25
       }
     }
 
-    // Handle window resize
+    // Handle window resize with mobile optimization
     const handleWindowResize = () => {
       const wasVertical = resizeDirection.value === 'vertical'
       const isNowVertical = window.innerWidth <= 1023
       
       if (wasVertical !== isNowVertical) {
         resizeDirection.value = isNowVertical ? 'vertical' : 'horizontal'
-         ('📱 Resize direction changed to:', resizeDirection.value)
+        
+        // ✅ MOBILE OPTIMIZATION: Adjust splits for mobile
+        if (isNowVertical && currentLeftWidth.value < 65) {
+          currentLeftWidth.value = 70  // ✅ GIVE MORE SPACE: To content on mobile
+          currentRightWidth.value = 30
+        } else if (!isNowVertical && currentLeftWidth.value > 80) {
+          currentLeftWidth.value = 75  // ✅ BALANCE: For desktop
+          currentRightWidth.value = 25
+        }
+        
+        console.log('📱 Resize direction changed to:', resizeDirection.value, 'New split:', `${currentLeftWidth.value}/${currentRightWidth.value}`)
       }
     }
 
@@ -751,7 +776,7 @@ export default {
     // NAVIGATION METHODS
     // ==========================================
     const handleReturnToCatalogue = () => {
-       ('🔄 Returning to catalogue...')
+      console.log('🔄 Returning to catalogue...')
       
       try {
         router.push({ 
@@ -777,7 +802,7 @@ export default {
     }
 
     const handleGoToHomework = () => {
-       ('📚 Navigating to homework...')
+      console.log('📚 Navigating to homework...')
       
       if (lessonOrchestrator.lesson.value?._id) {
         try {
@@ -817,7 +842,7 @@ export default {
     }
 
     const exitLesson = () => {
-       ('🚪 Exiting lesson...')
+      console.log('🚪 Exiting lesson...')
       
       try {
         if (lessonOrchestrator.saveProgress) {
@@ -935,7 +960,7 @@ export default {
         const encodedMessage = encodeURIComponent(reportMessage)
         const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`
         
-         ('📊 Problem Report Submitted:', {
+        console.log('📊 Problem Report Submitted:', {
           lessonId: getCurrentLessonInfo().lessonId,
           problemType: problemType.value,
           hasScreenshot: !!screenshotUrl.value,
@@ -1009,7 +1034,7 @@ export default {
     // VOCABULARY METHODS
     // ==========================================
     const initializeVocabularyModal = (step) => {
-       ('📚 Initializing vocabulary modal from LessonPage:', step)
+      console.log('📚 Initializing vocabulary modal from LessonPage:', step)
 
       let vocabularyStep = step
 
@@ -1028,7 +1053,7 @@ export default {
 
         const vocabularySteps = lessonOrchestrator.steps.value?.filter(s => s.type === 'vocabulary')
         if (vocabularySteps && vocabularySteps.length > 0) {
-           ('✅ Found vocabulary step in lesson, using first one:', vocabularySteps[0])
+          console.log('✅ Found vocabulary step in lesson, using first one:', vocabularySteps[0])
           vocabularyStep = vocabularySteps[0]
         } else {
           console.error('❌ No vocabulary steps found in entire lesson')
@@ -1040,7 +1065,7 @@ export default {
     }
 
     const jumpToVocabWord = (index) => {
-       ('🎯 Jumping to vocabulary word:', index)
+      console.log('🎯 Jumping to vocabulary word:', index)
 
       if (index >= 0 && index < vocabulary.vocabularyModal.words.length) {
         vocabulary.cardAnimation.isFlipping = false
@@ -1048,7 +1073,7 @@ export default {
 
         setTimeout(() => {
           vocabulary.vocabularyModal.currentIndex = index
-           (`✅ Jumped to word ${index + 1}/${vocabulary.vocabularyModal.words.length}`)
+          console.log(`✅ Jumped to word ${index + 1}/${vocabulary.vocabularyModal.words.length}`)
         }, 50)
       } else {
         console.warn('⚠️ Invalid vocabulary word index:', index)
@@ -1056,7 +1081,7 @@ export default {
     }
 
     const showVocabDefinition = () => {
-       ('🔄 Showing vocabulary definition')
+      console.log('🔄 Showing vocabulary definition')
       vocabulary.showVocabDefinition()
     }
 
@@ -1194,7 +1219,6 @@ export default {
       if (!currentExercise || currentExercise.type !== 'drag-drop') {
         return
       }
-      
       
       if (exercises.availableDragItems.value.length === 0 || exercises.dropZones.value.length === 0) {
         exercises.initializeDragDropItems(currentExercise)
@@ -1438,11 +1462,9 @@ export default {
     // ==========================================
     const completeLessonWithExtraction = async () => {
       try {
-
         const completionResult = await lessonOrchestrator.completeLesson?.()
 
         if (completionResult?.success || lessonOrchestrator.lessonCompleted.value) {
-
           const extractionResult = await extractLessonContent()
 
           if (extractionResult?.success) {
@@ -1460,7 +1482,6 @@ export default {
 
     const extractLessonContent = async () => {
       try {
-
         if (!lessonOrchestrator.currentUser?.value?.uid || !lessonOrchestrator.lesson.value?._id) {
           console.error('❌ Missing required data for extraction')
           return { success: false, error: 'Missing user or lesson data' }
@@ -1494,7 +1515,6 @@ export default {
     }
 
     const showCompletionMessage = (extractionResult) => {
-
       let message = '🎉 Урок успешно завершён!'
 
       if (extractionResult.homeworkCreated) {
@@ -1507,7 +1527,6 @@ export default {
 
       if (lessonOrchestrator.showToast) {
         lessonOrchestrator.showToast(message, 'success')
-      } else {
       }
 
       lessonOrchestrator.lessonCompleted.value = true
@@ -1521,15 +1540,22 @@ export default {
       document.addEventListener('keydown', handleKeyboardShortcuts)
       window.addEventListener('resize', handleWindowResize)
       
-      // Load saved split sizes
+      // ✅ LOAD: Saved split sizes with new defaults
       loadSavedSizes()
+      
+      // ✅ RESPONSIVE: Adjust for current screen size
+      handleWindowResize()
       
       // Make debug functions globally available
       window.resetSplitSizes = resetSplitSizes
       window.loadSavedSizes = loadSavedSizes
+      window.getCurrentSplit = () => ({
+        left: currentLeftWidth.value,
+        right: currentRightWidth.value,
+        direction: resizeDirection.value
+      })
       
-      
-     
+      console.log('🎯 LessonPage initialized with split:', `${currentLeftWidth.value}/${currentRightWidth.value}`)
     })
 
     onUnmounted(() => {
@@ -1544,6 +1570,7 @@ export default {
       // Clean up debug functions
       delete window.resetSplitSizes
       delete window.loadSavedSizes
+      delete window.getCurrentSplit
     })
 
     // ==========================================
@@ -1572,6 +1599,7 @@ export default {
 
     // Watch for window size changes to update resize direction
     watch(() => resizeDirection.value, (newDirection) => {
+      console.log('📐 Resize direction updated:', newDirection)
     })
 
     // ==========================================
