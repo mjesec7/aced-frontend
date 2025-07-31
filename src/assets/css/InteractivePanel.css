@@ -1,6 +1,6 @@
 /* ================================
    COMPLETE INTERACTIVE PANEL FIX
-   Full solution for proper layout and visibility
+   Full solution for proper layout and visibility with PERFECT SCROLLING
    ================================ */
 
 /* ================================
@@ -12,9 +12,9 @@
     border-radius: 20px;
     display: flex;
     flex-direction: column;
-    height: 100%;
-    min-height: 500px; /* Ensure minimum readable height */
-    overflow: hidden;
+    height: 100%; /* ✅ CRITICAL: Take full container height */
+    min-height: 0; /* ✅ CRITICAL: Allow flex shrinking */
+    overflow: hidden; /* ✅ FIXED: Let children handle scrolling */
     box-shadow: 
       0 4px 20px rgba(0, 0, 0, 0.08),
       0 1px 3px rgba(0, 0, 0, 0.05);
@@ -23,77 +23,89 @@
   }
   
   /* ================================
-     HEADER - COMPACT BUT READABLE
+     HEADER - COMPACT BUT READABLE (FIXED HEIGHT)
      ================================ */
   
   .exercise-header, .quiz-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 16px 20px; /* Reduced padding */
+    padding: 16px 20px;
     border-radius: 20px 20px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-shrink: 0;
+    flex-shrink: 0; /* ✅ CRITICAL: Never shrink header */
     box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
-    min-height: 60px; /* Reduced from 80px */
+    min-height: 60px;
+    max-height: 60px; /* ✅ FIXED: Constrain header height */
   }
   
   .exercise-header h3, .quiz-header h3 {
-    font-size: 1.2rem; /* Reduced from 1.4rem */
+    font-size: 1.2rem;
     font-weight: 700;
     margin: 0;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .exercise-counter, .quiz-counter {
     background: rgba(255, 255, 255, 0.2);
-    padding: 6px 12px; /* Reduced padding */
+    padding: 6px 12px;
     border-radius: 16px;
     font-weight: 600;
-    font-size: 0.85rem; /* Slightly smaller */
+    font-size: 0.85rem;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
   }
   
   /* ================================
-     MAIN CONTENT - PROPER SCROLLING
+     MAIN CONTENT - PERFECT SCROLLING
      ================================ */
   
   .exercise-body, .quiz-body {
-    flex: 1;
-    padding: 16px 20px; /* Reduced padding */
+    flex: 1; /* ✅ CRITICAL: Take remaining space */
+    padding: 16px 20px;
     display: flex;
     flex-direction: column;
-    gap: 16px; /* Reduced gap */
-    overflow-y: auto;
+    gap: 16px;
+    overflow-y: auto; /* ✅ CRITICAL: Enable vertical scrolling */
     overflow-x: hidden;
+    min-height: 0; /* ✅ CRITICAL: Allow flex shrinking */
+    position: relative;
+    
+    /* ✅ FIXED: Beautiful scrollbar */
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 transparent;
-    position: relative;
-    min-height: 0; /* Critical for proper flex behavior */
-    max-height: calc(100vh - 300px); /* Adjust based on header and footer */
+    
+    /* ✅ FIXED: Smooth scrolling */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
   }
   
   .exercise-body::-webkit-scrollbar,
   .quiz-body::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
   }
   
   .exercise-body::-webkit-scrollbar-track,
   .quiz-body::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
   }
   
   .exercise-body::-webkit-scrollbar-thumb,
   .quiz-body::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    transition: background 0.2s ease;
   }
   
   .exercise-body::-webkit-scrollbar-thumb:hover,
   .quiz-body::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: rgba(0, 0, 0, 0.4);
   }
   
   /* ================================
@@ -101,17 +113,17 @@
      ================================ */
   
   .question-text, .quiz-question {
-    font-size: 1.1rem; /* Reduced from 1.3rem */
+    font-size: 1.1rem;
     font-weight: 600;
     color: #1e293b;
     line-height: 1.5;
-    margin-bottom: 16px; /* Reduced from 24px */
-    padding: 16px; /* Reduced from 24px */
+    margin-bottom: 16px;
+    padding: 16px;
     background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
     border-radius: 12px;
     border-left: 4px solid #667eea;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    flex-shrink: 0;
+    flex-shrink: 0; /* ✅ FIXED: Don't shrink question */
   }
   
   /* ================================
@@ -122,8 +134,8 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 14px; /* Reduced gap */
-    min-height: 0;
+    gap: 14px;
+    min-height: 0; /* ✅ CRITICAL: Allow shrinking */
     position: relative;
   }
   
@@ -133,9 +145,9 @@
   
   .answer-textarea {
     flex: 1;
-    min-height: 120px; /* Reduced from 200px */
-    max-height: 250px; /* Reduced from 400px */
-    padding: 14px; /* Reduced padding */
+    min-height: 120px;
+    max-height: 300px; /* ✅ FIXED: Reasonable max height */
+    padding: 14px;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
     font-size: 1rem;
@@ -155,32 +167,53 @@
   }
   
   /* ================================
-     OPTIONS - COMPACT LAYOUT
+     OPTIONS - SCROLLABLE WHEN NEEDED
      ================================ */
   
   .options-list, .quiz-options, .true-false-options {
     display: flex;
     flex-direction: column;
-    gap: 12px; /* Reduced gap */
+    gap: 12px;
     flex: 1;
-    min-height: 0;
+    min-height: 0; /* ✅ CRITICAL: Allow shrinking */
+    overflow-y: auto; /* ✅ FIXED: Allow scrolling for many options */
+    
+    /* ✅ FIXED: Scrollbar for options */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+  
+  .options-list::-webkit-scrollbar,
+  .quiz-options::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .options-list::-webkit-scrollbar-track,
+  .quiz-options::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .options-list::-webkit-scrollbar-thumb,
+  .quiz-options::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
   }
   
   .option-item, .quiz-option, .tf-option {
     background: #ffffff;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
-    padding: 14px 16px; /* Reduced padding */
+    padding: 14px 16px;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
     gap: 12px;
-    min-height: 48px; /* Reduced from 64px */
+    min-height: 48px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     position: relative;
     overflow: hidden;
-    flex-shrink: 0;
+    flex-shrink: 0; /* ✅ FIXED: Don't shrink individual options */
   }
   
   .option-item::before, .quiz-option::before, .tf-option::before {
@@ -220,11 +253,12 @@
   
   .option-text {
     flex: 1;
-    font-size: 0.95rem; /* Slightly smaller */
+    font-size: 0.95rem;
     font-weight: 500;
     line-height: 1.4;
     z-index: 1;
     position: relative;
+    word-wrap: break-word;
   }
   
   /* ================================
@@ -235,8 +269,8 @@
     background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
     border: 2px solid #f59e0b;
     border-radius: 12px;
-    padding: 14px; /* Reduced padding */
-    margin: 12px 0; /* Reduced margin */
+    padding: 14px;
+    margin: 12px 0;
     font-style: italic;
     color: #92400e;
     line-height: 1.5;
@@ -248,18 +282,19 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+    flex-shrink: 0; /* ✅ FIXED: Don't shrink true/false options */
   }
   
   /* ================================
-     FILL IN BLANKS - COMPACT
+     FILL IN BLANKS - SCROLLABLE
      ================================ */
   
   .fill-blank-template {
     background: #f8fafc;
     border: 2px dashed #cbd5e1;
     border-radius: 12px;
-    padding: 16px; /* Reduced padding */
-    margin: 12px 0; /* Reduced margin */
+    padding: 16px;
+    margin: 12px 0;
     font-size: 1rem;
     line-height: 1.6;
     color: #475569;
@@ -269,14 +304,44 @@
   .fill-blank-inputs {
     display: flex;
     flex-direction: column;
-    gap: 14px; /* Reduced gap */
+    gap: 14px;
     flex: 1;
-    min-height: 0;
-    overflow-y: auto;
+    min-height: 0; /* ✅ CRITICAL: Allow shrinking */
+    overflow-y: auto; /* ✅ FIXED: Allow scrolling for many blanks */
+    
+    /* ✅ FIXED: Scrollbar for inputs */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+  
+  .fill-blank-inputs::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .fill-blank-inputs::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .fill-blank-inputs::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+  
+  .blank-input-group {
+    flex-shrink: 0; /* ✅ FIXED: Don't shrink individual inputs */
+  }
+  
+  .blank-label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.9rem;
   }
   
   .blank-input {
-    padding: 12px 14px; /* Reduced padding */
+    width: 100%;
+    padding: 12px 14px;
     border: 2px solid #e2e8f0;
     border-radius: 8px;
     font-size: 0.95rem;
@@ -290,106 +355,429 @@
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
   
+  .input-preview {
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-style: italic;
+  }
+  
   /* ================================
-     MATCHING - COMPACT LAYOUT
+     MATCHING - SCROLLABLE LAYOUT
      ================================ */
   
   .matching-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px; /* Reduced gap */
+    gap: 16px;
     flex: 1;
-    min-height: 200px; /* Reduced from 300px */
-    max-height: 350px; /* Reduced from 500px */
+    min-height: 200px;
+    max-height: 400px; /* ✅ FIXED: Reasonable max height */
+    overflow: hidden; /* ✅ FIXED: Let sides handle scrolling */
   }
   
   .matching-side {
     background: #f8fafc;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
-    padding: 12px; /* Reduced padding */
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 8px; /* Reduced gap */
-    overflow-y: auto;
+    gap: 8px;
+    overflow-y: auto; /* ✅ CRITICAL: Enable scrolling for matching items */
+    min-height: 0;
+    
+    /* ✅ FIXED: Scrollbar for matching sides */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+  
+  .matching-side::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .matching-side::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .matching-side::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
   }
   
   .matching-side h4 {
     color: #374151;
-    font-size: 0.9rem; /* Smaller */
+    font-size: 0.9rem;
     font-weight: 600;
     text-align: center;
-    margin-bottom: 6px;
+    margin: 0 0 6px 0;
     padding-bottom: 8px;
     border-bottom: 2px solid #e2e8f0;
-    flex-shrink: 0;
+    flex-shrink: 0; /* ✅ FIXED: Don't shrink headers */
   }
   
   .matching-item {
     background: #ffffff;
     border: 2px solid #e2e8f0;
     border-radius: 8px;
-    padding: 10px; /* Reduced padding */
+    padding: 10px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: 500;
     text-align: center;
     position: relative;
-    min-height: 40px; /* Reduced from 56px */
+    min-height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0; /* ✅ FIXED: Don't shrink individual items */
+    font-size: 0.85rem;
+    word-wrap: break-word;
+  }
+  
+  .matching-item:hover:not(.disabled) {
+    border-color: #667eea;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  }
+  
+  .matching-item.selected {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    font-weight: 600;
+  }
+  
+  .matching-item.matched {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+  }
+  
+  .selection-indicator {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-size: 1.2rem;
+  }
+  
+  .matching-pairs {
+    margin-top: 16px;
+    padding: 12px;
+    background: rgba(102, 126, 234, 0.05);
+    border-radius: 8px;
     flex-shrink: 0;
-    font-size: 0.85rem; /* Smaller text */
+  }
+  
+  .matching-pairs h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.9rem;
+    color: #374151;
+  }
+  
+  .pair-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    background: white;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    font-size: 0.8rem;
+  }
+  
+  .pair-text {
+    flex: 1;
+  }
+  
+  .remove-pair {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .matching-instructions {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: 8px;
+    border-left: 3px solid #3b82f6;
+    flex-shrink: 0;
+  }
+  
+  .matching-instructions p {
+    margin: 4px 0;
+    font-size: 0.8rem;
+    color: #4b5563;
+  }
+  
+  .current-selection {
+    color: #3b82f6 !important;
+    font-weight: 600;
   }
   
   /* ================================
-     DRAG AND DROP - COMPACT
+     ORDERING - SCROLLABLE
+     ================================ */
+  
+  .ordering-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-height: 0; /* ✅ CRITICAL: Allow shrinking */
+    overflow-y: auto; /* ✅ CRITICAL: Enable scrolling for ordering items */
+    
+    /* ✅ FIXED: Scrollbar for ordering */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+  
+  .ordering-container::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .ordering-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .ordering-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+  
+  .ordering-instructions {
+    background: rgba(59, 130, 246, 0.05);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    font-size: 0.8rem;
+    color: #4b5563;
+    flex-shrink: 0;
+  }
+  
+  .ordering-item {
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px;
+    cursor: move;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0; /* ✅ FIXED: Don't shrink individual items */
+    min-height: 44px;
+  }
+  
+  .ordering-item:hover:not(.disabled) {
+    border-color: #667eea;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  }
+  
+  .ordering-item.dragging {
+    opacity: 0.7;
+    transform: rotate(2deg);
+    z-index: 10;
+  }
+  
+  .ordering-item.drop-target {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.05);
+  }
+  
+  .ordering-item-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .drag-handle {
+    color: #9ca3af;
+    font-size: 1.2rem;
+    cursor: move;
+    flex-shrink: 0;
+  }
+  
+  .drag-handle.disabled {
+    color: #d1d5db;
+    cursor: not-allowed;
+  }
+  
+  .item-text {
+    flex: 1;
+    font-weight: 500;
+    font-size: 0.9rem;
+    min-width: 0;
+    word-wrap: break-word;
+  }
+  
+  .item-number {
+    background: #667eea;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  
+  .ordering-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .move-btn {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    width: 24px;
+    height: 20px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+  
+  .move-btn:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+  }
+  
+  /* ================================
+     DRAG AND DROP - SCROLLABLE LAYOUT
      ================================ */
   
   .drag-drop-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px; /* Reduced gap */
+    gap: 16px;
     flex: 1;
-    min-height: 250px; /* Reduced from 400px */
-    max-height: 400px; /* Reduced from 600px */
+    min-height: 250px;
+    max-height: 450px; /* ✅ FIXED: Reasonable max height */
+    overflow: hidden; /* ✅ FIXED: Let sides handle scrolling */
   }
   
   .drag-items, .drop-zones {
     background: #f8fafc;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
-    padding: 12px; /* Reduced padding */
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 8px; /* Reduced gap */
-    overflow-y: auto;
+    gap: 8px;
+    overflow-y: auto; /* ✅ CRITICAL: Enable scrolling */
+    min-height: 0;
+    
+    /* ✅ FIXED: Scrollbar for drag-drop sides */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+  
+  .drag-items::-webkit-scrollbar,
+  .drop-zones::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .drag-items::-webkit-scrollbar-track,
+  .drop-zones::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .drag-items::-webkit-scrollbar-thumb,
+  .drop-zones::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+  
+  .drag-items h4,
+  .drop-zones h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #374151;
+    text-align: center;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
   }
   
   .drag-item, .dropped-item {
     background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
     color: white;
-    padding: 10px 12px; /* Reduced padding */
+    padding: 10px 12px;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 500;
     text-align: center;
-    min-height: 36px; /* Reduced from 56px */
+    min-height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    font-size: 0.85rem; /* Smaller text */
+    font-size: 0.85rem;
     transition: all 0.3s ease;
+    word-wrap: break-word;
+  }
+  
+  .drag-item:hover:not(.disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+  
+  .drag-item.dragging {
+    opacity: 0.7;
+    transform: rotate(3deg) scale(1.05);
+    z-index: 10;
+  }
+  
+  .dropped-item {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    cursor: pointer;
+    position: relative;
+  }
+  
+  .dropped-item:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  }
+  
+  .remove-dropped {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #ef4444;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
   }
   
   .drop-zone {
     background: #ffffff;
     border: 2px dashed #cbd5e1;
     border-radius: 12px;
-    padding: 12px; /* Reduced padding */
-    min-height: 80px; /* Reduced from 120px */
+    padding: 12px;
+    min-height: 80px;
     transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
@@ -397,80 +785,99 @@
     flex-shrink: 0;
   }
   
-  /* ================================
-     ORDERING - COMPACT
-     ================================ */
+  .drop-zone.drag-over {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+    border-style: solid;
+  }
   
-  .ordering-container {
+  .zone-label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.85rem;
+    text-align: center;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+  }
+  
+  .zone-items {
     display: flex;
     flex-direction: column;
-    gap: 8px; /* Reduced gap */
+    gap: 6px;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    
+    /* ✅ FIXED: Scrollbar for zone items */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
   }
   
-  .ordering-item {
-    background: #ffffff;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 10px; /* Reduced padding */
-    cursor: move;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    flex-shrink: 0;
-    min-height: 44px; /* Reduced */
+  .zone-items::-webkit-scrollbar {
+    width: 4px;
   }
   
-  .ordering-item-content {
+  .zone-items::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .zone-items::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+  }
+  
+  .no-dragdrop-data {
     display: flex;
     align-items: center;
-    gap: 10px; /* Reduced gap */
-  }
-  
-  .item-text {
-    flex: 1;
-    font-weight: 500;
-    font-size: 0.9rem; /* Smaller */
-    min-width: 0;
-    word-wrap: break-word;
+    justify-content: center;
+    padding: 40px 20px;
+    color: #6b7280;
+    text-align: center;
+    background: rgba(239, 68, 68, 0.05);
+    border: 2px dashed #fca5a5;
+    border-radius: 12px;
+    margin: 20px 0;
   }
   
   /* ================================
-     ACTION BUTTONS - COMPACT
+     ACTION BUTTONS - FIXED AT BOTTOM
      ================================ */
   
   .exercise-actions, .quiz-actions {
-    padding: 16px 20px; /* Reduced padding */
+    padding: 16px 20px;
     border-top: 1px solid #e2e8f0;
     background: #f8fafc;
     border-radius: 0 0 20px 20px;
     display: flex;
-    gap: 12px; /* Reduced gap */
+    gap: 12px;
     justify-content: center;
     flex-wrap: wrap;
-    flex-shrink: 0;
-    min-height: 70px; /* Reduced from 100px */
+    flex-shrink: 0; /* ✅ CRITICAL: Never shrink action buttons */
+    min-height: 70px;
+    max-height: 70px; /* ✅ FIXED: Constrain action area height */
+    align-items: center;
   }
   
   .hint-btn, .submit-btn, .next-btn {
-    padding: 12px 20px; /* Reduced padding */
+    padding: 12px 20px;
     border: none;
     border-radius: 12px;
-    font-size: 0.9rem; /* Smaller text */
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
     gap: 6px;
-    min-height: 42px; /* Reduced from 56px */
-    min-width: 100px; /* Reduced from 140px */
+    min-height: 42px;
+    min-width: 100px;
     justify-content: center;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     color: white;
     text-decoration: none;
     font-family: inherit;
+    white-space: nowrap;
   }
   
   .hint-btn {
@@ -510,28 +917,73 @@
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   }
   
+  .second-chance-icon,
+  .next-icon {
+    font-size: 0.8rem;
+  }
+  
   /* ================================
-     CONFIRMATION SECTION - COMPACT
+     CONFIRMATION SECTION - FIXED HEIGHT
      ================================ */
   
   .confirmation-section {
     background: #ffffff;
     border-radius: 12px;
-    padding: 14px; /* Reduced padding */
-    margin-top: 12px; /* Reduced margin */
+    padding: 14px;
+    margin-top: 12px;
     border: 2px solid #e2e8f0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    flex-shrink: 0;
+    flex-shrink: 0; /* ✅ FIXED: Don't shrink confirmation */
+  }
+  
+  .second-chance-indicator {
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  
+  .attempt-counter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .attempt-text {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-weight: 600;
+  }
+  
+  .attempt-dots {
+    display: flex;
+    gap: 4px;
+  }
+  
+  .attempt-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    transition: all 0.3s ease;
+  }
+  
+  .attempt-dot.filled {
+    background: #ef4444;
+  }
+  
+  .attempt-dot.current {
+    background: #f59e0b;
+    transform: scale(1.2);
   }
   
   .confirmation-message {
     text-align: center;
-    padding: 12px; /* Reduced padding */
+    padding: 12px;
     border-radius: 8px;
-    font-size: 0.95rem; /* Smaller text */
+    font-size: 0.95rem;
     font-weight: 600;
     line-height: 1.4;
-    margin-bottom: 10px; /* Reduced margin */
+    margin-bottom: 10px;
   }
   
   .confirmation-message.correct {
@@ -552,6 +1004,27 @@
     border: 2px solid #f59e0b;
   }
   
+  .correct-answer-display {
+    background: rgba(59, 130, 246, 0.05);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 8px;
+  }
+  
+  .correct-answer-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #3b82f6;
+    margin-bottom: 4px;
+  }
+  
+  .correct-answer-text {
+    font-size: 0.9rem;
+    color: #1e293b;
+    font-weight: 500;
+  }
+  
   /* ================================
      HINTS SECTION - COMPACT
      ================================ */
@@ -560,9 +1033,9 @@
     background: #fffbeb;
     border: 2px solid #f59e0b;
     border-radius: 12px;
-    padding: 12px; /* Reduced padding */
-    margin-top: 12px; /* Reduced margin */
-    flex-shrink: 0;
+    padding: 12px;
+    margin-top: 12px;
+    flex-shrink: 0; /* ✅ FIXED: Don't shrink hints */
   }
   
   .hint {
@@ -570,27 +1043,107 @@
     align-items: flex-start;
     gap: 8px;
     margin-bottom: 8px;
+    position: relative;
   }
   
   .hint:last-child {
     margin-bottom: 0;
   }
   
+  .hint.smart-hint {
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 8px;
+    padding: 8px;
+  }
+  
+  .hint-icon {
+    flex-shrink: 0;
+    font-size: 1rem;
+  }
+  
   .hint-text {
     flex: 1;
     color: #92400e;
     line-height: 1.4;
-    font-size: 0.85rem; /* Smaller text */
+    font-size: 0.85rem;
+  }
+  
+  .hint.smart-hint .hint-text {
+    color: #6d28d9;
+  }
+  
+  .clear-hint-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(239, 68, 68, 0.2);
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   /* ================================
-     RESPONSIVE DESIGN
+     NO CONTENT STATE
      ================================ */
+  
+  .no-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #6b7280;
+    padding: 40px 20px;
+  }
+  
+  .no-content-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    opacity: 0.6;
+  }
+  
+  .no-content h4 {
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+    color: #374151;
+  }
+  
+  .no-content p {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    max-width: 300px;
+  }
+  
+  /* ================================
+     RESPONSIVE DESIGN WITH PROPER SCROLLING
+     ================================ */
+  
+  @media (max-width: 1023px) {
+    .matching-container,
+    .drag-drop-container {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      max-height: 500px; /* ✅ FIXED: Increase max height on mobile */
+    }
+  
+    .true-false-options {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+  }
   
   @media (max-width: 768px) {
     .interactive-panel {
       border-radius: 16px;
-      min-height: 400px;
     }
   
     .exercise-body, .quiz-body {
@@ -609,6 +1162,7 @@
       gap: 8px;
       flex-direction: column;
       min-height: 60px;
+      max-height: auto; /* ✅ FIXED: Allow auto height on mobile */
     }
   
     .hint-btn, .submit-btn, .next-btn {
@@ -621,13 +1175,7 @@
   
     .matching-container,
     .drag-drop-container {
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-  
-    .true-false-options {
-      grid-template-columns: 1fr;
-      gap: 8px;
+      max-height: 350px; /* ✅ FIXED: Reduce max height on small screens */
     }
   }
   
@@ -635,6 +1183,7 @@
     .exercise-header, .quiz-header {
       padding: 12px 16px;
       min-height: 50px;
+      max-height: 50px;
     }
   
     .exercise-header h3, .quiz-header h3 {
@@ -672,37 +1221,142 @@
       min-height: 34px;
       min-width: 70px;
     }
+  
+    .matching-container,
+    .drag-drop-container {
+      max-height: 300px; /* ✅ FIXED: Further reduce on very small screens */
+    }
   }
   
   /* ================================
-     NO CONTENT STATE
+     ACCESSIBILITY & PERFORMANCE
      ================================ */
   
-  .no-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    color: #6b7280;
-    padding: 40px 20px;
+  /* Focus states */
+  .hint-btn:focus,
+  .submit-btn:focus,
+  .next-btn:focus,
+  .option-item:focus,
+  .quiz-option:focus,
+  .tf-option:focus,
+  .matching-item:focus,
+  .ordering-item:focus,
+  .drag-item:focus,
+  .blank-input:focus,
+  .answer-textarea:focus {
+    outline: 3px solid #3b82f6;
+    outline-offset: 2px;
   }
   
-  .no-content-icon {
-    font-size: 3rem;
-    margin-bottom: 16px;
-    opacity: 0.6;
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .interactive-panel,
+    .option-item,
+    .quiz-option,
+    .tf-option,
+    .matching-item,
+    .ordering-item,
+    .drag-item {
+      border-width: 3px;
+    }
   }
   
-  .no-content h4 {
-    font-size: 1.2rem;
-    margin-bottom: 8px;
-    color: #374151;
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .exercise-body,
+    .quiz-body,
+    .options-list,
+    .quiz-options,
+    .fill-blank-inputs,
+    .matching-side,
+    .ordering-container,
+    .drag-items,
+    .drop-zones,
+    .zone-items {
+      scroll-behavior: auto;
+    }
+  
+    .option-item:hover,
+    .quiz-option:hover,
+    .tf-option:hover,
+    .matching-item:hover,
+    .ordering-item:hover,
+    .drag-item:hover,
+    .hint-btn:hover,
+    .submit-btn:hover,
+    .next-btn:hover {
+      transform: none;
+    }
   }
   
-  .no-content p {
-    font-size: 0.9rem;
-    line-height: 1.4;
-    max-width: 300px;
+  /* Print styles */
+  @media print {
+    .exercise-actions,
+    .quiz-actions,
+    .hint-btn,
+    .submit-btn,
+    .next-btn {
+      display: none;
+    }
+  
+    .interactive-panel {
+      border: 1px solid #000;
+      box-shadow: none;
+      overflow: visible;
+    }
+  
+    .exercise-body,
+    .quiz-body {
+      overflow: visible;
+      max-height: none;
+    }
+  }
+  
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .interactive-panel {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      border-color: #4b5563;
+    }
+  
+    .exercise-header,
+    .quiz-header {
+      background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+    }
+  
+    .exercise-body,
+    .quiz-body {
+      color: #e2e8f0;
+    }
+  
+    .exercise-actions,
+    .quiz-actions {
+      background: #1e293b;
+      border-top-color: #4b5563;
+    }
+  
+    .question-text,
+    .quiz-question {
+      background: rgba(59, 130, 246, 0.1);
+      border-left-color: #3b82f6;
+      color: #e2e8f0;
+    }
+  
+    .option-item,
+    .quiz-option,
+    .tf-option,
+    .matching-item,
+    .ordering-item,
+    .answer-textarea,
+    .blank-input {
+      background: #374151;
+      border-color: #4b5563;
+      color: #e2e8f0;
+    }
+  
+    .confirmation-section,
+    .hints-section {
+      background: #374151;
+      border-color: #4b5563;
+    }
   }

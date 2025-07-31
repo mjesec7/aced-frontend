@@ -370,15 +370,19 @@ export default {
 </script>
 
 <style scoped>
-.content-panel {
+/* ================================
+   FIXED CONTENTPANEL STYLES - PROPER SCROLLING
+   ================================ */
+
+   .content-panel {
   background: white;
-  padding: 32px;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #e2e8f0;
-  overflow-y: auto;
-  min-height: 0;
   position: relative;
+  overflow: hidden; /* ✅ FIXED: Let step-content handle scrolling */
+  min-height: 0; /* ✅ CRITICAL: Allow flex shrinking */
+  height: 100%; /* ✅ FIXED: Take full height */
 }
 
 .content-panel::before {
@@ -390,12 +394,16 @@ export default {
   width: 2px;
   background: linear-gradient(180deg, #3b82f6, #1d4ed8);
   opacity: 0.1;
+  z-index: 1;
 }
 
+/* ✅ FIXED: Step header - no scrolling needed */
 .step-header {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+  flex-shrink: 0; /* ✅ CRITICAL: Don't shrink header */
+  padding: 24px 32px 16px 32px;
   border-bottom: 1px solid #e2e8f0;
+  background: white;
+  z-index: 2;
 }
 
 .step-title {
@@ -440,35 +448,71 @@ export default {
   margin-left: 0.5rem;
 }
 
+/* ✅ CRITICAL: Step content - MAIN SCROLLABLE AREA */
 .step-content {
-  flex: 1;
-  margin-bottom: 24px;
-  animation: stepFadeIn 0.3s ease-out;
+  flex: 1; /* ✅ CRITICAL: Take remaining space */
+  overflow-y: auto; /* ✅ CRITICAL: Enable vertical scrolling */
+  overflow-x: hidden; /* ✅ FIXED: Prevent horizontal scrolling */
+  padding: 24px 32px; /* ✅ FIXED: Add padding for content */
+  min-height: 0; /* ✅ CRITICAL: Allow flex shrinking */
+  position: relative;
+  
+  /* ✅ FIXED: Smooth scrolling */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+  
+  /* ✅ FIXED: Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) rgba(0, 0, 0, 0.1);
 }
 
+.step-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.step-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.step-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.step-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* ✅ FIXED: Animation for step changes */
 @keyframes stepFadeIn {
   from {
     opacity: 0;
-    transform: translateX(20px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 
-/* Clean question display */
+.step-content {
+  animation: stepFadeIn 0.3s ease-out;
+}
+
+/* ✅ FIXED: Clean question display */
 .clean-question {
   font-size: 1.2rem;
   line-height: 1.6;
   color: #2c3e50;
-  margin: 0;
+  margin: 0 0 16px 0;
   padding: 0;
   font-weight: 600;
   text-align: left;
 }
 
-/* Interactive content styling */
+/* ✅ FIXED: Interactive content styling */
 .interactive-content {
   padding: 0;
   margin: 0;
@@ -480,7 +524,7 @@ export default {
   border-radius: 16px;
   padding: 2rem;
   border: 2px solid #e1e8ff;
-  margin-top: 1rem;
+  margin-bottom: 16px;
   position: relative;
 }
 
@@ -501,7 +545,7 @@ export default {
   text-align: left;
 }
 
-/* Exercise type badge - subtle */
+/* ✅ FIXED: Exercise type badge - subtle */
 .exercise-type-info {
   margin-top: 1rem;
   text-align: center;
@@ -519,9 +563,10 @@ export default {
   opacity: 0.8;
 }
 
-/* Text Content */
+/* ✅ FIXED: Text Content */
 .text-content {
   line-height: 1.7;
+  margin: 0;
 }
 
 .content-text {
@@ -531,12 +576,13 @@ export default {
   line-height: 1.8;
 }
 
-/* Vocabulary Content */
+/* ✅ FIXED: Vocabulary Content */
 .vocabulary-content.enhanced {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   padding: 24px;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
+  margin: 0;
 }
 
 .vocabulary-modal-trigger {
@@ -626,6 +672,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: none; /* ✅ FIXED: Allow natural height */
 }
 
 .vocabulary-item {
@@ -736,12 +783,12 @@ export default {
   margin-top: 4px;
 }
 
-/* Media Content */
+/* ✅ FIXED: Media Content */
 .media-content {
   display: flex;
   justify-content: center;
   align-items: center;
-  flex: 1;
+  padding: 40px 0;
 }
 
 .media-placeholder {
@@ -751,6 +798,7 @@ export default {
   border: 2px dashed #cbd5e1;
   text-align: center;
   max-width: 400px;
+  width: 100%;
 }
 
 .media-icon {
@@ -778,12 +826,12 @@ export default {
   border-radius: 4px;
 }
 
-/* Default Content */
+/* ✅ FIXED: Default Content */
 .default-content {
   line-height: 1.7;
 }
 
-/* AI Help Panel */
+/* ✅ FIXED: AI Help Panel */
 .explanation-help {
   background: rgba(139, 92, 246, 0.1);
   padding: 20px;
@@ -838,12 +886,16 @@ export default {
   border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
-/* Content Navigation */
+/* ✅ FIXED: Content Navigation - ALWAYS AT BOTTOM */
 .content-navigation {
+  flex-shrink: 0; /* ✅ CRITICAL: Don't shrink navigation */
   display: flex;
   gap: 12px;
-  margin-top: auto;
+  padding: 24px 32px;
+  border-top: 1px solid #e2e8f0;
+  background: white;
   flex-wrap: wrap;
+  z-index: 2;
 }
 
 .nav-btn {
@@ -891,7 +943,10 @@ export default {
   transform: translateY(-2px);
 }
 
-/* Responsive Design */
+/* ================================
+   RESPONSIVE DESIGN FIXES
+   ================================ */
+
 @media (max-width: 1024px) {
   .content-panel {
     border-right: none;
@@ -901,11 +956,31 @@ export default {
   .content-panel::before {
     display: none;
   }
+  
+  .step-header {
+    padding: 20px 24px 12px 24px;
+  }
+  
+  .step-content {
+    padding: 20px 24px;
+  }
+  
+  .content-navigation {
+    padding: 20px 24px;
+  }
 }
 
 @media (max-width: 768px) {
-  .content-panel {
-    padding: 20px 16px;
+  .step-header {
+    padding: 16px 20px 12px 20px;
+  }
+  
+  .step-content {
+    padding: 16px 20px;
+  }
+  
+  .content-navigation {
+    padding: 16px 20px;
   }
 
   .step-title {
@@ -952,7 +1027,15 @@ export default {
 }
 
 @media (max-width: 480px) {
-  .content-panel {
+  .step-header {
+    padding: 16px;
+  }
+  
+  .step-content {
+    padding: 16px;
+  }
+  
+  .content-navigation {
     padding: 16px;
   }
 
@@ -1000,6 +1083,10 @@ export default {
   }
 }
 
+/* ================================
+   ACCESSIBILITY FIXES
+   ================================ */
+
 /* Focus states for accessibility */
 .nav-btn:focus,
 .help-btn:focus,
@@ -1036,6 +1123,10 @@ export default {
   .review-btn:hover {
     transform: none;
   }
+  
+  .step-content {
+    scroll-behavior: auto;
+  }
 }
 
 /* Print styles */
@@ -1051,6 +1142,12 @@ export default {
   .content-panel {
     border: none;
     box-shadow: none;
+    overflow: visible;
+  }
+  
+  .step-content {
+    overflow: visible;
+    padding: 20px;
   }
 }
 
@@ -1059,6 +1156,16 @@ export default {
   .content-panel {
     background: #1e293b;
     border-right-color: #374151;
+  }
+
+  .step-header {
+    background: #1e293b;
+    border-bottom-color: #374151;
+  }
+
+  .content-navigation {
+    background: #1e293b;
+    border-top-color: #374151;
   }
 
   .step-title,
