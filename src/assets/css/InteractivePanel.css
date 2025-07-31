@@ -1076,7 +1076,7 @@
     overflow: visible;
     max-height: none;
   }
-} 16px;
+} 
   /* ✅ CHANGED: Remove height constraints for natural scrolling */
   overflow: visible;
   min-height: 0;
