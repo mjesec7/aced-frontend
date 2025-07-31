@@ -1073,18 +1073,16 @@
   .ordering-container,
   .drag-items,
   .drop-zones {
-    overflow: visible;
-    max-height: none;
-  }
-} 
-  /* ✅ CHANGED: Remove height constraints for natural scrolling */
-  overflow: visible;
+   overflow: visible;
   min-height: 0;
-  
-  /* ✅ Beautiful, smooth scrolling when needed */
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-}
+
+  }
+} 
+
+
+
 
 /* ================================
    QUESTION TEXT - RESPONSIVE
