@@ -374,7 +374,7 @@ export default {
 
 .content-panel {
   background: white;
-  padding: 20px 28px; /* REDUCED padding from 32px to give more content space */
+  padding: 16px 20px; /* FURTHER REDUCED padding for maximum content space */
   display: flex;
   flex-direction: column;
   border-right: 1px solid #e2e8f0;
@@ -395,8 +395,8 @@ export default {
 }
 
 .step-header {
-  margin-bottom: 20px; /* REDUCED from 24px */
-  padding-bottom: 12px; /* REDUCED from 16px */
+  margin-bottom: 16px; /* FURTHER REDUCED from 20px */
+  padding-bottom: 10px; /* REDUCED from 12px */
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -444,7 +444,7 @@ export default {
 
 .step-content {
   flex: 1;
-  margin-bottom: 20px; /* REDUCED from 24px */
+  margin-bottom: 16px; /* FURTHER REDUCED from 20px */
   animation: stepFadeIn 0.3s ease-out;
 }
 
@@ -898,7 +898,7 @@ export default {
   .content-panel {
     border-right: none;
     border-bottom: 1px solid #e2e8f0;
-    padding: 16px 20px; /* REDUCED padding for tablets */
+    padding: 12px 16px; /* FURTHER REDUCED padding for tablets */
   }
   
   .content-panel::before {
@@ -908,7 +908,7 @@ export default {
 
 @media (max-width: 768px) {
   .content-panel {
-    padding: 16px; /* OPTIMIZED for mobile */
+    padding: 10px 14px; /* FURTHER REDUCED for mobile - maximum content space */
   }
 
   .step-title {
@@ -960,7 +960,7 @@ export default {
 
 @media (max-width: 480px) {
   .content-panel {
-    padding: 12px; /* MINIMAL but sufficient padding */
+    padding: 8px 12px; /* MINIMAL padding for maximum content space */
   }
 
   .step-title {
