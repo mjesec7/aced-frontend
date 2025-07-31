@@ -1,11 +1,4 @@
-/* ================================
-   ENHANCED INTERACTIVE PANEL
-   Perfect scrolling, responsive design, comfortable on all devices
-   ================================ */
 
-/* ================================
-   MAIN INTERACTIVE PANEL CONTAINER
-   ================================ */
 
    .interactive-panel {
     background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
@@ -1529,7 +1522,7 @@
       max-height: none;
     }
   }
-  }
+  
   
   .matching-item:hover:not(.disabled) {
     border-color: #667eea;
