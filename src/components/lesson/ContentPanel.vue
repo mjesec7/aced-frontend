@@ -19,26 +19,14 @@
     <!-- Scrollable Content Area -->
     <div class="content-step-container">
       <div class="content-step-content">
-        <!-- FOR INTERACTIVE STEPS: Show ONLY the question, no instructions -->
-        <div v-if="isInteractiveStep" class="interactive-content">
-          
-          <!-- Exercise Content - ONLY the question -->
-          <div v-if="['exercise', 'practice'].includes(currentStep?.type)" class="current-exercise-content">
-            <div class="exercise-question-display">
-              <div class="clean-question">{{ getStepContent(currentStep) }}</div>
-              
-              <!-- Show exercise type badge ONLY if not default type -->
-              <div v-if="currentExercise?.type && currentExercise.type !== 'short-answer'" class="exercise-type-info">
-                <span class="type-badge">{{ getExerciseTypeName(currentExercise?.type) }}</span>
-              </div>
+        <!-- FOR INTERACTIVE STEPS: Show simple instruction -->
+        <div v-if="isInteractiveStep" class="interactive-instruction">
+          <div class="instruction-card">
+            <div class="instruction-icon">
+              {{ currentStep?.type === 'exercise' ? '✏️' : currentStep?.type === 'practice' ? '🧪' : '🧩' }}
             </div>
-          </div>
-          
-          <!-- Quiz Content - ONLY the question -->
-          <div v-else-if="currentStep?.type === 'quiz'" class="current-quiz-content">
-            <div class="quiz-question-display">
-              <div class="clean-question">{{ getStepContent(currentStep) }}</div>
-            </div>
+            <h3>Complete the {{ getStepTypeText(currentStep?.type).toLowerCase() }} on the right</h3>
+            <p>Use the interactive panel to answer the question and continue with the lesson.</p>
           </div>
         </div>
 
@@ -331,7 +319,7 @@ export default {
 }
 
 .content-step-header {
-  padding: 24px 28px;
+  padding: 16px 28px; /* Reduced from 24px */
   border-bottom: 1px solid #e2e8f0;
   flex-shrink: 0;
   background: white;
@@ -339,12 +327,12 @@ export default {
 }
 
 .content-step-title {
-  font-size: 1.4rem !important;
+  font-size: 1.2rem !important; /* Reduced from 1.4rem */
   color: #1e293b;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px; /* Reduced from 12px */
   flex-wrap: wrap;
   font-weight: 600;
 }
@@ -352,26 +340,26 @@ export default {
 .content-step-number {
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: white;
-  width: 40px;
-  height: 40px;
+  width: 32px; /* Reduced from 40px */
+  height: 32px; /* Reduced from 40px */
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 0.95rem; /* Reduced from 1.1rem */
   flex-shrink: 0;
 }
 
 .content-step-type-icon {
-  font-size: 1.5rem;
+  font-size: 1.3rem; /* Reduced from 1.5rem */
   flex-shrink: 0;
 }
 
 .content-step-type-text {
   font-weight: 700;
   color: #1e293b;
-  font-size: 1.2rem !important;
+  font-size: 1.1rem !important; /* Reduced from 1.2rem */
 }
 
 .content-exercise-counter,
@@ -417,73 +405,45 @@ export default {
   }
 }
 
-/* Make text smaller as requested */
-.clean-question {
-  font-size: 1.4rem !important;
-  line-height: 1.6;
-  color: #2c3e50;
-  margin: 0;
-  padding: 0;
-  font-weight: 600;
-  text-align: left;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* Interactive content styling */
-.interactive-content {
-  padding: 0;
-  margin: 0;
+/* Interactive instruction styling */
+.interactive-instruction {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
   width: 100%;
 }
 
-.current-exercise-content,
-.current-quiz-content {
-  background: linear-gradient(135deg, #f8f9ff 0%, #f1f5f9 100%);
+.instruction-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 2px solid #0ea5e9;
   border-radius: 16px;
-  padding: 2.5rem;
-  border: 2px solid #e1e8ff;
-  margin-top: 1rem;
-  position: relative;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.current-exercise-content::before,
-.current-quiz-content::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
-  border-radius: 16px 16px 0 0;
-}
-
-.exercise-question-display,
-.quiz-question-display {
-  text-align: left;
-  width: 100%;
-}
-
-/* Exercise type badge */
-.exercise-type-info {
-  margin-top: 1rem;
+  padding: 40px;
   text-align: center;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
 }
 
-.type-badge {
-  display: inline-block;
-  padding: 0.3rem 0.8rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 15px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  letter-spacing: 0.5px;
+.instruction-icon {
+  font-size: 3rem;
+  margin-bottom: 20px;
   opacity: 0.8;
+}
+
+.instruction-card h3 {
+  margin: 0 0 16px 0;
+  color: #0c4a6e;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.instruction-card p {
+  margin: 0;
+  color: #075985;
+  font-size: 1rem;
+  line-height: 1.5;
+  opacity: 0.9;
 }
 
 /* Text Content - smaller text */
