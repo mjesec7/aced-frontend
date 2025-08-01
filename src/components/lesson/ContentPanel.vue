@@ -1048,3 +1048,4 @@ export default {
   overflow-y: auto !important;
   overflow-x: hidden !important;
 }
+</style>
