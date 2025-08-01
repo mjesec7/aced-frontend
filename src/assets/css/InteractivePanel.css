@@ -1,5 +1,5 @@
 /* ================================
-   DEBUG STYLES - TEMPORARY TO FIND SCROLL ISSUE
+   FIXED SCROLLING - REMOVE ALL HEIGHT CONSTRAINTS
    ================================ */
 
    .interactive-panel {
@@ -14,9 +14,6 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px solid #e2e8f0;
     position: relative;
-    
-    /* DEBUG */
-    border: 3px solid red !important;
   }
   
   .exercise-body, .quiz-body {
@@ -26,10 +23,7 @@
     min-height: 0;
     overflow: hidden;
     position: relative;
-    
-    /* DEBUG */
-    border: 3px solid blue !important;
-    background: rgba(0, 0, 255, 0.1) !important;
+    height: 100%; /* CRITICAL FIX */
   }
   
   .exercise-content-scroll, .quiz-content-scroll {
@@ -38,13 +32,11 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    overflow-y: auto !important;
+    overflow-y: scroll !important; /* CHANGED TO SCROLL */
     overflow-x: hidden !important;
     min-height: 0 !important;
-    
-    /* DEBUG */
-    border: 3px solid green !important;
-    background: rgba(0, 255, 0, 0.1) !important;
+    height: 100%; /* CRITICAL FIX */
+    max-height: none !important; /* REMOVE MAX HEIGHT */
     
     /* CRITICAL: Enable scrolling */
     scroll-behavior: smooth;
@@ -53,7 +45,7 @@
     scrollbar-color: #cbd5e1 #f1f5f9;
   }
   
-  /* DEBUG: Force some content height to test scroll */
+  /* FORCE TALL CONTENT FOR TESTING */
   .exercise-type {
     display: flex;
     flex-direction: column;
@@ -62,10 +54,9 @@
     position: relative;
     flex-shrink: 0;
     
-    /* DEBUG */
-    border: 2px solid orange !important;
-    min-height: 800px !important; /* Force height to test scroll */
-    background: rgba(255, 165, 0, 0.1) !important;
+    /* DEBUG - FORCE TALL CONTENT */
+    min-height: 1200px !important; /* Even taller to force scroll */
+    background: linear-gradient(to bottom, #ffcccc, #ccffcc, #ccccff, #ffffcc) !important;
   }
   
   /* ================================
