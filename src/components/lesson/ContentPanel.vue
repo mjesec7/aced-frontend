@@ -292,7 +292,29 @@ export default {
 
     formatContent(content) {
       if (!content) return 'Контент недоступен';
-      return content.replace(/\n/g, '<br>');
+      
+      // Convert markdown-like formatting to HTML
+      let formatted = content
+        // Convert ## headings to h2
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+        // Convert ### headings to h3  
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        // Convert **bold** to strong
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        // Convert *italic* to em
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        // Convert `code` to code tags
+        .replace(/`(.+?)`/g, '<code>$1</code>')
+        // Convert line breaks
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>');
+      
+      // Wrap in paragraph tags if not already wrapped
+      if (!formatted.includes('<h') && !formatted.includes('<p>')) {
+        formatted = '<p>' + formatted + '</p>';
+      }
+      
+      return formatted;
     },
 
     getLocalized(field) {
@@ -446,21 +468,111 @@ export default {
   opacity: 0.9;
 }
 
-/* Text Content - smaller text */
+/* Text Content - styled like the reference image */
 .text-content {
-  line-height: 1.8;
+  line-height: 1.7;
   width: 100%;
 }
 
 .content-text {
-  font-size: 1.1rem !important;
+  font-size: 1rem !important;
   color: #374151;
   margin: 0;
-  line-height: 1.8;
+  line-height: 1.7;
   font-weight: 400;
   width: 100%;
   max-width: none !important;
   box-sizing: border-box;
+}
+
+/* Style headings like the reference */
+.content-text :deep(h1),
+.content-text :deep(h2),
+.content-text :deep(h3) {
+  color: #1f2937;
+  font-weight: 600;
+  margin: 2rem 0 1rem 0;
+  padding-left: 16px;
+  border-left: 4px solid #8b5cf6;
+  line-height: 1.4;
+}
+
+.content-text :deep(h1) {
+  font-size: 1.5rem;
+}
+
+.content-text :deep(h2) {
+  font-size: 1.3rem;
+}
+
+.content-text :deep(h3) {
+  font-size: 1.2rem;
+}
+
+/* Style paragraphs like the reference */
+.content-text :deep(p) {
+  margin: 1rem 0;
+  color: #374151;
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+/* Style sections with background like the reference */
+.content-text :deep(.section),
+.content-text :deep(.component-section) {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  border-left: 4px solid #8b5cf6;
+}
+
+.content-text :deep(.section h4),
+.content-text :deep(.component-section h4) {
+  color: #8b5cf6;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem 0;
+}
+
+.content-text :deep(.section p),
+.content-text :deep(.component-section p) {
+  margin: 0.5rem 0;
+  color: #4b5563;
+}
+
+/* Style code blocks */
+.content-text :deep(code) {
+  background: #f1f5f9;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 0.9rem;
+  color: #1e40af;
+}
+
+.content-text :deep(pre) {
+  background: #1f2937;
+  color: #f9fafb;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 1rem 0;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 0.9rem;
+}
+
+/* Style lists */
+.content-text :deep(ul),
+.content-text :deep(ol) {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.content-text :deep(li) {
+  margin: 0.5rem 0;
+  color: #374151;
+  line-height: 1.6;
 }
 
 /* Vocabulary Content */
@@ -733,35 +845,35 @@ export default {
   width: 100%;
 }
 
-/* Content Navigation - Force visibility */
+/* Content Navigation - More comfortable size */
 .content-navigation {
   display: flex !important;
-  gap: 16px;
-  padding: 24px 28px;
+  gap: 12px; /* Reduced from 16px */
+  padding: 16px 28px; /* Reduced from 24px */
   border-top: 1px solid #e2e8f0;
   flex-shrink: 0 !important;
   background: white;
   flex-wrap: wrap;
   box-sizing: border-box;
-  position: sticky !important; /* Make it stick to bottom */
+  position: sticky !important;
   bottom: 0 !important;
   z-index: 100 !important;
   width: 100%;
-  margin-top: auto; /* Push to bottom */
+  margin-top: auto;
 }
 
 .content-nav-btn {
   display: block !important;
-  padding: 16px 28px;
+  padding: 10px 20px; /* Much smaller - reduced from 16px 28px */
   border: none;
-  border-radius: 8px;
+  border-radius: 6px; /* Reduced from 8px */
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   flex: 1;
-  min-width: 140px;
-  min-height: 52px;
-  font-size: 1.1rem !important;
+  min-width: 100px; /* Reduced from 140px */
+  min-height: 40px; /* Much smaller - reduced from 52px */
+  font-size: 0.95rem !important; /* Reduced from 1.1rem */
   visibility: visible !important;
   opacity: 1 !important;
 }
@@ -815,119 +927,127 @@ export default {
 /* Responsive Design */
 @media (max-width: 768px) {
   .content-step-header {
-    padding: 20px 24px;
+    padding: 14px 24px; /* Reduced */
   }
 
   .content-step-content {
-    padding: 24px;
+    padding: 20px; /* Reduced from 24px */
   }
 
   .content-step-title {
-    font-size: 1.3rem !important;
-    gap: 10px;
+    font-size: 1.1rem !important; /* Reduced */
+    gap: 8px;
   }
 
   .content-step-number {
-    width: 36px;
-    height: 36px;
-    font-size: 1rem;
+    width: 28px; /* Reduced from 36px */
+    height: 28px;
+    font-size: 0.85rem; /* Reduced from 1rem */
   }
 
   .clean-question {
-    font-size: 1.4rem !important;
+    font-size: 1.3rem !important; /* Reduced */
   }
 
   .content-text {
-    font-size: 1.2rem !important;
+    font-size: 1.05rem !important; /* Reduced */
   }
 
   .current-exercise-content,
   .current-quiz-content {
-    padding: 2rem;
+    padding: 1.5rem; /* Reduced from 2rem */
   }
 
   .content-navigation {
     flex-direction: column;
-    gap: 12px;
-    padding: 20px 24px;
+    gap: 8px; /* Reduced from 12px */
+    padding: 12px 24px; /* Much smaller - reduced from 20px 24px */
   }
 
   .content-nav-btn {
     width: 100%;
     min-width: auto;
+    min-height: 36px; /* Smaller on mobile */
+    padding: 8px 16px; /* Smaller padding */
   }
 
   .vocabulary-content.enhanced {
-    padding: 24px;
+    padding: 20px; /* Reduced from 24px */
   }
 
   .trigger-card {
-    padding: 36px 28px;
+    padding: 32px 24px; /* Reduced from 36px 28px */
   }
 
   .vocabulary-summary {
-    gap: 24px;
+    gap: 20px; /* Reduced from 24px */
   }
 }
 
 @media (max-width: 480px) {
   .content-step-header {
-    padding: 16px 20px;
+    padding: 12px 20px; /* Reduced */
   }
 
   .content-step-content {
-    padding: 20px;
+    padding: 16px; /* Reduced from 20px */
   }
 
   .content-step-title {
-    font-size: 1.2rem !important;
+    font-size: 1rem !important; /* Reduced */
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: 8px;
   }
 
   .content-step-number {
-    width: 32px;
-    height: 32px;
-    font-size: 0.9rem;
+    width: 26px; /* Reduced from 32px */
+    height: 26px;
+    font-size: 0.8rem; /* Reduced */
   }
 
   .clean-question {
-    font-size: 1.3rem !important;
+    font-size: 1.2rem !important; /* Reduced */
   }
 
   .content-text {
-    font-size: 1.1rem !important;
+    font-size: 1rem !important; /* Reduced */
   }
 
   .current-exercise-content,
   .current-quiz-content {
-    padding: 1.5rem;
+    padding: 1.2rem; /* Reduced from 1.5rem */
   }
 
   .vocabulary-content.enhanced {
-    padding: 20px;
+    padding: 16px; /* Reduced from 20px */
   }
 
   .trigger-card {
-    padding: 28px 20px;
+    padding: 24px 16px; /* Reduced from 28px 20px */
   }
 
   .trigger-icon {
-    font-size: 2.5rem;
+    font-size: 2rem; /* Reduced from 2.5rem */
   }
 
   .vocabulary-summary {
     flex-direction: column;
-    gap: 20px;
+    gap: 16px; /* Reduced from 20px */
   }
 
   .summary-number {
-    font-size: 1.6rem !important;
+    font-size: 1.4rem !important; /* Reduced from 1.6rem */
   }
 
   .content-navigation {
-    padding: 16px 20px;
+    padding: 10px 20px; /* Much smaller - reduced from 16px 20px */
+  }
+
+  .content-nav-btn {
+    min-height: 34px; /* Even smaller on small screens */
+    padding: 6px 14px; /* Smaller padding */
+    font-size: 0.9rem !important; /* Smaller text */
   }
 }
 
