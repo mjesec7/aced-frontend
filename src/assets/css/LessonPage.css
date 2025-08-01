@@ -1068,7 +1068,7 @@
     .non-interactive-panel {
       padding: 8px; /* ✅ MINIMAL: Very small padding */
     }
-    
+    /* rjfv */
     .floating-ai-btn {
       width: 56px;
       height: 56px;
