@@ -326,9 +326,21 @@ export default {
   height: 100%; /* Use parent height */
   min-height: 100vh; /* Fallback to viewport height */
   width: 100%;
-  overflow: hidden;
+  overflow: hidden !important; /* Keep this hidden on wrapper */
   box-sizing: border-box;
   position: relative;
+}
+
+/* Override parent .content-panel styles */
+:deep(.content-panel) {
+  overflow: visible !important;
+  height: auto !important;
+  padding: 0 !important;
+}
+
+/* Alternative override - target parent directly */
+.content-panel-wrapper {
+  overflow: visible !important; /* Override parent's overflow: hidden */
 }
 
 .content-step-header {
@@ -395,6 +407,8 @@ export default {
   position: relative;
   /* Force scrolling behavior */
   -webkit-overflow-scrolling: touch;
+  /* Ensure this container can scroll even if parent has overflow: hidden */
+  contain: layout style paint;
 }
 
 .content-step-content {
@@ -1025,18 +1039,12 @@ export default {
   max-width: none !important;
 }
 
-/* Debug styles - remove these after testing */
-.content-step-container {
-  border: 2px solid red !important; /* Temporary - shows container boundaries */
+/* Override any parent styles that might interfere */
+.content-panel-wrapper {
+  overflow: visible !important;
 }
 
-.content-step-content {
-  border: 2px solid blue !important; /* Temporary - shows content boundaries */
-  min-height: 200vh !important; /* Temporary - forces content to be taller than container for testing scroll */
-}
-
-/* Force scroll on container for testing */
 .content-step-container {
-  height: 500px !important; /* Temporary fixed height to force scrolling */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
-</style>

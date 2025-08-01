@@ -256,20 +256,21 @@
      LEFT PANEL - CONTENT (LIKE CLAUDE'S LEFT SIDE) - MAXIMUM SPACE
      ================================ */
   
-  .content-panel {
-    background: #ffffff;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden; /* ✅ CHANGED: Remove scrolling to maximize space usage */
-    position: relative;
-    width: 75%; /* ✅ INCREASED: Even more space - 75% by default */
-    min-width: 300px; /* ✅ REDUCED: Lower minimum for maximum flexibility */
-    border-right: 1px solid #e5e7eb;
-    resize: horizontal;
-    overflow-x: hidden;
-    padding: 0; /* ✅ REMOVED: No padding - maximum content space */
-    margin: 0; /* ✅ ENSURE: No margins */
-  }
+     .content-panel {
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      overflow: visible !important; /* ✅ FIXED: Changed from hidden to visible to allow inner scroll */
+      height: auto !important; /* ✅ FIXED: Allow content to determine height */
+      position: relative;
+      width: 75%; /* ✅ INCREASED: Even more space - 75% by default */
+      min-width: 300px; /* ✅ REDUCED: Lower minimum for maximum flexibility */
+      border-right: 1px solid #e5e7eb;
+      resize: horizontal;
+      overflow-x: hidden; /* Keep horizontal overflow hidden */
+      padding: 0; /* ✅ REMOVED: No padding - maximum content space */
+      margin: 0; /* ✅ ENSURE: No margins */
+    }
   
 
   
