@@ -1,6 +1,5 @@
 /* ================================
-   INTERACTIVE PANEL - CLEAN MODERN DESIGN
-   Matching ContentPanel styling with card-based layout
+   INTERACTIVE PANEL - PROPER HEIGHT SETUP
    ================================ */
 
    .interactive-panel {
@@ -10,6 +9,7 @@
     flex-direction: column;
     height: 100vh;
     max-height: 100vh;
+    min-height: 100vh;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px solid #e2e8f0;
