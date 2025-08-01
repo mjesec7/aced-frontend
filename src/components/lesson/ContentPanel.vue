@@ -323,10 +323,12 @@ export default {
   margin: 0 !important;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100%; /* Use parent height */
+  min-height: 100vh; /* Fallback to viewport height */
   width: 100%;
   overflow: hidden;
   box-sizing: border-box;
+  position: relative;
 }
 
 .content-step-header {
@@ -384,11 +386,15 @@ export default {
 /* Scrollable content container - this is key for proper scrolling */
 .content-step-container {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  min-height: 0; /* Important for flex child to scroll properly */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 0 !important; /* Important for flex child to scroll properly */
+  max-height: none !important;
   width: 100%;
   box-sizing: border-box;
+  position: relative;
+  /* Force scrolling behavior */
+  -webkit-overflow-scrolling: touch;
 }
 
 .content-step-content {
@@ -812,20 +818,28 @@ export default {
 
 /* Custom scrollbar styling */
 .content-step-container::-webkit-scrollbar {
-  width: 8px;
+  width: 12px;
 }
 
 .content-step-container::-webkit-scrollbar-track {
   background: #f1f5f9;
+  border-radius: 6px;
 }
 
 .content-step-container::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 4px;
+  border-radius: 6px;
+  border: 2px solid #f1f5f9;
 }
 
 .content-step-container::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Firefox scrollbar */
+.content-step-container {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
 }
 
 /* Responsive Design */
@@ -1009,5 +1023,20 @@ export default {
 .content-text {
   width: 100% !important;
   max-width: none !important;
+}
+
+/* Debug styles - remove these after testing */
+.content-step-container {
+  border: 2px solid red !important; /* Temporary - shows container boundaries */
+}
+
+.content-step-content {
+  border: 2px solid blue !important; /* Temporary - shows content boundaries */
+  min-height: 200vh !important; /* Temporary - forces content to be taller than container for testing scroll */
+}
+
+/* Force scroll on container for testing */
+.content-step-container {
+  height: 500px !important; /* Temporary fixed height to force scrolling */
 }
 </style>
