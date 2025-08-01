@@ -1,15 +1,14 @@
 /* ================================
-   INTERACTIVE PANEL - ENHANCED SCROLLING & COMPACT DESIGN
+   INTERACTIVE PANEL - ULTRA COMFORTABLE DESIGN
    ================================ */
 
    .interactive-panel {
     background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    border-radius: 16px;
+    border-radius: 12px;
     display: flex;
     flex-direction: column;
     height: 100vh;
     max-height: 100vh;
-    min-height: 100vh;
     overflow: hidden;
     box-shadow: 
       0 4px 20px rgba(0, 0, 0, 0.08),
@@ -19,27 +18,27 @@
   }
   
   /* ================================
-     HEADER - FIXED HEIGHT, COMPACT
+     HEADER - MUCH SHORTER & COMPACT
      ================================ */
   
   .exercise-header, .quiz-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 12px 16px;
-    border-radius: 16px 16px 0 0;
+    padding: 8px 16px;
+    border-radius: 12px 12px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
     box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
-    min-height: 48px;
-    max-height: 48px;
-    height: 48px;
+    min-height: 36px;
+    max-height: 36px;
+    height: 36px;
     z-index: 10;
   }
   
   .exercise-header h3, .quiz-header h3 {
-    font-size: 1rem;
+    font-size: 0.85rem;
     font-weight: 600;
     margin: 0;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -47,18 +46,20 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 70%;
+    line-height: 1.2;
   }
   
   .exercise-counter, .quiz-counter {
     background: rgba(255, 255, 255, 0.2);
-    padding: 4px 10px;
-    border-radius: 12px;
+    padding: 3px 8px;
+    border-radius: 10px;
     font-weight: 600;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     white-space: nowrap;
     flex-shrink: 0;
+    line-height: 1;
   }
   
   /* ================================
@@ -76,7 +77,7 @@
   
   .exercise-content-scroll, .quiz-content-scroll {
     flex: 1;
-    padding: 12px 16px;
+    padding: 14px 16px;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -84,63 +85,66 @@
     overflow-x: hidden;
     min-height: 0;
     
-    /* Enhanced scrolling */
+    /* Ultra smooth scrolling */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+    
+    /* Ensure content can scroll fully */
+    padding-bottom: 20px;
   }
   
-  /* Modern scrollbar styling */
+  /* Ultra smooth modern scrollbars */
   .exercise-content-scroll::-webkit-scrollbar,
   .quiz-content-scroll::-webkit-scrollbar {
-    width: 6px;
+    width: 5px;
   }
   
   .exercise-content-scroll::-webkit-scrollbar-track,
   .quiz-content-scroll::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(0, 0, 0, 0.03);
     border-radius: 3px;
   }
   
   .exercise-content-scroll::-webkit-scrollbar-thumb,
   .quiz-content-scroll::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.2);
     border-radius: 3px;
-    transition: background 0.2s ease;
+    transition: all 0.2s ease;
   }
   
   .exercise-content-scroll::-webkit-scrollbar-thumb:hover,
   .quiz-content-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.4);
   }
   
   /* ================================
-     ACTION BUTTONS - FIXED AT BOTTOM
+     ACTION BUTTONS - COMPACT & FIXED
      ================================ */
   
   .exercise-actions, .quiz-actions {
-    padding: 12px 16px;
+    padding: 10px 16px;
     border-top: 1px solid #e2e8f0;
     background: #f8fafc;
-    border-radius: 0 0 16px 16px;
+    border-radius: 0 0 12px 12px;
     display: flex;
     gap: 8px;
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
     flex-shrink: 0;
-    min-height: 56px;
-    max-height: 56px;
-    height: 56px;
+    min-height: 48px;
+    max-height: 48px;
+    height: 48px;
     z-index: 10;
   }
   
   .hint-btn, .submit-btn, .next-btn {
-    padding: 8px 16px;
+    padding: 7px 14px;
     border: none;
     border-radius: 8px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -148,8 +152,8 @@
     align-items: center;
     justify-content: center;
     gap: 4px;
-    min-height: 36px;
-    min-width: 80px;
+    min-height: 32px;
+    min-width: 75px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     color: white;
     text-decoration: none;
@@ -196,20 +200,20 @@
   }
   
   /* ================================
-     EXERCISE TYPES - COMPACT DESIGN
+     EXERCISE TYPES - COMFORTABLE SPACING
      ================================ */
   
   .exercise-type {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
     min-height: 0;
     position: relative;
     flex-shrink: 0;
   }
   
   /* ================================
-     QUESTION TEXT - SMALLER FONT
+     QUESTION TEXT - COMFORTABLE SIZE
      ================================ */
   
   .question-text, .quiz-question {
@@ -217,11 +221,11 @@
     font-weight: 600;
     color: #1e293b;
     line-height: 1.5;
-    margin-bottom: 12px;
-    padding: 12px;
+    margin-bottom: 14px;
+    padding: 14px 16px;
     background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-    border-radius: 8px;
-    border-left: 3px solid #667eea;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
     word-wrap: break-word;
@@ -229,18 +233,18 @@
   }
   
   /* ================================
-     SHORT ANSWER - COMPACT
+     SHORT ANSWER - COMFORTABLE INPUT
      ================================ */
   
   .answer-textarea {
     width: 100%;
-    min-height: 80px;
-    max-height: 200px;
-    padding: 10px;
+    min-height: 100px;
+    max-height: 250px;
+    padding: 12px 14px;
     border: 2px solid #e2e8f0;
-    border-radius: 8px;
+    border-radius: 10px;
     font-size: 0.85rem;
-    line-height: 1.5;
+    line-height: 1.6;
     resize: vertical;
     background: #ffffff;
     transition: all 0.3s ease;
@@ -258,22 +262,22 @@
   }
   
   /* ================================
-     OPTIONS - ENHANCED SCROLLING
+     OPTIONS - COMFORTABLE SCROLLABLE LISTS
      ================================ */
   
   .options-list, .quiz-options, .true-false-options {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    max-height: 300px;
+    gap: 10px;
+    max-height: 350px;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-right: 4px;
+    padding-right: 6px;
     
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
   }
   
   .options-list::-webkit-scrollbar,
@@ -283,7 +287,8 @@
   
   .options-list::-webkit-scrollbar-track,
   .quiz-options::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 2px;
   }
   
   .options-list::-webkit-scrollbar-thumb,
@@ -301,14 +306,14 @@
   .option-item, .quiz-option, .tf-option {
     background: #ffffff;
     border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 10px 12px;
+    border-radius: 10px;
+    padding: 12px 14px;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 8px;
-    min-height: 40px;
+    gap: 10px;
+    min-height: 48px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     position: relative;
     overflow: hidden;
@@ -353,9 +358,9 @@
   
   .option-text {
     flex: 1;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 500;
-    line-height: 1.4;
+    line-height: 1.5;
     z-index: 1;
     position: relative;
     word-wrap: break-word;
@@ -364,24 +369,24 @@
   
   .option-radio {
     flex-shrink: 0;
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     z-index: 1;
     position: relative;
   }
   
   /* ================================
-     FILL IN BLANKS - COMPACT
+     FILL IN BLANKS - COMFORTABLE
      ================================ */
   
   .fill-blank-template {
     background: #f8fafc;
     border: 2px dashed #cbd5e1;
-    border-radius: 8px;
-    padding: 12px;
-    margin: 8px 0;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin: 10px 0;
     font-size: 0.85rem;
-    line-height: 1.5;
+    line-height: 1.6;
     color: #475569;
     flex-shrink: 0;
     word-wrap: break-word;
@@ -390,26 +395,26 @@
   .blank-indicator {
     background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
     color: white;
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
     font-weight: 600;
-    margin: 0 2px;
+    margin: 0 3px;
   }
   
   .fill-blank-inputs {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    max-height: 200px;
+    gap: 12px;
+    max-height: 280px;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-right: 4px;
+    padding-right: 6px;
     
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
   }
   
   .fill-blank-inputs::-webkit-scrollbar {
@@ -417,7 +422,8 @@
   }
   
   .fill-blank-inputs::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 2px;
   }
   
   .fill-blank-inputs::-webkit-scrollbar-thumb {
@@ -431,22 +437,23 @@
   
   .blank-label {
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
     font-weight: 600;
     color: #374151;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
   }
   
   .blank-input {
     width: 100%;
-    padding: 8px 10px;
+    padding: 10px 12px;
     border: 2px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 0.8rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
     background: #ffffff;
     transition: all 0.3s ease;
     box-sizing: border-box;
     font-family: inherit;
+    min-height: 40px;
   }
   
   .blank-input:focus {
@@ -456,33 +463,33 @@
   }
   
   .input-preview {
-    margin-top: 2px;
-    font-size: 0.7rem;
+    margin-top: 4px;
+    font-size: 0.75rem;
     color: #6b7280;
     font-style: italic;
   }
   
   /* ================================
-     MATCHING - ENHANCED SCROLLING
+     MATCHING - COMFORTABLE SCROLLING
      ================================ */
   
   .matching-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    height: 300px;
-    min-height: 250px;
-    max-height: 400px;
+    gap: 14px;
+    height: 380px;
+    min-height: 320px;
+    max-height: 450px;
   }
   
   .matching-side {
     background: #f8fafc;
     border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 8px;
+    border-radius: 10px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
@@ -490,7 +497,7 @@
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
   }
   
   .matching-side::-webkit-scrollbar {
@@ -498,7 +505,8 @@
   }
   
   .matching-side::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 2px;
   }
   
   .matching-side::-webkit-scrollbar-thumb {
@@ -508,11 +516,11 @@
   
   .matching-side h4 {
     color: #374151;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 600;
     text-align: center;
-    margin: 0 0 6px 0;
-    padding-bottom: 6px;
+    margin: 0 0 8px 0;
+    padding-bottom: 8px;
     border-bottom: 2px solid #e2e8f0;
     flex-shrink: 0;
   }
@@ -520,22 +528,22 @@
   .matching-item {
     background: #ffffff;
     border: 2px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 8px;
+    border-radius: 8px;
+    padding: 10px 12px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: 500;
     text-align: center;
     position: relative;
-    min-height: 36px;
+    min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     word-wrap: break-word;
     hyphens: auto;
-    line-height: 1.3;
+    line-height: 1.4;
   }
   
   .matching-item:hover:not(.disabled) {
@@ -558,28 +566,29 @@
   }
   
   .matching-pairs {
-    margin-top: 12px;
-    padding: 8px;
+    margin-top: 14px;
+    padding: 12px;
     background: #f8fafc;
-    border-radius: 6px;
+    border-radius: 8px;
     border: 1px solid #e2e8f0;
   }
   
   .matching-pairs h4 {
     font-size: 0.8rem;
     color: #374151;
-    margin: 0 0 6px 0;
+    margin: 0 0 8px 0;
   }
   
   .pair-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 4px 6px;
-    margin: 2px 0;
+    padding: 6px 8px;
+    margin: 4px 0;
     background: white;
-    border-radius: 4px;
-    font-size: 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    border: 1px solid #e2e8f0;
   }
   
   .remove-pair {
@@ -587,43 +596,48 @@
     color: white;
     border: none;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    font-size: 0.7rem;
+    width: 22px;
+    height: 22px;
+    font-size: 0.8rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background 0.2s ease;
+  }
+  
+  .remove-pair:hover {
+    background: #dc2626;
   }
   
   .matching-instructions {
-    margin-top: 8px;
-    padding: 8px;
+    margin-top: 12px;
+    padding: 12px;
     background: rgba(59, 130, 246, 0.05);
     border: 1px solid rgba(59, 130, 246, 0.2);
-    border-radius: 6px;
-    font-size: 0.7rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
     color: #4b5563;
-    line-height: 1.3;
+    line-height: 1.5;
   }
   
   /* ================================
-     ORDERING - ENHANCED SCROLLING
+     ORDERING - COMFORTABLE SCROLLING
      ================================ */
   
   .ordering-container {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    max-height: 300px;
+    gap: 8px;
+    max-height: 350px;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-right: 4px;
+    padding-right: 6px;
     
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
   }
   
   .ordering-container::-webkit-scrollbar {
@@ -631,7 +645,8 @@
   }
   
   .ordering-container::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 2px;
   }
   
   .ordering-container::-webkit-scrollbar-thumb {
@@ -642,25 +657,25 @@
   .ordering-instructions {
     background: rgba(59, 130, 246, 0.05);
     border: 1px solid rgba(59, 130, 246, 0.2);
-    border-radius: 6px;
-    padding: 8px;
-    margin-bottom: 8px;
-    font-size: 0.7rem;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    font-size: 0.75rem;
     color: #4b5563;
     flex-shrink: 0;
-    line-height: 1.3;
+    line-height: 1.5;
   }
   
   .ordering-item {
     background: #ffffff;
     border: 2px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 8px;
+    border-radius: 8px;
+    padding: 12px;
     cursor: move;
     transition: all 0.3s ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     flex-shrink: 0;
-    min-height: 40px;
+    min-height: 52px;
   }
   
   .ordering-item:hover:not(.disabled) {
@@ -672,77 +687,85 @@
   .ordering-item-content {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
   }
   
   .drag-handle {
     color: #9ca3af;
-    font-size: 1rem;
+    font-size: 1.1rem;
     cursor: grab;
+    user-select: none;
+  }
+  
+  .drag-handle:active {
+    cursor: grabbing;
   }
   
   .item-text {
     flex: 1;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 500;
+    line-height: 1.4;
   }
   
   .item-number {
     background: #667eea;
     color: white;
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     font-weight: 600;
   }
   
   .ordering-controls {
     display: flex;
-    gap: 2px;
+    gap: 4px;
   }
   
   .move-btn {
     background: #f3f4f6;
     border: 1px solid #d1d5db;
-    border-radius: 4px;
-    width: 24px;
-    height: 24px;
-    font-size: 0.7rem;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.2s ease;
   }
   
   .move-btn:hover {
     background: #e5e7eb;
+    transform: translateY(-1px);
   }
   
   /* ================================
-     DRAG AND DROP - ENHANCED
+     DRAG AND DROP - COMFORTABLE
      ================================ */
   
   .drag-drop-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    height: 300px;
-    min-height: 250px;
-    max-height: 400px;
+    gap: 14px;
+    height: 380px;
+    min-height: 320px;
+    max-height: 450px;
   }
   
   .drag-items, .drop-zones {
     background: #f8fafc;
     border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 8px;
+    border-radius: 10px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
@@ -750,7 +773,7 @@
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
   }
   
   .drag-items::-webkit-scrollbar,
@@ -760,7 +783,8 @@
   
   .drag-items::-webkit-scrollbar-track,
   .drop-zones::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 2px;
   }
   
   .drag-items::-webkit-scrollbar-thumb,
@@ -771,12 +795,12 @@
   
   .drag-items h4,
   .drop-zones h4 {
-    margin: 0 0 6px 0;
-    font-size: 0.8rem;
+    margin: 0 0 8px 0;
+    font-size: 0.85rem;
     font-weight: 600;
     color: #374151;
     text-align: center;
-    padding-bottom: 4px;
+    padding-bottom: 6px;
     border-bottom: 1px solid #e2e8f0;
     flex-shrink: 0;
   }
@@ -784,27 +808,32 @@
   .drag-item, .dropped-item {
     background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
     color: white;
-    padding: 8px;
-    border-radius: 6px;
+    padding: 10px 12px;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: 500;
     text-align: center;
-    min-height: 32px;
+    min-height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     transition: all 0.3s ease;
     word-wrap: break-word;
-    line-height: 1.3;
+    line-height: 1.4;
+  }
+  
+  .drag-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   }
   
   .drop-zone {
-    min-height: 60px;
+    min-height: 80px;
     border: 2px dashed #cbd5e1;
-    border-radius: 6px;
-    padding: 8px;
+    border-radius: 8px;
+    padding: 10px;
     background: rgba(255, 255, 255, 0.5);
     transition: all 0.3s ease;
   }
@@ -812,37 +841,43 @@
   .drop-zone.drag-over {
     border-color: #667eea;
     background: rgba(102, 126, 234, 0.1);
+    border-style: solid;
   }
   
   .zone-label {
     font-weight: 600;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: #374151;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
     text-align: center;
   }
   
   .zone-items {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
   }
   
   .remove-dropped {
-    margin-left: 4px;
+    margin-left: 6px;
     font-weight: bold;
-    opacity: 0.7;
+    opacity: 0.8;
+    cursor: pointer;
+  }
+  
+  .remove-dropped:hover {
+    opacity: 1;
   }
   
   /* ================================
-     CONFIRMATION & FEEDBACK - COMPACT
+     CONFIRMATION & FEEDBACK - COMFORTABLE
      ================================ */
   
   .confirmation-section {
     background: #ffffff;
-    border-radius: 8px;
-    padding: 10px;
-    margin-top: 8px;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 12px;
     border: 2px solid #e2e8f0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
@@ -850,12 +885,12 @@
   
   .confirmation-message {
     text-align: center;
-    padding: 8px;
-    border-radius: 6px;
-    font-size: 0.8rem;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
     font-weight: 600;
-    line-height: 1.3;
-    margin-bottom: 6px;
+    line-height: 1.4;
+    margin-bottom: 8px;
     word-wrap: break-word;
   }
   
@@ -878,31 +913,32 @@
   }
   
   .correct-answer-display {
-    margin-top: 8px;
-    padding: 8px;
+    margin-top: 10px;
+    padding: 10px 12px;
     background: #f0f9ff;
     border: 1px solid #0ea5e9;
-    border-radius: 6px;
+    border-radius: 8px;
   }
   
   .correct-answer-label {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 600;
     color: #0369a1;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
   }
   
   .correct-answer-text {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: #0c4a6e;
     word-wrap: break-word;
+    line-height: 1.4;
   }
   
   .second-chance-indicator {
-    margin-bottom: 8px;
-    padding: 6px;
+    margin-bottom: 10px;
+    padding: 8px 10px;
     background: rgba(245, 158, 11, 0.1);
-    border-radius: 6px;
+    border-radius: 8px;
     border: 1px solid rgba(245, 158, 11, 0.3);
   }
   
@@ -910,18 +946,18 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: #92400e;
   }
   
   .attempt-dots {
     display: flex;
-    gap: 4px;
+    gap: 6px;
   }
   
   .attempt-dot {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     background: rgba(245, 158, 11, 0.3);
     transition: all 0.3s ease;
@@ -937,24 +973,24 @@
   }
   
   /* ================================
-     HINTS SECTION - COMPACT
+     HINTS SECTION - COMFORTABLE
      ================================ */
   
   .hints-section {
-    margin-top: 8px;
+    margin-top: 12px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
   
   .hint {
     display: flex;
     align-items: flex-start;
-    gap: 8px;
-    padding: 8px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    line-height: 1.4;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    line-height: 1.5;
   }
   
   .basic-hint {
@@ -971,7 +1007,7 @@
   }
   
   .hint-icon {
-    font-size: 0.9rem;
+    font-size: 1rem;
     flex-shrink: 0;
   }
   
@@ -986,8 +1022,8 @@
     color: #6b7280;
     cursor: pointer;
     padding: 0;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1013,136 +1049,214 @@
     justify-content: center;
     text-align: center;
     color: #6b7280;
-    padding: 32px 16px;
+    padding: 40px 20px;
     height: 100%;
   }
   
   .no-content-icon {
-    font-size: 2.5rem;
-    margin-bottom: 12px;
+    font-size: 3rem;
+    margin-bottom: 16px;
     opacity: 0.6;
   }
   
   .no-content h4 {
-    font-size: 1rem;
-    margin-bottom: 6px;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
     color: #374151;
   }
   
   .no-content p {
-    font-size: 0.8rem;
-    line-height: 1.4;
-    max-width: 280px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    max-width: 320px;
   }
   
   /* ================================
-     RESPONSIVE DESIGN - MOBILE OPTIMIZED
+     RESPONSIVE DESIGN - ULTRA COMFORTABLE
      ================================ */
   
-  /* Large Desktop (1200px+) */
+  /* Large Desktop (1200px+) - Maximum comfort */
   @media (min-width: 1200px) {
     .interactive-panel {
-      border-radius: 20px;
+      border-radius: 16px;
     }
     
     .exercise-header, .quiz-header {
-      padding: 16px 20px;
-      border-radius: 20px 20px 0 0;
-      min-height: 56px;
-      max-height: 56px;
-      height: 56px;
+      padding: 10px 20px;
+      border-radius: 16px 16px 0 0;
+      min-height: 40px;
+      max-height: 40px;
+      height: 40px;
     }
     
     .exercise-header h3, .quiz-header h3 {
-      font-size: 1.1rem;
+      font-size: 0.9rem;
     }
     
     .exercise-counter, .quiz-counter {
-      font-size: 0.8rem;
-      padding: 5px 12px;
+      font-size: 0.7rem;
+      padding: 4px 10px;
     }
     
     .exercise-content-scroll, .quiz-content-scroll {
-      padding: 16px 20px;
+      padding: 18px 20px;
       gap: 16px;
     }
     
     .question-text, .quiz-question {
-      font-size: 1rem;
-      padding: 16px;
+      font-size: 0.95rem;
+      padding: 16px 18px;
     }
     
     .matching-container,
     .drag-drop-container {
-      height: 400px;
+      height: 420px;
       max-height: 500px;
     }
     
     .exercise-actions, .quiz-actions {
-      padding: 16px 20px;
-      min-height: 64px;
-      max-height: 64px;
-      height: 64px;
+      padding: 12px 20px;
+      min-height: 52px;
+      max-height: 52px;
+      height: 52px;
     }
     
     .hint-btn, .submit-btn, .next-btn {
-      padding: 10px 18px;
-      font-size: 0.85rem;
-      min-height: 40px;
-      min-width: 90px;
+      padding: 8px 16px;
+      font-size: 0.8rem;
+      min-height: 36px;
+      min-width: 85px;
     }
   }
   
   /* Standard Desktop (992px - 1199px) */
   @media (min-width: 992px) and (max-width: 1199px) {
     .interactive-panel {
-      border-radius: 18px;
+      border-radius: 14px;
     }
     
     .matching-container,
     .drag-drop-container {
-      height: 350px;
-      max-height: 450px;
+      height: 400px;
+      max-height: 480px;
+    }
+    
+    .exercise-actions, .quiz-actions {
+      min-height: 50px;
+      max-height: 50px;
+      height: 50px;
     }
   }
   
   /* Tablet Landscape (768px - 991px) */
   @media (min-width: 768px) and (max-width: 991px) {
-    .interactive-panel {
-      border-radius: 16px;
-    }
-    
     .exercise-header, .quiz-header {
-      padding: 14px 18px;
-      min-height: 50px;
-      max-height: 50px;
-      height: 50px;
+      padding: 8px 16px;
+      min-height: 38px;
+      max-height: 38px;
+      height: 38px;
     }
     
     .exercise-header h3, .quiz-header h3 {
-      font-size: 0.95rem;
+      font-size: 0.8rem;
       max-width: 65%;
     }
     
+    .exercise-counter, .quiz-counter {
+      font-size: 0.6rem;
+      padding: 3px 7px;
+    }
+    
     .exercise-content-scroll, .quiz-content-scroll {
-      padding: 14px 18px;
-      gap: 14px;
+      padding: 12px 16px;
+      gap: 12px;
     }
     
     .question-text, .quiz-question {
-      font-size: 0.85rem;
-      padding: 14px;
+      font-size: 0.8rem;
+      padding: 12px 14px;
     }
     
     .matching-container,
     .drag-drop-container {
-      height: 280px;
-      max-height: 380px;
-      gap: 10px;
+      height: 320px;
+      max-height: 400px;
+      gap: 12px;
     }
     
     .options-list, .quiz-options {
-      max-height: 250px;
+      max-height: 280px;
+    }
+    
+    .fill-blank-inputs {
+      max-height: 220px;
+    }
+    
+    .ordering-container {
+      max-height: 280px;
+    }
+    
+    .exercise-actions, .quiz-actions {
+      padding: 10px 16px;
+      gap: 6px;
+      min-height: 46px;
+      max-height: 46px;
+      height: 46px;
+    }
+    
+    .hint-btn, .submit-btn, .next-btn {
+      padding: 6px 12px;
+      font-size: 0.7rem;
+      min-width: 75px;
+      min-height: 30px;
+    }
+  }
+  
+  /* Tablet Portrait (600px - 767px) */
+  @media (min-width: 600px) and (max-width: 767px) {
+    .exercise-header, .quiz-header {
+      padding: 6px 14px;
+      min-height: 36px;
+      max-height: 36px;
+      height: 36px;
+    }
+    
+    .exercise-header h3, .quiz-header h3 {
+      font-size: 0.75rem;
+      max-width: 60%;
+    }
+    
+    .exercise-counter, .quiz-counter {
+      font-size: 0.55rem;
+      padding: 2px 6px;
+    }
+    
+    .exercise-content-scroll, .quiz-content-scroll {
+      padding: 10px 14px;
+      gap: 10px;
+    }
+    
+    .question-text, .quiz-question {
+      font-size: 0.75rem;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      grid-template-columns: 1fr;
+      height: 280px;
+      max-height: 360px;
+      gap: 10px;
+    }
+    
+    .true-false-options {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    
+    .options-list, .quiz-options {
+      max-height: 240px;
     }
     
     .fill-blank-inputs {
@@ -1150,147 +1264,74 @@
     }
     
     .ordering-container {
-      max-height: 250px;
-    }
-    
-    .exercise-actions, .quiz-actions {
-      padding: 14px 18px;
-      gap: 8px;
-      min-height: 58px;
-      max-height: 58px;
-      height: 58px;
-    }
-    
-    .hint-btn, .submit-btn, .next-btn {
-      padding: 8px 16px;
-      font-size: 0.8rem;
-      min-width: 85px;
-    }
-  }
-  
-  /* Tablet Portrait (600px - 767px) */
-  @media (min-width: 600px) and (max-width: 767px) {
-    .interactive-panel {
-      border-radius: 14px;
-    }
-    
-    .exercise-header, .quiz-header {
-      padding: 12px 16px;
-      min-height: 46px;
-      max-height: 46px;
-      height: 46px;
-    }
-    
-    .exercise-header h3, .quiz-header h3 {
-      font-size: 0.9rem;
-      max-width: 60%;
-    }
-    
-    .exercise-counter, .quiz-counter {
-      font-size: 0.7rem;
-      padding: 3px 8px;
-    }
-    
-    .exercise-content-scroll, .quiz-content-scroll {
-      padding: 12px 16px;
-      gap: 12px;
-    }
-    
-    .question-text, .quiz-question {
-      font-size: 0.8rem;
-      padding: 12px;
-      margin-bottom: 10px;
-    }
-    
-    .matching-container,
-    .drag-drop-container {
-      grid-template-columns: 1fr;
-      height: 320px;
-      max-height: 420px;
-      gap: 12px;
-    }
-    
-    .true-false-options {
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
-    
-    .options-list, .quiz-options {
-      max-height: 200px;
-    }
-    
-    .fill-blank-inputs {
-      max-height: 150px;
-    }
-    
-    .ordering-container {
-      max-height: 200px;
+      max-height: 240px;
     }
     
     .option-item, .quiz-option, .tf-option {
-      padding: 8px 10px;
-      min-height: 36px;
+      padding: 10px 12px;
+      min-height: 42px;
+    }
+    
+    .option-text {
+      font-size: 0.8rem;
     }
     
     .exercise-actions, .quiz-actions {
-      padding: 12px 16px;
+      padding: 8px 14px;
       gap: 6px;
       flex-direction: row;
       flex-wrap: wrap;
-      min-height: 54px;
+      min-height: 44px;
       max-height: auto;
     }
     
     .hint-btn, .submit-btn, .next-btn {
-      padding: 8px 14px;
-      font-size: 0.75rem;
-      min-width: 80px;
+      padding: 6px 10px;
+      font-size: 0.65rem;
+      min-width: 70px;
       flex: 1;
-      max-width: 140px;
+      max-width: 120px;
+      min-height: 28px;
     }
   }
   
   /* Large Mobile (480px - 599px) */
   @media (min-width: 480px) and (max-width: 599px) {
-    .interactive-panel {
-      border-radius: 12px;
-    }
-    
     .exercise-header, .quiz-header {
-      padding: 10px 14px;
-      min-height: 44px;
-      max-height: 44px;
-      height: 44px;
+      padding: 6px 12px;
+      min-height: 34px;
+      max-height: 34px;
+      height: 34px;
     }
     
     .exercise-header h3, .quiz-header h3 {
-      font-size: 0.85rem;
+      font-size: 0.7rem;
       max-width: 55%;
     }
     
     .exercise-counter, .quiz-counter {
-      font-size: 0.65rem;
-      padding: 3px 7px;
+      font-size: 0.5rem;
+      padding: 2px 5px;
     }
     
     .exercise-content-scroll, .quiz-content-scroll {
-      padding: 10px 14px;
-      gap: 10px;
+      padding: 8px 12px;
+      gap: 8px;
     }
     
     .question-text, .quiz-question {
-      font-size: 0.75rem;
-      padding: 10px;
-      margin-bottom: 8px;
+      font-size: 0.7rem;
+      padding: 8px 10px;
+      margin-bottom: 6px;
       line-height: 1.4;
     }
     
     .matching-container,
     .drag-drop-container {
       grid-template-columns: 1fr;
-      height: 280px;
-      max-height: 380px;
-      gap: 10px;
+      height: 240px;
+      max-height: 320px;
+      gap: 8px;
     }
     
     .true-false-options {
@@ -1299,289 +1340,55 @@
     }
     
     .options-list, .quiz-options {
-      max-height: 160px;
+      max-height: 200px;
       gap: 6px;
     }
     
     .fill-blank-inputs {
-      max-height: 130px;
-      gap: 8px;
+      max-height: 140px;
+      gap: 6px;
     }
     
     .ordering-container {
-      max-height: 160px;
+      max-height: 200px;
       gap: 4px;
     }
     
     .option-item, .quiz-option, .tf-option {
-      padding: 7px 9px;
-      min-height: 34px;
-    }
-    
-    .option-text {
-      font-size: 0.75rem;
-    }
-    
-    .matching-item {
-      padding: 6px;
-      min-height: 32px;
-      font-size: 0.7rem;
-    }
-    
-    .ordering-item {
-      padding: 7px;
+      padding: 8px 10px;
       min-height: 38px;
     }
     
-    .item-text {
+    .option-text {
       font-size: 0.75rem;
     }
     
-    .drag-item, .dropped-item {
-      padding: 6px;
-      min-height: 30px;
-      font-size: 0.7rem;
-    }
-    
-    .exercise-actions, .quiz-actions {
-      padding: 10px 14px;
-      gap: 6px;
-      flex-direction: column;
-      min-height: 52px;
-      max-height: auto;
-    }
-    
-    .hint-btn, .submit-btn, .next-btn {
-      padding: 8px 12px;
-      font-size: 0.7rem;
-      min-width: 75px;
-      width: 100%;
-      min-height: 34px;
-    }
-  }
-  
-  /* Standard Mobile (375px - 479px) */
-  @media (min-width: 375px) and (max-width: 479px) {
-    .interactive-panel {
-      border-radius: 10px;
-    }
-    
-    .exercise-header, .quiz-header {
-      padding: 8px 12px;
-      min-height: 42px;
-      max-height: 42px;
-      height: 42px;
-    }
-    
-    .exercise-header h3, .quiz-header h3 {
-      font-size: 0.8rem;
-      max-width: 50%;
-    }
-    
-    .exercise-counter, .quiz-counter {
-      font-size: 0.6rem;
-      padding: 2px 6px;
-    }
-    
-    .exercise-content-scroll, .quiz-content-scroll {
-      padding: 8px 12px;
-      gap: 8px;
-    }
-    
-    .question-text, .quiz-question {
-      font-size: 0.7rem;
-      padding: 8px;
-      margin-bottom: 6px;
-      line-height: 1.3;
-    }
-    
-    .matching-container,
-    .drag-drop-container {
-      grid-template-columns: 1fr;
-      height: 240px;
-      max-height: 340px;
-      gap: 8px;
-    }
-    
-    .true-false-options {
-      grid-template-columns: 1fr;
-      gap: 6px;
-    }
-    
-    .options-list, .quiz-options {
-      max-height: 140px;
-      gap: 5px;
-    }
-    
-    .fill-blank-inputs {
-      max-height: 110px;
-      gap: 6px;
-    }
-    
-    .ordering-container {
-      max-height: 140px;
-      gap: 4px;
-    }
-    
-    .option-item, .quiz-option, .tf-option {
+    .matching-item {
       padding: 6px 8px;
-      min-height: 32px;
-    }
-    
-    .option-text {
-      font-size: 0.7rem;
-      line-height: 1.2;
-    }
-    
-    .matching-item {
-      padding: 5px;
-      min-height: 28px;
-      font-size: 0.65rem;
-    }
-    
-    .ordering-item {
-      padding: 6px;
       min-height: 36px;
-    }
-    
-    .item-text {
       font-size: 0.7rem;
     }
     
-    .item-number {
-      width: 18px;
-      height: 18px;
-      font-size: 0.6rem;
-    }
-    
-    .drag-item, .dropped-item {
-      padding: 5px;
-      min-height: 28px;
-      font-size: 0.65rem;
-    }
-    
-    .exercise-actions, .quiz-actions {
-      padding: 8px 12px;
-      gap: 5px;
-      flex-direction: column;
-      min-height: 50px;
-      max-height: auto;
-    }
-    
-    .hint-btn, .submit-btn, .next-btn {
-      padding: 7px 10px;
-      font-size: 0.65rem;
-      min-width: 70px;
-      width: 100%;
-      min-height: 32px;
-    }
-  }
-  
-  /* Small Mobile (320px - 374px) */
-  @media (max-width: 374px) {
-    .interactive-panel {
-      border-radius: 8px;
-    }
-    
-    .exercise-header, .quiz-header {
-      padding: 6px 10px;
-      min-height: 40px;
-      max-height: 40px;
-      height: 40px;
-    }
-    
-    .exercise-header h3, .quiz-header h3 {
-      font-size: 0.75rem;
-      max-width: 45%;
-    }
-    
-    .exercise-counter, .quiz-counter {
-      font-size: 0.55rem;
-      padding: 2px 5px;
-    }
-    
-    .exercise-content-scroll, .quiz-content-scroll {
-      padding: 6px 10px;
-      gap: 6px;
-    }
-    
-    .question-text, .quiz-question {
-      font-size: 0.65rem;
-      padding: 6px;
-      margin-bottom: 5px;
-      line-height: 1.3;
-    }
-    
-    .matching-container,
-    .drag-drop-container {
-      grid-template-columns: 1fr;
-      height: 200px;
-      max-height: 300px;
-      gap: 6px;
-    }
-    
-    .true-false-options {
-      grid-template-columns: 1fr;
-      gap: 5px;
-    }
-    
-    .options-list, .quiz-options {
-      max-height: 120px;
-      gap: 4px;
-    }
-    
-    .fill-blank-inputs {
-      max-height: 90px;
-      gap: 5px;
-    }
-    
-    .ordering-container {
-      max-height: 120px;
-      gap: 3px;
-    }
-    
-    .option-item, .quiz-option, .tf-option {
-      padding: 5px 7px;
-      min-height: 30px;
-    }
-    
-    .option-text {
-      font-size: 0.65rem;
-      line-height: 1.2;
-    }
-    
-    .matching-item {
-      padding: 4px;
-      min-height: 26px;
-      font-size: 0.6rem;
-    }
-    
     .ordering-item {
-      padding: 5px;
-      min-height: 34px;
+      padding: 8px 10px;
+      min-height: 44px;
     }
     
     .item-text {
-      font-size: 0.65rem;
-    }
-    
-    .item-number {
-      width: 16px;
-      height: 16px;
-      font-size: 0.55rem;
+      font-size: 0.75rem;
     }
     
     .drag-item, .dropped-item {
-      padding: 4px;
-      min-height: 26px;
-      font-size: 0.6rem;
+      padding: 6px 8px;
+      min-height: 34px;
+      font-size: 0.7rem;
     }
     
     .exercise-actions, .quiz-actions {
-      padding: 6px 10px;
+      padding: 6px 12px;
       gap: 4px;
       flex-direction: column;
-      min-height: 48px;
+      min-height: 42px;
       max-height: auto;
     }
     
@@ -1590,61 +1397,289 @@
       font-size: 0.6rem;
       min-width: 65px;
       width: 100%;
-      min-height: 30px;
-    }
-    
-    .answer-textarea {
-      min-height: 60px;
-      max-height: 150px;
-      font-size: 0.75rem;
-    }
-    
-    .blank-input {
-      padding: 6px 8px;
-      font-size: 0.75rem;
+      min-height: 26px;
     }
   }
   
-  /* ================================
-     LANDSCAPE ORIENTATION OPTIMIZATIONS
-     ================================ */
-  
-  @media (orientation: landscape) and (max-height: 600px) {
+  /* Standard Mobile (375px - 479px) */
+  @media (min-width: 375px) and (max-width: 479px) {
     .exercise-header, .quiz-header {
-      min-height: 36px;
-      max-height: 36px;
-      height: 36px;
-      padding: 6px 14px;
+      padding: 5px 10px;
+      min-height: 32px;
+      max-height: 32px;
+      height: 32px;
     }
     
     .exercise-header h3, .quiz-header h3 {
-      font-size: 0.8rem;
+      font-size: 0.65rem;
+      max-width: 50%;
     }
     
     .exercise-counter, .quiz-counter {
-      font-size: 0.65rem;
-      padding: 2px 6px;
+      font-size: 0.45rem;
+      padding: 1px 4px;
     }
     
     .exercise-content-scroll, .quiz-content-scroll {
-      padding: 8px 14px;
+      padding: 6px 10px;
       gap: 6px;
     }
     
     .question-text, .quiz-question {
-      font-size: 0.75rem;
-      padding: 8px;
-      margin-bottom: 6px;
+      font-size: 0.65rem;
+      padding: 6px 8px;
+      margin-bottom: 4px;
+      line-height: 1.3;
     }
     
     .matching-container,
     .drag-drop-container {
+      grid-template-columns: 1fr;
+      height: 200px;
+      max-height: 280px;
+      gap: 6px;
+    }
+    
+    .true-false-options {
+      grid-template-columns: 1fr;
+      gap: 5px;
+    }
+    
+    .options-list, .quiz-options {
+      max-height: 160px;
+      gap: 4px;
+    }
+    
+    .fill-blank-inputs {
+      max-height: 120px;
+      gap: 4px;
+    }
+    
+    .ordering-container {
+      max-height: 160px;
+      gap: 3px;
+    }
+    
+    .option-item, .quiz-option, .tf-option {
+      padding: 6px 8px;
+      min-height: 34px;
+    }
+    
+    .option-text {
+      font-size: 0.7rem;
+      line-height: 1.2;
+    }
+    
+    .matching-item {
+      padding: 4px 6px;
+      min-height: 32px;
+      font-size: 0.65rem;
+    }
+    
+    .ordering-item {
+      padding: 6px 8px;
+      min-height: 40px;
+    }
+    
+    .item-text {
+      font-size: 0.7rem;
+    }
+    
+    .item-number {
+      width: 20px;
+      height: 20px;
+      font-size: 0.6rem;
+    }
+    
+    .drag-item, .dropped-item {
+      padding: 4px 6px;
+      min-height: 30px;
+      font-size: 0.65rem;
+    }
+    
+    .exercise-actions, .quiz-actions {
+      padding: 4px 10px;
+      gap: 3px;
+      flex-direction: column;
+      min-height: 40px;
+      max-height: auto;
+    }
+    
+    .hint-btn, .submit-btn, .next-btn {
+      padding: 5px 6px;
+      font-size: 0.55rem;
+      min-width: 60px;
+      width: 100%;
+      min-height: 24px;
+    }
+  }
+  
+  /* Small Mobile (320px - 374px) */
+  @media (max-width: 374px) {
+    .exercise-header, .quiz-header {
+      padding: 4px 8px;
+      min-height: 30px;
+      max-height: 30px;
+      height: 30px;
+    }
+    
+    .exercise-header h3, .quiz-header h3 {
+      font-size: 0.6rem;
+      max-width: 45%;
+    }
+    
+    .exercise-counter, .quiz-counter {
+      font-size: 0.4rem;
+      padding: 1px 3px;
+    }
+    
+    .exercise-content-scroll, .quiz-content-scroll {
+      padding: 4px 8px;
+      gap: 4px;
+    }
+    
+    .question-text, .quiz-question {
+      font-size: 0.6rem;
+      padding: 4px 6px;
+      margin-bottom: 3px;
+      line-height: 1.2;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      grid-template-columns: 1fr;
       height: 160px;
-      max-height: 200px;
+      max-height: 240px;
+      gap: 4px;
+    }
+    
+    .true-false-options {
+      grid-template-columns: 1fr;
+      gap: 4px;
     }
     
     .options-list, .quiz-options {
       max-height: 120px;
+      gap: 3px;
+    }
+    
+    .fill-blank-inputs {
+      max-height: 100px;
+      gap: 3px;
+    }
+    
+    .ordering-container {
+      max-height: 120px;
+      gap: 2px;
+    }
+    
+    .option-item, .quiz-option, .tf-option {
+      padding: 4px 6px;
+      min-height: 30px;
+    }
+    
+    .option-text {
+      font-size: 0.65rem;
+      line-height: 1.1;
+    }
+    
+    .matching-item {
+      padding: 3px 4px;
+      min-height: 28px;
+      font-size: 0.6rem;
+    }
+    
+    .ordering-item {
+      padding: 4px 6px;
+      min-height: 36px;
+    }
+    
+    .item-text {
+      font-size: 0.65rem;
+    }
+    
+    .item-number {
+      width: 18px;
+      height: 18px;
+      font-size: 0.55rem;
+    }
+    
+    .drag-item, .dropped-item {
+      padding: 3px 4px;
+      min-height: 26px;
+      font-size: 0.6rem;
+    }
+    
+    .exercise-actions, .quiz-actions {
+      padding: 3px 8px;
+      gap: 2px;
+      flex-direction: column;
+      min-height: 38px;
+      max-height: auto;
+    }
+    
+    .hint-btn, .submit-btn, .next-btn {
+      padding: 4px 5px;
+      font-size: 0.5rem;
+      min-width: 55px;
+      width: 100%;
+      min-height: 22px;
+    }
+    
+    .answer-textarea {
+      min-height: 60px;
+      max-height: 120px;
+      font-size: 0.7rem;
+      padding: 6px 8px;
+    }
+    
+    .blank-input {
+      padding: 4px 6px;
+      font-size: 0.7rem;
+      min-height: 30px;
+    }
+  }
+  
+  /* ================================
+     LANDSCAPE ORIENTATION - SUPER COMFORTABLE
+     ================================ */
+  
+  @media (orientation: landscape) and (max-height: 600px) {
+    .exercise-header, .quiz-header {
+      min-height: 28px;
+      max-height: 28px;
+      height: 28px;
+      padding: 4px 12px;
+    }
+    
+    .exercise-header h3, .quiz-header h3 {
+      font-size: 0.65rem;
+    }
+    
+    .exercise-counter, .quiz-counter {
+      font-size: 0.5rem;
+      padding: 1px 4px;
+    }
+    
+    .exercise-content-scroll, .quiz-content-scroll {
+      padding: 6px 12px;
+      gap: 4px;
+    }
+    
+    .question-text, .quiz-question {
+      font-size: 0.65rem;
+      padding: 6px 8px;
+      margin-bottom: 4px;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      height: 120px;
+      max-height: 160px;
+    }
+    
+    .options-list, .quiz-options {
+      max-height: 100px;
     }
     
     .fill-blank-inputs {
@@ -1652,31 +1687,31 @@
     }
     
     .ordering-container {
-      max-height: 120px;
+      max-height: 100px;
     }
     
     .exercise-actions, .quiz-actions {
-      min-height: 40px;
-      max-height: 40px;
-      height: 40px;
-      padding: 6px 14px;
+      min-height: 32px;
+      max-height: 32px;
+      height: 32px;
+      padding: 4px 12px;
       flex-direction: row;
-      gap: 6px;
+      gap: 4px;
     }
     
     .hint-btn, .submit-btn, .next-btn {
-      padding: 4px 10px;
-      font-size: 0.65rem;
-      min-height: 28px;
+      padding: 3px 8px;
+      font-size: 0.55rem;
+      min-height: 24px;
       flex: 1;
     }
   }
   
   /* ================================
-     ACCESSIBILITY & USABILITY
+     ACCESSIBILITY - ENHANCED
      ================================ */
   
-  /* Focus states for better accessibility */
+  /* Perfect focus states */
   .hint-btn:focus,
   .submit-btn:focus,
   .next-btn:focus,
@@ -1690,9 +1725,10 @@
   .answer-textarea:focus {
     outline: 2px solid #3b82f6;
     outline-offset: 2px;
+    z-index: 100;
   }
   
-  /* High contrast mode support */
+  /* High contrast mode */
   @media (prefers-contrast: high) {
     .interactive-panel,
     .option-item,
@@ -1705,23 +1741,16 @@
     }
     
     .question-text, .quiz-question {
-      border-left-width: 5px;
+      border-left-width: 6px;
     }
   }
   
-  /* Reduced motion support */
+  /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .exercise-content-scroll,
-    .quiz-content-scroll,
-    .options-list,
-    .quiz-options,
-    .fill-blank-inputs,
-    .matching-side,
-    .ordering-container,
-    .drag-items,
-    .drop-zones,
-    .zone-items {
-      scroll-behavior: auto;
+    * {
+      scroll-behavior: auto !important;
+      transition: none !important;
+      animation: none !important;
     }
     
     .option-item:hover,
@@ -1733,56 +1762,48 @@
     .hint-btn:hover,
     .submit-btn:hover,
     .next-btn:hover {
-      transform: none;
-    }
-    
-    .ordering-item.dragging,
-    .drag-item.dragging {
-      transform: none;
+      transform: none !important;
     }
   }
   
-  /* Touch-friendly improvements */
+  /* Touch devices - perfect touch targets */
   @media (pointer: coarse) {
     .option-item, .quiz-option, .tf-option {
-      min-height: 40px;
+      min-height: 48px;
     }
     
     .matching-item {
-      min-height: 36px;
+      min-height: 44px;
     }
     
     .ordering-item {
-      min-height: 40px;
+      min-height: 48px;
     }
     
     .drag-item, .dropped-item {
-      min-height: 36px;
+      min-height: 44px;
     }
     
     .hint-btn, .submit-btn, .next-btn {
-      min-height: 40px;
+      min-height: 44px;
     }
     
     .move-btn {
-      width: 28px;
-      height: 24px;
+      width: 32px;
+      height: 32px;
     }
     
     .remove-pair,
     .remove-dropped {
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
     }
   }
   
-  /* Print styles */
+  /* Print optimization */
   @media print {
     .exercise-actions,
-    .quiz-actions,
-    .hint-btn,
-    .submit-btn,
-    .next-btn {
+    .quiz-actions {
       display: none;
     }
     
@@ -1798,6 +1819,7 @@
     .quiz-content-scroll {
       overflow: visible;
       max-height: none;
+      padding-bottom: 0;
     }
     
     .options-list, .quiz-options,
