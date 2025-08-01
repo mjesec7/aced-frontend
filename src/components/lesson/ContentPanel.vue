@@ -1,24 +1,24 @@
 <template>
-  <div class="content-panel">
-    <div class="step-header">
-      <h3 class="step-title">
-        <span class="step-number">{{ currentIndex + 1 }}</span>
-        <span class="step-type-icon">{{ getStepIcon(currentStep?.type) }}</span>
-        <span class="step-type-text">{{ getStepTypeText(currentStep?.type) }}</span>
+  <div class="content-panel-wrapper">
+    <div class="content-step-header">
+      <h3 class="content-step-title">
+        <span class="content-step-number">{{ currentIndex + 1 }}</span>
+        <span class="content-step-type-icon">{{ getStepIcon(currentStep?.type) }}</span>
+        <span class="content-step-type-text">{{ getStepTypeText(currentStep?.type) }}</span>
         
         <!-- Exercise/quiz counter for interactive steps -->
-        <span v-if="isInteractiveStep && ['exercise', 'practice'].includes(currentStep?.type)" class="exercise-counter">
+        <span v-if="isInteractiveStep && ['exercise', 'practice'].includes(currentStep?.type)" class="content-exercise-counter">
           ({{ exerciseIndex + 1 }}/{{ totalExercises || 1 }})
         </span>
-        <span v-else-if="isInteractiveStep && currentStep?.type === 'quiz'" class="quiz-counter">
+        <span v-else-if="isInteractiveStep && currentStep?.type === 'quiz'" class="content-quiz-counter">
           ({{ quizIndex + 1 }}/{{ totalQuizzes || 1 }})
         </span>
       </h3>
     </div>
     
     <!-- Scrollable Content Area -->
-    <div class="step-content-container">
-      <div class="step-content">
+    <div class="content-step-container">
+      <div class="content-step-content">
         <!-- FOR INTERACTIVE STEPS: Show ONLY the question, no instructions -->
         <div v-if="isInteractiveStep" class="interactive-content">
           
@@ -138,12 +138,12 @@
     
     <!-- Content Navigation -->
     <div class="content-navigation">
-      <button v-if="currentIndex > 0" class="nav-btn prev-btn" @click="$emit('previous')">
+      <button v-if="currentIndex > 0" class="content-nav-btn content-prev-btn" @click="$emit('previous')">
         ⬅️ Назад
       </button>
       <button 
         v-if="!isInteractiveStep" 
-        class="nav-btn next-btn" 
+        class="content-nav-btn content-next-btn" 
         @click="$emit('next')"
       >
         {{ isLastStep ? '🏁 Завершить' : '➡️ Далее' }}
@@ -316,77 +316,89 @@ export default {
 </script>
 
 <style scoped>
-.content-panel {
+/* Use different class names to avoid conflicts with parent CSS */
+.content-panel-wrapper {
   background: white;
-  padding: 0;
+  padding: 0 !important;
+  margin: 0 !important;
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 100%;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-.step-header {
-  padding: 20px 24px;
+.content-step-header {
+  padding: 24px 28px;
   border-bottom: 1px solid #e2e8f0;
   flex-shrink: 0;
+  background: white;
+  box-sizing: border-box;
 }
 
-.step-title {
-  font-size: 1.3rem;
+.content-step-title {
+  font-size: 1.4rem !important;
   color: #1e293b;
   margin: 0;
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  font-weight: 600;
 }
 
-.step-number {
+.content-step-number {
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: white;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
-  font-size: 1rem;
-  flex-shrink: 0;
-}
-
-.step-type-icon {
-  font-size: 1.4rem;
-  flex-shrink: 0;
-}
-
-.step-type-text {
-  font-weight: 600;
-  color: #1e293b;
+  font-weight: 700;
   font-size: 1.1rem;
+  flex-shrink: 0;
 }
 
-.exercise-counter,
-.quiz-counter {
-  font-size: 1rem;
+.content-step-type-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.content-step-type-text {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 1.2rem !important;
+}
+
+.content-exercise-counter,
+.content-quiz-counter {
+  font-size: 1.1rem !important;
   color: #666;
-  font-weight: normal;
+  font-weight: 500;
   margin-left: 0.5rem;
 }
 
-/* Scrollable content container */
-.step-content-container {
+/* Scrollable content container - this is key for proper scrolling */
+.content-step-container {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  min-height: 0; /* Important for flex child to scroll properly */
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.step-content {
-  padding: 24px;
-  animation: stepFadeIn 0.3s ease-out;
+.content-step-content {
+  padding: 32px 28px;
+  animation: contentFadeIn 0.3s ease-out;
+  box-sizing: border-box;
+  width: 100%;
 }
 
-@keyframes stepFadeIn {
+@keyframes contentFadeIn {
   from {
     opacity: 0;
     transform: translateX(20px);
@@ -397,31 +409,37 @@ export default {
   }
 }
 
-/* Clean question display - bigger text */
+/* Make text bigger as requested */
 .clean-question {
-  font-size: 1.4rem;
+  font-size: 1.6rem !important;
   line-height: 1.6;
   color: #2c3e50;
   margin: 0;
   padding: 0;
   font-weight: 600;
   text-align: left;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Interactive content styling */
 .interactive-content {
   padding: 0;
   margin: 0;
+  width: 100%;
 }
 
 .current-exercise-content,
 .current-quiz-content {
   background: linear-gradient(135deg, #f8f9ff 0%, #f1f5f9 100%);
   border-radius: 16px;
-  padding: 2rem;
+  padding: 2.5rem;
   border: 2px solid #e1e8ff;
   margin-top: 1rem;
   position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .current-exercise-content::before,
@@ -439,9 +457,10 @@ export default {
 .exercise-question-display,
 .quiz-question-display {
   text-align: left;
+  width: 100%;
 }
 
-/* Exercise type badge - subtle */
+/* Exercise type badge */
 .exercise-type-info {
   margin-top: 1rem;
   text-align: center;
@@ -449,34 +468,41 @@ export default {
 
 .type-badge {
   display: inline-block;
-  padding: 0.25rem 0.75rem;
+  padding: 0.3rem 0.8rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 15px;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 500;
   letter-spacing: 0.5px;
   opacity: 0.8;
 }
 
-/* Text Content - bigger text */
+/* Text Content - bigger text, no width limits */
 .text-content {
   line-height: 1.8;
+  width: 100%;
 }
 
 .content-text {
-  font-size: 1.2rem;
+  font-size: 1.3rem !important;
   color: #374151;
   margin: 0;
   line-height: 1.8;
+  font-weight: 400;
+  width: 100%;
+  max-width: none !important; /* Remove any width limits */
+  box-sizing: border-box;
 }
 
 /* Vocabulary Content */
 .vocabulary-content.enhanced {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  padding: 24px;
+  padding: 28px;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .vocabulary-modal-trigger {
@@ -486,38 +512,41 @@ export default {
 .trigger-card {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 40px 32px;
+  padding: 48px 36px;
   border-radius: 20px;
   box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .trigger-icon {
-  font-size: 3rem;
-  margin-bottom: 16px;
+  font-size: 3.5rem;
+  margin-bottom: 20px;
 }
 
 .trigger-card h3 {
-  margin: 0 0 12px 0;
-  font-size: 1.6rem;
+  margin: 0 0 16px 0;
+  font-size: 1.8rem !important;
+  font-weight: 700;
 }
 
 .trigger-card p {
-  margin: 0 0 24px 0;
+  margin: 0 0 28px 0;
   opacity: 0.9;
-  font-size: 1.1rem;
+  font-size: 1.2rem !important;
 }
 
 .start-vocabulary-btn {
   background: rgba(255, 255, 255, 0.2);
   color: white;
   border: none;
-  padding: 16px 32px;
+  padding: 18px 36px;
   border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 1.1rem;
-  min-height: 44px;
+  font-size: 1.2rem !important;
+  min-height: 52px;
 }
 
 .start-vocabulary-btn:hover {
@@ -528,34 +557,36 @@ export default {
 .vocabulary-list-view {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  width: 100%;
 }
 
 .vocabulary-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 16px;
+  padding-bottom: 20px;
   border-bottom: 2px solid #e2e8f0;
 }
 
 .vocabulary-header h3 {
   margin: 0;
   color: #1e293b;
-  font-size: 1.4rem;
+  font-size: 1.5rem !important;
+  font-weight: 700;
 }
 
 .review-btn {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   color: white;
   border: none;
-  padding: 10px 20px;
+  padding: 12px 24px;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 1rem;
-  min-height: 44px;
+  font-size: 1.1rem !important;
+  min-height: 48px;
 }
 
 .review-btn:hover {
@@ -566,15 +597,18 @@ export default {
 .vocabulary-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+  width: 100%;
 }
 
 .vocabulary-item {
   background: white;
-  padding: 20px;
+  padding: 24px;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
   transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .vocabulary-item.enhanced {
@@ -595,11 +629,11 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .vocab-item-header .vocab-term {
-  font-size: 1.3rem;
+  font-size: 1.4rem !important;
   font-weight: 700;
   color: #1e293b;
   margin: 0;
@@ -611,10 +645,10 @@ export default {
 .mini-pronunciation-btn {
   background: #f1f5f9;
   border: none;
-  padding: 4px 8px;
+  padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 1rem !important;
   transition: all 0.2s ease;
 }
 
@@ -625,36 +659,36 @@ export default {
 
 .learned-badge {
   color: #3b82f6;
-  font-size: 1.3rem;
+  font-size: 1.4rem !important;
 }
 
 .vocabulary-item .vocab-definition {
-  font-size: 1.1rem;
+  font-size: 1.2rem !important;
   color: #4b5563;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   line-height: 1.6;
 }
 
 .vocabulary-item .vocab-example {
-  font-size: 1rem;
+  font-size: 1.1rem !important;
   color: #6b7280;
   font-style: italic;
-  padding: 8px 0;
+  padding: 12px 0;
   border-top: 1px solid #e5e7eb;
-  margin-top: 8px;
+  margin-top: 12px;
 }
 
 .vocabulary-item .vocab-pronunciation {
-  font-size: 0.95rem;
+  font-size: 1rem !important;
   color: #9ca3af;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 .vocabulary-summary {
   display: flex;
   justify-content: center;
-  gap: 32px;
-  padding: 20px;
+  gap: 40px;
+  padding: 24px;
   background: rgba(59, 130, 246, 0.05);
   border-radius: 12px;
   border: 1px solid rgba(59, 130, 246, 0.1);
@@ -665,16 +699,17 @@ export default {
 }
 
 .summary-number {
-  font-size: 1.6rem;
+  font-size: 1.8rem !important;
   font-weight: 700;
   color: #3b82f6;
   display: block;
 }
 
 .summary-label {
-  font-size: 0.95rem;
+  font-size: 1rem !important;
   color: #64748b;
-  margin-top: 4px;
+  margin-top: 6px;
+  font-weight: 500;
 }
 
 /* Media Content */
@@ -683,114 +718,202 @@ export default {
   justify-content: center;
   align-items: center;
   flex: 1;
+  width: 100%;
 }
 
 .media-placeholder {
   background: #f8fafc;
-  padding: 40px;
+  padding: 48px;
   border-radius: 16px;
   border: 2px dashed #cbd5e1;
   text-align: center;
-  max-width: 400px;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
 }
 
 .media-icon {
-  font-size: 3rem;
-  margin-bottom: 16px;
+  font-size: 3.5rem;
+  margin-bottom: 20px;
 }
 
 .media-placeholder h4 {
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
   color: #1e293b;
-  font-size: 1.2rem;
+  font-size: 1.3rem !important;
+  font-weight: 600;
 }
 
 .media-placeholder p {
-  margin: 0 0 16px 0;
+  margin: 0 0 20px 0;
   color: #64748b;
-  font-size: 1rem;
+  font-size: 1.1rem !important;
 }
 
 .media-url {
-  font-size: 0.95rem;
+  font-size: 1rem !important;
   color: #9ca3af;
   font-family: monospace;
   background: white;
-  padding: 8px;
+  padding: 12px;
   border-radius: 4px;
 }
 
 /* Default Content */
 .default-content {
   line-height: 1.8;
+  width: 100%;
 }
 
 /* Content Navigation */
 .content-navigation {
   display: flex;
-  gap: 12px;
-  padding: 20px 24px;
+  gap: 16px;
+  padding: 24px 28px;
   border-top: 1px solid #e2e8f0;
   flex-shrink: 0;
+  background: white;
   flex-wrap: wrap;
+  box-sizing: border-box;
 }
 
-.nav-btn {
-  padding: 14px 24px;
+.content-nav-btn {
+  padding: 16px 28px;
   border: none;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   flex: 1;
-  min-width: 120px;
-  min-height: 48px;
-  font-size: 1rem;
+  min-width: 140px;
+  min-height: 52px;
+  font-size: 1.1rem !important;
 }
 
-.prev-btn {
+.content-prev-btn {
   background: #f1f5f9;
   color: #64748b;
 }
 
-.prev-btn:hover {
+.content-prev-btn:hover {
   background: #e2e8f0;
   transform: translateY(-1px);
 }
 
-.next-btn {
+.content-next-btn {
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
 }
 
-.next-btn:hover {
+.content-next-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
 }
 
+/* Custom scrollbar styling */
+.content-step-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.content-step-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.content-step-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.content-step-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
-  .content-panel {
-    padding: 0;
+  .content-step-header {
+    padding: 20px 24px;
   }
 
-  .step-header {
+  .content-step-content {
+    padding: 24px;
+  }
+
+  .content-step-title {
+    font-size: 1.3rem !important;
+    gap: 10px;
+  }
+
+  .content-step-number {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+
+  .clean-question {
+    font-size: 1.4rem !important;
+  }
+
+  .content-text {
+    font-size: 1.2rem !important;
+  }
+
+  .current-exercise-content,
+  .current-quiz-content {
+    padding: 2rem;
+  }
+
+  .content-navigation {
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px 24px;
+  }
+
+  .content-nav-btn {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .vocabulary-content.enhanced {
+    padding: 24px;
+  }
+
+  .trigger-card {
+    padding: 36px 28px;
+  }
+
+  .vocabulary-summary {
+    gap: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-step-header {
     padding: 16px 20px;
   }
 
-  .step-content {
+  .content-step-content {
     padding: 20px;
   }
 
-  .step-title {
-    font-size: 1.2rem;
-    gap: 8px;
+  .content-step-title {
+    font-size: 1.2rem !important;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
   }
 
-  .step-number {
+  .content-step-number {
     width: 32px;
     height: 32px;
     font-size: 0.9rem;
+  }
+
+  .clean-question {
+    font-size: 1.3rem !important;
+  }
+
+  .content-text {
+    font-size: 1.1rem !important;
   }
 
   .current-exercise-content,
@@ -798,119 +921,34 @@ export default {
     padding: 1.5rem;
   }
 
-  .clean-question {
-    font-size: 1.3rem;
-  }
-
-  .content-text {
-    font-size: 1.1rem;
-  }
-
-  .content-navigation {
-    flex-direction: column;
-    gap: 8px;
-    padding: 16px 20px;
-  }
-
-  .nav-btn {
-    width: 100%;
-    min-width: auto;
-  }
-
   .vocabulary-content.enhanced {
     padding: 20px;
   }
 
   .trigger-card {
-    padding: 32px 24px;
-  }
-
-  .vocabulary-summary {
-    gap: 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  .step-header {
-    padding: 12px 16px;
-  }
-
-  .step-content {
-    padding: 16px;
-  }
-
-  .step-title {
-    font-size: 1.1rem;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .step-number {
-    width: 28px;
-    height: 28px;
-    font-size: 0.8rem;
-  }
-
-  .current-exercise-content,
-  .current-quiz-content {
-    padding: 1rem;
-  }
-
-  .clean-question {
-    font-size: 1.2rem;
-  }
-
-  .content-text {
-    font-size: 1rem;
-  }
-
-  .vocabulary-content.enhanced {
-    padding: 16px;
-  }
-
-  .trigger-card {
-    padding: 24px 16px;
+    padding: 28px 20px;
   }
 
   .trigger-icon {
-    font-size: 2rem;
+    font-size: 2.5rem;
   }
 
   .vocabulary-summary {
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
   }
 
   .summary-number {
-    font-size: 1.4rem;
+    font-size: 1.6rem !important;
   }
 
   .content-navigation {
-    padding: 12px 16px;
+    padding: 16px 20px;
   }
 }
 
-/* Custom scrollbar styling */
-.step-content-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.step-content-container::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-
-.step-content-container::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.step-content-container::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
 /* Focus states for accessibility */
-.nav-btn:focus,
+.content-nav-btn:focus,
 .start-vocabulary-btn:focus,
 .review-btn:focus,
 .mini-pronunciation-btn:focus {
@@ -923,22 +961,22 @@ export default {
   .current-exercise-content,
   .current-quiz-content,
   .vocabulary-item {
-    border-width: 2px;
+    border-width: 3px;
   }
 
-  .step-number {
+  .content-step-number {
     border: 2px solid white;
   }
 }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .step-content {
+  .content-step-content {
     animation: none;
   }
 
   .vocabulary-item:hover,
-  .nav-btn:hover,
+  .content-nav-btn:hover,
   .start-vocabulary-btn:hover,
   .review-btn:hover {
     transform: none;
@@ -954,8 +992,22 @@ export default {
     display: none;
   }
 
-  .content-panel {
+  .content-panel-wrapper {
     box-shadow: none;
   }
+}
+
+/* Ensure no width constraints anywhere */
+* {
+  max-width: none !important;
+}
+
+.content-panel-wrapper,
+.content-step-container,
+.content-step-content,
+.text-content,
+.content-text {
+  width: 100% !important;
+  max-width: none !important;
 }
 </style>
