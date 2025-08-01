@@ -323,24 +323,11 @@ export default {
   margin: 0 !important;
   display: flex;
   flex-direction: column;
-  height: 100%; /* Use parent height */
-  min-height: 100vh; /* Fallback to viewport height */
+  height: 100%;
   width: 100%;
-  overflow: hidden !important; /* Keep this hidden on wrapper */
+  overflow: hidden !important;
   box-sizing: border-box;
   position: relative;
-}
-
-/* Override parent .content-panel styles */
-:deep(.content-panel) {
-  overflow: visible !important;
-  height: auto !important;
-  padding: 0 !important;
-}
-
-/* Alternative override - target parent directly */
-.content-panel-wrapper {
-  overflow: visible !important; /* Override parent's overflow: hidden */
 }
 
 .content-step-header {
@@ -400,22 +387,23 @@ export default {
   flex: 1;
   overflow-y: auto !important;
   overflow-x: hidden !important;
-  min-height: 0 !important; /* Important for flex child to scroll properly */
+  min-height: 0 !important;
   max-height: none !important;
+  height: auto !important; /* Remove any height constraints */
   width: 100%;
   box-sizing: border-box;
   position: relative;
-  /* Force scrolling behavior */
   -webkit-overflow-scrolling: touch;
-  /* Ensure this container can scroll even if parent has overflow: hidden */
-  contain: layout style paint;
 }
 
 .content-step-content {
   padding: 32px 28px;
+  padding-bottom: 40px; /* Extra padding at bottom to ensure full scroll */
   animation: contentFadeIn 0.3s ease-out;
   box-sizing: border-box;
   width: 100%;
+  min-height: auto !important; /* Remove height constraints */
+  height: auto !important;
 }
 
 @keyframes contentFadeIn {
@@ -429,9 +417,9 @@ export default {
   }
 }
 
-/* Make text bigger as requested */
+/* Make text smaller as requested */
 .clean-question {
-  font-size: 1.6rem !important;
+  font-size: 1.4rem !important;
   line-height: 1.6;
   color: #2c3e50;
   margin: 0;
@@ -498,20 +486,20 @@ export default {
   opacity: 0.8;
 }
 
-/* Text Content - bigger text, no width limits */
+/* Text Content - smaller text */
 .text-content {
   line-height: 1.8;
   width: 100%;
 }
 
 .content-text {
-  font-size: 1.3rem !important;
+  font-size: 1.1rem !important;
   color: #374151;
   margin: 0;
   line-height: 1.8;
   font-weight: 400;
   width: 100%;
-  max-width: none !important; /* Remove any width limits */
+  max-width: none !important;
   box-sizing: border-box;
 }
 
@@ -785,19 +773,25 @@ export default {
   width: 100%;
 }
 
-/* Content Navigation */
+/* Content Navigation - Force visibility */
 .content-navigation {
-  display: flex;
+  display: flex !important;
   gap: 16px;
   padding: 24px 28px;
   border-top: 1px solid #e2e8f0;
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
   background: white;
   flex-wrap: wrap;
   box-sizing: border-box;
+  position: sticky !important; /* Make it stick to bottom */
+  bottom: 0 !important;
+  z-index: 100 !important;
+  width: 100%;
+  margin-top: auto; /* Push to bottom */
 }
 
 .content-nav-btn {
+  display: block !important;
   padding: 16px 28px;
   border: none;
   border-radius: 8px;
@@ -808,21 +802,23 @@ export default {
   min-width: 140px;
   min-height: 52px;
   font-size: 1.1rem !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .content-prev-btn {
-  background: #f1f5f9;
-  color: #64748b;
+  background: #f1f5f9 !important;
+  color: #64748b !important;
 }
 
 .content-prev-btn:hover {
-  background: #e2e8f0;
+  background: #e2e8f0 !important;
   transform: translateY(-1px);
 }
 
 .content-next-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: white;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  color: white !important;
 }
 
 .content-next-btn:hover {
@@ -1025,11 +1021,7 @@ export default {
   }
 }
 
-/* Ensure no width constraints anywhere */
-* {
-  max-width: none !important;
-}
-
+/* Remove any height constraints that might prevent full scrolling */
 .content-panel-wrapper,
 .content-step-container,
 .content-step-content,
@@ -1037,15 +1029,20 @@ export default {
 .content-text {
   width: 100% !important;
   max-width: none !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
 }
 
-/* Override any parent styles that might interfere */
-.content-panel-wrapper {
-  overflow: visible !important;
-}
-
+/* Ensure full scrolling capability */
 .content-step-container {
   overflow-y: auto !important;
   overflow-x: hidden !important;
+}
+
+/* Make sure content can expand fully */
+.content-step-content {
+  height: auto !important;
+  min-height: auto !important;
 }
 </style>
