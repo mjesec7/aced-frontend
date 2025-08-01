@@ -335,7 +335,7 @@
     background: #ffffff;
     display: flex;
     flex-direction: column;
-    overflow: visible !important; /* This conflicts with the panel structure */
+    overflow: hidden; /* ✅ ENSURE: No overflow on container */
     position: relative;
     flex: 1; /* ✅ TAKE REMAINING SPACE */
     min-width: 200px; /* ✅ FURTHER REDUCED: Even less minimum to allow max content space */
