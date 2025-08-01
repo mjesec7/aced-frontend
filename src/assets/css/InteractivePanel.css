@@ -55,7 +55,7 @@
   }
   
   /* ================================
-     MAIN CONTENT - PERFECT SCROLLING
+     MAIN CONTENT - PERFECT SCROLLING FIXED
      ================================ */
   
   .exercise-body, .quiz-body {
@@ -69,15 +69,16 @@
   
   .exercise-content-scroll, .quiz-content-scroll {
     flex: 1;
-    padding: 32px 28px;
+    padding: 20px 28px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 16px;
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
-    padding-bottom: 40px;
+    padding-bottom: 24px;
     
+    /* ENHANCED SCROLLING */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
@@ -109,19 +110,22 @@
   }
   
   /* ================================
-     ACTION BUTTONS - CLEAN & COMPACT
+     ACTION BUTTONS - SMALLER GAPS
      ================================ */
   
   .exercise-actions, .quiz-actions {
     display: flex;
-    gap: 12px;
-    padding: 16px 28px;
+    gap: 8px;
+    padding: 12px 28px;
     border-top: 1px solid #e2e8f0;
     background: white;
     flex-shrink: 0;
     flex-wrap: wrap;
     box-sizing: border-box;
     z-index: 100;
+    min-height: 56px;
+    max-height: 56px;
+    height: 56px;
   }
   
   .hint-btn, .submit-btn, .next-btn {
@@ -191,20 +195,20 @@
   }
   
   /* ================================
-     EXERCISE TYPES - CLEAN CARDS
+     EXERCISE TYPES - TIGHTER GAPS
      ================================ */
   
   .exercise-type {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 14px;
     min-height: 0;
     position: relative;
     flex-shrink: 0;
   }
   
   /* ================================
-     QUESTION TEXT - MODERN CARD
+     QUESTION TEXT - SMALLER MARGINS
      ================================ */
   
   .question-text, .quiz-question {
@@ -212,8 +216,8 @@
     font-weight: 500;
     color: #374151;
     line-height: 1.6;
-    margin-bottom: 20px;
-    padding: 20px 24px;
+    margin-bottom: 14px;
+    padding: 16px 20px;
     background: #f8fafc;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
@@ -249,18 +253,19 @@
   }
   
   /* ================================
-     OPTIONS - CLEAN CARD DESIGN
+     OPTIONS - TIGHTER SPACING
      ================================ */
   
   .options-list, .quiz-options, .true-false-options {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    max-height: 400px;
+    gap: 8px;
+    max-height: 350px;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-right: 8px;
+    padding-right: 6px;
     
+    /* ENHANCED SCROLLING */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
@@ -336,15 +341,15 @@
   }
   
   /* ================================
-     FILL IN BLANKS - MODERN DESIGN
+     FILL IN BLANKS - TIGHTER SPACING
      ================================ */
   
   .fill-blank-template {
     background: #f8fafc;
     border: 2px dashed #cbd5e1;
     border-radius: 12px;
-    padding: 20px 24px;
-    margin: 16px 0;
+    padding: 16px 20px;
+    margin: 12px 0;
     font-size: 0.95rem;
     line-height: 1.6;
     color: #4b5563;
@@ -365,12 +370,13 @@
   .fill-blank-inputs {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    max-height: 350px;
+    gap: 12px;
+    max-height: 300px;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-right: 8px;
+    padding-right: 6px;
     
+    /* ENHANCED SCROLLING */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
@@ -430,30 +436,31 @@
   }
   
   /* ================================
-     MATCHING - CLEAN GRID LAYOUT
+     MATCHING - COMPACT SPACING
      ================================ */
   
   .matching-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    height: 400px;
-    min-height: 350px;
-    max-height: 500px;
+    gap: 16px;
+    height: 350px;
+    min-height: 300px;
+    max-height: 450px;
   }
   
   .matching-side {
     background: #f8fafc;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
-    padding: 16px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
     
+    /* ENHANCED SCROLLING */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
