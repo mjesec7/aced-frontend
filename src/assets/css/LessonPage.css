@@ -264,7 +264,6 @@
     position: relative;
     width: 75%; /* ✅ INCREASED: Even more space - 75% by default */
     min-width: 300px; /* ✅ REDUCED: Lower minimum for maximum flexibility */
-    max-width: none; /* ✅ REMOVED: No maximum width limit - can expand fully */
     border-right: 1px solid #e5e7eb;
     resize: horizontal;
     overflow-x: hidden;
@@ -272,11 +271,7 @@
     margin: 0; /* ✅ ENSURE: No margins */
   }
   
-  /* ✅ REMOVED ALL SCROLLBARS FROM CONTENT PANEL TO MAXIMIZE SPACE */
-  
-  /* ================================
-     RESIZE DIVIDER - LIKE CLAUDE'S DIVIDER
-     ================================ */
+
   
   .resize-divider {
     width: 8px;

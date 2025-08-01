@@ -372,7 +372,7 @@ export default {
 <style scoped>
 .content-panel {
   background: white;
-  padding: 32px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #e2e8f0;
