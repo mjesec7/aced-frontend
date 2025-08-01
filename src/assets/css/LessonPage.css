@@ -422,21 +422,7 @@
     animation: fadeInOut 2s ease-in-out;
   }
   
-  .content-panel[data-at-max]::before {
-    content: '→ Max width reached';
-    position: absolute;
-    top: 50%;
-    right: 20px;
-    transform: translateY(-50%);
-    background: rgba(59, 130, 246, 0.9);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    z-index: 100;
-    animation: fadeInOut 2s ease-in-out;
-  }
+  
   
   @keyframes fadeInOut {
     0%, 100% { opacity: 0; }
