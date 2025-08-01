@@ -1,789 +1,16 @@
 /* ================================
-   NO CONTENT STATE
+   INTERACTIVE PANEL - ENHANCED SCROLLING & COMPACT DESIGN
    ================================ */
 
-   .no-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    color: #6b7280;
-    padding: 40px 20px;
-    height: 100%; /* ✅ TAKE: Full available height */
-  }
-  
-  .no-content-icon {
-    font-size: 3rem;
-    margin-bottom: 16px;
-    opacity: 0.6;
-  }
-  
-  .no-content h4 {
-    font-size: 1.2rem;
-    margin-bottom: 8px;
-    color: #374151;
-  }
-  
-  .no-content p {
-    font-size: 0.9rem;
-    line-height: 1.4;
-    max-width: 300px;
-  }
-  
-  /* ================================
-     COMPREHENSIVE RESPONSIVE DESIGN - MOBILE OPTIMIZED
-     ================================ */
-  
-  /* ✅ Large Desktop (1200px+) - Spacious and comfortable */
-  @media (min-width: 1200px) {
-    .interactive-panel {
-      border-radius: 24px;
-    }
-    
-    .exercise-header, .quiz-header {
-      padding: 20px 24px;
-      border-radius: 24px 24px 0 0;
-    }
-    
-    .exercise-content-scroll, .quiz-content-scroll {
-      padding: 20px 24px;
-      gap: 20px;
-    }
-    
-    .question-text, .quiz-question {
-      font-size: 1.2rem;
-      padding: 20px;
-    }
-    
-    .matching-container,
-    .drag-drop-container {
-      height: 500px;
-      max-height: 600px;
-    }
-    
-    .exercise-actions, .quiz-actions {
-      padding: 20px 24px;
-    }
-  }
-  
-  /* ✅ Standard Desktop (992px - 1199px) - Default comfortable size */
-  @media (min-width: 992px) and (max-width: 1199px) {
-    .interactive-panel {
-      border-radius: 20px;
-    }
-    
-    .matching-container,
-    .drag-drop-container {
-      height: 450px;
-      max-height: 550px;
-    }
-  }
-  
-  /* ✅ Tablet Landscape (768px - 991px) - Optimized for landscape tablets */
-  @media (min-width: 768px) and (max-width: 991px) {
-    .interactive-panel {
-      border-radius: 18px;
-    }
-    
-    .exercise-header, .quiz-header {
-      padding: 16px 20px;
-      min-height: 60px;
-      max-height: 60px;
-    }
-    
-    .exercise-header h3, .quiz-header h3 {
-      font-size: 1.1rem;
-      max-width: 65%;
-    }
-    
-    .exercise-content-scroll, .quiz-content-scroll {
-      padding: 16px 20px;
-      gap: 16px;
-    }
-    
-    .question-text, .quiz-question {
-      font-size: 1.05rem;
-      padding: 16px;
-    }
-    
-    .matching-container,
-    .drag-drop-container {
-      height: 350px;
-      max-height: 450px;
-      gap: 12px;
-    }
-    
-    .options-list, .quiz-options {
-      max-height: 300px;
-    }
-    
-    .fill-blank-inputs {
-      max-height: 250px;
-    }
-    
-    .ordering-container {
-      max-height: 300px;
-    }
-    
-    .exercise-actions, .quiz-actions {
-      padding: 16px 20px;
-      gap: 10px;
-    }
-    
-    .hint-btn, .submit-btn, .next-btn {
-      padding: 10px 16px;
-      font-size: 0.85rem;
-      min-width: 90px;
-    }
-  }
-  
-  /* ✅ Tablet Portrait (600px - 767px) - Comfortable for portrait tablets */
-  @media (min-width: 600px) and (max-width: 767px) {
-    .interactive-panel {
-      border-radius: 16px;
-    }
-    
-    .exercise-header, .quiz-header {
-      padding: 14px 18px;
-      min-height: 56px;
-      max-height: 56px;
-    }
-    
-    .exercise-header h3, .quiz-header h3 {
-      font-size: 1rem;
-      max-width: 60%;
-    }
-    
-    .exercise-counter, .quiz-counter {
-      font-size: 0.8rem;
-      padding: 5px 10px;
-    }
-    
-    .exercise-content-scroll, .quiz-content-scroll {
-      padding: 14px 18px;
-      gap: 14px;
-    }
-    
-    .question-text, .quiz-question {
-      font-size: 1rem;
-      padding: 14px;
-      margin-bottom: 14px;
-    }
-    
-    .matching-container,
-    .drag-drop-container {
-      grid-template-columns: 1fr;
-      height: 400px;
-      max-height: 500px;
-      gap: 14px;
-    }
-    
-    .true-false-options {
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-    
-    .options-list, .quiz-options {
-      max-height: 250px;
-    }
-    
-    .fill-blank-inputs {
-      max-height: 200px;
-    }
-    
-    .ordering-container {
-      max-height: 250px;
-    }
-    
-    .option-item, .quiz-option, .tf-option {
-      padding: 12px 14px;
-      min-height: 44px;
-    }
-    
-    .exercise-actions, .quiz-actions {
-      padding: 14px 18px;
-      gap: 8px;
-      flex-direction: row;
-      flex-wrap: wrap;
-      min-height: 65px;
-      max-height: auto;
-    }
-    
-    .hint-btn, .submit-btn, .next-btn {
-      padding: 10px 14px;
-      font-size: 0.85rem;
-      min-width: 85px;
-      flex: 1;
-      max-width: 150px;
-    }
-  }
-  
-  /* ✅ Large Mobile (480px - 599px) - Optimized for large phones */
-  @media (min-width: 480px) and (max-width: 599px) {
-    .interactive-panel {
-      border-radius: 14px;
-    }
-    
-    .exercise-header, .quiz-header {
-      padding: 12px 16px;
-      min-height: 52px;
-      max-height: 52px;
-    }
-    
-    .exercise-header h3, .quiz-header h3 {
-      font-size: 0.95rem;
-      max-width: 55%;
-    }
-    
-    .exercise-counter, .quiz-counter {
-      font-size: 0.75rem;
-      padding: 4px 8px;
-    }
-    
-    .exercise-content-scroll, .quiz-content-scroll {
-      padding: 12px 16px;
-      gap: 12px;
-    }
-    
-    .question-text, .quiz-question {
-      font-size: 0.95rem;
-      padding: 12px;
-      margin-bottom: 12px;
-      line-height: 1.5;
-    }
-    
-    .matching-container,
-    .drag-drop-container {
-      grid-template-columns: 1fr;
-      height: 350px;
-      max-height: 450px;
-      gap: 12px;
-    }
-    
-    .true-false-options {
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
-    
-    .options-list, .quiz-options {
-      max-height: 200px;
-      gap: 10px;
-    }
-    
-    .fill-blank-inputs {
-      max-height: 180px;
-      gap: 12px;
-    }
-    
-    .ordering-container {
-      max-height: 200px;
-      gap: 6px;
-    }
-    
-    .option-item, .quiz-option, .tf-option {
-      padding: 10px 12px;
-      min-height: 40px;
-    }
-    
-    .option-text {
-      font-size: 0.9rem;
-    }
-    
-    .matching-item {
-      padding: 10px;
-      min-height: 40px;
-      font-size: 0.85rem;
-    }
-    
-    .ordering-item {
-      padding: 10px;
-      min-height: 46px;
-    }
-    
-    .item-text {
-      font-size: 0.9rem;
-    }
-    
-    .drag-item, .dropped-item {
-      padding: 10px;
-      min-height: 36px;
-      font-size: 0.85rem;
-    }
-    
-    .exercise-actions, .quiz-actions {
-      padding: 12px 16px;
-      gap: 8px;
-      flex-direction: column;
-      min-height: 60px;
-      max-height: auto;
-    }
-    
-    .hint-btn, .submit-btn, .next-btn {
-      padding: 10px 14px;
-      font-size: 0.8rem;
-      min-width: 80px;
-      width: 100%;
-      min-height: 40px;
-    }
-  }
-  
-  /* ✅ Standard Mobile (375px - 479px) - Optimized for most phones */
-  @media (min-width: 375px) and (max-width: 479px) {
-    .interactive-panel {
-      border-radius: 12px;
-    }
-    
-    .exercise-header, .quiz-header {
-      padding: 10px 14px;
-      min-height: 48px;
-      max-height: 48px;
-    }
-    
-    .exercise-header h3, .quiz-header h3 {
-      font-size: 0.9rem;
-      max-width: 50%;
-    }
-    
-    .exercise-counter, .quiz-counter {
-      font-size: 0.7rem;
-      padding: 3px 7px;
-    }
-    
-    .exercise-content-scroll, .quiz-content-scroll {
-      padding: 10px 14px;
-      gap: 10px;
-    }
-    
-    .question-text, .quiz-question {
-      font-size: 0.9rem;
-      padding: 10px;
-      margin-bottom: 10px;
-      line-height: 1.4;
-    }
-    
-    .matching-container,
-    .drag-drop-container {
-      grid-template-columns: 1fr;
-      height: 300px;
-      max-height: 400px;
-      gap: 10px;
-    }
-    
-    .true-false-options {
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
-    
-    .options-list, .quiz-options {
-      max-height: 180px;
-      gap: 8px;
-    }
-    
-    .fill-blank-inputs {
-      max-height: 150px;
-      gap: 10px;
-    }
-    
-    .ordering-container {
-      max-height: 180px;
-      gap: 6px;
-    }
-    
-    .option-item, .quiz-option, .tf-option {
-      padding: 9px 11px;
-      min-height: 38px;
-    }
-    
-    .option-text {
-      font-size: 0.85rem;
-    }
-    
-    .matching-item {
-      padding: 8px;
-      min-height: 36px;
-      font-size: 0.8rem;
-    }
-    
-    .ordering-item {
-      padding: 8px;
-      min-height: 42px;
-    }
-    
-    .item-text {
-      font-size: 0.85rem;
-    }
-    
-    .item-number {
-      width: 24px;
-      height: 24px;
-      font-size: 0.75rem;
-    }
-    
-    .drag-item, .dropped-item {
-      padding: 8px;
-      min-height: 32px;
-      font-size: 0.8rem;
-    }
-    
-    .exercise-actions, .quiz-actions {
-      padding: 10px 14px;
-      gap: 6px;
-      flex-direction: column;
-      min-height: 55px;
-      max-height: auto;
-    }
-    
-    .hint-btn, .submit-btn, .next-btn {
-      padding: 9px 12px;
-      font-size: 0.75rem;
-      min-width: 75px;
-      width: 100%;
-      min-height: 36px;
-    }
-  }
-  
-  /* ✅ Small Mobile (320px - 374px) - Optimized for smaller phones */
-  @media (max-width: 374px) {
-    .interactive-panel {
-      border-radius: 10px;
-    }
-    
-    .exercise-header, .quiz-header {
-      padding: 8px 12px;
-      min-height: 44px;
-      max-height: 44px;
-    }
-    
-    .exercise-header h3, .quiz-header h3 {
-      font-size: 0.85rem;
-      max-width: 45%;
-    }
-    
-    .exercise-counter, .quiz-counter {
-      font-size: 0.65rem;
-      padding: 2px 6px;
-    }
-    
-    .exercise-content-scroll, .quiz-content-scroll {
-      padding: 8px 12px;
-      gap: 8px;
-    }
-    
-    .question-text, .quiz-question {
-      font-size: 0.85rem;
-      padding: 8px;
-      margin-bottom: 8px;
-      line-height: 1.4;
-    }
-    
-    .matching-container,
-    .drag-drop-container {
-      grid-template-columns: 1fr;
-      height: 250px;
-      max-height: 350px;
-      gap: 8px;
-    }
-    
-    .true-false-options {
-      grid-template-columns: 1fr;
-      gap: 6px;
-    }
-    
-    .options-list, .quiz-options {
-      max-height: 150px;
-      gap: 6px;
-    }
-    
-    .fill-blank-inputs {
-      max-height: 120px;
-      gap: 8px;
-    }
-    
-    .ordering-container {
-      max-height: 150px;
-      gap: 4px;
-    }
-    
-    .option-item, .quiz-option, .tf-option {
-      padding: 8px 10px;
-      min-height: 36px;
-    }
-    
-    .option-text {
-      font-size: 0.8rem;
-      line-height: 1.3;
-    }
-    
-    .matching-item {
-      padding: 6px;
-      min-height: 32px;
-      font-size: 0.75rem;
-    }
-    
-    .ordering-item {
-      padding: 6px;
-      min-height: 38px;
-    }
-    
-    .item-text {
-      font-size: 0.8rem;
-    }
-    
-    .item-number {
-      width: 22px;
-      height: 22px;
-      font-size: 0.7rem;
-    }
-    
-    .drag-item, .dropped-item {
-      padding: 6px;
-      min-height: 30px;
-      font-size: 0.75rem;
-    }
-    
-    .exercise-actions, .quiz-actions {
-      padding: 8px 12px;
-      gap: 6px;
-      flex-direction: column;
-      min-height: 50px;
-      max-height: auto;
-    }
-    
-    .hint-btn, .submit-btn, .next-btn {
-      padding: 8px 10px;
-      font-size: 0.7rem;
-      min-width: 70px;
-      width: 100%;
-      min-height: 34px;
-    }
-    
-    .answer-textarea {
-      min-height: 80px;
-      max-height: 200px;
-      font-size: 0.9rem;
-    }
-    
-    .blank-input {
-      padding: 10px 12px;
-      font-size: 0.9rem;
-    }
-  }
-  
-  /* ================================
-     LANDSCAPE ORIENTATION OPTIMIZATIONS
-     ================================ */
-  
-  @media (orientation: landscape) and (max-height: 600px) {
-    .exercise-header, .quiz-header {
-      min-height: 40px;
-      max-height: 40px;
-      padding: 8px 16px;
-    }
-    
-    .exercise-header h3, .quiz-header h3 {
-      font-size: 0.9rem;
-    }
-    
-    .exercise-counter, .quiz-counter {
-      font-size: 0.7rem;
-      padding: 3px 8px;
-    }
-    
-    .exercise-content-scroll, .quiz-content-scroll {
-      padding: 10px 16px;
-      gap: 8px;
-    }
-    
-    .question-text, .quiz-question {
-      font-size: 0.9rem;
-      padding: 10px;
-      margin-bottom: 8px;
-    }
-    
-    .matching-container,
-    .drag-drop-container {
-      height: 200px;
-      max-height: 250px;
-    }
-    
-    .options-list, .quiz-options {
-      max-height: 150px;
-    }
-    
-    .fill-blank-inputs {
-      max-height: 100px;
-    }
-    
-    .ordering-container {
-      max-height: 150px;
-    }
-    
-    .exercise-actions, .quiz-actions {
-      min-height: 45px;
-      max-height: 45px;
-      padding: 8px 16px;
-      flex-direction: row;
-      gap: 8px;
-    }
-    
-    .hint-btn, .submit-btn, .next-btn {
-      padding: 6px 12px;
-      font-size: 0.75rem;
-      min-height: 30px;
-      flex: 1;
-    }
-  }
-  
-  /* ================================
-     ACCESSIBILITY & USABILITY
-     ================================ */
-  
-  /* ✅ Focus states for better accessibility */
-  .hint-btn:focus,
-  .submit-btn:focus,
-  .next-btn:focus,
-  .option-item:focus,
-  .quiz-option:focus,
-  .tf-option:focus,
-  .matching-item:focus,
-  .ordering-item:focus,
-  .drag-item:focus,
-  .blank-input:focus,
-  .answer-textarea:focus {
-    outline: 3px solid #3b82f6;
-    outline-offset: 2px;
-  }
-  
-  /* ✅ High contrast mode support */
-  @media (prefers-contrast: high) {
-    .interactive-panel,
-    .option-item,
-    .quiz-option,
-    .tf-option,
-    .matching-item,
-    .ordering-item,
-    .drag-item {
-      border-width: 3px;
-    }
-    
-    .question-text, .quiz-question {
-      border-left-width: 6px;
-    }
-  }
-  
-  /* ✅ Reduced motion support */
-  @media (prefers-reduced-motion: reduce) {
-    .exercise-content-scroll,
-    .quiz-content-scroll,
-    .options-list,
-    .quiz-options,
-    .fill-blank-inputs,
-    .matching-side,
-    .ordering-container,
-    .drag-items,
-    .drop-zones,
-    .zone-items {
-      scroll-behavior: auto;
-    }
-    
-    .option-item:hover,
-    .quiz-option:hover,
-    .tf-option:hover,
-    .matching-item:hover,
-    .ordering-item:hover,
-    .drag-item:hover,
-    .hint-btn:hover,
-    .submit-btn:hover,
-    .next-btn:hover {
-      transform: none;
-    }
-    
-    .ordering-item.dragging,
-    .drag-item.dragging {
-      transform: none;
-    }
-  }
-  
-  /* ✅ Touch-friendly improvements */
-  @media (pointer: coarse) {
-    .option-item, .quiz-option, .tf-option {
-      min-height: 48px; /* ✅ Minimum touch target size */
-    }
-    
-    .matching-item {
-      min-height: 44px;
-    }
-    
-    .ordering-item {
-      min-height: 48px;
-    }
-    
-    .drag-item, .dropped-item {
-      min-height: 44px;
-    }
-    
-    .hint-btn, .submit-btn, .next-btn {
-      min-height: 44px; /* ✅ Minimum touch target size */
-    }
-    
-    .move-btn {
-      width: 32px;
-      height: 28px; /* ✅ Larger touch targets */
-    }
-    
-    .remove-pair,
-    .remove-dropped {
-      width: 28px;
-      height: 28px; /* ✅ Larger touch targets */
-    }
-  }
-  
-  /* ✅ Print styles */
-  @media print {
-    .exercise-actions,
-    .quiz-actions,
-    .hint-btn,
-    .submit-btn,
-    .next-btn {
-      display: none;
-    }
-    
-    .interactive-panel {
-      border: 1px solid #000;
-      box-shadow: none;
-      overflow: visible;
-      height: auto;
-      max-height: none;
-    }
-    
-    .exercise-content-scroll,
-    .quiz-content-scroll {
-      overflow: visible;
-      max-height: none;
-    }
-    
-    .options-list, .quiz-options,
-    .fill-blank-inputs,
-    .matching-side,
-    .ordering-container,
-    .drag-items,
-    .drop-zones {
-      overflow: visible;
-      max-height: none;
-    }
-  }/* ✅ INTERACTIVE PANEL - PERFECT INTERNAL SCROLLING & MAXIMUM SPACE USAGE */
-  
-  .interactive-panel {
+   .interactive-panel {
     background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    border-radius: 20px;
+    border-radius: 16px;
     display: flex;
     flex-direction: column;
-    height: 100vh; /* ✅ CRITICAL: Take full viewport height */
-    max-height: 100vh; /* ✅ CRITICAL: Never exceed viewport */
-    min-height: 100vh; /* ✅ CRITICAL: Always use full height */
-    overflow: hidden; /* ✅ CRITICAL: No overflow on main container */
+    height: 100vh;
+    max-height: 100vh;
+    min-height: 100vh;
+    overflow: hidden;
     box-shadow: 
       0 4px 20px rgba(0, 0, 0, 0.08),
       0 1px 3px rgba(0, 0, 0, 0.05);
@@ -792,28 +19,28 @@
   }
   
   /* ================================
-     HEADER - FIXED HEIGHT, NEVER SCROLLS
+     HEADER - FIXED HEIGHT, COMPACT
      ================================ */
   
   .exercise-header, .quiz-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 16px 20px;
-    border-radius: 20px 20px 0 0;
+    padding: 12px 16px;
+    border-radius: 16px 16px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-shrink: 0; /* ✅ CRITICAL: Never shrink header */
+    flex-shrink: 0;
     box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
-    min-height: 60px;
-    max-height: 60px; /* ✅ FIXED: Constrain header height */
-    height: 60px; /* ✅ EXPLICIT: Fixed height */
-    z-index: 10; /* ✅ Ensure header stays on top */
+    min-height: 48px;
+    max-height: 48px;
+    height: 48px;
+    z-index: 10;
   }
   
   .exercise-header h3, .quiz-header h3 {
-    font-size: 1.2rem;
-    font-weight: 700;
+    font-size: 1rem;
+    font-weight: 600;
     margin: 0;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     white-space: nowrap;
@@ -824,10 +51,10 @@
   
   .exercise-counter, .quiz-counter {
     background: rgba(255, 255, 255, 0.2);
-    padding: 6px 12px;
-    border-radius: 16px;
+    padding: 4px 10px;
+    border-radius: 12px;
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     white-space: nowrap;
@@ -835,52 +62,51 @@
   }
   
   /* ================================
-     MAIN CONTENT - SCROLLABLE MIDDLE SECTION
+     MAIN CONTENT - PERFECT SCROLLING
      ================================ */
   
   .exercise-body, .quiz-body {
     display: flex;
     flex-direction: column;
-    flex: 1; /* ✅ CRITICAL: Take remaining space between header and footer */
-    min-height: 0; /* ✅ CRITICAL: Allow shrinking */
-    overflow: hidden; /* ✅ CRITICAL: No overflow on body */
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
     position: relative;
   }
   
-  /* ✅ CRITICAL: SCROLLABLE CONTENT AREA */
   .exercise-content-scroll, .quiz-content-scroll {
-    flex: 1; /* ✅ CRITICAL: Take all available space */
-    padding: 16px 20px;
+    flex: 1;
+    padding: 12px 16px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    overflow-y: auto; /* ✅ CRITICAL: Enable vertical scrolling */
-    overflow-x: hidden; /* ✅ CRITICAL: Prevent horizontal scrolling */
-    min-height: 0; /* ✅ CRITICAL: Allow shrinking */
+    gap: 12px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
     
-    /* ✅ ENHANCED: Smooth scrolling */
+    /* Enhanced scrolling */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
   }
   
-  /* ✅ CRITICAL: Scrollbar styling for content areas */
+  /* Modern scrollbar styling */
   .exercise-content-scroll::-webkit-scrollbar,
   .quiz-content-scroll::-webkit-scrollbar {
-    width: 8px;
+    width: 6px;
   }
   
   .exercise-content-scroll::-webkit-scrollbar-track,
   .quiz-content-scroll::-webkit-scrollbar-track {
     background: rgba(0, 0, 0, 0.05);
-    border-radius: 4px;
+    border-radius: 3px;
   }
   
   .exercise-content-scroll::-webkit-scrollbar-thumb,
   .quiz-content-scroll::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
+    border-radius: 3px;
     transition: background 0.2s ease;
   }
   
@@ -890,40 +116,40 @@
   }
   
   /* ================================
-     ACTION BUTTONS - FIXED AT BOTTOM, NEVER SCROLL
+     ACTION BUTTONS - FIXED AT BOTTOM
      ================================ */
   
   .exercise-actions, .quiz-actions {
-    padding: 16px 20px;
+    padding: 12px 16px;
     border-top: 1px solid #e2e8f0;
     background: #f8fafc;
-    border-radius: 0 0 20px 20px;
+    border-radius: 0 0 16px 16px;
     display: flex;
-    gap: 12px;
+    gap: 8px;
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
-    flex-shrink: 0; /* ✅ CRITICAL: Never shrink action buttons */
-    min-height: 70px;
-    max-height: 70px; /* ✅ FIXED: Constrain action area height */
-    height: 70px; /* ✅ EXPLICIT: Fixed height */
-    z-index: 10; /* ✅ Ensure buttons stay on top */
+    flex-shrink: 0;
+    min-height: 56px;
+    max-height: 56px;
+    height: 56px;
+    z-index: 10;
   }
   
   .hint-btn, .submit-btn, .next-btn {
-    padding: 12px 20px;
+    padding: 8px 16px;
     border: none;
-    border-radius: 12px;
-    font-size: 0.9rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    min-height: 42px;
-    min-width: 100px;
+    gap: 4px;
+    min-height: 36px;
+    min-width: 80px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     color: white;
     text-decoration: none;
@@ -969,57 +195,52 @@
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   }
   
-  .second-chance-icon,
-  .next-icon {
-    font-size: 0.8rem;
-  }
-  
   /* ================================
-     EXERCISE TYPES - ALL SCROLLABLE WITHIN CONTENT AREA
+     EXERCISE TYPES - COMPACT DESIGN
      ================================ */
   
   .exercise-type {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    min-height: 0; /* ✅ CRITICAL: Allow shrinking */
+    gap: 12px;
+    min-height: 0;
     position: relative;
-    flex-shrink: 0; /* ✅ PREVENT: Individual exercises from shrinking */
+    flex-shrink: 0;
   }
   
   /* ================================
-     QUESTION TEXT - RESPONSIVE
+     QUESTION TEXT - SMALLER FONT
      ================================ */
   
   .question-text, .quiz-question {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     font-weight: 600;
     color: #1e293b;
-    line-height: 1.6;
-    margin-bottom: 16px;
-    padding: 16px;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    padding: 12px;
     background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-    border-radius: 12px;
-    border-left: 4px solid #667eea;
+    border-radius: 8px;
+    border-left: 3px solid #667eea;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    flex-shrink: 0; /* ✅ Question never shrinks */
+    flex-shrink: 0;
     word-wrap: break-word;
     hyphens: auto;
   }
   
   /* ================================
-     SHORT ANSWER - RESPONSIVE
+     SHORT ANSWER - COMPACT
      ================================ */
   
   .answer-textarea {
     width: 100%;
-    min-height: 120px;
-    max-height: 400px;
-    padding: 14px;
+    min-height: 80px;
+    max-height: 200px;
+    padding: 10px;
     border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    font-size: 1rem;
-    line-height: 1.6;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.5;
     resize: vertical;
     background: #ffffff;
     transition: all 0.3s ease;
@@ -1037,19 +258,18 @@
   }
   
   /* ================================
-     OPTIONS - SCROLLING FOR MANY OPTIONS
+     OPTIONS - ENHANCED SCROLLING
      ================================ */
   
   .options-list, .quiz-options, .true-false-options {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    max-height: 400px; /* ✅ REASONABLE: Max height before scrolling */
+    gap: 8px;
+    max-height: 300px;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-right: 4px; /* Space for scrollbar */
+    padding-right: 4px;
     
-    /* ✅ Smooth scrolling for options */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
@@ -1058,7 +278,7 @@
   
   .options-list::-webkit-scrollbar,
   .quiz-options::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
   }
   
   .options-list::-webkit-scrollbar-track,
@@ -1069,7 +289,7 @@
   .options-list::-webkit-scrollbar-thumb,
   .quiz-options::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
+    border-radius: 2px;
     transition: background 0.2s ease;
   }
   
@@ -1081,18 +301,18 @@
   .option-item, .quiz-option, .tf-option {
     background: #ffffff;
     border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 14px 16px;
+    border-radius: 8px;
+    padding: 10px 12px;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 12px;
-    min-height: 48px;
+    gap: 8px;
+    min-height: 40px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     position: relative;
     overflow: hidden;
-    flex-shrink: 0; /* ✅ Don't shrink individual options */
+    flex-shrink: 0;
     word-wrap: break-word;
   }
   
@@ -1133,9 +353,9 @@
   
   .option-text {
     flex: 1;
-    font-size: 0.95rem;
+    font-size: 0.8rem;
     font-weight: 500;
-    line-height: 1.5;
+    line-height: 1.4;
     z-index: 1;
     position: relative;
     word-wrap: break-word;
@@ -1144,24 +364,24 @@
   
   .option-radio {
     flex-shrink: 0;
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     z-index: 1;
     position: relative;
   }
   
   /* ================================
-     FILL IN BLANKS - SCROLLABLE INPUTS
+     FILL IN BLANKS - COMPACT
      ================================ */
   
   .fill-blank-template {
     background: #f8fafc;
     border: 2px dashed #cbd5e1;
-    border-radius: 12px;
-    padding: 16px;
-    margin: 12px 0;
-    font-size: 1rem;
-    line-height: 1.6;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 8px 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
     color: #475569;
     flex-shrink: 0;
     word-wrap: break-word;
@@ -1170,9 +390,9 @@
   .blank-indicator {
     background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
     color: white;
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-size: 0.8rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
     font-weight: 600;
     margin: 0 2px;
   }
@@ -1180,13 +400,12 @@
   .fill-blank-inputs {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    max-height: 300px; /* ✅ REASONABLE: Max height before scrolling */
+    gap: 8px;
+    max-height: 200px;
     overflow-y: auto;
     overflow-x: hidden;
     padding-right: 4px;
     
-    /* ✅ Smooth scrolling for inputs */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
@@ -1194,7 +413,7 @@
   }
   
   .fill-blank-inputs::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
   }
   
   .fill-blank-inputs::-webkit-scrollbar-track {
@@ -1203,27 +422,27 @@
   
   .fill-blank-inputs::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
+    border-radius: 2px;
   }
   
   .blank-input-group {
-    flex-shrink: 0; /* ✅ Don't shrink individual inputs */
+    flex-shrink: 0;
   }
   
   .blank-label {
     display: block;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     font-weight: 600;
     color: #374151;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
   }
   
   .blank-input {
     width: 100%;
-    padding: 12px 14px;
+    padding: 8px 10px;
     border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 0.95rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
     background: #ffffff;
     transition: all 0.3s ease;
     box-sizing: border-box;
@@ -1237,38 +456,37 @@
   }
   
   .input-preview {
-    margin-top: 4px;
-    font-size: 0.8rem;
+    margin-top: 2px;
+    font-size: 0.7rem;
     color: #6b7280;
     font-style: italic;
   }
   
   /* ================================
-     MATCHING - RESPONSIVE GRID WITH SCROLLING
+     MATCHING - ENHANCED SCROLLING
      ================================ */
   
   .matching-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    height: 400px; /* ✅ REASONABLE: Height for matching */
-    min-height: 300px;
-    max-height: 500px;
+    gap: 12px;
+    height: 300px;
+    min-height: 250px;
+    max-height: 400px;
   }
   
   .matching-side {
     background: #f8fafc;
     border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 12px;
+    border-radius: 8px;
+    padding: 8px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    overflow-y: auto; /* ✅ CRITICAL: Enable scrolling for matching items */
+    gap: 6px;
+    overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
     
-    /* ✅ Smooth scrolling for matching sides */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
@@ -1276,7 +494,7 @@
   }
   
   .matching-side::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
   }
   
   .matching-side::-webkit-scrollbar-track {
@@ -1285,39 +503,39 @@
   
   .matching-side::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
+    border-radius: 2px;
   }
   
   .matching-side h4 {
     color: #374151;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     font-weight: 600;
     text-align: center;
-    margin: 0 0 8px 0;
-    padding-bottom: 8px;
+    margin: 0 0 6px 0;
+    padding-bottom: 6px;
     border-bottom: 2px solid #e2e8f0;
-    flex-shrink: 0; /* ✅ Headers never shrink */
+    flex-shrink: 0;
   }
   
   .matching-item {
     background: #ffffff;
     border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px;
+    border-radius: 6px;
+    padding: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: 500;
     text-align: center;
     position: relative;
-    min-height: 44px;
+    min-height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0; /* ✅ Items never shrink */
-    font-size: 0.9rem;
+    flex-shrink: 0;
+    font-size: 0.75rem;
     word-wrap: break-word;
     hyphens: auto;
-    line-height: 1.4;
+    line-height: 1.3;
   }
   
   .matching-item:hover:not(.disabled) {
@@ -1339,20 +557,69 @@
     color: #10b981;
   }
   
+  .matching-pairs {
+    margin-top: 12px;
+    padding: 8px;
+    background: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .matching-pairs h4 {
+    font-size: 0.8rem;
+    color: #374151;
+    margin: 0 0 6px 0;
+  }
+  
+  .pair-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 6px;
+    margin: 2px 0;
+    background: white;
+    border-radius: 4px;
+    font-size: 0.75rem;
+  }
+  
+  .remove-pair {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .matching-instructions {
+    margin-top: 8px;
+    padding: 8px;
+    background: rgba(59, 130, 246, 0.05);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 6px;
+    font-size: 0.7rem;
+    color: #4b5563;
+    line-height: 1.3;
+  }
+  
   /* ================================
-     ORDERING - SCROLLABLE WITH BETTER UX
+     ORDERING - ENHANCED SCROLLING
      ================================ */
   
   .ordering-container {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    max-height: 400px; /* ✅ REASONABLE: Max height before scrolling */
+    gap: 6px;
+    max-height: 300px;
     overflow-y: auto;
     overflow-x: hidden;
     padding-right: 4px;
     
-    /* ✅ Smooth scrolling for ordering */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
@@ -1360,7 +627,7 @@
   }
   
   .ordering-container::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
   }
   
   .ordering-container::-webkit-scrollbar-track {
@@ -1369,31 +636,31 @@
   
   .ordering-container::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
+    border-radius: 2px;
   }
   
   .ordering-instructions {
     background: rgba(59, 130, 246, 0.05);
     border: 1px solid rgba(59, 130, 246, 0.2);
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 12px;
-    font-size: 0.85rem;
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 8px;
+    font-size: 0.7rem;
     color: #4b5563;
     flex-shrink: 0;
-    line-height: 1.4;
+    line-height: 1.3;
   }
   
   .ordering-item {
     background: #ffffff;
     border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px;
+    border-radius: 6px;
+    padding: 8px;
     cursor: move;
     transition: all 0.3s ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    flex-shrink: 0; /* ✅ Items never shrink */
-    min-height: 50px;
+    flex-shrink: 0;
+    min-height: 40px;
   }
   
   .ordering-item:hover:not(.disabled) {
@@ -1402,32 +669,84 @@
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
   }
   
+  .ordering-item-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .drag-handle {
+    color: #9ca3af;
+    font-size: 1rem;
+    cursor: grab;
+  }
+  
+  .item-text {
+    flex: 1;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  
+  .item-number {
+    background: #667eea;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+  
+  .ordering-controls {
+    display: flex;
+    gap: 2px;
+  }
+  
+  .move-btn {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .move-btn:hover {
+    background: #e5e7eb;
+  }
+  
   /* ================================
-     DRAG AND DROP - RESPONSIVE GRID WITH SCROLLING
+     DRAG AND DROP - ENHANCED
      ================================ */
   
   .drag-drop-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    height: 400px; /* ✅ REASONABLE: Height for drag-drop */
-    min-height: 350px;
-    max-height: 500px;
+    gap: 12px;
+    height: 300px;
+    min-height: 250px;
+    max-height: 400px;
   }
   
   .drag-items, .drop-zones {
     background: #f8fafc;
     border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 12px;
+    border-radius: 8px;
+    padding: 8px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    overflow-y: auto; /* ✅ CRITICAL: Enable scrolling */
+    gap: 6px;
+    overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
     
-    /* ✅ Smooth scrolling for drag-drop sides */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
@@ -1436,7 +755,7 @@
   
   .drag-items::-webkit-scrollbar,
   .drop-zones::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
   }
   
   .drag-items::-webkit-scrollbar-track,
@@ -1447,17 +766,17 @@
   .drag-items::-webkit-scrollbar-thumb,
   .drop-zones::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 3px;
+    border-radius: 2px;
   }
   
   .drag-items h4,
   .drop-zones h4 {
-    margin: 0 0 8px 0;
-    font-size: 0.9rem;
+    margin: 0 0 6px 0;
+    font-size: 0.8rem;
     font-weight: 600;
     color: #374151;
     text-align: center;
-    padding-bottom: 6px;
+    padding-bottom: 4px;
     border-bottom: 1px solid #e2e8f0;
     flex-shrink: 0;
   }
@@ -1465,20 +784,54 @@
   .drag-item, .dropped-item {
     background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
     color: white;
-    padding: 12px;
-    border-radius: 8px;
+    padding: 8px;
+    border-radius: 6px;
     cursor: pointer;
     font-weight: 500;
     text-align: center;
-    min-height: 40px;
+    min-height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     transition: all 0.3s ease;
     word-wrap: break-word;
-    line-height: 1.4;
+    line-height: 1.3;
+  }
+  
+  .drop-zone {
+    min-height: 60px;
+    border: 2px dashed #cbd5e1;
+    border-radius: 6px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.5);
+    transition: all 0.3s ease;
+  }
+  
+  .drop-zone.drag-over {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+  }
+  
+  .zone-label {
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: #374151;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+  
+  .zone-items {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .remove-dropped {
+    margin-left: 4px;
+    font-weight: bold;
+    opacity: 0.7;
   }
   
   /* ================================
@@ -1487,22 +840,22 @@
   
   .confirmation-section {
     background: #ffffff;
-    border-radius: 12px;
-    padding: 14px;
-    margin-top: 12px;
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 8px;
     border: 2px solid #e2e8f0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    flex-shrink: 0; /* ✅ Don't shrink confirmation */
+    flex-shrink: 0;
   }
   
   .confirmation-message {
     text-align: center;
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 0.95rem;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
     font-weight: 600;
-    line-height: 1.4;
-    margin-bottom: 10px;
+    line-height: 1.3;
+    margin-bottom: 6px;
     word-wrap: break-word;
   }
   
@@ -1522,4 +875,938 @@
     background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
     color: #92400e;
     border: 2px solid #f59e0b;
+  }
+  
+  .correct-answer-display {
+    margin-top: 8px;
+    padding: 8px;
+    background: #f0f9ff;
+    border: 1px solid #0ea5e9;
+    border-radius: 6px;
+  }
+  
+  .correct-answer-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #0369a1;
+    margin-bottom: 4px;
+  }
+  
+  .correct-answer-text {
+    font-size: 0.8rem;
+    color: #0c4a6e;
+    word-wrap: break-word;
+  }
+  
+  .second-chance-indicator {
+    margin-bottom: 8px;
+    padding: 6px;
+    background: rgba(245, 158, 11, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+  
+  .attempt-counter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #92400e;
+  }
+  
+  .attempt-dots {
+    display: flex;
+    gap: 4px;
+  }
+  
+  .attempt-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(245, 158, 11, 0.3);
+    transition: all 0.3s ease;
+  }
+  
+  .attempt-dot.filled {
+    background: #f59e0b;
+  }
+  
+  .attempt-dot.current {
+    background: #d97706;
+    transform: scale(1.2);
+  }
+  
+  /* ================================
+     HINTS SECTION - COMPACT
+     ================================ */
+  
+  .hints-section {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+  
+  .basic-hint {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #92400e;
+  }
+  
+  .smart-hint {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #1e40af;
+    position: relative;
+  }
+  
+  .hint-icon {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+  
+  .hint-text {
+    flex: 1;
+    word-wrap: break-word;
+  }
+  
+  .clear-hint-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+  
+  .clear-hint-btn:hover {
+    background: rgba(107, 114, 128, 0.1);
+    color: #374151;
+  }
+  
+  /* ================================
+     NO CONTENT STATE
+     ================================ */
+  
+  .no-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #6b7280;
+    padding: 32px 16px;
+    height: 100%;
+  }
+  
+  .no-content-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    opacity: 0.6;
+  }
+  
+  .no-content h4 {
+    font-size: 1rem;
+    margin-bottom: 6px;
+    color: #374151;
+  }
+  
+  .no-content p {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    max-width: 280px;
+  }
+  
+  /* ================================
+     RESPONSIVE DESIGN - MOBILE OPTIMIZED
+     ================================ */
+  
+  /* Large Desktop (1200px+) */
+  @media (min-width: 1200px) {
+    .interactive-panel {
+      border-radius: 20px;
+    }
+    
+    .exercise-header, .quiz-header {
+      padding: 16px 20px;
+      border-radius: 20px 20px 0 0;
+      min-height: 56px;
+      max-height: 56px;
+      height: 56px;
+    }
+    
+    .exercise-header h3, .quiz-header h3 {
+      font-size: 1.1rem;
+    }
+    
+    .exercise-counter, .quiz-counter {
+      font-size: 0.8rem;
+      padding: 5px 12px;
+    }
+    
+    .exercise-content-scroll, .quiz-content-scroll {
+      padding: 16px 20px;
+      gap: 16px;
+    }
+    
+    .question-text, .quiz-question {
+      font-size: 1rem;
+      padding: 16px;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      height: 400px;
+      max-height: 500px;
+    }
+    
+    .exercise-actions, .quiz-actions {
+      padding: 16px 20px;
+      min-height: 64px;
+      max-height: 64px;
+      height: 64px;
+    }
+    
+    .hint-btn, .submit-btn, .next-btn {
+      padding: 10px 18px;
+      font-size: 0.85rem;
+      min-height: 40px;
+      min-width: 90px;
+    }
+  }
+  
+  /* Standard Desktop (992px - 1199px) */
+  @media (min-width: 992px) and (max-width: 1199px) {
+    .interactive-panel {
+      border-radius: 18px;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      height: 350px;
+      max-height: 450px;
+    }
+  }
+  
+  /* Tablet Landscape (768px - 991px) */
+  @media (min-width: 768px) and (max-width: 991px) {
+    .interactive-panel {
+      border-radius: 16px;
+    }
+    
+    .exercise-header, .quiz-header {
+      padding: 14px 18px;
+      min-height: 50px;
+      max-height: 50px;
+      height: 50px;
+    }
+    
+    .exercise-header h3, .quiz-header h3 {
+      font-size: 0.95rem;
+      max-width: 65%;
+    }
+    
+    .exercise-content-scroll, .quiz-content-scroll {
+      padding: 14px 18px;
+      gap: 14px;
+    }
+    
+    .question-text, .quiz-question {
+      font-size: 0.85rem;
+      padding: 14px;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      height: 280px;
+      max-height: 380px;
+      gap: 10px;
+    }
+    
+    .options-list, .quiz-options {
+      max-height: 250px;
+    }
+    
+    .fill-blank-inputs {
+      max-height: 180px;
+    }
+    
+    .ordering-container {
+      max-height: 250px;
+    }
+    
+    .exercise-actions, .quiz-actions {
+      padding: 14px 18px;
+      gap: 8px;
+      min-height: 58px;
+      max-height: 58px;
+      height: 58px;
+    }
+    
+    .hint-btn, .submit-btn, .next-btn {
+      padding: 8px 16px;
+      font-size: 0.8rem;
+      min-width: 85px;
+    }
+  }
+  
+  /* Tablet Portrait (600px - 767px) */
+  @media (min-width: 600px) and (max-width: 767px) {
+    .interactive-panel {
+      border-radius: 14px;
+    }
+    
+    .exercise-header, .quiz-header {
+      padding: 12px 16px;
+      min-height: 46px;
+      max-height: 46px;
+      height: 46px;
+    }
+    
+    .exercise-header h3, .quiz-header h3 {
+      font-size: 0.9rem;
+      max-width: 60%;
+    }
+    
+    .exercise-counter, .quiz-counter {
+      font-size: 0.7rem;
+      padding: 3px 8px;
+    }
+    
+    .exercise-content-scroll, .quiz-content-scroll {
+      padding: 12px 16px;
+      gap: 12px;
+    }
+    
+    .question-text, .quiz-question {
+      font-size: 0.8rem;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      grid-template-columns: 1fr;
+      height: 320px;
+      max-height: 420px;
+      gap: 12px;
+    }
+    
+    .true-false-options {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    
+    .options-list, .quiz-options {
+      max-height: 200px;
+    }
+    
+    .fill-blank-inputs {
+      max-height: 150px;
+    }
+    
+    .ordering-container {
+      max-height: 200px;
+    }
+    
+    .option-item, .quiz-option, .tf-option {
+      padding: 8px 10px;
+      min-height: 36px;
+    }
+    
+    .exercise-actions, .quiz-actions {
+      padding: 12px 16px;
+      gap: 6px;
+      flex-direction: row;
+      flex-wrap: wrap;
+      min-height: 54px;
+      max-height: auto;
+    }
+    
+    .hint-btn, .submit-btn, .next-btn {
+      padding: 8px 14px;
+      font-size: 0.75rem;
+      min-width: 80px;
+      flex: 1;
+      max-width: 140px;
+    }
+  }
+  
+  /* Large Mobile (480px - 599px) */
+  @media (min-width: 480px) and (max-width: 599px) {
+    .interactive-panel {
+      border-radius: 12px;
+    }
+    
+    .exercise-header, .quiz-header {
+      padding: 10px 14px;
+      min-height: 44px;
+      max-height: 44px;
+      height: 44px;
+    }
+    
+    .exercise-header h3, .quiz-header h3 {
+      font-size: 0.85rem;
+      max-width: 55%;
+    }
+    
+    .exercise-counter, .quiz-counter {
+      font-size: 0.65rem;
+      padding: 3px 7px;
+    }
+    
+    .exercise-content-scroll, .quiz-content-scroll {
+      padding: 10px 14px;
+      gap: 10px;
+    }
+    
+    .question-text, .quiz-question {
+      font-size: 0.75rem;
+      padding: 10px;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      grid-template-columns: 1fr;
+      height: 280px;
+      max-height: 380px;
+      gap: 10px;
+    }
+    
+    .true-false-options {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+    
+    .options-list, .quiz-options {
+      max-height: 160px;
+      gap: 6px;
+    }
+    
+    .fill-blank-inputs {
+      max-height: 130px;
+      gap: 8px;
+    }
+    
+    .ordering-container {
+      max-height: 160px;
+      gap: 4px;
+    }
+    
+    .option-item, .quiz-option, .tf-option {
+      padding: 7px 9px;
+      min-height: 34px;
+    }
+    
+    .option-text {
+      font-size: 0.75rem;
+    }
+    
+    .matching-item {
+      padding: 6px;
+      min-height: 32px;
+      font-size: 0.7rem;
+    }
+    
+    .ordering-item {
+      padding: 7px;
+      min-height: 38px;
+    }
+    
+    .item-text {
+      font-size: 0.75rem;
+    }
+    
+    .drag-item, .dropped-item {
+      padding: 6px;
+      min-height: 30px;
+      font-size: 0.7rem;
+    }
+    
+    .exercise-actions, .quiz-actions {
+      padding: 10px 14px;
+      gap: 6px;
+      flex-direction: column;
+      min-height: 52px;
+      max-height: auto;
+    }
+    
+    .hint-btn, .submit-btn, .next-btn {
+      padding: 8px 12px;
+      font-size: 0.7rem;
+      min-width: 75px;
+      width: 100%;
+      min-height: 34px;
+    }
+  }
+  
+  /* Standard Mobile (375px - 479px) */
+  @media (min-width: 375px) and (max-width: 479px) {
+    .interactive-panel {
+      border-radius: 10px;
+    }
+    
+    .exercise-header, .quiz-header {
+      padding: 8px 12px;
+      min-height: 42px;
+      max-height: 42px;
+      height: 42px;
+    }
+    
+    .exercise-header h3, .quiz-header h3 {
+      font-size: 0.8rem;
+      max-width: 50%;
+    }
+    
+    .exercise-counter, .quiz-counter {
+      font-size: 0.6rem;
+      padding: 2px 6px;
+    }
+    
+    .exercise-content-scroll, .quiz-content-scroll {
+      padding: 8px 12px;
+      gap: 8px;
+    }
+    
+    .question-text, .quiz-question {
+      font-size: 0.7rem;
+      padding: 8px;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      grid-template-columns: 1fr;
+      height: 240px;
+      max-height: 340px;
+      gap: 8px;
+    }
+    
+    .true-false-options {
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+    
+    .options-list, .quiz-options {
+      max-height: 140px;
+      gap: 5px;
+    }
+    
+    .fill-blank-inputs {
+      max-height: 110px;
+      gap: 6px;
+    }
+    
+    .ordering-container {
+      max-height: 140px;
+      gap: 4px;
+    }
+    
+    .option-item, .quiz-option, .tf-option {
+      padding: 6px 8px;
+      min-height: 32px;
+    }
+    
+    .option-text {
+      font-size: 0.7rem;
+      line-height: 1.2;
+    }
+    
+    .matching-item {
+      padding: 5px;
+      min-height: 28px;
+      font-size: 0.65rem;
+    }
+    
+    .ordering-item {
+      padding: 6px;
+      min-height: 36px;
+    }
+    
+    .item-text {
+      font-size: 0.7rem;
+    }
+    
+    .item-number {
+      width: 18px;
+      height: 18px;
+      font-size: 0.6rem;
+    }
+    
+    .drag-item, .dropped-item {
+      padding: 5px;
+      min-height: 28px;
+      font-size: 0.65rem;
+    }
+    
+    .exercise-actions, .quiz-actions {
+      padding: 8px 12px;
+      gap: 5px;
+      flex-direction: column;
+      min-height: 50px;
+      max-height: auto;
+    }
+    
+    .hint-btn, .submit-btn, .next-btn {
+      padding: 7px 10px;
+      font-size: 0.65rem;
+      min-width: 70px;
+      width: 100%;
+      min-height: 32px;
+    }
+  }
+  
+  /* Small Mobile (320px - 374px) */
+  @media (max-width: 374px) {
+    .interactive-panel {
+      border-radius: 8px;
+    }
+    
+    .exercise-header, .quiz-header {
+      padding: 6px 10px;
+      min-height: 40px;
+      max-height: 40px;
+      height: 40px;
+    }
+    
+    .exercise-header h3, .quiz-header h3 {
+      font-size: 0.75rem;
+      max-width: 45%;
+    }
+    
+    .exercise-counter, .quiz-counter {
+      font-size: 0.55rem;
+      padding: 2px 5px;
+    }
+    
+    .exercise-content-scroll, .quiz-content-scroll {
+      padding: 6px 10px;
+      gap: 6px;
+    }
+    
+    .question-text, .quiz-question {
+      font-size: 0.65rem;
+      padding: 6px;
+      margin-bottom: 5px;
+      line-height: 1.3;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      grid-template-columns: 1fr;
+      height: 200px;
+      max-height: 300px;
+      gap: 6px;
+    }
+    
+    .true-false-options {
+      grid-template-columns: 1fr;
+      gap: 5px;
+    }
+    
+    .options-list, .quiz-options {
+      max-height: 120px;
+      gap: 4px;
+    }
+    
+    .fill-blank-inputs {
+      max-height: 90px;
+      gap: 5px;
+    }
+    
+    .ordering-container {
+      max-height: 120px;
+      gap: 3px;
+    }
+    
+    .option-item, .quiz-option, .tf-option {
+      padding: 5px 7px;
+      min-height: 30px;
+    }
+    
+    .option-text {
+      font-size: 0.65rem;
+      line-height: 1.2;
+    }
+    
+    .matching-item {
+      padding: 4px;
+      min-height: 26px;
+      font-size: 0.6rem;
+    }
+    
+    .ordering-item {
+      padding: 5px;
+      min-height: 34px;
+    }
+    
+    .item-text {
+      font-size: 0.65rem;
+    }
+    
+    .item-number {
+      width: 16px;
+      height: 16px;
+      font-size: 0.55rem;
+    }
+    
+    .drag-item, .dropped-item {
+      padding: 4px;
+      min-height: 26px;
+      font-size: 0.6rem;
+    }
+    
+    .exercise-actions, .quiz-actions {
+      padding: 6px 10px;
+      gap: 4px;
+      flex-direction: column;
+      min-height: 48px;
+      max-height: auto;
+    }
+    
+    .hint-btn, .submit-btn, .next-btn {
+      padding: 6px 8px;
+      font-size: 0.6rem;
+      min-width: 65px;
+      width: 100%;
+      min-height: 30px;
+    }
+    
+    .answer-textarea {
+      min-height: 60px;
+      max-height: 150px;
+      font-size: 0.75rem;
+    }
+    
+    .blank-input {
+      padding: 6px 8px;
+      font-size: 0.75rem;
+    }
+  }
+  
+  /* ================================
+     LANDSCAPE ORIENTATION OPTIMIZATIONS
+     ================================ */
+  
+  @media (orientation: landscape) and (max-height: 600px) {
+    .exercise-header, .quiz-header {
+      min-height: 36px;
+      max-height: 36px;
+      height: 36px;
+      padding: 6px 14px;
+    }
+    
+    .exercise-header h3, .quiz-header h3 {
+      font-size: 0.8rem;
+    }
+    
+    .exercise-counter, .quiz-counter {
+      font-size: 0.65rem;
+      padding: 2px 6px;
+    }
+    
+    .exercise-content-scroll, .quiz-content-scroll {
+      padding: 8px 14px;
+      gap: 6px;
+    }
+    
+    .question-text, .quiz-question {
+      font-size: 0.75rem;
+      padding: 8px;
+      margin-bottom: 6px;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      height: 160px;
+      max-height: 200px;
+    }
+    
+    .options-list, .quiz-options {
+      max-height: 120px;
+    }
+    
+    .fill-blank-inputs {
+      max-height: 80px;
+    }
+    
+    .ordering-container {
+      max-height: 120px;
+    }
+    
+    .exercise-actions, .quiz-actions {
+      min-height: 40px;
+      max-height: 40px;
+      height: 40px;
+      padding: 6px 14px;
+      flex-direction: row;
+      gap: 6px;
+    }
+    
+    .hint-btn, .submit-btn, .next-btn {
+      padding: 4px 10px;
+      font-size: 0.65rem;
+      min-height: 28px;
+      flex: 1;
+    }
+  }
+  
+  /* ================================
+     ACCESSIBILITY & USABILITY
+     ================================ */
+  
+  /* Focus states for better accessibility */
+  .hint-btn:focus,
+  .submit-btn:focus,
+  .next-btn:focus,
+  .option-item:focus,
+  .quiz-option:focus,
+  .tf-option:focus,
+  .matching-item:focus,
+  .ordering-item:focus,
+  .drag-item:focus,
+  .blank-input:focus,
+  .answer-textarea:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .interactive-panel,
+    .option-item,
+    .quiz-option,
+    .tf-option,
+    .matching-item,
+    .ordering-item,
+    .drag-item {
+      border-width: 3px;
+    }
+    
+    .question-text, .quiz-question {
+      border-left-width: 5px;
+    }
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .exercise-content-scroll,
+    .quiz-content-scroll,
+    .options-list,
+    .quiz-options,
+    .fill-blank-inputs,
+    .matching-side,
+    .ordering-container,
+    .drag-items,
+    .drop-zones,
+    .zone-items {
+      scroll-behavior: auto;
+    }
+    
+    .option-item:hover,
+    .quiz-option:hover,
+    .tf-option:hover,
+    .matching-item:hover,
+    .ordering-item:hover,
+    .drag-item:hover,
+    .hint-btn:hover,
+    .submit-btn:hover,
+    .next-btn:hover {
+      transform: none;
+    }
+    
+    .ordering-item.dragging,
+    .drag-item.dragging {
+      transform: none;
+    }
+  }
+  
+  /* Touch-friendly improvements */
+  @media (pointer: coarse) {
+    .option-item, .quiz-option, .tf-option {
+      min-height: 40px;
+    }
+    
+    .matching-item {
+      min-height: 36px;
+    }
+    
+    .ordering-item {
+      min-height: 40px;
+    }
+    
+    .drag-item, .dropped-item {
+      min-height: 36px;
+    }
+    
+    .hint-btn, .submit-btn, .next-btn {
+      min-height: 40px;
+    }
+    
+    .move-btn {
+      width: 28px;
+      height: 24px;
+    }
+    
+    .remove-pair,
+    .remove-dropped {
+      width: 24px;
+      height: 24px;
+    }
+  }
+  
+  /* Print styles */
+  @media print {
+    .exercise-actions,
+    .quiz-actions,
+    .hint-btn,
+    .submit-btn,
+    .next-btn {
+      display: none;
+    }
+    
+    .interactive-panel {
+      border: 1px solid #000;
+      box-shadow: none;
+      overflow: visible;
+      height: auto;
+      max-height: none;
+    }
+    
+    .exercise-content-scroll,
+    .quiz-content-scroll {
+      overflow: visible;
+      max-height: none;
+    }
+    
+    .options-list, .quiz-options,
+    .fill-blank-inputs,
+    .matching-side,
+    .ordering-container,
+    .drag-items,
+    .drop-zones {
+      overflow: visible;
+      max-height: none;
+    }
   }
