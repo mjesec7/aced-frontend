@@ -16,140 +16,123 @@
       </h3>
     </div>
     
-    <!-- Step content shows ONLY clean questions -->
-    <div class="step-content">
-      <!-- FOR INTERACTIVE STEPS: Show ONLY the question, no instructions -->
-      <div v-if="isInteractiveStep" class="interactive-content">
-        
-        <!-- Exercise Content - ONLY the question -->
-        <div v-if="['exercise', 'practice'].includes(currentStep?.type)" class="current-exercise-content">
-          <div class="exercise-question-display">
-            <div class="clean-question">{{ getStepContent(currentStep) }}</div>
+    <!-- Scrollable Content Area -->
+    <div class="step-content-container">
+      <div class="step-content">
+        <!-- FOR INTERACTIVE STEPS: Show ONLY the question, no instructions -->
+        <div v-if="isInteractiveStep" class="interactive-content">
+          
+          <!-- Exercise Content - ONLY the question -->
+          <div v-if="['exercise', 'practice'].includes(currentStep?.type)" class="current-exercise-content">
+            <div class="exercise-question-display">
+              <div class="clean-question">{{ getStepContent(currentStep) }}</div>
+              
+              <!-- Show exercise type badge ONLY if not default type -->
+              <div v-if="currentExercise?.type && currentExercise.type !== 'short-answer'" class="exercise-type-info">
+                <span class="type-badge">{{ getExerciseTypeName(currentExercise?.type) }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Quiz Content - ONLY the question -->
+          <div v-else-if="currentStep?.type === 'quiz'" class="current-quiz-content">
+            <div class="quiz-question-display">
+              <div class="clean-question">{{ getStepContent(currentStep) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOR NON-INTERACTIVE STEPS: Show only explanation content -->
+        <div v-else-if="['explanation', 'example', 'reading'].includes(currentStep?.type)" class="text-content">
+          <div class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
+        </div>
+
+        <!-- Vocabulary Step -->
+        <div v-else-if="currentStep?.type === 'vocabulary'" class="vocabulary-content enhanced">
+          
+          <!-- Show modal trigger if not completed -->
+          <div v-if="!currentStep?.data?.modalCompleted" class="vocabulary-modal-trigger">
+            <div class="trigger-card">
+              <div class="trigger-icon">📚</div>
+              <h3>Изучение словаря</h3>
+              <p>{{ Array.isArray(currentStep?.data) ? currentStep.data.length : 1 }} новых слов ждут вас!</p>
+              <button @click="$emit('init-vocabulary')" class="start-vocabulary-btn">
+                🚀 Начать изучение
+              </button>
+            </div>
+          </div>
+
+          <!-- Show list view after modal completion -->
+          <div v-else class="vocabulary-list-view">
+            <div class="vocabulary-header">
+              <h3>📖 Изученные слова</h3>
+              <button @click="$emit('init-vocabulary')" class="review-btn">
+                🔄 Повторить
+              </button>
+            </div>
             
-            <!-- Show exercise type badge ONLY if not default type -->
-            <div v-if="currentExercise?.type && currentExercise.type !== 'short-answer'" class="exercise-type-info">
-              <span class="type-badge">{{ getExerciseTypeName(currentExercise?.type) }}</span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Quiz Content - ONLY the question -->
-        <div v-else-if="currentStep?.type === 'quiz'" class="current-quiz-content">
-          <div class="quiz-question-display">
-            <div class="clean-question">{{ getStepContent(currentStep) }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- FOR NON-INTERACTIVE STEPS: Show regular content -->
-      <div v-else-if="['explanation', 'example', 'reading'].includes(currentStep?.type)" class="text-content">
-        <div class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
-        
-        <!-- AI Help for Explanations -->
-        <div v-if="showExplanationHelp" class="explanation-help">
-          <h4>🤖 Нужна помощь с пониманием?</h4>
-          <div class="explanation-help-input">
-            <input 
-              :value="explanationQuestion"
-              @input="updateExplanationQuestion"
-              placeholder="Задайте вопрос об этом объяснении..."
-              @keyup.enter="askExplanation"
-            />
-            <button @click="askExplanation" :disabled="!explanationQuestion?.trim()">
-              Спросить AI
-            </button>
-          </div>
-          <div v-if="explanationAIResponse" class="ai-response">
-            <p>{{ explanationAIResponse }}</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Vocabulary Step -->
-      <div v-else-if="currentStep?.type === 'vocabulary'" class="vocabulary-content enhanced">
-        
-        <!-- Show modal trigger if not completed -->
-        <div v-if="!currentStep?.data?.modalCompleted" class="vocabulary-modal-trigger">
-          <div class="trigger-card">
-            <div class="trigger-icon">📚</div>
-            <h3>Изучение словаря</h3>
-            <p>{{ Array.isArray(currentStep?.data) ? currentStep.data.length : 1 }} новых слов ждут вас!</p>
-            <button @click="$emit('init-vocabulary')" class="start-vocabulary-btn">
-              🚀 Начать изучение
-            </button>
-          </div>
-        </div>
-
-        <!-- Show list view after modal completion -->
-        <div v-else class="vocabulary-list-view">
-          <div class="vocabulary-header">
-            <h3>📖 Изученные слова</h3>
-            <button @click="$emit('init-vocabulary')" class="review-btn">
-              🔄 Повторить
-            </button>
-          </div>
-          
-          <div class="vocabulary-list">
-            <div 
-              v-for="(vocab, vocabIndex) in (currentStep?.data?.allWords || currentStep?.data || [])" 
-              :key="vocab?.id || `vocab-list-${vocabIndex}`" 
-              class="vocabulary-item enhanced"
-              :class="{ learned: vocab?.learned }"
-            >
-              <div class="vocab-item-header">
-                <div class="vocab-term">
-                  {{ vocab?.term || 'Term' }}
-                  <button 
-                    v-if="vocab?.term"
-                    @click="$emit('pronounce', vocab.term)"
-                    class="mini-pronunciation-btn"
-                    title="Произношение"
-                  >
-                    🔊
-                  </button>
+            <div class="vocabulary-list">
+              <div 
+                v-for="(vocab, vocabIndex) in (currentStep?.data?.allWords || currentStep?.data || [])" 
+                :key="vocab?.id || `vocab-list-${vocabIndex}`" 
+                class="vocabulary-item enhanced"
+                :class="{ learned: vocab?.learned }"
+              >
+                <div class="vocab-item-header">
+                  <div class="vocab-term">
+                    {{ vocab?.term || 'Term' }}
+                    <button 
+                      v-if="vocab?.term"
+                      @click="$emit('pronounce', vocab.term)"
+                      class="mini-pronunciation-btn"
+                      title="Произношение"
+                    >
+                      🔊
+                    </button>
+                  </div>
+                  <div v-if="vocab?.learned" class="learned-badge">✅</div>
                 </div>
-                <div v-if="vocab?.learned" class="learned-badge">✅</div>
+                
+                <div class="vocab-definition">{{ vocab?.definition || 'Definition' }}</div>
+                
+                <div v-if="vocab?.example" class="vocab-example">
+                  <strong>Пример:</strong> {{ vocab.example }}
+                </div>
+                
+                <div v-if="vocab?.pronunciation" class="vocab-pronunciation">
+                  Произношение: /{{ vocab.pronunciation }}/
+                </div>
               </div>
-              
-              <div class="vocab-definition">{{ vocab?.definition || 'Definition' }}</div>
-              
-              <div v-if="vocab?.example" class="vocab-example">
-                <strong>Пример:</strong> {{ vocab.example }}
+            </div>
+            
+            <!-- Summary Stats -->
+            <div class="vocabulary-summary">
+              <div class="summary-stat">
+                <span class="summary-number">{{ ((currentStep?.data?.allWords || []).filter(w => w?.learned) || []).length }}</span>
+                <span class="summary-label">изучено</span>
               </div>
-              
-              <div v-if="vocab?.pronunciation" class="vocab-pronunciation">
-                Произношение: /{{ vocab.pronunciation }}/
+              <div class="summary-stat">
+                <span class="summary-number">{{ (currentStep?.data?.allWords || []).length }}</span>
+                <span class="summary-label">всего</span>
               </div>
             </div>
           </div>
-          
-          <!-- Summary Stats -->
-          <div class="vocabulary-summary">
-            <div class="summary-stat">
-              <span class="summary-number">{{ ((currentStep?.data?.allWords || []).filter(w => w?.learned) || []).length }}</span>
-              <span class="summary-label">изучено</span>
-            </div>
-            <div class="summary-stat">
-              <span class="summary-number">{{ (currentStep?.data?.allWords || []).length }}</span>
-              <span class="summary-label">всего</span>
-            </div>
+        </div>
+
+        <!-- Video/Audio Step -->
+        <div v-else-if="['video', 'audio'].includes(currentStep?.type)" class="media-content">
+          <div class="media-placeholder">
+            <div class="media-icon">{{ currentStep?.type === 'video' ? '🎬' : '🎵' }}</div>
+            <h4>{{ currentStep?.type === 'video' ? 'Видео урок' : 'Аудио урок' }}</h4>
+            <p>{{ currentStep?.data?.description || 'Мультимедиа контент' }}</p>
+            <div class="media-url">{{ currentStep?.data?.url || 'URL недоступен' }}</div>
           </div>
         </div>
-      </div>
 
-      <!-- Video/Audio Step -->
-      <div v-else-if="['video', 'audio'].includes(currentStep?.type)" class="media-content">
-        <div class="media-placeholder">
-          <div class="media-icon">{{ currentStep?.type === 'video' ? '🎬' : '🎵' }}</div>
-          <h4>{{ currentStep?.type === 'video' ? 'Видео урок' : 'Аудио урок' }}</h4>
-          <p>{{ currentStep?.data?.description || 'Мультимедиа контент' }}</p>
-          <div class="media-url">{{ currentStep?.data?.url || 'URL недоступен' }}</div>
+        <!-- Default content for other step types -->
+        <div v-else class="default-content">
+          <div class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
         </div>
-      </div>
-
-      <!-- Default content for other step types -->
-      <div v-else class="default-content">
-        <div class="content-text" v-html="formatContent(getStepContent(currentStep))"></div>
       </div>
     </div>
     
@@ -164,14 +147,6 @@
         @click="$emit('next')"
       >
         {{ isLastStep ? '🏁 Завершить' : '➡️ Далее' }}
-      </button>
-      <button 
-        v-if="['explanation', 'example', 'reading'].includes(currentStep?.type)"
-        class="help-btn" 
-        @click="$emit('toggle-explanation-help')"
-        :class="{ active: showExplanationHelp }"
-      >
-        🤖 {{ showExplanationHelp ? 'Скрыть помощь' : 'AI помощь' }}
       </button>
     </div>
   </div>
@@ -217,35 +192,16 @@ export default {
       type: Number,
       default: 0
     },
-    showExplanationHelp: {
-      type: Boolean,
-      default: false
-    },
-    explanationQuestion: {
-      type: String,
-      default: ''
-    },
-    explanationAIResponse: {
-      type: String,
-      default: ''
-    },
-    isLoadingExplanation: {
-      type: Boolean,
-      default: false
-    },
     isLastStep: {
       type: Boolean,
       default: false
     }
   },
   emits: [
-    'toggle-explanation-help',
-    'ask-explanation',
     'init-vocabulary',
     'pronounce',
     'next',
-    'previous',
-    'update:explanation-question'
+    'previous'
   ],
   methods: {
     getStepIcon(stepType) {
@@ -312,7 +268,7 @@ export default {
         return 'Вопрос загружается...';
       }
       
-      // For non-interactive steps, show content
+      // For non-interactive steps, show only explanation content
       try {
         if (typeof step.data === 'string' && step.data.trim()) {
           return step.data.trim();
@@ -351,16 +307,6 @@ export default {
       return content.replace(/\n/g, '<br>');
     },
 
-    updateExplanationQuestion(event) {
-      this.$emit('update:explanation-question', event.target.value);
-    },
-
-    askExplanation() {
-      if (this.explanationQuestion?.trim()) {
-        this.$emit('ask-explanation', this.explanationQuestion);
-      }
-    },
-
     getLocalized(field) {
       if (typeof field === 'string') return field;
       return (field?.en || field?.ru || field?.uz || '').replace(/^(en|ru|uz):/i, '').trim();
@@ -372,34 +318,21 @@ export default {
 <style scoped>
 .content-panel {
   background: white;
-  padding: 10px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #e2e8f0;
-  overflow-y: auto;
-  min-height: 0;
-  position: relative;
-}
-
-.content-panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
   height: 100%;
-  width: 2px;
-  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
-  opacity: 0.1;
+  overflow: hidden;
 }
 
 .step-header {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+  padding: 20px 24px;
   border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
 }
 
 .step-title {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   color: #1e293b;
   margin: 0;
   display: flex;
@@ -411,38 +344,45 @@ export default {
 .step-number {
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: white;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 1rem;
   flex-shrink: 0;
 }
 
 .step-type-icon {
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   flex-shrink: 0;
 }
 
 .step-type-text {
   font-weight: 600;
   color: #1e293b;
+  font-size: 1.1rem;
 }
 
 .exercise-counter,
 .quiz-counter {
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: #666;
   font-weight: normal;
   margin-left: 0.5rem;
 }
 
-.step-content {
+/* Scrollable content container */
+.step-content-container {
   flex: 1;
-  margin-bottom: 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.step-content {
+  padding: 24px;
   animation: stepFadeIn 0.3s ease-out;
 }
 
@@ -457,9 +397,9 @@ export default {
   }
 }
 
-/* Clean question display */
+/* Clean question display - bigger text */
 .clean-question {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   line-height: 1.6;
   color: #2c3e50;
   margin: 0;
@@ -513,19 +453,19 @@ export default {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border-radius: 15px;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 500;
   letter-spacing: 0.5px;
   opacity: 0.8;
 }
 
-/* Text Content */
+/* Text Content - bigger text */
 .text-content {
-  line-height: 1.7;
+  line-height: 1.8;
 }
 
 .content-text {
-  font-size: 1rem;
+  font-size: 1.2rem;
   color: #374151;
   margin: 0;
   line-height: 1.8;
@@ -558,12 +498,13 @@ export default {
 
 .trigger-card h3 {
   margin: 0 0 12px 0;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
 }
 
 .trigger-card p {
   margin: 0 0 24px 0;
   opacity: 0.9;
+  font-size: 1.1rem;
 }
 
 .start-vocabulary-btn {
@@ -575,7 +516,7 @@ export default {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 1rem;
+  font-size: 1.1rem;
   min-height: 44px;
 }
 
@@ -601,7 +542,7 @@ export default {
 .vocabulary-header h3 {
   margin: 0;
   color: #1e293b;
-  font-size: 1.3rem;
+  font-size: 1.4rem;
 }
 
 .review-btn {
@@ -613,7 +554,7 @@ export default {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 0.9rem;
+  font-size: 1rem;
   min-height: 44px;
 }
 
@@ -658,7 +599,7 @@ export default {
 }
 
 .vocab-item-header .vocab-term {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: #1e293b;
   margin: 0;
@@ -673,7 +614,7 @@ export default {
   padding: 4px 8px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   transition: all 0.2s ease;
 }
 
@@ -684,18 +625,18 @@ export default {
 
 .learned-badge {
   color: #3b82f6;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
 }
 
 .vocabulary-item .vocab-definition {
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: #4b5563;
   margin-bottom: 8px;
   line-height: 1.6;
 }
 
 .vocabulary-item .vocab-example {
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: #6b7280;
   font-style: italic;
   padding: 8px 0;
@@ -704,7 +645,7 @@ export default {
 }
 
 .vocabulary-item .vocab-pronunciation {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: #9ca3af;
   margin-top: 4px;
 }
@@ -724,14 +665,14 @@ export default {
 }
 
 .summary-number {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: #3b82f6;
   display: block;
 }
 
 .summary-label {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: #64748b;
   margin-top: 4px;
 }
@@ -761,16 +702,17 @@ export default {
 .media-placeholder h4 {
   margin: 0 0 12px 0;
   color: #1e293b;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
 }
 
 .media-placeholder p {
   margin: 0 0 16px 0;
   color: #64748b;
+  font-size: 1rem;
 }
 
 .media-url {
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: #9ca3af;
   font-family: monospace;
   background: white;
@@ -780,74 +722,21 @@ export default {
 
 /* Default Content */
 .default-content {
-  line-height: 1.7;
-}
-
-/* AI Help Panel */
-.explanation-help {
-  background: rgba(139, 92, 246, 0.1);
-  padding: 20px;
-  border-radius: 12px;
-  margin: 16px 0;
-  border: 1px solid rgba(139, 92, 246, 0.2);
-}
-
-.explanation-help h4 {
-  margin: 0 0 12px 0;
-  color: #6d28d9;
-}
-
-.explanation-help-input {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.explanation-help-input input {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 0.9rem;
-}
-
-.explanation-help-input button {
-  background: #8b5cf6;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.explanation-help-input button:hover:not(:disabled) {
-  background: #7c3aed;
-}
-
-.explanation-help-input button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.ai-response {
-  background: white;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  line-height: 1.8;
 }
 
 /* Content Navigation */
 .content-navigation {
   display: flex;
   gap: 12px;
-  margin-top: auto;
+  padding: 20px 24px;
+  border-top: 1px solid #e2e8f0;
+  flex-shrink: 0;
   flex-wrap: wrap;
 }
 
 .nav-btn {
-  padding: 12px 24px;
+  padding: 14px 24px;
   border: none;
   border-radius: 8px;
   font-weight: 600;
@@ -855,7 +744,8 @@ export default {
   transition: all 0.2s ease;
   flex: 1;
   min-width: 120px;
-  min-height: 44px;
+  min-height: 48px;
+  font-size: 1rem;
 }
 
 .prev-btn {
@@ -878,45 +768,29 @@ export default {
   box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
 }
 
-.help-btn {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
-  flex: 0 0 auto;
-  min-width: 140px;
-}
-
-.help-btn:hover,
-.help-btn.active {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-  transform: translateY(-2px);
-}
-
 /* Responsive Design */
-@media (max-width: 1024px) {
-  .content-panel {
-    border-right: none;
-    border-bottom: 1px solid #e2e8f0;
-  }
-  
-  .content-panel::before {
-    display: none;
-  }
-}
-
 @media (max-width: 768px) {
   .content-panel {
-    padding: 20px 16px;
+    padding: 0;
+  }
+
+  .step-header {
+    padding: 16px 20px;
+  }
+
+  .step-content {
+    padding: 20px;
   }
 
   .step-title {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     gap: 8px;
   }
 
   .step-number {
-    width: 28px;
-    height: 28px;
-    font-size: 0.8rem;
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
   }
 
   .current-exercise-content,
@@ -925,12 +799,17 @@ export default {
   }
 
   .clean-question {
+    font-size: 1.3rem;
+  }
+
+  .content-text {
     font-size: 1.1rem;
   }
 
   .content-navigation {
     flex-direction: column;
     gap: 8px;
+    padding: 16px 20px;
   }
 
   .nav-btn {
@@ -952,21 +831,25 @@ export default {
 }
 
 @media (max-width: 480px) {
-  .content-panel {
+  .step-header {
+    padding: 12px 16px;
+  }
+
+  .step-content {
     padding: 16px;
   }
 
   .step-title {
-    font-size: 1rem;
+    font-size: 1.1rem;
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
 
   .step-number {
-    width: 24px;
-    height: 24px;
-    font-size: 0.75rem;
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
   }
 
   .current-exercise-content,
@@ -975,6 +858,10 @@ export default {
   }
 
   .clean-question {
+    font-size: 1.2rem;
+  }
+
+  .content-text {
     font-size: 1rem;
   }
 
@@ -996,13 +883,34 @@ export default {
   }
 
   .summary-number {
-    font-size: 1.25rem;
+    font-size: 1.4rem;
   }
+
+  .content-navigation {
+    padding: 12px 16px;
+  }
+}
+
+/* Custom scrollbar styling */
+.step-content-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.step-content-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.step-content-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.step-content-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* Focus states for accessibility */
 .nav-btn:focus,
-.help-btn:focus,
 .start-vocabulary-btn:focus,
 .review-btn:focus,
 .mini-pronunciation-btn:focus {
@@ -1031,7 +939,6 @@ export default {
 
   .vocabulary-item:hover,
   .nav-btn:hover,
-  .help-btn:hover,
   .start-vocabulary-btn:hover,
   .review-btn:hover {
     transform: none;
@@ -1041,7 +948,6 @@ export default {
 /* Print styles */
 @media print {
   .content-navigation,
-  .help-btn,
   .start-vocabulary-btn,
   .review-btn,
   .mini-pronunciation-btn {
@@ -1049,49 +955,7 @@ export default {
   }
 
   .content-panel {
-    border: none;
     box-shadow: none;
-  }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .content-panel {
-    background: #1e293b;
-    border-right-color: #374151;
-  }
-
-  .step-title,
-  .clean-question,
-  .content-text {
-    color: #e2e8f0;
-  }
-
-  .current-exercise-content,
-  .current-quiz-content {
-    background: rgba(59, 130, 246, 0.1);
-    border-color: rgba(59, 130, 246, 0.2);
-  }
-
-  .vocabulary-item {
-    background: #374151;
-    border-color: #4b5563;
-    color: #e2e8f0;
-  }
-
-  .media-placeholder {
-    background: #374151;
-    border-color: #4b5563;
-  }
-
-  .explanation-help {
-    background: rgba(139, 92, 246, 0.2);
-    border-color: rgba(139, 92, 246, 0.3);
-  }
-
-  .ai-response {
-    background: #374151;
-    color: #e2e8f0;
   }
 }
 </style>
