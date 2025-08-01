@@ -2,14 +2,12 @@
    INTERACTIVE PANEL - CLEAN MODERN DESIGN
    Matching ContentPanel styling with card-based layout
    ================================ */
-
    .interactive-panel {
     background: white;
     border-radius: 12px;
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    max-height: 100vh;
+    height: 100%;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px solid #e2e8f0;
@@ -20,15 +18,13 @@
      HEADER - MATCHING CONTENTPANEL
      ================================ */
   
-  .exercise-header, .quiz-header {
-    padding: 16px 28px;
-    border-bottom: 1px solid #e2e8f0;
-    flex-shrink: 0;
-    background: white;
-    box-sizing: border-box;
-    min-height: auto;
-    height: auto;
-  }
+     .exercise-body, .quiz-body {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
   
   .exercise-header h3, .quiz-header h3 {
     font-size: 1.2rem;
@@ -69,19 +65,9 @@
   
   .exercise-content-scroll, .quiz-content-scroll {
     flex: 1;
-    padding: 32px 28px;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    overflow-y: auto;
+    padding: 20px 28px 40px 28px;
+    overflow-y: scroll !important;
     overflow-x: hidden;
-    min-height: 0;
-    padding-bottom: 40px;
-    
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 #f1f5f9;
   }
   
   /* Custom scrollbar */

@@ -331,16 +331,17 @@
      RIGHT PANEL - INTERACTIVE (LIKE CLAUDE'S RIGHT SIDE) - ADJUSTED FOR MAX CONTENT SPACE
      ================================ */
   
-  .interactive-panel-container {
-    background: #ffffff;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden; /* ✅ ENSURE: No overflow on container */
-    position: relative;
-    flex: 1; /* ✅ TAKE REMAINING SPACE */
-    min-width: 200px; /* ✅ FURTHER REDUCED: Even less minimum to allow max content space */
-    padding: 0; /* ✅ CRITICAL: No padding for interactive panel space */
-  }
+     .interactive-panel-container {
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+      padding: 0;
+      height: 100%;
+    }
   
   .non-interactive-panel {
     background: #ffffff;
