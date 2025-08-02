@@ -1,7 +1,6 @@
 /* ================================
-   COMPLETE LESSONPAGE.CSS - SPLIT SCREEN LIKE CLAUDE INTERFACE
-   Full responsive design + resizable split screen + all features
-   MAXIMUM SPACE FOR CONTENT PANEL + NO DARK MODE
+   ENHANCED LESSONPAGE.CSS - MOBILE-FIRST RESPONSIVE DESIGN
+   Optimized for ALL devices with excellent mobile experience
    ================================ */
 
    .lesson-page {
@@ -11,10 +10,13 @@
     contain: layout style paint;
     position: relative;
     overflow: hidden;
+    /* Mobile-first: Ensure no horizontal scroll */
+    width: 100%;
+    max-width: 100vw;
   }
   
   /* ================================
-     LOADING & ERROR STATES
+     LOADING & ERROR STATES - MOBILE OPTIMIZED
      ================================ */
   
   .loading-screen,
@@ -24,20 +26,32 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
     text-align: center;
-    padding: 40px 20px;
+    padding: 20px 16px;
     background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    width: 100%;
+    box-sizing: border-box;
   }
   
   .loading-spinner {
-    width: 60px;
-    height: 60px;
-    border: 4px solid #f3f4f6;
-    border-top: 4px solid #3b82f6;
+    width: 48px;
+    height: 48px;
+    border: 3px solid #f3f4f6;
+    border-top: 3px solid #3b82f6;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin-bottom: 24px;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+  }
+  
+  /* Mobile: Larger spinner for better visibility */
+  @media (max-width: 768px) {
+    .loading-spinner {
+      width: 56px;
+      height: 56px;
+      border-width: 4px;
+    }
   }
   
   @keyframes spin {
@@ -46,57 +60,72 @@
   }
   
   .error-icon {
-    font-size: 4.5rem;
-    margin-bottom: 24px;
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+    font-size: 3rem;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
   }
   
   .error-screen h3 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     color: #dc2626;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     font-weight: 600;
+    line-height: 1.3;
   }
   
   .error-screen p {
     color: #6b7280;
-    margin-bottom: 32px;
-    max-width: 500px;
-    line-height: 1.6;
-    font-size: 1.1rem;
+    margin-bottom: 24px;
+    max-width: 400px;
+    line-height: 1.5;
+    font-size: 1rem;
   }
   
   .error-actions {
     display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    justify-content: center;
+    gap: 12px;
+    flex-direction: column;
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  /* Desktop: Horizontal layout for error actions */
+  @media (min-width: 768px) {
+    .error-actions {
+      flex-direction: row;
+      justify-content: center;
+      max-width: none;
+    }
   }
   
   .retry-btn,
   .back-btn {
-    padding: 14px 28px;
+    padding: 16px 24px;
     border: none;
     border-radius: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    min-height: 48px;
+    min-height: 52px;
     font-size: 1rem;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
+    width: 100%;
+    touch-action: manipulation;
   }
   
   .retry-btn {
     background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
     color: white;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
   }
   
-  .retry-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+  .retry-btn:hover,
+  .retry-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
   }
   
   .back-btn {
@@ -105,14 +134,15 @@
     border: 2px solid #e2e8f0;
   }
   
-  .back-btn:hover {
+  .back-btn:hover,
+  .back-btn:active {
     background: #f1f5f9;
     border-color: #cbd5e1;
     transform: translateY(-1px);
   }
   
   /* ================================
-     MODAL OVERLAY SYSTEM
+     MODAL OVERLAY SYSTEM - MOBILE OPTIMIZED
      ================================ */
   
   .modal-overlay {
@@ -121,14 +151,16 @@
     left: 0;
     width: 100%;
     height: 100%;
+    height: 100dvh; /* Dynamic viewport height */
     background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(8px);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    padding: 20px;
+    padding: 16px;
     animation: modalOverlayAppear 0.3s ease-out;
+    overscroll-behavior: contain;
   }
   
   @keyframes modalOverlayAppear {
@@ -138,28 +170,39 @@
     }
     to {
       opacity: 1;
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(8px);
     }
   }
   
   .modal-content {
     background: white;
-    padding: 40px;
-    border-radius: 20px;
+    padding: 24px 20px;
+    border-radius: 16px;
     text-align: center;
-    max-width: 500px;
+    max-width: 90vw;
     width: 100%;
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow-y: auto;
     box-shadow: 
-      0 25px 50px rgba(0, 0, 0, 0.25),
-      0 8px 16px rgba(0, 0, 0, 0.1);
+      0 20px 40px rgba(0, 0, 0, 0.25),
+      0 4px 8px rgba(0, 0, 0, 0.1);
     animation: modalContentAppear 0.3s ease-out;
     position: relative;
+  }
+  
+  /* Desktop: Larger modal */
+  @media (min-width: 768px) {
+    .modal-content {
+      max-width: 500px;
+      padding: 32px;
+    }
   }
   
   @keyframes modalContentAppear {
     from {
       opacity: 0;
-      transform: scale(0.9) translateY(30px);
+      transform: scale(0.95) translateY(20px);
     }
     to {
       opacity: 1;
@@ -168,49 +211,69 @@
   }
   
   .modal-content h3 {
-    margin: 0 0 20px 0;
-    font-size: 1.5rem;
+    margin: 0 0 16px 0;
+    font-size: 1.3rem;
     color: #1e293b;
     font-weight: 600;
+    line-height: 1.3;
   }
   
   .modal-content p {
-    margin: 0 0 32px 0;
+    margin: 0 0 24px 0;
     color: #64748b;
-    line-height: 1.6;
-    font-size: 1.1rem;
+    line-height: 1.5;
+    font-size: 1rem;
   }
   
   .modal-actions {
     display: flex;
-    gap: 16px;
+    gap: 12px;
     justify-content: center;
-    flex-wrap: wrap;
+    flex-direction: column;
+  }
+  
+  /* Desktop: Horizontal modal actions */
+  @media (min-width: 768px) {
+    .modal-actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
   }
   
   .modal-actions button {
-    padding: 14px 28px;
+    padding: 16px 24px;
     border: none;
     border-radius: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    min-width: 140px;
-    min-height: 48px;
+    min-height: 52px;
     font-size: 1rem;
+    touch-action: manipulation;
+    width: 100%;
+  }
+  
+  /* Desktop: Auto width for modal buttons */
+  @media (min-width: 768px) {
+    .modal-actions button {
+      width: auto;
+      min-width: 140px;
+    }
   }
   
   .premium-btn,
   .confirm-btn {
     background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
     color: white;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
   }
   
   .premium-btn:hover,
-  .confirm-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+  .premium-btn:active,
+  .confirm-btn:hover,
+  .confirm-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
   }
   
   .cancel-btn {
@@ -219,93 +282,175 @@
     border: 2px solid #e2e8f0;
   }
   
-  .cancel-btn:hover {
+  .cancel-btn:hover,
+  .cancel-btn:active {
     background: #f1f5f9;
     border-color: #cbd5e1;
   }
   
   /* ================================
-     LESSON CONTAINER - FIXED HEIGHT FOR SPLIT SCREEN
+     LESSON CONTAINER - MOBILE-FIRST LAYOUT
      ================================ */
   
   .lesson-container {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    min-height: 100dvh;
     max-height: 100vh;
+    max-height: 100dvh;
     background: #ffffff;
     margin: 0;
     overflow: hidden;
+    width: 100%;
   }
   
   /* ================================
-     SPLIT SCREEN CONTENT - LIKE CLAUDE INTERFACE
+     SPLIT SCREEN CONTENT - MOBILE-FIRST APPROACH
      ================================ */
   
   .split-content {
     flex: 1;
     display: flex;
-    flex-direction: row;
+    flex-direction: column; /* Mobile-first: Stack vertically */
     min-height: 0;
     background: #f3f4f6;
     position: relative;
     overflow: hidden;
+    width: 100%;
+  }
+  
+  /* Desktop: Horizontal layout */
+  @media (min-width: 1024px) {
+    .split-content {
+      flex-direction: row;
+    }
   }
   
   /* ================================
-     LEFT PANEL - CONTENT (LIKE CLAUDE'S LEFT SIDE) - MAXIMUM SPACE
+     CONTENT PANEL - MOBILE OPTIMIZED
      ================================ */
   
-     .content-panel {
-      background: #ffffff;
-      display: flex;
-      flex-direction: column;
-      overflow: visible !important; /* ✅ FIXED: Changed from hidden to visible to allow inner scroll */
-      height: auto !important; /* ✅ FIXED: Allow content to determine height */
-      position: relative;
-      width: 75%; /* ✅ INCREASED: Even more space - 75% by default */
-      min-width: 300px; /* ✅ REDUCED: Lower minimum for maximum flexibility */
-      border-right: 1px solid #e5e7eb;
-      resize: horizontal;
-      overflow-x: hidden; /* Keep horizontal overflow hidden */
-      padding: 0; /* ✅ REMOVED: No padding - maximum content space */
-      margin: 0; /* ✅ ENSURE: No margins */
-    }
+  .content-panel {
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    
+    /* Mobile: Full width, 65% height */
+    width: 100%;
+    height: 65%;
+    min-height: 300px;
+    max-height: 80%;
+    
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0;
+    margin: 0;
+    resize: vertical;
+  }
   
-
+  /* Tablet: Increase content space */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .content-panel {
+      height: 70%;
+      min-height: 350px;
+    }
+  }
+  
+  /* Desktop: Horizontal layout with 75% width */
+  @media (min-width: 1024px) {
+    .content-panel {
+      width: 75%;
+      height: 100%;
+      min-width: 320px;
+      max-width: 85%;
+      border-right: 1px solid #e5e7eb;
+      border-bottom: none;
+      resize: horizontal;
+    }
+  }
+  
+  /* ================================
+     RESIZE DIVIDER - TOUCH-FRIENDLY
+     ================================ */
   
   .resize-divider {
-    width: 8px;
     background: #f3f4f6;
-    cursor: col-resize;
+    cursor: row-resize;
     position: relative;
     flex-shrink: 0;
-    border-left: 1px solid #e5e7eb;
-    border-right: 1px solid #e5e7eb;
     transition: all 0.2s ease;
     user-select: none;
     display: flex;
     align-items: center;
     justify-content: center;
+    
+    /* Mobile: Horizontal divider */
+    width: 100%;
+    height: 12px;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    
+    /* Touch-friendly: Larger tap target */
+    min-height: 20px;
+    touch-action: none;
+  }
+  
+  /* Desktop: Vertical divider */
+  @media (min-width: 1024px) {
+    .resize-divider {
+      width: 8px;
+      height: auto;
+      min-height: auto;
+      cursor: col-resize;
+      border-left: 1px solid #e5e7eb;
+      border-right: 1px solid #e5e7eb;
+      border-top: none;
+      border-bottom: none;
+    }
   }
   
   .resize-divider:hover {
     background: #e5e7eb;
-    width: 12px;
+  }
+  
+  /* Mobile: Larger hover area */
+  @media (max-width: 1023px) {
+    .resize-divider:hover {
+      height: 16px;
+    }
+  }
+  
+  /* Desktop: Wider hover area */
+  @media (min-width: 1024px) {
+    .resize-divider:hover {
+      width: 12px;
+    }
   }
   
   .resize-divider:active {
     background: #3b82f6;
-    width: 12px;
   }
   
-  /* Divider handle (3 dots like Claude) */
+  /* Divider handle */
   .resize-divider::before {
-    content: '⋮';
     color: #9ca3af;
-    font-size: 16px;
+    font-size: 14px;
     line-height: 1;
     transition: all 0.2s ease;
+    
+    /* Mobile: Horizontal dots */
+    content: '⋯';
+    transform: none;
+  }
+  
+  /* Desktop: Vertical dots */
+  @media (min-width: 1024px) {
+    .resize-divider::before {
+      content: '⋮';
+      transform: none;
+    }
   }
   
   .resize-divider:hover::before {
@@ -316,123 +461,106 @@
     color: white;
   }
   
-  /* Extended click area */
+  /* Extended touch/click area */
   .resize-divider::after {
     content: '';
     position: absolute;
-    width: 24px;
-    height: 100%;
-    left: -8px;
-    top: 0;
-    cursor: col-resize;
+    cursor: row-resize;
+    
+    /* Mobile: Larger touch area */
+    width: 100%;
+    height: 32px;
+    left: 0;
+    top: -10px;
+  }
+  
+  /* Desktop: Vertical click area */
+  @media (min-width: 1024px) {
+    .resize-divider::after {
+      width: 24px;
+      height: 100%;
+      left: -8px;
+      top: 0;
+      cursor: col-resize;
+    }
   }
   
   /* ================================
-     RIGHT PANEL - INTERACTIVE (LIKE CLAUDE'S RIGHT SIDE) - ADJUSTED FOR MAX CONTENT SPACE
+     RIGHT PANEL - MOBILE OPTIMIZED
      ================================ */
   
-     .interactive-panel-container {
-      background: #ffffff;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      position: relative;
-      flex: 1;
-      min-width: 200px;
-      padding: 0;
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    
+    /* Mobile: Remaining space */
+    flex: 1;
+    min-height: 150px;
+    max-height: 50%;
+    
+    background: #ffffff;
+    overflow: hidden;
+  }
+  
+  /* Desktop: Fixed width */
+  @media (min-width: 1024px) {
+    .right-panel {
+      width: 25%;
       height: 100%;
-      min-height: 500px !important; /* ✅ FORCE minimum height */
+      min-width: 250px;
+      max-width: 80%;
+      max-height: none;
     }
+  }
+  
+  .interactive-panel-container {
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    flex: 1;
+    padding: 0;
+    height: 100%;
+    min-height: 120px;
+  }
+  
   .non-interactive-panel {
     background: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 24px; /* ✅ REDUCED: Less padding */
+    padding: 16px;
     position: relative;
     flex: 1;
-    min-width: 200px; /* ✅ REDUCED: Allow more content space */
+    text-align: center;
   }
   
   .panel-placeholder {
-    text-align: center;
     color: #6b7280;
+    max-width: 300px;
   }
   
   .placeholder-icon {
-    font-size: 4rem;
-    margin-bottom: 20px;
-    opacity: 0.5;
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    opacity: 0.6;
   }
   
   .panel-placeholder h4 {
-    font-size: 1.3rem;
-    margin-bottom: 12px;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
     color: #374151;
+    line-height: 1.3;
   }
   
   .panel-placeholder p {
-    font-size: 1rem;
-    line-height: 1.5;
-    max-width: 400px;
+    font-size: 0.9rem;
+    line-height: 1.4;
   }
   
   /* ================================
-     RESIZABLE FUNCTIONALITY - JAVASCRIPT CONTROLLED
-     ================================ */
-  
-  /* When dragging */
-  .split-content.dragging {
-    user-select: none;
-    cursor: col-resize;
-  }
-  
-  .split-content.dragging * {
-    cursor: col-resize !important;
-    pointer-events: none;
-  }
-  
-  .split-content.dragging .content-panel {
-    transition: none;
-  }
-  
-  /* Visual feedback during resize */
-  .resize-divider.active {
-    background: #3b82f6;
-    width: 12px;
-    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
-  }
-  
-  .resize-divider.active::before {
-    color: white;
-  }
-  
-  /* Panel size constraints indicators */
-  .content-panel[data-at-min]::before {
-    content: '← Min width reached';
-    position: absolute;
-    top: 50%;
-    right: 20px;
-    transform: translateY(-50%);
-    background: rgba(59, 130, 246, 0.9);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    z-index: 100;
-    animation: fadeInOut 2s ease-in-out;
-  }
-  
-  
-  
-  @keyframes fadeInOut {
-    0%, 100% { opacity: 0; }
-    50% { opacity: 1; }
-  }
-  
-  /* ================================
-     VOCABULARY MODAL STYLES
+     VOCABULARY MODAL - MOBILE OPTIMIZED
      ================================ */
   
   .vocabulary-modal-overlay {
@@ -441,14 +569,16 @@
     left: 0;
     width: 100%;
     height: 100%;
+    height: 100dvh;
     background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(12px);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 3000;
-    padding: 20px;
+    padding: 16px;
     animation: modalFadeIn 0.4s ease-out;
+    overscroll-behavior: contain;
   }
   
   @keyframes modalFadeIn {
@@ -458,29 +588,45 @@
     }
     to {
       opacity: 1;
-      backdrop-filter: blur(16px);
+      backdrop-filter: blur(12px);
     }
   }
   
   .vocabulary-modal-container {
     background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    border-radius: 24px;
-    padding: 32px;
-    max-width: 900px;
+    border-radius: 20px;
+    padding: 20px;
+    max-width: 95vw;
     width: 100%;
     max-height: 95vh;
+    max-height: 95dvh;
     overflow-y: auto;
     box-shadow: 
-      0 25px 50px rgba(0, 0, 0, 0.25),
+      0 20px 40px rgba(0, 0, 0, 0.25),
       0 0 0 1px rgba(255, 255, 255, 0.1);
     position: relative;
     animation: modalSlideUp 0.4s ease-out;
   }
   
+  /* Desktop: Larger vocabulary modal */
+  @media (min-width: 768px) {
+    .vocabulary-modal-container {
+      max-width: 700px;
+      padding: 28px;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .vocabulary-modal-container {
+      max-width: 900px;
+      padding: 32px;
+    }
+  }
+  
   @keyframes modalSlideUp {
     from {
       opacity: 0;
-      transform: translateY(40px) scale(0.95);
+      transform: translateY(30px) scale(0.95);
     }
     to {
       opacity: 1;
@@ -490,26 +636,35 @@
   
   .vocabulary-modal-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 32px;
-    padding-bottom: 20px;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
     border-bottom: 2px solid #e2e8f0;
+  }
+  
+  /* Desktop: Horizontal header */
+  @media (min-width: 768px) {
+    .vocabulary-modal-header {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
   }
   
   .vocab-progress-section {
     flex: 1;
-    margin-right: 20px;
   }
   
   .vocab-progress-bar {
     width: 100%;
-    height: 8px;
+    height: 6px;
     background: #e2e8f0;
-    border-radius: 4px;
+    border-radius: 3px;
     overflow: hidden;
-    margin-bottom: 8px;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 6px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
   }
   
   .vocab-progress-fill {
@@ -521,31 +676,40 @@
   }
   
   .vocab-progress-text {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: #4b5563;
     font-weight: 600;
   }
   
   .vocab-header-actions {
     display: flex;
-    gap: 12px;
+    gap: 8px;
     align-items: center;
+    justify-content: center;
+  }
+  
+  /* Desktop: Right-aligned actions */
+  @media (min-width: 768px) {
+    .vocab-header-actions {
+      justify-content: flex-end;
+    }
   }
   
   .vocab-skip-btn,
   .vocab-close-btn {
-    padding: 10px 18px;
+    padding: 12px 16px;
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 0.95rem;
-    min-height: 48px;
+    font-size: 0.9rem;
+    min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
+    touch-action: manipulation;
   }
   
   .vocab-skip-btn {
@@ -554,7 +718,8 @@
     border: 2px solid #e2e8f0;
   }
   
-  .vocab-skip-btn:hover {
+  .vocab-skip-btn:hover,
+  .vocab-skip-btn:active {
     background: #e2e8f0;
     transform: translateY(-1px);
     border-color: #cbd5e1;
@@ -563,15 +728,16 @@
   .vocab-close-btn {
     background: rgba(239, 68, 68, 0.1);
     color: #ef4444;
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     padding: 0;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     border: 2px solid rgba(239, 68, 68, 0.2);
   }
   
-  .vocab-close-btn:hover {
+  .vocab-close-btn:hover,
+  .vocab-close-btn:active {
     background: rgba(239, 68, 68, 0.2);
     transform: scale(1.05);
     border-color: rgba(239, 68, 68, 0.3);
@@ -581,25 +747,41 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 28px;
+    gap: 20px;
   }
   
   .vocabulary-card {
     width: 100%;
-    max-width: 550px;
-    height: 380px;
+    max-width: 100%;
+    height: 280px;
     position: relative;
-    perspective: 1200px;
+    perspective: 1000px;
     cursor: pointer;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     animation: cardAppear 0.6s ease-out;
     transform-style: preserve-3d;
+  }
+  
+  /* Tablet: Larger cards */
+  @media (min-width: 768px) {
+    .vocabulary-card {
+      height: 320px;
+      max-width: 480px;
+    }
+  }
+  
+  /* Desktop: Even larger cards */
+  @media (min-width: 1024px) {
+    .vocabulary-card {
+      height: 380px;
+      max-width: 550px;
+    }
   }
   
   @keyframes cardAppear {
     from {
       opacity: 0;
-      transform: translateY(30px) scale(0.9);
+      transform: translateY(20px) scale(0.95);
     }
     to {
       opacity: 1;
@@ -608,8 +790,15 @@
   }
   
   .vocabulary-card:hover {
-    transform: scale(1.02) translateY(-4px);
+    transform: scale(1.02) translateY(-2px);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Mobile: Reduce hover effects */
+  @media (max-width: 767px) {
+    .vocabulary-card:hover {
+      transform: none;
+    }
   }
   
   .card-front,
@@ -618,14 +807,14 @@
     width: 100%;
     height: 100%;
     backface-visibility: hidden;
-    border-radius: 24px;
+    border-radius: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 
-      0 20px 40px rgba(0, 0, 0, 0.15),
-      0 8px 16px rgba(0, 0, 0, 0.1);
+      0 10px 20px rgba(0, 0, 0, 0.15),
+      0 4px 8px rgba(0, 0, 0, 0.1);
     will-change: transform;
   }
   
@@ -654,170 +843,250 @@
   }
   
   .card-content {
-    padding: 48px;
+    padding: 24px 20px;
     text-align: center;
     height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     position: relative;
+    box-sizing: border-box;
+  }
+  
+  /* Desktop: More padding */
+  @media (min-width: 768px) {
+    .card-content {
+      padding: 32px 28px;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .card-content {
+      padding: 40px 36px;
+    }
   }
   
   .vocab-term {
-    font-size: 2.75rem;
+    font-size: 2rem;
     font-weight: 700;
-    margin: 0 0 20px 0;
+    margin: 0 0 16px 0;
     line-height: 1.1;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    word-wrap: break-word;
+    hyphens: auto;
+  }
+  
+  /* Responsive font sizes */
+  @media (min-width: 768px) {
+    .vocab-term {
+      font-size: 2.25rem;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .vocab-term {
+      font-size: 2.75rem;
+    }
   }
   
   .vocab-definition {
-    font-size: 1.3rem;
-    line-height: 1.5;
+    font-size: 1.1rem;
+    line-height: 1.4;
     margin: 0;
+    word-wrap: break-word;
+    hyphens: auto;
+  }
+  
+  @media (min-width: 768px) {
+    .vocab-definition {
+      font-size: 1.2rem;
+      line-height: 1.5;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .vocab-definition {
+      font-size: 1.3rem;
+    }
   }
   
   .vocab-card-actions {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-    margin-top: 28px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+    width: 100%;
+  }
+  
+  /* Desktop: Multi-row layout */
+  @media (min-width: 768px) {
+    .vocab-card-actions {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
   }
   
   .vocab-nav-btn {
     background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
     color: white;
     border: none;
-    padding: 14px 28px;
-    border-radius: 14px;
+    padding: 14px 20px;
+    border-radius: 12px;
     font-weight: 600;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    min-width: 140px;
-    min-height: 48px;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-  }
-  
-  .vocab-nav-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
-  }
-  
-  .vocab-nav-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-  
-  .vocab-main-actions {
-    display: flex;
-    gap: 16px;
-    flex: 1;
-    justify-content: center;
-  }
-  
-  .vocab-learned-btn {
-    background: #f1f5f9;
-    color: #64748b;
-    border: 2px solid #e2e8f0;
-    padding: 14px 28px;
-    border-radius: 14px;
-    font-weight: 600;
+    font-size: 0.95rem;
     cursor: pointer;
     transition: all 0.2s ease;
     min-height: 48px;
-    font-size: 1rem;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    touch-action: manipulation;
+    width: 100%;
+  }
+  
+  /* Desktop: Auto width */
+  @media (min-width: 768px) {
+    .vocab-learned-btn {
+      width: auto;
+      min-width: 120px;
+    }
   }
   
   .vocab-learned-btn.active {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white;
     border-color: transparent;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
   }
   
-  .vocab-learned-btn:hover {
-    transform: translateY(-2px);
+  .vocab-learned-btn:hover,
+  .vocab-learned-btn:active {
+    transform: translateY(-1px);
   }
   
   .vocab-next-btn {
     background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
     color: white;
     border: none;
-    padding: 14px 28px;
-    border-radius: 14px;
+    padding: 14px 20px;
+    border-radius: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
     min-height: 48px;
-    font-size: 1rem;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    font-size: 0.95rem;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    touch-action: manipulation;
+    width: 100%;
   }
   
-  .vocab-next-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+  /* Desktop: Auto width */
+  @media (min-width: 768px) {
+    .vocab-next-btn {
+      width: auto;
+      min-width: 120px;
+    }
+  }
+  
+  .vocab-next-btn:hover,
+  .vocab-next-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
   }
   
   /* ================================
-     FLOATING AI BUTTON
+     FLOATING AI BUTTON - MOBILE OPTIMIZED
      ================================ */
   
   .floating-ai-btn {
     position: fixed;
-    bottom: 28px;
-    right: 28px;
-    width: 64px;
-    height: 64px;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
     background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
     color: white;
     border: none;
     border-radius: 50%;
-    font-size: 1.6rem;
+    font-size: 1.4rem;
     cursor: pointer;
     box-shadow: 
-      0 8px 24px rgba(59, 130, 246, 0.4),
-      0 4px 8px rgba(59, 130, 246, 0.2);
+      0 6px 20px rgba(59, 130, 246, 0.4),
+      0 2px 6px rgba(59, 130, 246, 0.2);
     z-index: 1000;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 3px solid rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    touch-action: manipulation;
+  }
+  
+  /* Desktop: Larger button */
+  @media (min-width: 768px) {
+    .floating-ai-btn {
+      width: 64px;
+      height: 64px;
+      font-size: 1.6rem;
+      bottom: 28px;
+      right: 28px;
+    }
   }
   
   .floating-ai-btn:hover,
+  .floating-ai-btn:active,
   .floating-ai-btn.active {
     transform: scale(1.1) translateY(-2px);
     box-shadow: 
-      0 12px 32px rgba(59, 130, 246, 0.5),
-      0 6px 12px rgba(59, 130, 246, 0.3);
+      0 8px 24px rgba(59, 130, 246, 0.5),
+      0 4px 8px rgba(59, 130, 246, 0.3);
     border-color: rgba(255, 255, 255, 0.3);
   }
   
+  /* Mobile: Reduce hover effects */
+  @media (max-width: 767px) {
+    .floating-ai-btn:hover {
+      transform: scale(1.05);
+    }
+  }
+  
   /* ================================
-     PROBLEM REPORT MODAL
+     PROBLEM REPORT MODAL - MOBILE OPTIMIZED
      ================================ */
   
   .problem-report-modal {
     background: white;
-    border-radius: 20px;
+    border-radius: 16px;
     width: 100%;
-    max-width: 700px;
-    max-height: 90vh;
+    max-width: 95vw;
+    max-height: 95vh;
+    max-height: 95dvh;
     overflow-y: auto;
     box-shadow: 
-      0 25px 50px rgba(0, 0, 0, 0.3),
-      0 8px 16px rgba(0, 0, 0, 0.1);
+      0 20px 40px rgba(0, 0, 0, 0.3),
+      0 4px 8px rgba(0, 0, 0, 0.1);
     animation: modalSlideIn 0.3s ease-out;
-    margin: 20px;
+    margin: 8px;
+  }
+  
+  /* Desktop: Larger modal */
+  @media (min-width: 768px) {
+    .problem-report-modal {
+      max-width: 600px;
+      border-radius: 20px;
+      margin: 16px;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .problem-report-modal {
+      max-width: 700px;
+      margin: 20px;
+    }
   }
   
   @keyframes modalSlideIn {
     from {
       opacity: 0;
-      transform: translateY(30px) scale(0.95);
+      transform: translateY(20px) scale(0.95);
     }
     to {
       opacity: 1;
@@ -829,68 +1098,120 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 28px 28px 0 28px;
+    padding: 20px 20px 0 20px;
     border-bottom: 2px solid #e2e8f0;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
+  }
+  
+  /* Desktop: More padding */
+  @media (min-width: 768px) {
+    .modal-header {
+      padding: 24px 24px 0 24px;
+      margin-bottom: 24px;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .modal-header {
+      padding: 28px 28px 0 28px;
+      margin-bottom: 28px;
+    }
   }
   
   .modal-header h3 {
     margin: 0;
     color: #1e293b;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     font-weight: 600;
+    line-height: 1.3;
+    flex: 1;
+    padding-right: 16px;
+  }
+  
+  @media (min-width: 768px) {
+    .modal-header h3 {
+      font-size: 1.4rem;
+    }
   }
   
   .close-btn {
     background: rgba(239, 68, 68, 0.1);
     border: 2px solid rgba(239, 68, 68, 0.2);
     color: #ef4444;
-    padding: 10px;
+    padding: 8px;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 1.3rem;
-    width: 48px;
-    height: 48px;
+    font-size: 1.2rem;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
+    touch-action: manipulation;
+    flex-shrink: 0;
   }
   
-  .close-btn:hover {
+  .close-btn:hover,
+  .close-btn:active {
     background: rgba(239, 68, 68, 0.2);
     transform: scale(1.05);
     border-color: rgba(239, 68, 68, 0.3);
   }
   
   .modal-body {
-    padding: 0 28px;
+    padding: 0 20px;
+  }
+  
+  @media (min-width: 768px) {
+    .modal-body {
+      padding: 0 24px;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .modal-body {
+      padding: 0 28px;
+    }
+  }
+  
+  .modal-description {
+    color: #64748b;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
   }
   
   .form-group {
-    margin-bottom: 24px;
+    margin-bottom: 20px;
   }
   
   .form-group label {
     display: block;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     font-weight: 600;
     color: #374151;
-    font-size: 1rem;
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+  
+  .required {
+    color: #ef4444;
   }
   
   .form-input,
   .form-textarea,
   .form-select {
     width: 100%;
-    padding: 14px 18px;
+    padding: 14px 16px;
     border: 2px solid #e2e8f0;
-    border-radius: 12px;
+    border-radius: 10px;
     font-size: 1rem;
     transition: all 0.2s ease;
     background: white;
     box-sizing: border-box;
     font-family: inherit;
+    line-height: 1.4;
   }
   
   .form-input:focus,
@@ -901,33 +1222,85 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
   
+  .form-input.error,
+  .form-textarea.error {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  }
+  
+  .form-textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+  
+  .error-message {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+  
+  .help-text {
+    color: #6b7280;
+    font-size: 0.85rem;
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+  
   .modal-footer {
     display: flex;
-    gap: 16px;
+    gap: 12px;
     justify-content: flex-end;
-    padding: 28px;
+    padding: 20px;
     border-top: 2px solid #e2e8f0;
-    margin-top: 28px;
+    margin-top: 20px;
+    flex-direction: column-reverse;
+  }
+  
+  /* Desktop: Horizontal footer */
+  @media (min-width: 768px) {
+    .modal-footer {
+      flex-direction: row;
+      padding: 24px;
+      margin-top: 24px;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .modal-footer {
+      padding: 28px;
+      margin-top: 28px;
+    }
   }
   
   .submit-btn {
     background: linear-gradient(135deg, #059669 0%, #047857 100%);
     color: white;
     border: none;
-    padding: 14px 28px;
+    padding: 16px 24px;
     border-radius: 12px;
     cursor: pointer;
     font-weight: 600;
     transition: all 0.2s ease;
-    min-width: 160px;
-    min-height: 48px;
+    min-height: 52px;
     font-size: 1rem;
-    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+    touch-action: manipulation;
+    width: 100%;
   }
   
-  .submit-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(5, 150, 105, 0.4);
+  /* Desktop: Auto width */
+  @media (min-width: 768px) {
+    .submit-btn {
+      width: auto;
+      min-width: 160px;
+    }
+  }
+  
+  .submit-btn:hover:not(:disabled),
+  .submit-btn:active:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
   }
   
   .submit-btn:disabled {
@@ -937,288 +1310,121 @@
   }
   
   /* ================================
-     RESPONSIVE DESIGN - SPLIT SCREEN ADAPTATIONS
+     DRAGGING AND INTERACTION STATES
      ================================ */
   
-  /* Large screens - keep split screen with MAXIMUM content space */
+  /* When dragging */
+  .split-content.dragging {
+    user-select: none;
+  }
+  
+  /* Mobile: Row resize cursor */
+  .split-content.dragging {
+    cursor: row-resize;
+  }
+  
+  /* Desktop: Column resize cursor */
   @media (min-width: 1024px) {
-    .split-content {
-      flex-direction: row;
-    }
-    
-    .content-panel {
-      width: 75%; /* ✅ INCREASED: 75% by default instead of 70% */
-      border-right: 1px solid #e5e7eb;
-      border-bottom: none;
-    }
-    
-    .resize-divider {
-      width: 8px;
-      height: auto;
-      cursor: col-resize;
-      border-top: none;
-      border-bottom: none;
-      border-left: 1px solid #e5e7eb;
-      border-right: 1px solid #e5e7eb;
-    }
-    
-    .resize-divider::before {
-      content: '⋮';
-    }
-    
-    .resize-divider::after {
-      width: 24px;
-      height: 100%;
-      left: -8px;
-      top: 0;
-      cursor: col-resize;
-    }
-  }
-  
-  /* Tablets and smaller - stack vertically with MAXIMUM content space */
-  @media (max-width: 1023px) {
-    .split-content {
-      flex-direction: column;
-    }
-    
-    .content-panel {
-      width: 100%;
-      height: 70%; /* ✅ INCREASED: Even more space for content on mobile - 70% */
-      min-height: 400px; /* ✅ INCREASED: More minimum height */
-      max-height: 85%; /* ✅ INCREASED: Allow even more space if needed */
-      border-right: none;
-      border-bottom: 1px solid #e5e7eb;
-      resize: vertical;
-      padding: 0; /* ✅ NO PADDING: Maximum content space */
-    }
-    
-    .resize-divider {
-      width: 100%;
-      height: 8px;
-      cursor: row-resize;
-      border-left: none;
-      border-right: none;
-      border-top: 1px solid #e5e7eb;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    
-    .resize-divider:hover {
-      height: 12px;
-    }
-    
-    .resize-divider:active {
-      height: 12px;
-    }
-    
-    .resize-divider::before {
-      content: '⋯';
-      transform: rotate(90deg);
-    }
-    
-    .resize-divider::after {
-      width: 100%;
-      height: 24px;
-      left: 0;
-      top: -8px;
-      cursor: row-resize;
-    }
-    
-    .interactive-panel-container,
-    .non-interactive-panel {
-      flex: 1;
-      min-height: 150px; /* ✅ REDUCED: Less minimum height for interactive panel */
-      padding: 0;
-    }
-    
-    .non-interactive-panel {
-      padding: 16px; /* ✅ MINIMAL: Less padding for non-interactive */
-    }
-    
-    /* Dragging in vertical mode */
     .split-content.dragging {
-      cursor: row-resize;
+      cursor: col-resize;
     }
-    
+  }
+  
+  .split-content.dragging * {
+    pointer-events: none;
+  }
+  
+  .split-content.dragging * {
+    cursor: row-resize !important;
+  }
+  
+  @media (min-width: 1024px) {
     .split-content.dragging * {
-      cursor: row-resize !important;
+      cursor: col-resize !important;
     }
   }
   
-  /* Mobile phones - MAXIMUM content space priority */
-  @media (max-width: 768px) {
-    .content-panel {
-      padding: 0; /* ✅ ZERO PADDING: Maximum space for content */
-      min-height: 350px; /* ✅ INCREASED: More space for content */
-      height: 75%; /* ✅ INCREASED: Even more space on mobile */
-    }
-    
-    .resize-divider {
-      height: 12px;
-    }
-    
-    .resize-divider:hover,
-    .resize-divider:active {
-      height: 16px;
-    }
-    
-    .interactive-panel-container {
-      padding: 0;
-    }
-    
-    .non-interactive-panel {
-      padding: 8px; /* ✅ MINIMAL: Very small padding */
-    }
-    /* rjfv */
-    .floating-ai-btn {
-      width: 56px;
-      height: 56px;
-      bottom: 20px;
+  .split-content.dragging .content-panel {
+    transition: none;
+  }
+  
+  /* Visual feedback during resize */
+  .resize-divider.active {
+    background: #3b82f6;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
+  }
+  
+  .resize-divider.active::before {
+    color: white;
+  }
+  
+  /* Panel size constraint indicators */
+  .content-panel[data-at-min]::before {
+    content: '↑ Min height reached';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(59, 130, 246, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    z-index: 100;
+    animation: fadeInOut 2s ease-in-out;
+    white-space: nowrap;
+  }
+  
+  /* Desktop: Different constraint message */
+  @media (min-width: 1024px) {
+    .content-panel[data-at-min]::before {
+      content: '← Min width reached';
+      top: 50%;
+      left: auto;
       right: 20px;
-      font-size: 1.4rem;
-    }
-    
-    .vocabulary-modal-container {
-      padding: 24px;
-      margin: 16px;
-    }
-    
-    .vocabulary-card {
-      height: 320px;
-    }
-    
-    .vocab-term {
-      font-size: 2.25rem;
-    }
-    
-    .modal-content {
-      padding: 32px 24px;
-      margin: 16px;
-    }
-    
-    .problem-report-modal {
-      margin: 16px;
-    }
-    
-    .modal-header {
-      padding: 24px 24px 0 24px;
-    }
-    
-    .modal-body {
-      padding: 0 24px;
-    }
-    
-    .modal-footer {
-      padding: 24px;
-      flex-direction: column-reverse;
-    }
-    
-    .submit-btn,
-    .cancel-btn {
-      width: 100%;
+      transform: translateY(-50%);
     }
   }
   
-  /* Small mobile phones - ULTIMATE content space priority */
-  @media (max-width: 480px) {
-    .content-panel {
-      padding: 0; /* ✅ ABSOLUTELY NO PADDING: Every pixel for content */
-      min-height: 300px; /* ✅ ADEQUATE: Still good space */
-      height: 80%; /* ✅ MAXIMUM: 80% of screen for content */
-    }
-    
-    .resize-divider {
-      height: 16px;
-    }
-    
-    .resize-divider:hover,
-    .resize-divider:active {
-      height: 20px;
-    }
-    
-    .non-interactive-panel {
-      padding: 4px; /* ✅ ULTRA MINIMAL: Just enough */
-    }
-    
-    .floating-ai-btn {
-      width: 48px;
-      height: 48px;
-      bottom: 16px;
-      right: 16px;
-      font-size: 1.2rem;
-    }
-    
-    .vocabulary-modal-container {
-      padding: 16px;
-      margin: 8px;
-    }
-    
-    .vocabulary-card {
-      height: 280px;
-    }
-    
-    .vocab-term {
-      font-size: 1.875rem;
-    }
-    
-    .card-content {
-      padding: 24px;
-    }
-    
-    .vocab-card-actions {
-      flex-direction: column;
-      gap: 12px;
-    }
-    
-    .vocab-nav-btn,
-    .vocab-learned-btn,
-    .vocab-next-btn {
-      width: 100%;
-      min-width: auto;
-    }
-    
-    .modal-content {
-      padding: 24px 20px;
-      margin: 8px;
-    }
-    
-    .problem-report-modal {
-      margin: 8px;
-    }
-    
-    .modal-header {
-      padding: 20px 20px 0 20px;
-    }
-    
-    .modal-header h3 {
-      font-size: 1.2rem;
-    }
-    
-    .modal-body {
-      padding: 0 20px;
-    }
-    
-    .modal-footer {
-      padding: 20px;
-    }
-    
-    .form-input,
-    .form-textarea,
-    .form-select {
-      padding: 12px 16px;
-      font-size: 0.95rem;
-    }
+  @keyframes fadeInOut {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
   }
   
   /* ================================
-     SUCCESS NOTIFICATIONS
+     SUCCESS NOTIFICATIONS - MOBILE OPTIMIZED
      ================================ */
   
   .success-notification {
     position: fixed;
-    top: 24px;
-    right: 24px;
+    top: 20px;
+    left: 16px;
+    right: 16px;
     z-index: 2000;
-    animation: slideInRight 0.3s ease-out;
+    animation: slideInDown 0.3s ease-out;
+  }
+  
+  /* Desktop: Top-right positioning */
+  @media (min-width: 768px) {
+    .success-notification {
+      top: 24px;
+      left: auto;
+      right: 24px;
+      max-width: 400px;
+      animation: slideInRight 0.3s ease-out;
+    }
+  }
+  
+  @keyframes slideInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   
   @keyframes slideInRight {
@@ -1235,49 +1441,66 @@
   .success-content {
     background: white;
     border: 2px solid #059669;
-    border-radius: 16px;
-    padding: 20px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     display: flex;
-    align-items: center;
-    gap: 16px;
-    max-width: 400px;
+    align-items: flex-start;
+    gap: 12px;
     position: relative;
   }
   
+  @media (min-width: 768px) {
+    .success-content {
+      padding: 20px;
+      gap: 16px;
+    }
+  }
+  
   .success-icon {
-    font-size: 1.6rem;
+    font-size: 1.4rem;
     flex-shrink: 0;
+    margin-top: 2px;
+  }
+  
+  .success-text {
+    flex: 1;
+    min-width: 0;
   }
   
   .success-text h4 {
-    margin: 0 0 6px 0;
+    margin: 0 0 4px 0;
     color: #059669;
-    font-size: 1.1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.3;
   }
   
   .success-text p {
     margin: 0;
     color: #374151;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     line-height: 1.4;
   }
   
   .close-success {
     position: absolute;
-    top: 12px;
-    right: 12px;
+    top: 8px;
+    right: 8px;
     background: none;
     border: none;
     color: #6b7280;
     cursor: pointer;
-    font-size: 1.1rem;
-    padding: 6px;
-    border-radius: 6px;
+    font-size: 1rem;
+    padding: 4px;
+    border-radius: 4px;
     transition: all 0.2s ease;
+    touch-action: manipulation;
+    flex-shrink: 0;
   }
   
-  .close-success:hover {
+  .close-success:hover,
+  .close-success:active {
     background: #f3f4f6;
     color: #374151;
   }
@@ -1292,15 +1515,16 @@
     left: 0;
     width: 100%;
     height: 100%;
+    height: 100dvh;
     pointer-events: none;
     z-index: 999;
   }
   
   /* ================================
-     ACCESSIBILITY & PERFORMANCE
+     ACCESSIBILITY & TOUCH IMPROVEMENTS
      ================================ */
   
-  /* Focus states */
+  /* Focus states with larger focus rings for mobile */
   .retry-btn:focus,
   .back-btn:focus,
   .floating-ai-btn:focus,
@@ -1320,7 +1544,7 @@
   
   .vocabulary-card:focus-within {
     outline: 2px solid #3b82f6;
-    outline-offset: 4px;
+    outline-offset: 3px;
   }
   
   .form-input:focus,
@@ -1345,6 +1569,7 @@
   /* High contrast mode support */
   @media (prefers-contrast: high) {
     .content-panel {
+      border-bottom: 3px solid #000;
       border-right: 3px solid #000;
     }
     
@@ -1376,20 +1601,14 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
-
+  
     .loading-spinner {
       animation: none;
       border: 4px solid #3b82f6;
     }
     
-    .vocabulary-card:hover {
-      transform: none;
-    }
-    
-    .floating-ai-btn:hover {
-      transform: none;
-    }
-    
+    .vocabulary-card:hover,
+    .floating-ai-btn:hover,
     .submit-btn:hover,
     .cancel-btn:hover,
     .vocab-nav-btn:hover,
@@ -1426,7 +1645,10 @@
     contain: layout;
   }
   
-  /* Print styles */
+  /* ================================
+     PRINT STYLES
+     ================================ */
+  
   @media print {
     .floating-ai-btn,
     .modal-overlay,
@@ -1436,20 +1658,20 @@
     .resize-divider {
       display: none !important;
     }
-
+  
     .lesson-page {
       background: white !important;
     }
-
+  
     .lesson-container {
       background: white !important;
     }
-
+  
     .split-content {
       display: block !important;
       background: white !important;
     }
-
+  
     .content-panel,
     .interactive-panel-container,
     .non-interactive-panel {
@@ -1461,13 +1683,13 @@
       height: auto !important;
       page-break-inside: avoid;
     }
-
+  
     .vocabulary-card {
       background: white !important;
       border: 2px solid #000;
       color: black !important;
     }
-
+  
     * {
       background: white !important;
       color: black !important;
@@ -1494,7 +1716,7 @@
   @keyframes slideUp {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(15px);
     }
     to {
       opacity: 1;
@@ -1513,7 +1735,10 @@
     color: inherit;
   }
   
-  /* JavaScript classes for split screen control */
+  /* ================================
+     JAVASCRIPT CLASSES FOR SPLIT SCREEN CONTROL
+     ================================ */
+  
   .split-content.smooth-resize .content-panel {
     transition: width 0.3s ease, height 0.3s ease;
   }
@@ -1530,3 +1755,262 @@
   .lesson-container.resizing * {
     user-select: none;
   }
+  
+  /* ================================
+     LANDSCAPE MODE OPTIMIZATIONS FOR MOBILE
+     ================================ */
+  
+  @media (max-width: 1023px) and (orientation: landscape) {
+    /* Landscape: Reduce heights for better space utilization */
+    .content-panel {
+      height: 60%;
+      min-height: 250px;
+    }
+    
+    .modal-content,
+    .vocabulary-modal-container,
+    .problem-report-modal {
+      max-height: 85vh;
+      max-height: 85dvh;
+    }
+    
+    .vocabulary-card {
+      height: 240px;
+    }
+    
+    .card-content {
+      padding: 20px 16px;
+    }
+    
+    .vocab-term {
+      font-size: 1.75rem;
+      margin-bottom: 12px;
+    }
+    
+    .vocab-definition {
+      font-size: 1rem;
+    }
+  }
+  
+  /* ================================
+     EXTRA SMALL DEVICES (< 480px)
+     ================================ */
+  
+  @media (max-width: 479px) {
+    .lesson-page {
+      font-size: 14px;
+    }
+    
+    .content-panel {
+      height: 70%;
+      min-height: 280px;
+    }
+    
+    .resize-divider {
+      height: 16px;
+      min-height: 24px;
+    }
+    
+    .floating-ai-btn {
+      width: 52px;
+      height: 52px;
+      bottom: 16px;
+      right: 16px;
+      font-size: 1.3rem;
+    }
+    
+    .vocabulary-modal-container {
+      padding: 16px;
+      margin: 8px;
+      border-radius: 16px;
+    }
+    
+    .vocabulary-card {
+      height: 260px;
+    }
+    
+    .card-content {
+      padding: 20px 16px;
+    }
+    
+    .vocab-term {
+      font-size: 1.6rem;
+    }
+    
+    .vocab-definition {
+      font-size: 1rem;
+    }
+    
+    .vocab-card-actions {
+      gap: 10px;
+      margin-top: 16px;
+    }
+    
+    .vocab-nav-btn,
+    .vocab-learned-btn,
+    .vocab-next-btn {
+      padding: 12px 16px;
+      min-height: 44px;
+      font-size: 0.9rem;
+    }
+    
+    .modal-content {
+      padding: 20px 16px;
+      margin: 8px;
+      border-radius: 12px;
+    }
+    
+    .problem-report-modal {
+      margin: 8px;
+      border-radius: 12px;
+    }
+    
+    .modal-header {
+      padding: 16px 16px 0 16px;
+      margin-bottom: 16px;
+    }
+    
+    .modal-header h3 {
+      font-size: 1.1rem;
+    }
+    
+    .modal-body {
+      padding: 0 16px;
+    }
+    
+    .modal-footer {
+      padding: 16px;
+      margin-top: 16px;
+    }
+    
+    .form-input,
+    .form-textarea,
+    .form-select {
+      padding: 12px 14px;
+      font-size: 0.95rem;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-group label {
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+    
+    .submit-btn,
+    .cancel-btn {
+      min-height: 48px;
+      padding: 14px 20px;
+    }
+  }
+  
+  /* ================================
+     SAFE AREA SUPPORT FOR DEVICES WITH NOTCHES
+     ================================ */
+  
+  @supports (padding: max(0px)) {
+    .lesson-page,
+    .lesson-container {
+      padding-left: max(0px, env(safe-area-inset-left));
+      padding-right: max(0px, env(safe-area-inset-right));
+    }
+    
+    .floating-ai-btn {
+      bottom: max(20px, calc(20px + env(safe-area-inset-bottom)));
+      right: max(20px, calc(20px + env(safe-area-inset-right)));
+    }
+    
+    .success-notification {
+      top: max(20px, calc(20px + env(safe-area-inset-top)));
+      left: max(16px, calc(16px + env(safe-area-inset-left)));
+      right: max(16px, calc(16px + env(safe-area-inset-right)));
+    }
+    
+    @media (min-width: 768px) {
+      .success-notification {
+        right: max(24px, calc(24px + env(safe-area-inset-right)));
+        left: auto;
+      }
+    }
+    
+    .modal-overlay {
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+      padding-top: max(16px, env(safe-area-inset-top));
+    }
+    
+    .vocabulary-modal-overlay {
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+      padding-top: max(16px, env(safe-area-inset-top));
+    }
+  }
+  
+  /* ================================
+     DARK MODE PREVENTION (SINCE DESIGN IS LIGHT-ONLY)
+     ================================ */
+  
+  @media (prefers-color-scheme: dark) {
+    /* Force light mode for this component */
+   
+    .lesson-page * {
+      color-scheme: light;
+      width: 768px
+    }
+  }
+    .vocab-nav-btn {
+      width: auto;
+      min-width: 120px;
+    }
+  
+  
+  .vocab-nav-btn:hover:not(:disabled),
+  .vocab-nav-btn:active:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  }
+  
+  .vocab-nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .vocab-main-actions {
+    display: flex;
+    gap: 12px;
+    flex: 1;
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  /* Desktop: Horizontal main actions */
+  @media (min-width: 768px) {
+    .vocab-main-actions {
+      flex-direction: row;
+      justify-content: center;
+      width: auto;
+    }
+  }
+  
+  .vocab-learned-btn {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 2px solid #e2e8f0;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 48px;
+    font-size: 0.95rem;
+    touch-action: manipulation;
+    width: 100%;
+  }
+  
+ 
