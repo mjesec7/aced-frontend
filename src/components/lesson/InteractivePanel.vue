@@ -684,35 +684,62 @@ export default {
       })
     })
     
+    // 🔥 FIXED: Left items computation
     const leftItems = computed(() => {
       if (!props.currentExercise?.pairs) return []
       const pairs = props.currentExercise.pairs
+      
+      console.log('🔧 DEBUG: Computing left items from pairs:', pairs)
+      
       if (Array.isArray(pairs)) {
-        return pairs.map((pair) => {
-          if (Array.isArray(pair)) return String(pair[0] || '')
-          if (pair && typeof pair === 'object') {
-            return String(pair.left || pair[0] || pair.question || pair.term || '')
+        const items = pairs.map((pair, index) => {
+          let leftItem = ''
+          
+          if (Array.isArray(pair)) {
+            leftItem = String(pair[0] || '')
+          } else if (pair && typeof pair === 'object') {
+            leftItem = String(pair.left || pair[0] || pair.question || pair.term || '')
+          } else {
+            leftItem = String(pair || '')
           }
-          return String(pair || '')
+          
+          console.log(`  Left item ${index}: "${leftItem}"`)
+          return leftItem
         }).filter(item => item.trim() !== '')
+        
+        console.log('✅ Final left items:', items)
+        return items
       }
       return []
     })
     
+    // 🔥 FIXED: Right items computation (NO SHUFFLING for validation)
     const rightItems = computed(() => {
       if (!props.currentExercise?.pairs) return []
       const pairs = props.currentExercise.pairs
+      
+      console.log('🔧 DEBUG: Computing right items from pairs:', pairs)
+      
       if (Array.isArray(pairs)) {
-        const rightItems = pairs.map((pair) => {
-          if (Array.isArray(pair)) return String(pair[1] || '')
-          if (pair && typeof pair === 'object') {
-            return String(pair.right || pair[1] || pair.answer || pair.definition || '')
+        const items = pairs.map((pair, index) => {
+          let rightItem = ''
+          
+          if (Array.isArray(pair)) {
+            rightItem = String(pair[1] || '')
+          } else if (pair && typeof pair === 'object') {
+            rightItem = String(pair.right || pair[1] || pair.answer || pair.definition || '')
+          } else {
+            rightItem = String(pair || '')
           }
-          return String(pair || '')
+          
+          console.log(`  Right item ${index}: "${rightItem}"`)
+          return rightItem
         }).filter(item => item.trim() !== '')
         
-        // Shuffle for challenge
-        return [...rightItems].sort(() => Math.random() - 0.5)
+        // 🔥 CRITICAL: Shuffle ONLY for display, but keep original indices
+        const shuffledItems = [...items].sort(() => Math.random() - 0.5)
+        console.log('✅ Final right items (shuffled for display):', shuffledItems)
+        return shuffledItems
       }
       return []
     })
@@ -865,7 +892,7 @@ export default {
     }
 
     // ========================
-    // FIXED MATCHING METHODS
+    // 🔥 FIXED: MATCHING METHODS
     // ========================
     const handleMatchingClick = (side, index) => {
       console.log('🔗 Matching click:', { side, index, current: props.selectedMatchingItem })
@@ -917,7 +944,20 @@ export default {
       
       console.log('🔗 Creating pair:', { leftIndex, rightIndex })
       
-      const newPair = { leftIndex, rightIndex }
+      // 🔥 CRITICAL: Map shuffled right index back to original index
+      const rightText = rightItems.value[rightIndex]
+      const originalRightIndex = getOriginalRightIndex(rightText)
+      
+      console.log('🔧 DEBUG: Mapping shuffled right index to original:', {
+        shuffledIndex: rightIndex,
+        rightText: rightText,
+        originalIndex: originalRightIndex
+      })
+      
+      const newPair = { 
+        leftIndex, 
+        rightIndex: originalRightIndex // Use original index for validation
+      }
       const currentPairs = props.matchingPairs || []
       
       // Check if this pair already exists
@@ -948,6 +988,28 @@ export default {
       emit('matching-item-selected', null)
     }
 
+    // 🔥 HELPER: Get original index of right item from shuffled array
+    const getOriginalRightIndex = (rightText) => {
+      if (!props.currentExercise?.pairs) return 0
+      
+      const pairs = props.currentExercise.pairs
+      for (let i = 0; i < pairs.length; i++) {
+        const pair = pairs[i]
+        let originalRightText = ''
+        
+        if (Array.isArray(pair)) {
+          originalRightText = String(pair[1] || '')
+        } else if (pair && typeof pair === 'object') {
+          originalRightText = String(pair.right || pair[1] || pair.answer || pair.definition || '')
+        }
+        
+        if (originalRightText.trim() === rightText.trim()) {
+          return i
+        }
+      }
+      return 0
+    }
+
     const isItemSelected = (side, index) => {
       const selection = props.selectedMatchingItem
       return selection && selection.side === side && selection.index === index
@@ -959,7 +1021,10 @@ export default {
       if (side === 'left') {
         return currentPairs.some(pair => pair.leftIndex === index)
       } else {
-        return currentPairs.some(pair => pair.rightIndex === index)
+        // For right side, need to check if the displayed item is matched
+        const rightText = rightItems.value[index]
+        const originalIndex = getOriginalRightIndex(rightText)
+        return currentPairs.some(pair => pair.rightIndex === originalIndex)
       }
     }
 
@@ -1012,9 +1077,19 @@ export default {
     }
 
     const getRightItemText = (index) => {
-      if (index >= 0 && index < rightItems.value.length) {
-        return rightItems.value[index]
+      // Get the text from the original pairs, not shuffled display
+      if (!props.currentExercise?.pairs || index < 0 || index >= props.currentExercise.pairs.length) {
+        return `Right Item ${index + 1}`
       }
+      
+      const pair = props.currentExercise.pairs[index]
+      
+      if (Array.isArray(pair)) {
+        return String(pair[1] || '')
+      } else if (pair && typeof pair === 'object') {
+        return String(pair.right || pair[1] || pair.answer || pair.definition || '')
+      }
+      
       return `Right Item ${index + 1}`
     }
 
@@ -1340,9 +1415,10 @@ export default {
       renderFillBlankTemplate,
       initializeFillBlankAnswers,
       
-      // Fixed matching methods
+      // 🔥 FIXED: Matching methods
       handleMatchingClick,
       createMatchingPair,
+      getOriginalRightIndex,
       isItemSelected,
       isItemMatched,
       isPairCorrect,
