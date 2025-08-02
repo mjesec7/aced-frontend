@@ -1262,14 +1262,14 @@ export default {
 <style scoped>
 @import "@/assets/css/InteractivePanel.css";
 
-/* Enhanced scroll styling */
+/* Enhanced scroll styling - FIXED HEIGHT CALCULATION */
 .exercise-content-scroll,
 .quiz-content-scroll {
-  height: calc(100vh - 200px) !important;
+  height: calc(100vh - 300px) !important; /* Increased from 200px to 300px */
   overflow-y: scroll !important;
   overflow-x: hidden !important;
-  min-height: 300px !important;
-  max-height: calc(100vh - 200px) !important;
+  min-height: 200px !important; /* Reduced minimum */
+  max-height: calc(100vh - 300px) !important; /* Increased from 200px to 300px */
   -webkit-overflow-scrolling: touch !important;
   scrollbar-width: auto !important;
   flex: 1;
@@ -1277,12 +1277,12 @@ export default {
 }
 
 .scroll-content-wrapper {
-  min-height: 600px;
+  min-height: 400px; /* Reduced from 600px */
   padding-bottom: 40px;
 }
 
 .spacer {
-  height: 200px;
+  height: 100px; /* Reduced from 200px */
   background: transparent;
 }
 
@@ -1299,12 +1299,16 @@ export default {
   width: 100%;
   margin-top: auto;
   
-  /* Ensure visibility */
+  /* Force visibility - CRITICAL FIX */
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: all !important;
-  z-index: 100 !important;
+  z-index: 1000 !important;
   position: relative !important;
+  
+  /* Ensure it's always above the fold */
+  min-height: 60px !important;
+  max-height: 80px !important;
 }
 
 .interactive-nav-btn {
@@ -1321,6 +1325,11 @@ export default {
   font-size: 0.95rem !important; /* EXACT match to content panel */
   visibility: visible !important;
   opacity: 1 !important;
+  
+  /* Ensure text fits */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .interactive-nav-btn.hint-btn {
@@ -1361,5 +1370,46 @@ export default {
 .interactive-nav-btn.next-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+}
+
+/* RESPONSIVE FIXES */
+@media (max-height: 700px) {
+  .exercise-content-scroll,
+  .quiz-content-scroll {
+    height: calc(100vh - 250px) !important;
+    max-height: calc(100vh - 250px) !important;
+    min-height: 150px !important;
+  }
+  
+  .interactive-actions {
+    padding: 12px 28px !important;
+    min-height: 50px !important;
+  }
+  
+  .interactive-nav-btn {
+    padding: 8px 16px !important;
+    min-height: 36px !important;
+    font-size: 0.9rem !important;
+  }
+}
+
+@media (max-height: 600px) {
+  .exercise-content-scroll,
+  .quiz-content-scroll {
+    height: calc(100vh - 200px) !important;
+    max-height: calc(100vh - 200px) !important;
+    min-height: 100px !important;
+  }
+  
+  .interactive-actions {
+    padding: 10px 28px !important;
+    min-height: 45px !important;
+  }
+  
+  .interactive-nav-btn {
+    padding: 6px 14px !important;
+    min-height: 32px !important;
+    font-size: 0.85rem !important;
+  }
 }
 </style>
