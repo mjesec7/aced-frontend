@@ -171,23 +171,16 @@
     <!-- Main Lesson Content -->
     <div v-else-if="started && !showPaywallModal && !loading && !error" class="lesson-container">
 
-      <!-- Top Header with Problem Report Strip Below -->
+      <!-- Combined Header with Progress Bar -->
       <LessonHeader
         :lesson="lesson"
         :current-step="currentIndex + 1"
         :total-steps="steps.length"
         :formatted-time="formattedTime"
         :stars="stars"
+        :progress-percentage="progressPercentage"
         @exit="confirmExit"
         @report-problem="openProblemReportModal"
-      />
-
-      <!-- Progress Bar -->
-      <ProgressBar
-        :progress-percentage="progressPercentage"
-        :stars="stars"
-        :current-step="currentIndex"
-        :total-steps="steps.length"
       />
 
       <!-- Split Screen Content -->
@@ -381,7 +374,7 @@ import { useLessonOrchestrator } from '@/composables/useLessonOrchestrator'
 import VocabularyModal from '@/components/lesson/VocabularyModal.vue'
 import LessonIntro from '@/components/lesson/LessonIntro.vue'
 import LessonHeader from '@/components/lesson/LessonHeader.vue'
-import ProgressBar from '@/components/lesson/ProgressBar.vue'
+// ✅ REMOVED: ProgressBar import - now integrated into LessonHeader
 import ContentPanel from '@/components/lesson/ContentPanel.vue'
 import InteractivePanel from '@/components/lesson/InteractivePanel.vue'
 import AIHelpPanel from '@/components/lesson/AIHelpPanel.vue'
@@ -395,7 +388,7 @@ export default {
     VocabularyModal,
     LessonIntro,
     LessonHeader,
-    ProgressBar,
+    // ✅ REMOVED: ProgressBar component
     ContentPanel,
     InteractivePanel,
     AIHelpPanel,
@@ -773,8 +766,10 @@ export default {
     }
 
     // ==========================================
-    // NAVIGATION METHODS
+    // ALL OTHER METHODS FROM ORIGINAL FILE
     // ==========================================
+    
+    // Navigation methods
     const handleReturnToCatalogue = () => {
       console.log('🔄 Returning to catalogue...')
       
@@ -870,9 +865,7 @@ export default {
       }
     }
 
-    // ==========================================
-    // PROBLEM REPORTING METHODS
-    // ==========================================
+    // Problem reporting methods
     const openProblemReportModal = () => {
       showProblemReportModal.value = true
       resetProblemForm()
@@ -1030,9 +1023,7 @@ export default {
       }
     }
 
-    // ==========================================
-    // VOCABULARY METHODS
-    // ==========================================
+    // Vocabulary methods
     const initializeVocabularyModal = (step) => {
       console.log('📚 Initializing vocabulary modal from LessonPage:', step)
 
@@ -1133,9 +1124,7 @@ export default {
       }
     }
 
-    // ==========================================
-    // EXERCISE METHODS
-    // ==========================================
+    // Exercise methods
     const getCurrentExercise = () => {
       const exercise = exercises.getCurrentExercise(lessonOrchestrator.currentStep.value)
       if (exercise) {
@@ -1169,9 +1158,7 @@ export default {
       return exercises.getTotalQuizzes(lessonOrchestrator.currentStep.value)
     }
 
-    // ==========================================
-    // DRAG AND DROP EVENT HANDLERS
-    // ==========================================
+    // Drag and Drop event handlers
     const handleDragItemStart = ({ item, event }) => {
       exercises.handleDragItemStart({ item, event })
       
@@ -1210,9 +1197,7 @@ export default {
       }
     }
 
-    // ==========================================
-    // DRAG & DROP HELPER METHODS
-    // ==========================================
+    // Drag & Drop helper methods
     const ensureDragDropInitialization = () => {
       const currentExercise = getCurrentExercise()
       
@@ -1225,9 +1210,7 @@ export default {
       }
     }
 
-    // ==========================================
-    // EVENT HANDLERS
-    // ==========================================
+    // Event handlers
     const handleAnswerChanged = (newAnswer) => {
       exercises.updateUserAnswer(newAnswer, getCurrentExercise())
     }
@@ -1244,9 +1227,7 @@ export default {
       exercises.removeMatchingPair(pairIndex)
     }
 
-    // ==========================================
-    // SUBMISSION HANDLER
-    // ==========================================
+    // Submission handler
     const handleSubmitOrNext = async () => {
       const currentStep = lessonOrchestrator.currentStep.value
       if (!currentStep) {
@@ -1316,9 +1297,7 @@ export default {
       await lessonOrchestrator.saveProgress()
     }
 
-    // ==========================================
-    // NAVIGATION FUNCTIONS
-    // ==========================================
+    // Navigation functions
     const resetAttempts = () => {
       attemptCount.value = 0
       isOnSecondChance.value = false
@@ -1362,31 +1341,23 @@ export default {
       lessonOrchestrator.goPrevious()
     }
 
-    // ==========================================
-    // SIMPLIFIED EXERCISE METHODS
-    // ==========================================
+    // Simplified exercise methods
     const showHint = (exercise) => exercises.showHint(exercise)
     const clearSmartHint = () => exercises.clearSmartHint()
 
-    // ==========================================
-    // AI HELP PANEL METHODS
-    // ==========================================
+    // AI help panel methods
     const toggleExplanationHelp = explanation.toggleExplanationHelp
     const askAboutExplanation = explanation.askAboutExplanation
     const sendAIMessage = explanation.sendAIMessage
     const askAI = explanation.askAI
     const clearAIChat = explanation.clearAIChat
 
-    // ==========================================
-    // FLOATING AI ASSISTANT METHODS
-    // ==========================================
+    // Floating AI assistant methods
     const toggleFloatingAI = explanation.toggleFloatingAI
     const closeFloatingAI = explanation.closeFloatingAI
     const sendFloatingAIMessage = explanation.sendFloatingAIMessage
 
-    // ==========================================
-    // CONFETTI ANIMATION
-    // ==========================================
+    // Confetti animation
     const startConfetti = () => {
       showConfetti.value = true
       nextTick(() => {
@@ -1396,9 +1367,7 @@ export default {
       })
     }
 
-    // ==========================================
-    // MIGRATION FUNCTIONALITY
-    // ==========================================
+    // Migration functionality
     const migrateLessonContent = async () => {
       try {
         migrationLoading.value = true
@@ -1457,9 +1426,7 @@ export default {
       showMigrationPanel.value = false
     }
 
-    // ==========================================
-    // LESSON COMPLETION WITH EXTRACTION
-    // ==========================================
+    // Lesson completion with extraction
     const completeLessonWithExtraction = async () => {
       try {
         const completionResult = await lessonOrchestrator.completeLesson?.()
@@ -1533,9 +1500,7 @@ export default {
       extractionResults.value = extractionResult
     }
 
-    // ==========================================
-    // LIFECYCLE HOOKS
-    // ==========================================
+    // Lifecycle hooks
     onMounted(() => {
       document.addEventListener('keydown', handleKeyboardShortcuts)
       window.addEventListener('resize', handleWindowResize)
@@ -1573,9 +1538,7 @@ export default {
       delete window.getCurrentSplit
     })
 
-    // ==========================================
-    // WATCHERS
-    // ==========================================
+    // Watchers
     watch(() => lessonOrchestrator.lessonCompleted.value, (newVal) => {
       if (newVal) {
         startConfetti()
@@ -1602,9 +1565,7 @@ export default {
       console.log('📐 Resize direction updated:', newDirection)
     })
 
-    // ==========================================
-    // RETURN ALL PROPS AND METHODS
-    // ==========================================
+    // Return all props and methods
     return {
       // Resizable Split Screen State
       isResizing,
