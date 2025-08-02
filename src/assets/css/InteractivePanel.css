@@ -57,7 +57,7 @@
   }
   
   /* ================================
-     BODY - CONTAINS SCROLL AREA
+     BODY - CONTAINS SCROLL AREA (UPDATED)
      ================================ */
   
   .exercise-body, .quiz-body {
@@ -67,8 +67,7 @@
     min-height: 0;
     overflow: hidden;
     position: relative;
-    /* Reserve space for sticky buttons */
-    padding-bottom: 80px;
+    /* Remove padding-bottom since buttons are now at same level */
   }
   
   /* ================================
@@ -121,35 +120,31 @@
   }
   
   /* ================================
-     ACTION BUTTONS - ALWAYS VISIBLE STICKY
+     ACTION BUTTONS - SAME LEVEL AS CONTENT PANEL
      ================================ */
   
   .exercise-actions, .quiz-actions {
-    /* CRITICAL: Sticky positioning */
-    position: sticky !important;
-    bottom: 0 !important;
-    z-index: 9999 !important;
-    
-    /* Styling */
-    display: flex;
+    /* CRITICAL: Same level as content panel navigation */
+    display: flex !important;
     gap: 10px;
-    padding: 12px 20px;
+    padding: 16px 28px; /* Match content panel exactly */
     background: white !important;
-    border-top: 2px solid #e2e8f0;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15) !important;
-    flex-shrink: 0;
+    border-top: 1px solid #e2e8f0; /* Match content panel border */
+    flex-shrink: 0 !important;
     box-sizing: border-box;
     min-height: 60px;
     
     /* Ensure visibility on all devices */
     width: 100% !important;
-    left: 0 !important;
-    right: 0 !important;
     
     /* Prevent any interference */
     pointer-events: all !important;
     visibility: visible !important;
     opacity: 1 !important;
+    
+    /* Position at same level - no sticky needed */
+    position: relative !important;
+    z-index: 100 !important;
   }
   
   /* ================================
@@ -1675,40 +1670,32 @@
   }
   
   /* ================================
-     CRITICAL: ENSURE BUTTONS ALWAYS VISIBLE
+     CRITICAL: ENSURE BUTTONS ALWAYS VISIBLE (UPDATED)
      ================================ */
   
-  /* Force buttons to always be on top and visible */
+  /* Force buttons to always be visible at same level */
   .exercise-actions, .quiz-actions {
-    position: sticky !important;
-    bottom: 0 !important;
-    z-index: 9999 !important;
-    background: white !important;
-    border-top: 2px solid #e2e8f0 !important;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2) !important;
-    
-    /* Prevent any interference */
-    pointer-events: all !important;
+    display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
-    display: flex !important;
+    pointer-events: all !important;
   }
   
-  /* Ensure content doesn't overlap buttons */
+  /* Remove old sticky positioning overrides */
   .exercise-body, .quiz-body {
     margin-bottom: 0 !important;
-    padding-bottom: 80px !important; /* Critical space for sticky buttons */
+    padding-bottom: 0 !important;
   }
   
-  /* Make sure scroll area respects button space */
+  /* Remove extra padding from scroll areas */
   .exercise-content-scroll, .quiz-content-scroll {
     margin-bottom: 0 !important;
-    padding-bottom: 80px !important; /* Space for buttons */
+    padding-bottom: 40px !important; /* Keep some padding for content spacing */
   }
   
-  /* Additional safety for scroll content wrapper */
+  /* Remove extra safety padding */
   .scroll-content-wrapper {
-    padding-bottom: 40px !important; /* Extra safety padding */
+    padding-bottom: 40px !important;
   }
   
   /* ================================

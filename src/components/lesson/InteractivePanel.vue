@@ -2,7 +2,7 @@
   <div class="interactive-panel">
     <!-- Exercise Content -->
     <div v-if="isExerciseStep" class="exercise-content">
-      <!-- ✅ FIXED: Header - Never Scrolls -->
+      <!-- Header -->
       <div class="exercise-header">
         <h3>{{ currentExercise?.title || 'Упражнение' }}</h3>
         <div class="exercise-counter">
@@ -10,29 +10,14 @@
         </div>
       </div>
 
-      <!-- ✅ ENHANCED: Body with Perfect Internal Scrolling -->
+      <!-- Scrollable Body -->
       <div class="exercise-body">
-        <!-- ✅ FIXED INLINE STYLE WITH GUARANTEED CONTENT HEIGHT -->
-        <div 
-          class="exercise-content-scroll"
-          style="
-            height: 400px !important; 
-            overflow-y: scroll !important; 
-            overflow-x: hidden !important;
-            min-height: 400px !important;
-            max-height: 400px !important;
-            -webkit-overflow-scrolling: touch !important;
-            scrollbar-width: auto !important;
-          "
-        >
-          <!-- ✅ ADDED CONTENT WRAPPER TO ENSURE SCROLLABLE HEIGHT -->
-          <div class="scroll-content-wrapper" style="min-height: 600px;">
+        <div class="exercise-content-scroll">
+          <div class="scroll-content-wrapper">
             
-            <!-- Short Answer Exercise -->
-            <div v-if="exerciseType === 'short-answer'" class="exercise-type short-answer">
-              <div class="question-text">
-                {{ currentExercise?.question }}
-              </div>
+            <!-- Short Answer -->
+            <div v-if="exerciseType === 'short-answer'" class="exercise-type">
+              <div class="question-text">{{ currentExercise?.question }}</div>
               <div class="answer-input">
                 <textarea
                   v-model="localUserAnswer"
@@ -43,24 +28,18 @@
                   :disabled="showCorrectAnswer"
                 />
               </div>
-              <!-- ✅ ADDED SPACER TO ENSURE SCROLL -->
-              <div style="height: 200px; background: transparent;"></div>
+              <div class="spacer"></div>
             </div>
 
-            <!-- Multiple Choice Exercise -->
-            <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc'" class="exercise-type multiple-choice">
-              <div class="question-text">
-                {{ currentExercise?.question }}
-              </div>
+            <!-- Multiple Choice -->
+            <div v-else-if="exerciseType === 'multiple-choice' || exerciseType === 'abc'" class="exercise-type">
+              <div class="question-text">{{ currentExercise?.question }}</div>
               <div class="options-list">
                 <div 
                   v-for="(option, index) in exerciseOptions" 
                   :key="index"
                   class="option-item"
-                  :class="{ 
-                    selected: localUserAnswer === option,
-                    disabled: showCorrectAnswer
-                  }"
+                  :class="{ selected: localUserAnswer === option, disabled: showCorrectAnswer }"
                   @click="!showCorrectAnswer && selectOption(option)"
                   tabindex="0"
                   @keypress.enter="!showCorrectAnswer && selectOption(option)"
@@ -78,19 +57,15 @@
                   <div class="option-text">{{ option }}</div>
                 </div>
               </div>
-              <!-- ✅ ADDED SPACER TO ENSURE SCROLL -->
-              <div style="height: 200px; background: transparent;"></div>
+              <div class="spacer"></div>
             </div>
 
-            <!-- Fill in the Blanks Exercise -->
-            <div v-else-if="exerciseType === 'fill-blank'" class="exercise-type fill-blank">
-              <div class="question-text">
-                {{ currentExercise?.question }}
-              </div>
+            <!-- Fill in Blanks -->
+            <div v-else-if="exerciseType === 'fill-blank'" class="exercise-type">
+              <div class="question-text">{{ currentExercise?.question }}</div>
               <div v-if="currentExercise?.template" class="fill-blank-template">
                 <div v-html="renderFillBlankTemplate()" />
               </div>
-              
               <div class="fill-blank-inputs">
                 <div 
                   v-for="(blank, index) in blankCount" 
@@ -115,25 +90,19 @@
                   </div>
                 </div>
               </div>
-              <!-- ✅ ADDED SPACER TO ENSURE SCROLL -->
-              <div style="height: 200px; background: transparent;"></div>
+              <div class="spacer"></div>
             </div>
 
-            <!-- True/False Exercise -->
-            <div v-else-if="exerciseType === 'true-false'" class="exercise-type true-false">
-              <div class="question-text">
-                {{ currentExercise?.question }}
-              </div>
+            <!-- True/False -->
+            <div v-else-if="exerciseType === 'true-false'" class="exercise-type">
+              <div class="question-text">{{ currentExercise?.question }}</div>
               <div v-if="currentExercise?.statement" class="statement-text">
                 {{ currentExercise.statement }}
               </div>
               <div class="true-false-options">
                 <div 
                   class="tf-option"
-                  :class="{ 
-                    selected: localUserAnswer === 'true',
-                    disabled: showCorrectAnswer
-                  }"
+                  :class="{ selected: localUserAnswer === 'true', disabled: showCorrectAnswer }"
                   @click="!showCorrectAnswer && selectTrueFalse('true')"
                   tabindex="0"
                   @keypress.enter="!showCorrectAnswer && selectTrueFalse('true')"
@@ -151,10 +120,7 @@
                 </div>
                 <div 
                   class="tf-option"
-                  :class="{ 
-                    selected: localUserAnswer === 'false',
-                    disabled: showCorrectAnswer
-                  }"
+                  :class="{ selected: localUserAnswer === 'false', disabled: showCorrectAnswer }"
                   @click="!showCorrectAnswer && selectTrueFalse('false')"
                   tabindex="0"
                   @keypress.enter="!showCorrectAnswer && selectTrueFalse('false')"
@@ -171,18 +137,13 @@
                   <span>Ложь</span>
                 </div>
               </div>
-              <!-- ✅ ADDED SPACER TO ENSURE SCROLL -->
-              <div style="height: 200px; background: transparent;"></div>
+              <div class="spacer"></div>
             </div>
 
-            <!-- Matching Exercise -->
-            <div v-else-if="exerciseType === 'matching'" class="exercise-type matching">
-              <div class="question-text">
-                {{ currentExercise?.question }}
-              </div>
-              
+            <!-- Matching -->
+            <div v-else-if="exerciseType === 'matching'" class="exercise-type">
+              <div class="question-text">{{ currentExercise?.question }}</div>
               <div class="matching-container">
-                <!-- Left Side -->
                 <div class="matching-side left-side">
                   <h4>Соедините:</h4>
                   <div 
@@ -203,8 +164,6 @@
                     <span v-if="selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === index" class="selection-indicator">👆</span>
                   </div>
                 </div>
-                
-                <!-- Right Side -->
                 <div class="matching-side right-side">
                   <h4>С:</h4>
                   <div 
@@ -227,7 +186,6 @@
                 </div>
               </div>
               
-              <!-- Matching Pairs Display -->
               <div v-if="matchingPairs && matchingPairs.length > 0" class="matching-pairs">
                 <h4>Соединения:</h4>
                 <div 
@@ -248,7 +206,6 @@
                 </div>
               </div>
               
-              <!-- Instructions -->
               <div class="matching-instructions">
                 <p>💡 <strong>Инструкция:</strong> Нажмите на элемент слева, затем на соответствующий элемент справа для создания связи.</p>
                 <p v-if="selectedMatchingItem" class="current-selection">
@@ -256,15 +213,12 @@
                   "{{ selectedMatchingItem.side === 'left' ? leftItems[selectedMatchingItem.index] : rightItems[selectedMatchingItem.index] }}"
                 </p>
               </div>
-              <!-- ✅ ADDED SPACER TO ENSURE SCROLL -->
-              <div style="height: 100px; background: transparent;"></div>
+              <div class="spacer"></div>
             </div>
 
-            <!-- Ordering Exercise -->
-            <div v-else-if="exerciseType === 'ordering'" class="exercise-type ordering">
-              <div class="question-text">
-                {{ currentExercise?.question }}
-              </div>
+            <!-- Ordering -->
+            <div v-else-if="exerciseType === 'ordering'" class="exercise-type">
+              <div class="question-text">{{ currentExercise?.question }}</div>
               <div class="ordering-instructions">
                 💡 <strong>Инструкция:</strong> Перетащите элементы в правильном порядке или используйте кнопки ↑↓ для перемещения
               </div>
@@ -310,28 +264,20 @@
                   </div>
                 </div>
               </div>
-              <!-- ✅ ADDED SPACER TO ENSURE SCROLL -->
-              <div style="height: 200px; background: transparent;"></div>
+              <div class="spacer"></div>
             </div>
 
-            <!-- ✅ ENHANCED: Drag and Drop Exercise - Better Layout -->
-            <div v-else-if="exerciseType === 'drag-drop'" class="exercise-type drag-drop">
-              <div class="question-text">
-                {{ currentExercise?.question }}
-              </div>
-              
+            <!-- Drag and Drop -->
+            <div v-else-if="exerciseType === 'drag-drop'" class="exercise-type">
+              <div class="question-text">{{ currentExercise?.question }}</div>
               <div v-if="availableDragItems.length > 0 && dropZones.length > 0" class="drag-drop-container">
-                <!-- Available Items to Drag -->
                 <div class="drag-items">
                   <h4>Перетащите элементы:</h4>
                   <div 
                     v-for="(item, index) in availableDragItems" 
                     :key="'drag-' + index"
                     class="drag-item"
-                    :class="{ 
-                      dragging: draggedDragItem === item,
-                      disabled: showCorrectAnswer
-                    }"
+                    :class="{ dragging: draggedDragItem === item, disabled: showCorrectAnswer }"
                     :draggable="!showCorrectAnswer"
                     @dragstart="startDragItem(item, $event)"
                     @dragend="endDragItem"
@@ -344,17 +290,12 @@
                     {{ getDragItemText(item) }}
                   </div>
                 </div>
-
-                <!-- Drop Zones -->
                 <div class="drop-zones">
                   <div 
                     v-for="(zone, index) in dropZones" 
                     :key="'zone-' + index"
                     class="drop-zone"
-                    :class="{ 
-                      'drag-over': dropOverZone === getZoneId(zone),
-                      disabled: showCorrectAnswer
-                    }"
+                    :class="{ 'drag-over': dropOverZone === getZoneId(zone), disabled: showCorrectAnswer }"
                     @dragover.prevent="dragOverZone(getZoneId(zone), $event)"
                     @dragleave="dragLeaveZone($event)"
                     @drop="dropInZone(getZoneId(zone), $event)"
@@ -379,17 +320,14 @@
                   </div>
                 </div>
               </div>
-              
               <div v-else class="no-dragdrop-data">
                 <p>⚠️ Данные для перетаскивания не загружены</p>
               </div>
-              <!-- ✅ ADDED SPACER TO ENSURE SCROLL -->
-              <div style="height: 100px; background: transparent;"></div>
+              <div class="spacer"></div>
             </div>
 
             <!-- Confirmation Section -->
             <div v-if="confirmation" class="confirmation-section">
-              <!-- Second Chance Indicator -->
               <div v-if="isOnSecondChance && !showCorrectAnswer" class="second-chance-indicator">
                 <div class="attempt-counter">
                   <span class="attempt-text">Попытка {{ attemptCount }} из {{ maxAttempts }}</span>
@@ -407,8 +345,6 @@
                   </div>
                 </div>
               </div>
-
-              <!-- Confirmation Message -->
               <div 
                 class="confirmation-message" 
                 :class="{ 
@@ -421,15 +357,13 @@
               >
                 {{ confirmation }}
               </div>
-
-              <!-- Correct Answer Display -->
               <div v-if="showCorrectAnswer && correctAnswerText" class="correct-answer-display">
                 <div class="correct-answer-label">💡 Правильный ответ:</div>
                 <div class="correct-answer-text">{{ correctAnswerText }}</div>
               </div>
             </div>
 
-            <!-- Hints and Feedback -->
+            <!-- Hints Section -->
             <div v-if="(currentHint || smartHint) && !showCorrectAnswer" class="hints-section">
               <div v-if="currentHint" class="hint basic-hint">
                 <div class="hint-icon">💡</div>
@@ -446,51 +380,14 @@
               </div>
             </div>
 
-          </div> <!-- End scroll-content-wrapper -->
+          </div>
         </div>
-      </div>
-
-      <!-- ✅ FIXED: Action Buttons - STICKY AT BOTTOM, Always Visible -->
-      <div class="exercise-actions" style="position: sticky; bottom: 0; z-index: 1000; background: white; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);">
-        <button 
-          v-if="!confirmation && attemptCount === 0"
-          @click="$emit('show-hint')" 
-          class="hint-btn"
-          aria-label="Показать подсказку"
-        >
-          💡 Подсказка
-        </button>
-        
-        <button 
-          v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
-          @click="$emit('submit')"
-          :disabled="!canSubmitAnswer"
-          class="submit-btn"
-          :class="{ 
-            disabled: !canSubmitAnswer,
-            'second-chance': isOnSecondChance
-          }"
-          :aria-label="isOnSecondChance ? 'Попробовать ещё раз' : 'Проверить ответ'"
-        >
-          {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Проверить' }}
-          <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
-        </button>
-        
-        <button 
-          v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
-          @click="$emit('next-exercise')"
-          class="next-btn"
-          :aria-label="isLastExercise ? 'Завершить упражнения' : 'Следующее упражнение'"
-        >
-          {{ isLastExercise ? 'Завершить' : 'Далее' }}
-          <span class="next-icon">→</span>
-        </button>
       </div>
     </div>
 
     <!-- Quiz Content -->
     <div v-else-if="isQuizStep" class="quiz-content">
-      <!-- ✅ FIXED: Header - Never Scrolls -->
+      <!-- Header -->
       <div class="quiz-header">
         <h3>{{ currentQuiz?.title || 'Вопрос' }}</h3>
         <div class="quiz-counter">
@@ -498,37 +395,19 @@
         </div>
       </div>
 
-      <!-- ✅ ENHANCED: Body with Perfect Internal Scrolling -->
+      <!-- Scrollable Body -->
       <div class="quiz-body">
-        <!-- ✅ FIXED INLINE STYLE WITH GUARANTEED CONTENT HEIGHT -->
-        <div 
-          class="quiz-content-scroll"
-          style="
-            height: 400px !important; 
-            overflow-y: scroll !important; 
-            overflow-x: hidden !important;
-            min-height: 400px !important;
-            max-height: 400px !important;
-            -webkit-overflow-scrolling: touch !important;
-            scrollbar-width: auto !important;
-          "
-        >
-          <!-- ✅ ADDED CONTENT WRAPPER TO ENSURE SCROLLABLE HEIGHT -->
-          <div class="scroll-content-wrapper" style="min-height: 600px;">
+        <div class="quiz-content-scroll">
+          <div class="scroll-content-wrapper">
             
-            <div class="quiz-question">
-              {{ currentQuiz?.question }}
-            </div>
+            <div class="quiz-question">{{ currentQuiz?.question }}</div>
 
             <div class="quiz-options">
               <div 
                 v-for="(option, index) in quizOptions" 
                 :key="index"
                 class="quiz-option"
-                :class="{ 
-                  selected: localUserAnswer === option,
-                  disabled: showCorrectAnswer
-                }"
+                :class="{ selected: localUserAnswer === option, disabled: showCorrectAnswer }"
                 @click="!showCorrectAnswer && selectQuizOption(option)"
                 tabindex="0"
                 @keypress.enter="!showCorrectAnswer && selectQuizOption(option)"
@@ -547,7 +426,7 @@
               </div>
             </div>
 
-            <!-- Quiz Confirmation Section -->
+            <!-- Quiz Confirmation -->
             <div v-if="confirmation" class="confirmation-section">
               <div v-if="isOnSecondChance && !showCorrectAnswer" class="second-chance-indicator">
                 <div class="attempt-counter">
@@ -566,7 +445,6 @@
                   </div>
                 </div>
               </div>
-
               <div 
                 class="confirmation-message" 
                 :class="{ 
@@ -579,46 +457,16 @@
               >
                 {{ confirmation }}
               </div>
-
               <div v-if="showCorrectAnswer && correctAnswerText" class="correct-answer-display">
                 <div class="correct-answer-label">💡 Правильный ответ:</div>
                 <div class="correct-answer-text">{{ correctAnswerText }}</div>
               </div>
             </div>
             
-            <!-- ✅ ADDED SPACER TO ENSURE SCROLL -->
-            <div style="height: 200px; background: transparent;"></div>
+            <div class="spacer"></div>
 
-          </div> <!-- End scroll-content-wrapper -->
+          </div>
         </div>
-      </div>
-
-      <!-- ✅ FIXED: Action Buttons - STICKY AT BOTTOM, Always Visible -->
-      <div class="quiz-actions" style="position: sticky; bottom: 0; z-index: 1000; background: white; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);">
-        <button 
-          v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
-          @click="$emit('submit')"
-          :disabled="!canSubmitAnswer"
-          class="submit-btn"
-          :class="{ 
-            disabled: !canSubmitAnswer,
-            'second-chance': isOnSecondChance
-          }"
-          :aria-label="isOnSecondChance ? 'Попробовать ещё раз' : 'Ответить на вопрос'"
-        >
-          {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Ответить' }}
-          <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
-        </button>
-        
-        <button 
-          v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
-          @click="$emit('next-quiz')"
-          class="next-btn"
-          :aria-label="isLastQuiz ? 'Завершить викторину' : 'Следующий вопрос'"
-        >
-          {{ isLastQuiz ? 'Завершить' : 'Следующий вопрос' }}
-          <span class="next-icon">→</span>
-        </button>
       </div>
     </div>
 
@@ -627,6 +475,64 @@
       <div class="no-content-icon">📝</div>
       <h4>Нет интерактивного содержимого</h4>
       <p>Для этого шага нет упражнений или вопросов</p>
+    </div>
+
+    <!-- Action Buttons - Same Level as Content Panel -->
+    <div v-if="isExerciseStep" class="exercise-actions">
+      <button 
+        v-if="!confirmation && attemptCount === 0"
+        @click="$emit('show-hint')" 
+        class="hint-btn"
+        aria-label="Показать подсказку"
+      >
+        💡 Подсказка
+      </button>
+      
+      <button 
+        v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
+        @click="$emit('submit')"
+        :disabled="!canSubmitAnswer"
+        class="submit-btn"
+        :class="{ disabled: !canSubmitAnswer, 'second-chance': isOnSecondChance }"
+        :aria-label="isOnSecondChance ? 'Попробовать ещё раз' : 'Проверить ответ'"
+      >
+        {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Проверить' }}
+        <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
+      </button>
+      
+      <button 
+        v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
+        @click="$emit('next-exercise')"
+        class="next-btn"
+        :aria-label="isLastExercise ? 'Завершить упражнения' : 'Следующее упражнение'"
+      >
+        {{ isLastExercise ? 'Завершить' : 'Далее' }}
+        <span class="next-icon">→</span>
+      </button>
+    </div>
+
+    <div v-else-if="isQuizStep" class="quiz-actions">
+      <button 
+        v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
+        @click="$emit('submit')"
+        :disabled="!canSubmitAnswer"
+        class="submit-btn"
+        :class="{ disabled: !canSubmitAnswer, 'second-chance': isOnSecondChance }"
+        :aria-label="isOnSecondChance ? 'Попробовать ещё раз' : 'Ответить на вопрос'"
+      >
+        {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Ответить' }}
+        <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
+      </button>
+      
+      <button 
+        v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
+        @click="$emit('next-quiz')"
+        class="next-btn"
+        :aria-label="isLastQuiz ? 'Завершить викторину' : 'Следующий вопрос'"
+      >
+        {{ isLastQuiz ? 'Завершить' : 'Следующий вопрос' }}
+        <span class="next-icon">→</span>
+      </button>
     </div>
   </div>
 </template>
@@ -668,28 +574,16 @@ export default {
   },
   
   emits: [
-    'answer-changed',
-    'fill-blank-updated',
-    'submit',
-    'next-exercise',
-    'next-quiz',
-    'show-hint',
-    'clear-hint',
-    'matching-item-selected',
-    'remove-matching-pair',
-    'drag-start',
-    'drag-drop',
-    'drag-item-start',
-    'drag-over-zone',
-    'drag-leave-zone',
-    'drop-in-zone',
-    'remove-dropped-item'
+    'answer-changed', 'fill-blank-updated', 'submit', 'next-exercise', 'next-quiz',
+    'show-hint', 'clear-hint', 'matching-item-selected', 'remove-matching-pair',
+    'drag-start', 'drag-drop', 'drag-item-start', 'drag-over-zone',
+    'drag-leave-zone', 'drop-in-zone', 'remove-dropped-item'
   ],
   
   setup(props, { emit }) {
-    // ==========================================
+    // ========================
     // REACTIVE STATE
-    // ==========================================
+    // ========================
     const localUserAnswer = ref('')
     const localFillBlankAnswers = ref([])
     const draggedDragItem = ref(null)
@@ -697,14 +591,12 @@ export default {
     const localOrderingItems = ref([])
     const draggedOrderingItem = ref(null)
     const dropTargetIndex = ref(null)
-    
-    // Touch handling for mobile drag-drop
     const touchStartPos = ref({ x: 0, y: 0 })
     const draggedTouchItem = ref(null)
 
-    // ==========================================
-    // COMPUTED PROPERTIES  
-    // ==========================================
+    // ========================
+    // COMPUTED PROPERTIES
+    // ========================
     const isExerciseStep = computed(() => 
       ['exercise', 'practice'].includes(props.currentStep?.type)
     )
@@ -737,47 +629,34 @@ export default {
     
     const leftItems = computed(() => {
       if (!props.currentExercise?.pairs) return []
-      
       const pairs = props.currentExercise.pairs
-      
       if (Array.isArray(pairs)) {
-        const leftItems = pairs.map((pair, index) => {
-          if (Array.isArray(pair)) {
-            return String(pair[0] || '')
-          } else if (pair && typeof pair === 'object') {
+        return pairs.map((pair) => {
+          if (Array.isArray(pair)) return String(pair[0] || '')
+          if (pair && typeof pair === 'object') {
             return String(pair.left || pair[0] || pair.question || pair.term || '')
-          } else {
-            return String(pair || '')
           }
+          return String(pair || '')
         }).filter(item => item.trim() !== '')
-        
-        return leftItems
       }
-      
       return []
     })
     
     const rightItems = computed(() => {
       if (!props.currentExercise?.pairs) return []
-      
       const pairs = props.currentExercise.pairs
-      
       if (Array.isArray(pairs)) {
-        const rightItems = pairs.map((pair, index) => {
-          if (Array.isArray(pair)) {
-            return String(pair[1] || '')
-          } else if (pair && typeof pair === 'object') {
+        const rightItems = pairs.map((pair) => {
+          if (Array.isArray(pair)) return String(pair[1] || '')
+          if (pair && typeof pair === 'object') {
             return String(pair.right || pair[1] || pair.answer || pair.definition || '')
-          } else {
-            return String(pair || '')
           }
+          return String(pair || '')
         }).filter(item => item.trim() !== '')
         
         // Shuffle for challenge
-        const shuffledRightItems = [...rightItems].sort(() => Math.random() - 0.5)
-        return shuffledRightItems
+        return [...rightItems].sort(() => Math.random() - 0.5)
       }
-      
       return []
     })
     
@@ -850,197 +729,31 @@ export default {
       }
     })
 
-    // ==========================================
-    // DRAG AND DROP METHODS
-    // ==========================================
-    
-    const startDragItem = (item, event) => {
-      console.log('🔥 Starting drag for item:', item)
-      
-      if (!item || props.showCorrectAnswer) {
-        console.warn('⚠️ Cannot start drag - invalid item or answers shown')
-        return
-      }
-      
-      draggedDragItem.value = item
-      
-      if (event && event.dataTransfer) {
-        event.dataTransfer.effectAllowed = 'move'
-        event.dataTransfer.setData('text/plain', JSON.stringify(item))
-      }
-      
-      // Emit to parent for coordination
-      emit('drag-item-start', { item, event })
-      
-      console.log('✅ Drag started for:', getDragItemText(item))
-    }
-
-    const endDragItem = () => {
-      console.log('🏁 Ending drag operation')
-      draggedDragItem.value = null
-      dropOverZone.value = null
-    }
-
-    const dragOverZone = (zoneId, event) => {
-      if (!draggedDragItem.value || props.showCorrectAnswer) return
-      
-      if (event) {
-        event.preventDefault()
-        event.dataTransfer.dropEffect = 'move'
-      }
-      
-      dropOverZone.value = zoneId
-      emit('drag-over-zone', zoneId)
-    }
-
-    const dragLeaveZone = (event) => {
-      // Only clear if we're actually leaving the zone (not entering a child element)
-      if (!event || !event.currentTarget.contains(event.relatedTarget)) {
-        dropOverZone.value = null
-        emit('drag-leave-zone')
-      }
-    }
-
-    const dropInZone = (zoneId, event) => {
-      console.log('💧 Dropping item in zone:', zoneId)
-      
-      if (event) {
-        event.preventDefault()
-      }
-      
-      let droppedItem = draggedDragItem.value
-      
-      // Try to get item from dataTransfer if drag item is null
-      if (!droppedItem && event && event.dataTransfer) {
-        try {
-          const transferData = event.dataTransfer.getData('text/plain')
-          if (transferData) {
-            droppedItem = JSON.parse(transferData)
-          }
-        } catch (e) {
-          console.warn('⚠️ Could not parse transfer data:', e)
-        }
-      }
-      
-      if (!droppedItem) {
-        console.warn('⚠️ No item to drop')
-        return
-      }
-      
-      console.log('✅ Dropping item:', getDragItemText(droppedItem), 'into zone:', zoneId)
-      
-      // Emit to parent to handle the actual drop logic
-      emit('drop-in-zone', { zoneId, item: droppedItem })
-      
-      // Clean up
-      draggedDragItem.value = null
-      dropOverZone.value = null
-    }
-
-    // ==========================================
-    // UTILITY METHODS FOR DRAG-AND-DROP
-    // ==========================================
-    
-    const getDragItemText = (item) => {
-      if (!item) return ''
-      
-      if (typeof item === 'string') return item
-      
-      if (item.text) return item.text
-      if (item.label) return item.label
-      if (item.name) return item.name
-      if (item.title) return item.title
-      if (item.content) return item.content
-      
-      return String(item)
-    }
-
-    const getZoneId = (zone) => {
-      if (!zone) return 'default'
-      
-      if (typeof zone === 'string') return zone
-      
-      if (zone.id) return zone.id
-      if (zone.label) return zone.label
-      if (zone.name) return zone.name
-      if (zone.title) return zone.title
-      
-      return String(zone)
-    }
-
-    const getDropZoneItems = (zoneId) => {
-      const placements = props.dragDropPlacements || {}
-      return placements[zoneId] || []
-    }
-
-    const removeDroppedItem = (zoneId, itemIndex) => {
-      console.log('🗑️ Removing item from zone:', zoneId, 'index:', itemIndex)
-      emit('remove-dropped-item', { zoneId, itemIndex })
-    }
-
-    // ==========================================
-    // MOBILE TOUCH SUPPORT
-    // ==========================================
-    
-    const handleTouchStart = (event, item) => {
-      if (props.showCorrectAnswer) return
-      
-      const touch = event.touches[0]
-      touchStartPos.value = { x: touch.clientX, y: touch.clientY }
-      draggedTouchItem.value = item
-      
-      event.preventDefault()
-      
-      console.log('📱 Touch drag started for:', getDragItemText(item))
-    }
-
-    const handleTouchMove = (event) => {
-      if (!draggedTouchItem.value) return
-      
-      event.preventDefault()
-      
-      const touch = event.touches[0]
-      const element = document.elementFromPoint(touch.clientX, touch.clientY)
-      
-      const dropZone = element?.closest('.drop-zone')
-      if (dropZone) {
-        const zoneLabel = dropZone.querySelector('.zone-label')?.textContent
-        if (zoneLabel) {
-          dropOverZone.value = zoneLabel
-        }
-      } else {
-        dropOverZone.value = null
-      }
-    }
-
-    const handleTouchEnd = (event) => {
-      if (!draggedTouchItem.value) return
-      
-      const touch = event.changedTouches[0]
-      const element = document.elementFromPoint(touch.clientX, touch.clientY)
-      
-      const dropZone = element?.closest('.drop-zone')
-      if (dropZone) {
-        const zoneLabel = dropZone.querySelector('.zone-label')?.textContent
-        if (zoneLabel) {
-          dropInZone(zoneLabel, null)
-        }
-      }
-      
-      draggedTouchItem.value = null
-      dropOverZone.value = null
-      
-      console.log('📱 Touch drag ended')
-    }
-
-    // ==========================================
-    // OTHER EXERCISE METHODS
-    // ==========================================
-    
+    // ========================
+    // ANSWER METHODS
+    // ========================
     const updateAnswer = () => {
       emit('answer-changed', localUserAnswer.value)
     }
 
+    const selectOption = (option) => {
+      localUserAnswer.value = option
+      emit('answer-changed', option)
+    }
+
+    const selectQuizOption = (option) => {
+      localUserAnswer.value = option
+      emit('answer-changed', option)
+    }
+
+    const selectTrueFalse = (value) => {
+      localUserAnswer.value = value
+      emit('answer-changed', value)
+    }
+
+    // ========================
+    // FILL BLANK METHODS
+    // ========================
     const getFillBlankValue = (index) => {
       if (localFillBlankAnswers.value[index] !== undefined) {
         return localFillBlankAnswers.value[index]
@@ -1060,25 +773,43 @@ export default {
       emit('fill-blank-updated', { index, value })
     }
 
-    const selectOption = (option) => {
-      localUserAnswer.value = option
-      emit('answer-changed', option)
+    const renderFillBlankTemplate = () => {
+      if (!props.currentExercise?.template) return ''
+      
+      let template = props.currentExercise.template
+      let blankIndex = 0
+      
+      template = template.replace(/\*/g, () => {
+        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
+      })
+      
+      template = template.replace(/_+/g, () => {
+        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
+      })
+      
+      template = template.replace(/\[blank\]/gi, () => {
+        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
+      })
+      
+      return template
     }
 
-    const selectQuizOption = (option) => {
-      localUserAnswer.value = option
-      emit('answer-changed', option)
+    const initializeFillBlankAnswers = () => {
+      if (exerciseType.value === 'fill-blank') {
+        const count = blankCount.value
+        localFillBlankAnswers.value = new Array(count).fill('')
+        
+        if (props.fillBlankAnswers && Array.isArray(props.fillBlankAnswers)) {
+          for (let i = 0; i < Math.min(count, props.fillBlankAnswers.length); i++) {
+            localFillBlankAnswers.value[i] = props.fillBlankAnswers[i] || ''
+          }
+        }
+      }
     }
 
-    const selectTrueFalse = (value) => {
-      localUserAnswer.value = value
-      emit('answer-changed', value)
-    }
-
-    // ==========================================
+    // ========================
     // MATCHING METHODS
-    // ==========================================
-    
+    // ========================
     const handleMatchingItemClick = (side, index) => {
       if (props.showCorrectAnswer) return
       selectMatchingItem(side, index)
@@ -1118,7 +849,6 @@ export default {
       }
       
       const newPair = { leftIndex, rightIndex }
-      
       const currentPairs = props.matchingPairs || []
       const pairExists = currentPairs.some(pair => 
         pair.leftIndex === newPair.leftIndex && pair.rightIndex === newPair.rightIndex
@@ -1128,7 +858,6 @@ export default {
         const updatedPairs = currentPairs.filter(pair => 
           pair.leftIndex !== newPair.leftIndex && pair.rightIndex !== newPair.rightIndex
         )
-        
         updatedPairs.push(newPair)
         emit('answer-changed', updatedPairs)
       }
@@ -1149,9 +878,7 @@ export default {
     const isItemMatched = (side, index) => {
       const currentPairs = props.matchingPairs || []
       
-      if (currentPairs.length === 0) {
-        return false
-      }
+      if (currentPairs.length === 0) return false
       
       if (side === 'left') {
         return currentPairs.some(pair => pair.leftIndex === index)
@@ -1174,10 +901,9 @@ export default {
       return `Right Item ${index + 1}`
     }
 
-    // ==========================================
+    // ========================
     // ORDERING METHODS
-    // ==========================================
-    
+    // ========================
     const initializeOrderingItems = () => {
       if (props.currentExercise?.items && Array.isArray(props.currentExercise.items)) {
         const items = props.currentExercise.items.map((item, index) => ({
@@ -1188,7 +914,6 @@ export default {
         
         const shuffledItems = [...items].sort(() => Math.random() - 0.5)
         localOrderingItems.value = shuffledItems
-        
         emit('answer-changed', localOrderingItems.value)
       }
     }
@@ -1257,35 +982,154 @@ export default {
       endOrderingDrag()
     }
 
-    // ==========================================
-    // RENDER METHODS
-    // ==========================================
-    
-    const renderFillBlankTemplate = () => {
-      if (!props.currentExercise?.template) return ''
+    // ========================
+    // DRAG AND DROP METHODS
+    // ========================
+    const startDragItem = (item, event) => {
+      if (!item || props.showCorrectAnswer) return
       
-      let template = props.currentExercise.template
-      let blankIndex = 0
+      draggedDragItem.value = item
       
-      template = template.replace(/\*/g, () => {
-        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
-      })
+      if (event && event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move'
+        event.dataTransfer.setData('text/plain', JSON.stringify(item))
+      }
       
-      template = template.replace(/_+/g, () => {
-        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
-      })
-      
-      template = template.replace(/\[blank\]/gi, () => {
-        return `<span class="blank-indicator">[Пропуск ${++blankIndex}]</span>`
-      })
-      
-      return template
+      emit('drag-item-start', { item, event })
     }
 
-    // ==========================================
+    const endDragItem = () => {
+      draggedDragItem.value = null
+      dropOverZone.value = null
+    }
+
+    const dragOverZone = (zoneId, event) => {
+      if (!draggedDragItem.value || props.showCorrectAnswer) return
+      
+      if (event) {
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'move'
+      }
+      
+      dropOverZone.value = zoneId
+      emit('drag-over-zone', zoneId)
+    }
+
+    const dragLeaveZone = (event) => {
+      if (!event || !event.currentTarget.contains(event.relatedTarget)) {
+        dropOverZone.value = null
+        emit('drag-leave-zone')
+      }
+    }
+
+    const dropInZone = (zoneId, event) => {
+      if (event) {
+        event.preventDefault()
+      }
+      
+      let droppedItem = draggedDragItem.value
+      
+      if (!droppedItem && event && event.dataTransfer) {
+        try {
+          const transferData = event.dataTransfer.getData('text/plain')
+          if (transferData) {
+            droppedItem = JSON.parse(transferData)
+          }
+        } catch (e) {
+          console.warn('Could not parse transfer data:', e)
+        }
+      }
+      
+      if (!droppedItem) return
+      
+      emit('drop-in-zone', { zoneId, item: droppedItem })
+      
+      draggedDragItem.value = null
+      dropOverZone.value = null
+    }
+
+    const getDragItemText = (item) => {
+      if (!item) return ''
+      if (typeof item === 'string') return item
+      if (item.text) return item.text
+      if (item.label) return item.label
+      if (item.name) return item.name
+      if (item.title) return item.title
+      if (item.content) return item.content
+      return String(item)
+    }
+
+    const getZoneId = (zone) => {
+      if (!zone) return 'default'
+      if (typeof zone === 'string') return zone
+      if (zone.id) return zone.id
+      if (zone.label) return zone.label
+      if (zone.name) return zone.name
+      if (zone.title) return zone.title
+      return String(zone)
+    }
+
+    const getDropZoneItems = (zoneId) => {
+      const placements = props.dragDropPlacements || {}
+      return placements[zoneId] || []
+    }
+
+    const removeDroppedItem = (zoneId, itemIndex) => {
+      emit('remove-dropped-item', { zoneId, itemIndex })
+    }
+
+    // ========================
+    // TOUCH SUPPORT
+    // ========================
+    const handleTouchStart = (event, item) => {
+      if (props.showCorrectAnswer) return
+      
+      const touch = event.touches[0]
+      touchStartPos.value = { x: touch.clientX, y: touch.clientY }
+      draggedTouchItem.value = item
+      event.preventDefault()
+    }
+
+    const handleTouchMove = (event) => {
+      if (!draggedTouchItem.value) return
+      
+      event.preventDefault()
+      
+      const touch = event.touches[0]
+      const element = document.elementFromPoint(touch.clientX, touch.clientY)
+      
+      const dropZone = element?.closest('.drop-zone')
+      if (dropZone) {
+        const zoneLabel = dropZone.querySelector('.zone-label')?.textContent
+        if (zoneLabel) {
+          dropOverZone.value = zoneLabel
+        }
+      } else {
+        dropOverZone.value = null
+      }
+    }
+
+    const handleTouchEnd = (event) => {
+      if (!draggedTouchItem.value) return
+      
+      const touch = event.changedTouches[0]
+      const element = document.elementFromPoint(touch.clientX, touch.clientY)
+      
+      const dropZone = element?.closest('.drop-zone')
+      if (dropZone) {
+        const zoneLabel = dropZone.querySelector('.zone-label')?.textContent
+        if (zoneLabel) {
+          dropInZone(zoneLabel, null)
+        }
+      }
+      
+      draggedTouchItem.value = null
+      dropOverZone.value = null
+    }
+
+    // ========================
     // WATCHERS
-    // ==========================================
-    
+    // ========================
     watch(() => props.userAnswer, (newValue) => {
       if (exerciseType.value !== 'fill-blank' && exerciseType.value !== 'ordering') {
         localUserAnswer.value = newValue || ''
@@ -1329,27 +1173,9 @@ export default {
       }
     }, { immediate: true })
 
-    // ==========================================
-    // INITIALIZATION
-    // ==========================================
-    
-    const initializeFillBlankAnswers = () => {
-      if (exerciseType.value === 'fill-blank') {
-        const count = blankCount.value
-        localFillBlankAnswers.value = new Array(count).fill('')
-        
-        if (props.fillBlankAnswers && Array.isArray(props.fillBlankAnswers)) {
-          for (let i = 0; i < Math.min(count, props.fillBlankAnswers.length); i++) {
-            localFillBlankAnswers.value[i] = props.fillBlankAnswers[i] || ''
-          }
-        }
-      }
-    }
-
-    // ==========================================
+    // ========================
     // LIFECYCLE
-    // ==========================================
-    
+    // ========================
     onMounted(() => {
       localUserAnswer.value = props.userAnswer || ''
       initializeFillBlankAnswers()
@@ -1359,10 +1185,9 @@ export default {
       }
     })
 
-    // ==========================================
-    // RETURN ALL METHODS AND STATE
-    // ==========================================
-    
+    // ========================
+    // RETURN
+    // ========================
     return {
       // State
       localUserAnswer,
@@ -1388,7 +1213,31 @@ export default {
       blankCount,
       canSubmitAnswer,
       
-      // Drag-and-drop methods
+      // Methods
+      updateAnswer,
+      selectOption,
+      selectQuizOption,
+      selectTrueFalse,
+      getFillBlankValue,
+      handleFillBlankInput,
+      renderFillBlankTemplate,
+      initializeFillBlankAnswers,
+      handleMatchingItemClick,
+      handleRemovePair,
+      selectMatchingItem,
+      removeMatchingPair,
+      isItemMatched,
+      getLeftItemText,
+      getRightItemText,
+      initializeOrderingItems,
+      getOrderingItemText,
+      moveOrderingItem,
+      startOrderingDrag,
+      endOrderingDrag,
+      handleOrderingDragOver,
+      handleOrderingDragEnter,
+      handleOrderingDragLeave,
+      handleOrderingDrop,
       startDragItem,
       endDragItem,
       dragOverZone,
@@ -1398,51 +1247,57 @@ export default {
       getZoneId,
       getDropZoneItems,
       removeDroppedItem,
-      
-      // Touch support for mobile
       handleTouchStart,
       handleTouchMove,
-      handleTouchEnd,
-      
-      // Answer methods
-      updateAnswer,
-      
-      // Fill-blank methods
-      getFillBlankValue,
-      handleFillBlankInput,
-      renderFillBlankTemplate,
-      initializeFillBlankAnswers,
-      
-      // Option selection methods
-      selectOption,
-      selectQuizOption,
-      selectTrueFalse,
-      
-      // Matching methods
-      handleMatchingItemClick,
-      handleRemovePair,
-      selectMatchingItem,
-      removeMatchingPair,
-      isItemMatched,
-      getLeftItemText,
-      getRightItemText,
-      
-      // Ordering methods
-      initializeOrderingItems,
-      getOrderingItemText,
-      moveOrderingItem,
-      startOrderingDrag,
-      endOrderingDrag,
-      handleOrderingDragOver,
-      handleOrderingDragEnter,
-      handleOrderingDragLeave,
-      handleOrderingDrop
+      handleTouchEnd
     }
   }
 }
 </script>
 
 <style scoped>
-/* ✅ Use the enhanced CSS file with perfect scrolling and responsive design */
 @import "@/assets/css/InteractivePanel.css";
+
+/* Enhanced scroll styling */
+.exercise-content-scroll,
+.quiz-content-scroll {
+  height: calc(100vh - 200px) !important;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+  min-height: 300px !important;
+  max-height: calc(100vh - 200px) !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: auto !important;
+  flex: 1;
+  padding: 16px 20px 20px 20px;
+}
+
+.scroll-content-wrapper {
+  min-height: 600px;
+  padding-bottom: 40px;
+}
+
+.spacer {
+  height: 200px;
+  background: transparent;
+}
+
+/* Clean button positioning */
+.exercise-actions,
+.quiz-actions {
+  display: flex !important;
+  gap: 10px;
+  padding: 16px 28px;
+  background: white !important;
+  border-top: 1px solid #e2e8f0;
+  flex-shrink: 0 !important;
+  box-sizing: border-box;
+  min-height: 60px;
+  width: 100% !important;
+  pointer-events: all !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 100 !important;
+}
 </style>
