@@ -450,8 +450,8 @@
         </div>
       </div>
 
-      <!-- ✅ FIXED: Action Buttons - Never Scroll, Always Visible -->
-      <div class="exercise-actions">
+      <!-- ✅ FIXED: Action Buttons - STICKY AT BOTTOM, Always Visible -->
+      <div class="exercise-actions" style="position: sticky; bottom: 0; z-index: 1000; background: white; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);">
         <button 
           v-if="!confirmation && attemptCount === 0"
           @click="$emit('show-hint')" 
@@ -593,8 +593,8 @@
         </div>
       </div>
 
-      <!-- ✅ FIXED: Action Buttons - Never Scroll, Always Visible -->
-      <div class="quiz-actions">
+      <!-- ✅ FIXED: Action Buttons - STICKY AT BOTTOM, Always Visible -->
+      <div class="quiz-actions" style="position: sticky; bottom: 0; z-index: 1000; background: white; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);">
         <button 
           v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
           @click="$emit('submit')"
