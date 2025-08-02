@@ -1,7 +1,8 @@
 /* ================================
-   INTERACTIVE PANEL - CLEAN MODERN DESIGN
-   Matching ContentPanel styling with card-based layout
+   INTERACTIVE PANEL - ALWAYS SCROLL VERSION
+   No matter what height, there will ALWAYS be scroll
    ================================ */
+
    .interactive-panel {
     background: white;
     border-radius: 12px;
@@ -15,16 +16,20 @@
   }
   
   /* ================================
-     HEADER - MATCHING CONTENTPANEL
+     HEADER - FIXED SIZE, NEVER SCROLLS
      ================================ */
   
-     .exercise-body, .quiz-body {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-    }
+  .exercise-header, .quiz-header {
+    padding: 16px 28px;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+    background: white;
+    box-sizing: border-box;
+    min-height: 60px;
+    max-height: 60px;
+    height: 60px;
+    z-index: 10;
+  }
   
   .exercise-header h3, .quiz-header h3 {
     font-size: 1.2rem;
@@ -51,7 +56,7 @@
   }
   
   /* ================================
-     MAIN CONTENT - PERFECT SCROLLING
+     BODY - CONTAINS SCROLL AREA
      ================================ */
   
   .exercise-body, .quiz-body {
@@ -63,39 +68,56 @@
     position: relative;
   }
   
+  /* ================================
+     MAIN SCROLL AREA - ALWAYS SCROLLS
+     ================================ */
+  
   .exercise-content-scroll, .quiz-content-scroll {
     flex: 1;
     padding: 20px 28px 40px 28px;
-    overflow-y: scroll !important;
-    overflow-x: hidden;
+    overflow-y: scroll !important; /* ✅ ALWAYS scroll */
+    overflow-x: hidden !important;
+    max-height: 500px !important; /* ✅ FORCE height limit */
+    min-height: 200px !important;
+    
+    /* Ultra smooth scrolling */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: auto !important;
+    scrollbar-color: #cbd5e1 #f1f5f9 !important;
   }
   
-  /* Custom scrollbar */
+  /* ================================
+     SCROLLBAR STYLING - ALWAYS VISIBLE
+     ================================ */
+  
   .exercise-content-scroll::-webkit-scrollbar,
   .quiz-content-scroll::-webkit-scrollbar {
-    width: 12px;
+    width: 12px !important;
+    display: block !important;
   }
   
   .exercise-content-scroll::-webkit-scrollbar-track,
   .quiz-content-scroll::-webkit-scrollbar-track {
-    background: #f1f5f9;
+    background: #f1f5f9 !important;
     border-radius: 6px;
   }
   
   .exercise-content-scroll::-webkit-scrollbar-thumb,
   .quiz-content-scroll::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: #cbd5e1 !important;
     border-radius: 6px;
     border: 2px solid #f1f5f9;
+    transition: all 0.2s ease;
   }
   
   .exercise-content-scroll::-webkit-scrollbar-thumb:hover,
   .quiz-content-scroll::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: #94a3b8 !important;
   }
   
   /* ================================
-     ACTION BUTTONS - CLEAN & COMPACT
+     ACTION BUTTONS - FIXED BOTTOM
      ================================ */
   
   .exercise-actions, .quiz-actions {
@@ -107,6 +129,7 @@
     flex-shrink: 0;
     flex-wrap: wrap;
     box-sizing: border-box;
+    min-height: 68px;
     z-index: 100;
   }
   
@@ -177,7 +200,7 @@
   }
   
   /* ================================
-     EXERCISE TYPES - CLEAN CARDS
+     EXERCISE TYPES
      ================================ */
   
   .exercise-type {
@@ -190,7 +213,7 @@
   }
   
   /* ================================
-     QUESTION TEXT - MODERN CARD
+     QUESTION TEXT
      ================================ */
   
   .question-text, .quiz-question {
@@ -209,7 +232,7 @@
   }
   
   /* ================================
-     SHORT ANSWER - MODERN INPUT
+     SHORT ANSWER
      ================================ */
   
   .answer-textarea {
@@ -235,15 +258,15 @@
   }
   
   /* ================================
-     OPTIONS - CLEAN CARD DESIGN
+     OPTIONS - ALWAYS SCROLL
      ================================ */
   
   .options-list, .quiz-options, .true-false-options {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    max-height: 400px;
-    overflow-y: auto;
+    max-height: 300px !important; /* ✅ FORCE scroll */
+    overflow-y: auto !important;
     overflow-x: hidden;
     padding-right: 8px;
     
@@ -254,18 +277,21 @@
   }
   
   .options-list::-webkit-scrollbar,
-  .quiz-options::-webkit-scrollbar {
+  .quiz-options::-webkit-scrollbar,
+  .true-false-options::-webkit-scrollbar {
     width: 6px;
   }
   
   .options-list::-webkit-scrollbar-track,
-  .quiz-options::-webkit-scrollbar-track {
+  .quiz-options::-webkit-scrollbar-track,
+  .true-false-options::-webkit-scrollbar-track {
     background: #f1f5f9;
     border-radius: 3px;
   }
   
   .options-list::-webkit-scrollbar-thumb,
-  .quiz-options::-webkit-scrollbar-thumb {
+  .quiz-options::-webkit-scrollbar-thumb,
+  .true-false-options::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 3px;
   }
@@ -322,7 +348,7 @@
   }
   
   /* ================================
-     FILL IN BLANKS - MODERN DESIGN
+     FILL IN BLANKS - ALWAYS SCROLL
      ================================ */
   
   .fill-blank-template {
@@ -352,8 +378,8 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    max-height: 350px;
-    overflow-y: auto;
+    max-height: 250px !important; /* ✅ FORCE scroll */
+    overflow-y: auto !important;
     overflow-x: hidden;
     padding-right: 8px;
     
@@ -416,16 +442,16 @@
   }
   
   /* ================================
-     MATCHING - CLEAN GRID LAYOUT
+     MATCHING - FIXED HEIGHT, ALWAYS SCROLL
      ================================ */
   
   .matching-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
-    height: 400px;
+    height: 350px !important; /* ✅ FIXED height */
     min-height: 350px;
-    max-height: 500px;
+    max-height: 350px;
   }
   
   .matching-side {
@@ -436,7 +462,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    overflow-y: auto;
+    overflow-y: auto !important; /* ✅ ALWAYS scroll */
     overflow-x: hidden;
     min-height: 0;
     
@@ -569,15 +595,15 @@
   }
   
   /* ================================
-     ORDERING - DRAG & DROP CARDS
+     ORDERING - ALWAYS SCROLL
      ================================ */
   
   .ordering-container {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    max-height: 400px;
-    overflow-y: auto;
+    max-height: 300px !important; /* ✅ FORCE scroll */
+    overflow-y: auto !important;
     overflow-x: hidden;
     padding-right: 8px;
     
@@ -693,16 +719,16 @@
   }
   
   /* ================================
-     DRAG AND DROP - MODERN CARDS
+     DRAG AND DROP - FIXED HEIGHT, ALWAYS SCROLL
      ================================ */
   
   .drag-drop-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
-    height: 400px;
+    height: 350px !important; /* ✅ FIXED height */
     min-height: 350px;
-    max-height: 500px;
+    max-height: 350px;
   }
   
   .drag-items, .drop-zones {
@@ -713,7 +739,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    overflow-y: auto;
+    overflow-y: auto !important; /* ✅ ALWAYS scroll */
     overflow-x: hidden;
     min-height: 0;
     
@@ -1019,7 +1045,7 @@
   }
   
   /* ================================
-     RESPONSIVE DESIGN - CLEAN & MODERN
+     RESPONSIVE DESIGN - MAINTAIN SCROLL ALWAYS
      ================================ */
   
   /* Large Desktop (1200px+) */
@@ -1030,6 +1056,7 @@
     
     .exercise-header, .quiz-header {
       padding: 20px 32px;
+      height: 64px;
     }
     
     .exercise-header h3, .quiz-header h3 {
@@ -1037,8 +1064,8 @@
     }
     
     .exercise-content-scroll, .quiz-content-scroll {
-      padding: 36px 32px;
-      gap: 28px;
+      padding: 36px 32px 50px 32px;
+      max-height: 600px !important; /* ✅ Larger but still scrollable */
     }
     
     .question-text, .quiz-question {
@@ -1046,14 +1073,27 @@
       padding: 24px 28px;
     }
     
+    .options-list, .quiz-options, .true-false-options {
+      max-height: 400px !important; /* ✅ Larger on desktop */
+    }
+    
+    .fill-blank-inputs {
+      max-height: 350px !important;
+    }
+    
+    .ordering-container {
+      max-height: 400px !important;
+    }
+    
     .matching-container,
     .drag-drop-container {
-      height: 450px;
-      max-height: 550px;
+      height: 450px !important;
+      max-height: 450px;
     }
     
     .exercise-actions, .quiz-actions {
       padding: 20px 32px;
+      min-height: 76px;
     }
     
     .hint-btn, .submit-btn, .next-btn {
@@ -1066,10 +1106,26 @@
   
   /* Standard Desktop (992px - 1199px) */
   @media (min-width: 992px) and (max-width: 1199px) {
+    .exercise-content-scroll, .quiz-content-scroll {
+      max-height: 550px !important;
+    }
+    
+    .options-list, .quiz-options, .true-false-options {
+      max-height: 350px !important;
+    }
+    
+    .fill-blank-inputs {
+      max-height: 300px !important;
+    }
+    
+    .ordering-container {
+      max-height: 350px !important;
+    }
+    
     .matching-container,
     .drag-drop-container {
-      height: 420px;
-      max-height: 520px;
+      height: 420px !important;
+      max-height: 420px;
     }
   }
   
@@ -1077,11 +1133,11 @@
   @media (min-width: 768px) and (max-width: 991px) {
     .exercise-header, .quiz-header {
       padding: 14px 24px;
+      height: 56px;
     }
     
     .exercise-header h3, .quiz-header h3 {
       font-size: 1.1rem;
-      max-width: 65%;
     }
     
     .exercise-counter, .quiz-counter {
@@ -1090,8 +1146,8 @@
     }
     
     .exercise-content-scroll, .quiz-content-scroll {
-      padding: 28px 24px;
-      gap: 20px;
+      padding: 28px 24px 40px 24px;
+      max-height: 450px !important; /* ✅ Still scrollable */
     }
     
     .question-text, .quiz-question {
@@ -1099,28 +1155,30 @@
       padding: 18px 20px;
     }
     
-    .matching-container,
-    .drag-drop-container {
-      height: 350px;
-      max-height: 450px;
-      gap: 16px;
-    }
-    
-    .options-list, .quiz-options {
-      max-height: 320px;
+    .options-list, .quiz-options, .true-false-options {
+      max-height: 280px !important;
     }
     
     .fill-blank-inputs {
-      max-height: 280px;
+      max-height: 220px !important;
     }
     
     .ordering-container {
+      max-height: 280px !important;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      height: 320px !important;
       max-height: 320px;
+      grid-template-columns: 1fr;
+      gap: 16px;
     }
     
     .exercise-actions, .quiz-actions {
       padding: 14px 24px;
       gap: 10px;
+      min-height: 60px;
     }
     
     .hint-btn, .submit-btn, .next-btn {
@@ -1135,11 +1193,11 @@
   @media (min-width: 600px) and (max-width: 767px) {
     .exercise-header, .quiz-header {
       padding: 12px 20px;
+      height: 52px;
     }
     
     .exercise-header h3, .quiz-header h3 {
       font-size: 1rem;
-      max-width: 60%;
     }
     
     .exercise-counter, .quiz-counter {
@@ -1148,8 +1206,8 @@
     }
     
     .exercise-content-scroll, .quiz-content-scroll {
-      padding: 24px 20px;
-      gap: 18px;
+      padding: 24px 20px 35px 20px;
+      max-height: 380px !important; /* ✅ Still scrollable */
     }
     
     .question-text, .quiz-question {
@@ -1158,29 +1216,24 @@
       margin-bottom: 16px;
     }
     
-    .matching-container,
-    .drag-drop-container {
-      grid-template-columns: 1fr;
-      height: 320px;
-      max-height: 420px;
-      gap: 14px;
-    }
-    
-    .true-false-options {
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-    
-    .options-list, .quiz-options {
-      max-height: 280px;
+    .options-list, .quiz-options, .true-false-options {
+      max-height: 240px !important;
     }
     
     .fill-blank-inputs {
-      max-height: 240px;
+      max-height: 180px !important;
     }
     
     .ordering-container {
+      max-height: 240px !important;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      grid-template-columns: 1fr;
+      height: 280px !important;
       max-height: 280px;
+      gap: 14px;
     }
     
     .option-item, .quiz-option, .tf-option {
@@ -1195,8 +1248,8 @@
     .exercise-actions, .quiz-actions {
       padding: 12px 20px;
       gap: 8px;
-      flex-direction: row;
       flex-wrap: wrap;
+      min-height: 56px;
     }
     
     .hint-btn, .submit-btn, .next-btn {
@@ -1213,11 +1266,11 @@
   @media (min-width: 480px) and (max-width: 599px) {
     .exercise-header, .quiz-header {
       padding: 10px 16px;
+      height: 48px;
     }
     
     .exercise-header h3, .quiz-header h3 {
       font-size: 0.95rem;
-      max-width: 55%;
     }
     
     .exercise-counter, .quiz-counter {
@@ -1226,8 +1279,8 @@
     }
     
     .exercise-content-scroll, .quiz-content-scroll {
-      padding: 20px 16px;
-      gap: 16px;
+      padding: 20px 16px 30px 16px;
+      max-height: 320px !important; /* ✅ Still scrollable */
     }
     
     .question-text, .quiz-question {
@@ -1237,32 +1290,24 @@
       line-height: 1.5;
     }
     
-    .matching-container,
-    .drag-drop-container {
-      grid-template-columns: 1fr;
-      height: 280px;
-      max-height: 380px;
-      gap: 12px;
-    }
-    
-    .true-false-options {
-      grid-template-columns: 1fr;
-      gap: 8px;
-    }
-    
-    .options-list, .quiz-options {
-      max-height: 240px;
-      gap: 8px;
+    .options-list, .quiz-options, .true-false-options {
+      max-height: 200px !important;
     }
     
     .fill-blank-inputs {
-      max-height: 200px;
-      gap: 10px;
+      max-height: 150px !important;
     }
     
     .ordering-container {
-      max-height: 240px;
-      gap: 6px;
+      max-height: 200px !important;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      grid-template-columns: 1fr;
+      height: 220px !important;
+      max-height: 220px;
+      gap: 12px;
     }
     
     .option-item, .quiz-option, .tf-option {
@@ -1299,6 +1344,7 @@
       padding: 10px 16px;
       gap: 6px;
       flex-direction: column;
+      min-height: 50px;
     }
     
     .hint-btn, .submit-btn, .next-btn {
@@ -1314,11 +1360,11 @@
   @media (min-width: 375px) and (max-width: 479px) {
     .exercise-header, .quiz-header {
       padding: 8px 14px;
+      height: 44px;
     }
     
     .exercise-header h3, .quiz-header h3 {
       font-size: 0.9rem;
-      max-width: 50%;
     }
     
     .exercise-counter, .quiz-counter {
@@ -1327,8 +1373,8 @@
     }
     
     .exercise-content-scroll, .quiz-content-scroll {
-      padding: 16px 14px;
-      gap: 14px;
+      padding: 16px 14px 25px 14px;
+      max-height: 280px !important; /* ✅ Still scrollable */
     }
     
     .question-text, .quiz-question {
@@ -1338,32 +1384,24 @@
       line-height: 1.4;
     }
     
-    .matching-container,
-    .drag-drop-container {
-      grid-template-columns: 1fr;
-      height: 240px;
-      max-height: 340px;
-      gap: 10px;
-    }
-    
-    .true-false-options {
-      grid-template-columns: 1fr;
-      gap: 6px;
-    }
-    
-    .options-list, .quiz-options {
-      max-height: 200px;
-      gap: 6px;
+    .options-list, .quiz-options, .true-false-options {
+      max-height: 160px !important;
     }
     
     .fill-blank-inputs {
-      max-height: 160px;
-      gap: 8px;
+      max-height: 120px !important;
     }
     
     .ordering-container {
-      max-height: 200px;
-      gap: 5px;
+      max-height: 160px !important;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      grid-template-columns: 1fr;
+      height: 180px !important;
+      max-height: 180px;
+      gap: 10px;
     }
     
     .option-item, .quiz-option, .tf-option {
@@ -1407,6 +1445,7 @@
       padding: 8px 14px;
       gap: 5px;
       flex-direction: column;
+      min-height: 46px;
     }
     
     .hint-btn, .submit-btn, .next-btn {
@@ -1422,11 +1461,11 @@
   @media (max-width: 374px) {
     .exercise-header, .quiz-header {
       padding: 6px 12px;
+      height: 40px;
     }
     
     .exercise-header h3, .quiz-header h3 {
       font-size: 0.85rem;
-      max-width: 45%;
     }
     
     .exercise-counter, .quiz-counter {
@@ -1435,8 +1474,8 @@
     }
     
     .exercise-content-scroll, .quiz-content-scroll {
-      padding: 12px;
-      gap: 12px;
+      padding: 12px 12px 20px 12px;
+      max-height: 240px !important; /* ✅ Still scrollable */
     }
     
     .question-text, .quiz-question {
@@ -1446,32 +1485,24 @@
       line-height: 1.3;
     }
     
-    .matching-container,
-    .drag-drop-container {
-      grid-template-columns: 1fr;
-      height: 200px;
-      max-height: 300px;
-      gap: 8px;
-    }
-    
-    .true-false-options {
-      grid-template-columns: 1fr;
-      gap: 5px;
-    }
-    
-    .options-list, .quiz-options {
-      max-height: 160px;
-      gap: 4px;
+    .options-list, .quiz-options, .true-false-options {
+      max-height: 120px !important;
     }
     
     .fill-blank-inputs {
-      max-height: 120px;
-      gap: 6px;
+      max-height: 100px !important;
     }
     
     .ordering-container {
-      max-height: 160px;
-      gap: 4px;
+      max-height: 120px !important;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      grid-template-columns: 1fr;
+      height: 140px !important;
+      max-height: 140px;
+      gap: 8px;
     }
     
     .option-item, .quiz-option, .tf-option {
@@ -1515,6 +1546,7 @@
       padding: 6px 12px;
       gap: 4px;
       flex-direction: column;
+      min-height: 42px;
     }
     
     .hint-btn, .submit-btn, .next-btn {
@@ -1527,7 +1559,7 @@
     
     .answer-textarea {
       min-height: 80px;
-      max-height: 180px;
+      max-height: 150px;
       font-size: 0.8rem;
       padding: 10px 12px;
     }
@@ -1540,12 +1572,13 @@
   }
   
   /* ================================
-     LANDSCAPE ORIENTATION
+     LANDSCAPE ORIENTATION - MAINTAIN SCROLL
      ================================ */
   
   @media (orientation: landscape) and (max-height: 600px) {
     .exercise-header, .quiz-header {
       padding: 8px 16px;
+      height: 40px;
     }
     
     .exercise-header h3, .quiz-header h3 {
@@ -1558,8 +1591,8 @@
     }
     
     .exercise-content-scroll, .quiz-content-scroll {
-      padding: 12px 16px;
-      gap: 10px;
+      padding: 12px 16px 20px 16px;
+      max-height: 200px !important; /* ✅ Very constrained but still scrollable */
     }
     
     .question-text, .quiz-question {
@@ -1568,28 +1601,29 @@
       margin-bottom: 8px;
     }
     
-    .matching-container,
-    .drag-drop-container {
-      height: 180px;
-      max-height: 220px;
-    }
-    
-    .options-list, .quiz-options {
-      max-height: 140px;
+    .options-list, .quiz-options, .true-false-options {
+      max-height: 100px !important;
     }
     
     .fill-blank-inputs {
-      max-height: 100px;
+      max-height: 80px !important;
     }
     
     .ordering-container {
-      max-height: 140px;
+      max-height: 100px !important;
+    }
+    
+    .matching-container,
+    .drag-drop-container {
+      height: 120px !important;
+      max-height: 120px;
     }
     
     .exercise-actions, .quiz-actions {
       padding: 6px 16px;
       flex-direction: row;
       gap: 6px;
+      min-height: 36px;
     }
     
     .hint-btn, .submit-btn, .next-btn {
@@ -1710,8 +1744,8 @@
     
     .exercise-content-scroll,
     .quiz-content-scroll {
-      overflow: visible;
-      max-height: none;
+      overflow: visible !important;
+      max-height: none !important;
       padding-bottom: 0;
     }
     
@@ -1721,7 +1755,7 @@
     .ordering-container,
     .drag-items,
     .drop-zones {
-      overflow: visible;
-      max-height: none;
+      overflow: visible !important;
+      max-height: none !important;
     }
   }
