@@ -140,38 +140,94 @@ export default {
   gap: 16px;
 }
 
-.exit-btn-small,
-.problem-report-btn-header {
+.exit-btn-small {
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.15) 100%);
   border: 2px solid rgba(239, 68, 68, 0.2);
   color: #ef4444;
   cursor: pointer;
-  border-radius: 10px;
+  border-radius: 12px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.exit-btn-small::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s;
+}
+
+.exit-btn-small:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.25) 100%);
+  border-color: rgba(239, 68, 68, 0.4);
+  transform: scale(1.05) rotate(90deg);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+}
+
+.exit-btn-small:hover::before {
+  left: 100%;
+}
+
+.exit-btn-small:active {
+  transform: scale(0.95) rotate(90deg);
 }
 
 .problem-report-btn-header {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  border-color: rgba(245, 158, 11, 0.3);
   color: white;
-}
-
-.exit-btn-small:hover,
-.problem-report-btn-header:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-
-.problem-report-btn-header:hover {
+  border: none;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 1.2rem;
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.problem-report-btn-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s;
+}
+
+.problem-report-btn-header:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+}
+
+.problem-report-btn-header:hover::before {
+  left: 100%;
+}
+
+.problem-report-btn-header:active {
+  transform: translateY(0);
 }
 
 .lesson-title {
@@ -292,39 +348,76 @@ export default {
 .progress-percentage,
 .timer-display,
 .stars-display {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 8px 12px;
+  border-radius: 10px;
   white-space: nowrap;
+  min-height: 36px;
   display: flex;
   align-items: center;
-  gap: 2px;
-  transition: all 0.2s ease;
+  gap: 4px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
 }
 
 .step-info {
   background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
   color: #1e40af;
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
 .progress-percentage {
   background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
   color: #475569;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 2px solid rgba(148, 163, 184, 0.3);
+  box-shadow: 0 4px 12px rgba(71, 85, 105, 0.1);
 }
 
 .timer-display {
   background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
   color: #065f46;
-  border: 1px solid rgba(5, 150, 105, 0.2);
+  border: 2px solid rgba(5, 150, 105, 0.3);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
 }
 
 .stars-display {
   background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   color: #92400e;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  border: 2px solid rgba(245, 158, 11, 0.4);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+/* Enhanced hover effects for meta items */
+.timer-display:hover,
+.step-info:hover,
+.progress-percentage:hover,
+.stars-display:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.step-info:hover {
+  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.progress-percentage:hover {
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.timer-display:hover {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border-color: rgba(5, 150, 105, 0.4);
+}
+
+.stars-display:hover {
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
+  border-color: rgba(245, 158, 11, 0.6);
 }
 
 /* Enhanced progress bar states */
@@ -346,8 +439,24 @@ export default {
     font-size: 1rem;
   }
   
+  .exit-btn-small,
+  .problem-report-btn-header {
+    width: 44px;
+    height: 44px;
+    font-size: 1.1rem;
+  }
+  
   .meta-row {
     gap: 8px;
+  }
+  
+  .step-info,
+  .progress-percentage,
+  .timer-display,
+  .stars-display {
+    font-size: 0.8rem;
+    padding: 6px 10px;
+    min-height: 32px;
   }
 }
 
@@ -366,8 +475,8 @@ export default {
   
   .exit-btn-small,
   .problem-report-btn-header {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     font-size: 1rem;
   }
   
@@ -381,8 +490,9 @@ export default {
   .progress-percentage,
   .timer-display,
   .stars-display {
-    font-size: 0.7rem;
-    padding: 3px 6px;
+    font-size: 0.75rem;
+    padding: 5px 8px;
+    min-height: 28px;
     flex-shrink: 0;
   }
 }
@@ -402,8 +512,8 @@ export default {
   
   .exit-btn-small,
   .problem-report-btn-header {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     font-size: 0.9rem;
   }
   
@@ -425,8 +535,9 @@ export default {
   .progress-percentage,
   .timer-display,
   .stars-display {
-    font-size: 0.65rem;
-    padding: 2px 4px;
+    font-size: 0.7rem;
+    padding: 4px 6px;
+    min-height: 24px;
   }
 }
 
