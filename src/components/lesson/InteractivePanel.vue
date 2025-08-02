@@ -684,64 +684,99 @@ export default {
       })
     })
     
-    // 🔥 FIXED: Left items computation
+    // 🔥 SAFE: Left items computation with error handling
     const leftItems = computed(() => {
-      if (!props.currentExercise?.pairs) return []
-      const pairs = props.currentExercise.pairs
-      
-      console.log('🔧 DEBUG: Computing left items from pairs:', pairs)
-      
-      if (Array.isArray(pairs)) {
+      try {
+        if (!props.currentExercise?.pairs) {
+          console.log('⚠️ No pairs found in exercise')
+          return []
+        }
+        
+        const pairs = props.currentExercise.pairs
+        console.log('🔧 DEBUG: Computing left items from pairs:', pairs)
+        
+        if (!Array.isArray(pairs)) {
+          console.warn('⚠️ Pairs is not an array:', typeof pairs)
+          return []
+        }
+        
         const items = pairs.map((pair, index) => {
-          let leftItem = ''
-          
-          if (Array.isArray(pair)) {
-            leftItem = String(pair[0] || '')
-          } else if (pair && typeof pair === 'object') {
-            leftItem = String(pair.left || pair[0] || pair.question || pair.term || '')
-          } else {
-            leftItem = String(pair || '')
+          try {
+            let leftItem = ''
+            
+            if (Array.isArray(pair)) {
+              leftItem = String(pair[0] || '')
+            } else if (pair && typeof pair === 'object') {
+              leftItem = String(pair.left || pair[0] || pair.question || pair.term || '')
+            } else {
+              leftItem = String(pair || '')
+            }
+            
+            console.log(`  Left item ${index}: "${leftItem}"`)
+            return leftItem.trim()
+          } catch (itemError) {
+            console.error(`❌ Error processing left item ${index}:`, itemError)
+            return `Item ${index + 1}`
           }
-          
-          console.log(`  Left item ${index}: "${leftItem}"`)
-          return leftItem
-        }).filter(item => item.trim() !== '')
+        }).filter(item => item !== '')
         
         console.log('✅ Final left items:', items)
         return items
+      } catch (error) {
+        console.error('❌ Error computing left items:', error)
+        return []
       }
-      return []
     })
     
-    // 🔥 FIXED: Right items computation (NO SHUFFLING for validation)
+    // 🔥 SAFE: Right items computation with error handling
     const rightItems = computed(() => {
-      if (!props.currentExercise?.pairs) return []
-      const pairs = props.currentExercise.pairs
-      
-      console.log('🔧 DEBUG: Computing right items from pairs:', pairs)
-      
-      if (Array.isArray(pairs)) {
-        const items = pairs.map((pair, index) => {
-          let rightItem = ''
-          
-          if (Array.isArray(pair)) {
-            rightItem = String(pair[1] || '')
-          } else if (pair && typeof pair === 'object') {
-            rightItem = String(pair.right || pair[1] || pair.answer || pair.definition || '')
-          } else {
-            rightItem = String(pair || '')
-          }
-          
-          console.log(`  Right item ${index}: "${rightItem}"`)
-          return rightItem
-        }).filter(item => item.trim() !== '')
+      try {
+        if (!props.currentExercise?.pairs) {
+          console.log('⚠️ No pairs found in exercise')
+          return []
+        }
         
-        // 🔥 CRITICAL: Shuffle ONLY for display, but keep original indices
-        const shuffledItems = [...items].sort(() => Math.random() - 0.5)
-        console.log('✅ Final right items (shuffled for display):', shuffledItems)
-        return shuffledItems
+        const pairs = props.currentExercise.pairs
+        console.log('🔧 DEBUG: Computing right items from pairs:', pairs)
+        
+        if (!Array.isArray(pairs)) {
+          console.warn('⚠️ Pairs is not an array:', typeof pairs)
+          return []
+        }
+        
+        const items = pairs.map((pair, index) => {
+          try {
+            let rightItem = ''
+            
+            if (Array.isArray(pair)) {
+              rightItem = String(pair[1] || '')
+            } else if (pair && typeof pair === 'object') {
+              rightItem = String(pair.right || pair[1] || pair.answer || pair.definition || '')
+            } else {
+              rightItem = String(pair || '')
+            }
+            
+            console.log(`  Right item ${index}: "${rightItem}"`)
+            return rightItem.trim()
+          } catch (itemError) {
+            console.error(`❌ Error processing right item ${index}:`, itemError)
+            return `Answer ${index + 1}`
+          }
+        }).filter(item => item !== '')
+        
+        // 🔥 SAFE: Shuffle ONLY for display, with error handling
+        try {
+          const shuffledItems = [...items].sort(() => Math.random() - 0.5)
+          console.log('✅ Final right items (shuffled for display):', shuffledItems)
+          return shuffledItems
+        } catch (shuffleError) {
+          console.error('❌ Error shuffling right items:', shuffleError)
+          return items // Return unshuffled on error
+        }
+      } catch (error) {
+        console.error('❌ Error computing right items:', error)
+        return []
       }
-      return []
     })
     
     const isLastExercise = computed(() => 
