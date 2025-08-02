@@ -478,61 +478,65 @@
     </div>
 
     <!-- Action Buttons - Same Level as Content Panel -->
-    <div v-if="isExerciseStep" class="exercise-actions">
-      <button 
-        v-if="!confirmation && attemptCount === 0"
-        @click="$emit('show-hint')" 
-        class="hint-btn"
-        aria-label="Показать подсказку"
-      >
-        💡 Подсказка
-      </button>
-      
-      <button 
-        v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
-        @click="$emit('submit')"
-        :disabled="!canSubmitAnswer"
-        class="submit-btn"
-        :class="{ disabled: !canSubmitAnswer, 'second-chance': isOnSecondChance }"
-        :aria-label="isOnSecondChance ? 'Попробовать ещё раз' : 'Проверить ответ'"
-      >
-        {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Проверить' }}
-        <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
-      </button>
-      
-      <button 
-        v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
-        @click="$emit('next-exercise')"
-        class="next-btn"
-        :aria-label="isLastExercise ? 'Завершить упражнения' : 'Следующее упражнение'"
-      >
-        {{ isLastExercise ? 'Завершить' : 'Далее' }}
-        <span class="next-icon">→</span>
-      </button>
-    </div>
+    <div v-if="isExerciseStep || isQuizStep" class="interactive-actions">
+      <!-- Exercise Buttons -->
+      <template v-if="isExerciseStep">
+        <button 
+          v-if="!confirmation && attemptCount === 0"
+          @click="$emit('show-hint')" 
+          class="interactive-nav-btn hint-btn"
+          aria-label="Показать подсказку"
+        >
+          💡 Подсказка
+        </button>
+        
+        <button 
+          v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
+          @click="$emit('submit')"
+          :disabled="!canSubmitAnswer"
+          class="interactive-nav-btn submit-btn"
+          :class="{ disabled: !canSubmitAnswer, 'second-chance': isOnSecondChance }"
+          :aria-label="isOnSecondChance ? 'Попробовать ещё раз' : 'Проверить ответ'"
+        >
+          {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Проверить' }}
+          <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
+        </button>
+        
+        <button 
+          v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
+          @click="$emit('next-exercise')"
+          class="interactive-nav-btn next-btn"
+          :aria-label="isLastExercise ? 'Завершить упражнения' : 'Следующее упражнение'"
+        >
+          {{ isLastExercise ? 'Завершить' : 'Далее' }}
+          <span class="next-icon">→</span>
+        </button>
+      </template>
 
-    <div v-else-if="isQuizStep" class="quiz-actions">
-      <button 
-        v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
-        @click="$emit('submit')"
-        :disabled="!canSubmitAnswer"
-        class="submit-btn"
-        :class="{ disabled: !canSubmitAnswer, 'second-chance': isOnSecondChance }"
-        :aria-label="isOnSecondChance ? 'Попробовать ещё раз' : 'Ответить на вопрос'"
-      >
-        {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Ответить' }}
-        <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
-      </button>
-      
-      <button 
-        v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
-        @click="$emit('next-quiz')"
-        class="next-btn"
-        :aria-label="isLastQuiz ? 'Завершить викторину' : 'Следующий вопрос'"
-      >
-        {{ isLastQuiz ? 'Завершить' : 'Следующий вопрос' }}
-        <span class="next-icon">→</span>
-      </button>
+      <!-- Quiz Buttons -->
+      <template v-else-if="isQuizStep">
+        <button 
+          v-if="!confirmation || (isOnSecondChance && !showCorrectAnswer)"
+          @click="$emit('submit')"
+          :disabled="!canSubmitAnswer"
+          class="interactive-nav-btn submit-btn"
+          :class="{ disabled: !canSubmitAnswer, 'second-chance': isOnSecondChance }"
+          :aria-label="isOnSecondChance ? 'Попробовать ещё раз' : 'Ответить на вопрос'"
+        >
+          {{ isOnSecondChance ? 'Попробовать ещё раз' : 'Ответить' }}
+          <span v-if="isOnSecondChance" class="second-chance-icon">🔄</span>
+        </button>
+        
+        <button 
+          v-if="confirmation && (answerWasCorrect || showCorrectAnswer)"
+          @click="$emit('next-quiz')"
+          class="interactive-nav-btn next-btn"
+          :aria-label="isLastQuiz ? 'Завершить викторину' : 'Следующий вопрос'"
+        >
+          {{ isLastQuiz ? 'Завершить' : 'Следующий вопрос' }}
+          <span class="next-icon">→</span>
+        </button>
+      </template>
     </div>
   </div>
 </template>
@@ -1282,22 +1286,80 @@ export default {
   background: transparent;
 }
 
-/* Clean button positioning */
-.exercise-actions,
-.quiz-actions {
+/* CRITICAL: Match Content Panel Navigation Exactly */
+.interactive-actions {
   display: flex !important;
-  gap: 10px;
-  padding: 16px 28px;
-  background: white !important;
-  border-top: 1px solid #e2e8f0;
+  gap: 12px;
+  padding: 16px 28px; /* EXACT match to content panel */
+  border-top: 1px solid #e2e8f0; /* EXACT match to content panel */
   flex-shrink: 0 !important;
+  background: white;
+  flex-wrap: wrap;
   box-sizing: border-box;
-  min-height: 60px;
-  width: 100% !important;
-  pointer-events: all !important;
+  width: 100%;
+  margin-top: auto;
+  
+  /* Ensure visibility */
   visibility: visible !important;
   opacity: 1 !important;
-  position: relative !important;
+  pointer-events: all !important;
   z-index: 100 !important;
+  position: relative !important;
+}
+
+.interactive-nav-btn {
+  display: block !important;
+  padding: 10px 20px; /* EXACT match to content panel */
+  border: none;
+  border-radius: 6px; /* EXACT match to content panel */
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 100px; /* EXACT match to content panel */
+  min-height: 40px; /* EXACT match to content panel */
+  font-size: 0.95rem !important; /* EXACT match to content panel */
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.interactive-nav-btn.hint-btn {
+  background: #f59e0b !important;
+  color: white !important;
+}
+
+.interactive-nav-btn.hint-btn:hover {
+  background: #d97706 !important;
+  transform: translateY(-1px);
+}
+
+.interactive-nav-btn.submit-btn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+  color: white !important;
+}
+
+.interactive-nav-btn.submit-btn:hover:not(.disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(139, 92, 246, 0.3);
+}
+
+.interactive-nav-btn.submit-btn.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.interactive-nav-btn.submit-btn.second-chance {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+}
+
+.interactive-nav-btn.next-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  color: white !important;
+}
+
+.interactive-nav-btn.next-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
 }
 </style>
