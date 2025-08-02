@@ -1,22 +1,23 @@
 /* ================================
-   ENHANCED LESSONPAGE.CSS - MOBILE-FIRST RESPONSIVE DESIGN
-   Optimized for ALL devices with excellent mobile experience
+   MOBILE-FIRST LESSONPAGE.CSS - CLEAN & FUNCTIONAL
+   Prioritizing mobile usability and proper scrolling
    ================================ */
 
-   .lesson-page {
+   * {
+    box-sizing: border-box;
+  }
+  
+  .lesson-page {
     min-height: 100vh;
     background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
-    contain: layout style paint;
     position: relative;
-    overflow: hidden;
-    /* Mobile-first: Ensure no horizontal scroll */
     width: 100%;
-    max-width: 100vw;
+    overflow-x: hidden;
   }
   
   /* ================================
-     LOADING & ERROR STATES - MOBILE OPTIMIZED
+     LOADING & ERROR STATES
      ================================ */
   
   .loading-screen,
@@ -26,32 +27,19 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    min-height: 100dvh; /* Dynamic viewport height for mobile */
     text-align: center;
-    padding: 20px 16px;
+    padding: 20px;
     background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    width: 100%;
-    box-sizing: border-box;
   }
   
   .loading-spinner {
-    width: 48px;
-    height: 48px;
+    width: 50px;
+    height: 50px;
     border: 3px solid #f3f4f6;
     border-top: 3px solid #3b82f6;
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
-  }
-  
-  /* Mobile: Larger spinner for better visibility */
-  @media (max-width: 768px) {
-    .loading-spinner {
-      width: 56px;
-      height: 56px;
-      border-width: 4px;
-    }
   }
   
   @keyframes spin {
@@ -62,7 +50,6 @@
   .error-icon {
     font-size: 3rem;
     margin-bottom: 16px;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
   }
   
   .error-screen h3 {
@@ -70,7 +57,6 @@
     color: #dc2626;
     margin-bottom: 12px;
     font-weight: 600;
-    line-height: 1.3;
   }
   
   .error-screen p {
@@ -78,7 +64,6 @@
     margin-bottom: 24px;
     max-width: 400px;
     line-height: 1.5;
-    font-size: 1rem;
   }
   
   .error-actions {
@@ -89,60 +74,50 @@
     max-width: 300px;
   }
   
-  /* Desktop: Horizontal layout for error actions */
   @media (min-width: 768px) {
     .error-actions {
       flex-direction: row;
-      justify-content: center;
       max-width: none;
     }
   }
   
   .retry-btn,
   .back-btn {
-    padding: 16px 24px;
+    padding: 14px 20px;
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    min-height: 52px;
+    min-height: 48px;
     font-size: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    width: 100%;
-    touch-action: manipulation;
   }
   
   .retry-btn {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    background: #3b82f6;
     color: white;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
   }
   
-  .retry-btn:hover,
-  .retry-btn:active {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  .retry-btn:hover {
+    background: #2563eb;
   }
   
   .back-btn {
     background: #f8fafc;
     color: #374151;
-    border: 2px solid #e2e8f0;
+    border: 1px solid #e2e8f0;
   }
   
-  .back-btn:hover,
-  .back-btn:active {
+  .back-btn:hover {
     background: #f1f5f9;
-    border-color: #cbd5e1;
-    transform: translateY(-1px);
   }
   
   /* ================================
-     MODAL OVERLAY SYSTEM - MOBILE OPTIMIZED
+     MODAL OVERLAY SYSTEM
      ================================ */
   
   .modal-overlay {
@@ -151,176 +126,115 @@
     left: 0;
     width: 100%;
     height: 100%;
-    height: 100dvh; /* Dynamic viewport height */
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    padding: 16px;
-    animation: modalOverlayAppear 0.3s ease-out;
-    overscroll-behavior: contain;
-  }
-  
-  @keyframes modalOverlayAppear {
-    from {
-      opacity: 0;
-      backdrop-filter: blur(0px);
-    }
-    to {
-      opacity: 1;
-      backdrop-filter: blur(8px);
-    }
+    padding: 20px;
   }
   
   .modal-content {
     background: white;
-    padding: 24px 20px;
-    border-radius: 16px;
+    padding: 24px;
+    border-radius: 12px;
     text-align: center;
     max-width: 90vw;
     width: 100%;
-    max-height: 90vh;
-    max-height: 90dvh;
+    max-height: 80vh;
     overflow-y: auto;
-    box-shadow: 
-      0 20px 40px rgba(0, 0, 0, 0.25),
-      0 4px 8px rgba(0, 0, 0, 0.1);
-    animation: modalContentAppear 0.3s ease-out;
-    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   }
   
-  /* Desktop: Larger modal */
   @media (min-width: 768px) {
     .modal-content {
       max-width: 500px;
-      padding: 32px;
-    }
-  }
-  
-  @keyframes modalContentAppear {
-    from {
-      opacity: 0;
-      transform: scale(0.95) translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
     }
   }
   
   .modal-content h3 {
     margin: 0 0 16px 0;
-    font-size: 1.3rem;
+    font-size: 1.25rem;
     color: #1e293b;
     font-weight: 600;
-    line-height: 1.3;
   }
   
   .modal-content p {
     margin: 0 0 24px 0;
     color: #64748b;
     line-height: 1.5;
-    font-size: 1rem;
   }
   
   .modal-actions {
     display: flex;
     gap: 12px;
-    justify-content: center;
     flex-direction: column;
   }
   
-  /* Desktop: Horizontal modal actions */
   @media (min-width: 768px) {
     .modal-actions {
       flex-direction: row;
-      flex-wrap: wrap;
+      justify-content: center;
     }
   }
   
   .modal-actions button {
-    padding: 16px 24px;
+    padding: 12px 20px;
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    min-height: 52px;
+    min-height: 48px;
     font-size: 1rem;
-    touch-action: manipulation;
-    width: 100%;
-  }
-  
-  /* Desktop: Auto width for modal buttons */
-  @media (min-width: 768px) {
-    .modal-actions button {
-      width: auto;
-      min-width: 140px;
-    }
   }
   
   .premium-btn,
   .confirm-btn {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    background: #3b82f6;
     color: white;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
   }
   
   .premium-btn:hover,
-  .premium-btn:active,
-  .confirm-btn:hover,
-  .confirm-btn:active {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  .confirm-btn:hover {
+    background: #2563eb;
   }
   
   .cancel-btn {
     background: #f8fafc;
     color: #64748b;
-    border: 2px solid #e2e8f0;
+    border: 1px solid #e2e8f0;
   }
   
-  .cancel-btn:hover,
-  .cancel-btn:active {
+  .cancel-btn:hover {
     background: #f1f5f9;
-    border-color: #cbd5e1;
   }
   
   /* ================================
-     LESSON CONTAINER - MOBILE-FIRST LAYOUT
+     LESSON CONTAINER - MOBILE FIRST
      ================================ */
   
   .lesson-container {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    min-height: 100dvh;
-    max-height: 100vh;
-    max-height: 100dvh;
     background: #ffffff;
-    margin: 0;
     overflow: hidden;
-    width: 100%;
   }
   
   /* ================================
-     SPLIT SCREEN CONTENT - MOBILE-FIRST APPROACH
+     SPLIT CONTENT - MOBILE STACK, DESKTOP SPLIT
      ================================ */
   
   .split-content {
     flex: 1;
     display: flex;
-    flex-direction: column; /* Mobile-first: Stack vertically */
+    flex-direction: column;
     min-height: 0;
     background: #f3f4f6;
-    position: relative;
     overflow: hidden;
-    width: 100%;
   }
   
-  /* Desktop: Horizontal layout */
   @media (min-width: 1024px) {
     .split-content {
       flex-direction: row;
@@ -335,36 +249,26 @@
     background: #ffffff;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
     position: relative;
     
-    /* Mobile: Full width, 65% height */
-    width: 100%;
-    height: 65%;
-    min-height: 300px;
-    max-height: 80%;
+    /* Mobile: Stack on top, scrollable */
+    flex: 1;
+    min-height: 50vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    
+    /* Enable momentum scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
     
     border-bottom: 1px solid #e5e7eb;
     padding: 0;
-    margin: 0;
-    resize: vertical;
   }
   
-  /* Tablet: Increase content space */
-  @media (min-width: 768px) and (max-width: 1023px) {
-    .content-panel {
-      height: 70%;
-      min-height: 350px;
-    }
-  }
-  
-  /* Desktop: Horizontal layout with 75% width */
   @media (min-width: 1024px) {
     .content-panel {
-      width: 75%;
+      width: 70%;
       height: 100%;
-      min-width: 320px;
-      max-width: 85%;
+      min-width: 400px;
       border-right: 1px solid #e5e7eb;
       border-bottom: none;
       resize: horizontal;
@@ -372,116 +276,42 @@
   }
   
   /* ================================
-     RESIZE DIVIDER - TOUCH-FRIENDLY
+     RESIZE DIVIDER - DESKTOP ONLY
      ================================ */
   
   .resize-divider {
-    background: #f3f4f6;
-    cursor: row-resize;
-    position: relative;
-    flex-shrink: 0;
-    transition: all 0.2s ease;
-    user-select: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    
-    /* Mobile: Horizontal divider */
-    width: 100%;
-    height: 12px;
-    border-top: 1px solid #e5e7eb;
-    border-bottom: 1px solid #e5e7eb;
-    
-    /* Touch-friendly: Larger tap target */
-    min-height: 20px;
-    touch-action: none;
+    display: none;
   }
   
-  /* Desktop: Vertical divider */
   @media (min-width: 1024px) {
     .resize-divider {
+      display: flex;
       width: 8px;
-      height: auto;
-      min-height: auto;
+      background: #f3f4f6;
       cursor: col-resize;
+      position: relative;
+      flex-shrink: 0;
       border-left: 1px solid #e5e7eb;
       border-right: 1px solid #e5e7eb;
-      border-top: none;
-      border-bottom: none;
+      transition: all 0.2s ease;
+      user-select: none;
+      align-items: center;
+      justify-content: center;
     }
-  }
-  
-  .resize-divider:hover {
-    background: #e5e7eb;
-  }
-  
-  /* Mobile: Larger hover area */
-  @media (max-width: 1023px) {
+    
     .resize-divider:hover {
-      height: 16px;
-    }
-  }
-  
-  /* Desktop: Wider hover area */
-  @media (min-width: 1024px) {
-    .resize-divider:hover {
+      background: #e5e7eb;
       width: 12px;
     }
-  }
-  
-  .resize-divider:active {
-    background: #3b82f6;
-  }
-  
-  /* Divider handle */
-  .resize-divider::before {
-    color: #9ca3af;
-    font-size: 14px;
-    line-height: 1;
-    transition: all 0.2s ease;
     
-    /* Mobile: Horizontal dots */
-    content: '⋯';
-    transform: none;
-  }
-  
-  /* Desktop: Vertical dots */
-  @media (min-width: 1024px) {
     .resize-divider::before {
       content: '⋮';
-      transform: none;
+      color: #9ca3af;
+      font-size: 16px;
     }
-  }
-  
-  .resize-divider:hover::before {
-    color: #6b7280;
-  }
-  
-  .resize-divider:active::before {
-    color: white;
-  }
-  
-  /* Extended touch/click area */
-  .resize-divider::after {
-    content: '';
-    position: absolute;
-    cursor: row-resize;
     
-    /* Mobile: Larger touch area */
-    width: 100%;
-    height: 32px;
-    left: 0;
-    top: -10px;
-  }
-  
-  /* Desktop: Vertical click area */
-  @media (min-width: 1024px) {
-    .resize-divider::after {
-      width: 24px;
-      height: 100%;
-      left: -8px;
-      top: 0;
-      cursor: col-resize;
+    .resize-divider:hover::before {
+      color: #6b7280;
     }
   }
   
@@ -490,25 +320,23 @@
      ================================ */
   
   .right-panel {
+    background: #ffffff;
     display: flex;
     flex-direction: column;
     
-    /* Mobile: Remaining space */
-    flex: 1;
-    min-height: 150px;
-    max-height: 50%;
-    
-    background: #ffffff;
-    overflow: hidden;
+    /* Mobile: Bottom section, limited height */
+    flex: 0 0 auto;
+    min-height: 200px;
+    max-height: 40vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
-  /* Desktop: Fixed width */
   @media (min-width: 1024px) {
     .right-panel {
-      width: 25%;
+      width: 30%;
       height: 100%;
-      min-width: 250px;
-      max-width: 80%;
+      min-width: 300px;
       max-height: none;
     }
   }
@@ -517,12 +345,18 @@
     background: #ffffff;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     position: relative;
     flex: 1;
-    padding: 0;
+    padding: 16px;
     height: 100%;
-    min-height: 120px;
+  }
+  
+  @media (min-width: 768px) {
+    .interactive-panel-container {
+      padding: 20px;
+    }
   }
   
   .non-interactive-panel {
@@ -530,7 +364,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px;
+    padding: 20px;
     position: relative;
     flex: 1;
     text-align: center;
@@ -538,29 +372,27 @@
   
   .panel-placeholder {
     color: #6b7280;
-    max-width: 300px;
   }
   
   .placeholder-icon {
-    font-size: 2.5rem;
-    margin-bottom: 12px;
-    opacity: 0.6;
+    font-size: 3rem;
+    margin-bottom: 16px;
+    opacity: 0.5;
   }
   
   .panel-placeholder h4 {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     margin-bottom: 8px;
     color: #374151;
-    line-height: 1.3;
   }
   
   .panel-placeholder p {
-    font-size: 0.9rem;
-    line-height: 1.4;
+    font-size: 1rem;
+    line-height: 1.5;
   }
   
   /* ================================
-     VOCABULARY MODAL - MOBILE OPTIMIZED
+     VOCABULARY MODAL - MOBILE FRIENDLY
      ================================ */
   
   .vocabulary-modal-overlay {
@@ -569,92 +401,48 @@
     left: 0;
     width: 100%;
     height: 100%;
-    height: 100dvh;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(12px);
+    background: rgba(0, 0, 0, 0.8);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 3000;
-    padding: 16px;
-    animation: modalFadeIn 0.4s ease-out;
-    overscroll-behavior: contain;
-  }
-  
-  @keyframes modalFadeIn {
-    from {
-      opacity: 0;
-      backdrop-filter: blur(0px);
-    }
-    to {
-      opacity: 1;
-      backdrop-filter: blur(12px);
-    }
+    padding: 20px;
+    overflow-y: auto;
   }
   
   .vocabulary-modal-container {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    border-radius: 20px;
+    background: white;
+    border-radius: 16px;
     padding: 20px;
     max-width: 95vw;
     width: 100%;
-    max-height: 95vh;
-    max-height: 95dvh;
+    max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 
-      0 20px 40px rgba(0, 0, 0, 0.25),
-      0 0 0 1px rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     position: relative;
-    animation: modalSlideUp 0.4s ease-out;
   }
   
-  /* Desktop: Larger vocabulary modal */
   @media (min-width: 768px) {
     .vocabulary-modal-container {
-      max-width: 700px;
-      padding: 28px;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    .vocabulary-modal-container {
-      max-width: 900px;
-      padding: 32px;
-    }
-  }
-  
-  @keyframes modalSlideUp {
-    from {
-      opacity: 0;
-      transform: translateY(30px) scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
+      max-width: 600px;
+      padding: 24px;
     }
   }
   
   .vocabulary-modal-header {
     display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-bottom: 24px;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
     padding-bottom: 16px;
     border-bottom: 2px solid #e2e8f0;
-  }
-  
-  /* Desktop: Horizontal header */
-  @media (min-width: 768px) {
-    .vocabulary-modal-header {
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: center;
-      gap: 20px;
-    }
+    flex-wrap: wrap;
+    gap: 12px;
   }
   
   .vocab-progress-section {
     flex: 1;
+    min-width: 200px;
   }
   
   .vocab-progress-bar {
@@ -663,16 +451,13 @@
     background: #e2e8f0;
     border-radius: 3px;
     overflow: hidden;
-    margin-bottom: 6px;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+    margin-bottom: 8px;
   }
   
   .vocab-progress-fill {
     height: 100%;
     background: linear-gradient(90deg, #3b82f6, #1d4ed8);
-    border-radius: inherit;
     transition: width 0.6s ease;
-    position: relative;
   }
   
   .vocab-progress-text {
@@ -685,62 +470,47 @@
     display: flex;
     gap: 8px;
     align-items: center;
-    justify-content: center;
-  }
-  
-  /* Desktop: Right-aligned actions */
-  @media (min-width: 768px) {
-    .vocab-header-actions {
-      justify-content: flex-end;
-    }
   }
   
   .vocab-skip-btn,
   .vocab-close-btn {
-    padding: 12px 16px;
+    padding: 8px 16px;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
     font-size: 0.9rem;
-    min-height: 44px;
+    min-height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    touch-action: manipulation;
+    gap: 4px;
   }
   
   .vocab-skip-btn {
     background: #f1f5f9;
     color: #64748b;
-    border: 2px solid #e2e8f0;
+    border: 1px solid #e2e8f0;
   }
   
-  .vocab-skip-btn:hover,
-  .vocab-skip-btn:active {
+  .vocab-skip-btn:hover {
     background: #e2e8f0;
-    transform: translateY(-1px);
-    border-color: #cbd5e1;
   }
   
   .vocab-close-btn {
     background: rgba(239, 68, 68, 0.1);
     color: #ef4444;
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     padding: 0;
-    font-size: 1.2rem;
-    border: 2px solid rgba(239, 68, 68, 0.2);
+    font-size: 1.1rem;
+    border: 1px solid rgba(239, 68, 68, 0.2);
   }
   
-  .vocab-close-btn:hover,
-  .vocab-close-btn:active {
+  .vocab-close-btn:hover {
     background: rgba(239, 68, 68, 0.2);
-    transform: scale(1.05);
-    border-color: rgba(239, 68, 68, 0.3);
   }
   
   .vocabulary-card-container {
@@ -752,53 +522,23 @@
   
   .vocabulary-card {
     width: 100%;
-    max-width: 100%;
-    height: 280px;
+    max-width: 400px;
+    height: 250px;
     position: relative;
     perspective: 1000px;
     cursor: pointer;
     margin-bottom: 16px;
-    animation: cardAppear 0.6s ease-out;
-    transform-style: preserve-3d;
   }
   
-  /* Tablet: Larger cards */
   @media (min-width: 768px) {
     .vocabulary-card {
-      height: 320px;
-      max-width: 480px;
+      height: 300px;
+      max-width: 500px;
     }
   }
   
-  /* Desktop: Even larger cards */
-  @media (min-width: 1024px) {
-    .vocabulary-card {
-      height: 380px;
-      max-width: 550px;
-    }
-  }
-  
-  @keyframes cardAppear {
-    from {
-      opacity: 0;
-      transform: translateY(20px) scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-  
-  .vocabulary-card:hover {
-    transform: scale(1.02) translateY(-2px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  /* Mobile: Reduce hover effects */
-  @media (max-width: 767px) {
-    .vocabulary-card:hover {
-      transform: none;
-    }
+  .vocabulary-card:active {
+    transform: scale(0.98);
   }
   
   .card-front,
@@ -807,39 +547,32 @@
     width: 100%;
     height: 100%;
     backface-visibility: hidden;
-    border-radius: 20px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 
-      0 10px 20px rgba(0, 0, 0, 0.15),
-      0 4px 8px rgba(0, 0, 0, 0.1);
-    will-change: transform;
+    transition: transform 0.6s ease;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   }
   
   .card-front {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     transform: rotateY(0deg);
-    z-index: 2;
   }
   
   .card-back {
     background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     color: white;
     transform: rotateY(-180deg);
-    z-index: 1;
   }
   
   .vocabulary-card.flipped .card-front {
     transform: rotateY(180deg);
-    z-index: 1;
   }
   
   .vocabulary-card.flipped .card-back {
     transform: rotateY(0deg);
-    z-index: 2;
   }
   
   .card-content {
@@ -848,65 +581,34 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: center;
     position: relative;
-    box-sizing: border-box;
-  }
-  
-  /* Desktop: More padding */
-  @media (min-width: 768px) {
-    .card-content {
-      padding: 32px 28px;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    .card-content {
-      padding: 40px 36px;
-    }
   }
   
   .vocab-term {
-    font-size: 2rem;
+    font-size: 1.8rem;
     font-weight: 700;
     margin: 0 0 16px 0;
-    line-height: 1.1;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    word-wrap: break-word;
-    hyphens: auto;
+    line-height: 1.2;
+    word-break: break-word;
   }
   
-  /* Responsive font sizes */
   @media (min-width: 768px) {
     .vocab-term {
-      font-size: 2.25rem;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    .vocab-term {
-      font-size: 2.75rem;
+      font-size: 2.2rem;
     }
   }
   
   .vocab-definition {
-    font-size: 1.1rem;
+    font-size: 1rem;
     line-height: 1.4;
     margin: 0;
-    word-wrap: break-word;
-    hyphens: auto;
+    word-break: break-word;
   }
   
   @media (min-width: 768px) {
     .vocab-definition {
-      font-size: 1.2rem;
-      line-height: 1.5;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    .vocab-definition {
-      font-size: 1.3rem;
+      font-size: 1.1rem;
     }
   }
   
@@ -915,88 +617,122 @@
     flex-direction: column;
     gap: 12px;
     margin-top: 20px;
-    width: 100%;
   }
   
-  /* Desktop: Multi-row layout */
   @media (min-width: 768px) {
     .vocab-card-actions {
       flex-direction: row;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 16px;
     }
   }
   
   .vocab-nav-btn {
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    background: #6366f1;
     color: white;
     border: none;
-    padding: 14px 20px;
-    border-radius: 12px;
+    padding: 12px 20px;
+    border-radius: 8px;
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.2s ease;
-    min-height: 48px;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
-    touch-action: manipulation;
+    min-height: 44px;
     width: 100%;
   }
   
-  /* Desktop: Auto width */
+  @media (min-width: 768px) {
+    .vocab-nav-btn {
+      width: auto;
+      min-width: 100px;
+    }
+  }
+  
+  .vocab-nav-btn:hover:not(:disabled) {
+    background: #4f46e5;
+  }
+  
+  .vocab-nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .vocab-main-actions {
+    display: flex;
+    gap: 12px;
+    flex: 1;
+    flex-direction: column;
+  }
+  
+  @media (min-width: 768px) {
+    .vocab-main-actions {
+      flex-direction: row;
+      justify-content: center;
+    }
+  }
+  
+  .vocab-learned-btn {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 44px;
+    font-size: 0.9rem;
+    width: 100%;
+  }
+  
   @media (min-width: 768px) {
     .vocab-learned-btn {
       width: auto;
-      min-width: 120px;
+      min-width: 100px;
     }
   }
   
   .vocab-learned-btn.active {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: #10b981;
     color: white;
-    border-color: transparent;
-    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    border-color: #10b981;
   }
   
-  .vocab-learned-btn:hover,
-  .vocab-learned-btn:active {
-    transform: translateY(-1px);
+  .vocab-learned-btn:hover {
+    background: #e2e8f0;
+  }
+  
+  .vocab-learned-btn.active:hover {
+    background: #059669;
   }
   
   .vocab-next-btn {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    background: #3b82f6;
     color: white;
     border: none;
-    padding: 14px 20px;
-    border-radius: 12px;
+    padding: 12px 20px;
+    border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    min-height: 48px;
-    font-size: 0.95rem;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-    touch-action: manipulation;
+    min-height: 44px;
+    font-size: 0.9rem;
     width: 100%;
   }
   
-  /* Desktop: Auto width */
   @media (min-width: 768px) {
     .vocab-next-btn {
       width: auto;
-      min-width: 120px;
+      min-width: 100px;
     }
   }
   
-  .vocab-next-btn:hover,
-  .vocab-next-btn:active {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  .vocab-next-btn:hover {
+    background: #2563eb;
   }
   
   /* ================================
-     FLOATING AI BUTTON - MOBILE OPTIMIZED
+     FLOATING AI BUTTON
      ================================ */
   
   .floating-ai-btn {
@@ -1005,92 +741,41 @@
     right: 20px;
     width: 56px;
     height: 56px;
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    background: #3b82f6;
     color: white;
     border: none;
     border-radius: 50%;
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     cursor: pointer;
-    box-shadow: 
-      0 6px 20px rgba(59, 130, 246, 0.4),
-      0 2px 6px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
     z-index: 1000;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    touch-action: manipulation;
-  }
-  
-  /* Desktop: Larger button */
-  @media (min-width: 768px) {
-    .floating-ai-btn {
-      width: 64px;
-      height: 64px;
-      font-size: 1.6rem;
-      bottom: 28px;
-      right: 28px;
-    }
+    transition: all 0.2s ease;
   }
   
   .floating-ai-btn:hover,
-  .floating-ai-btn:active,
   .floating-ai-btn.active {
-    transform: scale(1.1) translateY(-2px);
-    box-shadow: 
-      0 8px 24px rgba(59, 130, 246, 0.5),
-      0 4px 8px rgba(59, 130, 246, 0.3);
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-  
-  /* Mobile: Reduce hover effects */
-  @media (max-width: 767px) {
-    .floating-ai-btn:hover {
-      transform: scale(1.05);
-    }
+    background: #2563eb;
+    transform: scale(1.1);
   }
   
   /* ================================
-     PROBLEM REPORT MODAL - MOBILE OPTIMIZED
+     PROBLEM REPORT MODAL
      ================================ */
   
   .problem-report-modal {
     background: white;
-    border-radius: 16px;
+    border-radius: 12px;
     width: 100%;
-    max-width: 95vw;
-    max-height: 95vh;
-    max-height: 95dvh;
+    max-width: 90vw;
+    max-height: 85vh;
     overflow-y: auto;
-    box-shadow: 
-      0 20px 40px rgba(0, 0, 0, 0.3),
-      0 4px 8px rgba(0, 0, 0, 0.1);
-    animation: modalSlideIn 0.3s ease-out;
-    margin: 8px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    margin: 20px;
   }
   
-  /* Desktop: Larger modal */
   @media (min-width: 768px) {
     .problem-report-modal {
       max-width: 600px;
-      border-radius: 20px;
-      margin: 16px;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    .problem-report-modal {
-      max-width: 700px;
-      margin: 20px;
-    }
-  }
-  
-  @keyframes modalSlideIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px) scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
     }
   }
   
@@ -1099,23 +784,8 @@
     justify-content: space-between;
     align-items: center;
     padding: 20px 20px 0 20px;
-    border-bottom: 2px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
     margin-bottom: 20px;
-  }
-  
-  /* Desktop: More padding */
-  @media (min-width: 768px) {
-    .modal-header {
-      padding: 24px 24px 0 24px;
-      margin-bottom: 24px;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    .modal-header {
-      padding: 28px 28px 0 28px;
-      margin-bottom: 28px;
-    }
   }
   
   .modal-header h3 {
@@ -1123,56 +793,33 @@
     color: #1e293b;
     font-size: 1.2rem;
     font-weight: 600;
-    line-height: 1.3;
     flex: 1;
     padding-right: 16px;
   }
   
-  @media (min-width: 768px) {
-    .modal-header h3 {
-      font-size: 1.4rem;
-    }
-  }
-  
   .close-btn {
     background: rgba(239, 68, 68, 0.1);
-    border: 2px solid rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.2);
     color: #ef4444;
     padding: 8px;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 1.2rem;
-    width: 44px;
-    height: 44px;
+    font-size: 1.1rem;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    touch-action: manipulation;
     flex-shrink: 0;
   }
   
-  .close-btn:hover,
-  .close-btn:active {
+  .close-btn:hover {
     background: rgba(239, 68, 68, 0.2);
-    transform: scale(1.05);
-    border-color: rgba(239, 68, 68, 0.3);
   }
   
   .modal-body {
     padding: 0 20px;
-  }
-  
-  @media (min-width: 768px) {
-    .modal-body {
-      padding: 0 24px;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    .modal-body {
-      padding: 0 28px;
-    }
   }
   
   .modal-description {
@@ -1183,16 +830,15 @@
   }
   
   .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   
   .form-group label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     font-weight: 600;
     color: #374151;
-    font-size: 0.95rem;
-    line-height: 1.3;
+    font-size: 0.9rem;
   }
   
   .required {
@@ -1203,15 +849,14 @@
   .form-textarea,
   .form-select {
     width: 100%;
-    padding: 14px 16px;
-    border: 2px solid #e2e8f0;
-    border-radius: 10px;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
     font-size: 1rem;
     transition: all 0.2s ease;
     background: white;
     box-sizing: border-box;
     font-family: inherit;
-    line-height: 1.4;
   }
   
   .form-input:focus,
@@ -1230,21 +875,21 @@
   
   .form-textarea {
     resize: vertical;
-    min-height: 100px;
+    min-height: 80px;
   }
   
   .error-message {
     color: #ef4444;
-    font-size: 0.875rem;
-    margin-top: 6px;
+    font-size: 0.85rem;
+    margin-top: 4px;
     font-weight: 500;
   }
   
   .help-text {
     color: #6b7280;
-    font-size: 0.85rem;
-    margin-top: 6px;
-    line-height: 1.4;
+    font-size: 0.8rem;
+    margin-top: 4px;
+    line-height: 1.3;
   }
   
   .modal-footer {
@@ -1252,165 +897,64 @@
     gap: 12px;
     justify-content: flex-end;
     padding: 20px;
-    border-top: 2px solid #e2e8f0;
+    border-top: 1px solid #e2e8f0;
     margin-top: 20px;
     flex-direction: column-reverse;
   }
   
-  /* Desktop: Horizontal footer */
   @media (min-width: 768px) {
     .modal-footer {
       flex-direction: row;
-      padding: 24px;
-      margin-top: 24px;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    .modal-footer {
-      padding: 28px;
-      margin-top: 28px;
     }
   }
   
   .submit-btn {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    background: #059669;
     color: white;
     border: none;
-    padding: 16px 24px;
-    border-radius: 12px;
+    padding: 12px 20px;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
     transition: all 0.2s ease;
-    min-height: 52px;
+    min-height: 48px;
     font-size: 1rem;
-    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
-    touch-action: manipulation;
     width: 100%;
   }
   
-  /* Desktop: Auto width */
   @media (min-width: 768px) {
     .submit-btn {
       width: auto;
-      min-width: 160px;
+      min-width: 120px;
     }
   }
   
-  .submit-btn:hover:not(:disabled),
-  .submit-btn:active:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+  .submit-btn:hover:not(:disabled) {
+    background: #047857;
   }
   
   .submit-btn:disabled {
     opacity: 0.7;
     cursor: not-allowed;
-    transform: none;
   }
   
   /* ================================
-     DRAGGING AND INTERACTION STATES
-     ================================ */
-  
-  /* When dragging */
-  .split-content.dragging {
-    user-select: none;
-  }
-  
-  /* Mobile: Row resize cursor */
-  .split-content.dragging {
-    cursor: row-resize;
-  }
-  
-  /* Desktop: Column resize cursor */
-  @media (min-width: 1024px) {
-    .split-content.dragging {
-      cursor: col-resize;
-    }
-  }
-  
-  .split-content.dragging * {
-    pointer-events: none;
-  }
-  
-  .split-content.dragging * {
-    cursor: row-resize !important;
-  }
-  
-  @media (min-width: 1024px) {
-    .split-content.dragging * {
-      cursor: col-resize !important;
-    }
-  }
-  
-  .split-content.dragging .content-panel {
-    transition: none;
-  }
-  
-  /* Visual feedback during resize */
-  .resize-divider.active {
-    background: #3b82f6;
-    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
-  }
-  
-  .resize-divider.active::before {
-    color: white;
-  }
-  
-  /* Panel size constraint indicators */
-  .content-panel[data-at-min]::before {
-    content: '↑ Min height reached';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(59, 130, 246, 0.9);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    z-index: 100;
-    animation: fadeInOut 2s ease-in-out;
-    white-space: nowrap;
-  }
-  
-  /* Desktop: Different constraint message */
-  @media (min-width: 1024px) {
-    .content-panel[data-at-min]::before {
-      content: '← Min width reached';
-      top: 50%;
-      left: auto;
-      right: 20px;
-      transform: translateY(-50%);
-    }
-  }
-  
-  @keyframes fadeInOut {
-    0%, 100% { opacity: 0; }
-    50% { opacity: 1; }
-  }
-  
-  /* ================================
-     SUCCESS NOTIFICATIONS - MOBILE OPTIMIZED
+     SUCCESS NOTIFICATIONS
      ================================ */
   
   .success-notification {
     position: fixed;
     top: 20px;
-    left: 16px;
-    right: 16px;
+    left: 20px;
+    right: 20px;
     z-index: 2000;
     animation: slideInDown 0.3s ease-out;
   }
   
-  /* Desktop: Top-right positioning */
   @media (min-width: 768px) {
     .success-notification {
-      top: 24px;
       left: auto;
-      right: 24px;
+      right: 20px;
       max-width: 400px;
       animation: slideInRight 0.3s ease-out;
     }
@@ -1441,7 +985,7 @@
   .success-content {
     background: white;
     border: 2px solid #059669;
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 16px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     display: flex;
@@ -1450,22 +994,14 @@
     position: relative;
   }
   
-  @media (min-width: 768px) {
-    .success-content {
-      padding: 20px;
-      gap: 16px;
-    }
-  }
-  
   .success-icon {
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     flex-shrink: 0;
     margin-top: 2px;
   }
   
   .success-text {
     flex: 1;
-    min-width: 0;
   }
   
   .success-text h4 {
@@ -1473,7 +1009,6 @@
     color: #059669;
     font-size: 1rem;
     font-weight: 600;
-    line-height: 1.3;
   }
   
   .success-text p {
@@ -1491,16 +1026,13 @@
     border: none;
     color: #6b7280;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.9rem;
     padding: 4px;
     border-radius: 4px;
     transition: all 0.2s ease;
-    touch-action: manipulation;
-    flex-shrink: 0;
   }
   
-  .close-success:hover,
-  .close-success:active {
+  .close-success:hover {
     background: #f3f4f6;
     color: #374151;
   }
@@ -1515,36 +1047,20 @@
     left: 0;
     width: 100%;
     height: 100%;
-    height: 100dvh;
     pointer-events: none;
     z-index: 999;
   }
   
   /* ================================
-     ACCESSIBILITY & TOUCH IMPROVEMENTS
+     ACCESSIBILITY
      ================================ */
   
-  /* Focus states with larger focus rings for mobile */
-  .retry-btn:focus,
-  .back-btn:focus,
-  .floating-ai-btn:focus,
-  .premium-btn:focus,
-  .confirm-btn:focus,
-  .cancel-btn:focus,
-  .vocab-nav-btn:focus,
-  .vocab-learned-btn:focus,
-  .vocab-next-btn:focus,
-  .submit-btn:focus,
-  .close-btn:focus,
-  .vocab-close-btn:focus,
-  .resize-divider:focus {
-    outline: 3px solid #3b82f6;
-    outline-offset: 2px;
-  }
-  
-  .vocabulary-card:focus-within {
+  /* Focus states */
+  button:focus,
+  .resize-divider:focus,
+  .vocabulary-card:focus {
     outline: 2px solid #3b82f6;
-    outline-offset: 3px;
+    outline-offset: 2px;
   }
   
   .form-input:focus,
@@ -1566,31 +1082,6 @@
     border: 0;
   }
   
-  /* High contrast mode support */
-  @media (prefers-contrast: high) {
-    .content-panel {
-      border-bottom: 3px solid #000;
-      border-right: 3px solid #000;
-    }
-    
-    .resize-divider {
-      background: #000;
-      border: 3px solid #000;
-    }
-    
-    .vocabulary-card,
-    .modal-content,
-    .problem-report-modal {
-      border: 3px solid #000;
-    }
-    
-    .form-input,
-    .form-textarea,
-    .form-select {
-      border-width: 3px;
-    }
-  }
-  
   /* Reduced motion support */
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -1599,50 +1090,62 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
     }
   
     .loading-spinner {
       animation: none;
-      border: 4px solid #3b82f6;
-    }
-    
-    .vocabulary-card:hover,
-    .floating-ai-btn:hover,
-    .submit-btn:hover,
-    .cancel-btn:hover,
-    .vocab-nav-btn:hover,
-    .retry-btn:hover {
-      transform: none;
+      border: 3px solid #3b82f6;
     }
   }
   
   /* ================================
-     PERFORMANCE OPTIMIZATIONS
+     UTILITY CLASSES
      ================================ */
   
-  .vocabulary-card,
-  .floating-ai-btn,
+  .fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  /* Better text selection */
+  ::selection {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: inherit;
+  }
+  
+  /* ================================
+     SMOOTH SCROLLING FIX
+     ================================ */
+  
+  /* Ensure smooth scrolling works on all devices */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Fix momentum scrolling on iOS */
+  .content-panel,
+  .right-panel,
+  .interactive-panel-container,
   .modal-content,
   .vocabulary-modal-container,
-  .content-panel,
-  .interactive-panel-container,
-  .non-interactive-panel {
-    will-change: transform;
-    transform: translateZ(0);
+  .problem-report-modal {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
   }
   
-  .content-panel,
-  .interactive-panel-container,
-  .non-interactive-panel {
-    will-change: width, height;
-  }
-  
-  .split-content.dragging .content-panel,
-  .split-content.dragging .interactive-panel-container,
-  .split-content.dragging .non-interactive-panel {
-    will-change: width, height;
-    contain: layout;
+  /* Prevent zoom on input focus (iOS) */
+  @media screen and (max-width: 767px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="url"],
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
   }
   
   /* ================================
@@ -1663,10 +1166,6 @@
       background: white !important;
     }
   
-    .lesson-container {
-      background: white !important;
-    }
-  
     .split-content {
       display: block !important;
       background: white !important;
@@ -1683,238 +1182,292 @@
       height: auto !important;
       page-break-inside: avoid;
     }
+  }
   
-    .vocabulary-card {
-      background: white !important;
-      border: 2px solid #000;
-      color: black !important;
+  /* ================================
+     RESIZING FUNCTIONALITY (DESKTOP ONLY)
+     ================================ */
+  
+  @media (min-width: 1024px) {
+    /* When dragging */
+    .split-content.dragging {
+      user-select: none;
+      cursor: col-resize;
     }
   
-    * {
-      background: white !important;
-      color: black !important;
+    .split-content.dragging * {
+      cursor: col-resize !important;
+      pointer-events: none;
+    }
+  
+    .split-content.dragging .content-panel {
+      transition: none;
+    }
+  
+    /* Visual feedback during resize */
+    .resize-divider.active {
+      background: #3b82f6;
+      width: 12px;
+    }
+  
+    .resize-divider.active::before {
+      color: white;
+    }
+  
+    /* Panel size constraint indicators */
+    .content-panel[data-at-min]::before {
+      content: '← Min width reached';
+      position: absolute;
+      top: 50%;
+      right: 20px;
+      transform: translateY(-50%);
+      background: rgba(59, 130, 246, 0.9);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      z-index: 100;
+      animation: fadeInOut 2s ease-in-out;
+    }
+  
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 1; }
+    }
+  
+    /* Smooth resize classes for JS control */
+    .split-content.smooth-resize .content-panel {
+      transition: width 0.3s ease;
+    }
+  
+    .split-content.smooth-resize .right-panel {
+      transition: width 0.3s ease;
+    }
+  
+    .lesson-container.resizing {
+      overflow: hidden;
+    }
+  
+    .lesson-container.resizing * {
+      user-select: none;
     }
   }
   
   /* ================================
-     UTILITY CLASSES
+     MOBILE SPECIFIC OPTIMIZATIONS
      ================================ */
   
-  .fade-in {
-    animation: fadeIn 0.3s ease-out;
-  }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  
-  .slide-up {
-    animation: slideUp 0.3s ease-out;
-  }
-  
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(15px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  /* Better text selection */
-  ::selection {
-    background-color: rgba(59, 130, 246, 0.2);
-    color: inherit;
-  }
-  
-  ::-moz-selection {
-    background-color: rgba(59, 130, 246, 0.2);
-    color: inherit;
-  }
-  
-  /* ================================
-     JAVASCRIPT CLASSES FOR SPLIT SCREEN CONTROL
-     ================================ */
-  
-  .split-content.smooth-resize .content-panel {
-    transition: width 0.3s ease, height 0.3s ease;
-  }
-  
-  .split-content.smooth-resize .interactive-panel-container,
-  .split-content.smooth-resize .non-interactive-panel {
-    transition: flex 0.3s ease;
-  }
-  
-  .lesson-container.resizing {
-    overflow: hidden;
-  }
-  
-  .lesson-container.resizing * {
-    user-select: none;
-  }
-  
-  /* ================================
-     LANDSCAPE MODE OPTIMIZATIONS FOR MOBILE
-     ================================ */
-  
-  @media (max-width: 1023px) and (orientation: landscape) {
-    /* Landscape: Reduce heights for better space utilization */
+  /* Very small phones */
+  @media (max-width: 480px) {
     .content-panel {
-      height: 60%;
-      min-height: 250px;
+      min-height: 45vh;
     }
     
-    .modal-content,
-    .vocabulary-modal-container,
-    .problem-report-modal {
-      max-height: 85vh;
-      max-height: 85dvh;
-    }
-    
-    .vocabulary-card {
-      height: 240px;
-    }
-    
-    .card-content {
-      padding: 20px 16px;
-    }
-    
-    .vocab-term {
-      font-size: 1.75rem;
-      margin-bottom: 12px;
-    }
-    
-    .vocab-definition {
-      font-size: 1rem;
-    }
-  }
-  
-  /* ================================
-     EXTRA SMALL DEVICES (< 480px)
-     ================================ */
-  
-  @media (max-width: 479px) {
-    .lesson-page {
-      font-size: 14px;
-    }
-    
-    .content-panel {
-      height: 70%;
-      min-height: 280px;
-    }
-    
-    .resize-divider {
-      height: 16px;
-      min-height: 24px;
+    .right-panel {
+      max-height: 35vh;
     }
     
     .floating-ai-btn {
-      width: 52px;
-      height: 52px;
+      width: 50px;
+      height: 50px;
       bottom: 16px;
       right: 16px;
-      font-size: 1.3rem;
-    }
-    
-    .vocabulary-modal-container {
-      padding: 16px;
-      margin: 8px;
-      border-radius: 16px;
+      font-size: 1.2rem;
     }
     
     .vocabulary-card {
-      height: 260px;
-    }
-    
-    .card-content {
-      padding: 20px 16px;
+      height: 220px;
     }
     
     .vocab-term {
       font-size: 1.6rem;
     }
     
-    .vocab-definition {
-      font-size: 1rem;
-    }
-    
-    .vocab-card-actions {
-      gap: 10px;
-      margin-top: 16px;
-    }
-    
-    .vocab-nav-btn,
-    .vocab-learned-btn,
-    .vocab-next-btn {
-      padding: 12px 16px;
-      min-height: 44px;
-      font-size: 0.9rem;
-    }
-    
-    .modal-content {
+    .card-content {
       padding: 20px 16px;
-      margin: 8px;
-      border-radius: 12px;
     }
     
+    .modal-content,
+    .vocabulary-modal-container,
     .problem-report-modal {
-      margin: 8px;
-      border-radius: 12px;
-    }
-    
-    .modal-header {
-      padding: 16px 16px 0 16px;
-      margin-bottom: 16px;
-    }
-    
-    .modal-header h3 {
-      font-size: 1.1rem;
-    }
-    
-    .modal-body {
-      padding: 0 16px;
-    }
-    
-    .modal-footer {
+      margin: 10px;
       padding: 16px;
-      margin-top: 16px;
+    }
+  }
+  
+  /* Tablets in portrait */
+  @media (min-width: 481px) and (max-width: 768px) {
+    .content-panel {
+      min-height: 55vh;
+    }
+    
+    .right-panel {
+      max-height: 35vh;
+    }
+  }
+  
+  /* Tablets in landscape - use desktop layout */
+  @media (min-width: 769px) and (max-width: 1023px) and (orientation: landscape) {
+    .split-content {
+      flex-direction: row;
+    }
+    
+    .content-panel {
+      width: 65%;
+      height: 100%;
+      border-right: 1px solid #e5e7eb;
+      border-bottom: none;
+    }
+    
+    .right-panel {
+      width: 35%;
+      height: 100%;
+      max-height: none;
+    }
+    
+    .resize-divider {
+      display: flex;
+    }
+  }
+  
+  /* ================================
+     TOUCH IMPROVEMENTS
+     ================================ */
+  
+  /* Larger touch targets for mobile */
+  @media (max-width: 1023px) {
+    button,
+    .vocabulary-card,
+    .close-btn,
+    .vocab-close-btn {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Remove hover effects on touch devices */
+    @media (hover: none) {
+      .vocabulary-card:hover,
+      .floating-ai-btn:hover,
+      button:hover {
+        transform: none;
+        background: initial;
+      }
+      
+      .retry-btn:hover {
+        background: #3b82f6;
+      }
+      
+      .back-btn:hover {
+        background: #f8fafc;
+      }
+      
+      .cancel-btn:hover {
+        background: #f8fafc;
+      }
+      
+      .premium-btn:hover,
+      .confirm-btn:hover {
+        background: #3b82f6;
+      }
+      
+      .vocab-nav-btn:hover:not(:disabled) {
+        background: #6366f1;
+      }
+      
+      .vocab-learned-btn:hover {
+        background: #f1f5f9;
+      }
+      
+      .vocab-learned-btn.active:hover {
+        background: #10b981;
+      }
+      
+      .vocab-next-btn:hover {
+        background: #3b82f6;
+      }
+      
+      .submit-btn:hover:not(:disabled) {
+        background: #059669;
+      }
+      
+      .close-success:hover {
+        background: transparent;
+      }
+    }
+  }
+  
+  /* ================================
+     LANDSCAPE MODE SPECIFIC
+     ================================ */
+  
+  @media (max-width: 1023px) and (orientation: landscape) {
+    /* Reduce heights in landscape for better space usage */
+    .content-panel {
+      min-height: 50vh;
+    }
+    
+    .right-panel {
+      max-height: 40vh;
+    }
+    
+    .vocabulary-card {
+      height: 200px;
+    }
+    
+    .vocab-term {
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+    }
+    
+    .vocab-definition {
+      font-size: 0.95rem;
+    }
+    
+    .card-content {
+      padding: 16px;
+    }
+    
+    /* Stack vocabulary actions in landscape */
+    .vocab-card-actions {
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .vocab-main-actions {
+      flex-direction: row;
+    }
+  }
+  
+  /* ================================
+     HIGH DPI DISPLAYS
+     ================================ */
+  
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+    /* Ensure crisp borders and shadows on retina displays */
+    .modal-content,
+    .vocabulary-modal-container,
+    .problem-report-modal,
+    .success-content {
+      border-width: 0.5px;
     }
     
     .form-input,
     .form-textarea,
     .form-select {
-      padding: 12px 14px;
-      font-size: 0.95rem;
-    }
-    
-    .form-group {
-      margin-bottom: 16px;
-    }
-    
-    .form-group label {
-      font-size: 0.9rem;
-      margin-bottom: 6px;
-    }
-    
-    .submit-btn,
-    .cancel-btn {
-      min-height: 48px;
-      padding: 14px 20px;
+      border-width: 0.5px;
     }
   }
   
   /* ================================
-     SAFE AREA SUPPORT FOR DEVICES WITH NOTCHES
+     SAFE AREA SUPPORT (NOTCHED DEVICES)
      ================================ */
   
   @supports (padding: max(0px)) {
-    .lesson-page,
-    .lesson-container {
-      padding-left: max(0px, env(safe-area-inset-left));
-      padding-right: max(0px, env(safe-area-inset-right));
+    .lesson-page {
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
     }
     
     .floating-ai-btn {
@@ -1924,93 +1477,58 @@
     
     .success-notification {
       top: max(20px, calc(20px + env(safe-area-inset-top)));
-      left: max(16px, calc(16px + env(safe-area-inset-left)));
-      right: max(16px, calc(16px + env(safe-area-inset-right)));
+      left: max(20px, calc(20px + env(safe-area-inset-left)));
+      right: max(20px, calc(20px + env(safe-area-inset-right)));
     }
     
     @media (min-width: 768px) {
       .success-notification {
-        right: max(24px, calc(24px + env(safe-area-inset-right)));
+        right: max(20px, calc(20px + env(safe-area-inset-right)));
         left: auto;
       }
     }
     
-    .modal-overlay {
-      padding-left: max(16px, env(safe-area-inset-left));
-      padding-right: max(16px, env(safe-area-inset-right));
-      padding-bottom: max(16px, env(safe-area-inset-bottom));
-      padding-top: max(16px, env(safe-area-inset-top));
-    }
-    
+    .modal-overlay,
     .vocabulary-modal-overlay {
-      padding-left: max(16px, env(safe-area-inset-left));
-      padding-right: max(16px, env(safe-area-inset-right));
-      padding-bottom: max(16px, env(safe-area-inset-bottom));
-      padding-top: max(16px, env(safe-area-inset-top));
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-top: env(safe-area-inset-top);
     }
   }
   
   /* ================================
-     DARK MODE PREVENTION (SINCE DESIGN IS LIGHT-ONLY)
+     FORCE LIGHT MODE
      ================================ */
   
   @media (prefers-color-scheme: dark) {
-    /* Force light mode for this component */
-   
+    .lesson-page,
     .lesson-page * {
       color-scheme: light;
-      width: 768px
-    }
-  }
-    .vocab-nav-btn {
-      width: auto;
-      min-width: 120px;
-    }
-  
-  
-  .vocab-nav-btn:hover:not(:disabled),
-  .vocab-nav-btn:active:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-  }
-  
-  .vocab-nav-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-  
-  .vocab-main-actions {
-    display: flex;
-    gap: 12px;
-    flex: 1;
-    width: 100%;
-    flex-direction: column;
-  }
-  
-  /* Desktop: Horizontal main actions */
-  @media (min-width: 768px) {
-    .vocab-main-actions {
-      flex-direction: row;
-      justify-content: center;
-      width: auto;
     }
   }
   
-  .vocab-learned-btn {
-    background: #f1f5f9;
-    color: #64748b;
-    border: 2px solid #e2e8f0;
-    padding: 14px 20px;
-    border-radius: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    min-height: 48px;
-    font-size: 0.95rem;
-    touch-action: manipulation;
-    width: 100%;
+  /* ================================
+     PERFORMANCE OPTIMIZATIONS
+     ================================ */
+  
+  .vocabulary-card,
+  .floating-ai-btn,
+  .modal-content,
+  .vocabulary-modal-container {
+    will-change: transform;
+    transform: translateZ(0);
   }
   
- 
+  /* GPU acceleration for smooth interactions */
+  .content-panel,
+  .right-panel {
+    transform: translateZ(0);
+  }
+  
+  /* Optimize for scrolling performance */
+  .content-panel,
+  .right-panel,
+  .interactive-panel-container {
+    contain: layout style paint;
+  }
