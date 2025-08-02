@@ -1,4 +1,4 @@
-// src/composables/useExercises.js - COMPLETE EXERCISE LOGIC WITH FIXED DRAG & DROP
+// src/composables/useExercises.js - COMPLETE EXERCISE LOGIC WITH FIXED MATCHING
 import { ref, reactive, computed } from 'vue'
 
 export function useExercises() {
@@ -264,12 +264,51 @@ export function useExercises() {
     return correctCount === finalCorrectAnswers.length
   }
 
+  // ==========================================
+  // 🔥 FIXED: MATCHING VALIDATION WITH HELPER FUNCTIONS
+  // ==========================================
+  
+  const getLeftItemsArray = (exercise) => {
+    if (!exercise?.pairs) return []
+    const pairs = exercise.pairs
+    if (Array.isArray(pairs)) {
+      return pairs.map((pair) => {
+        if (Array.isArray(pair)) return String(pair[0] || '')
+        if (pair && typeof pair === 'object') {
+          return String(pair.left || pair[0] || pair.question || pair.term || '')
+        }
+        return String(pair || '')
+      }).filter(item => item.trim() !== '')
+    }
+    return []
+  }
+  
+  const getRightItemsArray = (exercise) => {
+    if (!exercise?.pairs) return []
+    const pairs = exercise.pairs
+    if (Array.isArray(pairs)) {
+      const rightItems = pairs.map((pair) => {
+        if (Array.isArray(pair)) return String(pair[1] || '')
+        if (pair && typeof pair === 'object') {
+          return String(pair.right || pair[1] || pair.answer || pair.definition || '')
+        }
+        return String(pair || '')
+      }).filter(item => item.trim() !== '')
+      
+      // Return in original order for validation (don't shuffle here)
+      return rightItems
+    }
+    return []
+  }
+
   const validateMatching = (userPairs, exercise) => {
     if (!Array.isArray(userPairs)) {
       userPairs = matchingPairs.value
     }
 
     console.log('🔗 Validating matching exercise')
+    console.log('User pairs:', userPairs)
+    console.log('Exercise pairs:', exercise.pairs)
     
     if (!Array.isArray(userPairs) || userPairs.length === 0) {
       console.log('❌ No user pairs provided')
@@ -287,31 +326,70 @@ export function useExercises() {
       return false
     }
 
+    // 🔥 FIXED: Proper matching validation logic
     let correctCount = 0
     
-    for (let i = 0; i < userPairs.length; i++) {
-      const userPair = userPairs[i]
-      
+    for (const userPair of userPairs) {
       if (!userPair || typeof userPair !== 'object') {
-        console.log(`❌ Invalid pair at index ${i}:`, userPair)
+        console.log('❌ Invalid user pair:', userPair)
         continue
       }
 
-      const leftIndex = userPair.leftIndex
-      const rightIndex = userPair.rightIndex
+      const { leftIndex, rightIndex } = userPair
+      
+      if (leftIndex === undefined || rightIndex === undefined) {
+        console.log('❌ Missing indices in pair:', userPair)
+        continue
+      }
 
-      console.log(`🔍 Checking pair ${i}: leftIndex=${leftIndex}, rightIndex=${rightIndex}`)
+      // Get the actual text values from the user's selection
+      const leftItems = getLeftItemsArray(exercise)
+      const rightItems = getRightItemsArray(exercise)
+      
+      if (leftIndex >= leftItems.length || rightIndex >= rightItems.length) {
+        console.log('❌ Index out of bounds:', { leftIndex, rightIndex, leftCount: leftItems.length, rightCount: rightItems.length })
+        continue
+      }
 
-      if (leftIndex === rightIndex) {
+      const userLeftText = leftItems[leftIndex]
+      const userRightText = rightItems[rightIndex]
+      
+      console.log(`🔍 Checking pair: "${userLeftText}" ↔ "${userRightText}"`)
+
+      // Find if this pairing is correct in the exercise pairs
+      const isCorrectPair = exercisePairs.some((exercisePair, pairIndex) => {
+        let exerciseLeft, exerciseRight
+        
+        if (Array.isArray(exercisePair)) {
+          exerciseLeft = String(exercisePair[0] || '').trim()
+          exerciseRight = String(exercisePair[1] || '').trim()
+        } else if (exercisePair && typeof exercisePair === 'object') {
+          exerciseLeft = String(exercisePair.left || exercisePair[0] || exercisePair.question || exercisePair.term || '').trim()
+          exerciseRight = String(exercisePair.right || exercisePair[1] || exercisePair.answer || exercisePair.definition || '').trim()
+        } else {
+          console.warn('⚠️ Invalid exercise pair format:', exercisePair)
+          return false
+        }
+        
+        const leftMatch = userLeftText.toLowerCase().trim() === exerciseLeft.toLowerCase().trim()
+        const rightMatch = userRightText.toLowerCase().trim() === exerciseRight.toLowerCase().trim()
+        
+        console.log(`  Comparing with exercise pair ${pairIndex}: "${exerciseLeft}" ↔ "${exerciseRight}"`)
+        console.log(`  Left match: ${leftMatch}, Right match: ${rightMatch}`)
+        
+        return leftMatch && rightMatch
+      })
+
+      if (isCorrectPair) {
         correctCount++
-        console.log(`✅ CORRECT: Index ${leftIndex} matches ${rightIndex}`)
+        console.log(`✅ CORRECT: "${userLeftText}" ↔ "${userRightText}"`)
       } else {
-        console.log(`❌ WRONG: Index ${leftIndex} does not match ${rightIndex}`)
+        console.log(`❌ WRONG: "${userLeftText}" ↔ "${userRightText}"`)
       }
     }
 
     const isValid = correctCount === exercisePairs.length
-    console.log(`🎯 Validation result: ${correctCount}/${exercisePairs.length} correct = ${isValid}`)
+    console.log(`🎯 Matching validation result: ${correctCount}/${exercisePairs.length} correct = ${isValid}`)
     
     return isValid
   }
@@ -494,7 +572,7 @@ export function useExercises() {
   }
 
   // ==========================================
-  // 🔥 ANSWER DISPLAY METHODS
+  // 🔥 ENHANCED ANSWER DISPLAY METHODS
   // ==========================================
   
   const getCorrectAnswerDisplay = (exercise) => {
@@ -503,6 +581,27 @@ export function useExercises() {
     const exerciseType = exercise.type || 'short-answer'
     
     switch (exerciseType) {
+      case 'matching':
+        if (exercise.pairs && Array.isArray(exercise.pairs)) {
+          return exercise.pairs.map((pair, index) => {
+            let left, right
+            
+            if (Array.isArray(pair)) {
+              left = String(pair[0] || '')
+              right = String(pair[1] || '')
+            } else if (pair && typeof pair === 'object') {
+              left = String(pair.left || pair[0] || pair.question || pair.term || '')
+              right = String(pair.right || pair[1] || pair.answer || pair.definition || '')
+            } else {
+              left = String(pair || '')
+              right = 'Unknown'
+            }
+            
+            return `${left} ↔ ${right}`
+          }).join('; ')
+        }
+        return 'Правильные пары показаны выше'
+
       case 'multiple-choice':
       case 'abc':
         if (typeof exercise.correctAnswer === 'number' && exercise.options) {
@@ -572,10 +671,75 @@ export function useExercises() {
   }
 
   // ==========================================
-  // 🔥 MESSAGE METHODS
+  // 🔥 ENHANCED FEEDBACK MESSAGES
   // ==========================================
   
+  const getMatchingFeedback = (userPairs, exercise, isCorrect) => {
+    if (isCorrect) {
+      return getRandomSuccessMessage()
+    }
+    
+    if (!Array.isArray(userPairs) || userPairs.length === 0) {
+      return '🔗 Создайте хотя бы одну пару для проверки!'
+    }
+    
+    const exercisePairs = exercise.pairs || []
+    const requiredPairs = exercisePairs.length
+    const userPairCount = userPairs.length
+    
+    if (userPairCount < requiredPairs) {
+      return `🔗 Создайте все ${requiredPairs} пар (у вас ${userPairCount})`
+    }
+    
+    // Check how many are correct
+    let correctCount = 0
+    const leftItems = getLeftItemsArray(exercise)
+    const rightItems = getRightItemsArray(exercise)
+    
+    for (const userPair of userPairs) {
+      const { leftIndex, rightIndex } = userPair
+      
+      if (leftIndex < leftItems.length && rightIndex < rightItems.length) {
+        const userLeftText = leftItems[leftIndex]
+        const userRightText = rightItems[rightIndex]
+        
+        const isCorrectPair = exercisePairs.some((exercisePair) => {
+          let exerciseLeft, exerciseRight
+          
+          if (Array.isArray(exercisePair)) {
+            exerciseLeft = String(exercisePair[0] || '').trim()
+            exerciseRight = String(exercisePair[1] || '').trim()
+          } else if (exercisePair && typeof exercisePair === 'object') {
+            exerciseLeft = String(exercisePair.left || exercisePair[0] || exercisePair.question || exercisePair.term || '').trim()
+            exerciseRight = String(exercisePair.right || exercisePair[1] || exercisePair.answer || exercisePair.definition || '').trim()
+          } else {
+            return false
+          }
+          
+          return userLeftText.toLowerCase().trim() === exerciseLeft.toLowerCase().trim() &&
+                 userRightText.toLowerCase().trim() === exerciseRight.toLowerCase().trim()
+        })
+        
+        if (isCorrectPair) {
+          correctCount++
+        }
+      }
+    }
+    
+    if (correctCount === 0) {
+      return '🤔 Ни одна пара не совпадает. Подумайте о логических связях!'
+    } else if (correctCount === 1) {
+      return `🎯 ${correctCount} пара правильная из ${requiredPairs}. Проверьте остальные!`
+    } else {
+      return `🎯 ${correctCount} пар правильных из ${requiredPairs}. Почти получилось!`
+    }
+  }
+
   const getSecondChanceMessage = (exercise) => {
+    if (exercise?.type === 'matching') {
+      return getMatchingFeedback(matchingPairs.value, exercise, false)
+    }
+    
     const messages = [
       '🤔 Не совсем правильно. У вас есть ещё одна попытка!',
       '💭 Подумайте ещё немного. Попробуйте снова!',
@@ -777,7 +941,7 @@ export function useExercises() {
   }
 
   // ==========================================
-  // EXISTING METHODS (kept as-is)
+  // CORE EXERCISE NAVIGATION METHODS
   // ==========================================
   
   const getCurrentExercise = (currentStep) => {
@@ -1214,6 +1378,7 @@ export function useExercises() {
     
     // 🔥 FIXED: Display Methods
     getCorrectAnswerDisplay,
+    getMatchingFeedback,
     getSecondChanceMessage,
     getFinalFailureMessage,
     getRandomSuccessMessage,
@@ -1236,7 +1401,9 @@ export function useExercises() {
     clearSmartHint,
     setSmartHint,
     
-    // Helper Methods
+    // 🔥 FIXED: Helper Methods
+    getLeftItemsArray,
+    getRightItemsArray,
     calculateSimilarity,
     levenshteinDistance,
     getCorrectAnswersArray

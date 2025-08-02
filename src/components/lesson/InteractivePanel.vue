@@ -140,79 +140,132 @@
               <div class="spacer"></div>
             </div>
 
-            <!-- Matching -->
+            <!-- FIXED MATCHING EXERCISE -->
             <div v-else-if="exerciseType === 'matching'" class="exercise-type">
               <div class="question-text">{{ currentExercise?.question }}</div>
+              
+              <!-- Debug Info (remove in production) -->
+              <div v-if="process.env.NODE_ENV === 'development'" class="debug-info">
+                <small>Debug: Left items: {{ leftItems.length }}, Right items: {{ rightItems.length }}</small>
+                <br>
+                <small>Selected: {{ selectedMatchingItem ? `${selectedMatchingItem.side}-${selectedMatchingItem.index}` : 'none' }}</small>
+                <br>
+                <small>Pairs: {{ matchingPairs.length }}</small>
+                <br>
+                <small>Exercise pairs: {{ currentExercise?.pairs?.length || 0 }}</small>
+              </div>
+              
               <div class="matching-container">
+                <!-- Left Side -->
                 <div class="matching-side left-side">
                   <h4>Соедините:</h4>
                   <div 
                     v-for="(item, index) in leftItems" 
-                    :key="`left-${index}`"
+                    :key="`left-${index}-${item}`"
                     class="matching-item"
                     :class="{ 
-                      selected: selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === index,
+                      selected: isItemSelected('left', index),
                       matched: isItemMatched('left', index),
                       disabled: showCorrectAnswer
                     }"
-                    @click="handleMatchingItemClick('left', index)"
+                    @click="!showCorrectAnswer && handleMatchingClick('left', index)"
                     tabindex="0"
-                    @keypress.enter="handleMatchingItemClick('left', index)"
-                    @keypress.space.prevent="handleMatchingItemClick('left', index)"
+                    @keypress.enter="!showCorrectAnswer && handleMatchingClick('left', index)"
+                    @keypress.space.prevent="!showCorrectAnswer && handleMatchingClick('left', index)"
+                    :aria-label="`Left item ${index + 1}: ${item}`"
                   >
                     {{ item }}
-                    <span v-if="selectedMatchingItem?.side === 'left' && selectedMatchingItem?.index === index" class="selection-indicator">👆</span>
+                    <span v-if="isItemSelected('left', index)" class="selection-indicator">👆</span>
+                    <span v-if="isItemMatched('left', index)" class="match-indicator">✓</span>
                   </div>
                 </div>
+                
+                <!-- Right Side -->
                 <div class="matching-side right-side">
                   <h4>С:</h4>
                   <div 
                     v-for="(item, index) in rightItems" 
-                    :key="`right-${index}`"
+                    :key="`right-${index}-${item}`"
                     class="matching-item"
                     :class="{ 
-                      selected: selectedMatchingItem?.side === 'right' && selectedMatchingItem?.index === index,
+                      selected: isItemSelected('right', index),
                       matched: isItemMatched('right', index),
                       disabled: showCorrectAnswer
                     }"
-                    @click="handleMatchingItemClick('right', index)"
+                    @click="!showCorrectAnswer && handleMatchingClick('right', index)"
                     tabindex="0"
-                    @keypress.enter="handleMatchingItemClick('right', index)"
-                    @keypress.space.prevent="handleMatchingItemClick('right', index)"
+                    @keypress.enter="!showCorrectAnswer && handleMatchingClick('right', index)"
+                    @keypress.space.prevent="!showCorrectAnswer && handleMatchingClick('right', index)"
+                    :aria-label="`Right item ${index + 1}: ${item}`"
                   >
                     {{ item }}
-                    <span v-if="selectedMatchingItem?.side === 'right' && selectedMatchingItem?.index === index" class="selection-indicator">👆</span>
+                    <span v-if="isItemSelected('right', index)" class="selection-indicator">👆</span>
+                    <span v-if="isItemMatched('right', index)" class="match-indicator">✓</span>
                   </div>
                 </div>
               </div>
               
+              <!-- Current Pairs Display -->
               <div v-if="matchingPairs && matchingPairs.length > 0" class="matching-pairs">
-                <h4>Соединения:</h4>
-                <div 
-                  v-for="(pair, index) in matchingPairs" 
-                  :key="`pair-${index}`"
-                  class="pair-item"
-                >
-                  <span class="pair-text">
-                    {{ getLeftItemText(pair.leftIndex) }} ↔ {{ getRightItemText(pair.rightIndex) }}
-                  </span>
-                  <button 
-                    v-if="!showCorrectAnswer"
-                    @click="handleRemovePair(index)" 
-                    class="remove-pair"
-                    type="button"
-                    :aria-label="`Удалить связь ${index + 1}`"
-                  >×</button>
+                <h4>Соединения ({{ matchingPairs.length }}):</h4>
+                <div class="pairs-list">
+                  <div 
+                    v-for="(pair, index) in matchingPairs" 
+                    :key="`pair-${index}-${pair.leftIndex}-${pair.rightIndex}`"
+                    class="pair-item"
+                    :class="{ 'pair-correct': isPairCorrect(pair) }"
+                  >
+                    <span class="pair-text">
+                      <strong>{{ getLeftItemText(pair.leftIndex) }}</strong> 
+                      <span class="pair-arrow">↔</span> 
+                      <strong>{{ getRightItemText(pair.rightIndex) }}</strong>
+                    </span>
+                    <button 
+                      v-if="!showCorrectAnswer"
+                      @click="removePair(index)" 
+                      class="remove-pair"
+                      type="button"
+                      :aria-label="`Удалить связь ${index + 1}`"
+                      title="Удалить связь"
+                    >×</button>
+                  </div>
                 </div>
               </div>
               
+              <!-- Instructions -->
               <div class="matching-instructions">
-                <p>💡 <strong>Инструкция:</strong> Нажмите на элемент слева, затем на соответствующий элемент справа для создания связи.</p>
-                <p v-if="selectedMatchingItem" class="current-selection">
-                  🎯 Выбран элемент: <strong>{{ selectedMatchingItem.side === 'left' ? 'слева' : 'справа' }}</strong> - 
-                  "{{ selectedMatchingItem.side === 'left' ? leftItems[selectedMatchingItem.index] : rightItems[selectedMatchingItem.index] }}"
-                </p>
+                <div class="instruction-main">
+                  <span class="instruction-icon">💡</span>
+                  <strong>Инструкция:</strong> Нажмите на элемент слева, затем на соответствующий элемент справа для создания связи.
+                </div>
+                
+                <div v-if="selectedMatchingItem" class="current-selection">
+                  <span class="selection-icon">🎯</span>
+                  <span>Выбран элемент: <strong>{{ selectedMatchingItem.side === 'left' ? 'слева' : 'справа' }}</strong></span>
+                  <span class="selected-text">"{{ getSelectedItemText() }}"</span>
+                  <button 
+                    @click="clearSelection" 
+                    class="clear-selection"
+                    title="Очистить выбор"
+                  >×</button>
+                </div>
+                
+                <div v-if="matchingPairs.length === 0" class="no-pairs-message">
+                  <span class="warning-icon">⚠️</span>
+                  Создайте хотя бы одну связь для продолжения
+                </div>
+                
+                <div v-if="matchingPairs.length > 0 && matchingPairs.length < leftItems.length" class="progress-message">
+                  <span class="progress-icon">📊</span>
+                  Создано {{ matchingPairs.length }} из {{ leftItems.length }} связей
+                </div>
+                
+                <div v-if="matchingPairs.length === leftItems.length" class="complete-message">
+                  <span class="complete-icon">✅</span>
+                  Все связи созданы! Можете проверить ответ.
+                </div>
               </div>
+              
               <div class="spacer"></div>
             </div>
 
@@ -812,77 +865,96 @@ export default {
     }
 
     // ========================
-    // MATCHING METHODS
+    // FIXED MATCHING METHODS
     // ========================
-    const handleMatchingItemClick = (side, index) => {
-      if (props.showCorrectAnswer) return
-      selectMatchingItem(side, index)
-    }
-
-    const handleRemovePair = (pairIndex) => {
-      if (props.showCorrectAnswer) return
-      removeMatchingPair(pairIndex)
-    }
-    
-    const selectMatchingItem = (side, index) => {
+    const handleMatchingClick = (side, index) => {
+      console.log('🔗 Matching click:', { side, index, current: props.selectedMatchingItem })
+      
+      if (props.showCorrectAnswer) {
+        console.log('❌ Cannot interact - correct answer is shown')
+        return
+      }
+      
       const currentSelection = props.selectedMatchingItem
       
+      // If nothing is selected, select this item
       if (!currentSelection) {
+        console.log('✅ Selecting first item:', { side, index })
         emit('matching-item-selected', { side, index })
         return
       }
       
+      // If clicking the same item, deselect it
       if (currentSelection.side === side && currentSelection.index === index) {
+        console.log('🔄 Deselecting same item')
         emit('matching-item-selected', null)
         return
       }
       
+      // If clicking another item on the same side, change selection
       if (currentSelection.side === side) {
+        console.log('🔄 Changing selection on same side')
         emit('matching-item-selected', { side, index })
         return
       }
       
+      // If clicking an item on the opposite side, create a pair
+      console.log('🎯 Creating pair between sides')
+      createMatchingPair(currentSelection, { side, index })
+    }
+
+    const createMatchingPair = (firstItem, secondItem) => {
       let leftIndex, rightIndex
       
-      if (side === 'left') {
-        leftIndex = index
-        rightIndex = currentSelection.index
+      // Determine which is left and which is right
+      if (firstItem.side === 'left') {
+        leftIndex = firstItem.index
+        rightIndex = secondItem.index
       } else {
-        leftIndex = currentSelection.index
-        rightIndex = index
+        leftIndex = secondItem.index
+        rightIndex = firstItem.index
       }
+      
+      console.log('🔗 Creating pair:', { leftIndex, rightIndex })
       
       const newPair = { leftIndex, rightIndex }
       const currentPairs = props.matchingPairs || []
+      
+      // Check if this pair already exists
       const pairExists = currentPairs.some(pair => 
         pair.leftIndex === newPair.leftIndex && pair.rightIndex === newPair.rightIndex
       )
       
-      if (!pairExists) {
-        const updatedPairs = currentPairs.filter(pair => 
-          pair.leftIndex !== newPair.leftIndex && pair.rightIndex !== newPair.rightIndex
-        )
-        updatedPairs.push(newPair)
-        emit('answer-changed', updatedPairs)
+      if (pairExists) {
+        console.log('⚠️ Pair already exists')
+        emit('matching-item-selected', null)
+        return
       }
       
+      // Remove any existing pairs that use these items
+      const filteredPairs = currentPairs.filter(pair => 
+        pair.leftIndex !== newPair.leftIndex && pair.rightIndex !== newPair.rightIndex
+      )
+      
+      // Add the new pair
+      const updatedPairs = [...filteredPairs, newPair]
+      
+      console.log('✅ Updated pairs:', updatedPairs)
+      
+      // Emit the updated pairs
+      emit('answer-changed', updatedPairs)
+      
+      // Clear selection
       emit('matching-item-selected', null)
     }
-    
-    const removeMatchingPair = (pairIndex) => {
-      const currentPairs = props.matchingPairs || []
-      
-      if (pairIndex >= 0 && pairIndex < currentPairs.length) {
-        const updatedPairs = currentPairs.filter((_, index) => index !== pairIndex)
-        emit('answer-changed', updatedPairs)
-        emit('remove-matching-pair', pairIndex)
-      }
+
+    const isItemSelected = (side, index) => {
+      const selection = props.selectedMatchingItem
+      return selection && selection.side === side && selection.index === index
     }
-    
+
     const isItemMatched = (side, index) => {
       const currentPairs = props.matchingPairs || []
-      
-      if (currentPairs.length === 0) return false
       
       if (side === 'left') {
         return currentPairs.some(pair => pair.leftIndex === index)
@@ -890,14 +962,55 @@ export default {
         return currentPairs.some(pair => pair.rightIndex === index)
       }
     }
-    
+
+    const isPairCorrect = (pair) => {
+      // This is for visual feedback only - actual validation happens in useExercises
+      // You can implement this based on your exercise data structure
+      return false // For now, don't show correctness until submission
+    }
+
+    const getSelectedItemText = () => {
+      const selection = props.selectedMatchingItem
+      if (!selection) return ''
+      
+      if (selection.side === 'left') {
+        return leftItems.value[selection.index] || ''
+      } else {
+        return rightItems.value[selection.index] || ''
+      }
+    }
+
+    const clearSelection = () => {
+      emit('matching-item-selected', null)
+    }
+
+    const removePair = (pairIndex) => {
+      console.log('🗑️ Removing pair at index:', pairIndex)
+      
+      if (props.showCorrectAnswer) {
+        console.log('❌ Cannot remove - correct answer is shown')
+        return
+      }
+      
+      const currentPairs = props.matchingPairs || []
+      
+      if (pairIndex >= 0 && pairIndex < currentPairs.length) {
+        const updatedPairs = currentPairs.filter((_, index) => index !== pairIndex)
+        console.log('✅ Updated pairs after removal:', updatedPairs)
+        emit('answer-changed', updatedPairs)
+        emit('remove-matching-pair', pairIndex)
+      } else {
+        console.warn('⚠️ Invalid pair index for removal:', pairIndex)
+      }
+    }
+
     const getLeftItemText = (index) => {
       if (index >= 0 && index < leftItems.value.length) {
         return leftItems.value[index]
       }
       return `Left Item ${index + 1}`
     }
-    
+
     const getRightItemText = (index) => {
       if (index >= 0 && index < rightItems.value.length) {
         return rightItems.value[index]
@@ -1226,13 +1339,19 @@ export default {
       handleFillBlankInput,
       renderFillBlankTemplate,
       initializeFillBlankAnswers,
-      handleMatchingItemClick,
-      handleRemovePair,
-      selectMatchingItem,
-      removeMatchingPair,
+      
+      // Fixed matching methods
+      handleMatchingClick,
+      createMatchingPair,
+      isItemSelected,
       isItemMatched,
+      isPairCorrect,
+      getSelectedItemText,
+      clearSelection,
+      removePair,
       getLeftItemText,
       getRightItemText,
+      
       initializeOrderingItems,
       getOrderingItemText,
       moveOrderingItem,
@@ -1265,11 +1384,11 @@ export default {
 /* Enhanced scroll styling - FIXED HEIGHT CALCULATION */
 .exercise-content-scroll,
 .quiz-content-scroll {
-  height: calc(100vh - 300px) !important; /* Increased from 200px to 300px */
+  height: calc(100vh - 300px) !important;
   overflow-y: scroll !important;
   overflow-x: hidden !important;
-  min-height: 200px !important; /* Reduced minimum */
-  max-height: calc(100vh - 300px) !important; /* Increased from 200px to 300px */
+  min-height: 200px !important;
+  max-height: calc(100vh - 300px) !important;
   -webkit-overflow-scrolling: touch !important;
   scrollbar-width: auto !important;
   flex: 1;
@@ -1277,12 +1396,12 @@ export default {
 }
 
 .scroll-content-wrapper {
-  min-height: 400px; /* Reduced from 600px */
+  min-height: 400px;
   padding-bottom: 40px;
 }
 
 .spacer {
-  height: 100px; /* Reduced from 200px */
+  height: 100px;
   background: transparent;
 }
 
@@ -1290,8 +1409,8 @@ export default {
 .interactive-actions {
   display: flex !important;
   gap: 12px;
-  padding: 16px 28px; /* EXACT match to content panel */
-  border-top: 1px solid #e2e8f0; /* EXACT match to content panel */
+  padding: 16px 28px;
+  border-top: 1px solid #e2e8f0;
   flex-shrink: 0 !important;
   background: white;
   flex-wrap: wrap;
@@ -1313,16 +1432,16 @@ export default {
 
 .interactive-nav-btn {
   display: block !important;
-  padding: 10px 20px; /* EXACT match to content panel */
+  padding: 10px 20px;
   border: none;
-  border-radius: 6px; /* EXACT match to content panel */
+  border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   flex: 1;
-  min-width: 100px; /* EXACT match to content panel */
-  min-height: 40px; /* EXACT match to content panel */
-  font-size: 0.95rem !important; /* EXACT match to content panel */
+  min-width: 100px;
+  min-height: 40px;
+  font-size: 0.95rem !important;
   visibility: visible !important;
   opacity: 1 !important;
   
@@ -1372,7 +1491,371 @@ export default {
   box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
 }
 
-/* RESPONSIVE FIXES */
+/* ================================
+   ENHANCED MATCHING EXERCISE STYLES
+   ================================ */
+
+.matching-container {
+  display: flex;
+  gap: 20px;
+  margin: 20px 0;
+  min-height: 200px;
+}
+
+@media (max-width: 768px) {
+  .matching-container {
+    flex-direction: column;
+    gap: 15px;
+  }
+}
+
+.matching-side {
+  flex: 1;
+  padding: 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  min-height: 180px;
+}
+
+.left-side {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #dbeafe 0%, #f8fafc 100%);
+}
+
+.right-side {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #d1fae5 0%, #f8fafc 100%);
+}
+
+.matching-side h4 {
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+  text-align: center;
+}
+
+.matching-item {
+  padding: 12px 16px;
+  margin: 8px 0;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  font-weight: 500;
+  line-height: 1.4;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  word-wrap: break-word;
+}
+
+.matching-item:hover:not(.disabled) {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.matching-item:active:not(.disabled) {
+  transform: translateY(0);
+}
+
+.matching-item.selected {
+  border-color: #8b5cf6;
+  background: linear-gradient(135deg, #ede9fe 0%, #f3f4f6 100%);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { 
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1); 
+  }
+  50% { 
+    box-shadow: 0 0 0 6px rgba(139, 92, 246, 0.2); 
+  }
+}
+
+.matching-item.matched {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #d1fae5 0%, #f0fdf4 100%);
+  opacity: 0.8;
+}
+
+.matching-item.matched:hover {
+  border-color: #059669;
+  background: linear-gradient(135deg, #a7f3d0 0%, #d1fae5 100%);
+}
+
+.matching-item.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f3f4f6;
+}
+
+.matching-item.disabled:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: #e2e8f0;
+  background: #f3f4f6;
+}
+
+.selection-indicator {
+  font-size: 1.2rem;
+  animation: bounce 1s infinite;
+  margin-left: 8px;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { 
+    transform: translateY(0); 
+  }
+  40% { 
+    transform: translateY(-3px); 
+  }
+  60% { 
+    transform: translateY(-2px); 
+  }
+}
+
+.match-indicator {
+  color: #10b981;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-left: 8px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ================================
+   MATCHING PAIRS DISPLAY
+   ================================ */
+
+.matching-pairs {
+  margin: 20px 0;
+  padding: 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.matching-pairs h4 {
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pairs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pair-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.pair-item:hover {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+}
+
+.pair-item.pair-correct {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%);
+}
+
+.pair-text {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  line-height: 1.3;
+  word-wrap: break-word;
+}
+
+.pair-arrow {
+  color: #6b7280;
+  font-weight: bold;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.remove-pair {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  padding: 4px 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.remove-pair:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.3);
+  transform: scale(1.1);
+}
+
+.remove-pair:active {
+  transform: scale(0.95);
+}
+
+/* ================================
+   INSTRUCTIONS AND FEEDBACK
+   ================================ */
+
+.matching-instructions {
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: 8px;
+  background: #f0f9ff;
+  border: 1px solid #bfdbfe;
+}
+
+.instruction-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.instruction-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.current-selection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #ede9fe 0%, #f3f4f6 100%);
+  border: 1px solid #c4b5fd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.selection-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.selected-text {
+  font-style: italic;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.clear-selection {
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+  padding: 2px 6px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: bold;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.clear-selection:hover {
+  background: rgba(139, 92, 246, 0.2);
+  transform: scale(1.1);
+}
+
+.no-pairs-message,
+.progress-message,
+.complete-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.no-pairs-message {
+  color: #dc2626;
+}
+
+.progress-message {
+  color: #f59e0b;
+}
+
+.complete-message {
+  color: #10b981;
+}
+
+.warning-icon,
+.progress-icon,
+.complete-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* ================================
+   DEBUG INFO (DEVELOPMENT ONLY)
+   ================================ */
+
+.debug-info {
+  padding: 8px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  margin: 8px 0;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #92400e;
+}
+
+/* ================================
+   RESPONSIVE FIXES
+   ================================ */
+
 @media (max-height: 700px) {
   .exercise-content-scroll,
   .quiz-content-scroll {
@@ -1410,6 +1893,119 @@ export default {
     padding: 6px 14px !important;
     min-height: 32px !important;
     font-size: 0.85rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .matching-side {
+    padding: 12px;
+    min-height: 150px;
+  }
+  
+  .matching-item {
+    padding: 10px 12px;
+    min-height: 44px;
+    font-size: 0.9rem;
+  }
+  
+  .pair-text {
+    font-size: 0.9rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .pair-arrow {
+    font-size: 1rem;
+  }
+  
+  .current-selection {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  
+  .clear-selection {
+    align-self: flex-end;
+    margin-top: -24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .matching-container {
+    gap: 12px;
+  }
+  
+  .matching-side {
+    padding: 10px;
+  }
+  
+  .matching-item {
+    padding: 8px 10px;
+    margin: 6px 0;
+    font-size: 0.85rem;
+  }
+  
+  .matching-pairs {
+    padding: 12px;
+  }
+  
+  .instruction-main {
+    font-size: 0.85rem;
+  }
+}
+
+/* ================================
+   ACCESSIBILITY IMPROVEMENTS
+   ================================ */
+
+.matching-item:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.matching-item[aria-selected="true"] {
+  background: linear-gradient(135deg, #ede9fe 0%, #f3f4f6 100%);
+  border-color: #8b5cf6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .matching-item,
+  .pair-item,
+  .remove-pair,
+  .clear-selection {
+    transition: none;
+  }
+  
+  .selection-indicator,
+  .match-indicator {
+    animation: none;
+  }
+  
+  .matching-item.selected {
+    animation: none;
+  }
+}
+
+/* ================================
+   HIGH CONTRAST MODE
+   ================================ */
+
+@media (prefers-contrast: high) {
+  .matching-item {
+    border-width: 3px;
+  }
+  
+  .matching-item.selected {
+    border-color: #000;
+    background: #ffff00;
+    color: #000;
+  }
+  
+  .matching-item.matched {
+    border-color: #008000;
+    background: #90EE90;
+    color: #000;
   }
 }
 </style>
