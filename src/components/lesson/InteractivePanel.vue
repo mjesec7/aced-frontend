@@ -12,7 +12,11 @@
 
       <!-- ✅ ENHANCED: Body with Perfect Internal Scrolling -->
       <div class="exercise-body">
-        <div class="exercise-content-scroll">
+        <!-- ✅ ADDED INLINE STYLE FOR GUARANTEED SCROLLING -->
+        <div 
+          class="exercise-content-scroll"
+          style="height: 400px !important; overflow-y: scroll !important; overflow-x: hidden !important;"
+        >
           <!-- Short Answer Exercise -->
           <div v-if="exerciseType === 'short-answer'" class="exercise-type short-answer">
             <div class="question-text">
@@ -469,7 +473,11 @@
 
       <!-- ✅ ENHANCED: Body with Perfect Internal Scrolling -->
       <div class="quiz-body">
-        <div class="quiz-content-scroll">
+        <!-- ✅ ADDED INLINE STYLE FOR GUARANTEED SCROLLING -->
+        <div 
+          class="quiz-content-scroll"
+          style="height: 400px !important; overflow-y: scroll !important; overflow-x: hidden !important;"
+        >
           <div class="quiz-question">
             {{ currentQuiz?.question }}
           </div>

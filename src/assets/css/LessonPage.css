@@ -341,8 +341,8 @@
       min-width: 200px;
       padding: 0;
       height: 100%;
+      min-height: 500px !important; /* ✅ FORCE minimum height */
     }
-  
   .non-interactive-panel {
     background: #ffffff;
     display: flex;
