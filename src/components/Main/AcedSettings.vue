@@ -74,6 +74,23 @@
     <div class="settings-content">
       <h2 class="section-title">💳 Подписка и оплата</h2>
 
+      <!-- Sync Status Display -->
+      <div v-if="lastSyncCheck" class="sync-status">
+        <div class="sync-info">
+          <span class="sync-icon">🔄</span>
+          <span class="sync-text">
+            Последняя синхронизация: {{ formatDate(lastSyncCheck) }}
+          </span>
+          <button 
+            class="sync-button" 
+            @click="forceSyncStatus"
+            :disabled="syncInProgress"
+          >
+            {{ syncInProgress ? '⏳ Синхронизация...' : '🔄 Синхронизировать' }}
+          </button>
+        </div>
+      </div>
+
       <!-- Current Plan Display -->
       <div class="current-plan-section">
         <div class="plan-info">
@@ -468,6 +485,11 @@ export default {
       notificationClass: "",
       notificationIcon: "",
       
+      // Device sync state (added from paste.txt)
+      syncInProgress: false,
+      lastSyncCheck: null,
+      syncInterval: null,
+      
       // Enhanced reactivity tracking
       reactivityKey: 0,
       lastUpdateTime: Date.now(),
@@ -510,13 +532,18 @@ export default {
         const statuses = [storeStatus, localStatus, userObjectStatus].filter(s => s && s !== 'free');
         const status = statuses[0] || storeStatus || localStatus || userObjectStatus || 'free';
         
-        
-        
         return status;
       } catch (e) {
         console.warn('⚠️ Error getting userStatus:', e);
         return localStorage.getItem('userStatus') || 'free';
       }
+    },
+
+    // Added computed property for checking if server status check is needed
+    shouldCheckServerStatus() {
+      const lastSync = localStorage.getItem('lastServerStatusCheck');
+      const syncAge = lastSync ? Date.now() - parseInt(lastSync) : Infinity;
+      return syncAge > 5 * 60 * 1000; // 5 minutes
     },
     
     // Enhanced reactive subscription details with comprehensive info
@@ -896,10 +923,21 @@ export default {
   async mounted() {
     await this.initializeComponent();
     this.componentMounted = true;
+    
+    // ✅ ADD: Check server status on mount
+    if (this.shouldCheckServerStatus) {
+      await this.checkServerStatus();
+    }
+    
+    // ✅ ADD: Set up sync mechanisms
+    this.setupDeviceSync();
   },
   
   beforeUnmount() {
     this.cleanup();
+    
+    // ✅ ADD: Clean up sync mechanisms
+    this.cleanupDeviceSync();
   },
   
   methods: {
@@ -910,7 +948,6 @@ export default {
     // Handle user status changes
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
-
 
       try {
         // Update localStorage immediately
@@ -931,6 +968,237 @@ export default {
         console.error('❌ Error handling status change:', error);
         this.$forceUpdate(); // Fallback
       }
+    },
+
+    // ============================================================================
+    // 🌐 DEVICE SYNC METHODS (FROM PASTE.TXT)
+    // ============================================================================
+    
+    // ✅ NEW: Check server status method
+    async checkServerStatus() {
+      if (this.syncInProgress) return;
+      
+      const userId = this.currentUser?.firebaseId || this.currentUser?._id;
+      if (!userId) return;
+      
+      try {
+        this.syncInProgress = true;
+        console.log('🌐 Checking server status for user:', userId);
+        
+        const token = await this.getAuthToken();
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const endpoints = [
+          `${process.env.VUE_APP_API_BASE_URL || 'https://api.aced.live'}/api/users/${userId}/status`,
+          `${process.env.VUE_APP_API_BASE_URL || 'https://api.aced.live'}/api/users/${userId}`,
+        ];
+        
+        let serverStatus = null;
+        
+        for (const endpoint of endpoints) {
+          try {
+            const response = await fetch(endpoint, { 
+              headers,
+              timeout: 5000 
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              serverStatus = data.status || 
+                           data.subscriptionPlan || 
+                           data.userStatus || 
+                           data.user?.subscriptionPlan ||
+                           null;
+              
+              if (serverStatus) {
+                console.log('✅ Server status retrieved:', serverStatus);
+                break;
+              }
+            }
+          } catch (endpointError) {
+            console.warn('⚠️ Endpoint failed:', endpoint, endpointError.message);
+            continue;
+          }
+        }
+        
+        if (serverStatus && serverStatus !== this.currentPlan) {
+          console.log('🔄 Status mismatch detected:', {
+            local: this.currentPlan,
+            server: serverStatus
+          });
+          
+          await this.updateLocalStatus(serverStatus);
+        }
+        
+        localStorage.setItem('lastServerStatusCheck', Date.now().toString());
+        this.lastSyncCheck = Date.now();
+        
+      } catch (error) {
+        console.error('❌ Server status check failed:', error);
+      } finally {
+        this.syncInProgress = false;
+      }
+    },
+    
+    // ✅ NEW: Update local status method
+    async updateLocalStatus(newStatus) {
+      const oldStatus = this.currentPlan;
+      
+      try {
+        // Update localStorage
+        localStorage.setItem('userStatus', newStatus);
+        localStorage.setItem('userPlan', newStatus);
+        localStorage.setItem('subscriptionPlan', newStatus);
+        localStorage.setItem('statusSyncTime', Date.now().toString());
+        
+        // Update store
+        this.$store.commit('user/SET_USER_STATUS', newStatus);
+        
+        // Set up subscription persistence for paid plans
+        if (newStatus !== 'free') {
+          await this.setupSubscriptionPersistence(newStatus);
+        }
+        
+        // Force reactivity update
+        this.forceReactivityUpdate();
+        
+        // Trigger global events
+        this.triggerStatusChangeEvents(oldStatus, newStatus);
+        
+        console.log('✅ Local status updated:', oldStatus, '->', newStatus);
+        
+        // Show notification for upgrades
+        if (newStatus !== 'free' && oldStatus === 'free') {
+          this.showNotification(`🎉 ${newStatus.toUpperCase()} подписка активирована на этом устройстве!`, 'success');
+        }
+        
+      } catch (error) {
+        console.error('❌ Failed to update local status:', error);
+      }
+    },
+    
+    // ✅ NEW: Setup subscription persistence
+    async setupSubscriptionPersistence(plan) {
+      try {
+        const now = new Date();
+        const expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+        
+        const subscriptionData = {
+          plan: plan,
+          activatedAt: now.toISOString(),
+          expiryDate: expiryDate.toISOString(),
+          lastUpdated: now.toISOString(),
+          source: 'device-sync',
+          status: 'active'
+        };
+        
+        localStorage.setItem('subscriptionData', JSON.stringify(subscriptionData));
+        localStorage.setItem('subscriptionPlan', plan);
+        localStorage.setItem('subscriptionExpiry', subscriptionData.expiryDate);
+        
+        console.log('✅ Subscription persistence set up for:', plan);
+        
+      } catch (error) {
+        console.error('❌ Failed to setup subscription persistence:', error);
+      }
+    },
+    
+    // ✅ NEW: Trigger status change events
+    triggerStatusChangeEvents(oldStatus, newStatus) {
+      const eventData = {
+        oldStatus,
+        newStatus,
+        source: 'device-sync',
+        timestamp: Date.now(),
+        deviceSync: true
+      };
+      
+      // Trigger events using existing global functions
+      if (window.triggerGlobalEvent) {
+        window.triggerGlobalEvent('userStatusChanged', eventData);
+        window.triggerGlobalEvent('userSubscriptionChanged', eventData);
+        window.triggerGlobalEvent('subscriptionUpdated', eventData);
+        window.triggerGlobalEvent('deviceStatusSynced', eventData);
+      }
+      
+      if (window.eventBus?.emit) {
+        window.eventBus.emit('userStatusChanged', eventData);
+        window.eventBus.emit('subscriptionUpdated', eventData);
+      }
+    },
+    
+    // ✅ NEW: Setup device sync
+    setupDeviceSync() {
+      // Periodic sync every 10 minutes
+      this.syncInterval = setInterval(() => {
+        if (!this.syncInProgress && this.shouldCheckServerStatus) {
+          this.checkServerStatus();
+        }
+      }, 10 * 60 * 1000);
+      
+      // Cross-tab sync
+      this.handleStorageChange = (event) => {
+        if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
+          console.log('🔄 Cross-tab status change detected:', event.oldValue, '->', event.newValue);
+          
+          if (event.newValue && this.$store) {
+            this.$store.commit('user/SET_USER_STATUS', event.newValue);
+            this.forceReactivityUpdate();
+          }
+        }
+      };
+      
+      // Window focus check
+      this.handleWindowFocus = () => {
+        if (this.shouldCheckServerStatus) {
+          setTimeout(() => {
+            this.checkServerStatus();
+          }, 1000);
+        }
+      };
+      
+      window.addEventListener('storage', this.handleStorageChange);
+      window.addEventListener('focus', this.handleWindowFocus);
+    },
+    
+    // ✅ NEW: Cleanup device sync
+    cleanupDeviceSync() {
+      if (this.syncInterval) {
+        clearInterval(this.syncInterval);
+      }
+      
+      window.removeEventListener('storage', this.handleStorageChange);
+      window.removeEventListener('focus', this.handleWindowFocus);
+    },
+    
+    // ✅ NEW: Get auth token
+    async getAuthToken() {
+      try {
+        // Try Firebase auth
+        if (this.$firebase?.auth?.currentUser) {
+          return await this.$firebase.auth.currentUser.getIdToken();
+        }
+        
+        // Try store
+        if (this.$store.getters.getToken) {
+          return this.$store.getters.getToken;
+        }
+        
+        // Try localStorage
+        return localStorage.getItem('token') || localStorage.getItem('authToken');
+        
+      } catch (error) {
+        console.warn('⚠️ Failed to get auth token:', error);
+        return null;
+      }
+    },
+    
+    // ✅ NEW: Manual sync trigger (can be called from UI)
+    async forceSyncStatus() {
+      await this.checkServerStatus();
     },
 
     // Setup comprehensive event listeners
@@ -1984,4 +2252,183 @@ export default {
 
 <style scoped>
 @import "@/assets/css/AcedSettings.css";
+
+/* Additional styles for device sync status */
+.sync-status {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.sync-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sync-icon {
+  font-size: 18px;
+}
+
+.sync-text {
+  color: #6c757d;
+  font-size: 14px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.sync-button {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.sync-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+.sync-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Enhanced subscription source styles */
+.subscription-source {
+  margin-top: 10px;
+}
+
+.source-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.source-info.source-success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.source-info.source-primary {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.source-info.source-warning {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.source-info.source-info {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+/* Enhanced expiry warning styles */
+.expiry-warning-alert {
+  margin-top: 15px;
+  padding: 15px;
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+}
+
+.warning-content {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.warning-icon {
+  font-size: 20px;
+  margin-top: 2px;
+}
+
+.warning-text {
+  flex: 1;
+  color: #856404;
+}
+
+.warning-text strong {
+  color: #533f03;
+}
+
+.warning-text small {
+  display: block;
+  margin-top: 5px;
+  opacity: 0.8;
+}
+
+/* Enhanced usage progress bars */
+.usage-bar {
+  width: 100%;
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.usage-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #28a745 0%, #20c997 50%, #17a2b8 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Spinner animations */
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+  .sync-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .sync-button {
+    align-self: stretch;
+    text-align: center;
+  }
+  
+  .warning-content {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .warning-icon {
+    align-self: flex-start;
+  }
+}
 </style>

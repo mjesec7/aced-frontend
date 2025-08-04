@@ -293,33 +293,32 @@ async function ensureStoreInitialized() {
   }
 }
 
-// ============================================================================
-// 🔥 ENHANCED USER AUTHENTICATION HANDLER
-// ============================================================================
+// ========================================
+// FIX 1: Enhanced main.js authentication (replace existing functions)
+// ========================================
+
+// ✅ ENHANCED: handleUserAuthenticated with server status check
 async function handleUserAuthenticated(firebaseUser) {
+  console.log('🔐 Processing authenticated user:', firebaseUser.uid);
 
   try {
-    // Get Firebase ID token with retry
+    // Get Firebase ID token
     let token;
     let tokenRetries = 3;
 
     while (tokenRetries > 0) {
       try {
-        token = await firebaseUser.getIdToken(true); // Force refresh
+        token = await firebaseUser.getIdToken(true);
         if (token && token.length > 20) {
           break;
         }
         throw new Error('Invalid token received');
       } catch (tokenError) {
         tokenRetries--;
-
         if (tokenRetries === 0) {
-          // Don't fail the entire auth process, continue with basic user data
           await handleBasicUserAuthentication(firebaseUser);
           return;
         }
-
-        // Wait before retry
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
@@ -335,100 +334,153 @@ async function handleUserAuthenticated(firebaseUser) {
       lastLoginAt: new Date().toISOString()
     };
 
+    console.log('📤 Saving user to server...');
 
-    // ✅ ENHANCED: Try to save user with better error handling
+    // ✅ CRITICAL: Try to save user and get server status
     let saveResult;
     let saveRetries = 2;
 
     while (saveRetries > 0) {
       try {
-
         saveResult = await store.dispatch('user/saveUser', { userData, token });
 
-
-
-        // ✅ CRITICAL: Check if we got a valid result
-        if (!saveResult) {
-          throw new Error('Save action returned undefined result');
-        }
-
-        if (typeof saveResult !== 'object') {
-          throw new Error(`Save action returned ${typeof saveResult} instead of object`);
-        }
-
-        if (saveResult.success === true && saveResult.user) {
+        if (saveResult && saveResult.success === true && saveResult.user) {
+          console.log('✅ User saved successfully with status:', saveResult.user.subscriptionPlan);
           break;
-        } else if (saveResult.success === false) {
-
-          // For server failures, try basic auth instead of retrying
+        } else {
           if (saveRetries === 1) {
-            await handleBasicUserAuthentication(firebaseUser, token);
+            // Before fallback, try to get status from server
+            const serverStatus = await fetchUserStatusFromServer(firebaseUser.uid, token);
+            await handleBasicUserAuthentication(firebaseUser, token, serverStatus);
             return;
           }
-
           throw new Error(saveResult.error || 'Server returned failure');
-        } else {
-          throw new Error('Invalid server response structure');
         }
 
       } catch (saveError) {
+        console.error('❌ Save attempt failed:', saveError.message);
         saveRetries--;
 
         if (saveRetries === 0) {
-          await handleBasicUserAuthentication(firebaseUser, token);
+          const serverStatus = await fetchUserStatusFromServer(firebaseUser.uid, token);
+          await handleBasicUserAuthentication(firebaseUser, token, serverStatus);
           return;
         }
 
-        // Wait before retry
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
 
-    // ✅ ENHANCED: Handle successful save
+    // Handle successful save
     if (saveResult && saveResult.success && saveResult.user) {
       await handleSuccessfulUserSave(saveResult, token, userData);
     } else {
-      await handleBasicUserAuthentication(firebaseUser, token);
+      const serverStatus = await fetchUserStatusFromServer(firebaseUser.uid, token);
+      await handleBasicUserAuthentication(firebaseUser, token, serverStatus);
     }
 
   } catch (error) {
-
-    // Last resort: try basic authentication
+    console.error('❌ Authentication error:', error);
+    
     try {
-      await handleBasicUserAuthentication(firebaseUser);
+      const serverStatus = await fetchUserStatusFromServer(firebaseUser.uid);
+      await handleBasicUserAuthentication(firebaseUser, null, serverStatus);
     } catch (basicError) {
       await handleUserNotAuthenticated();
     }
   }
 }
 
-// 🔥 MODIFIED: Enhanced handleBasicUserAuthentication to preserve subscriptions
-async function handleBasicUserAuthentication(firebaseUser, token = null) {
+// ✅ NEW: Function to fetch status from server
+async function fetchUserStatusFromServer(userId, token = null) {
+  console.log('🔄 Fetching user status from server for:', userId);
+  
   try {
-    // 🛡️ CRITICAL: Check for preserved subscription status FIRST
-    let existingStatus = 'free';
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
 
-    // Check preservation flag first
-    const preserveStatus = localStorage.getItem('preserveStatusDuringAuth');
-    if (preserveStatus && preserveStatus !== 'free') {
-      existingStatus = preserveStatus;
-    } else {
-      // Original subscription checking logic
-      const subscription = getStoredSubscription();
-      if (subscription && subscription.plan !== 'free') {
-        if (isSubscriptionValid()) {
-          existingStatus = subscription.plan;
+    const endpoints = [
+      `${import.meta.env.VITE_API_BASE_URL}/api/users/${userId}/status`,
+      `${import.meta.env.VITE_API_BASE_URL}/api/users/${userId}`,
+      `https://api.aced.live/api/users/${userId}/status`,
+      `https://api.aced.live/api/users/${userId}`
+    ];
+
+    for (const endpoint of endpoints) {
+      try {
+        console.log('🌐 Trying endpoint:', endpoint);
+        
+        const response = await Promise.race([
+          fetch(endpoint, { headers }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), 5000)
+          )
+        ]);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('📥 Server response:', data);
+          
+          const serverStatus = data.status || 
+                             data.subscriptionPlan || 
+                             data.userStatus || 
+                             data.user?.subscriptionPlan || 
+                             'free';
+
+          if (serverStatus && serverStatus !== 'free') {
+            console.log('✅ Found server status:', serverStatus);
+            
+            // Update localStorage immediately
+            localStorage.setItem('userStatus', serverStatus);
+            localStorage.setItem('userPlan', serverStatus);
+            localStorage.setItem('subscriptionPlan', serverStatus);
+            localStorage.setItem('serverStatusFetched', 'true');
+            localStorage.setItem('statusSyncTime', Date.now().toString());
+
+            // Set up subscription persistence
+            if (serverStatus !== 'free') {
+              await setupSubscriptionPersistence(serverStatus, 'server-fetch');
+            }
+
+            return serverStatus;
+          }
         }
-      } else {
-        const localStatus = localStorage.getItem('userStatus');
-        if (localStatus && ['start', 'pro'].includes(localStatus)) {
-          existingStatus = localStatus;
-          await setupSubscriptionPersistence(existingStatus, 'basic-auth-preserve');
-        }
+      } catch (endpointError) {
+        console.warn('⚠️ Endpoint failed:', endpoint, endpointError.message);
+        continue;
       }
     }
 
-    // Create basic user object with preserved status
+    console.warn('⚠️ Could not fetch user status from any endpoint');
+    return 'free';
+
+  } catch (error) {
+    console.error('❌ Failed to fetch user status from server:', error);
+    return 'free';
+  }
+}
+
+// 🔥 MODIFIED: Enhanced handleBasicUserAuthentication to preserve subscriptions
+async function handleBasicUserAuthentication(firebaseUser, token = null, serverStatus = 'free') {
+  try {
+    console.log('🔧 Handling basic user authentication with server status:', serverStatus);
+
+    // Use server status if available, otherwise check local data
+    let existingStatus = serverStatus;
+    
+    if (existingStatus === 'free') {
+      // Check stored subscription data as fallback
+      const subscription = getStoredSubscription();
+      if (subscription && subscription.plan !== 'free' && isSubscriptionValid()) {
+        existingStatus = subscription.plan;
+      }
+    }
+
+    console.log('📊 Final status for basic auth:', existingStatus);
+
+    // Create user object with server status
     const basicUser = {
       firebaseId: firebaseUser.uid,
       _id: firebaseUser.uid,
@@ -443,15 +495,20 @@ async function handleBasicUserAuthentication(firebaseUser, token = null) {
       emailVerified: firebaseUser.emailVerified,
       photoURL: firebaseUser.photoURL,
       lastLoginAt: new Date().toISOString(),
+      lastSyncTime: new Date().toISOString(),
       metadata: {
         lastSync: new Date().toISOString(),
-        syncSource: 'basic-auth',
-        fallback: true,
-        preservedSubscription: preserveStatus ? true : false
+        syncSource: 'basic-auth-with-server',
+        serverStatusUsed: serverStatus !== 'free'
       }
     };
 
-    // Update stores with preserved status
+    // Set up subscription persistence for paid plans
+    if (existingStatus && existingStatus !== 'free') {
+      await setupSubscriptionPersistence(existingStatus, 'basic-auth-server');
+    }
+
+    // Update stores
     store.commit('setUser', basicUser);
     store.commit('setFirebaseUserId', basicUser.firebaseId);
     if (token) {
@@ -461,13 +518,7 @@ async function handleBasicUserAuthentication(firebaseUser, token = null) {
     store.commit('user/SET_USER', basicUser);
     store.commit('user/SET_USER_STATUS', existingStatus);
 
-    try {
-      store.commit('user/setUserStatus', existingStatus);
-    } catch (e) {
-      // Ignore if not present
-    }
-
-    // Update localStorage with preserved status
+    // Update localStorage with all variations
     try {
       localStorage.setItem('user', JSON.stringify(basicUser));
       localStorage.setItem('firebaseUserId', basicUser.firebaseId);
@@ -478,25 +529,25 @@ async function handleBasicUserAuthentication(firebaseUser, token = null) {
       localStorage.setItem('userStatus', existingStatus);
       localStorage.setItem('userPlan', existingStatus);
       localStorage.setItem('subscriptionPlan', existingStatus);
+      localStorage.setItem('plan', existingStatus);
       localStorage.setItem('lastLoginTime', new Date().toISOString());
-      localStorage.setItem('authMode', 'basic');
-
-      // Clean up preservation flags
-      localStorage.removeItem('validSubscriptionDetected');
-      localStorage.removeItem('preserveStatusDuringAuth');
-
+      localStorage.setItem('authMode', 'basic-with-server');
+      localStorage.setItem('serverStatusConfirmed', serverStatus !== 'free' ? 'true' : 'false');
     } catch (storageError) {
+      console.warn('⚠️ localStorage update failed:', storageError);
     }
 
     appLifecycle.authReady = true;
 
-    // Trigger events with preserved status
+    // Trigger events
     const eventData = {
       oldStatus: 'free',
       newStatus: existingStatus,
-      source: 'basic-auth-preserved',
+      source: 'basic-auth-server-sync',
       user: basicUser,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      serverStatus: serverStatus,
+      deviceSync: true
     };
 
     window.triggerGlobalEvent('userStatusChanged', eventData);
@@ -504,26 +555,28 @@ async function handleBasicUserAuthentication(firebaseUser, token = null) {
     window.triggerGlobalEvent('userLoggedIn', {
       user: basicUser,
       userStatus: existingStatus,
-      source: 'basic',
-      mode: 'fallback-preserved',
+      source: 'basic-server',
       timestamp: Date.now()
     });
 
-    // Delayed propagation for stubborn components
+    // Delayed propagation
     setTimeout(() => {
-      window.triggerGlobalEvent('userStatusChanged', eventData);
+      window.triggerGlobalEvent('deviceStatusSynced', eventData);
       window.triggerGlobalEvent('globalForceUpdate', {
-        reason: 'basic-auth-status-preserved',
+        reason: 'basic-auth-server-status',
         plan: existingStatus,
         timestamp: Date.now()
       });
-    }, 50);
+    }, 100);
 
+    console.log('✅ Basic auth completed with server status:', existingStatus);
 
   } catch (error) {
+    console.error('❌ Basic authentication failed:', error);
     throw error;
   }
 }
+
 
 // ✅ ENHANCED: Successful user save handler with subscription persistence
 async function handleSuccessfulUserSave(result, token, userData) {
