@@ -1329,57 +1329,6 @@
      }
    }
    
-   /* Dark mode support */
-   @media (prefers-color-scheme: dark) {
-     .dashboard {
-       background: #1a1a1a;
-       color: #e0e0e0;
-     }
-     
-     .filter-bar,
-     .recommendation-card,
-     .recommendations-section,
-     .study-section {
-       background: #2d2d2d;
-       border-color: #404040;
-       color: #e0e0e0;
-     }
-     
-     .search-input,
-     .filter-select {
-       background: #1a1a1a;
-       border-color: #404040;
-       color: #e0e0e0;
-     }
-     
-     .search-input::placeholder {
-       color: #888;
-     }
-     
-     .topic-title {
-       color: #f0f0f0;
-     }
-     
-     .subject-tag {
-       background: #404040;
-       color: #e0e0e0;
-       border-color: #606060;
-     }
-     
-     .empty-message,
-     .recommendation-placeholder,
-     .study-placeholder {
-       background: #2d2d2d;
-       color: #e0e0e0;
-       border-color: #404040;
-     }
-     
-     .loading-carousel .recommendation-placeholder {
-       background: #2d2d2d;
-       color: #e0e0e0;
-     }
-   }
-   
    /* ================================
       PERFORMANCE OPTIMIZATIONS
       ================================ */
