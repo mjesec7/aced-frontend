@@ -1,4 +1,4 @@
-// src/composables/useExercises.js - COMPLETE EXERCISE LOGIC WITH SIMPLIFIED MATCHING
+// src/composables/useExercises.js - COMPLETE EXERCISE LOGIC WITH FIXED MATCHING
 import { ref, reactive, computed } from 'vue'
 
 export function useExercises() {
@@ -25,6 +25,11 @@ export function useExercises() {
   const dropOverZone = ref(null)
   const draggedItem = ref(null)
   const dropTarget = ref(null)
+
+  // ✅ Attempt tracking
+  const attemptCount = ref(0)
+  const maxAttempts = ref(2)
+  const showCorrectAnswer = ref(false)
 
   // ==========================================
   // 🔥 VALIDATION FUNCTIONS
@@ -265,7 +270,7 @@ export function useExercises() {
   }
 
   // ==========================================
-  // 🔥 SIMPLIFIED: MATCHING VALIDATION WITH INDEX COMPARISON
+  // 🔥 FIXED: MATCHING VALIDATION WITH PROPER INDEX HANDLING
   // ==========================================
   
   const getLeftItemsArray = (exercise) => {
@@ -298,7 +303,7 @@ export function useExercises() {
     return []
   }
 
-  // 🔥 SIMPLIFIED: Matching validation now uses simple index comparison
+  // 🔥 FIXED: Matching validation with proper index comparison
   const validateMatching = (userPairs, exercise) => {
     if (!Array.isArray(userPairs)) {
       userPairs = matchingPairs.value
@@ -324,7 +329,7 @@ export function useExercises() {
       return false
     }
 
-    // 🔥 SIMPLIFIED: Just check if leftIndex === rightIndex for each pair
+    // 🔥 FIXED: Check if leftIndex === rightIndex for each pair (correct matching)
     let correctCount = 0
     
     for (const userPair of userPairs) {
@@ -340,7 +345,7 @@ export function useExercises() {
         continue
       }
 
-      // 🔥 SIMPLIFIED: Since InteractivePanel stores original indices, just compare
+      // 🔥 FIXED: Since InteractivePanel stores original rightIndex, just compare
       const isCorrect = leftIndex === rightIndex
       
       console.log(`🔍 Pair ${leftIndex} ↔ ${rightIndex}: ${isCorrect ? 'CORRECT' : 'WRONG'}`)
@@ -632,7 +637,7 @@ export function useExercises() {
   }
 
   // ==========================================
-  // 🔥 ENHANCED FEEDBACK MESSAGES WITH SIMPLIFIED MATCHING
+  // 🔥 ENHANCED FEEDBACK MESSAGES WITH FIXED MATCHING
   // ==========================================
   
   const getMatchingFeedback = (userPairs, exercise, isCorrect) => {
@@ -652,7 +657,7 @@ export function useExercises() {
       return `🔗 Создайте все ${requiredPairs} пар (у вас ${userPairCount})`
     }
     
-    // 🔥 SIMPLIFIED: Count correct pairs using index comparison
+    // 🔥 FIXED: Count correct pairs using proper index comparison
     let correctCount = 0
     
     for (const userPair of userPairs) {
@@ -875,6 +880,111 @@ export function useExercises() {
 
   const setSmartHint = (hint) => {
     smartHint.value = hint
+  }
+
+  // ==========================================
+  // 🔥 ATTEMPT TRACKING METHODS
+  // ==========================================
+  
+  const isOnSecondChance = computed(() => {
+    return attemptCount.value === 1 && attemptCount.value < maxAttempts.value
+  })
+
+  const canSubmitAnswer = (exercise) => {
+    if (!exercise) {
+      return userAnswer.value && userAnswer.value.trim().length > 0
+    }
+    
+    const exerciseType = exercise.type || 'short-answer'
+    
+    switch (exerciseType) {
+      case 'short-answer':
+        return userAnswer.value && userAnswer.value.trim().length > 0
+        
+      case 'multiple-choice':
+      case 'abc':
+      case 'true-false':
+        return userAnswer.value !== null && userAnswer.value !== undefined && userAnswer.value !== ''
+        
+      case 'fill-blank':
+        const hasAnswers = Array.isArray(fillBlankAnswers.value) && fillBlankAnswers.value.length > 0
+        const hasFilledAnswers = hasAnswers && fillBlankAnswers.value.some(answer => 
+          answer && typeof answer === 'string' && answer.trim().length > 0
+        )
+        return hasFilledAnswers
+        
+      case 'matching':
+        return Array.isArray(matchingPairs.value) && matchingPairs.value.length > 0
+        
+      case 'ordering':
+        return Array.isArray(orderingItems.value) && orderingItems.value.length > 0
+        
+      case 'drag-drop':
+        return Object.values(dragDropPlacements).some(items => 
+          Array.isArray(items) && items.length > 0
+        )
+        
+      default:
+        return userAnswer.value && userAnswer.value.trim().length > 0
+    }
+  }
+
+  const submitAnswer = (exercise) => {
+    if (!canSubmitAnswer(exercise)) {
+      console.warn('⚠️ Cannot submit: answer validation failed')
+      return false
+    }
+
+    attemptCount.value++
+    
+    const isCorrect = validateCurrentAnswer(exercise)
+    answerWasCorrect.value = isCorrect
+    
+    if (isCorrect) {
+      confirmation.value = getRandomSuccessMessage()
+      showCorrectAnswer.value = false
+    } else if (isOnSecondChance.value) {
+      confirmation.value = getSecondChanceMessage(exercise)
+      showCorrectAnswer.value = false
+    } else {
+      // Final attempt failed
+      const correctAnswer = getCorrectAnswerDisplay(exercise)
+      confirmation.value = getFinalFailureMessage(exercise, correctAnswer)
+      showCorrectAnswer.value = true
+    }
+    
+    console.log(`📊 Submit result: ${isCorrect ? 'CORRECT' : 'INCORRECT'} (attempt ${attemptCount.value}/${maxAttempts.value})`)
+    
+    return isCorrect
+  }
+
+  const submitQuizAnswer = (quiz) => {
+    if (!canSubmitAnswer(quiz)) {
+      console.warn('⚠️ Cannot submit: quiz answer validation failed')
+      return false
+    }
+
+    attemptCount.value++
+    
+    const isCorrect = validateQuizAnswer(quiz)
+    answerWasCorrect.value = isCorrect
+    
+    if (isCorrect) {
+      confirmation.value = getRandomSuccessMessage()
+      showCorrectAnswer.value = false
+    } else if (isOnSecondChance.value) {
+      confirmation.value = getSecondChanceMessage(quiz)
+      showCorrectAnswer.value = false
+    } else {
+      // Final attempt failed
+      const correctAnswer = getCorrectAnswerDisplay(quiz)
+      confirmation.value = getFinalFailureMessage(quiz, correctAnswer)
+      showCorrectAnswer.value = true
+    }
+    
+    console.log(`📊 Quiz submit result: ${isCorrect ? 'CORRECT' : 'INCORRECT'} (attempt ${attemptCount.value}/${maxAttempts.value})`)
+    
+    return isCorrect
   }
 
   // ==========================================
@@ -1150,45 +1260,6 @@ export function useExercises() {
     console.log('✅ Initialized matching items')
   }
   
-  const canSubmitAnswer = (exercise) => {
-    if (!exercise) {
-      return userAnswer.value && userAnswer.value.trim().length > 0
-    }
-    
-    const exerciseType = exercise.type || 'short-answer'
-    
-    switch (exerciseType) {
-      case 'short-answer':
-        return userAnswer.value && userAnswer.value.trim().length > 0
-        
-      case 'multiple-choice':
-      case 'abc':
-      case 'true-false':
-        return userAnswer.value !== null && userAnswer.value !== undefined && userAnswer.value !== ''
-        
-      case 'fill-blank':
-        const hasAnswers = Array.isArray(fillBlankAnswers.value) && fillBlankAnswers.value.length > 0
-        const hasFilledAnswers = hasAnswers && fillBlankAnswers.value.some(answer => 
-          answer && typeof answer === 'string' && answer.trim().length > 0
-        )
-        return hasFilledAnswers
-        
-      case 'matching':
-        return Array.isArray(matchingPairs.value) && matchingPairs.value.length > 0
-        
-      case 'ordering':
-        return Array.isArray(orderingItems.value) && orderingItems.value.length > 0
-        
-      case 'drag-drop':
-        return Object.values(dragDropPlacements).some(items => 
-          Array.isArray(items) && items.length > 0
-        )
-        
-      default:
-        return userAnswer.value && userAnswer.value.trim().length > 0
-    }
-  }
-  
   const updateFillBlankAnswer = (index, value) => {
     if (!Array.isArray(fillBlankAnswers.value)) {
       fillBlankAnswers.value = []
@@ -1210,6 +1281,7 @@ export function useExercises() {
     currentQuizIndex.value = 0
     resetExerciseAnswers()
     resetExerciseData()
+    resetAttemptState()
   }
   
   const resetExerciseAnswers = () => {
@@ -1218,6 +1290,12 @@ export function useExercises() {
     answerWasCorrect.value = false
     currentHint.value = ''
     smartHint.value = ''
+    resetAttemptState()
+  }
+
+  const resetAttemptState = () => {
+    attemptCount.value = 0
+    showCorrectAnswer.value = false
   }
   
   const resetExerciseData = () => {
@@ -1278,6 +1356,12 @@ export function useExercises() {
     dropOverZone,
     draggedItem,
     dropTarget,
+    attemptCount,
+    maxAttempts,
+    showCorrectAnswer,
+    
+    // Computed
+    isOnSecondChance,
     
     // Core Methods
     getCurrentExercise,
@@ -1294,14 +1378,17 @@ export function useExercises() {
     initializeDragDropItems,
     initializeMatchingItems,
     canSubmitAnswer,
+    submitAnswer,
+    submitQuizAnswer,
     resetExerciseState,
     resetExerciseAnswers,
     resetExerciseData,
+    resetAttemptState,
     updateFillBlankAnswer,
     getCurrentExerciseType,
     getFormattedFillBlankTemplate,
     
-    // 🔥 SIMPLIFIED: Validation Methods
+    // 🔥 FIXED: Validation Methods
     validateCurrentAnswer,
     validateQuizAnswer,
     validateShortAnswer,
@@ -1312,32 +1399,32 @@ export function useExercises() {
     validateOrdering,
     validateDragDrop,
     
-    // 🔥 SIMPLIFIED: Display Methods
+    // 🔥 FIXED: Display Methods
     getCorrectAnswerDisplay,
     getMatchingFeedback,
     getSecondChanceMessage,
     getFinalFailureMessage,
     getRandomSuccessMessage,
     
-    // 🔥 SIMPLIFIED: Interaction Methods
+    // 🔥 FIXED: Interaction Methods
     updateUserAnswer,
     getCurrentUserAnswer,
     handleMatchingSelection,
     removeMatchingPair,
     
-    // 🔥 SIMPLIFIED: Drag and Drop Methods
+    // 🔥 FIXED: Drag and Drop Methods
     handleDragItemStart,
     handleDragOverZone,
     handleDragLeaveZone,
     handleDropInZone,
     handleRemoveDroppedItem,
     
-    // 🔥 SIMPLIFIED: Hint Methods
+    // 🔥 FIXED: Hint Methods
     showHint,
     clearSmartHint,
     setSmartHint,
     
-    // 🔥 SIMPLIFIED: Helper Methods
+    // 🔥 FIXED: Helper Methods
     getLeftItemsArray,
     getRightItemsArray,
     calculateSimilarity,

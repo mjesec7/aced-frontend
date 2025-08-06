@@ -37,7 +37,7 @@
               <div class="options-list">
                 <div 
                   v-for="(option, index) in exerciseOptions" 
-                  :key="index"
+                  :key="`option-${index}-${exerciseIndex}`"
                   class="option-item"
                   :class="{ selected: localUserAnswer === option, disabled: showCorrectAnswer }"
                   @click="!showCorrectAnswer && selectOption(option)"
@@ -148,11 +148,11 @@
               <div v-if="process.env.NODE_ENV === 'development'" class="debug-info">
                 <small>Debug: Left items: {{ leftItems.length }}, Right items: {{ rightItems.length }}</small>
                 <br>
-                <small>Selected: {{ selectedMatchingItem ? `${selectedMatchingItem.side}-${selectedMatchingItem.index}` : 'none' }}</small>
-                <br>
-                <small>Pairs: {{ matchingPairs.length }}</small>
-                <br>
                 <small>Exercise pairs: {{ currentExercise?.pairs?.length || 0 }}</small>
+                <br>
+                <small>Current pairs: {{ matchingPairs.length }}</small>
+                <br>
+                <small>Right items mapping: {{ rightItemsMapping.length }}</small>
               </div>
               
               <div class="matching-container">
@@ -161,7 +161,7 @@
                   <h4>Соедините:</h4>
                   <div 
                     v-for="(item, index) in leftItems" 
-                    :key="`left-${index}-${item}`"
+                    :key="`left-${index}-${exerciseIndex}`"
                     class="matching-item"
                     :class="{ 
                       selected: isItemSelected('left', index),
@@ -185,7 +185,7 @@
                   <h4>С:</h4>
                   <div 
                     v-for="(item, index) in rightItems" 
-                    :key="`right-${index}-${item}`"
+                    :key="`right-${index}-${exerciseIndex}`"
                     class="matching-item"
                     :class="{ 
                       selected: isItemSelected('right', index),
@@ -211,14 +211,14 @@
                 <div class="pairs-list">
                   <div 
                     v-for="(pair, index) in matchingPairs" 
-                    :key="`pair-${index}-${pair.leftIndex}-${pair.rightIndex}`"
+                    :key="`pair-${index}-${exerciseIndex}`"
                     class="pair-item"
                     :class="{ 'pair-correct': isPairCorrect(pair) }"
                   >
                     <span class="pair-text">
                       <strong>{{ getLeftItemText(pair.leftIndex) }}</strong> 
                       <span class="pair-arrow">↔</span> 
-                      <strong>{{ getRightItemText(pair.rightIndex) }}</strong>
+                      <strong>{{ getRightItemText(pair.rightIndex, pair.rightDisplayIndex) }}</strong>
                     </span>
                     <button 
                       v-if="!showCorrectAnswer"
@@ -278,7 +278,7 @@
               <div class="ordering-container">
                 <div 
                   v-for="(item, index) in localOrderingItems" 
-                  :key="`ordering-${item.id || item.text || index}`"
+                  :key="`ordering-${item.id || item.text || index}-${exerciseIndex}`"
                   class="ordering-item"
                   :class="{ 
                     dragging: draggedOrderingItem === index,
@@ -328,7 +328,7 @@
                   <h4>Перетащите элементы:</h4>
                   <div 
                     v-for="(item, index) in availableDragItems" 
-                    :key="'drag-' + index"
+                    :key="`drag-${index}-${exerciseIndex}`"
                     class="drag-item"
                     :class="{ dragging: draggedDragItem === item, disabled: showCorrectAnswer }"
                     :draggable="!showCorrectAnswer"
@@ -346,7 +346,7 @@
                 <div class="drop-zones">
                   <div 
                     v-for="(zone, index) in dropZones" 
-                    :key="'zone-' + index"
+                    :key="`zone-${index}-${exerciseIndex}`"
                     class="drop-zone"
                     :class="{ 'drag-over': dropOverZone === getZoneId(zone), disabled: showCorrectAnswer }"
                     @dragover.prevent="dragOverZone(getZoneId(zone), $event)"
@@ -358,7 +358,7 @@
                     <div class="zone-items">
                       <div 
                         v-for="(item, itemIndex) in getDropZoneItems(getZoneId(zone))" 
-                        :key="'dropped-' + itemIndex"
+                        :key="`dropped-${itemIndex}-${exerciseIndex}`"
                         class="dropped-item"
                         @click="!showCorrectAnswer && removeDroppedItem(getZoneId(zone), itemIndex)"
                         tabindex="0"
@@ -458,7 +458,7 @@
             <div class="quiz-options">
               <div 
                 v-for="(option, index) in quizOptions" 
-                :key="index"
+                :key="`quiz-option-${index}-${quizIndex}`"
                 class="quiz-option"
                 :class="{ selected: localUserAnswer === option, disabled: showCorrectAnswer }"
                 @click="!showCorrectAnswer && selectQuizOption(option)"
@@ -995,23 +995,25 @@ export default {
       console.log('🔗 Creating pair:', { leftIndex, rightDisplayIndex })
       
       // 🔥 CRITICAL FIX: Get the original index from the mapping
-      const originalRightIndex = rightItemsMapping.value[rightDisplayIndex]?.originalIndex ?? rightDisplayIndex
+      const rightMapping = rightItemsMapping.value[rightDisplayIndex]
+      const originalRightIndex = rightMapping ? rightMapping.originalIndex : rightDisplayIndex
       
       console.log('🔧 DEBUG: Mapping display index to original:', {
         displayIndex: rightDisplayIndex,
         originalIndex: originalRightIndex,
         rightText: rightItems.value[rightDisplayIndex],
-        mapping: rightItemsMapping.value[rightDisplayIndex]
+        mapping: rightMapping
       })
       
       const newPair = { 
         leftIndex, 
-        rightIndex: originalRightIndex // Use the original index for validation
+        rightIndex: originalRightIndex, // Use the original index for validation
+        rightDisplayIndex // Store display index for text retrieval
       }
       
       const currentPairs = props.matchingPairs || []
       
-      // Check if this pair already exists
+      // Check if this exact pair already exists
       const pairExists = currentPairs.some(pair => 
         pair.leftIndex === newPair.leftIndex && pair.rightIndex === newPair.rightIndex
       )
@@ -1024,7 +1026,8 @@ export default {
       
       // Remove any existing pairs that use these items
       const filteredPairs = currentPairs.filter(pair => 
-        pair.leftIndex !== newPair.leftIndex && pair.rightIndex !== newPair.rightIndex
+        pair.leftIndex !== newPair.leftIndex && 
+        pair.rightDisplayIndex !== newPair.rightDisplayIndex
       )
       
       // Add the new pair
@@ -1050,9 +1053,8 @@ export default {
       if (side === 'left') {
         return currentPairs.some(pair => pair.leftIndex === index)
       } else {
-        // 🔥 FIXED: For right side, check using the original index from mapping
-        const originalIndex = rightItemsMapping.value[index]?.originalIndex ?? index
-        return currentPairs.some(pair => pair.rightIndex === originalIndex)
+        // 🔥 FIXED: For right side, check using display index
+        return currentPairs.some(pair => pair.rightDisplayIndex === index)
       }
     }
 
@@ -1104,13 +1106,19 @@ export default {
       return `Left Item ${index + 1}`
     }
 
-    const getRightItemText = (index) => {
-      // 🔥 FIXED: Get the text from the original pairs at the given original index
-      if (!props.currentExercise?.pairs || index < 0 || index >= props.currentExercise.pairs.length) {
-        return `Right Item ${index + 1}`
+    const getRightItemText = (originalIndex, displayIndex) => {
+      // 🔥 FIXED: Get the text from the correct source
+      // If displayIndex is provided, use it for current display
+      if (displayIndex !== undefined && displayIndex >= 0 && displayIndex < rightItems.value.length) {
+        return rightItems.value[displayIndex]
       }
       
-      const pair = props.currentExercise.pairs[index]
+      // Otherwise get from original pairs using original index
+      if (!props.currentExercise?.pairs || originalIndex < 0 || originalIndex >= props.currentExercise.pairs.length) {
+        return `Right Item ${originalIndex + 1}`
+      }
+      
+      const pair = props.currentExercise.pairs[originalIndex]
       
       if (Array.isArray(pair)) {
         return String(pair[1] || '')
@@ -1118,7 +1126,7 @@ export default {
         return String(pair.right || pair[1] || pair.answer || pair.definition || '')
       }
       
-      return `Right Item ${index + 1}`
+      return `Right Item ${originalIndex + 1}`
     }
 
     // ========================
@@ -1392,6 +1400,7 @@ export default {
           emit('matching-item-selected', null)
           // Clear the mapping when exercise changes
           rightItemsMapping.value = []
+          console.log('🔄 Reset matching exercise state')
         }
       }
     }, { immediate: true })
