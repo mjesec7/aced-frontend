@@ -1,4 +1,4 @@
-// src/composables/useExercises.js - COMPLETE EXERCISE LOGIC WITH FIXED MATCHING
+// src/composables/useExercises.js - COMPLETE EXERCISE LOGIC WITH SIMPLIFIED MATCHING
 import { ref, reactive, computed } from 'vue'
 
 export function useExercises() {
@@ -265,7 +265,7 @@ export function useExercises() {
   }
 
   // ==========================================
-  // 🔥 FIXED: MATCHING VALIDATION WITH HELPER FUNCTIONS
+  // 🔥 SIMPLIFIED: MATCHING VALIDATION WITH INDEX COMPARISON
   // ==========================================
   
   const getLeftItemsArray = (exercise) => {
@@ -287,20 +287,18 @@ export function useExercises() {
     if (!exercise?.pairs) return []
     const pairs = exercise.pairs
     if (Array.isArray(pairs)) {
-      const rightItems = pairs.map((pair) => {
+      return pairs.map((pair) => {
         if (Array.isArray(pair)) return String(pair[1] || '')
         if (pair && typeof pair === 'object') {
           return String(pair.right || pair[1] || pair.answer || pair.definition || '')
         }
         return String(pair || '')
       }).filter(item => item.trim() !== '')
-      
-      // Return in original order for validation (don't shuffle here)
-      return rightItems
     }
     return []
   }
 
+  // 🔥 SIMPLIFIED: Matching validation now uses simple index comparison
   const validateMatching = (userPairs, exercise) => {
     if (!Array.isArray(userPairs)) {
       userPairs = matchingPairs.value
@@ -308,7 +306,7 @@ export function useExercises() {
 
     console.log('🔗 Validating matching exercise')
     console.log('User pairs:', userPairs)
-    console.log('Exercise pairs:', exercise.pairs)
+    console.log('Exercise pairs count:', exercise.pairs?.length || 0)
     
     if (!Array.isArray(userPairs) || userPairs.length === 0) {
       console.log('❌ No user pairs provided')
@@ -326,7 +324,7 @@ export function useExercises() {
       return false
     }
 
-    // 🔥 FIXED: Proper matching validation logic
+    // 🔥 SIMPLIFIED: Just check if leftIndex === rightIndex for each pair
     let correctCount = 0
     
     for (const userPair of userPairs) {
@@ -342,49 +340,13 @@ export function useExercises() {
         continue
       }
 
-      // Get the actual text values from the user's selection
-      const leftItems = getLeftItemsArray(exercise)
-      const rightItems = getRightItemsArray(exercise)
+      // 🔥 SIMPLIFIED: Since InteractivePanel stores original indices, just compare
+      const isCorrect = leftIndex === rightIndex
       
-      if (leftIndex >= leftItems.length || rightIndex >= rightItems.length) {
-        console.log('❌ Index out of bounds:', { leftIndex, rightIndex, leftCount: leftItems.length, rightCount: rightItems.length })
-        continue
-      }
+      console.log(`🔍 Pair ${leftIndex} ↔ ${rightIndex}: ${isCorrect ? 'CORRECT' : 'WRONG'}`)
 
-      const userLeftText = leftItems[leftIndex]
-      const userRightText = rightItems[rightIndex]
-      
-      console.log(`🔍 Checking pair: "${userLeftText}" ↔ "${userRightText}"`)
-
-      // Find if this pairing is correct in the exercise pairs
-      const isCorrectPair = exercisePairs.some((exercisePair, pairIndex) => {
-        let exerciseLeft, exerciseRight
-        
-        if (Array.isArray(exercisePair)) {
-          exerciseLeft = String(exercisePair[0] || '').trim()
-          exerciseRight = String(exercisePair[1] || '').trim()
-        } else if (exercisePair && typeof exercisePair === 'object') {
-          exerciseLeft = String(exercisePair.left || exercisePair[0] || exercisePair.question || exercisePair.term || '').trim()
-          exerciseRight = String(exercisePair.right || exercisePair[1] || exercisePair.answer || exercisePair.definition || '').trim()
-        } else {
-          console.warn('⚠️ Invalid exercise pair format:', exercisePair)
-          return false
-        }
-        
-        const leftMatch = userLeftText.toLowerCase().trim() === exerciseLeft.toLowerCase().trim()
-        const rightMatch = userRightText.toLowerCase().trim() === exerciseRight.toLowerCase().trim()
-        
-        console.log(`  Comparing with exercise pair ${pairIndex}: "${exerciseLeft}" ↔ "${exerciseRight}"`)
-        console.log(`  Left match: ${leftMatch}, Right match: ${rightMatch}`)
-        
-        return leftMatch && rightMatch
-      })
-
-      if (isCorrectPair) {
+      if (isCorrect) {
         correctCount++
-        console.log(`✅ CORRECT: "${userLeftText}" ↔ "${userRightText}"`)
-      } else {
-        console.log(`❌ WRONG: "${userLeftText}" ↔ "${userRightText}"`)
       }
     }
 
@@ -448,7 +410,6 @@ export function useExercises() {
     return isValid
   }
 
-  // 🔥 FIXED: Enhanced Drag & Drop Validation
   const validateDragDrop = (userPlacements, exercise) => {
     if (!userPlacements || typeof userPlacements !== 'object') {
       userPlacements = dragDropPlacements
@@ -671,7 +632,7 @@ export function useExercises() {
   }
 
   // ==========================================
-  // 🔥 ENHANCED FEEDBACK MESSAGES
+  // 🔥 ENHANCED FEEDBACK MESSAGES WITH SIMPLIFIED MATCHING
   // ==========================================
   
   const getMatchingFeedback = (userPairs, exercise, isCorrect) => {
@@ -691,38 +652,14 @@ export function useExercises() {
       return `🔗 Создайте все ${requiredPairs} пар (у вас ${userPairCount})`
     }
     
-    // Check how many are correct
+    // 🔥 SIMPLIFIED: Count correct pairs using index comparison
     let correctCount = 0
-    const leftItems = getLeftItemsArray(exercise)
-    const rightItems = getRightItemsArray(exercise)
     
     for (const userPair of userPairs) {
       const { leftIndex, rightIndex } = userPair
       
-      if (leftIndex < leftItems.length && rightIndex < rightItems.length) {
-        const userLeftText = leftItems[leftIndex]
-        const userRightText = rightItems[rightIndex]
-        
-        const isCorrectPair = exercisePairs.some((exercisePair) => {
-          let exerciseLeft, exerciseRight
-          
-          if (Array.isArray(exercisePair)) {
-            exerciseLeft = String(exercisePair[0] || '').trim()
-            exerciseRight = String(exercisePair[1] || '').trim()
-          } else if (exercisePair && typeof exercisePair === 'object') {
-            exerciseLeft = String(exercisePair.left || exercisePair[0] || exercisePair.question || exercisePair.term || '').trim()
-            exerciseRight = String(exercisePair.right || exercisePair[1] || exercisePair.answer || exercisePair.definition || '').trim()
-          } else {
-            return false
-          }
-          
-          return userLeftText.toLowerCase().trim() === exerciseLeft.toLowerCase().trim() &&
-                 userRightText.toLowerCase().trim() === exerciseRight.toLowerCase().trim()
-        })
-        
-        if (isCorrectPair) {
-          correctCount++
-        }
+      if (leftIndex !== undefined && rightIndex !== undefined && leftIndex === rightIndex) {
+        correctCount++
       }
     }
     
@@ -855,7 +792,7 @@ export function useExercises() {
   }
 
   // ==========================================
-  // 🔥 FIXED: DRAG AND DROP HANDLERS
+  // 🔥 DRAG AND DROP HANDLERS
   // ==========================================
   
   const handleDragItemStart = ({ item, event }) => {
@@ -1151,7 +1088,6 @@ export function useExercises() {
     console.log('✅ Initialized ordering items:', orderingItems.value.length)
   }
   
-  // 🔥 FIXED: Enhanced Drag Drop Initialization
   const initializeDragDropItems = (exercise) => {
     // Clear existing placements
     Object.keys(dragDropPlacements).forEach(key => {
@@ -1365,7 +1301,7 @@ export function useExercises() {
     getCurrentExerciseType,
     getFormattedFillBlankTemplate,
     
-    // 🔥 FIXED: Validation Methods
+    // 🔥 SIMPLIFIED: Validation Methods
     validateCurrentAnswer,
     validateQuizAnswer,
     validateShortAnswer,
@@ -1376,32 +1312,32 @@ export function useExercises() {
     validateOrdering,
     validateDragDrop,
     
-    // 🔥 FIXED: Display Methods
+    // 🔥 SIMPLIFIED: Display Methods
     getCorrectAnswerDisplay,
     getMatchingFeedback,
     getSecondChanceMessage,
     getFinalFailureMessage,
     getRandomSuccessMessage,
     
-    // 🔥 FIXED: Interaction Methods
+    // 🔥 SIMPLIFIED: Interaction Methods
     updateUserAnswer,
     getCurrentUserAnswer,
     handleMatchingSelection,
     removeMatchingPair,
     
-    // 🔥 FIXED: Drag and Drop Methods
+    // 🔥 SIMPLIFIED: Drag and Drop Methods
     handleDragItemStart,
     handleDragOverZone,
     handleDragLeaveZone,
     handleDropInZone,
     handleRemoveDroppedItem,
     
-    // 🔥 FIXED: Hint Methods
+    // 🔥 SIMPLIFIED: Hint Methods
     showHint,
     clearSmartHint,
     setSmartHint,
     
-    // 🔥 FIXED: Helper Methods
+    // 🔥 SIMPLIFIED: Helper Methods
     getLeftItemsArray,
     getRightItemsArray,
     calculateSimilarity,

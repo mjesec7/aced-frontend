@@ -1959,21 +1959,6 @@ export default {
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --white: #1f2937;
-    --gray-50: #374151;
-    --gray-100: #4b5563;
-    --gray-200: #6b7280;
-    --gray-900: #f9fafb;
-  }
-  
-  .diary-page {
-    background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
-  }
-}
-
 /* Accessibility */
 .action-button:focus,
 .retry-button:focus,

@@ -650,6 +650,9 @@ export default {
     const dropTargetIndex = ref(null)
     const touchStartPos = ref({ x: 0, y: 0 })
     const draggedTouchItem = ref(null)
+    
+    // 🔥 NEW: Store the mapping of shuffled right items to their original indices
+    const rightItemsMapping = ref([])
 
     // ========================
     // COMPUTED PROPERTIES
@@ -684,7 +687,7 @@ export default {
       })
     })
     
-    // 🔥 SAFE: Left items computation with error handling
+    // 🔥 FIXED: Left items computation (unchanged but safe)
     const leftItems = computed(() => {
       try {
         if (!props.currentExercise?.pairs) {
@@ -728,7 +731,7 @@ export default {
       }
     })
     
-    // 🔥 SAFE: Right items computation with error handling
+    // 🔥 FIXED: Right items computation with proper index tracking
     const rightItems = computed(() => {
       try {
         if (!props.currentExercise?.pairs) {
@@ -744,7 +747,8 @@ export default {
           return []
         }
         
-        const items = pairs.map((pair, index) => {
+        // Get items with their original indices
+        const itemsWithIndices = pairs.map((pair, originalIndex) => {
           try {
             let rightItem = ''
             
@@ -756,23 +760,34 @@ export default {
               rightItem = String(pair || '')
             }
             
-            console.log(`  Right item ${index}: "${rightItem}"`)
-            return rightItem.trim()
+            console.log(`  Right item ${originalIndex}: "${rightItem}"`)
+            return {
+              text: rightItem.trim(),
+              originalIndex: originalIndex
+            }
           } catch (itemError) {
-            console.error(`❌ Error processing right item ${index}:`, itemError)
-            return `Answer ${index + 1}`
+            console.error(`❌ Error processing right item ${originalIndex}:`, itemError)
+            return {
+              text: `Answer ${originalIndex + 1}`,
+              originalIndex: originalIndex
+            }
           }
-        }).filter(item => item !== '')
+        }).filter(item => item.text !== '')
         
-        // 🔥 SAFE: Shuffle ONLY for display, with error handling
-        try {
-          const shuffledItems = [...items].sort(() => Math.random() - 0.5)
-          console.log('✅ Final right items (shuffled for display):', shuffledItems)
-          return shuffledItems
-        } catch (shuffleError) {
-          console.error('❌ Error shuffling right items:', shuffleError)
-          return items // Return unshuffled on error
-        }
+        // 🔥 CRITICAL: Shuffle the items but keep track of original indices
+        const shuffled = [...itemsWithIndices].sort(() => Math.random() - 0.5)
+        
+        // Store the mapping for later use
+        rightItemsMapping.value = shuffled
+        console.log('🔧 Right items mapping:', shuffled.map(item => ({
+          displayText: item.text,
+          originalIndex: item.originalIndex
+        })))
+        
+        // Return just the text for display
+        const displayItems = shuffled.map(item => item.text)
+        console.log('✅ Final right items (shuffled for display):', displayItems)
+        return displayItems
       } catch (error) {
         console.error('❌ Error computing right items:', error)
         return []
@@ -966,33 +981,34 @@ export default {
     }
 
     const createMatchingPair = (firstItem, secondItem) => {
-      let leftIndex, rightIndex
+      let leftIndex, rightDisplayIndex
       
       // Determine which is left and which is right
       if (firstItem.side === 'left') {
         leftIndex = firstItem.index
-        rightIndex = secondItem.index
+        rightDisplayIndex = secondItem.index
       } else {
         leftIndex = secondItem.index
-        rightIndex = firstItem.index
+        rightDisplayIndex = firstItem.index
       }
       
-      console.log('🔗 Creating pair:', { leftIndex, rightIndex })
+      console.log('🔗 Creating pair:', { leftIndex, rightDisplayIndex })
       
-      // 🔥 CRITICAL: Map shuffled right index back to original index
-      const rightText = rightItems.value[rightIndex]
-      const originalRightIndex = getOriginalRightIndex(rightText)
+      // 🔥 CRITICAL FIX: Get the original index from the mapping
+      const originalRightIndex = rightItemsMapping.value[rightDisplayIndex]?.originalIndex ?? rightDisplayIndex
       
-      console.log('🔧 DEBUG: Mapping shuffled right index to original:', {
-        shuffledIndex: rightIndex,
-        rightText: rightText,
-        originalIndex: originalRightIndex
+      console.log('🔧 DEBUG: Mapping display index to original:', {
+        displayIndex: rightDisplayIndex,
+        originalIndex: originalRightIndex,
+        rightText: rightItems.value[rightDisplayIndex],
+        mapping: rightItemsMapping.value[rightDisplayIndex]
       })
       
       const newPair = { 
         leftIndex, 
-        rightIndex: originalRightIndex // Use original index for validation
+        rightIndex: originalRightIndex // Use the original index for validation
       }
+      
       const currentPairs = props.matchingPairs || []
       
       // Check if this pair already exists
@@ -1023,28 +1039,6 @@ export default {
       emit('matching-item-selected', null)
     }
 
-    // 🔥 HELPER: Get original index of right item from shuffled array
-    const getOriginalRightIndex = (rightText) => {
-      if (!props.currentExercise?.pairs) return 0
-      
-      const pairs = props.currentExercise.pairs
-      for (let i = 0; i < pairs.length; i++) {
-        const pair = pairs[i]
-        let originalRightText = ''
-        
-        if (Array.isArray(pair)) {
-          originalRightText = String(pair[1] || '')
-        } else if (pair && typeof pair === 'object') {
-          originalRightText = String(pair.right || pair[1] || pair.answer || pair.definition || '')
-        }
-        
-        if (originalRightText.trim() === rightText.trim()) {
-          return i
-        }
-      }
-      return 0
-    }
-
     const isItemSelected = (side, index) => {
       const selection = props.selectedMatchingItem
       return selection && selection.side === side && selection.index === index
@@ -1056,17 +1050,16 @@ export default {
       if (side === 'left') {
         return currentPairs.some(pair => pair.leftIndex === index)
       } else {
-        // For right side, need to check if the displayed item is matched
-        const rightText = rightItems.value[index]
-        const originalIndex = getOriginalRightIndex(rightText)
+        // 🔥 FIXED: For right side, check using the original index from mapping
+        const originalIndex = rightItemsMapping.value[index]?.originalIndex ?? index
         return currentPairs.some(pair => pair.rightIndex === originalIndex)
       }
     }
 
     const isPairCorrect = (pair) => {
       // This is for visual feedback only - actual validation happens in useExercises
-      // You can implement this based on your exercise data structure
-      return false // For now, don't show correctness until submission
+      // Check if leftIndex matches rightIndex (they should be the same for correct pairs)
+      return pair.leftIndex === pair.rightIndex
     }
 
     const getSelectedItemText = () => {
@@ -1112,7 +1105,7 @@ export default {
     }
 
     const getRightItemText = (index) => {
-      // Get the text from the original pairs, not shuffled display
+      // 🔥 FIXED: Get the text from the original pairs at the given original index
       if (!props.currentExercise?.pairs || index < 0 || index >= props.currentExercise.pairs.length) {
         return `Right Item ${index + 1}`
       }
@@ -1395,7 +1388,10 @@ export default {
         }
         
         if (newExercise.type === 'matching') {
+          // Reset matching state when exercise changes
           emit('matching-item-selected', null)
+          // Clear the mapping when exercise changes
+          rightItemsMapping.value = []
         }
       }
     }, { immediate: true })
@@ -1426,6 +1422,7 @@ export default {
       dropTargetIndex,
       touchStartPos,
       draggedTouchItem,
+      rightItemsMapping, // 🔥 NEW: Export the mapping
       
       // Computed
       isExerciseStep,
@@ -1453,7 +1450,6 @@ export default {
       // 🔥 FIXED: Matching methods
       handleMatchingClick,
       createMatchingPair,
-      getOriginalRightIndex,
       isItemSelected,
       isItemMatched,
       isPairCorrect,
@@ -1463,6 +1459,7 @@ export default {
       getLeftItemText,
       getRightItemText,
       
+      // Ordering methods
       initializeOrderingItems,
       getOrderingItemText,
       moveOrderingItem,
@@ -1472,6 +1469,8 @@ export default {
       handleOrderingDragEnter,
       handleOrderingDragLeave,
       handleOrderingDrop,
+      
+      // Drag and drop methods
       startDragItem,
       endDragItem,
       dragOverZone,
@@ -1481,6 +1480,8 @@ export default {
       getZoneId,
       getDropZoneItems,
       removeDroppedItem,
+      
+      // Touch support methods
       handleTouchStart,
       handleTouchMove,
       handleTouchEnd
