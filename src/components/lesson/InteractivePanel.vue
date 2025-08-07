@@ -140,48 +140,9 @@
               <div class="spacer"></div>
             </div>
 
-            <!-- 🔥 COMPLETELY REBUILT MATCHING EXERCISE -->
+            <!-- Matching Exercise -->
             <div v-else-if="exerciseType === 'matching'" class="exercise-type">
               <div class="question-text">{{ currentExercise?.question }}</div>
-              
-              <!-- Debug Panel (Development Only) -->
-              <div v-if="showDebug" class="debug-panel">
-                <h5>🔍 Debug Info:</h5>
-                <div class="debug-grid">
-                  <div class="debug-item">
-                    <strong>Exercise Data:</strong>
-                    <pre>{{ JSON.stringify(currentExercise, null, 2) }}</pre>
-                  </div>
-                  <div class="debug-item">
-                    <strong>Left Items ({{ leftItems.length }}):</strong>
-                    <ul>
-                      <li v-for="(item, i) in leftItems" :key="i">{{ i }}: {{ item }}</li>
-                    </ul>
-                  </div>
-                  <div class="debug-item">
-                    <strong>Right Items ({{ rightItems.length }}):</strong>
-                    <ul>
-                      <li v-for="(item, i) in rightItems" :key="i">{{ i }}: {{ item }} (orig: {{ rightItemsMapping[i]?.originalIndex }})</li>
-                    </ul>
-                  </div>
-                  <div class="debug-item">
-                    <strong>Current Pairs ({{ matchingPairs.length }}):</strong>
-                    <ul>
-                      <li v-for="(pair, i) in matchingPairs" :key="i">
-                        L{{ pair.leftIndex }} ↔ R{{ pair.rightIndex }} (display: {{ pair.rightDisplayIndex }})
-                      </li>
-                    </ul>
-                  </div>
-                  <div class="debug-item">
-                    <strong>Selected Item:</strong>
-                    {{ selectedMatchingItem || 'None' }}
-                  </div>
-                </div>
-                <button @click="toggleDebug" class="debug-toggle">Hide Debug</button>
-              </div>
-              
-              <!-- Toggle Debug Button -->
-              <button v-else @click="toggleDebug" class="debug-toggle">🔍 Show Debug</button>
               
               <div class="matching-container">
                 <!-- Left Side -->
@@ -292,14 +253,6 @@
                   <span class="complete-icon">✅</span>
                   Все связи созданы! Можете проверить ответ.
                 </div>
-              </div>
-              
-              <!-- Test Controls (Development) -->
-              <div v-if="showDebug" class="test-controls">
-                <button @click="testLeftClick(0)" class="test-btn">Test Left 0</button>
-                <button @click="testRightClick(0)" class="test-btn">Test Right 0</button>
-                <button @click="clearAllPairs" class="test-btn">Clear All</button>
-                <button @click="resetMatchingState" class="test-btn">Reset State</button>
               </div>
               
               <div class="spacer"></div>
@@ -686,9 +639,8 @@ export default {
     const touchStartPos = ref({ x: 0, y: 0 })
     const draggedTouchItem = ref(null)
     
-    // 🔥 MATCHING SPECIFIC STATE
+    // Matching specific state
     const rightItemsMapping = ref([])
-    const showDebug = ref(false)
     const refreshKey = ref(0)
 
     // ========================
@@ -724,23 +676,13 @@ export default {
       })
     })
     
-    // 🔥 ROBUST LEFT ITEMS COMPUTATION
+    // Left items computation
     const leftItems = computed(() => {
-      console.log('🔧 Computing left items...')
-      
       try {
-        if (!props.currentExercise?.pairs) {
-          console.warn('⚠️ No pairs found in current exercise')
-          return []
-        }
+        if (!props.currentExercise?.pairs) return []
         
         const pairs = props.currentExercise.pairs
-        console.log('📋 Raw pairs data:', pairs)
-        
-        if (!Array.isArray(pairs)) {
-          console.warn('⚠️ Pairs is not an array:', typeof pairs)
-          return []
-        }
+        if (!Array.isArray(pairs)) return []
         
         const items = pairs.map((pair, index) => {
           let leftItem = ''
@@ -757,39 +699,25 @@ export default {
               leftItem = String(pair || `Left ${index + 1}`)
             }
             
-            console.log(`  Left item ${index}: "${leftItem}"`)
             return leftItem.trim()
           } catch (itemError) {
-            console.error(`❌ Error processing left item ${index}:`, itemError)
             return `Left ${index + 1}`
           }
         }).filter(item => item !== '')
         
-        console.log('✅ Final left items:', items)
         return items
       } catch (error) {
-        console.error('❌ Error in leftItems computed:', error)
         return []
       }
     })
     
-    // 🔥 ROBUST RIGHT ITEMS COMPUTATION WITH SHUFFLING
+    // Right items computation with shuffling
     const rightItems = computed(() => {
-      console.log('🔧 Computing right items...')
-      
       try {
-        if (!props.currentExercise?.pairs) {
-          console.warn('⚠️ No pairs found for right items')
-          return []
-        }
+        if (!props.currentExercise?.pairs) return []
         
         const pairs = props.currentExercise.pairs
-        console.log('📋 Processing pairs for right items:', pairs)
-        
-        if (!Array.isArray(pairs)) {
-          console.warn('⚠️ Pairs is not an array for right items')
-          return []
-        }
+        if (!Array.isArray(pairs)) return []
         
         // Extract right items with original indices
         const itemsWithIndices = pairs.map((pair, originalIndex) => {
@@ -807,13 +735,11 @@ export default {
               rightItem = String(pair || `Right ${originalIndex + 1}`)
             }
             
-            console.log(`  Right item ${originalIndex}: "${rightItem}"`)
             return {
               text: rightItem.trim(),
               originalIndex: originalIndex
             }
           } catch (itemError) {
-            console.error(`❌ Error processing right item ${originalIndex}:`, itemError)
             return {
               text: `Right ${originalIndex + 1}`,
               originalIndex: originalIndex
@@ -831,17 +757,10 @@ export default {
         
         // Store the mapping
         rightItemsMapping.value = shuffled
-        console.log('🔄 Right items mapping:', shuffled.map(item => ({
-          text: item.text,
-          originalIndex: item.originalIndex
-        })))
         
         // Return display items
-        const displayItems = shuffled.map(item => item.text)
-        console.log('✅ Final right items (shuffled):', displayItems)
-        return displayItems
+        return shuffled.map(item => item.text)
       } catch (error) {
-        console.error('❌ Error in rightItems computed:', error)
         return []
       }
     })
@@ -994,70 +913,37 @@ export default {
     }
 
     // ========================
-    // 🔥 COMPLETELY REBUILT MATCHING METHODS
+    // MATCHING METHODS
     // ========================
     
-    const toggleDebug = () => {
-      showDebug.value = !showDebug.value
-      console.log('🔍 Debug mode:', showDebug.value ? 'ON' : 'OFF')
-    }
-
-    const logMatchingState = (action = 'State Check') => {
-      console.log(`🔗 MATCHING ${action.toUpperCase()}:`)
-      console.log('  Exercise:', props.currentExercise)
-      console.log('  Left items:', leftItems.value)
-      console.log('  Right items:', rightItems.value)
-      console.log('  Right mapping:', rightItemsMapping.value)
-      console.log('  Current pairs:', props.matchingPairs)
-      console.log('  Selected item:', props.selectedMatchingItem)
-      console.log('  Show correct answer:', props.showCorrectAnswer)
-    }
-
     const handleMatchingClick = (side, index) => {
-      console.log(`🖱️ MATCHING CLICK: ${side}[${index}]`)
-      logMatchingState('Click')
-      
-      if (props.showCorrectAnswer) {
-        console.log('❌ Cannot interact - showing correct answer')
-        return
-      }
+      if (props.showCorrectAnswer) return
       
       const currentSelection = props.selectedMatchingItem
-      console.log('Current selection:', currentSelection)
       
       // If nothing is selected, select this item
       if (!currentSelection) {
-        console.log('✅ Selecting first item')
-        const itemText = side === 'left' ? leftItems.value[index] : rightItems.value[index]
-        console.log(`  Item text: "${itemText}"`)
         emit('matching-item-selected', { side, index })
         return
       }
       
       // If clicking the same item, deselect it
       if (currentSelection.side === side && currentSelection.index === index) {
-        console.log('🔄 Deselecting same item')
         emit('matching-item-selected', null)
         return
       }
       
       // If clicking another item on the same side, change selection
       if (currentSelection.side === side) {
-        console.log('🔄 Changing selection on same side')
         emit('matching-item-selected', { side, index })
         return
       }
       
       // If clicking an item on the opposite side, create a pair
-      console.log('🎯 Creating pair between different sides')
       createMatchingPair(currentSelection, { side, index })
     }
 
     const createMatchingPair = (firstItem, secondItem) => {
-      console.log('🔗 CREATE MATCHING PAIR:')
-      console.log('  First item:', firstItem)
-      console.log('  Second item:', secondItem)
-      
       let leftIndex, rightDisplayIndex
       
       // Determine which is left and which is right
@@ -1069,27 +955,14 @@ export default {
         rightDisplayIndex = firstItem.index
       }
       
-      console.log('  Determined indices:')
-      console.log('    leftIndex:', leftIndex)
-      console.log('    rightDisplayIndex:', rightDisplayIndex)
-      
       // Get original index from mapping
       if (!rightItemsMapping.value || rightItemsMapping.value.length === 0) {
-        console.error('❌ Right items mapping is empty!')
-        console.log('  Attempting to rebuild mapping...')
         // Force rebuild mapping
         const temp = rightItems.value // This will trigger the computed
-        console.log('  Rebuilt mapping:', rightItemsMapping.value)
       }
       
       const rightMapping = rightItemsMapping.value[rightDisplayIndex]
       const originalRightIndex = rightMapping ? rightMapping.originalIndex : rightDisplayIndex
-      
-      console.log('  Right item mapping:')
-      console.log('    rightMapping:', rightMapping)
-      console.log('    originalRightIndex:', originalRightIndex)
-      console.log('    rightText:', rightItems.value[rightDisplayIndex])
-      console.log('    leftText:', leftItems.value[leftIndex])
       
       const newPair = {
         leftIndex,
@@ -1097,10 +970,7 @@ export default {
         rightDisplayIndex
       }
       
-      console.log('  New pair object:', newPair)
-      
       const currentPairs = props.matchingPairs || []
-      console.log('  Current pairs before adding:', currentPairs)
       
       // Check if this exact pair already exists
       const pairExists = currentPairs.some(pair => 
@@ -1108,7 +978,6 @@ export default {
       )
       
       if (pairExists) {
-        console.log('⚠️ Pair already exists, skipping')
         emit('matching-item-selected', null)
         return
       }
@@ -1120,18 +989,13 @@ export default {
         return !leftConflict && !rightConflict
       })
       
-      console.log('  Pairs after filtering conflicts:', filteredPairs)
-      
       // Add the new pair
       const updatedPairs = [...filteredPairs, newPair]
-      console.log('  Final updated pairs:', updatedPairs)
       
       // Emit the updated pairs
-      console.log('  🚀 Emitting answer-changed...')
       emit('answer-changed', updatedPairs)
       
       // Clear selection
-      console.log('  🧹 Clearing selection')
       emit('matching-item-selected', null)
       
       // Force refresh
@@ -1140,8 +1004,7 @@ export default {
 
     const isItemSelected = (side, index) => {
       const selection = props.selectedMatchingItem
-      const selected = selection && selection.side === side && selection.index === index
-      return selected
+      return selection && selection.side === side && selection.index === index
     }
 
     const isItemMatched = (side, index) => {
@@ -1172,29 +1035,19 @@ export default {
     }
 
     const clearSelection = () => {
-      console.log('🧹 Clearing selection manually')
       emit('matching-item-selected', null)
     }
 
     const removePair = (pairIndex) => {
-      console.log('🗑️ REMOVE PAIR:', pairIndex)
-      
-      if (props.showCorrectAnswer) {
-        console.log('❌ Cannot remove - showing correct answer')
-        return
-      }
+      if (props.showCorrectAnswer) return
       
       const currentPairs = props.matchingPairs || []
-      console.log('  Current pairs:', currentPairs)
       
       if (pairIndex >= 0 && pairIndex < currentPairs.length) {
         const updatedPairs = currentPairs.filter((_, index) => index !== pairIndex)
-        console.log('  Updated pairs after removal:', updatedPairs)
         emit('answer-changed', updatedPairs)
         emit('remove-matching-pair', pairIndex)
         refreshKey.value++
-      } else {
-        console.warn('⚠️ Invalid pair index:', pairIndex)
       }
     }
 
@@ -1225,38 +1078,6 @@ export default {
       }
       
       return `Right Item ${originalIndex + 1}`
-    }
-
-    // 🔥 TEST METHODS FOR DEBUGGING
-    const testLeftClick = (index) => {
-      console.log('🧪 TEST: Left click', index)
-      handleMatchingClick('left', index)
-    }
-
-    const testRightClick = (index) => {
-      console.log('🧪 TEST: Right click', index)
-      handleMatchingClick('right', index)
-    }
-
-    const clearAllPairs = () => {
-      console.log('🧪 TEST: Clear all pairs')
-      emit('answer-changed', [])
-      emit('matching-item-selected', null)
-      refreshKey.value++
-    }
-
-    const resetMatchingState = () => {
-      console.log('🧪 TEST: Reset matching state')
-      rightItemsMapping.value = []
-      emit('answer-changed', [])
-      emit('matching-item-selected', null)
-      refreshKey.value++
-      
-      // Force recomputation
-      nextTick(() => {
-        console.log('  Recomputed items after reset')
-        logMatchingState('Reset Complete')
-      })
     }
 
     // ========================
@@ -1394,7 +1215,7 @@ export default {
             droppedItem = JSON.parse(transferData)
           }
         } catch (e) {
-          console.warn('Could not parse transfer data:', e)
+          // Failed to parse transfer data
         }
       }
       
@@ -1509,14 +1330,9 @@ export default {
       }
     }, { immediate: true, deep: true })
 
-    // 🔥 ENHANCED EXERCISE WATCHER WITH MATCHING RESET
+    // Enhanced exercise watcher with matching reset
     watch(() => props.currentExercise, (newExercise, oldExercise) => {
-      console.log('👁️ Exercise watcher triggered')
-      console.log('  New exercise:', newExercise)
-      console.log('  Old exercise:', oldExercise)
-      
       if (newExercise && newExercise !== oldExercise) {
-        console.log('  📝 Processing new exercise')
         localUserAnswer.value = props.userAnswer || ''
         
         if (newExercise.type === 'fill-blank') {
@@ -1532,7 +1348,6 @@ export default {
         }
         
         if (newExercise.type === 'matching') {
-          console.log('  🔗 Resetting matching exercise state')
           // Clear matching state
           rightItemsMapping.value = []
           emit('matching-item-selected', null)
@@ -1541,33 +1356,22 @@ export default {
           
           // Force recomputation of items
           nextTick(() => {
-            console.log('  🔄 Forcing recomputation...')
             const leftCount = leftItems.value.length
             const rightCount = rightItems.value.length
-            console.log(`  📊 Recomputed: ${leftCount} left, ${rightCount} right items`)
-            logMatchingState('Exercise Change Complete')
           })
         }
       }
     }, { immediate: true })
 
-    // 🔥 WATCH MATCHING PAIRS CHANGES
+    // Watch matching pairs changes
     watch(() => props.matchingPairs, (newPairs, oldPairs) => {
-      console.log('👁️ Matching pairs watcher triggered')
-      console.log('  New pairs:', newPairs)
-      console.log('  Old pairs:', oldPairs)
-      
       if (newPairs !== oldPairs) {
         refreshKey.value++
       }
     }, { immediate: true, deep: true })
 
-    // 🔥 WATCH SELECTED MATCHING ITEM CHANGES
+    // Watch selected matching item changes
     watch(() => props.selectedMatchingItem, (newSelection, oldSelection) => {
-      console.log('👁️ Selected item watcher triggered')
-      console.log('  New selection:', newSelection)
-      console.log('  Old selection:', oldSelection)
-      
       if (newSelection !== oldSelection) {
         refreshKey.value++
       }
@@ -1577,8 +1381,6 @@ export default {
     // LIFECYCLE
     // ========================
     onMounted(() => {
-      console.log('🔄 InteractivePanel mounted')
-      
       localUserAnswer.value = props.userAnswer || ''
       initializeFillBlankAnswers()
       
@@ -1587,15 +1389,9 @@ export default {
       }
       
       if (props.currentExercise?.type === 'matching') {
-        console.log('🔗 Initializing matching exercise on mount')
-        logMatchingState('Mount')
-        
         // Ensure items are computed
         nextTick(() => {
-          console.log('  ✅ Mount complete, items ready:')
-          console.log('    Left items:', leftItems.value.length)
-          console.log('    Right items:', rightItems.value.length)
-          console.log('    Right mapping:', rightItemsMapping.value.length)
+          // Items ready
         })
       }
     })
@@ -1615,7 +1411,6 @@ export default {
       touchStartPos,
       draggedTouchItem,
       rightItemsMapping,
-      showDebug,
       refreshKey,
       
       // Computed
@@ -1643,9 +1438,7 @@ export default {
       renderFillBlankTemplate,
       initializeFillBlankAnswers,
       
-      // 🔥 REBUILT MATCHING METHODS
-      toggleDebug,
-      logMatchingState,
+      // Matching methods
       handleMatchingClick,
       createMatchingPair,
       isItemSelected,
@@ -1656,10 +1449,6 @@ export default {
       removePair,
       getLeftItemText,
       getRightItemText,
-      testLeftClick,
-      testRightClick,
-      clearAllPairs,
-      resetMatchingState,
       
       // Ordering methods
       initializeOrderingItems,
