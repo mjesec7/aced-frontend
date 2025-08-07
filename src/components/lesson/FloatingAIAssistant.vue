@@ -6,10 +6,15 @@
     </div>
     
     <div class="ai-body">
-      <div v-if="aiUsage" class="usage-display">
-        <p>📊 Использовано: {{ formatUsage(aiUsage) }}</p>
+      <!-- Usage Display -->
+      <div v-if="formattedUsage" class="usage-display">
+        <p>📊 Использовано: {{ formattedUsage }}</p>
+        <div v-if="usagePercentage > 0 && !isUnlimited" class="usage-bar">
+          <div class="usage-fill" :style="{ width: usagePercentage + '%' }"></div>
+        </div>
       </div>
       
+      <!-- Quick Suggestions -->
       <div v-if="(quickSuggestions || []).length" class="quick-suggestions">
         <p class="suggestions-label">💡 Быстрые вопросы:</p>
         <div class="suggestions-list">
@@ -18,13 +23,14 @@
             :key="`quick-${quickIndex}`"
             @click="$emit('ask-ai', suggestion)"
             class="quick-suggestion-btn"
-            :disabled="aiIsLoading"
+            :disabled="aiIsLoading || isMessageLimitReached"
           >
             {{ suggestion }}
           </button>
         </div>
       </div>
       
+      <!-- Chat Area -->
       <div class="ai-chat-area">
         <div class="chat-messages" ref="chatMessages">
           <div v-if="!(aiChatHistory || []).length" class="empty-chat-state">
@@ -61,26 +67,40 @@
           </div>
         </div>
         
+        <!-- Chat Input -->
         <div class="chat-input">
           <input 
             v-model="localFloatingInput" 
             @keyup.enter="sendMessage"
             placeholder="Спросите о текущем шаге..."
-            :disabled="aiIsLoading"
+            :disabled="aiIsLoading || isMessageLimitReached"
             class="chat-input-field"
             ref="chatInput"
           />
           <button 
             @click="sendMessage" 
-            :disabled="!localFloatingInput?.trim() || aiIsLoading"
+            :disabled="!localFloatingInput?.trim() || aiIsLoading || isMessageLimitReached"
             class="send-btn"
+            :title="isMessageLimitReached ? 'Лимит сообщений исчерпан' : 'Отправить сообщение'"
           >
             <span v-if="aiIsLoading" class="loading-spinner">⏳</span>
             <span v-else>📤</span>
           </button>
         </div>
+        
+        <!-- Message Limit Warning -->
+        <div v-if="isNearLimit || isMessageLimitReached" class="limit-warning">
+          <div v-if="isMessageLimitReached" class="limit-reached">
+            🚫 Лимит сообщений исчерпан. 
+            <a href="/pay/start" class="upgrade-link">Обновить подписку</a>
+          </div>
+          <div v-else-if="isNearLimit" class="limit-near">
+            ⚠️ Осталось {{ remainingMessages }} сообщений
+          </div>
+        </div>
       </div>
       
+      <!-- Chat Controls -->
       <div v-if="(aiChatHistory || []).length > 3" class="chat-controls">
         <button @click="showAllMessages = !showAllMessages" class="toggle-messages-btn">
           {{ showAllMessages ? 'Показать меньше' : 'Показать все' }}
@@ -99,7 +119,15 @@ export default {
   props: {
     aiUsage: {
       type: Object,
-      default: null
+      default: () => ({
+        messages: 0,
+        current: 0,
+        limit: 50,
+        remaining: 50,
+        percentage: 0,
+        unlimited: false,
+        plan: 'free'
+      })
     },
     quickSuggestions: {
       type: Array,
@@ -136,6 +164,88 @@ export default {
       }
       
       return this.aiChatHistory.slice(-5);
+    },
+
+    // Get user subscription status from store
+    userStatus() {
+      return this.$store?.getters?.['user/userStatus'] || 'free';
+    },
+
+    // Parse usage data properly
+    currentMessageCount() {
+      if (!this.aiUsage || typeof this.aiUsage !== 'object') {
+        return 0;
+      }
+      
+      // Handle different possible structures
+      return this.aiUsage.current || this.aiUsage.messages || 0;
+    },
+
+    messageLimit() {
+      if (!this.aiUsage || typeof this.aiUsage !== 'object') {
+        return 50;
+      }
+      
+      return this.aiUsage.limit || 50;
+    },
+
+    isUnlimited() {
+      return this.aiUsage?.unlimited || this.messageLimit === -1;
+    },
+
+    remainingMessages() {
+      if (this.isUnlimited) {
+        return -1; // Unlimited
+      }
+      
+      return this.aiUsage?.remaining || Math.max(0, this.messageLimit - this.currentMessageCount);
+    },
+
+    usagePercentage() {
+      if (this.isUnlimited) {
+        return 0;
+      }
+      
+      if (this.messageLimit <= 0) {
+        return 0;
+      }
+      
+      return this.aiUsage?.percentage || Math.min(100, Math.round((this.currentMessageCount / this.messageLimit) * 100));
+    },
+
+    // Check if user has reached message limit
+    isMessageLimitReached() {
+      if (this.isUnlimited) {
+        return false;
+      }
+      
+      return this.currentMessageCount >= this.messageLimit;
+    },
+
+    // Check if user is near the limit (90% of limit reached)
+    isNearLimit() {
+      if (this.isUnlimited) {
+        return false;
+      }
+      
+      const threshold = Math.floor(this.messageLimit * 0.9);
+      return this.currentMessageCount >= threshold && !this.isMessageLimitReached;
+    },
+
+    // Format usage display properly
+    formattedUsage() {
+      if (!this.aiUsage) {
+        return '0/50';
+      }
+      
+      const current = this.currentMessageCount;
+      
+      if (this.isUnlimited) {
+        return `${current}/∞`;
+      }
+      
+      const limit = this.messageLimit;
+      return `${current}/${limit}`;
     }
   },
   watch: {
@@ -160,7 +270,12 @@ export default {
   },
   methods: {
     sendMessage() {
-      if (!this.localFloatingInput?.trim() || this.aiIsLoading) return;
+      if (!this.localFloatingInput?.trim() || this.aiIsLoading || this.isMessageLimitReached) {
+        if (this.isMessageLimitReached) {
+          console.warn('🚫 Cannot send message: limit reached');
+        }
+        return;
+      }
       
       this.$emit('send-message', this.localFloatingInput.trim());
       this.localFloatingInput = '';
@@ -168,15 +283,6 @@ export default {
 
     clearChat() {
       this.$emit('clear-chat');
-    },
-
-    formatUsage(usage) {
-      if (!usage) return '';
-      
-      const messages = usage.messages || 0;
-      const limit = usage.plan === 'free' ? 50 : '∞';
-      
-      return `${messages}/${limit}`;
     },
 
     formatTime(message) {
@@ -303,8 +409,30 @@ export default {
 }
 
 .usage-display p {
-  margin: 0;
+  margin: 0 0 4px 0;
   font-weight: 500;
+}
+
+.usage-bar {
+  width: 100%;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.usage-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
+  transition: width 0.3s ease;
+}
+
+.usage-fill[style*="90"], .usage-fill[style*="100"] {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.usage-fill[style*="70"], .usage-fill[style*="80"] {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
 }
 
 .quick-suggestions {
@@ -529,6 +657,7 @@ export default {
 .chat-input-field:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  background: #f3f4f6;
 }
 
 .send-btn {
@@ -555,6 +684,7 @@ export default {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+  background: #9ca3af;
 }
 
 .loading-spinner {
@@ -564,6 +694,37 @@ export default {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Message limit warning styles */
+.limit-warning {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.limit-reached {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.limit-near {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  color: #d97706;
+  border: 1px solid #fed7aa;
+}
+
+.upgrade-link {
+  color: #2563eb;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.upgrade-link:hover {
+  color: #1d4ed8;
 }
 
 .chat-controls {
@@ -605,24 +766,6 @@ export default {
   color: #dc2626;
 }
 
-/* Custom scrollbar for chat messages */
-.chat-messages::-webkit-scrollbar {
-  width: 4px;
-}
-
-.chat-messages::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.chat-messages::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
-  border-radius: 2px;
-}
-
-.chat-messages::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6);
-}
-
 /* Responsive Design */
 @media (max-width: 768px) {
   .floating-ai-assistant {
@@ -631,230 +774,6 @@ export default {
     left: 16px;
     bottom: 70px;
     max-height: 60vh;
-  }
-
-  .ai-header {
-    padding: 12px 16px;
-  }
-
-  .ai-body {
-    padding: 12px;
-  }
-
-  .chat-messages {
-    max-height: 200px;
-  }
-
-  .message-content {
-    font-size: 0.8rem;
-    padding: 8px 10px;
-  }
-
-  .chat-input-field {
-    font-size: 0.8rem;
-    padding: 8px 10px;
-  }
-
-  .quick-suggestion-btn {
-    font-size: 0.7rem;
-    padding: 6px 10px;
-  }
-}
-
-@media (max-width: 480px) {
-  .floating-ai-assistant {
-    width: calc(100vw - 16px);
-    right: 8px;
-    left: 8px;
-    bottom: 60px;
-    max-height: 50vh;
-  }
-
-  .ai-header {
-    padding: 10px 12px;
-  }
-
-  .ai-header h4 {
-    font-size: 0.9rem;
-  }
-
-  .ai-body {
-    padding: 10px;
-    gap: 10px;
-  }
-
-  .chat-messages {
-    max-height: 150px;
-    min-height: 100px;
-  }
-
-  .message-content {
-    font-size: 0.75rem;
-    padding: 6px 8px;
-  }
-
-  .message-avatar {
-    width: 24px;
-    height: 24px;
-    font-size: 0.7rem;
-  }
-
-  .chat-input {
-    gap: 6px;
-  }
-
-  .chat-input-field {
-    font-size: 0.75rem;
-    padding: 6px 8px;
-  }
-
-  .send-btn {
-    padding: 6px 8px;
-    min-width: 32px;
-    font-size: 0.8rem;
-  }
-
-  .quick-suggestions {
-    padding: 8px;
-  }
-
-  .quick-suggestion-btn {
-    font-size: 0.65rem;
-    padding: 4px 8px;
-  }
-
-  .empty-chat-state {
-    padding: 20px 15px;
-  }
-
-  .empty-icon {
-    font-size: 1.5rem;
-  }
-}
-
-/* Focus states for accessibility */
-.close-ai-btn:focus,
-.quick-suggestion-btn:focus,
-.chat-input-field:focus,
-.send-btn:focus,
-.toggle-messages-btn:focus,
-.clear-chat-btn:focus {
-  outline: 3px solid #3b82f6;
-  outline-offset: 2px;
-}
-
-/* High contrast mode */
-@media (prefers-contrast: high) {
-  .floating-ai-assistant,
-  .quick-suggestions,
-  .usage-display {
-    border-width: 2px;
-  }
-
-  .message-content {
-    border-width: 2px;
-  }
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .floating-ai-assistant {
-    animation: none;
-  }
-
-  .chat-message {
-    animation: none;
-  }
-
-  .typing-indicator span {
-    animation: none;
-  }
-
-  .loading-spinner {
-    animation: none;
-  }
-
-  .quick-suggestion-btn:hover,
-  .send-btn:hover,
-  .close-ai-btn:hover,
-  .toggle-messages-btn:hover,
-  .clear-chat-btn:hover {
-    transform: none;
-  }
-}
-
-/* Print styles */
-@media print {
-  .floating-ai-assistant {
-    display: none;
-  }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .floating-ai-assistant {
-    background: #1e293b;
-    color: #e2e8f0;
-  }
-
-  .ai-header {
-    background: linear-gradient(135deg, #374151 0%, #1e293b 100%);
-    border-bottom-color: #4b5563;
-  }
-
-  .ai-header h4 {
-    color: #e2e8f0;
-  }
-
-  .close-ai-btn {
-    background: rgba(148, 163, 184, 0.2);
-    color: #94a3b8;
-  }
-
-  .usage-display,
-  .quick-suggestions {
-    background: #374151;
-    border-color: #4b5563;
-    color: #e2e8f0;
-  }
-
-  .suggestions-label {
-    color: #e2e8f0;
-  }
-
-  .chat-input-field {
-    background: #374151;
-    border-color: #4b5563;
-    color: #e2e8f0;
-  }
-
-  .message-content {
-    color: #e2e8f0;
-  }
-
-  .chat-message.ai .message-content {
-    background: #374151;
-    border-color: #4b5563;
-  }
-
-  .message-bubble.loading .message-content {
-    background: #374151;
-    border-color: #4b5563;
-  }
-
-  .chat-controls {
-    border-top-color: #4b5563;
-  }
-
-  .toggle-messages-btn,
-  .clear-chat-btn {
-    background: #374151;
-    border-color: #4b5563;
-    color: #94a3b8;
-  }
-
-  .empty-chat-state {
-    color: #6b7280;
   }
 }
 </style>
