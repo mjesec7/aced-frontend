@@ -299,7 +299,6 @@ async function ensureStoreInitialized() {
 
 // ✅ ENHANCED: handleUserAuthenticated with server status check
 async function handleUserAuthenticated(firebaseUser) {
-  console.log('🔐 Processing authenticated user:', firebaseUser.uid);
 
   try {
     // Get Firebase ID token with retries
@@ -335,7 +334,6 @@ async function handleUserAuthenticated(firebaseUser) {
       lastLoginAt: new Date().toISOString()
     };
 
-    console.log('📤 Saving user to backend...');
 
     // ✅ CRITICAL FIX: Robust saveUser with proper error handling
     let saveResult = null;
@@ -343,7 +341,6 @@ async function handleUserAuthenticated(firebaseUser) {
 
     while (saveRetries > 0) {
       try {
-        console.log(`🔄 Save attempt ${3 - saveRetries + 1}/2`);
         
         // ✅ Call store saveUser action with proper error handling
         const storeResult = await store.dispatch('user/saveUser', { userData, token });
@@ -351,7 +348,6 @@ async function handleUserAuthenticated(firebaseUser) {
         // ✅ CRITICAL: Validate result object structure
         if (storeResult && typeof storeResult === 'object') {
           if (storeResult.success === true && storeResult.user && typeof storeResult.user === 'object') {
-            console.log('✅ User save successful:', storeResult.source || 'unknown');
             saveResult = storeResult;
             break;
           } else if (storeResult.success === false) {
@@ -371,7 +367,6 @@ async function handleUserAuthenticated(firebaseUser) {
         saveRetries--;
 
         if (saveRetries === 0) {
-          console.log('⚠️ All save attempts failed, creating fallback user...');
           
           // ✅ Create fallback saveResult with proper structure
           saveResult = {
@@ -426,7 +421,6 @@ async function handleUserAuthenticated(firebaseUser) {
 }
 // ✅ NEW: Function to fetch status from server
 async function fetchUserStatusFromServer(userId, token = null) {
-  console.log('🔄 Fetching user status from server for:', userId);
   
   try {
     const headers = { 'Content-Type': 'application/json' };
@@ -443,7 +437,6 @@ async function fetchUserStatusFromServer(userId, token = null) {
 
     for (const endpoint of endpoints) {
       try {
-        console.log('🌐 Trying endpoint:', endpoint);
         
         const response = await Promise.race([
           fetch(endpoint, { headers }),
@@ -454,7 +447,6 @@ async function fetchUserStatusFromServer(userId, token = null) {
 
         if (response.ok) {
           const data = await response.json();
-          console.log('📥 Server response:', data);
           
           const serverStatus = data.status || 
                              data.subscriptionPlan || 
@@ -463,7 +455,6 @@ async function fetchUserStatusFromServer(userId, token = null) {
                              'free';
 
           if (serverStatus && serverStatus !== 'free') {
-            console.log('✅ Found server status:', serverStatus);
             
             // Update localStorage immediately
             localStorage.setItem('userStatus', serverStatus);
@@ -498,7 +489,6 @@ async function fetchUserStatusFromServer(userId, token = null) {
 // 🔥 MODIFIED: Enhanced handleBasicUserAuthentication to preserve subscriptions
 async function handleBasicUserAuthentication(firebaseUser, token = null, serverStatus = 'free') {
   try {
-    console.log('🔧 Handling basic user authentication with server status:', serverStatus);
 
     // Use server status if available, otherwise check local data
     let existingStatus = serverStatus;
@@ -511,7 +501,6 @@ async function handleBasicUserAuthentication(firebaseUser, token = null, serverS
       }
     }
 
-    console.log('📊 Final status for basic auth:', existingStatus);
 
     // Create user object with server status
     const basicUser = {
@@ -602,7 +591,6 @@ async function handleBasicUserAuthentication(firebaseUser, token = null, serverS
       });
     }, 100);
 
-    console.log('✅ Basic auth completed with server status:', existingStatus);
 
   } catch (error) {
     console.error('❌ Basic authentication failed:', error);
@@ -614,7 +602,6 @@ async function handleBasicUserAuthentication(firebaseUser, token = null, serverS
 // ✅ ENHANCED: Successful user save handler with subscription persistence
 async function handleSuccessfulUserSave(saveResult, token, userData) {
   try {
-    console.log('✅ Processing successful user save:', saveResult.source || 'unknown');
 
     // ✅ ROBUST: Validate saveResult structure
     if (!saveResult || typeof saveResult !== 'object') {
@@ -650,7 +637,6 @@ async function handleSuccessfulUserSave(saveResult, token, userData) {
     };
 
     const userPlan = extractValidStatus(serverUser);
-    console.log('📊 Extracted user plan:', userPlan);
 
     // ✅ CRITICAL: Enhanced user object with all possible status fields
     const enhancedUser = {
@@ -685,7 +671,6 @@ async function handleSuccessfulUserSave(saveResult, token, userData) {
       store.commit('user/SET_USER', enhancedUser);
       store.commit('user/SET_USER_STATUS', userPlan);
 
-      console.log('✅ Store updates completed successfully');
 
     } catch (storeUpdateError) {
       console.error('❌ Store update failed:', storeUpdateError);
@@ -696,7 +681,6 @@ async function handleSuccessfulUserSave(saveResult, token, userData) {
           store.state.user.user = enhancedUser;
           store.state.user.userStatus = userPlan;
         }
-        console.log('✅ Direct state update completed');
       } catch (directUpdateError) {
         console.error('❌ Direct state update also failed:', directUpdateError);
       }
@@ -724,7 +708,6 @@ async function handleSuccessfulUserSave(saveResult, token, userData) {
         }
       });
 
-      console.log('✅ localStorage updates completed');
 
     } catch (storageError) {
       console.error('❌ localStorage updates failed:', storageError);
@@ -777,7 +760,6 @@ async function handleSuccessfulUserSave(saveResult, token, userData) {
       console.warn('⚠️ Save completed with warning:', saveResult.warning);
     }
 
-    console.log('✅ Successful user save processing completed');
 
   } catch (error) {
     console.error('❌ Failed to process successful user save:', error);

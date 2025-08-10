@@ -113,7 +113,6 @@ export function useExercises() {
   // ===================================
   
   const validateShortAnswer = (userAnswer, exercise) => {
-    console.log('📝 Validating short answer:', userAnswer)
     
     if (!userAnswer || typeof userAnswer !== 'string') {
       return false
@@ -140,7 +139,6 @@ export function useExercises() {
   }
 
   const validateMultipleChoice = (userAnswer, exercise) => {
-    console.log('🔘 Validating multiple choice:', userAnswer)
     
     const correctAnswer = exercise.correctAnswer
 
@@ -178,7 +176,6 @@ export function useExercises() {
   }
 
   const validateTrueFalse = (userAnswer, exercise) => {
-    console.log('✔️ Validating true/false:', userAnswer)
     
     const correctAnswer = exercise.correctAnswer
 
@@ -218,7 +215,6 @@ export function useExercises() {
   }
 
   const validateFillBlank = (userAnswers, exercise) => {
-    console.log('📝 Validating fill blank:', userAnswers)
     
     if (!Array.isArray(userAnswers)) {
       userAnswers = fillBlankAnswers.value || []
@@ -278,7 +274,6 @@ export function useExercises() {
   }
 
   const validateMatching = (userPairs, exercise) => {
-    console.log('🔗 Validating matching exercise')
     
     if (!Array.isArray(userPairs)) {
       userPairs = matchingPairs.value || []
@@ -314,7 +309,6 @@ export function useExercises() {
   }
 
   const validateOrdering = (userItems, exercise) => {
-    console.log('🔄 Validating ordering:', userItems)
     
     if (!Array.isArray(userItems)) {
       userItems = orderingItems.value || []
@@ -350,7 +344,6 @@ export function useExercises() {
   }
 
   const validateDragDrop = (userPlacements, exercise) => {
-    console.log('🎯 Validating drag-drop:', userPlacements)
     
     if (!userPlacements || typeof userPlacements !== 'object') {
       userPlacements = dragDropPlacements
@@ -409,13 +402,11 @@ export function useExercises() {
   
   const validateCurrentAnswer = (exercise) => {
     if (!exercise) {
-      console.log('❌ No exercise provided for validation')
       return false
     }
 
     const exerciseType = exercise.type || 'short-answer'
     
-    console.log(`🔍 Validating ${exerciseType.toUpperCase()} exercise`)
 
     switch (exerciseType) {
       case 'short-answer':
@@ -442,7 +433,6 @@ export function useExercises() {
     if (!quiz) return false
 
     const quizType = quiz.type || 'multiple-choice'
-    console.log(`🔍 Validating quiz (${quizType}):`, userAnswer.value)
 
     switch (quizType) {
       case 'multiple-choice':
@@ -663,7 +653,6 @@ export function useExercises() {
   // ===================================
   
   const submitAnswer = (exercise) => {
-    console.log('🚀 Submitting answer for:', exercise?.type)
     
     if (!canSubmitAnswer(exercise)) {
       console.warn('⚠️ Cannot submit: answer validation failed')
@@ -671,7 +660,6 @@ export function useExercises() {
     }
 
     attemptCount.value++
-    console.log(`📊 Attempt ${attemptCount.value}/${maxAttempts.value}`)
     
     const isCorrect = validateCurrentAnswer(exercise)
     answerWasCorrect.value = isCorrect
@@ -696,7 +684,6 @@ export function useExercises() {
   }
 
   const submitQuizAnswer = (quiz) => {
-    console.log('🚀 Submitting quiz answer for:', quiz?.type)
     
     if (!canSubmitAnswer(quiz)) {
       console.warn('⚠️ Cannot submit: quiz answer validation failed')
@@ -704,7 +691,6 @@ export function useExercises() {
     }
 
     attemptCount.value++
-    console.log(`📊 Quiz attempt ${attemptCount.value}/${maxAttempts.value}`)
     
     const isCorrect = validateQuizAnswer(quiz)
     answerWasCorrect.value = isCorrect
@@ -845,14 +831,11 @@ export function useExercises() {
   }
   
   const goToNextExercise = (currentStep, onNextStep) => {
-    console.log('➡️ Going to next exercise')
     
     if (isLastExercise(currentStep)) {
-      console.log('✅ Last exercise completed, moving to next step')
       resetExerciseState()
       onNextStep()
     } else {
-      console.log('🔄 Moving to next exercise in current step')
       currentExerciseIndex.value++
       resetExerciseAnswers()
       initializeCurrentExerciseData(getCurrentExercise(currentStep))
@@ -860,14 +843,11 @@ export function useExercises() {
   }
   
   const goToNextQuiz = (currentStep, onNextStep) => {
-    console.log('➡️ Going to next quiz')
     
     if (isLastQuiz(currentStep)) {
-      console.log('✅ Last quiz completed, moving to next step')
       resetExerciseState()
       onNextStep()
     } else {
-      console.log('🔄 Moving to next quiz in current step')
       currentQuizIndex.value++
       resetExerciseAnswers()
     }
@@ -880,7 +860,6 @@ export function useExercises() {
   const initializeCurrentExerciseData = (exercise) => {
     if (!exercise) return
     
-    console.log('🔧 Initializing exercise data for type:', exercise.type)
     
     switch (exercise.type) {
       case 'fill-blank':
@@ -923,7 +902,6 @@ export function useExercises() {
     }
     
     fillBlankAnswers.value = new Array(Math.max(1, blankCount)).fill('')
-    console.log(`✅ Initialized ${fillBlankAnswers.value.length} fill-blank answers`)
   }
   
   const initializeOrderingItems = (exercise) => {
@@ -940,7 +918,6 @@ export function useExercises() {
     }))
     
     shuffleArray(orderingItems.value)
-    console.log('✅ Initialized ordering items:', orderingItems.value.length)
   }
   
   const initializeDragDropItems = (exercise) => {
@@ -991,11 +968,9 @@ export function useExercises() {
       })
     }
     
-    console.log('✅ Initialized drag-drop items')
   }
   
   const initializeMatchingItems = () => {
-    console.log('🔗 Initializing matching items')
     matchingPairs.value = []
     selectedMatchingItem.value = null
   }
@@ -1005,7 +980,6 @@ export function useExercises() {
   // ===================================
   
   const updateUserAnswer = (newAnswer, exercise) => {
-    console.log('📝 Updating user answer:', newAnswer, 'for type:', exercise?.type)
     
     if (!exercise) {
       userAnswer.value = newAnswer
@@ -1042,7 +1016,6 @@ export function useExercises() {
     fillBlankAnswers.value[index] = newValue || ''
     fillBlankAnswers.value = [...fillBlankAnswers.value]
     
-    console.log(`📝 Updated blank ${index + 1}:`, newValue)
   }
 
   const getCurrentUserAnswer = () => {
@@ -1054,12 +1027,10 @@ export function useExercises() {
   // ===================================
   
   const handleMatchingSelection = (selection) => {
-    console.log('🎯 Handle matching selection:', selection)
     selectedMatchingItem.value = selection
   }
 
   const removeMatchingPair = (pairIndex) => {
-    console.log('🗑️ Remove matching pair:', pairIndex)
     
     if (pairIndex >= 0 && pairIndex < matchingPairs.value.length) {
       const updatedPairs = matchingPairs.value.filter((_, index) => index !== pairIndex)
@@ -1073,22 +1044,18 @@ export function useExercises() {
   // ===================================
   
   const handleDragItemStart = ({ item, event }) => {
-    console.log('🔥 Starting drag for item:', item)
     draggedDragItem.value = item
   }
 
   const handleDragOverZone = (zoneId) => {
-    console.log('🔥 Drag over zone:', zoneId)
     dropOverZone.value = zoneId
   }
 
   const handleDragLeaveZone = () => {
-    console.log('🔥 Drag leave zone')
     dropOverZone.value = null
   }
 
   const handleDropInZone = ({ zoneId, item }) => {
-    console.log('🔥 Drop in zone:', zoneId, 'item:', item)
     
     if (!dragDropPlacements[zoneId]) {
       dragDropPlacements[zoneId] = []
@@ -1122,7 +1089,6 @@ export function useExercises() {
   }
 
   const handleRemoveDroppedItem = ({ zoneId, itemIndex, item }) => {
-    console.log('🗑️ Removing dropped item:', { zoneId, itemIndex, item })
     
     if (dragDropPlacements[zoneId] && dragDropPlacements[zoneId][itemIndex]) {
       dragDropPlacements[zoneId].splice(itemIndex, 1)
@@ -1150,7 +1116,6 @@ export function useExercises() {
   // ===================================
   
   const resetExerciseState = () => {
-    console.log('🔄 Reset exercise state')
     currentExerciseIndex.value = 0
     currentQuizIndex.value = 0
     resetExerciseAnswers()
@@ -1159,7 +1124,6 @@ export function useExercises() {
   }
   
   const resetExerciseAnswers = () => {
-    console.log('🧹 Reset exercise answers')
     userAnswer.value = ''
     confirmation.value = ''
     answerWasCorrect.value = false
@@ -1169,13 +1133,11 @@ export function useExercises() {
   }
 
   const resetAttemptState = () => {
-    console.log('🔄 Reset attempt state')
     attemptCount.value = 0
     showCorrectAnswer.value = false
   }
   
   const resetExerciseData = () => {
-    console.log('🗑️ Reset exercise data')
     fillBlankAnswers.value = []
     matchingPairs.value = []
     selectedMatchingItem.value = null

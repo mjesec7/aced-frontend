@@ -549,7 +549,6 @@ export default {
       document.body.style.userSelect = 'none'
       document.body.style.cursor = resizeDirection.value === 'horizontal' ? 'col-resize' : 'row-resize'
       
-      console.log('🔧 Started resizing:', resizeDirection.value)
     }
 
     const handleResize = (event) => {
@@ -633,10 +632,7 @@ export default {
         console.warn('Could not save split sizes to localStorage:', error)
       }
       
-      console.log('✅ Stopped resizing. Final sizes:', {
-        left: Math.round(currentLeftWidth.value),
-        right: Math.round(currentRightWidth.value)
-      })
+    
     }
 
     // Keyboard support for accessibility with new constraints
@@ -709,7 +705,6 @@ export default {
         console.warn('Could not remove saved sizes from localStorage:', error)
       }
       
-      console.log('🔄 Reset split sizes to new defaults (75/25)')
     }
 
     // Function to load saved sizes from localStorage with new defaults
@@ -724,7 +719,6 @@ export default {
           if (timestamp && timestamp > thirtyDaysAgo) {
             currentLeftWidth.value = Math.max(20, Math.min(85, left || 75)) // ✅ UPDATED: New ranges
             currentRightWidth.value = Math.max(15, Math.min(80, right || 25)) // ✅ UPDATED: New ranges
-            console.log('📊 Loaded saved split sizes:', { left: currentLeftWidth.value, right: currentRightWidth.value })
           } else {
             // Remove old data and use new defaults
             localStorage.removeItem('lessonPageSplitSizes')
@@ -761,7 +755,6 @@ export default {
           currentRightWidth.value = 25
         }
         
-        console.log('📱 Resize direction changed to:', resizeDirection.value, 'New split:', `${currentLeftWidth.value}/${currentRightWidth.value}`)
       }
     }
 
@@ -771,7 +764,6 @@ export default {
     
     // Navigation methods
     const handleReturnToCatalogue = () => {
-      console.log('🔄 Returning to catalogue...')
       
       try {
         router.push({ 
@@ -797,7 +789,6 @@ export default {
     }
 
     const handleGoToHomework = () => {
-      console.log('📚 Navigating to homework...')
       
       if (lessonOrchestrator.lesson.value?._id) {
         try {
@@ -837,7 +828,6 @@ export default {
     }
 
     const exitLesson = () => {
-      console.log('🚪 Exiting lesson...')
       
       try {
         if (lessonOrchestrator.saveProgress) {
@@ -953,13 +943,7 @@ export default {
         const encodedMessage = encodeURIComponent(reportMessage)
         const telegramLink = `https://t.me/aced_live?text=${encodedMessage}`
         
-        console.log('📊 Problem Report Submitted:', {
-          lessonId: getCurrentLessonInfo().lessonId,
-          problemType: problemType.value,
-          hasScreenshot: !!screenshotUrl.value,
-          hasContact: !!contactInfo.value,
-          timestamp: new Date().toISOString()
-        })
+       
         
         try {
           await fetch('/api/analytics/problem-report', {
@@ -1025,7 +1009,6 @@ export default {
 
     // Vocabulary methods
     const initializeVocabularyModal = (step) => {
-      console.log('📚 Initializing vocabulary modal from LessonPage:', step)
 
       let vocabularyStep = step
 
@@ -1044,7 +1027,6 @@ export default {
 
         const vocabularySteps = lessonOrchestrator.steps.value?.filter(s => s.type === 'vocabulary')
         if (vocabularySteps && vocabularySteps.length > 0) {
-          console.log('✅ Found vocabulary step in lesson, using first one:', vocabularySteps[0])
           vocabularyStep = vocabularySteps[0]
         } else {
           console.error('❌ No vocabulary steps found in entire lesson')
@@ -1056,7 +1038,6 @@ export default {
     }
 
     const jumpToVocabWord = (index) => {
-      console.log('🎯 Jumping to vocabulary word:', index)
 
       if (index >= 0 && index < vocabulary.vocabularyModal.words.length) {
         vocabulary.cardAnimation.isFlipping = false
@@ -1064,7 +1045,6 @@ export default {
 
         setTimeout(() => {
           vocabulary.vocabularyModal.currentIndex = index
-          console.log(`✅ Jumped to word ${index + 1}/${vocabulary.vocabularyModal.words.length}`)
         }, 50)
       } else {
         console.warn('⚠️ Invalid vocabulary word index:', index)
@@ -1072,7 +1052,6 @@ export default {
     }
 
     const showVocabDefinition = () => {
-      console.log('🔄 Showing vocabulary definition')
       vocabulary.showVocabDefinition()
     }
 
@@ -1520,7 +1499,6 @@ export default {
         direction: resizeDirection.value
       })
       
-      console.log('🎯 LessonPage initialized with split:', `${currentLeftWidth.value}/${currentRightWidth.value}`)
     })
 
     onUnmounted(() => {
@@ -1562,7 +1540,6 @@ export default {
 
     // Watch for window size changes to update resize direction
     watch(() => resizeDirection.value, (newDirection) => {
-      console.log('📐 Resize direction updated:', newDirection)
     })
 
     // Return all props and methods

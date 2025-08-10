@@ -43,7 +43,6 @@ export function useExplanation() {
   const initializeAI = async () => {
     try {
       await loadAIUsage()
-      console.log('✅ AI services initialized')
     } catch (error) {
       console.warn('⚠️ AI initialization failed:', error.message)
     }
@@ -312,7 +311,6 @@ export function useExplanation() {
   
   const clearAIChatHistory = () => {
     aiChatHistory.value = []
-    console.log('🗑️ AI chat history cleared')
   }
   
   const exportChatHistory = () => {
@@ -350,7 +348,6 @@ export function useExplanation() {
   // ✅ Settings management
   const updateAISettings = (newSettings) => {
     Object.assign(aiSettings, newSettings)
-    console.log('🔧 AI settings updated:', newSettings)
   }
   
   const resetAISettings = () => {
@@ -362,13 +359,11 @@ export function useExplanation() {
       enableSmartHints: true,
       enableProgressInsights: true
     })
-    console.log('🔄 AI settings reset to defaults')
   }
   
   // ✅ Analytics and tracking
   const trackAIEvent = (eventType, data = {}) => {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`🤖 AI Event: ${eventType}`, data)
     }
     
     // Could send to analytics service

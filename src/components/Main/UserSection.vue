@@ -180,7 +180,6 @@ export default {
 
     // ✅ COMPLETELY REWRITTEN: Graceful backend save with proper fallback
     async saveUserToBackend(firebaseUser, token, additionalData = {}) {
-      console.log('💾 Attempting to save user to backend...');
       
       try {
         const apiBase = this.getApiBase();
@@ -203,11 +202,7 @@ export default {
           ...additionalData
         };
 
-        console.log('📤 Trying to save to backend:', {
-          uid: userData.uid,
-          email: userData.email,
-          name: userData.name
-        });
+      
 
         // ✅ SINGLE ATTEMPT with short timeout - don't retry if backend is down
         const response = await axios({
@@ -222,7 +217,6 @@ export default {
         });
 
         if (response.data && response.data.success !== false) {
-          console.log('✅ Backend save successful:', response.data);
           
           const savedUser = response.data.user || response.data.data || response.data;
           
@@ -269,7 +263,6 @@ export default {
           syncError: message
         };
 
-        console.log('✅ Created fallback user (Firebase-only):', fallbackUser.email);
 
         return {
           success: true,  // ✅ Still return success!
@@ -284,7 +277,6 @@ export default {
     // ✅ SIMPLIFIED: Auth state change handler with better error handling
     async handleAuthStateChange(firebaseUser) {
       try {
-        console.log('🔐 Processing auth state change for:', firebaseUser.uid);
         
         this.loadingMessage = 'Настройка аккаунта...';
         
@@ -309,7 +301,6 @@ export default {
           console.info('ℹ️ Auth completed with warning:', saveResult.warning);
           // Don't show error to user - auth still worked
         } else {
-          console.log('✅ Auth completed successfully');
         }
         
       } catch (error) {
@@ -328,7 +319,6 @@ export default {
           const token = await firebaseUser.getIdToken(true);
           this.setUserData(fallbackUserData, firebaseUser.uid, token);
           
-          console.log('✅ Fallback auth successful');
           
         } catch (fallbackError) {
           console.error('❌ Complete auth failure:', fallbackError);
@@ -349,13 +339,11 @@ export default {
       this.loadingMessage = 'Вход в систему...';
 
       try {
-        console.log('🔐 Starting email login for:', this.Login.email);
         
         // ✅ Firebase authentication first
         const result = await signInWithEmailAndPassword(auth, this.Login.email, this.Login.password);
         const firebaseUser = result.user;
         
-        console.log('✅ Firebase authentication successful');
         this.loadingMessage = 'Настройка профиля...';
         
         // ✅ Handle auth state change (includes backend sync attempt)
@@ -367,7 +355,6 @@ export default {
           this.closeModal();
         }, 1000);
         
-        console.log('✅ Email login completed');
 
       } catch (error) {
         console.error("❌ Email Login failed:", error);
@@ -413,7 +400,6 @@ export default {
       this.loadingMessage = 'Подключение к Google...';
 
       try {
-        console.log('🔐 Starting Google login...');
         
         const provider = new GoogleAuthProvider();
         provider.addScope('email');
@@ -423,7 +409,6 @@ export default {
         const result = await signInWithPopup(auth, provider);
         const firebaseUser = result.user;
         
-        console.log('✅ Google authentication successful');
         this.loadingMessage = 'Настройка профиля...';
         
         // ✅ Handle auth state change (includes backend sync attempt)
@@ -436,7 +421,6 @@ export default {
           this.$router.push("/profile");
         }, 1000);
         
-        console.log('✅ Google login completed');
 
       } catch (error) {
         console.error("❌ Google Login error:", error);
@@ -488,13 +472,11 @@ export default {
       this.loadingMessage = 'Создание аккаунта...';
 
       try {
-        console.log('🔐 Starting registration for:', this.user.email);
         
         // ✅ Firebase registration first
         const result = await createUserWithEmailAndPassword(auth, this.user.email, this.user.password);
         const firebaseUser = result.user;
         
-        console.log('✅ Firebase registration successful');
         this.loadingMessage = 'Настройка профиля...';
         
         // ✅ Include registration data
@@ -525,7 +507,6 @@ export default {
           this.closeModal();
         }, 1500);
         
-        console.log('✅ Registration completed');
 
       } catch (error) {
         console.error("❌ Registration error:", error);
@@ -624,7 +605,6 @@ export default {
         localStorage.removeItem("firebaseUserId");
         localStorage.removeItem("token");
         
-        console.log('✅ Logout successful');
         
         // Redirect to home if needed
         if (this.$route.path !== '/') {

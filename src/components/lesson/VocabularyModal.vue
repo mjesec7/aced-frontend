@@ -293,12 +293,7 @@ export default {
       const hasWords = words.length > 0
       
       if (this.isDevelopment) {
-        console.log('🔍 [VocabularyModal] hasValidWords check:', {
-          rawWordsLength: this.vocabularyData?.words?.length || 0,
-          validWordsLength: words.length,
-          hasWords,
-          sampleWords: words.slice(0, 2)
-        })
+        
       }
       
       return hasWords
@@ -311,15 +306,7 @@ export default {
       const word = validWords[index] || this.currentWord || null
       
       if (this.isDevelopment) {
-        console.log('🔍 [VocabularyModal] currentDisplayWord:', {
-          index,
-          validWordsLength: validWords.length,
-          word: word ? {
-            term: this.getWordTerm(word),
-            definition: this.getWordDefinition(word),
-            hasValidData: !!(this.getWordTerm(word) && this.getWordDefinition(word))
-          } : null
-        })
+       
       }
       
       return word
@@ -428,7 +415,6 @@ export default {
     },
 
     jumpToWord(index) {
-      console.log('🎯 [VocabularyModal] Jumping to word:', index)
       this.$emit('jump-to-word', index)
     }
   },
@@ -436,12 +422,7 @@ export default {
   // Add mounted hook for debugging
   mounted() {
     if (this.isDevelopment) {
-      console.log('🔍 [VocabularyModal] Mounted with data:', {
-        vocabularyData: this.vocabularyData,
-        currentWord: this.currentWord,
-        hasValidWords: this.hasValidWords,
-        validWordsCount: this.getValidWordsCount()
-      })
+    
     }
   },
 
@@ -450,13 +431,7 @@ export default {
     vocabularyData: {
       handler(newData) {
         if (this.isDevelopment) {
-          console.log('🔍 [VocabularyModal] vocabularyData changed:', {
-            isVisible: newData?.isVisible,
-            currentIndex: newData?.currentIndex,
-            wordsLength: newData?.words?.length,
-            validWordsCount: this.getValidWordsCount(),
-            hasValidWords: this.hasValidWords
-          })
+       
         }
       },
       deep: true,

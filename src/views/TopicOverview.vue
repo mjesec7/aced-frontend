@@ -399,13 +399,7 @@ export default {
 
       const finalPlan = overridePlan || storePlan || localPlan || componentPlan || 'free';
       
-      console.log('📊 TopicOverview: Computing enhanced user plan:', {
-        store: storePlan,
-        local: localPlan,
-        component: componentPlan,
-        override: overridePlan,
-        final: finalPlan,
-      });
+   
       
       return finalPlan;
     },
@@ -415,7 +409,6 @@ export default {
       const premiumPlans = ['premium', 'start', 'pro'];
       const isPremium = premiumPlans.includes(plan);
       
-      console.log('📊 TopicOverview: Checking premium status:', { plan, isPremium });
       
       return isPremium;
     },
@@ -442,7 +435,6 @@ export default {
     enhancedUserPlan: {
       handler(newPlan, oldPlan) {
         if (newPlan !== oldPlan) {
-          console.log('📊 TopicOverview: Enhanced user plan changed:', oldPlan, '→', newPlan);
           this.triggerReactivityUpdate();
         }
       },
@@ -452,7 +444,6 @@ export default {
     '$store.getters["user/userStatus"]': {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
-          console.log('📊 TopicOverview: Store user status changed:', oldStatus, '→', newStatus);
           this.userPlan = newStatus || 'free';
           this.triggerReactivityUpdate();
         }
@@ -464,10 +455,8 @@ export default {
     currentUser: {
       handler(newUser, oldUser) {
         if (newUser && newUser !== oldUser) {
-          console.log('👤 User authenticated, loading progress...');
           this.loadUserProgressForLessons();
         } else if (!newUser && oldUser) {
-          console.log('👤 User logged out, clearing progress...');
           this.clearUserProgress();
         }
       },
@@ -476,14 +465,12 @@ export default {
   },
   
   async mounted() {
-    console.log('📱 TopicOverview: Component mounted');
     
     try {
       await this.initializeComponent();
       this.setupEventListeners();
       this.setupPeriodicChecks();
       
-      console.log('✅ TopicOverview: Component mounted successfully');
       
     } catch (error) {
       console.error('❌ TopicOverview: Mount error:', error);
@@ -495,7 +482,6 @@ export default {
     // Navigate to profile catalogue method
     navigateToProfile() {
       try {
-        console.log('🔄 Navigating to profile catalogue');
         this.$router.push({ name: 'CataloguePage' });
       } catch (error) {
         console.error('❌ Error navigating to profile:', error);
@@ -512,7 +498,6 @@ export default {
         this.topic = null;
         this.lessons = [];
 
-        console.log('🚀 Initializing TopicOverview component...');
         
         await this.waitForAuth();
         await this.loadUserPlan();
@@ -523,7 +508,6 @@ export default {
           await this.loadUserProgressForLessons();
         }
         
-        console.log('✅ Component initialization complete');
         
       } catch (error) {
         console.error('❌ Component initialization failed:', error);
@@ -548,7 +532,6 @@ export default {
     // Load user progress for all lessons in the topic
     async loadUserProgressForLessons() {
       if (!this.currentUser || !this.lessons.length) {
-        console.log('ℹ️ No user or lessons available for progress loading');
         return;
       }
 
@@ -556,14 +539,12 @@ export default {
         this.progressLoading = true;
         const userId = this.currentUser.uid;
         
-        console.log('📊 Loading user progress for', this.lessons.length, 'lessons...');
 
         // Method 1: Try to get all user progress at once
         try {
           const userProgressResult = await getUserProgress(userId);
           
           if (userProgressResult.success && Array.isArray(userProgressResult.data)) {
-            console.log('✅ Loaded user progress from bulk endpoint:', userProgressResult.data.length, 'records');
             this.mapProgressToLessons(userProgressResult.data);
             return;
           }
@@ -572,7 +553,6 @@ export default {
         }
 
         // Method 2: Load progress for each lesson individually
-        console.log('🔄 Loading progress for each lesson individually...');
         const progressPromises = this.lessons.map(async (lesson) => {
           try {
             const progressResult = await getLessonProgress(userId, lesson._id || lesson.id);
@@ -599,7 +579,6 @@ export default {
           }
         });
 
-        console.log('✅ Individual progress loading complete');
 
       } catch (error) {
         console.error('❌ Error loading user progress:', error);
@@ -627,7 +606,6 @@ export default {
         }
       });
 
-      console.log('✅ Progress mapped to', this.lessons.filter(l => l.progress).length, 'lessons');
     },
 
     // Normalize progress data structure
@@ -654,7 +632,6 @@ export default {
           delete lesson.progress;
         }
       });
-      console.log('🧹 User progress cleared from lessons');
     },
 
     // Format duration in minutes and seconds
@@ -681,12 +658,10 @@ export default {
 
     // Setup event listeners for external changes
     setupEventListeners() {
-      console.log('🎧 Setting up event listeners...');
       
       // Listen for subscription changes
       if (typeof window !== 'undefined') {
         this.globalEventHandlers.subscriptionChange = (event) => {
-          console.log('📡 Subscription change event received:', event.detail);
           this.userPlan = event.detail.newPlan || 'free';
           this.triggerReactivityUpdate();
         };
@@ -696,7 +671,6 @@ export default {
         // Listen for localStorage changes from other tabs
         this.globalEventHandlers.storageChange = (event) => {
           if (event.key === 'userStatus' && event.newValue !== this.userPlan) {
-            console.log('📡 User status changed in storage:', event.newValue);
             this.userPlan = event.newValue || 'free';
             this.triggerReactivityUpdate();
           }
@@ -708,7 +682,6 @@ export default {
 
     // Setup periodic checks
     setupPeriodicChecks() {
-      console.log('⏰ Setting up periodic checks...');
       
       // Check payment status every 30 seconds
       this.paymentCheckInterval = setInterval(() => {
@@ -724,26 +697,21 @@ export default {
     // Enhanced authentication waiting with timeout
     async waitForAuth() {
       if (auth.currentUser) {
-        console.log('✅ User already authenticated:', auth.currentUser.uid);
         return;
       }
       
-      console.log('⏳ Waiting for authentication...');
       
       return new Promise((resolve) => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
           unsubscribe();
           if (user) {
-            console.log('✅ User authenticated:', user.uid);
           } else {
-            console.log('ℹ️ No user authentication (continuing as guest)');
           }
           resolve();
         });
         
         setTimeout(() => {
           unsubscribe(); 
-          console.log('⏰ Authentication wait timeout (continuing anyway)');
           resolve();
         }, 3000);
       });
@@ -763,11 +731,9 @@ export default {
         this.loading = true;
         this.error = null;
         
-        console.log('🔍 Loading topic data for ID:', topicId);
         
         const topicResult = await getTopicById(topicId);
         
-        console.log('📘 Raw topic API response:', topicResult);
         this.lastApiResponse = topicResult;
         
         let topicData = null;
@@ -813,7 +779,6 @@ export default {
         
         this.topic = this.normalizeTopicData(topicData);
         
-        console.log('✅ Topic loaded and normalized:', this.topic);
 
         await this.loadLessonsForTopic(this.topic._id || this.topic.id);
         
@@ -849,10 +814,8 @@ export default {
 
       try {
         this.lessonsLoading = true;
-        console.log('📚 Loading lessons for topic:', topicId);
         
         const lessonsResult = await getLessonsByTopic(topicId);
-        console.log('📚 Raw lessons API response:', lessonsResult);
         
         let lessonsData = [];
         let lessonsFormat = 'unknown';
@@ -880,13 +843,11 @@ export default {
           }
         }
         
-        console.log(`📚 Found ${lessonsData.length} lessons (format: ${lessonsFormat})`);
         
         this.lessons = lessonsData
           .map((lesson, index) => this.normalizeLessonData(lesson, topicId, index))
           .filter(lesson => lesson !== null);
         
-        console.log('✅ Lessons loaded and normalized:', this.lessons.length);
         
       } catch (lessonError) {
         console.error('❌ Error loading lessons:', lessonError);
@@ -997,12 +958,10 @@ export default {
     // Enhanced user plan loading from multiple reliable sources
     async loadUserPlan() {
       try {
-        console.log('👤 TopicOverview: Loading user plan...');
         
         const storeStatus = this.$store?.getters?.['user/userStatus'];
         if (storeStatus && ['premium', 'start', 'pro', 'free'].includes(storeStatus)) {
           this.userPlan = storeStatus;
-          console.log('✅ User plan loaded from store:', this.userPlan);
           return;
         }
         
@@ -1012,13 +971,11 @@ export default {
           if (!storeStatus) {
             this.$store.commit('user/SET_USER_STATUS', localStatus); 
           }
-          console.log('✅ User plan loaded from localStorage:', this.userPlan);
           return;
         }
         
         if (auth.currentUser) {
           const userId = auth.currentUser.uid;
-          console.log('👤 Loading user plan from API for:', userId);
 
           try {
             const statusResult = await getUserStatus(userId);
@@ -1028,7 +985,6 @@ export default {
               this.userPlan = apiPlan;
               localStorage.setItem('userStatus', apiPlan);
               this.$store.commit('user/SET_USER_STATUS', apiPlan);
-              console.log('✅ User plan loaded from API:', this.userPlan);
               return;
             } else {
               console.warn('⚠️ API returned no success or data for user status. Defaulting to free.');
@@ -1041,7 +997,6 @@ export default {
         this.userPlan = 'free';
         localStorage.setItem('userStatus', 'free');
         this.$store.commit('user/SET_USER_STATUS', 'free');
-        console.log('ℹ️ Defaulting to free plan as no other plan found.');
         
       } catch (err) {
         console.warn('⚠️ Critical error in loadUserPlan:', err.message, 'Defaulting to free.');
@@ -1233,7 +1188,6 @@ export default {
       
       const delay = Math.pow(2, this.retryCount - 1) * 1000; 
       
-      console.log(`⏱️ Retrying load in ${delay}ms (attempt ${this.retryCount}/${3})`);
       
       await new Promise(resolve => setTimeout(resolve, delay));
       
@@ -1274,14 +1228,12 @@ export default {
         }
         
         if ((lesson.type === 'premium' || lesson.type === 'pro') && !this.isPremiumUser) {
-          console.log('🔒 Premium lesson requires subscription');
           this.handleSubscription();
           return;
         }
         
         const lessonId = lesson._id || lesson.id;
         
-        console.log('🚀 Starting lesson:', lessonId);
         this.$router.push({ name: 'LessonPage', params: { id: lessonId } });
         
       } catch (error) {
@@ -1298,10 +1250,8 @@ export default {
         );
         
         if (firstAvailable) {
-          console.log('🚀 Starting first available lesson:', this.getLessonName(firstAvailable));
           this.startLesson(firstAvailable);
         } else {
-          console.log('🔒 No available lessons (all restricted or empty), redirecting to subscription');
           this.handleSubscription();
         }
       } catch (error) {
@@ -1313,7 +1263,6 @@ export default {
     // Handle subscription redirect
     handleSubscription() {
       try {
-        console.log('💳 Redirecting to subscription page');
         
         this.$router.push({
           name: 'PaymePayment',
@@ -1339,14 +1288,11 @@ export default {
 
       try {
         if (!auth.currentUser || !this.$store) {
-          console.log('ℹ️ Skipping payment status check: no authenticated user or store.');
           return;
         }
         
-        console.log('💳 Checking for pending payments or subscription updates...');
         if (typeof this.$store.dispatch === 'function') {
           await this.$store.dispatch('user/checkPendingPayments');
-          console.log('✅ Payment status check dispatched successfully.');
         } else {
           console.warn('⚠️ Vuex store dispatch method not available for payment check.');
         }
@@ -1378,7 +1324,6 @@ export default {
 
     // Cleanup method for all event listeners and intervals
     cleanup() {
-      console.log('🧹 TopicOverview: Performing cleanup...');
       
       if (this.statusChangeTimeout) {
         clearTimeout(this.statusChangeTimeout);
@@ -1420,7 +1365,6 @@ export default {
       
       this.globalEventHandlers = {};
       
-      console.log('✅ TopicOverview: Cleanup completed.');
     }
   },
   
@@ -1435,7 +1379,6 @@ export default {
   
   // Lifecycle hook for comprehensive cleanup
   beforeUnmount() {
-    console.log('📱 TopicOverview: Component unmounting');
     this.cleanup();
   },
   

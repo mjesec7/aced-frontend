@@ -122,7 +122,6 @@ export function useLessonOrchestrator() {
       loading.value = true
       error.value = null
 
-      console.log('🔍 Loading lesson:', lessonId)
 
       const response = await withErrorHandling(
         () => getLessonById(lessonId),
@@ -146,8 +145,7 @@ export function useLessonOrchestrator() {
       }
       
       lesson.value = lessonData
-      console.log('✅ Lesson loaded:', lesson.value.lessonName)
-      console.log('📊 Steps available:', lesson.value.steps?.length || 0)
+
       
       processLessonSteps()
       
@@ -165,12 +163,7 @@ export function useLessonOrchestrator() {
       
       // Log step details for debugging
       steps.value.forEach((step, index) => {
-        console.log(`📝 Step ${index + 1}:`, {
-          type: step.type,
-          hasData: !!step.data,
-          dataType: typeof step.data,
-          isArray: Array.isArray(step.data)
-        })
+    
       })
       
     } catch (err) {
@@ -183,7 +176,6 @@ export function useLessonOrchestrator() {
   }
   
   const processLessonSteps = () => {
-    console.log('🔄 Starting lesson step processing...')
     steps.value = []
     
     if (!lesson.value.steps || !Array.isArray(lesson.value.steps)) {
@@ -193,7 +185,6 @@ export function useLessonOrchestrator() {
     }
     
     lesson.value.steps.forEach((step, index) => {
-      console.log(`🔍 Processing step ${index + 1}:`, step)
       
       if (!step || typeof step !== 'object') {
         console.warn(`⚠️ Step ${index + 1}: Invalid step object, skipping`)
@@ -234,7 +225,6 @@ export function useLessonOrchestrator() {
         }
         
         steps.value.push(processedStep)
-        console.log(`✅ Step ${index + 1} processed successfully:`, processedStep.type)
         
       } catch (stepError) {
         console.error(`❌ Error processing step ${index + 1}:`, stepError)
@@ -248,7 +238,6 @@ export function useLessonOrchestrator() {
       }
     })
     
-    console.log(`✅ Processed ${steps.value.length} total steps`)
     
     if (steps.value.length === 0) {
       console.warn('⚠️ No valid steps found, creating default step')
@@ -263,7 +252,6 @@ export function useLessonOrchestrator() {
   
   const processExerciseStep = (step, index) => {
     // Implementation similar to original but extracted
-    console.log(`📝 Processing exercise step ${index + 1}:`, step)
     // ... exercise processing logic
     return {
       type: 'exercise',
@@ -273,7 +261,6 @@ export function useLessonOrchestrator() {
   
   const processQuizStep = (step, index) => {
     // Implementation similar to original but extracted
-    console.log(`🧩 Processing quiz step ${index + 1}:`, step)
     // ... quiz processing logic
     return {
       type: 'quiz',
@@ -283,7 +270,6 @@ export function useLessonOrchestrator() {
   
   const processVocabularyStep = (step, index) => {
     // Implementation similar to original but extracted
-    console.log(`📚 Processing vocabulary step ${index + 1}:`, step)
     // ... vocabulary processing logic
     return {
       type: 'vocabulary',
@@ -318,7 +304,6 @@ export function useLessonOrchestrator() {
   }
   
   const processLegacyLessonFormat = () => {
-    console.log('🔄 Processing legacy lesson format')
     
     // Add explanations
     if (Array.isArray(lesson.value.explanations)) {
@@ -332,10 +317,8 @@ export function useLessonOrchestrator() {
       })
     }
     
-    // Add examples, exercises, quiz, etc.
-    // ... similar to original implementation
+  
     
-    console.log(`✅ Processed ${steps.value.length} steps from legacy format`)
   }
   
   // ✅ Progress management
