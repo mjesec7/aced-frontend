@@ -272,7 +272,6 @@ export default {
     sendMessage() {
       if (!this.localFloatingInput?.trim() || this.aiIsLoading || this.isMessageLimitReached) {
         if (this.isMessageLimitReached) {
-          console.warn('🚫 Cannot send message: limit reached');
         }
         return;
       }

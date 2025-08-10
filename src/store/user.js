@@ -161,7 +161,6 @@ const getUserToken = async () => {
         }
       }
     } catch (firebaseError) {
-      console.warn('⚠️ Firebase token retrieval failed:', firebaseError);
     }
 
     // Method 2: From localStorage
@@ -171,7 +170,6 @@ const getUserToken = async () => {
         return storedToken;
       }
     } catch (storageError) {
-      console.warn('⚠️ localStorage token retrieval failed:', storageError);
     }
 
     // Method 3: From sessionStorage
@@ -181,14 +179,11 @@ const getUserToken = async () => {
         return sessionToken;
       }
     } catch (sessionError) {
-      console.warn('⚠️ sessionStorage token retrieval failed:', sessionError);
     }
 
-    console.warn('⚠️ No valid authentication token found');
     return null;
 
   } catch (error) {
-    console.warn('⚠️ Token retrieval completely failed:', error);
     return null;
   }
 };
@@ -367,7 +362,6 @@ const mutations = {
         localStorage.setItem('lastUserUpdate', timestamp.toString());
       
       } catch (storageError) {
-        console.warn('⚠️ Failed to store user in localStorage:', storageError);
         state.system.errors.lastError = 'localStorage write failed';
         state.system.errors.errorCount++;
       }
@@ -462,7 +456,6 @@ const mutations = {
       try {
         localStorage.removeItem(key);
       } catch (error) {
-        console.warn(`⚠️ Failed to remove ${key} from localStorage:`, error);
       }
     });
 
@@ -476,7 +469,6 @@ const mutations = {
         }
       });
     } catch (error) {
-      console.warn('⚠️ Failed to clear dynamic localStorage keys:', error);
     }
 
     triggerGlobalEvent('userCleared', { timestamp });
@@ -551,7 +543,6 @@ const mutations = {
       localStorage.setItem('userStatus', newStatus);
       localStorage.setItem('statusUpdateTime', Date.now().toString());
     } catch (storageError) {
-      console.warn('⚠️ Failed to persist status to localStorage:', storageError);
     }
 
 
@@ -605,7 +596,6 @@ const mutations = {
     // Ensure applied array exists and is an array
     if (!Array.isArray(state.promocodes.applied)) {
       state.promocodes.applied = [];
-      console.warn('⚠️ Fixed promocodes.applied array');
     }
 
     const promocode = {
@@ -643,7 +633,6 @@ const mutations = {
       localStorage.setItem('appliedPromocodes', JSON.stringify(state.promocodes.applied));
       localStorage.setItem('promocodesLastUpdate', timestamp.toString());
     } catch (storageError) {
-      console.warn('⚠️ Failed to persist promocodes:', storageError);
     }
 
     state.system.lastUpdate = timestamp;
@@ -665,7 +654,6 @@ const mutations = {
     // Ensure history array exists and is an array
     if (!Array.isArray(state.payments.history)) {
       state.payments.history = [];
-      console.warn('⚠️ Fixed payments.history array');
     }
 
     const payment = {
@@ -746,7 +734,6 @@ const mutations = {
     const timestamp = Date.now();
 
     if (!subscriptionData || typeof subscriptionData !== 'object') {
-      console.warn('⚠️ Invalid subscription data provided');
       return;
     }
 
@@ -771,7 +758,6 @@ const mutations = {
       localStorage.setItem('subscriptionDetails', JSON.stringify(state.subscription));
       localStorage.setItem('subscriptionLastUpdate', timestamp.toString());
     } catch (storageError) {
-      console.warn('⚠️ Failed to persist subscription:', storageError);
     }
 
   
@@ -787,7 +773,6 @@ const mutations = {
     const timestamp = Date.now();
 
     if (!usageData || typeof usageData !== 'object') {
-      console.warn('⚠️ Invalid usage data provided');
       return;
     }
 
@@ -985,7 +970,6 @@ const mutations = {
     const timestamp = Date.now();
 
     if (!preferences || typeof preferences !== 'object') {
-      console.warn('⚠️ Invalid preferences data provided');
       return;
     }
 
@@ -997,7 +981,6 @@ const mutations = {
     try {
       localStorage.setItem('userPreferences', JSON.stringify(state.preferences));
     } catch (storageError) {
-      console.warn('⚠️ Failed to persist preferences:', storageError);
     }
 
 
@@ -1086,7 +1069,6 @@ const actions = {
         try {
           commit('FORCE_UPDATE');
         } catch (forceError) {
-          console.warn('⚠️ FORCE_UPDATE failed:', forceError);
         }
         
         result.success = true;
@@ -1116,14 +1098,12 @@ const actions = {
           lastSync: new Date().toISOString()
         });
       } catch (subscriptionError) {
-        console.warn('⚠️ UPDATE_SUBSCRIPTION failed:', subscriptionError);
         // Don't fail the entire operation for this
       }
   
       try {
         commit('FORCE_UPDATE');
       } catch (forceError) {
-        console.warn('⚠️ FORCE_UPDATE failed:', forceError);
         // Don't fail the entire operation for this
       }
   
@@ -1133,7 +1113,6 @@ const actions = {
         localStorage.setItem('statusUpdateTime', Date.now().toString());
         localStorage.setItem('plan', newStatus); // Legacy compatibility
       } catch (storageError) {
-        console.warn('⚠️ localStorage update failed:', storageError);
         // Don't fail the entire operation for this
       }
   
@@ -1170,12 +1149,10 @@ const actions = {
             });
             window.dispatchEvent(customEvent);
           } catch (domEventError) {
-            console.warn('⚠️ DOM event dispatch failed:', domEventError);
           }
         }
   
       } catch (eventError) {
-        console.warn('⚠️ Global event triggering failed:', eventError);
         // Don't fail the entire operation for this
       }
   
@@ -1601,7 +1578,6 @@ const actions = {
       try {
         commit('SET_LOADING', { type: 'saving', loading: false });
       } catch (loadingError) {
-        console.warn('⚠️ Failed to clear loading state:', loadingError);
       }
     }
   },
@@ -1615,7 +1591,6 @@ const actions = {
 
       const userId = getUserId(state);
       if (!userId) {
-        console.warn('⚠️ No user ID found, defaulting to free status');
         commit('SET_USER_STATUS', 'free');
         return { success: false, error: 'No user ID', defaulted: true };
       }
@@ -1642,7 +1617,6 @@ const actions = {
 
         return { success: true, status, duration };
       } else {
-        console.warn('⚠️ Failed to load user status from server:', result?.error);
         commit('SET_USER_STATUS', 'free');
         commit('SET_ERROR', {
           message: 'Failed to load user status',
@@ -1678,7 +1652,6 @@ const actions = {
       const validatedPlan = validPlans.includes(plan) ? plan : 'free';
 
       if (plan !== validatedPlan) {
-        console.warn(`⚠️ Invalid plan "${plan}" normalized to "${validatedPlan}"`);
       }
 
       // Get old status for comparison
@@ -1746,14 +1719,12 @@ const actions = {
       try {
         commit('UPDATE_FEATURES'); // Recalculate features based on new plan
       } catch (featuresError) {
-        console.warn('⚠️ UPDATE_FEATURES failed:', featuresError);
         // Don't fail for features update
       }
 
       try {
         commit('FORCE_UPDATE');
       } catch (forceError) {
-        console.warn('⚠️ FORCE_UPDATE failed:', forceError);
         // Don't fail for force update
       }
 
@@ -1764,7 +1735,6 @@ const actions = {
         localStorage.setItem('subscriptionDetails', JSON.stringify(subscriptionData));
         localStorage.setItem('lastSubscriptionUpdate', Date.now().toString());
       } catch (storageError) {
-        console.warn('⚠️ Failed to persist subscription data:', storageError);
         // Don't fail the operation due to storage issues
       }
 
@@ -1807,7 +1777,6 @@ const actions = {
             window.dispatchEvent(customEvent);
           }
         } catch (eventError) {
-          console.warn(`⚠️ Failed to trigger ${eventName}:`, eventError);
         }
       });
 
@@ -1971,7 +1940,6 @@ const actions = {
 
       // Handle server errors
       const serverError = result?.error || 'Не удалось применить промокод';
-      console.warn('⚠️ Promocode application failed:', serverError);
 
       commit('SET_ERROR', {
         message: serverError,
@@ -2129,7 +2097,6 @@ const actions = {
           const stored = localStorage.getItem(storageKey);
           storedData[key] = stored;
         } catch (storageError) {
-          console.warn(`⚠️ Failed to read ${storageKey}:`, storageError);
           storedData[key] = null;
         }
       }
@@ -2142,7 +2109,6 @@ const actions = {
             commit('SET_USER', userData);
           }
         } catch (parseError) {
-          console.warn('⚠️ Failed to parse stored user data:', parseError);
           localStorage.removeItem('currentUser');
         }
       }
@@ -2163,7 +2129,6 @@ const actions = {
             commit('UPDATE_SUBSCRIPTION', subscription);
           }
         } catch (parseError) {
-          console.warn('⚠️ Invalid stored subscription:', parseError);
         }
       }
 
@@ -2220,7 +2185,6 @@ const actions = {
               });
             }
           } catch (eventError) {
-            console.warn(`⚠️ Failed to trigger ${eventName}:`, eventError);
           }
         });
 
@@ -2282,7 +2246,6 @@ const actions = {
         try {
           localStorage.removeItem(key);
         } catch (storageError) {
-          console.warn(`⚠️ Failed to remove ${key} from localStorage:`, storageError);
         }
       });
 
@@ -2302,7 +2265,6 @@ const actions = {
             }
           });
         } catch (error) {
-          console.warn('⚠️ Failed to clear dynamic localStorage keys:', error);
         }
       }
 
@@ -2327,7 +2289,6 @@ const actions = {
             window.triggerGlobalEvent(eventName, logoutData);
           }
         } catch (eventError) {
-          console.warn(`⚠️ Failed to trigger logout event ${eventName}:`, eventError);
         }
       });
 
@@ -2534,7 +2495,6 @@ const cleanupUniversalStatusListener = function() {
       try {
         cleanup();
       } catch (error) {
-        console.warn('⚠️ Cleanup error:', error);
       }
     });
     this.statusEventCleanup = [];
@@ -3155,7 +3115,6 @@ export const setupUserStoreEvents = (app, store) => {
             try {
               callback(data);
             } catch (error) {
-              console.warn(`Event listener error for ${event}:`, error);
             }
           });
         }
@@ -3196,7 +3155,6 @@ export const setupUserStoreEvents = (app, store) => {
       try {
         await store.dispatch('user/syncUserData');
       } catch (error) {
-        console.warn('⚠️ Periodic sync failed:', error);
       }
     }
   }, 5 * 60 * 1000);
@@ -3283,7 +3241,6 @@ export const performanceMonitor = {
       console.timeEnd(label);
 
       if (duration > 1000) {
-        console.warn(`⚠️ Slow operation detected: ${label} took ${duration.toFixed(2)}ms`);
       }
 
       return duration;

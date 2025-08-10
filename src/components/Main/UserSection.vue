@@ -235,11 +235,7 @@ export default {
         const status = error.response?.status;
         const message = error.response?.data?.message || error.message;
         
-        console.warn('⚠️ Backend save failed (this is OK - continuing with Firebase-only):', {
-          status,
-          message,
-          code: error.code
-        });
+        
 
         // ✅ Return a constructed user for frontend-only operation
         const fallbackUser = {

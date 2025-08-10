@@ -315,7 +315,6 @@ async function handleUserAuthenticated(firebaseUser) {
       } catch (tokenError) {
         tokenRetries--;
         if (tokenRetries === 0) {
-          console.warn('⚠️ Token retrieval failed, using basic auth');
           await handleBasicUserAuthentication(firebaseUser);
           return;
         }
@@ -351,19 +350,15 @@ async function handleUserAuthenticated(firebaseUser) {
             saveResult = storeResult;
             break;
           } else if (storeResult.success === false) {
-            console.warn('⚠️ Save failed with error:', storeResult.error);
             throw new Error(storeResult.error || 'Save returned failure');
           } else {
-            console.warn('⚠️ Save result invalid structure:', storeResult);
             throw new Error('Save result has invalid structure');
           }
         } else {
-          console.warn('⚠️ Save result is not an object:', typeof storeResult, storeResult);
           throw new Error('Save result is not a valid object');
         }
 
       } catch (saveError) {
-        console.warn(`❌ Save attempt ${3 - saveRetries + 1} failed:`, saveError.message);
         saveRetries--;
 
         if (saveRetries === 0) {
@@ -472,12 +467,10 @@ async function fetchUserStatusFromServer(userId, token = null) {
           }
         }
       } catch (endpointError) {
-        console.warn('⚠️ Endpoint failed:', endpoint, endpointError.message);
         continue;
       }
     }
 
-    console.warn('⚠️ Could not fetch user status from any endpoint');
     return 'free';
 
   } catch (error) {
@@ -556,7 +549,6 @@ async function handleBasicUserAuthentication(firebaseUser, token = null, serverS
       localStorage.setItem('authMode', 'basic-with-server');
       localStorage.setItem('serverStatusConfirmed', serverStatus !== 'free' ? 'true' : 'false');
     } catch (storageError) {
-      console.warn('⚠️ localStorage update failed:', storageError);
     }
 
     appLifecycle.authReady = true;
@@ -655,7 +647,6 @@ async function handleSuccessfulUserSave(saveResult, token, userData) {
       try {
         await setupSubscriptionPersistence(userPlan, 'successful-save');
       } catch (persistError) {
-        console.warn('⚠️ Subscription persistence failed:', persistError);
         // Don't fail the whole operation
       }
     }
@@ -704,7 +695,6 @@ async function handleSuccessfulUserSave(saveResult, token, userData) {
         try {
           localStorage.setItem(key, typeof value === 'object' ? JSON.stringify(value) : value);
         } catch (storageError) {
-          console.warn(`⚠️ Failed to save ${key} to localStorage:`, storageError);
         }
       });
 
@@ -757,7 +747,6 @@ async function handleSuccessfulUserSave(saveResult, token, userData) {
 
     // Show warning if it was a fallback save
     if (saveResult.warning) {
-      console.warn('⚠️ Save completed with warning:', saveResult.warning);
     }
 
 

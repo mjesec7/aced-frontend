@@ -655,7 +655,6 @@ export function useExercises() {
   const submitAnswer = (exercise) => {
     
     if (!canSubmitAnswer(exercise)) {
-      console.warn('⚠️ Cannot submit: answer validation failed')
       return false
     }
 
@@ -686,7 +685,6 @@ export function useExercises() {
   const submitQuizAnswer = (quiz) => {
     
     if (!canSubmitAnswer(quiz)) {
-      console.warn('⚠️ Cannot submit: quiz answer validation failed')
       return false
     }
 

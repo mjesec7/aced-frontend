@@ -44,14 +44,12 @@ export function useExplanation() {
     try {
       await loadAIUsage()
     } catch (error) {
-      console.warn('⚠️ AI initialization failed:', error.message)
     }
   }
   
   // ✅ Explanation help methods
   const askAboutExplanation = async (explanationText, lessonContext) => {
     if (!explanationQuestion.value.trim()) {
-      console.warn('⚠️ No question provided for explanation help')
       return
     }
     
@@ -180,7 +178,6 @@ export function useExplanation() {
         }
       }
     } catch (error) {
-      console.warn('⚠️ Could not generate AI suggestions:', error.message)
     }
   }
   
@@ -209,7 +206,6 @@ export function useExplanation() {
         }
       }
     } catch (error) {
-      console.warn('⚠️ Could not generate smart hint:', error.message)
     }
   }
   
@@ -238,7 +234,6 @@ export function useExplanation() {
         }
       }
     } catch (error) {
-      console.warn('⚠️ Could not generate progress insight:', error.message)
     }
   }
   
@@ -257,7 +252,6 @@ export function useExplanation() {
         }
       }
     } catch (error) {
-      console.warn('⚠️ Could not load AI usage:', error.message)
     }
   }
   

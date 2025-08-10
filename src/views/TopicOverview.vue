@@ -549,7 +549,6 @@ export default {
             return;
           }
         } catch (bulkError) {
-          console.warn('⚠️ Bulk progress loading failed:', bulkError.message);
         }
 
         // Method 2: Load progress for each lesson individually
@@ -561,7 +560,6 @@ export default {
               progress: progressResult.success ? progressResult.data : null
             };
           } catch (error) {
-            console.warn(`⚠️ Failed to load progress for lesson ${lesson._id}:`, error.message);
             return {
               lessonId: lesson._id || lesson.id,
               progress: null
@@ -590,7 +588,6 @@ export default {
     // Map progress data from bulk endpoint to lessons
     mapProgressToLessons(progressArray) {
       if (!Array.isArray(progressArray)) {
-        console.warn('⚠️ Progress data is not an array:', progressArray);
         return;
       }
 
@@ -807,7 +804,6 @@ export default {
     // Load lessons for topic with comprehensive error handling
     async loadLessonsForTopic(topicId) {
       if (!topicId) {
-        console.warn('⚠️ No topicId provided to load lessons.');
         this.lessons = [];
         return;
       }
@@ -837,7 +833,6 @@ export default {
             lessonsData = lessonsResult;
             lessonsFormat = 'direct_array';
           } else if (lessonsResult.success === false) {
-            console.warn('⚠️ Lessons API returned error:', lessonsResult.message || lessonsResult.error);
             lessonsData = [];
             lessonsFormat = 'error_response';
           }
@@ -853,7 +848,6 @@ export default {
         console.error('❌ Error loading lessons:', lessonError);
         this.lessons = [];
         
-        console.warn('⚠️ Lessons for this topic could not be loaded. Please try again later.');
         
         if (this.isDevelopment) {
           this.debugInfo = {
@@ -871,7 +865,6 @@ export default {
     // Topic data normalization function
     normalizeTopicData(rawData) {
       if (!rawData) {
-        console.warn('Normalization: Raw topic data is null/undefined.');
         return null;
       }
       
@@ -904,7 +897,6 @@ export default {
           return null;
       }
       if (!normalized.name || normalized.name === 'Без названия') {
-          console.warn('Normalization: Topic name could not be extracted:', rawData);
           normalized.name = `Тема ${normalized._id?.substring(0, 8) || ''}`;
       }
 
@@ -914,7 +906,6 @@ export default {
     // Lesson data normalization function
     normalizeLessonData(rawLesson, topicId, index) {
       if (!rawLesson) {
-        console.warn(`Normalization: Raw lesson data at index ${index} is null/undefined.`);
         return null;
       }
 
@@ -948,7 +939,6 @@ export default {
       };
 
       if (!normalized.lessonName || normalized.lessonName === 'Без названия') {
-          console.warn(`Normalization: Lesson name could not be extracted for lesson at index ${index}.`);
           normalized.lessonName = `Урок ${index + 1} (${normalized._id.substring(0, 8)})`;
       }
 
@@ -987,10 +977,8 @@ export default {
               this.$store.commit('user/SET_USER_STATUS', apiPlan);
               return;
             } else {
-              console.warn('⚠️ API returned no success or data for user status. Defaulting to free.');
             }
           } catch (apiError) {
-            console.warn('⚠️ API error loading user status:', apiError.message, 'Defaulting to free.');
           }
         }
         
@@ -999,7 +987,6 @@ export default {
         this.$store.commit('user/SET_USER_STATUS', 'free');
         
       } catch (err) {
-        console.warn('⚠️ Critical error in loadUserPlan:', err.message, 'Defaulting to free.');
         this.userPlan = 'free';
       }
     },
@@ -1294,11 +1281,9 @@ export default {
         if (typeof this.$store.dispatch === 'function') {
           await this.$store.dispatch('user/checkPendingPayments');
         } else {
-          console.warn('⚠️ Vuex store dispatch method not available for payment check.');
         }
         
       } catch (error) {
-        console.warn('⚠️ Payment status check failed:', error.message);
       }
     },
 
@@ -1353,7 +1338,6 @@ export default {
         try {
           cleanupFn();
         } catch (error) {
-          console.warn('⚠️ TopicOverview: Error during Event Bus cleanup:', error);
         }
       });
       this.eventCleanupFunctions = [];
@@ -1373,7 +1357,6 @@ export default {
     try {
       await this.checkPaymentStatus();
     } catch (error) {
-      console.warn('⚠️ Error in created hook during initial payment check:', error.message);
     }
   },
   

@@ -263,7 +263,6 @@ export default {
             }
           }
         } catch (e) {
-          console.warn('⚠️ Sidebar: Failed to parse subscription data');
         }
       }
       
@@ -273,13 +272,11 @@ export default {
       // ✅ CRITICAL: Handle string 'undefined' and null cases
       if (effectiveStatus === 'undefined' || effectiveStatus === null || effectiveStatus === undefined || effectiveStatus === '') {
         effectiveStatus = subscriptionPlan || localStatus || 'free';
-        console.warn('⚠️ Sidebar: Invalid status detected, using fallback:', effectiveStatus);
       }
       
       // ✅ CRITICAL: Validate the plan value
       const validPlans = ['free', 'start', 'pro'];
       if (!validPlans.includes(effectiveStatus)) {
-        console.warn('⚠️ Sidebar: Invalid plan value:', effectiveStatus);
         effectiveStatus = localStatus && validPlans.includes(localStatus) ? localStatus : 'free';
       }
       
@@ -459,7 +456,6 @@ export default {
       // Find the link configuration for this feature
       const linkConfig = this.links.find(link => link.feature === feature);
       if (!linkConfig) {
-        console.warn('⚠️ Sidebar: Unknown feature:', feature);
         return true; // Default to allowing access for unknown features
       }
       
@@ -717,7 +713,6 @@ export default {
           try {
             cleanup();
           } catch (error) {
-            console.warn('⚠️ Event cleanup function failed:', error);
           }
         });
       }

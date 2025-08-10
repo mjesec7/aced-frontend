@@ -437,7 +437,6 @@ export default {
         try {
           const result = await removeFromStudyList(userId, topicId);
         } catch (backendError) {
-          console.warn('Backend deletion failed, but continuing with UI update:', backendError);
         }
 
         this.showDeleteModal = false;

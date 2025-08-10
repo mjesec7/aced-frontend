@@ -99,7 +99,6 @@ export function useLessonOrchestrator() {
               })
             }
           } catch (storeError) {
-            console.warn('⚠️ Could not update store:', storeError.message)
           }
         }
         
@@ -107,7 +106,6 @@ export function useLessonOrchestrator() {
       })
       
       setTimeout(() => {
-        console.warn('⚠️ Authentication wait timeout')
         unsubscribe()
         resolve()
       }, 5000)
@@ -154,7 +152,6 @@ export function useLessonOrchestrator() {
       }
       
       if (steps.value.length === 0) {
-        console.warn('⚠️ No steps found in lesson, creating default step')
         steps.value = [{
           type: 'explanation',
           data: { content: lesson.value.description || 'Lesson content not available' }
@@ -179,7 +176,6 @@ export function useLessonOrchestrator() {
     steps.value = []
     
     if (!lesson.value.steps || !Array.isArray(lesson.value.steps)) {
-      console.warn('⚠️ No steps array found, trying legacy format')
       processLegacyLessonFormat()
       return
     }
@@ -187,12 +183,10 @@ export function useLessonOrchestrator() {
     lesson.value.steps.forEach((step, index) => {
       
       if (!step || typeof step !== 'object') {
-        console.warn(`⚠️ Step ${index + 1}: Invalid step object, skipping`)
         return
       }
       
       if (!step.type) {
-        console.warn(`⚠️ Step ${index + 1}: Missing step type, defaulting to explanation`)
         step.type = 'explanation'
       }
       
@@ -218,7 +212,6 @@ export function useLessonOrchestrator() {
         }
         
         if (!processedStep.data) {
-          console.warn(`⚠️ Step ${index + 1}: No data after processing, creating default`)
           processedStep.data = {
             content: `Контент для ${step.type} шага ${index + 1}`
           }
@@ -240,7 +233,6 @@ export function useLessonOrchestrator() {
     
     
     if (steps.value.length === 0) {
-      console.warn('⚠️ No valid steps found, creating default step')
       steps.value.push({
         type: 'explanation',
         data: {
@@ -354,7 +346,6 @@ export function useLessonOrchestrator() {
       }
       
     } catch (err) {
-      console.warn('⚠️ Failed to load previous progress:', err)
       previousProgress.value = null
     }
   }
@@ -399,7 +390,6 @@ export function useLessonOrchestrator() {
       if (result.success) {
         return true
       } else {
-        console.warn('⚠️ Progress save returned success: false')
         return false
       }
       

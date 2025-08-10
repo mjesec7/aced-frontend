@@ -629,7 +629,6 @@ export default {
           timestamp: Date.now()
         }))
       } catch (error) {
-        console.warn('Could not save split sizes to localStorage:', error)
       }
       
     
@@ -689,7 +688,6 @@ export default {
           timestamp: Date.now()
         }))
       } catch (error) {
-        console.warn('Could not save split sizes to localStorage:', error)
       }
     }
 
@@ -702,7 +700,6 @@ export default {
       try {
         localStorage.removeItem('lessonPageSplitSizes')
       } catch (error) {
-        console.warn('Could not remove saved sizes from localStorage:', error)
       }
       
     }
@@ -731,7 +728,6 @@ export default {
           currentRightWidth.value = 25
         }
       } catch (error) {
-        console.warn('Could not load saved sizes from localStorage:', error)
         // Fallback to new defaults
         currentLeftWidth.value = 75
         currentRightWidth.value = 25
@@ -769,11 +765,9 @@ export default {
         router.push({ 
           path: '/profile/catalogue' 
         }).catch(err => {
-          console.warn('⚠️ Direct path navigation failed:', err)
           router.push({ 
             name: 'CataloguePage' 
           }).catch(err2 => {
-            console.warn('⚠️ Named route navigation failed:', err2)
             router.push({ 
               path: '/profile' 
             }).catch(err3 => {
@@ -800,7 +794,6 @@ export default {
               subject: lessonOrchestrator.lesson.value.subject || 'general'
             }
           }).catch(err => {
-            console.warn('⚠️ Lesson homework navigation failed:', err)
             router.push({ 
               name: 'HomeworkList' 
             }).catch(err2 => {
@@ -832,7 +825,6 @@ export default {
       try {
         if (lessonOrchestrator.saveProgress) {
           lessonOrchestrator.saveProgress().catch(err => {
-            console.warn('⚠️ Failed to save progress on exit:', err)
           })
         }
         
@@ -963,7 +955,6 @@ export default {
             })
           })
         } catch (analyticsError) {
-          console.warn('Analytics logging failed:', analyticsError)
         }
         
         window.open(telegramLink, '_blank')
@@ -1013,7 +1004,6 @@ export default {
       let vocabularyStep = step
 
       if (!vocabularyStep) {
-        console.warn('⚠️ No step provided to initializeVocabularyModal, using current step')
         vocabularyStep = lessonOrchestrator.currentStep.value
       }
 
@@ -1047,7 +1037,6 @@ export default {
           vocabulary.vocabularyModal.currentIndex = index
         }, 50)
       } else {
-        console.warn('⚠️ Invalid vocabulary word index:', index)
       }
     }
 
@@ -1081,7 +1070,6 @@ export default {
 
     const pronounceWord = (word) => {
       if (!word || typeof word !== 'string') {
-        console.warn('⚠️ Invalid word for pronunciation:', word)
         return
       }
       try {
@@ -1094,7 +1082,6 @@ export default {
           utterance.onerror = (event) => console.error('❌ Pronunciation error:', event.error)
           window.speechSynthesis.speak(utterance)
         } else {
-          console.warn('⚠️ Speech synthesis not supported')
           sound.pronounceWord?.(word)
         }
       } catch (error) {
@@ -1163,7 +1150,6 @@ export default {
       
       if (lessonOrchestrator.saveProgress) {
         lessonOrchestrator.saveProgress().catch(err => {
-          console.warn('⚠️ Failed to save progress after drop:', err)
         })
       }
     }
@@ -1210,7 +1196,6 @@ export default {
     const handleSubmitOrNext = async () => {
       const currentStep = lessonOrchestrator.currentStep.value
       if (!currentStep) {
-        console.warn('❌ No current step available')
         return
       }
       if (showCorrectAnswer.value) {
@@ -1416,7 +1401,6 @@ export default {
           if (extractionResult?.success) {
             showCompletionMessage(extractionResult)
           } else {
-            console.warn('⚠️ Content extraction failed, but lesson still completed')
             lessonOrchestrator.lessonCompleted.value = true
           }
         }

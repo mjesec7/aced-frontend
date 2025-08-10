@@ -401,7 +401,6 @@ export default {
         
         return finalStatus;
       } catch (error) {
-        console.warn('⚠️ Error in currentUserStatus computed:', error);
         return this.safeUserStatus || 'free';
       }
     },
@@ -563,7 +562,6 @@ export default {
               break;
             }
           } catch (error) {
-            console.warn('⚠️ Error getting status from source:', error);
           }
         }
         
@@ -612,7 +610,6 @@ export default {
           this.handleUserStatusChange(newPlan, this.safeUserStatus);
         }
       } catch (error) {
-        console.warn('⚠️ Error handling store user change:', error);
       }
     },
 
@@ -625,7 +622,6 @@ export default {
           this.handleUserStatusChange(newPlan, this.safeUserStatus);
         }
       } catch (error) {
-        console.warn('⚠️ Error handling vuex user change:', error);
       }
     },
 
@@ -669,7 +665,6 @@ export default {
               this.handleUserStatusChange(detail.plan, detail.oldPlan || this.safeUserStatus);
             }
           } catch (error) {
-            console.warn('⚠️ Error handling subscription change:', error);
           }
         };
         
@@ -688,7 +683,6 @@ export default {
               this.handleUserStatusChange(event.newValue, event.oldValue || this.safeUserStatus);
             }
           } catch (error) {
-            console.warn('⚠️ Error handling storage change:', error);
           }
         };
         
@@ -728,7 +722,6 @@ export default {
               this.handleUserStatusChange(currentStatus, this.safeUserStatus);
             }
           } catch (error) {
-            console.warn('⚠️ Error handling generic status change:', error);
           }
         };
 
@@ -753,7 +746,6 @@ export default {
               this.handleUserStatusChange(newStatus, oldStatus);
             }
           } catch (error) {
-            console.warn('⚠️ Error handling user status event:', error);
           }
         };
 
@@ -768,7 +760,6 @@ export default {
               this.handleUserStatusChange(currentStatus, this.safeUserStatus);
             }
           } catch (error) {
-            console.warn('⚠️ Error handling force update event:', error);
           }
         };
 
@@ -796,7 +787,6 @@ export default {
               });
             }
           } catch (error) {
-            console.warn('⚠️ Error setting up eventBus listener:', eventType, error);
           }
         });
 
@@ -820,7 +810,6 @@ export default {
                 }
               }
             } catch (error) {
-              console.warn('⚠️ Error handling store mutation:', error);
             }
           });
           
@@ -831,7 +820,6 @@ export default {
             }
           });
         } catch (error) {
-          console.warn('⚠️ Error setting up store subscription:', error);
         }
       }
 
@@ -875,7 +863,6 @@ export default {
         
         
       } catch (error) {
-        console.warn('⚠️ MainPage: Reactivity update failed:', error);
       }
     },
 
@@ -884,7 +871,6 @@ export default {
         try {
           cleanup();
         } catch (error) {
-          console.warn('⚠️ MainPage: Cleanup error:', error);
         }
       });
       this.statusEventListeners = [];
@@ -893,7 +879,6 @@ export default {
         try {
           this.storeUnsubscribe();
         } catch (error) {
-          console.warn('⚠️ Error unsubscribing from store:', error);
         }
         this.storeUnsubscribe = null;
       }
@@ -911,7 +896,6 @@ export default {
                        localStorage.getItem('userId');
       
       if (!storedId) {
-        console.warn('⚠️ No user ID found, redirecting to home');
         this.showNotification('Необходимо войти в систему', 'warning');
         this.$router.push('/');
         throw new Error('Authentication required');
@@ -968,7 +952,6 @@ export default {
             
             
           } catch (error) {
-            console.warn('⚠️ Auto-refresh failed:', error);
           }
         }
       }, this.config.autoRefreshInterval);
@@ -1135,7 +1118,6 @@ export default {
             userProgressData = progressResult.data;
           }
         } catch (progressError) {
-          console.warn('⚠️ Failed to load progress data:', progressError.message);
         }
         
         const validTopics = [];
@@ -1212,7 +1194,6 @@ export default {
 
     getTopicName(topic) {
       if (!topic) {
-        console.warn('⚠️ getTopicName: No topic provided');
         return 'Без названия';
       }
       
@@ -1585,7 +1566,6 @@ export default {
         try {
           cleanup();
         } catch (error) {
-          console.warn('⚠️ Event cleanup error:', error);
         }
       });
       this.eventCleanupFunctions = [];
@@ -2115,7 +2095,6 @@ export default {
           }
           return null;
         } catch (error) {
-          console.warn(`⚠️ Failed to enrich topic ${topic._id}:`, error.message);
           return null;
         }
       });
@@ -2200,7 +2179,6 @@ export default {
             }
           }
         } catch (topicError) {
-          console.warn(`⚠️ Failed to get fresh topic data for ${entry.topicId}:`, topicError.message);
           topicData.metadata.freshDataAvailable = false;
           topicData.metadata.freshDataError = topicError.message;
         }
@@ -2216,7 +2194,6 @@ export default {
               lessons = lessonsResult.data;
             }
           } catch (lessonsError) {
-            console.warn(`⚠️ Failed to get lessons for topic ${entry.topicId}:`, lessonsError.message);
           }
         }
         
@@ -2486,10 +2463,8 @@ export default {
           if (result?.success) {
             this.performanceMetrics.successfulOperations++;
           } else {
-            console.warn('⚠️ Backend removal failed but UI updated');
           }
         } catch (backendError) {
-          console.warn('⚠️ Backend removal failed:', backendError.message);
           this.performanceMetrics.failedOperations++;
           
           if (topicToRemove) {

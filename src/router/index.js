@@ -55,7 +55,6 @@ const getEffectiveUserPlan = () => {
         }
       }
     } catch (e) {
-      console.warn('⚠️ Router: Failed to parse subscription data');
     }
   }
   
@@ -65,13 +64,11 @@ const getEffectiveUserPlan = () => {
   // Handle invalid statuses
   if (effectiveStatus === 'undefined' || effectiveStatus === null || effectiveStatus === undefined || effectiveStatus === '') {
     effectiveStatus = subscriptionPlan || localStatus || 'free';
-    console.warn('⚠️ Router: Invalid status detected, using fallback:', effectiveStatus);
   }
   
   // Validate the plan value
   const validPlans = ['free', 'start', 'pro'];
   if (!validPlans.includes(effectiveStatus)) {
-    console.warn('⚠️ Router: Invalid plan value:', effectiveStatus);
     effectiveStatus = localStatus && validPlans.includes(localStatus) ? localStatus : 'free';
   }
   
@@ -151,7 +148,6 @@ const routes = [
           const hasAccess = hasFeatureAccess('analytics', ['pro']); // Analytics requires Pro only
           
           if (!hasAccess) {
-            console.warn('❌ Router: Analytics access denied - redirecting to payment');
             
             sessionStorage.setItem('intendedRoute', JSON.stringify({
               path: to.path,
@@ -396,7 +392,6 @@ const routes = [
           const hasAccess = hasFeatureAccess('vocabulary', ['start', 'pro']);
           
           if (!hasAccess) {
-            console.warn('❌ Router: Vocabulary access denied - redirecting to payment');
             
             // Store the intended destination for after subscription
             sessionStorage.setItem('intendedRoute', JSON.stringify({
@@ -456,7 +451,6 @@ const routes = [
       
       const isLoggedIn = store.getters.isLoggedIn;
       if (!isLoggedIn) {
-        console.warn('❌ Payment requires authentication');
         return next({ 
           name: 'HomePage',
           query: { 
@@ -513,7 +507,6 @@ const routes = [
             await store.dispatch('user/updateUserStatus', to.query.plan);
           }
         } catch (err) {
-          console.warn('⚠️ Failed to update user status:', err);
         }
       }
       
@@ -787,7 +780,6 @@ router.beforeEach(async (to, from, next) => {
     const { authInitPromise } = await import('@/main.js'); 
     await authInitPromise;
   } catch (err) {
-    console.warn('⚠️ Router: Auth wait failed, proceeding anyway:', err);
   }
 
   const isLoggedIn = store.getters.isLoggedIn;
@@ -795,7 +787,6 @@ router.beforeEach(async (to, from, next) => {
 
   // ✅ AUTHENTICATION CHECKS (only after auth is ready)
   if (requiresAuth && !isLoggedIn) {
-    console.warn('❌ Authentication required. Redirecting to home with Login prompt.');
     return next({ 
       name: 'HomePage',
       query: { 
@@ -808,7 +799,6 @@ router.beforeEach(async (to, from, next) => {
   // ✅ PAYMENT ROUTE SPECIFIC CHECKS
   if (to.name === 'PaymePayment') {
     if (!isLoggedIn) {
-      console.warn('❌ Payment requires authentication');
       return next({ 
         name: 'HomePage',
         query: { 
@@ -832,13 +822,11 @@ router.beforeEach(async (to, from, next) => {
     try {
       await store.dispatch('user/checkPendingPayments');
     } catch (err) {
-      console.warn('⚠️ Failed to check pending payments:', err);
     }
   }
 
   // ✅ PROFILE ROUTE CHECKS
   if (!isPublic && !isLoggedIn && to.path.startsWith('/profile')) {
-    console.warn('❌ Profile access requires authentication.');
     return next({ 
       name: 'HomePage',
       query: { 
@@ -877,7 +865,6 @@ router.afterEach((to, from) => {
     
     if (!lastCheck || (now - lastCheck) > fiveMinutes) {
       store.dispatch('user/checkPendingPayments').catch(err => {
-        console.warn('⚠️ Auto payment check failed:', err);
       });
     }
   }

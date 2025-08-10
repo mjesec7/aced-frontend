@@ -514,7 +514,6 @@ export default {
         
         return status;
       } catch (e) {
-        console.warn('⚠️ Error getting userStatus:', e);
         return localStorage.getItem('userStatus') || 'free';
       }
     },
@@ -560,7 +559,6 @@ export default {
         
         return details;
       } catch (e) {
-        console.warn('⚠️ Error getting subscriptionDetails:', e);
         return { 
           plan: this.currentPlan,
           status: this.currentPlan !== 'free' ? 'active' : 'inactive',
@@ -666,7 +664,6 @@ export default {
         const promocodes = this.$store.getters['user/appliedPromocodes'];
         return Array.isArray(promocodes) ? promocodes : [];
       } catch (e) {
-        console.warn('⚠️ Error getting appliedPromocodes:', e);
         return [];
       }
     },
@@ -688,7 +685,6 @@ export default {
         const history = this.$store.getters['user/paymentHistory'];
         return Array.isArray(history) ? history : [];
       } catch (e) {
-        console.warn('⚠️ Error getting paymentHistory:', e);
         return [];
       }
     },
@@ -710,7 +706,6 @@ export default {
         const usage = this.$store.getters['user/currentUsage'];
         return (usage && typeof usage === 'object') ? usage : { messages: 0, images: 0 };
       } catch (e) {
-        console.warn('⚠️ Error getting currentUsage:', e);
         return { messages: 0, images: 0 };
       }
     },
@@ -731,7 +726,6 @@ export default {
         const limits = this.$store.getters['user/usageLimits'];
         return (limits && typeof limits === 'object') ? limits : { messages: 50, images: 5 };
       } catch (e) {
-        console.warn('⚠️ Error getting usageLimits:', e);
         return { messages: 50, images: 5 };
       }
     },
@@ -1125,7 +1119,6 @@ export default {
         
         
       } catch (error) {
-        console.warn('⚠️ AcedSettings: Reactivity update failed:', error);
       }
     },
 
@@ -1152,7 +1145,6 @@ export default {
         try {
           cleanup();
         } catch (error) {
-          console.warn('⚠️ AcedSettings: Cleanup error:', error);
         }
       });
       this.statusEventListeners = [];
@@ -1197,7 +1189,6 @@ export default {
           await this.$store.dispatch('user/loadUserStatus');
         }
       } catch (error) {
-        console.warn('⚠️ Failed to load initial data:', error);
       }
     },
     
@@ -1301,7 +1292,6 @@ export default {
             }
           }
         } catch (storeError) {
-          console.warn('⚠️ Store validation failed:', storeError.message);
         }
         
         // Direct API call fallback
@@ -1369,7 +1359,6 @@ export default {
                   break; // Success, stop trying other endpoints
                 }
               } else {
-                console.warn(`⚠️ API endpoint ${endpoint} failed with status:`, response.status);
                 
                 if (response.status === 404) {
                   continue;
@@ -1377,7 +1366,6 @@ export default {
                 
                 try {
                   const errorData = await response.json();
-                  console.warn('API error details:', errorData);
                   
                   if (response.status === 400 || response.status === 422) {
                     validationResult = {
@@ -1387,11 +1375,9 @@ export default {
                     break;
                   }
                 } catch (jsonError) {
-                  console.warn('Failed to parse error response:', jsonError);
                 }
               }
             } catch (endpointError) {
-              console.warn(`⚠️ Endpoint ${endpoint} failed:`, endpointError.message);
               continue;
             }
           }
@@ -1409,7 +1395,6 @@ export default {
           }
           
         } catch (apiError) {
-          console.warn('⚠️ All API validation attempts failed:', apiError.message);
         }
         
         // If all backend attempts fail, show appropriate error
@@ -1516,7 +1501,6 @@ export default {
         
         return '';
       } catch (error) {
-        console.warn('⚠️ Failed to get auth header:', error);
         return '';
       }
     },
@@ -1586,7 +1570,6 @@ export default {
               });
               window.dispatchEvent(event);
             } catch (domEventError) {
-              console.warn('⚠️ DOM event failed:', domEventError);
             }
             
             // Method 2: Event bus
@@ -1600,7 +1583,6 @@ export default {
                 });
               }
             } catch (eventBusError) {
-              console.warn('⚠️ Event bus failed:', eventBusError);
             }
           }
           
@@ -1608,7 +1590,6 @@ export default {
           
         } else {
           // Handle store action failure
-          console.warn('⚠️ Store applyPromocode action failed:', result);
           
           const errorMessage = result?.error || result?.message || 'Не удалось применить промокод';
           this.showNotification(errorMessage, 'error');
@@ -1675,7 +1656,6 @@ export default {
               serverSuccess = true;
               break;
             } else {
-              console.warn(`⚠️ Endpoint ${endpoint} failed:`, serverResult?.error || 'Unknown error');
               
               if (response.status === 400 || response.status === 422) {
                 const errorMsg = serverResult?.error || serverResult?.message || 'Неверный промокод';
@@ -1688,7 +1668,6 @@ export default {
               }
             }
           } catch (endpointError) {
-            console.warn(`⚠️ Apply endpoint ${endpoint} failed:`, endpointError.message);
             continue;
           }
         }
@@ -1767,7 +1746,6 @@ export default {
           });
           window.dispatchEvent(event);
         } catch (domEventError) {
-          console.warn('⚠️ DOM event failed:', domEventError);
         }
         
         // Method 2: Event bus
@@ -1781,7 +1759,6 @@ export default {
             });
           }
         } catch (eventBusError) {
-          console.warn('⚠️ Event bus failed:', eventBusError);
         }
         
         // Method 3: Global trigger function
@@ -1795,7 +1772,6 @@ export default {
             });
           }
         } catch (globalTriggerError) {
-          console.warn('⚠️ Global trigger failed:', globalTriggerError);
         }
       }
     },
@@ -1930,7 +1906,6 @@ export default {
       try {
         return new Date(date).toLocaleDateString('ru-RU');
       } catch (error) {
-        console.warn('⚠️ Invalid date format:', date);
         return '';
       }
     },
@@ -1939,7 +1914,6 @@ export default {
       try {
         return new Intl.NumberFormat('ru-RU').format(amount) + ' сум';
       } catch (error) {
-        console.warn('⚠️ Invalid amount format:', amount);
         return amount + ' сум';
       }
     },
