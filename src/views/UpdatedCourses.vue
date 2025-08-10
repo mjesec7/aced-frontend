@@ -1,6 +1,5 @@
 <template>
     <div class="updated-courses-container">
-      <!-- Hero Section -->
       <div class="hero-section">
         <div class="hero-content">
           <div class="hero-text">
@@ -42,7 +41,6 @@
         </div>
       </div>
   
-      <!-- Filters Section -->
       <div class="filters-section">
         <div class="container">
           <div class="filters-header">
@@ -53,7 +51,6 @@
           </div>
           
           <div class="filters-grid">
-            <!-- Category Filter -->
             <div class="filter-group">
               <label class="filter-label">Категория</label>
               <div class="filter-options">
@@ -69,7 +66,6 @@
               </div>
             </div>
   
-            <!-- Difficulty Filter -->
             <div class="filter-group">
               <label class="filter-label">Уровень сложности</label>
               <div class="filter-options">
@@ -85,7 +81,6 @@
               </div>
             </div>
   
-            <!-- Duration Filter -->
             <div class="filter-group">
               <label class="filter-label">Длительность</label>
               <div class="filter-options">
@@ -101,7 +96,6 @@
               </div>
             </div>
   
-            <!-- Search -->
             <div class="filter-group search-group">
               <label class="filter-label">Поиск</label>
               <div class="search-input-container">
@@ -118,7 +112,6 @@
         </div>
       </div>
   
-      <!-- Courses Grid -->
       <div class="courses-section">
         <div class="container">
           <div class="section-header">
@@ -143,6 +136,9 @@
               <div class="course-image">
                 <img :src="course.thumbnail" :alt="course.title" />
                 <div class="course-overlay">
+                  <div v-if="course.isPremium" class="premium-badge-overlay">
+                    PRO
+                  </div>
                   <div class="course-category">{{ course.category }}</div>
                   <div class="course-duration">{{ course.duration }}</div>
                 </div>
@@ -191,14 +187,19 @@
                     <button class="btn-secondary" @click.stop="toggleBookmark(course)">
                       {{ course.bookmarked ? '❤️' : '🤍' }}
                     </button>
-                    <button class="btn-primary">Начать</button>
+                    <button 
+                      class="btn-primary" 
+                      :class="{ 'premium-course': course.isPremium }"
+                      @click.stop="handleCourseStart(course)"
+                    >
+                      Начать
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
   
-          <!-- Empty State -->
           <div v-else class="empty-state">
             <div class="empty-icon">🔍</div>
             <h3>Курсы не найдены</h3>
@@ -208,7 +209,6 @@
         </div>
       </div>
   
-      <!-- Course Modal -->
       <div v-if="selectedCourse" class="course-modal-overlay" @click="closeCourseModal">
         <div class="course-modal" @click.stop>
           <div class="modal-header">
@@ -281,17 +281,42 @@
               <button class="btn-secondary" @click="toggleBookmark(selectedCourse)">
                 {{ selectedCourse.bookmarked ? 'Удалить из избранного' : 'Добавить в избранное' }}
               </button>
-              <button class="btn-primary btn-large">Начать обучение</button>
+              <button 
+                class="btn-primary btn-large" 
+                :class="{ 'premium-course': selectedCourse.isPremium }"
+                @click="handleCourseStart(selectedCourse)"
+              >
+                Начать обучение
+              </button>
             </div>
           </div>
         </div>
       </div>
+  
+      <PaymentModal
+        v-if="showPaymentModal"
+        :visible="showPaymentModal"
+        :userId="currentUserId"
+        :defaultPlan="requiredPlan"
+        :requestedTopicId="selectedCourseId"
+        @close="closePaymentModal"
+        @unlocked="handleCourseUnlocked"
+        @payment-initiated="handlePaymentInitiated"
+      />
     </div>
   </template>
   
   <script>
+  import PaymentModal from '@/components/Modals/PaymentModal.vue';
+  import { mapState, mapGetters } from 'vuex';
+  
   export default {
     name: 'UpdatedCourses',
+    
+    components: {
+      PaymentModal
+    },
+    
     data() {
       return {
         searchQuery: '',
@@ -300,6 +325,11 @@
         selectedDuration: '',
         sortBy: 'newest',
         selectedCourse: null,
+        
+        // ✅ NEW: Payment Modal State
+        showPaymentModal: false,
+        selectedCourseId: null,
+        requiredPlan: 'pro', // Default to pro for premium courses
         
         categories: ['ИИ и автоматизация', 'Видеомонтаж', 'Графический дизайн', 'Web-разработка', 'Мобильная разработка', 'Машинное обучение'],
         difficultyLevels: ['Начинающий', 'Средний', 'Продвинутый'],
@@ -318,6 +348,7 @@
             students: '2.3k',
             rating: '4.8',
             bookmarked: false,
+            isPremium: true, // ✅ NEW: Premium course
             tools: ['OpenAI API', 'Python', 'Flask', 'React', 'Docker'],
             instructor: {
               name: 'Алексей Петров',
@@ -344,6 +375,7 @@
             students: '1.8k',
             rating: '4.9',
             bookmarked: true,
+            isPremium: true, // ✅ NEW: Premium course
             tools: ['DaVinci Resolve', 'Fusion', 'Fairlight', 'Color Grading'],
             instructor: {
               name: 'Мария Соколова',
@@ -371,6 +403,7 @@
             students: '3.5k',
             rating: '4.7',
             bookmarked: false,
+            isPremium: false, // ✅ Free course
             tools: ['Midjourney', 'DALL-E', 'Stable Diffusion', 'Photoshop'],
             instructor: {
               name: 'Дмитрий Козлов',
@@ -397,6 +430,7 @@
             students: '1.2k',
             rating: '4.8',
             bookmarked: true,
+            isPremium: true, // ✅ NEW: Premium course
             tools: ['Next.js', 'TypeScript', 'Prisma', 'Stripe', 'Vercel'],
             instructor: {
               name: 'Сергей Иванов',
@@ -425,6 +459,7 @@
             students: '2.1k',
             rating: '4.6',
             bookmarked: false,
+            isPremium: false, // ✅ Free course
             tools: ['React Native', 'Expo', 'TypeScript', 'Firebase', 'Redux'],
             instructor: {
               name: 'Анна Волкова',
@@ -452,6 +487,7 @@
             students: '1.5k',
             rating: '4.9',
             bookmarked: false,
+            isPremium: true, // ✅ NEW: Premium course
             tools: ['Python', 'TensorFlow', 'Keras', 'Pandas', 'NumPy', 'Jupyter'],
             instructor: {
               name: 'Игорь Смирнов',
@@ -469,10 +505,41 @@
             ]
           }
         ]
-      }
+      };
     },
   
     computed: {
+      ...mapState(['user']),
+      ...mapGetters('user', ['userStatus', 'isPremiumUser', 'isStartUser', 'isProUser']),
+  
+      // ✅ NEW: Get current user ID
+      currentUserId() {
+        return this.user?.uid || this.$store.getters['user/getUserId'] || localStorage.getItem('firebaseUserId');
+      },
+  
+      // ✅ NEW: Get current user plan
+      currentUserPlan() {
+        const storeStatus = this.userStatus;
+        const localStatus = localStorage.getItem('userStatus');
+        const subscriptionData = localStorage.getItem('subscriptionData');
+        
+        let subscriptionPlan = null;
+        if (subscriptionData) {
+          try {
+            const parsed = JSON.parse(subscriptionData);
+            const now = new Date();
+            const expiry = parsed.expiryDate ? new Date(parsed.expiryDate) : null;
+            if (parsed.plan && expiry && now < expiry && parsed.plan !== 'free') {
+              subscriptionPlan = parsed.plan;
+            }
+          } catch (e) {
+            console.error('Error parsing subscription data:', e);
+          }
+        }
+        
+        return subscriptionPlan || storeStatus || localStatus || 'free';
+      },
+  
       filteredCourses() {
         let filtered = this.courses;
   
@@ -532,7 +599,8 @@
   
       totalDuration() {
         return this.filteredCourses.reduce((total, course) => {
-          return total + parseInt(course.duration);
+          const durationValue = parseInt(course.duration);
+          return total + (isNaN(durationValue) ? 0 : durationValue);
         }, 0);
       },
   
@@ -602,6 +670,109 @@
       toggleBookmark(course) {
         course.bookmarked = !course.bookmarked;
         // Here you would typically make an API call to save the bookmark status
+        
+        if (this.$toast) {
+          const message = course.bookmarked ? 
+            'Курс добавлен в избранное' : 
+            'Курс удален из избранного';
+          this.$toast.success(message, { duration: 2000 });
+        }
+      },
+  
+      // ✅ NEW: Check if user has access to specific course
+      hasAccessToCourse(course) {
+        if (!course.isPremium) {
+          return true; // Free courses are always accessible
+        }
+        
+        const plan = this.currentUserPlan;
+        return ['start', 'pro'].includes(plan);
+      },
+  
+      // ✅ NEW: Handle course start action
+      handleCourseStart(course) {
+        console.log('🎓 Starting course:', course.title);
+        console.log('👤 User plan:', this.currentUserPlan);
+        console.log('🔒 Is premium course:', course.isPremium);
+        
+        // Check if user has access to the course
+        if (course.isPremium && !this.hasAccessToCourse(course)) {
+          // Show payment modal for premium courses
+          this.selectedCourseId = course.id.toString();
+          this.requiredPlan = 'pro'; // Premium courses require Pro plan
+          this.showPaymentModal = true;
+          
+          // Close course modal if open
+          if (this.selectedCourse) {
+            this.closeCourseModal();
+          }
+          
+          console.log('💳 Showing payment modal for premium course');
+          return;
+        }
+        
+        // User has access - start the course
+        this.startCourse(course);
+      },
+  
+      // ✅ NEW: Start course (redirect to course content)
+      startCourse(course) {
+        console.log('🚀 Starting course:', course.title);
+        
+        // Here you would typically navigate to the course content page
+        // For now, we'll show a success message
+        if (this.$toast) {
+          this.$toast.success(`Начинаем курс: ${course.title}`, {
+            duration: 3000,
+            position: 'top-center'
+          });
+        }
+        
+        // Example navigation (replace with your actual course route)
+        // this.$router.push({ 
+        //  name: 'CourseContent', 
+        //  params: { courseId: course.id }
+        // });
+        
+        // Close modals
+        this.closeCourseModal();
+      },
+  
+      // ✅ NEW: Close payment modal
+      closePaymentModal() {
+        this.showPaymentModal = false;
+        this.selectedCourseId = null;
+      },
+  
+      // ✅ NEW: Handle successful course unlock
+      handleCourseUnlocked(data) {
+        console.log('🔓 Course unlocked:', data);
+        
+        this.closePaymentModal();
+        
+        // Find the course that was unlocked
+        const course = this.courses.find(c => c.id.toString() === this.selectedCourseId);
+        if (course) {
+          // Start the course immediately after unlock
+          setTimeout(() => {
+            this.startCourse(course);
+          }, 1000);
+        }
+        
+        // Update user status in store if needed
+        if (data.plan) {
+          this.$store.commit('user/SET_USER_STATUS', data.plan);
+          localStorage.setItem('userStatus', data.plan);
+        }
+      },
+  
+      // ✅ NEW: Handle payment initiated
+      handlePaymentInitiated(data) {
+        console.log('💳 Payment initiated:', data);
+        
+        // The PaymentModal will handle navigation to payment page
+        // We just need to close our modal
+        this.closePaymentModal();
       }
     },
   
@@ -978,6 +1149,8 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
   
   .course-category {
@@ -1425,6 +1598,53 @@
     display: flex;
     gap: 1rem;
     justify-content: flex-end;
+  }
+  
+  /* ✅ NEW: Premium Course Styling */
+  .premium-badge-overlay {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  }
+  
+  .btn-primary.premium-course {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border: 1px solid #f59e0b;
+  }
+  
+  .btn-primary.premium-course:hover {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+  }
+  
+  .course-card:has(.premium-badge-overlay) {
+    border: 2px solid #f59e0b20;
+  }
+  
+  .course-card:has(.premium-badge-overlay):hover {
+    border-color: #f59e0b;
+    box-shadow: 0 20px 40px rgba(245, 158, 11, 0.15);
+  }
+  
+  /* Enhanced course overlay positioning */
+  .course-overlay {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    right: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
   
   /* Responsive Design */
