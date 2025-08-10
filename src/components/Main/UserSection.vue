@@ -294,7 +294,6 @@ export default {
         
         // ✅ Only show warning if backend sync failed, not error
         if (saveResult.warning) {
-          console.info('ℹ️ Auth completed with warning:', saveResult.warning);
           // Don't show error to user - auth still worked
         } else {
         }

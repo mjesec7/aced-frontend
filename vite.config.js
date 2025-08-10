@@ -11,7 +11,11 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist'
+    outDir: 'dist',
+    sourcemap: false, // 🛑 Added to disable source maps
+    esbuild: {
+      drop: ['console', 'debugger'], // 🛑 Added to remove console and debugger statements
+    },
   },
   server: {
     historyApiFallback: true // ✅ Handles SPA routes in dev
