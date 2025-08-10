@@ -47,6 +47,7 @@
               <span class="link-content">
                 {{ link.label }}
                 <span v-if="link.premium && !hasAccessToFeature(link.feature)" class="premium-badge">✨</span>
+                <span v-if="link.name === 'updated-courses'" class="new-badge">NEW</span>
               </span>
             </router-link>
             
@@ -97,6 +98,7 @@
               <li v-if="selectedFeature?.name === 'analytics'">📊 Детальная статистика прогресса</li>
               <li v-if="selectedFeature?.name === 'homework'">🤖 ИИ-помощник для ДЗ</li>
               <li v-if="selectedFeature?.name === 'tests'">📝 Безлимитные тесты</li>
+              <li v-if="selectedFeature?.name === 'updated-courses'">🚀 Доступ к трендовым курсам</li>
             </ul>
           </div>
           <div class="debug-info" v-if="$store.state.isDev">
@@ -151,7 +153,7 @@ export default {
       showUpgradeModal: false,
       selectedFeature: null,
       
-      // ✅ ENHANCED: Links with fixed access control configuration
+      // ✅ ENHANCED: Links with Updated Courses and fixed access control configuration
       links: [
         { 
           name: 'analytics', 
@@ -173,6 +175,13 @@ export default {
           feature: 'diary',
           premium: false, // Free for everyone
           requiredPlans: ['free', 'start', 'pro']
+        },
+        { 
+          name: 'updated-courses', 
+          label: 'Актуальные курсы', 
+          feature: 'updated_courses',
+          premium: false, // Free for everyone (change to true if you want to make it premium)
+          requiredPlans: ['free', 'start', 'pro'] // Or ['start', 'pro'] if premium
         },
         { 
           name: 'homework', 
@@ -605,6 +614,12 @@ export default {
         forceUpdate: () => {
           this.triggerReactivityUpdate();
           return 'Reactivity updated';
+        },
+        
+        // Navigate to updated courses (for testing)
+        goToUpdatedCourses: () => {
+          this.$router.push('/profile/updated-courses');
+          return 'Navigated to Updated Courses';
         }
       };
       
@@ -860,7 +875,7 @@ export default {
       }
     },
     
-    // ✅ UPDATED: Route path logic to handle vocabulary correctly
+    // ✅ UPDATED: Route path logic to handle updated courses and vocabulary correctly
     getRoutePath(linkName) {
       if (linkName === 'settings') {
         return '/settings';
@@ -869,10 +884,14 @@ export default {
       if (linkName === 'vocabulary') {
         return '/profile/vocabulary';
       }
+      // ✅ NEW: Updated courses route
+      if (linkName === 'updated-courses') {
+        return '/profile/updated-courses';
+      }
       return `/profile/${linkName}`;
     },
     
-    // ✅ UPDATED: Active check logic to handle vocabulary correctly
+    // ✅ UPDATED: Active check logic to handle updated courses and vocabulary correctly
     isActive(name) {
       const path = this.$route.path;
       
@@ -883,7 +902,8 @@ export default {
         goal: ['/profile/goal'],
         diary: ['/profile/diary'],
         settings: ['/settings'],
-        vocabulary: ['/profile/vocabulary'] // ✅ FIXED: Updated to profile vocabulary path
+        vocabulary: ['/profile/vocabulary'], // ✅ FIXED: Updated to profile vocabulary path
+        'updated-courses': ['/profile/updated-courses'] // ✅ NEW: Updated courses path
       };
       
       const startsWithMatches = {
@@ -1141,6 +1161,24 @@ export default {
   opacity: 0.7;
 }
 
+/* ✅ NEW: New badge for Updated Courses */
+.new-badge {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  animation: pulse-new 2s ease-in-out infinite;
+}
+
+@keyframes pulse-new {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.9; }
+}
+
 .bottom-logout {
   padding: 16px;
   border-top: 1px solid #e5e7eb;
@@ -1167,7 +1205,7 @@ export default {
   transform: translateY(-1px);
 }
 
-/* ✅ NEW: Upgrade Modal Styles */
+/* ✅ ENHANCED: Upgrade Modal Styles with Metallic Purple Theme */
 .upgrade-modal {
   position: fixed;
   top: 0;

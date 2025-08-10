@@ -6,6 +6,7 @@ import HomePage from '@/views/HomePage.vue';
 import ProfilePage from '@/views/ProfilePage.vue';
 import AcedSettings from '@/components/Main/AcedSettings.vue';
 import VocabularyPage from '@/views/VocabularyPage.vue';
+import UpdatedCourses from '@/views/UpdatedCourses.vue';
 
 // ✅ Profile Sub-Pages
 import MainPage from '@/components/Profile/MainPage.vue';
@@ -135,6 +136,47 @@ const routes = [
         component: CataloguePage,
         meta: { title: 'Каталог' }
       },
+      
+      // ✅ NEW: Updated Courses Route
+      { 
+        path: 'updated-courses', 
+        name: 'UpdatedCourses', 
+        component: UpdatedCourses,
+        meta: { 
+          title: 'Актуальные курсы',
+          description: 'Изучайте новейшие технологии и инструменты - от создания ИИ-помощников до современных методов редактирования'
+        }
+        // No beforeEnter - free for everyone by default
+        // Add access control here if you want to make it premium:
+        /*
+        beforeEnter: async (to, from, next) => {
+          const hasAccess = hasFeatureAccess('updated_courses', ['start', 'pro']);
+          
+          if (!hasAccess) {
+            sessionStorage.setItem('intendedRoute', JSON.stringify({
+              path: to.path,
+              name: to.name,
+              params: to.params,
+              query: to.query
+            }));
+            
+            return next({ 
+              name: 'PaymePayment',
+              params: { plan: 'start' },
+              query: { 
+                feature: 'updated_courses',
+                requiredPlan: 'start',
+                returnTo: to.path,
+                message: 'Актуальные курсы доступны с подпиской Start'
+              }
+            });
+          }
+          
+          next();
+        }
+        */
+      },
+      
       { 
         path: 'analytics', 
         name: 'UserAnalyticsPanel', 
@@ -377,7 +419,7 @@ const routes = [
         }
       },
       
-      // ✅ NEW: VOCABULARY ROUTE MOVED INSIDE PROFILE WITH FULL ACCESS CONTROL
+      // ✅ VOCABULARY ROUTE MOVED INSIDE PROFILE WITH FULL ACCESS CONTROL
       { 
         path: 'vocabulary', 
         name: 'ProfileVocabularyPage', 
@@ -847,7 +889,7 @@ router.afterEach((to, from) => {
   document.title = to.meta.title ? `${to.meta.title} - ACED` : baseTitle;
   
   // Enhanced logging for specific route types
-  if (to.name && (to.name.includes('Vocabulary') || to.name.includes('Analytics'))) {
+  if (to.name && (to.name.includes('Vocabulary') || to.name.includes('Analytics') || to.name.includes('UpdatedCourses'))) {
   } 
   else if (to.name && (to.name.includes('Payme') || to.name.includes('Payment'))) {
   }
@@ -865,6 +907,7 @@ router.afterEach((to, from) => {
     
     if (!lastCheck || (now - lastCheck) > fiveMinutes) {
       store.dispatch('user/checkPendingPayments').catch(err => {
+        console.error('❌ Failed to check pending payments:', err);
       });
     }
   }
@@ -888,6 +931,10 @@ router.onError((err) => {
   
   if (err.message.includes('payment') || err.message.includes('Payment')) {
     console.error('💳 Payment route error:', err);
+  }
+  
+  if (err.message.includes('courses') || err.message.includes('UpdatedCourses')) {
+    console.error('📚 Updated Courses route error:', err);
   }
   
   // Generic error handling
@@ -930,6 +977,27 @@ export const navigateToSettings = (options = {}) => {
     ...(returnTo && { query: { returnTo } })
   };
   
+  
+  if (routerInstance) {
+    return routerInstance.push(route);
+  } else {
+    return router.push(route);
+  }
+};
+
+// ✅ UPDATED COURSES NAVIGATION HELPER
+export const navigateToUpdatedCourses = (options = {}) => {
+  const { router: routerInstance, category, difficulty } = options;
+  
+  const route = {
+    name: 'UpdatedCourses',
+    ...(category || difficulty) && { 
+      query: { 
+        ...(category && { category }),
+        ...(difficulty && { difficulty })
+      } 
+    }
+  };
   
   if (routerInstance) {
     return routerInstance.push(route);
@@ -983,6 +1051,14 @@ export const checkVocabularyAccess = () => {
   return ['start', 'pro', 'premium'].includes(effectiveStatus);
 };
 
+// ✅ UPDATED COURSES ACCESS HELPER
+export const checkUpdatedCoursesAccess = () => {
+  const effectiveStatus = getEffectiveUserPlan();
+  // By default, Updated Courses is free for everyone
+  // Change this if you want to make it premium
+  return true; // or return ['start', 'pro', 'premium'].includes(effectiveStatus);
+};
+
 // ✅ FEATURE ACCESS HELPERS
 export const getFeatureAccess = (feature) => {
   const effectiveStatus = getEffectiveUserPlan();
@@ -993,6 +1069,7 @@ export const getFeatureAccess = (feature) => {
     goals: ['start', 'pro', 'premium'],
     homework_help: ['start', 'pro', 'premium'],
     tests: ['start', 'pro', 'premium'],
+    updated_courses: ['free', 'start', 'pro', 'premium'], // Free for everyone by default
     advanced_lessons: ['start', 'pro', 'premium'],
     unlimited_practice: ['pro', 'premium'],
     priority_support: ['start', 'pro', 'premium'],
@@ -1023,6 +1100,12 @@ if (typeof window !== 'undefined') {
       return hasAccess;
     },
     
+    // Check updated courses access
+    checkUpdatedCourses: () => {
+      const hasAccess = checkUpdatedCoursesAccess();
+      return hasAccess;
+    },
+    
     // Get all status sources
     getAllSources: () => {
       const storeStatus = store.getters['user/userStatus'];
@@ -1049,10 +1132,15 @@ if (typeof window !== 'undefined') {
     // Force navigation to vocabulary (for testing) - Updated to use profile path
     goToVocabulary: () => {
       router.push('/profile/vocabulary');
+    },
+    
+    // Force navigation to updated courses (for testing)
+    goToUpdatedCourses: () => {
+      router.push('/profile/updated-courses');
     }
   };
   
-
+  console.log('🚀 Router debug tools available at window.routerDebug');
 }
 
 export default router;
