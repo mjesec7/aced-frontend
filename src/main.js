@@ -302,7 +302,7 @@ async function handleUserAuthenticated(firebaseUser) {
   console.log('🔐 Processing authenticated user:', firebaseUser.uid);
 
   try {
-    // Get Firebase ID token
+    // Get Firebase ID token with retries
     let token;
     let tokenRetries = 3;
 
@@ -316,6 +316,7 @@ async function handleUserAuthenticated(firebaseUser) {
       } catch (tokenError) {
         tokenRetries--;
         if (tokenRetries === 0) {
+          console.warn('⚠️ Token retrieval failed, using basic auth');
           await handleBasicUserAuthentication(firebaseUser);
           return;
         }
@@ -334,63 +335,95 @@ async function handleUserAuthenticated(firebaseUser) {
       lastLoginAt: new Date().toISOString()
     };
 
-    console.log('📤 Saving user to server...');
+    console.log('📤 Saving user to backend...');
 
-    // ✅ CRITICAL: Try to save user and get server status
-    let saveResult;
+    // ✅ CRITICAL FIX: Robust saveUser with proper error handling
+    let saveResult = null;
     let saveRetries = 2;
 
     while (saveRetries > 0) {
       try {
-        saveResult = await store.dispatch('user/saveUser', { userData, token });
+        console.log(`🔄 Save attempt ${3 - saveRetries + 1}/2`);
+        
+        // ✅ Call store saveUser action with proper error handling
+        const storeResult = await store.dispatch('user/saveUser', { userData, token });
 
-        if (saveResult && saveResult.success === true && saveResult.user) {
-          console.log('✅ User saved successfully with status:', saveResult.user.subscriptionPlan);
-          break;
-        } else {
-          if (saveRetries === 1) {
-            // Before fallback, try to get status from server
-            const serverStatus = await fetchUserStatusFromServer(firebaseUser.uid, token);
-            await handleBasicUserAuthentication(firebaseUser, token, serverStatus);
-            return;
+        // ✅ CRITICAL: Validate result object structure
+        if (storeResult && typeof storeResult === 'object') {
+          if (storeResult.success === true && storeResult.user && typeof storeResult.user === 'object') {
+            console.log('✅ User save successful:', storeResult.source || 'unknown');
+            saveResult = storeResult;
+            break;
+          } else if (storeResult.success === false) {
+            console.warn('⚠️ Save failed with error:', storeResult.error);
+            throw new Error(storeResult.error || 'Save returned failure');
+          } else {
+            console.warn('⚠️ Save result invalid structure:', storeResult);
+            throw new Error('Save result has invalid structure');
           }
-          throw new Error(saveResult.error || 'Server returned failure');
+        } else {
+          console.warn('⚠️ Save result is not an object:', typeof storeResult, storeResult);
+          throw new Error('Save result is not a valid object');
         }
 
       } catch (saveError) {
-        console.error('❌ Save attempt failed:', saveError.message);
+        console.warn(`❌ Save attempt ${3 - saveRetries + 1} failed:`, saveError.message);
         saveRetries--;
 
         if (saveRetries === 0) {
-          const serverStatus = await fetchUserStatusFromServer(firebaseUser.uid, token);
-          await handleBasicUserAuthentication(firebaseUser, token, serverStatus);
-          return;
+          console.log('⚠️ All save attempts failed, creating fallback user...');
+          
+          // ✅ Create fallback saveResult with proper structure
+          saveResult = {
+            success: true,
+            user: {
+              uid: firebaseUser.uid,
+              _id: firebaseUser.uid,
+              firebaseId: firebaseUser.uid,
+              email: firebaseUser.email,
+              name: userData.name,
+              subscriptionPlan: 'free',
+              userStatus: 'free',
+              emailVerified: firebaseUser.emailVerified,
+              photoURL: firebaseUser.photoURL,
+              createdAt: new Date().toISOString(),
+              lastLoginAt: new Date().toISOString(),
+              authProvider: 'firebase',
+              fallbackCreated: true,
+              originalError: saveError.message
+            },
+            source: 'main-js-fallback',
+            message: 'User created as fallback in main.js',
+            warning: 'Backend save failed - using fallback mode'
+          };
+          break;
         }
 
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
 
-    // Handle successful save
+    // ✅ ENHANCED: Handle save result - should never be null at this point
     if (saveResult && saveResult.success && saveResult.user) {
       await handleSuccessfulUserSave(saveResult, token, userData);
     } else {
-      const serverStatus = await fetchUserStatusFromServer(firebaseUser.uid, token);
-      await handleBasicUserAuthentication(firebaseUser, token, serverStatus);
+      // ✅ Emergency fallback if saveResult is somehow still invalid
+      console.error('🚨 CRITICAL: saveResult is invalid after all attempts:', saveResult);
+      await handleBasicUserAuthentication(firebaseUser, token, 'free');
     }
 
   } catch (error) {
     console.error('❌ Authentication error:', error);
     
     try {
-      const serverStatus = await fetchUserStatusFromServer(firebaseUser.uid);
-      await handleBasicUserAuthentication(firebaseUser, null, serverStatus);
+      // ✅ Final fallback: basic authentication
+      await handleBasicUserAuthentication(firebaseUser, null, 'free');
     } catch (basicError) {
+      console.error('❌ Basic authentication also failed:', basicError);
       await handleUserNotAuthenticated();
     }
   }
 }
-
 // ✅ NEW: Function to fetch status from server
 async function fetchUserStatusFromServer(userId, token = null) {
   console.log('🔄 Fetching user status from server for:', userId);
@@ -579,86 +612,128 @@ async function handleBasicUserAuthentication(firebaseUser, token = null, serverS
 
 
 // ✅ ENHANCED: Successful user save handler with subscription persistence
-async function handleSuccessfulUserSave(result, token, userData) {
+async function handleSuccessfulUserSave(saveResult, token, userData) {
   try {
+    console.log('✅ Processing successful user save:', saveResult.source || 'unknown');
 
-    const serverUser = result.user;
-    // ✅ CRITICAL FIX: Handle multiple possible status field names
-    const userPlan = serverUser.subscriptionPlan ||
-      serverUser.userStatus ||
-      serverUser.plan ||
-      serverUser.subscription ||
-      'free';
+    // ✅ ROBUST: Validate saveResult structure
+    if (!saveResult || typeof saveResult !== 'object') {
+      console.error('❌ Invalid saveResult object:', saveResult);
+      throw new Error('saveResult is not a valid object');
+    }
 
-    // ✅ CRITICAL: Enhanced user object with all possible status fields AND subscription tracking
+    if (!saveResult.user || typeof saveResult.user !== 'object') {
+      console.error('❌ Invalid user data in saveResult:', saveResult.user);
+      throw new Error('saveResult.user is not a valid object');
+    }
+
+    // ✅ Extract user data with multiple fallbacks
+    const serverUser = saveResult.user;
+
+    // ✅ CRITICAL: Handle multiple possible status field names with validation
+    const extractValidStatus = (user) => {
+      const possibleStatuses = [
+        user.subscriptionPlan,
+        user.userStatus,
+        user.plan,
+        user.subscription,
+        'free' // Ultimate fallback
+      ];
+      
+      for (const status of possibleStatuses) {
+        if (status && typeof status === 'string' && ['free', 'start', 'pro', 'premium'].includes(status)) {
+          return status;
+        }
+      }
+      
+      return 'free';
+    };
+
+    const userPlan = extractValidStatus(serverUser);
+    console.log('📊 Extracted user plan:', userPlan);
+
+    // ✅ CRITICAL: Enhanced user object with all possible status fields
     const enhancedUser = {
       ...serverUser,
       subscriptionPlan: userPlan,
       userStatus: userPlan,
       plan: userPlan,
-      subscription: userPlan
+      subscription: userPlan,
+      lastLoginAt: new Date().toISOString(),
+      saveSource: saveResult.source,
+      saveSuccess: true
     };
 
-    // ✅ CRITICAL: Set up subscription persistence if it's a paid plan
+    // ✅ CRITICAL: Set up subscription persistence for paid plans
     if (userPlan && userPlan !== 'free') {
-      await setupSubscriptionPersistence(userPlan, 'server-sync');
+      try {
+        await setupSubscriptionPersistence(userPlan, 'successful-save');
+      } catch (persistError) {
+        console.warn('⚠️ Subscription persistence failed:', persistError);
+        // Don't fail the whole operation
+      }
     }
 
-    // Update stores with server data
+    // ✅ Update stores with comprehensive error handling
     try {
       // Update main store (legacy compatibility)
       store.commit('setUser', enhancedUser);
-      store.commit('setFirebaseUserId', enhancedUser.firebaseId || enhancedUser._id);
+      store.commit('setFirebaseUserId', enhancedUser.firebaseId || enhancedUser._id || enhancedUser.uid);
       store.commit('setToken', token);
 
-      // Update user module store with multiple mutations to ensure it sticks
+      // Update user module store
       store.commit('user/SET_USER', enhancedUser);
       store.commit('user/SET_USER_STATUS', userPlan);
 
-      // ✅ CRITICAL: Also update any legacy status fields
-      if (store.hasModule('user')) {
-        try {
-          store.commit('user/setUserStatus', userPlan);
-        } catch (e) {
-          // Ignore if not present
-        }
+      console.log('✅ Store updates completed successfully');
 
-        try {
-          store.commit('user/UPDATE_SUBSCRIPTION', { plan: userPlan });
-        } catch (e) {
-          // Ignore if not present
+    } catch (storeUpdateError) {
+      console.error('❌ Store update failed:', storeUpdateError);
+      
+      // Try direct state update as fallback
+      try {
+        if (store.state.user) {
+          store.state.user.user = enhancedUser;
+          store.state.user.userStatus = userPlan;
         }
+        console.log('✅ Direct state update completed');
+      } catch (directUpdateError) {
+        console.error('❌ Direct state update also failed:', directUpdateError);
       }
+    }
 
-      // Update localStorage immediately and forcefully
+    // ✅ Update localStorage with comprehensive data
+    try {
       const storageData = {
         user: enhancedUser,
-        firebaseUserId: enhancedUser.firebaseId || enhancedUser._id,
-        userId: enhancedUser.firebaseId || enhancedUser._id,
+        firebaseUserId: enhancedUser.firebaseId || enhancedUser._id || enhancedUser.uid,
+        userId: enhancedUser.firebaseId || enhancedUser._id || enhancedUser.uid,
         token: token,
         userStatus: userPlan,
         userPlan: userPlan,
         subscriptionPlan: userPlan,
-        authMode: 'server'
+        authMode: 'successful-save',
+        lastSaveTime: new Date().toISOString()
       };
 
       Object.entries(storageData).forEach(([key, value]) => {
         try {
           localStorage.setItem(key, typeof value === 'object' ? JSON.stringify(value) : value);
         } catch (storageError) {
+          console.warn(`⚠️ Failed to save ${key} to localStorage:`, storageError);
         }
       });
 
-    } catch (storeUpdateError) {
-      // Don't fail login for store update errors, but emit warning
-      eventBus.emit('storeUpdateWarning', {
-        error: storeUpdateError.message,
-        timestamp: Date.now()
-      });
+      console.log('✅ localStorage updates completed');
+
+    } catch (storageError) {
+      console.error('❌ localStorage updates failed:', storageError);
     }
 
     // Mark auth as ready
-    appLifecycle.authReady = true;
+    if (typeof appLifecycle !== 'undefined') {
+      appLifecycle.authReady = true;
+    }
 
     // ✅ CRITICAL: Immediate status propagation with multiple event types
     const eventData = {
@@ -666,45 +741,58 @@ async function handleSuccessfulUserSave(result, token, userData) {
       newStatus: userPlan,
       source: 'login-complete',
       user: enhancedUser,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      saveResult: {
+        success: saveResult.success,
+        source: saveResult.source,
+        message: saveResult.message
+      }
     };
 
     // Trigger immediately (no delay)
-    window.triggerGlobalEvent('userStatusChanged', eventData);
-    window.triggerGlobalEvent('userSubscriptionChanged', eventData);
-    window.triggerGlobalEvent('subscriptionUpdated', eventData);
-    window.triggerGlobalEvent('userLoggedIn', {
-      user: enhancedUser,
-      userStatus: userPlan,
-      source: 'server',
-      timestamp: Date.now()
-    });
-
-    // Also trigger with small delay for any stubborn components
-    setTimeout(() => {
+    if (typeof window !== 'undefined' && window.triggerGlobalEvent) {
       window.triggerGlobalEvent('userStatusChanged', eventData);
-      window.triggerGlobalEvent('globalForceUpdate', {
-        reason: 'user-login-status-update',
-        plan: userPlan,
+      window.triggerGlobalEvent('userSubscriptionChanged', eventData);
+      window.triggerGlobalEvent('subscriptionUpdated', eventData);
+      window.triggerGlobalEvent('userLoggedIn', {
+        user: enhancedUser,
+        userStatus: userPlan,
+        source: saveResult.source || 'unknown',
         timestamp: Date.now()
       });
-    }, 50);
 
-    // Store last login time
-    localStorage.setItem('lastLoginTime', new Date().toISOString());
+      // Also trigger with small delay for any stubborn components
+      setTimeout(() => {
+        window.triggerGlobalEvent('userStatusChanged', eventData);
+        window.triggerGlobalEvent('globalForceUpdate', {
+          reason: 'user-login-status-update',
+          plan: userPlan,
+          timestamp: Date.now()
+        });
+      }, 50);
+    }
+
+    // Show warning if it was a fallback save
+    if (saveResult.warning) {
+      console.warn('⚠️ Save completed with warning:', saveResult.warning);
+    }
+
+    console.log('✅ Successful user save processing completed');
 
   } catch (error) {
-
-    // Fallback to basic auth even after successful save
+    console.error('❌ Failed to process successful user save:', error);
+    
+    // ✅ Fallback to basic auth even after successful save
     try {
       await handleBasicUserAuthentication({
-        uid: result.user?.firebaseId || result.user?._id,
-        email: result.user?.email || userData.email,
-        displayName: result.user?.name || userData.name,
-        emailVerified: result.user?.emailVerified || userData.emailVerified,
-        photoURL: result.user?.photoURL || userData.photoURL
-      }, token);
+        uid: userData.uid,
+        email: userData.email,
+        displayName: userData.name,
+        emailVerified: userData.emailVerified,
+        photoURL: userData.photoURL
+      }, token, 'free');
     } catch (fallbackError) {
+      console.error('❌ Fallback auth also failed:', fallbackError);
     }
   }
 }

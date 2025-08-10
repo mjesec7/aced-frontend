@@ -1,4 +1,3 @@
-
 <template>
   <div>
     <!-- 🔐 Auth buttons -->
@@ -46,7 +45,7 @@
 
         <!-- Loading state -->
         <div v-if="isLoading" class="loading-state">
-          <p>Загрузка...</p>
+          <p>{{ loadingMessage }}</p>
         </div>
 
         <!-- 👤 Register Form -->
@@ -84,6 +83,11 @@
         <div v-if="errorMessage" class="error-message">
           {{ errorMessage }}
         </div>
+        
+        <!-- Success message display -->
+        <div v-if="successMessage" class="success-message">
+          {{ successMessage }}
+        </div>
       </div>
     </div>
 
@@ -116,6 +120,8 @@ export default {
       showSettings: false,
       isLoading: false,
       errorMessage: '',
+      successMessage: '',
+      loadingMessage: 'Загрузка...',
       user: { name: "", surname: "", email: "", password: "", confirmPassword: "" },
       Login: { email: "", password: "" },
     };
@@ -157,186 +163,181 @@ export default {
     ...mapMutations(["setUser", "setFirebaseUserId", "setToken"]),
     ...mapActions(["LoginUser", "logoutUser"]),
 
-    openModal(mode) {
-      this.authMode = mode;
-      this.isModalOpen = true;
-      this.clearError();
+    // ✅ FIXED: Better API base with fallback handling
+    getApiBase() {
+      const envUrl = import.meta.env.VITE_API_BASE_URL;
+      
+      if (window.location.hostname === 'aced.live') {
+        return 'https://api.aced.live';
+      }
+      
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return envUrl || 'http://localhost:5000';
+      }
+      
+      return envUrl || 'https://api.aced.live';
     },
 
-    closeModal() {
-      this.isModalOpen = false;
-      this.resetForms();
-      this.clearError();
-    },
-
-    switchAuth(mode) {
-      this.authMode = mode;
-      this.resetForms();
-      this.clearError();
-    },
-
-    toggleDropdown() {
-      this.dropdownOpen = !this.dropdownOpen;
-    },
-
-    clearError() {
-      this.errorMessage = '';
-    },
-
-    showError(message) {
-      this.errorMessage = message;
-      setTimeout(() => {
-        this.clearError();
-      }, 5000);
-    },
-
-    async handleAuthStateChange(firebaseUser) {
-  try {
-
-    
-    const token = await firebaseUser.getIdToken(true);
-    const apiBase = this.getApiBase();
-    
-
-    // ✅ Production-optimized API call
-    const response = await axios.get(`${apiBase}/users/${firebaseUser.uid}`, {
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      timeout: 15000
-    });
-
-    if (response.data) {
-      const userData = {
-        name: response.data.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-        email: firebaseUser.email,
-        uid: firebaseUser.uid,
-        subscriptionPlan: response.data.subscriptionPlan || 'free',
-      };
-
-      this.setUserData(userData, firebaseUser.uid, token);
-    }
-  } catch (error) {
-   
-    
-    if (error.response?.status === 404) {
-      const userData = {
-        name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-        email: firebaseUser.email,
-        uid: firebaseUser.uid,
-        subscriptionPlan: 'free',
-      };
-      this.setUserData(userData, firebaseUser.uid, await firebaseUser.getIdToken(true));
-    } else {
-      console.error('🌐 Backend connection issue with api.aced.live');
-      this.showError('Проблема с подключением к серверу');
-    }
-  }
-},
-getApiBase() {
-  // ✅ Production-aware API base URL
-  const envUrl = import.meta.env.VITE_API_BASE_URL;
-  
-  // Always use production API for live site
-  if (window.location.hostname === 'aced.live') {
-    return 'https://api.aced.live/api';
-  }
-  
-  // For local development
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return envUrl || 'http://localhost:5000/api';
-  }
-  
-  // Default fallback
-  return envUrl || 'https://api.aced.live/api';
-},
-
-    setUserData(userData, firebaseUserId, token) {
-      this.setUser(userData);
-      this.setFirebaseUserId(firebaseUserId);
-      this.setToken(token);
-
-      localStorage.setItem("user", JSON.stringify(userData));
-      localStorage.setItem("firebaseUserId", firebaseUserId);
-      localStorage.setItem("token", token);
-      localStorage.setItem("plan", userData.subscriptionPlan || 'free');
-    },
-
+    // ✅ COMPLETELY REWRITTEN: Graceful backend save with proper fallback
     async saveUserToBackend(firebaseUser, token, additionalData = {}) {
+      console.log('💾 Attempting to save user to backend...');
+      
       try {
         const apiBase = this.getApiBase();
+        
         const userData = {
-          token,
-          name: additionalData.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-          Login: firebaseUser.email,
+          uid: firebaseUser.uid,
+          firebaseId: firebaseUser.uid,
+          name: additionalData.name || 
+                firebaseUser.displayName || 
+                firebaseUser.email?.split('@')[0] || 
+                'User',
           email: firebaseUser.email,
+          Login: firebaseUser.email,
+          token: token,
           subscriptionPlan: additionalData.subscriptionPlan || 'free',
+          emailVerified: firebaseUser.emailVerified || false,
+          photoURL: firebaseUser.photoURL || null,
+          lastLoginAt: new Date().toISOString(),
+          authProvider: firebaseUser.providerData?.[0]?.providerId || 'firebase',
+          ...additionalData
         };
 
+        console.log('📤 Trying to save to backend:', {
+          uid: userData.uid,
+          email: userData.email,
+          name: userData.name
+        });
 
-        const response = await axios.post(`${apiBase}/users/save`, userData);
-        return response.data;
+        // ✅ SINGLE ATTEMPT with short timeout - don't retry if backend is down
+        const response = await axios({
+          method: 'POST',
+          url: `${apiBase}/api/users/save`,
+          data: userData,
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 8000  // Shorter timeout - fail fast if backend is down
+        });
+
+        if (response.data && response.data.success !== false) {
+          console.log('✅ Backend save successful:', response.data);
+          
+          const savedUser = response.data.user || response.data.data || response.data;
+          
+          return {
+            success: true,
+            user: savedUser,
+            source: 'backend',
+            message: 'User saved to backend successfully'
+          };
+        } else {
+          throw new Error('Backend returned unsuccessful response');
+        }
+
       } catch (error) {
-        console.error('❌ Backend save error:', error.response?.data || error.message);
-        throw new Error(error.response?.data?.error || 'Ошибка сохранения пользователя');
+        // ✅ CRITICAL: Don't treat backend errors as failures - just log and continue
+        const status = error.response?.status;
+        const message = error.response?.data?.message || error.message;
+        
+        console.warn('⚠️ Backend save failed (this is OK - continuing with Firebase-only):', {
+          status,
+          message,
+          code: error.code
+        });
+
+        // ✅ Return a constructed user for frontend-only operation
+        const fallbackUser = {
+          uid: firebaseUser.uid,
+          _id: firebaseUser.uid,
+          firebaseId: firebaseUser.uid,
+          email: firebaseUser.email,
+          name: additionalData.name || 
+                firebaseUser.displayName || 
+                firebaseUser.email?.split('@')[0] || 
+                'User',
+          displayName: firebaseUser.displayName || '',
+          subscriptionPlan: additionalData.subscriptionPlan || 'free',
+          userStatus: additionalData.subscriptionPlan || 'free',
+          emailVerified: firebaseUser.emailVerified || false,
+          photoURL: firebaseUser.photoURL || null,
+          createdAt: new Date().toISOString(),
+          lastLoginAt: new Date().toISOString(),
+          authProvider: 'firebase',
+          backendSyncFailed: true,
+          syncError: message
+        };
+
+        console.log('✅ Created fallback user (Firebase-only):', fallbackUser.email);
+
+        return {
+          success: true,  // ✅ Still return success!
+          user: fallbackUser,
+          source: 'firebase-only',
+          message: 'User authenticated with Firebase (backend sync failed)',
+          warning: 'Backend synchronization failed, using Firebase-only mode'
+        };
       }
     },
 
-    async LoginWithGoogle() {
-      if (this.isLoading) return;
-      
-      this.isLoading = true;
-      this.clearError();
-
+    // ✅ SIMPLIFIED: Auth state change handler with better error handling
+    async handleAuthStateChange(firebaseUser) {
       try {
-        const provider = new GoogleAuthProvider();
-        provider.addScope('email');
-        provider.addScope('profile');
+        console.log('🔐 Processing auth state change for:', firebaseUser.uid);
         
-        const result = await signInWithPopup(auth, provider);
-        const firebaseUser = result.user;
+        this.loadingMessage = 'Настройка аккаунта...';
         
-        
-        // Get fresh token
         const token = await firebaseUser.getIdToken(true);
+        
+        // ✅ Try to save to backend but don't fail if it doesn't work
+        const saveResult = await this.saveUserToBackend(firebaseUser, token);
 
-        // Save user to backend
-        const savedUser = await this.saveUserToBackend(firebaseUser, token);
-
-        // Set user data in frontend
+        // ✅ Always proceed with user setup, regardless of backend status
         const userData = {
-          name: savedUser.name || firebaseUser.displayName || firebaseUser.email,
+          name: saveResult.user.name,
           email: firebaseUser.email,
           uid: firebaseUser.uid,
-          subscriptionPlan: savedUser.subscriptionPlan || 'free',
+          subscriptionPlan: saveResult.user.subscriptionPlan || 'free',
+          ...saveResult.user
         };
 
         this.setUserData(userData, firebaseUser.uid, token);
-
-        this.closeModal();
         
-        // Navigate to profile
-        this.$router.push("/profile");
-
-      } catch (error) {
-        console.error("❌ Google Login error:", error);
-        
-        let errorMsg = "Ошибка входа через Google";
-        if (error.code === 'auth/popup-closed-by-user') {
-          errorMsg = "Окно входа было закрыто";
-        } else if (error.code === 'auth/popup-blocked') {
-          errorMsg = "Всплывающее окно заблокировано браузером";
-        } else if (error.message.includes('Request failed')) {
-          errorMsg = "Ошибка соединения с сервером";
+        // ✅ Only show warning if backend sync failed, not error
+        if (saveResult.warning) {
+          console.info('ℹ️ Auth completed with warning:', saveResult.warning);
+          // Don't show error to user - auth still worked
+        } else {
+          console.log('✅ Auth completed successfully');
         }
         
-        this.showError(errorMsg);
-      } finally {
-        this.isLoading = false;
+      } catch (error) {
+        console.error('❌ Auth state change error:', error);
+        
+        // ✅ GRACEFUL FALLBACK: Create minimal user data
+        try {
+          const fallbackUserData = {
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            email: firebaseUser.email,
+            uid: firebaseUser.uid,
+            subscriptionPlan: 'free',
+            authMode: 'fallback'
+          };
+
+          const token = await firebaseUser.getIdToken(true);
+          this.setUserData(fallbackUserData, firebaseUser.uid, token);
+          
+          console.log('✅ Fallback auth successful');
+          
+        } catch (fallbackError) {
+          console.error('❌ Complete auth failure:', fallbackError);
+          this.showError('Ошибка входа в систему');
+        }
       }
     },
 
+    // ✅ SIMPLIFIED: Email login with better error isolation
     async handleEmailLogin() {
       if (!this.Login.email || !this.Login.password) {
         this.showError("Введите email и пароль");
@@ -344,47 +345,36 @@ getApiBase() {
       }
 
       this.isLoading = true;
-      this.clearError();
+      this.clearMessages();
+      this.loadingMessage = 'Вход в систему...';
 
       try {
+        console.log('🔐 Starting email login for:', this.Login.email);
+        
+        // ✅ Firebase authentication first
         const result = await signInWithEmailAndPassword(auth, this.Login.email, this.Login.password);
         const firebaseUser = result.user;
-        const token = await firebaseUser.getIdToken(true);
         
-
-        const apiBase = this.getApiBase();
-
-        // Try to get existing user data
-        let userData;
-        try {
-          const response = await axios.get(`${apiBase}/users/${firebaseUser.uid}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          userData = {
-            name: response.data.name || firebaseUser.email,
-            email: firebaseUser.email,
-            uid: firebaseUser.uid,
-            subscriptionPlan: response.data.subscriptionPlan || 'free',
-          };
-        } catch (error) {
-          // User doesn't exist in backend, create them
-          const savedUser = await this.saveUserToBackend(firebaseUser, token);
-          userData = {
-            name: savedUser.name || firebaseUser.email,
-            email: firebaseUser.email,
-            uid: firebaseUser.uid,
-            subscriptionPlan: savedUser.subscriptionPlan || 'free',
-          };
-        }
-
-        this.setUserData(userData, firebaseUser.uid, token);
+        console.log('✅ Firebase authentication successful');
+        this.loadingMessage = 'Настройка профиля...';
         
-        this.closeModal();
+        // ✅ Handle auth state change (includes backend sync attempt)
+        await this.handleAuthStateChange(firebaseUser);
+        
+        this.showSuccess('Вход выполнен успешно!');
+        
+        setTimeout(() => {
+          this.closeModal();
+        }, 1000);
+        
+        console.log('✅ Email login completed');
 
       } catch (error) {
         console.error("❌ Email Login failed:", error);
         
+        // ✅ BETTER ERROR HANDLING: Focus on Firebase errors, not backend errors
         let errorMsg = "Ошибка входа";
+        
         if (error.code === 'auth/user-not-found') {
           errorMsg = "Пользователь не найден";
         } else if (error.code === 'auth/wrong-password') {
@@ -393,14 +383,90 @@ getApiBase() {
           errorMsg = "Неверный формат email";
         } else if (error.code === 'auth/too-many-requests') {
           errorMsg = "Слишком много попыток. Попробуйте позже";
+        } else if (error.code === 'auth/user-disabled') {
+          errorMsg = "Аккаунт заблокирован";
+        } else if (error.code === 'auth/invalid-credential') {
+          errorMsg = "Неверные данные для входа";
+        } else if (error.code === 'auth/network-request-failed') {
+          errorMsg = "Проблема с интернет-соединением";
+        } else if (error.code && error.code.startsWith('auth/')) {
+          // It's a Firebase auth error
+          errorMsg = "Ошибка аутентификации Firebase";
+        } else {
+          // It's likely a network/backend error - be more gentle
+          errorMsg = "Проблема с подключением. Попробуйте позже";
         }
         
         this.showError(errorMsg);
       } finally {
         this.isLoading = false;
+        this.loadingMessage = 'Загрузка...';
       }
     },
 
+    // ✅ SIMPLIFIED: Google login with better error isolation
+    async LoginWithGoogle() {
+      if (this.isLoading) return;
+      
+      this.isLoading = true;
+      this.clearMessages();
+      this.loadingMessage = 'Подключение к Google...';
+
+      try {
+        console.log('🔐 Starting Google login...');
+        
+        const provider = new GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+        
+        // ✅ Firebase authentication first
+        const result = await signInWithPopup(auth, provider);
+        const firebaseUser = result.user;
+        
+        console.log('✅ Google authentication successful');
+        this.loadingMessage = 'Настройка профиля...';
+        
+        // ✅ Handle auth state change (includes backend sync attempt)
+        await this.handleAuthStateChange(firebaseUser);
+        
+        this.showSuccess('Вход через Google выполнен успешно!');
+        
+        setTimeout(() => {
+          this.closeModal();
+          this.$router.push("/profile");
+        }, 1000);
+        
+        console.log('✅ Google login completed');
+
+      } catch (error) {
+        console.error("❌ Google Login error:", error);
+        
+        // ✅ BETTER ERROR HANDLING: Focus on actual user-facing issues
+        let errorMsg = "Ошибка входа через Google";
+        
+        if (error.code === 'auth/popup-closed-by-user') {
+          errorMsg = "Окно входа было закрыто";
+        } else if (error.code === 'auth/popup-blocked') {
+          errorMsg = "Всплывающее окно заблокировано браузером";
+        } else if (error.code === 'auth/cancelled-popup-request') {
+          errorMsg = "Запрос на вход был отменен";
+        } else if (error.code === 'auth/network-request-failed') {
+          errorMsg = "Проблема с интернет-соединением";
+        } else if (error.code && error.code.startsWith('auth/')) {
+          errorMsg = "Ошибка аутентификации Google";
+        } else {
+          // Network/backend errors - don't scare the user
+          errorMsg = "Проблема с подключением";
+        }
+        
+        this.showError(errorMsg);
+      } finally {
+        this.isLoading = false;
+        this.loadingMessage = 'Загрузка...';
+      }
+    },
+
+    // ✅ SIMPLIFIED: Registration with better error isolation  
     async register() {
       if (!this.user.name || !this.user.email || !this.user.password) {
         this.showError("Заполните все обязательные поля");
@@ -418,51 +484,132 @@ getApiBase() {
       }
 
       this.isLoading = true;
-      this.clearError();
+      this.clearMessages();
+      this.loadingMessage = 'Создание аккаунта...';
 
       try {
+        console.log('🔐 Starting registration for:', this.user.email);
+        
+        // ✅ Firebase registration first
         const result = await createUserWithEmailAndPassword(auth, this.user.email, this.user.password);
         const firebaseUser = result.user;
-        const token = await firebaseUser.getIdToken(true);
         
-
-        // Save user to backend with registration data
-        const savedUser = await this.saveUserToBackend(firebaseUser, token, {
+        console.log('✅ Firebase registration successful');
+        this.loadingMessage = 'Настройка профиля...';
+        
+        // ✅ Include registration data
+        const registrationData = {
           name: this.user.name,
+          surname: this.user.surname,
           subscriptionPlan: 'free'
-        });
+        };
+        
+        const token = await firebaseUser.getIdToken(true);
+        const saveResult = await this.saveUserToBackend(firebaseUser, token, registrationData);
 
+        // ✅ Always proceed regardless of backend sync status
         const userData = {
-          name: savedUser.name || this.user.name,
+          name: saveResult.user.name || this.user.name,
           email: firebaseUser.email,
           uid: firebaseUser.uid,
-          subscriptionPlan: savedUser.subscriptionPlan || 'free'
+          subscriptionPlan: saveResult.user.subscriptionPlan || 'free',
+          ...saveResult.user
         };
 
         this.setUserData(userData, firebaseUser.uid, token);
         
-        this.showError("Вы успешно зарегистрированы!");
+        // ✅ Show success message regardless of backend sync
+        this.showSuccess("Вы успешно зарегистрированы!");
         
         setTimeout(() => {
           this.closeModal();
         }, 1500);
+        
+        console.log('✅ Registration completed');
 
       } catch (error) {
         console.error("❌ Registration error:", error);
         
+        // ✅ BETTER ERROR HANDLING: Focus on Firebase registration errors
         let errorMsg = "Ошибка регистрации";
+        
         if (error.code === 'auth/email-already-in-use') {
           errorMsg = "Email уже используется";
         } else if (error.code === 'auth/invalid-email') {
           errorMsg = "Неверный формат email";
         } else if (error.code === 'auth/weak-password') {
           errorMsg = "Слишком слабый пароль";
+        } else if (error.code === 'auth/operation-not-allowed') {
+          errorMsg = "Регистрация временно недоступна";
+        } else if (error.code === 'auth/network-request-failed') {
+          errorMsg = "Проблема с интернет-соединением";
+        } else if (error.code && error.code.startsWith('auth/')) {
+          errorMsg = "Ошибка Firebase регистрации";
+        } else {
+          // Likely network/backend issue
+          errorMsg = "Проблема с подключением";
         }
         
         this.showError(errorMsg);
       } finally {
         this.isLoading = false;
+        this.loadingMessage = 'Загрузка...';
       }
+    },
+
+    // ✅ Helper methods
+    setUserData(userData, firebaseUserId, token) {
+      this.setUser(userData);
+      this.setFirebaseUserId(firebaseUserId);
+      this.setToken(token);
+
+      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("firebaseUserId", firebaseUserId);
+      localStorage.setItem("token", token);
+      localStorage.setItem("plan", userData.subscriptionPlan || 'free');
+    },
+
+    openModal(mode) {
+      this.authMode = mode;
+      this.isModalOpen = true;
+      this.clearMessages();
+    },
+
+    closeModal() {
+      this.isModalOpen = false;
+      this.resetForms();
+      this.clearMessages();
+    },
+
+    switchAuth(mode) {
+      this.authMode = mode;
+      this.resetForms();
+      this.clearMessages();
+    },
+
+    toggleDropdown() {
+      this.dropdownOpen = !this.dropdownOpen;
+    },
+
+    clearMessages() {
+      this.errorMessage = '';
+      this.successMessage = '';
+    },
+
+    showError(message) {
+      this.errorMessage = message;
+      this.successMessage = '';
+      setTimeout(() => {
+        this.clearMessages();
+      }, 5000);
+    },
+
+    showSuccess(message) {
+      this.successMessage = message;
+      this.errorMessage = '';
+      setTimeout(() => {
+        this.clearMessages();
+      }, 3000);
     },
 
     async logout() {
@@ -477,6 +624,7 @@ getApiBase() {
         localStorage.removeItem("firebaseUserId");
         localStorage.removeItem("token");
         
+        console.log('✅ Logout successful');
         
         // Redirect to home if needed
         if (this.$route.path !== '/') {
@@ -507,6 +655,16 @@ getApiBase() {
   background-color: #fee;
   border: 1px solid #fcc;
   color: #c33;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.success-message {
+  background-color: #efe;
+  border: 1px solid #cfc;
+  color: #3c3;
   padding: 0.75rem;
   border-radius: 4px;
   margin-top: 1rem;
