@@ -1,314 +1,407 @@
 <template>
-    <div class="updated-courses-container">
-      <!-- Hero Section -->
-      <div class="hero-section">
+    <div class="courses-page">
+      <!-- Modern Hero Section -->
+      <section class="hero">
+        <div class="hero-bg">
+          <div class="hero-pattern"></div>
+        </div>
         <div class="hero-content">
-          <div class="hero-text">
-            <h1 class="hero-title">
-              <span class="gradient-text">Актуальные курсы</span>
-            </h1>
-            <p class="hero-subtitle">
-              Изучайте новейшие технологии и инструменты. От создания ИИ-помощников до современных методов редактирования.
-            </p>
-            <div class="hero-stats">
-              <div class="stat-item">
-                <span class="stat-number">{{ filteredCourses.length }}</span>
-                <span class="stat-label">Курсов</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-number">{{ totalDuration }}</span>
-                <span class="stat-label">Часов</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-number">{{ availableCategories.length }}</span>
-                <span class="stat-label">Категорий</span>
-              </div>
+          <div class="hero-badge">
+            <span class="badge-icon">🚀</span>
+            <span>Актуальные курсы 2025</span>
+          </div>
+          <h1 class="hero-title">
+            Изучай будущее<br>
+            <span class="accent">уже сегодня</span>
+          </h1>
+          <p class="hero-description">
+            Освой новейшие технологии с экспертами индустрии. От ИИ до современной разработки — все в одном месте.
+          </p>
+          <div class="hero-metrics">
+            <div class="metric">
+              <div class="metric-number">{{ filteredCourses.length }}+</div>
+              <div class="metric-label">Курсов</div>
+            </div>
+            <div class="metric">
+              <div class="metric-number">{{ totalDuration }}ч</div>
+              <div class="metric-label">Контента</div>
+            </div>
+            <div class="metric">
+              <div class="metric-number">{{ availableCategories.length }}</div>
+              <div class="metric-label">Направлений</div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
   
-      <!-- Filters Section -->
-      <div class="filters-section">
+      <!-- Search and Filters -->
+      <section class="search-section">
         <div class="container">
-          <div class="filters-header">
-            <h2>Найди свой курс</h2>
-            <button class="clear-filters" @click="clearFilters" v-if="hasActiveFilters">
-              Очистить фильтры
-            </button>
+          <div class="search-container">
+            <div class="search-box">
+              <div class="search-input-wrapper">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <input 
+                  v-model="searchQuery"
+                  type="text" 
+                  placeholder="Поиск курсов..." 
+                  class="search-input"
+                />
+                <button v-if="searchQuery" @click="searchQuery = ''" class="clear-search">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div class="filters">
+              <div class="filter-group">
+                <button 
+                  class="filter-toggle"
+                  @click="showFilters = !showFilters"
+                  :class="{ active: showFilters }"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
+                  </svg>
+                  Фильтры
+                  <span v-if="activeFiltersCount" class="filter-count">{{ activeFiltersCount }}</span>
+                </button>
+              </div>
+              
+              <div class="sort-group">
+                <select v-model="sortBy" class="sort-select">
+                  <option value="newest">Новые</option>
+                  <option value="popular">Популярные</option>
+                  <option value="duration">По времени</option>
+                  <option value="difficulty">По сложности</option>
+                </select>
+              </div>
+            </div>
           </div>
-          
-          <div class="filters-grid">
-            <!-- Category Filter -->
-            <div class="filter-group">
-              <label class="filter-label">Категория</label>
-              <div class="filter-options">
+  
+          <!-- Expandable Filters -->
+          <div v-if="showFilters" class="filters-panel">
+            <div class="filter-section">
+              <h3>Категория</h3>
+              <div class="filter-chips">
                 <button 
                   v-for="category in availableCategories" 
                   :key="category"
+                  @click="toggleCategory(category)"
                   class="filter-chip"
                   :class="{ active: selectedCategory === category }"
-                  @click="setCategory(category)"
                 >
-                  {{ getCategoryIcon(category) }} {{ category }}
+                  {{ getCategoryIcon(category) }}
+                  {{ category }}
                 </button>
               </div>
             </div>
   
-            <!-- Difficulty Filter -->
-            <div class="filter-group">
-              <label class="filter-label">Уровень сложности</label>
-              <div class="filter-options">
+            <div class="filter-section">
+              <h3>Уровень</h3>
+              <div class="filter-chips">
                 <button 
                   v-for="level in availableDifficulties" 
                   :key="level"
+                  @click="toggleDifficulty(level)"
                   class="filter-chip"
                   :class="{ active: selectedDifficulty === level }"
-                  @click="setDifficulty(level)"
                 >
-                  {{ getDifficultyIcon(level) }} {{ level }}
+                  {{ getDifficultyIcon(level) }}
+                  {{ level }}
                 </button>
               </div>
             </div>
   
-            <!-- Search -->
-            <div class="filter-group search-group">
-              <label class="filter-label">Поиск</label>
-              <div class="search-input-container">
-                <input 
-                  v-model="searchQuery" 
-                  type="text" 
-                  placeholder="Поиск по названию или описанию..."
-                  class="search-input"
-                />
-                <div class="search-icon">🔍</div>
-              </div>
+            <div class="filter-actions">
+              <button @click="clearAllFilters" class="clear-btn">
+                Очистить все
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      </section>
   
       <!-- Loading State -->
-      <div v-if="loading" class="loading-section">
+      <section v-if="loading" class="content-section">
         <div class="container">
-          <div class="loading-grid">
+          <div class="courses-grid">
             <div v-for="n in 6" :key="n" class="course-skeleton">
               <div class="skeleton-image"></div>
               <div class="skeleton-content">
-                <div class="skeleton-title"></div>
-                <div class="skeleton-text"></div>
-                <div class="skeleton-text"></div>
-                <div class="skeleton-footer"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line"></div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
   
       <!-- Error State -->
-      <div v-else-if="error" class="error-section">
+      <section v-else-if="error" class="content-section">
         <div class="container">
-          <div class="error-content">
+          <div class="error-state">
             <div class="error-icon">⚠️</div>
-            <h3>Не удалось загрузить курсы</h3>
+            <h3>Упс! Что-то пошло не так</h3>
             <p>{{ error }}</p>
-            <button class="retry-btn" @click="fetchCourses">Попробовать снова</button>
+            <button @click="fetchCourses" class="retry-btn">
+              Попробовать снова
+            </button>
           </div>
         </div>
-      </div>
+      </section>
   
       <!-- Courses Grid -->
-      <div v-else class="courses-section">
+      <section v-else class="content-section">
         <div class="container">
-          <div class="section-header">
+          <div v-if="filteredCourses.length > 0" class="courses-header">
             <h2>{{ getSectionTitle() }}</h2>
-            <div class="sort-options">
-              <select v-model="sortBy" class="sort-select">
-                <option value="newest">Сначала новые</option>
-                <option value="popular">По популярности</option>
-                <option value="duration">По длительности</option>
-                <option value="difficulty">По сложности</option>
-              </select>
+            <div class="view-toggle">
+              <button 
+                @click="viewMode = 'grid'" 
+                :class="{ active: viewMode === 'grid' }"
+                class="view-btn"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+              </button>
+              <button 
+                @click="viewMode = 'list'" 
+                :class="{ active: viewMode === 'list' }"
+                class="view-btn"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+              </button>
             </div>
           </div>
   
-          <div class="courses-grid" v-if="filteredCourses.length > 0">
-            <div 
+          <div v-if="filteredCourses.length > 0" class="courses-grid" :class="viewMode">
+            <article 
               v-for="course in sortedCourses" 
               :key="course.id"
               class="course-card"
-              :class="{ 'premium-course': course.isPremium }"
+              :class="{ premium: course.isPremium }"
               @click="openCourse(course)"
             >
               <div class="course-image">
-                <img :src="course.thumbnail || '/default-course-thumbnail.jpg'" :alt="course.title" />
-                <div class="course-overlay">
-                  <div class="course-category">{{ course.category }}</div>
-                  <div v-if="course.isPremium" class="premium-badge">PRO</div>
+                <img :src="course.thumbnail || '/api/placeholder/400/250'" :alt="course.title" />
+                <div class="course-badges">
+                  <span class="category-badge">{{ course.category }}</span>
+                  <span v-if="course.isPremium" class="premium-badge">PRO</span>
                 </div>
-                <div class="course-difficulty" :class="getDifficultyClass(course.difficulty)">
+                <div class="difficulty-indicator" :class="getDifficultyClass(course.difficulty)">
                   {{ getDifficultyIcon(course.difficulty) }}
                 </div>
               </div>
               
-              <div class="course-content">
+              <div class="course-info">
                 <h3 class="course-title">{{ course.title }}</h3>
                 <p class="course-description">{{ course.description }}</p>
                 
-                <div class="course-meta">
-                  <div class="course-tools" v-if="course.tools && course.tools.length">
-                    <span 
-                      v-for="tool in course.tools.slice(0, 3)" 
-                      :key="tool"
-                      class="tool-tag"
-                    >
-                      {{ tool }}
-                    </span>
-                    <span v-if="course.tools.length > 3" class="tool-more">
-                      +{{ course.tools.length - 3 }}
-                    </span>
-                  </div>
-                  
-                  <div class="course-stats">
-                    <div class="stat" v-if="course.duration">
-                      <span class="stat-icon">⏱️</span>
-                      <span class="stat-value">{{ course.duration }}</span>
-                    </div>
-                    <div class="stat" v-if="course.studentsCount">
-                      <span class="stat-icon">👥</span>
-                      <span class="stat-value">{{ formatNumber(course.studentsCount) }}</span>
-                    </div>
-                    <div class="stat" v-if="course.rating">
-                      <span class="stat-icon">⭐</span>
-                      <span class="stat-value">{{ course.rating }}</span>
-                    </div>
-                  </div>
+                <div class="course-tags" v-if="course.tools && course.tools.length">
+                  <span 
+                    v-for="tool in course.tools.slice(0, 2)" 
+                    :key="tool"
+                    class="tag"
+                  >
+                    {{ tool }}
+                  </span>
+                  <span v-if="course.tools.length > 2" class="tag more">
+                    +{{ course.tools.length - 2 }}
+                  </span>
                 </div>
-  
-                <div class="course-footer">
-                  <div class="course-instructor" v-if="course.instructor">
-                    <img 
-                      :src="course.instructor.avatar || '/default-avatar.jpg'" 
-                      :alt="course.instructor.name" 
-                      class="instructor-avatar" 
-                    />
-                    <span class="instructor-name">{{ course.instructor.name }}</span>
+                
+                <div class="course-meta">
+                  <div class="meta-item" v-if="course.duration">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12,6 12,12 16,14"></polyline>
+                    </svg>
+                    {{ course.duration }}
                   </div>
-                  
-                  <div class="course-actions">
-                    <button class="btn-secondary" @click.stop="toggleBookmark(course)">
-                      {{ course.isBookmarked ? '❤️' : '🤍' }}
-                    </button>
-                    <button 
-                      class="btn-primary" 
-                      :class="{ 'btn-premium': course.isPremium && !hasAccessToCourse(course) }"
-                      @click.stop="handleCourseStart(course)"
-                    >
-                      <span v-if="course.isPremium && !hasAccessToCourse(course)">🔒 PRO</span>
-                      <span v-else>Начать</span>
-                    </button>
+                  <div class="meta-item" v-if="course.studentsCount">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    {{ formatNumber(course.studentsCount) }}
+                  </div>
+                  <div class="meta-item" v-if="course.rating">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"></polygon>
+                    </svg>
+                    {{ course.rating }}
                   </div>
                 </div>
               </div>
-            </div>
+  
+              <div class="course-footer">
+                <div class="instructor" v-if="course.instructor">
+                  <img 
+                    :src="course.instructor.avatar || '/api/placeholder/32/32'" 
+                    :alt="course.instructor.name"
+                    class="instructor-avatar"
+                  />
+                  <span class="instructor-name">{{ course.instructor.name }}</span>
+                </div>
+                
+                <div class="course-actions">
+                  <button 
+                    @click.stop="toggleBookmark(course)"
+                    class="action-btn bookmark"
+                    :class="{ bookmarked: course.isBookmarked }"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                  </button>
+                  <button 
+                    @click.stop="handleCourseStart(course)"
+                    class="start-btn"
+                    :class="{ premium: course.isPremium && !hasAccessToCourse(course) }"
+                  >
+                    <span v-if="course.isPremium && !hasAccessToCourse(course)">
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <circle cx="12" cy="16" r="1"></circle>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                      </svg>
+                      PRO
+                    </span>
+                    <span v-else>Начать</span>
+                  </button>
+                </div>
+              </div>
+            </article>
           </div>
   
           <!-- Empty State -->
           <div v-else class="empty-state">
-            <div class="empty-icon">🔍</div>
+            <div class="empty-illustration">
+              <svg viewBox="0 0 200 200" fill="none">
+                <circle cx="100" cy="100" r="80" stroke="#e5e7eb" stroke-width="2" stroke-dasharray="5,5"/>
+                <path d="M70 85 Q100 65 130 85" stroke="#9ca3af" stroke-width="2" fill="none"/>
+                <circle cx="85" cy="95" r="3" fill="#9ca3af"/>
+                <circle cx="115" cy="95" r="3" fill="#9ca3af"/>
+              </svg>
+            </div>
             <h3>Курсы не найдены</h3>
-            <p>Попробуйте изменить фильтры или поисковый запрос</p>
-            <button class="btn-primary" @click="clearFilters">Сбросить фильтры</button>
+            <p>Попробуйте изменить критерии поиска</p>
+            <button @click="clearAllFilters" class="reset-btn">
+              Сбросить фильтры
+            </button>
           </div>
         </div>
-      </div>
+      </section>
   
-      <!-- Course Modal -->
-      <div v-if="selectedCourse" class="course-modal-overlay" @click="closeCourseModal">
-        <div class="course-modal" @click.stop>
+      <!-- Course Detail Modal -->
+      <div v-if="selectedCourse" class="modal-overlay" @click="closeCourseModal">
+        <div class="modal" @click.stop>
           <div class="modal-header">
-            <h2>{{ selectedCourse.title }}</h2>
-            <button class="close-btn" @click="closeCourseModal">×</button>
+            <div class="modal-title-section">
+              <h2>{{ selectedCourse.title }}</h2>
+              <div class="modal-badges">
+                <span class="modal-category">{{ selectedCourse.category }}</span>
+                <span v-if="selectedCourse.isPremium" class="modal-premium">PRO</span>
+              </div>
+            </div>
+            <button @click="closeCourseModal" class="modal-close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
           </div>
           
           <div class="modal-content">
             <div class="modal-image">
-              <img :src="selectedCourse.thumbnail || '/default-course-thumbnail.jpg'" :alt="selectedCourse.title" />
-              <div v-if="selectedCourse.isPremium" class="modal-premium-badge">PRO КУРС</div>
+              <img :src="selectedCourse.thumbnail || '/api/placeholder/600/300'" :alt="selectedCourse.title" />
             </div>
             
-            <div class="modal-info">
-              <div class="course-details">
+            <div class="modal-details">
+              <div class="detail-grid">
                 <div class="detail-item">
-                  <span class="detail-label">Категория:</span>
-                  <span class="detail-value">{{ selectedCourse.category }}</span>
-                </div>
-                <div class="detail-item" v-if="selectedCourse.difficulty">
-                  <span class="detail-label">Уровень:</span>
+                  <span class="detail-label">Уровень</span>
                   <span class="detail-value">{{ selectedCourse.difficulty }}</span>
                 </div>
                 <div class="detail-item" v-if="selectedCourse.duration">
-                  <span class="detail-label">Длительность:</span>
+                  <span class="detail-label">Длительность</span>
                   <span class="detail-value">{{ selectedCourse.duration }}</span>
                 </div>
                 <div class="detail-item" v-if="selectedCourse.studentsCount">
-                  <span class="detail-label">Студентов:</span>
+                  <span class="detail-label">Студентов</span>
                   <span class="detail-value">{{ formatNumber(selectedCourse.studentsCount) }}</span>
                 </div>
-              </div>
-              
-              <p class="course-full-description" v-if="selectedCourse.fullDescription">
-                {{ selectedCourse.fullDescription }}
-              </p>
-              
-              <div class="course-tools-list" v-if="selectedCourse.tools && selectedCourse.tools.length">
-                <h4>Инструменты и технологии:</h4>
-                <div class="tools-grid">
-                  <span v-for="tool in selectedCourse.tools" :key="tool" class="tool-tag-large">
-                    {{ tool }}
-                  </span>
+                <div class="detail-item" v-if="selectedCourse.rating">
+                  <span class="detail-label">Рейтинг</span>
+                  <span class="detail-value">{{ selectedCourse.rating }} ⭐</span>
                 </div>
               </div>
               
-              <div class="course-curriculum" v-if="selectedCourse.curriculum && selectedCourse.curriculum.length">
-                <h4>Программа курса:</h4>
-                <div class="curriculum-list">
-                  <div v-for="(lesson, index) in selectedCourse.curriculum" :key="index" class="curriculum-item">
-                    <div class="lesson-number">{{ index + 1 }}</div>
-                    <div class="lesson-info">
-                      <h5>{{ lesson.title }}</h5>
-                      <p v-if="lesson.description">{{ lesson.description }}</p>
-                      <span class="lesson-duration" v-if="lesson.duration">{{ lesson.duration }}</span>
-                    </div>
-                  </div>
+              <div class="description-section">
+                <h3>О курсе</h3>
+                <p>{{ selectedCourse.fullDescription || selectedCourse.description }}</p>
+              </div>
+              
+              <div v-if="selectedCourse.tools && selectedCourse.tools.length" class="tools-section">
+                <h3>Технологии</h3>
+                <div class="tools-list">
+                  <span v-for="tool in selectedCourse.tools" :key="tool" class="tool-badge">
+                    {{ tool }}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
           
           <div class="modal-footer">
-            <div class="instructor-info" v-if="selectedCourse.instructor">
+            <div class="instructor-section" v-if="selectedCourse.instructor">
               <img 
-                :src="selectedCourse.instructor.avatar || '/default-avatar.jpg'" 
-                :alt="selectedCourse.instructor.name" 
-                class="instructor-avatar-large" 
+                :src="selectedCourse.instructor.avatar || '/api/placeholder/48/48'" 
+                :alt="selectedCourse.instructor.name"
+                class="instructor-avatar-large"
               />
-              <div class="instructor-details">
+              <div class="instructor-info">
                 <h4>{{ selectedCourse.instructor.name }}</h4>
                 <p v-if="selectedCourse.instructor.bio">{{ selectedCourse.instructor.bio }}</p>
               </div>
             </div>
             
             <div class="modal-actions">
-              <button class="btn-secondary" @click="toggleBookmark(selectedCourse)">
-                {{ selectedCourse.isBookmarked ? 'Удалить из избранного' : 'Добавить в избранное' }}
+              <button 
+                @click="toggleBookmark(selectedCourse)"
+                class="modal-btn secondary"
+              >
+                {{ selectedCourse.isBookmarked ? 'Убрать из избранного' : 'В избранное' }}
               </button>
               <button 
-                class="btn-primary btn-large"
-                :class="{ 'btn-premium': selectedCourse.isPremium && !hasAccessToCourse(selectedCourse) }"
                 @click="handleCourseStart(selectedCourse)"
+                class="modal-btn primary"
+                :class="{ premium: selectedCourse.isPremium && !hasAccessToCourse(selectedCourse) }"
               >
-                <span v-if="selectedCourse.isPremium && !hasAccessToCourse(selectedCourse)">🔒 Требуется PRO</span>
+                <span v-if="selectedCourse.isPremium && !hasAccessToCourse(selectedCourse)">
+                  🔒 Требуется PRO
+                </span>
                 <span v-else>Начать обучение</span>
               </button>
             </div>
@@ -316,7 +409,7 @@
         </div>
       </div>
   
-      <!-- Payment Modal Integration -->
+      <!-- Payment Modal -->
       <PaymentModal
         v-if="showPaymentModal"
         :visible="showPaymentModal"
@@ -343,6 +436,10 @@
     
     data() {
       return {
+        // UI State
+        showFilters: false,
+        viewMode: 'grid', // 'grid' or 'list'
+        
         // Filter state
         searchQuery: '',
         selectedCategory: '',
@@ -412,6 +509,13 @@
         return difficulties;
       },
   
+      activeFiltersCount() {
+        let count = 0;
+        if (this.selectedCategory) count++;
+        if (this.selectedDifficulty) count++;
+        return count;
+      },
+  
       filteredCourses() {
         let filtered = this.courses;
   
@@ -456,39 +560,98 @@
         return this.filteredCourses.reduce((total, course) => {
           return total + this.parseDuration(course.duration);
         }, 0);
-      },
-  
-      hasActiveFilters() {
-        return this.selectedCategory || this.selectedDifficulty || this.searchQuery;
       }
     },
   
     async mounted() {
       await this.fetchCourses();
+      // Set up responsive view mode
+      this.updateViewMode();
+      window.addEventListener('resize', this.updateViewMode);
+    },
+  
+    beforeUnmount() {
+      window.removeEventListener('resize', this.updateViewMode);
+      document.body.style.overflow = 'auto';
     },
   
     methods: {
+      updateViewMode() {
+        // Auto-switch to list view on mobile
+        if (window.innerWidth < 768) {
+          this.viewMode = 'list';
+        }
+      },
+  
       async fetchCourses() {
         this.loading = true;
         this.error = null;
         
         try {
-          // Replace with your actual API endpoint
-          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/updated-courses`, {
-            headers: {
-              'Authorization': `Bearer ${this.getAuthToken()}`,
-              'Content-Type': 'application/json'
-            }
-          });
-  
-          if (!response.ok) {
-            throw new Error('Не удалось загрузить курсы');
-          }
-  
-          const data = await response.json();
-          this.courses = data.courses || [];
+          // Mock data for demo - replace with your API
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
-          // Clear cache when new data arrives
+          this.courses = [
+            {
+              id: 1,
+              title: "Создание ИИ-помощников с GPT-4",
+              description: "Изучите, как создавать умных ботов и автоматизировать бизнес-процессы",
+              category: "ИИ и автоматизация",
+              difficulty: "Средний",
+              duration: "12 часов",
+              studentsCount: 2847,
+              rating: 4.8,
+              isPremium: true,
+              thumbnail: "/api/placeholder/400/250",
+              tools: ["OpenAI API", "Python", "FastAPI", "React"],
+              instructor: {
+                name: "Алексей Петров",
+                avatar: "/api/placeholder/32/32",
+                bio: "Senior AI Engineer в Яндексе"
+              },
+              isBookmarked: false,
+              createdAt: "2025-01-01"
+            },
+            {
+              id: 2,
+              title: "Современный видеомонтаж в DaVinci Resolve",
+              description: "От базовых навыков до профессиональной цветокоррекции",
+              category: "Видеомонтаж",
+              difficulty: "Начинающий",
+              duration: "8 часов",
+              studentsCount: 1523,
+              rating: 4.6,
+              isPremium: false,
+              thumbnail: "/api/placeholder/400/250",
+              tools: ["DaVinci Resolve", "After Effects"],
+              instructor: {
+                name: "Мария Сидорова",
+                avatar: "/api/placeholder/32/32"
+              },
+              isBookmarked: true,
+              createdAt: "2024-12-15"
+            },
+            {
+              id: 3,
+              title: "Web-разработка с Next.js 14",
+              description: "Создайте современное веб-приложение с новейшими возможностями",
+              category: "Web-разработка",
+              difficulty: "Продвинутый",
+              duration: "16 часов",
+              studentsCount: 892,
+              rating: 4.9,
+              isPremium: true,
+              thumbnail: "/api/placeholder/400/250",
+              tools: ["Next.js", "TypeScript", "Tailwind CSS", "Prisma"],
+              instructor: {
+                name: "Дмитрий Козлов",
+                avatar: "/api/placeholder/32/32"
+              },
+              isBookmarked: false,
+              createdAt: "2024-12-20"
+            }
+          ];
+          
           this.categoriesCache = [];
           this.difficultiesCache = [];
           
@@ -502,23 +665,16 @@
   
       async toggleBookmark(course) {
         try {
-          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/courses/${course.id}/bookmark`, {
-            method: course.isBookmarked ? 'DELETE' : 'POST',
-            headers: {
-              'Authorization': `Bearer ${this.getAuthToken()}`,
-              'Content-Type': 'application/json'
-            }
-          });
-  
-          if (response.ok) {
-            course.isBookmarked = !course.isBookmarked;
-            
-            if (this.$toast) {
-              const message = course.isBookmarked ? 
-                'Курс добавлен в избранное' : 
-                'Курс удален из избранного';
-              this.$toast.success(message, { duration: 2000 });
-            }
+          // Mock API call
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          course.isBookmarked = !course.isBookmarked;
+          
+          if (this.$toast) {
+            const message = course.isBookmarked ? 
+              'Курс добавлен в избранное' : 
+              'Курс удален из избранного';
+            this.$toast.success(message, { duration: 2000 });
           }
         } catch (error) {
           console.error('Error toggling bookmark:', error);
@@ -526,10 +682,6 @@
             this.$toast.error('Ошибка при обновлении избранного');
           }
         }
-      },
-  
-      getAuthToken() {
-        return localStorage.getItem('authToken') || '';
       },
   
       formatNumber(num) {
@@ -571,25 +723,23 @@
           });
         }
         
-        // Navigate to course content
-        // this.$router.push({ name: 'CourseContent', params: { courseId: course.id } });
-        
         this.closeCourseModal();
       },
   
       // Filter methods
-      setCategory(category) {
+      toggleCategory(category) {
         this.selectedCategory = this.selectedCategory === category ? '' : category;
       },
   
-      setDifficulty(difficulty) {
+      toggleDifficulty(difficulty) {
         this.selectedDifficulty = this.selectedDifficulty === difficulty ? '' : difficulty;
       },
   
-      clearFilters() {
+      clearAllFilters() {
         this.selectedCategory = '';
         this.selectedDifficulty = '';
         this.searchQuery = '';
+        this.showFilters = false;
       },
   
       // Modal methods
@@ -658,933 +808,1378 @@
       },
   
       getSectionTitle() {
-        if (this.hasActiveFilters) {
+        if (this.searchQuery || this.selectedCategory || this.selectedDifficulty) {
           return `Найдено курсов: ${this.filteredCourses.length}`;
         }
         return 'Все актуальные курсы';
       }
-    },
-  
-    beforeUnmount() {
-      document.body.style.overflow = 'auto';
     }
   };
   </script>
   
   <style scoped>
-  /* Base Styles */
-  .updated-courses-container {
-    min-height: 100vh;
-    background: #f8fafc;
+  /* CSS Custom Properties */
+:root {
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-500: #3b82f6;
+  --primary-600: #2563eb;
+  --primary-700: #1d4ed8;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --success-500: #10b981;
+  --warning-500: #f59e0b;
+  --error-500: #ef4444;
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --border-radius: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base Styles */
+.courses-page {
+  min-height: 100vh;
+  background: var(--gray-50);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Hero Section */
+.hero {
+  position: relative;
+  background: var(--gradient-primary);
+  padding: 4rem 0 6rem;
+  overflow: hidden;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0.1;
+}
+
+.hero-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(circle at 25% 25%, white 2px, transparent 2px),
+    radial-gradient(circle at 75% 75%, white 2px, transparent 2px);
+  background-size: 50px 50px;
+  background-position: 0 0, 25px 25px;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+  color: white;
+  padding: 0 1rem;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.badge-icon {
+  font-size: 1rem;
+}
+
+.hero-title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0 0 1.5rem;
+}
+
+.accent {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-description {
+  font-size: 1.25rem;
+  line-height: 1.6;
+  opacity: 0.9;
+  margin: 0 0 3rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hero-metrics {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.metric {
+  text-align: center;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-width: 120px;
+}
+
+.metric-number {
+  display: block;
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+}
+
+.metric-label {
+  font-size: 0.875rem;
+  opacity: 0.8;
+  font-weight: 500;
+}
+
+/* Search Section */
+.search-section {
+  position: relative;
+  z-index: 10;
+  margin-top: -3rem;
+  padding: 0 0 2rem;
+}
+
+.search-container {
+  background: white;
+  border-radius: var(--border-radius-xl);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--gray-200);
+}
+
+.search-box {
+  margin-bottom: 1rem;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  width: 20px;
+  height: 20px;
+  color: var(--gray-400);
+  z-index: 2;
+}
+
+.search-input {
+  width: 100%;
+  padding: 1rem 1rem 1rem 3rem;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--border-radius-lg);
+  font-size: 1rem;
+  transition: var(--transition);
+  background: var(--gray-50);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.clear-search {
+  position: absolute;
+  right: 0.75rem;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: var(--gray-300);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  z-index: 2;
+}
+
+.clear-search:hover {
+  background: var(--gray-400);
+}
+
+.clear-search svg {
+  width: 14px;
+  height: 14px;
+  color: white;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--border-radius);
+  background: white;
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 600;
+  position: relative;
+}
+
+.filter-toggle:hover,
+.filter-toggle.active {
+  border-color: var(--primary-500);
+  background: var(--primary-50);
+  color: var(--primary-700);
+}
+
+.filter-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.filter-count {
+  background: var(--primary-500);
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 50px;
+  font-weight: 700;
+  min-width: 18px;
+  text-align: center;
+}
+
+.sort-select {
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--border-radius);
+  background: white;
+  cursor: pointer;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.sort-select:focus {
+  outline: none;
+  border-color: var(--primary-500);
+}
+
+/* Filters Panel */
+.filters-panel {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  background: var(--gray-50);
+  border-radius: var(--border-radius-lg);
+  border: 2px solid var(--gray-200);
+}
+
+.filter-section {
+  margin-bottom: 1.5rem;
+}
+
+.filter-section:last-of-type {
+  margin-bottom: 0;
+}
+
+.filter-section h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin: 0 0 0.75rem;
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filter-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  border: 2px solid var(--gray-200);
+  border-radius: 50px;
+  background: white;
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.filter-chip:hover {
+  border-color: var(--primary-300);
+  background: var(--primary-50);
+}
+
+.filter-chip.active {
+  border-color: var(--primary-500);
+  background: var(--primary-500);
+  color: white;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+.clear-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: var(--error-500);
+  color: white;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.clear-btn:hover {
+  background: #dc2626;
+}
+
+/* Content Section */
+.content-section {
+  padding: 2rem 0 4rem;
+}
+
+.courses-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.courses-header h2 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--gray-800);
+  margin: 0;
+}
+
+.view-toggle {
+  display: flex;
+  background: var(--gray-200);
+  border-radius: var(--border-radius);
+  padding: 0.25rem;
+}
+
+.view-btn {
+  padding: 0.5rem;
+  border: none;
+  background: transparent;
+  border-radius: calc(var(--border-radius) - 2px);
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--gray-500);
+}
+
+.view-btn.active {
+  background: white;
+  color: var(--gray-800);
+  box-shadow: var(--shadow-sm);
+}
+
+.view-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Courses Grid */
+.courses-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.courses-grid.grid {
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+}
+
+.courses-grid.list {
+  grid-template-columns: 1fr;
+}
+
+.courses-grid.list .course-card {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.courses-grid.list .course-image {
+  width: 200px;
+  flex-shrink: 0;
+}
+
+.courses-grid.list .course-info {
+  flex: 1;
+}
+
+/* Course Cards */
+.course-card {
+  background: white;
+  border-radius: var(--border-radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--gray-200);
+  transition: var(--transition);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+
+.course-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--primary-200);
+}
+
+.course-card.premium {
+  border-color: var(--warning-500);
+  border-width: 2px;
+}
+
+.course-image {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.course-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: var(--transition);
+}
+
+.course-card:hover .course-image img {
+  transform: scale(1.05);
+}
+
+.course-badges {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.category-badge {
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.375rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  backdrop-filter: blur(10px);
+}
+
+.premium-badge {
+  background: var(--gradient-secondary);
+  color: white;
+  padding: 0.375rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.difficulty-indicator {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.course-info {
+  padding: 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.course-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin: 0 0 0.75rem;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.course-description {
+  color: var(--gray-600);
+  line-height: 1.5;
+  margin: 0 0 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+
+.course-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-bottom: 1rem;
+}
+
+.tag {
+  background: var(--primary-100);
+  color: var(--primary-700);
+  padding: 0.25rem 0.625rem;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.tag.more {
+  background: var(--gray-200);
+  color: var(--gray-600);
+}
+
+.course-meta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--gray-500);
+  font-weight: 500;
+}
+
+.meta-item svg {
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
+}
+
+.course-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+.instructor {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.instructor-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--gray-200);
+}
+
+.instructor-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.course-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.action-btn {
+  padding: 0.5rem;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--border-radius);
+  background: white;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn:hover {
+  border-color: var(--gray-300);
+  background: var(--gray-50);
+}
+
+.action-btn.bookmark.bookmarked {
+  border-color: var(--error-500);
+  background: var(--error-50);
+  color: var(--error-500);
+}
+
+.action-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.start-btn {
+  padding: 0.625rem 1rem;
+  border: none;
+  border-radius: var(--border-radius);
+  background: var(--gradient-primary);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.start-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.start-btn.premium {
+  background: var(--gradient-secondary);
+}
+
+.start-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Loading State */
+.course-skeleton {
+  background: white;
+  border-radius: var(--border-radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.skeleton-image {
+  height: 200px;
+  background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-300) 50%, var(--gray-200) 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+.skeleton-content {
+  padding: 1.5rem;
+}
+
+.skeleton-line {
+  height: 1rem;
+  background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-300) 50%, var(--gray-200) 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Error State */
+.error-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--gray-600);
+}
+
+.error-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.error-state h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin: 0 0 0.5rem;
+}
+
+.error-state p {
+  margin: 0 0 2rem;
+  font-size: 1.125rem;
+}
+
+.retry-btn {
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius);
+  background: var(--gradient-primary);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 1rem;
+}
+
+.retry-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--gray-600);
+}
+
+.empty-illustration {
+  margin-bottom: 2rem;
+}
+
+.empty-illustration svg {
+  width: 120px;
+  height: 120px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin: 0 0 0.5rem;
+}
+
+.empty-state p {
+  margin: 0 0 2rem;
+  font-size: 1.125rem;
+}
+
+.reset-btn {
+  padding: 0.875rem 1.5rem;
+  border: 2px solid var(--primary-500);
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--primary-500);
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 1rem;
+}
+
+.reset-btn:hover {
+  background: var(--primary-500);
+  color: white;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background: white;
+  border-radius: var(--border-radius-xl);
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  padding: 2rem;
+  background: var(--gradient-primary);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-radius: var(--border-radius-xl) var(--border-radius-xl) 0 0;
+}
+
+.modal-title-section h2 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin: 0 0 0.75rem;
+  line-height: 1.2;
+}
+
+.modal-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.modal-category {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.375rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+.modal-premium {
+  background: var(--gradient-secondary);
+  padding: 0.375rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 0.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.modal-close svg {
+  width: 24px;
+  height: 24px;
+}
+
+.modal-content {
+  padding: 2rem;
+  flex: 1;
+}
+
+.modal-image {
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.modal-image img {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--gray-50);
+  border-radius: var(--border-radius-lg);
+  margin-bottom: 2rem;
+}
+
+.detail-item {
+  text-align: center;
+}
+
+.detail-label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--gray-500);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.detail-value {
+  font-size: 1.125rem;
+  color: var(--gray-800);
+  font-weight: 700;
+}
+
+.description-section,
+.tools-section {
+  margin-bottom: 2rem;
+}
+
+.description-section h3,
+.tools-section h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin: 0 0 1rem;
+}
+
+.description-section p {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--gray-700);
+  margin: 0;
+}
+
+.tools-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tool-badge {
+  background: var(--gradient-primary);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.modal-footer {
+  padding: 2rem;
+  background: var(--gray-50);
+  border-top: 1px solid var(--gray-200);
+  border-radius: 0 0 var(--border-radius-xl) var(--border-radius-xl);
+}
+
+.instructor-section {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: white;
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--gray-200);
+}
+
+.instructor-avatar-large {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--gray-200);
+  flex-shrink: 0;
+}
+
+.instructor-info h4 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin: 0 0 0.25rem;
+}
+
+.instructor-info p {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.modal-btn {
+  padding: 0.875rem 1.5rem;
+  border-radius: var(--border-radius);
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-btn.secondary {
+  border: 2px solid var(--gray-300);
+  background: white;
+  color: var(--gray-700);
+}
+
+.modal-btn.secondary:hover {
+  border-color: var(--gray-400);
+  background: var(--gray-50);
+}
+
+.modal-btn.primary {
+  border: none;
+  background: var(--gradient-primary);
+  color: white;
+}
+
+.modal-btn.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-btn.premium {
+  background: var(--gradient-secondary);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .courses-grid.grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   }
   
   .container {
-    max-width: 1200px;
-    margin: 0 auto;
     padding: 0 1.5rem;
   }
-  
-  /* Hero Section */
-  .hero-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 4rem 0;
-    color: white;
-  }
-  
-  .hero-content {
-    text-align: center;
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 3rem 0 4rem;
   }
   
   .hero-title {
-    font-size: 3rem;
-    font-weight: 800;
-    margin-bottom: 1rem;
-    line-height: 1.1;
+    font-size: 2.5rem;
   }
   
-  .gradient-text {
-    background: linear-gradient(45deg, #ffffff, #e0e7ff);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  
-  .hero-subtitle {
-    font-size: 1.25rem;
-    margin-bottom: 2rem;
-    opacity: 0.9;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  
-  .hero-stats {
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-    flex-wrap: wrap;
-  }
-  
-  .stat-item {
-    text-align: center;
-    padding: 1rem;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    backdrop-filter: blur(10px);
-    min-width: 100px;
-  }
-  
-  .stat-number {
-    display: block;
-    font-size: 1.5rem;
-    font-weight: 700;
-  }
-  
-  .stat-label {
-    font-size: 0.875rem;
-    opacity: 0.8;
-  }
-  
-  /* Filters Section */
-  .filters-section {
-    padding: 2rem 0;
-    background: white;
-    border-bottom: 1px solid #e5e7eb;
-  }
-  
-  .filters-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-  }
-  
-  .filters-header h2 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0;
-  }
-  
-  .clear-filters {
-    background: #ef4444;
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  
-  .clear-filters:hover {
-    background: #dc2626;
-  }
-  
-  .filters-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-  }
-  
-  .filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  
-  .filter-label {
-    font-weight: 600;
-    color: #374151;
-    font-size: 0.9rem;
-  }
-  
-  .filter-options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-  
-  .filter-chip {
-    background: #f3f4f6;
-    border: 1px solid #d1d5db;
-    color: #6b7280;
-    padding: 0.5rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: none;
-  }
-  
-  .filter-chip:hover {
-    background: #e5e7eb;
-  }
-  
-  .filter-chip.active {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-  }
-  
-  .search-group {
-    grid-column: 1 / -1;
-  }
-  
-  .search-input-container {
-    position: relative;
-  }
-  
-  .search-input {
-    width: 100%;
-    padding: 0.75rem 1rem 0.75rem 2.5rem;
-    border: 1px solid #d1d5db;
-    border-radius: 10px;
-    font-size: 1rem;
-    transition: border-color 0.2s;
-  }
-  
-  .search-input:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  }
-  
-  .search-icon {
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #9ca3af;
-  }
-  
-  /* Loading Section */
-  .loading-section {
-    padding: 2rem 0;
-  }
-  
-  .loading-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 1.5rem;
-  }
-  
-  .course-skeleton {
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-  
-  .skeleton-image {
-    height: 200px;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-  }
-  
-  .skeleton-content {
-    padding: 1rem;
-  }
-  
-  .skeleton-title {
-    height: 1.25rem;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-    border-radius: 4px;
-    margin-bottom: 0.75rem;
-  }
-  
-  .skeleton-text {
-    height: 1rem;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-    border-radius: 4px;
-    margin-bottom: 0.5rem;
-  }
-  
-  .skeleton-text:last-child {
-    width: 60%;
-  }
-  
-  .skeleton-footer {
-    height: 2rem;
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-    border-radius: 4px;
-    margin-top: 1rem;
-  }
-  
-  @keyframes loading {
-    0% {
-      background-position: 200% 0;
-    }
-    100% {
-      background-position: -200% 0;
-    }
-  }
-  
-  /* Error Section */
-  .error-section {
-    padding: 3rem 0;
-  }
-  
-  .error-content {
-    text-align: center;
-    max-width: 400px;
-    margin: 0 auto;
-  }
-  
-  .error-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-  }
-  
-  .error-content h3 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin-bottom: 0.5rem;
-  }
-  
-  .error-content p {
-    color: #6b7280;
-    margin-bottom: 1.5rem;
-  }
-  
-  .retry-btn {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s;
-  }
-  
-  .retry-btn:hover {
-    transform: translateY(-1px);
-  }
-  
-  /* Courses Section */
-  .courses-section {
-    padding: 2rem 0 3rem;
-  }
-  
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-  }
-  
-  .section-header h2 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0;
-  }
-  
-  .sort-select {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background: white;
-    font-size: 0.875rem;
-    cursor: pointer;
-  }
-  
-  .sort-select:focus {
-    outline: none;
-    border-color: #667eea;
-  }
-  
-  .courses-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 1.5rem;
-  }
-  
-  .course-card {
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    cursor: pointer;
-  }
-  
-  .course-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  }
-  
-  .course-card.premium-course {
-    border: 2px solid #f59e0b;
-  }
-  
-  .course-image {
-    position: relative;
-    height: 200px;
-    overflow: hidden;
-  }
-  
-  .course-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s;
-  }
-  
-  .course-card:hover .course-image img {
-    transform: scale(1.05);
-  }
-  
-  .course-overlay {
-    position: absolute;
-    top: 1rem;
-    left: 1rem;
-    right: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-  
-  .course-category {
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-  
-  .premium-badge {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: white;
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-  
-  .course-difficulty {
-    position: absolute;
-    bottom: 1rem;
-    right: 1rem;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px);
-  }
-  
-  .course-content {
-    padding: 1.25rem;
-  }
-  
-  .course-title {
+  .hero-description {
     font-size: 1.125rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0 0 0.75rem;
-    line-height: 1.3;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
   }
   
-  .course-description {
-    color: #6b7280;
-    line-height: 1.5;
-    margin: 0 0 1rem;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    font-size: 0.875rem;
-  }
-  
-  .course-meta {
-    margin-bottom: 1rem;
-  }
-  
-  .course-tools {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    margin-bottom: 0.75rem;
-  }
-  
-  .tool-tag {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    padding: 0.125rem 0.5rem;
-    border-radius: 8px;
-    font-size: 0.7rem;
-    font-weight: 600;
-  }
-  
-  .tool-more {
-    background: #f3f4f6;
-    color: #6b7280;
-    padding: 0.125rem 0.5rem;
-    border-radius: 8px;
-    font-size: 0.7rem;
-    font-weight: 600;
-  }
-  
-  .course-stats {
-    display: flex;
+  .hero-metrics {
     gap: 1rem;
   }
   
-  .stat {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.75rem;
-    color: #6b7280;
+  .metric {
+    padding: 1rem;
+    min-width: 100px;
   }
   
-  .stat-icon {
-    font-size: 0.875rem;
+  .metric-number {
+    font-size: 1.5rem;
   }
   
-  .course-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .course-instructor {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex: 1;
-  }
-  
-  .instructor-avatar {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    object-fit: cover;
-  }
-  
-  .instructor-name {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #374151;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  
-  .course-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-  }
-  
-  .btn-secondary {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    color: #6b7280;
-    padding: 0.375rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 1rem;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .btn-secondary:hover {
-    background: #f3f4f6;
-  }
-  
-  .btn-primary {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    border: none;
-    padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 0.8rem;
-    white-space: nowrap;
-  }
-  
-  .btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  }
-  
-  .btn-premium {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-  }
-  
-  .btn-premium:hover {
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-  }
-  
-  .btn-large {
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-  }
-  
-  /* Empty State */
-  .empty-state {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: #6b7280;
-  }
-  
-  .empty-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-  }
-  
-  .empty-state h3 {
-    font-size: 1.25rem;
-    margin: 0 0 0.5rem;
-    color: #374151;
-  }
-  
-  .empty-state p {
-    margin: 0 0 1.5rem;
-  }
-  
-  /* Course Modal */
-  .course-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.75);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+  .search-container {
     padding: 1rem;
   }
   
-  .course-modal {
-    background: white;
-    border-radius: 16px;
-    max-width: 800px;
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .courses-grid.grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .courses-grid.list .course-card {
+    flex-direction: column;
+  }
+  
+  .courses-grid.list .course-image {
     width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    height: 200px;
+  }
+  
+  .courses-header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  
+  .view-toggle {
+    align-self: center;
+  }
+  
+  .modal {
+    margin: 0.5rem;
+    max-height: 95vh;
   }
   
   .modal-header {
     padding: 1.5rem;
-    border-bottom: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    border-radius: 16px 16px 0 0;
-  }
-  
-  .modal-header h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-  }
-  
-  .close-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-  }
-  
-  .close-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
   }
   
   .modal-content {
     padding: 1.5rem;
   }
   
-  .modal-image {
-    position: relative;
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 1.5rem;
-  }
-  
-  .modal-image img {
-    width: 100%;
-    height: 250px;
-    object-fit: cover;
-  }
-  
-  .modal-premium-badge {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.875rem;
-    font-weight: 700;
-  }
-  
-  .course-details {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: #f8fafc;
-    border-radius: 12px;
-  }
-  
-  .detail-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  
-  .detail-label {
-    font-size: 0.8rem;
-    color: #6b7280;
-    font-weight: 600;
-  }
-  
-  .detail-value {
-    font-size: 1rem;
-    color: #1f2937;
-    font-weight: 700;
-  }
-  
-  .course-full-description {
-    font-size: 1rem;
-    line-height: 1.6;
-    color: #374151;
-    margin: 0 0 1.5rem;
-  }
-  
-  .course-tools-list h4,
-  .course-curriculum h4 {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0 0 1rem;
-  }
-  
-  .tools-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-  }
-  
-  .tool-tag-large {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    padding: 0.375rem 0.75rem;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 0.875rem;
-  }
-  
-  .curriculum-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  
-  .curriculum-item {
-    display: flex;
-    gap: 1rem;
-    padding: 1rem;
-    background: #f8fafc;
-    border-radius: 12px;
-  }
-  
-  .lesson-number {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 0.875rem;
-    flex-shrink: 0;
-  }
-  
-  .lesson-info h5 {
-    margin: 0 0 0.25rem;
-    font-size: 1rem;
-    font-weight: 700;
-    color: #1f2937;
-  }
-  
-  .lesson-info p {
-    margin: 0 0 0.25rem;
-    color: #6b7280;
-    font-size: 0.875rem;
-  }
-  
-  .lesson-duration {
-    font-size: 0.8rem;
-    color: #667eea;
-    font-weight: 600;
-  }
-  
   .modal-footer {
     padding: 1.5rem;
-    border-top: 1px solid #e5e7eb;
-    background: #f8fafc;
-    border-radius: 0 0 16px 16px;
-  }
-  
-  .instructor-info {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: white;
-    border-radius: 12px;
-  }
-  
-  .instructor-avatar-large {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-  }
-  
-  .instructor-details h4 {
-    margin: 0 0 0.25rem;
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #1f2937;
-  }
-  
-  .instructor-details p {
-    margin: 0;
-    color: #6b7280;
-    font-size: 0.875rem;
   }
   
   .modal-actions {
-    display: flex;
+    flex-direction: column;
+  }
+  
+  .instructor-section {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .detail-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .detail-item {
+    padding: 0.75rem;
+    background: white;
+    border-radius: var(--border-radius);
+  }
+  
+  .container {
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 2rem 0 3rem;
+  }
+  
+  .hero-title {
+    font-size: 2rem;
+  }
+  
+  .hero-description {
+    font-size: 1rem;
+  }
+  
+  .hero-metrics {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .metric {
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  .search-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  .course-card {
+    margin: 0 -0.5rem;
+  }
+  
+  .course-info {
+    padding: 1rem;
+  }
+  
+  .course-footer {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+  
+  .course-actions {
+    justify-content: space-between;
+  }
+  
+  .start-btn {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .modal-header {
+    padding: 1rem;
+  }
+  
+  .modal-content {
+    padding: 1rem;
+  }
+  
+  .modal-footer {
+    padding: 1rem;
+  }
+  
+  .modal-title-section h2 {
+    font-size: 1.25rem;
+  }
+  
+  .container {
+    padding: 0 0.75rem;
+  }
+}
+
+/* Animation for smooth transitions */
+@media (prefers-reduced-motion: no-preference) {
+  .course-card,
+  .filter-chip,
+  .action-btn,
+  .start-btn,
+  .modal-btn {
+    transition: var(--transition);
+  }
+  
+  .course-card:hover {
+    animation: cardHover 0.3s ease-out;
+  }
+}
+
+@keyframes cardHover {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+  100% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Focus styles for accessibility */
+.search-input:focus,
+.filter-toggle:focus,
+.sort-select:focus,
+.filter-chip:focus,
+.action-btn:focus,
+.start-btn:focus,
+.modal-btn:focus {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .course-card {
+    border-width: 2px;
+  }
+  
+  .filter-chip,
+  .action-btn {
+    border-width: 2px;
+  }
+  
+  .start-btn {
+    border: 2px solid var(--primary-700);
+  }
+}
+
+/* Print styles */
+@media print {
+  .hero,
+  .search-section,
+  .modal-overlay {
+    display: none;
+  }
+  
+  .course-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid var(--gray-400);
+  }
+  
+  .courses-grid {
     gap: 1rem;
-    justify-content: flex-end;
+  }
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --gray-50: #18181b;
+    --gray-100: #27272a;
+    --gray-200: #3f3f46;
+    --gray-300: #52525b;
+    --gray-400: #71717a;
+    --gray-500: #a1a1aa;
+    --gray-600: #d4d4d8;
+    --gray-700: #e4e4e7;
+    --gray-800: #f4f4f5;
+    --gray-900: #fafafa;
   }
   
-  /* Responsive Design */
-  @media (max-width: 768px) {
-    .hero-title {
-      font-size: 2rem;
-    }
-  
-    .hero-subtitle {
-      font-size: 1rem;
-    }
-  
-    .hero-stats {
-      gap: 1rem;
-    }
-  
-    .filters-grid {
-      grid-template-columns: 1fr;
-    }
-  
-    .courses-grid {
-      grid-template-columns: 1fr;
-      gap: 1rem;
-    }
-  
-    .course-modal {
-      margin: 0.5rem;
-      max-height: 95vh;
-    }
-  
-    .modal-content {
-      padding: 1rem;
-    }
-  
-    .course-details {
-      grid-template-columns: 1fr;
-    }
-  
-    .modal-actions {
-      flex-direction: column;
-    }
-  
-    .instructor-info {
-      flex-direction: column;
-      text-align: center;
-    }
-  
-    .section-header {
-      flex-direction: column;
-      gap: 1rem;
-      align-items: stretch;
-    }
-  
-    .container {
-      padding: 0 1rem;
-    }
+  .courses-page {
+    background: var(--gray-50);
+    color: var(--gray-800);
   }
   
-  @media (max-width: 480px) {
-    .hero-section {
-      padding: 2rem 0;
-    }
-  
-    .hero-title {
-      font-size: 1.75rem;
-    }
-  
-    .course-card {
-      margin: 0;
-    }
-  
-    .course-actions {
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-  
-    .btn-primary {
-      font-size: 0.75rem;
-      padding: 0.375rem 0.5rem;
-    }
+  .course-card,
+  .search-container,
+  .filters-panel {
+    background: var(--gray-100);
+    border-color: var(--gray-300);
   }
+}
   </style>
