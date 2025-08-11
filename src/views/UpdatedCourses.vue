@@ -1,368 +1,325 @@
 <template>
-    <div class="updated-courses-container">
+    <div class="courses-container">
       <!-- Hero Section -->
-      <div class="hero-section">
-        <div class="hero-content">
-          <div class="hero-text">
-            <h1 class="hero-title">
-              <span class="gradient-text">Освойте навыки ИИ в 2024</span>
-            </h1>
+      <section class="hero">
+        <div class="container">
+          <div class="hero-content">
+            <h1 class="hero-title">Master AI Skills in 2024</h1>
             <p class="hero-subtitle">
-              Оставайтесь впереди с нашими передовыми курсами по ИИ. Получите неограниченный доступ к обучению по подписке и трансформируйте свою карьеру с помощью новейших технологий ИИ.
+              Stay ahead with cutting-edge AI courses. Get unlimited access to learning 
+              and transform your career with the latest AI technologies.
             </p>
             <div class="hero-stats">
-              <div class="stat-item">
+              <div class="stat">
                 <span class="stat-number">{{ filteredCourses.length }}</span>
-                <span class="stat-label">Курсов</span>
+                <span class="stat-label">Courses</span>
               </div>
-              <div class="stat-item">
-                <span class="stat-number">{{ totalDuration }}</span>
-                <span class="stat-label">Часов</span>
+              <div class="stat">
+                <span class="stat-number">{{ totalHours }}</span>
+                <span class="stat-label">Hours</span>
               </div>
-              <div class="stat-item">
+              <div class="stat">
                 <span class="stat-number">{{ availableCategories.length }}</span>
-                <span class="stat-label">Категорий</span>
+                <span class="stat-label">Categories</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
   
       <!-- Filters Section -->
-      <div class="filters-section">
+      <section class="filters">
         <div class="container">
           <div class="filters-header">
-            <h2>Популярные курсы по ИИ</h2>
-            <div class="courses-found-header">
-              <p class="courses-found-text">{{ filteredCourses.length }} курсов найдено</p>
+            <h2>Popular AI Courses</h2>
+            <div class="results-count">
+              {{ filteredCourses.length }} courses found
             </div>
           </div>
           
-          <div class="filters-grid">
-            <!-- Filter Tabs -->
-            <div class="filter-group">
-              <div class="filter-options">
+          <div class="filters-content">
+            <!-- Quick Filters -->
+            <div class="filter-row">
+              <div class="filter-chips">
                 <button 
-                  class="filter-chip"
-                  :class="{ active: !selectedCategory }"
-                  @click="setCategory('')"
+                  class="chip"
+                  :class="{ active: !selectedFilter }"
+                  @click="setFilter('')"
                 >
-                  📚 Все курсы
+                  All Courses
                 </button>
                 <button 
-                  class="filter-chip"
-                  :class="{ active: selectedCategory === 'most-popular' }"
-                  @click="setCategory('most-popular')"
+                  class="chip"
+                  :class="{ active: selectedFilter === 'popular' }"
+                  @click="setFilter('popular')"
                 >
-                  🔥 Самые популярные
+                  Most Popular
                 </button>
                 <button 
-                  class="filter-chip"
-                  :class="{ active: selectedCategory === 'latest' }"
-                  @click="setCategory('latest')"
+                  class="chip"
+                  :class="{ active: selectedFilter === 'recent' }"
+                  @click="setFilter('recent')"
                 >
-                  🕐 Последние
+                  Latest
                 </button>
                 <button 
-                  class="filter-chip"
-                  :class="{ active: selectedCategory === 'established' }"
-                  @click="setCategory('established')"
+                  class="chip"
+                  :class="{ active: selectedFilter === 'free' }"
+                  @click="setFilter('free')"
                 >
-                  ⭐ Проверенные
+                  Free
                 </button>
               </div>
             </div>
   
             <!-- Category Filter -->
-            <div class="filter-group">
-              <label class="filter-label">Все категории</label>
-              <div class="filter-options">
+            <div class="filter-row" v-if="availableCategories.length">
+              <div class="filter-label">Categories:</div>
+              <div class="filter-chips">
                 <button 
                   v-for="category in availableCategories" 
                   :key="category"
-                  class="filter-chip"
+                  class="chip category-chip"
                   :class="{ active: selectedCategory === category }"
                   @click="setCategory(category)"
                 >
-                  {{ getCategoryIcon(category) }} {{ category }}
+                  {{ category }}
                 </button>
               </div>
             </div>
   
             <!-- Search -->
-            <div class="filter-group search-group">
-              <div class="search-input-container">
+            <div class="search-container">
+              <div class="search-input-wrapper">
                 <input 
                   v-model="searchQuery" 
                   type="text" 
-                  placeholder="Поиск по названию или описанию..."
+                  placeholder="Search courses..."
                   class="search-input"
                 />
-                <div class="search-icon">🔍</div>
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.35-4.35"></path>
+                </svg>
               </div>
+              <button 
+                v-if="hasActiveFilters" 
+                @click="clearAllFilters"
+                class="clear-btn"
+              >
+                Clear Filters
+              </button>
             </div>
           </div>
-  
-          <div class="clear-filters-container" v-if="hasActiveFilters">
-            <button class="clear-filters" @click="clearFilters">
-              Очистить все фильтры
-            </button>
-          </div>
         </div>
-      </div>
+      </section>
   
-      <!-- Loading State -->
-      <div v-if="loading" class="loading-section">
+      <!-- Content Section -->
+      <section class="content">
         <div class="container">
-          <div class="loading-grid">
+          <!-- Loading State -->
+          <div v-if="loading" class="loading-grid">
             <div v-for="n in 6" :key="n" class="course-skeleton">
               <div class="skeleton-image"></div>
               <div class="skeleton-content">
-                <div class="skeleton-title"></div>
-                <div class="skeleton-text"></div>
-                <div class="skeleton-text"></div>
-                <div class="skeleton-footer"></div>
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line medium"></div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
   
-      <!-- Error State -->
-      <div v-else-if="error" class="error-section">
-        <div class="container">
-          <div class="error-content">
+          <!-- Error State -->
+          <div v-else-if="error" class="error-state">
             <div class="error-icon">⚠️</div>
-            <h3>Не удалось загрузить курсы</h3>
+            <h3>Failed to load courses</h3>
             <p>{{ error }}</p>
-            <button class="retry-btn" @click="fetchCourses">Попробовать снова</button>
+            <button @click="fetchCourses" class="retry-btn">Try Again</button>
           </div>
-        </div>
-      </div>
   
-      <!-- Courses Grid -->
-      <div v-else class="courses-section">
-        <div class="container">
-          <div class="courses-grid" v-if="filteredCourses.length > 0">
-            <div 
-              v-for="course in sortedCourses" 
+          <!-- Courses Grid -->
+          <div v-else-if="filteredCourses.length" class="courses-grid">
+            <article 
+              v-for="course in paginatedCourses" 
               :key="course.id"
               class="course-card"
-              :class="{ 'premium-course': course.isPremium }"
+              @click="openCourseModal(course)"
             >
               <div class="course-image">
-                <img :src="course.thumbnail || '/api/placeholder/400/220'" :alt="course.title" />
-                <div class="course-overlay">
-                  <div class="course-tags">
-                    <div class="tag-new" v-if="course.isNew">НОВЫЙ</div>
-                    <div class="tag-popular" v-if="course.isPopular">ПОПУЛЯРНЫЙ</div>
-                    <div class="tag-free" v-if="!course.isPremium">БЕСПЛАТНО</div>
-                  </div>
-                  <div v-if="course.isPremium" class="premium-badge">PRO</div>
-                </div>
-                <div class="course-difficulty" :class="getDifficultyClass(course.difficulty)">
-                  {{ getDifficultyIcon(course.difficulty) }}
+                <img 
+                  :src="course.thumbnail" 
+                  :alt="course.title"
+                  @error="handleImageError"
+                />
+                <div class="course-badges">
+                  <span v-if="course.isNew" class="badge new">New</span>
+                  <span v-if="course.isPopular" class="badge popular">Popular</span>
+                  <span v-if="!course.isPremium" class="badge free">Free</span>
+                  <span v-if="course.isPremium" class="badge premium">Premium</span>
                 </div>
               </div>
               
               <div class="course-content">
-                <div class="course-category-small">{{ course.category }}</div>
+                <div class="course-meta">
+                  <span class="category">{{ course.category }}</span>
+                  <span class="difficulty" :class="getDifficultyClass(course.difficulty)">
+                    {{ course.difficulty }}
+                  </span>
+                </div>
+                
                 <h3 class="course-title">{{ course.title }}</h3>
                 <p class="course-description">{{ course.description }}</p>
                 
                 <div class="course-stats">
-                  <div class="stat" v-if="course.rating">
-                    <span class="stat-icon">⭐</span>
-                    <span class="stat-value">{{ course.rating }}</span>
+                  <div v-if="course.rating" class="stat">
+                    <span class="icon">⭐</span>
+                    <span>{{ course.rating }}</span>
                   </div>
-                  <div class="stat" v-if="course.studentsCount">
-                    <span class="stat-icon">👥</span>
-                    <span class="stat-value">{{ formatNumber(course.studentsCount) }}</span>
+                  <div v-if="course.studentsCount" class="stat">
+                    <span class="icon">👥</span>
+                    <span>{{ formatNumber(course.studentsCount) }}</span>
                   </div>
-                  <div class="stat" v-if="course.duration">
-                    <span class="stat-icon">⏱️</span>
-                    <span class="stat-value">{{ course.duration }}</span>
+                  <div v-if="course.duration" class="stat">
+                    <span class="icon">⏰</span>
+                    <span>{{ course.duration }}</span>
                   </div>
                 </div>
-  
-                <button 
-                  class="view-details-btn"
-                  @click="openCourse(course)"
-                >
-                  Подробнее о курсе
-                </button>
               </div>
-            </div>
+            </article>
           </div>
   
           <!-- Empty State -->
           <div v-else class="empty-state">
             <div class="empty-icon">🔍</div>
-            <h3>Курсы не найдены</h3>
-            <p>Попробуйте изменить фильтры или поисковый запрос</p>
-            <button class="btn-primary" @click="clearFilters">Сбросить фильтры</button>
+            <h3>No courses found</h3>
+            <p>Try adjusting your filters or search terms</p>
+            <button @click="clearAllFilters" class="clear-btn">Clear Filters</button>
+          </div>
+  
+          <!-- Pagination -->
+          <div v-if="totalPages > 1" class="pagination">
+            <button 
+              @click="prevPage" 
+              :disabled="currentPage === 1"
+              class="page-btn"
+            >
+              Previous
+            </button>
+            <span class="page-info">
+              Page {{ currentPage }} of {{ totalPages }}
+            </span>
+            <button 
+              @click="nextPage" 
+              :disabled="currentPage === totalPages"
+              class="page-btn"
+            >
+              Next
+            </button>
           </div>
         </div>
-      </div>
+      </section>
   
-      <!-- Subscription Section -->
-      <div class="subscription-section">
-        <div class="container">
-          <div class="subscription-card">
-            <div class="subscription-icon">🚀</div>
-            <h3>Неограниченный доступ с вашей подпиской</h3>
-            <p>Получите доступ ко всем курсам, включая эксклюзивный контент и новые релизы. Некоторые вводные курсы доступны бесплатно, чтобы вы могли начать свое путешествие в мир ИИ.</p>
-            <div class="featured-courses">
-              <span class="featured-course-tag">Как создать вирусные ИИ-видео в 2024</span>
-              <span class="featured-course-tag">Создайте собственного ИИ-чатбота с нуля</span>
+      <!-- Course Modal -->
+      <div v-if="selectedCourse" class="modal-overlay" @click="closeCourseModal">
+        <div class="modal" @click.stop>
+          <header class="modal-header">
+            <div class="modal-badges">
+              <span v-if="selectedCourse.isNew" class="badge new">New</span>
+              <span v-if="selectedCourse.isPopular" class="badge popular">Popular</span>
+              <span v-if="!selectedCourse.isPremium" class="badge free">Free</span>
+              <span v-if="selectedCourse.isPremium" class="badge premium">Premium</span>
             </div>
-          </div>
-        </div>
-      </div>
+            <button @click="closeCourseModal" class="close-btn">×</button>
+          </header>
   
-      <!-- Course Modal - Updated to match the design -->
-      <div v-if="selectedCourse" class="course-modal-overlay" @click="closeCourseModal">
-        <div class="course-modal" @click.stop>
-          <!-- Modal Header with Tags -->
-          <div class="modal-header-new">
-            <div class="modal-tags">
-              <div class="tag-free" v-if="!selectedCourse.isPremium">БЕСПЛАТНО</div>
-              <div class="tag-new" v-if="selectedCourse.isNew">НОВЫЙ</div>
-              <div class="tag-popular" v-if="selectedCourse.isPopular">ПОПУЛЯРНЫЙ</div>
-            </div>
-            <button class="close-btn-new" @click="closeCourseModal">×</button>
-          </div>
-  
-          <div class="modal-content-new">
-            <!-- Course Image -->
-            <div class="modal-image-new">
-              <img :src="selectedCourse.thumbnail || '/api/placeholder/400/200'" :alt="selectedCourse.title" />
+          <div class="modal-content">
+            <div class="modal-image">
+              <img :src="selectedCourse.thumbnail" :alt="selectedCourse.title" />
             </div>
             
-            <!-- Course Title and Stats -->
-            <div class="modal-title-section">
-              <h2 class="modal-course-title">{{ selectedCourse.title }}</h2>
-              <div class="modal-course-stats">
-                <div class="modal-stat" v-if="selectedCourse.rating">
-                  <span class="stat-icon">⭐</span>
-                  <span class="stat-value">{{ selectedCourse.rating }}</span>
+            <div class="modal-body">
+              <h2 class="modal-title">{{ selectedCourse.title }}</h2>
+              
+              <div class="modal-stats">
+                <div v-if="selectedCourse.rating" class="stat">
+                  <span class="icon">⭐</span>
+                  <span>{{ selectedCourse.rating }} rating</span>
                 </div>
-                <div class="modal-stat" v-if="selectedCourse.studentsCount">
-                  <span class="stat-icon">👥</span>
-                  <span class="stat-value">{{ formatNumber(selectedCourse.studentsCount) }} студентов</span>
+                <div v-if="selectedCourse.studentsCount" class="stat">
+                  <span class="icon">👥</span>
+                  <span>{{ formatNumber(selectedCourse.studentsCount) }} students</span>
                 </div>
-                <div class="modal-stat" v-if="selectedCourse.duration">
-                  <span class="stat-icon">⏱️</span>
-                  <span class="stat-value">{{ selectedCourse.duration }}</span>
+                <div v-if="selectedCourse.duration" class="stat">
+                  <span class="icon">⏰</span>
+                  <span>{{ selectedCourse.duration }}</span>
                 </div>
-                <div class="modal-stat" v-if="selectedCourse.difficulty">
-                  <span class="stat-icon">📊</span>
-                  <span class="stat-value">{{ selectedCourse.difficulty }}</span>
+                <div v-if="selectedCourse.difficulty" class="stat">
+                  <span class="icon">📊</span>
+                  <span>{{ selectedCourse.difficulty }}</span>
                 </div>
               </div>
-            </div>
   
-            <!-- Course Category and Type Tags -->
-            <div class="modal-course-tags">
-              <span class="course-category-tag">{{ selectedCourse.category }}</span>
-              <span class="course-type-tag" v-if="!selectedCourse.isPremium">Бесплатный курс</span>
-              <span class="course-type-tag premium" v-else>Premium курс</span>
-            </div>
-  
-            <!-- Course Overview -->
-            <div class="course-overview-section">
-              <div class="section-header-icon">
-                <span class="icon">📚</span>
-                <h3>Обзор курса</h3>
-              </div>
-              <p class="course-overview-text">
-                {{ selectedCourse.description || 'Освойте новейшие инструменты и техники генерации контента с помощью ИИ для создания захватывающего контента, который станет вирусным в социальных сетях.' }}
-              </p>
-            </div>
-  
-            <!-- What You'll Learn Section -->
-            <div class="what-learn-section">
-              <div class="section-header-icon">
-                <span class="icon">🎯</span>
-                <h3>Что вы изучите</h3>
-              </div>
-              <div class="learn-content">
-                <p v-if="selectedCourse.fullDescription">{{ selectedCourse.fullDescription }}</p>
-                <p v-else>
-                  Ландшафт создания контента был революционизирован инструментами генерации ИИ-видео. В этом всеобъемлющем курсе вы откроете для себя, как использовать передовые ИИ-платформы, такие как Runway ML, Pika Labs и Stable Video Diffusion, для создания привлекательного видеоконтента, которое привлекает внимание и стимулирует вовлеченность.
-                </p>
-                <br>
-                <p>
-                  Мы изучим психологию вирусного контента, технические аспекты генерации ИИ-видео и практические стратегии для оптимизации вашего контента для различных платформ социальных сетей. Вы научитесь создавать эффективные промпты, понимать возможности и ограничения современных инструментов ИИ-видео и разрабатывать рабочий процесс, который позволит вам последовательно создавать высококачественный контент.
-                </p>
-                <br>
-                <p>
-                  Курс охватывает все от базовой разработки концепции до продвинутых техник редактирования, гарантируя, что у вас есть все инструменты, необходимые для выделения в переполненном цифровом ландшафте.
-                </p>
-              </div>
-            </div>
-  
-            <!-- Course Tools and Technologies -->
-            <div class="course-tools-section" v-if="selectedCourse.tools && selectedCourse.tools.length">
-              <h4>Инструменты и технологии:</h4>
-              <div class="tools-grid">
-                <span v-for="tool in selectedCourse.tools" :key="tool" class="tool-tag-large">
-                  {{ tool }}
+              <div class="modal-tags">
+                <span class="tag">{{ selectedCourse.category }}</span>
+                <span class="tag" :class="{ premium: selectedCourse.isPremium }">
+                  {{ selectedCourse.isPremium ? 'Premium Course' : 'Free Course' }}
                 </span>
               </div>
-            </div>
-            
-            <!-- Course Curriculum -->
-            <div class="course-curriculum-section" v-if="selectedCourse.curriculum && selectedCourse.curriculum.length">
-              <h4>Программа курса:</h4>
-              <div class="curriculum-list">
-                <div v-for="(lesson, index) in selectedCourse.curriculum" :key="index" class="curriculum-item">
-                  <div class="lesson-number">{{ index + 1 }}</div>
-                  <div class="lesson-info">
-                    <h5>{{ lesson.title }}</h5>
-                    <p v-if="lesson.description">{{ lesson.description }}</p>
-                    <span class="lesson-duration" v-if="lesson.duration">{{ lesson.duration }}</span>
+  
+              <div class="modal-section">
+                <h3>Course Overview</h3>
+                <p>{{ selectedCourse.fullDescription || selectedCourse.description }}</p>
+              </div>
+  
+              <div v-if="selectedCourse.curriculum?.length" class="modal-section">
+                <h3>Curriculum</h3>
+                <div class="curriculum">
+                  <div 
+                    v-for="(lesson, index) in selectedCourse.curriculum" 
+                    :key="index" 
+                    class="curriculum-item"
+                  >
+                    <span class="lesson-number">{{ index + 1 }}</span>
+                    <div class="lesson-content">
+                      <h4>{{ lesson.title }}</h4>
+                      <p v-if="lesson.description">{{ lesson.description }}</p>
+                      <span v-if="lesson.duration" class="lesson-duration">{{ lesson.duration }}</span>
+                    </div>
                   </div>
+                </div>
+              </div>
+  
+              <div v-if="selectedCourse.instructor" class="instructor-info">
+                <img 
+                  :src="selectedCourse.instructor.avatar" 
+                  :alt="selectedCourse.instructor.name"
+                  class="instructor-avatar"
+                />
+                <div>
+                  <h4>{{ selectedCourse.instructor.name }}</h4>
+                  <p>{{ selectedCourse.instructor.bio || 'AI Expert and Course Creator' }}</p>
                 </div>
               </div>
             </div>
           </div>
           
-          <!-- Modal Footer -->
-          <div class="modal-footer-new">
-            <div class="instructor-info-new" v-if="selectedCourse.instructor">
-              <img 
-                :src="selectedCourse.instructor.avatar || '/api/placeholder/60/60'" 
-                :alt="selectedCourse.instructor.name" 
-                class="instructor-avatar-large" 
-              />
-              <div class="instructor-details">
-                <h4>{{ selectedCourse.instructor.name }}</h4>
-                <p v-if="selectedCourse.instructor.bio">{{ selectedCourse.instructor.bio }}</p>
-                <p v-else>Эксперт по ИИ и создатель курсов</p>
-              </div>
-            </div>
-            
-            <div class="modal-actions-new">
-              <button class="btn-secondary-new" @click="toggleBookmark(selectedCourse)">
-                <span v-if="selectedCourse.isBookmarked">❤️</span>
-                <span v-else>🤍</span>
-                {{ selectedCourse.isBookmarked ? 'Удалить из избранного' : 'Добавить в избранное' }}
-              </button>
-              <button 
-                class="btn-primary-new"
-                :class="{ 'btn-premium': selectedCourse.isPremium && !hasAccessToCourse(selectedCourse) }"
-                @click="handleCourseStart(selectedCourse)"
-              >
-                <span v-if="selectedCourse.isPremium && !hasAccessToCourse(selectedCourse)">🔒 Требуется PRO</span>
-                <span v-else>Начать обучение</span>
-              </button>
-            </div>
-          </div>
+          <footer class="modal-footer">
+            <button @click="toggleBookmark(selectedCourse)" class="btn-secondary">
+              {{ selectedCourse.isBookmarked ? '❤️ Bookmarked' : '🤍 Bookmark' }}
+            </button>
+            <button 
+              @click="handleCourseStart(selectedCourse)"
+              class="btn-primary"
+              :class="{ premium: selectedCourse.isPremium && !hasAccess(selectedCourse) }"
+            >
+              {{ getStartButtonText(selectedCourse) }}
+            </button>
+          </footer>
         </div>
       </div>
   
-      <!-- Payment Modal Integration -->
+      <!-- Payment Modal -->
       <PaymentModal
         v-if="showPaymentModal"
         :visible="showPaymentModal"
@@ -377,11 +334,11 @@
   </template>
   
   <script>
-  import PaymentModal from '@/components/Modals/PaymentModal.vue';
   import { mapState, mapGetters } from 'vuex';
+  import PaymentModal from '@/components/Modals/PaymentModal.vue';
   
   export default {
-    name: 'UpdatedCourses',
+    name: 'CoursesPage',
     
     components: {
       PaymentModal
@@ -392,8 +349,11 @@
         // Filter state
         searchQuery: '',
         selectedCategory: '',
-        selectedDifficulty: '',
-        sortBy: 'newest',
+        selectedFilter: '',
+        
+        // Pagination
+        currentPage: 1,
+        coursesPerPage: 12,
         
         // Modal state
         selectedCourse: null,
@@ -402,173 +362,83 @@
         requiredPlan: 'pro',
         
         // Data state
-        courses: [
-          // Sample data - replace with your API data
-          {
-            id: 1,
-            title: 'Полнофункциональный учебный курс по разработке ИИ',
-            description: 'Создавайте полноценные ИИ-приложения от фронтенда до бэкенда, используя современные фреймворки разработки.',
-            category: 'Разработка',
-            difficulty: 'Продвинутый',
-            duration: '12 часов',
-            rating: 4.9,
-            studentsCount: 1290,
-            isNew: true,
-            isPopular: true,
-            isPremium: false,
-            thumbnail: '/api/placeholder/400/220',
-            instructor: {
-              name: 'Алексей Петров',
-              avatar: '/api/placeholder/32/32'
-            }
-          },
-          {
-            id: 2,
-            title: 'Как создать вирусные ИИ-видео в 2024',
-            description: 'Освойте новейшие инструменты и техники генерации видео с помощью ИИ для создания захватывающего контента, который станет вирусным в социальных сетях.',
-            category: 'ИИ Видео',
-            difficulty: 'Начинающий',
-            duration: '4 часа',
-            rating: 4.8,
-            studentsCount: 15420,
-            isNew: true,
-            isPopular: true,
-            isPremium: false,
-            thumbnail: '/api/placeholder/400/220',
-            instructor: {
-              name: 'Мария Иванова',
-              avatar: '/api/placeholder/32/32'
-            }
-          },
-          {
-            id: 3,
-            title: 'Создайте собственного ИИ-чатбота с нуля',
-            description: 'Научитесь создавать интеллектуальных чатботов, используя современные ИИ-фреймворки и разворачивать их для реальных приложений.',
-            category: 'Чатботы',
-            difficulty: 'Средний',
-            duration: '6 часов',
-            rating: 4.9,
-            studentsCount: 6930,
-            isPopular: true,
-            isPremium: true,
-            thumbnail: '/api/placeholder/400/220',
-            instructor: {
-              name: 'Денис Козлов',
-              avatar: '/api/placeholder/32/32'
-            }
-          }
-        ],
+        courses: [],
         loading: false,
-        error: null,
-        
-        // Cache for computed values
-        categoriesCache: [],
-        difficultiesCache: []
+        error: null
       };
     },
-    
+  
     computed: {
       ...mapState(['user']),
-      ...mapGetters('user', ['userStatus', 'isPremiumUser', 'isStartUser', 'isProUser']),
+      ...mapGetters('user', ['userStatus', 'isPremiumUser']),
   
       currentUserId() {
-        return this.user?.uid || this.$store.getters['user/getUserId'] || localStorage.getItem('firebaseUserId');
+        return this.user?.uid || this.$store.getters['user/getUserId'];
       },
   
       currentUserPlan() {
-        const storeStatus = this.userStatus;
-        const localStatus = localStorage.getItem('userStatus');
-        const subscriptionData = localStorage.getItem('subscriptionData');
-        
-        let subscriptionPlan = null;
-        if (subscriptionData) {
-          try {
-            const parsed = JSON.parse(subscriptionData);
-            if (parsed.plan && parsed.expiryDate) {
-              const now = new Date();
-              const expiry = new Date(parsed.expiryDate);
-              if (now < expiry && parsed.plan !== 'free') {
-                subscriptionPlan = parsed.plan;
-              }
-            }
-          } catch (e) {
-            console.error('Error parsing subscription data:', e);
-          }
-        }
-        
-        return subscriptionPlan || storeStatus || localStatus || 'free';
+        return this.userStatus || 'free';
       },
   
       availableCategories() {
-        if (this.categoriesCache.length) return this.categoriesCache;
-        const categories = [...new Set(this.courses.map(course => course.category))].filter(Boolean);
-        this.categoriesCache = categories;
-        return categories;
-      },
-  
-      availableDifficulties() {
-        if (this.difficultiesCache.length) return this.difficultiesCache;
-        const difficulties = [...new Set(this.courses.map(course => course.difficulty))].filter(Boolean);
-        this.difficultiesCache = difficulties;
-        return difficulties;
+        return [...new Set(this.courses.map(course => course.category))].filter(Boolean);
       },
   
       filteredCourses() {
-        let filtered = this.courses;
+        let filtered = [...this.courses];
   
+        // Apply search filter
         if (this.searchQuery) {
           const query = this.searchQuery.toLowerCase();
           filtered = filtered.filter(course => 
             course.title?.toLowerCase().includes(query) ||
             course.description?.toLowerCase().includes(query) ||
-            course.tools?.some(tool => tool.toLowerCase().includes(query))
+            course.category?.toLowerCase().includes(query)
           );
         }
   
+        // Apply category filter
         if (this.selectedCategory) {
-          if (this.selectedCategory === 'most-popular') {
-            filtered = filtered.filter(course => course.isPopular);
-          } else if (this.selectedCategory === 'latest') {
-            filtered = filtered.filter(course => course.isNew);
-          } else if (this.selectedCategory === 'established') {
-            filtered = filtered.filter(course => !course.isNew && course.rating >= 4.5);
-          } else {
-            filtered = filtered.filter(course => course.category === this.selectedCategory);
-          }
+          filtered = filtered.filter(course => course.category === this.selectedCategory);
         }
   
-        if (this.selectedDifficulty) {
-          filtered = filtered.filter(course => course.difficulty === this.selectedDifficulty);
+        // Apply quick filters
+        if (this.selectedFilter) {
+          switch (this.selectedFilter) {
+            case 'popular':
+              filtered = filtered.filter(course => course.isPopular);
+              break;
+            case 'recent':
+              filtered = filtered.filter(course => course.isNew);
+              break;
+            case 'free':
+              filtered = filtered.filter(course => !course.isPremium);
+              break;
+          }
         }
   
         return filtered;
       },
   
-      sortedCourses() {
-        const courses = [...this.filteredCourses];
-        
-        switch (this.sortBy) {
-          case 'popular':
-            return courses.sort((a, b) => (b.studentsCount || 0) - (a.studentsCount || 0));
-          case 'duration':
-            return courses.sort((a, b) => this.parseDuration(a.duration) - this.parseDuration(b.duration));
-          case 'difficulty':
-            const difficultyOrder = { 'Начинающий': 1, 'Средний': 2, 'Продвинутый': 3 };
-            return courses.sort((a, b) => (difficultyOrder[a.difficulty] || 0) - (difficultyOrder[b.difficulty] || 0));
-          case 'newest':
-          default:
-            return courses.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-        }
+      paginatedCourses() {
+        const start = (this.currentPage - 1) * this.coursesPerPage;
+        const end = start + this.coursesPerPage;
+        return this.filteredCourses.slice(start, end);
       },
   
-      totalDuration() {
+      totalPages() {
+        return Math.ceil(this.filteredCourses.length / this.coursesPerPage);
+      },
+  
+      totalHours() {
         return this.filteredCourses.reduce((total, course) => {
-          return total + this.parseDuration(course.duration);
+          const hours = this.parseDuration(course.duration);
+          return total + hours;
         }, 0);
       },
   
       hasActiveFilters() {
-        return this.selectedCategory || this.selectedDifficulty || this.searchQuery;
+        return this.selectedCategory || this.selectedFilter || this.searchQuery;
       }
     },
   
@@ -582,16 +452,23 @@
         this.error = null;
         
         try {
-          // Sample implementation - replace with your actual API call
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-          
-          // Clear cache when new data arrives
-          this.categoriesCache = [];
-          this.difficultiesCache = [];
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/courses`, {
+            headers: {
+              'Authorization': `Bearer ${this.getAuthToken()}`,
+              'Content-Type': 'application/json'
+            }
+          });
+  
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+  
+          const data = await response.json();
+          this.courses = data.courses || [];
           
         } catch (error) {
           console.error('Error fetching courses:', error);
-          this.error = error.message || 'Произошла ошибка при загрузке курсов';
+          this.error = error.message || 'Failed to load courses';
         } finally {
           this.loading = false;
         }
@@ -599,9 +476,9 @@
   
       async toggleBookmark(course) {
         try {
-          // Replace with your actual API endpoint
-          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/courses/${course.id}/bookmark`, {
-            method: course.isBookmarked ? 'DELETE' : 'POST',
+          const method = course.isBookmarked ? 'DELETE' : 'POST';
+          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/courses/${course.id}/bookmark`, {
+            method,
             headers: {
               'Authorization': `Bearer ${this.getAuthToken()}`,
               'Content-Type': 'application/json'
@@ -610,19 +487,14 @@
   
           if (response.ok) {
             course.isBookmarked = !course.isBookmarked;
-            
-            if (this.$toast) {
-              const message = course.isBookmarked ? 
-                'Курс добавлен в избранное' : 
-                'Курс удален из избранного';
-              this.$toast.success(message, { duration: 2000 });
-            }
+            this.showToast(
+              course.isBookmarked ? 'Course bookmarked' : 'Bookmark removed',
+              'success'
+            );
           }
         } catch (error) {
           console.error('Error toggling bookmark:', error);
-          if (this.$toast) {
-            this.$toast.error('Ошибка при обновлении избранного');
-          }
+          this.showToast('Failed to update bookmark', 'error');
         }
       },
   
@@ -631,9 +503,9 @@
       },
   
       formatNumber(num) {
-        if (num >= 1000) {
-          return (num / 1000).toFixed(1) + 'k';
-        }
+        if (!num) return '0';
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
         return num.toString();
       },
   
@@ -643,14 +515,20 @@
         return match ? parseInt(match[1]) : 0;
       },
   
-      hasAccessToCourse(course) {
+      hasAccess(course) {
         if (!course.isPremium) return true;
-        const plan = this.currentUserPlan;
-        return ['start', 'pro'].includes(plan);
+        return ['start', 'pro'].includes(this.currentUserPlan);
+      },
+  
+      getStartButtonText(course) {
+        if (course.isPremium && !this.hasAccess(course)) {
+          return '🔒 Upgrade Required';
+        }
+        return 'Start Learning';
       },
   
       handleCourseStart(course) {
-        if (course.isPremium && !this.hasAccessToCourse(course)) {
+        if (course.isPremium && !this.hasAccess(course)) {
           this.selectedCourseId = course.id.toString();
           this.requiredPlan = 'pro';
           this.showPaymentModal = true;
@@ -662,43 +540,67 @@
       },
   
       startCourse(course) {
-        if (this.$toast) {
-          this.$toast.success(`Начинаем курс: ${course.title}`, {
-            duration: 3000,
-            position: 'top-center'
-          });
-        }
-        
+        this.showToast(`Starting course: ${course.title}`, 'success');
         // Navigate to course content
         // this.$router.push({ name: 'CourseContent', params: { courseId: course.id } });
-        
         this.closeCourseModal();
       },
   
+      getDifficultyClass(difficulty) {
+        if (!difficulty) return '';
+        return difficulty.toLowerCase().replace(/\s+/g, '-');
+      },
+  
+      handleImageError(event) {
+        event.target.src = '/api/placeholder/400/220';
+      },
+  
       // Filter methods
+      setFilter(filter) {
+        this.selectedFilter = this.selectedFilter === filter ? '' : filter;
+        this.currentPage = 1;
+      },
+  
       setCategory(category) {
         this.selectedCategory = this.selectedCategory === category ? '' : category;
+        this.currentPage = 1;
       },
   
-      setDifficulty(difficulty) {
-        this.selectedDifficulty = this.selectedDifficulty === difficulty ? '' : difficulty;
-      },
-  
-      clearFilters() {
+      clearAllFilters() {
         this.selectedCategory = '';
-        this.selectedDifficulty = '';
+        this.selectedFilter = '';
         this.searchQuery = '';
+        this.currentPage = 1;
+      },
+  
+      // Pagination methods
+      nextPage() {
+        if (this.currentPage < this.totalPages) {
+          this.currentPage++;
+          this.scrollToTop();
+        }
+      },
+  
+      prevPage() {
+        if (this.currentPage > 1) {
+          this.currentPage--;
+          this.scrollToTop();
+        }
+      },
+  
+      scrollToTop() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       },
   
       // Modal methods
-      openCourse(course) {
+      openCourseModal(course) {
         this.selectedCourse = course;
         document.body.style.overflow = 'hidden';
       },
   
       closeCourseModal() {
         this.selectedCourse = null;
-        document.body.style.overflow = 'auto';
+        document.body.style.overflow = '';
       },
   
       closePaymentModal() {
@@ -711,1214 +613,956 @@
         
         const course = this.courses.find(c => c.id.toString() === this.selectedCourseId);
         if (course) {
-          setTimeout(() => {
-            this.startCourse(course);
-          }, 1000);
+          setTimeout(() => this.startCourse(course), 1000);
         }
         
         if (data.plan) {
           this.$store.commit('user/SET_USER_STATUS', data.plan);
-          localStorage.setItem('userStatus', data.plan);
         }
       },
   
-      handlePaymentInitiated(data) {
+      handlePaymentInitiated() {
         this.closePaymentModal();
       },
   
-      // Utility methods
-      getCategoryIcon(category) {
-        const icons = {
-          'Разработка': '💻',
-          'ИИ Видео': '🎬',
-          'Чатботы': '🤖',
-          'Графический дизайн': '🎨',
-          'Машинное обучение': '🧠',
-          'Дизайн': '🎨',
-          'Программирование': '💻',
-          'Маркетинг': '📈',
-          'Данные': '📊'
-        };
-        return icons[category] || '📚';
-      },
-  
-      getDifficultyIcon(difficulty) {
-        const icons = {
-          'Начинающий': '🟢',
-          'Средний': '🟡',
-          'Продвинутый': '🔴'
-        };
-        return icons[difficulty] || '⚪';
-      },
-  
-      getDifficultyClass(difficulty) {
-        return difficulty?.toLowerCase().replace(/[^a-zа-я]/g, '') || '';
+      showToast(message, type = 'info') {
+        if (this.$toast) {
+          this.$toast[type](message, { duration: 3000 });
+        }
       }
     },
   
     beforeUnmount() {
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = '';
     }
   };
   </script>
   
-  
   <style scoped>
   /* Base Styles */
-.updated-courses-container {
-  min-height: 100vh;
-  background: #f8f9fa;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1.5rem;
-}
-
-/* Hero Section */
-.hero-section {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
-  padding: 4rem 0 5rem;
-  color: white;
-  position: relative;
-  overflow: hidden;
-}
-
-.hero-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.hero-content {
-  text-align: center;
-  position: relative;
-  z-index: 2;
-}
-
-.hero-title {
-  font-size: 3.5rem;
-  font-weight: 800;
-  margin-bottom: 1.5rem;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-}
-
-.gradient-text {
-  background: linear-gradient(45deg, #ffffff, #f0f9ff);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
-}
-
-.hero-subtitle {
-  font-size: 1.125rem;
-  margin-bottom: 2.5rem;
-  opacity: 0.95;
-  max-width: 700px;
-  margin-left: auto;
-  margin-right: auto;
-  line-height: 1.6;
-  font-weight: 400;
-}
-
-.hero-stats {
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
-  flex-wrap: wrap;
-}
-
-.stat-item {
-  text-align: center;
-  padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
-  min-width: 120px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.stat-number {
-  display: block;
-  font-size: 2rem;
-  font-weight: 800;
-  margin-bottom: 0.25rem;
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  opacity: 0.9;
-  font-weight: 500;
-}
-
-/* Filters Section */
-.filters-section {
-  padding: 2rem 0;
-  background: white;
-  margin-top: -2rem;
-  position: relative;
-  z-index: 10;
-  border-radius: 20px 20px 0 0;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.filters-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.filters-header h2 {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
-}
-
-.courses-found-header {
-  background: #f8f9fa;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-}
-
-.courses-found-text {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0;
-  font-weight: 500;
-}
-
-.filters-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.filter-label {
-  font-weight: 600;
-  color: #374151;
-  font-size: 1rem;
-}
-
-.filter-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  background: #f8f9fa;
-  padding: 0.75rem;
-  border-radius: 12px;
-}
-
-.filter-chip {
-  background: white;
-  border: 1px solid #e5e7eb;
-  color: #6b7280;
-  padding: 0.625rem 1rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.filter-chip:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
-}
-
-.filter-chip.active {
-  background: #6366f1;
-  color: white;
-  border-color: #6366f1;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
-}
-
-.search-group {
-  margin-top: 1rem;
-}
-
-.search-input-container {
-  position: relative;
-  max-width: 400px;
-}
-
-.search-input {
-  width: 100%;
-  padding: 0.875rem 1rem 0.875rem 3rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  font-size: 1rem;
-  transition: all 0.2s;
-  background: white;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-.search-icon {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #9ca3af;
-  font-size: 1.125rem;
-}
-
-.clear-filters-container {
-  margin-top: 1.5rem;
-  text-align: center;
-}
-
-.clear-filters {
-  background: #ef4444;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.875rem;
-}
-
-.clear-filters:hover {
-  background: #dc2626;
-  transform: translateY(-1px);
-}
-
-/* Courses Section */
-.courses-section {
-  padding: 3rem 0;
-  background: #f8f9fa;
-}
-
-.courses-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-  gap: 2rem;
-}
-
-/* Course Cards */
-.course-card {
-  background: white;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-  cursor: pointer;
-  border: 1px solid #f1f5f9;
-}
-
-.course-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-}
-
-.course-image {
-  position: relative;
-  height: 220px;
-  overflow: hidden;
-  background: #f8f9fa;
-}
-
-.course-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s;
-}
-
-.course-card:hover .course-image img {
-  transform: scale(1.05);
-}
-
-.course-overlay {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  right: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.course-tags {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.tag-new {
-  background: #8b5cf6;
-  color: white;
-  padding: 0.25rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.tag-popular {
-  background: #f59e0b;
-  color: white;
-  padding: 0.25rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.tag-free {
-  background: #10b981;
-  color: white;
-  padding: 0.25rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.premium-badge {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: white;
-  padding: 0.375rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.course-difficulty {
-  position: absolute;
-  bottom: 1rem;
-  right: 1rem;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border: 2px solid white;
-}
-
-/* Course Content */
-.course-content {
-  padding: 1.5rem;
-}
-
-.course-category-small {
-  background: #6366f1;
-  color: white;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  display: inline-block;
-  margin-bottom: 0.75rem;
-}
-
-.course-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 0.75rem;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.course-description {
-  color: #6b7280;
-  line-height: 1.6;
-  margin: 0 0 1.25rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  font-size: 0.9rem;
-}
-
-.course-stats {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  margin-bottom: 1.25rem;
-  padding: 0.75rem 0;
-  border-top: 1px solid #f1f5f9;
-}
-
-.stat {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.stat-icon {
-  font-size: 1rem;
-}
-
-.view-details-btn {
-  background: #6366f1;
-  color: white;
-  border: none;
-  padding: 0.75rem 2rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.875rem;
-  width: 100%;
-}
-
-.view-details-btn:hover {
-  background: #5856eb;
-  transform: translateY(-1px);
-}
-
-/* Loading States */
-.loading-section {
-  padding: 2rem 0;
-}
-
-.loading-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-  gap: 2rem;
-}
-
-.course-skeleton {
-  background: white;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.skeleton-image {
-  height: 220px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-}
-
-.skeleton-content {
-  padding: 1.5rem;
-}
-
-.skeleton-title {
-  height: 1.5rem;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-}
-
-.skeleton-text {
-  height: 1rem;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
-}
-
-.skeleton-text:last-child {
-  width: 60%;
-}
-
-.skeleton-footer {
-  height: 2.5rem;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-  border-radius: 4px;
-  margin-top: 1rem;
-}
-
-@keyframes loading {
-  0% {
-    background-position: 200% 0;
+  .courses-container {
+    min-height: 100vh;
+    background: #f8fafc;
   }
-  100% {
-    background-position: -200% 0;
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
   }
-}
-
-/* Error Section */
-.error-section {
-  padding: 3rem 0;
-}
-
-.error-content {
-  text-align: center;
-  max-width: 400px;
-  margin: 0 auto;
-  background: white;
-  padding: 3rem 2rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.error-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.error-content h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 0.5rem;
-}
-
-.error-content p {
-  color: #6b7280;
-  margin-bottom: 1.5rem;
-}
-
-.retry-btn {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.retry-btn:hover {
-  transform: translateY(-1px);
-}
-
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 4rem 1rem;
-  color: #6b7280;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.empty-icon {
-  font-size: 4rem;
-  margin-bottom: 1.5rem;
-  opacity: 0.6;
-}
-
-.empty-state h3 {
-  font-size: 1.5rem;
-  margin: 0 0 0.75rem;
-  color: #374151;
-  font-weight: 700;
-}
-
-.empty-state p {
-  margin: 0 0 2rem;
-  font-size: 1.125rem;
-}
-
-.btn-primary {
-  background: #6366f1;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.875rem;
-}
-
-.btn-primary:hover {
-  background: #5856eb;
-  transform: translateY(-1px);
-}
-
-/* Subscription Section */
-.subscription-section {
-  padding: 3rem 0;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-}
-
-.subscription-card {
-  background: white;
-  border-radius: 16px;
-  padding: 2rem;
-  text-align: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
-}
-
-.subscription-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.subscription-card h3 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 1rem;
-}
-
-.subscription-card p {
-  color: #6b7280;
-  line-height: 1.6;
-  margin: 0 0 1.5rem;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.featured-courses {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.featured-course-tag {
-  background: #10b981;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-/* New Modal Design */
-.course-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.75);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.course-modal {
-  background: white;
-  border-radius: 16px;
-  max-width: 600px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header-new {
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  background: #f8f9fa;
-  border-radius: 16px 16px 0 0;
-}
-
-.modal-tags {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.close-btn-new {
-  background: #f1f5f9;
-  border: none;
-  color: #64748b;
-  font-size: 1.5rem;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-  flex-shrink: 0;
-}
-
-.close-btn-new:hover {
-  background: #e2e8f0;
-}
-
-.modal-content-new {
-  padding: 0;
-}
-
-.modal-image-new {
-  width: 100%;
-  height: 200px;
-  background: #f1f5f9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-image-new img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.modal-title-section {
-  padding: 1.5rem 1.5rem 1rem;
-}
-
-.modal-course-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 1rem;
-  line-height: 1.3;
-}
-
-.modal-course-stats {
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.modal-stat {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.modal-course-tags {
-  padding: 0 1.5rem 1rem;
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.course-category-tag {
-  background: #8b5cf6;
-  color: white;
-  padding: 0.375rem 0.75rem;
-  border-radius: 16px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.course-type-tag {
-  background: #10b981;
-  color: white;
-  padding: 0.375rem 0.75rem;
-  border-radius: 16px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.course-type-tag.premium {
-  background: #f59e0b;
-}
-
-.course-overview-section,
-.what-learn-section {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #f1f5f9;
-}
-
-.section-header-icon {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.section-header-icon .icon {
-  font-size: 1.25rem;
-}
-
-.section-header-icon h3 {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.course-overview-text,
-.learn-content p {
-  color: #374151;
-  line-height: 1.6;
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-.learn-content {
-  color: #374151;
-  line-height: 1.6;
-  font-size: 0.9rem;
-}
-
-.course-tools-section,
-.course-curriculum-section {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #f1f5f9;
-}
-
-.course-tools-section h4,
-.course-curriculum-section h4 {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 1rem;
-}
-
-.tools-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.tool-tag-large {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  padding: 0.375rem 0.75rem;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 0.875rem;
-}
-
-.curriculum-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.curriculum-item {
-  display: flex;
-  gap: 1rem;
-  padding: 1rem;
-  background: #f8fafc;
-  border-radius: 12px;
-}
-
-.lesson-number {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.875rem;
-  flex-shrink: 0;
-}
-
-.lesson-info h5 {
-  margin: 0 0 0.25rem;
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.lesson-info p {
-  margin: 0 0 0.25rem;
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-.lesson-duration {
-  font-size: 0.8rem;
-  color: #6366f1;
-  font-weight: 600;
-}
-
-.modal-footer-new {
-  padding: 1.5rem;
-  border-top: 1px solid #f1f5f9;
-  background: #f8fafc;
-  border-radius: 0 0 16px 16px;
-}
-
-.instructor-info-new {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: white;
-  border-radius: 12px;
-}
-
-.instructor-avatar-large {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.instructor-details h4 {
-  margin: 0 0 0.25rem;
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.instructor-details p {
-  margin: 0;
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-.modal-actions-new {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-}
-
-.btn-secondary-new {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  color: #6b7280;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.875rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.btn-secondary-new:hover {
-  background: #f3f4f6;
-}
-
-.btn-primary-new {
-  background: #6366f1;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.875rem;
-}
-
-.btn-primary-new:hover {
-  background: #5856eb;
-  transform: translateY(-1px);
-}
-
-.btn-primary-new.btn-premium {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-}
-
-.btn-primary-new.btn-premium:hover {
-  background: linear-gradient(135deg, #d97706, #b45309);
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
+  
+  /* Hero Section */
+  .hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 80px 0;
+  }
+  
+  .hero-content {
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
   .hero-title {
-    font-size: 2.5rem;
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    line-height: 1.2;
   }
-
+  
   .hero-subtitle {
+    font-size: 1.25rem;
+    margin-bottom: 40px;
+    opacity: 0.9;
+    line-height: 1.6;
+  }
+  
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+  }
+  
+  .stat {
+    text-align: center;
+  }
+  
+  .stat-number {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  
+  .stat-label {
+    font-size: 1rem;
+    opacity: 0.8;
+  }
+  
+  /* Filters Section */
+  .filters {
+    background: white;
+    padding: 32px 0;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+  }
+  
+  .filters-header h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0;
+  }
+  
+  .results-count {
+    background: #f7fafc;
+    padding: 8px 16px;
+    border-radius: 8px;
+    color: #4a5568;
+    font-weight: 500;
+  }
+  
+  .filters-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  
+  .filter-label {
+    font-weight: 600;
+    color: #4a5568;
+    min-width: 100px;
+  }
+  
+  .filter-chips {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .chip {
+    background: white;
+    border: 2px solid #e2e8f0;
+    color: #4a5568;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .chip:hover {
+    border-color: #cbd5e0;
+  }
+  
+  .chip.active {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+  }
+  
+  .category-chip {
+    text-transform: capitalize;
+  }
+  
+  .search-container {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  
+  .search-input-wrapper {
+    position: relative;
+    flex-grow: 1;
+    max-width: 400px;
+  }
+  
+  .search-input {
+    width: 100%;
+    padding: 12px 16px 12px 44px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+  }
+  
+  .search-input:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+  
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    color: #a0aec0;
+  }
+  
+  .clear-btn {
+    background: #e53e3e;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .clear-btn:hover {
+    background: #c53030;
+  }
+  
+  /* Content Section */
+  .content {
+    padding: 48px 0;
+  }
+  
+  /* Loading State */
+  .loading-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 24px;
+  }
+  
+  .course-skeleton {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .skeleton-image {
+    height: 200px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+  }
+  
+  .skeleton-content {
+    padding: 24px;
+  }
+  
+  .skeleton-line {
+    height: 16px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 12px;
+  }
+  
+  .skeleton-line.short {
+    width: 40%;
+  }
+  
+  .skeleton-line.medium {
+    width: 70%;
+  }
+  
+  @keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  
+  /* Error State */
+  .error-state {
+    text-align: center;
+    padding: 80px 24px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .error-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+  }
+  
+  .error-state h3 {
+    font-size: 1.5rem;
+    color: #1a202c;
+    margin-bottom: 8px;
+  }
+  
+  .error-state p {
+    color: #4a5568;
+    margin-bottom: 24px;
+  }
+  
+  .retry-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .retry-btn:hover {
+    background: #5a67d8;
+  }
+  
+  /* Courses Grid */
+  .courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 24px;
+  }
+  
+  .course-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+  
+  .course-image {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+  }
+  
+  .course-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+  }
+  
+  .course-card:hover .course-image img {
+    transform: scale(1.05);
+  }
+  
+  .course-badges {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  
+  .badge.new {
+    background: #9f7aea;
+    color: white;
+  }
+  
+  .badge.popular {
+    background: #ed8936;
+    color: white;
+  }
+  
+  .badge.free {
+    background: #38a169;
+    color: white;
+  }
+  
+  .badge.premium {
+    background: #d69e2e;
+    color: white;
+  }
+  
+  .course-content {
+    padding: 24px;
+  }
+  
+  .course-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  
+  .category {
+    background: #edf2f7;
+    color: #4a5568;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+  
+  .difficulty {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+  
+  .difficulty.beginner {
+    background: #c6f6d5;
+    color: #22543d;
+  }
+  
+  .difficulty.intermediate {
+    background: #fef5e7;
+    color: #744210;
+  }
+  
+  .difficulty.advanced {
+    background: #fed7d7;
+    color: #742a2a;
+  }
+  
+  .course-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 12px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .course-description {
+    color: #4a5568;
+    line-height: 1.6;
+    margin-bottom: 16px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .course-stats {
+    display: flex;
+    gap: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .course-stats .stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.875rem;
+    color: #4a5568;
+  }
+  
+  .course-stats .icon {
     font-size: 1rem;
   }
-
-  .hero-stats {
-    gap: 1rem;
+  
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 80px 24px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
   }
-
-  .courses-grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
+  
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 24px;
+    opacity: 0.5;
   }
-
-  .filters-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
+  
+  .empty-state h3 {
+    font-size: 1.5rem;
+    color: #1a202c;
+    margin-bottom: 8px;
   }
-
-  .filter-options {
+  
+  .empty-state p {
+    color: #4a5568;
+    margin-bottom: 24px;
+  }
+  
+  /* Pagination */
+  .pagination {
+    display: flex;
     justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-top: 48px;
   }
-
-  .container {
-    padding: 0 1rem;
+  
+  .page-btn {
+    background: white;
+    border: 2px solid #e2e8f0;
+    color: #4a5568;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
   }
-
-  .course-modal {
-    margin: 0.5rem;
-    max-height: 95vh;
-    max-width: calc(100vw - 1rem);
+  
+  .page-btn:hover:not(:disabled) {
+    border-color: #667eea;
+    color: #667eea;
   }
-
-  .modal-content-new {
+  
+  .page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .page-info {
+    font-weight: 500;
+    color: #4a5568;
+  }
+  
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 24px;
+  }
+  
+  .modal {
+    background: white;
+    border-radius: 16px;
+    max-width: 700px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 24px 24px 0;
+  }
+  
+  .modal-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .close-btn {
+    background: #f7fafc;
+    border: none;
+    color: #4a5568;
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  
+  .close-btn:hover {
+    background: #edf2f7;
+  }
+  
+  .modal-content {
     padding: 0;
   }
-
-  .modal-title-section,
-  .course-overview-section,
-  .what-learn-section,
-  .course-tools-section,
-  .course-curriculum-section {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  .modal-course-stats {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .modal-actions-new {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .instructor-info-new {
-    flex-direction: column;
-    text-align: center;
+  
+  .modal-image {
+    height: 240px;
+    background: #f7fafc;
+    overflow: hidden;
+    display: flex;
     align-items: center;
+    justify-content: center;
   }
-
-  .subscription-card {
-    padding: 1.5rem;
+  
+  .modal-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
-
-  .featured-courses {
-    flex-direction: column;
+  
+  .modal-body {
+    padding: 24px;
+  }
+  
+  .modal-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 16px;
+    line-height: 1.3;
+  }
+  
+  .modal-stats {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  
+  .modal-stats .stat {
+    display: flex;
     align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    color: #4a5568;
+    font-weight: 500;
   }
-}
-
-@media (max-width: 480px) {
-  .hero-section {
-    padding: 2rem 0 3rem;
-  }
-
-  .hero-title {
-    font-size: 2rem;
-  }
-
-  .filters-section {
-    padding: 1.5rem 0;
-  }
-
-  .filter-options {
-    gap: 0.5rem;
-  }
-
-  .filter-chip {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.8rem;
-  }
-
-  .course-content {
-    padding: 1.25rem;
-  }
-
-  .stat-item {
-    padding: 1rem;
-    min-width: 90px;
-  }
-
-  .stat-number {
-    font-size: 1.5rem;
-  }
-
-  .modal-course-title {
-    font-size: 1.25rem;
-  }
-
-  .subscription-card {
-    padding: 1rem;
-  }
-
-  .subscription-card h3 {
-    font-size: 1.25rem;
-  }
-
+  
   .modal-tags {
-    gap: 0.25rem;
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
   }
-
-  .modal-header-new {
-    padding: 0.75rem;
+  
+  .tag {
+    background: #edf2f7;
+    color: #4a5568;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
   }
-
-  .course-overview-section,
-  .what-learn-section,
-  .course-tools-section,
-  .course-curriculum-section {
-    padding: 0.75rem;
+  
+  .tag.premium {
+    background: #fed7aa;
+    color: #9c4221;
   }
-
-  .modal-footer-new {
-    padding: 1rem;
+  
+  .modal-section {
+    margin-bottom: 32px;
   }
-
-  .featured-course-tag {
-    font-size: 0.8rem;
-    padding: 0.375rem 0.75rem;
+  
+  .modal-section h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-
-  .search-input-container {
-    max-width: 100%;
+  
+  .modal-section h3::before {
+    content: "📖";
+    font-size: 1.125rem;
   }
-
-  .modal-stat {
-    font-size: 0.8rem;
+  
+  .modal-section p {
+    color: #4a5568;
+    line-height: 1.6;
   }
-
-  .course-category-tag,
-  .course-type-tag {
-    font-size: 0.7rem;
-    padding: 0.25rem 0.5rem;
+  
+  .curriculum {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
-}
+  
+  .curriculum-item {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    background: #f7fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .lesson-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #667eea;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+  }
+  
+  .lesson-content h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a202c;
+    margin-bottom: 4px;
+  }
+  
+  .lesson-content p {
+    color: #4a5568;
+    font-size: 0.875rem;
+    margin-bottom: 8px;
+  }
+  
+  .lesson-duration {
+    background: #e6fffa;
+    color: #234e52;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  
+  .instructor-info {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    background: #f7fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    margin-top: 24px;
+  }
+  
+  .instructor-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+  
+  .instructor-info h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 4px;
+  }
+  
+  .instructor-info p {
+    color: #4a5568;
+    font-size: 0.875rem;
+  }
+  
+  .modal-footer {
+    padding: 24px;
+    border-top: 1px solid #e2e8f0;
+    background: #f7fafc;
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+  }
+  
+  .btn-secondary {
+    background: white;
+    border: 2px solid #e2e8f0;
+    color: #4a5568;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .btn-secondary:hover {
+    border-color: #cbd5e0;
+  }
+  
+  .btn-primary {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .btn-primary:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+  }
+  
+  .btn-primary.premium {
+    background: linear-gradient(135deg, #d69e2e, #b7791f);
+  }
+  
+  .btn-primary.premium:hover {
+    background: linear-gradient(135deg, #b7791f, #975a16);
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .container {
+      padding: 0 16px;
+    }
+  
+    .hero {
+      padding: 60px 0;
+    }
+  
+    .hero-title {
+      font-size: 2.25rem;
+    }
+  
+    .hero-subtitle {
+      font-size: 1.125rem;
+    }
+  
+    .hero-stats {
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+  
+    .stat-number {
+      font-size: 2rem;
+    }
+  
+    .filters {
+      padding: 24px 0;
+    }
+  
+    .filters-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+    }
+  
+    .filters-header h2 {
+      font-size: 1.5rem;
+    }
+  
+    .filter-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+  
+    .filter-label {
+      min-width: auto;
+    }
+  
+    .search-container {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+  
+    .search-input-wrapper {
+      max-width: none;
+    }
+  
+    .courses-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+  
+    .content {
+      padding: 32px 0;
+    }
+  
+    .pagination {
+      margin-top: 32px;
+    }
+  
+    .modal {
+      margin: 16px;
+      max-height: calc(100vh - 32px);
+    }
+  
+    .modal-header {
+      padding: 16px 16px 0;
+    }
+  
+    .modal-body {
+      padding: 16px;
+    }
+  
+    .modal-footer {
+      padding: 16px;
+      flex-direction: column;
+    }
+  
+    .modal-stats {
+      flex-direction: column;
+      gap: 12px;
+    }
+  
+    .instructor-info {
+      flex-direction: column;
+      text-align: center;
+      align-items: center;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .hero-title {
+      font-size: 1.875rem;
+    }
+  
+    .hero-stats {
+      flex-direction: column;
+      gap: 16px;
+    }
+  
+    .filter-chips {
+      gap: 8px;
+    }
+  
+    .chip {
+      padding: 6px 12px;
+      font-size: 0.875rem;
+    }
+  
+    .modal-title {
+      font-size: 1.5rem;
+    }
+  
+    .curriculum-item {
+      padding: 12px;
+      gap: 12px;
+    }
+  
+    .lesson-number {
+      width: 28px;
+      height: 28px;
+      font-size: 0.8rem;
+    }
+  }
   </style>
