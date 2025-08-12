@@ -1,4 +1,4 @@
-// src/api.js - UPDATED API WITHOUT PAYME (IMPORTS FROM payments.js)
+// src/api.js - UPDATED API WITH getUpdatedCourses AND ALL PREVIOUS FUNCTIONS
 import axios from 'axios';
 import { auth } from '@/firebase';
 
@@ -262,6 +262,81 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// =============================================
+// 📚 UPDATED COURSES API FUNCTIONS
+// =============================================
+
+/**
+ * Fetches the list of all updated courses from the backend.
+ * @param {object} filters - An object containing filters like search, category, difficulty, etc.
+ * @returns {Promise<object>} An object containing the courses data or an error.
+ */
+export const getUpdatedCourses = async (filters = {}) => {
+  try {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        params.append(key, filters[key]);
+      }
+    });
+
+    const queryString = params.toString();
+    const url = queryString ? `/updated-courses?${queryString}` : '/updated-courses';
+
+    const { data } = await api.get(url);
+
+    if (data.success) {
+      return {
+        success: true,
+        courses: data.courses || [],
+      };
+    } else {
+      throw new Error(data.error || 'Failed to fetch courses');
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch updated courses:', error);
+    return {
+      success: false,
+      courses: [],
+      error: error.message || 'Network error'
+    };
+  }
+};
+
+/**
+ * Toggles the bookmark status for a course.
+ * @param {string} userId - The ID of the current user.
+ * @param {string} courseId - The ID of the course to bookmark.
+ * @param {boolean} isBookmarked - The new bookmark status.
+ * @returns {Promise<object>} The API response.
+ */
+export const toggleBookmark = async (userId, courseId, isBookmarked) => {
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('No authentication token');
+    
+    const headers = { Authorization: `Bearer ${token}` };
+    const method = isBookmarked ? 'POST' : 'DELETE';
+    const response = await api({
+      method,
+      url: `/updated-courses/${courseId}/bookmark`,
+      headers,
+    });
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    console.error('❌ Failed to toggle bookmark:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to update bookmark status',
+    };
+  }
+};
+
 
 // =============================================
 // 📚 LESSON AND TOPIC API FUNCTIONS - FIXED
@@ -2282,36 +2357,32 @@ export const withErrorHandling = async (apiCall, context = 'API call') => {
   }
 };
 
-// =============================================
 // 🧪 DEVELOPMENT TESTING HELPERS
-// =============================================
-
 export const checkApiHealth = async () => {
   try {
     console.log('🏥 Checking API health...');
     
-    const healthResponse = await healthCheck();
-    console.log('✅ Health check passed:', healthResponse);
+    const healthResponse = await fetch(`${BASE_URL}/health`);
+    const healthData = await healthResponse.json();
     
-    try {
-      const authResponse = await authTest();
-      console.log('✅ Auth test passed:', authResponse);
-    } catch (authError) {
-      console.warn('⚠️ Auth test failed (this is normal if not logged in):', authError.message);
-    }
+    const apiHealthResponse = await fetch(`${BASE_URL}/api/health`);
+    const apiHealthData = await apiHealthResponse.json();
+    
+    const routesResponse = await fetch(`${BASE_URL}/api/routes`);
+    const routesData = await routesResponse.json();
     
     return {
       success: true,
-      health: healthResponse,
-      timestamp: new Date().toISOString()
+      health: healthData,
+      apiHealth: apiHealthData,
+      routes: routesData
     };
     
   } catch (error) {
-    console.error('❌ API health check failed:', error);
+    console.error('❌ Backend connectivity test failed:', error);
     return {
       success: false,
-      error: error.message,
-      timestamp: new Date().toISOString()
+      error: error.message
     };
   }
 };
