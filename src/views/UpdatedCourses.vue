@@ -580,9 +580,15 @@
   
     async mounted() {
       try {
+        // Fetch courses first
         await this.fetchCourses();
+        
+        // Then fetch user progress if authenticated
+        if (this.getAuthToken()) {
+          await this.fetchUserProgress();
+        }
       } catch (error) {
-        console.error('Error in mounted:', error);
+        console.error('Error in mounted lifecycle:', error);
         this.error = 'Ошибка инициализации компонента';
       }
     },
@@ -593,81 +599,92 @@
         this.error = null;
         
         try {
-          // Simulate API call or use fallback data
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          this.courses = this.getFallbackCourses();
+          const apiUrl = import.meta.env.VITE_API_BASE_URL || process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000/api';
+          const token = this.getAuthToken();
+          
+          const response = await fetch(`${apiUrl}/updated-courses`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { 'Authorization': `Bearer ${token}` })
+            }
+          });
+  
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+  
+          const data = await response.json();
+          
+          // Handle different response formats
+          if (data.success && data.courses) {
+            this.courses = data.courses;
+          } else if (data.data) {
+            this.courses = data.data;
+          } else if (Array.isArray(data)) {
+            this.courses = data;
+          } else {
+            throw new Error('Invalid response format');
+          }
+  
+          console.log('✅ Courses fetched successfully:', this.courses.length);
           
           // Clear cache when new data arrives
           this.categoriesCache = [];
           this.difficultiesCache = [];
           
         } catch (error) {
-          console.error('Error fetching courses:', error);
-          this.error = error.message || 'Произошла ошибка при загрузке курсов';
-          this.courses = this.getFallbackCourses();
+          console.error('❌ Error fetching courses:', error);
+          this.error = this.getErrorMessage(error);
+          
+          // Only use fallback in development or if explicitly enabled
+          if (process.env.NODE_ENV === 'development' || import.meta.env.VITE_USE_FALLBACK_DATA) {
+            console.warn('🔄 Using fallback data in development mode');
+            this.courses = this.getFallbackCourses();
+          } else {
+            this.courses = [];
+          }
         } finally {
           this.loading = false;
         }
       },
   
+      getErrorMessage(error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          return 'Не удается подключиться к серверу. Проверьте подключение к интернету.';
+        } else if (error.message.includes('404')) {
+          return 'Курсы не найдены. Возможно, они еще не загружены.';
+        } else if (error.message.includes('401')) {
+          return 'Необходима авторизация для просмотра курсов.';
+        } else if (error.message.includes('403')) {
+          return 'Недостаточно прав для просмотра курсов.';
+        } else if (error.message.includes('500')) {
+          return 'Ошибка сервера. Попробуйте позже.';
+        }
+        return error.message || 'Произошла ошибка при загрузке курсов';
+      },
+  
       getFallbackCourses() {
+        // Only used in development mode as fallback
         return [
           {
-            id: '1',
-            title: 'Создание ИИ-помощника с ChatGPT API',
-            description: 'Научитесь создавать собственного ИИ-помощника используя современные API и инструменты',
+            id: 'demo-1',
+            title: 'Demo: Создание ИИ-помощника',
+            description: 'Демо-курс для разработки',
             category: 'ИИ и автоматизация',
             difficulty: 'Средний',
             duration: '4 часа',
             thumbnail: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=250&fit=crop',
             isPremium: false,
             studentsCount: 1234,
-            tools: ['ChatGPT API', 'Python', 'Flask'],
+            tools: ['ChatGPT API', 'Python'],
             instructor: {
-              name: 'Алексей Иванов',
-              avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-              bio: 'Эксперт по машинному обучению'
+              name: 'Demo Instructor',
+              avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop',
+              bio: 'Demo instructor for development'
             },
-            createdAt: '2024-01-15T00:00:00Z',
+            createdAt: new Date().toISOString(),
             isBookmarked: false
-          },
-          {
-            id: '2',
-            title: 'Профессиональный видеомонтаж в DaVinci Resolve',
-            description: 'Освойте профессиональный видеомонтаж от основ до продвинутых техник',
-            category: 'Видеомонтаж',
-            difficulty: 'Продвинутый',
-            duration: '8 часов',
-            thumbnail: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&h=250&fit=crop',
-            isPremium: true,
-            studentsCount: 567,
-            tools: ['DaVinci Resolve', 'Color Grading'],
-            instructor: {
-              name: 'Мария Петрова',
-              avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
-              bio: 'Профессиональный видеомонтажер'
-            },
-            createdAt: '2024-01-10T00:00:00Z',
-            isBookmarked: false
-          },
-          {
-            id: '3',
-            title: 'React и TypeScript для начинающих',
-            description: 'Изучите современную разработку на React с TypeScript',
-            category: 'Web-разработка',
-            difficulty: 'Начинающий',
-            duration: '6 часов',
-            thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=250&fit=crop',
-            isPremium: false,
-            studentsCount: 890,
-            tools: ['React', 'TypeScript', 'Vite'],
-            instructor: {
-              name: 'Дмитрий Сидоров',
-              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-              bio: 'Senior Frontend Developer'
-            },
-            createdAt: '2024-01-20T00:00:00Z',
-            isBookmarked: true
           }
         ];
       },
@@ -679,12 +696,50 @@
   
       async fetchCourseContent(course) {
         try {
-          // Simulate fetching course content
-          await new Promise(resolve => setTimeout(resolve, 500));
-          this.courseContent = this.generateFallbackLessons(course);
+          const apiUrl = import.meta.env.VITE_API_BASE_URL || process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000/api';
+          const token = this.getAuthToken();
+          const courseId = course.id || course._id;
+  
+          const response = await fetch(`${apiUrl}/lessons/topic/${courseId}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { 'Authorization': `Bearer ${token}` })
+            }
+          });
+  
+          if (response.ok) {
+            const data = await response.json();
+            
+            // Handle different response formats
+            if (data.success && data.data) {
+              this.courseContent = data.data;
+            } else if (data.lessons) {
+              this.courseContent = data.lessons;
+            } else if (Array.isArray(data)) {
+              this.courseContent = data;
+            } else {
+              throw new Error('Invalid lessons response format');
+            }
+  
+            console.log('✅ Course content fetched:', this.courseContent.length, 'lessons');
+          } else {
+            throw new Error(`Failed to fetch course content: ${response.status}`);
+          }
         } catch (error) {
-          console.error('Error fetching course content:', error);
-          this.courseContent = this.generateFallbackLessons(course);
+          console.error('❌ Error fetching course content:', error);
+          
+          // Only use fallback in development
+          if (process.env.NODE_ENV === 'development' || import.meta.env.VITE_USE_FALLBACK_DATA) {
+            console.warn('🔄 Using fallback lessons in development mode');
+            this.courseContent = this.generateFallbackLessons(course);
+          } else {
+            this.courseContent = [];
+            // Show error to user
+            if (this.$toast) {
+              this.$toast.error('Не удалось загрузить содержание курса');
+            }
+          }
         }
       },
   
@@ -901,24 +956,92 @@
         if (!course) return;
         
         try {
+          const apiUrl = import.meta.env.VITE_API_BASE_URL || process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000/api';
+          const token = this.getAuthToken();
+          const courseId = course.id || course._id;
           const wasBookmarked = course.isBookmarked;
           
           // Optimistic update
           course.isBookmarked = !wasBookmarked;
           
-          // Simulate API call
-          await new Promise(resolve => setTimeout(resolve, 500));
+          const response = await fetch(`${apiUrl}/updated-courses/${courseId}/bookmark`, {
+            method: wasBookmarked ? 'DELETE' : 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { 'Authorization': `Bearer ${token}` })
+            }
+          });
+  
+          if (!response.ok) {
+            // Revert on failure
+            course.isBookmarked = wasBookmarked;
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
           
           const message = course.isBookmarked ? 
             'Курс добавлен в избранное' : 
             'Курс удален из избранного';
-          console.log(message);
+            
+          if (this.$toast) {
+            this.$toast.success(message, { duration: 2000 });
+          } else {
+            console.log(message);
+          }
           
         } catch (error) {
-          console.error('Error toggling bookmark:', error);
-          // Revert on failure
+          console.error('❌ Error toggling bookmark:', error);
+          
+          // Revert optimistic update on error
           course.isBookmarked = !course.isBookmarked;
+          
+          if (this.$toast) {
+            this.$toast.error('Ошибка при обновлении избранного');
+          }
         }
+      },
+  
+      // Refresh data method for manual refresh
+      async refreshCourses() {
+        await this.fetchCourses();
+      },
+  
+      // Method to fetch user's enrolled courses
+      async fetchUserProgress() {
+        try {
+          const apiUrl = import.meta.env.VITE_API_BASE_URL || process.env.VUE_APP_API_BASE_URL || 'http://localhost:3000/api';
+          const token = this.getAuthToken();
+          
+          if (!token) return;
+  
+          const response = await fetch(`${apiUrl}/user/progress`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+  
+          if (response.ok) {
+            const progressData = await response.json();
+            // Update courses with progress data
+            this.updateCoursesWithProgress(progressData);
+          }
+        } catch (error) {
+          console.error('Error fetching user progress:', error);
+        }
+      },
+  
+      updateCoursesWithProgress(progressData) {
+        if (!progressData || !Array.isArray(progressData)) return;
+        
+        this.courses.forEach(course => {
+          const progress = progressData.find(p => p.courseId === (course.id || course._id));
+          if (progress) {
+            course.progress = progress.completionPercentage || 0;
+            course.isEnrolled = true;
+            course.lastAccessedAt = progress.lastAccessedAt;
+          }
+        });
       },
   
       formatNumber(num) {
@@ -1051,8 +1174,6 @@
   </script>
   
   <style scoped>
-  /* Clean Modern Styles for UpdatedCourses.vue */
-
 /* CSS Variables */
 :root {
   --primary: #6366f1;
@@ -1954,11 +2075,9 @@
   align-items: center;
 }
 
-.instructor-avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
+.course-instructor {
+  display: flex;
+  align-items: center;
 }
 
 .instructor-name {
