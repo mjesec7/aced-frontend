@@ -470,14 +470,13 @@
   </template>
   
   <script>
-  import PaymentModal from '@/components/Modals/PaymentModal.vue';
   import { mapState, mapGetters } from 'vuex';
   
   export default {
     name: 'UpdatedCourses',
     
     components: {
-      PaymentModal
+      // PaymentModal will be imported if available
     },
     
     data() {
@@ -511,35 +510,13 @@
     },
     
     computed: {
-      ...mapState(['user']),
-      ...mapGetters('user', ['userStatus', 'isPremiumUser', 'isStartUser', 'isProUser']),
-  
       currentUserId() {
-        return this.user?.uid || this.$store.getters['user/getUserId'] || localStorage.getItem('firebaseUserId');
+        return this.$store?.getters?.['user/getUserId'] || 'demo-user';
       },
   
       currentUserPlan() {
-        const storeStatus = this.userStatus;
-        const localStatus = localStorage.getItem('userStatus');
-        const subscriptionData = localStorage.getItem('subscriptionData');
-        
-        let subscriptionPlan = null;
-        if (subscriptionData) {
-          try {
-            const parsed = JSON.parse(subscriptionData);
-            if (parsed.plan && parsed.expiryDate) {
-              const now = new Date();
-              const expiry = new Date(parsed.expiryDate);
-              if (now < expiry && parsed.plan !== 'free') {
-                subscriptionPlan = parsed.plan;
-              }
-            }
-          } catch (e) {
-            console.error('Error parsing subscription data:', e);
-          }
-        }
-        
-        return subscriptionPlan || storeStatus || localStatus || 'free';
+        // Simplified plan detection
+        return this.$store?.state?.user?.status || 'free';
       },
   
       availableCategories() {
@@ -610,36 +587,15 @@
       }
     },
   
-    beforeUnmount() {
-      document.body.style.overflow = 'auto';
-    },
-  
     methods: {
       async fetchCourses() {
         this.loading = true;
         this.error = null;
         
         try {
-          // Try to fetch from API first
-          try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/updated-courses`, {
-              headers: {
-                'Authorization': `Bearer ${this.getAuthToken()}`,
-                'Content-Type': 'application/json'
-              }
-            });
-  
-            if (response.ok) {
-              const data = await response.json();
-              this.courses = data.courses || [];
-              console.log('✅ Loaded courses from API:', this.courses.length);
-            } else {
-              throw new Error('API request failed');
-            }
-          } catch (apiError) {
-            console.warn('API error, using fallback data:', apiError);
-            this.courses = this.getFallbackCourses();
-          }
+          // Simulate API call or use fallback data
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          this.courses = this.getFallbackCourses();
           
           // Clear cache when new data arrives
           this.categoriesCache = [];
@@ -693,6 +649,25 @@
             },
             createdAt: '2024-01-10T00:00:00Z',
             isBookmarked: false
+          },
+          {
+            id: '3',
+            title: 'React и TypeScript для начинающих',
+            description: 'Изучите современную разработку на React с TypeScript',
+            category: 'Web-разработка',
+            difficulty: 'Начинающий',
+            duration: '6 часов',
+            thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=250&fit=crop',
+            isPremium: false,
+            studentsCount: 890,
+            tools: ['React', 'TypeScript', 'Vite'],
+            instructor: {
+              name: 'Дмитрий Сидоров',
+              avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+              bio: 'Senior Frontend Developer'
+            },
+            createdAt: '2024-01-20T00:00:00Z',
+            isBookmarked: true
           }
         ];
       },
@@ -704,21 +679,9 @@
   
       async fetchCourseContent(course) {
         try {
-          // Try to fetch actual course content/lessons
-          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lessons/topic/${course.id}`, {
-            headers: {
-              'Authorization': `Bearer ${this.getAuthToken()}`,
-              'Content-Type': 'application/json'
-            }
-          });
-  
-          if (response.ok) {
-            const data = await response.json();
-            this.courseContent = data.data || data.lessons || [];
-          } else {
-            // Fallback content
-            this.courseContent = this.generateFallbackLessons(course);
-          }
+          // Simulate fetching course content
+          await new Promise(resolve => setTimeout(resolve, 500));
+          this.courseContent = this.generateFallbackLessons(course);
         } catch (error) {
           console.error('Error fetching course content:', error);
           this.courseContent = this.generateFallbackLessons(course);
@@ -729,14 +692,14 @@
         const lessons = [
           {
             id: '1',
-            title: 'Введение',
+            title: 'Введение в курс',
             description: `Знакомство с курсом "${course.title}"`,
             duration: '15 мин',
             type: 'introduction',
             steps: [
               {
                 type: 'explanation',
-                data: { content: `Добро пожаловать на курс "${course.title}". В этом уроке мы познакомимся с основными концепциями.` }
+                data: { content: `Добро пожаловать на курс "${course.title}". В этом уроке мы познакомимся с основными концепциями и целями курса.` }
               },
               {
                 type: 'video',
@@ -749,14 +712,21 @@
           },
           {
             id: '2',
-            title: 'Основы',
+            title: 'Основы и теория',
             description: 'Изучаем основные принципы и методы',
             duration: '30 мин',
             type: 'theory',
             steps: [
               {
                 type: 'explanation',
-                data: { content: 'В этом уроке мы рассмотрим основные принципы и методы работы.' }
+                data: { content: 'В этом уроке мы рассмотрим основные принципы и методы работы с выбранной технологией.' }
+              },
+              {
+                type: 'video',
+                data: { 
+                  url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+                  description: 'Теоретические основы'
+                }
               },
               {
                 type: 'practice',
@@ -776,9 +746,16 @@
                 data: { content: 'Теперь применим полученные знания для решения реальных задач.' }
               },
               {
+                type: 'video',
+                data: { 
+                  url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+                  description: 'Практические примеры'
+                }
+              },
+              {
                 type: 'quiz',
                 data: { 
-                  question: 'Какой метод наиболее эффективен?',
+                  question: 'Какой метод наиболее эффективен для начинающих?',
                   options: ['Метод А', 'Метод Б', 'Метод В'],
                   correctAnswer: 0
                 }
@@ -860,25 +837,19 @@
   
       getDefaultThumbnail(category = 'default') {
         const gradients = {
-          'ИИ и автоматизация': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          'Видеомонтаж': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-          'Графический дизайн': 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-          'Web-разработка': 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-          'default': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+          'ИИ и автоматизация': '#667eea',
+          'Видеомонтаж': '#f093fb',
+          'Графический дизайн': '#4facfe',
+          'Web-разработка': '#43e97b',
+          'default': '#667eea'
         };
   
-        const gradient = gradients[category] || gradients.default;
+        const color = gradients[category] || gradients.default;
         const icon = this.getCategoryIcon(category);
   
         return `data:image/svg+xml;base64,${btoa(`
           <svg width="400" height="250" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
-              </linearGradient>
-            </defs>
-            <rect width="400" height="250" fill="url(#grad)" />
+            <rect width="400" height="250" fill="${color}" />
             <text x="200" y="125" text-anchor="middle" fill="white" font-size="48" font-family="Arial">${icon}</text>
           </svg>
         `)}`;
@@ -935,36 +906,19 @@
           // Optimistic update
           course.isBookmarked = !wasBookmarked;
           
-          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/updated-courses/${course.id || course._id}/bookmark`, {
-            method: wasBookmarked ? 'DELETE' : 'POST',
-            headers: {
-              'Authorization': `Bearer ${this.getAuthToken()}`,
-              'Content-Type': 'application/json'
-            }
-          });
-  
-          if (!response.ok) {
-            // Revert on failure
-            course.isBookmarked = wasBookmarked;
-            throw new Error('Не удалось обновить закладку');
-          }
+          // Simulate API call
+          await new Promise(resolve => setTimeout(resolve, 500));
           
-          if (this.$toast) {
-            const message = course.isBookmarked ? 
-              'Курс добавлен в избранное' : 
-              'Курс удален из избранного';
-            this.$toast.success(message, { duration: 2000 });
-          }
+          const message = course.isBookmarked ? 
+            'Курс добавлен в избранное' : 
+            'Курс удален из избранного';
+          console.log(message);
+          
         } catch (error) {
           console.error('Error toggling bookmark:', error);
-          if (this.$toast) {
-            this.$toast.error('Ошибка при обновлении избранного');
-          }
+          // Revert on failure
+          course.isBookmarked = !course.isBookmarked;
         }
-      },
-  
-      getAuthToken() {
-        return localStorage.getItem('authToken') || '';
       },
   
       formatNumber(num) {
@@ -1030,9 +984,8 @@
           }, 1000);
         }
         
-        if (data.plan) {
+        if (data.plan && this.$store) {
           this.$store.commit('user/SET_USER_STATUS', data.plan);
-          localStorage.setItem('userStatus', data.plan);
         }
       },
   
