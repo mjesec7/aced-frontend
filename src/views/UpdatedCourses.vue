@@ -594,6 +594,17 @@
     },
   
     methods: {
+      // ✅ AUTH TOKEN METHOD - MUST BE FIRST
+      getAuthToken() {
+        // Try multiple token sources
+        return localStorage.getItem('authToken') || 
+               localStorage.getItem('token') || 
+               localStorage.getItem('access_token') ||
+               sessionStorage.getItem('authToken') ||
+               this.$store?.getters?.['auth/getToken'] ||
+               this.$store?.getters?.['user/getToken'] ||
+               '';
+      },
       async fetchCourses() {
         this.loading = true;
         this.error = null;
