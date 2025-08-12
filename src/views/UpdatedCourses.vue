@@ -220,7 +220,7 @@
 <script>
 import { mapState, mapGetters } from 'vuex'
 import { getUpdatedCourses, getLessonsByTopic, toggleBookmark } from '@/api'
-import LessonPlayer from '@/components/LessonPlayer.vue'
+import LessonPlayer from '@/components/Updated/LessonPlayer.vue'
 
 export default {
   name: 'UpdatedCourses',
