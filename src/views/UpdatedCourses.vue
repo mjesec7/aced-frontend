@@ -79,76 +79,239 @@
             </div>
   
             <div v-else class="courses-grid">
-              <CourseCard
+              <article
                 v-for="course in sortedCourses"
                 :key="course.id"
-                :course="course"
-                @view-details="selectCourse(course)"
-              />
+                class="course-card"
+                :class="{ 'premium-course': course.isPremium }"
+                @click="selectCourse(course)"
+              >
+                <div class="course-image-wrapper">
+                  <img
+                    :src="getValidImageUrl(course.thumbnail)"
+                    :alt="course.title"
+                    loading="lazy"
+                    @error="handleImageError"
+                  />
+                  <div class="course-badge" :class="course.isPremium ? 'is-premium' : 'is-free'">
+                    {{ course.isPremium ? 'PRO' : 'БЕСПЛАТНО' }}
+                  </div>
+                </div>
+                <div class="course-content">
+                  <h3 class="course-title">{{ course.title }}</h3>
+                  <p class="course-description">{{ truncateText(course.description, 100) }}</p>
+                  <div class="course-meta">
+                    <span class="course-difficulty">{{ getDifficultyIcon(course.difficulty) }} {{ course.difficulty }}</span>
+                    <span class="course-duration">⏱️ {{ course.duration }}</span>
+                  </div>
+                  <div class="course-footer">
+                    <div class="instructor-info">
+                      <img
+                        :src="getValidImageUrl(course.instructor.avatar)"
+                        :alt="course.instructor.name"
+                        class="instructor-avatar"
+                      />
+                      <span class="instructor-name">{{ course.instructor.name }}</span>
+                    </div>
+                    <button class="view-btn">
+                      Подробнее
+                    </button>
+                  </div>
+                </div>
+              </article>
             </div>
           </div>
         </div>
       </section>
   
-      <section v-else class="course-detail-section">
+      <section v-else-if="selectedCourse && !showLessonView" class="course-detail-section">
         <div class="container">
           <button class="back-btn" @click="selectedCourse = null">← Назад к списку</button>
-          <CourseDetail
-            :course="selectedCourse"
-            :course-content="courseContent"
-            :loading-content="loadingContent"
-            :content-error="contentError"
-            @start-lesson="openLesson"
-            @toggle-bookmark="toggleBookmark"
-            @request-access="handleRequestAccess"
-          />
+          <div class="course-detail-container">
+            <div class="detail-header">
+              <div class="detail-image-wrapper">
+                <img :src="getValidImageUrl(selectedCourse.thumbnail)" :alt="selectedCourse.title" />
+                <div class="premium-badge">{{ selectedCourse.isPremium ? 'PRO' : 'БЕСПЛАТНО' }}</div>
+              </div>
+              <div class="detail-info">
+                <h1 class="detail-title">{{ selectedCourse.title }}</h1>
+                <p class="detail-description">{{ selectedCourse.description }}</p>
+                <div class="detail-meta">
+                  <span class="meta-item">Категория: {{ selectedCourse.category }}</span>
+                  <span class="meta-item">Сложность: {{ getDifficultyIcon(selectedCourse.difficulty) }} {{ selectedCourse.difficulty }}</span>
+                  <span class="meta-item">Длительность: {{ selectedCourse.duration }}</span>
+                </div>
+                <div class="detail-instructor" v-if="selectedCourse.instructor">
+                  <img :src="getValidImageUrl(selectedCourse.instructor.avatar)" class="instructor-avatar" />
+                  <div class="instructor-details">
+                    <h4>{{ selectedCourse.instructor.name }}</h4>
+                    <p>{{ selectedCourse.instructor.bio }}</p>
+                  </div>
+                </div>
+                <div class="detail-actions">
+                  <button
+                    class="btn-primary"
+                    @click="startCourse(selectedCourse)"
+                  >
+                    Начать обучение
+                  </button>
+                  <button
+                    class="btn-secondary"
+                    @click="toggleBookmark(selectedCourse)"
+                  >
+                    {{ selectedCourse.isBookmarked ? '❤️ В избранном' : '🤍 В избранное' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="detail-content">
+              <div v-if="loadingContent" class="content-state">
+                <div class="spinner"></div>
+                <p>Загрузка содержания...</p>
+              </div>
+              <div v-else-if="contentError" class="content-state">
+                <p class="error-message">{{ contentError }}</p>
+              </div>
+              <div v-else class="lessons-list">
+                <h3>Содержание курса ({{ courseContent.length }} уроков)</h3>
+                <div
+                  v-for="(lesson, index) in courseContent"
+                  :key="lesson.id"
+                  class="lesson-item"
+                  @click="openLesson(lesson, index)"
+                >
+                  <span class="lesson-number">{{ index + 1 }}</span>
+                  <div class="lesson-info">
+                    <h4>{{ lesson.title || lesson.lessonName }}</h4>
+                    <p>{{ lesson.description }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
   
-      <PaymentModal
-        v-if="showPaymentModal"
-        :visible="showPaymentModal"
-        :userId="currentUserId"
-        :defaultPlan="requiredPlan"
-        @close="closePaymentModal"
-        @unlocked="handleCourseUnlocked"
-      />
+      <section v-else-if="showLessonView && currentLesson" class="lesson-player-overlay">
+        <div class="lesson-player-modal">
+          <div class="player-header">
+            <button class="close-btn" @click="closeLessonView">
+              <span class="icon">×</span>
+            </button>
+            <div class="player-title-info">
+              <span class="course-title-text">{{ selectedCourse.title }}</span>
+              <h2 class="lesson-title">{{ currentLesson.title || currentLesson.lessonName }}</h2>
+            </div>
+            <div class="progress-bar-wrapper">
+              <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: progressPercentage }"></div>
+              </div>
+              <span class="progress-text">Урок {{ currentLessonIndex + 1 }} из {{ courseContent.length }}</span>
+            </div>
+          </div>
+          <div class="player-content">
+            <div v-if="currentLesson.steps && currentLesson.steps.length" class="lesson-steps">
+              <div
+                v-for="(step, stepIndex) in currentLesson.steps"
+                :key="stepIndex"
+                class="lesson-step"
+              >
+                <div class="step-header">
+                  <span class="step-number">{{ stepIndex + 1 }}</span>
+                  <h3>{{ getStepTitle(step) }}</h3>
+                </div>
+                <div class="step-content">
+                  <div v-if="step.type === 'explanation' || step.type === 'example'" class="step-text">
+                    <p>{{ step.data?.content || step.content }}</p>
+                  </div>
   
-      <LessonPlayer
-        v-if="showLessonView && currentLesson"
-        :lesson="currentLesson"
-        :course-title="selectedCourse.title"
-        :lesson-index="currentLessonIndex"
-        :total-lessons="courseContent.length"
-        @close="closeLessonView"
-        @next-lesson="nextLesson"
-        @previous-lesson="previousLesson"
-        @complete-course="completeCourse"
-      />
+                  <div v-else-if="step.type === 'video'" class="step-video">
+                    <div class="video-container">
+                      <video
+                        v-if="isDirectVideoUrl(step.data?.url || step.videoUrl)"
+                        controls
+                        class="lesson-video"
+                        :poster="step.data?.thumbnail"
+                      >
+                        <source :src="step.data?.url || step.videoUrl" type="video/mp4">
+                        <source :src="step.data?.url || step.videoUrl" type="video/webm">
+                        Ваш браузер не поддерживает видео.
+                      </video>
+                      <div v-else class="video-embed">
+                        <iframe
+                          :src="getEmbedUrl(step.data?.url || step.videoUrl)"
+                          frameborder="0"
+                          allowfullscreen
+                          class="lesson-video"
+                        ></iframe>
+                      </div>
+                    </div>
+                    <p v-if="step.data?.description || step.description" class="video-description">
+                      {{ step.data?.description || step.description }}
+                    </p>
+                  </div>
+  
+                  <div v-else-if="step.type === 'practice'" class="step-practice">
+                    <div class="practice-instructions">
+                      <h4>Практическое задание</h4>
+                      <p>{{ step.data?.instructions || step.instructions }}</p>
+                    </div>
+                  </div>
+  
+                  <div v-else-if="step.type === 'quiz'" class="step-quiz">
+                    <div class="quiz-question">
+                      <h4>{{ step.data?.question || step.question }}</h4>
+                      <div v-if="step.data?.options || step.options" class="quiz-options">
+                        <button
+                          v-for="(option, optIndex) in (step.data?.options || step.options)"
+                          :key="optIndex"
+                          class="quiz-option"
+                          @click="selectQuizOption(stepIndex, optIndex)"
+                        >
+                          {{ option.text || option }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+  
+            <div class="player-navigation">
+              <button
+                class="nav-btn prev"
+                :disabled="currentLessonIndex === 0"
+                @click="previousLesson"
+              >
+                ← Назад
+              </button>
+              <button
+                v-if="currentLessonIndex < courseContent.length - 1"
+                class="nav-btn next"
+                @click="nextLesson"
+              >
+                Далее →
+              </button>
+              <button
+                v-else
+                class="nav-btn complete"
+                @click="completeCourse"
+              >
+                Завершить курс 🎉
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   </template>
   
   <script>
   import { mapState, mapGetters } from 'vuex';
-  import {
-    getUpdatedCourses,
-    getCourseDetails,
-    getLessonsByTopic,
-    toggleBookmark,
-  } from '@/api'; // Assuming these functions exist in your api.js
-  import CourseCard from './components/CourseCard.vue';
-  import CourseDetail from './components/CourseDetail.vue';
-  import LessonPlayer from './components/LessonPlayer.vue';
-  import PaymentModal from './components/PaymentModal.vue'; // Assuming you have a PaymentModal component
+  import { getUpdatedCourses, getLessonsByTopic, toggleBookmark } from '@/api';
   
   export default {
     name: 'UpdatedCourses',
-    components: {
-      CourseCard,
-      CourseDetail,
-      LessonPlayer,
-      PaymentModal,
-    },
     data() {
       return {
         // Filter state
@@ -171,16 +334,12 @@
         // Lesson state
         showLessonView: false,
         currentLessonIndex: 0,
-  
-        // Payment state
-        showPaymentModal: false,
-        requiredPlan: 'pro',
         
         debounceTimeout: null,
       };
     },
     computed: {
-      ...mapGetters('user', ['currentUserId', 'currentUserPlan']), // Assuming Vuex module 'user'
+      ...mapGetters('user', ['currentUserId', 'currentUserPlan']),
   
       availableCategories() {
         return [...new Set(this.courses.map(c => c.category))].filter(Boolean);
@@ -190,7 +349,6 @@
       },
       sortedCourses() {
         const courses = [...this.courses];
-        // Note: The backend should handle sorting, but this provides a client-side fallback
         switch (this.sortBy) {
           case 'popular':
             return courses.sort((a, b) => (b.studentsCount || 0) - (a.studentsCount || 0));
@@ -203,6 +361,9 @@
       },
       currentLesson() {
         return this.courseContent[this.currentLessonIndex] || null;
+      },
+      progressPercentage() {
+        return `${((this.currentLessonIndex + 1) / this.courseContent.length) * 100}%`;
       },
     },
     async mounted() {
@@ -224,9 +385,9 @@
             search: this.searchQuery,
             sort: this.sortBy,
           };
-          const { courses, error } = await getUpdatedCourses(filters);
-          if (error) throw new Error(error);
-          this.courses = courses;
+          const response = await getUpdatedCourses(filters);
+          if (response.error) throw new Error(response.error);
+          this.courses = response.courses;
         } catch (e) {
           console.error('Failed to fetch courses:', e);
           this.error = 'Не удалось загрузить курсы. Пожалуйста, попробуйте позже.';
@@ -241,14 +402,12 @@
         this.contentError = null;
         this.courseContent = [];
         try {
-          // Fetch detailed course data and lessons
-          const { data, error } = await getLessonsByTopic(course.id);
-          if (error) throw new Error(error);
-          this.courseContent = data;
+          const response = await getLessonsByTopic(course.id);
+          if (response.error) throw new Error(response.error);
+          this.courseContent = response.data;
         } catch (e) {
           console.error('Failed to fetch course content:', e);
           this.contentError = 'Не удалось загрузить содержание курса.';
-          // Fallback to mock data if API fails
           this.courseContent = this.generateFallbackLessons(course);
         } finally {
           this.loadingContent = false;
@@ -260,7 +419,6 @@
         const wasBookmarked = course.isBookmarked;
   
         try {
-          // Optimistic update
           course.isBookmarked = !wasBookmarked;
           const response = await toggleBookmark(this.currentUserId, courseId, !wasBookmarked);
           
@@ -271,29 +429,20 @@
           const message = course.isBookmarked ?
             'Курс добавлен в избранное' :
             'Курс удален из избранного';
-          this.$toast.success(message);
+          // this.$toast.success(message);
+          console.log(message);
   
         } catch (error) {
           console.error('Error toggling bookmark:', error);
-          course.isBookmarked = wasBookmarked; // Revert on error
-          this.$toast.error('Не удалось обновить статус избранного.');
+          course.isBookmarked = wasBookmarked;
+          // this.$toast.error('Не удалось обновить статус избранного.');
+          console.log('Не удалось обновить статус избранного.');
         }
       },
   
-      handleRequestAccess() {
-        this.showPaymentModal = true;
-        this.requiredPlan = this.selectedCourse.isPremium ? 'pro' : 'start';
-      },
-  
-      handleCourseUnlocked(plan) {
-        this.showPaymentModal = false;
-        // Optionally update user state
-        this.$store.commit('user/SET_USER_STATUS', plan);
-        this.$toast.success('Доступ к курсу разблокирован!');
-      },
-  
-      closePaymentModal() {
-        this.showPaymentModal = false;
+      startCourse(course) {
+        // Logic for checking access and opening lesson
+        this.openLesson(this.courseContent[0], 0);
       },
   
       openLesson(lesson, index) {
@@ -321,7 +470,7 @@
       completeCourse() {
         this.showLessonView = false;
         this.selectedCourse = null;
-        this.$toast.success('Поздравляем! Вы успешно завершили курс!', { duration: 5000 });
+        console.log('Поздравляем! Вы успешно завершили курс!');
       },
       
       clearFilters() {
@@ -344,13 +493,68 @@
         };
         return icons[difficulty] || '⚪';
       },
+      
+      getStepTitle(step) {
+        const titles = {
+          explanation: '📝 Объяснение',
+          video: '🎥 Видео',
+          practice: '🎯 Практика',
+          quiz: '❓ Викторина',
+          example: '💡 Пример'
+        };
+        return titles[step.type] || 'Шаг';
+      },
+  
+      getValidImageUrl(url) {
+        return url || 'https://via.placeholder.com/400x250.png?text=ACED';
+      },
+      
+      handleImageError(event) {
+        event.target.src = 'https://via.placeholder.com/400x250.png?text=ACED';
+      },
+      
+      isDirectVideoUrl(url) {
+        if (!url) return false;
+        return url.includes('.mp4') || url.includes('.webm') || url.includes('.ogg') || url.includes('blob:');
+      },
+  
+      getEmbedUrl(url) {
+        if (!url) return '';
+        if (url.includes('youtube.com/watch')) {
+          const videoId = url.split('v=')[1]?.split('&')[0];
+          return `https://www.youtube.com/embed/${videoId}`;
+        }
+        if (url.includes('youtu.be/')) {
+          const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+          return `https://www.youtube.com/embed/${videoId}`;
+        }
+        return url;
+      },
+  
+      truncateText(text, length) {
+        if (!text) return '';
+        return text.length > length ? text.substring(0, length) + '...' : text;
+      },
   
       generateFallbackLessons(course) {
         // Mock lesson data for when API fails
         return [
-          { id: '1', title: 'Введение в курс', content: 'Приветствие и обзор курса.', duration: '15 мин' },
-          { id: '2', title: 'Основы дизайна', content: 'Изучение базовых принципов.', duration: '30 мин' },
-          { id: '3', title: 'Практика', content: 'Решение практической задачи.', duration: '45 мин' }
+          { 
+            id: '1', 
+            title: 'Введение в курс', 
+            steps: [
+              { type: 'explanation', data: { content: 'Добро пожаловать на демо-курс! Это первый урок.' } },
+              { type: 'video', data: { url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' } }
+            ],
+          },
+          { 
+            id: '2', 
+            title: 'Основы дизайна', 
+            steps: [
+              { type: 'explanation', data: { content: 'Здесь мы изучим основные принципы.' } },
+              { type: 'practice', data: { instructions: 'Попробуйте создать свой первый макет.' } }
+            ],
+          },
         ];
       },
     },
@@ -548,7 +752,7 @@
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
-    transition: var(--transition);
+    transition: all 0.3s ease-in-out;
     border: none;
   }
   
@@ -582,11 +786,583 @@
     border-radius: 8px;
     border: none;
     cursor: pointer;
-    transition: var(--transition);
+    transition: all 0.3s ease-in-out;
     margin-bottom: 2rem;
   }
   
   .back-btn:hover {
     background-color: var(--color-light-2);
   }
+  
+  /* ================== Course Card ================== */
+  .course-card {
+    background-color: var(--color-light-1);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+  
+  .course-image-wrapper {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+  }
+  
+  .course-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+  }
+  
+  .course-card:hover .course-image-wrapper img {
+    transform: scale(1.05);
+  }
+  
+  .course-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 9999px;
+    color: var(--text-color-light);
+  }
+  
+  .is-premium { background-color: var(--brand-accent); }
+  .is-free { background-color: var(--brand-success); }
+  
+  .course-content {
+    padding: 1.5rem;
+  }
+  
+  .course-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-color-primary);
+    margin-bottom: 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .course-description {
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
+    margin-bottom: 1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .course-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--text-color-muted);
+    margin-bottom: 1.5rem;
+  }
+  
+  .course-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-light-3);
+  }
+  
+  .instructor-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .instructor-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  
+  .instructor-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color-primary);
+  }
+  
+  .view-btn {
+    background-color: var(--brand-primary);
+    color: var(--text-color-light);
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background-color 0.2s;
+    border: none;
+  }
+  
+  .view-btn:hover {
+    background-color: var(--brand-secondary);
+  }
+  
+  
+  /* ================== Course Detail ================== */
+  .course-detail-container {
+    background-color: var(--color-light-1);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 2rem;
+  }
+  
+  .detail-header {
+    display: flex;
+    gap: 2rem;
+    border-bottom: 1px solid var(--color-light-3);
+    padding-bottom: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .detail-image-wrapper {
+    flex-shrink: 0;
+    width: 350px;
+    height: 200px;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .detail-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .premium-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background-color: var(--brand-accent);
+    color: var(--text-color-light);
+    padding: 0.3rem 0.8rem;
+    border-radius: 9999px;
+    font-weight: 700;
+  }
+  
+  .detail-info {
+    flex: 1;
+  }
+  
+  .detail-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-color-primary);
+    margin-bottom: 0.5rem;
+  }
+  
+  .detail-description {
+    font-size: 1rem;
+    color: var(--text-color-secondary);
+    margin-bottom: 1.5rem;
+  }
+  
+  .detail-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    font-size: 0.9rem;
+    color: var(--text-color-muted);
+    margin-bottom: 1.5rem;
+  }
+  
+  .detail-instructor {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: var(--color-light-2);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+  }
+  
+  .detail-instructor .instructor-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  
+  .instructor-details h4 {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  
+  .instructor-details p {
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+  }
+  
+  .detail-actions {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .lessons-list h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-color-primary);
+    margin-bottom: 1.5rem;
+  }
+  
+  .lesson-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: var(--color-light-2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .lesson-item:hover {
+    background-color: var(--color-light-3);
+  }
+  
+  .lesson-number {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--brand-primary);
+  }
+  
+  .lesson-info h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color-primary);
+  }
+  
+  .lesson-info p {
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+  }
+  
+  @media (max-width: 992px) {
+    .detail-header {
+      flex-direction: column;
+    }
+    .detail-image-wrapper {
+      width: 100%;
+    }
+  }
+  
+  /* ================== Lesson Player ================== */
+  .lesson-player-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .lesson-player-modal {
+    background-color: var(--color-light-1);
+    border-radius: var(--border-radius);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 1000px;
+    max-height: 90%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .player-header {
+    position: sticky;
+    top: 0;
+    background-color: var(--color-light-1);
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--color-light-3);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    z-index: 10;
+  }
+  
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: var(--text-color-muted);
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  
+  .close-btn:hover {
+    color: var(--text-color-primary);
+  }
+  
+  .player-title-info {
+    text-align: center;
+  }
+  
+  .course-title-text {
+    font-size: 0.875rem;
+    color: var(--brand-primary);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+  
+  .lesson-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  
+  .progress-bar-wrapper {
+    width: 150px;
+    text-align: right;
+  }
+  
+  .progress-bar {
+    height: 8px;
+    background-color: var(--color-light-3);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+  
+  .progress-fill {
+    height: 100%;
+    background-color: var(--brand-success);
+    transition: width 0.3s ease-in-out;
+  }
+  
+  .progress-text {
+    font-size: 0.8rem;
+    color: var(--text-color-muted);
+  }
+  
+  .player-content {
+    padding: 2rem;
+  }
+  
+  .lesson-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  .lesson-step {
+    border: 1px solid var(--color-light-3);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+  }
+  
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--color-light-2);
+    border-bottom: 1px solid var(--color-light-3);
+  }
+  
+  .step-number {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--brand-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+  
+  .step-content {
+    padding: 1.5rem;
+  }
+  
+  .step-text p {
+    color: var(--text-color-primary);
+    line-height: 1.6;
+  }
+  
+  .step-video {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .video-container {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .video-embed {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    overflow: hidden;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+  }
+  
+  .video-embed iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+  
+  .lesson-video {
+    width: 100%;
+    height: auto;
+    max-height: 500px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+  }
+  
+  .video-description {
+    color: var(--text-color-secondary);
+    font-style: italic;
+    text-align: center;
+  }
+  
+  .step-practice,
+  .step-quiz {
+    padding: 1rem;
+    background: var(--color-light-2);
+    border-radius: var(--border-radius);
+  }
+  
+  .practice-instructions h4,
+  .quiz-question h4 {
+    color: var(--text-color-primary);
+    margin-bottom: 1rem;
+  }
+  
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .quiz-option {
+    background: var(--color-light-1);
+    border: 1px solid var(--color-light-3);
+    padding: 0.75rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+  
+  .quiz-option:hover {
+    background: var(--color-light-3);
+  }
+  
+  
+  .player-navigation {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-light-3);
+  }
+  
+  .nav-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background-color 0.2s;
+    cursor: pointer;
+    border: none;
+  }
+  
+  .nav-btn.prev, .nav-btn.next {
+    background-color: var(--brand-primary);
+    color: var(--text-color-light);
+  }
+  
+  .nav-btn.prev:disabled {
+      background-color: var(--text-color-muted);
+      cursor: not-allowed;
+  }
+  
+  .nav-btn.prev:hover, .nav-btn.next:hover {
+    background-color: var(--brand-secondary);
+  }
+  
+  .nav-btn.complete {
+    background-color: var(--brand-success);
+    color: var(--text-color-light);
+  }
+  
+  .nav-btn.complete:hover {
+    background-color: #0c8861;
+  }
+  
+  /* ================== Responsive Design ================== */
+  @media (max-width: 768px) {
+    .hero-title {
+      font-size: 2rem;
+    }
+    .filter-bar {
+      grid-template-columns: 1fr;
+    }
+    .course-detail-container {
+      padding: 1rem;
+    }
+    .detail-header {
+      flex-direction: column;
+    }
+    .detail-image-wrapper {
+      width: 100%;
+    }
+    .player-header {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+      text-align: center;
+    }
+    .close-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+    }
+    .progress-bar-wrapper {
+      width: 100%;
+      text-align: center;
+    }
+    .player-navigation {
+      flex-direction: column;
+    }
+    .nav-btn {
+      width: 100%;
+    }
+  }
+  
   </style>
