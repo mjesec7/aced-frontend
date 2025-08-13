@@ -1,241 +1,466 @@
 <template>
   <div class="courses-page">
-    <!-- HERO -->
-    <section class="hero">
+    <div class="header">
       <div class="container">
-        <div class="hero-badge">
-          <span>✨ Новые курсы каждую неделю</span>
+        <div class="header-content">
+          <div class="header-badge">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="header-badge-icon"
+            >
+              <path d="M5.5 8.5L2 12l3.5 3.5" />
+              <path d="M18.5 8.5L22 12l-3.5 3.5" />
+              <path d="M12 2l-2 10l2 10l2-10z" />
+            </svg>
+            Новые курсы каждую неделю
+          </div>
+          <h1 class="header-title">Современные профессии</h1>
+          <h2 class="header-subtitle">
+            Изучайте актуальные навыки и развивайтесь вместе с технологиями
+          </h2>
+          <p class="header-description">
+            Откройте для себя курсы по самым востребованным направлениям: ИИ,
+            блокчейн, дизайн, маркетинг и программирование
+          </p>
         </div>
-        <h1 class="hero-title">Современные профессии</h1>
-        <p class="hero-subtitle">
-          Изучайте актуальные навыки и развивайтесь вместе с технологиями
-        </p>
-        <p class="hero-description">
-          Откройте для себя курсы по самым востребованным направлениям: ИИ, блокчейн, дизайн, маркетинг и программирование
-        </p>
       </div>
-    </section>
+    </div>
 
-    <!-- FILTERS -->
-    <section class="courses-section">
+    <div class="content-wrapper">
       <div class="container">
-        <form class="filter-bar" @submit.prevent>
-          <div class="filter-group search">
-            <svg class="search-icon" width="20" height="20" fill="none" stroke="currentColor">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="M21 21l-4.35-4.35"/>
+        <div class="filter-bar">
+          <div class="filter-group-search">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="search-icon"
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.3-4.3"></path>
             </svg>
             <input
-              v-model="searchQuery"
-              type="text"
+              v-model="searchTerm"
+              @input="debounceSearch"
               placeholder="Поиск курсов..."
-              @input="debounceFetch"
-              aria-label="Поиск курсов"
+              class="input-search"
             />
           </div>
-          <div class="filter-group select">
-            <select v-model="selectedCategory" @change="fetchCourses">
-              <option value="">Все категории</option>
-              <option v-for="cat in availableCategories" :key="cat" :value="cat">
-                {{ cat }}
+
+          <div class="filter-group-select">
+            <select
+              v-model="categoryFilter"
+              @change="applyFilters"
+              class="select-field"
+            >
+              <option value="all">Все категории</option>
+              <option
+                v-for="category in categories"
+                :key="category"
+                :value="category"
+              >
+                {{ category }}
               </option>
             </select>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="select-arrow"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
           </div>
-          <div class="filter-group select">
-            <select v-model="selectedDifficulty" @change="fetchCourses">
-              <option value="">Все уровни</option>
-              <option v-for="diff in availableDifficulties" :key="diff" :value="diff">
-                {{ diff }}
-              </option>
+
+          <div class="filter-group-select">
+            <select
+              v-model="levelFilter"
+              @change="applyFilters"
+              class="select-field"
+            >
+              <option value="all">Все уровни</option>
+              <option value="Начинающий">Начинающий</option>
+              <option value="Средний">Средний</option>
+              <option value="Продвинутый">Продвинутый</option>
             </select>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="select-arrow"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
           </div>
+
           <div class="filter-group-buttons">
             <button
-              type="button"
-              :class="{ active: selectedType === 'free' }"
-              @click="toggleType('free')"
-            >Бесплатные</button>
+              :class="['button-filter', { active: typeFilter === 'all' }]"
+              @click="setTypeFilter('all')"
+            >
+              Все
+            </button>
             <button
-              type="button"
-              :class="{ active: selectedType === 'premium' }"
-              @click="toggleType('premium')"
-            >Премиум</button>
+              :class="['button-filter', { active: typeFilter === 'free' }]"
+              @click="setTypeFilter('free')"
+            >
+              Бесплатные
+            </button>
+            <button
+              :class="['button-filter', { active: typeFilter === 'premium' }]"
+              @click="setTypeFilter('premium')"
+            >
+              Премиум
+            </button>
           </div>
-        </form>
+        </div>
 
-        <!-- Results label -->
-        <div class="course-results-label">
-          <span class="results-found">
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+        <div class="results-info">
+          <div class="results-count">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="results-icon"
+            >
+              <path
+                d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"
+              ></path>
             </svg>
-            Найдено курсов: {{ sortedCourses.length }}
-          </span>
-          <span class="results-source">Обновлено сегодня</span>
+            <span>Найдено курсов: {{ filteredCourses.length }}</span>
+          </div>
+          <div class="results-updated">Обновлено сегодня</div>
         </div>
 
-        <!-- Main Grid -->
-        <div v-if="loading" class="content-state">
-          <div class="spinner"></div>
-          <p>Загрузка курсов...</p>
-        </div>
-        <div v-else-if="error" class="content-state error">
-          <div class="state-icon">⚠️</div>
-          <h3>Не удалось загрузить курсы</h3>
-          <p>{{ error }}</p>
-          <button class="btn btn-primary" @click="fetchCourses">Попробовать снова</button>
-        </div>
-        <div v-else-if="sortedCourses.length === 0" class="content-state">
-          <div class="state-icon">🔍</div>
-          <h3>Курсы не найдены</h3>
-          <p>Попробуйте изменить фильтры или поисковый запрос</p>
-          <button class="btn btn-secondary" @click="clearFilters">Сбросить фильтры</button>
-        </div>
-        <div v-else class="courses-grid">
-          <article
-            v-for="course in sortedCourses"
-            :key="course.id || course._id"
+        <div v-if="filteredCourses.length > 0" class="courses-grid">
+          <div
+            v-for="course in filteredCourses"
+            :key="course.id"
             class="course-card"
-            @click="openCourseModal(course)"
-            tabindex="0"
+            @click="openModal(course)"
           >
-            <div class="course-image">
+            <div class="course-card-image-wrapper">
               <img
-                :src="getValidImageUrl(course.thumbnail)"
+                :src="course.image"
                 :alt="course.title"
-                loading="lazy"
-                @error="handleImageError"
+                class="course-card-image"
               />
-              <div class="course-badges">
-                <span class="course-badge" :class="{ premium: course.isPremium }">
-                  {{ course.isPremium ? 'Премиум' : 'Бесплатно' }}
-                </span>
+              <div v-if="course.isPremium" class="badge badge-premium">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="badge-icon"
+                >
+                  <path d="m14 6 4 10L2 10"></path>
+                  <path d="M5 14 2 12l10-2L9.5 2l.5 6"></path>
+                </svg>
+                Премиум
               </div>
+              <div v-else class="badge badge-free">Бесплатно</div>
             </div>
-            <div class="course-content">
-              <div class="course-category">{{ course.category }}</div>
-              <h3 class="course-title">{{ course.title }}</h3>
-              <p class="course-description">{{ course.description }}</p>
-              <div class="course-meta">
-                <div class="course-meta-item">
-                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="12,6 12,12 16,14"/>
+
+            <div class="course-card-content">
+              <div class="course-card-meta">
+                <div class="course-card-category">{{ course.category }}</div>
+              </div>
+              <h3 class="course-card-title">{{ course.title }}</h3>
+              <p class="course-card-description">{{ course.description }}</p>
+              <div class="course-card-stats">
+                <div class="course-card-stat">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="course-card-stat-icon"
+                  >
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
                   </svg>
-                  <span>{{ course.duration || "8 недель" }}</span>
+                  <span>{{ course.duration }}</span>
                 </div>
-                <div class="course-meta-item">
-                  <span class="difficulty-badge" :class="getDifficultyClass(course.difficulty)">
-                    {{ course.difficulty || 'Средний' }}
-                  </span>
-                </div>
+                <div class="course-card-level">{{ course.level }}</div>
               </div>
-              <div class="course-price">
-                <span v-if="course.isPremium && course.price" class="price">
-                  от {{ course.price }}
-                </span>
-                <span v-else-if="course.isPremium" class="price">
-                  от {{ course.price || '4900' }}
-                </span>
-                <span v-else class="price-free">Бесплатно</span>
-              </div>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- MODAL: Course detail -->
-    <div v-if="showCourseModal && selectedCourse" class="modal-overlay" @click.self="closeCourseModal">
-      <div class="course-modal">
-        <button class="modal-close" @click="closeCourseModal" aria-label="Закрыть">×</button>
-        <div class="modal-image">
-          <img :src="getValidImageUrl(selectedCourse.thumbnail)" :alt="selectedCourse.title" @error="handleImageError" />
-          <span class="modal-badge" :class="{ premium: selectedCourse.isPremium }">
-            {{ selectedCourse.isPremium ? 'Премиум' : 'Бесплатно' }}
-          </span>
-        </div>
-        <div class="modal-info">
-          <div class="modal-category">{{ selectedCourse.category }}</div>
-          <h2 class="modal-title">{{ selectedCourse.title }}</h2>
-          <div class="modal-description">{{ selectedCourse.description }}</div>
-          <div class="modal-meta">
-            <span>
-              <svg width="18" height="18" fill="none" stroke="currentColor"><path d="M3 8A5 5 0 1 1 13 8A5 5 0 0 1 3 8Z" stroke-width="1.5"/><path d="M8 5v3l2 2" stroke-width="1.5" stroke-linecap="round"/></svg>
-              {{ selectedCourse.duration || "12 недель" }}
-            </span>
-            <span>
-              <svg width="18" height="18" fill="none" stroke="currentColor"><circle cx="8" cy="8" r="7" stroke-width="1.5"/><path d="M8 4v5l3 2" stroke-width="1.5" stroke-linecap="round"/></svg>
-              {{ getCourseLength(selectedCourse) }} {{ getLessonWord(getCourseLength(selectedCourse)) }}
-            </span>
-            <span>
-              {{ selectedCourse.difficulty }}
-            </span>
-          </div>
-          <div v-if="selectedCourse.isPremium && !isUserPremium" class="modal-locked">
-            <span>🔒 Для доступа требуется премиум-подписка</span>
-            <button class="btn btn-primary" @click="upgradeAccount">Обновить до PRO</button>
-          </div>
-          <div v-else>
-            <button class="btn btn-primary" @click="openLessonView(selectedCourse)">Начать обучение</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- FULLSCREEN LESSON READER: SUBSCRIBERS ONLY -->
-    <div v-if="showLessonView && lessonView.loaded" class="lesson-reader-overlay">
-      <div class="lesson-reader">
-        <button class="reader-close" @click="closeLessonView" aria-label="Закрыть">×</button>
-        <div class="reader-header">
-          <button class="btn-back" @click="closeLessonView">← Назад к курсу</button>
-          <span class="lesson-category">{{ lessonView.course.category }}</span>
-          <h1 class="lesson-title">{{ lessonView.lesson.title }}</h1>
-          <div class="lesson-meta">
-            <span>{{ lessonView.course.title }}</span> •
-            <span>{{ lessonView.lesson.duration || '30 мин' }}</span>
-            <span v-if="lessonView.course.isPremium" class="lesson-premium">Премиум</span>
-          </div>
-        </div>
-        <div v-if="!lessonView.hasAccess" class="locked-message">
-          <div class="locked-icon">🔒</div>
-          <p>Этот урок доступен только для пользователей с подпиской.</p>
-          <button class="btn btn-primary" @click="upgradeAccount">Обновить до PRO</button>
-        </div>
-        <div v-else class="reader-content">
-          <div class="step-navigation">
-            <button class="btn-nav" :disabled="lessonView.stepIndex === 0" @click="prevStep">←</button>
-            <span>Шаг {{ lessonView.stepIndex + 1 }} из {{ lessonView.steps.length }}</span>
-            <button class="btn-nav" :disabled="lessonView.stepIndex === lessonView.steps.length - 1" @click="nextStep">→</button>
-          </div>
-          <div class="lesson-step">
-            <div v-if="currentStep">
-              <h2 v-if="currentStep.title">{{ currentStep.title }}</h2>
-              <div v-if="currentStep.data && currentStep.data.content" v-html="currentStep.data.content"></div>
-              <div v-else-if="currentStep.content" v-html="currentStep.content"></div>
-              <div v-if="currentStep.data && currentStep.data.images && currentStep.data.images.length">
-                <div class="img-list">
-                  <img 
-                    v-for="(img, index) in currentStep.data.images" 
-                    :key="img.id || img.url || index"
-                    :src="getValidImageUrl(img.url)" 
-                    :alt="img.caption || ''"
-                    @error="handleImageError"
-                  />
-                </div>
+              <div class="course-card-provider">
+                <p>от</p>
+                <p>Aced</p>
               </div>
             </div>
           </div>
         </div>
+        <div v-else class="empty-state">
+          <div class="empty-state-icon-wrapper">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="empty-state-icon"
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.3-4.3"></path>
+            </svg>
+          </div>
+          <h3 class="empty-state-title">Курсы не найдены</h3>
+          <p class="empty-state-description">
+            Попробуйте изменить параметры поиска или выбрать другую категорию
+          </p>
+          <button @click="clearFilters" class="button-reset-filters">
+            Сбросить фильтры
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- LESSON LOADING STATE -->
-    <div v-if="showLessonView && !lessonView.loaded" class="lesson-reader-overlay">
-      <div class="lesson-reader">
-        <div class="loading-state">
-          <div class="spinner"></div>
-          <p>Загрузка урока...</p>
+    <div v-if="isModalOpen && selectedCourse" class="modal-overlay">
+      <div class="modal-container">
+        <button class="modal-close" @click="closeModal">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="modal-close-icon"
+          >
+            <path d="M18 6 6 18"></path>
+            <path d="m6 6 12 12"></path>
+          </svg>
+        </button>
+        <div class="modal-content">
+          <div class="modal-image-wrapper">
+            <img
+              :src="selectedCourse.image"
+              :alt="selectedCourse.title"
+              class="modal-image"
+            />
+            <div class="modal-image-overlay"></div>
+            <div v-if="selectedCourse.isPremium" class="modal-badge-premium">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="badge-icon"
+              >
+                <path d="m14 6 4 10L2 10"></path>
+                <path d="M5 14 2 12l10-2L9.5 2l.5 6"></path>
+              </svg>
+              Премиум
+            </div>
+            <div v-else class="modal-badge-free">Бесплатно</div>
+
+            <div class="modal-meta-bottom">
+              <div class="modal-meta-item">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="modal-meta-icon"
+                >
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>{{ selectedCourse.duration }}</span>
+              </div>
+              <div class="modal-provider-info">
+                <p>от</p>
+                <p>Aced</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-info">
+            <div class="modal-header">
+              <div class="modal-badges-header">
+                <div class="modal-category">{{ selectedCourse.category }}</div>
+                <div class="modal-level">{{ selectedCourse.level }}</div>
+              </div>
+              <h3 class="modal-title">{{ selectedCourse.title }}</h3>
+              <p class="modal-description">{{ selectedCourse.fullDescription }}</p>
+            </div>
+
+            <hr class="modal-separator" />
+
+            <div class="modal-details">
+              <div class="modal-details-section">
+                <h4 class="modal-details-title">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="modal-details-icon"
+                  >
+                    <path
+                      d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"
+                    ></path>
+                  </svg>
+                  Что вы изучите:
+                </h4>
+                <ul class="modal-list">
+                  <li
+                    v-for="(skill, index) in selectedCourse.skills.slice(0, 4)"
+                    :key="index"
+                    class="modal-list-item"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="list-check-icon"
+                    >
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"></path>
+                      <path d="M22 4L12 14.01l-3-3"></path>
+                    </svg>
+                    <span>{{ skill }}</span>
+                  </li>
+                  <li
+                    v-if="selectedCourse.skills.length > 4"
+                    class="modal-list-more"
+                  >
+                    и еще {{ selectedCourse.skills.length - 4 }} навыков...
+                  </li>
+                </ul>
+              </div>
+
+              <div class="modal-details-section">
+                <h4 class="modal-details-title">Программа курса:</h4>
+                <ul class="modal-list">
+                  <li
+                    v-for="(module, index) in selectedCourse.modules.slice(0, 6)"
+                    :key="index"
+                    class="modal-list-item-plain"
+                  >
+                    {{ index + 1 }}. {{ module }}
+                  </li>
+                  <li
+                    v-if="selectedCourse.modules.length > 6"
+                    class="modal-list-more"
+                  >
+                    и еще {{ selectedCourse.modules.length - 6 }} модулей...
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <button
+                :class="['button-action', { premium: selectedCourse.isPremium }]"
+              >
+                <svg
+                  v-if="selectedCourse.isPremium"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="button-icon"
+                >
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <svg
+                  v-else
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="button-icon"
+                >
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                {{ selectedCourse.isPremium ? 'Только для подписчиков' : 'Начать курс' }}
+              </button>
+              <p class="modal-action-hint">
+                Начните изучение прямо сейчас и развивайте свои навыки
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -243,1053 +468,1014 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
-import { getUpdatedCourses, getCourseById, getCourseContent } from '@/api'
-
 export default {
   name: 'UpdatedCourses',
   data() {
     return {
-      searchQuery: '',
-      selectedCategory: '',
-      selectedDifficulty: '',
-      selectedType: '',
-      loading: false,
-      error: null,
-      courses: [],
-      availableCategories: [],
-      availableDifficulties: [],
-      showCourseModal: false,
+      courses: [
+        {
+          id: '1',
+          title: 'ИИ и машинное обучение: с нуля до профессионала',
+          description: 'Освойте основы искусственного интеллекта, изучите популярные алгоритмы машинного обучения и создайте свои первые AI-проекты.',
+          fullDescription: 'Комплексный курс по искусственному интеллекту и машинному обучению. Вы изучите основы математики для ML, освоите Python, TensorFlow и создадите реальные проекты с использованием нейронных сетей.',
+          category: 'Искусственный интеллект',
+          duration: '12 недель',
+          level: 'Начинающий',
+          isPremium: true,
+          image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=600&fit=crop',
+          skills: [
+            'Основы машинного обучения и нейронных сетей',
+            'Программирование на Python для Data Science',
+            'Работа с TensorFlow и PyTorch',
+            'Обработка естественного языка (NLP)',
+            'Компьютерное зрение',
+            'Развертывание ML-моделей в продакшн'
+          ],
+          modules: [
+            'Введение в ИИ и основы математики',
+            'Python для машинного обучения',
+            'Линейная алгебра и статистика',
+            'Обучение с учителем',
+            'Обучение без учителя',
+            'Глубокое обучение и нейронные сети',
+            'Обработка естественного языка',
+            'Компьютерное зрение',
+            'Практические проекты',
+            'Развертывание моделей'
+          ]
+        },
+        {
+          id: '2',
+          title: 'UX/UI дизайн: современные подходы',
+          description: 'Изучите принципы пользовательского опыта, освойте Figma и создайте портфолио современного дизайнера.',
+          fullDescription: 'Практический курс по UX/UI дизайну с фокусом на современные тренды. Научитесь создавать интуитивные интерфейсы, проводить пользовательские исследования и работать с командой разработки.',
+          category: 'Дизайн',
+          duration: '8 недель',
+          level: 'Начинающий',
+          isPremium: false,
+          image: 'https://images.unsplash.com/photo-1559028006-448665bd7c7f?w=800&h=600&fit=crop',
+          skills: [
+            'Принципы UX/UI дизайна',
+            'Пользовательские исследования',
+            'Создание wireframes и прототипов',
+            'Работа в Figma',
+            'Типографика и колористика',
+            'Адаптивный дизайн'
+          ],
+          modules: [
+            'Введение в UX/UI дизайн',
+            'Пользовательские исследования',
+            'Информационная архитектура',
+            'Wireframing и прототипирование',
+            'Визуальный дизайн',
+            'Работа с Figma',
+            'Адаптивный дизайн',
+            'Создание портфолио'
+          ]
+        },
+        {
+          id: '3',
+          title: 'Блокчейн и криптовалюты: технологии будущего',
+          description: 'Погрузитесь в мир криптовалют и блокчейн-технологий. Изучите смарт-контракты и создайте свой токен.',
+          fullDescription: 'Полный курс по блокчейн-технологиям от основ до создания собственных проектов. Изучите Ethereum, Solidity, DeFi и NFT.',
+          category: 'Блокчейн',
+          duration: '10 недель',
+          level: 'Средний',
+          isPremium: true,
+          image: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=800&h=600&fit=crop',
+          skills: [
+            'Основы блокчейн-технологий',
+            'Создание смарт-контрактов на Solidity',
+            'Работа с Ethereum и Web3',
+            'DeFi и децентрализованные приложения',
+            'NFT и токенизация',
+            'Безопасность в блокчейне'
+          ],
+          modules: [
+            'Введение в блокчейн',
+            'Криптография и консенсус',
+            'Ethereum и смарт-контракты',
+            'Solidity для начинающих',
+            'Web3 и dApps',
+            'DeFi протоколы',
+            'NFT и метавселенная',
+            'Безопасность и аудит',
+            'Практические проекты'
+          ]
+        },
+        {
+          id: '4',
+          title: 'Цифровой маркетинг: полный гид',
+          description: 'Освойте все каналы цифрового маркетинга: от контекстной рекламы до социальных сетей и email-маркетинга.',
+          fullDescription: 'Комплексный курс по цифровому маркетингу с акцентом на практические навыки. Научитесь создавать эффективные рекламные кампании и анализировать их результаты.',
+          category: 'Маркетинг',
+          duration: '6 недель',
+          level: 'Начинающий',
+          isPremium: false,
+          image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop',
+          skills: [
+            'Стратегия цифрового маркетинга',
+            'Контекстная реклама (Яндекс.Директ, Google Ads)',
+            'SMM и реклама в социальных сетях',
+            'Email-маркетинг и автоворонки',
+            'Аналитика и метрики',
+            'SEO-оптимизация'
+          ],
+          modules: [
+            'Основы цифрового маркетинга',
+            'Контекстная реклама',
+            'Социальные сети и SMM',
+            'Email-маркетинг',
+            'Контент-маркетинг',
+            'Аналитика и оптимизация'
+          ]
+        },
+        {
+          id: '5',
+          title: 'React и Next.js: современная frontend-разработка',
+          description: 'Изучите современные технологии frontend-разработки. Создайте полноценные веб-приложения с использованием React и Next.js.',
+          fullDescription: 'Практический курс по современной frontend-разработке. Освойте React, Next.js, TypeScript и создайте portfolio-проекты для трудоустройства.',
+          category: 'Веб-разработка',
+          duration: '14 недель',
+          level: 'Средний',
+          isPremium: true,
+          image: 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=800&h=600&fit=crop',
+          skills: [
+            'React и его экосистема',
+            'Next.js и серверный рендеринг',
+            'TypeScript для React',
+            'State management (Redux, Zustand)',
+            'Стилизация (CSS-in-JS, Tailwind)',
+            'Тестирование React-приложений'
+          ],
+          modules: [
+            'Основы React',
+            'Компоненты и хуки',
+            'State management',
+            'Роутинг в React',
+            'Next.js и SSR',
+            'TypeScript',
+            'Стилизация компонентов',
+            'API интеграция',
+            'Тестирование',
+            'Деплой приложений'
+          ]
+        },
+        {
+          id: '6',
+          title: 'Data Science: анализ данных на Python',
+          description: 'Станьте специалистом по анализу данных. Изучите Python, pandas, matplotlib и создайте свои первые модели.',
+          fullDescription: 'Полноценный курс по Data Science с практическими проектами. Освойте статистику, машинное обучение и визуализацию данных.',
+          category: 'Анализ данных',
+          duration: '16 недель',
+          level: 'Начинающий',
+          isPremium: true,
+          image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop',
+          skills: [
+            'Python для анализа данных',
+            'Pandas и NumPy',
+            'Визуализация данных (Matplotlib, Seaborn)',
+            'Статистический анализ',
+            'Машинное обучение с Scikit-learn',
+            'Работа с базами данных'
+          ],
+          modules: [
+            'Введение в Data Science',
+            'Python основы',
+            'NumPy и Pandas',
+            'Статистика и вероятность',
+            'Визуализация данных',
+            'Машинное обучение',
+            'Обработка текстовых данных',
+            'Временные ряды',
+            'Практические проекты'
+          ]
+        },
+      ],
       selectedCourse: null,
+      isModalOpen: false,
+      searchTerm: '',
+      categoryFilter: 'all',
+      levelFilter: 'all',
+      typeFilter: 'all',
       debounceTimeout: null,
-
-      // LESSON VIEW MODAL
-      showLessonView: false,
-      lessonView: {
-        loaded: false,
-        course: null,
-        lesson: null,
-        steps: [],
-        stepIndex: 0,
-        hasAccess: false
-      }
-    }
+    };
   },
   computed: {
-    ...mapGetters('user', ['currentUserPlan']),
-    isUserPremium() {
-      return this.currentUserPlan && ['start','pro','premium'].includes(this.currentUserPlan.toLowerCase())
+    categories() {
+      return [...new Set(this.courses.map((course) => course.category))];
     },
-    sortedCourses() {
-      return this.filterCourses([...this.courses])
+    filteredCourses() {
+      return this.courses.filter((course) => {
+        const matchesSearch =
+          course.title.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+          course.description.toLowerCase().includes(this.searchTerm.toLowerCase());
+        const matchesCategory =
+          this.categoryFilter === 'all' || course.category === this.categoryFilter;
+        const matchesLevel =
+          this.levelFilter === 'all' || course.level === this.levelFilter;
+        const matchesType =
+          this.typeFilter === 'all' ||
+          (this.typeFilter === 'free' && !course.isPremium) ||
+          (this.typeFilter === 'premium' && course.isPremium);
+
+        return matchesSearch && matchesCategory && matchesLevel && matchesType;
+      });
     },
-    currentStep() {
-      if (!this.lessonView || !this.lessonView.steps) return null
-      return this.lessonView.steps[this.lessonView.stepIndex] || null
-    }
-  },
-  async mounted() {
-    await this.fetchCourses()
   },
   methods: {
-    debounceFetch() {
-      clearTimeout(this.debounceTimeout)
-      this.debounceTimeout = setTimeout(this.fetchCourses, 500)
+    debounceSearch() {
+      clearTimeout(this.debounceTimeout);
+      this.debounceTimeout = setTimeout(this.applyFilters, 300);
     },
-    toggleType(type) {
-      this.selectedType = this.selectedType === type ? '' : type
-      this.fetchCourses()
+    applyFilters() {
+      // The computed property `filteredCourses` handles the filtering automatically
     },
-    async fetchCourses() {
-      this.loading = true
-      this.error = null
-      try {
-        const filters = {
-          category: this.selectedCategory,
-          difficulty: this.selectedDifficulty,
-          search: this.searchQuery,
-          type: this.selectedType
-        }
-        const response = await getUpdatedCourses(filters)
-        if (response.success) {
-          this.courses = response.courses || []
-          this.availableCategories = response.categories || []
-          this.availableDifficulties = response.difficulties || []
-        } else {
-          throw new Error(response.error || 'Failed to fetch courses')
-        }
-      } catch (e) {
-        this.error = e.message || 'Не удалось загрузить курсы. Пожалуйста, попробуйте позже.'
-      } finally {
-        this.loading = false
-      }
-    },
-    filterCourses(courses) {
-      let filtered = courses
-      if (this.searchQuery) {
-        const query = this.searchQuery.toLowerCase()
-        filtered = filtered.filter(course =>
-          (course.title || '').toLowerCase().includes(query) ||
-          (course.description || '').toLowerCase().includes(query)
-        )
-      }
-      if (this.selectedCategory) {
-        filtered = filtered.filter(course => course.category === this.selectedCategory)
-      }
-      if (this.selectedDifficulty) {
-        filtered = filtered.filter(course => course.difficulty === this.selectedDifficulty)
-      }
-      if (this.selectedType) {
-        if (this.selectedType === 'free') {
-          filtered = filtered.filter(course => !course.isPremium)
-        } else if (this.selectedType === 'premium') {
-          filtered = filtered.filter(course => course.isPremium)
-        }
-      }
-      return filtered
-    },
-    openCourseModal(course) {
-      this.selectedCourse = course
-      this.showCourseModal = true
-    },
-    closeCourseModal() {
-      this.showCourseModal = false
-      this.selectedCourse = null
-    },
-    openLessonView(course) {
-      this.showCourseModal = false
-      this.lessonView.loaded = false
-      this.showLessonView = true
-      this.loadLessonView(course)
-    },
-    async loadLessonView(course) {
-      this.lessonView.loaded = false
-      try {
-        let courseObj = course
-        if (!course.curriculum) {
-          const res = await getCourseById(course.id || course._id)
-          if (!res.success) throw new Error('Курс не найден')
-          courseObj = res.data
-        }
-        const lessonsRes = await getCourseContent(courseObj.id || courseObj._id)
-        if (!lessonsRes.success) throw new Error('Содержание курса не найдено')
-        const lessons = lessonsRes.data || []
-        const lesson = lessons[0]
-        this.lessonView.course = courseObj
-        this.lessonView.lesson = lesson
-        this.lessonView.steps = lesson.steps || []
-        this.lessonView.stepIndex = 0
-        this.lessonView.hasAccess = !courseObj.isPremium || this.isUserPremium
-      } catch (e) {
-        this.lessonView.course = course
-        this.lessonView.lesson = { title: 'Ошибка', steps: [] }
-        this.lessonView.steps = []
-        this.lessonView.hasAccess = false
-      }
-      this.lessonView.loaded = true
-    },
-    closeLessonView() {
-      this.showLessonView = false
-      this.lessonView = {
-        loaded: false, course: null, lesson: null, steps: [], stepIndex: 0, hasAccess: false
-      }
-    },
-    prevStep() {
-      if (this.lessonView.stepIndex > 0) this.lessonView.stepIndex--
-    },
-    nextStep() {
-      if (this.lessonView.stepIndex < this.lessonView.steps.length - 1) this.lessonView.stepIndex++
-    },
-    upgradeAccount() {
-      this.$router.push('/pricing')
+    setTypeFilter(type) {
+      this.typeFilter = type;
     },
     clearFilters() {
-      this.searchQuery = ''
-      this.selectedCategory = ''
-      this.selectedDifficulty = ''
-      this.selectedType = ''
-      this.fetchCourses()
+      this.searchTerm = '';
+      this.categoryFilter = 'all';
+      this.levelFilter = 'all';
+      this.typeFilter = 'all';
     },
-    getValidImageUrl(url) {
-      if (!url) return 'https://via.placeholder.com/600x300/6366f1/ffffff?text=ACED+Course'
-      if (url.startsWith('http')) return url
-      if (url.startsWith('/')) return `https://api.aced.live${url}`
-      return `https://api.aced.live/${url}`
+    openModal(course) {
+      this.selectedCourse = course;
+      this.isModalOpen = true;
     },
-    handleImageError(event) {
-      event.target.src = 'https://via.placeholder.com/600x300/6366f1/ffffff?text=ACED+Course'
+    closeModal() {
+      this.isModalOpen = false;
+      this.selectedCourse = null;
     },
-    getCourseLength(course) {
-      return course.curriculum?.length || course.lessonCount || 0
-    },
-    getLessonWord(count) {
-      if (count % 10 === 1 && count % 100 !== 11) return 'урок'
-      if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return 'урока'
-      return 'уроков'
-    },
-    getDifficultyClass(difficulty) {
-      const diff = (difficulty || '').toLowerCase()
-      if (diff.includes('начин') || diff === 'легкий') return 'beginner'
-      if (diff.includes('средн')) return 'intermediate'
-      if (diff.includes('продвин') || diff === 'сложный') return 'advanced'
-      return 'intermediate'
-    }
-  }
-}
+  },
+};
 </script>
 
 <style scoped>
 /* CSS Variables */
 :root {
-  --primary-color: #3b82f6;
-  --secondary-color: #1e293b;
-  --accent-color: #6366f1;
-  --success-color: #10b981;
-  --warning-color: #f59e0b;
-  --danger-color: #ef4444;
-  
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --bg-dark: #1e293b;
-  --bg-card: #ffffff;
-  
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  
-  --border-color: #e2e8f0;
-  --border-light: #f1f5f9;
-  
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --color-background: #ffffff;
+  --color-foreground: #222;
+  --color-card: #ffffff;
+  --color-card-foreground: #222;
+  --color-muted: #f3f3f5;
+  --color-muted-foreground: #717182;
+  --color-accent: #e9ebef;
+  --color-accent-foreground: #222;
+  --color-border: rgba(0, 0, 0, 0.1);
+  --color-input-background: #f3f3f5;
+  --color-ring: #ccc;
+  --color-brand: #8b7fbf;
+  --color-brand-light: #a599d4;
+  --color-brand-dark: #6b5b9a;
+  --color-brand-foreground: #ffffff;
+  --color-success: #16a34a;
+  --color-green-100: #d1fae5;
+  --color-green-800: #166534;
 }
 
-/* Base Styles */
+.dark {
+  --color-background: #111827;
+  --color-foreground: #f9fafb;
+  --color-card: #1f2937;
+  --color-card-foreground: #f9fafb;
+  --color-muted: #374151;
+  --color-muted-foreground: #9ca3af;
+  --color-accent: #374151;
+  --color-accent-foreground: #f9fafb;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-input-background: #1f2937;
+  --color-ring: #555;
+  --color-brand: #9b8fd9;
+  --color-brand-light: #b5a9e4;
+  --color-brand-dark: #7b6bbf;
+  --color-brand-foreground: #ffffff;
+  --color-success: #22c55e;
+  --color-green-100: #14532d;
+  --color-green-800: #d1fae5;
+}
+
 .courses-page {
-  background: var(--bg-secondary);
+  background-color: var(--color-background);
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-  color: var(--text-primary);
+  color: var(--color-foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", sans-serif;
+  line-height: 1.5;
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 1rem;
 }
 
-/* Hero Section */
-.hero {
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-  color: white;
-  padding: 80px 0 120px;
+/* Header */
+.header {
+  background-image: linear-gradient(to right, #111827, #1f2937, #111827);
+  color: #fff;
+  padding: 4rem 0;
   text-align: center;
-  position: relative;
-  overflow: hidden;
+}
+@media (min-width: 768px) {
+  .header {
+    padding: 6rem 0;
+  }
 }
 
-.hero::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-  opacity: 0.3;
+.header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
-
-.hero-badge {
+.header-badge {
   display: inline-flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50px;
-  padding: 8px 16px;
-  font-size: 14px;
+  gap: 0.5rem;
+  background-color: rgba(139, 127, 191, 0.2);
+  color: var(--color-brand-light);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
   font-weight: 500;
-  margin-bottom: 24px;
-  backdrop-filter: blur(10px);
-}
-
-.hero-title {
-  font-size: 3.5rem;
-  font-weight: 800;
-  margin-bottom: 16px;
-  line-height: 1.1;
-  background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.hero-subtitle {
-  font-size: 1.25rem;
-  font-weight: 400;
-  margin-bottom: 8px;
-  opacity: 0.9;
-}
-
-.hero-description {
-  font-size: 1.1rem;
-  opacity: 0.75;
-  max-width: 600px;
   margin: 0 auto;
-  line-height: 1.6;
+}
+.header-badge-icon {
+  width: 1rem;
+  height: 1rem;
+}
+.header-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  background-image: linear-gradient(to right, #fff, #e5e7eb, #9ca3af);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@media (min-width: 768px) {
+  .header-title {
+    font-size: 3.75rem;
+  }
+}
+.header-subtitle {
+  font-size: 1.25rem;
+  color: #d1d5db;
+}
+@media (min-width: 768px) {
+  .header-subtitle {
+    font-size: 1.5rem;
+  }
+}
+.header-description {
+  font-size: 1.125rem;
+  color: #9ca3af;
+  max-width: 42rem;
+  margin: 0 auto;
 }
 
-/* Courses Section */
-.courses-section {
-  margin-top: -80px;
-  position: relative;
-  z-index: 10;
+.content-wrapper {
+  padding: 2rem 0;
 }
 
-/* Filter Bar */
+/* Filters */
 .filter-bar {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl);
-  padding: 24px;
+  background-color: var(--color-card);
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
   display: flex;
-  gap: 16px;
-  align-items: center;
-  margin-bottom: 32px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 1rem;
+}
+@media (min-width: 1024px) {
+  .filter-bar {
+    flex-direction: row;
+    align-items: center;
+  }
 }
 
-.filter-group {
-  flex: 1;
-  min-width: 200px;
-}
-
-.filter-group.search {
-  flex: 2;
-  min-width: 300px;
+.filter-group-search {
   position: relative;
+  flex: 1;
+}
+@media (min-width: 1024px) {
+  .filter-group-search {
+    flex: 1.5;
+  }
 }
 
 .search-icon {
   position: absolute;
-  left: 16px;
+  left: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-muted);
-  z-index: 1;
+  color: var(--color-muted-foreground);
+  width: 1rem;
+  height: 1rem;
 }
-
-.filter-group input[type="text"] {
+.input-search {
   width: 100%;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 12px 16px 12px 48px;
-  font-size: 16px;
-  background: var(--bg-primary);
-  transition: all 0.2s ease;
-}
-
-.filter-group input[type="text"]:focus {
+  height: 2.5rem;
+  padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background-color: var(--color-input-background);
+  font-size: 0.875rem;
   outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.1);
+  transition: border-color 0.2s;
+}
+.input-search:focus {
+  border-color: rgba(139, 127, 191, 0.5);
+  box-shadow: 0 0 0 2px rgba(139, 127, 191, 0.2);
 }
 
-.filter-group select {
+.filter-group-select {
+  position: relative;
+  flex: 1;
+}
+.select-field {
   width: 100%;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 12px 16px;
-  font-size: 16px;
-  background: var(--bg-primary);
+  height: 2.5rem;
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background-color: var(--color-input-background);
+  font-size: 0.875rem;
+  outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
-
-.filter-group select:focus {
-  outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.1);
+@media (min-width: 1024px) {
+  .filter-group-select.category {
+    width: 16rem;
+  }
+  .filter-group-select.level {
+    width: 12rem;
+  }
 }
-
+.select-arrow {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  opacity: 0.5;
+  pointer-events: none;
+}
 .filter-group-buttons {
   display: flex;
-  gap: 8px;
+  gap: 0.5rem;
 }
-
-.filter-group-buttons button {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  border-radius: var(--radius-md);
-  padding: 12px 20px;
+.button-filter {
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
   font-weight: 500;
-  font-size: 14px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  transition: all 0.2s ease-in-out;
+}
+.button-filter:hover {
+  background-color: var(--color-accent);
+  color: var(--color-accent-foreground);
+}
+.button-filter.active {
+  background-color: var(--color-brand);
+  color: #fff;
+  border-color: var(--color-brand);
+}
+.button-filter.active.premium {
+  background-color: var(--color-brand);
+}
+.button-filter.active.free {
+  background-color: var(--color-success);
 }
 
-.filter-group-buttons button:hover {
-  background: var(--border-light);
-}
-
-.filter-group-buttons button.active {
-  background: var(--accent-color);
-  color: white;
-  border-color: var(--accent-color);
-}
-
-/* Results Label */
-.course-results-label {
+/* Results Info */
+.results-info {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
-  color: var(--text-secondary);
-  font-size: 16px;
+  align-items: center;
+  margin-bottom: 1.5rem;
 }
-
-.results-found {
+.results-count {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 500;
+  gap: 0.5rem;
+  color: var(--color-muted-foreground);
+  font-size: 0.875rem;
 }
-
-.results-source {
-  font-size: 14px;
-  color: var(--text-muted);
+.results-icon {
+  width: 1rem;
+  height: 1rem;
 }
-
-/* Course Grid */
-.courses-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  gap: 24px;
-  margin-bottom: 40px;
-}
-
-/* Course Cards */
-.course-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.course-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-xl);
-  border-color: var(--accent-color);
-}
-
-.course-image {
-  position: relative;
-  width: 100%;
-  height: 200px;
-  background: var(--border-light);
-  overflow: hidden;
-}
-
-.course-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.course-card:hover .course-image img {
-  transform: scale(1.05);
-}
-
-.course-badges {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  right: 16px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.course-badge {
-  background: var(--success-color);
-  color: white;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-radius: 20px;
-  padding: 6px 12px;
-  box-shadow: var(--shadow-md);
-}
-
-.course-badge.premium {
-  background: var(--warning-color);
-}
-
-.course-content {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  gap: 16px;
-}
-
-.course-category {
-  display: inline-block;
-  background: var(--bg-secondary);
-  color: var(--accent-color);
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-radius: var(--radius-sm);
-  padding: 6px 12px;
-  align-self: flex-start;
-}
-
-.course-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.course-description {
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.5;
-  flex: 1;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.course-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: auto;
-}
-
-.course-meta-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--text-muted);
-  font-size: 14px;
-}
-
-.course-meta-item svg {
-  width: 16px;
-  height: 16px;
-}
-
-.difficulty-badge {
-  font-size: 12px;
-  font-weight: 500;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  text-transform: capitalize;
-}
-
-.difficulty-badge.beginner {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.difficulty-badge.intermediate {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.difficulty-badge.advanced {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.course-price {
-  margin-top: 8px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border-light);
-}
-
-.price {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.price-free {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--success-color);
-}
-
-/* Loading and Error States */
-.content-state {
-  text-align: center;
-  padding: 80px 20px;
-  color: var(--text-secondary);
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--border-color);
-  border-top: 3px solid var(--accent-color);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 16px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.state-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-
-.content-state h3 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: var(--text-primary);
-}
-
-.content-state p {
-  margin-bottom: 24px;
-}
-
-/* Buttons */
-.btn {
+.results-updated {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border-radius: var(--radius-md);
+  border-radius: 9999px;
+  border: 1px solid rgba(139, 127, 191, 0.3);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  font-size: 14px;
-  text-decoration: none;
+  color: var(--color-brand);
+}
+
+/* Courses Grid */
+.courses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+@media (min-width: 768px) {
+  .courses-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+@media (min-width: 1024px) {
+  .courses-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Course Card */
+.course-card {
   cursor: pointer;
+  background-color: var(--color-card);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.course-card:hover {
+  transform: translateY(-0.25rem);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  border-color: rgba(139, 127, 191, 0.3);
+}
+
+.course-card-image-wrapper {
+  position: relative;
+  padding: 1.5rem 1.5rem 0.5rem;
+}
+.course-card-image {
+  width: 100%;
+  height: 12rem;
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
+
+.badge {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.badge-premium {
+  background-image: linear-gradient(
+    to right,
+    var(--color-brand),
+    var(--color-brand-light)
+  );
+  color: #fff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.1);
   border: none;
-  transition: all 0.2s ease;
+}
+.badge-free {
+  background-color: var(--color-green-100);
+  color: var(--color-green-800);
+  border: none;
+}
+.badge-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: 0.25rem;
 }
 
-.btn-primary {
-  background: var(--accent-color);
-  color: white;
+.course-card-content {
+  padding: 1.5rem;
+  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.course-card-meta {
+  display: flex;
+  justify-content: space-between;
+}
+.course-card-category {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid rgba(139, 127, 191, 0.3);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-brand);
+}
+.course-card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0;
+  transition: color 0.2s ease;
+}
+.course-card:hover .course-card-title {
+  color: var(--color-brand);
+}
+.course-card-description {
+  font-size: 0.875rem;
+  color: var(--color-muted-foreground);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.course-card-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--color-muted-foreground);
+}
+.course-card-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.course-card-stat-icon {
+  width: 1rem;
+  height: 1rem;
+}
+.course-card-level {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid rgba(139, 127, 191, 0.2);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-brand);
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: #4338ca;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
+.course-card-provider {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+}
+.course-card-provider p:first-child {
+  font-size: 0.875rem;
+  color: var(--color-muted-foreground);
+}
+.course-card-provider p:last-child {
+  font-weight: 500;
+  color: var(--color-brand);
 }
 
-.btn-secondary {
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 4rem 0;
 }
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--border-light);
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+.empty-state-icon-wrapper {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1rem;
+  background-color: var(--color-muted);
+  border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.empty-state-icon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--color-muted-foreground);
+}
+.empty-state-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+.empty-state-description {
+  color: var(--color-muted-foreground);
+  margin-bottom: 1rem;
+}
+.button-reset-filters {
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(139, 127, 191, 0.3);
+  background-color: var(--color-background);
+  color: var(--color-brand);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.button-reset-filters:hover {
+  background-color: rgba(139, 127, 191, 0.1);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 50;
-  padding: 20px;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-
-.course-modal {
-  background: var(--bg-primary);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl);
-  max-width: 500px;
-  width: 100%;
-  max-height: 90vh;
-  overflow: hidden;
+.modal-container {
   position: relative;
-  animation: modalIn 0.3s ease-out;
+  width: 95%;
+  max-width: 1200px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background-color: var(--color-background);
+  border-radius: 0.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
-
-@keyframes modalIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+@media (min-width: 640px) {
+  .modal-container {
+    border-radius: 0.5rem;
   }
 }
 
 .modal-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
-  background: rgba(0, 0, 0, 0.1);
-  border: none;
-  border-radius: 50%;
-  color: white;
-  font-size: 18px;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+  height: 2rem;
+  width: 2rem;
+  border-radius: 9999px;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  z-index: 1;
-  transition: background 0.2s ease;
+  border: none;
+  transition: background-color 0.2s;
 }
-
 .modal-close:hover {
-  background: rgba(0, 0, 0, 0.2);
+  background-color: rgba(0, 0, 0, 0.7);
+}
+.modal-close-icon {
+  width: 1rem;
+  height: 1rem;
 }
 
-.modal-image {
+.modal-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+@media (min-width: 1024px) {
+  .modal-content {
+    grid-template-columns: 2fr 3fr;
+  }
+}
+
+.modal-image-wrapper {
   position: relative;
-  width: 100%;
-  height: 200px;
-  background: var(--border-light);
 }
-
-.modal-image img {
+.modal-image {
   width: 100%;
-  height: 100%;
+  height: 16rem;
   object-fit: cover;
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
 }
-
-.modal-badge {
+@media (min-width: 1024px) {
+  .modal-image {
+    height: 100%;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0.5rem;
+  }
+}
+.modal-image-overlay {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  background: var(--success-color);
-  color: white;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  border-radius: 20px;
-  padding: 6px 12px;
+  inset: 0;
+  background-image: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
 }
 
-.modal-badge.premium {
-  background: var(--warning-color);
+.modal-badge-premium, .modal-badge-free {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  border: none;
+}
+.modal-badge-premium {
+  background-image: linear-gradient(to right, var(--color-brand), var(--color-brand-light));
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+.modal-badge-free {
+  background-color: var(--color-success);
+}
+.modal-meta-bottom {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+.modal-meta-icon {
+  width: 1rem;
+  height: 1rem;
+}
+.modal-provider-info {
+  text-align: right;
+}
+.modal-provider-info p:first-child {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+.modal-provider-info p:last-child {
+  font-weight: 500;
 }
 
 .modal-info {
-  padding: 24px;
-}
-
-.modal-category {
-  display: inline-block;
-  background: var(--bg-secondary);
-  color: var(--accent-color);
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  border-radius: var(--radius-sm);
-  padding: 6px 12px;
-  margin-bottom: 12px;
-}
-
-.modal-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 12px;
-  line-height: 1.3;
-}
-
-.modal-description {
-  color: var(--text-secondary);
-  line-height: 1.6;
-  margin-bottom: 16px;
-}
-
-.modal-meta {
-  display: flex;
-  gap: 16px;
-  color: var(--text-muted);
-  font-size: 14px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-}
-
-.modal-meta span {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.modal-locked {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: var(--radius-md);
-  padding: 16px;
-  margin-bottom: 16px;
-  color: var(--danger-color);
-  text-align: center;
-}
-
-/* Lesson Reader */
-.lesson-reader-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  z-index: 60;
-  overflow-y: auto;
-  padding: 20px;
-}
-
-.lesson-reader {
-  background: var(--bg-primary);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl);
-  max-width: 800px;
-  width: 100%;
-  margin: 20px 0;
-  position: relative;
-  animation: modalIn 0.3s ease-out;
-}
-
-.reader-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
-  background: var(--bg-secondary);
-  border: none;
-  border-radius: 50%;
-  color: var(--text-secondary);
-  font-size: 18px;
-  cursor: pointer;
-  z-index: 1;
-}
-
-.reader-header {
-  padding: 24px;
-  border-bottom: 1px solid var(--border-light);
-}
-
-.btn-back {
-  background: var(--bg-secondary);
-  color: var(--accent-color);
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  margin-bottom: 16px;
-}
-
-.lesson-category {
-  display: inline-block;
-  background: var(--bg-secondary);
-  color: var(--accent-color);
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  border-radius: var(--radius-sm);
-  padding: 6px 12px;
-  margin-bottom: 12px;
-}
-
-.lesson-title {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 8px;
-  line-height: 1.2;
-}
-
-.lesson-meta {
-  color: var(--text-muted);
-  font-size: 14px;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.lesson-premium {
-  background: var(--warning-color);
-  color: white;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  font-size: 12px;
-}
-
-.locked-message {
-  text-align: center;
-  padding: 60px 24px;
-}
-
-.locked-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-
-.reader-content {
-  padding: 24px;
-}
-
-.step-navigation {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.btn-nav {
-  background: var(--bg-secondary);
-  color: var(--accent-color);
-  border: none;
-  border-radius: var(--radius-md);
-  padding: 8px 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-nav:hover:not(:disabled) {
-  background: var(--border-light);
-}
-
-.lesson-step {
-  padding: 20px 0;
-  line-height: 1.7;
-}
-
-.lesson-step h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 16px;
-  color: var(--text-primary);
-}
-
-.img-list {
-  margin-top: 24px;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 1.5rem;
+}
+.modal-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.modal-badges-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-category, .modal-level {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-brand);
+}
+.modal-category {
+  border: 1px solid rgba(139, 127, 191, 0.3);
+}
+.modal-level {
+  border: 1px solid rgba(139, 127, 191, 0.2);
+}
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.modal-description {
+  color: var(--color-muted-foreground);
 }
 
-.img-list img {
-  max-width: 100%;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+.modal-separator {
+  height: 1px;
+  background-color: var(--color-border);
+  border: none;
 }
 
-.loading-state {
+.modal-details {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+@media (min-width: 768px) {
+  .modal-details {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.modal-details-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.modal-details-title {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+}
+.modal-details-icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-brand);
+}
+.modal-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.modal-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+.list-check-icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-success);
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+}
+.modal-list-more {
+  font-size: 0.875rem;
+  color: var(--color-muted-foreground);
+  margin-left: 1.5rem;
+}
+.modal-list-item-plain {
+  font-size: 0.875rem;
+  color: var(--color-muted-foreground);
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 1rem;
+}
+.button-action {
+  width: 100%;
+  height: 2.75rem;
+  padding: 0 2rem;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-image: linear-gradient(
+    to right,
+    var(--color-brand),
+    var(--color-brand-light)
+  );
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+.button-action:hover {
+  background-image: linear-gradient(
+    to right,
+    var(--color-brand-dark),
+    var(--color-brand)
+  );
+}
+.button-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-right: 0.5rem;
+}
+.modal-action-hint {
+  font-size: 0.75rem;
   text-align: center;
-  padding: 80px 24px;
-  color: var(--accent-color);
-}
-
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .courses-grid {
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  }
-  
-  .filter-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .filter-group {
-    min-width: auto;
-  }
-  
-  .filter-group.search {
-    min-width: auto;
-  }
-}
-
-@media (max-width: 768px) {
-  .container {
-    padding: 0 16px;
-  }
-  
-  .hero {
-    padding: 60px 0 100px;
-  }
-  
-  .hero-title {
-    font-size: 2.5rem;
-  }
-  
-  .courses-section {
-    margin-top: -60px;
-  }
-  
-  .courses-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  
-  .filter-bar {
-    padding: 16px;
-    gap: 12px;
-  }
-  
-  .filter-group-buttons {
-    flex-wrap: wrap;
-  }
-  
-  .course-modal {
-    margin: 0;
-    max-height: 100vh;
-    border-radius: 0;
-  }
-  
-  .lesson-reader {
-    margin: 0;
-    border-radius: 0;
-    max-height: 100vh;
-  }
-  
-  .lesson-title {
-    font-size: 1.5rem;
-  }
+  color: var(--color-muted-foreground);
 }
 </style>
