@@ -3170,3 +3170,4 @@ export default {
     padding: 1.5rem;
   }
 }
+</style>
