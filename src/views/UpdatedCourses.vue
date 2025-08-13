@@ -316,7 +316,11 @@
             <path d="m6 6 12 12"></path>
           </svg>
         </button>
-        <div class="modal-content">
+        <div v-if="modalLoading" class="modal-loading-state">
+          <div class="spinner"></div>
+          <p>Загрузка информации о курсе...</p>
+        </div>
+        <div v-else class="modal-content">
           <div class="modal-image-wrapper">
             <img
               :src="selectedCourse.image"
@@ -492,13 +496,15 @@
 </template>
 
 <script>
+import { getUpdatedCourses, getCourseById } from '@/api.js';
+
 export default {
   name: 'UpdatedCourses',
   data() {
     return {
-      courses: [], // Will be populated from the API
-      availableCategories: [], // Will be populated from the API
-      availableLevels: [], // Will be populated from the API
+      courses: [],
+      availableCategories: [],
+      availableLevels: [],
       selectedCourse: null,
       isModalOpen: false,
       searchTerm: '',
@@ -507,6 +513,7 @@ export default {
       typeFilter: 'all',
       debounceTimeout: null,
       loading: false,
+      modalLoading: false,
       error: null,
     };
   },
@@ -514,52 +521,48 @@ export default {
     this.fetchCourses();
   },
   methods: {
-    // Fetches courses from the backend based on current filters
     async fetchCourses() {
       this.loading = true;
       this.error = null;
       try {
-        const queryParams = new URLSearchParams({
+        const filters = {
           search: this.searchTerm,
-          category: this.categoryFilter === 'all' ? '' : this.categoryFilter,
-          level: this.levelFilter === 'all' ? '' : this.levelFilter,
-          type: this.typeFilter === 'all' ? '' : this.typeFilter,
-        });
+          category: this.categoryFilter,
+          difficulty: this.levelFilter,
+          type: this.typeFilter,
+        };
 
-        // Replace with your actual backend API endpoint
-        const response = await fetch(`https://api.aced.live/api/courses?${queryParams.toString()}`);
-        if (!response.ok) {
-          throw new Error('Не удалось получить список курсов.');
+        const response = await getUpdatedCourses(filters);
+
+        if (response.success) {
+          this.courses = response.courses || [];
+          this.availableCategories = response.categories || [];
+          this.availableLevels = response.difficulties || [];
+        } else {
+          this.error = response.error;
+          this.courses = [];
         }
-        const data = await response.json();
-        this.courses = data.courses;
-        this.availableCategories = data.categories || [];
-        this.availableLevels = data.levels || [];
       } catch (e) {
-        this.error = e.message;
+        this.error = 'Не удалось загрузить курсы. Пожалуйста, попробуйте позже.';
       } finally {
         this.loading = false;
       }
     },
 
-    // Debounces the search input to avoid excessive API calls
     debounceSearch() {
       clearTimeout(this.debounceTimeout);
       this.debounceTimeout = setTimeout(this.fetchCourses, 500);
     },
 
-    // Applies filters by calling the fetchCourses method
     applyFilters() {
       this.fetchCourses();
     },
 
-    // Sets the course type filter and fetches courses
     setTypeFilter(type) {
       this.typeFilter = type;
       this.fetchCourses();
     },
 
-    // Resets all filters and fetches courses
     clearFilters() {
       this.searchTerm = '';
       this.categoryFilter = 'all';
@@ -568,25 +571,26 @@ export default {
       this.fetchCourses();
     },
 
-    // Opens the course modal and fetches detailed info
     async openModal(course) {
-      this.selectedCourse = { ...course }; // Use a copy of the course
+      this.selectedCourse = null;
       this.isModalOpen = true;
-
-      // In a real scenario, you would fetch the full course details here
-      // For this example, we assume `course` already contains all necessary info.
-      // If not, you could do something like this:
-      // try {
-      //   const response = await fetch(`https://api.aced.live/api/courses/${course.id}`);
-      //   if (!response.ok) throw new Error('Failed to load course details.');
-      //   this.selectedCourse = await response.json();
-      // } catch (e) {
-      //   console.error(e);
-      //   // Handle error in the modal
-      // }
+      this.modalLoading = true;
+      try {
+        const response = await getCourseById(course._id);
+        if (response.success) {
+          this.selectedCourse = response.data;
+        } else {
+          console.error('Failed to fetch detailed course info:', response.error);
+          this.selectedCourse = course;
+        }
+      } catch (e) {
+        console.error('API error while fetching course details:', e);
+        this.selectedCourse = course;
+      } finally {
+        this.modalLoading = false;
+      }
     },
 
-    // Closes the modal
     closeModal() {
       this.isModalOpen = false;
       this.selectedCourse = null;
@@ -1144,15 +1148,17 @@ export default {
   height: 1rem;
 }
 
-.modal-content {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0;
+.modal-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
 }
-@media (min-width: 1024px) {
-  .modal-content {
-    grid-template-columns: 2fr 3fr;
-  }
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-image-wrapper {
@@ -1168,8 +1174,8 @@ export default {
 @media (min-width: 1024px) {
   .modal-image {
     height: 100%;
-    border-top-right-radius: 0;
-    border-bottom-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+    border-bottom-left-radius: 0;
   }
 }
 .modal-image-overlay {
