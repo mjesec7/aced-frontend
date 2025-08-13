@@ -1,5 +1,5 @@
 <template>
-  <div class="courses-page">
+  <div v-if="!showStudyInterface" class="courses-page">
     <div class="header">
       <div class="container">
         <div class="header-content">
@@ -187,7 +187,9 @@
               stroke-linejoin="round"
               class="empty-state-icon"
             >
-              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <path
+                d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+              />
               <line x1="12" y1="9" x2="12" y2="13" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
@@ -297,195 +299,139 @@
       </div>
     </div>
 
-    <div v-if="isModalOpen && selectedCourse" class="modal-overlay">
-      <div class="modal-container">
+    <div v-if="isModalOpen && selectedCourse" class="modal-overlay" @click="closeModal">
+      <div class="modal-container" @click.stop>
         <button class="modal-close" @click="closeModal">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
+            width="20"
+            height="20"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-            class="modal-close-icon"
           >
             <path d="M18 6 6 18"></path>
             <path d="m6 6 12 12"></path>
           </svg>
         </button>
+
         <div v-if="modalLoading" class="modal-loading-state">
           <div class="spinner"></div>
           <p>Загрузка информации о курсе...</p>
         </div>
-        <div v-else class="modal-content">
-          <div class="modal-image-wrapper">
-            <img
-              :src="selectedCourse.image"
-              :alt="selectedCourse.title"
-              class="modal-image"
-            />
-            <div class="modal-image-overlay"></div>
-            <div v-if="selectedCourse.isPremium" class="modal-badge-premium">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="badge-icon"
-              >
-                <path d="m14 6 4 10L2 10"></path>
-                <path d="M5 14 2 12l10-2L9.5 2l.5 6"></path>
-              </svg>
-              Премиум
-            </div>
-            <div v-else class="modal-badge-free">Бесплатно</div>
 
-            <div class="modal-meta-bottom">
-              <div class="modal-meta-item">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="modal-meta-icon"
-                >
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                <span>{{ selectedCourse.duration }}</span>
+        <div v-else class="modal-content">
+          <div class="modal-header-section">
+            <div class="modal-image-container">
+              <img
+                :src="selectedCourse.image"
+                :alt="selectedCourse.title"
+                class="modal-image"
+              />
+              <div class="modal-image-overlay"></div>
+              
+              <div class="modal-badge-container">
+                <div v-if="selectedCourse.isPremium" class="modal-badge modal-badge-premium">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m14 6 4 10L2 10"></path>
+                    <path d="M5 14 2 12l10-2L9.5 2l.5 6"></path>
+                  </svg>
+                  Премиум
+                </div>
+                <div v-else class="modal-badge modal-badge-free">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  Бесплатно
+                </div>
               </div>
-              <div class="modal-provider-info">
-                <p>от</p>
-                <p>Aced</p>
+              <div class="modal-meta-overlay">
+                <div class="modal-duration">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  {{ selectedCourse.duration }}
+                </div>
+                <div class="modal-provider">
+                  <span>от</span>
+                  <span>Aced</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="modal-info">
-            <div class="modal-header">
-              <div class="modal-badges-header">
-                <div class="modal-category">{{ selectedCourse.category }}</div>
-                <div class="modal-level">{{ selectedCourse.level }}</div>
+          <div class="modal-body">
+            <div class="modal-course-info">
+              <div class="modal-tags">
+                <span class="modal-tag modal-tag-category">{{ selectedCourse.category }}</span>
+                <span class="modal-tag modal-tag-level">{{ selectedCourse.level }}</span>
               </div>
-              <h3 class="modal-title">{{ selectedCourse.title }}</h3>
+              
+              <h2 class="modal-title">{{ selectedCourse.title }}</h2>
               <p class="modal-description">{{ selectedCourse.fullDescription }}</p>
             </div>
 
-            <hr class="modal-separator" />
+            <div class="modal-divider"></div>
 
             <div class="modal-details">
-              <div class="modal-details-section">
-                <h4 class="modal-details-title">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="modal-details-icon"
-                  >
-                    <path
-                      d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"
-                    ></path>
-                  </svg>
-                  Что вы изучите:
-                </h4>
-                <ul class="modal-list">
-                  <li
-                    v-for="(skill, index) in selectedCourse.skills"
-                    :key="index"
-                    class="modal-list-item"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="list-check-icon"
-                    >
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"></path>
-                      <path d="M22 4L12 14.01l-3-3"></path>
+              <div class="modal-details-grid">
+                <div class="modal-section">
+                  <h3 class="modal-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
                     </svg>
-                    <span>{{ skill }}</span>
-                  </li>
-                </ul>
-              </div>
+                    Что вы изучите:
+                  </h3>
+                  <ul class="modal-skills-list">
+                    <li v-for="(skill, index) in selectedCourse.skills" :key="index" class="modal-skill-item">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="skill-check-icon">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"></path>
+                        <path d="M22 4L12 14.01l-3-3"></path>
+                      </svg>
+                      {{ skill }}
+                    </li>
+                  </ul>
+                </div>
 
-              <div class="modal-details-section">
-                <h4 class="modal-details-title">Программа курса:</h4>
-                <ul class="modal-list">
-                  <li
-                    v-for="(module, index) in selectedCourse.modules"
-                    :key="index"
-                    class="modal-list-item-plain"
-                  >
-                    {{ index + 1 }}. {{ module }}
-                  </li>
-                </ul>
+                <div class="modal-section">
+                  <h3 class="modal-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                    Программа курса:
+                  </h3>
+                  <ul class="modal-modules-list">
+                    <li v-for="(module, index) in selectedCourse.modules" :key="index" class="modal-module-item">
+                      <span class="module-number">{{ index + 1 }}.</span>
+                      <span class="module-text">{{ module }}</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
 
             <div class="modal-actions">
               <button
-                :class="['button-action', { premium: selectedCourse.isPremium }]"
+                :class="['modal-action-button', { 'premium': selectedCourse.isPremium && !isUserPremium }]"
                 @click="startCourse(selectedCourse)"
               >
-                <svg
-                  v-if="selectedCourse.isPremium && !isUserPremium"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="button-icon"
-                >
+                <svg v-if="selectedCourse.isPremium && !isUserPremium" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
                   <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
-                <svg
-                  v-else
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="button-icon"
-                >
+                <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polygon points="5 3 19 12 5 21 5 3"></polygon>
                 </svg>
-                Начать курс
+                <span v-if="selectedCourse.isPremium && !isUserPremium">Получить доступ</span>
+                <span v-else>Начать изучение</span>
               </button>
-              <p class="modal-action-hint">
+              <p class="modal-action-description">
                 Начните изучение прямо сейчас и развивайте свои навыки
               </p>
             </div>
@@ -493,7 +439,7 @@
         </div>
       </div>
     </div>
-
+    
     <PaymentModal
       :visible="showPaymentModal"
       :user-id="currentUserId"
@@ -502,6 +448,215 @@
       @unlocked="handleUnlocked"
       @payment-initiated="handlePaymentInitiated"
     />
+  </div>
+
+  <div v-else class="study-page">
+    <header class="study-header">
+      <div class="study-header-content">
+        <button @click="goBackToCourses" class="back-button">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+          <span>Назад к курсам</span>
+        </button>
+        
+        <div class="course-info">
+          <h1 class="course-title">{{ selectedCourse?.title || 'Загрузка...' }}</h1>
+          <div class="course-meta">
+            <span class="course-category">{{ selectedCourse?.category }}</span>
+            <span class="course-level">{{ selectedCourse?.level }}</span>
+          </div>
+        </div>
+
+        <div class="progress-section">
+          <div class="progress-info">
+            <span class="progress-text">Прогресс: {{ completedLessons }}/{{ totalLessons }}</span>
+            <span class="progress-percent">{{ progressPercent }}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="study-main">
+      <aside class="study-sidebar" :class="{ 'sidebar-open': sidebarOpen }">
+        <div class="sidebar-header">
+          <h3>Содержание курса</h3>
+          <button @click="toggleSidebar" class="sidebar-toggle mobile-only">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6 6 18"/>
+              <path d="m6 6 12 12"/>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="lessons-list">
+          <div 
+            v-for="(lesson, index) in lessons" 
+            :key="lesson.id"
+            :class="['lesson-item', { 
+              'active': currentLessonIndex === index,
+              'completed': lesson.completed,
+              'locked': lesson.locked 
+            }]"
+            @click="selectLesson(index)"
+          >
+            <div class="lesson-number">{{ index + 1 }}</div>
+            <div class="lesson-content">
+              <h4 class="lesson-title">{{ lesson.title }}</h4>
+              <p class="lesson-duration">{{ lesson.duration }}</p>
+            </div>
+            <div class="lesson-status">
+              <svg v-if="lesson.completed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"/>
+                <path d="M22 4L12 14.01l-3-3"/>
+              </svg>
+              <svg v-else-if="lesson.locked" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="study-content">
+        <button @click="toggleSidebar" class="sidebar-toggle desktop-hidden">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+          <span>Содержание</span>
+        </button>
+
+        <div v-if="currentLesson" class="lesson-container">
+          <div class="lesson-header">
+            <div class="lesson-meta">
+              <span class="lesson-number-badge">Урок {{ currentLessonIndex + 1 }}</span>
+              <span class="lesson-duration-badge">{{ currentLesson.duration }}</span>
+            </div>
+            <h2 class="lesson-title">{{ currentLesson.title }}</h2>
+            <p class="lesson-description">{{ currentLesson.description }}</p>
+          </div>
+
+          <div class="lesson-content-area">
+            <div class="text-content">
+              <div class="content-section" v-html="currentLesson.content"></div>
+              
+              <div v-if="currentLesson.resources && currentLesson.resources.length" class="resources-section">
+                <h3>Материалы урока</h3>
+                <div class="resources-list">
+                  <a 
+                    v-for="resource in currentLesson.resources" 
+                    :key="resource.id"
+                    :href="resource.url"
+                    download
+                    class="resource-item"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    <span>{{ resource.name }}</span>
+                    <span class="resource-size">{{ resource.size }}</span>
+                  </a>
+                </div>
+              </div>
+
+              <div v-if="currentLesson.quiz" class="quiz-section">
+                <h3>Проверьте себя</h3>
+                <div class="quiz-container">
+                  <div v-if="!quizCompleted" class="quiz-questions">
+                    <div class="question-item">
+                      <h4>{{ currentLesson.quiz.question }}</h4>
+                      <div class="quiz-options">
+                        <label 
+                          v-for="(option, index) in currentLesson.quiz.options" 
+                          :key="index"
+                          class="quiz-option"
+                        >
+                          <input 
+                            type="radio" 
+                            :name="'quiz-' + currentLesson.id" 
+                            :value="index"
+                            v-model="selectedAnswer"
+                          />
+                          <span>{{ option }}</span>
+                        </label>
+                      </div>
+                      <button 
+                        @click="submitQuiz" 
+                        :disabled="selectedAnswer === null"
+                        class="quiz-submit-btn"
+                      >
+                        Проверить ответ
+                      </button>
+                    </div>
+                  </div>
+                  <div v-else class="quiz-result">
+                    <div :class="['quiz-feedback', quizCorrect ? 'correct' : 'incorrect']">
+                      <svg v-if="quizCorrect" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"/>
+                        <path d="M22 4L12 14.01l-3-3"/>
+                      </svg>
+                      <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                      </svg>
+                      <span v-if="quizCorrect">Правильно! Отличная работа!</span>
+                      <span v-else>Неправильно. Попробуйте еще раз!</span>
+                    </div>
+                    <button v-if="!quizCorrect" @click="quizCompleted = false" class="retry-quiz-btn">
+                      Попробовать снова
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="lesson-navigation">
+              <button 
+                @click="previousLesson" 
+                :disabled="currentLessonIndex === 0"
+                class="nav-btn prev-btn"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="m15 18-6-6 6-6"/>
+                </svg>
+                Предыдущий урок
+              </button>
+              
+              <button 
+                v-if="!currentLesson.completed && currentLesson.quiz && !quizCompleted"
+                @click="markLessonCompleted"
+                class="nav-btn complete-btn"
+              >
+                Завершить урок
+              </button>
+              
+              <button 
+                @click="nextLesson" 
+                :disabled="currentLessonIndex === lessons.length - 1 || lessons[currentLessonIndex + 1]?.locked"
+                class="nav-btn next-btn"
+              >
+                Следующий урок
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
   </div>
 </template>
 
@@ -535,6 +690,16 @@ export default {
       // Payment Modal properties
       showPaymentModal: false,
       requestedTopicId: null,
+
+      // Study Interface properties
+      showStudyInterface: false,
+      lessons: [],
+      currentLessonIndex: 0,
+      currentLesson: null,
+      sidebarOpen: false,
+      selectedAnswer: null,
+      quizCompleted: false,
+      quizCorrect: false,
     };
   },
   computed: {
@@ -544,6 +709,16 @@ export default {
     },
     isUserPremium() {
       return checkSubscriptionAccess(this.userStatus, 'start');
+    },
+    completedLessons() {
+      return this.lessons.filter(lesson => lesson.completed).length;
+    },
+    totalLessons() {
+      return this.lessons.length;
+    },
+    progressPercent() {
+      if (this.totalLessons === 0) return 0;
+      return Math.round((this.completedLessons / this.totalLessons) * 100);
     }
   },
   mounted() {
@@ -621,19 +796,144 @@ export default {
     },
 
     startCourse(course) {
-      // Check for authentication and premium status
       if (course.isPremium && !this.isUserPremium) {
-        this.isModalOpen = false; // Close course modal
+        this.isModalOpen = false;
         this.requestedTopicId = course._id;
-        this.showPaymentModal = true; // Open payment modal
+        this.showPaymentModal = true;
       } else {
-        // Handle logic for starting the course (free or premium with access)
-        console.log(`Starting course: ${course.title}`);
-        // You can add your router navigation logic here, for example:
-        // this.$router.push({ name: 'LessonPage', params: { id: course.lessons[0].id } });
-        
-        // For now, we will just close the modal.
-        this.closeModal();
+        this.selectedCourse = course;
+        this.isModalOpen = false;
+        this.showStudyInterface = true;
+        this.initializeStudyData();
+      }
+    },
+
+    initializeStudyData() {
+      this.currentLessonIndex = 0;
+      this.lessons = this.selectedCourse.lessons || this.generateSampleLessons();
+      this.currentLesson = this.lessons[0];
+      this.sidebarOpen = false;
+      this.loading = false;
+      this.selectedAnswer = null;
+      this.quizCompleted = false;
+      this.quizCorrect = false;
+    },
+
+    generateSampleLessons() {
+      return [
+        {
+          id: 1,
+          title: "Введение в курс",
+          description: "Обзор курса и что вы изучите",
+          duration: "15 мин",
+          completed: false,
+          locked: false,
+          videoUrl: null,
+          content: `
+            <h3>Добро пожаловать в курс!</h3>
+            <p>В этом курсе вы изучите основы современных технологий и получите практические навыки, которые помогут вам в карьере.</p>
+            <h4>Что вас ждет:</h4>
+            <ul>
+              <li>Теоретические основы</li>
+              <li>Практические задания</li>
+              <li>Реальные проекты</li>
+              <li>Сертификат о прохождении</li>
+            </ul>
+            <p>Желаем успехов в обучении!</p>
+          `,
+          resources: [],
+          quiz: {
+            question: "Что является основной целью данного курса?",
+            options: [
+              "Изучение теории без практики",
+              "Получение практических навыков для карьеры",
+              "Просто потратить время",
+              "Получить сертификат любой ценой"
+            ],
+            correctAnswer: 1
+          }
+        },
+        {
+          id: 2,
+          title: "Основные концепции",
+          description: "Изучаем ключевые понятия и термины",
+          duration: "25 мин",
+          completed: false,
+          locked: true,
+          content: `
+            <h3>Основные концепции</h3>
+            <p>В этом уроке мы рассмотрим ключевые понятия, которые будут использоваться на протяжении всего курса.</p>
+          `,
+          resources: [
+            { id: 1, name: "Конспект урока.pdf", size: "2.3 MB", url: "#" },
+            { id: 2, name: "Дополнительные материалы.zip", size: "5.1 MB", url: "#" }
+          ]
+        },
+        {
+          id: 3,
+          title: "Практическое задание",
+          description: "Применяем полученные знания на практике",
+          duration: "40 мин",
+          completed: false,
+          locked: true,
+          content: `
+            <h3>Практическое задание</h3>
+            <p>Теперь пришло время применить полученные знания на практике.</p>
+          `
+        }
+      ];
+    },
+
+    goBackToCourses() {
+      this.showStudyInterface = false;
+      this.selectedCourse = null;
+    },
+
+    toggleSidebar() {
+      this.sidebarOpen = !this.sidebarOpen;
+    },
+
+    selectLesson(index) {
+      if (this.lessons[index].locked) return;
+      
+      this.currentLessonIndex = index;
+      this.currentLesson = this.lessons[index];
+      this.selectedAnswer = null;
+      this.quizCompleted = false;
+      this.quizCorrect = false;
+      
+      if (window.innerWidth < 1024) {
+        this.sidebarOpen = false;
+      }
+    },
+
+    markLessonCompleted() {
+      this.lessons[this.currentLessonIndex].completed = true;
+      
+      if (this.currentLessonIndex + 1 < this.lessons.length) {
+        this.lessons[this.currentLessonIndex + 1].locked = false;
+      }
+    },
+
+    submitQuiz() {
+      const currentQuiz = this.currentLesson.quiz;
+      this.quizCorrect = this.selectedAnswer === currentQuiz.correctAnswer;
+      this.quizCompleted = true;
+      
+      if (this.quizCorrect) {
+        this.markLessonCompleted();
+      }
+    },
+
+    nextLesson() {
+      if (this.currentLessonIndex + 1 < this.lessons.length) {
+        this.selectLesson(this.currentLessonIndex + 1);
+      }
+    },
+
+    previousLesson() {
+      if (this.currentLessonIndex > 0) {
+        this.selectLesson(this.currentLessonIndex - 1);
       }
     },
 
@@ -642,13 +942,11 @@ export default {
       this.selectedCourse = null;
     },
     
-    // Payment modal handlers
     handleUnlocked(payload) {
       console.log('✅ Access unlocked via promo code for plan:', payload.plan);
       this.showPaymentModal = false;
       
       if (this.requestedTopicId) {
-        // Re-open the course modal after a successful subscription update
         const courseToOpen = this.courses.find(c => c._id === this.requestedTopicId);
         if (courseToOpen) {
           this.openModal(courseToOpen);
@@ -657,7 +955,6 @@ export default {
     },
     handlePaymentInitiated(payload) {
       console.log('💳 Payment initiated for plan:', payload.plan);
-      // The PaymentModal handles navigation, so we just need to listen to this event.
     }
   },
 };
@@ -1157,34 +1454,33 @@ export default {
   100% { transform: rotate(360deg); }
 }
 
-
-/* Modal */
+/* FIXED MODAL STYLES */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 50;
-  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1rem;
 }
+
 .modal-container {
   position: relative;
-  width: 95%;
-  max-width: 1200px;
-  max-height: 85vh;
-  overflow-y: auto;
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
   background-color: var(--color-background);
-  border-radius: 0.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-@media (min-width: 640px) {
-  .modal-container {
-    border-radius: 0.5rem;
-  }
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-close {
@@ -1192,24 +1488,23 @@ export default {
   top: 1rem;
   right: 1rem;
   z-index: 10;
-  height: 2rem;
-  width: 2rem;
-  border-radius: 9999px;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  color: white;
+  border: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  border: none;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
 }
+
 .modal-close:hover {
-  background-color: rgba(0, 0, 0, 0.7);
-}
-.modal-close-icon {
-  width: 1rem;
-  height: 1rem;
+  background-color: rgba(0, 0, 0, 0.8);
+  transform: scale(1.05);
 }
 
 .modal-loading-state {
@@ -1218,246 +1513,962 @@ export default {
   align-items: center;
   justify-content: center;
   padding: 4rem 2rem;
+  gap: 1rem;
 }
 
 .modal-content {
-  display: grid;
-  grid-template-columns: 1fr;
-}
-@media (min-width: 1024px) {
-  .modal-content {
-    grid-template-columns: 2fr 3fr;
-  }
-}
-
-.modal-image-wrapper {
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   overflow: hidden;
 }
-@media (min-width: 1024px) {
-  .modal-image-wrapper {
-    min-height: 100%;
-  }
+
+.modal-header-section {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.modal-image-container {
+  position: relative;
+  height: 240px;
+  overflow: hidden;
 }
 
 .modal-image {
   width: 100%;
-  height: 16rem;
+  height: 100%;
   object-fit: cover;
-  border-top-left-radius: 0.5rem;
-  border-top-right-radius: 0.5rem;
-}
-@media (min-width: 1024px) {
-  .modal-image {
-    height: 100%;
-    border-top-right-radius: 0;
-    border-bottom-left-radius: 0.5rem;
-  }
-}
-.modal-image-overlay {
-  position: absolute;
-  inset: 0;
-  background-image: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
 }
 
-.modal-badge-premium, .modal-badge-free {
+.modal-image-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+}
+
+.modal-badge-container {
   position: absolute;
   top: 1rem;
-  right: 1rem;
+  left: 1rem;
+}
+
+.modal-badge {
   display: inline-flex;
   align-items: center;
-  border-radius: 9999px;
-  padding: 0.25rem 0.625rem;
-  font-size: 0.75rem;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
   font-weight: 600;
-  color: #fff;
-  border: none;
+  backdrop-filter: blur(8px);
 }
+
 .modal-badge-premium {
-  background-image: linear-gradient(to right, var(--color-brand), var(--color-brand-light));
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
+  color: white;
+  box-shadow: 0 4px 12px rgba(139, 127, 191, 0.4);
 }
+
 .modal-badge-free {
-  background-color: var(--color-success);
+  background: linear-gradient(135deg, var(--color-success), #22c55e);
+  color: white;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
 }
-.modal-meta-bottom {
+
+.modal-meta-overlay {
   position: absolute;
   bottom: 1rem;
   left: 1rem;
   right: 1rem;
-  color: #fff;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-}
-.modal-meta-item {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.875rem;
-}
-.modal-meta-icon {
-  width: 1rem;
-  height: 1rem;
-}
-.modal-provider-info {
-  text-align: right;
-}
-.modal-provider-info p:first-child {
-  font-size: 0.75rem;
-  opacity: 0.8;
-}
-.modal-provider-info p:last-child {
-  font-weight: 500;
+  align-items: end;
+  color: white;
 }
 
-.modal-info {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-.modal-header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.modal-badges-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.modal-category, .modal-level {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 9999px;
-  padding: 0.25rem 0.625rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-brand);
-}
-.modal-category {
-  border: 1px solid rgba(139, 127, 191, 0.3);
-}
-.modal-level {
-  border: 1px solid rgba(139, 127, 191, 0.2);
-}
-.modal-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 1.2;
-}
-.modal-description {
-  color: var(--color-muted-foreground);
-}
-
-.modal-separator {
-  height: 1px;
-  background-color: var(--color-border);
-  border: none;
-}
-
-.modal-details {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-}
-@media (min-width: 768px) {
-  .modal-details {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-.modal-details-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-.modal-details-title {
-  font-weight: 500;
+.modal-duration {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  border-radius: 8px;
+}
+
+.modal-provider {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+  font-size: 0.875rem;
+}
+
+.modal-provider span:first-child {
+  opacity: 0.8;
+  font-size: 0.75rem;
+}
+
+.modal-provider span:last-child {
+  font-weight: 600;
   font-size: 1rem;
 }
-.modal-details-icon {
-  width: 1rem;
-  height: 1rem;
-  color: var(--color-brand);
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
 }
-.modal-list {
+
+.modal-course-info {
+  margin-bottom: 2rem;
+}
+
+.modal-tags {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.modal-tag {
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.modal-tag-category {
+  background: rgba(139, 127, 191, 0.1);
+  color: var(--color-brand);
+  border: 1px solid rgba(139, 127, 191, 0.3);
+}
+
+.modal-tag-level {
+  background: rgba(139, 127, 191, 0.05);
+  color: var(--color-brand);
+  border: 1px solid rgba(139, 127, 191, 0.2);
+}
+
+.modal-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 1rem;
+  color: var(--color-foreground);
+}
+
+.modal-description {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-muted-foreground);
+}
+
+.modal-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 2rem 0;
+}
+
+.modal-details {
+  margin-bottom: 2rem;
+}
+
+.modal-details-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .modal-details-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+.modal-skills-list {
   list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
-.modal-list-item {
+
+.modal-skill-item {
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
-  font-size: 0.875rem;
+  gap: 0.75rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--color-foreground);
 }
-.list-check-icon {
-  width: 1rem;
-  height: 1rem;
+
+.skill-check-icon {
   color: var(--color-success);
+  flex-shrink: 0;
   margin-top: 0.125rem;
+}
+
+.modal-modules-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.modal-module-item {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.module-number {
+  color: var(--color-brand);
+  font-weight: 600;
   flex-shrink: 0;
 }
-.modal-list-more {
-  font-size: 0.875rem;
-  color: var(--color-muted-foreground);
-  margin-left: 1.5rem;
-}
-.modal-list-item-plain {
-  font-size: 0.875rem;
+
+.module-text {
   color: var(--color-muted-foreground);
 }
 
 .modal-actions {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
   padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
 }
-.button-action {
-  width: 100%;
-  height: 2.75rem;
-  padding: 0 2rem;
-  border-radius: 0.375rem;
+
+.modal-action-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  color: #fff;
+  gap: 0.75rem;
+  width: 100%;
+  height: 3rem;
+  padding: 0 2rem;
   border: none;
-  font-size: 0.875rem;
-  font-weight: 500;
-  background-image: linear-gradient(
-    to right,
-    var(--color-brand),
-    var(--color-brand-light)
-  );
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
+  box-shadow: 0 4px 12px rgba(139, 127, 191, 0.3);
+  cursor: pointer;
   transition: all 0.2s ease;
 }
-.button-action:hover {
-  background-image: linear-gradient(
-    to right,
-    var(--color-brand-dark),
-    var(--color-brand)
-  );
+
+.modal-action-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(139, 127, 191, 0.4);
 }
-.button-icon {
-  width: 1.25rem;
-  height: 1.25rem;
-  margin-right: 0.5rem;
+
+.modal-action-button.premium {
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
-.modal-action-hint {
-  font-size: 0.75rem;
+
+.modal-action-button.premium:hover {
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+}
+
+.modal-action-description {
   text-align: center;
+  font-size: 0.875rem;
   color: var(--color-muted-foreground);
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .modal-container {
+    margin: 0.5rem;
+    max-height: 95vh;
+  }
+  
+  .modal-image-container {
+    height: 200px;
+  }
+  
+  .modal-body {
+    padding: 1.5rem;
+  }
+  
+  .modal-title {
+    font-size: 1.5rem;
+  }
+  
+  .modal-details-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* STUDY INTERFACE STYLES */
+.study-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
+
+.study-header {
+  background: linear-gradient(135deg, var(--color-card), var(--color-muted));
+  border-bottom: 1px solid var(--color-border);
+  padding: 1rem 0;
+  flex-shrink: 0;
+}
+
+.study-header-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .study-header-content {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.back-button:hover {
+  background: var(--color-muted);
+  border-color: var(--color-brand);
+}
+
+.course-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.course-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--color-foreground);
+}
+
+.course-meta {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.course-category,
+.course-level {
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: rgba(139, 127, 191, 0.1);
+  color: var(--color-brand);
+  border: 1px solid rgba(139, 127, 191, 0.2);
+}
+
+.progress-section {
+  min-width: 200px;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.progress-text {
+  color: var(--color-muted-foreground);
+}
+
+.progress-percent {
+  font-weight: 600;
+  color: var(--color-brand);
+}
+
+.progress-bar {
+  height: 8px;
+  background: var(--color-muted);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-brand), var(--color-brand-light));
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.study-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.study-sidebar {
+  width: 300px;
+  background: var(--color-card);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease;
+}
+
+@media (max-width: 1023px) {
+  .study-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 50;
+    transform: translateX(-100%);
+    box-shadow: 4px 0 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .study-sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+}
+
+.sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-foreground);
+}
+
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.sidebar-toggle:hover {
+  background: var(--color-muted);
+  border-color: var(--color-brand);
+}
+
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .mobile-only {
+    display: flex;
+  }
+}
+
+.desktop-hidden {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .desktop-hidden {
+    display: flex;
+  }
+}
+
+.lessons-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.lesson-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 0.5rem;
+}
+
+.lesson-item:hover {
+  background: var(--color-muted);
+}
+
+.lesson-item.active {
+  background: rgba(139, 127, 191, 0.1);
+  border: 1px solid rgba(139, 127, 191, 0.3);
+}
+
+.lesson-item.completed {
+  opacity: 0.8;
+}
+
+.lesson-item.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lesson-item.locked:hover {
+  background: transparent;
+}
+
+.lesson-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-muted);
+  color: var(--color-muted-foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.lesson-item.active .lesson-number {
+  background: var(--color-brand);
+  color: white;
+}
+
+.lesson-item.completed .lesson-number {
+  background: var(--color-success);
+  color: white;
+}
+
+.lesson-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.lesson-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0 0 0.25rem 0;
+  color: var(--color-foreground);
+}
+
+.lesson-duration {
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+  margin: 0;
+}
+
+.lesson-status {
+  color: var(--color-muted-foreground);
+  flex-shrink: 0;
+}
+
+.lesson-item.completed .lesson-status {
+  color: var(--color-success);
+}
+
+.lesson-item.active .lesson-status {
+  color: var(--color-brand);
+}
+
+.study-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+}
+
+@media (max-width: 1023px) {
+  .study-content {
+    padding: 1rem;
+  }
+}
+
+.lesson-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.lesson-header {
+  margin-bottom: 2rem;
+}
+
+.lesson-meta {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.lesson-number-badge,
+.lesson-duration-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.lesson-number-badge {
+  background: rgba(139, 127, 191, 0.1);
+  color: var(--color-brand);
+  border: 1px solid rgba(139, 127, 191, 0.3);
+}
+
+.lesson-duration-badge {
+  background: var(--color-muted);
+  color: var(--color-muted-foreground);
+}
+
+.lesson-header .lesson-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  color: var(--color-foreground);
+}
+
+.lesson-description {
+  font-size: 1rem;
+  color: var(--color-muted-foreground);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.lesson-content-area {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.text-content {
+  line-height: 1.7;
+}
+
+.content-section h3 {
+  color: var(--color-foreground);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 1.5rem 0 1rem 0;
+}
+
+.content-section h4 {
+  color: var(--color-foreground);
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin: 1.25rem 0 0.75rem 0;
+}
+
+.content-section p {
+  color: var(--color-foreground);
+  margin: 0 0 1rem 0;
+}
+
+.content-section ul,
+.content-section ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.content-section li {
+  color: var(--color-foreground);
+  margin: 0.5rem 0;
+}
+
+.resources-section {
+  background: var(--color-muted);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+}
+
+.resources-section h3 {
+  margin: 0 0 1rem 0;
+  color: var(--color-foreground);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.resources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.resource-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--color-foreground);
+  transition: all 0.2s ease;
+}
+
+.resource-item:hover {
+  background: var(--color-card);
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
+
+.resource-size {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--color-muted-foreground);
+}
+
+.quiz-section {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
+.quiz-section h3 {
+  margin: 0 0 1.5rem 0;
+  color: var(--color-foreground);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.question-item h4 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0 0 1rem 0;
+  color: var(--color-foreground);
+}
+
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0 1.5rem 0;
+}
+
+.quiz-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--color-background);
+}
+
+.quiz-option:hover {
+  background: var(--color-muted);
+  border-color: var(--color-brand);
+}
+
+.quiz-option input[type="radio"] {
+  margin: 0;
+}
+
+.quiz-option span {
+  flex: 1;
+  color: var(--color-foreground);
+  font-size: 0.875rem;
+}
+
+.quiz-submit-btn,
+.retry-quiz-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quiz-submit-btn:hover,
+.retry-quiz-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 127, 191, 0.3);
+}
+
+.quiz-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.quiz-result {
+  text-align: center;
+}
+
+.quiz-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.quiz-feedback.correct {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--color-success);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.quiz-feedback.incorrect {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.lesson-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 0;
+  border-top: 1px solid var(--color-border);
+  margin-top: 2rem;
+}
+
+@media (max-width: 640px) {
+  .lesson-navigation {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: var(--color-muted);
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
+
+.nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.complete-btn {
+  background: linear-gradient(135deg, var(--color-success), #22c55e);
+  color: white;
+  border-color: var(--color-success);
+}
+
+.complete-btn:hover {
+  background: linear-gradient(135deg, #15803d, var(--color-success));
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+}
+
+.next-btn {
+  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
+  color: white;
+  border-color: var(--color-brand);
+}
+
+.next-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--color-brand-dark), var(--color-brand));
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 127, 191, 0.3);
+}
+
+@media (max-width: 640px) {
+  .nav-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Responsive adjustments for study interface */
+@media (max-width: 768px) {
+  .study-header-content {
+    gap: 0.75rem;
+  }
+  
+  .course-title {
+    font-size: 1.125rem;
+  }
+  
+  .progress-section {
+    min-width: auto;
+  }
+  
+  .lesson-header .lesson-title {
+    font-size: 1.5rem;
+  }
+  
+  .lesson-container {
+    max-width: none;
+  }
 }
 </style>
