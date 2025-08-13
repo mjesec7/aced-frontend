@@ -1,28 +1,27 @@
 <template>
   <div class="courses-page">
-    <!-- Hero Section -->
     <section class="hero">
       <div class="container">
-        <h1 class="hero-title">Актуальные курсы</h1>
+        <h1 class="hero-title">Современные профессии</h1>
         <p class="hero-subtitle">
-          Изучайте новейшие технологии и инструменты с нашими современными курсами
+          Изучайте актуальные навыки и развивайтесь вместе с технологиями
+        </p>
+        <p class="hero-description">
+          Спокойте для себя курсы по самым востребованным направлениям: ИИ, блокчейн, дизайн, маркетинг и программирование
         </p>
       </div>
     </section>
 
-    <!-- Course List Section -->
     <section v-if="!selectedCourse" class="courses-section">
       <div class="container">
-        <!-- Filter Bar -->
         <div class="filter-bar">
           <div class="filter-group">
-            <label for="search">Поиск</label>
             <div class="input-wrapper">
               <input
                 id="search"
                 v-model="searchQuery"
                 type="text"
-                placeholder="Поиск по названию или описанию..."
+                placeholder="Поиск курсов..."
                 @input="debounceFetch"
               />
               <span class="input-icon">🔍</span>
@@ -30,7 +29,6 @@
           </div>
 
           <div class="filter-group">
-            <label for="category">Категория</label>
             <select id="category" v-model="selectedCategory" @change="fetchCourses">
               <option value="">Все категории</option>
               <option v-for="cat in availableCategories" :key="cat" :value="cat">
@@ -40,26 +38,35 @@
           </div>
 
           <div class="filter-group">
-            <label for="difficulty">Сложность</label>
             <select id="difficulty" v-model="selectedDifficulty" @change="fetchCourses">
-              <option value="">Любая сложность</option>
+              <option value="">Все уровни</option>
               <option v-for="diff in availableDifficulties" :key="diff" :value="diff">
                 {{ getDifficultyIcon(diff) }} {{ diff }}
               </option>
             </select>
           </div>
 
-          <div class="filter-group">
-            <label for="type">Тип</label>
-            <select id="type" v-model="selectedType" @change="fetchCourses">
-              <option value="">Все</option>
-              <option value="free">Бесплатные</option>
-              <option value="premium">Премиум</option>
-            </select>
+          <div class="filter-group-buttons">
+            <button
+              :class="{ active: selectedType === 'free' }"
+              @click="toggleType('free')"
+            >
+              Бесплатные
+            </button>
+            <button
+              :class="{ active: selectedType === 'premium' }"
+              @click="toggleType('premium')"
+            >
+              Премиум
+            </button>
           </div>
         </div>
+        
+        <div class="course-results-label">
+          <span># Найдено курсов: {{ sortedCourses.length }}</span>
+          <span class="results-source">Обновлено сегодня</span>
+        </div>
 
-        <!-- Content States -->
         <div v-if="loading" class="content-state">
           <div class="spinner"></div>
           <p>Загрузка курсов...</p>
@@ -83,13 +90,11 @@
           </button>
         </div>
 
-        <!-- Courses Grid -->
         <div v-else class="courses-grid">
           <article
             v-for="course in sortedCourses"
             :key="course.id || course._id"
             class="course-card"
-            :class="{ 'premium-course': course.isPremium }"
             @click="selectCourse(course)"
           >
             <div class="course-image">
@@ -101,19 +106,9 @@
               />
               <div 
                 class="course-badge" 
-                :class="{ 
-                  premium: course.isPremium,
-                  free: !course.isPremium 
-                }"
+                :class="{ premium: course.isPremium }"
               >
-                <span class="badge-icon">{{ course.isPremium ? '👑' : '🆓' }}</span>
                 {{ course.isPremium ? 'ПРЕМИУМ' : 'БЕСПЛАТНО' }}
-              </div>
-              
-              <!-- Premium Lock Overlay -->
-              <div v-if="course.isPremium && !isUserPremium" class="premium-overlay">
-                <div class="lock-icon">🔒</div>
-                <span class="premium-text">Требуется подписка</span>
               </div>
             </div>
             
@@ -123,49 +118,13 @@
               
               <div class="course-meta">
                 <span class="meta-item">
-                  <span class="meta-icon">{{ getDifficultyIcon(course.difficulty) }}</span>
-                  {{ course.difficulty || 'Базовый' }}
-                </span>
-                <span class="meta-item">
                   <span class="meta-icon">⏱️</span>
-                  {{ course.duration || '30 мин' }}
+                  {{ course.totalTime || "12 часов" }}
                 </span>
                 <span class="meta-item">
-                  <span class="meta-icon">👥</span>
-                  {{ course.studentsCount || 0 }}
+                  <span class="meta-icon">📚</span>
+                  {{ getCourseLength(course) }} {{ getLessonWord(getCourseLength(course)) }}
                 </span>
-              </div>
-
-              <!-- Course Stats -->
-              <div class="course-stats">
-                <div class="stat-item">
-                  <span class="star-rating">
-                    <span v-for="i in 5" :key="i" class="star" :class="{ filled: i <= (course.rating || 0) }">⭐</span>
-                  </span>
-                  <span class="rating-text">{{ course.rating ? course.rating.toFixed(1) : 'Новый' }}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="lesson-count">{{ getCourseLength(course) }} уроков</span>
-                </div>
-              </div>
-              
-              <div class="course-footer">
-                <div class="instructor-info">
-                  <img
-                    :src="getValidImageUrl(course.instructor?.avatar)"
-                    :alt="course.instructor?.name || 'Instructor'"
-                    class="instructor-avatar"
-                    @error="handleAvatarError"
-                  />
-                  <span class="instructor-name">{{ course.instructor?.name || 'ACED Team' }}</span>
-                </div>
-                <button 
-                  class="btn btn-primary btn-sm"
-                  :disabled="course.isPremium && !isUserPremium"
-                >
-                  <span v-if="course.isPremium && !isUserPremium">🔒 Требуется PRO</span>
-                  <span v-else>Подробнее</span>
-                </button>
               </div>
             </div>
           </article>
@@ -173,8 +132,7 @@
       </div>
     </section>
 
-    <!-- Course Detail Section -->
-    <section v-else-if="selectedCourse && !showLessonView" class="course-detail-section">
+    <section v-else class="course-detail-section">
       <div class="container">
         <button class="btn btn-back" @click="selectedCourse = null">
           ← Назад к списку
@@ -190,25 +148,9 @@
               />
               <div 
                 class="detail-badge" 
-                :class="{ 
-                  premium: selectedCourse.isPremium,
-                  free: !selectedCourse.isPremium 
-                }"
+                :class="{ premium: selectedCourse.isPremium }"
               >
-                <span class="badge-icon">{{ selectedCourse.isPremium ? '👑' : '🆓' }}</span>
                 {{ selectedCourse.isPremium ? 'ПРЕМИУМ КУРС' : 'БЕСПЛАТНЫЙ КУРС' }}
-              </div>
-
-              <!-- Access Status -->
-              <div class="access-status" :class="{ 
-                accessible: !selectedCourse.isPremium || isUserPremium,
-                restricted: selectedCourse.isPremium && !isUserPremium 
-              }">
-                <span v-if="!selectedCourse.isPremium || isUserPremium" class="access-icon">✅</span>
-                <span v-else class="access-icon">🔒</span>
-                <span class="access-text">
-                  {{ getAccessText(selectedCourse) }}
-                </span>
               </div>
             </div>
             
@@ -234,28 +176,6 @@
                     <strong>Студентов:</strong> {{ selectedCourse.studentsCount || 0 }}
                   </span>
                 </div>
-                <div v-if="selectedCourse.tools && selectedCourse.tools.length" class="meta-row">
-                  <span class="meta-item tools">
-                    <strong>Инструменты:</strong>
-                    <span class="tool-tags">
-                      <span v-for="tool in selectedCourse.tools" :key="tool" class="tool-tag">
-                        {{ tool }}
-                      </span>
-                    </span>
-                  </span>
-                </div>
-              </div>
-              
-              <div v-if="selectedCourse.instructor" class="instructor-card">
-                <img 
-                  :src="getValidImageUrl(selectedCourse.instructor.avatar)" 
-                  class="instructor-avatar"
-                  @error="handleAvatarError"
-                />
-                <div class="instructor-details">
-                  <h4>{{ selectedCourse.instructor.name }}</h4>
-                  <p>{{ selectedCourse.instructor.bio || 'Опытный преподаватель ACED' }}</p>
-                </div>
               </div>
               
               <div class="detail-actions">
@@ -270,19 +190,6 @@
                   <span v-else>
                     ▶️ Начать обучение
                   </span>
-                </button>
-                
-                <button class="btn btn-secondary" @click="toggleBookmark(selectedCourse)">
-                  {{ selectedCourse.isBookmarked ? '❤️ В избранном' : '🤍 В избранное' }}
-                </button>
-
-                <!-- Upgrade button for premium courses -->
-                <button 
-                  v-if="selectedCourse.isPremium && !isUserPremium" 
-                  class="btn btn-upgrade"
-                  @click="upgradeAccount"
-                >
-                  ⬆️ Обновить до PRO
                 </button>
               </div>
             </div>
@@ -329,18 +236,13 @@
                           👁️ Предпросмотр
                         </span>
                       </h4>
-                      <p>{{ lesson.description || 'Описание урока' }}</p>
                       <div class="lesson-meta">
                         <span class="lesson-duration">{{ lesson.duration || '30 мин' }}</span>
-                        <span class="lesson-steps">{{ (lesson.steps || []).length }} шагов</span>
                       </div>
                     </div>
                   </div>
                   
                   <div class="lesson-right">
-                    <div class="lesson-type">
-                      {{ getLessonTypeIcon(lesson) }}
-                    </div>
                     <div v-if="selectedCourse.isPremium && !isUserPremium && index > 0" class="lesson-lock">
                       🔒
                     </div>
@@ -348,7 +250,6 @@
                 </div>
               </div>
 
-              <!-- Premium Upsell for locked lessons -->
               <div v-if="selectedCourse.isPremium && !isUserPremium && courseContent.length > 1" class="premium-upsell">
                 <div class="upsell-content">
                   <h4>🔓 Разблокируйте все уроки</h4>
@@ -364,7 +265,6 @@
       </div>
     </section>
 
-    <!-- Lesson Player -->
     <LessonPlayer
       v-if="showLessonView && currentLesson"
       :course="selectedCourse"
@@ -383,8 +283,8 @@
 </template>
 
 <script>
-import { mapState, mapGetters } from 'vuex'
-import { getUpdatedCourses, getCourseContent, toggleBookmark } from '@/api'
+import { mapGetters } from 'vuex'
+import { getUpdatedCourses, getCourseContent } from '@/api'
 import LessonPlayer from '@/components/Updated/LessonPlayer.vue'
 
 export default {
@@ -394,26 +294,22 @@ export default {
   },
   data() {
     return {
-      // Filter state
       searchQuery: '',
       selectedCategory: '',
       selectedDifficulty: '',
       selectedType: '',
       
-      // UI state
       loading: false,
       error: null,
       selectedCourse: null,
       loadingContent: false,
       contentError: null,
 
-      // Data state
       courses: [],
       courseContent: [],
       availableCategories: [],
       availableDifficulties: [],
       
-      // Lesson state
       showLessonView: false,
       currentLessonIndex: 0,
       
@@ -421,7 +317,7 @@ export default {
     }
   },
   computed: {
-    ...mapGetters('user', ['currentUserId', 'currentUserPlan']),
+    ...mapGetters('user', ['currentUserPlan']),
 
     isUserPremium() {
       return this.currentUserPlan && ['start', 'pro', 'premium'].includes(this.currentUserPlan.toLowerCase())
@@ -446,13 +342,16 @@ export default {
       this.debounceTimeout = setTimeout(this.fetchCourses, 500)
     },
 
+    toggleType(type) {
+      this.selectedType = this.selectedType === type ? '' : type
+      this.fetchCourses()
+    },
+
     async fetchCourses() {
       this.loading = true
       this.error = null
       
       try {
-        console.log('🔄 Fetching updated courses...')
-        
         const filters = {
           category: this.selectedCategory,
           difficulty: this.selectedDifficulty,
@@ -460,39 +359,21 @@ export default {
           type: this.selectedType
         }
 
-        // Use the updated courses API function from api.js
         const response = await getUpdatedCourses(filters)
         
         if (response.success) {
           this.courses = response.courses || []
           this.availableCategories = response.categories || []
           this.availableDifficulties = response.difficulties || []
-          
-          console.log(`✅ Loaded ${this.courses.length} courses`)
-          console.log('Categories:', this.availableCategories)
-          console.log('Difficulties:', this.availableDifficulties)
         } else {
           throw new Error(response.error || 'Failed to fetch courses')
         }
         
       } catch (e) {
-        console.error('❌ Failed to fetch courses:', e)
         this.error = e.message || 'Не удалось загрузить курсы. Пожалуйста, попробуйте позже.'
-        
-        // Fallback to mock data for development
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔧 Using fallback mock data...')
-          this.loadMockData()
-        }
       } finally {
         this.loading = false
       }
-    },
-
-    loadMockData() {
-      this.courses = this.generateMockCourses()
-      this.availableCategories = [...new Set(this.courses.map(c => c.category))].filter(Boolean)
-      this.availableDifficulties = [...new Set(this.courses.map(c => c.difficulty))].filter(Boolean)
     },
 
     filterCourses(courses) {
@@ -502,8 +383,7 @@ export default {
         const query = this.searchQuery.toLowerCase()
         filtered = filtered.filter(course =>
           (course.title || '').toLowerCase().includes(query) ||
-          (course.description || '').toLowerCase().includes(query) ||
-          (course.instructor?.name || '').toLowerCase().includes(query)
+          (course.description || '').toLowerCase().includes(query)
         )
       }
 
@@ -523,7 +403,7 @@ export default {
         }
       }
 
-      return filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      return filtered
     },
 
     async selectCourse(course) {
@@ -537,67 +417,30 @@ export default {
       this.courseContent = []
       
       try {
-        console.log('📥 Loading course content for:', course.title)
-        
         const response = await getCourseContent(course.id || course._id)
         
         if (response.success) {
           this.courseContent = response.data || []
-          console.log(`✅ Loaded ${this.courseContent.length} lessons`)
-          console.log('Course content source:', response.source)
         } else {
           throw new Error(response.error || 'Failed to load course content')
         }
         
       } catch (e) {
-        console.error('❌ Failed to fetch course content:', e)
         this.contentError = e.message || 'Не удалось загрузить содержание курса.'
-        
-        // Fallback to mock lessons for development
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔧 Using fallback mock lessons...')
-          this.courseContent = this.generateMockLessons(course)
-        }
       } finally {
         this.loadingContent = false
       }
     },
     
-    async toggleBookmark(course) {
-      if (!this.currentUserId) {
-        console.warn('No user ID available for bookmark')
-        return
-      }
-
-      const courseId = course.id || course._id
-      const wasBookmarked = course.isBookmarked
-
-      try {
-        course.isBookmarked = !wasBookmarked
-        const response = await toggleBookmark(this.currentUserId, courseId, !wasBookmarked)
-        
-        if (!response.success) {
-          throw new Error('API request failed')
-        }
-        
-        console.log('✅ Bookmark toggled successfully')
-      } catch (error) {
-        console.error('❌ Error toggling bookmark:', error)
-        course.isBookmarked = wasBookmarked
-      }
-    },
-
     startCourse(course) {
       if (course.isPremium && !this.isUserPremium) {
-        // Allow access to first lesson only
-        this.openLesson(this.courseContent[0], 0)
-      } else {
+        this.upgradeAccount()
+      } else if (this.courseContent.length > 0) {
         this.openLesson(this.courseContent[0], 0)
       }
     },
 
     openLesson(lesson, index) {
-      // Check access for premium courses
       if (this.selectedCourse.isPremium && !this.isUserPremium && index > 0) {
         this.upgradeAccount()
         return
@@ -615,7 +458,6 @@ export default {
     nextLesson() {
       const nextIndex = this.currentLessonIndex + 1
       
-      // Check access for premium content
       if (this.selectedCourse.isPremium && !this.isUserPremium && nextIndex > 0) {
         this.upgradeAccount()
         return
@@ -635,7 +477,6 @@ export default {
     completeCourse() {
       this.showLessonView = false
       this.selectedCourse = null
-      this.$emit('course-completed', this.selectedCourse)
     },
     
     clearFilters() {
@@ -647,7 +488,6 @@ export default {
     },
 
     upgradeAccount() {
-      // Navigate to upgrade page or show upgrade modal
       this.$router.push('/pricing')
     },
 
@@ -665,38 +505,18 @@ export default {
       return icons[difficulty] || '⚪'
     },
 
-    getLessonTypeIcon(lesson) {
-      if (!lesson.steps || !lesson.steps.length) return '📝'
-      
-      const types = lesson.steps.map(step => step.type)
-      if (types.includes('quiz')) return '❓'
-      if (types.includes('practice')) return '🎯'
-      if (types.includes('image')) return '🖼️'
-      if (types.includes('reading')) return '📖'
-      return '📝'
-    },
-
     getValidImageUrl(url) {
       if (!url) return 'https://via.placeholder.com/400x250/6366f1/ffffff?text=ACED+Course'
       
-      // If it's already a full URL, return as is
       if (url.startsWith('http')) return url
       
-      // If it starts with /, prepend the base URL
       if (url.startsWith('/')) return `https://api.aced.live${url}`
       
-      // Otherwise, assume it's a relative path
       return `https://api.aced.live/${url}`
     },
     
     handleImageError(event) {
-      console.warn('Image failed to load:', event.target.src)
       event.target.src = 'https://via.placeholder.com/400x250/6366f1/ffffff?text=ACED+Course'
-    },
-
-    handleAvatarError(event) {
-      console.warn('Avatar failed to load:', event.target.src)
-      event.target.src = 'https://via.placeholder.com/50x50/8b5cf6/ffffff?text=👤'
     },
 
     truncateText(text, length) {
@@ -713,250 +533,6 @@ export default {
       if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return 'урока'
       return 'уроков'
     },
-
-    getAccessText(course) {
-      if (!course.isPremium) return 'Полный доступ'
-      if (this.isUserPremium) return 'Полный доступ'
-      return 'Требуется подписка'
-    },
-
-    // Mock data generators (for development)
-    generateMockCourses() {
-      return [
-        {
-          id: '1',
-          _id: '1',
-          title: 'Современный веб-дизайн',
-          description: 'Изучите принципы современного веб-дизайна с использованием Figma и CSS. Полный курс от основ до продвинутых техник.',
-          category: 'Дизайн',
-          difficulty: 'Начинающий',
-          duration: '6 часов',
-          thumbnail: 'https://via.placeholder.com/400x250/6366f1/ffffff?text=Web+Design',
-          image: 'https://via.placeholder.com/400x250/6366f1/ffffff?text=Web+Design',
-          isPremium: false,
-          isBookmarked: false,
-          studentsCount: 1250,
-          rating: 4.8,
-          tools: ['Figma', 'CSS', 'HTML'],
-          instructor: {
-            name: 'Анна Петрова',
-            avatar: 'https://via.placeholder.com/50x50/8b5cf6/ffffff?text=AP',
-            bio: 'Опытный UI/UX дизайнер с 8-летним стажем в ведущих IT компаниях'
-          },
-          curriculum: Array(8).fill().map((_, i) => ({ title: `Урок ${i + 1}`, _id: `lesson_${i}` })),
-          lessonCount: 8,
-          createdAt: '2024-01-15'
-        },
-        {
-          id: '2',
-          _id: '2',
-          title: 'React с TypeScript',
-          description: 'Полное руководство по разработке React приложений с TypeScript. От основ до продвинутых паттернов.',
-          category: 'Программирование',
-          difficulty: 'Продвинутый',
-          duration: '12 часов',
-          thumbnail: 'https://via.placeholder.com/400x250/10b981/ffffff?text=React+TS',
-          image: 'https://via.placeholder.com/400x250/10b981/ffffff?text=React+TS',
-          isPremium: true,
-          isBookmarked: true,
-          studentsCount: 890,
-          rating: 4.9,
-          tools: ['React', 'TypeScript', 'Webpack'],
-          instructor: {
-            name: 'Максим Иванов',
-            avatar: 'https://via.placeholder.com/50x50/f59e0b/ffffff?text=MI',
-            bio: 'Senior Frontend разработчик в крупной IT компании, контрибьютор в React'
-          },
-          curriculum: Array(15).fill().map((_, i) => ({ title: `Урок ${i + 1}`, _id: `lesson_${i}` })),
-          lessonCount: 15,
-          createdAt: '2024-02-20'
-        },
-        {
-          id: '3',
-          _id: '3',
-          title: 'Машинное обучение для начинающих',
-          description: 'Введение в мир машинного обучения. Изучите основные алгоритмы и создайте свои первые модели.',
-          category: 'Машинное обучение',
-          difficulty: 'Средний',
-          duration: '10 часов',
-          thumbnail: 'https://via.placeholder.com/400x250/ef4444/ffffff?text=ML+Course',
-          image: 'https://via.placeholder.com/400x250/ef4444/ffffff?text=ML+Course',
-          isPremium: true,
-          isBookmarked: false,
-          studentsCount: 2100,
-          rating: 4.7,
-          tools: ['Python', 'Scikit-learn', 'Pandas'],
-          instructor: {
-            name: 'Дмитрий Козлов',
-            avatar: 'https://via.placeholder.com/50x50/10b981/ffffff?text=DK',
-            bio: 'Кандидат технических наук, специалист по машинному обучению и анализу данных'
-          },
-          curriculum: Array(12).fill().map((_, i) => ({ title: `Урок ${i + 1}`, _id: `lesson_${i}` })),
-          lessonCount: 12,
-          createdAt: '2024-03-10'
-        },
-        {
-          id: '4',
-          _id: '4',
-          title: 'Мобильная разработка с Flutter',
-          description: 'Создавайте кроссплатформенные мобильные приложения с помощью Flutter и Dart.',
-          category: 'Мобильная разработка',
-          difficulty: 'Средний',
-          duration: '8 часов',
-          thumbnail: 'https://via.placeholder.com/400x250/3b82f6/ffffff?text=Flutter',
-          image: 'https://via.placeholder.com/400x250/3b82f6/ffffff?text=Flutter',
-          isPremium: false,
-          isBookmarked: false,
-          studentsCount: 650,
-          rating: 4.6,
-          tools: ['Flutter', 'Dart', 'Firebase'],
-          instructor: {
-            name: 'Елена Смирнова',
-            avatar: 'https://via.placeholder.com/50x50/3b82f6/ffffff?text=ES',
-            bio: 'Mobile Team Lead, эксперт по Flutter разработке'
-          },
-          curriculum: Array(10).fill().map((_, i) => ({ title: `Урок ${i + 1}`, _id: `lesson_${i}` })),
-          lessonCount: 10,
-          createdAt: '2024-03-25'
-        }
-      ]
-    },
-
-    generateMockLessons(course) {
-      const lessonCount = course.curriculum?.length || course.lessonCount || 8
-      return Array(lessonCount).fill().map((_, index) => ({
-        id: `lesson_${index}`,
-        _id: `lesson_${index}`,
-        title: `Урок ${index + 1}: ${this.generateLessonTitle(course.category, index)}`,
-        lessonName: `Урок ${index + 1}: ${this.generateLessonTitle(course.category, index)}`,
-        description: `Подробное изучение темы урока ${index + 1}. Практические примеры и упражнения.`,
-        duration: `${20 + Math.floor(Math.random() * 40)} мин`,
-        order: index,
-        steps: this.generateLessonSteps(index)
-      }))
-    },
-
-    generateLessonTitle(category, index) {
-      const titles = {
-        'Дизайн': [
-          'Основы композиции',
-          'Цветовая теория',
-          'Типографика',
-          'Создание макетов',
-          'Прототипирование',
-          'Пользовательский опыт',
-          'Адаптивный дизайн',
-          'Финальный проект'
-        ],
-        'Программирование': [
-          'Введение в TypeScript',
-          'Компоненты и Props',
-          'Состояние и хуки',
-          'Маршрутизация',
-          'Управление состоянием',
-          'Тестирование',
-          'Оптимизация',
-          'Деплой приложения',
-          'Продвинутые паттерны',
-          'Микрофронтенды',
-          'Performance',
-          'Безопасность',
-          'CI/CD',
-          'Мониторинг',
-          'Финальный проект'
-        ],
-        'Машинное обучение': [
-          'Введение в ML',
-          'Подготовка данных',
-          'Линейная регрессия',
-          'Классификация',
-          'Кластеризация',
-          'Нейронные сети',
-          'Валидация моделей',
-          'Практический проект',
-          'Deep Learning',
-          'Computer Vision',
-          'NLP',
-          'Развертывание моделей'
-        ],
-        'Мобильная разработка': [
-          'Введение в Flutter',
-          'Dart основы',
-          'Виджеты и layouts',
-          'Навигация',
-          'Состояние приложения',
-          'Работа с API',
-          'База данных',
-          'Анимации',
-          'Тестирование',
-          'Публикация'
-        ]
-      }
-      
-      const categoryTitles = titles[category] || titles['Дизайн']
-      return categoryTitles[index] || `Урок ${index + 1}`
-    },
-
-    generateLessonSteps(lessonIndex) {
-      const stepTypes = ['explanation', 'example', 'reading', 'image', 'practice', 'quiz']
-      const stepCount = 3 + Math.floor(Math.random() * 4)
-      
-      return Array(stepCount).fill().map((_, stepIndex) => ({
-        id: `step_${lessonIndex}_${stepIndex}`,
-        type: stepTypes[stepIndex % stepTypes.length],
-        title: `Шаг ${stepIndex + 1}`,
-        description: `Описание шага ${stepIndex + 1}`,
-        data: this.generateStepData(stepTypes[stepIndex % stepTypes.length])
-      }))
-    },
-
-    generateStepData(type) {
-      switch (type) {
-        case 'explanation':
-          return {
-            content: 'Подробное объяснение концепции с примерами и иллюстрациями.',
-            images: []
-          }
-        case 'example':
-          return {
-            content: 'Практический пример применения изученного материала.',
-            images: []
-          }
-        case 'reading':
-          return {
-            content: 'Дополнительный материал для углубленного изучения темы.',
-            images: []
-          }
-        case 'image':
-          return {
-            images: [{
-              url: 'https://via.placeholder.com/800x400/6366f1/ffffff?text=Lesson+Image',
-              caption: 'Иллюстрация к уроку'
-            }],
-            description: 'Визуальный материал для лучшего понимания'
-          }
-        case 'practice':
-          return {
-            instructions: 'Выполните практическое задание для закрепления материала.',
-            type: 'guided'
-          }
-        case 'quiz':
-          return [{
-            question: 'Проверочный вопрос по пройденному материалу',
-            type: 'multiple-choice',
-            options: [
-              { text: 'Вариант ответа 1' },
-              { text: 'Вариант ответа 2' },
-              { text: 'Правильный ответ' },
-              { text: 'Вариант ответа 4' }
-            ],
-            correctAnswer: 2,
-            explanation: 'Объяснение правильного ответа'
-          }]
-        default:
-          return {}
-      }
-    }
   }
 }
 </script>
@@ -1000,9 +576,9 @@ export default {
 
 /* Hero Section */
 .hero {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  background: #2b354b;
   color: white;
-  padding: 3rem 0;
+  padding: 3rem 0 5rem;
   text-align: center;
 }
 
@@ -1021,28 +597,54 @@ export default {
   line-height: 1.5;
 }
 
+.hero-description {
+  font-size: 1rem;
+  opacity: 0.7;
+  max-width: 800px;
+  margin: 1.5rem auto 0;
+  line-height: 1.5;
+}
+
 /* Filter Bar */
+.courses-section {
+  position: relative;
+  margin-top: -3rem;
+}
+
 .filter-bar {
   background-color: var(--bg-primary);
-  padding: 1.5rem;
+  padding: 1rem;
   border-radius: var(--border-radius);
   box-shadow: var(--shadow);
-  margin-bottom: 2rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
 }
 
 .filter-group {
+  flex: 1;
+}
+
+.filter-group-buttons {
   display: flex;
-  flex-direction: column;
   gap: 0.5rem;
 }
 
-.filter-group label {
-  font-size: 0.875rem;
-  font-weight: 600;
+.filter-group-buttons button {
+  background-color: var(--bg-tertiary);
   color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.filter-group-buttons button.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
 }
 
 .input-wrapper {
@@ -1073,10 +675,18 @@ input, select {
   transition: all var(--transition);
 }
 
-input:focus, select:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+.course-results-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.results-source {
+  font-size: 0.875rem;
+  color: var(--text-muted);
 }
 
 /* Content States */
@@ -1089,29 +699,6 @@ input:focus, select:focus {
   text-align: center;
   padding: 3rem 0;
   color: var(--text-secondary);
-}
-
-.content-state.error {
-  color: var(--error-color);
-}
-
-.state-icon {
-  font-size: 3rem;
-  opacity: 0.6;
-}
-
-.spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid var(--border-color);
-  border-top: 4px solid var(--primary-color);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 /* Courses Grid */
@@ -1137,20 +724,6 @@ input:focus, select:focus {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
   border-color: var(--primary-color);
-}
-
-.course-card.premium-course {
-  border: 2px solid var(--premium-color);
-}
-
-.course-card.premium-course::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--premium-color), var(--warning-color));
 }
 
 .course-image {
@@ -1180,54 +753,11 @@ input:focus, select:focus {
   border-radius: 50px;
   color: white;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.course-badge.free {
-  background: linear-gradient(135deg, var(--free-color), #059669);
+  background-color: var(--free-color);
 }
 
 .course-badge.premium {
-  background: linear-gradient(135deg, var(--premium-color), #d97706);
-}
-
-.badge-icon {
-  font-size: 1rem;
-}
-
-.premium-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  opacity: 0;
-  transition: opacity var(--transition);
-}
-
-.course-card:hover .premium-overlay {
-  opacity: 1;
-}
-
-.lock-icon {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-}
-
-.premium-text {
-  font-size: 0.875rem;
-  font-weight: 600;
+  background-color: var(--premium-color);
 }
 
 .course-content {
@@ -1240,10 +770,6 @@ input:focus, select:focus {
   color: var(--text-primary);
   margin-bottom: 0.5rem;
   line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .course-description {
@@ -1264,8 +790,6 @@ input:focus, select:focus {
   margin-bottom: 1rem;
   font-size: 0.875rem;
   color: var(--text-muted);
-  flex-wrap: wrap;
-  gap: 0.5rem;
 }
 
 .meta-item {
@@ -1278,148 +802,11 @@ input:focus, select:focus {
   font-size: 1rem;
 }
 
-.course-stats {
-  margin-bottom: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.875rem;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.star-rating {
-  display: flex;
-  gap: 1px;
-}
-
-.star {
-  font-size: 0.875rem;
-  opacity: 0.3;
-  transition: opacity var(--transition);
-}
-
-.star.filled {
-  opacity: 1;
-}
-
-.rating-text {
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.lesson-count {
-  color: var(--text-muted);
-}
-
-.course-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.instructor-info {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.instructor-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--border-color);
-}
-
-.instructor-name {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-/* Buttons */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-radius: var(--border-radius);
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all var(--transition);
-  border: none;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-sm {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-}
-
-.btn-lg {
-  padding: 1rem 1.5rem;
-  font-size: 1.125rem;
-}
-
-.btn-primary {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--secondary-color);
-  transform: translateY(-1px);
-}
-
-.btn-secondary {
-  background-color: var(--bg-tertiary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: var(--border-color);
-  transform: translateY(-1px);
-}
-
-.btn-upgrade {
-  background: linear-gradient(135deg, var(--premium-color), #d97706);
-  color: white;
-  font-weight: 700;
-}
-
-.btn-upgrade:hover {
-  background: linear-gradient(135deg, #d97706, var(--premium-color));
-  transform: translateY(-1px);
-}
-
-.btn-back {
-  background-color: var(--bg-tertiary);
-  color: var(--text-secondary);
-  margin-bottom: 2rem;
-}
-
-.btn-back:hover {
-  background-color: var(--border-color);
-  color: var(--text-primary);
-}
-
 /* Course Detail */
+.course-detail-section {
+  padding-top: 2rem;
+}
+
 .course-detail {
   background-color: var(--bg-primary);
   border-radius: var(--border-radius);
@@ -1459,47 +846,11 @@ input:focus, select:focus {
   font-weight: 700;
   color: white;
   text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.detail-badge.free {
-  background: linear-gradient(135deg, var(--free-color), #059669);
+  background-color: var(--free-color);
 }
 
 .detail-badge.premium {
-  background: linear-gradient(135deg, var(--premium-color), #d97706);
-}
-
-.access-status {
-  position: absolute;
-  bottom: 1rem;
-  left: 1rem;
-  right: 1rem;
-  padding: 0.75rem;
-  border-radius: var(--border-radius);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  backdrop-filter: blur(10px);
-}
-
-.access-status.accessible {
-  background: rgba(16, 185, 129, 0.9);
-  color: white;
-}
-
-.access-status.restricted {
-  background: rgba(239, 68, 68, 0.9);
-  color: white;
-}
-
-.access-icon {
-  font-size: 1.25rem;
+  background-color: var(--premium-color);
 }
 
 .detail-info {
@@ -1544,59 +895,65 @@ input:focus, select:focus {
   color: var(--text-primary);
 }
 
-.tools {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.tool-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.tool-tag {
-  padding: 0.25rem 0.75rem;
-  background-color: var(--bg-tertiary);
-  color: var(--text-primary);
-  border-radius: 20px;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.instructor-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background-color: var(--bg-secondary);
-  border-radius: var(--border-radius);
-}
-
-.instructor-card .instructor-avatar {
-  width: 60px;
-  height: 60px;
-}
-
-.instructor-details h4 {
-  font-size: 1.125rem;
-  font-weight: 700;
-  margin: 0 0 0.25rem 0;
-  color: var(--text-primary);
-}
-
-.instructor-details p {
-  font-size: 1rem;
-  color: var(--text-secondary);
-  margin: 0;
-  line-height: 1.4;
-}
-
 .detail-actions {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  border: none;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--secondary-color);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-back {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+}
+
+.btn-upgrade {
+  background: linear-gradient(135deg, var(--premium-color), #d97706);
+  color: white;
+  font-weight: 700;
+}
+
+.btn-lg {
+  padding: 1rem 1.5rem;
+  font-size: 1.125rem;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Lessons List */
@@ -1643,11 +1000,6 @@ input:focus, select:focus {
   background-color: #f3f4f6;
 }
 
-.lesson-item.locked:hover {
-  transform: none;
-  border-color: var(--border-color);
-}
-
 .lesson-item.preview {
   background: linear-gradient(135deg, #fef3c7, #fde68a);
   border-color: var(--warning-color);
@@ -1682,10 +1034,6 @@ input:focus, select:focus {
   background-color: var(--warning-color);
 }
 
-.lesson-info {
-  flex: 1;
-}
-
 .lesson-info h4 {
   font-size: 1.125rem;
   font-weight: 600;
@@ -1705,29 +1053,10 @@ input:focus, select:focus {
   font-weight: 600;
 }
 
-.lesson-info p {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  margin: 0 0 0.5rem 0;
-  line-height: 1.4;
-}
-
-.lesson-meta {
-  display: flex;
-  gap: 1rem;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
 .lesson-right {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.lesson-type {
-  font-size: 1.25rem;
-  opacity: 0.7;
 }
 
 .lesson-lock {
@@ -1745,33 +1074,11 @@ input:focus, select:focus {
   margin-top: 2rem;
 }
 
-.upsell-content h4 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 0.5rem;
-}
-
-.upsell-content p {
-  font-size: 1rem;
-  color: var(--text-secondary);
-  margin-bottom: 1.5rem;
-  line-height: 1.5;
-}
-
 /* Responsive Design */
 @media (max-width: 1024px) {
   .detail-header {
     grid-template-columns: 1fr;
     gap: 1rem;
-  }
-  
-  .detail-image {
-    height: 300px;
-  }
-
-  .courses-grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   }
 }
 
@@ -1780,340 +1087,33 @@ input:focus, select:focus {
     padding: 0 1rem;
   }
   
-  .hero-title {
-    font-size: 2rem;
-  }
-  
-  .hero-subtitle {
-    font-size: 1.125rem;
-  }
-  
   .filter-bar {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
   }
-  
+
+  .filter-group {
+    width: 100%;
+  }
+
+  .filter-group-buttons {
+    width: 100%;
+  }
+
+  .filter-group-buttons button {
+    flex: 1;
+  }
+
+  .course-results-label {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
   .courses-grid {
     grid-template-columns: 1fr;
   }
-  
-  .course-detail {
-    padding: 1rem;
-  }
-
-  .detail-actions {
-    flex-direction: column;
-  }
-
-  .meta-row {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .lesson-left {
-    gap: 0.75rem;
-  }
-
-  .lesson-meta {
-    flex-direction: column;
-    gap: 0.25rem;
-  }
 }
 
-@media (max-width: 480px) {
-  .container {
-    padding: 0 0.75rem;
-  }
-  
-  .hero {
-    padding: 2rem 0;
-  }
-  
-  .hero-title {
-    font-size: 1.5rem;
-  }
-  
-  .hero-subtitle {
-    font-size: 1rem;
-  }
-  
-  .filter-bar {
-    padding: 1rem;
-  }
-  
-  .lesson-item {
-    padding: 0.75rem;
-    gap: 0.75rem;
-  }
-  
-  .lesson-number {
-    width: 32px;
-    height: 32px;
-    font-size: 0.875rem;
-  }
-
-  .course-meta {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
-  }
-
-  .course-stats {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-}
-
-/* Accessibility */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-.btn:focus-visible,
-input:focus-visible,
-select:focus-visible,
-.lesson-item:focus-visible,
-.course-card:focus-visible {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 2px;
-}
-
-/* Loading animations */
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.course-card.loading {
-  animation: pulse 2s infinite;
-}
-
-/* Image Loading States */
-.course-image {
-  background-color: var(--bg-tertiary);
-}
-
-.course-image img {
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-}
-
-.course-image img[src] {
-  opacity: 1;
-}
-
-.instructor-avatar {
-  background-color: var(--bg-tertiary);
-}
-
-/* Error States */
-.image-error {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--bg-tertiary);
-  color: var(--text-muted);
-  font-size: 0.875rem;
-}
-
-/* Premium Features */
-.premium-features {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1));
-  border: 1px solid var(--premium-color);
-  border-radius: var(--border-radius);
-  padding: 1rem;
-  margin-top: 1rem;
-}
-
-.premium-features h4 {
-  color: var(--premium-color);
-  font-size: 1rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.premium-features ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.premium-features li {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.25rem;
-}
-
-.premium-features li::before {
-  content: '✨';
-  font-size: 1rem;
-}
-
-/* Course Progress */
-.course-progress {
-  background-color: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  padding: 1rem;
-  margin-top: 1rem;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background-color: var(--border-color);
-  border-radius: 4px;
-  overflow: hidden;
-  margin-top: 0.5rem;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-  transition: width 0.3s ease-in-out;
-}
-
-/* Tooltips */
-.tooltip {
-  position: relative;
-  cursor: help;
-}
-
-.tooltip::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: var(--text-primary);
-  color: white;
-  padding: 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s;
-  z-index: 1000;
-}
-
-.tooltip:hover::after {
-  opacity: 1;
-}
-
-/* Skeleton Loading */
-.skeleton {
-  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--border-color) 50%, var(--bg-tertiary) 75%);
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.5s infinite;
-}
-
-@keyframes skeleton-loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-.skeleton-course-card {
-  height: 400px;
-  border-radius: var(--border-radius);
-}
-
-.skeleton-text {
-  height: 1rem;
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
-}
-
-.skeleton-text.short {
-  width: 60%;
-}
-
-.skeleton-text.medium {
-  width: 80%;
-}
-
-.skeleton-text.long {
-  width: 100%;
-}
-
-/* Dark Mode Support (Optional) */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-primary: #1e293b;
-    --bg-secondary: #0f172a;
-    --bg-tertiary: #334155;
-    --text-primary: #f1f5f9;
-    --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
-    --border-color: #475569;
-  }
-  
-  .course-image img {
-    filter: brightness(0.9);
-  }
-  
-  .skeleton {
-    background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--border-color) 50%, var(--bg-tertiary) 75%);
-  }
-}
-
-/* Print Styles */
-@media print {
-  .hero,
-  .filter-bar,
-  .btn,
-  .premium-overlay,
-  .course-badge {
-    display: none !important;
-  }
-  
-  .course-card {
-    break-inside: avoid;
-    border: 1px solid #ccc;
-    margin-bottom: 1rem;
-  }
-  
-  .course-image {
-    height: 150px;
-  }
-}
-
-/* High Contrast Mode */
-@media (prefers-contrast: high) {
-  .course-card {
-    border-width: 2px;
-  }
-  
-  .btn {
-    border: 2px solid currentColor;
-  }
-  
-  .course-badge {
-    border: 2px solid white;
-  }
-}
-
-/* Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-  .course-card:hover {
-    transform: none;
-  }
-  
-  .course-image img {
-    transition: none;
-  }
-  
-  .skeleton {
-    animation: none;
-  }
-}
 </style>
