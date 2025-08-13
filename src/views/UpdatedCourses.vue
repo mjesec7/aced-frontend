@@ -507,7 +507,7 @@
 
 <script>
 import { getUpdatedCourses, getCourseById } from '@/api.js';
-import PaymentModal from '@/components/Payments/PaymentModal.vue';
+import PaymentModal from '@/components/Modals/PaymentModal.vue';
 import { checkSubscriptionAccess } from '@/router/index.js';
 import { mapGetters } from 'vuex';
 
