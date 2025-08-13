@@ -1,20 +1,22 @@
 <template>
   <div v-if="visible" class="modal-overlay" @click.self="closeModal">
     <div class="modal-content">
-      <!-- Close Button -->
-      <button class="close-btn" @click="closeModal" aria-label="Закрыть">
+      <button
+        class="close-btn"
+        @click="closeModal"
+        aria-label="Закрыть"
+        :disabled="loading"
+      >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </button>
 
-      <!-- Header -->
       <div class="modal-header">
         <h3>🔒 Доступ к премиум-контенту</h3>
         <p class="modal-subtitle">Выберите способ получения доступа</p>
       </div>
 
-      <!-- Plan Selection -->
       <div class="plan-selection">
         <h4>Выберите тариф:</h4>
         <div class="plans-grid">
@@ -54,7 +56,6 @@
         </div>
       </div>
 
-      <!-- Promo Code Section -->
       <div class="promo-section">
         <h4>Или введите промокод:</h4>
         <div class="promo-input-group">
@@ -77,7 +78,6 @@
         </div>
       </div>
 
-      <!-- Action Buttons -->
       <div class="modal-actions">
         <button 
           class="payment-btn" 
@@ -89,7 +89,6 @@
         </button>
       </div>
 
-      <!-- Messages -->
       <div v-if="error" class="message error-message">
         <span class="message-icon">❌</span>
         {{ error }}
@@ -100,10 +99,9 @@
         {{ success }}
       </div>
 
-      <!-- Loading Overlay -->
       <div v-if="loading" class="loading-overlay">
         <div class="spinner"></div>
-        <p>Обработка платежа...</p>
+        <p>Обработка...</p>
       </div>
     </div>
   </div>
@@ -201,8 +199,6 @@ export default {
       this.clearMessages();
 
       try {
-   
-
         const result = await applyPromoCode(
           this.userId,
           this.selectedPlan,
@@ -212,14 +208,12 @@ export default {
         if (result.success) {
           this.success = result.message;
           
-          // Emit unlocked event with plan info
           this.$emit('unlocked', {
             plan: this.selectedPlan,
             method: 'promo',
             promoCode: this.promoCodeInput.trim()
           });
 
-          // Auto-close after success
           setTimeout(() => {
             if (this.requestedTopicId) {
               this.$router.push({ 
@@ -252,16 +246,12 @@ export default {
       this.clearMessages();
 
       try {
-     
-
-        // Emit payment initiation event
         this.$emit('payment-initiated', {
           plan: this.selectedPlan,
           userId: this.userId,
           requestedTopicId: this.requestedTopicId
         });
 
-        // Navigate to payment page
         await this.$router.push({ 
           name: 'PaymePayment', 
           params: { plan: this.selectedPlan },
@@ -271,7 +261,6 @@ export default {
           }
         });
 
-        // Close modal after navigation
         this.closeModal();
 
       } catch (err) {
@@ -282,7 +271,6 @@ export default {
       }
     },
 
-    // Keyboard navigation support
     handleKeydown(event) {
       if (event.key === 'Escape') {
         this.closeModal();
@@ -346,9 +334,14 @@ export default {
   justify-content: center;
 }
 
-.close-btn:hover {
+.close-btn:hover:not(:disabled) {
   background-color: #f3f4f6;
   color: #374151;
+}
+
+.close-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .modal-header {
@@ -452,6 +445,10 @@ export default {
   padding: 4px 0;
   font-size: 0.9rem;
   color: #4b5563;
+}
+
+.promo-section {
+  margin-top: 32px;
 }
 
 .promo-input-group {
