@@ -94,7 +94,7 @@
           >
             <div class="course-image">
               <img
-                :src="getValidImageUrl(course.thumbnail)"
+                :src="getValidImageUrl(course.thumbnail || course.image)"
                 :alt="course.title"
                 loading="lazy"
                 @error="handleImageError"
@@ -124,11 +124,11 @@
               <div class="course-meta">
                 <span class="meta-item">
                   <span class="meta-icon">{{ getDifficultyIcon(course.difficulty) }}</span>
-                  {{ course.difficulty }}
+                  {{ course.difficulty || 'Базовый' }}
                 </span>
                 <span class="meta-item">
                   <span class="meta-icon">⏱️</span>
-                  {{ course.duration }}
+                  {{ course.duration || '30 мин' }}
                 </span>
                 <span class="meta-item">
                   <span class="meta-icon">👥</span>
@@ -184,7 +184,7 @@
           <div class="detail-header">
             <div class="detail-image">
               <img 
-                :src="getValidImageUrl(selectedCourse.thumbnail)" 
+                :src="getValidImageUrl(selectedCourse.thumbnail || selectedCourse.image)" 
                 :alt="selectedCourse.title" 
                 @error="handleImageError"
               />
@@ -219,16 +219,16 @@
               <div class="detail-meta">
                 <div class="meta-row">
                   <span class="meta-item">
-                    <strong>Категория:</strong> {{ selectedCourse.category }}
+                    <strong>Категория:</strong> {{ selectedCourse.category || 'Общий' }}
                   </span>
                   <span class="meta-item">
                     <strong>Сложность:</strong> 
-                    {{ getDifficultyIcon(selectedCourse.difficulty) }} {{ selectedCourse.difficulty }}
+                    {{ getDifficultyIcon(selectedCourse.difficulty) }} {{ selectedCourse.difficulty || 'Базовый' }}
                   </span>
                 </div>
                 <div class="meta-row">
                   <span class="meta-item">
-                    <strong>Длительность:</strong> {{ selectedCourse.duration }}
+                    <strong>Длительность:</strong> {{ selectedCourse.duration || '30 мин' }}
                   </span>
                   <span class="meta-item">
                     <strong>Студентов:</strong> {{ selectedCourse.studentsCount || 0 }}
@@ -384,7 +384,7 @@
 
 <script>
 import { mapState, mapGetters } from 'vuex'
-import { getCourseContent, toggleBookmark } from '@/api'
+import { getUpdatedCourses, getCourseContent, toggleBookmark } from '@/api'
 import LessonPlayer from '@/components/Updated/LessonPlayer.vue'
 
 export default {
@@ -410,6 +410,8 @@ export default {
       // Data state
       courses: [],
       courseContent: [],
+      availableCategories: [],
+      availableDifficulties: [],
       
       // Lesson state
       showLessonView: false,
@@ -423,14 +425,6 @@ export default {
 
     isUserPremium() {
       return this.currentUserPlan && ['start', 'pro', 'premium'].includes(this.currentUserPlan.toLowerCase())
-    },
-
-    availableCategories() {
-      return [...new Set(this.courses.map(c => c.category))].filter(Boolean)
-    },
-    
-    availableDifficulties() {
-      return [...new Set(this.courses.map(c => c.difficulty))].filter(Boolean)
     },
     
     sortedCourses() {
@@ -463,29 +457,42 @@ export default {
           category: this.selectedCategory,
           difficulty: this.selectedDifficulty,
           search: this.searchQuery,
+          type: this.selectedType
         }
 
-        // Use the correct API endpoint for updated courses
-        const response = await this.$api.get('/updated-courses', { params: filters })
+        // Use the updated courses API function from api.js
+        const response = await getUpdatedCourses(filters)
         
-        if (response.data.success) {
-          this.courses = response.data.courses || []
+        if (response.success) {
+          this.courses = response.courses || []
+          this.availableCategories = response.categories || []
+          this.availableDifficulties = response.difficulties || []
+          
           console.log(`✅ Loaded ${this.courses.length} courses`)
+          console.log('Categories:', this.availableCategories)
+          console.log('Difficulties:', this.availableDifficulties)
         } else {
-          throw new Error(response.data.error || 'Failed to fetch courses')
+          throw new Error(response.error || 'Failed to fetch courses')
         }
         
       } catch (e) {
         console.error('❌ Failed to fetch courses:', e)
-        this.error = e.response?.data?.message || e.message || 'Не удалось загрузить курсы. Пожалуйста, попробуйте позже.'
+        this.error = e.message || 'Не удалось загрузить курсы. Пожалуйста, попробуйте позже.'
         
         // Fallback to mock data for development
         if (process.env.NODE_ENV === 'development') {
-          this.courses = this.generateMockCourses()
+          console.log('🔧 Using fallback mock data...')
+          this.loadMockData()
         }
       } finally {
         this.loading = false
       }
+    },
+
+    loadMockData() {
+      this.courses = this.generateMockCourses()
+      this.availableCategories = [...new Set(this.courses.map(c => c.category))].filter(Boolean)
+      this.availableDifficulties = [...new Set(this.courses.map(c => c.difficulty))].filter(Boolean)
     },
 
     filterCourses(courses) {
@@ -494,8 +501,8 @@ export default {
       if (this.searchQuery) {
         const query = this.searchQuery.toLowerCase()
         filtered = filtered.filter(course =>
-          course.title.toLowerCase().includes(query) ||
-          course.description.toLowerCase().includes(query) ||
+          (course.title || '').toLowerCase().includes(query) ||
+          (course.description || '').toLowerCase().includes(query) ||
           (course.instructor?.name || '').toLowerCase().includes(query)
         )
       }
@@ -532,12 +539,12 @@ export default {
       try {
         console.log('📥 Loading course content for:', course.title)
         
-        // Use the correct API function for getting course content
         const response = await getCourseContent(course.id || course._id)
         
         if (response.success) {
           this.courseContent = response.data || []
           console.log(`✅ Loaded ${this.courseContent.length} lessons`)
+          console.log('Course content source:', response.source)
         } else {
           throw new Error(response.error || 'Failed to load course content')
         }
@@ -548,6 +555,7 @@ export default {
         
         // Fallback to mock lessons for development
         if (process.env.NODE_ENV === 'development') {
+          console.log('🔧 Using fallback mock lessons...')
           this.courseContent = this.generateMockLessons(course)
         }
       } finally {
@@ -556,6 +564,11 @@ export default {
     },
     
     async toggleBookmark(course) {
+      if (!this.currentUserId) {
+        console.warn('No user ID available for bookmark')
+        return
+      }
+
       const courseId = course.id || course._id
       const wasBookmarked = course.isBookmarked
 
@@ -566,8 +579,10 @@ export default {
         if (!response.success) {
           throw new Error('API request failed')
         }
+        
+        console.log('✅ Bookmark toggled successfully')
       } catch (error) {
-        console.error('Error toggling bookmark:', error)
+        console.error('❌ Error toggling bookmark:', error)
         course.isBookmarked = wasBookmarked
       }
     },
@@ -640,8 +655,12 @@ export default {
     getDifficultyIcon(difficulty) {
       const icons = {
         'Начинающий': '🟢',
+        'Базовый': '🟢',
+        'Начальный': '🟢',
         'Средний': '🟡',
-        'Продвинутый': '🔴'
+        'Промежуточный': '🟡',
+        'Продвинутый': '🔴',
+        'Эксперт': '🔴'
       }
       return icons[difficulty] || '⚪'
     },
@@ -659,15 +678,24 @@ export default {
 
     getValidImageUrl(url) {
       if (!url) return 'https://via.placeholder.com/400x250/6366f1/ffffff?text=ACED+Course'
+      
+      // If it's already a full URL, return as is
       if (url.startsWith('http')) return url
-      return `https://api.aced.live${url}`
+      
+      // If it starts with /, prepend the base URL
+      if (url.startsWith('/')) return `https://api.aced.live${url}`
+      
+      // Otherwise, assume it's a relative path
+      return `https://api.aced.live/${url}`
     },
     
     handleImageError(event) {
+      console.warn('Image failed to load:', event.target.src)
       event.target.src = 'https://via.placeholder.com/400x250/6366f1/ffffff?text=ACED+Course'
     },
 
     handleAvatarError(event) {
+      console.warn('Avatar failed to load:', event.target.src)
       event.target.src = 'https://via.placeholder.com/50x50/8b5cf6/ffffff?text=👤'
     },
 
@@ -704,6 +732,7 @@ export default {
           difficulty: 'Начинающий',
           duration: '6 часов',
           thumbnail: 'https://via.placeholder.com/400x250/6366f1/ffffff?text=Web+Design',
+          image: 'https://via.placeholder.com/400x250/6366f1/ffffff?text=Web+Design',
           isPremium: false,
           isBookmarked: false,
           studentsCount: 1250,
@@ -715,6 +744,7 @@ export default {
             bio: 'Опытный UI/UX дизайнер с 8-летним стажем в ведущих IT компаниях'
           },
           curriculum: Array(8).fill().map((_, i) => ({ title: `Урок ${i + 1}`, _id: `lesson_${i}` })),
+          lessonCount: 8,
           createdAt: '2024-01-15'
         },
         {
@@ -726,6 +756,7 @@ export default {
           difficulty: 'Продвинутый',
           duration: '12 часов',
           thumbnail: 'https://via.placeholder.com/400x250/10b981/ffffff?text=React+TS',
+          image: 'https://via.placeholder.com/400x250/10b981/ffffff?text=React+TS',
           isPremium: true,
           isBookmarked: true,
           studentsCount: 890,
@@ -737,6 +768,7 @@ export default {
             bio: 'Senior Frontend разработчик в крупной IT компании, контрибьютор в React'
           },
           curriculum: Array(15).fill().map((_, i) => ({ title: `Урок ${i + 1}`, _id: `lesson_${i}` })),
+          lessonCount: 15,
           createdAt: '2024-02-20'
         },
         {
@@ -748,6 +780,7 @@ export default {
           difficulty: 'Средний',
           duration: '10 часов',
           thumbnail: 'https://via.placeholder.com/400x250/ef4444/ffffff?text=ML+Course',
+          image: 'https://via.placeholder.com/400x250/ef4444/ffffff?text=ML+Course',
           isPremium: true,
           isBookmarked: false,
           studentsCount: 2100,
@@ -759,17 +792,43 @@ export default {
             bio: 'Кандидат технических наук, специалист по машинному обучению и анализу данных'
           },
           curriculum: Array(12).fill().map((_, i) => ({ title: `Урок ${i + 1}`, _id: `lesson_${i}` })),
+          lessonCount: 12,
           createdAt: '2024-03-10'
+        },
+        {
+          id: '4',
+          _id: '4',
+          title: 'Мобильная разработка с Flutter',
+          description: 'Создавайте кроссплатформенные мобильные приложения с помощью Flutter и Dart.',
+          category: 'Мобильная разработка',
+          difficulty: 'Средний',
+          duration: '8 часов',
+          thumbnail: 'https://via.placeholder.com/400x250/3b82f6/ffffff?text=Flutter',
+          image: 'https://via.placeholder.com/400x250/3b82f6/ffffff?text=Flutter',
+          isPremium: false,
+          isBookmarked: false,
+          studentsCount: 650,
+          rating: 4.6,
+          tools: ['Flutter', 'Dart', 'Firebase'],
+          instructor: {
+            name: 'Елена Смирнова',
+            avatar: 'https://via.placeholder.com/50x50/3b82f6/ffffff?text=ES',
+            bio: 'Mobile Team Lead, эксперт по Flutter разработке'
+          },
+          curriculum: Array(10).fill().map((_, i) => ({ title: `Урок ${i + 1}`, _id: `lesson_${i}` })),
+          lessonCount: 10,
+          createdAt: '2024-03-25'
         }
       ]
     },
 
     generateMockLessons(course) {
-      const lessonCount = course.curriculum?.length || 8
+      const lessonCount = course.curriculum?.length || course.lessonCount || 8
       return Array(lessonCount).fill().map((_, index) => ({
         id: `lesson_${index}`,
         _id: `lesson_${index}`,
         title: `Урок ${index + 1}: ${this.generateLessonTitle(course.category, index)}`,
+        lessonName: `Урок ${index + 1}: ${this.generateLessonTitle(course.category, index)}`,
         description: `Подробное изучение темы урока ${index + 1}. Практические примеры и упражнения.`,
         duration: `${20 + Math.floor(Math.random() * 40)} мин`,
         order: index,
@@ -797,7 +856,14 @@ export default {
           'Управление состоянием',
           'Тестирование',
           'Оптимизация',
-          'Деплой приложения'
+          'Деплой приложения',
+          'Продвинутые паттерны',
+          'Микрофронтенды',
+          'Performance',
+          'Безопасность',
+          'CI/CD',
+          'Мониторинг',
+          'Финальный проект'
         ],
         'Машинное обучение': [
           'Введение в ML',
@@ -807,7 +873,23 @@ export default {
           'Кластеризация',
           'Нейронные сети',
           'Валидация моделей',
-          'Практический проект'
+          'Практический проект',
+          'Deep Learning',
+          'Computer Vision',
+          'NLP',
+          'Развертывание моделей'
+        ],
+        'Мобильная разработка': [
+          'Введение в Flutter',
+          'Dart основы',
+          'Виджеты и layouts',
+          'Навигация',
+          'Состояние приложения',
+          'Работа с API',
+          'База данных',
+          'Анимации',
+          'Тестирование',
+          'Публикация'
         ]
       }
       
@@ -1808,5 +1890,230 @@ select:focus-visible,
 
 .course-card.loading {
   animation: pulse 2s infinite;
+}
+
+/* Image Loading States */
+.course-image {
+  background-color: var(--bg-tertiary);
+}
+
+.course-image img {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.course-image img[src] {
+  opacity: 1;
+}
+
+.instructor-avatar {
+  background-color: var(--bg-tertiary);
+}
+
+/* Error States */
+.image-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* Premium Features */
+.premium-features {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1));
+  border: 1px solid var(--premium-color);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.premium-features h4 {
+  color: var(--premium-color);
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.premium-features ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.premium-features li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.premium-features li::before {
+  content: '✨';
+  font-size: 1rem;
+}
+
+/* Course Progress */
+.course-progress {
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  transition: width 0.3s ease-in-out;
+}
+
+/* Tooltips */
+.tooltip {
+  position: relative;
+  cursor: help;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--text-primary);
+  color: white;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 1000;
+}
+
+.tooltip:hover::after {
+  opacity: 1;
+}
+
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--border-color) 50%, var(--bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-course-card {
+  height: 400px;
+  border-radius: var(--border-radius);
+}
+
+.skeleton-text {
+  height: 1rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-text.short {
+  width: 60%;
+}
+
+.skeleton-text.medium {
+  width: 80%;
+}
+
+.skeleton-text.long {
+  width: 100%;
+}
+
+/* Dark Mode Support (Optional) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #1e293b;
+    --bg-secondary: #0f172a;
+    --bg-tertiary: #334155;
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --border-color: #475569;
+  }
+  
+  .course-image img {
+    filter: brightness(0.9);
+  }
+  
+  .skeleton {
+    background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--border-color) 50%, var(--bg-tertiary) 75%);
+  }
+}
+
+/* Print Styles */
+@media print {
+  .hero,
+  .filter-bar,
+  .btn,
+  .premium-overlay,
+  .course-badge {
+    display: none !important;
+  }
+  
+  .course-card {
+    break-inside: avoid;
+    border: 1px solid #ccc;
+    margin-bottom: 1rem;
+  }
+  
+  .course-image {
+    height: 150px;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .course-card {
+    border-width: 2px;
+  }
+  
+  .btn {
+    border: 2px solid currentColor;
+  }
+  
+  .course-badge {
+    border: 2px solid white;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .course-card:hover {
+    transform: none;
+  }
+  
+  .course-image img {
+    transition: none;
+  }
+  
+  .skeleton {
+    animation: none;
+  }
 }
 </style>
