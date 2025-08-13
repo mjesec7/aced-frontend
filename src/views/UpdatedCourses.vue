@@ -89,18 +89,44 @@
         </button>
 
         <div v-if="currentLesson" class="lesson-container">
-          <div class="lesson-header">
-            <div class="lesson-meta">
-              <span class="lesson-number-badge">Урок {{ currentLessonIndex + 1 }}</span>
-              <span class="lesson-duration-badge">{{ currentLesson.duration }}</span>
+          <div class="lesson-header-new">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-gradient-to-br from-[var(--color-brand-purple)] to-[var(--color-brand-purple-dark)] rounded-lg flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+              </div>
+              <div>
+                <h1 class="text-2xl font-medium mb-1">{{ currentLesson.title }}</h1>
+                <div class="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span class="flex items-center gap-1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    {{ currentLesson.duration }}
+                  </span>
+                  <span>Урок {{ currentLessonIndex + 1 }} из {{ totalLessons }}</span>
+                </div>
+              </div>
             </div>
-            <h2 class="lesson-title">{{ currentLesson.title }}</h2>
-            <p class="lesson-description">{{ currentLesson.description }}</p>
+            <p class="text-muted-foreground text-lg">{{ currentLesson.description }}</p>
+          </div>
+
+          <div v-if="currentLesson.objectives && currentLesson.objectives.length" class="learning-objectives-section">
+            <h2 class="text-lg font-medium mb-4 text-brand-purple-dark">Цели урока</h2>
+            <ul class="space-y-2">
+              <li v-for="(objective, index) in currentLesson.objectives" :key="index" class="flex items-start gap-3">
+                <div class="w-1.5 h-1.5 rounded-full bg-brand-purple mt-2.5 flex-shrink-0"></div>
+                <span class="text-foreground">{{ objective }}</span>
+              </li>
+            </ul>
           </div>
 
           <div class="lesson-content-area">
             <div class="text-content">
-              <div class="content-section" v-html="currentLesson.content"></div>
+              <div class="content-section-new" v-html="currentLesson.content"></div>
 
               <div v-if="currentLesson.resources && currentLesson.resources.length" class="resources-section">
                 <h3>Материалы урока</h3>
@@ -566,8 +592,8 @@ export default {
         'software development': 'https://images.unsplash.com/photo-1518773553398-650c184e0bb3?w=400&h=250&fit=crop',
         
         // AI & Machine Learning
-        'artificial intelligence': 'https://images.unsplash.com/photo-1555255707-c079660887b?w=400&h=250&fit=crop',
-        'machine learning': 'https://images.unsplash.com/photo-1555255707-c079660887b?w=400&h=250&fit=crop',
+        'artificial intelligence': 'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=400&h=250&fit=crop',
+        'machine learning': 'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=400&h=250&fit=crop',
         'ai': 'https://images.unsplash.com/photo-1507146426996-ef05306b995a?w=400&h=250&fit=crop',
         'data science': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop',
         'neural networks': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=250&fit=crop',
@@ -899,7 +925,7 @@ export default {
           title: "Введение в курс",
           description: "Обзор курса и что вы изучите",
           duration: "15 мин",
-          completed: false,
+          completed: true,
           locked: false,
           content: `
             <h3>Добро пожаловать в курс!</h3>
@@ -923,7 +949,12 @@ export default {
               "Получить сертификат любой ценой"
             ],
             correctAnswer: 1
-          }
+          },
+          objectives: [
+            "Познакомиться с преподавателями",
+            "Оценить структуру курса",
+            "Узнать о будущих проектах"
+          ],
         },
         {
           id: 2,
@@ -931,7 +962,7 @@ export default {
           description: "Изучаем ключевые понятия и термины",
           duration: "25 мин",
           completed: false,
-          locked: true,
+          locked: false,
           content: `
             <h3>Основные концепции</h3>
             <p>В этом уроке мы рассмотрим ключевые понятия, которые будут использоваться на протяжении всего курса.</p>
@@ -949,7 +980,12 @@ export default {
               "База данных"
             ],
             correctAnswer: 1
-          }
+          },
+          objectives: [
+            "Определить основные термины",
+            "Понять принципы работы",
+            "Разобрать примеры"
+          ],
         },
         {
           id: 3,
@@ -961,7 +997,12 @@ export default {
           content: `
             <h3>Практическое задание</h3>
             <p>Теперь пришло время применить полученные знания на практике.</p>
-          `
+          `,
+          objectives: [
+            "Выполнить первое задание",
+            "Проверить свои навыки",
+            "Получить обратную связь"
+          ],
         }
       ];
     },
@@ -1777,7 +1818,7 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 1100px;
+  max-width: 1100px; /* Increased from 900px */
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
@@ -2455,115 +2496,105 @@ export default {
   }
 }
 
-/* LESSON HEADER - CLEAN DESIGN */
-.lesson-header {
-  margin-bottom: 3rem;
-  text-align: center;
-  padding: 2rem;
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-  border-radius: 16px;
-  border: 2px solid #e2e8f0;
+/* New Lesson Header Styles */
+.lesson-header-new {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f1f5f9;
 }
 
-.lesson-meta {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.lesson-number-badge,
-.lesson-duration-badge {
-  padding: 0.5rem 1rem;
-  border-radius: 12px;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.lesson-number-badge {
-  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
-  color: white;
-  box-shadow: 0 4px 12px rgba(139, 127, 191, 0.3);
-}
-
-.lesson-duration-badge {
-  background: #f1f5f9;
-  color: #64748b;
-  border: 2px solid #e2e8f0;
-}
-
-.lesson-header .lesson-title {
+.lesson-header-new h1 {
   font-size: 2rem;
-  font-weight: 800;
-  margin: 0 0 1rem 0;
+  font-weight: 700;
   color: #1e293b;
   line-height: 1.2;
 }
 
-.lesson-description {
+.lesson-header-new p {
   font-size: 1.125rem;
   color: #64748b;
   line-height: 1.6;
+}
+
+.text-muted-foreground {
+  color: #64748b;
+}
+
+/* Learning Objectives Section */
+.learning-objectives-section {
+  margin-bottom: 2rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(139, 127, 191, 0.1), rgba(165, 153, 212, 0.1));
+  border-radius: 16px;
+  border: 2px solid rgba(139, 127, 191, 0.3);
+}
+
+.learning-objectives-section h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #6b5b9a;
+  margin-bottom: 1.5rem;
+}
+
+.learning-objectives-section ul {
+  list-style: none;
+  padding: 0;
   margin: 0;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
-/* LESSON CONTENT - STRUCTURED LAYOUT */
-.lesson-content-area {
+.learning-objectives-section li {
   display: flex;
-  flex-direction: column;
-  gap: 3rem;
+  align-items: flex-start;
+  gap: 1rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #334155;
 }
 
-.text-content {
+.learning-objectives-section li > div {
+  background: var(--color-brand);
+  min-width: 6px;
+  min-height: 6px;
+  border-radius: 50%;
+  margin-top: 10px;
+}
+
+/* Main Content Section */
+.content-section-new {
   line-height: 1.8;
   font-size: 1rem;
+  color: #475569;
 }
 
-.content-section {
-  background: white;
-  padding: 2.5rem;
-  border-radius: 16px;
-  border: 2px solid #f1f5f9;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.content-section h3 {
+.content-section-new h3 {
   color: #1e293b;
   font-size: 1.5rem;
   font-weight: 700;
-  margin: 0 0 1.5rem 0;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #f1f5f9;
+  margin: 2rem 0 1.5rem 0;
 }
 
-.content-section h4 {
+.content-section-new h4 {
   color: #334155;
   font-size: 1.25rem;
   font-weight: 600;
   margin: 2rem 0 1rem 0;
 }
 
-.content-section p {
-  color: #475569;
+.content-section-new p {
   margin: 0 0 1.5rem 0;
-  line-height: 1.7;
 }
 
-.content-section ul,
-.content-section ol {
+.content-section-new ul,
+.content-section-new ol {
   margin: 1.5rem 0;
   padding-left: 2rem;
 }
 
-.content-section li {
-  color: #475569;
+.content-section-new li {
   margin: 0.75rem 0;
   line-height: 1.6;
 }
+
 
 /* RESOURCES SECTION - CARD DESIGN */
 .resources-section {
@@ -2875,7 +2906,7 @@ export default {
     min-width: auto;
   }
 
-  .lesson-header .lesson-title {
+  .lesson-header-new h1 {
     font-size: 1.5rem;
   }
 
