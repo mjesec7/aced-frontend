@@ -69,7 +69,7 @@
             >
               <option value="all">Все категории</option>
               <option
-                v-for="category in categories"
+                v-for="category in availableCategories"
                 :key="category"
                 :value="category"
               >
@@ -99,9 +99,13 @@
               class="select-field"
             >
               <option value="all">Все уровни</option>
-              <option value="Начинающий">Начинающий</option>
-              <option value="Средний">Средний</option>
-              <option value="Продвинутый">Продвинутый</option>
+              <option
+                v-for="level in availableLevels"
+                :key="level"
+                :value="level"
+              >
+                {{ level }}
+              </option>
             </select>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -159,14 +163,45 @@
                 d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"
               ></path>
             </svg>
-            <span>Найдено курсов: {{ filteredCourses.length }}</span>
+            <span>Найдено курсов: {{ courses.length }}</span>
           </div>
           <div class="results-updated">Обновлено сегодня</div>
         </div>
 
-        <div v-if="filteredCourses.length > 0" class="courses-grid">
+        <div v-if="loading" class="empty-state">
+          <div class="spinner"></div>
+          <h3 class="empty-state-title">Загрузка курсов...</h3>
+        </div>
+
+        <div v-else-if="error" class="empty-state">
+          <div class="empty-state-icon-wrapper">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="empty-state-icon"
+            >
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </div>
+          <h3 class="empty-state-title">Не удалось загрузить курсы</h3>
+          <p class="empty-state-description">{{ error }}</p>
+          <button @click="fetchCourses" class="button-reset-filters">
+            Попробовать снова
+          </button>
+        </div>
+
+        <div v-else-if="courses.length > 0" class="courses-grid">
           <div
-            v-for="course in filteredCourses"
+            v-for="course in courses"
             :key="course.id"
             class="course-card"
             @click="openModal(course)"
@@ -232,6 +267,7 @@
             </div>
           </div>
         </div>
+
         <div v-else class="empty-state">
           <div class="empty-state-icon-wrapper">
             <svg
@@ -369,7 +405,7 @@
                 </h4>
                 <ul class="modal-list">
                   <li
-                    v-for="(skill, index) in selectedCourse.skills.slice(0, 4)"
+                    v-for="(skill, index) in selectedCourse.skills"
                     :key="index"
                     class="modal-list-item"
                   >
@@ -390,12 +426,6 @@
                     </svg>
                     <span>{{ skill }}</span>
                   </li>
-                  <li
-                    v-if="selectedCourse.skills.length > 4"
-                    class="modal-list-more"
-                  >
-                    и еще {{ selectedCourse.skills.length - 4 }} навыков...
-                  </li>
                 </ul>
               </div>
 
@@ -403,17 +433,11 @@
                 <h4 class="modal-details-title">Программа курса:</h4>
                 <ul class="modal-list">
                   <li
-                    v-for="(module, index) in selectedCourse.modules.slice(0, 6)"
+                    v-for="(module, index) in selectedCourse.modules"
                     :key="index"
                     class="modal-list-item-plain"
                   >
                     {{ index + 1 }}. {{ module }}
-                  </li>
-                  <li
-                    v-if="selectedCourse.modules.length > 6"
-                    class="modal-list-more"
-                  >
-                    и еще {{ selectedCourse.modules.length - 6 }} модулей...
                   </li>
                 </ul>
               </div>
@@ -472,186 +496,9 @@ export default {
   name: 'UpdatedCourses',
   data() {
     return {
-      courses: [
-        {
-          id: '1',
-          title: 'ИИ и машинное обучение: с нуля до профессионала',
-          description: 'Освойте основы искусственного интеллекта, изучите популярные алгоритмы машинного обучения и создайте свои первые AI-проекты.',
-          fullDescription: 'Комплексный курс по искусственному интеллекту и машинному обучению. Вы изучите основы математики для ML, освоите Python, TensorFlow и создадите реальные проекты с использованием нейронных сетей.',
-          category: 'Искусственный интеллект',
-          duration: '12 недель',
-          level: 'Начинающий',
-          isPremium: true,
-          image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=600&fit=crop',
-          skills: [
-            'Основы машинного обучения и нейронных сетей',
-            'Программирование на Python для Data Science',
-            'Работа с TensorFlow и PyTorch',
-            'Обработка естественного языка (NLP)',
-            'Компьютерное зрение',
-            'Развертывание ML-моделей в продакшн'
-          ],
-          modules: [
-            'Введение в ИИ и основы математики',
-            'Python для машинного обучения',
-            'Линейная алгебра и статистика',
-            'Обучение с учителем',
-            'Обучение без учителя',
-            'Глубокое обучение и нейронные сети',
-            'Обработка естественного языка',
-            'Компьютерное зрение',
-            'Практические проекты',
-            'Развертывание моделей'
-          ]
-        },
-        {
-          id: '2',
-          title: 'UX/UI дизайн: современные подходы',
-          description: 'Изучите принципы пользовательского опыта, освойте Figma и создайте портфолио современного дизайнера.',
-          fullDescription: 'Практический курс по UX/UI дизайну с фокусом на современные тренды. Научитесь создавать интуитивные интерфейсы, проводить пользовательские исследования и работать с командой разработки.',
-          category: 'Дизайн',
-          duration: '8 недель',
-          level: 'Начинающий',
-          isPremium: false,
-          image: 'https://images.unsplash.com/photo-1559028006-448665bd7c7f?w=800&h=600&fit=crop',
-          skills: [
-            'Принципы UX/UI дизайна',
-            'Пользовательские исследования',
-            'Создание wireframes и прототипов',
-            'Работа в Figma',
-            'Типографика и колористика',
-            'Адаптивный дизайн'
-          ],
-          modules: [
-            'Введение в UX/UI дизайн',
-            'Пользовательские исследования',
-            'Информационная архитектура',
-            'Wireframing и прототипирование',
-            'Визуальный дизайн',
-            'Работа с Figma',
-            'Адаптивный дизайн',
-            'Создание портфолио'
-          ]
-        },
-        {
-          id: '3',
-          title: 'Блокчейн и криптовалюты: технологии будущего',
-          description: 'Погрузитесь в мир криптовалют и блокчейн-технологий. Изучите смарт-контракты и создайте свой токен.',
-          fullDescription: 'Полный курс по блокчейн-технологиям от основ до создания собственных проектов. Изучите Ethereum, Solidity, DeFi и NFT.',
-          category: 'Блокчейн',
-          duration: '10 недель',
-          level: 'Средний',
-          isPremium: true,
-          image: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=800&h=600&fit=crop',
-          skills: [
-            'Основы блокчейн-технологий',
-            'Создание смарт-контрактов на Solidity',
-            'Работа с Ethereum и Web3',
-            'DeFi и децентрализованные приложения',
-            'NFT и токенизация',
-            'Безопасность в блокчейне'
-          ],
-          modules: [
-            'Введение в блокчейн',
-            'Криптография и консенсус',
-            'Ethereum и смарт-контракты',
-            'Solidity для начинающих',
-            'Web3 и dApps',
-            'DeFi протоколы',
-            'NFT и метавселенная',
-            'Безопасность и аудит',
-            'Практические проекты'
-          ]
-        },
-        {
-          id: '4',
-          title: 'Цифровой маркетинг: полный гид',
-          description: 'Освойте все каналы цифрового маркетинга: от контекстной рекламы до социальных сетей и email-маркетинга.',
-          fullDescription: 'Комплексный курс по цифровому маркетингу с акцентом на практические навыки. Научитесь создавать эффективные рекламные кампании и анализировать их результаты.',
-          category: 'Маркетинг',
-          duration: '6 недель',
-          level: 'Начинающий',
-          isPremium: false,
-          image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop',
-          skills: [
-            'Стратегия цифрового маркетинга',
-            'Контекстная реклама (Яндекс.Директ, Google Ads)',
-            'SMM и реклама в социальных сетях',
-            'Email-маркетинг и автоворонки',
-            'Аналитика и метрики',
-            'SEO-оптимизация'
-          ],
-          modules: [
-            'Основы цифрового маркетинга',
-            'Контекстная реклама',
-            'Социальные сети и SMM',
-            'Email-маркетинг',
-            'Контент-маркетинг',
-            'Аналитика и оптимизация'
-          ]
-        },
-        {
-          id: '5',
-          title: 'React и Next.js: современная frontend-разработка',
-          description: 'Изучите современные технологии frontend-разработки. Создайте полноценные веб-приложения с использованием React и Next.js.',
-          fullDescription: 'Практический курс по современной frontend-разработке. Освойте React, Next.js, TypeScript и создайте portfolio-проекты для трудоустройства.',
-          category: 'Веб-разработка',
-          duration: '14 недель',
-          level: 'Средний',
-          isPremium: true,
-          image: 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=800&h=600&fit=crop',
-          skills: [
-            'React и его экосистема',
-            'Next.js и серверный рендеринг',
-            'TypeScript для React',
-            'State management (Redux, Zustand)',
-            'Стилизация (CSS-in-JS, Tailwind)',
-            'Тестирование React-приложений'
-          ],
-          modules: [
-            'Основы React',
-            'Компоненты и хуки',
-            'State management',
-            'Роутинг в React',
-            'Next.js и SSR',
-            'TypeScript',
-            'Стилизация компонентов',
-            'API интеграция',
-            'Тестирование',
-            'Деплой приложений'
-          ]
-        },
-        {
-          id: '6',
-          title: 'Data Science: анализ данных на Python',
-          description: 'Станьте специалистом по анализу данных. Изучите Python, pandas, matplotlib и создайте свои первые модели.',
-          fullDescription: 'Полноценный курс по Data Science с практическими проектами. Освойте статистику, машинное обучение и визуализацию данных.',
-          category: 'Анализ данных',
-          duration: '16 недель',
-          level: 'Начинающий',
-          isPremium: true,
-          image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop',
-          skills: [
-            'Python для анализа данных',
-            'Pandas и NumPy',
-            'Визуализация данных (Matplotlib, Seaborn)',
-            'Статистический анализ',
-            'Машинное обучение с Scikit-learn',
-            'Работа с базами данных'
-          ],
-          modules: [
-            'Введение в Data Science',
-            'Python основы',
-            'NumPy и Pandas',
-            'Статистика и вероятность',
-            'Визуализация данных',
-            'Машинное обучение',
-            'Обработка текстовых данных',
-            'Временные ряды',
-            'Практические проекты'
-          ]
-        },
-      ],
+      courses: [], // Will be populated from the API
+      availableCategories: [], // Will be populated from the API
+      availableLevels: [], // Will be populated from the API
       selectedCourse: null,
       isModalOpen: false,
       searchTerm: '',
@@ -659,51 +506,87 @@ export default {
       levelFilter: 'all',
       typeFilter: 'all',
       debounceTimeout: null,
+      loading: false,
+      error: null,
     };
   },
-  computed: {
-    categories() {
-      return [...new Set(this.courses.map((course) => course.category))];
-    },
-    filteredCourses() {
-      return this.courses.filter((course) => {
-        const matchesSearch =
-          course.title.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-          course.description.toLowerCase().includes(this.searchTerm.toLowerCase());
-        const matchesCategory =
-          this.categoryFilter === 'all' || course.category === this.categoryFilter;
-        const matchesLevel =
-          this.levelFilter === 'all' || course.level === this.levelFilter;
-        const matchesType =
-          this.typeFilter === 'all' ||
-          (this.typeFilter === 'free' && !course.isPremium) ||
-          (this.typeFilter === 'premium' && course.isPremium);
-
-        return matchesSearch && matchesCategory && matchesLevel && matchesType;
-      });
-    },
+  mounted() {
+    this.fetchCourses();
   },
   methods: {
+    // Fetches courses from the backend based on current filters
+    async fetchCourses() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const queryParams = new URLSearchParams({
+          search: this.searchTerm,
+          category: this.categoryFilter === 'all' ? '' : this.categoryFilter,
+          level: this.levelFilter === 'all' ? '' : this.levelFilter,
+          type: this.typeFilter === 'all' ? '' : this.typeFilter,
+        });
+
+        // Replace with your actual backend API endpoint
+        const response = await fetch(`https://api.aced.live/api/courses?${queryParams.toString()}`);
+        if (!response.ok) {
+          throw new Error('Не удалось получить список курсов.');
+        }
+        const data = await response.json();
+        this.courses = data.courses;
+        this.availableCategories = data.categories || [];
+        this.availableLevels = data.levels || [];
+      } catch (e) {
+        this.error = e.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // Debounces the search input to avoid excessive API calls
     debounceSearch() {
       clearTimeout(this.debounceTimeout);
-      this.debounceTimeout = setTimeout(this.applyFilters, 300);
+      this.debounceTimeout = setTimeout(this.fetchCourses, 500);
     },
+
+    // Applies filters by calling the fetchCourses method
     applyFilters() {
-      // The computed property `filteredCourses` handles the filtering automatically
+      this.fetchCourses();
     },
+
+    // Sets the course type filter and fetches courses
     setTypeFilter(type) {
       this.typeFilter = type;
+      this.fetchCourses();
     },
+
+    // Resets all filters and fetches courses
     clearFilters() {
       this.searchTerm = '';
       this.categoryFilter = 'all';
       this.levelFilter = 'all';
       this.typeFilter = 'all';
+      this.fetchCourses();
     },
-    openModal(course) {
-      this.selectedCourse = course;
+
+    // Opens the course modal and fetches detailed info
+    async openModal(course) {
+      this.selectedCourse = { ...course }; // Use a copy of the course
       this.isModalOpen = true;
+
+      // In a real scenario, you would fetch the full course details here
+      // For this example, we assume `course` already contains all necessary info.
+      // If not, you could do something like this:
+      // try {
+      //   const response = await fetch(`https://api.aced.live/api/courses/${course.id}`);
+      //   if (!response.ok) throw new Error('Failed to load course details.');
+      //   this.selectedCourse = await response.json();
+      // } catch (e) {
+      //   console.error(e);
+      //   // Handle error in the modal
+      // }
     },
+
+    // Closes the modal
     closeModal() {
       this.isModalOpen = false;
       this.selectedCourse = null;
@@ -1189,6 +1072,23 @@ export default {
 .button-reset-filters:hover {
   background-color: rgba(139, 127, 191, 0.1);
 }
+
+/* Loading Spinner */
+.spinner {
+  width: 4rem;
+  height: 4rem;
+  border: 4px solid var(--color-muted);
+  border-top: 4px solid var(--color-brand);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 
 /* Modal */
 .modal-overlay {
