@@ -492,14 +492,29 @@
         </div>
       </div>
     </div>
+
+    <PaymentModal
+      :visible="showPaymentModal"
+      :user-id="currentUserId"
+      :requested-topic-id="requestedTopicId"
+      @close="showPaymentModal = false"
+      @unlocked="handleUnlocked"
+      @payment-initiated="handlePaymentInitiated"
+    />
   </div>
 </template>
 
 <script>
 import { getUpdatedCourses, getCourseById } from '@/api.js';
+import PaymentModal from '@/components/Payments/PaymentModal.vue';
+import { checkSubscriptionAccess } from '@/router/index.js';
+import { mapGetters } from 'vuex';
 
 export default {
   name: 'UpdatedCourses',
+  components: {
+    PaymentModal,
+  },
   data() {
     return {
       courses: [],
@@ -515,7 +530,21 @@ export default {
       loading: false,
       modalLoading: false,
       error: null,
+      
+      // Payment Modal properties
+      showPaymentModal: false,
+      requestedTopicId: null,
     };
+  },
+  computed: {
+    ...mapGetters('user', ['userStatus', 'getUserId', 'isAuthenticated']),
+    currentUserId() {
+      return this.getUserId;
+    },
+    isUserPremium() {
+      // Use the helper from router.js to check subscription status
+      return checkSubscriptionAccess(this.userStatus, 'start');
+    }
   },
   mounted() {
     this.fetchCourses();
@@ -572,6 +601,13 @@ export default {
     },
 
     async openModal(course) {
+      // Check for authentication and premium status
+      if (course.isPremium && !this.isUserPremium) {
+        this.requestedTopicId = course._id;
+        this.showPaymentModal = true;
+        return;
+      }
+      
       this.selectedCourse = null;
       this.isModalOpen = true;
       this.modalLoading = true;
@@ -595,6 +631,32 @@ export default {
       this.isModalOpen = false;
       this.selectedCourse = null;
     },
+    
+    // Payment modal handlers
+    handleUnlocked(payload) {
+      // This is a simple handler, but in a real app, you might want to:
+      // 1. Update user state in Vuex
+      // 2. Fetch courses again to refresh UI
+      console.log('✅ Access unlocked via promo code for plan:', payload.plan);
+      // Automatically close modal after this event is emitted
+      this.showPaymentModal = false;
+      // Optional: Reroute to the course after a short delay
+      this.$nextTick(() => {
+        const courseId = this.requestedTopicId;
+        if (courseId) {
+          // Find the course and open its modal
+          const courseToOpen = this.courses.find(c => c._id === courseId);
+          if (courseToOpen) {
+            this.openModal(courseToOpen);
+          }
+        }
+      });
+    },
+    handlePaymentInitiated(payload) {
+      console.log('💳 Payment initiated for plan:', payload.plan);
+      // The PaymentModal handles navigation, so we just need to listen to this event.
+      // No extra action needed here as the modal handles its own closure and navigation.
+    }
   },
 };
 </script>
@@ -1157,13 +1219,25 @@ export default {
 }
 
 .modal-content {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 1024px) {
+  .modal-content {
+    grid-template-columns: 2fr 3fr;
+  }
 }
 
 .modal-image-wrapper {
   position: relative;
+  overflow: hidden;
 }
+@media (min-width: 1024px) {
+  .modal-image-wrapper {
+    min-height: 100%;
+  }
+}
+
 .modal-image {
   width: 100%;
   height: 16rem;
@@ -1174,8 +1248,8 @@ export default {
 @media (min-width: 1024px) {
   .modal-image {
     height: 100%;
-    border-top-right-radius: 0.5rem;
-    border-bottom-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0.5rem;
   }
 }
 .modal-image-overlay {
