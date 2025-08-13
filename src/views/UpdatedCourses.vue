@@ -450,9 +450,10 @@
             <div class="modal-actions">
               <button
                 :class="['button-action', { premium: selectedCourse.isPremium }]"
+                @click="startCourse(selectedCourse)"
               >
                 <svg
-                  v-if="selectedCourse.isPremium"
+                  v-if="selectedCourse.isPremium && !isUserPremium"
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
                   height="24"
@@ -482,7 +483,7 @@
                 >
                   <polygon points="5 3 19 12 5 21 5 3"></polygon>
                 </svg>
-                {{ selectedCourse.isPremium ? 'Только для подписчиков' : 'Начать курс' }}
+                Начать курс
               </button>
               <p class="modal-action-hint">
                 Начните изучение прямо сейчас и развивайте свои навыки
@@ -506,7 +507,7 @@
 
 <script>
 import { getUpdatedCourses, getCourseById } from '@/api.js';
-import PaymentModal from '@/components/Modals/PaymentModal.vue';
+import PaymentModal from '@/components/Payments/PaymentModal.vue';
 import { checkSubscriptionAccess } from '@/router/index.js';
 import { mapGetters } from 'vuex';
 
@@ -542,7 +543,6 @@ export default {
       return this.getUserId;
     },
     isUserPremium() {
-      // Use the helper from router.js to check subscription status
       return checkSubscriptionAccess(this.userStatus, 'start');
     }
   },
@@ -601,13 +601,6 @@ export default {
     },
 
     async openModal(course) {
-      // Check for authentication and premium status
-      if (course.isPremium && !this.isUserPremium) {
-        this.requestedTopicId = course._id;
-        this.showPaymentModal = true;
-        return;
-      }
-      
       this.selectedCourse = null;
       this.isModalOpen = true;
       this.modalLoading = true;
@@ -627,6 +620,23 @@ export default {
       }
     },
 
+    startCourse(course) {
+      // Check for authentication and premium status
+      if (course.isPremium && !this.isUserPremium) {
+        this.isModalOpen = false; // Close course modal
+        this.requestedTopicId = course._id;
+        this.showPaymentModal = true; // Open payment modal
+      } else {
+        // Handle logic for starting the course (free or premium with access)
+        console.log(`Starting course: ${course.title}`);
+        // You can add your router navigation logic here, for example:
+        // this.$router.push({ name: 'LessonPage', params: { id: course.lessons[0].id } });
+        
+        // For now, we will just close the modal.
+        this.closeModal();
+      }
+    },
+
     closeModal() {
       this.isModalOpen = false;
       this.selectedCourse = null;
@@ -634,28 +644,20 @@ export default {
     
     // Payment modal handlers
     handleUnlocked(payload) {
-      // This is a simple handler, but in a real app, you might want to:
-      // 1. Update user state in Vuex
-      // 2. Fetch courses again to refresh UI
       console.log('✅ Access unlocked via promo code for plan:', payload.plan);
-      // Automatically close modal after this event is emitted
       this.showPaymentModal = false;
-      // Optional: Reroute to the course after a short delay
-      this.$nextTick(() => {
-        const courseId = this.requestedTopicId;
-        if (courseId) {
-          // Find the course and open its modal
-          const courseToOpen = this.courses.find(c => c._id === courseId);
-          if (courseToOpen) {
-            this.openModal(courseToOpen);
-          }
+      
+      if (this.requestedTopicId) {
+        // Re-open the course modal after a successful subscription update
+        const courseToOpen = this.courses.find(c => c._id === this.requestedTopicId);
+        if (courseToOpen) {
+          this.openModal(courseToOpen);
         }
-      });
+      }
     },
     handlePaymentInitiated(payload) {
       console.log('💳 Payment initiated for plan:', payload.plan);
       // The PaymentModal handles navigation, so we just need to listen to this event.
-      // No extra action needed here as the modal handles its own closure and navigation.
     }
   },
 };
