@@ -36,7 +36,15 @@
     <div class="study-main">
       <aside class="study-sidebar" :class="{ 'sidebar-open': sidebarOpen }">
         <div class="sidebar-header">
-          <h3>Содержание курса</h3>
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-8 h-8 bg-gradient-to-br from-brand-purple to-brand-purple-dark rounded-lg flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-white">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+              </svg>
+            </div>
+            <h3 class="text-lg font-medium">{{ selectedCourse?.title || 'Курс' }}</h3>
+          </div>
+          <p class="text-sm text-muted-foreground">Полный курс</p>
           <button @click="toggleSidebar" class="sidebar-toggle mobile-only">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 6 6 18"/>
@@ -45,34 +53,80 @@
           </button>
         </div>
 
+        <!-- Progress in Sidebar -->
+        <div class="sidebar-progress">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-muted-foreground">Прогресс</span>
+            <span class="text-sm font-medium">{{ completedLessons }}/{{ totalLessons }} Завершено</span>
+          </div>
+          <div class="w-full bg-muted rounded-full h-2">
+            <div 
+              class="h-2 rounded-full bg-gradient-to-r from-brand-purple to-brand-purple-light" 
+              :style="{ width: progressPercent + '%' }"
+            ></div>
+          </div>
+        </div>
+
         <div class="lessons-list">
-          <div
-            v-for="(lesson, index) in lessons"
-            :key="lesson.id"
-            :class="['lesson-item', {
-              'active': currentLessonIndex === index,
-              'completed': lesson.completed,
-              'locked': lesson.locked
-            }]"
-            @click="selectLesson(index)"
-          >
-            <div class="lesson-number">{{ index + 1 }}</div>
-            <div class="lesson-content">
-              <h4 class="lesson-title">{{ lesson.title }}</h4>
-              <p class="lesson-duration">{{ lesson.duration }}</p>
-            </div>
-            <div class="lesson-status">
-              <svg v-if="lesson.completed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"/>
-                <path d="M22 4L12 14.01l-3-3"/>
-              </svg>
-              <svg v-else-if="lesson.locked" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="5 3 19 12 5 21 5 3"/>
-              </svg>
+          <div class="p-4 space-y-2">
+            <div
+              v-for="(lesson, index) in lessons"
+              :key="lesson.id"
+              @click="selectLesson(index)"
+              :class="[
+                'lesson-item-modern',
+                {
+                  'current': currentLessonIndex === index,
+                  'completed': lesson.completed,
+                  'locked': lesson.locked
+                }
+              ]"
+            >
+              <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 mt-0.5">
+                  <svg v-if="lesson.completed" class="w-5 h-5 text-brand-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"/>
+                    <path d="M22 4L12 14.01l-3-3"/>
+                  </svg>
+                  <svg v-else-if="lesson.locked" class="w-5 h-5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                  <div v-else-if="currentLessonIndex === index" class="w-5 h-5 rounded-full border-2 border-brand-purple flex items-center justify-center">
+                    <div class="w-2 h-2 rounded-full bg-brand-purple"></div>
+                  </div>
+                  <div v-else class="w-5 h-5 rounded-full border-2 border-muted-foreground"></div>
+                </div>
+                
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-xs text-muted-foreground font-medium">
+                      {{ String(index + 1).padStart(2, '0') }}
+                    </span>
+                    <span v-if="currentLessonIndex === index" class="text-xs px-2 py-1 bg-brand-purple text-white rounded-full">
+                      Текущий
+                    </span>
+                  </div>
+                  <h3 :class="[
+                    'text-sm leading-tight mb-2',
+                    currentLessonIndex === index ? 'text-brand-purple font-medium' : 'text-foreground'
+                  ]">
+                    {{ lesson.title }}
+                  </h3>
+                  <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    {{ lesson.duration }}
+                    <span v-if="lesson.type === 'workshop'" class="px-2 py-0.5 bg-muted rounded text-xs">Практика</span>
+                  </div>
+                </div>
+                
+                <svg v-if="!lesson.locked" class="w-4 h-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+              </div>
             </div>
           </div>
         </div>
@@ -88,11 +142,12 @@
           <span>Содержание</span>
         </button>
 
-        <div v-if="currentLesson" class="lesson-container">
-          <div class="lesson-header-new">
+        <div v-if="currentLesson" class="lesson-container-modern">
+          <!-- Modern Lesson Header -->
+          <div class="lesson-header-modern">
             <div class="flex items-center gap-3 mb-4">
-              <div class="w-10 h-10 bg-gradient-to-br from-[var(--color-brand-purple)] to-[var(--color-brand-purple-dark)] rounded-lg flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <div class="w-10 h-10 bg-gradient-to-br from-brand-purple to-brand-purple-dark rounded-lg flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-white">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                   <polyline points="14 2 14 8 20 8"></polyline>
                 </svg>
@@ -114,7 +169,8 @@
             <p class="text-muted-foreground text-lg">{{ currentLesson.description }}</p>
           </div>
 
-          <div v-if="currentLesson.objectives && currentLesson.objectives.length" class="learning-objectives-section">
+          <!-- Learning Objectives -->
+          <div v-if="currentLesson.objectives && currentLesson.objectives.length" class="learning-objectives-modern">
             <h2 class="text-lg font-medium mb-4 text-brand-purple-dark">Цели урока</h2>
             <ul class="space-y-2">
               <li v-for="(objective, index) in currentLesson.objectives" :key="index" class="flex items-start gap-3">
@@ -124,114 +180,116 @@
             </ul>
           </div>
 
-          <div class="lesson-content-area">
-            <div class="text-content">
-              <div class="content-section-new" v-html="currentLesson.content"></div>
+          <!-- Content -->
+          <div class="lesson-content-modern">
+            <div class="content-prose" v-html="currentLesson.content"></div>
 
-              <div v-if="currentLesson.resources && currentLesson.resources.length" class="resources-section">
-                <h3>Материалы урока</h3>
-                <div class="resources-list">
-                  <a
-                    v-for="resource in currentLesson.resources"
-                    :key="resource.id"
-                    :href="resource.url"
-                    download
-                    class="resource-item"
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                      <polyline points="7 10 12 15 17 10"/>
-                      <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                    <span>{{ resource.name }}</span>
-                    <span class="resource-size">{{ resource.size }}</span>
-                  </a>
-                </div>
+            <!-- Resources Section -->
+            <div v-if="currentLesson.resources && currentLesson.resources.length" class="resources-modern">
+              <h3>Материалы урока</h3>
+              <div class="resources-grid">
+                <a
+                  v-for="resource in currentLesson.resources"
+                  :key="resource.id"
+                  :href="resource.url"
+                  download
+                  class="resource-item-modern"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  <span>{{ resource.name }}</span>
+                  <span class="resource-size">{{ resource.size }}</span>
+                </a>
               </div>
+            </div>
 
-              <div v-if="currentLesson.quiz" class="quiz-section">
-                <h3>Проверьте себя</h3>
-                <div class="quiz-container">
-                  <div v-if="!quizCompleted" class="quiz-questions">
-                    <div class="question-item">
-                      <h4>{{ currentLesson.quiz.question }}</h4>
-                      <div class="quiz-options">
-                        <label
-                          v-for="(option, index) in currentLesson.quiz.options"
-                          :key="index"
-                          class="quiz-option"
-                        >
-                          <input
-                            type="radio"
-                            :name="'quiz-' + currentLesson.id"
-                            :value="index"
-                            v-model="selectedAnswer"
-                          />
-                          <span>{{ option }}</span>
-                        </label>
-                      </div>
-                      <button
-                        @click="submitQuiz"
-                        :disabled="selectedAnswer === null"
-                        class="quiz-submit-btn"
+            <!-- Quiz Section -->
+            <div v-if="currentLesson.quiz" class="quiz-modern">
+              <h3>Проверьте себя</h3>
+              <div class="quiz-container-modern">
+                <div v-if="!quizCompleted" class="quiz-questions">
+                  <div class="question-item-modern">
+                    <h4>{{ currentLesson.quiz.question }}</h4>
+                    <div class="quiz-options-modern">
+                      <label
+                        v-for="(option, index) in currentLesson.quiz.options"
+                        :key="index"
+                        class="quiz-option-modern"
                       >
-                        Проверить ответ
-                      </button>
+                        <input
+                          type="radio"
+                          :name="'quiz-' + currentLesson.id"
+                          :value="index"
+                          v-model="selectedAnswer"
+                        />
+                        <span>{{ option }}</span>
+                      </label>
                     </div>
-                  </div>
-                  <div v-else class="quiz-result">
-                    <div :class="['quiz-feedback', quizCorrect ? 'correct' : 'incorrect']">
-                      <svg v-if="quizCorrect" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"/>
-                        <path d="M22 4L12 14.01l-3-3"/>
-                      </svg>
-                      <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="15" y1="9" x2="9" y2="15"/>
-                        <line x1="9" y1="9" x2="15" y2="15"/>
-                      </svg>
-                      <span v-if="quizCorrect">Правильно! Отличная работа!</span>
-                      <span v-else>Неправильно. Попробуйте еще раз!</span>
-                    </div>
-                    <button v-if="!quizCorrect" @click="quizCompleted = false" class="retry-quiz-btn">
-                      Попробовать снова
+                    <button
+                      @click="submitQuiz"
+                      :disabled="selectedAnswer === null"
+                      class="quiz-submit-modern"
+                    >
+                      Проверить ответ
                     </button>
                   </div>
                 </div>
+                <div v-else class="quiz-result-modern">
+                  <div :class="['quiz-feedback-modern', quizCorrect ? 'correct' : 'incorrect']">
+                    <svg v-if="quizCorrect" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"/>
+                      <path d="M22 4L12 14.01l-3-3"/>
+                    </svg>
+                    <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="15" y1="9" x2="9" y2="15"/>
+                      <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    <span v-if="quizCorrect">Правильно! Отличная работа!</span>
+                    <span v-else>Неправильно. Попробуйте еще раз!</span>
+                  </div>
+                  <button v-if="!quizCorrect" @click="quizCompleted = false" class="retry-quiz-modern">
+                    Попробовать снова
+                  </button>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div class="lesson-navigation">
-              <button
-                @click="previousLesson"
-                :disabled="currentLessonIndex === 0"
-                class="nav-btn prev-btn"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="m15 18-6-6 6-6"/>
-                </svg>
-                Предыдущий урок
-              </button>
+          <!-- Navigation -->
+          <div class="lesson-navigation-modern">
+            <button
+              @click="previousLesson"
+              :disabled="currentLessonIndex === 0"
+              class="nav-btn-modern prev-btn"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m15 18-6-6 6-6"/>
+              </svg>
+              Предыдущий урок
+            </button>
 
-              <button
-                v-if="!currentLesson.completed && (!currentLesson.quiz || (currentLesson.quiz && quizCorrect))"
-                @click="markLessonCompleted"
-                class="complete-btn"
-              >
-                Завершить урок
-              </button>
+            <button
+              v-if="!currentLesson.completed && (!currentLesson.quiz || (currentLesson.quiz && quizCorrect))"
+              @click="markLessonCompleted"
+              class="complete-btn-modern"
+            >
+              Завершить урок
+            </button>
 
-              <button
-                @click="nextLesson"
-                :disabled="currentLessonIndex === lessons.length - 1 || lessons[currentLessonIndex + 1]?.locked"
-                class="nav-btn next-btn"
-              >
-                Следующий урок
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="m9 18 6-6-6-6"/>
-                </svg>
-              </button>
-            </div>
+            <button
+              @click="nextLesson"
+              :disabled="currentLessonIndex === lessons.length - 1 || lessons[currentLessonIndex + 1]?.locked"
+              class="nav-btn-modern next-btn"
+            >
+              Следующий урок
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m9 18 6-6-6-6"/>
+              </svg>
+            </button>
           </div>
         </div>
       </main>
@@ -1259,6 +1317,10 @@ export default {
   --color-success: #16a34a;
   --color-green-100: #d1fae5;
   --color-green-800: #166534;
+  --brand-purple: #8B5CF6;
+  --brand-purple-dark: #7C3AED;
+  --brand-purple-light: #A78BFA;
+  --brand-purple-muted: rgba(139, 92, 246, 0.1);
 }
 
 .dark {
@@ -1280,7 +1342,74 @@ export default {
   --color-success: #22c55e;
   --color-green-100: #14532d;
   --color-green-800: #d1fae5;
+  --brand-purple: #A78BFA;
+  --brand-purple-dark: #8B5CF6;
+  --brand-purple-light: #C4B5FD;
+  --brand-purple-muted: rgba(167, 139, 250, 0.1);
 }
+
+/* Utility Classes */
+.text-sm { font-size: 0.875rem; }
+.text-base { font-size: 1rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.text-muted-foreground { color: var(--color-muted-foreground); }
+.text-foreground { color: var(--color-foreground); }
+.text-brand-purple { color: var(--brand-purple); }
+.text-brand-purple-dark { color: var(--brand-purple-dark); }
+.text-white { color: white; }
+.bg-brand-purple { background-color: var(--brand-purple); }
+.bg-brand-purple-dark { background-color: var(--brand-purple-dark); }
+.bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)); }
+.from-brand-purple { --tw-gradient-from: var(--brand-purple); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(139, 92, 246, 0)); }
+.to-brand-purple-dark { --tw-gradient-to: var(--brand-purple-dark); }
+.from-brand-purple-to-brand-purple-light { background: linear-gradient(to right, var(--brand-purple), var(--brand-purple-light)); }
+.bg-muted { background-color: var(--color-muted); }
+.rounded-lg { border-radius: 0.5rem; }
+.rounded-full { border-radius: 9999px; }
+.w-8 { width: 2rem; }
+.h-8 { height: 2rem; }
+.w-10 { width: 2.5rem; }
+.h-10 { height: 2.5rem; }
+.w-5 { width: 1.25rem; }
+.h-5 { height: 1.25rem; }
+.w-4 { width: 1rem; }
+.h-4 { height: 1rem; }
+.w-3 { width: 0.75rem; }
+.h-3 { height: 0.75rem; }
+.w-2 { width: 0.5rem; }
+.h-2 { height: 0.5rem; }
+.w-1\.5 { width: 0.375rem; }
+.h-1\.5 { height: 0.375rem; }
+.w-full { width: 100%; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mt-2\.5 { margin-top: 0.625rem; }
+.p-4 { padding: 1rem; }
+.px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+.py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+.py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+.space-y-2 > * + * { margin-top: 0.5rem; }
+.flex-shrink-0 { flex-shrink: 0; }
+.flex-1 { flex: 1 1 0%; }
+.min-w-0 { min-width: 0px; }
+.leading-tight { line-height: 1.25; }
+.border-2 { border-width: 2px; }
+.border-brand-purple { border-color: var(--brand-purple); }
+.border-muted-foreground { border-color: var(--color-muted-foreground); }
 
 .courses-page {
   background-color: var(--color-background);
@@ -1818,7 +1947,7 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 1100px; /* Increased from 900px */
+  max-width: 1100px;
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
@@ -1883,7 +2012,7 @@ export default {
 
 .modal-header-section {
   position: relative;
-  height: 280px; /* Increased height */
+  height: 280px;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -1984,10 +2113,10 @@ export default {
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 32px; /* Increased padding */
+  padding: 32px;
   display: flex;
   flex-direction: column;
-  gap: 32px; /* Increased gap */
+  gap: 32px;
 }
 
 .modal-tags {
@@ -2018,7 +2147,7 @@ export default {
 }
 
 .modal-title {
-  font-size: 28px; /* Larger title */
+  font-size: 28px;
   font-weight: 700;
   line-height: 1.2;
   margin: 0 0 16px 0;
@@ -2026,7 +2155,7 @@ export default {
 }
 
 .modal-description {
-  font-size: 16px; /* Larger description */
+  font-size: 16px;
   line-height: 1.6;
   color: var(--color-muted-foreground);
   margin: 0;
@@ -2041,8 +2170,8 @@ export default {
 
 .modal-details-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* Always 2 columns on desktop */
-  gap: 40px; /* Increased gap */
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
 }
 
 @media (max-width: 768px) {
@@ -2171,21 +2300,21 @@ export default {
   line-height: 1.3;
 }
 
-/* STUDY INTERFACE STYLES */
+/* MODERN STUDY INTERFACE STYLES */
 .study-page {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #f8fafc;
+  background-color: var(--color-background);
   color: var(--color-foreground);
 }
 
 .study-header {
-  background: linear-gradient(135deg, #ffffff, #f1f5f9);
-  border-bottom: 2px solid #e2e8f0;
-  padding: 1.5rem 0;
+  background: white;
+  border-bottom: 1px solid var(--color-border);
+  padding: 1rem 0;
   flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .study-header-content {
@@ -2210,24 +2339,21 @@ export default {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   background: white;
-  color: #475569;
+  color: var(--color-muted-foreground);
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.875rem;
-  font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-weight: 500;
 }
 
 .back-button:hover {
-  background: #f8fafc;
-  border-color: var(--color-brand);
-  color: var(--color-brand);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--color-muted);
+  border-color: var(--brand-purple);
+  color: var(--brand-purple);
 }
 
 .course-info {
@@ -2235,30 +2361,28 @@ export default {
 }
 
 .course-title {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 600;
   margin: 0 0 0.5rem 0;
-  color: #1e293b;
-  line-height: 1.3;
+  color: var(--color-foreground);
 }
 
 .course-meta {
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
 .course-category,
 .course-level {
-  padding: 0.375rem 0.75rem;
-  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
   font-size: 0.75rem;
-  font-weight: 600;
-  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
-  color: white;
-  border: none;
-  box-shadow: 0 2px 4px rgba(139, 127, 191, 0.3);
+  font-weight: 500;
+  background: var(--brand-purple-muted);
+  color: var(--brand-purple);
+  border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
 .progress-section {
@@ -2270,24 +2394,24 @@ export default {
   justify-content: flex-end;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .progress-text {
-  color: #64748b;
+  color: var(--color-muted-foreground);
 }
 
 .progress-percent {
-  color: var(--color-brand);
-  font-size: 1.125rem;
+  color: var(--brand-purple);
+  font-weight: 600;
 }
 
 .progress-bar {
-  height: 12px;
-  background: #e2e8f0;
-  border-radius: 6px;
+  height: 8px;
+  background: var(--color-muted);
+  border-radius: 4px;
   overflow: hidden;
   width: 200px;
   margin-left: auto;
@@ -2295,8 +2419,8 @@ export default {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-brand), var(--color-brand-light));
-  border-radius: 6px;
+  background: linear-gradient(90deg, var(--brand-purple), var(--brand-purple-light));
+  border-radius: 4px;
   transition: width 0.3s ease;
 }
 
@@ -2304,18 +2428,17 @@ export default {
   display: flex;
   flex: 1;
   overflow: hidden;
-  background: #f8fafc;
+  background: var(--color-background);
 }
 
-/* SIDEBAR - CLEANER DESIGN */
+/* MODERN SIDEBAR */
 .study-sidebar {
   width: 320px;
   background: white;
-  border-right: 2px solid #e2e8f0;
+  border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   transition: transform 0.3s ease;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
 }
 
 @media (max-width: 1023px) {
@@ -2335,122 +2458,74 @@ export default {
 }
 
 .sidebar-header {
-  padding: 2rem;
-  border-bottom: 2px solid #f1f5f9;
-  background: linear-gradient(135deg, #fafbfc, #f8fafc);
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background: white;
 }
 
-.sidebar-header h3 {
-  font-size: 1.125rem;
-  font-weight: 700;
-  margin: 0;
-  color: #1e293b;
-  text-align: center;
+.sidebar-progress {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .lessons-list {
   flex: 1;
   overflow-y: auto;
-  padding: 1.5rem;
 }
 
-.lesson-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.25rem;
+.lesson-item-modern {
+  position: relative;
+  padding: 1rem;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
   border: 2px solid transparent;
-  background: #f8fafc;
 }
 
-.lesson-item:hover {
-  background: #f1f5f9;
-  border-color: #e2e8f0;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.lesson-item-modern:hover {
+  background: var(--color-muted);
+  border-color: rgba(139, 92, 246, 0.2);
 }
 
-.lesson-item.active {
-  background: linear-gradient(135deg, rgba(139, 127, 191, 0.1), rgba(165, 153, 212, 0.1));
-  border-color: var(--color-brand);
-  box-shadow: 0 4px 16px rgba(139, 127, 191, 0.2);
+.lesson-item-modern.current {
+  background: var(--brand-purple-muted);
+  border-color: var(--brand-purple);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
 }
 
-.lesson-item.completed {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(22, 163, 74, 0.1));
-  border-color: #22c55e;
+.lesson-item-modern.completed {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
 }
 
-.lesson-item.locked {
+.lesson-item-modern.locked {
   opacity: 0.6;
   cursor: not-allowed;
-  background: #f1f5f9;
 }
 
-.lesson-number {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #e2e8f0;
-  color: #64748b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.875rem;
-  font-weight: 700;
-  flex-shrink: 0;
+.mobile-only {
+  display: none;
 }
 
-.lesson-item.active .lesson-number {
-  background: var(--color-brand);
-  color: white;
-  box-shadow: 0 4px 12px rgba(139, 127, 191, 0.4);
+@media (max-width: 1023px) {
+  .mobile-only {
+    display: block;
+  }
 }
 
-.lesson-item.completed .lesson-number {
-  background: #22c55e;
-  color: white;
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+.sidebar-toggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.5rem;
+  cursor: pointer;
 }
 
-.lesson-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.lesson-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin: 0 0 0.25rem 0;
-  color: #1e293b;
-  line-height: 1.4;
-}
-
-.lesson-duration {
-  font-size: 0.75rem;
-  color: #64748b;
-  margin: 0;
-  font-weight: 500;
-}
-
-.lesson-status {
-  color: #94a3b8;
-  flex-shrink: 0;
-}
-
-.lesson-item.completed .lesson-status {
-  color: #22c55e;
-}
-
-.lesson-item.active .lesson-status {
-  color: var(--color-brand);
-}
-
-/* MAIN CONTENT - COMPLETELY REDESIGNED */
+/* MODERN CONTENT */
 .study-content {
   flex: 1;
   overflow-y: auto;
@@ -2460,409 +2535,337 @@ export default {
 
 .sidebar-toggle.desktop-hidden {
   position: absolute;
-  top: 2rem;
-  left: 2rem;
+  top: 1.5rem;
+  left: 1.5rem;
   z-index: 10;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   background: white;
-  color: #475569;
+  color: var(--color-muted-foreground);
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.875rem;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-toggle.desktop-hidden:hover {
-  background: #f8fafc;
-  border-color: var(--color-brand);
-  color: var(--color-brand);
+  background: var(--color-muted);
+  border-color: var(--brand-purple);
+  color: var(--brand-purple);
 }
 
-.lesson-container {
-  max-width: 900px;
+.lesson-container-modern {
+  max-width: 800px;
   margin: 0 auto;
-  padding: 3rem 2rem;
+  padding: 2rem;
 }
 
 @media (max-width: 1023px) {
-  .lesson-container {
-    padding: 6rem 2rem 3rem; /* More top padding for mobile toggle */
+  .lesson-container-modern {
+    padding: 5rem 1.5rem 2rem;
   }
 }
 
-/* New Lesson Header Styles */
-.lesson-header-new {
+/* MODERN LESSON HEADER */
+.lesson-header-modern {
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 2px solid #f1f5f9;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.lesson-header-new h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1e293b;
-  line-height: 1.2;
-}
-
-.lesson-header-new p {
-  font-size: 1.125rem;
-  color: #64748b;
-  line-height: 1.6;
-}
-
-.text-muted-foreground {
-  color: #64748b;
-}
-
-/* Learning Objectives Section */
-.learning-objectives-section {
+/* LEARNING OBJECTIVES */
+.learning-objectives-modern {
   margin-bottom: 2rem;
-  padding: 2rem;
-  background: linear-gradient(135deg, rgba(139, 127, 191, 0.1), rgba(165, 153, 212, 0.1));
-  border-radius: 16px;
-  border: 2px solid rgba(139, 127, 191, 0.3);
+  padding: 1.5rem;
+  background: var(--brand-purple-muted);
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
-.learning-objectives-section h2 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #6b5b9a;
-  margin-bottom: 1.5rem;
-}
-
-.learning-objectives-section ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.learning-objectives-section li {
+/* CONTENT */
+.lesson-content-modern {
   display: flex;
-  align-items: flex-start;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.content-prose {
+  line-height: 1.7;
   font-size: 1rem;
-  line-height: 1.6;
-  color: #334155;
+  color: var(--color-foreground);
 }
 
-.learning-objectives-section li > div {
-  background: var(--color-brand);
-  min-width: 6px;
-  min-height: 6px;
-  border-radius: 50%;
-  margin-top: 10px;
-}
-
-/* Main Content Section */
-.content-section-new {
-  line-height: 1.8;
-  font-size: 1rem;
-  color: #475569;
-}
-
-.content-section-new h3 {
-  color: #1e293b;
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 2rem 0 1.5rem 0;
-}
-
-.content-section-new h4 {
-  color: #334155;
+.content-prose h3 {
+  color: var(--color-foreground);
   font-size: 1.25rem;
   font-weight: 600;
-  margin: 2rem 0 1rem 0;
+  margin: 1.5rem 0 1rem 0;
 }
 
-.content-section-new p {
-  margin: 0 0 1.5rem 0;
+.content-prose h4 {
+  color: var(--color-foreground);
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 1.25rem 0 0.75rem 0;
 }
 
-.content-section-new ul,
-.content-section-new ol {
-  margin: 1.5rem 0;
-  padding-left: 2rem;
+.content-prose p {
+  margin: 0 0 1rem 0;
 }
 
-.content-section-new li {
-  margin: 0.75rem 0;
-  line-height: 1.6;
+.content-prose ul,
+.content-prose ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
 }
 
-
-/* RESOURCES SECTION - CARD DESIGN */
-.resources-section {
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-  border-radius: 16px;
-  padding: 2.5rem;
-  margin: 3rem 0;
-  border: 2px solid #e2e8f0;
+.content-prose li {
+  margin: 0.5rem 0;
 }
 
-.resources-section h3 {
-  margin: 0 0 2rem 0;
-  color: #1e293b;
-  font-size: 1.375rem;
-  font-weight: 700;
-  text-align: center;
+/* RESOURCES */
+.resources-modern {
+  background: var(--color-muted);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
 }
 
-.resources-list {
+.resources-modern h3 {
+  margin: 0 0 1rem 0;
+  color: var(--color-foreground);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.resources-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem;
 }
 
-.resource-item {
+.resource-item-modern {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1.25rem;
+  gap: 0.75rem;
+  padding: 0.75rem;
   background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   text-decoration: none;
-  color: #475569;
+  color: var(--color-foreground);
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.resource-item:hover {
-  background: #f8fafc;
-  border-color: var(--color-brand);
-  color: var(--color-brand);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-}
-
-.resource-item svg {
-  color: var(--color-brand);
+.resource-item-modern:hover {
+  background: var(--color-muted);
+  border-color: var(--brand-purple);
+  color: var(--brand-purple);
 }
 
 .resource-size {
   margin-left: auto;
   font-size: 0.75rem;
-  color: #94a3b8;
-  font-weight: 600;
-  background: #f1f5f9;
+  color: var(--color-muted-foreground);
+  background: var(--color-muted);
   padding: 0.25rem 0.5rem;
-  border-radius: 6px;
+  border-radius: 4px;
 }
 
-/* QUIZ SECTION - INTERACTIVE DESIGN */
-.quiz-section {
-  background: linear-gradient(135deg, white, #fafbfc);
-  border: 2px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 3rem;
-  margin: 3rem 0;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+/* QUIZ */
+.quiz-modern {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.quiz-section h3 {
-  margin: 0 0 2rem 0;
-  color: #1e293b;
-  font-size: 1.5rem;
-  font-weight: 700;
-  text-align: center;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #f1f5f9;
-}
-
-.question-item h4 {
+.quiz-modern h3 {
+  margin: 0 0 1.5rem 0;
+  color: var(--color-foreground);
   font-size: 1.125rem;
   font-weight: 600;
-  margin: 0 0 2rem 0;
-  color: #1e293b;
-  line-height: 1.5;
   text-align: center;
-  padding: 1.5rem;
-  background: #f8fafc;
-  border-radius: 12px;
-  border: 2px solid #f1f5f9;
 }
 
-.quiz-options {
+.question-item-modern h4 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0 0 1rem 0;
+  color: var(--color-foreground);
+  line-height: 1.5;
+  padding: 1rem;
+  background: var(--color-muted);
+  border-radius: 8px;
+}
+
+.quiz-options-modern {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin: 2rem 0;
+  gap: 0.75rem;
+  margin: 1rem 0;
 }
 
-.quiz-option {
+.quiz-option-modern {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1.25rem 1.5rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
-.quiz-option:hover {
-  background: #f8fafc;
-  border-color: var(--color-brand);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.quiz-option-modern:hover {
+  background: var(--color-muted);
+  border-color: var(--brand-purple);
 }
 
-.quiz-option input[type="radio"] {
+.quiz-option-modern input[type="radio"] {
   margin: 0;
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
 }
 
-.quiz-option span {
+.quiz-option-modern span {
   flex: 1;
-  color: #475569;
-  font-size: 1rem;
-  font-weight: 500;
+  color: var(--color-foreground);
+  font-size: 0.875rem;
 }
 
-.quiz-submit-btn,
-.retry-quiz-btn {
+.quiz-submit-modern,
+.retry-quiz-modern {
   display: block;
-  margin: 2rem auto 0;
-  padding: 1rem 2rem;
+  margin: 1rem auto 0;
+  padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
+  border-radius: 8px;
+  background: var(--brand-purple);
   color: white;
-  font-weight: 600;
-  font-size: 1rem;
+  font-weight: 500;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(139, 127, 191, 0.3);
 }
 
-.quiz-submit-btn:hover,
-.retry-quiz-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(139, 127, 191, 0.4);
+.quiz-submit-modern:hover,
+.retry-quiz-modern:hover {
+  background: var(--brand-purple-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
-.quiz-submit-btn:disabled {
+.quiz-submit-modern:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
-.quiz-result {
+.quiz-result-modern {
   text-align: center;
-  padding: 2rem;
+  padding: 1rem;
 }
 
-.quiz-feedback {
+.quiz-feedback-modern {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  padding: 1.5rem;
-  border-radius: 12px;
-  margin-bottom: 1.5rem;
-  font-weight: 600;
-  font-size: 1.125rem;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-weight: 500;
 }
 
-.quiz-feedback.correct {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(22, 163, 74, 0.05));
+.quiz-feedback-modern.correct {
+  background: rgba(34, 197, 94, 0.1);
   color: #15803d;
-  border: 2px solid rgba(34, 197, 94, 0.3);
+  border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
-.quiz-feedback.incorrect {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+.quiz-feedback-modern.incorrect {
+  background: rgba(239, 68, 68, 0.1);
   color: #dc2626;
-  border: 2px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-/* NAVIGATION - PROMINENT BUTTONS */
-.lesson-navigation {
+/* NAVIGATION */
+.lesson-navigation-modern {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1.5rem;
-  padding: 3rem 0;
-  border-top: 2px solid #f1f5f9;
-  margin-top: 3rem;
+  gap: 1rem;
+  padding: 2rem 0;
+  border-top: 1px solid var(--color-border);
+  margin-top: 2rem;
 }
 
 @media (max-width: 640px) {
-  .lesson-navigation {
+  .lesson-navigation-modern {
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
   }
 }
 
-.nav-btn {
+.nav-btn-modern {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem 2rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   background: white;
-  color: #475569;
+  color: var(--color-muted-foreground);
   cursor: pointer;
   transition: all 0.2s ease;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 0.875rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.nav-btn:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: var(--color-brand);
-  color: var(--color-brand);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.nav-btn-modern:hover:not(:disabled) {
+  background: var(--color-muted);
+  border-color: var(--brand-purple);
+  color: var(--brand-purple);
 }
 
-.nav-btn:disabled {
+.nav-btn-modern:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.complete-btn {
-  background: linear-gradient(135deg, #22c55e, #16a34a);
+.complete-btn-modern {
+  background: #22c55e;
   color: white;
   border-color: #22c55e;
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
 }
 
-.complete-btn:hover {
-  background: linear-gradient(135deg, #16a34a, #15803d);
+.complete-btn-modern:hover {
+  background: #16a34a;
   color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4);
 }
 
 .next-btn {
-  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
+  background: var(--brand-purple);
   color: white;
-  border-color: var(--color-brand);
-  box-shadow: 0 4px 12px rgba(139, 127, 191, 0.3);
+  border-color: var(--brand-purple);
 }
 
 .next-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--color-brand-dark), var(--color-brand));
+  background: var(--brand-purple-dark);
   color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(139, 127, 191, 0.4);
 }
 
 @media (max-width: 640px) {
-  .nav-btn {
+  .nav-btn-modern {
     width: 100%;
     justify-content: center;
   }
@@ -2904,14 +2907,6 @@ export default {
 
   .progress-section {
     min-width: auto;
-  }
-
-  .lesson-header-new h1 {
-    font-size: 1.5rem;
-  }
-
-  .lesson-container {
-    max-width: none;
   }
 }
 
