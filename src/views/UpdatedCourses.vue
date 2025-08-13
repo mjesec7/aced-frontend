@@ -566,8 +566,8 @@ export default {
         'software development': 'https://images.unsplash.com/photo-1518773553398-650c184e0bb3?w=400&h=250&fit=crop',
         
         // AI & Machine Learning
-        'artificial intelligence': 'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=400&h=250&fit=crop',
-        'machine learning': 'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=400&h=250&fit=crop',
+        'artificial intelligence': 'https://images.unsplash.com/photo-1555255707-c079660887b?w=400&h=250&fit=crop',
+        'machine learning': 'https://images.unsplash.com/photo-1555255707-c079660887b?w=400&h=250&fit=crop',
         'ai': 'https://images.unsplash.com/photo-1507146426996-ef05306b995a?w=400&h=250&fit=crop',
         'data science': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop',
         'neural networks': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=250&fit=crop',
@@ -618,17 +618,14 @@ export default {
   },
 
   computed: {
-    // ✅ FIXED: Map both user state and getters like CataloguePage
     ...mapGetters('user', ['userStatus']),
     ...mapState(['user']),
     ...mapGetters(['getUser']),
 
-    // ✅ FIXED: Get current user consistently like CataloguePage
     currentUser() {
       return this.getUser || this.user || {};
     },
 
-    // ✅ FIXED: Get user status from user object like CataloguePage  
     currentUserStatus() {
       const userStatus = this.currentUser?.subscriptionPlan || 
                         localStorage.getItem('userStatus') || 
@@ -637,13 +634,11 @@ export default {
       return userStatus;
     },
 
-    // ✅ FIXED: Check if user has premium access (SAME AS CATALOGUE)
     isPremiumUser() {
       const status = this.currentUserStatus;
       return status === 'pro' || status === 'start';
     },
 
-    // Subscription badge properties (same as CataloguePage)
     subscriptionClass() {
       const status = this.currentUserStatus;
       if (status === 'pro') return 'badge-pro';
@@ -660,7 +655,6 @@ export default {
       }
     },
 
-    // Progress tracking
     completedLessons() {
       return this.lessons.filter(lesson => lesson.completed).length;
     },
@@ -675,9 +669,7 @@ export default {
     }
   },
 
-  // ✅ FIXED: Watch store changes like CataloguePage
   watch: {
-    // ✅ FIXED: Watch the user object from store (same as CataloguePage)
     user: {
       handler(newUser, oldUser) {
         const newPlan = newUser?.subscriptionPlan;
@@ -692,7 +684,6 @@ export default {
       immediate: true
     },
 
-    // ✅ FIXED: Watch the getUser getter (same as CataloguePage)
     getUser: {
       handler(newUser, oldUser) {
         const newPlan = newUser?.subscriptionPlan;
@@ -707,7 +698,6 @@ export default {
       immediate: true
     },
 
-    // ✅ FIXED: Watch current user status computed property
     currentUserStatus: {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
@@ -723,10 +713,7 @@ export default {
     console.log('📱 UpdatedCourses: Component mounted');
     
     try {
-      // Fetch courses
       this.fetchCourses();
-      
-      // ✅ FIXED: Setup comprehensive event listeners
       this.setupEventListeners();
       
       console.log('✅ UpdatedCourses: Component mounted successfully');
@@ -769,11 +756,9 @@ export default {
       }
     },
 
-    // ✅ HARDCODED IMAGES: Get course image with smart matching
     getCourseImage(course) {
       if (!course) return this.courseImages.default;
 
-      // Helper function to safely get string and convert to lowercase
       const safeString = (value) => {
         if (value === null || value === undefined) return '';
         return String(value).toLowerCase().trim();
@@ -783,7 +768,6 @@ export default {
       const category = safeString(course.category);
       const description = safeString(course.description);
 
-      // 1. Try to match by title keywords
       const titleKeywords = [
         'javascript', 'python', 'react', 'vue', 'node', 'ai', 'machine learning',
         'design', 'marketing', 'blockchain', 'crypto', 'english', 'business'
@@ -795,12 +779,10 @@ export default {
         }
       }
 
-      // 2. Try to match by category
       if (category && this.courseImages[category]) {
         return this.courseImages[category];
       }
 
-      // 3. Try to match category keywords
       const categoryKeywords = Object.keys(this.courseImages);
       for (const keyword of categoryKeywords) {
         if (category.includes(keyword) && this.courseImages[keyword]) {
@@ -808,7 +790,6 @@ export default {
         }
       }
 
-      // 4. Try to match by description keywords (for more specific matching)
       const contentKeywords = [
         'programming', 'coding', 'development', 'design', 'marketing', 
         'business', 'ai', 'blockchain', 'language'
@@ -820,22 +801,16 @@ export default {
         }
       }
 
-      // 5. Fallback based on course properties
       if (course.isPremium) {
-        return this.courseImages.course; // Premium courses get a special image
+        return this.courseImages.course;
       }
 
-      // 6. Final fallback
       return this.courseImages.default;
     },
 
-    // ✅ HARDCODED IMAGES: Handle image loading errors
     handleImageError(event, course) {
       console.warn('Image failed to load for course:', course?.title || 'Unknown');
-      // Set a guaranteed fallback image
       event.target.src = this.courseImages.default;
-      
-      // Prevent infinite error loops
       event.target.onerror = null;
     },
 
@@ -881,18 +856,15 @@ export default {
       }
     },
 
-    // ✅ FIXED: Start course with premium access control (SAME AS CATALOGUE)
     startCourse(course) {
       console.log('🚀 Starting course:', course.title);
       console.log('Course isPremium:', course.isPremium);
       console.log('User status:', this.currentUserStatus);
       console.log('User isPremium:', this.isPremiumUser);
       
-      // ✅ FIXED: Use the same logic as CataloguePage.handleTopicAccess
       if (course.isPremium && !this.isPremiumUser) {
         console.log('❌ Course is premium and user lacks access');
         
-        // Show a more user-friendly message
         if (this.$toast) {
           this.$toast.error(`Этот курс доступен только по подписке. Ваш статус: ${this.currentUserStatus}`, { 
             duration: 4000 
@@ -1049,20 +1021,16 @@ export default {
       this.selectedCourse = null;
     },
 
-    // ✅ FIXED: Handle user status changes consistently (SAME AS CATALOGUE)
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
 
       console.log(`👤 UpdatedCourses: Handling status change ${oldStatus} → ${newStatus}`);
 
-      // Update localStorage immediately
       localStorage.setItem('userStatus', newStatus);
       localStorage.setItem('plan', newStatus);
 
-      // Trigger immediate reactivity update
       this.triggerReactivityUpdate();
 
-      // Show celebration for upgrades
       if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
         const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
         if (this.$toast) {
@@ -1073,16 +1041,13 @@ export default {
       console.log(`✅ UpdatedCourses: Status change handled: ${oldStatus} → ${newStatus}`);
     },
 
-    // ✅ FIXED: Trigger comprehensive reactivity update (SAME AS CATALOGUE)
     triggerReactivityUpdate() {
       this.componentKey++;
       this.forceUpdateCounter++;
       this.lastUpdateTime = Date.now();
 
-      // Force Vue reactivity with multiple strategies
       this.$forceUpdate();
 
-      // Additional delayed updates for maximum compatibility
       this.$nextTick(() => {
         this.$forceUpdate();
       });
@@ -1094,13 +1059,10 @@ export default {
       });
     },
 
-    // ✅ FIXED: Setup comprehensive event listeners (SAME AS CATALOGUE)
     setupEventListeners() {
       console.log('🔧 UpdatedCourses: Setting up event listeners');
 
-      // ===== DOM EVENT LISTENERS =====
       if (typeof window !== 'undefined') {
-        // Listen for user subscription changes
         this.handleSubscriptionChange = (event) => {
           console.log('📡 UpdatedCourses: Subscription change received:', event.detail);
           const { plan, oldPlan } = event.detail;
@@ -1109,7 +1071,6 @@ export default {
         
         window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
 
-        // Listen for localStorage changes (cross-tab sync)
         this.handleStorageChange = (event) => {
           if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
             console.log('📡 UpdatedCourses: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
@@ -1120,27 +1081,22 @@ export default {
         window.addEventListener('storage', this.handleStorageChange);
       }
 
-      // ===== EVENT BUS LISTENERS =====
       if (typeof window !== 'undefined' && window.eventBus) {
-        // User status change events
         this.handleUserStatusEvent = (data) => {
           console.log('📡 UpdatedCourses: User status event received:', data);
           this.handleUserStatusChange(data.newStatus, data.oldStatus);
         };
 
-        // Promocode applied events
         this.handlePromocodeEvent = (data) => {
           console.log('📡 UpdatedCourses: Promocode applied event:', data);
           this.handleUserStatusChange(data.newStatus, data.oldStatus);
         };
 
-        // Force update events
         this.handleForceUpdateEvent = () => {
           console.log('📡 UpdatedCourses: Force update event received');
           this.triggerReactivityUpdate();
         };
 
-        // Register event bus listeners
         window.eventBus.on('userStatusChanged', this.handleUserStatusEvent);
         window.eventBus.on('promocodeApplied', this.handlePromocodeEvent);
         window.eventBus.on('forceUpdate', this.handleForceUpdateEvent);
@@ -1151,7 +1107,6 @@ export default {
         console.log('✅ UpdatedCourses: Event bus listeners registered');
       }
 
-      // ===== STORE MUTATION LISTENER =====
       if (this.$store) {
         this.storeUnsubscribe = this.$store.subscribe((mutation) => {
           if (this.isUserRelatedMutation(mutation)) {
@@ -1164,7 +1119,6 @@ export default {
       console.log('✅ UpdatedCourses: Event listeners setup complete');
     },
 
-    // ✅ FIXED: Check if mutation is user-related (SAME AS CATALOGUE)
     isUserRelatedMutation(mutation) {
       const userMutations = [
         'setUser',
@@ -1182,11 +1136,9 @@ export default {
              mutation.type.toLowerCase().includes('subscription');
     },
 
-    // ✅ FIXED: Enhanced cleanup method (SAME AS CATALOGUE)
     cleanup() {
       console.log('🧹 UpdatedCourses: Performing cleanup...');
 
-      // Clean up DOM event listeners
       if (typeof window !== 'undefined') {
         if (this.handleSubscriptionChange) {
           window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
@@ -1196,7 +1148,6 @@ export default {
         }
       }
 
-      // Clean up event bus listeners
       if (typeof window !== 'undefined' && window.eventBus) {
         if (this.handleUserStatusEvent) {
           window.eventBus.off('userStatusChanged', this.handleUserStatusEvent);
@@ -1212,7 +1163,6 @@ export default {
         }
       }
 
-      // Clean up store subscription
       if (this.storeUnsubscribe) {
         this.storeUnsubscribe();
         this.storeUnsubscribe = null;
@@ -1221,7 +1171,6 @@ export default {
       console.log('✅ UpdatedCourses: Cleanup completed');
     },
 
-    // ✅ OPTIONAL: Methods for managing course images dynamically
     addCourseImage(keyword, imageUrl) {
       this.courseImages[keyword.toLowerCase()] = imageUrl;
       console.log(`Added new course image for keyword: ${keyword}`);
@@ -1292,37 +1241,27 @@ export default {
   --color-green-800: #d1fae5;
 }
 
-/* RESET AND BASE STYLES */
-* {
-  box-sizing: border-box;
-}
-
-.courses-page, .study-page {
+.courses-page {
   background-color: var(--color-background);
   min-height: 100vh;
   color: var(--color-foreground);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
   line-height: 1.5;
-  margin: 0;
-  padding: 0;
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 1rem;
-  width: 100%;
 }
 
 /* Header */
 .header {
-  background: linear-gradient(135deg, #111827, #1f2937, #111827);
+  background-image: linear-gradient(to right, #111827, #1f2937, #111827);
   color: #fff;
   padding: 4rem 0;
   text-align: center;
-  width: 100%;
 }
-
 @media (min-width: 768px) {
   .header {
     padding: 6rem 0;
@@ -1333,9 +1272,6 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
 }
 
 .header-badge {
@@ -1354,20 +1290,16 @@ export default {
 .header-badge-icon {
   width: 1rem;
   height: 1rem;
-  flex-shrink: 0;
 }
 
 .header-title {
   font-size: 2.25rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #fff, #e5e7eb, #9ca3af);
+  background-image: linear-gradient(to right, #fff, #e5e7eb, #9ca3af);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  text-align: center;
-  margin: 0;
 }
-
 @media (min-width: 768px) {
   .header-title {
     font-size: 3.75rem;
@@ -1377,10 +1309,7 @@ export default {
 .header-subtitle {
   font-size: 1.25rem;
   color: #d1d5db;
-  margin: 0;
-  text-align: center;
 }
-
 @media (min-width: 768px) {
   .header-subtitle {
     font-size: 1.5rem;
@@ -1392,26 +1321,20 @@ export default {
   color: #9ca3af;
   max-width: 42rem;
   margin: 0 auto;
-  text-align: center;
-  line-height: 1.6;
 }
 
 .content-wrapper {
   padding: 2rem 0;
-  width: 100%;
 }
 
 /* SUBSCRIPTION STATUS BADGE STYLES */
 .subscription-badge {
-  padding: 6px 14px;
-  border-radius: 20px;
+  padding: 4px 12px;
+  border-radius: 16px;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  display: inline-flex;
-  align-items: center;
-  white-space: nowrap;
 }
 
 .subscription-badge.badge-free {
@@ -1432,36 +1355,33 @@ export default {
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
 }
 
-/* FILTER BAR - FIXED LAYOUT */
+/* Filters */
 .filter-bar {
   background-color: var(--color-card);
   border-radius: 1rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   padding: 1.5rem;
   margin-bottom: 2rem;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
-  grid-template-columns: 1fr;
-  width: 100%;
 }
-
-@media (min-width: 768px) {
-  .filter-bar {
-    grid-template-columns: 2fr 1fr 1fr auto;
-    align-items: center;
-  }
-}
-
 @media (min-width: 1024px) {
   .filter-bar {
-    grid-template-columns: 3fr 1.5fr 1.5fr auto;
+    flex-direction: row;
+    align-items: center;
   }
 }
 
 .filter-group-search {
   position: relative;
-  width: 100%;
+  flex: 1;
+}
+@media (min-width: 1024px) {
+  .filter-group-search {
+    flex: 1.5;
+  }
 }
 
 .search-icon {
@@ -1472,8 +1392,6 @@ export default {
   color: var(--color-muted-foreground);
   width: 1rem;
   height: 1rem;
-  pointer-events: none;
-  z-index: 2;
 }
 
 .input-search {
@@ -1481,22 +1399,20 @@ export default {
   height: 2.5rem;
   padding: 0.5rem 0.75rem 0.5rem 2.5rem;
   border-radius: 0.375rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   background-color: var(--color-input-background);
   font-size: 0.875rem;
   outline: none;
-  transition: border-color 0.2s ease;
-  color: var(--color-foreground);
+  transition: border-color 0.2s;
 }
-
 .input-search:focus {
-  border-color: var(--color-brand);
+  border-color: rgba(139, 127, 191, 0.5);
   box-shadow: 0 0 0 2px rgba(139, 127, 191, 0.2);
 }
 
 .filter-group-select {
   position: relative;
-  width: 100%;
+  flex: 1;
 }
 
 .select-field {
@@ -1504,7 +1420,7 @@ export default {
   height: 2.5rem;
   padding: 0.5rem 2rem 0.5rem 0.75rem;
   border-radius: 0.375rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   background-color: var(--color-input-background);
   font-size: 0.875rem;
   outline: none;
@@ -1512,12 +1428,6 @@ export default {
   -moz-appearance: none;
   appearance: none;
   cursor: pointer;
-  color: var(--color-foreground);
-}
-
-.select-field:focus {
-  border-color: var(--color-brand);
-  box-shadow: 0 0 0 2px rgba(139, 127, 191, 0.2);
 }
 
 .select-arrow {
@@ -1527,22 +1437,13 @@ export default {
   transform: translateY(-50%);
   width: 1rem;
   height: 1rem;
-  color: var(--color-muted-foreground);
+  opacity: 0.5;
   pointer-events: none;
-  z-index: 2;
 }
 
 .filter-group-buttons {
   display: flex;
   gap: 0.5rem;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-}
-
-@media (min-width: 768px) {
-  .filter-group-buttons {
-    justify-content: flex-end;
-  }
 }
 
 .button-filter {
@@ -1552,22 +1453,18 @@ export default {
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   background-color: var(--color-background);
   color: var(--color-foreground);
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  flex-shrink: 0;
+  transition: all 0.2s ease-in-out;
 }
-
 .button-filter:hover {
   background-color: var(--color-accent);
   color: var(--color-accent-foreground);
 }
-
 .button-filter.active {
   background-color: var(--color-brand);
-  color: var(--color-brand-foreground);
+  color: #fff;
   border-color: var(--color-brand);
 }
 
@@ -1577,8 +1474,6 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
 }
 
 .results-count {
@@ -1592,7 +1487,6 @@ export default {
 .results-icon {
   width: 1rem;
   height: 1rem;
-  flex-shrink: 0;
 }
 
 .results-updated {
@@ -1604,67 +1498,53 @@ export default {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-brand);
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
-/* COURSES GRID - FIXED RESPONSIVE LAYOUT */
+/* Courses Grid */
 .courses-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-  width: 100%;
-  padding: 0;
-  margin: 0;
-}
-
-@media (min-width: 640px) {
-  .courses-grid {
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1.5rem;
-  }
+  gap: 20px;
 }
 
 @media (min-width: 768px) {
   .courses-grid {
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
   }
 }
 
 @media (min-width: 1024px) {
   .courses-grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
+    gap: 24px;
   }
 }
 
-/* COURSE CARD - COMPLETELY FIXED */
+/* Course Card */
 .course-card {
   cursor: pointer;
   background-color: var(--color-card);
   border-radius: 12px;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   height: 100%;
-  width: 100%;
-  min-height: 400px;
 }
 
 .course-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  border-color: var(--color-brand);
+  box-shadow: 0 8px 25px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  border-color: rgba(139, 127, 191, 0.3);
 }
 
 .course-card-image-wrapper {
   position: relative;
-  padding: 16px 16px 0 16px;
-  flex-shrink: 0;
+  padding: 16px 16px 0;
 }
 
 .course-card-image {
@@ -1672,8 +1552,6 @@ export default {
   height: 180px;
   object-fit: cover;
   border-radius: 8px;
-  display: block;
-  background-color: var(--color-muted);
 }
 
 .badge {
@@ -1686,26 +1564,25 @@ export default {
   padding: 4px 10px;
   font-size: 11px;
   font-weight: 600;
-  gap: 4px;
-  white-space: nowrap;
-  z-index: 2;
 }
 
 .badge-premium {
   background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
-  color: var(--color-brand-foreground);
-  box-shadow: 0 2px 8px rgba(139, 127, 191, 0.3);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: none;
 }
 
 .badge-free {
   background-color: var(--color-green-100);
   color: var(--color-green-800);
+  border: none;
 }
 
 .badge-icon {
   width: 10px;
   height: 10px;
-  flex-shrink: 0;
+  margin-right: 4px;
 }
 
 .course-card-content {
@@ -1714,13 +1591,11 @@ export default {
   flex-direction: column;
   gap: 12px;
   flex: 1;
-  min-height: 0;
 }
 
 .course-card-meta {
   display: flex;
   justify-content: flex-start;
-  flex-shrink: 0;
 }
 
 .course-card-category {
@@ -1732,8 +1607,6 @@ export default {
   font-size: 11px;
   font-weight: 600;
   color: var(--color-brand);
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .course-card-title {
@@ -1741,12 +1614,7 @@ export default {
   font-weight: 600;
   line-height: 1.3;
   margin: 0;
-  color: var(--color-card-foreground);
   transition: color 0.2s ease;
-  flex-shrink: 0;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  hyphens: auto;
 }
 
 .course-card:hover .course-card-title {
@@ -1760,9 +1628,8 @@ export default {
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   flex: 1;
-  min-height: 0;
 }
 
 .course-card-stats {
@@ -1772,21 +1639,17 @@ export default {
   font-size: 13px;
   color: var(--color-muted-foreground);
   margin-top: auto;
-  flex-shrink: 0;
-  gap: 0.5rem;
 }
 
 .course-card-stat {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-shrink: 0;
 }
 
 .course-card-stat-icon {
   width: 14px;
   height: 14px;
-  flex-shrink: 0;
 }
 
 .course-card-level {
@@ -1798,8 +1661,6 @@ export default {
   font-size: 11px;
   font-weight: 600;
   color: var(--color-brand);
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .course-card-provider {
@@ -1807,7 +1668,6 @@ export default {
   border-top: 1px solid var(--color-border);
   text-align: center;
   margin-top: auto;
-  flex-shrink: 0;
 }
 
 .course-card-provider p {
@@ -1830,16 +1690,15 @@ export default {
 /* Empty State */
 .empty-state {
   text-align: center;
-  padding: 4rem 1rem;
-  width: 100%;
+  padding: 4rem 0;
 }
 
 .empty-state-icon-wrapper {
   width: 4rem;
   height: 4rem;
-  margin: 0 auto 1rem auto;
+  margin: 0 auto 1rem;
   background-color: var(--color-muted);
-  border-radius: 50%;
+  border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1854,32 +1713,27 @@ export default {
 .empty-state-title {
   font-size: 1.125rem;
   font-weight: 500;
-  margin: 0 0 0.5rem 0;
-  color: var(--color-foreground);
+  margin-bottom: 0.5rem;
 }
 
 .empty-state-description {
   color: var(--color-muted-foreground);
-  margin: 0 0 1rem 0;
-  line-height: 1.5;
+  margin-bottom: 1rem;
 }
 
 .button-reset-filters {
   height: 2.5rem;
   padding: 0 1rem;
   border-radius: 0.375rem;
-  border: 1px solid var(--color-brand);
+  border: 1px solid rgba(139, 127, 191, 0.3);
   background-color: var(--color-background);
   color: var(--color-brand);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 0.875rem;
 }
-
 .button-reset-filters:hover {
-  background-color: var(--color-brand);
-  color: var(--color-brand-foreground);
+  background-color: rgba(139, 127, 191, 0.1);
 }
 
 /* Loading Spinner */
@@ -1890,7 +1744,7 @@ export default {
   border-top: 4px solid var(--color-brand);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto 1rem auto;
+  margin: 0 auto 1rem;
 }
 
 @keyframes spin {
@@ -1898,7 +1752,7 @@ export default {
   100% { transform: rotate(360deg); }
 }
 
-/* MODAL STYLES - FIXED OVERFLOW ISSUES */
+/* MODAL STYLES */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1913,7 +1767,6 @@ export default {
   justify-content: center;
   padding: 1rem;
   animation: fadeIn 0.2s ease-out;
-  overflow-y: auto;
 }
 
 @keyframes fadeIn {
@@ -1924,7 +1777,7 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 900px;
+  max-width: 1100px;
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
@@ -1933,7 +1786,6 @@ export default {
   animation: slideUp 0.3s ease-out;
   display: flex;
   flex-direction: column;
-  margin: auto;
 }
 
 @keyframes slideUp {
@@ -1969,6 +1821,7 @@ export default {
 .modal-close:hover {
   background-color: white;
   transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
 .modal-loading-state {
@@ -1983,14 +1836,13 @@ export default {
 .modal-content {
   display: flex;
   flex-direction: column;
-  height: 100%;
   max-height: 90vh;
   overflow: hidden;
 }
 
 .modal-header-section {
   position: relative;
-  height: 250px;
+  height: 280px; /* Increased height */
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -2005,7 +1857,6 @@ export default {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
 }
 
 .modal-image-overlay {
@@ -2021,7 +1872,6 @@ export default {
   position: absolute;
   top: 16px;
   left: 16px;
-  z-index: 2;
 }
 
 .modal-badge {
@@ -2057,7 +1907,6 @@ export default {
   justify-content: space-between;
   align-items: end;
   color: white;
-  z-index: 2;
 }
 
 .modal-duration {
@@ -2094,15 +1943,10 @@ export default {
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 32px; /* Increased padding */
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  min-height: 0;
-}
-
-.modal-course-info {
-  flex-shrink: 0;
+  gap: 32px; /* Increased gap */
 }
 
 .modal-tags {
@@ -2118,8 +1962,6 @@ export default {
   font-size: 11px;
   font-weight: 600;
   border: 1px solid;
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .modal-tag-category {
@@ -2135,7 +1977,7 @@ export default {
 }
 
 .modal-title {
-  font-size: 24px;
+  font-size: 28px; /* Larger title */
   font-weight: 700;
   line-height: 1.2;
   margin: 0 0 16px 0;
@@ -2143,7 +1985,7 @@ export default {
 }
 
 .modal-description {
-  font-size: 16px;
+  font-size: 16px; /* Larger description */
   line-height: 1.6;
   color: var(--color-muted-foreground);
   margin: 0;
@@ -2154,25 +1996,18 @@ export default {
   background: var(--color-border);
   border: none;
   margin: 0;
-  flex-shrink: 0;
-}
-
-.modal-details {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
 }
 
 .modal-details-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
+  grid-template-columns: 1fr 1fr; /* Always 2 columns on desktop */
+  gap: 40px; /* Increased gap */
 }
 
-@media (min-width: 768px) {
+@media (max-width: 768px) {
   .modal-details-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 32px;
+    grid-template-columns: 1fr;
+    gap: 24px;
   }
 }
 
@@ -2192,8 +2027,7 @@ export default {
   margin: 0;
 }
 
-.modal-skills-list,
-.modal-modules-list {
+.modal-skills-list {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -2219,6 +2053,15 @@ export default {
   height: 14px;
 }
 
+.modal-modules-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .modal-module-item {
   display: flex;
   gap: 8px;
@@ -2241,6 +2084,7 @@ export default {
 .modal-actions {
   padding-top: 16px;
   border-top: 1px solid var(--color-border);
+  margin-top: auto;
   flex-shrink: 0;
 }
 
@@ -2286,14 +2130,13 @@ export default {
   line-height: 1.3;
 }
 
-/* STUDY INTERFACE STYLES - COMPLETELY REDESIGNED */
+/* STUDY INTERFACE STYLES */
 .study-page {
   display: flex;
   flex-direction: column;
   height: 100vh;
   background-color: #f8fafc;
   color: var(--color-foreground);
-  overflow: hidden;
 }
 
 .study-header {
@@ -2302,29 +2145,16 @@ export default {
   padding: 1.5rem 0;
   flex-shrink: 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  z-index: 10;
 }
 
 .study-header-content {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 2rem;
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 1.5rem;
+  gap: 2rem;
   align-items: center;
-}
-
-@media (max-width: 1024px) {
-  .study-header-content {
-    grid-template-columns: auto 1fr;
-    gap: 1rem;
-  }
-  
-  .progress-section {
-    grid-column: 1 / -1;
-    justify-self: center;
-  }
 }
 
 @media (max-width: 768px) {
@@ -2349,8 +2179,6 @@ export default {
   font-size: 0.875rem;
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .back-button:hover {
@@ -2363,38 +2191,26 @@ export default {
 
 .course-info {
   text-align: center;
-  min-width: 0;
-  flex: 1;
 }
 
 .course-title {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 700;
   margin: 0 0 0.5rem 0;
   color: #1e293b;
   line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-@media (min-width: 768px) {
-  .course-title {
-    font-size: 1.5rem;
-    white-space: normal;
-  }
 }
 
 .course-meta {
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 1rem;
   flex-wrap: wrap;
 }
 
 .course-category,
 .course-level {
-  padding: 0.25rem 0.75rem;
+  padding: 0.375rem 0.75rem;
   border-radius: 8px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -2402,18 +2218,10 @@ export default {
   color: white;
   border: none;
   box-shadow: 0 2px 4px rgba(139, 127, 191, 0.3);
-  white-space: nowrap;
 }
 
 .progress-section {
   text-align: right;
-  flex-shrink: 0;
-}
-
-@media (max-width: 1024px) {
-  .progress-section {
-    text-align: center;
-  }
 }
 
 .progress-info {
@@ -2424,24 +2232,15 @@ export default {
   margin-bottom: 0.75rem;
   font-size: 0.875rem;
   font-weight: 600;
-  flex-wrap: wrap;
-}
-
-@media (max-width: 1024px) {
-  .progress-info {
-    justify-content: center;
-  }
 }
 
 .progress-text {
   color: #64748b;
-  white-space: nowrap;
 }
 
 .progress-percent {
   color: var(--color-brand);
   font-size: 1.125rem;
-  white-space: nowrap;
 }
 
 .progress-bar {
@@ -2451,12 +2250,6 @@ export default {
   overflow: hidden;
   width: 200px;
   margin-left: auto;
-}
-
-@media (max-width: 1024px) {
-  .progress-bar {
-    margin: 0 auto;
-  }
 }
 
 .progress-fill {
@@ -2471,10 +2264,9 @@ export default {
   flex: 1;
   overflow: hidden;
   background: #f8fafc;
-  min-height: 0;
 }
 
-/* SIDEBAR - FIXED LAYOUT */
+/* SIDEBAR - CLEANER DESIGN */
 .study-sidebar {
   width: 320px;
   background: white;
@@ -2483,8 +2275,6 @@ export default {
   flex-direction: column;
   transition: transform 0.3s ease;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
-  flex-shrink: 0;
-  overflow: hidden;
 }
 
 @media (max-width: 1023px) {
@@ -2504,13 +2294,9 @@ export default {
 }
 
 .sidebar-header {
-  padding: 1.5rem;
+  padding: 2rem;
   border-bottom: 2px solid #f1f5f9;
   background: linear-gradient(135deg, #fafbfc, #f8fafc);
-  flex-shrink: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .sidebar-header h3 {
@@ -2518,58 +2304,29 @@ export default {
   font-weight: 700;
   margin: 0;
   color: #1e293b;
-}
-
-.sidebar-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.875rem;
-}
-
-.sidebar-toggle:hover {
-  background: #f1f5f9;
-  color: #1e293b;
-}
-
-.mobile-only {
-  display: none;
-}
-
-@media (max-width: 1023px) {
-  .mobile-only {
-    display: flex;
-  }
+  text-align: center;
 }
 
 .lessons-list {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
-  min-height: 0;
+  padding: 1.5rem;
 }
 
 .lesson-item {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1rem;
+  padding: 1.25rem;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   border: 2px solid transparent;
   background: #f8fafc;
 }
 
-.lesson-item:hover:not(.locked) {
+.lesson-item:hover {
   background: #f1f5f9;
   border-color: #e2e8f0;
   transform: translateY(-1px);
@@ -2594,8 +2351,8 @@ export default {
 }
 
 .lesson-number {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: #e2e8f0;
   color: #64748b;
@@ -2625,16 +2382,11 @@ export default {
 }
 
 .lesson-title {
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   font-weight: 600;
   margin: 0 0 0.25rem 0;
   color: #1e293b;
   line-height: 1.4;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
 }
 
 .lesson-duration {
@@ -2657,21 +2409,20 @@ export default {
   color: var(--color-brand);
 }
 
-/* MAIN CONTENT - FIXED OVERFLOW */
+/* MAIN CONTENT - COMPLETELY REDESIGNED */
 .study-content {
   flex: 1;
   overflow-y: auto;
   background: white;
   position: relative;
-  min-width: 0;
 }
 
 .sidebar-toggle.desktop-hidden {
   position: absolute;
-  top: 1.5rem;
-  left: 1.5rem;
+  top: 2rem;
+  left: 2rem;
   z-index: 10;
-  display: none;
+  display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
@@ -2686,12 +2437,6 @@ export default {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-@media (max-width: 1023px) {
-  .sidebar-toggle.desktop-hidden {
-    display: flex;
-  }
-}
-
 .sidebar-toggle.desktop-hidden:hover {
   background: #f8fafc;
   border-color: var(--color-brand);
@@ -2699,21 +2444,20 @@ export default {
 }
 
 .lesson-container {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
-  width: 100%;
+  padding: 3rem 2rem;
 }
 
 @media (max-width: 1023px) {
   .lesson-container {
-    padding: 5rem 1.5rem 2rem;
+    padding: 6rem 2rem 3rem; /* More top padding for mobile toggle */
   }
 }
 
 /* LESSON HEADER - CLEAN DESIGN */
 .lesson-header {
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
   text-align: center;
   padding: 2rem;
   background: linear-gradient(135deg, #f8fafc, #f1f5f9);
@@ -2735,7 +2479,6 @@ export default {
   border-radius: 12px;
   font-size: 0.875rem;
   font-weight: 600;
-  white-space: nowrap;
 }
 
 .lesson-number-badge {
@@ -2751,21 +2494,15 @@ export default {
 }
 
 .lesson-header .lesson-title {
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-weight: 800;
   margin: 0 0 1rem 0;
   color: #1e293b;
   line-height: 1.2;
 }
 
-@media (max-width: 768px) {
-  .lesson-header .lesson-title {
-    font-size: 1.5rem;
-  }
-}
-
 .lesson-description {
-  font-size: 1rem;
+  font-size: 1.125rem;
   color: #64748b;
   line-height: 1.6;
   margin: 0;
@@ -2778,17 +2515,17 @@ export default {
 .lesson-content-area {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 3rem;
 }
 
 .text-content {
-  line-height: 1.7;
+  line-height: 1.8;
   font-size: 1rem;
 }
 
 .content-section {
   background: white;
-  padding: 2rem;
+  padding: 2.5rem;
   border-radius: 16px;
   border: 2px solid #f1f5f9;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -2807,7 +2544,7 @@ export default {
   color: #334155;
   font-size: 1.25rem;
   font-weight: 600;
-  margin: 1.5rem 0 1rem 0;
+  margin: 2rem 0 1rem 0;
 }
 
 .content-section p {
@@ -2832,22 +2569,22 @@ export default {
 .resources-section {
   background: linear-gradient(135deg, #f8fafc, #f1f5f9);
   border-radius: 16px;
-  padding: 2rem;
-  margin: 2rem 0;
+  padding: 2.5rem;
+  margin: 3rem 0;
   border: 2px solid #e2e8f0;
 }
 
 .resources-section h3 {
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 2rem 0;
   color: #1e293b;
-  font-size: 1.25rem;
+  font-size: 1.375rem;
   font-weight: 700;
   text-align: center;
 }
 
 .resources-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1rem;
 }
 
@@ -2855,7 +2592,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1rem;
+  padding: 1.25rem;
   background: white;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
@@ -2875,15 +2612,6 @@ export default {
 
 .resource-item svg {
   color: var(--color-brand);
-  flex-shrink: 0;
-}
-
-.resource-item span {
-  flex: 1;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .resource-size {
@@ -2894,7 +2622,6 @@ export default {
   background: #f1f5f9;
   padding: 0.25rem 0.5rem;
   border-radius: 6px;
-  flex-shrink: 0;
 }
 
 /* QUIZ SECTION - INTERACTIVE DESIGN */
@@ -2902,15 +2629,15 @@ export default {
   background: linear-gradient(135deg, white, #fafbfc);
   border: 2px solid #e2e8f0;
   border-radius: 16px;
-  padding: 2rem;
-  margin: 2rem 0;
+  padding: 3rem;
+  margin: 3rem 0;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
 }
 
 .quiz-section h3 {
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 2rem 0;
   color: #1e293b;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 700;
   text-align: center;
   padding-bottom: 1rem;
@@ -2920,7 +2647,7 @@ export default {
 .question-item h4 {
   font-size: 1.125rem;
   font-weight: 600;
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 2rem 0;
   color: #1e293b;
   line-height: 1.5;
   text-align: center;
@@ -2934,14 +2661,14 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  margin: 1.5rem 0;
+  margin: 2rem 0;
 }
 
 .quiz-option {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1rem 1.25rem;
+  padding: 1.25rem 1.5rem;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   cursor: pointer;
@@ -2959,9 +2686,8 @@ export default {
 
 .quiz-option input[type="radio"] {
   margin: 0;
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
 }
 
 .quiz-option span {
@@ -2969,13 +2695,12 @@ export default {
   color: #475569;
   font-size: 1rem;
   font-weight: 500;
-  line-height: 1.4;
 }
 
 .quiz-submit-btn,
 .retry-quiz-btn {
   display: block;
-  margin: 1.5rem auto 0;
+  margin: 2rem auto 0;
   padding: 1rem 2rem;
   border: none;
   border-radius: 12px;
@@ -3003,7 +2728,7 @@ export default {
 
 .quiz-result {
   text-align: center;
-  padding: 1.5rem;
+  padding: 2rem;
 }
 
 .quiz-feedback {
@@ -3011,11 +2736,11 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  padding: 1.25rem;
+  padding: 1.5rem;
   border-radius: 12px;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.125rem;
 }
 
 .quiz-feedback.correct {
@@ -3035,11 +2760,10 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  padding: 2rem 0;
+  gap: 1.5rem;
+  padding: 3rem 0;
   border-top: 2px solid #f1f5f9;
-  margin-top: 2rem;
-  flex-wrap: wrap;
+  margin-top: 3rem;
 }
 
 @media (max-width: 640px) {
@@ -3052,8 +2776,8 @@ export default {
 .nav-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.5rem;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   background: white;
@@ -3063,8 +2787,6 @@ export default {
   font-weight: 600;
   font-size: 0.875rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  text-decoration: none;
-  white-space: nowrap;
 }
 
 .nav-btn:hover:not(:disabled) {
@@ -3112,62 +2834,77 @@ export default {
   .nav-btn {
     width: 100%;
     justify-content: center;
-    padding: 1rem 1.5rem;
   }
 }
 
-/* RESPONSIVE IMPROVEMENTS */
-@media (max-width: 480px) {
-  .container {
-    padding: 0 0.75rem;
-  }
-  
+/* Responsive adjustments */
+@media (max-width: 768px) {
   .modal-container {
-    margin: 0.25rem;
-    border-radius: 12px;
+    margin: 0.5rem;
+    max-height: 95vh;
+    max-width: none;
   }
-  
+
   .modal-header-section {
-    height: 180px;
+    height: 200px;
   }
-  
+
   .modal-body {
-    padding: 1rem;
-    gap: 1rem;
+    padding: 20px;
+    gap: 20px;
   }
-  
+
   .modal-title {
-    font-size: 1.25rem;
+    font-size: 20px;
   }
-  
-  .courses-grid {
+
+  .modal-details-grid {
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: 20px;
   }
-  
-  .course-card-image {
+
+  .study-header-content {
+    gap: 0.75rem;
+  }
+
+  .course-title {
+    font-size: 1.125rem;
+  }
+
+  .progress-section {
+    min-width: auto;
+  }
+
+  .lesson-header .lesson-title {
+    font-size: 1.5rem;
+  }
+
+  .lesson-container {
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+
+  .modal-header-section {
     height: 160px;
   }
-  
-  .filter-bar {
-    padding: 1rem;
+
+  .modal-body {
+    padding: 16px;
+    gap: 16px;
   }
-  
-  .lesson-container {
-    padding: 4rem 1rem 2rem;
+
+  .modal-title {
+    font-size: 18px;
   }
-  
-  .lesson-header {
-    padding: 1.5rem;
-  }
-  
-  .content-section {
-    padding: 1.5rem;
-  }
-  
-  .resources-section,
-  .quiz-section {
-    padding: 1.5rem;
+
+  .courses-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 </style>
