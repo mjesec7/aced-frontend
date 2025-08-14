@@ -1,5 +1,6 @@
 <template>
   <div class="study-page">
+    <!-- Modern Header -->
     <header class="study-header">
       <div class="study-header-content">
         <button @click="goBackToCourses" class="back-button">
@@ -9,10 +10,6 @@
           <span>Назад к курсам</span>
         </button>
 
-        <span class="subscription-badge" :class="subscriptionClass">
-          {{ subscriptionText }}
-        </span>
-
         <div class="course-info">
           <h1 class="course-title">{{ course?.title || 'Загрузка...' }}</h1>
           <div class="course-meta">
@@ -21,32 +18,41 @@
           </div>
         </div>
 
-        <div class="progress-section">
-          <div class="progress-info">
-            <span class="progress-text">Прогресс: {{ completedLessons }}/{{ totalLessons }}</span>
-            <span class="progress-percent">{{ progressPercent }}%</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
+        <div class="header-right">
+          <span class="subscription-badge" :class="subscriptionClass">
+            {{ subscriptionText }}
+          </span>
+          <div class="progress-section">
+            <div class="progress-info">
+              <span class="progress-text">Прогресс: {{ completedLessons }}/{{ totalLessons }}</span>
+              <span class="progress-percent">{{ progressPercent }}%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
+            </div>
           </div>
         </div>
       </div>
     </header>
 
     <div class="study-main">
+      <!-- Modern Sidebar -->
       <aside class="study-sidebar" :class="{ 'sidebar-open': sidebarOpen }">
+        <!-- Sidebar Header -->
         <div class="sidebar-header">
-          <div class="flex items-center gap-3 mb-2">
-            <!-- BookOpen Icon -->
-            <div class="w-8 h-8 bg-gradient-to-br from-[var(--color-brand-purple)] to-[var(--color-brand-purple-dark)] rounded-lg flex items-center justify-center">
-              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.431m0 0a2.768 2.768 0 01-1.378-2.348v-2.185m1.378 2.348A2.768 2.768 0 0013.378 17.5v-2.185m-1.378 2.348a2.768 2.768 0 01-1.378-2.348v-2.185m1.378 2.348A2.768 2.768 0 0013.378 17.5v-2.185"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+          <div class="sidebar-title-section">
+            <div class="sidebar-icon">
+              <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.431m0 0a2.768 2.768 0 01-1.378-2.348v-2.185m1.378 2.348A2.768 2.768 0 0013.378 17.5v-2.185m-1.378 2.348a2.768 2.768 0 01-1.378-2.348v-2.185m1.378 2.348A2.768 2.768 0 0013.378 17.5v-2.185"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
               </svg>
             </div>
-            <h3 class="text-lg font-medium">{{ course?.title || 'Курс' }}</h3>
+            <div class="sidebar-title-content">
+              <h3 class="sidebar-title">{{ course?.title || 'Курс' }}</h3>
+              <p class="sidebar-subtitle">Полный курс</p>
+            </div>
           </div>
-          <p class="text-sm text-muted-foreground">Полный курс</p>
-          <button @click="toggleSidebar" class="sidebar-toggle mobile-only">
+          <button @click="toggleSidebar" class="sidebar-close mobile-only">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 6 6 18"/>
               <path d="m6 6 12 12"/>
@@ -54,79 +60,69 @@
           </button>
         </div>
 
+        <!-- Sidebar Progress -->
         <div class="sidebar-progress">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-sm text-muted-foreground">Прогресс</span>
-            <span class="text-sm font-medium">{{ completedLessons }}/{{ totalLessons }} Завершено</span>
+          <div class="progress-header">
+            <span class="progress-label">Прогресс</span>
+            <span class="progress-count">{{ completedLessons }}/{{ totalLessons }} Завершено</span>
           </div>
-          <div class="w-full bg-muted rounded-full h-2">
-            <div
-              class="h-2 rounded-full bg-gradient-to-r from-[var(--color-brand-purple)] to-[var(--color-brand-purple-light)]"
-              :style="{ width: progressPercent + '%' }"
-            ></div>
+          <div class="progress-track">
+            <div class="progress-bar-fill" :style="{ width: progressPercent + '%' }"></div>
           </div>
         </div>
 
-        <div class="lessons-list">
-          <div class="p-4 space-y-2">
+        <!-- Lessons List -->
+        <div class="lessons-container">
+          <div class="lessons-list">
             <div
               v-for="(lesson, index) in lessons"
               :key="lesson.id"
               @click="selectLesson(index)"
               :class="[
-                'relative p-4 rounded-lg border cursor-pointer transition-all duration-200',
+                'lesson-item',
                 {
-                  'border-[var(--color-brand-purple)] bg-[var(--color-brand-purple-muted)] shadow-sm': currentLessonIndex === index,
-                  'border-border hover:border-[var(--color-brand-purple-light)] hover:bg-accent/50': currentLessonIndex !== index,
-                  'opacity-60 cursor-not-allowed': lesson.locked
+                  'lesson-current': currentLessonIndex === index,
+                  'lesson-completed': lesson.completed,
+                  'lesson-locked': lesson.locked
                 }
               ]"
             >
-              <div class="flex items-start gap-3">
-                <div class="flex-shrink-0 mt-0.5">
-                  <!-- CheckCircle Icon -->
-                  <svg v-if="lesson.completed" class="w-5 h-5 text-[var(--color-brand-purple)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <div class="lesson-content">
+                <div class="lesson-status">
+                  <!-- Completed Icon -->
+                  <svg v-if="lesson.completed" class="status-icon completed" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
-                  <!-- Lock Icon -->
-                  <svg v-else-if="lesson.locked" class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <!-- Locked Icon -->
+                  <svg v-else-if="lesson.locked" class="status-icon locked" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4a2 2 0 002 2zm0-11V9a3 3 0 016 0v2"></path>
                   </svg>
-                  <!-- Current Lesson Indicator -->
-                  <div v-else-if="currentLessonIndex === index" class="w-5 h-5 rounded-full border-2 border-[var(--color-brand-purple)] flex items-center justify-center">
-                    <div class="w-2 h-2 rounded-full bg-[var(--color-brand-purple)]"></div>
+                  <!-- Current Lesson -->
+                  <div v-else-if="currentLessonIndex === index" class="status-icon current">
+                    <div class="current-dot"></div>
                   </div>
-                  <!-- Default Circle -->
-                  <div v-else class="w-5 h-5 rounded-full border-2 border-muted-foreground"></div>
+                  <!-- Default -->
+                  <div v-else class="status-icon default"></div>
                 </div>
 
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="text-xs text-muted-foreground font-medium">
-                      {{ String(index + 1).padStart(2, '0') }}
-                    </span>
-                    <span v-if="currentLessonIndex === index" class="text-xs px-2 py-1 bg-[var(--color-brand-purple)] text-white rounded-full">
-                      Текущий
-                    </span>
+                <div class="lesson-details">
+                  <div class="lesson-header">
+                    <span class="lesson-number">{{ String(index + 1).padStart(2, '0') }}</span>
+                    <span v-if="currentLessonIndex === index" class="current-badge">Текущий</span>
                   </div>
-                  <h3 :class="[
-                    'text-sm leading-tight mb-2',
-                    currentLessonIndex === index ? 'text-[var(--color-brand-purple)] font-medium' : 'text-foreground'
-                  ]">
+                  <h3 class="lesson-title" :class="{ 'current-title': currentLessonIndex === index }">
                     {{ lesson.title }}
                   </h3>
-                  <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                    <!-- Clock Icon -->
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <div class="lesson-meta">
+                    <svg class="time-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    {{ lesson.readingTime }}
-                    <span v-if="lesson.type === 'workshop'" class="px-2 py-0.5 bg-muted rounded text-xs">Практика</span>
+                    <span class="reading-time">{{ lesson.readingTime }}</span>
+                    <span v-if="lesson.type === 'workshop'" class="workshop-badge">Практика</span>
                   </div>
                 </div>
 
-                <!-- ChevronRight Icon -->
-                <svg v-if="!lesson.locked" class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg v-if="!lesson.locked" class="chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                 </svg>
               </div>
@@ -135,8 +131,10 @@
         </div>
       </aside>
 
+      <!-- Main Content -->
       <main class="study-content">
-        <button @click="toggleSidebar" class="sidebar-toggle desktop-hidden">
+        <!-- Mobile Menu Toggle -->
+        <button @click="toggleSidebar" class="mobile-menu-toggle desktop-hidden">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="3" y1="6" x2="21" y2="6"/>
             <line x1="3" y1="12" x2="21" y2="12"/>
@@ -145,114 +143,119 @@
           <span>Содержание</span>
         </button>
 
-        <div v-if="currentLesson" class="max-w-4xl mx-auto p-8">
-          <!-- Header -->
-          <div class="mb-8">
-            <div class="flex items-center gap-3 mb-4">
-              <!-- FileText Icon -->
-              <div class="w-10 h-10 bg-gradient-to-br from-[var(--color-brand-purple)] to-[var(--color-brand-purple-dark)] rounded-lg flex items-center justify-center">
-                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <div v-if="currentLesson" class="content-container">
+          <!-- Lesson Header -->
+          <div class="lesson-header-section">
+            <div class="lesson-title-row">
+              <div class="lesson-icon">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
               </div>
-              <div>
-                <h1 class="text-2xl font-medium mb-1">{{ currentLesson.title }}</h1>
-                <div class="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span class="flex items-center gap-1">
-                    <!-- Clock Icon -->
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <div class="lesson-title-content">
+                <h1 class="main-lesson-title">{{ currentLesson.title }}</h1>
+                <div class="lesson-meta-info">
+                  <span class="meta-item">
+                    <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     {{ currentLesson.readingTime }}
                   </span>
-                  <span>Урок {{ currentLessonIndex + 1 }} из {{ totalLessons }}</span>
+                  <span class="meta-item">Урок {{ currentLessonIndex + 1 }} из {{ totalLessons }}</span>
                 </div>
               </div>
             </div>
-            <p class="text-muted-foreground text-lg">{{ currentLesson.description }}</p>
+            <p v-if="currentLesson.description" class="lesson-description">{{ currentLesson.description }}</p>
           </div>
 
           <!-- Learning Objectives -->
-          <div v-if="currentLesson.objectives && currentLesson.objectives.length" class="mb-8 p-6 bg-[var(--color-brand-purple-muted)] rounded-lg border border-[var(--color-brand-purple-light)]/20">
-            <h2 class="text-lg font-medium mb-4 text-[var(--color-brand-purple-dark)]">Цели урока</h2>
-            <ul class="space-y-2">
-              <li v-for="(objective, index) in currentLesson.objectives" :key="index" class="flex items-start gap-3">
-                <div class="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-purple)] mt-2.5 flex-shrink-0"></div>
-                <span class="text-foreground">{{ objective }}</span>
+          <div v-if="currentLesson.objectives && currentLesson.objectives.length" class="objectives-section">
+            <h2 class="objectives-title">Цели урока</h2>
+            <ul class="objectives-list">
+              <li v-for="(objective, index) in currentLesson.objectives" :key="index" class="objective-item">
+                <div class="objective-dot"></div>
+                <span class="objective-text">{{ objective }}</span>
               </li>
             </ul>
           </div>
 
-          <!-- Content -->
-          <div class="prose prose-gray max-w-none">
-            <div class="whitespace-pre-line text-foreground leading-relaxed space-y-6" v-html="currentLesson.content">
-            </div>
-            <div v-if="currentLesson.resources && currentLesson.resources.length" class="resources-modern">
-              <h3>Материалы урока</h3>
+          <!-- Lesson Content -->
+          <div class="lesson-content">
+            <div class="content-prose" v-html="currentLesson.content"></div>
+            
+            <!-- Resources Section -->
+            <div v-if="currentLesson.resources && currentLesson.resources.length" class="resources-section">
+              <h3 class="section-title">Материалы урока</h3>
               <div class="resources-grid">
                 <a
                   v-for="resource in currentLesson.resources"
                   :key="resource.id"
                   :href="resource.url"
                   download
-                  class="resource-item-modern"
+                  class="resource-item"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <svg class="resource-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                     <polyline points="7 10 12 15 17 10"/>
                     <line x1="12" y1="15" x2="12" y2="3"/>
                   </svg>
-                  <span>{{ resource.name }}</span>
-                  <span class="resource-size">{{ resource.size }}</span>
+                  <div class="resource-details">
+                    <span class="resource-name">{{ resource.name }}</span>
+                    <span class="resource-size">{{ resource.size }}</span>
+                  </div>
                 </a>
               </div>
             </div>
 
-            <div v-if="currentLesson.quiz" class="quiz-modern">
-              <h3>Проверьте себя</h3>
-              <div class="quiz-container-modern">
+            <!-- Quiz Section -->
+            <div v-if="currentLesson.quiz" class="quiz-section">
+              <h3 class="section-title">Проверьте себя</h3>
+              <div class="quiz-container">
                 <div v-if="!quizCompleted" class="quiz-questions">
-                  <div class="question-item-modern">
-                    <h4>{{ currentLesson.quiz.question }}</h4>
-                    <div class="quiz-options-modern">
+                  <div class="question-card">
+                    <h4 class="question-text">{{ currentLesson.quiz.question }}</h4>
+                    <div class="quiz-options">
                       <label
                         v-for="(option, index) in currentLesson.quiz.options"
                         :key="index"
-                        class="quiz-option-modern"
+                        class="quiz-option"
+                        :class="{ 'selected': selectedAnswer === index }"
                       >
                         <input
                           type="radio"
                           :name="'quiz-' + currentLesson.id"
                           :value="index"
                           v-model="selectedAnswer"
+                          class="quiz-radio"
                         />
-                        <span>{{ option }}</span>
+                        <span class="option-text">{{ option }}</span>
                       </label>
                     </div>
                     <button
                       @click="submitQuiz"
                       :disabled="selectedAnswer === null"
-                      class="quiz-submit-modern"
+                      class="quiz-submit-btn"
                     >
                       Проверить ответ
                     </button>
                   </div>
                 </div>
-                <div v-else class="quiz-result-modern">
-                  <div :class="['quiz-feedback-modern', quizCorrect ? 'correct' : 'incorrect']">
-                    <svg v-if="quizCorrect" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"/>
-                      <path d="M22 4L12 14.01l-3-3"/>
+                <div v-else class="quiz-result">
+                  <div class="quiz-feedback" :class="{ 'correct': quizCorrect, 'incorrect': !quizCorrect }">
+                    <svg v-if="quizCorrect" class="feedback-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 11.08V12a10 10 0 1 1-5.93-8.08"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 4L12 14.01l-3-3"/>
                     </svg>
-                    <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg v-else class="feedback-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="10"/>
                       <line x1="15" y1="9" x2="9" y2="15"/>
                       <line x1="9" y1="9" x2="15" y2="15"/>
                     </svg>
-                    <span v-if="quizCorrect">Правильно! Отличная работа!</span>
-                    <span v-else>Неправильно. Попробуйте еще раз!</span>
+                    <span class="feedback-text">
+                      {{ quizCorrect ? 'Правильно! Отличная работа!' : 'Неправильно. Попробуйте еще раз!' }}
+                    </span>
                   </div>
-                  <button v-if="!quizCorrect" @click="quizCompleted = false" class="retry-quiz-modern">
+                  <button v-if="!quizCorrect" @click="quizCompleted = false" class="retry-btn">
                     Попробовать снова
                   </button>
                 </div>
@@ -261,33 +264,33 @@
           </div>
 
           <!-- Navigation -->
-          <div class="flex items-center justify-between pt-8 mt-8 border-t border-border">
+          <div class="lesson-navigation">
             <button
               @click="previousLesson"
               :disabled="currentLessonIndex === 0"
-              class="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              class="nav-btn prev-btn"
             >
-              <!-- ChevronRight Icon rotated -->
-              <svg class="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <svg class="nav-icon prev-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
               </svg>
               Предыдущий урок
             </button>
+            
             <button
               v-if="currentLesson && !currentLesson.completed && (!currentLesson.quiz || (currentLesson.quiz && quizCorrect))"
               @click="markLessonCompleted"
-              class="px-6 py-3 bg-[#22c55e] text-white rounded-lg hover:bg-[#16a34a] transition-colors"
+              class="nav-btn complete-btn"
             >
               Завершить урок
             </button>
+            
             <button
               @click="nextLesson"
               :disabled="currentLessonIndex === lessons.length - 1 || (lessons[currentLessonIndex + 1] && lessons[currentLessonIndex + 1].locked)"
-              class="flex items-center gap-2 px-6 py-3 bg-[var(--color-brand-purple)] text-white rounded-lg hover:bg-[var(--color-brand-purple-dark)] transition-colors"
+              class="nav-btn next-btn"
             >
               Следующий урок
-              <!-- ChevronRight Icon -->
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <svg class="nav-icon next-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
               </svg>
             </button>
@@ -295,6 +298,9 @@
         </div>
       </main>
     </div>
+
+    <!-- Mobile Overlay -->
+    <div v-if="sidebarOpen" @click="toggleSidebar" class="mobile-overlay"></div>
   </div>
 </template>
 
@@ -313,24 +319,22 @@ export default {
       lessons: [],
       currentLessonIndex: 0,
       currentLesson: null,
-      sidebarOpen: false, // For sidebar toggling
-      selectedAnswer: null, // For quiz
-      quizCompleted: false, // For quiz
-      quizCorrect: false, // For quiz
-      componentKey: 0, // For forcing component re-render if needed
+      sidebarOpen: false,
+      selectedAnswer: null,
+      quizCompleted: false,
+      quizCorrect: false,
+      componentKey: 0,
     };
   },
 
   computed: {
     subscriptionClass() {
-      // Dummy subscription logic, replace with actual user status
-      const status = this.course?.subscriptionPlan || 'free'; // Assuming course might have a subscription plan
+      const status = this.course?.subscriptionPlan || 'free';
       if (status === 'pro') return 'badge-pro';
       if (status === 'start') return 'badge-start';
       return 'badge-free';
     },
     subscriptionText() {
-      // Dummy subscription logic, replace with actual user status
       const status = this.course?.subscriptionPlan || 'free';
       switch (status) {
         case 'pro': return 'Pro подписка';
@@ -351,13 +355,11 @@ export default {
   },
 
   watch: {
-    // Watch for changes in the 'course' prop to initialize study data
     course: {
       handler: 'initializeStudyData',
-      immediate: true, // Run immediately when the component is mounted
-      deep: true // Watch for deep changes within the course object
+      immediate: true,
+      deep: true
     },
-    // Watch for changes in currentLessonIndex to update currentLesson details
     currentLessonIndex: {
       handler: 'updateCurrentLessonContent',
       immediate: true,
@@ -366,20 +368,17 @@ export default {
 
   methods: {
     initializeStudyData() {
-      // Populate lessons from the course prop
       this.lessons = this.course.lessons || this.generateSampleLessons();
-      // Set the initial current lesson based on the currentLessonIndex
       this.updateCurrentLessonContent();
       this.sidebarOpen = false;
       this.selectedAnswer = null;
       this.quizCompleted = false;
       this.quizCorrect = false;
     },
+    
     updateCurrentLessonContent() {
-      // Ensures currentLesson and its detailed content (like objectives and description) are updated
       if (this.lessons[this.currentLessonIndex]) {
         this.currentLesson = { ...this.lessons[this.currentLessonIndex] };
-        // If content is not provided by backend, use a placeholder or specific logic
         if (!this.currentLesson.content) {
           this.currentLesson.content = this.getLessonContent(this.currentLesson.id);
         }
@@ -393,11 +392,8 @@ export default {
         this.currentLesson = null;
       }
     },
-    // This is a placeholder for actual backend fetching or a local data source
-    // In a real application, you'd fetch lesson details including content, description, objectives, etc. from your API.
+
     getLessonContent(lessonId) {
-      // This content is taken directly from the React App.tsx file for lesson 3.
-      // You would replace this with actual backend fetching based on lessonId.
       const contentMap = {
         3: `# Getting Started with Runway ML
 
@@ -436,7 +432,8 @@ Runway offers several powerful AI models, each designed for specific use cases:
 - Capable of generating 4-second clips at high quality
 - Best for: Original content creation, concept visualization
 
-**Gen-1: Video-to-Video Transformation** - Transforms existing videos using text prompts
+**Gen-1: Video-to-Video Transformation**  
+- Transforms existing videos using text prompts
 - Maintains original video structure while changing style/content
 - Excellent for stylistic transformations
 - Best for: Style transfer, mood changes, artistic interpretations
@@ -670,16 +667,16 @@ Start building your prompt library today, and don't be afraid to try unconventio
 
 **Coming Up Next:** In "Text-to-Video Fundamentals," we'll explore advanced prompting strategies and learn how to create more complex, narrative-driven content that tells compelling visual stories.`,
       };
-      // Placeholder for other lesson content if they are not provided by the backend
-      // You would extend this map with content for other lesson IDs if needed.
       return contentMap[lessonId] || 'Содержимое урока не найдено.';
     },
+    
     getLessonDescription(lessonId) {
       const descriptionMap = {
         3: "Изучите основы Runway ML, одной из самых мощных платформ для создания видео с искусственным интеллектом, доступных на сегодняшний день."
       };
       return descriptionMap[lessonId] || 'Описание урока не найдено.';
     },
+    
     getLessonObjectives(lessonId) {
       const objectivesMap = {
         3: [
@@ -691,12 +688,12 @@ Start building your prompt library today, and don't be afraid to try unconventio
       };
       return objectivesMap[lessonId] || [];
     },
-    // This generates dummy lessons if no course lessons are provided
+
     generateSampleLessons() {
       return [
         {
           id: 1,
-          title: "Введение в курс",
+          title: "Введение в создание AI-видео",
           readingTime: "8 мин чтения",
           completed: true,
           locked: false,
@@ -808,12 +805,15 @@ Start building your prompt library today, and don't be afraid to try unconventio
         }
       ];
     },
+
     goBackToCourses() {
       this.$emit('back-to-courses');
     },
+
     toggleSidebar() {
       this.sidebarOpen = !this.sidebarOpen;
     },
+
     selectLesson(index) {
       if (this.lessons[index] && !this.lessons[index].locked) {
         this.currentLessonIndex = index;
@@ -825,12 +825,13 @@ Start building your prompt library today, and don't be afraid to try unconventio
         }
       }
     },
+
     markLessonCompleted() {
       if (this.currentLesson) {
-        this.currentLesson.completed = true; // Mark current lesson as completed
+        this.currentLesson.completed = true;
         const lessonInArray = this.lessons.find(l => l.id === this.currentLesson.id);
         if (lessonInArray) {
-          lessonInArray.completed = true; // Also update in the lessons array
+          lessonInArray.completed = true;
         }
 
         if (this.currentLessonIndex + 1 < this.lessons.length) {
@@ -838,6 +839,7 @@ Start building your prompt library today, and don't be afraid to try unconventio
         }
       }
     },
+
     submitQuiz() {
       if (!this.currentLesson || !this.currentLesson.quiz) return;
       const currentQuiz = this.currentLesson.quiz;
@@ -848,6 +850,7 @@ Start building your prompt library today, and don't be afraid to try unconventio
         this.markLessonCompleted();
       }
     },
+
     nextLesson() {
       if (this.currentLessonIndex + 1 < this.lessons.length) {
         const nextLessonCandidate = this.lessons[this.currentLessonIndex + 1];
@@ -856,6 +859,7 @@ Start building your prompt library today, and don't be afraid to try unconventio
         }
       }
     },
+
     previousLesson() {
       if (this.currentLessonIndex > 0) {
         this.selectLesson(this.currentLessonIndex - 1);
@@ -866,7 +870,7 @@ Start building your prompt library today, and don't be afraid to try unconventio
 </script>
 
 <style scoped>
-/* CSS Variables from globals.css */
+/* CSS Variables matching globals.css */
 :root {
   --font-size: 14px;
   --background: #ffffff;
@@ -953,130 +957,45 @@ Start building your prompt library today, and don't be afraid to try unconventio
   --brand-purple-muted: rgba(167, 139, 250, 0.1);
 }
 
-/* Utility Classes */
-.text-sm { font-size: 0.875rem; }
-.text-base { font-size: 1rem; }
-.text-lg { font-size: 1.125rem; }
-.text-xl { font-size: 1.25rem; }
-.text-2xl { font-size: 1.5rem; }
-.font-medium { font-weight: 500; }
-.font-semibold { font-weight: 600; }
-.text-muted-foreground { color: var(--muted-foreground); }
-.text-foreground { color: var(--foreground); }
-.text-\[var\(--color-brand-purple\)\] { color: var(--brand-purple); }
-.text-\[var\(--color-brand-purple-dark\)\] { color: var(--brand-purple-dark); }
-.text-white { color: white; }
-.bg-\[var\(--color-brand-purple\)\] { background-color: var(--brand-purple); }
-.bg-\[var\(--color-brand-purple-dark\)\] { background-color: var(--brand-purple-dark); }
-.bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)); }
-.from-\[var\(--color-brand-purple\)\] { --tw-gradient-from: var(--brand-purple); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(139, 92, 246, 0)); }
-.to-\[var\(--color-brand-purple-dark\)\] { --tw-gradient-to: var(--brand-purple-dark); }
-.from-\[var\(--color-brand-purple\)\] { background: linear-gradient(to right, var(--brand-purple), var(--brand-purple-light)); }
-.to-\[var\(--color-brand-purple-light\)\] { background: linear-gradient(to right, var(--brand-purple), var(--brand-purple-light)); }
-.bg-muted { background-color: var(--muted); }
-.rounded-lg { border-radius: 0.5rem; }
-.rounded-full { border-radius: 9999px; }
-.w-8 { width: 2rem; }
-.h-8 { height: 2rem; }
-.w-10 { width: 2.5rem; }
-.h-10 { height: 2.5rem; }
-.w-5 { width: 1.25rem; }
-.h-5 { height: 1.25rem; }
-.w-4 { width: 1rem; }
-.h-4 { height: 1rem; }
-.w-3 { width: 0.75rem; }
-.h-3 { height: 0.75rem; }
-.w-2 { width: 0.5rem; }
-.h-2 { height: 0.5rem; }
-.w-1\.5 { width: 0.375rem; }
-.h-1\.5 { height: 0.375rem; }
-.w-full { width: 100%; }
-.flex { display: flex; }
-.items-center { align-items: center; }
-.items-start { align-items: flex-start; }
-.justify-center { justify-content: center; }
-.justify-between { justify-content: space-between; }
-.gap-1 { gap: 0.25rem; }
-.gap-2 { gap: 0.5rem; }
-.gap-3 { gap: 0.75rem; }
-.gap-4 { gap: 1rem; }
-.mb-1 { margin-bottom: 0.25rem; }
-.mb-2 { margin-bottom: 0.5rem; }
-.mb-4 { margin-bottom: 1rem; }
-.mt-2\.5 { margin-top: 0.625rem; }
-.p-4 { padding: 1rem; }
-.px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
-.py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-.py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
-.space-y-2 > * + * { margin-top: 0.5rem; }
-.flex-shrink-0 { flex-shrink: 0; }
-.flex-1 { flex: 1 1 0%; }
-.min-w-0 { min-width: 0px; }
-.leading-tight { line-height: 1.25; }
-.border-2 { border-width: 2px; }
-.border-\[var\(--color-brand-purple\)\] { border-color: var(--brand-purple); }
-.border-muted-foreground { border-color: var(--muted-foreground); }
-
-/* SUBSCRIPTION STATUS BADGE STYLES */
-.subscription-badge {
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.subscription-badge.badge-free {
-  background: rgba(156, 163, 175, 0.1);
-  color: #6b7280;
-  border: 1px solid rgba(156, 163, 175, 0.3);
-}
-
-.subscription-badge.badge-start {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-}
-
-.subscription-badge.badge-pro {
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-  color: white;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
-}
-
-/* MODERN STUDY INTERFACE STYLES */
+/* Main Layout */
 .study-page {
-  display: flex;
-  flex-direction: column;
   height: 100vh;
   background-color: var(--background);
-  color: var(--foreground);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
+/* Header Styles */
 .study-header {
-  background: white;
+  background: var(--card);
   border-bottom: 1px solid var(--border);
-  padding: 1rem 0;
+  padding: 1.5rem 0;
   flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .study-header-content {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 2rem;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 2rem;
+  display: flex;
   align-items: center;
+  gap: 2rem;
 }
 
 @media (max-width: 768px) {
   .study-header-content {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     gap: 1rem;
     text-align: center;
+  }
+  
+  .header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
   }
 }
 
@@ -1087,7 +1006,7 @@ Start building your prompt library today, and don't be afraid to try unconventio
   padding: 0.5rem 1rem;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: white;
+  background: var(--card);
   color: var(--muted-foreground);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1102,6 +1021,7 @@ Start building your prompt library today, and don't be afraid to try unconventio
 }
 
 .course-info {
+  flex: 1;
   text-align: center;
 }
 
@@ -1130,16 +1050,51 @@ Start building your prompt library today, and don't be afraid to try unconventio
   border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.subscription-badge {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.subscription-badge.badge-free {
+  background: rgba(156, 163, 175, 0.1);
+  color: #6b7280;
+  border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+.subscription-badge.badge-start {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.subscription-badge.badge-pro {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
 .progress-section {
-  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
 }
 
 .progress-info {
   display: flex;
-  justify-content: flex-end;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -1159,7 +1114,6 @@ Start building your prompt library today, and don't be afraid to try unconventio
   border-radius: 4px;
   overflow: hidden;
   width: 200px;
-  margin-left: auto;
 }
 
 .progress-fill {
@@ -1169,6 +1123,7 @@ Start building your prompt library today, and don't be afraid to try unconventio
   transition: width 0.3s ease;
 }
 
+/* Main Content Layout */
 .study-main {
   display: flex;
   flex: 1;
@@ -1176,7 +1131,7 @@ Start building your prompt library today, and don't be afraid to try unconventio
   background: var(--background);
 }
 
-/* MODERN SIDEBAR */
+/* Sidebar Styles */
 .study-sidebar {
   width: 320px;
   background: var(--card);
@@ -1206,60 +1161,47 @@ Start building your prompt library today, and don't be afraid to try unconventio
   padding: 1.5rem;
   border-bottom: 1px solid var(--border);
   background: var(--card);
-}
-
-.sidebar-progress {
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.lessons-list {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.lesson-item-modern {
   position: relative;
-  padding: 1rem;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+}
+
+.sidebar-title-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   margin-bottom: 0.5rem;
-  border: 2px solid transparent;
 }
 
-.lesson-item-modern:hover {
-  background: var(--muted);
-  border-color: rgba(139, 92, 246, 0.2);
+.sidebar-icon {
+  width: 2rem;
+  height: 2rem;
+  background: linear-gradient(to bottom right, var(--brand-purple), var(--brand-purple-dark));
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.lesson-item-modern.current {
-  background: var(--brand-purple-muted);
-  border-color: var(--brand-purple);
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
+.sidebar-icon .icon {
+  width: 1rem;
+  height: 1rem;
+  color: white;
 }
 
-.lesson-item-modern.completed {
-  background: rgba(34, 197, 94, 0.1);
-  border-color: rgba(34, 197, 94, 0.3);
+.sidebar-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin: 0;
+  color: var(--foreground);
 }
 
-.lesson-item-modern.locked {
-  opacity: 0.6;
-  cursor: not-allowed;
+.sidebar-subtitle {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  margin: 0;
 }
 
-.mobile-only {
-  display: none;
-}
-
-@media (max-width: 1023px) {
-  .mobile-only {
-    display: block;
-  }
-}
-
-.sidebar-toggle {
+.sidebar-close {
   position: absolute;
   top: 1rem;
   right: 1rem;
@@ -1268,9 +1210,207 @@ Start building your prompt library today, and don't be afraid to try unconventio
   border-radius: 6px;
   padding: 0.5rem;
   cursor: pointer;
+  display: none;
 }
 
-/* MODERN CONTENT */
+@media (max-width: 1023px) {
+  .sidebar-close.mobile-only {
+    display: block;
+  }
+}
+
+.sidebar-progress {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.progress-label {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+.progress-count {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.progress-track {
+  width: 100%;
+  background: var(--muted);
+  border-radius: 9999px;
+  height: 0.5rem;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(to right, var(--brand-purple), var(--brand-purple-light));
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.lessons-container {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.lessons-list {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.lesson-item {
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.lesson-item:hover:not(.lesson-locked) {
+  border-color: rgba(139, 92, 246, 0.5);
+  background: rgba(233, 235, 239, 0.5);
+}
+
+.lesson-item.lesson-current {
+  border-color: var(--brand-purple);
+  background: var(--brand-purple-muted);
+  box-shadow: 0 1px 3px rgba(139, 92, 246, 0.15);
+}
+
+.lesson-item.lesson-completed {
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.lesson-item.lesson-locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lesson-content {
+  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.lesson-status {
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+}
+
+.status-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.status-icon.completed {
+  color: var(--brand-purple);
+}
+
+.status-icon.locked {
+  color: var(--muted-foreground);
+}
+
+.status-icon.current {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  border: 2px solid var(--brand-purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.current-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--brand-purple);
+}
+
+.status-icon.default {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  border: 2px solid var(--muted-foreground);
+}
+
+.lesson-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.lesson-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.lesson-number {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+.current-badge {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  background: var(--brand-purple);
+  color: white;
+  border-radius: 9999px;
+}
+
+.lesson-title {
+  font-size: 0.875rem;
+  line-height: 1.25;
+  margin: 0 0 0.5rem 0;
+  color: var(--foreground);
+}
+
+.lesson-title.current-title {
+  color: var(--brand-purple);
+  font-weight: 500;
+}
+
+.lesson-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.time-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.workshop-badge {
+  padding: 0.125rem 0.5rem;
+  background: var(--muted);
+  border-radius: 4px;
+}
+
+.chevron-icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
+/* Main Content Styles */
 .study-content {
   flex: 1;
   overflow-y: auto;
@@ -1278,12 +1418,12 @@ Start building your prompt library today, and don't be afraid to try unconventio
   position: relative;
 }
 
-.sidebar-toggle.desktop-hidden {
+.mobile-menu-toggle {
   position: absolute;
   top: 1.5rem;
   left: 1.5rem;
   z-index: 10;
-  display: flex;
+  display: none;
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
@@ -1298,42 +1438,143 @@ Start building your prompt library today, and don't be afraid to try unconventio
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.sidebar-toggle.desktop-hidden:hover {
+.mobile-menu-toggle:hover {
   background: var(--muted);
   border-color: var(--brand-purple);
   color: var(--brand-purple);
 }
 
-.lesson-container-modern {
+@media (max-width: 1023px) {
+  .mobile-menu-toggle.desktop-hidden {
+    display: flex;
+  }
+}
+
+.content-container {
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
 }
 
 @media (max-width: 1023px) {
-  .lesson-container-modern {
+  .content-container {
     padding: 5rem 1.5rem 2rem;
   }
 }
 
-/* MODERN LESSON HEADER */
-.lesson-header-modern {
+/* Lesson Header */
+.lesson-header-section {
   margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border);
 }
 
-/* LEARNING OBJECTIVES */
-.learning-objectives-modern {
+.lesson-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.lesson-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: linear-gradient(to bottom right, var(--brand-purple), var(--brand-purple-dark));
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lesson-icon .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: white;
+}
+
+.lesson-title-content {
+  flex: 1;
+}
+
+.main-lesson-title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin: 0 0 0.25rem 0;
+  color: var(--foreground);
+}
+
+.lesson-meta-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.meta-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.lesson-description {
+  font-size: 1.125rem;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Learning Objectives */
+.objectives-section {
   margin-bottom: 2rem;
   padding: 1.5rem;
   background: var(--brand-purple-muted);
-  border-radius: 12px;
+  border-radius: 0.75rem;
   border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
-/* CONTENT */
-.lesson-content-modern {
+.objectives-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin: 0 0 1rem 0;
+  color: var(--brand-purple-dark);
+}
+
+.objectives-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.objective-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.objective-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: var(--brand-purple);
+  margin-top: 0.625rem;
+  flex-shrink: 0;
+}
+
+.objective-text {
+  color: var(--foreground);
+  line-height: 1.5;
+}
+
+/* Lesson Content */
+.lesson-content {
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -1343,50 +1584,79 @@ Start building your prompt library today, and don't be afraid to try unconventio
   line-height: 1.7;
   font-size: 1rem;
   color: var(--foreground);
+  white-space: pre-line;
+}
+
+.content-prose h1 {
+  font-size: 2.25em;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.content-prose h2 {
+  font-size: 1.8em;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  color: var(--foreground);
 }
 
 .content-prose h3 {
-  color: var(--foreground);
-  font-size: 1.25rem;
+  font-size: 1.5em;
+  margin-top: 1.2em;
+  margin-bottom: 0.4em;
   font-weight: 600;
-  margin: 1.5rem 0 1rem 0;
+  color: var(--foreground);
 }
 
 .content-prose h4 {
-  color: var(--foreground);
-  font-size: 1.125rem;
+  font-size: 1.25em;
+  margin-top: 1em;
+  margin-bottom: 0.3em;
   font-weight: 600;
-  margin: 1.25rem 0 0.75rem 0;
+  color: var(--foreground);
 }
 
 .content-prose p {
-  margin: 0 0 1rem 0;
+  margin-bottom: 1em;
+  line-height: 1.6;
 }
 
-.content-prose ul,
+.content-prose ul {
+  list-style-type: disc;
+  margin-left: 1.5em;
+  margin-bottom: 1em;
+}
+
 .content-prose ol {
-  margin: 1rem 0;
-  padding-left: 1.5rem;
+  list-style-type: decimal;
+  margin-left: 1.5em;
+  margin-bottom: 1em;
 }
 
 .content-prose li {
-  margin: 0.5rem 0;
+  margin-bottom: 0.5em;
 }
 
-/* RESOURCES */
-.resources-modern {
-  background: var(--muted);
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid var(--border);
+.content-prose strong {
+  font-weight: 700;
 }
 
-.resources-modern h3 {
-  margin: 0 0 1rem 0;
-  color: var(--foreground);
+.section-title {
   font-size: 1.125rem;
   font-weight: 600;
-  text-align: center;
+  margin: 0 0 1rem 0;
+  color: var(--foreground);
+}
+
+/* Resources Section */
+.resources-section {
+  background: var(--muted);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  border: 1px solid var(--border);
 }
 
 .resources-grid {
@@ -1395,105 +1665,191 @@ Start building your prompt library today, and don't be afraid to try unconventio
   gap: 1rem;
 }
 
-.resource-item-modern {
+.resource-item {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: white;
+  background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 0.5rem;
   text-decoration: none;
   color: var(--foreground);
   transition: all 0.2s ease;
 }
 
-.resource-item-modern:hover {
-  background: var(--muted);
+.resource-item:hover {
+  background: var(--accent);
   border-color: var(--brand-purple);
   color: var(--brand-purple);
 }
 
-.resource-size {
-  margin-left: auto;
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-  background: var(--muted);
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+.resource-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
 }
 
-/* QUIZ */
-.quiz-modern {
+.resource-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.resource-name {
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.resource-size {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+/* Quiz Section */
+.quiz-section {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 0.75rem;
   padding: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.quiz-modern h3 {
-  margin: 0 0 1.5rem 0;
-  color: var(--foreground);
-  font-size: 1.125rem;
-  font-weight: 600;
-  text-align: center;
+.quiz-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.question-item-modern h4 {
+.question-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.question-text {
   font-size: 1rem;
   font-weight: 500;
-  margin: 0 0 1rem 0;
+  margin: 0;
   color: var(--foreground);
   line-height: 1.5;
   padding: 1rem;
   background: var(--muted);
-  border-radius: 8px;
+  border-radius: 0.5rem;
 }
 
-.quiz-options-modern {
+.quiz-options {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  margin: 1rem 0;
 }
 
-.quiz-option-modern {
+.quiz-option {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 0.5rem;
   cursor: pointer;
   transition: all 0.2s ease;
   background: var(--card);
 }
 
-.quiz-option-modern:hover {
+.quiz-option:hover {
   background: var(--muted);
   border-color: var(--brand-purple);
 }
 
-.quiz-option-modern input[type="radio"] {
+.quiz-option.selected {
+  border-color: var(--brand-purple);
+  background: var(--brand-purple-muted);
+}
+
+.quiz-radio {
   margin: 0;
   width: 16px;
   height: 16px;
+  flex-shrink: 0;
 }
 
-.quiz-option-modern span {
+.option-text {
   flex: 1;
   color: var(--foreground);
   font-size: 0.875rem;
+  line-height: 1.4;
 }
 
-.quiz-submit-modern,
-.retry-quiz-modern {
-  display: block;
-  margin: 1rem auto 0;
+.quiz-submit-btn {
+  align-self: center;
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 0.5rem;
+  background: var(--brand-purple);
+  color: white;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 0.5rem;
+}
+
+.quiz-submit-btn:hover:not(:disabled) {
+  background: var(--brand-purple-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.quiz-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.quiz-result {
+  text-align: center;
+  padding: 1rem;
+}
+
+.quiz-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.quiz-feedback.correct {
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.quiz-feedback.incorrect {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.feedback-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+}
+
+.feedback-text {
+  font-size: 0.875rem;
+}
+
+.retry-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
   background: var(--brand-purple);
   color: white;
   font-weight: 500;
@@ -1502,50 +1858,14 @@ Start building your prompt library today, and don't be afraid to try unconventio
   transition: all 0.2s ease;
 }
 
-.quiz-submit-modern:hover,
-.retry-quiz-modern:hover {
+.retry-btn:hover {
   background: var(--brand-purple-dark);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
-.quiz-submit-modern:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.quiz-result-modern {
-  text-align: center;
-  padding: 1rem;
-}
-
-.quiz-feedback-modern {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  font-weight: 500;
-}
-
-.quiz-feedback-modern.correct {
-  background: rgba(34, 197, 94, 0.1);
-  color: #15803d;
-  border: 1px solid rgba(34, 197, 94, 0.3);
-}
-
-.quiz-feedback-modern.incorrect {
-  background: rgba(239, 68, 68, 0.1);
-  color: #dc2626;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-/* NAVIGATION */
-.lesson-navigation-modern {
+/* Navigation */
+.lesson-navigation {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1556,68 +1876,97 @@ Start building your prompt library today, and don't be afraid to try unconventio
 }
 
 @media (max-width: 640px) {
-  .lesson-navigation-modern {
+  .lesson-navigation {
     flex-direction: column;
     gap: 0.75rem;
   }
 }
 
-.nav-btn-modern {
+.nav-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 0.5rem;
   background: var(--card);
   color: var(--muted-foreground);
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
   font-size: 0.875rem;
+  text-decoration: none;
 }
 
-.nav-btn-modern:hover:not(:disabled) {
+.nav-btn:hover:not(:disabled) {
   background: var(--muted);
   border-color: var(--brand-purple);
   color: var(--brand-purple);
 }
 
-.nav-btn-modern:disabled {
+.nav-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.complete-btn-modern {
+.nav-btn.complete-btn {
   background: #22c55e;
   color: white;
   border-color: #22c55e;
 }
 
-.complete-btn-modern:hover {
+.nav-btn.complete-btn:hover {
   background: #16a34a;
   color: white;
 }
 
-.next-btn {
+.nav-btn.next-btn {
   background: var(--brand-purple);
   color: white;
   border-color: var(--brand-purple);
 }
 
-.next-btn:hover:not(:disabled) {
+.nav-btn.next-btn:hover:not(:disabled) {
   background: var(--brand-purple-dark);
   color: white;
 }
 
+.nav-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.prev-icon {
+  transform: rotate(180deg);
+}
+
 @media (max-width: 640px) {
-  .nav-btn-modern {
+  .nav-btn {
     width: 100%;
     justify-content: center;
   }
 }
 
-/* Responsive adjustments */
+/* Mobile Overlay */
+.mobile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 40;
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .mobile-overlay {
+    display: block;
+  }
+}
+
+/* Responsive Adjustments */
 @media (max-width: 768px) {
   .study-header-content {
     gap: 0.75rem;
@@ -1627,61 +1976,148 @@ Start building your prompt library today, and don't be afraid to try unconventio
     font-size: 1.125rem;
   }
 
-  .progress-section {
-    min-width: auto;
+  .main-lesson-title {
+    font-size: 1.25rem;
+  }
+
+  .lesson-meta-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .content-container {
+    padding: 4rem 1rem 2rem;
+  }
+
+  .objectives-section,
+  .resources-section,
+  .quiz-section {
+    padding: 1rem;
+  }
+
+  .resources-grid {
+    grid-template-columns: 1fr;
   }
 }
-/* Prose styles for markdown content */
-.prose {
-  color: var(--foreground);
-  font-family: 'Inter', sans-serif; /* Assuming Inter font */
-}
-.prose h1 { font-size: 2.25em; margin-top: 1.5em; margin-bottom: 0.5em; font-weight: 600; }
-.prose h2 { font-size: 1.8em; margin-top: 1.5em; margin-bottom: 0.5em; font-weight: 600; }
-.prose h3 { font-size: 1.5em; margin-top: 1.2em; margin-bottom: 0.4em; font-weight: 600; }
-.prose h4 { font-size: 1.25em; margin-top: 1em; margin-bottom: 0.3em; font-weight: 600; }
-.prose p { margin-bottom: 1em; line-height: 1.6; }
-.prose ul { list-style-type: disc; margin-left: 1.5em; margin-bottom: 1em; }
-.prose ol { list-style-type: decimal; margin-left: 1.5em; margin-bottom: 1em; }
-.prose li { margin-bottom: 0.5em; }
-.prose strong { font-weight: 700; }
 
-.prose-gray {
-  color: var(--foreground); /* Use foreground color */
-}
+@media (max-width: 480px) {
+  .study-header {
+    padding: 1rem 0;
+  }
 
-/* Ensure consistent typography as defined in globals.css */
-body {
-  font-family: 'Inter', sans-serif; /* Or your preferred font */
-}
+  .study-header-content {
+    padding: 0 1rem;
+  }
 
-h1 {
-  font-size: var(--text-2xl);
-  font-weight: var(--font-weight-medium);
-  line-height: 1.5;
-}
+  .back-button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
 
-h2 {
-  font-size: var(--text-xl);
-  font-weight: var(--font-weight-medium);
-  line-height: 1.5;
-}
+  .course-title {
+    font-size: 1rem;
+  }
 
-h3 {
-  font-size: var(--text-lg);
-  font-weight: var(--font-weight-medium);
-  line-height: 1.5;
-}
+  .progress-bar {
+    width: 150px;
+  }
 
-h4 {
-  font-size: var(--text-base);
-  font-weight: var(--font-weight-medium);
-  line-height: 1.5;
+  .content-container {
+    padding: 3.5rem 0.75rem 1.5rem;
+  }
+
+  .lesson-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .main-lesson-title {
+    font-size: 1.125rem;
+  }
+
+  .mobile-menu-toggle {
+    top: 1rem;
+    left: 1rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+  }
 }
 
-p {
-  font-size: var(--text-base);
-  font-weight: var(--font-weight-normal);
-  line-height: 1.5;
+/* Utility Classes */
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .mobile-only {
+    display: block;
+  }
+}
+
+.desktop-hidden {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .desktop-hidden {
+    display: flex;
+  }
+}
+
+/* Focus States for Accessibility */
+.back-button:focus,
+.nav-btn:focus,
+.quiz-submit-btn:focus,
+.retry-btn:focus,
+.mobile-menu-toggle:focus,
+.sidebar-close:focus {
+  outline: 2px solid var(--brand-purple);
+  outline-offset: 2px;
+}
+
+.lesson-item:focus {
+  outline: 2px solid var(--brand-purple);
+  outline-offset: 2px;
+}
+
+.quiz-option:focus-within {
+  outline: 2px solid var(--brand-purple);
+  outline-offset: 2px;
+}
+
+/* Smooth Scrolling */
+.lessons-container,
+.study-content {
+  scroll-behavior: smooth;
+}
+
+/* Loading States */
+.lesson-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: var(--muted-foreground);
+}
+
+/* Print Styles */
+@media print {
+  .study-header,
+  .study-sidebar,
+  .lesson-navigation,
+  .mobile-menu-toggle {
+    display: none;
+  }
+
+  .study-content {
+    overflow: visible;
+  }
+
+  .content-container {
+    max-width: none;
+    padding: 1rem;
+  }
 }
 </style>
