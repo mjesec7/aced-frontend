@@ -53,7 +53,6 @@
           </button>
         </div>
 
-        <!-- Progress in Sidebar -->
         <div class="sidebar-progress">
           <div class="flex items-center justify-between mb-2">
             <span class="text-sm text-muted-foreground">Прогресс</span>
@@ -143,7 +142,6 @@
         </button>
 
         <div v-if="currentLesson" class="lesson-container-modern">
-          <!-- Modern Lesson Header -->
           <div class="lesson-header-modern">
             <div class="flex items-center gap-3 mb-4">
               <div class="w-10 h-10 bg-gradient-to-br from-brand-purple to-brand-purple-dark rounded-lg flex items-center justify-center">
@@ -169,7 +167,6 @@
             <p class="text-muted-foreground text-lg">{{ currentLesson.description }}</p>
           </div>
 
-          <!-- Learning Objectives -->
           <div v-if="currentLesson.objectives && currentLesson.objectives.length" class="learning-objectives-modern">
             <h2 class="text-lg font-medium mb-4 text-brand-purple-dark">Цели урока</h2>
             <ul class="space-y-2">
@@ -180,11 +177,9 @@
             </ul>
           </div>
 
-          <!-- Content -->
           <div class="lesson-content-modern">
             <div class="content-prose" v-html="currentLesson.content"></div>
 
-            <!-- Resources Section -->
             <div v-if="currentLesson.resources && currentLesson.resources.length" class="resources-modern">
               <h3>Материалы урока</h3>
               <div class="resources-grid">
@@ -206,7 +201,6 @@
               </div>
             </div>
 
-            <!-- Quiz Section -->
             <div v-if="currentLesson.quiz" class="quiz-modern">
               <h3>Проверьте себя</h3>
               <div class="quiz-container-modern">
@@ -259,7 +253,6 @@
             </div>
           </div>
 
-          <!-- Navigation -->
           <div class="lesson-navigation-modern">
             <button
               @click="previousLesson"
@@ -2641,6 +2634,7 @@ export default {
   color: var(--color-foreground);
   font-size: 1.125rem;
   font-weight: 600;
+  text-align: center;
 }
 
 .resources-grid {
