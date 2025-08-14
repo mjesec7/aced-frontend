@@ -1,306 +1,243 @@
 <template>
-  <div class="study-page">
-    <!-- Modern Header -->
-    <header class="study-header">
-      <div class="study-header-content">
-        <button @click="goBackToCourses" class="back-button">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="m15 18-6-6 6-6"/>
+  <div class="lesson-player">
+    <div class="sidebar">
+      <!-- Course Header -->
+      <div class="course-header">
+        <div class="course-icon">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.431m0 0a2.768 2.768 0 01-1.378-2.348v-2.185m1.378 2.348A2.768 2.768 0 0013.378 17.5v-2.185m-1.378 2.348a2.768 2.768 0 01-1.378-2.348v-2.185m1.378 2.348A2.768 2.768 0 0013.378 17.5v-2.185"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
           </svg>
-          <span>Назад к курсам</span>
-        </button>
-
-        <div class="course-info">
-          <h1 class="course-title">{{ course?.title || 'Загрузка...' }}</h1>
-          <div class="course-meta">
-            <span class="course-category">{{ course?.category }}</span>
-            <span class="course-level">{{ course?.level }}</span>
-          </div>
         </div>
+        <div>
+          <h1 class="course-title">{{ course?.title || 'AI Video Mastery' }}</h1>
+          <p class="course-subtitle">Complete Course</p>
+        </div>
+      </div>
 
-        <div class="header-right">
-          <span class="subscription-badge" :class="subscriptionClass">
-            {{ subscriptionText }}
-          </span>
-          <div class="progress-section">
-            <div class="progress-info">
-              <span class="progress-text">Прогресс: {{ completedLessons }}/{{ totalLessons }}</span>
-              <span class="progress-percent">{{ progressPercent }}%</span>
+      <!-- Progress Section -->
+      <div class="progress-section">
+        <div class="progress-info">
+          <span class="progress-label">Progress</span>
+          <span class="progress-count">{{ completedLessons }}/{{ totalLessons }} Complete</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
+        </div>
+      </div>
+
+      <!-- Lessons List -->
+      <div class="lessons-list">
+        <div
+          v-for="(lesson, index) in lessons"
+          :key="lesson.id"
+          @click="selectLesson(index)"
+          :class="[
+            'lesson-item',
+            {
+              'lesson-completed': lesson.completed,
+              'lesson-current': currentLessonIndex === index,
+              'lesson-locked': lesson.locked
+            }
+          ]"
+        >
+          <div class="lesson-status">
+            <!-- Completed Icon -->
+            <div v-if="lesson.completed" class="status-icon completed">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
             </div>
-            <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
+            <!-- Current Lesson Dot -->
+            <div v-else-if="currentLessonIndex === index" class="status-icon current">
+              <div class="current-dot"></div>
             </div>
+            <!-- Default Empty Circle -->
+            <div v-else class="status-icon default"></div>
+          </div>
+
+          <div class="lesson-content">
+            <div class="lesson-header">
+              <span class="lesson-number">{{ String(index + 1).padStart(2, '0') }}</span>
+              <span v-if="currentLessonIndex === index" class="current-badge">Current</span>
+            </div>
+            <h3 class="lesson-title">{{ lesson.title }}</h3>
+            <div class="lesson-meta">
+              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12,6 12,12 16,14"/>
+              </svg>
+              <span>{{ lesson.readingTime }}</span>
+            </div>
+          </div>
+
+          <div class="lesson-arrow">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <polyline points="9,18 15,12 9,6"/>
+            </svg>
           </div>
         </div>
       </div>
-    </header>
+    </div>
 
-    <div class="study-main">
-      <!-- Modern Sidebar -->
-      <aside class="study-sidebar" :class="{ 'sidebar-open': sidebarOpen }">
-        <!-- Sidebar Header -->
-        <div class="sidebar-header">
-          <div class="sidebar-title-section">
-            <div class="sidebar-icon">
-              <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.431m0 0a2.768 2.768 0 01-1.378-2.348v-2.185m1.378 2.348A2.768 2.768 0 0013.378 17.5v-2.185m-1.378 2.348a2.768 2.768 0 01-1.378-2.348v-2.185m1.378 2.348A2.768 2.768 0 0013.378 17.5v-2.185"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
-              </svg>
-            </div>
-            <div class="sidebar-title-content">
-              <h3 class="sidebar-title">{{ course?.title || 'Курс' }}</h3>
-              <p class="sidebar-subtitle">Полный курс</p>
-            </div>
-          </div>
-          <button @click="toggleSidebar" class="sidebar-close mobile-only">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6 6 18"/>
-              <path d="m6 6 12 12"/>
+    <!-- Main Content -->
+    <div class="main-content">
+      <div v-if="currentLesson" class="content-wrapper">
+        <!-- Lesson Header -->
+        <div class="lesson-header-section">
+          <div class="lesson-icon">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10,9 9,9 8,9"/>
             </svg>
-          </button>
-        </div>
-
-        <!-- Sidebar Progress -->
-        <div class="sidebar-progress">
-          <div class="progress-header">
-            <span class="progress-label">Прогресс</span>
-            <span class="progress-count">{{ completedLessons }}/{{ totalLessons }} Завершено</span>
           </div>
-          <div class="progress-track">
-            <div class="progress-bar-fill" :style="{ width: progressPercent + '%' }"></div>
-          </div>
-        </div>
-
-        <!-- Lessons List -->
-        <div class="lessons-container">
-          <div class="lessons-list">
-            <div
-              v-for="(lesson, index) in lessons"
-              :key="lesson.id"
-              @click="selectLesson(index)"
-              :class="[
-                'lesson-item',
-                {
-                  'lesson-current': currentLessonIndex === index,
-                  'lesson-completed': lesson.completed,
-                  'lesson-locked': lesson.locked
-                }
-              ]"
-            >
-              <div class="lesson-content">
-                <div class="lesson-status">
-                  <!-- Completed Icon -->
-                  <svg v-if="lesson.completed" class="status-icon completed" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                  <!-- Locked Icon -->
-                  <svg v-else-if="lesson.locked" class="status-icon locked" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4a2 2 0 002 2zm0-11V9a3 3 0 016 0v2"></path>
-                  </svg>
-                  <!-- Current Lesson -->
-                  <div v-else-if="currentLessonIndex === index" class="status-icon current">
-                    <div class="current-dot"></div>
-                  </div>
-                  <!-- Default -->
-                  <div v-else class="status-icon default"></div>
-                </div>
-
-                <div class="lesson-details">
-                  <div class="lesson-header">
-                    <span class="lesson-number">{{ String(index + 1).padStart(2, '0') }}</span>
-                    <span v-if="currentLessonIndex === index" class="current-badge">Текущий</span>
-                  </div>
-                  <h3 class="lesson-title" :class="{ 'current-title': currentLessonIndex === index }">
-                    {{ lesson.title }}
-                  </h3>
-                  <div class="lesson-meta">
-                    <svg class="time-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <span class="reading-time">{{ lesson.readingTime }}</span>
-                    <span v-if="lesson.type === 'workshop'" class="workshop-badge">Практика</span>
-                  </div>
-                </div>
-
-                <svg v-if="!lesson.locked" class="chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          <div class="lesson-title-section">
+            <h1 class="main-lesson-title">{{ currentLesson.title }}</h1>
+            <div class="lesson-meta-info">
+              <div class="meta-item">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12,6 12,12 16,14"/>
                 </svg>
+                <span>{{ currentLesson.readingTime }}</span>
+              </div>
+              <div class="meta-item">
+                <span>Lesson {{ currentLessonIndex + 1 }} of {{ totalLessons }}</span>
               </div>
             </div>
           </div>
         </div>
-      </aside>
 
-      <!-- Main Content -->
-      <main class="study-content">
-        <!-- Mobile Menu Toggle -->
-        <button @click="toggleSidebar" class="mobile-menu-toggle desktop-hidden">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <line x1="3" y1="12" x2="21" y2="12"/>
-            <line x1="3" y1="18" x2="21" y2="18"/>
-          </svg>
-          <span>Содержание</span>
-        </button>
+        <p v-if="currentLesson.description" class="lesson-description">{{ currentLesson.description }}</p>
 
-        <div v-if="currentLesson" class="content-container">
-          <!-- Lesson Header -->
-          <div class="lesson-header-section">
-            <div class="lesson-title-row">
-              <div class="lesson-icon">
-                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        <!-- Learning Objectives -->
+        <div v-if="currentLesson.objectives && currentLesson.objectives.length" class="objectives-section">
+          <h2 class="objectives-title">Learning Objectives</h2>
+          <ul class="objectives-list">
+            <li v-for="(objective, index) in currentLesson.objectives" :key="index" class="objective-item">
+              <div class="objective-bullet"></div>
+              <span>{{ objective }}</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Lesson Content -->
+        <div class="lesson-content-section">
+          <div class="content-prose" v-html="currentLesson.content"></div>
+          
+          <!-- Resources Section -->
+          <div v-if="currentLesson.resources && currentLesson.resources.length" class="resources-section">
+            <h3>Lesson Resources</h3>
+            <div class="resources-grid">
+              <a
+                v-for="resource in currentLesson.resources"
+                :key="resource.id"
+                :href="resource.url"
+                download
+                class="resource-item"
+              >
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7,10 12,15 17,10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
                 </svg>
-              </div>
-              <div class="lesson-title-content">
-                <h1 class="main-lesson-title">{{ currentLesson.title }}</h1>
-                <div class="lesson-meta-info">
-                  <span class="meta-item">
-                    <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    {{ currentLesson.readingTime }}
-                  </span>
-                  <span class="meta-item">Урок {{ currentLessonIndex + 1 }} из {{ totalLessons }}</span>
+                <div class="resource-details">
+                  <span class="resource-name">{{ resource.name }}</span>
+                  <span class="resource-size">{{ resource.size }}</span>
                 </div>
-              </div>
+              </a>
             </div>
-            <p v-if="currentLesson.description" class="lesson-description">{{ currentLesson.description }}</p>
           </div>
 
-          <!-- Learning Objectives -->
-          <div v-if="currentLesson.objectives && currentLesson.objectives.length" class="objectives-section">
-            <h2 class="objectives-title">Цели урока</h2>
-            <ul class="objectives-list">
-              <li v-for="(objective, index) in currentLesson.objectives" :key="index" class="objective-item">
-                <div class="objective-dot"></div>
-                <span class="objective-text">{{ objective }}</span>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Lesson Content -->
-          <div class="lesson-content">
-            <div class="content-prose" v-html="currentLesson.content"></div>
-            
-            <!-- Resources Section -->
-            <div v-if="currentLesson.resources && currentLesson.resources.length" class="resources-section">
-              <h3 class="section-title">Материалы урока</h3>
-              <div class="resources-grid">
-                <a
-                  v-for="resource in currentLesson.resources"
-                  :key="resource.id"
-                  :href="resource.url"
-                  download
-                  class="resource-item"
-                >
-                  <svg class="resource-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
-                  <div class="resource-details">
-                    <span class="resource-name">{{ resource.name }}</span>
-                    <span class="resource-size">{{ resource.size }}</span>
-                  </div>
-                </a>
-              </div>
-            </div>
-
-            <!-- Quiz Section -->
-            <div v-if="currentLesson.quiz" class="quiz-section">
-              <h3 class="section-title">Проверьте себя</h3>
-              <div class="quiz-container">
-                <div v-if="!quizCompleted" class="quiz-questions">
-                  <div class="question-card">
-                    <h4 class="question-text">{{ currentLesson.quiz.question }}</h4>
-                    <div class="quiz-options">
-                      <label
-                        v-for="(option, index) in currentLesson.quiz.options"
-                        :key="index"
-                        class="quiz-option"
-                        :class="{ 'selected': selectedAnswer === index }"
-                      >
-                        <input
-                          type="radio"
-                          :name="'quiz-' + currentLesson.id"
-                          :value="index"
-                          v-model="selectedAnswer"
-                          class="quiz-radio"
-                        />
-                        <span class="option-text">{{ option }}</span>
-                      </label>
-                    </div>
-                    <button
-                      @click="submitQuiz"
-                      :disabled="selectedAnswer === null"
-                      class="quiz-submit-btn"
+          <!-- Quiz Section -->
+          <div v-if="currentLesson.quiz" class="quiz-section">
+            <h3>Test Your Knowledge</h3>
+            <div class="quiz-container">
+              <div v-if="!quizCompleted" class="quiz-questions">
+                <div class="question-card">
+                  <h4>{{ currentLesson.quiz.question }}</h4>
+                  <div class="quiz-options">
+                    <label
+                      v-for="(option, index) in currentLesson.quiz.options"
+                      :key="index"
+                      class="quiz-option"
+                      :class="{ 'selected': selectedAnswer === index }"
                     >
-                      Проверить ответ
-                    </button>
+                      <input
+                        type="radio"
+                        :name="'quiz-' + currentLesson.id"
+                        :value="index"
+                        v-model="selectedAnswer"
+                      />
+                      <span>{{ option }}</span>
+                    </label>
                   </div>
-                </div>
-                <div v-else class="quiz-result">
-                  <div class="quiz-feedback" :class="{ 'correct': quizCorrect, 'incorrect': !quizCorrect }">
-                    <svg v-if="quizCorrect" class="feedback-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 11.08V12a10 10 0 1 1-5.93-8.08"/>
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M22 4L12 14.01l-3-3"/>
-                    </svg>
-                    <svg v-else class="feedback-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="10"/>
-                      <line x1="15" y1="9" x2="9" y2="15"/>
-                      <line x1="9" y1="9" x2="15" y2="15"/>
-                    </svg>
-                    <span class="feedback-text">
-                      {{ quizCorrect ? 'Правильно! Отличная работа!' : 'Неправильно. Попробуйте еще раз!' }}
-                    </span>
-                  </div>
-                  <button v-if="!quizCorrect" @click="quizCompleted = false" class="retry-btn">
-                    Попробовать снова
+                  <button
+                    @click="submitQuiz"
+                    :disabled="selectedAnswer === null"
+                    class="quiz-submit-btn"
+                  >
+                    Check Answer
                   </button>
                 </div>
               </div>
+              <div v-else class="quiz-result">
+                <div class="quiz-feedback" :class="{ 'correct': quizCorrect, 'incorrect': !quizCorrect }">
+                  <svg v-if="quizCorrect" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <svg v-else width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                  </svg>
+                  <span>{{ quizCorrect ? 'Correct! Great work!' : 'Incorrect. Try again!' }}</span>
+                </div>
+                <button v-if="!quizCorrect" @click="quizCompleted = false" class="retry-btn">
+                  Try Again
+                </button>
+              </div>
             </div>
           </div>
-
-          <!-- Navigation -->
-          <div class="lesson-navigation">
-            <button
-              @click="previousLesson"
-              :disabled="currentLessonIndex === 0"
-              class="nav-btn prev-btn"
-            >
-              <svg class="nav-icon prev-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-              </svg>
-              Предыдущий урок
-            </button>
-            
-            <button
-              v-if="currentLesson && !currentLesson.completed && (!currentLesson.quiz || (currentLesson.quiz && quizCorrect))"
-              @click="markLessonCompleted"
-              class="nav-btn complete-btn"
-            >
-              Завершить урок
-            </button>
-            
-            <button
-              @click="nextLesson"
-              :disabled="currentLessonIndex === lessons.length - 1 || (lessons[currentLessonIndex + 1] && lessons[currentLessonIndex + 1].locked)"
-              class="nav-btn next-btn"
-            >
-              Следующий урок
-              <svg class="nav-icon next-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-              </svg>
-            </button>
-          </div>
         </div>
-      </main>
-    </div>
 
-    <!-- Mobile Overlay -->
-    <div v-if="sidebarOpen" @click="toggleSidebar" class="mobile-overlay"></div>
+        <!-- Navigation -->
+        <div class="lesson-navigation">
+          <button
+            @click="previousLesson"
+            :disabled="currentLessonIndex === 0"
+            class="nav-btn prev-btn"
+          >
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <polyline points="15,18 9,12 15,6"/>
+            </svg>
+            Previous Lesson
+          </button>
+          
+          <button
+            v-if="currentLesson && !currentLesson.completed && (!currentLesson.quiz || (currentLesson.quiz && quizCorrect))"
+            @click="markLessonCompleted"
+            class="complete-btn"
+          >
+            Complete Lesson
+          </button>
+          
+          <button
+            @click="nextLesson"
+            :disabled="currentLessonIndex === lessons.length - 1 || (lessons[currentLessonIndex + 1] && lessons[currentLessonIndex + 1].locked)"
+            class="nav-btn next-btn"
+          >
+            Next Lesson
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <polyline points="9,6 15,12 9,18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -317,7 +254,7 @@ export default {
   data() {
     return {
       lessons: [],
-      currentLessonIndex: 0,
+      currentLessonIndex: 2, // Start at lesson 3 (index 2) to match the image
       currentLesson: null,
       sidebarOpen: false,
       selectedAnswer: null,
@@ -328,20 +265,6 @@ export default {
   },
 
   computed: {
-    subscriptionClass() {
-      const status = this.course?.subscriptionPlan || 'free';
-      if (status === 'pro') return 'badge-pro';
-      if (status === 'start') return 'badge-start';
-      return 'badge-free';
-    },
-    subscriptionText() {
-      const status = this.course?.subscriptionPlan || 'free';
-      switch (status) {
-        case 'pro': return 'Pro подписка';
-        case 'start': return 'Start подписка';
-        default: return 'Бесплатный доступ';
-      }
-    },
     completedLessons() {
       return this.lessons.filter(lesson => lesson.completed).length;
     },
@@ -404,7 +327,7 @@ Runway ML is at the forefront of AI-powered video creation, offering cutting-edg
 Runway ML is an AI research company that develops next-generation creative tools. Their platform offers various AI models for:
 
 • **Text-to-video generation** - Create videos from written descriptions
-• **Image-to-video conversion** - Animate static images into dynamic videos  
+• **Image-to-video conversion** - Animate static images into dynamic videos
 • **Video editing and enhancement** - Modify existing video content with AI
 • **Style transfer and effects** - Apply artistic styles and visual effects
 
@@ -432,7 +355,7 @@ Runway offers several powerful AI models, each designed for specific use cases:
 - Capable of generating 4-second clips at high quality
 - Best for: Original content creation, concept visualization
 
-**Gen-1: Video-to-Video Transformation**  
+**Gen-1: Video-to-Video Transformation**
 - Transforms existing videos using text prompts
 - Maintains original video structure while changing style/content
 - Excellent for stylistic transformations
@@ -448,242 +371,25 @@ Runway offers several powerful AI models, each designed for specific use cases:
 - Paint motion directions directly onto your video
 - Control how different parts of the scene move
 - Create complex animations with simple brush strokes
-- Best for: Adding specific movements, animation control
-
-### 3. Generation Controls
-
-Fine-tune your creations with comprehensive controls:
-
-**Prompt Engineering Tools**
-- Text prompt input with syntax highlighting
-- Suggested keywords and modifiers
-- Prompt history and favorites system
-- Template prompts for different scenarios
-
-**Style and Aesthetic Controls**
-- Preset style options (cinematic, documentary, artistic)
-- Custom style references through image uploads
-- Lighting and color temperature adjustments
-- Camera movement presets (static, zoom, pan, tilt)
-
-**Technical Parameters**
-- Duration settings (1-4 seconds for Gen-2)
-- Aspect ratio selection (16:9, 9:16, 1:1)
-- Resolution options (720p, 1080p)
-- Frame rate control (24fps, 30fps)
-
-**Seed Management**
-- Consistency controls for reproducible results
-- Random seed generation for variations
-- Seed locking for iterative improvements
-- Batch generation with seed variations
-
-## Your First Video Generation
-
-Creating your first AI video is an exciting milestone. Here's a step-by-step approach:
-
-### Step 1: Write a Clear Prompt
-
-Start with a descriptive, specific prompt. Instead of vague descriptions, use vivid, concrete language:
-
-**Good Example:**
-"A serene mountain lake at sunrise, with mist rising from the water and birds flying overhead, cinematic wide shot"
-
-**Why this works:**
-- **Specific setting**: Mountain lake (not just "nature")
-- **Time context**: Sunrise (establishes lighting)
-- **Atmospheric details**: Mist rising (adds visual interest)  
-- **Movement elements**: Birds flying (provides motion)
-- **Camera instruction**: Wide shot (guides framing)
-
-**Avoid these common mistakes:**
-- "Beautiful nature scene" (too vague)
-- "Something cool with water" (lacks specificity)
-- "Make it look good" (no actionable direction)
-
-### Step 2: Set Parameters
-
-**Duration Selection**
-- **1-2 seconds**: Good for testing prompts and quick iterations
-- **4 seconds**: Standard length, provides enough time for movement
-- **Recommendation**: Start with 4 seconds for beginners
-
-**Aspect Ratio Guidelines**
-- **16:9**: Standard video format, great for most content
-- **9:16**: Vertical format for social media (TikTok, Instagram Stories)
-- **1:1**: Square format for Instagram posts and thumbnails
-
-**Style Considerations**
-- **Default/Natural**: Best starting point for most projects
-- **Cinematic**: Adds film-like qualities and color grading
-- **Documentary**: More realistic, less stylized approach
-
-### Step 3: Generate and Iterate
-
-**Initial Generation**
-1. Click the generate button and wait for processing (typically 1-3 minutes)
-2. Review the result objectively - focus on whether it matches your vision
-3. Note any unexpected elements or missing components
-
-**Refinement Process**
-- **If motion is unclear**: Add specific movement descriptions ("slow zoom in", "gentle panning left")
-- **If style doesn't match**: Try adding style modifiers ("photorealistic", "artistic", "vintage film")
-- **If elements are missing**: Be more explicit about important details
-
-**Iteration Strategy**
-- Make one change at a time to understand what each modification does
-- Keep notes on successful prompts and settings
-- Build a personal library of effective combinations
-
-## Best Practices for Success
-
-### Prompt Writing Guidelines
-
-**Be Specific About Visuals**
-- Use concrete nouns instead of abstract concepts
-- Include color, lighting, and atmospheric details
-- Specify camera angles and movements when relevant
-
-**Structure Your Prompts Logically**
-- Subject + Setting + Action + Style + Camera
-- Example: "A red sports car (subject) on a mountain road (setting) driving through curves (action) in cinematic style (style) with a tracking shot (camera)"
-
-**Use Effective Modifiers**
-- **Lighting**: "golden hour", "dramatic shadows", "soft natural light"
-- **Movement**: "slow motion", "time-lapse", "smooth tracking"
-- **Style**: "photorealistic", "documentary style", "artistic interpretation"
-
-### Technical Optimization
-
-**Camera Movement Vocabulary**
-- **Static shot**: No camera movement, fixed perspective
-- **Slow zoom in/out**: Gradual focal length changes
-- **Panning left/right**: Horizontal camera movement
-- **Tilting up/down**: Vertical camera movement
-- **Tracking shot**: Camera follows subject movement
-
-**Lighting and Mood**
-- **Golden hour**: Warm, soft lighting during sunrise/sunset
-- **Blue hour**: Cool, ethereal lighting just after sunset
-- **Dramatic lighting**: High contrast with strong shadows
-- **Soft natural light**: Even, diffused illumination
-
-### Building Your Prompt Library
-
-**Category Organization**
-- **Nature scenes**: Landscapes, weather, animals
-- **Urban environments**: Cities, architecture, transportation  
-- **People and portraits**: Characters, emotions, actions
-- **Abstract concepts**: Artistic interpretations, surreal scenes
-
-**Documentation Strategy**
-- Save successful prompts with their settings
-- Note which models work best for different types of content
-- Track seed numbers for consistent results
-- Record common issues and their solutions
-
-## Common Challenges and Solutions
-
-### Challenge 1: Inconsistent Results
-
-**Problem**: Same prompt produces vastly different outputs
-**Solutions**:
-- Use seed values to maintain consistency across generations
-- Be more specific in your prompt descriptions
-- Try generating multiple versions and select the best one
-- Consider using reference images for style consistency
-
-### Challenge 2: Unclear or Unwanted Motion
-
-**Problem**: Objects move in unexpected ways or motion looks unnatural
-**Solutions**:
-- Be explicit about movement in your prompts ("slow zoom in", "panning left")
-- Use Motion Brush tool for precise movement control
-- Try different prompt phrasings for the same concept
-- Consider the natural physics of your scene
-
-### Challenge 3: Quality and Detail Issues
-
-**Problem**: Generated videos lack detail or appear blurry
-**Solutions**:
-- Ensure your prompts are detailed and well-structured
-- Use higher resolution settings when available
-- Try different style modifiers to enhance quality
-- Consider breaking complex scenes into simpler components
-
-### Challenge 4: Style Consistency Across Generations
-
-**Problem**: Multiple videos for a project don't match visually
-**Solutions**:
-- Use the same seed value across related generations
-- Maintain consistent prompt structure and modifiers
-- Create a style guide document for your project
-- Use reference images to maintain visual continuity
-
-## Advanced Techniques Preview
-
-As you become comfortable with basic generation, you'll want to explore more sophisticated approaches:
-
-### Sequence Planning
-- Breaking longer narratives into connected 4-second segments
-- Maintaining character and style consistency across clips
-- Planning transitions between generated segments
-
-### Style Transfer Applications
-- Using Gen-1 to transform existing footage
-- Applying artistic styles to real-world videos
-- Creating unique visual aesthetics for branded content
-
-### Combining with Traditional Editing
-- Integrating AI-generated clips with conventional footage
-- Using AI for specific shots that would be expensive to film
-- Enhancing practical effects with AI-generated elements
-
-## Next Steps in Your Journey
-
-In our upcoming lesson on "Text-to-Video Fundamentals," we'll dive deeper into prompt engineering techniques that will help you create more sophisticated and controlled AI videos. We'll explore:
-
-- **Advanced prompt syntax** and modifiers
-- **Combining multiple concepts** in single prompts  
-- **Creating narrative sequences** from individual generations
-- **Professional workflow** integration strategies
-
-### Immediate Action Items
-
-Before moving to the next lesson:
-
-1. **Practice with 5 different prompts** using various styles and subjects
-2. **Document your results** in a simple spreadsheet or notebook
-3. **Experiment with different aspect ratios** for the same prompt
-4. **Try both simple and complex descriptions** to see how detail affects output
-
-### Building Your Skills
-
-Remember that mastering AI video generation is an iterative process. Each generation teaches you something new about how the AI interprets language and creates visual content. The key is consistent practice combined with systematic experimentation.
-
-Start building your prompt library today, and don't be afraid to try unconventional descriptions – some of the most creative results come from unexpected prompt combinations!
-
----
-
-**Coming Up Next:** In "Text-to-Video Fundamentals," we'll explore advanced prompting strategies and learn how to create more complex, narrative-driven content that tells compelling visual stories.`,
+- Best for: Adding specific movements, animation control`
       };
-      return contentMap[lessonId] || 'Содержимое урока не найдено.';
+      return contentMap[lessonId] || 'Lesson content not found.';
     },
     
     getLessonDescription(lessonId) {
       const descriptionMap = {
-        3: "Изучите основы Runway ML, одной из самых мощных платформ для создания видео с искусственным интеллектом, доступных на сегодняшний день."
+        3: "Learn the fundamentals of Runway ML, one of the most powerful AI video generation platforms available today."
       };
-      return descriptionMap[lessonId] || 'Описание урока не найдено.';
+      return descriptionMap[lessonId] || null;
     },
     
     getLessonObjectives(lessonId) {
       const objectivesMap = {
         3: [
-          "Понять интерфейс и навигацию Runway ML",
-          "Изучить базовое создание видео из текста",
-          "Исследовать различные доступные видеомодели",
-          "Попрактиковаться в создании своего первого видео с ИИ"
+          "Understand Runway ML interface and navigation",
+          "Learn basic text-to-video generation",
+          "Explore different video models available",
+          "Practice with your first AI video creation"
         ]
       };
       return objectivesMap[lessonId] || [];
@@ -693,112 +399,112 @@ Start building your prompt library today, and don't be afraid to try unconventio
       return [
         {
           id: 1,
-          title: "Введение в создание AI-видео",
-          readingTime: "8 мин чтения",
+          title: "Introduction to AI Video Creation",
+          readingTime: "8 min read",
           completed: true,
           locked: false,
           type: "text"
         },
         {
           id: 2,
-          title: "Понимание платформ AI-видео",
-          readingTime: "12 мин чтения",
+          title: "Understanding AI Video Platforms",
+          readingTime: "12 min read",
           completed: true,
           locked: false,
           type: "text"
         },
         {
           id: 3,
-          title: "Runway ML: Начало работы",
-          readingTime: "10 мин чтения",
+          title: "Runway ML: Getting Started",
+          readingTime: "10 min read",
           completed: false,
           locked: false,
           type: "text"
         },
         {
           id: 4,
-          title: "Основы преобразования текста в видео",
-          readingTime: "15 мин чтения",
+          title: "Text-to-Video Fundamentals",
+          readingTime: "15 min read",
           completed: false,
           locked: false,
           type: "text"
         },
         {
           id: 5,
-          title: "Промпт-инжиниринг для видео",
-          readingTime: "18 мин чтения",
+          title: "Prompt Engineering for Video",
+          readingTime: "18 min read",
           completed: false,
           locked: false,
           type: "text"
         },
         {
           id: 6,
-          title: "Продвинутые техники Runway",
-          readingTime: "20 мин чтения",
+          title: "Advanced Runway Techniques",
+          readingTime: "20 min read",
           completed: false,
           locked: false,
           type: "text"
         },
         {
           id: 7,
-          title: "Midjourney для видеоактивов",
-          readingTime: "16 мин чтения",
+          title: "Midjourney for Video Assets",
+          readingTime: "16 min read",
           completed: false,
           locked: false,
           type: "text"
         },
         {
           id: 8,
-          title: "Стабильное видео-распространение",
-          readingTime: "19 мин чтения",
+          title: "Stable Video Diffusion",
+          readingTime: "19 min read",
           completed: false,
           locked: false,
           type: "text"
         },
         {
           id: 9,
-          title: "Редактирование видео с помощью инструментов ИИ",
-          readingTime: "22 мин чтения",
+          title: "Video Editing with AI Tools",
+          readingTime: "22 min read",
           completed: false,
           locked: false,
           type: "text"
         },
         {
           id: 10,
-          title: "Комбинирование нескольких платформ",
-          readingTime: "25 мин чтения",
+          title: "Combining Multiple Platforms",
+          readingTime: "25 min read",
           completed: false,
           locked: false,
           type: "text"
         },
         {
           id: 11,
-          title: "Создание согласованных персонажей",
-          readingTime: "21 мин чтения",
+          title: "Creating Consistent Characters",
+          readingTime: "21 min read",
           completed: false,
           locked: true,
           type: "text"
         },
         {
           id: 12,
-          title: "Рассказывание историй с AI-видео",
-          readingTime: "23 мин чтения",
+          title: "Storytelling with AI Video",
+          readingTime: "23 min read",
           completed: false,
           locked: true,
           type: "text"
         },
         {
           id: 13,
-          title: "Коммерческие приложения",
-          readingTime: "20 мин чтения",
+          title: "Commercial Applications",
+          readingTime: "20 min read",
           completed: false,
           locked: true,
           type: "text"
         },
         {
           id: 14,
-          title: "Мастер-класс по финальному проекту",
-          readingTime: "35 мин чтения",
+          title: "Final Project Workshop",
+          readingTime: "35 min read",
           completed: false,
           locked: true,
           type: "workshop"
@@ -810,19 +516,12 @@ Start building your prompt library today, and don't be afraid to try unconventio
       this.$emit('back-to-courses');
     },
 
-    toggleSidebar() {
-      this.sidebarOpen = !this.sidebarOpen;
-    },
-
     selectLesson(index) {
       if (this.lessons[index] && !this.lessons[index].locked) {
         this.currentLessonIndex = index;
         this.selectedAnswer = null;
         this.quizCompleted = false;
         this.quizCorrect = false;
-        if (window.innerWidth < 1024) {
-          this.sidebarOpen = false;
-        }
       }
     },
 
@@ -870,8 +569,11 @@ Start building your prompt library today, and don't be afraid to try unconventio
 </script>
 
 <style scoped>
+/* Reset and Base */
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 .lesson-player {
@@ -882,7 +584,7 @@ Start building your prompt library today, and don't be afraid to try unconventio
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
-/* Sidebar */
+/* Sidebar Styles */
 .sidebar {
   width: 320px;
   background: #ffffff;
@@ -909,6 +611,12 @@ Start building your prompt library today, and don't be afraid to try unconventio
   align-items: center;
   justify-content: center;
   color: white;
+  flex-shrink: 0;
+}
+
+.course-icon svg {
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
 }
 
@@ -1007,6 +715,13 @@ Start building your prompt library today, and don't be afraid to try unconventio
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+}
+
+.status-icon svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .status-icon.completed {
@@ -1025,6 +740,7 @@ Start building your prompt library today, and don't be afraid to try unconventio
   height: 8px;
   background: #8B5CF6;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .status-icon.default {
@@ -1080,12 +796,24 @@ Start building your prompt library today, and don't be afraid to try unconventio
   color: #717182;
 }
 
+.lesson-meta svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
 .lesson-arrow {
   flex-shrink: 0;
   color: #717182;
 }
 
-/* Main Content */
+.lesson-arrow svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* Main Content Styles */
 .main-content {
   flex: 1;
   overflow-y: auto;
@@ -1117,6 +845,12 @@ Start building your prompt library today, and don't be afraid to try unconventio
   flex-shrink: 0;
 }
 
+.lesson-icon svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
 .lesson-title-section {
   flex: 1;
 }
@@ -1140,6 +874,12 @@ Start building your prompt library today, and don't be afraid to try unconventio
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.meta-item svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .lesson-description {
@@ -1283,6 +1023,12 @@ Start building your prompt library today, and don't be afraid to try unconventio
   color: #8B5CF6;
 }
 
+.resource-item svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
 .resource-details {
   flex: 1;
 }
@@ -1359,6 +1105,7 @@ Start building your prompt library today, and don't be afraid to try unconventio
   margin: 0;
   width: 16px;
   height: 16px;
+  flex-shrink: 0;
 }
 
 .quiz-option span {
@@ -1407,6 +1154,12 @@ Start building your prompt library today, and don't be afraid to try unconventio
   border-radius: 8px;
   margin-bottom: 16px;
   font-weight: 500;
+}
+
+.quiz-feedback svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .quiz-feedback.correct {
@@ -1465,6 +1218,12 @@ Start building your prompt library today, and don't be afraid to try unconventio
   text-decoration: none;
 }
 
+.nav-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
 .nav-btn:hover:not(:disabled) {
   background: #f8f9fa;
   border-color: #8B5CF6;
@@ -1480,6 +1239,13 @@ Start building your prompt library today, and don't be afraid to try unconventio
   background: #22c55e;
   color: white;
   border-color: #22c55e;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .complete-btn:hover {
@@ -1498,7 +1264,7 @@ Start building your prompt library today, and don't be afraid to try unconventio
   color: white;
 }
 
-/* Mobile Styles */
+/* Mobile Responsive */
 @media (max-width: 768px) {
   .lesson-player {
     flex-direction: column;
@@ -1525,7 +1291,7 @@ Start building your prompt library today, and don't be afraid to try unconventio
     gap: 12px;
   }
   
-  .nav-btn {
+  .nav-btn, .complete-btn {
     width: 100%;
     justify-content: center;
   }
@@ -1533,6 +1299,18 @@ Start building your prompt library today, and don't be afraid to try unconventio
   .lessons-list {
     max-height: 200px;
     overflow-y: auto;
+  }
+  
+  .lesson-header-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .lesson-meta-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 }
 
@@ -1570,42 +1348,51 @@ Start building your prompt library today, and don't be afraid to try unconventio
   .quiz-section {
     padding: 16px;
   }
+  
+  .resources-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Scrollbar Styling */
-.lessons-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.lessons-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.lessons-list::-webkit-scrollbar-thumb {
-  background: #8B5CF6;
-  border-radius: 3px;
-}
-
-.lessons-list::-webkit-scrollbar-thumb:hover {
-  background: #7C3AED;
-}
-
+.lessons-list::-webkit-scrollbar,
 .main-content::-webkit-scrollbar {
   width: 6px;
 }
 
+.lessons-list::-webkit-scrollbar-track,
 .main-content::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 3px;
 }
 
+.lessons-list::-webkit-scrollbar-thumb,
 .main-content::-webkit-scrollbar-thumb {
   background: #8B5CF6;
   border-radius: 3px;
 }
 
+.lessons-list::-webkit-scrollbar-thumb:hover,
 .main-content::-webkit-scrollbar-thumb:hover {
   background: #7C3AED;
+}
+
+/* Focus States for Accessibility */
+.nav-btn:focus,
+.quiz-submit-btn:focus,
+.retry-btn:focus,
+.complete-btn:focus {
+  outline: 2px solid #8B5CF6;
+  outline-offset: 2px;
+}
+
+.lesson-item:focus {
+  outline: 2px solid #8B5CF6;
+  outline-offset: 2px;
+}
+
+.quiz-option:focus-within {
+  outline: 2px solid #8B5CF6;
+  outline-offset: 2px;
 }
 </style>
