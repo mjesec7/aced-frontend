@@ -317,7 +317,7 @@
 import { getUpdatedCourses, getCourseById } from '@/api.js';
 import { checkSubscriptionAccess } from '@/router/index.js';
 import { mapGetters, mapState } from 'vuex';
-import LessonLoader from '@/components/Updated/LessonLoader.vue';
+import LessonLoader from '../components/Updated/LessonPlayer.vue';
 
 export default {
   name: 'CoursesPage',
