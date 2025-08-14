@@ -1,5 +1,5 @@
 <template>
-  <div class="study-page" :key="`study-${componentKey}`">
+  <div class="study-page">
     <header class="study-header">
       <div class="study-header-content">
         <button @click="goBackToCourses" class="back-button">
@@ -37,9 +37,10 @@
       <aside class="study-sidebar" :class="{ 'sidebar-open': sidebarOpen }">
         <div class="sidebar-header">
           <div class="flex items-center gap-3 mb-2">
-            <div class="w-8 h-8 bg-gradient-to-br from-brand-purple to-brand-purple-dark rounded-lg flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-white">
-                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+            <!-- BookOpen Icon -->
+            <div class="w-8 h-8 bg-gradient-to-br from-[var(--color-brand-purple)] to-[var(--color-brand-purple-dark)] rounded-lg flex items-center justify-center">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.431m0 0a2.768 2.768 0 01-1.378-2.348v-2.185m1.378 2.348A2.768 2.768 0 0013.378 17.5v-2.185m-1.378 2.348a2.768 2.768 0 01-1.378-2.348v-2.185m1.378 2.348A2.768 2.768 0 0013.378 17.5v-2.185"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
               </svg>
             </div>
             <h3 class="text-lg font-medium">{{ course?.title || 'Курс' }}</h3>
@@ -59,8 +60,8 @@
             <span class="text-sm font-medium">{{ completedLessons }}/{{ totalLessons }} Завершено</span>
           </div>
           <div class="w-full bg-muted rounded-full h-2">
-            <div 
-              class="h-2 rounded-full bg-gradient-to-r from-brand-purple to-brand-purple-light" 
+            <div
+              class="h-2 rounded-full bg-gradient-to-r from-[var(--color-brand-purple)] to-[var(--color-brand-purple-light)]"
               :style="{ width: progressPercent + '%' }"
             ></div>
           </div>
@@ -73,57 +74,60 @@
               :key="lesson.id"
               @click="selectLesson(index)"
               :class="[
-                'lesson-item-modern',
+                'relative p-4 rounded-lg border cursor-pointer transition-all duration-200',
                 {
-                  'current': currentLessonIndex === index,
-                  'completed': lesson.completed,
-                  'locked': lesson.locked
+                  'border-[var(--color-brand-purple)] bg-[var(--color-brand-purple-muted)] shadow-sm': currentLessonIndex === index,
+                  'border-border hover:border-[var(--color-brand-purple-light)] hover:bg-accent/50': currentLessonIndex !== index,
+                  'opacity-60 cursor-not-allowed': lesson.locked
                 }
               ]"
             >
               <div class="flex items-start gap-3">
                 <div class="flex-shrink-0 mt-0.5">
-                  <svg v-if="lesson.completed" class="w-5 h-5 text-brand-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"/>
-                    <path d="M22 4L12 14.01l-3-3"/>
+                  <!-- CheckCircle Icon -->
+                  <svg v-if="lesson.completed" class="w-5 h-5 text-[var(--color-brand-purple)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
-                  <svg v-else-if="lesson.locked" class="w-5 h-5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  <!-- Lock Icon -->
+                  <svg v-else-if="lesson.locked" class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4a2 2 0 002 2zm0-11V9a3 3 0 016 0v2"></path>
                   </svg>
-                  <div v-else-if="currentLessonIndex === index" class="w-5 h-5 rounded-full border-2 border-brand-purple flex items-center justify-center">
-                    <div class="w-2 h-2 rounded-full bg-brand-purple"></div>
+                  <!-- Current Lesson Indicator -->
+                  <div v-else-if="currentLessonIndex === index" class="w-5 h-5 rounded-full border-2 border-[var(--color-brand-purple)] flex items-center justify-center">
+                    <div class="w-2 h-2 rounded-full bg-[var(--color-brand-purple)]"></div>
                   </div>
+                  <!-- Default Circle -->
                   <div v-else class="w-5 h-5 rounded-full border-2 border-muted-foreground"></div>
                 </div>
-                
+
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2 mb-1">
                     <span class="text-xs text-muted-foreground font-medium">
                       {{ String(index + 1).padStart(2, '0') }}
                     </span>
-                    <span v-if="currentLessonIndex === index" class="text-xs px-2 py-1 bg-brand-purple text-white rounded-full">
+                    <span v-if="currentLessonIndex === index" class="text-xs px-2 py-1 bg-[var(--color-brand-purple)] text-white rounded-full">
                       Текущий
                     </span>
                   </div>
                   <h3 :class="[
                     'text-sm leading-tight mb-2',
-                    currentLessonIndex === index ? 'text-brand-purple font-medium' : 'text-foreground'
+                    currentLessonIndex === index ? 'text-[var(--color-brand-purple)] font-medium' : 'text-foreground'
                   ]">
                     {{ lesson.title }}
                   </h3>
                   <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polyline points="12 6 12 12 16 14"></polyline>
+                    <!-- Clock Icon -->
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    {{ lesson.duration }}
+                    {{ lesson.readingTime }}
                     <span v-if="lesson.type === 'workshop'" class="px-2 py-0.5 bg-muted rounded text-xs">Практика</span>
                   </div>
                 </div>
-                
-                <svg v-if="!lesson.locked" class="w-4 h-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="m9 18 6-6-6-6"/>
+
+                <!-- ChevronRight Icon -->
+                <svg v-if="!lesson.locked" class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                 </svg>
               </div>
             </div>
@@ -141,24 +145,25 @@
           <span>Содержание</span>
         </button>
 
-        <div v-if="currentLesson" class="lesson-container-modern">
-          <div class="lesson-header-modern">
+        <div v-if="currentLesson" class="max-w-4xl mx-auto p-8">
+          <!-- Header -->
+          <div class="mb-8">
             <div class="flex items-center gap-3 mb-4">
-              <div class="w-10 h-10 bg-gradient-to-br from-brand-purple to-brand-purple-dark rounded-lg flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-white">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
+              <!-- FileText Icon -->
+              <div class="w-10 h-10 bg-gradient-to-br from-[var(--color-brand-purple)] to-[var(--color-brand-purple-dark)] rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
               </div>
               <div>
                 <h1 class="text-2xl font-medium mb-1">{{ currentLesson.title }}</h1>
                 <div class="flex items-center gap-4 text-sm text-muted-foreground">
                   <span class="flex items-center gap-1">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polyline points="12 6 12 12 16 14"></polyline>
+                    <!-- Clock Icon -->
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    {{ currentLesson.duration }}
+                    {{ currentLesson.readingTime }}
                   </span>
                   <span>Урок {{ currentLessonIndex + 1 }} из {{ totalLessons }}</span>
                 </div>
@@ -167,19 +172,21 @@
             <p class="text-muted-foreground text-lg">{{ currentLesson.description }}</p>
           </div>
 
-          <div v-if="currentLesson.objectives && currentLesson.objectives.length" class="learning-objectives-modern">
-            <h2 class="text-lg font-medium mb-4 text-brand-purple-dark">Цели урока</h2>
+          <!-- Learning Objectives -->
+          <div v-if="currentLesson.objectives && currentLesson.objectives.length" class="mb-8 p-6 bg-[var(--color-brand-purple-muted)] rounded-lg border border-[var(--color-brand-purple-light)]/20">
+            <h2 class="text-lg font-medium mb-4 text-[var(--color-brand-purple-dark)]">Цели урока</h2>
             <ul class="space-y-2">
               <li v-for="(objective, index) in currentLesson.objectives" :key="index" class="flex items-start gap-3">
-                <div class="w-1.5 h-1.5 rounded-full bg-brand-purple mt-2.5 flex-shrink-0"></div>
+                <div class="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-purple)] mt-2.5 flex-shrink-0"></div>
                 <span class="text-foreground">{{ objective }}</span>
               </li>
             </ul>
           </div>
 
-          <div class="lesson-content-modern">
-            <div class="content-prose" v-html="currentLesson.content"></div>
-
+          <!-- Content -->
+          <div class="prose prose-gray max-w-none">
+            <div class="whitespace-pre-line text-foreground leading-relaxed space-y-6" v-html="currentLesson.content">
+            </div>
             <div v-if="currentLesson.resources && currentLesson.resources.length" class="resources-modern">
               <h3>Материалы урока</h3>
               <div class="resources-grid">
@@ -253,34 +260,35 @@
             </div>
           </div>
 
-          <div class="lesson-navigation-modern">
+          <!-- Navigation -->
+          <div class="flex items-center justify-between pt-8 mt-8 border-t border-border">
             <button
               @click="previousLesson"
               :disabled="currentLessonIndex === 0"
-              class="nav-btn-modern prev-btn"
+              class="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="m15 18-6-6 6-6"/>
+              <!-- ChevronRight Icon rotated -->
+              <svg class="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
               </svg>
               Предыдущий урок
             </button>
-
             <button
-              v-if="!currentLesson.completed && (!currentLesson.quiz || (currentLesson.quiz && quizCorrect))"
+              v-if="currentLesson && !currentLesson.completed && (!currentLesson.quiz || (currentLesson.quiz && quizCorrect))"
               @click="markLessonCompleted"
-              class="complete-btn-modern"
+              class="px-6 py-3 bg-[#22c55e] text-white rounded-lg hover:bg-[#16a34a] transition-colors"
             >
               Завершить урок
             </button>
-
             <button
               @click="nextLesson"
-              :disabled="currentLessonIndex === lessons.length - 1 || lessons[currentLessonIndex + 1]?.locked"
-              class="nav-btn-modern next-btn"
+              :disabled="currentLessonIndex === lessons.length - 1 || (lessons[currentLessonIndex + 1] && lessons[currentLessonIndex + 1].locked)"
+              class="flex items-center gap-2 px-6 py-3 bg-[var(--color-brand-purple)] text-white rounded-lg hover:bg-[var(--color-brand-purple-dark)] transition-colors"
             >
               Следующий урок
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="m9 18 6-6-6-6"/>
+              <!-- ChevronRight Icon -->
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
               </svg>
             </button>
           </div>
@@ -291,8 +299,6 @@
 </template>
 
 <script>
-import { mapGetters, mapState } from 'vuex';
-
 export default {
   name: 'LessonLoader',
   props: {
@@ -307,216 +313,549 @@ export default {
       lessons: [],
       currentLessonIndex: 0,
       currentLesson: null,
-      sidebarOpen: false,
-      selectedAnswer: null,
-      quizCompleted: false,
-      quizCorrect: false,
-      componentKey: 0,
-      lastUpdateTime: Date.now(),
-      forceUpdateCounter: 0
+      sidebarOpen: false, // For sidebar toggling
+      selectedAnswer: null, // For quiz
+      quizCompleted: false, // For quiz
+      quizCorrect: false, // For quiz
+      componentKey: 0, // For forcing component re-render if needed
     };
   },
 
   computed: {
-    ...mapGetters('user', ['userStatus']),
-    ...mapState(['user']),
-    ...mapGetters(['getUser']),
-
-    currentUser() {
-      return this.getUser || this.user || {};
-    },
-
-    currentUserStatus() {
-      const userStatus = this.currentUser?.subscriptionPlan || 
-                        localStorage.getItem('userStatus') || 
-                        localStorage.getItem('plan') || 
-                        'free';
-      return userStatus;
-    },
-
-    isPremiumUser() {
-      const status = this.currentUserStatus;
-      return status === 'pro' || status === 'start';
-    },
-
     subscriptionClass() {
-      const status = this.currentUserStatus;
+      // Dummy subscription logic, replace with actual user status
+      const status = this.course?.subscriptionPlan || 'free'; // Assuming course might have a subscription plan
       if (status === 'pro') return 'badge-pro';
       if (status === 'start') return 'badge-start';
       return 'badge-free';
     },
-
     subscriptionText() {
-      const status = this.currentUserStatus;
+      // Dummy subscription logic, replace with actual user status
+      const status = this.course?.subscriptionPlan || 'free';
       switch (status) {
         case 'pro': return 'Pro подписка';
         case 'start': return 'Start подписка';
         default: return 'Бесплатный доступ';
       }
     },
-
     completedLessons() {
       return this.lessons.filter(lesson => lesson.completed).length;
     },
-    
     totalLessons() {
       return this.lessons.length;
     },
-    
     progressPercent() {
       if (this.totalLessons === 0) return 0;
       return Math.round((this.completedLessons / this.totalLessons) * 100);
     }
   },
 
-  mounted() {
-    console.log('📱 LessonLoader: Component mounted');
-    this.initializeStudyData();
+  watch: {
+    // Watch for changes in the 'course' prop to initialize study data
+    course: {
+      handler: 'initializeStudyData',
+      immediate: true, // Run immediately when the component is mounted
+      deep: true // Watch for deep changes within the course object
+    },
+    // Watch for changes in currentLessonIndex to update currentLesson details
+    currentLessonIndex: {
+      handler: 'updateCurrentLessonContent',
+      immediate: true,
+    }
   },
 
   methods: {
     initializeStudyData() {
-      this.currentLessonIndex = 0;
+      // Populate lessons from the course prop
       this.lessons = this.course.lessons || this.generateSampleLessons();
-      this.currentLesson = this.lessons[0];
+      // Set the initial current lesson based on the currentLessonIndex
+      this.updateCurrentLessonContent();
       this.sidebarOpen = false;
       this.selectedAnswer = null;
       this.quizCompleted = false;
       this.quizCorrect = false;
     },
+    updateCurrentLessonContent() {
+      // Ensures currentLesson and its detailed content (like objectives and description) are updated
+      if (this.lessons[this.currentLessonIndex]) {
+        this.currentLesson = { ...this.lessons[this.currentLessonIndex] };
+        // If content is not provided by backend, use a placeholder or specific logic
+        if (!this.currentLesson.content) {
+          this.currentLesson.content = this.getLessonContent(this.currentLesson.id);
+        }
+        if (!this.currentLesson.description && this.getLessonDescription(this.currentLesson.id)) {
+          this.currentLesson.description = this.getLessonDescription(this.currentLesson.id);
+        }
+        if (!this.currentLesson.objectives && this.getLessonObjectives(this.currentLesson.id)) {
+          this.currentLesson.objectives = this.getLessonObjectives(this.currentLesson.id);
+        }
+      } else {
+        this.currentLesson = null;
+      }
+    },
+    // This is a placeholder for actual backend fetching or a local data source
+    // In a real application, you'd fetch lesson details including content, description, objectives, etc. from your API.
+    getLessonContent(lessonId) {
+      // This content is taken directly from the React App.tsx file for lesson 3.
+      // You would replace this with actual backend fetching based on lessonId.
+      const contentMap = {
+        3: `# Getting Started with Runway ML
 
+Runway ML is at the forefront of AI-powered video creation, offering cutting-edge tools that democratize video production. In this lesson, we'll explore the platform's capabilities and get hands-on experience with creating your first AI-generated videos.
+
+## What is Runway ML?
+
+Runway ML is an AI research company that develops next-generation creative tools. Their platform offers various AI models for:
+
+• **Text-to-video generation** - Create videos from written descriptions
+• **Image-to-video conversion** - Animate static images into dynamic videos  
+• **Video editing and enhancement** - Modify existing video content with AI
+• **Style transfer and effects** - Apply artistic styles and visual effects
+
+The platform has revolutionized how content creators, filmmakers, and marketers approach video production by making professional-quality video generation accessible to everyone.
+
+## Platform Overview
+
+When you first access Runway ML, you'll notice the clean, intuitive interface designed for both beginners and professionals. The main dashboard includes several key areas:
+
+### 1. Project Management
+
+The project management system allows you to:
+- **Create and organize** your video projects in dedicated folders
+- **Access recent works** and templates for quick project starts
+- **Collaborate with team members** through shared workspaces
+- **Version control** to track different iterations of your projects
+
+### 2. Model Selection
+
+Runway offers several powerful AI models, each designed for specific use cases:
+
+**Gen-2: The Flagship Text-to-Video Model**
+- Primary tool for creating videos from text prompts
+- Supports various styles from photorealistic to artistic
+- Capable of generating 4-second clips at high quality
+- Best for: Original content creation, concept visualization
+
+**Gen-1: Video-to-Video Transformation** - Transforms existing videos using text prompts
+- Maintains original video structure while changing style/content
+- Excellent for stylistic transformations
+- Best for: Style transfer, mood changes, artistic interpretations
+
+**Inpainting: Selective Video Editing**
+- Remove or replace specific elements in videos
+- Seamlessly fill in selected areas with AI-generated content
+- Precise control over what gets modified
+- Best for: Object removal, background changes, cleanup
+
+**Motion Brush: Directional Movement Control**
+- Paint motion directions directly onto your video
+- Control how different parts of the scene move
+- Create complex animations with simple brush strokes
+- Best for: Adding specific movements, animation control
+
+### 3. Generation Controls
+
+Fine-tune your creations with comprehensive controls:
+
+**Prompt Engineering Tools**
+- Text prompt input with syntax highlighting
+- Suggested keywords and modifiers
+- Prompt history and favorites system
+- Template prompts for different scenarios
+
+**Style and Aesthetic Controls**
+- Preset style options (cinematic, documentary, artistic)
+- Custom style references through image uploads
+- Lighting and color temperature adjustments
+- Camera movement presets (static, zoom, pan, tilt)
+
+**Technical Parameters**
+- Duration settings (1-4 seconds for Gen-2)
+- Aspect ratio selection (16:9, 9:16, 1:1)
+- Resolution options (720p, 1080p)
+- Frame rate control (24fps, 30fps)
+
+**Seed Management**
+- Consistency controls for reproducible results
+- Random seed generation for variations
+- Seed locking for iterative improvements
+- Batch generation with seed variations
+
+## Your First Video Generation
+
+Creating your first AI video is an exciting milestone. Here's a step-by-step approach:
+
+### Step 1: Write a Clear Prompt
+
+Start with a descriptive, specific prompt. Instead of vague descriptions, use vivid, concrete language:
+
+**Good Example:**
+"A serene mountain lake at sunrise, with mist rising from the water and birds flying overhead, cinematic wide shot"
+
+**Why this works:**
+- **Specific setting**: Mountain lake (not just "nature")
+- **Time context**: Sunrise (establishes lighting)
+- **Atmospheric details**: Mist rising (adds visual interest)  
+- **Movement elements**: Birds flying (provides motion)
+- **Camera instruction**: Wide shot (guides framing)
+
+**Avoid these common mistakes:**
+- "Beautiful nature scene" (too vague)
+- "Something cool with water" (lacks specificity)
+- "Make it look good" (no actionable direction)
+
+### Step 2: Set Parameters
+
+**Duration Selection**
+- **1-2 seconds**: Good for testing prompts and quick iterations
+- **4 seconds**: Standard length, provides enough time for movement
+- **Recommendation**: Start with 4 seconds for beginners
+
+**Aspect Ratio Guidelines**
+- **16:9**: Standard video format, great for most content
+- **9:16**: Vertical format for social media (TikTok, Instagram Stories)
+- **1:1**: Square format for Instagram posts and thumbnails
+
+**Style Considerations**
+- **Default/Natural**: Best starting point for most projects
+- **Cinematic**: Adds film-like qualities and color grading
+- **Documentary**: More realistic, less stylized approach
+
+### Step 3: Generate and Iterate
+
+**Initial Generation**
+1. Click the generate button and wait for processing (typically 1-3 minutes)
+2. Review the result objectively - focus on whether it matches your vision
+3. Note any unexpected elements or missing components
+
+**Refinement Process**
+- **If motion is unclear**: Add specific movement descriptions ("slow zoom in", "gentle panning left")
+- **If style doesn't match**: Try adding style modifiers ("photorealistic", "artistic", "vintage film")
+- **If elements are missing**: Be more explicit about important details
+
+**Iteration Strategy**
+- Make one change at a time to understand what each modification does
+- Keep notes on successful prompts and settings
+- Build a personal library of effective combinations
+
+## Best Practices for Success
+
+### Prompt Writing Guidelines
+
+**Be Specific About Visuals**
+- Use concrete nouns instead of abstract concepts
+- Include color, lighting, and atmospheric details
+- Specify camera angles and movements when relevant
+
+**Structure Your Prompts Logically**
+- Subject + Setting + Action + Style + Camera
+- Example: "A red sports car (subject) on a mountain road (setting) driving through curves (action) in cinematic style (style) with a tracking shot (camera)"
+
+**Use Effective Modifiers**
+- **Lighting**: "golden hour", "dramatic shadows", "soft natural light"
+- **Movement**: "slow motion", "time-lapse", "smooth tracking"
+- **Style**: "photorealistic", "documentary style", "artistic interpretation"
+
+### Technical Optimization
+
+**Camera Movement Vocabulary**
+- **Static shot**: No camera movement, fixed perspective
+- **Slow zoom in/out**: Gradual focal length changes
+- **Panning left/right**: Horizontal camera movement
+- **Tilting up/down**: Vertical camera movement
+- **Tracking shot**: Camera follows subject movement
+
+**Lighting and Mood**
+- **Golden hour**: Warm, soft lighting during sunrise/sunset
+- **Blue hour**: Cool, ethereal lighting just after sunset
+- **Dramatic lighting**: High contrast with strong shadows
+- **Soft natural light**: Even, diffused illumination
+
+### Building Your Prompt Library
+
+**Category Organization**
+- **Nature scenes**: Landscapes, weather, animals
+- **Urban environments**: Cities, architecture, transportation  
+- **People and portraits**: Characters, emotions, actions
+- **Abstract concepts**: Artistic interpretations, surreal scenes
+
+**Documentation Strategy**
+- Save successful prompts with their settings
+- Note which models work best for different types of content
+- Track seed numbers for consistent results
+- Record common issues and their solutions
+
+## Common Challenges and Solutions
+
+### Challenge 1: Inconsistent Results
+
+**Problem**: Same prompt produces vastly different outputs
+**Solutions**:
+- Use seed values to maintain consistency across generations
+- Be more specific in your prompt descriptions
+- Try generating multiple versions and select the best one
+- Consider using reference images for style consistency
+
+### Challenge 2: Unclear or Unwanted Motion
+
+**Problem**: Objects move in unexpected ways or motion looks unnatural
+**Solutions**:
+- Be explicit about movement in your prompts ("slow zoom in", "panning left")
+- Use Motion Brush tool for precise movement control
+- Try different prompt phrasings for the same concept
+- Consider the natural physics of your scene
+
+### Challenge 3: Quality and Detail Issues
+
+**Problem**: Generated videos lack detail or appear blurry
+**Solutions**:
+- Ensure your prompts are detailed and well-structured
+- Use higher resolution settings when available
+- Try different style modifiers to enhance quality
+- Consider breaking complex scenes into simpler components
+
+### Challenge 4: Style Consistency Across Generations
+
+**Problem**: Multiple videos for a project don't match visually
+**Solutions**:
+- Use the same seed value across related generations
+- Maintain consistent prompt structure and modifiers
+- Create a style guide document for your project
+- Use reference images to maintain visual continuity
+
+## Advanced Techniques Preview
+
+As you become comfortable with basic generation, you'll want to explore more sophisticated approaches:
+
+### Sequence Planning
+- Breaking longer narratives into connected 4-second segments
+- Maintaining character and style consistency across clips
+- Planning transitions between generated segments
+
+### Style Transfer Applications
+- Using Gen-1 to transform existing footage
+- Applying artistic styles to real-world videos
+- Creating unique visual aesthetics for branded content
+
+### Combining with Traditional Editing
+- Integrating AI-generated clips with conventional footage
+- Using AI for specific shots that would be expensive to film
+- Enhancing practical effects with AI-generated elements
+
+## Next Steps in Your Journey
+
+In our upcoming lesson on "Text-to-Video Fundamentals," we'll dive deeper into prompt engineering techniques that will help you create more sophisticated and controlled AI videos. We'll explore:
+
+- **Advanced prompt syntax** and modifiers
+- **Combining multiple concepts** in single prompts  
+- **Creating narrative sequences** from individual generations
+- **Professional workflow** integration strategies
+
+### Immediate Action Items
+
+Before moving to the next lesson:
+
+1. **Practice with 5 different prompts** using various styles and subjects
+2. **Document your results** in a simple spreadsheet or notebook
+3. **Experiment with different aspect ratios** for the same prompt
+4. **Try both simple and complex descriptions** to see how detail affects output
+
+### Building Your Skills
+
+Remember that mastering AI video generation is an iterative process. Each generation teaches you something new about how the AI interprets language and creates visual content. The key is consistent practice combined with systematic experimentation.
+
+Start building your prompt library today, and don't be afraid to try unconventional descriptions – some of the most creative results come from unexpected prompt combinations!
+
+---
+
+**Coming Up Next:** In "Text-to-Video Fundamentals," we'll explore advanced prompting strategies and learn how to create more complex, narrative-driven content that tells compelling visual stories.`,
+      };
+      // Placeholder for other lesson content if they are not provided by the backend
+      // You would extend this map with content for other lesson IDs if needed.
+      return contentMap[lessonId] || 'Содержимое урока не найдено.';
+    },
+    getLessonDescription(lessonId) {
+      const descriptionMap = {
+        3: "Изучите основы Runway ML, одной из самых мощных платформ для создания видео с искусственным интеллектом, доступных на сегодняшний день."
+      };
+      return descriptionMap[lessonId] || 'Описание урока не найдено.';
+    },
+    getLessonObjectives(lessonId) {
+      const objectivesMap = {
+        3: [
+          "Понять интерфейс и навигацию Runway ML",
+          "Изучить базовое создание видео из текста",
+          "Исследовать различные доступные видеомодели",
+          "Попрактиковаться в создании своего первого видео с ИИ"
+        ]
+      };
+      return objectivesMap[lessonId] || [];
+    },
+    // This generates dummy lessons if no course lessons are provided
     generateSampleLessons() {
       return [
         {
           id: 1,
           title: "Введение в курс",
-          description: "Обзор курса и что вы изучите",
-          duration: "15 мин",
+          readingTime: "8 мин чтения",
           completed: true,
           locked: false,
-          content: `
-            <h3>Добро пожаловать в курс!</h3>
-            <p>В этом курсе вы изучите основы современных технологий и получите практические навыки, которые помогут вам в карьере.</p>
-            <h4>Что вас ждет:</h4>
-            <ul>
-              <li>Теоретические основы</li>
-              <li>Практические задания</li>
-              <li>Реальные проекты</li>
-              <li>Сертификат о прохождении</li>
-            </ul>
-            <p>Желаем успехов в обучении!</p>
-          `,
-          resources: [],
-          quiz: {
-            question: "Что является основной целью данного курса?",
-            options: [
-              "Изучение теории без практики",
-              "Получение практических навыков для карьеры",
-              "Просто потратить время",
-              "Получить сертификат любой ценой"
-            ],
-            correctAnswer: 1
-          },
-          objectives: [
-            "Познакомиться с преподавателями",
-            "Оценить структуру курса",
-            "Узнать о будущих проектах"
-          ],
+          type: "text"
         },
         {
           id: 2,
-          title: "Основные концепции",
-          description: "Изучаем ключевые понятия и термины",
-          duration: "25 мин",
-          completed: false,
+          title: "Понимание платформ AI-видео",
+          readingTime: "12 мин чтения",
+          completed: true,
           locked: false,
-          content: `
-            <h3>Основные концепции</h3>
-            <p>В этом уроке мы рассмотрим ключевые понятия, которые будут использоваться на протяжении всего курса.</p>
-          `,
-          resources: [
-            { id: 1, name: "Конспект урока.pdf", size: "2.3 MB", url: "#" },
-            { id: 2, name: "Дополнительные материалы.zip", size: "5.1 MB", url: "#" }
-          ],
-          quiz: {
-            question: "Что такое API?",
-            options: [
-              "Язык программирования",
-              "Интерфейс для взаимодействия программ",
-              "Библиотека для графики",
-              "База данных"
-            ],
-            correctAnswer: 1
-          },
-          objectives: [
-            "Определить основные термины",
-            "Понять принципы работы",
-            "Разобрать примеры"
-          ],
+          type: "text"
         },
         {
           id: 3,
-          title: "Практическое задание",
-          description: "Применяем полученные знания на практике",
-          duration: "40 мин",
+          title: "Runway ML: Начало работы",
+          readingTime: "10 мин чтения",
+          completed: false,
+          locked: false,
+          type: "text"
+        },
+        {
+          id: 4,
+          title: "Основы преобразования текста в видео",
+          readingTime: "15 мин чтения",
+          completed: false,
+          locked: false,
+          type: "text"
+        },
+        {
+          id: 5,
+          title: "Промпт-инжиниринг для видео",
+          readingTime: "18 мин чтения",
+          completed: false,
+          locked: false,
+          type: "text"
+        },
+        {
+          id: 6,
+          title: "Продвинутые техники Runway",
+          readingTime: "20 мин чтения",
+          completed: false,
+          locked: false,
+          type: "text"
+        },
+        {
+          id: 7,
+          title: "Midjourney для видеоактивов",
+          readingTime: "16 мин чтения",
+          completed: false,
+          locked: false,
+          type: "text"
+        },
+        {
+          id: 8,
+          title: "Стабильное видео-распространение",
+          readingTime: "19 мин чтения",
+          completed: false,
+          locked: false,
+          type: "text"
+        },
+        {
+          id: 9,
+          title: "Редактирование видео с помощью инструментов ИИ",
+          readingTime: "22 мин чтения",
+          completed: false,
+          locked: false,
+          type: "text"
+        },
+        {
+          id: 10,
+          title: "Комбинирование нескольких платформ",
+          readingTime: "25 мин чтения",
+          completed: false,
+          locked: false,
+          type: "text"
+        },
+        {
+          id: 11,
+          title: "Создание согласованных персонажей",
+          readingTime: "21 мин чтения",
           completed: false,
           locked: true,
-          content: `
-            <h3>Практическое задание</h3>
-            <p>Теперь пришло время применить полученные знания на практике.</p>
-          `,
-          objectives: [
-            "Выполнить первое задание",
-            "Проверить свои навыки",
-            "Получить обратную связь"
-          ],
+          type: "text"
+        },
+        {
+          id: 12,
+          title: "Рассказывание историй с AI-видео",
+          readingTime: "23 мин чтения",
+          completed: false,
+          locked: true,
+          type: "text"
+        },
+        {
+          id: 13,
+          title: "Коммерческие приложения",
+          readingTime: "20 мин чтения",
+          completed: false,
+          locked: true,
+          type: "text"
+        },
+        {
+          id: 14,
+          title: "Мастер-класс по финальному проекту",
+          readingTime: "35 мин чтения",
+          completed: false,
+          locked: true,
+          type: "workshop"
         }
       ];
     },
-
     goBackToCourses() {
       this.$emit('back-to-courses');
     },
-
     toggleSidebar() {
       this.sidebarOpen = !this.sidebarOpen;
     },
-
     selectLesson(index) {
-      if (this.lessons[index].locked) return;
-      this.currentLessonIndex = index;
-      this.currentLesson = this.lessons[index];
-      this.selectedAnswer = null;
-      this.quizCompleted = false;
-      this.quizCorrect = false;
-      if (window.innerWidth < 1024) {
-        this.sidebarOpen = false;
+      if (this.lessons[index] && !this.lessons[index].locked) {
+        this.currentLessonIndex = index;
+        this.selectedAnswer = null;
+        this.quizCompleted = false;
+        this.quizCorrect = false;
+        if (window.innerWidth < 1024) {
+          this.sidebarOpen = false;
+        }
       }
     },
-
     markLessonCompleted() {
-      this.lessons[this.currentLessonIndex].completed = true;
-      if (this.currentLessonIndex + 1 < this.lessons.length) {
-        this.lessons[this.currentLessonIndex + 1].locked = false;
+      if (this.currentLesson) {
+        this.currentLesson.completed = true; // Mark current lesson as completed
+        const lessonInArray = this.lessons.find(l => l.id === this.currentLesson.id);
+        if (lessonInArray) {
+          lessonInArray.completed = true; // Also update in the lessons array
+        }
+
+        if (this.currentLessonIndex + 1 < this.lessons.length) {
+          this.$set(this.lessons[this.currentLessonIndex + 1], 'locked', false);
+        }
       }
     },
-
     submitQuiz() {
+      if (!this.currentLesson || !this.currentLesson.quiz) return;
       const currentQuiz = this.currentLesson.quiz;
-      this.quizCorrect = this.selectedAnswer === currentQuiz.correctAnswer;
+      this.quizCorrect = parseInt(this.selectedAnswer) === currentQuiz.correctAnswer;
       this.quizCompleted = true;
 
       if (this.quizCorrect) {
         this.markLessonCompleted();
       }
     },
-
     nextLesson() {
       if (this.currentLessonIndex + 1 < this.lessons.length) {
-        this.selectLesson(this.currentLessonIndex + 1);
+        const nextLessonCandidate = this.lessons[this.currentLessonIndex + 1];
+        if (!nextLessonCandidate.locked) {
+          this.selectLesson(this.currentLessonIndex + 1);
+        }
       }
     },
-
     previousLesson() {
       if (this.currentLessonIndex > 0) {
         this.selectLesson(this.currentLessonIndex - 1);
@@ -527,26 +866,46 @@ export default {
 </script>
 
 <style scoped>
-/* CSS Variables */
+/* CSS Variables from globals.css */
 :root {
-  --color-background: #ffffff;
-  --color-foreground: #222;
-  --color-card: #ffffff;
-  --color-card-foreground: #222;
-  --color-muted: #f3f3f5;
-  --color-muted-foreground: #717182;
-  --color-accent: #e9ebef;
-  --color-accent-foreground: #222;
-  --color-border: rgba(0, 0, 0, 0.1);
-  --color-input-background: #f3f3f5;
-  --color-ring: #ccc;
-  --color-brand: #8b7fbf;
-  --color-brand-light: #a599d4;
-  --color-brand-dark: #6b5b9a;
-  --color-brand-foreground: #ffffff;
-  --color-success: #16a34a;
-  --color-green-100: #d1fae5;
-  --color-green-800: #166534;
+  --font-size: 14px;
+  --background: #ffffff;
+  --foreground: oklch(0.145 0 0);
+  --card: #ffffff;
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: #030213;
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0.0058 264.53);
+  --secondary-foreground: #030213;
+  --muted: #ececf0;
+  --muted-foreground: #717182;
+  --accent: #e9ebef;
+  --accent-foreground: #030213;
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --border: rgba(0, 0, 0, 0.1);
+  --input: transparent;
+  --input-background: #f3f3f5;
+  --switch-background: #cbced4;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: #030213;
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
   --brand-purple: #8B5CF6;
   --brand-purple-dark: #7C3AED;
   --brand-purple-light: #A78BFA;
@@ -554,24 +913,40 @@ export default {
 }
 
 .dark {
-  --color-background: #111827;
-  --color-foreground: #f9fafb;
-  --color-card: #1f2937;
-  --color-card-foreground: #f9fafb;
-  --color-muted: #374151;
-  --color-muted-foreground: #9ca3af;
-  --color-accent: #374151;
-  --color-accent-foreground: #f9fafb;
-  --color-border: rgba(255, 255, 255, 0.1);
-  --color-input-background: #1f2937;
-  --color-ring: #555;
-  --color-brand: #9b8fd9;
-  --color-brand-light: #b5a9e4;
-  --color-brand-dark: #7b6bbf;
-  --color-brand-foreground: #ffffff;
-  --color-success: #22c55e;
-  --color-green-100: #14532d;
-  --color-green-800: #d1fae5;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
   --brand-purple: #A78BFA;
   --brand-purple-dark: #8B5CF6;
   --brand-purple-light: #C4B5FD;
@@ -586,18 +961,19 @@ export default {
 .text-2xl { font-size: 1.5rem; }
 .font-medium { font-weight: 500; }
 .font-semibold { font-weight: 600; }
-.text-muted-foreground { color: var(--color-muted-foreground); }
-.text-foreground { color: var(--color-foreground); }
-.text-brand-purple { color: var(--brand-purple); }
-.text-brand-purple-dark { color: var(--brand-purple-dark); }
+.text-muted-foreground { color: var(--muted-foreground); }
+.text-foreground { color: var(--foreground); }
+.text-\[var\(--color-brand-purple\)\] { color: var(--brand-purple); }
+.text-\[var\(--color-brand-purple-dark\)\] { color: var(--brand-purple-dark); }
 .text-white { color: white; }
-.bg-brand-purple { background-color: var(--brand-purple); }
-.bg-brand-purple-dark { background-color: var(--brand-purple-dark); }
+.bg-\[var\(--color-brand-purple\)\] { background-color: var(--brand-purple); }
+.bg-\[var\(--color-brand-purple-dark\)\] { background-color: var(--brand-purple-dark); }
 .bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)); }
-.from-brand-purple { --tw-gradient-from: var(--brand-purple); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(139, 92, 246, 0)); }
-.to-brand-purple-dark { --tw-gradient-to: var(--brand-purple-dark); }
-.from-brand-purple-to-brand-purple-light { background: linear-gradient(to right, var(--brand-purple), var(--brand-purple-light)); }
-.bg-muted { background-color: var(--color-muted); }
+.from-\[var\(--color-brand-purple\)\] { --tw-gradient-from: var(--brand-purple); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(139, 92, 246, 0)); }
+.to-\[var\(--color-brand-purple-dark\)\] { --tw-gradient-to: var(--brand-purple-dark); }
+.from-\[var\(--color-brand-purple\)\] { background: linear-gradient(to right, var(--brand-purple), var(--brand-purple-light)); }
+.to-\[var\(--color-brand-purple-light\)\] { background: linear-gradient(to right, var(--brand-purple), var(--brand-purple-light)); }
+.bg-muted { background-color: var(--muted); }
 .rounded-lg { border-radius: 0.5rem; }
 .rounded-full { border-radius: 9999px; }
 .w-8 { width: 2rem; }
@@ -638,8 +1014,8 @@ export default {
 .min-w-0 { min-width: 0px; }
 .leading-tight { line-height: 1.25; }
 .border-2 { border-width: 2px; }
-.border-brand-purple { border-color: var(--brand-purple); }
-.border-muted-foreground { border-color: var(--color-muted-foreground); }
+.border-\[var\(--color-brand-purple\)\] { border-color: var(--brand-purple); }
+.border-muted-foreground { border-color: var(--muted-foreground); }
 
 /* SUBSCRIPTION STATUS BADGE STYLES */
 .subscription-badge {
@@ -674,13 +1050,13 @@ export default {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: var(--color-background);
-  color: var(--color-foreground);
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 .study-header {
   background: white;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border);
   padding: 1rem 0;
   flex-shrink: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -709,10 +1085,10 @@ export default {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border);
   border-radius: 8px;
   background: white;
-  color: var(--color-muted-foreground);
+  color: var(--muted-foreground);
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.875rem;
@@ -720,7 +1096,7 @@ export default {
 }
 
 .back-button:hover {
-  background: var(--color-muted);
+  background: var(--muted);
   border-color: var(--brand-purple);
   color: var(--brand-purple);
 }
@@ -733,7 +1109,7 @@ export default {
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
-  color: var(--color-foreground);
+  color: var(--foreground);
 }
 
 .course-meta {
@@ -769,7 +1145,7 @@ export default {
 }
 
 .progress-text {
-  color: var(--color-muted-foreground);
+  color: var(--muted-foreground);
 }
 
 .progress-percent {
@@ -779,7 +1155,7 @@ export default {
 
 .progress-bar {
   height: 8px;
-  background: var(--color-muted);
+  background: var(--muted);
   border-radius: 4px;
   overflow: hidden;
   width: 200px;
@@ -797,14 +1173,14 @@ export default {
   display: flex;
   flex: 1;
   overflow: hidden;
-  background: var(--color-background);
+  background: var(--background);
 }
 
 /* MODERN SIDEBAR */
 .study-sidebar {
   width: 320px;
-  background: white;
-  border-right: 1px solid var(--color-border);
+  background: var(--card);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   transition: transform 0.3s ease;
@@ -828,13 +1204,13 @@ export default {
 
 .sidebar-header {
   padding: 1.5rem;
-  border-bottom: 1px solid var(--color-border);
-  background: white;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
 }
 
 .sidebar-progress {
   padding: 1.5rem;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border);
 }
 
 .lessons-list {
@@ -853,7 +1229,7 @@ export default {
 }
 
 .lesson-item-modern:hover {
-  background: var(--color-muted);
+  background: var(--muted);
   border-color: rgba(139, 92, 246, 0.2);
 }
 
@@ -887,8 +1263,8 @@ export default {
   position: absolute;
   top: 1rem;
   right: 1rem;
-  background: white;
-  border: 1px solid var(--color-border);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.5rem;
   cursor: pointer;
@@ -898,7 +1274,7 @@ export default {
 .study-content {
   flex: 1;
   overflow-y: auto;
-  background: white;
+  background: var(--card);
   position: relative;
 }
 
@@ -911,10 +1287,10 @@ export default {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: white;
-  color: var(--color-muted-foreground);
+  background: var(--card);
+  color: var(--muted-foreground);
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.875rem;
@@ -923,7 +1299,7 @@ export default {
 }
 
 .sidebar-toggle.desktop-hidden:hover {
-  background: var(--color-muted);
+  background: var(--muted);
   border-color: var(--brand-purple);
   color: var(--brand-purple);
 }
@@ -944,7 +1320,7 @@ export default {
 .lesson-header-modern {
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--border);
 }
 
 /* LEARNING OBJECTIVES */
@@ -966,18 +1342,18 @@ export default {
 .content-prose {
   line-height: 1.7;
   font-size: 1rem;
-  color: var(--color-foreground);
+  color: var(--foreground);
 }
 
 .content-prose h3 {
-  color: var(--color-foreground);
+  color: var(--foreground);
   font-size: 1.25rem;
   font-weight: 600;
   margin: 1.5rem 0 1rem 0;
 }
 
 .content-prose h4 {
-  color: var(--color-foreground);
+  color: var(--foreground);
   font-size: 1.125rem;
   font-weight: 600;
   margin: 1.25rem 0 0.75rem 0;
@@ -999,15 +1375,15 @@ export default {
 
 /* RESOURCES */
 .resources-modern {
-  background: var(--color-muted);
+  background: var(--muted);
   border-radius: 12px;
   padding: 1.5rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border);
 }
 
 .resources-modern h3 {
   margin: 0 0 1rem 0;
-  color: var(--color-foreground);
+  color: var(--foreground);
   font-size: 1.125rem;
   font-weight: 600;
   text-align: center;
@@ -1025,15 +1401,15 @@ export default {
   gap: 0.75rem;
   padding: 0.75rem;
   background: white;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border);
   border-radius: 8px;
   text-decoration: none;
-  color: var(--color-foreground);
+  color: var(--foreground);
   transition: all 0.2s ease;
 }
 
 .resource-item-modern:hover {
-  background: var(--color-muted);
+  background: var(--muted);
   border-color: var(--brand-purple);
   color: var(--brand-purple);
 }
@@ -1041,16 +1417,16 @@ export default {
 .resource-size {
   margin-left: auto;
   font-size: 0.75rem;
-  color: var(--color-muted-foreground);
-  background: var(--color-muted);
+  color: var(--muted-foreground);
+  background: var(--muted);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
 }
 
 /* QUIZ */
 .quiz-modern {
-  background: white;
-  border: 1px solid var(--color-border);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -1058,7 +1434,7 @@ export default {
 
 .quiz-modern h3 {
   margin: 0 0 1.5rem 0;
-  color: var(--color-foreground);
+  color: var(--foreground);
   font-size: 1.125rem;
   font-weight: 600;
   text-align: center;
@@ -1068,10 +1444,10 @@ export default {
   font-size: 1rem;
   font-weight: 500;
   margin: 0 0 1rem 0;
-  color: var(--color-foreground);
+  color: var(--foreground);
   line-height: 1.5;
   padding: 1rem;
-  background: var(--color-muted);
+  background: var(--muted);
   border-radius: 8px;
 }
 
@@ -1087,15 +1463,15 @@ export default {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: white;
+  background: var(--card);
 }
 
 .quiz-option-modern:hover {
-  background: var(--color-muted);
+  background: var(--muted);
   border-color: var(--brand-purple);
 }
 
@@ -1107,7 +1483,7 @@ export default {
 
 .quiz-option-modern span {
   flex: 1;
-  color: var(--color-foreground);
+  color: var(--foreground);
   font-size: 0.875rem;
 }
 
@@ -1175,7 +1551,7 @@ export default {
   align-items: center;
   gap: 1rem;
   padding: 2rem 0;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--border);
   margin-top: 2rem;
 }
 
@@ -1191,10 +1567,10 @@ export default {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: white;
-  color: var(--color-muted-foreground);
+  background: var(--card);
+  color: var(--muted-foreground);
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
@@ -1202,7 +1578,7 @@ export default {
 }
 
 .nav-btn-modern:hover:not(:disabled) {
-  background: var(--color-muted);
+  background: var(--muted);
   border-color: var(--brand-purple);
   color: var(--brand-purple);
 }
@@ -1254,5 +1630,58 @@ export default {
   .progress-section {
     min-width: auto;
   }
+}
+/* Prose styles for markdown content */
+.prose {
+  color: var(--foreground);
+  font-family: 'Inter', sans-serif; /* Assuming Inter font */
+}
+.prose h1 { font-size: 2.25em; margin-top: 1.5em; margin-bottom: 0.5em; font-weight: 600; }
+.prose h2 { font-size: 1.8em; margin-top: 1.5em; margin-bottom: 0.5em; font-weight: 600; }
+.prose h3 { font-size: 1.5em; margin-top: 1.2em; margin-bottom: 0.4em; font-weight: 600; }
+.prose h4 { font-size: 1.25em; margin-top: 1em; margin-bottom: 0.3em; font-weight: 600; }
+.prose p { margin-bottom: 1em; line-height: 1.6; }
+.prose ul { list-style-type: disc; margin-left: 1.5em; margin-bottom: 1em; }
+.prose ol { list-style-type: decimal; margin-left: 1.5em; margin-bottom: 1em; }
+.prose li { margin-bottom: 0.5em; }
+.prose strong { font-weight: 700; }
+
+.prose-gray {
+  color: var(--foreground); /* Use foreground color */
+}
+
+/* Ensure consistent typography as defined in globals.css */
+body {
+  font-family: 'Inter', sans-serif; /* Or your preferred font */
+}
+
+h1 {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5;
+}
+
+h2 {
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5;
+}
+
+h3 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5;
+}
+
+h4 {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5;
+}
+
+p {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-normal);
+  line-height: 1.5;
 }
 </style>
