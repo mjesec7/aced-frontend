@@ -3,6 +3,7 @@
 import { checkPaymentStatus } from '@/api/payments';
 import { getUserUsage, resetMonthlyUsage } from '@/services/GPTService';
 import { updateUserStatusAction } from '@/composables/useUserStatus';
+import { syncSubscriptionGlobally, applyPromocodeGlobally, completePaymentGlobally } from '@/api';
 
 
 // ✅ ENHANCED triggerGlobalEvent function with error handling
@@ -542,6 +543,7 @@ const mutations = {
     try {
       localStorage.setItem('userStatus', newStatus);
       localStorage.setItem('statusUpdateTime', Date.now().toString());
+      localStorage.setItem('plan', newStatus); // Legacy compatibility
     } catch (storageError) {
     }
 
@@ -790,8 +792,8 @@ const mutations = {
     if (state.usage.monthlyStats.currentMonth !== currentMonth) {
       state.usage.monthlyStats = {
         currentMonth,
-        totalMessages: state.usage.current.messages,
-        totalImages: state.usage.current.images
+        totalMessages: 0,
+        totalImages: 0
       };
     }
 
@@ -2320,7 +2322,123 @@ const actions = {
         duration: Date.now() - startTime
       };
     }
-  }
+  },
+
+  // 🌐 NEW: Initialize user with global subscription sync
+  async initializeWithGlobalSync({ commit, dispatch, state }, userId) {
+    try {
+      console.log('🌐 Initializing with global sync...');
+      // Get local subscription
+      const localSubscriptionJson = localStorage.getItem('subscriptionData');
+      let localSubscription = null;
+      
+      if (localSubscriptionJson) {
+        try {
+          localSubscription = JSON.parse(localSubscriptionJson);
+        } catch (error) {
+          console.warn('⚠️ Invalid local subscription data');
+        }
+      }
+
+      // Perform global sync
+      const syncResult = await syncSubscriptionGlobally(userId, localSubscription);
+
+      if (syncResult.success && syncResult.subscription) {
+        // Update store with synced subscription
+        commit('SET_USER_STATUS', syncResult.subscription.plan);
+        commit('UPDATE_SUBSCRIPTION', syncResult.subscription);
+
+        console.log('✅ Global sync completed:', syncResult.subscription.plan);
+        
+        return {
+          success: true,
+          subscription: syncResult.subscription,
+          syncAction: syncResult.syncAction,
+          globalSync: true
+        };
+      }
+
+      // No valid subscription found, but still a success
+      return {
+        success: true,
+        subscription: null,
+        message: 'No subscription to sync'
+      };
+      
+    } catch (error) {
+      console.error('❌ Global sync initialization failed:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+
+  // 🌐 NEW: Apply promocode with global persistence
+  async applyPromocodeWithGlobalSync({ commit, dispatch, state }, { promoCode, plan }) {
+    try {
+      const userId = state.currentUser?.firebaseId || state.currentUser?._id;
+      if (!userId) {
+        return { success: false, error: 'User not found' };
+      }
+      // Apply promocode globally
+      const result = await applyPromocodeGlobally(userId, promoCode, plan);
+      
+      if (result.success) {
+        // Update store
+        commit('SET_USER_STATUS', plan);
+        commit('UPDATE_SUBSCRIPTION', result.subscription);
+        commit('ADD_PROMOCODE', {
+          code: promoCode,
+          plan: plan,
+          source: 'global',
+          details: result.subscription.details
+        });
+        
+        return result;
+      }
+      return result;
+    } catch (error) {
+      console.error('❌ Global promocode application failed:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+
+  // 🌐 NEW: Complete payment with global persistence
+  async completePaymentWithGlobalSync({ commit, dispatch, state }, paymentData) {
+    try {
+      const userId = state.currentUser?.firebaseId || state.currentUser?._id;
+      if (!userId) {
+        return { success: false, error: 'User not found' };
+      }
+      // Complete payment globally
+      const result = await completePaymentGlobally(userId, paymentData);
+      
+      if (result.success) {
+        // Update store
+        commit('SET_USER_STATUS', paymentData.plan);
+        commit('UPDATE_SUBSCRIPTION', result.subscription);
+        commit('ADD_PAYMENT', {
+          ...paymentData,
+          status: 'completed',
+          completedAt: new Date().toISOString()
+        });
+        
+        return result;
+      }
+      return result;
+    } catch (error) {
+      console.error('❌ Global payment completion failed:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
+
 };
 // Assuming handleSuccessfulUserSave and eventBus are defined elsewhere or passed in scope.
 // This block is typically outside the store module or in a related utility file.
@@ -3262,4 +3380,6 @@ export const performanceMonitor = {
     };
   }
 };
+
+
 

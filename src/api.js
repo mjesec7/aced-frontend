@@ -2828,5 +2828,440 @@ export {
   executePaymentFlow
 };
 
+// 🌐 GLOBAL SUBSCRIPTION PERSISTENCE SYSTEM
+// This ensures user status is saved to server and synced globally
+
+/**
+ * Save subscription to server for global persistence
+ */
+export const saveSubscriptionToServer = async (userId, subscriptionData) => {
+  try {
+    console.log('🌐 Saving subscription to server:', { userId, subscriptionData });
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      console.warn('⚠️ No auth token for server save');
+      return { success: false, error: 'No authentication token' };
+    }
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+    // Prepare comprehensive subscription data
+    const serverData = {
+      userId: userId,
+      subscriptionPlan: subscriptionData.plan,
+      subscriptionStatus: subscriptionData.status || 'active',
+      activatedAt: subscriptionData.activatedAt || new Date().toISOString(),
+      expiryDate: subscriptionData.expiryDate,
+      source: subscriptionData.source || 'api',
+      details: {
+        ...subscriptionData.details,
+        lastUpdated: new Date().toISOString(),
+        deviceInfo: {
+          userAgent: navigator.userAgent,
+          timestamp: Date.now()
+        }
+      },
+      metadata: {
+        version: '2.0',
+        persistenceType: 'global',
+        syncSource: 'client'
+      }
+    };
+    // Try multiple endpoints for saving subscription
+    const endpoints = [
+      `/users/${userId}/subscription`,
+      `/api/users/${userId}/subscription`,
+      `/subscription/save`,
+      `/users/${userId}/status`
+    ];
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`🔄 Trying endpoint: ${endpoint}`);
+        const response = await api.post(endpoint, serverData, { headers });
+        if (response.data && response.data.success !== false) {
+          console.log('✅ Subscription saved to server via:', endpoint);
+          return {
+            success: true,
+            data: response.data,
+            endpoint: endpoint,
+            serverData: serverData
+          };
+        }
+      } catch (endpointError) {
+        console.warn(`⚠️ Endpoint ${endpoint} failed:`, endpointError.message);
+        continue;
+      }
+    }
+    // If all endpoints fail, still return success but with warning
+    console.warn('⚠️ All save endpoints failed, subscription saved locally only');
+    return {
+      success: true,
+      localOnly: true,
+      warning: 'Saved locally only - server sync failed',
+      serverData: serverData
+    };
+  } catch (error) {
+    console.error('❌ Failed to save subscription to server:', error);
+    return {
+      success: false,
+      error: error.message,
+      localOnly: true
+    };
+  }
+};
+
+/**
+ * Load subscription from server for global sync
+ */
+export const loadSubscriptionFromServer = async (userId) => {
+  try {
+    console.log('🌐 Loading subscription from server for user:', userId);
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      console.warn('⚠️ No auth token for server load');
+      return { success: false, error: 'No authentication token' };
+    }
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+    // Try multiple endpoints for loading subscription
+    const endpoints = [
+      `/users/${userId}/subscription`,
+      `/api/users/${userId}/subscription`,
+      `/users/${userId}/status`,
+      `/api/users/${userId}/status`,
+      `/subscription/user/${userId}`
+    ];
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`🔍 Checking endpoint: ${endpoint}`);
+        const response = await api.get(endpoint, { headers });
+        if (response.data && response.data.success !== false) {
+          const serverData = response.data.data || response.data;
+          // Extract subscription information
+          const subscription = {
+            plan: serverData.subscriptionPlan || serverData.plan || serverData.userStatus || 'free',
+            status: serverData.subscriptionStatus || serverData.status || (serverData.subscriptionPlan !== 'free' ? 'active' : 'inactive'),
+            activatedAt: serverData.activatedAt || serverData.createdAt,
+            expiryDate: serverData.expiryDate || serverData.subscriptionExpiry,
+            source: serverData.source || 'server',
+            details: serverData.details || {},
+            lastSync: new Date().toISOString(),
+            serverSync: true
+          };
+          // Validate the subscription
+          if (subscription.plan && subscription.plan !== 'free') {
+            // Check if not expired
+            if (subscription.expiryDate) {
+              const expiryDate = new Date(subscription.expiryDate);
+              const now = new Date();
+              if (expiryDate > now) {
+                console.log('✅ Valid server subscription found:', subscription);
+                return {
+                  success: true,
+                  subscription: subscription,
+                  endpoint: endpoint,
+                  serverSync: true
+                };
+              } else {
+                console.log('⏰ Server subscription expired:', subscription);
+                // Continue to check other endpoints or return expired status
+              }
+            } else {
+              // No expiry date, assume valid for paid plans
+              console.log('✅ Server subscription found (no expiry):', subscription);
+              return {
+                success: true,
+                subscription: subscription,
+                endpoint: endpoint,
+                serverSync: true
+              };
+            }
+          }
+        }
+      } catch (endpointError) {
+        console.warn(`⚠️ Endpoint ${endpoint} failed:`, endpointError.message);
+        continue;
+      }
+    }
+    console.log('ℹ️ No valid subscription found on server');
+    return {
+      success: true,
+      subscription: null,
+      message: 'No subscription found on server'
+    };
+  } catch (error) {
+    console.error('❌ Failed to load subscription from server:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Sync subscription status globally (bidirectional)
+ */
+export const syncSubscriptionGlobally = async (userId, localSubscription = null) => {
+  try {
+    console.log('🔄 Starting global subscription sync for user:', userId);
+    // Step 1: Load from server
+    const serverResult = await loadSubscriptionFromServer(userId);
+    let finalSubscription = null;
+    let syncAction = 'none';
+    if (serverResult.success && serverResult.subscription) {
+      const serverSub = serverResult.subscription;
+      if (localSubscription) {
+        // Compare local vs server and use the better one
+        const localExpiry = localSubscription.expiryDate ? new Date(localSubscription.expiryDate) : null;
+        const serverExpiry = serverSub.expiryDate ? new Date(serverSub.expiryDate) : null;
+        // Priority logic: use the subscription with later expiry date or higher plan
+        const planPriority = { free: 0, start: 1, pro: 2, premium: 3 };
+        const localPriority = planPriority[localSubscription.plan] || 0;
+        const serverPriority = planPriority[serverSub.plan] || 0;
+        if (serverPriority > localPriority) {
+          finalSubscription = serverSub;
+          syncAction = 'server-to-local';
+        } else if (localPriority > serverPriority) {
+          finalSubscription = localSubscription;
+          syncAction = 'local-to-server';
+        } else if (serverExpiry && localExpiry) {
+          // Same plan, compare expiry dates
+          if (serverExpiry > localExpiry) {
+            finalSubscription = serverSub;
+            syncAction = 'server-to-local';
+          } else {
+            finalSubscription = localSubscription;
+            syncAction = 'local-to-server';
+          }
+        } else {
+          // Use server version if equal
+          finalSubscription = serverSub;
+          syncAction = 'server-to-local';
+        }
+      } else {
+        // No local subscription, use server
+        finalSubscription = serverSub;
+        syncAction = 'server-to-local';
+      }
+    } else if (localSubscription && localSubscription.plan !== 'free') {
+      // No server subscription but have local, upload to server
+      finalSubscription = localSubscription;
+      syncAction = 'local-to-server';
+    }
+    // Step 2: Perform sync action
+    if (syncAction === 'local-to-server' && finalSubscription) {
+      console.log('⬆️ Syncing local subscription to server');
+      await saveSubscriptionToServer(userId, finalSubscription);
+    }
+    // Step 3: Update local storage with final subscription
+    if (finalSubscription && finalSubscription.plan !== 'free') {
+      const now = new Date();
+      const expiryDate = finalSubscription.expiryDate ? new Date(finalSubscription.expiryDate) : null;
+      if (!expiryDate || expiryDate > now) {
+        // Valid subscription, persist locally
+        console.log('💾 Persisting synced subscription locally:', finalSubscription);
+        localStorage.setItem('subscriptionData', JSON.stringify(finalSubscription));
+        localStorage.setItem('userStatus', finalSubscription.plan);
+        localStorage.setItem('userPlan', finalSubscription.plan);
+        localStorage.setItem('subscriptionPlan', finalSubscription.plan);
+        localStorage.setItem('subscriptionExpiry', finalSubscription.expiryDate || '');
+        localStorage.setItem('lastGlobalSync', Date.now().toString());
+        return {
+          success: true,
+          subscription: finalSubscription,
+          syncAction: syncAction,
+          globalSync: true
+        };
+      }
+    }
+    // No valid subscription found
+    console.log('ℹ️ No valid subscription after global sync');
+    return {
+      success: true,
+      subscription: null,
+      syncAction: 'none',
+      message: 'No valid subscription to sync'
+    };
+  } catch (error) {
+    console.error('❌ Global subscription sync failed:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Enhanced promocode application with global persistence
+ */
+export const applyPromocodeGlobally = async (userId, promoCode, plan) => {
+  try {
+    console.log('🎟️ Applying promocode globally:', { userId, promoCode, plan });
+    // Step 1: Apply promocode via API (this should update server-side)
+    const token = await auth.currentUser?.getIdToken();
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+    const response = await api.post('/api/payments/promo-code', {
+      userId: userId,
+      promoCode: promoCode.toUpperCase(),
+      plan: plan
+    }, { headers });
+    if (response.data && response.data.success) {
+      console.log('✅ Promocode accepted by server');
+      // Step 2: Create subscription data
+      const now = new Date();
+      const expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+      const subscriptionData = {
+        plan: plan,
+        status: 'active',
+        activatedAt: now.toISOString(),
+        expiryDate: expiryDate.toISOString(),
+        source: 'promocode',
+        details: {
+          promocode: promoCode.toUpperCase(),
+          appliedAt: now.toISOString(),
+          serverResponse: response.data
+        },
+        lastSync: now.toISOString()
+      };
+      // Step 3: Save to server for global persistence
+      const saveResult = await saveSubscriptionToServer(userId, subscriptionData);
+      // Step 4: Always persist locally regardless of server save result
+      localStorage.setItem('subscriptionData', JSON.stringify(subscriptionData));
+      localStorage.setItem('userStatus', plan);
+      localStorage.setItem('userPlan', plan);
+      localStorage.setItem('subscriptionPlan', plan);
+      localStorage.setItem('subscriptionExpiry', subscriptionData.expiryDate);
+      localStorage.setItem('promocodeApplied', JSON.stringify({
+        code: promoCode.toUpperCase(),
+        plan: plan,
+        appliedAt: now.toISOString()
+      }));
+      return {
+        success: true,
+        subscription: subscriptionData,
+        globalSync: saveResult.success && !saveResult.localOnly,
+        serverResponse: response.data,
+        message: `Promocode applied! ${plan.toUpperCase()} plan activated${saveResult.localOnly ? ' (local only)' : ' globally'}.`
+      };
+    }
+    return {
+      success: false,
+      error: response.data?.message || response.data?.error || 'Promocode was rejected by server'
+    };
+  } catch (error) {
+    console.error('❌ Global promocode application failed:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Enhanced payment completion with global persistence
+ */
+export const completePaymentGlobally = async (userId, paymentData) => {
+  try {
+    console.log('💳 Completing payment globally:', { userId, paymentData });
+    // Step 1: Verify payment with server
+    const token = await auth.currentUser?.getIdToken();
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+    // This should be called after successful payment processing
+    const response = await api.post('/api/payments/complete', {
+      userId: userId,
+      ...paymentData
+    }, { headers });
+    if (response.data && response.data.success) {
+      console.log('✅ Payment confirmed by server');
+      // Step 2: Create subscription data
+      const now = new Date();
+      const expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year for payments
+      const subscriptionData = {
+        plan: paymentData.plan,
+        status: 'active',
+        activatedAt: now.toISOString(),
+        expiryDate: expiryDate.toISOString(),
+        source: 'payment',
+        isAutoRenew: true,
+        details: {
+          transactionId: paymentData.transactionId,
+          amount: paymentData.amount,
+          currency: paymentData.currency || 'UZS',
+          paymentMethod: paymentData.method,
+          completedAt: now.toISOString(),
+          serverResponse: response.data
+        },
+        lastSync: now.toISOString()
+      };
+      // Step 3: Save to server for global persistence
+      const saveResult = await saveSubscriptionToServer(userId, subscriptionData);
+      // Step 4: Always persist locally
+      localStorage.setItem('subscriptionData', JSON.stringify(subscriptionData));
+      localStorage.setItem('userStatus', paymentData.plan);
+      localStorage.setItem('userPlan', paymentData.plan);
+      localStorage.setItem('subscriptionPlan', paymentData.plan);
+      localStorage.setItem('subscriptionExpiry', subscriptionData.expiryDate);
+      localStorage.setItem('lastPayment', JSON.stringify({
+        transactionId: paymentData.transactionId,
+        plan: paymentData.plan,
+        amount: paymentData.amount,
+        completedAt: now.toISOString()
+      }));
+      return {
+        success: true,
+        subscription: subscriptionData,
+        globalSync: saveResult.success && !saveResult.localOnly,
+        serverResponse: response.data,
+        message: `Payment completed! ${paymentData.plan.toUpperCase()} plan activated${saveResult.localOnly ? ' (local only)' : ' globally'}.`
+      };
+    }
+    return {
+      success: false,
+      error: response.data?.message || response.data?.error || 'Payment was not confirmed by server'
+    };
+  } catch (error) {
+    console.error('❌ Global payment completion failed:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Check global sync status with server
+ */
+export const checkGlobalSyncStatus = async (userId, localSubscription = null) => {
+  try {
+    console.log('🔄 Checking global sync status for user:', userId);
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      console.warn('⚠️ No auth token for status check');
+      return { syncNeeded: false, message: 'No authenticated user' };
+    }
+    const headers = { 'Authorization': `Bearer ${token}` };
+    const { data } = await api.post(`/api/users/${userId}/sync-status`, {
+      localSubscription: localSubscription
+    }, { headers });
+    return data;
+  } catch (error) {
+    console.error('❌ Failed to check global sync status:', error);
+    return {
+      syncNeeded: true,
+      message: 'Server check failed, assuming sync is needed',
+      error: error.message
+    };
+  }
+};
+
 // ✅ FINAL EXPORT
 export default api;
