@@ -115,12 +115,38 @@ const getValidToken = async () => {
   }
 };
 
-// ✅ REQUEST INTERCEPTOR
+// ========================================
+// 🚨 CRITICAL FIX FOR API.JS REQUEST INTERCEPTOR
+// ========================================
+
+// ✅ FIXED REQUEST INTERCEPTOR - No more double /api/api/
 api.interceptors.request.use(async (config) => {
   try {
-    // FIX: Ensure the API endpoint starts with /api/
-    if (!config.url.startsWith('/api/') && !config.url.startsWith('/health')) {
-      config.url = `/api${config.url}`;
+    // ✅ CRITICAL FIX: Prevent double /api/ in URLs
+    if (config.url) {
+      console.log('🔗 Original URL:', config.url);
+      
+      // Clean the URL properly
+      let cleanUrl = config.url;
+      
+      // Remove any leading /api/ if it exists
+      cleanUrl = cleanUrl.replace(/^\/api\//, '');
+      
+      // Special handling for specific endpoints that shouldn't have /api/
+      const specialEndpoints = ['/health', '/auth-test'];
+      const isSpecialEndpoint = specialEndpoints.some(endpoint => cleanUrl.startsWith(endpoint.substring(1)));
+      
+      if (isSpecialEndpoint) {
+        config.url = `/${cleanUrl}`;
+      } else {
+        // Add /api/ prefix for all other endpoints
+        config.url = `/api/${cleanUrl}`;
+      }
+      
+      // Clean up any double slashes
+      config.url = config.url.replace(/\/+/g, '/');
+      
+      console.log('🔗 Final URL:', config.url);
     }
     
     const requestKey = createRequestKey(config);
@@ -149,6 +175,7 @@ api.interceptors.request.use(async (config) => {
     return Promise.reject(error);
   }
 });
+
 
 // ✅ RESPONSE INTERCEPTOR
 api.interceptors.response.use(
@@ -285,7 +312,8 @@ export const getUpdatedCourses = async (filters = {}) => {
     });
 
     const queryString = params.toString();
-    const url = queryString ? `/updated-courses?${queryString}` : '/updated-courses';
+    // ✅ FIXED: Clean URL without /api/ prefix
+    const url = queryString ? `updated-courses?${queryString}` : 'updated-courses';
 
     const { data } = await api.get(url);
 
@@ -543,7 +571,8 @@ export const getTopics = async (filters = {}) => {
     });
     
     const queryString = params.toString();
-    const url = queryString ? `/topics?${queryString}` : '/topics';
+    // ✅ FIXED: Clean URL without /api/ prefix
+    const url = queryString ? `topics?${queryString}` : 'topics';
     
     const { data } = await api.get(url);
     
@@ -847,10 +876,11 @@ export const getLessonsByTopic = async (topicId) => {
       throw new Error('Topic ID is required');
     }
 
-    // ✅ STRATEGY 1: Try the enhanced lessons endpoint first
+    // ✅ Strategy 1: Try the enhanced lessons endpoint first
     try {
       console.log('🔄 Strategy 1: Enhanced lessons endpoint...');
-      const { data } = await api.get(`/lessons/topic/${topicId}?includeStats=true&sortBy=createdAt&order=asc`);
+      // ✅ FIXED: Clean URL without /api/ prefix
+      const { data } = await api.get(`lessons/topic/${topicId}?includeStats=true&sortBy=createdAt&order=asc`);
       
       console.log('📚 Enhanced endpoint raw response:', data);
       
@@ -872,10 +902,11 @@ export const getLessonsByTopic = async (topicId) => {
       }
     }
     
-    // ✅ STRATEGY 2: Try legacy topic-specific lessons endpoint
+    // ✅ Strategy 2: Try legacy topic-specific lessons endpoint
     try {
       console.log('🔄 Strategy 2: Legacy topic lessons endpoint...');
-      const { data } = await api.get(`/topics/${topicId}/lessons`);
+      // ✅ FIXED: Clean URL without /api/ prefix
+      const { data } = await api.get(`topics/${topicId}/lessons`);
       
       console.log('📚 Legacy endpoint raw response:', data);
       
@@ -903,10 +934,11 @@ export const getLessonsByTopic = async (topicId) => {
       }
     }
     
-    // ✅ STRATEGY 3: Final fallback - get all lessons and filter by topicId
+    // ✅ Strategy 3: Final fallback - get all lessons and filter by topicId
     try {
       console.log('🔄 Strategy 3: Fallback - filter all lessons...');
-      const { data } = await api.get('/lessons');
+      // ✅ FIXED: Clean URL without /api/ prefix
+      const { data } = await api.get('lessons');
       
       console.log(`📚 All lessons response: ${Array.isArray(data) ? data.length : 'not array'} items`);
       
@@ -980,7 +1012,8 @@ export const getAllLessons = async (filters = {}) => {
     });
     
     const queryString = params.toString();
-    const url = queryString ? `/lessons?${queryString}` : '/lessons';
+    // ✅ FIXED: Clean URL without /api/ prefix
+    const url = queryString ? `lessons?${queryString}` : 'lessons';
     
     const { data } = await api.get(url);
     
@@ -1190,11 +1223,9 @@ export const getUserProgress = async (userId) => {
     
     // Try multiple endpoints
     const endpoints = [
-      `/users/${userId}/progress`,
-      `/user-progress/user/${userId}`,
-      `/progress?userId=${userId}`,
-      `/api/progress/${userId}`,
-      `/api/user-progress/${userId}`
+      `users/${userId}/progress`,
+      `user-progress/user/${userId}`,
+      `progress?userId=${userId}`,
     ];
     
     for (const endpoint of endpoints) {
@@ -2093,7 +2124,8 @@ export const getUserStudyList = async (userId) => {
     const token = await auth.currentUser?.getIdToken();
     if (!token) throw new Error('No authentication token');
     
-    const { data } = await api.get(`/users/${userId}/study-list`, {
+    // ✅ FIXED: Clean URL without /api/ prefix
+    const { data } = await api.get(`users/${userId}/study-list`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     
@@ -2192,7 +2224,8 @@ export const getRecommendations = async (userId) => {
     const token = await auth.currentUser?.getIdToken();
     if (!token) throw new Error('No authentication token');
     
-    const { data } = await api.get(`/users/${userId}/recommendations`, {
+    // ✅ FIXED: Clean URL without /api/ prefix
+    const { data } = await api.get(`users/${userId}/recommendations`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     return data;
