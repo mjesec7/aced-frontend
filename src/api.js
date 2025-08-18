@@ -139,8 +139,11 @@ api.interceptors.request.use(async (config) => {
       if (isSpecialEndpoint) {
         config.url = `/${cleanUrl}`;
       } else {
-        // Add /api/ prefix for all other endpoints
-        config.url = `/api/${cleanUrl}`;
+        // ✅ FIXED: Add /api/ prefix only if the BASE_URL does not already have it
+        const hasApiPrefix = BASE_URL.includes('/api');
+        config.url = hasApiPrefix
+          ? (cleanUrl.startsWith('/') ? cleanUrl : `/${cleanUrl}`)
+          : `/api/${cleanUrl}`;
       }
       
       // Clean up any double slashes
