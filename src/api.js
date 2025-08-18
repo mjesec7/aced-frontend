@@ -1,4 +1,4 @@
-// src/api.js - UPDATED API WITH getUpdatedCourses AND ALL PREVIOUS FUNCTIONS
+// src/api.js - UNIFIED AND FIXED API FILE
 import axios from 'axios';
 import { auth } from '@/firebase';
 
@@ -118,6 +118,11 @@ const getValidToken = async () => {
 // ✅ REQUEST INTERCEPTOR
 api.interceptors.request.use(async (config) => {
   try {
+    // FIX: Ensure the API endpoint starts with /api/
+    if (!config.url.startsWith('/api/') && !config.url.startsWith('/health')) {
+      config.url = `/api${config.url}`;
+    }
+    
     const requestKey = createRequestKey(config);
     
     // Check for pending duplicate requests
@@ -2703,19 +2708,19 @@ export const diagnosticTool = {
   // Test critical endpoints
   async testCriticalEndpoints() {
     const endpoints = [
-      { name: 'Topics List', url: '/api/topics', method: 'GET' },
-      { name: 'Lessons List', url: '/api/lessons', method: 'GET' },
-      { name: 'Topic by ID', url: '/api/topics/507f1f77bcf86cd799439011', method: 'GET' },
-      { name: 'Lesson by ID', url: '/api/lessons/507f1f77bcf86cd799439011', method: 'GET' },
-      { name: 'Topic Lessons', url: '/api/lessons/topic/507f1f77bcf86cd799439011', method: 'GET' },
-      { name: 'User Status', url: '/api/users/testuser/status', method: 'GET' }
+      { name: 'Topics List', url: '/topics', method: 'GET' },
+      { name: 'Lessons List', url: '/lessons', method: 'GET' },
+      { name: 'Topic by ID', url: '/topics/507f1f77bcf86cd799439011', method: 'GET' },
+      { name: 'Lesson by ID', url: '/lessons/507f1f77bcf86cd799439011', method: 'GET' },
+      { name: 'Topic Lessons', url: '/lessons/topic/507f1f77bcf86cd799439011', method: 'GET' },
+      { name: 'User Status', url: '/users/testuser/status', method: 'GET' }
     ];
     
     const results = {};
     
     for (const endpoint of endpoints) {
       try {
-        const response = await fetch(`${BASE_URL}${endpoint.url}`, {
+        const response = await fetch(`${BASE_URL}/api${endpoint.url}`, {
           method: endpoint.method,
           headers: {
             'Content-Type': 'application/json'
