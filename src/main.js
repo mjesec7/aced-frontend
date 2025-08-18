@@ -2623,68 +2623,6 @@ window.applyPromocode = (promocode, newPlan) => {
   return true;
 };
 
-// ✅ CRITICAL: Add comprehensive subscription persistence system
-async function setupSubscriptionPersistence(plan, source = 'manual') {
-  if (!plan || plan === 'free') {
-    return;
-  }
-
-
-  const now = new Date();
-  // ✅ FIXED: Set expiry to 1 year instead of 30 days
-  const expiryDate = new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000));
-
-  // Check if we already have a valid subscription
-  const existingSubscription = getStoredSubscription();
-
-  let subscriptionData;
-
-  // ✅ FIXED: Preserve existing valid subscriptions properly
-  if (existingSubscription && existingSubscription.plan === plan && existingSubscription.expiryDate) {
-    const existingExpiry = new Date(existingSubscription.expiryDate);
-    if (existingExpiry > now) {
-      // Keep existing expiry if still valid
-      subscriptionData = { ...existingSubscription, lastUpdated: now.toISOString(), source: source };
-    } else {
-      // If expired, create a new one
-      subscriptionData = {
-        plan: plan,
-        activatedAt: now.toISOString(),
-        expiryDate: expiryDate.toISOString(),
-        lastUpdated: now.toISOString(),
-        source: source,
-        status: 'active'
-      };
-    }
-  } else {
-    // Create new subscription or update plan
-    subscriptionData = {
-      plan: plan,
-      activatedAt: now.toISOString(),
-      expiryDate: expiryDate.toISOString(),
-      lastUpdated: now.toISOString(),
-      source: source,
-      status: 'active'
-    };
-  }
-
-  // Store in localStorage with multiple keys for reliability
-  try {
-    localStorage.setItem('subscriptionData', JSON.stringify(subscriptionData));
-    localStorage.setItem('subscriptionPlan', plan);
-    localStorage.setItem('subscriptionExpiry', subscriptionData.expiryDate);
-    localStorage.setItem('subscriptionActivated', subscriptionData.activatedAt);
-    localStorage.setItem('userStatus', plan);
-    localStorage.setItem('userPlan', plan);
-
-  } catch (error) {
-  }
-
-  // Setup expiry check
-  setupSubscriptionExpiryCheck();
-
-  return subscriptionData;
-}
 
 // ✅ CRITICAL & FIXED: Get stored subscription data and prevent corruption
 function getStoredSubscription() {
