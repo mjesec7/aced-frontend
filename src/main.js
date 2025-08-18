@@ -246,49 +246,35 @@ export const authInitPromise = new Promise((resolve, reject) => {
 // 🔥 ENHANCED STORE INITIALIZATION WITH BULLETPROOF ERROR HANDLING
 // ============================================================================
 async function ensureStoreInitialized() {
-
+  console.log('🏪 Ensuring store is initialized with server data...');
   try {
     if (store.getters['user/isInitialized']) {
+      console.log('✅ Store already initialized');
 
-      // But check if subscription needs restoration
-      const preserveStatus = localStorage.getItem('authPreserveStatus');
-      if (preserveStatus && preserveStatus !== 'free') {
-        const currentStoreStatus = store.getters['user/userStatus'];
-        if (currentStoreStatus !== preserveStatus) {
-          store.commit('user/SET_USER_STATUS', preserveStatus);
-        }
+      // But still check if we need to load from server
+      const lastServerLoad = localStorage.getItem('lastServerLoad');
+      const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+
+      if (!lastServerLoad || parseInt(lastServerLoad) < fiveMinutesAgo) {
+        console.log('🔄 Loading fresh data from server...');
+        await store.dispatch('user/loadUserFromServer');
       }
 
       return true;
     }
-
+    // Initialize store
     await store.dispatch('user/initialize');
-
-    // After initialization, restore subscription if needed
-    const preserveStatus = localStorage.getItem('authPreserveStatus') || localStorage.getItem('userStatus');
-    if (preserveStatus && preserveStatus !== 'free') {
-      store.commit('user/SET_USER_STATUS', preserveStatus);
+    // CRITICAL: Load user from server after initialization
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      console.log('👤 Loading authenticated user from server...');
+      await store.dispatch('user/loadUserFromServer');
     }
-
     setupStoreInterceptor(store);
     appLifecycle.storeReady = true;
-
     return true;
-
   } catch (error) {
-
-    try {
-      store.commit('user/SET_INITIALIZED', false);
-
-      // Still try to restore subscription even after init failure
-      const preserveStatus = localStorage.getItem('authPreserveStatus') || localStorage.getItem('userStatus');
-      if (preserveStatus && preserveStatus !== 'free') {
-        store.commit('user/SET_USER_STATUS', preserveStatus);
-      }
-
-    } catch (commitError) {
-    }
-
+    console.error('❌ Store initialization failed:', error);
     throw error;
   }
 }
@@ -299,119 +285,128 @@ async function ensureStoreInitialized() {
 
 // ✅ ENHANCED: handleUserAuthenticated with server status check
 async function handleUserAuthenticated(firebaseUser) {
+  console.log('🔐 Handling authenticated user with server status fetch...');
 
   try {
-    // Get Firebase ID token with retries
-    let token;
-    let tokenRetries = 3;
+    // Get Firebase token
+    const token = await firebaseUser.getIdToken(true);
+    const userId = firebaseUser.uid;
+    // CRITICAL: Fetch user data from server FIRST
+    console.log('📡 Fetching user data from server...');
 
-    while (tokenRetries > 0) {
+    let serverUser = null;
+    let userStatus = 'free';
+    // Try to fetch user from server
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/users/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        console.log('✅ Server user data fetched:', userData);
+
+        serverUser = userData.user || userData;
+        userStatus = serverUser.subscriptionPlan || serverUser.userStatus || 'free';
+
+        console.log('📊 Server user status:', userStatus);
+      } else {
+        console.warn('⚠️ Server fetch failed, status:', response.status);
+      }
+    } catch (fetchError) {
+      console.error('❌ Server fetch error:', fetchError);
+    }
+    // If server fetch failed, try saveUser as fallback
+    if (!serverUser) {
+      console.log('🔄 Server fetch failed, trying saveUser...');
+
+      const userData = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+        emailVerified: firebaseUser.emailVerified,
+        photoURL: firebaseUser.photoURL,
+        lastLoginAt: new Date().toISOString()
+      };
       try {
-        token = await firebaseUser.getIdToken(true);
-        if (token && token.length > 20) {
-          break;
+        const saveResult = await store.dispatch('user/saveUser', { userData, token });
+
+        if (saveResult && saveResult.success && saveResult.user) {
+          serverUser = saveResult.user;
+          userStatus = serverUser.subscriptionPlan || serverUser.userStatus || 'free';
+          console.log('✅ SaveUser result status:', userStatus);
         }
-        throw new Error('Invalid token received');
-      } catch (tokenError) {
-        tokenRetries--;
-        if (tokenRetries === 0) {
-          await handleBasicUserAuthentication(firebaseUser);
-          return;
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (saveError) {
+        console.error('❌ SaveUser also failed:', saveError);
       }
     }
-
-    // Prepare user data
-    const userData = {
+    // Create enhanced user object with server status
+    const enhancedUser = {
+      ...serverUser,
+      firebaseId: firebaseUser.uid,
+      _id: serverUser?._id || firebaseUser.uid,
       uid: firebaseUser.uid,
       email: firebaseUser.email,
-      displayName: firebaseUser.displayName,
-      name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-      emailVerified: firebaseUser.emailVerified,
-      photoURL: firebaseUser.photoURL,
-      lastLoginAt: new Date().toISOString()
+      name: serverUser?.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+      subscriptionPlan: userStatus,
+      userStatus: userStatus,
+      plan: userStatus,
+      lastLoginAt: new Date().toISOString(),
+      serverStatus: userStatus,
+      fetchedFromServer: true
     };
-
-
-    // ✅ CRITICAL FIX: Robust saveUser with proper error handling
-    let saveResult = null;
-    let saveRetries = 2;
-
-    while (saveRetries > 0) {
-      try {
-
-        // ✅ Call store saveUser action with proper error handling
-        const storeResult = await store.dispatch('user/saveUser', { userData, token });
-
-        // ✅ CRITICAL: Validate result object structure
-        if (storeResult && typeof storeResult === 'object') {
-          if (storeResult.success === true && storeResult.user && typeof storeResult.user === 'object') {
-            saveResult = storeResult;
-            break;
-          } else if (storeResult.success === false) {
-            throw new Error(storeResult.error || 'Save returned failure');
-          } else {
-            throw new Error('Save result has invalid structure');
-          }
-        } else {
-          throw new Error('Save result is not a valid object');
-        }
-
-      } catch (saveError) {
-        saveRetries--;
-
-        if (saveRetries === 0) {
-
-          // ✅ Create fallback saveResult with proper structure
-          saveResult = {
-            success: true,
-            user: {
-              uid: firebaseUser.uid,
-              _id: firebaseUser.uid,
-              firebaseId: firebaseUser.uid,
-              email: firebaseUser.email,
-              name: userData.name,
-              subscriptionPlan: 'free',
-              userStatus: 'free',
-              emailVerified: firebaseUser.emailVerified,
-              photoURL: firebaseUser.photoURL,
-              createdAt: new Date().toISOString(),
-              lastLoginAt: new Date().toISOString(),
-              authProvider: 'firebase',
-              fallbackCreated: true,
-              originalError: saveError.message
-            },
-            source: 'main-js-fallback',
-            message: 'User created as fallback in main.js',
-            warning: 'Backend save failed - using fallback mode'
-          };
-          break;
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-    }
-
-    // ✅ ENHANCED: Handle save result - should never be null at this point
-    if (saveResult && saveResult.success && saveResult.user) {
-      await handleSuccessfulUserSave(saveResult, token, userData);
-    } else {
-      // ✅ Emergency fallback if saveResult is somehow still invalid
-      console.error('🚨 CRITICAL: saveResult is invalid after all attempts:', saveResult);
-      await handleBasicUserAuthentication(firebaseUser, token, 'free');
-    }
-
+    console.log('🎯 Final enhanced user with status:', userStatus);
+    // CRITICAL: Update store with server status
+    store.commit('setUser', enhancedUser);
+    store.commit('setFirebaseUserId', enhancedUser.firebaseId);
+    store.commit('setToken', token);
+    store.commit('user/SET_USER', enhancedUser);
+    store.commit('user/SET_USER_STATUS', userStatus);
+    // CRITICAL: Update localStorage with server status
+    localStorage.setItem('user', JSON.stringify(enhancedUser));
+    localStorage.setItem('firebaseUserId', enhancedUser.firebaseId);
+    localStorage.setItem('userId', enhancedUser.firebaseId);
+    localStorage.setItem('token', token);
+    localStorage.setItem('userStatus', userStatus);
+    localStorage.setItem('userPlan', userStatus);
+    localStorage.setItem('subscriptionPlan', userStatus);
+    localStorage.setItem('plan', userStatus);
+    localStorage.setItem('serverStatus', userStatus);
+    localStorage.setItem('lastServerFetch', Date.now().toString());
+    // Mark as authenticated
+    appLifecycle.authReady = true;
+    // CRITICAL: Trigger status events with server data
+    const eventData = {
+      oldStatus: 'free',
+      newStatus: userStatus,
+      source: 'server-auth-fetch',
+      user: enhancedUser,
+      timestamp: Date.now(),
+      serverFetched: true
+    };
+    // Trigger multiple events for maximum compatibility
+    window.triggerGlobalEvent('userStatusChanged', eventData);
+    window.triggerGlobalEvent('userSubscriptionChanged', eventData);
+    window.triggerGlobalEvent('userLoggedIn', eventData);
+    window.triggerGlobalEvent('serverStatusLoaded', eventData);
+    // Delayed propagation for stubborn components
+    setTimeout(() => {
+      window.triggerGlobalEvent('userStatusChanged', eventData);
+      window.triggerGlobalEvent('globalForceUpdate', {
+        reason: 'server-status-loaded',
+        plan: userStatus,
+        timestamp: Date.now()
+      });
+    }, 100);
+    console.log('✅ User authentication with server status completed:', userStatus);
   } catch (error) {
-    console.error('❌ Authentication error:', error);
-
-    try {
-      // ✅ Final fallback: basic authentication
-      await handleBasicUserAuthentication(firebaseUser, null, 'free');
-    } catch (basicError) {
-      console.error('❌ Basic authentication also failed:', basicError);
-      await handleUserNotAuthenticated();
-    }
+    console.error('❌ Authentication with server fetch failed:', error);
+    // Fallback to basic auth
+    await handleBasicUserAuthentication(firebaseUser, null, 'free');
   }
 }
 // ✅ NEW: Function to fetch status from server
@@ -1352,6 +1347,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
         try {
           store.commit('user/setUserStatus', actualPlan);
         } catch (e) {
+          // Ignore if not present
         }
 
         // Direct state update as backup
@@ -1566,8 +1562,7 @@ function setupEnhancedGlobalSubscriptionManagement() {
 window.addEventListener('error', (event) => {
 
   // Check if error is related to user status/arrays
-  if (event.error?.message?.includes('length') ||
-    event.error?.message?.includes('Cannot read properties of undefined')) {
+  if (event.error?.message?.includes("Cannot read properties of undefined (reading 'length')")) {
 
     try {
       // Force store update
@@ -2317,7 +2312,7 @@ async function setupSubscriptionPersistence(plan, source = 'manual') {
 
   const now = new Date();
   // ✅ FIXED: Set expiry to 1 year instead of 30 days
-  const expiryDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
+  const expiryDate = new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000));
 
   // Check if we already have a valid subscription
   const existingSubscription = getStoredSubscription();

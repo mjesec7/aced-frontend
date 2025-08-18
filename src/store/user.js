@@ -2546,6 +2546,66 @@ const actions = {
     }
   },
 
+  // ✅ CRITICAL FIX: loadUserFromServer action
+  async loadUserFromServer({ commit, state }) {
+    console.log('🌐 Loading user from server...');
+
+    try {
+      const userId = getUserId(state);
+      if (!userId) {
+        console.log('❌ No user ID for server fetch');
+        return { success: false, error: 'No user ID' };
+      }
+      const token = await getUserToken();
+      if (!token) {
+        console.log('❌ No token for server fetch');
+        return { success: false, error: 'No token' };
+      }
+
+      // Import the API instance
+      const apiModule = await import('@/api');
+      const api = apiModule.default || apiModule;
+
+      const { data } = await api.get(`/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (data.success && data.user) {
+        const serverUser = data.user;
+        const serverStatus = serverUser.subscriptionPlan || serverUser.userStatus || 'free';
+        console.log('✅ Server user loaded with status:', serverStatus);
+
+        // Update store
+        commit('SET_USER', serverUser);
+        commit('SET_USER_STATUS', serverStatus);
+        
+        // Update localStorage
+        localStorage.setItem('user', JSON.stringify(serverUser));
+        localStorage.setItem('userStatus', serverStatus);
+        localStorage.setItem('userPlan', serverStatus);
+        localStorage.setItem('subscriptionPlan', serverStatus);
+        localStorage.setItem('serverStatus', serverStatus);
+        localStorage.setItem('lastServerLoad', Date.now().toString());
+        
+        // Trigger events
+        window.triggerGlobalEvent('userStatusChanged', {
+          oldStatus: state.userStatus,
+          newStatus: serverStatus,
+          source: 'server-load',
+          timestamp: Date.now()
+        });
+
+        return {
+          success: true,
+          user: serverUser,
+          status: serverStatus
+        };
+      }
+      return { success: false, error: 'Invalid server response' };
+    } catch (error) {
+      console.error('❌ Failed to load user from server:', error);
+      return { success: false, error: error.message };
+    }
+  },
 };
 // Assuming handleSuccessfulUserSave and eventBus are defined elsewhere or passed in scope.
 // This block is typically outside the store module or in a related utility file.
