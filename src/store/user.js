@@ -475,91 +475,101 @@ const mutations = {
     triggerGlobalEvent('userCleared', { timestamp });
   },
 
-  // 🔥 FIX 2: Enhanced status management with multiple reactivity strategies
+  // ✅ CRITICAL FIX: Enhanced SET_USER_STATUS mutation
   SET_USER_STATUS(state, status) {
     const startTime = Date.now();
     const oldStatus = state.userStatus;
 
+    console.log('🔧 SET_USER_STATUS mutation called:', { oldStatus, newStatus: status });
 
-    // ✅ BULLETPROOF: Validate status
+    // ✅ CRITICAL: Validate status
     const validStatuses = ['free', 'start', 'pro', 'premium'];
     const newStatus = validStatuses.includes(status) ? status : 'free';
 
     if (oldStatus === newStatus) {
-
-      // Still trigger events for consistency
-      triggerGlobalEvent('userStatusChanged', {
-        oldStatus,
-        newStatus,
-        timestamp: Date.now(),
-        source: 'store-no-change'
-      });
-      return;
+      console.log('ℹ️ Status unchanged, still triggering events for consistency');
     }
 
-    // 🚨 STRATEGY 1: Use Vue.set for guaranteed reactivity (Vue 2)
-    if (window.Vue?.set) {
-      window.Vue.set(state, 'userStatus', newStatus);
-    } else {
-      // Vue 3 or fallback
-      state.userStatus = newStatus;
+    // ✅ CRITICAL: Update state with multiple strategies for maximum compatibility
+    try {
+      // Strategy 1: Use Vue.set for guaranteed reactivity (Vue 2)
+      if (window.Vue?.set) {
+        window.Vue.set(state, 'userStatus', newStatus);
+      } else {
+        // Vue 3 or fallback
+        state.userStatus = newStatus;
+      }
+
+      // Strategy 2: Update subscription object
+      if (window.Vue?.set) {
+        window.Vue.set(state, 'subscription', {
+          ...state.subscription,
+          plan: newStatus,
+          status: newStatus !== 'free' ? 'active' : 'inactive',
+          lastSync: new Date().toISOString()
+        });
+      } else {
+        state.subscription = {
+          ...state.subscription,
+          plan: newStatus,
+          status: newStatus !== 'free' ? 'active' : 'inactive',
+          lastSync: new Date().toISOString()
+        };
+      }
+
+      // Strategy 3: Force reactivity with counters
+      state.system.lastUpdate = Date.now();
+      state.system.forceUpdateCounter = (state.system.forceUpdateCounter || 0) + 1;
+      state.system.reactivityKey = Date.now();
+
+      // Strategy 4: Update cache
+      if (window.Vue?.set) {
+        window.Vue.set(state.cache, 'userStatusCache', newStatus);
+        window.Vue.set(state.cache, 'lastCacheUpdate', Date.now());
+      } else {
+        state.cache.userStatusCache = newStatus;
+        state.cache.lastCacheUpdate = Date.now();
+      }
+
+      console.log('✅ State updated successfully:', newStatus);
+
+    } catch (stateUpdateError) {
+      console.error('❌ State update failed:', stateUpdateError);
     }
 
-    // 🚨 CRITICAL: Update subscription with Vue.set
-    if (window.Vue?.set) {
-      window.Vue.set(state, 'subscription', {
-        ...state.subscription,
-        plan: newStatus,
-        status: newStatus !== 'free' ? 'active' : 'inactive',
-        lastSync: new Date().toISOString()
-      });
-    } else {
-      state.subscription = {
-        ...state.subscription,
-        plan: newStatus,
-        status: newStatus !== 'free' ? 'active' : 'inactive',
-        lastSync: new Date().toISOString()
-      };
-    }
-
-    // 🚨 STRATEGY 2: Force reactivity with counters
-    state.system.lastUpdate = Date.now();
-    state.system.forceUpdateCounter = (state.system.forceUpdateCounter || 0) + 1;
-    state.system.reactivityKey = Date.now(); // Update dedicated reactivity key
-
-    // Update cache with Vue.set if available
-    if (window.Vue?.set) {
-      window.Vue.set(state.cache, 'userStatusCache', newStatus);
-      window.Vue.set(state.cache, 'lastCacheUpdate', Date.now());
-    } else {
-      state.cache.userStatusCache = newStatus;
-      state.cache.lastCacheUpdate = Date.now();
-    }
-
-    // Update feature matrix
+    // ✅ CRITICAL: Update feature matrix
     updateFeatureMatrix(state);
 
-    // 🚨 STRATEGY 3: Update localStorage IMMEDIATELY
+    // ✅ CRITICAL: Update localStorage IMMEDIATELY with ALL variations
     try {
       localStorage.setItem('userStatus', newStatus);
+      localStorage.setItem('userPlan', newStatus);
+      localStorage.setItem('subscriptionPlan', newStatus);
+      localStorage.setItem('plan', newStatus);
       localStorage.setItem('statusUpdateTime', Date.now().toString());
-      localStorage.setItem('plan', newStatus); // Legacy compatibility
+      localStorage.setItem('mutationTime', Date.now().toString());
+      
+      console.log('✅ localStorage updated with all status fields');
     } catch (storageError) {
+      console.error('❌ localStorage update failed:', storageError);
     }
 
-
-    // 🚨 STRATEGY 4: Enhanced global event broadcasting with multiple triggers
+    // ✅ CRITICAL: Enhanced global event broadcasting with multiple triggers
     const eventData = {
       oldStatus,
       newStatus,
+      plan: newStatus,
+      userStatus: newStatus,
+      subscriptionPlan: newStatus,
       timestamp: Date.now(),
       features: { ...state.features },
       subscription: { ...state.subscription },
       forceCounter: state.system.forceUpdateCounter,
-      source: 'store-mutation'
+      source: 'store-mutation-enhanced',
+      duration: Date.now() - startTime
     };
 
-    // 🔥 TRIGGER MULTIPLE EVENT TYPES for maximum compatibility
+    // ✅ CRITICAL: Trigger MULTIPLE event types for maximum compatibility
     const eventTypes = [
       'userStatusChanged',
       'subscriptionUpdated',
@@ -568,22 +578,30 @@ const mutations = {
       'statusUpdated',
       'globalForceUpdate',
       'reactivityUpdate',
-      'storeChanged'
+      'storeChanged',
+      'mutationComplete'
     ];
 
     eventTypes.forEach(eventType => {
-      triggerGlobalEvent(eventType, { ...eventData, eventType });
+      try {
+        triggerGlobalEvent(eventType, { ...eventData, eventType });
+      } catch (eventError) {
+        console.warn(`⚠️ Failed to trigger ${eventType}:`, eventError);
+      }
     });
 
-    // 🚨 CRITICAL: Force Vue reactivity with multiple strategies
+    // ✅ CRITICAL: Delayed events for stubborn components
     setTimeout(() => {
+      triggerGlobalEvent('delayedStatusUpdate', eventData);
       triggerGlobalEvent('forceReactivityUpdate', eventData);
+    }, 50);
 
-      // Additional delayed event for stubborn components
-      setTimeout(() => {
-        triggerGlobalEvent('delayedStatusUpdate', eventData);
-      }, 100);
-    }, 10);
+    // ✅ CRITICAL: Additional delayed event for maximum compatibility
+    setTimeout(() => {
+      triggerGlobalEvent('finalStatusUpdate', eventData);
+    }, 200);
+
+    console.log('✅ SET_USER_STATUS mutation completed:', newStatus);
   },
 
   // Legacy mutation for backward compatibility
@@ -924,26 +942,53 @@ const mutations = {
     }
   },
 
-  // Enhanced force update with better tracking
+  // ✅ CRITICAL FIX: Enhanced FORCE_UPDATE mutation
   FORCE_UPDATE(state) {
     const timestamp = Date.now();
     const oldCounter = state.system.forceUpdateCounter;
 
-    state.system.forceUpdateCounter++;
+    console.log('🔧 FORCE_UPDATE mutation called');
+
+    // ✅ Update counters and timestamps
+    state.system.forceUpdateCounter = (oldCounter || 0) + 1;
     state.system.lastUpdate = timestamp;
+    state.system.reactivityKey = timestamp;
 
+    // ✅ Force update all cached values
+    state.cache.userStatusCache = state.userStatus;
+    state.cache.lastCacheUpdate = timestamp;
 
-    triggerGlobalEvent('forceUpdate', {
+    console.log('✅ Force update completed, counter:', state.system.forceUpdateCounter);
+
+    // ✅ CRITICAL: Trigger multiple force update events
+    const eventData = {
       counter: state.system.forceUpdateCounter,
       oldCounter,
-      timestamp
+      timestamp,
+      userStatus: state.userStatus,
+      source: 'force-update-mutation'
+    };
+
+    const forceEventTypes = [
+      'forceUpdate',
+      'globalForceUpdate',
+      'vueReactivityUpdate',
+      'storeForceUpdate',
+      'reactivityUpdate'
+    ];
+
+    forceEventTypes.forEach(eventType => {
+      try {
+        triggerGlobalEvent(eventType, { ...eventData, eventType });
+      } catch (eventError) {
+        console.warn(`⚠️ Failed to trigger force ${eventType}:`, eventError);
+      }
     });
 
-    triggerGlobalEvent('globalForceUpdate', {
-      source: 'store-mutation',
-      counter: state.system.forceUpdateCounter,
-      timestamp
-    });
+    // ✅ CRITICAL: Delayed force update
+    setTimeout(() => {
+      triggerGlobalEvent('delayedForceUpdate', eventData);
+    }, 100);
   },
 
   // Enhanced error tracking
@@ -2819,12 +2864,13 @@ export {
 };
 
 
-// ✅ ENHANCED GETTER DEFINITIONS WITH COMPREHENSIVE NULL SAFETY
+// ✅ CRITICAL FIX 3: Enhanced getters with better caching and null safety
 const getters = {
   // ========================================
   // BASIC USER GETTERS WITH NULL SAFETY
   // ========================================
 
+  // ✅ CRITICAL: Enhanced isAuthenticated getter
   isAuthenticated: (state) => {
     return !!(state.currentUser && (state.currentUser.firebaseId || state.currentUser._id));
   },
@@ -2850,16 +2896,40 @@ const getters = {
   // SUBSCRIPTION GETTERS WITH NULL SAFETY
   // ========================================
 
-  userStatus: (state) => state.userStatus || 'free',
+  // ✅ CRITICAL: Enhanced userStatus getter with multiple fallbacks
+  userStatus: (state) => {
+    // Try multiple sources in priority order
+    const sources = [
+      state.userStatus,
+      state.cache?.userStatusCache,
+      state.subscription?.plan,
+      state.currentUser?.subscriptionPlan,
+      state.currentUser?.userStatus,
+      localStorage.getItem('userStatus'),
+      localStorage.getItem('subscriptionPlan'),
+      localStorage.getItem('userPlan')
+    ];
 
-  subscription: (state) => state.subscription || {
-    plan: 'free',
-    status: 'inactive',
-    source: null,
-    startDate: null,
-    expiryDate: null,
-    isAutoRenew: false,
-    details: {}
+    for (const source of sources) {
+      if (source && typeof source === 'string' && ['free', 'start', 'pro', 'premium'].includes(source)) {
+        return source;
+      }
+    }
+
+    return 'free';
+  },
+
+  // ✅ CRITICAL: Enhanced subscription getter
+  subscription: (state) => {
+    const subscription = state.subscription || {};
+    const userStatus = getters.userStatus(state);
+    
+    return {
+      plan: userStatus,
+      status: userStatus !== 'free' ? 'active' : 'inactive',
+      ...subscription,
+      lastAccess: Date.now()
+    };
   },
 
   subscriptionDetails: (state) => state.subscription || {
@@ -2871,8 +2941,9 @@ const getters = {
   // STATUS CHECKS WITH ENHANCED LOGIC
   // ========================================
 
-  isPremiumUser: (state) => {
-    const status = state.userStatus || 'free';
+  // ✅ CRITICAL: Enhanced isPremiumUser getter
+  isPremiumUser: (state, getters) => {
+    const status = getters.userStatus;
     return ['premium', 'start', 'pro'].includes(status);
   },
 
