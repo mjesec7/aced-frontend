@@ -1789,6 +1789,7 @@ window.addEventListener('DOMContentLoaded', () => {
       mutations.forEach(mutation => {
         try {
           store.commit(mutation, localStatus);
+          const newValue = store.getters['user/userStatus'];
         } catch (e) {
         }
       });
@@ -3111,3 +3112,104 @@ window.checkGlobalSyncStatus = async () => {
     };
   }
 };
+
+// ========================================
+// 2. Add this to your main.js file - ENHANCED STATUS RESTORATION
+// ========================================
+/**
+ * CRITICAL FIX: Enhanced subscription restoration on app load
+ */
+function enhancedSubscriptionRestoration() {
+  console.log('🔄 Starting enhanced subscription restoration...');
+  try {
+    // Check multiple sources for subscription data
+    const sources = [
+      () => {
+        const data = localStorage.getItem('subscriptionData');
+        return data ? JSON.parse(data) : null;
+      },
+      () => ({
+        plan: localStorage.getItem('userStatus'),
+        status: 'active',
+        source: 'userStatus'
+      }),
+      () => ({
+        plan: localStorage.getItem('userPlan'),
+        status: 'active',
+        source: 'userPlan'
+      }),
+      () => ({
+        plan: localStorage.getItem('subscriptionPlan'),
+        status: 'active',
+        source: 'subscriptionPlan'
+      }),
+      () => {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          return {
+            plan: user.subscriptionPlan || user.userStatus,
+            status: 'active',
+            source: 'user-object'
+          };
+        }
+        return null;
+      }
+    ];
+    let validSubscription = null;
+    // Try each source
+    for (const sourceFunc of sources) {
+      try {
+        const subscription = sourceFunc();
+        if (subscription && subscription.plan && subscription.plan !== 'free') {
+          // Validate subscription hasn't expired
+          if (subscription.expiryDate) {
+            const expiry = new Date(subscription.expiryDate);
+            const now = new Date();
+            if (now > expiry) {
+              console.log('⏰ Subscription expired:', subscription.plan);
+              continue;
+            }
+          }
+          validSubscription = subscription;
+          console.log('✅ Valid subscription found:', subscription.plan, 'from', subscription.source);
+          break;
+        }
+      } catch (sourceError) {
+        console.warn('⚠️ Error checking subscription source:', sourceError);
+        continue;
+      }
+    }
+    if (validSubscription) {
+      const plan = validSubscription.plan;
+            // Force update all storage keys
+      const updateKeys = [
+        'userStatus',
+        'userPlan',
+        'subscriptionPlan',
+        'plan'
+      ];
+      updateKeys.forEach(key => {
+        try {
+          localStorage.setItem(key, plan);
+        } catch (error) {
+          console.warn(`⚠️ Failed to update ${key}:`, error);
+        }
+      });
+      // Set restoration flags
+      localStorage.setItem('subscriptionRestored', 'true');
+      localStorage.setItem('restoredPlan', plan);
+      localStorage.setItem('restorationTime', Date.now().toString());
+      console.log('✅ Subscription restored:', plan);
+      return plan;
+    }
+    console.log('ℹ️ No valid subscription found, using free plan');
+    return 'free';
+  } catch (error) {
+    console.error('❌ Subscription restoration failed:', error);
+    return 'free';
+  }
+}
+
+// Run enhanced restoration immediately
+const restoredPlan = enhancedSubscriptionRestoration();

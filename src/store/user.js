@@ -1959,17 +1959,12 @@ const actions = {
 
       if (error.message === 'Request timeout') {
         userFriendlyError = 'Истекло время ожидания. Попробуйте снова.';
-      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        userFriendlyError = 'Ошибка сети. Проверьте подключение к интернету.';
-      }
-
-      // Map HTTP status codes to user-friendly messages
-      if (error.status) {
+      } else if (error.status) {
         const errorMessages = {
-          400: 'Неверный промокод или данные',
+          404: 'Промокод не найден',
+          400: 'Неверный формат промокода',
           401: 'Необходимо войти в систему',
           403: 'Промокод недоступен или уже использован',
-          404: 'Промокод не найден',
           409: 'Промокод уже был применён',
           429: 'Слишком много запросов. Попробуйте позже.',
           500: 'Ошибка сервера. Попробуйте позже.'
@@ -2438,6 +2433,118 @@ const actions = {
       };
     }
   },
+  
+  /**
+   * CRITICAL FIX: Enhanced updateUserStatus action with server sync
+   */
+  async updateUserStatusWithServerSync({ commit, state, dispatch }, { newStatus, source = 'manual' }) {
+    console.log('🌐 Store: Updating user status with server sync:', { newStatus, source });
+    try {
+      const userId = getUserId(state);
+      if (!userId) {
+        throw new Error('No user ID available');
+      }
+      // Import the enhanced API function
+      const { updateUserStatusWithPersistence } = await import('@/api');
+  
+      // Update with global persistence
+      const result = await updateUserStatusWithPersistence(userId, newStatus, source);
+      if (result.success) {
+        // Update store
+        commit('SET_USER_STATUS', newStatus);
+        commit('UPDATE_SUBSCRIPTION', result.subscriptionData);
+        commit('FORCE_UPDATE');
+        // Trigger events
+        const eventData = {
+          oldStatus: state.userStatus,
+          newStatus: newStatus,
+          source: source,
+          serverSync: result.serverSync,
+          timestamp: Date.now()
+        };
+        // Multiple event triggers for maximum compatibility
+        if (typeof window !== 'undefined') {
+          window.triggerGlobalEvent('userStatusChanged', eventData);
+          window.triggerGlobalEvent('userSubscriptionChanged', eventData);
+          window.triggerGlobalEvent('subscriptionUpdated', eventData);
+          window.triggerGlobalEvent('globalForceUpdate', {
+            reason: 'server-sync-status-update',
+            plan: newStatus,
+            timestamp: Date.now()
+          });
+        }
+        return {
+          success: true,
+          newStatus: newStatus,
+          serverSync: result.serverSync,
+          message: `Status updated to ${newStatus.toUpperCase()} with ${result.serverSync ? 'server sync' : 'local storage only'}`
+        };
+      } else {
+        throw new Error(result.error || 'Status update failed');
+      }
+    } catch (error) {
+      console.error('❌ Store status update with server sync failed:', error);
+  
+      // Fallback: update locally only
+      try {
+        commit('SET_USER_STATUS', newStatus);
+        localStorage.setItem('userStatus', newStatus);
+  
+        return {
+          success: false,
+          error: error.message,
+          newStatus: newStatus,
+          fallback: true
+        };
+      } catch (fallbackError) {
+        return {
+          success: false,
+          error: fallbackError.message
+        };
+      }
+    }
+  },
+  
+  /**
+   * CRITICAL FIX: Enhanced applyPromocode action with global persistence
+   */
+  async applyPromocodeWithGlobalSync({ commit, dispatch, state }, { promoCode, plan }) {
+    console.log('🎟️ Store: Applying promocode with global sync:', { promoCode, plan });
+    try {
+      const userId = getUserId(state);
+      if (!userId) {
+        throw new Error('No user ID available');
+      }
+      // Import the enhanced API function
+      const { applyPromocodeWithGlobalPersistence } = await import('@/api');
+  
+      // Apply with global persistence
+      const result = await applyPromocodeWithGlobalPersistence(userId, promoCode, plan);
+      if (result.success) {
+        // Update store
+        await dispatch('updateUserStatusWithServerSync', {
+          newStatus: plan,
+          source: 'promocode'
+        });
+        // Track promocode
+        commit('ADD_PROMOCODE', {
+          code: promoCode.toUpperCase(),
+          plan: plan,
+          source: 'global-sync',
+          details: result.serverResponse
+        });
+        return result;
+      } else {
+        throw new Error(result.error || 'Promocode application failed');
+      }
+    } catch (error) {
+      console.error('❌ Store promocode application with global sync failed:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  },
 
 };
 // Assuming handleSuccessfulUserSave and eventBus are defined elsewhere or passed in scope.
@@ -2460,7 +2567,7 @@ const handleFailedUserSave = (store, { userData, token }) => {
       const retryResult = await store.dispatch('user/saveUser', { userData, token });
 
       // ✅ CRITICAL: Check for valid result object
-
+      
       if (retryResult && typeof retryResult === 'object' && retryResult.success === true && retryResult.user) {
         await handleSuccessfulUserSave(retryResult, token, userData);
 
@@ -3380,6 +3487,3 @@ export const performanceMonitor = {
     };
   }
 };
-
-
-

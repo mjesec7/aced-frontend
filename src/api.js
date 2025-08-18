@@ -3263,5 +3263,235 @@ export const checkGlobalSyncStatus = async (userId, localSubscription = null) =>
   }
 };
 
+// ========================================
+// 🔧 GLOBAL SUBSCRIPTION PERSISTENCE FIX
+// ========================================
+
+/**
+ * CRITICAL FIX: Enhanced user status update with server persistence
+ */
+export const updateUserStatusWithPersistence = async (userId, newStatus, source = 'manual') => {
+  console.log('🌐 Updating user status with global persistence:', { userId, newStatus, source });
+  
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    
+    // 1. Update server first
+    const serverUpdateData = {
+      subscriptionPlan: newStatus,
+      userStatus: newStatus,
+      plan: newStatus,
+      lastStatusUpdate: new Date().toISOString(),
+      statusSource: source
+    };
+    
+    // Try multiple server endpoints to ensure update
+    const endpoints = [
+      `/users/${userId}`,
+      `/users/${userId}/status`,
+      `/api/users/${userId}`,
+      `/api/users/${userId}/status`
+    ];
+    
+    let serverUpdateSuccess = false;
+    for (const endpoint of endpoints) {
+      try {
+        const response = await api.put(endpoint, serverUpdateData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.status === 200) {
+          console.log('✅ Server status updated via:', endpoint);
+          serverUpdateSuccess = true;
+          break;
+        }
+      } catch (endpointError) {
+        console.warn(`⚠️ Server update failed via ${endpoint}:`, endpointError.message);
+        continue;
+      }
+    }
+    
+    // 2. Create comprehensive subscription data
+    const now = new Date();
+    const expiryDate = new Date(now.getTime() + (source === 'payment' ? 365 : 30) * 24 * 60 * 60 * 1000);
+    
+    const subscriptionData = {
+      plan: newStatus,
+      status: newStatus !== 'free' ? 'active' : 'inactive',
+      activatedAt: now.toISOString(),
+      expiryDate: newStatus !== 'free' ? expiryDate.toISOString() : null,
+      source: source,
+      lastUpdated: now.toISOString(),
+      serverSync: serverUpdateSuccess,
+      version: '2.0'
+    };
+    
+    // 3. Persist to localStorage with multiple keys for reliability
+    const persistenceKeys = {
+      'subscriptionData': JSON.stringify(subscriptionData),
+      'userStatus': newStatus,
+      'userPlan': newStatus,
+      'subscriptionPlan': newStatus,
+      'plan': newStatus,
+      'lastStatusUpdate': now.toISOString(),
+      'statusPersistenceVersion': '2.0'
+    };
+    
+    Object.entries(persistenceKeys).forEach(([key, value]) => {
+      try {
+        localStorage.setItem(key, value);
+      } catch (storageError) {
+        console.warn(`⚠️ Failed to persist ${key}:`, storageError);
+      }
+    });
+    
+    // 4. Update user object in localStorage
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        userData.subscriptionPlan = newStatus;
+        userData.userStatus = newStatus;
+        userData.plan = newStatus;
+        userData.lastStatusUpdate = now.toISOString();
+        localStorage.setItem('user', JSON.stringify(userData));
+      }
+    } catch (userUpdateError) {
+      console.warn('⚠️ Failed to update user object:', userUpdateError);
+    }
+    
+    console.log('✅ Global status persistence completed:', {
+      newStatus,
+      serverSync: serverUpdateSuccess,
+      localStorage: 'updated',
+      subscriptionData: subscriptionData
+    });
+    
+    return {
+      success: true,
+      newStatus: newStatus,
+      serverSync: serverUpdateSuccess,
+      subscriptionData: subscriptionData
+    };
+    
+  } catch (error) {
+    console.error('❌ Global status persistence failed:', error);
+    
+    // Fallback: at least persist locally
+    try {
+      localStorage.setItem('userStatus', newStatus);
+      localStorage.setItem('userPlan', newStatus);
+      localStorage.setItem('subscriptionPlan', newStatus);
+      localStorage.setItem('plan', newStatus);
+    } catch (fallbackError) {
+      console.error('❌ Even fallback persistence failed:', fallbackError);
+    }
+    
+    return {
+      success: false,
+      error: error.message,
+      newStatus: newStatus,
+      serverSync: false
+    };
+  }
+};
+
+/**
+ * CRITICAL FIX: Enhanced promocode application with global persistence
+ */
+export const applyPromocodeWithGlobalPersistence = async (userId, promocode, plan) => {
+  console.log('🎟️ Applying promocode with global persistence:', { userId, promocode, plan });
+  
+  try {
+    // 1. Apply promocode via server
+    const token = await auth.currentUser?.getIdToken();
+    const response = await api.post('/api/payments/promo-code', {
+      userId: userId,
+      promoCode: promocode.toUpperCase(),
+      plan: plan
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data && response.data.success) {
+      console.log('✅ Promocode accepted by server');
+      
+      // 2. Update status with global persistence
+      const persistenceResult = await updateUserStatusWithPersistence(userId, plan, 'promocode');
+      
+      // 3. Return comprehensive result
+      return {
+        success: true,
+        message: response.data.message || `Promocode applied! ${plan.toUpperCase()} plan activated.`,
+        plan: plan,
+        promocode: promocode.toUpperCase(),
+        serverResponse: response.data,
+        persistence: persistenceResult
+      };
+      
+    } else {
+      return {
+        success: false,
+        error: response.data?.error || response.data?.message || 'Promocode was rejected'
+      };
+    }
+  } catch (error) {
+    console.error('❌ Promocode application with persistence failed:', error);
+    
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to apply promocode'
+    };
+  }
+};
+
+/**
+ * CRITICAL FIX: Enhanced payment completion with global persistence
+ */
+export const completePaymentWithGlobalPersistence = async (userId, paymentData) => {
+  console.log('💳 Completing payment with global persistence:', { userId, paymentData });
+  
+  try {
+    // 1. Complete payment via server
+    const token = await auth.currentUser?.getIdToken();
+    const response = await api.post('/api/payments/complete', {
+      userId: userId,
+      ...paymentData
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data && response.data.success) {
+      console.log('✅ Payment confirmed by server');
+      
+      // 2. Update status with global persistence
+      const persistenceResult = await updateUserStatusWithPersistence(userId, paymentData.plan, 'payment');
+      
+      // 3. Return comprehensive result
+      return {
+        success: true,
+        message: response.data.message || `Payment completed! ${paymentData.plan.toUpperCase()} plan activated.`,
+        plan: paymentData.plan,
+        transactionId: paymentData.transactionId,
+        serverResponse: response.data,
+        persistence: persistenceResult
+      };
+      
+    } else {
+      return {
+        success: false,
+        error: response.data?.error || response.data?.message || 'Payment was not confirmed'
+      };
+    }
+  } catch (error) {
+    console.error('❌ Payment completion with persistence failed:', error);
+    
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || 'Failed to complete payment'
+    };
+  }
+};
+
 // ✅ FINAL EXPORT
 export default api;
