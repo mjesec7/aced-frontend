@@ -122,35 +122,8 @@ const getValidToken = async () => {
 // ✅ FIXED REQUEST INTERCEPTOR - No more double /api/api/
 api.interceptors.request.use(async (config) => {
   try {
-    // ✅ CRITICAL FIX: Prevent double /api/ in URLs
-    if (config.url) {
-      console.log('🔗 Original URL:', config.url);
-      
-      // Clean the URL properly
-      let cleanUrl = config.url;
-      
-      // Remove any leading /api/ if it exists
-      cleanUrl = cleanUrl.replace(/^\/api\//, '');
-      
-      // Special handling for specific endpoints that shouldn't have /api/
-      const specialEndpoints = ['/health', '/auth-test'];
-      const isSpecialEndpoint = specialEndpoints.some(endpoint => cleanUrl.startsWith(endpoint.substring(1)));
-      
-      if (isSpecialEndpoint) {
-        config.url = `/${cleanUrl}`;
-      } else {
-        // ✅ FIXED: Add /api/ prefix only if the BASE_URL does not already have it
-        const hasApiPrefix = BASE_URL.includes('/api');
-        config.url = hasApiPrefix
-          ? (cleanUrl.startsWith('/') ? cleanUrl : `/${cleanUrl}`)
-          : `/api/${cleanUrl}`;
-      }
-      
-      // Clean up any double slashes
-      config.url = config.url.replace(/\/+/g, '/');
-      
-      console.log('🔗 Final URL:', config.url);
-    }
+    // ✅ DO NOT MODIFY config.url - let Axios handle URL construction
+    console.log('🔗 Request will go to:', config.url);
     
     const requestKey = createRequestKey(config);
     
