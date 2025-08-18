@@ -653,8 +653,8 @@ export const getTopicById = async (topicId) => {
       console.log('🔄 Building topic from lessons data...');
 
       // Get all lessons
-      const { data: lessonsData } = await api.get('lessons');
-      const allLessons = Array.isArray(lessonsData) ? lessonsData : [];
+      const { data } = await api.get('lessons');
+      const allLessons = Array.isArray(data) ? data : [];
 
       console.log(`📚 Found ${allLessons.length} total lessons`);
 
@@ -690,48 +690,42 @@ export const getTopicById = async (topicId) => {
       // ✅ BUILD TOPIC DATA from lessons (same logic as CataloguePage)
       const firstLesson = topicLessons[0];
 
-      // ✅ BULLETPROOF: Extract topic name with proper null checks
+      // ✅ CRITICAL FIX FOR TypeError: Cannot read properties of undefined (reading 'toUpperCase')
       const getTopicName = (lesson) => {
         if (!lesson) return 'Без темы';
+        const lang = localStorage.getItem('lang') || 'en';
 
-        try {
-          // Check different possible structures
-          if (typeof lesson.topic === 'string' && lesson.topic.trim()) {
-            return lesson.topic.trim();
-          }
-
-          const lang = localStorage.getItem('lang') || 'en';
-
-          if (lesson.translations &&
-              lesson.translations[lang] &&
-              lesson.translations[lang].topic &&
-              typeof lesson.translations[lang].topic === 'string') {
-            return lesson.translations[lang].topic.trim();
-          }
-
-          if (lesson.topic && typeof lesson.topic === 'object') {
-            if (lesson.topic[lang] && typeof lesson.topic[lang] === 'string') {
-              return lesson.topic[lang].trim();
-            }
-            if (lesson.topic.en && typeof lesson.topic.en === 'string') {
-              return lesson.topic.en.trim();
-            }
-          }
-
-          // ✅ FALLBACK: Use lesson name if topic name not available
-          if (lesson.lessonName && typeof lesson.lessonName === 'string') {
-            return `Тема: ${lesson.lessonName.trim()}`;
-          }
-
-          if (lesson.title && typeof lesson.title === 'string') {
-            return `Тема: ${lesson.title.trim()}`;
-          }
-
-          return 'Без темы';
-        } catch (error) {
-          console.error('❌ Error getting topic name:', error);
-          return 'Без темы';
+        // Check for direct string topic
+        if (typeof lesson.topic === 'string' && lesson.topic.trim()) {
+          return lesson.topic.trim();
         }
+
+        // Check for translated topic name
+        if (lesson.translations && lesson.translations[lang] && typeof lesson.translations[lang].topic === 'string' && lesson.translations[lang].topic.trim()) {
+          return lesson.translations[lang].topic.trim();
+        }
+
+        // Check for topic as object
+        if (lesson.topic && typeof lesson.topic === 'object') {
+          if (typeof lesson.topic[lang] === 'string' && lesson.topic[lang].trim()) {
+            return lesson.topic[lang].trim();
+          }
+          if (typeof lesson.topic.en === 'string' && lesson.topic.en.trim()) {
+            return lesson.topic.en.trim();
+          }
+        }
+
+        // ✅ FALLBACK: Use lesson name if topic name not available
+        if (typeof lesson.lessonName === 'string' && lesson.lessonName.trim()) {
+          return `Тема: ${lesson.lessonName.trim()}`;
+        }
+        
+        if (typeof lesson.title === 'string' && lesson.title.trim()) {
+          return `Тема: ${lesson.title.trim()}`;
+        }
+
+        // Final fallback to a default string
+        return 'Без темы';
       };
 
       const topicName = getTopicName(firstLesson);
@@ -3124,7 +3118,7 @@ export const applyPromocodeGlobally = async (userId, promoCode, plan) => {
     };
     const response = await api.post('payments/promo-code', {
       userId: userId,
-      promoCode: promoCode.toUpperCase(),
+      promoCode: (promoCode || '').toUpperCase(),
       plan: plan
     }, { headers });
     if (response.data && response.data.success) {
@@ -3139,7 +3133,7 @@ export const applyPromocodeGlobally = async (userId, promoCode, plan) => {
         expiryDate: expiryDate.toISOString(),
         source: 'promocode',
         details: {
-          promocode: promoCode.toUpperCase(),
+          promocode: (promoCode || '').toUpperCase(),
           appliedAt: now.toISOString(),
           serverResponse: response.data
         },
@@ -3154,7 +3148,7 @@ export const applyPromocodeGlobally = async (userId, promoCode, plan) => {
       localStorage.setItem('subscriptionPlan', plan);
       localStorage.setItem('subscriptionExpiry', subscriptionData.expiryDate);
       localStorage.setItem('promocodeApplied', JSON.stringify({
-        code: promoCode.toUpperCase(),
+        code: (promoCode || '').toUpperCase(),
         plan: plan,
         appliedAt: now.toISOString()
       }));
@@ -3423,7 +3417,7 @@ export const applyPromocodeWithGlobalPersistence = async (userId, promocode, pla
     const token = await auth.currentUser?.getIdToken();
     const response = await api.post('payments/promo-code', {
       userId: userId,
-      promoCode: promocode.toUpperCase(),
+      promoCode: (promocode || '').toUpperCase(),
       plan: plan
     }, {
       headers: { Authorization: `Bearer ${token}` }
@@ -3440,7 +3434,7 @@ export const applyPromocodeWithGlobalPersistence = async (userId, promocode, pla
         success: true,
         message: response.data.message || `Promocode applied! ${plan.toUpperCase()} plan activated.`,
         plan: plan,
-        promocode: promocode.toUpperCase(),
+        promocode: (promocode || '').toUpperCase(),
         serverResponse: response.data,
         persistence: persistenceResult
       };
