@@ -7,7 +7,7 @@ import {
   // Main payment functions
   initiatePaymePayment,
   generatePaymeForm,
-  applyPromoCode as applyPaymePromoCode,
+  applyPromoCode, // ✅ Keep the original name for compatibility
   checkPaymentStatus,
   validateUser,
 
@@ -2833,7 +2833,7 @@ export {
   // Main payment functions
   initiatePaymePayment,
   generatePaymeForm,
-  applyPaymePromoCode,
+  applyPromoCode, // ✅ Exporting the original name for backward compatibility
   checkPaymentStatus,
   validateUser,
 
