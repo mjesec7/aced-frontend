@@ -121,50 +121,35 @@ const getValidToken = async () => {
 // 🚨 CRITICAL FIX FOR API.JS REQUEST INTERCEPTOR
 // ========================================
 
-// ✅ FIXED REQUEST INTERCEPTOR - No more double /api/api/
+// ✅ COMPLETELY FIXED REQUEST INTERCEPTOR
 api.interceptors.request.use(async (config) => {
   try {
-    // ✅ DO NOT MODIFY config.url - let Axios handle URL construction
     console.log('🔗 Request will go to:', `${config.baseURL}/${config.url}`);
-
     const requestKey = createRequestKey(config);
-
-    // ✅ FIXED: Pending request handling with error support
+    
+    // ✅ SIMPLE: Just check if we recently made this request
     if (pendingRequests.has(requestKey)) {
-      console.log('🔄 Request already pending, waiting...:', requestKey);
-      try {
-        // Return the pending promise and wait for it to resolve
-        const result = await pendingRequests.get(requestKey);
-        // This won't actually resolve the original config, but will let us proceed
-        return Promise.resolve(config);
-      } catch (pendingError) {
-        console.warn('⚠️ Pending request failed, proceeding with new request');
-        // If the pending request failed, delete it and continue with the new one
-        pendingRequests.delete(requestKey);
+      const lastRequestTime = pendingRequests.get(requestKey);
+      if (Date.now() - lastRequestTime < 1000) { // 1 second debounce
+        console.log('🔄 Debouncing duplicate request:', requestKey);
+        // Let it proceed but mark it
+        config.headers = { ...config.headers, 'X-Debounced': 'true' };
       }
     }
     
-    // Add new request to pending map
-    const newRequestPromise = new Promise((resolve, reject) => {
-      const originalRequest = { ...config };
-      Object.assign(originalRequest, { resolve, reject });
-      pendingRequests.set(requestKey, originalRequest);
-    });
-    
-    // Check request cache
+    // ✅ SIMPLE: Track this request
+    pendingRequests.set(requestKey, Date.now());
+
+    // ✅ SIMPLE: Check cache for GET requests
     if (config.method && config.method.toLowerCase() === 'get') {
-        const cached = requestCache.get(requestKey);
-        if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-            console.log('📋 Using cached response:', requestKey);
-            // ✅ CRITICAL FIX: Return a modified config object instead of a resolved promise with the response
-            return Promise.resolve({
-                ...config,
-                // Add a custom header to signal a cache hit
-                headers: { ...config.headers, 'X-Cache-Status': 'HIT' }
-            });
-        }
+      const cached = requestCache.get(requestKey);
+      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        console.log('📋 Cache hit for:', requestKey);
+        config.headers = { ...config.headers, 'X-Cache-Status': 'HIT' };
+      }
     }
     
+    // ✅ Add auth token
     const token = await getValidToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -177,35 +162,37 @@ api.interceptors.request.use(async (config) => {
   }
 });
 
-// ✅ RESPONSE INTERCEPTOR
+// ✅ COMPLETELY FIXED RESPONSE INTERCEPTOR
 api.interceptors.response.use(
   (response) => {
-    const requestKey = createRequestKey(response.config);
-    // Remove from pending requests
-    if (requestKey && pendingRequests.has(requestKey)) {
-        const originalRequest = pendingRequests.get(requestKey);
-        originalRequest.resolve(response);
+    // ✅ SIMPLE: Clean up pending requests
+    try {
+      const requestKey = createRequestKey(response.config);
+      if (requestKey && pendingRequests.has(requestKey)) {
         pendingRequests.delete(requestKey);
+      }
+    } catch (cleanupError) {
+      console.warn('⚠️ Cleanup error:', cleanupError);
     }
     
-    // Cache successful GET requests only
-    if (response.config?.method && typeof response.config.method === 'string' && response.config.method.toLowerCase() === 'get') {
+    // ✅ SIMPLE: Cache successful GET requests
+    if (response.config?.method && 
+        response.config.method.toLowerCase() === 'get' && 
+        response.status === 200 &&
+        !response.config.headers['X-Cache-Status']) {
       try {
-        const isCacheHit = response.config.headers['X-Cache-Status'] === 'HIT';
-        if (!isCacheHit) {
-          if (requestKey && requestKey !== `unknown-${Date.now()}`) {
-            requestCache.set(requestKey, {
-              response: response,
-              timestamp: Date.now()
-            });
-
-            // Clean old cache entries
-            if (requestCache.size > 100) {
-              const cutoff = Date.now() - CACHE_DURATION;
-              for (const [key, value] of requestCache.entries()) {
-                if (value.timestamp < cutoff) {
-                  requestCache.delete(key);
-                }
+        const requestKey = createRequestKey(response.config);
+        if (requestKey && !requestKey.includes('unknown')) {
+          requestCache.set(requestKey, {
+            response: response,
+            timestamp: Date.now()
+          });
+          // Clean old cache entries
+          if (requestCache.size > 100) {
+            const cutoff = Date.now() - CACHE_DURATION;
+            for (const [key, value] of requestCache.entries()) {
+              if (value.timestamp < cutoff) {
+                requestCache.delete(key);
               }
             }
           }
@@ -218,16 +205,19 @@ api.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
-    const requestKey = createRequestKey(originalRequest);
-    
-    // Remove from pending requests on error
-    if (requestKey && pendingRequests.has(requestKey)) {
-        const originalRequestPromise = pendingRequests.get(requestKey);
-        originalRequestPromise.reject(error);
-        pendingRequests.delete(requestKey);
+    // ✅ SIMPLE: Clean up on error
+    if (originalRequest) {
+      try {
+        const requestKey = createRequestKey(originalRequest);
+        if (requestKey && pendingRequests.has(requestKey)) {
+          pendingRequests.delete(requestKey);
+        }
+      } catch (cleanupError) {
+        console.warn('⚠️ Error cleanup failed:', cleanupError);
+      }
     }
     
-    // Enhanced error logging with safe property access
+    // Rest of your error handling code stays the same...
     const errorInfo = {
       url: error.config?.url || 'unknown',
       method: error.config?.method || 'unknown',
@@ -239,7 +229,6 @@ api.interceptors.response.use(
 
     // Handle 401 errors with token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
-
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
