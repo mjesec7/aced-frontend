@@ -7,7 +7,7 @@ import {
   // Main payment functions
   initiatePaymePayment,
   generatePaymeForm,
-  applyPromoCode,
+  applyPromoCode as applyPaymePromoCode,
   checkPaymentStatus,
   validateUser,
 
@@ -129,19 +129,42 @@ api.interceptors.request.use(async (config) => {
 
     const requestKey = createRequestKey(config);
 
-    // Check for pending duplicate requests
+    // ✅ FIXED: Pending request handling with error support
     if (pendingRequests.has(requestKey)) {
-      console.log('🔄 Reusing pending request:', requestKey);
-      return pendingRequests.get(requestKey);
+      console.log('🔄 Request already pending, waiting...:', requestKey);
+      try {
+        // Return the pending promise and wait for it to resolve
+        const result = await pendingRequests.get(requestKey);
+        // This won't actually resolve the original config, but will let us proceed
+        return Promise.resolve(config);
+      } catch (pendingError) {
+        console.warn('⚠️ Pending request failed, proceeding with new request');
+        // If the pending request failed, delete it and continue with the new one
+        pendingRequests.delete(requestKey);
+      }
     }
-
+    
+    // Add new request to pending map
+    const newRequestPromise = new Promise((resolve, reject) => {
+      const originalRequest = { ...config };
+      Object.assign(originalRequest, { resolve, reject });
+      pendingRequests.set(requestKey, originalRequest);
+    });
+    
     // Check request cache
-    const cached = requestCache.get(requestKey);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      console.log('📋 Using cached response:', requestKey);
-      return Promise.resolve(cached.response);
+    if (config.method && config.method.toLowerCase() === 'get') {
+        const cached = requestCache.get(requestKey);
+        if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+            console.log('📋 Using cached response:', requestKey);
+            // ✅ CRITICAL FIX: Return a modified config object instead of a resolved promise with the response
+            return Promise.resolve({
+                ...config,
+                // Add a custom header to signal a cache hit
+                headers: { ...config.headers, 'X-Cache-Status': 'HIT' }
+            });
+        }
     }
-
+    
     const token = await getValidToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -154,26 +177,35 @@ api.interceptors.request.use(async (config) => {
   }
 });
 
-
 // ✅ RESPONSE INTERCEPTOR
 api.interceptors.response.use(
   (response) => {
+    const requestKey = createRequestKey(response.config);
+    // Remove from pending requests
+    if (requestKey && pendingRequests.has(requestKey)) {
+        const originalRequest = pendingRequests.get(requestKey);
+        originalRequest.resolve(response);
+        pendingRequests.delete(requestKey);
+    }
+    
     // Cache successful GET requests only
     if (response.config?.method && typeof response.config.method === 'string' && response.config.method.toLowerCase() === 'get') {
       try {
-        const requestKey = createRequestKey(response.config);
-        if (requestKey && requestKey !== `unknown-${Date.now()}`) {
-          requestCache.set(requestKey, {
-            response: response,
-            timestamp: Date.now()
-          });
+        const isCacheHit = response.config.headers['X-Cache-Status'] === 'HIT';
+        if (!isCacheHit) {
+          if (requestKey && requestKey !== `unknown-${Date.now()}`) {
+            requestCache.set(requestKey, {
+              response: response,
+              timestamp: Date.now()
+            });
 
-          // Clean old cache entries
-          if (requestCache.size > 100) {
-            const cutoff = Date.now() - CACHE_DURATION;
-            for (const [key, value] of requestCache.entries()) {
-              if (value.timestamp < cutoff) {
-                requestCache.delete(key);
+            // Clean old cache entries
+            if (requestCache.size > 100) {
+              const cutoff = Date.now() - CACHE_DURATION;
+              for (const [key, value] of requestCache.entries()) {
+                if (value.timestamp < cutoff) {
+                  requestCache.delete(key);
+                }
               }
             }
           }
@@ -182,34 +214,19 @@ api.interceptors.response.use(
         console.warn('⚠️ Cache error:', cacheError);
       }
     }
-
-    // Remove from pending requests
-    try {
-      const requestKey = createRequestKey(response.config);
-      if (requestKey && pendingRequests.has(requestKey)) {
-        pendingRequests.delete(requestKey);
-      }
-    } catch (pendingError) {
-      console.warn('⚠️ Pending request cleanup error:', pendingError);
-    }
-
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
-
+    const requestKey = createRequestKey(originalRequest);
+    
     // Remove from pending requests on error
-    if (originalRequest) {
-      try {
-        const requestKey = createRequestKey(originalRequest);
-        if (requestKey && pendingRequests.has(requestKey)) {
-          pendingRequests.delete(requestKey);
-        }
-      } catch (cleanupError) {
-        console.warn('⚠️ Error cleanup failed:', cleanupError);
-      }
+    if (requestKey && pendingRequests.has(requestKey)) {
+        const originalRequestPromise = pendingRequests.get(requestKey);
+        originalRequestPromise.reject(error);
+        pendingRequests.delete(requestKey);
     }
-
+    
     // Enhanced error logging with safe property access
     const errorInfo = {
       url: error.config?.url || 'unknown',
@@ -2816,7 +2833,7 @@ export {
   // Main payment functions
   initiatePaymePayment,
   generatePaymeForm,
-  applyPromoCode,
+  applyPaymePromoCode,
   checkPaymentStatus,
   validateUser,
 
