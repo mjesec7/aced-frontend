@@ -589,25 +589,16 @@
         </div>
       </div>
     </Teleport>
-
-    <LessonLoader
-      v-if="showStudyInterface"
-      :course="selectedCourse"
-      @back-to-courses="goBackToCourses"
-      :key="`lesson-${componentKey}`"
-    />
   </div>
 </template>
 
 <script>
 import { getUpdatedCourses, getCourseById } from '@/api.js';
 import { mapGetters, mapState } from 'vuex';
-import LessonLoader from '../components/Updated/LessonPlayer.vue';
 
 export default {
   name: 'CoursesPage',
   components: {
-    LessonLoader,
   },
   data() {
     return {
@@ -624,42 +615,26 @@ export default {
       loading: false,
       modalLoading: false,
       error: null,
-      showStudyInterface: false,
       componentKey: 0,
       lastUpdateTime: Date.now(),
       forceUpdateCounter: 0,
       courseImages: {
-        'javascript': 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=400&h=250&fit=crop',
-        'python': 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400&h=250&fit=crop',
-        'react': 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=250&fit=crop',
-        'vue': 'https://images.unsplash.com/photo-1661956602116-aa6865609028?w=400&h=250&fit=crop',
-        'node': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=250&fit=crop',
-        'web-разработка': 'https://images.unsplash.com/photo-1547658719-da2b51169166?w=400&h=250&fit=crop',
-        'программирование': 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=250&fit=crop',
-        'иИ и автоматизация': 'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=400&h=250&fit=crop',
-        'ии и автоматизация': 'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=400&h=250&fit=crop',
-        'машинное обучение': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop',
-        'искусственный интеллект': 'https://images.unsplash.com/photo-1507146426996-ef05306b995a?w=400&h=250&fit=crop',
-        'ai': 'https://images.unsplash.com/photo-1507146426996-ef05306b995a?w=400&h=250&fit=crop',
-        'дизайн': 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop',
-        'графический дизайн': 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=400&h=250&fit=crop',
-        'ui дизайн': 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=400&h=250&fit=crop',
-        'ux дизайн': 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?w=400&h=250&fit=crop',
-        'веб-дизайн': 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=400&h=250&fit=crop',
-        'видеомонтаж': 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&h=250&fit=crop',
-        'монтаж': 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&h=250&fit=crop',
-        'маркетинг': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop',
-        'цифровой маркетинг': 'https://images.unsplash.com/photo-1432888622747-4eb9a8efeb07?w=400&h=250&fit=crop',
-        'мобильная разработка': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=250&fit=crop',
-        'мобильные приложения': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=250&fit=crop',
-        'android': 'https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?w=400&h=250&fit=crop',
-        'ios': 'https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?w=400&h=250&fit=crop',
-        'бизнес': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop',
-        'предпринимательство': 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop',
-        'финансы': 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=400&h=250&fit=crop',
-        'default': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=250&fit=crop',
-        'course': 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=400&h=250&fit=crop',
-        'learning': 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=250&fit=crop',
+        'javascript': '/images/course/javascript.jpg',
+        'python': '/images/course/python.jpg',
+        'react': '/images/course/react.jpg',
+        'vue': '/images/course/vue.jpg',
+        'node': '/images/course/node.jpg',
+        'web-разработка': '/images/course/web-dev.jpg',
+        'программирование': '/images/course/programming.jpg',
+        'ии и автоматизация': '/images/course/ai.jpg',
+        'машинное обучение': '/images/course/machine-learning.jpg',
+        'дизайн': '/images/course/design.jpg',
+        'графический дизайн': '/images/course/graphic-design.jpg',
+        'видеомонтаж': '/images/course/video-editing.jpg',
+        'маркетинг': '/images/course/marketing.jpg',
+        'мобильная разработка': '/images/course/mobile-dev.jpg',
+        'default': '/images/course/default.jpg',
+        'premium': '/images/course/premium.jpg'
       },
     };
   },
@@ -738,6 +713,17 @@ export default {
     this.cleanup();
   },
   methods: {
+    getProcessedImage(imagePath) {
+      if (!imagePath) return this.courseImages.default;
+
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
+
+      // If the path is relative, prepend the base URL.
+      if (imagePath.startsWith('/')) {
+        return `${baseUrl}${imagePath}`;
+      }
+      return imagePath; // Return as is if it's already an absolute URL.
+    },
     async fetchCourses() {
       this.loading = true;
       this.error = null;
@@ -753,8 +739,8 @@ export default {
         console.log('📦 Courses response:', response);
         if (response.success) {
           this.courses = this.processCourses(response.courses || []);
-          this.availableCategories = response.categories || [];
-          this.availableLevels = response.difficulties || [];
+          this.availableCategories = response.categories?.map(c => c.name) || [];
+          this.availableLevels = ['Начинающий', 'Средний', 'Продвинутый'];
           console.log(`✅ Loaded ${this.courses.length} courses`);
         } else {
           this.error = response.error || 'Не удалось загрузить курсы';
@@ -778,8 +764,8 @@ export default {
           level: course.level || course.difficulty || 'Начинающий',
           duration: course.duration || (course.estimatedTime?.hours ? `${course.estimatedTime.hours} часов` : '10 часов'),
           instructor: {
-            name: course.instructor?.name || 'Aced Team',
-            avatar: course.instructor?.avatar || '/default-avatar.jpg',
+            name: course.instructor?.name || 'Aced Team' ,
+            avatar: this.getProcessedImage(course.instructor?.avatar) || this.getProcessedImage('/default-avatar.jpg'),
             bio: course.instructor?.bio || '',
           },
           curriculum: this.processCurriculum(course.curriculum || []),
@@ -800,14 +786,14 @@ export default {
           description: lesson.description || '',
           duration: lesson.duration || '30 мин',
           order: lesson.order || lessonIndex,
-          steps: this.processSteps(lesson.steps || [], lessonIndex),
+          steps: this.processSteps(lesson.steps || [], lessonIndex, lesson),
           hasImages: this.lessonHasImages(lesson),
           imageCount: this.getLessonImageCount(lesson),
         };
         return processedLesson;
       });
     },
-    processSteps(steps, lessonIndex) {
+    processSteps(steps, lessonIndex, lesson) {
       if (!Array.isArray(steps)) return [];
       return steps.map((step, stepIndex) => {
         const processedStep = {
@@ -817,13 +803,14 @@ export default {
           title: step.title || '',
           description: step.description || '',
           content: step.content || '',
-          images: this.processStepImages(step.images || []),
-          data: this.processStepData(step),
+          images: this.processStepImages(step.images || [], lessonIndex, stepIndex),
+          data: this.processStepData(step, lessonIndex, stepIndex),
+          lesson: lesson // Attach the parent lesson for context
         };
         return processedStep;
       });
     },
-    processStepData(step) {
+    processStepData(step, lessonIndex, stepIndex) {
       const baseData = step.data || {};
       switch (step.type) {
         case 'explanation':
@@ -832,12 +819,12 @@ export default {
           return {
             ...baseData,
             content: baseData.content || step.content || '',
-            images: this.processStepImages(baseData.images || step.images || []),
+            images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
           };
         case 'image':
           return {
             ...baseData,
-            images: this.processStepImages(baseData.images || step.images || []),
+            images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
             description: baseData.description || step.description || '',
             caption: baseData.caption || step.caption || '',
           };
@@ -846,7 +833,7 @@ export default {
             ...baseData,
             instructions: baseData.instructions || step.instructions || step.content || '',
             type: baseData.type || 'guided',
-            images: this.processStepImages(baseData.images || step.images || []),
+            images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
           };
         case 'quiz':
           return Array.isArray(baseData) ? baseData : step.quizzes || [];
@@ -854,17 +841,17 @@ export default {
           return {
             ...baseData,
             content: baseData.content || step.content || '',
-            images: this.processStepImages(baseData.images || step.images || []),
+            images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
           };
       }
     },
-    processStepImages(images) {
+    processStepImages(images, lessonIndex, stepIndex) {
       if (!Array.isArray(images)) return [];
       return images
         .filter((img) => img && (img.url || img.base64))
         .map((img, index) => ({
           id: img.id || `img_${index}`,
-          url: img.url || img.base64 || '',
+          url: this.getProcessedImage(img.url || img.base64) || '',
           caption: img.caption || '',
           alt: img.alt || img.caption || `Изображение ${index + 1}`,
           filename: img.filename || `image_${index}`,
@@ -882,7 +869,7 @@ export default {
     getCourseImage(course) {
       if (!course) return this.courseImages.default;
       if (course.thumbnail && course.thumbnail !== '/default-course-thumbnail.jpg') {
-        return course.thumbnail;
+        return this.getProcessedImage(course.thumbnail);
       }
       const curriculumImages = this.extractCurriculumImages(course);
       if (curriculumImages.length > 0) {
@@ -892,40 +879,14 @@ export default {
         if (value === null || value === undefined) return '';
         return String(value).toLowerCase().trim();
       };
-      const title = safeString(course.title);
       const category = safeString(course.category);
-      const categoryMap = {
-        'ии и автоматизация': 'иИ и автоматизация',
-        'искусственный интеллект': 'иИ и автоматизация',
-        'машинное обучение': 'машинное обучение',
-        'видеомонтаж': 'видеомонтаж',
-        'графический дизайн': 'графический дизайн',
-        'web-разработка': 'web-разработка',
-        'веб-разработка': 'web-разработка',
-        'мобильная разработка': 'мобильная разработка',
-        'дизайн': 'дизайн',
-        'программирование': 'программирование',
-        'маркетинг': 'маркетинг',
-      };
-      if (category && categoryMap[category] && this.courseImages[categoryMap[category]]) {
-        return this.courseImages[categoryMap[category]];
-      }
       if (category && this.courseImages[category]) {
         return this.courseImages[category];
       }
-      const titleKeywords = Object.keys(this.courseImages);
-      for (const keyword of titleKeywords) {
-        if (title.includes(keyword) && this.courseImages[keyword]) {
-          return this.courseImages[keyword];
-        }
-      }
-      for (const keyword of Object.keys(categoryMap)) {
-        if (category.includes(keyword) && this.courseImages[categoryMap[keyword]]) {
-          return this.courseImages[categoryMap[keyword]];
-        }
-      }
+
+      // Use 'premium' image if it's a premium course and no other thumbnail is found
       if (course.isPremium) {
-        return this.courseImages.course;
+        return this.courseImages.premium;
       }
       return this.courseImages.default;
     },
@@ -938,7 +899,10 @@ export default {
               if (step.images && Array.isArray(step.images)) {
                 step.images.forEach((img) => {
                   if (img.url && !img.url.startsWith('data:')) {
-                    images.push(img);
+                    images.push({
+                      url: this.getProcessedImage(img.url),
+                      caption: img.caption
+                    });
                   }
                 });
               }
@@ -967,15 +931,6 @@ export default {
         }
       });
       return count;
-    },
-    lessonHasImages(lesson) {
-      return lesson.steps && lesson.steps.some((step) => step.images && step.images.length > 0);
-    },
-    getLessonImageCount(lesson) {
-      if (!lesson.steps) return 0;
-      return lesson.steps.reduce((count, step) => {
-        return count + (step.images ? step.images.length : 0);
-      }, 0);
     },
     getCourseOutcomes(course) {
       if (course.learningOutcomes && course.learningOutcomes.length > 0) {
@@ -1038,7 +993,7 @@ export default {
     },
     handleImageError(event, course) {
       console.warn('Image failed to load for course:', course?.title || 'Unknown');
-      event.target.src = this.courseImages.default;
+      event.target.src = this.getProcessedImage(this.courseImages.default);
       event.target.onerror = null;
     },
     debounceSearch() {
@@ -1067,7 +1022,7 @@ export default {
         console.log('📖 Opening course modal:', course.title);
         const response = await getCourseById(course._id || course.id);
         if (response.success) {
-          this.selectedCourse = this.processCourses([response.data])[0];
+          this.selectedCourse = this.processCourses([response.data.course])[0];
           console.log('✅ Course details loaded:', this.selectedCourse);
         } else {
           console.error('Failed to fetch detailed course info:', response.error);
@@ -1081,6 +1036,7 @@ export default {
       }
     },
     startCourse(course) {
+      // This method now navigates to the new route
       console.log('🚀 Starting course:', course.title);
       console.log('Course isPremium:', course.isPremium);
       console.log('User status:', this.currentUserStatus);
@@ -1097,13 +1053,8 @@ export default {
         return;
       }
       console.log('✅ Access granted - starting course');
-      this.selectedCourse = course;
-      this.isModalOpen = false;
-      this.showStudyInterface = true;
-    },
-    goBackToCourses() {
-      this.showStudyInterface = false;
-      this.selectedCourse = null;
+      // Use Vue Router to navigate to the new page
+      this.$router.push({ name: 'LessonPlayer', params: { courseId: course.id } });
     },
     closeModal() {
       this.isModalOpen = false;
