@@ -527,11 +527,7 @@ export const getCourseById = async (courseId) => {
           avatar: processImageUrl(data.course.instructor?.avatar)
         },
         // Process curriculum with images
-        curriculum: processCurriculum(data.course.curriculum || []),
-        lessons: (data.course.lessons || []).map(lesson => ({
-          ...lesson,
-          steps: processSteps(lesson.steps || [], 0) // Process steps for lessons
-        }))
+        curriculum: processCurriculum(data.course.curriculum || [])
       };
 
       console.log('✅ Course fetched and processed:', processedCourse.title);
@@ -3433,6 +3429,10 @@ export const checkGlobalSyncStatus = async (userId, localSubscription = null) =>
     };
   }
 };
+
+// ========================================
+// 🔧 GLOBAL SUBSCRIPTION PERSISTENCE FIX
+// ========================================
 
 /**
  * CRITICAL FIX: Enhanced user status update with server persistence
