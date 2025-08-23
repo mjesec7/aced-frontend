@@ -126,7 +126,7 @@ api.interceptors.request.use(async (config) => {
   try {
     console.log('🔗 Request will go to:', `${config.baseURL}/${config.url}`);
     const requestKey = createRequestKey(config);
-    
+
     // ✅ SIMPLE: Just check if we recently made this request
     if (pendingRequests.has(requestKey)) {
       const lastRequestTime = pendingRequests.get(requestKey);
@@ -136,7 +136,7 @@ api.interceptors.request.use(async (config) => {
         config.headers = { ...config.headers, 'X-Debounced': 'true' };
       }
     }
-    
+
     // ✅ SIMPLE: Track this request
     pendingRequests.set(requestKey, Date.now());
 
@@ -148,7 +148,7 @@ api.interceptors.request.use(async (config) => {
         config.headers = { ...config.headers, 'X-Cache-Status': 'HIT' };
       }
     }
-    
+
     // ✅ Add auth token
     const token = await getValidToken();
     if (token) {
@@ -174,10 +174,10 @@ api.interceptors.response.use(
     } catch (cleanupError) {
       console.warn('⚠️ Cleanup error:', cleanupError);
     }
-    
+
     // ✅ SIMPLE: Cache successful GET requests
-    if (response.config?.method && 
-        response.config.method.toLowerCase() === 'get' && 
+    if (response.config?.method &&
+        response.config.method.toLowerCase() === 'get' &&
         response.status === 200 &&
         !response.config.headers['X-Cache-Status']) {
       try {
@@ -216,7 +216,7 @@ api.interceptors.response.use(
         console.warn('⚠️ Error cleanup failed:', cleanupError);
       }
     }
-    
+
     // Rest of your error handling code stays the same...
     const errorInfo = {
       url: error.config?.url || 'unknown',
@@ -279,10 +279,178 @@ api.interceptors.response.use(
   }
 );
 
-// ✅ FIXED API Functions for Updated Courses (Images & Text Only)
+// =============================================
+// 📚 UTILITY FUNCTIONS FOR CONTENT PROCESSING
+// =============================================
 
 /**
- * Get updated courses with proper structure for frontend
+ * ✅ Process individual image URL
+ */
+function processImageUrl(imageUrl) {
+  if (!imageUrl) return null;
+
+  // Handle base64 images
+  if (imageUrl.startsWith('data:')) {
+    return imageUrl;
+  }
+
+  // Handle relative URLs from your backend
+  if (imageUrl.startsWith('/uploads/')) {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
+    return `${baseUrl}${imageUrl}`;
+  }
+
+  // Handle other relative URLs
+  if (imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
+    return `${baseUrl}${imageUrl}`;
+  }
+
+  // Handle absolute URLs
+  if (imageUrl.startsWith('http')) {
+    return imageUrl;
+  }
+
+  // Handle other cases
+  return imageUrl;
+}
+
+/**
+ * ✅ Process array of images from steps
+ */
+function processStepImages(images) {
+  if (!Array.isArray(images)) return [];
+
+  return images
+    .filter(img => img && (img.url || img.base64))
+    .map((img, index) => ({
+      id: img.id || `img_${index}`,
+      url: processImageUrl(img.url || img.base64),
+      caption: img.caption || '',
+      alt: img.alt || img.caption || `Изображение ${index + 1}`,
+      filename: img.filename || `image_${index}`,
+      size: img.size || 0,
+      order: img.order || index,
+      // Display options
+      displayOptions: {
+        width: img.displayOptions?.width || img.width || 'auto',
+        height: img.displayOptions?.height || img.height || 'auto',
+        alignment: img.displayOptions?.alignment || img.alignment || 'center',
+        zoom: img.displayOptions?.zoom || false
+      }
+    }))
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+}
+
+/**
+ * ✅ Process step data with proper image handling
+ */
+function processStepData(step, lessonIndex, stepIndex) {
+  const baseData = step.data || {};
+
+  switch (step.type) {
+    case 'explanation':
+    case 'example':
+    case 'reading':
+      return {
+        ...baseData,
+        content: baseData.content || step.content || '',
+        images: processStepImages(baseData.images || step.images || [])
+      };
+
+    case 'image':
+      return {
+        ...baseData,
+        images: processStepImages(baseData.images || step.images || []),
+        description: baseData.description || step.description || '',
+        caption: baseData.caption || step.caption || ''
+      };
+
+    case 'practice':
+      return {
+        ...baseData,
+        instructions: baseData.instructions || step.instructions || step.content || '',
+        type: baseData.type || 'guided',
+        images: processStepImages(baseData.images || step.images || [])
+      };
+
+    case 'quiz':
+      if (Array.isArray(baseData) && baseData.length > 0) {
+        return baseData.map(quiz => ({
+          ...quiz,
+          images: processStepImages(quiz.images || [])
+        }));
+      } else if (step.question || step.content) {
+        return [{
+          question: step.question || step.content || '',
+          type: step.quizType || 'multiple-choice',
+          options: (step.options || []).map(opt => ({ text: opt.text || opt })),
+          correctAnswer: parseInt(step.correctAnswer) || 0,
+          explanation: step.explanation || '',
+          images: processStepImages(step.questionImages || [])
+        }];
+      } else if (step.quizzes && Array.isArray(step.quizzes)) {
+        return step.quizzes.map(quiz => ({
+          ...quiz,
+          images: processStepImages(quiz.images || [])
+        }));
+      }
+      return [];
+
+    default:
+      return {
+        ...baseData,
+        content: baseData.content || step.content || '',
+        images: processStepImages(baseData.images || step.images || [])
+      };
+  }
+}
+
+/**
+ * ✅ Process lesson steps with images
+ */
+function processSteps(steps, lessonIndex) {
+  if (!Array.isArray(steps)) return [];
+
+  return steps.map((step, stepIndex) => ({
+    ...step,
+    id: step.id || `step_${lessonIndex}_${stepIndex}`,
+    type: step.type || 'explanation',
+    title: step.title || '',
+    description: step.description || '',
+    content: step.content || '',
+    // Process images from the step
+    images: processStepImages(step.images || []),
+    // Process data field based on step type
+    data: processStepData(step, lessonIndex, stepIndex)
+  }));
+}
+
+/**
+ * ✅ Process curriculum array with images
+ */
+function processCurriculum(curriculum) {
+  if (!Array.isArray(curriculum)) return [];
+
+  return curriculum.map((lesson, lessonIndex) => ({
+    ...lesson,
+    id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
+    _id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
+    title: lesson.title || `Урок ${lessonIndex + 1}`,
+    description: lesson.description || '',
+    duration: lesson.duration || '30 мин',
+    order: lesson.order || lessonIndex,
+    // Process steps with images
+    steps: processSteps(lesson.steps || [], lessonIndex)
+  }));
+}
+
+// =============================================
+// ✅ FIXED API FUNCTIONS FOR COURSES
+// =============================================
+
+/**
+ * ✅ Get updated courses with proper image processing
  */
 export const getUpdatedCourses = async (filters = {}) => {
   try {
@@ -296,17 +464,30 @@ export const getUpdatedCourses = async (filters = {}) => {
     });
 
     const queryString = params.toString();
-    // ✅ FIXED: Clean URL without /api/ prefix
     const url = queryString ? `updated-courses?${queryString}` : 'updated-courses';
 
     const { data } = await api.get(url);
 
-    console.log('✅ Updated courses response:', data);
-
     if (data.success) {
+      // Process courses to ensure proper structure
+      const processedCourses = (data.courses || []).map(course => ({
+        ...course,
+        id: course._id || course.id,
+        _id: course._id || course.id,
+        // Ensure proper thumbnail URL
+        thumbnail: processImageUrl(course.thumbnail),
+        // Ensure proper instructor avatar
+        instructor: {
+          ...course.instructor,
+          avatar: processImageUrl(course.instructor?.avatar)
+        },
+        // Process curriculum with images
+        curriculum: processCurriculum(course.curriculum || [])
+      }));
+
       return {
         success: true,
-        courses: data.courses || [],
+        courses: processedCourses,
         categories: data.categories || [],
         difficulties: data.difficulties || []
       };
@@ -324,21 +505,87 @@ export const getUpdatedCourses = async (filters = {}) => {
 };
 
 /**
- * Get lessons for a specific updated course
+ * ✅ Get single course by ID with proper image processing
+ */
+export const getCourseById = async (courseId) => {
+  try {
+    console.log('📥 Fetching course by ID:', courseId);
+
+    const { data } = await api.get(`updated-courses/${courseId}`);
+
+    if (data && data.success && data.course) {
+      // Process the single course
+      const processedCourse = {
+        ...data.course,
+        id: data.course._id || data.course.id,
+        _id: data.course._id || data.course.id,
+        // Process thumbnail
+        thumbnail: processImageUrl(data.course.thumbnail),
+        // Process instructor avatar
+        instructor: {
+          ...data.course.instructor,
+          avatar: processImageUrl(data.course.instructor?.avatar)
+        },
+        // Process curriculum with images
+        curriculum: processCurriculum(data.course.curriculum || [])
+      };
+
+      console.log('✅ Course fetched and processed:', processedCourse.title);
+      return {
+        success: true,
+        data: processedCourse
+      };
+    } else {
+      throw new Error('Course not found or invalid response');
+    }
+  } catch (error) {
+    console.error('❌ Failed to fetch course by ID:', error);
+
+    if (error.response?.status === 404) {
+      return {
+        success: false,
+        error: 'Course not found',
+        status: 404
+      };
+    }
+
+    return {
+      success: false,
+      error: error.message || 'Failed to fetch course'
+    };
+  }
+};
+
+/**
+ * ✅ Get course content/lessons with proper image processing
  */
 export const getCourseContent = async (courseId) => {
   try {
     console.log('📥 Fetching course content for:', courseId);
 
-    // ✅ STRATEGY 1: Try the course-specific lessons endpoint
+    // Try the course-specific lessons endpoint first
     try {
       const { data } = await api.get(`updated-courses/${courseId}/lessons`);
 
       if (data && data.success) {
-        console.log(`✅ Course lessons fetched: ${data.lessons?.length || 0} lessons`);
+        const lessons = (data.lessons || data.data || []).map((lesson, index) => ({
+          id: lesson._id || lesson.id || `lesson_${index}`,
+          _id: lesson._id || lesson.id || `lesson_${index}`,
+          title: lesson.title || lesson.lessonName || `Урок ${index + 1}`,
+          lessonName: lesson.title || lesson.lessonName || `Урок ${index + 1}`,
+          description: lesson.description || '',
+          duration: lesson.duration || '30 мин',
+          order: lesson.order || index,
+          topicId: courseId,
+          subject: lesson.subject || 'General',
+          // Process steps with images
+          steps: processSteps(lesson.steps || [], index)
+        }));
+
+        console.log(`✅ Course lessons processed: ${lessons.length} lessons`);
         return {
           success: true,
-          data: data.lessons || data.data || [],
+          data: lessons,
           source: 'course-lessons-endpoint'
         };
       }
@@ -346,7 +593,7 @@ export const getCourseContent = async (courseId) => {
       console.warn('⚠️ Course lessons endpoint failed:', courseError.message);
     }
 
-    // ✅ STRATEGY 2: Get course details and extract curriculum
+    // Fallback: Get course details and extract curriculum
     try {
       const { data } = await api.get(`updated-courses/${courseId}`);
 
@@ -354,71 +601,21 @@ export const getCourseContent = async (courseId) => {
         const course = data.course;
 
         // Convert curriculum to lessons format
-        const lessons = course.curriculum?.map((lesson, index) => ({
+        const lessons = (course.curriculum || []).map((lesson, index) => ({
           id: lesson._id || lesson.id || `lesson_${index}`,
           _id: lesson._id || lesson.id || `lesson_${index}`,
           title: lesson.title,
           lessonName: lesson.title,
           description: lesson.description,
-          duration: lesson.duration || '30 min',
+          duration: lesson.duration || '30 мин',
           order: lesson.order || index,
           topicId: course.id || course._id,
           subject: course.category || 'General',
-          // ✅ Process steps to only include images and text
-          steps: (lesson.steps || []).map((step, stepIndex) => {
-            const processedStep = {
-              id: `step_${index}_${stepIndex}`,
-              type: step.type,
-              data: {},
-              content: step.content,
-              title: step.title,
-              description: step.description,
-              images: step.images || []
-            };
+          // Process steps with images
+          steps: processSteps(lesson.steps || [], index)
+        }));
 
-            // ✅ Only process allowed step types (no video)
-            switch (step.type) {
-              case 'explanation':
-              case 'example':
-              case 'reading':
-                processedStep.data = {
-                  content: step.data?.content || step.content || '',
-                  images: step.data?.images || step.images || []
-                };
-                break;
-
-              case 'image':
-                processedStep.data = {
-                  images: step.data?.images || step.images || [],
-                  description: step.data?.description || step.description || ''
-                };
-                break;
-
-              case 'practice':
-                processedStep.data = {
-                  instructions: step.data?.instructions || step.instructions || '',
-                  type: step.data?.type || 'guided'
-                };
-                break;
-
-              case 'quiz':
-                processedStep.data = {
-                  question: step.data?.question || step.question || '',
-                  options: step.data?.options || step.options || [],
-                  correctAnswer: step.data?.correctAnswer || step.correctAnswer,
-                  quizzes: step.data?.quizzes || step.quizzes || []
-                };
-                break;
-
-              default:
-                processedStep.data = step.data || {};
-            }
-
-            return processedStep;
-          })
-        })) || [];
-
-        console.log(`✅ Course curriculum extracted: ${lessons.length} lessons`);
+        console.log(`✅ Course curriculum processed: ${lessons.length} lessons`);
         return {
           success: true,
           data: lessons,
@@ -429,18 +626,7 @@ export const getCourseContent = async (courseId) => {
       console.warn('⚠️ Course details endpoint failed:', detailError.message);
     }
 
-    // ✅ STRATEGY 3: Fallback to topic-based lessons
-    try {
-      const response = await getLessonsByTopic(courseId);
-      if (response.success && response.data) {
-        console.log(`✅ Topic lessons fallback: ${response.data.length} lessons`);
-        return response;
-      }
-    } catch (topicError) {
-      console.warn('⚠️ Topic lessons fallback failed:', topicError.message);
-    }
-
-    // No content found
+    // Final fallback
     console.log('ℹ️ No course content found, returning empty array');
     return {
       success: true,
@@ -504,41 +690,6 @@ export const toggleBookmark = async (userId, courseId, isBookmarked) => {
   }
 };
 
-/**
- * Get single course by ID with proper structure
- */
-export const getCourseById = async (courseId) => {
-  try {
-    console.log('📥 Fetching course by ID:', courseId);
-
-    const { data } = await api.get(`updated-courses/${courseId}`);
-
-    if (data && data.success && data.course) {
-      console.log('✅ Course fetched successfully:', data.course.title);
-      return {
-        success: true,
-        data: data.course
-      };
-    } else {
-      throw new Error('Course not found or invalid response');
-    }
-  } catch (error) {
-    console.error('❌ Failed to fetch course by ID:', error);
-
-    if (error.response?.status === 404) {
-      return {
-        success: false,
-        error: 'Course not found',
-        status: 404
-      };
-    }
-
-    return {
-      success: false,
-      error: error.message || 'Failed to fetch course'
-    };
-  }
-};
 
 // =============================================
 // 📚 LESSON AND TOPIC API FUNCTIONS - FIXED
@@ -725,7 +876,7 @@ export const getTopicById = async (topicId) => {
         if (typeof lesson.lessonName === 'string' && lesson.lessonName.trim()) {
           return `Тема: ${lesson.lessonName.trim()}`;
         }
-        
+
         if (typeof lesson.title === 'string' && lesson.title.trim()) {
           return `Тема: ${lesson.title.trim()}`;
         }
@@ -1093,7 +1244,7 @@ export const submitProgress = async (userId, progressData) => {
     for (const endpoint of endpoints) {
       try {
         const dataToSend = endpoint.includes('/progress') && !endpoint.includes('users')
-          ? enhancedData  // Include userId in data for general progress endpoint
+          ? enhancedData // Include userId in data for general progress endpoint
           : { ...enhancedData, userId: undefined }; // Remove userId from data for user-specific endpoints
 
         const { data } = await api.post(endpoint, dataToSend, { headers, timeout: 15000 });

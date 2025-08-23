@@ -1,19 +1,21 @@
 <template>
-  <!-- Lesson Interface -->
-  <LessonLoader 
-    v-if="showStudyInterface" 
-    :course="selectedCourse"
-    @back-to-courses="goBackToCourses"
-    :key="`lesson-${componentKey}`"
-  />
-
-  <!-- Courses List Interface -->
-  <div v-else class="courses-page" :key="`courses-${componentKey}`">
-    <div class="header">
+  <div class="courses-page" :key="`courses-${componentKey}`">
+    <header class="header">
       <div class="container">
         <div class="header-content">
           <div class="header-badge">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-badge-icon">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="header-badge-icon"
+            >
               <path d="M5.5 8.5L2 12l3.5 3.5" />
               <path d="M18.5 8.5L22 12l-3.5 3.5" />
               <path d="M12 2l-2 10l2 10l2-10z" />
@@ -30,17 +32,33 @@
           </p>
         </div>
       </div>
-    </div>
+    </header>
 
     <div class="content-wrapper">
       <div class="container">
-        <div class="filter-bar">
+        <section class="filter-bar">
           <div class="filter-group-search">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="search-icon"
+            >
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.3-4.3"></path>
             </svg>
-            <input v-model="searchTerm" @input="debounceSearch" placeholder="Поиск курсов..." class="input-search" />
+            <input
+              v-model="searchTerm"
+              @input="debounceSearch"
+              placeholder="Поиск курсов..."
+              class="input-search"
+            />
           </div>
 
           <div class="filter-group-select">
@@ -50,7 +68,18 @@
                 {{ category }}
               </option>
             </select>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="select-arrow">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="select-arrow"
+            >
               <path d="m6 9 6 6 6-6" />
             </svg>
           </div>
@@ -62,27 +91,58 @@
                 {{ level }}
               </option>
             </select>
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="select-arrow">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="select-arrow"
+            >
               <path d="m6 9 6 6 6-6" />
             </svg>
           </div>
 
           <div class="filter-group-buttons">
-            <button :class="['button-filter', { active: typeFilter === 'all' }]" @click="setTypeFilter('all')">
+            <button
+              :class="['button-filter', { active: typeFilter === 'all' }]"
+              @click="setTypeFilter('all')"
+            >
               Все
             </button>
-            <button :class="['button-filter', { active: typeFilter === 'free' }]" @click="setTypeFilter('free')">
+            <button
+              :class="['button-filter', { active: typeFilter === 'free' }]"
+              @click="setTypeFilter('free')"
+            >
               Бесплатные
             </button>
-            <button :class="['button-filter', { active: typeFilter === 'premium' }]" @click="setTypeFilter('premium')">
+            <button
+              :class="['button-filter', { active: typeFilter === 'premium' }]"
+              @click="setTypeFilter('premium')"
+            >
               Премиум
             </button>
           </div>
-        </div>
+        </section>
 
         <div class="results-info">
           <div class="results-count">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="results-icon">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="results-icon"
+            >
               <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
             </svg>
             <span>Найдено курсов: {{ courses.length }}</span>
@@ -97,8 +157,21 @@
 
         <div v-else-if="error" class="empty-state">
           <div class="empty-state-icon-wrapper">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-icon">
-              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="empty-state-icon"
+            >
+              <path
+                d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+              />
               <line x1="12" y1="9" x2="12" y2="13" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
@@ -111,16 +184,32 @@
         </div>
 
         <div v-else-if="courses.length > 0" class="courses-grid">
-          <div v-for="course in courses" :key="course.id" class="course-card" @click="openModal(course)">
+          <div
+            v-for="course in courses"
+            :key="course.id"
+            class="course-card"
+            @click="openModal(course)"
+          >
             <div class="course-card-image-wrapper">
-              <img 
-                :src="getCourseImage(course)" 
-                :alt="course.title" 
+              <img
+                :src="getCourseImage(course)"
+                :alt="course.title"
                 class="course-card-image"
                 @error="handleImageError($event, course)"
               />
               <div v-if="course.isPremium" class="badge badge-premium">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="badge-icon">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="badge-icon"
+                >
                   <path d="m14 6 4 10L2 10"></path>
                   <path d="M5 14 2 12l10-2L9.5 2l.5 6"></path>
                 </svg>
@@ -137,13 +226,24 @@
               <p class="course-card-description">{{ course.description }}</p>
               <div class="course-card-stats">
                 <div class="course-card-stat">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="course-card-stat-icon">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="course-card-stat-icon"
+                  >
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="12 6 12 12 16 14"></polyline>
                   </svg>
                   <span>{{ course.duration }}</span>
                 </div>
-                <div class="course-card-level">{{ course.level }}</div>
+                <div class="course-card-level">{{ course.difficulty || course.level }}</div>
               </div>
               <div class="course-card-provider">
                 <p>от</p>
@@ -155,7 +255,18 @@
 
         <div v-else class="empty-state">
           <div class="empty-state-icon-wrapper">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-icon">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="empty-state-icon"
+            >
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.3-4.3"></path>
             </svg>
@@ -171,158 +282,332 @@
       </div>
     </div>
 
-    <!-- Course Modal -->
-    <div v-if="isModalOpen && selectedCourse" class="modal-overlay" @click="closeModal">
-      <div class="modal-container" @click.stop>
-        <button class="modal-close" @click="closeModal">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 6 6 18"></path>
-            <path d="m6 6 12 12"></path>
-          </svg>
-        </button>
+    <Teleport to="body">
+      <div v-if="isModalOpen && selectedCourse" class="modal-overlay" @click="closeModal">
+        <div class="modal-container" @click.stop>
+          <button class="modal-close" @click="closeModal">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M18 6 6 18"></path>
+              <path d="m6 6 12 12"></path>
+            </svg>
+          </button>
 
-        <div v-if="modalLoading" class="modal-loading-state">
-          <div class="spinner"></div>
-          <p>Загрузка информации о курсе...</p>
-        </div>
-
-        <div v-else class="modal-content">
-          <div class="modal-header-section">
-            <div class="modal-image-container">
-              <img 
-                :src="getCourseImage(selectedCourse)" 
-                :alt="selectedCourse.title" 
-                class="modal-image"
-                @error="handleImageError($event, selectedCourse)"
-              />
-              <div class="modal-image-overlay"></div>
-
-              <div class="modal-badge-container">
-                <div v-if="selectedCourse.isPremium" class="modal-badge modal-badge-premium">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="m14 6 4 10L2 10"></path>
-                    <path d="M5 14 2 12l10-2L9.5 2l.5 6"></path>
-                  </svg>
-                  Премиум
-                </div>
-                <div v-else class="modal-badge modal-badge-free">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                  </svg>
-                  Бесплатно
-                </div>
-              </div>
-
-              <div class="modal-meta-overlay">
-                <div class="modal-duration">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                  </svg>
-                  {{ selectedCourse.duration }}
-                </div>
-                <div class="modal-provider">
-                  <span>от</span>
-                  <span>Aced</span>
-                </div>
-              </div>
-            </div>
+          <div v-if="modalLoading" class="modal-loading-state">
+            <div class="spinner"></div>
+            <p>Загрузка информации о курсе...</p>
           </div>
 
-          <div class="modal-body">
-            <div class="modal-course-info">
-              <div class="modal-tags">
-                <span class="modal-tag modal-tag-category">{{ selectedCourse.category }}</span>
-                <span class="modal-tag modal-tag-level">{{ selectedCourse.level }}</span>
-              </div>
+          <div v-else class="modal-content">
+            <div class="modal-header-section">
+              <div class="modal-image-container">
+                <img
+                  :src="getCourseImage(selectedCourse)"
+                  :alt="selectedCourse.title"
+                  class="modal-image"
+                  @error="handleImageError($event, selectedCourse)"
+                />
+                <div class="modal-image-overlay"></div>
 
-              <h2 class="modal-title">{{ selectedCourse.title }}</h2>
-              <p class="modal-description">{{ selectedCourse.fullDescription }}</p>
+                <div class="modal-badge-container">
+                  <div v-if="selectedCourse.isPremium" class="modal-badge modal-badge-premium">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="m14 6 4 10L2 10"></path>
+                      <path d="M5 14 2 12l10-2L9.5 2l.5 6"></path>
+                    </svg>
+                    Премиум
+                  </div>
+                  <div v-else class="modal-badge modal-badge-free">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    Бесплатно
+                  </div>
+                </div>
+
+                <div class="modal-meta-overlay">
+                  <div class="modal-duration">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    {{ selectedCourse.duration }}
+                  </div>
+                  <div class="modal-provider">
+                    <span>от</span>
+                    <span>Aced</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="modal-divider"></div>
+            <div class="modal-body">
+              <section class="modal-course-info">
+                <div class="modal-tags">
+                  <span class="modal-tag modal-tag-category">{{ selectedCourse.category }}</span>
+                  <span class="modal-tag modal-tag-level">{{
+                    selectedCourse.difficulty || selectedCourse.level
+                  }}</span>
+                </div>
 
-            <div class="modal-details">
-              <div class="modal-details-grid">
-                <div class="modal-section">
-                  <h3 class="modal-section-title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
-                    </svg>
-                    Что вы изучите:
-                  </h3>
-                  <ul class="modal-skills-list">
-                    <li v-for="(skill, index) in selectedCourse.skills" :key="index" class="modal-skill-item">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="skill-check-icon">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"></path>
-                        <path d="M22 4L12 14.01l-3-3"></path>
+                <h2 class="modal-title">{{ selectedCourse.title }}</h2>
+                <p class="modal-description">
+                  {{ selectedCourse.fullDescription || selectedCourse.description }}
+                </p>
+              </section>
+
+              <div class="modal-divider"></div>
+
+              <section class="modal-details">
+                <div class="modal-details-grid">
+                  <div class="modal-section">
+                    <h3 class="modal-section-title">
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path
+                          d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"
+                        ></path>
                       </svg>
-                      {{ skill }}
-                    </li>
-                  </ul>
-                </div>
+                      Что вы изучите:
+                    </h3>
+                    <ul class="modal-skills-list">
+                      <li
+                        v-for="(outcome, index) in getCourseOutcomes(selectedCourse)"
+                        :key="index"
+                        class="modal-skill-item"
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          class="skill-check-icon"
+                        >
+                          <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"></path>
+                          <path d="M22 4L12 14.01l-3-3"></path>
+                        </svg>
+                        {{ outcome }}
+                      </li>
+                    </ul>
+                  </div>
 
-                <div class="modal-section">
-                  <h3 class="modal-section-title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                      <polyline points="14 2 14 8 20 8"></polyline>
+                  <div class="modal-section">
+                    <h3 class="modal-section-title">
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                      </svg>
+                      Программа курса:
+                    </h3>
+                    <ul class="modal-modules-list">
+                      <li
+                        v-for="(lesson, index) in getCourseModules(selectedCourse)"
+                        :key="index"
+                        class="modal-module-item"
+                      >
+                        <span class="module-number">{{ index + 1 }}.</span>
+                        <div class="module-content">
+                          <span class="module-text">{{ lesson.title }}</span>
+                          <span v-if="lesson.duration" class="module-duration">{{
+                            lesson.duration
+                          }}</span>
+                          <div v-if="lesson.hasImages" class="module-badge">
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                            >
+                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                              <circle cx="9" cy="9" r="2"></circle>
+                              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                            </svg>
+                            Изображения
+                          </div>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </section>
+
+              <section v-if="selectedCourse.studentsCount || selectedCourse.rating" class="modal-stats">
+                <div class="modal-stats-grid">
+                  <div v-if="selectedCourse.studentsCount" class="modal-stat-item">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                      <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                     </svg>
-                    Программа курса:
-                  </h3>
-                  <ul class="modal-modules-list">
-                    <li v-for="(module, index) in selectedCourse.modules" :key="index" class="modal-module-item">
-                      <span class="module-number">{{ index + 1 }}.</span>
-                      <span class="module-text">{{ module }}</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
+                    <div>
+                      <div class="stat-value">{{ formatNumber(selectedCourse.studentsCount) }}</div>
+                      <div class="stat-label">студентов</div>
+                    </div>
+                  </div>
 
-            <div class="modal-actions">
-              <button 
-                :class="['modal-action-button', { 
-                  'premium': selectedCourse.isPremium && !isPremiumUser,
-                  'accessible': !selectedCourse.isPremium || isPremiumUser
-                }]" 
-                @click="startCourse(selectedCourse)"
-              >
-                <svg v-if="selectedCourse.isPremium && !isPremiumUser" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
-                <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-                
-                <span v-if="selectedCourse.isPremium && !isPremiumUser">
-                  Требуется подписка {{ currentUserStatus === 'free' ? 'Start/Pro' : 'Pro' }}
-                </span>
-                <span v-else>Начать изучение</span>
-              </button>
-              <p class="modal-action-description">
-                Начните изучение прямо сейчас и развивайте свои навыки
-              </p>
+                  <div v-if="selectedCourse.rating" class="modal-stat-item">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <polygon
+                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                      ></polygon>
+                    </svg>
+                    <div>
+                      <div class="stat-value">{{ selectedCourse.rating.toFixed(1) }}</div>
+                      <div class="stat-label">рейтинг</div>
+                    </div>
+                  </div>
+
+                  <div v-if="getCourseImageCount(selectedCourse) > 0" class="modal-stat-item">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <circle cx="9" cy="9" r="2"></circle>
+                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                    </svg>
+                    <div>
+                      <div class="stat-value">{{ getCourseImageCount(selectedCourse) }}</div>
+                      <div class="stat-label">изображений</div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <footer class="modal-actions">
+                <button
+                  :class="[
+                    'modal-action-button',
+                    {
+                      premium: selectedCourse.isPremium && !isPremiumUser,
+                      accessible: !selectedCourse.isPremium || isPremiumUser,
+                    },
+                  ]"
+                  @click="startCourse(selectedCourse)"
+                >
+                  <svg
+                    v-if="selectedCourse.isPremium && !isPremiumUser"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  <svg
+                    v-else
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  <span v-if="selectedCourse.isPremium && !isPremiumUser">
+                    Требуется подписка {{ currentUserStatus === 'free' ? 'Start/Pro' : 'Pro' }}
+                  </span>
+                  <span v-else>Начать изучение</span>
+                </button>
+                <p class="modal-action-description">
+                  Начните изучение прямо сейчас и развивайте свои навыки
+                </p>
+              </footer>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </Teleport>
+
+    <LessonLoader
+      v-if="showStudyInterface"
+      :course="selectedCourse"
+      @back-to-courses="goBackToCourses"
+      :key="`lesson-${componentKey}`"
+    />
   </div>
 </template>
 
 <script>
 import { getUpdatedCourses, getCourseById } from '@/api.js';
-import { checkSubscriptionAccess } from '@/router/index.js';
 import { mapGetters, mapState } from 'vuex';
 import LessonLoader from '../components/Updated/LessonPlayer.vue';
 
 export default {
   name: 'CoursesPage',
   components: {
-    LessonLoader
+    LessonLoader,
   },
   data() {
     return {
@@ -340,259 +625,433 @@ export default {
       modalLoading: false,
       error: null,
       showStudyInterface: false,
-      
-      // ✅ ENHANCED: Add comprehensive reactivity tracking
       componentKey: 0,
       lastUpdateTime: Date.now(),
       forceUpdateCounter: 0,
-
-      // ✅ HARDCODED IMAGES MAP
       courseImages: {
-        // Programming & Development
         'javascript': 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=400&h=250&fit=crop',
         'python': 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400&h=250&fit=crop',
         'react': 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=250&fit=crop',
         'vue': 'https://images.unsplash.com/photo-1661956602116-aa6865609028?w=400&h=250&fit=crop',
         'node': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=250&fit=crop',
-        'web development': 'https://images.unsplash.com/photo-1547658719-da2b51169166?w=400&h=250&fit=crop',
-        'programming': 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=250&fit=crop',
-        'coding': 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=250&fit=crop',
-        'software development': 'https://images.unsplash.com/photo-1518773553398-650c184e0bb3?w=400&h=250&fit=crop',
-        
-        // AI & Machine Learning
-        'artificial intelligence': 'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=400&h=250&fit=crop',
-        'machine learning': 'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=400&h=250&fit=crop',
+        'web-разработка': 'https://images.unsplash.com/photo-1547658719-da2b51169166?w=400&h=250&fit=crop',
+        'программирование': 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=250&fit=crop',
+        'иИ и автоматизация': 'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=400&h=250&fit=crop',
+        'ии и автоматизация': 'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=400&h=250&fit=crop',
+        'машинное обучение': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop',
+        'искусственный интеллект': 'https://images.unsplash.com/photo-1507146426996-ef05306b995a?w=400&h=250&fit=crop',
         'ai': 'https://images.unsplash.com/photo-1507146426996-ef05306b995a?w=400&h=250&fit=crop',
-        'data science': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop',
-        'neural networks': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=250&fit=crop',
-        
-        // Design
-        'design': 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop',
-        'ui design': 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=400&h=250&fit=crop',
-        'ux design': 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?w=400&h=250&fit=crop',
-        'graphic design': 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=400&h=250&fit=crop',
-        'web design': 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=400&h=250&fit=crop',
-        
-        // Business & Marketing
-        'marketing': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop',
-        'digital marketing': 'https://images.unsplash.com/photo-1432888622747-4eb9a8efeb07?w=400&h=250&fit=crop',
-        'business': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop',
-        'entrepreneurship': 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop',
-        'finance': 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=400&h=250&fit=crop',
-        
-        // Languages
-        'english': 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=250&fit=crop',
-        'language learning': 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=250&fit=crop',
-        'languages': 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=250&fit=crop',
-        
-        // Blockchain & Crypto
-        'blockchain': 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=250&fit=crop',
-        'cryptocurrency': 'https://images.unsplash.com/photo-1605792657660-596af9009e82?w=400&h=250&fit=crop',
-        'bitcoin': 'https://images.unsplash.com/photo-1605792657660-596af9009e82?w=400&h=250&fit=crop',
-        'crypto': 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=400&h=250&fit=crop',
-        
-        // Default fallback images by category
-        'технологии': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=250&fit=crop',
-        'образование': 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop',
-        'наука': 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=250&fit=crop',
-        'искусство': 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=250&fit=crop',
-        'музыка': 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=250&fit=crop',
-        'спорт': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=250&fit=crop',
-        'здоровье': 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=250&fit=crop',
-        'кулинария': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=250&fit=crop',
-        
-        // Generic fallbacks
+        'дизайн': 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop',
+        'графический дизайн': 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=400&h=250&fit=crop',
+        'ui дизайн': 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=400&h=250&fit=crop',
+        'ux дизайн': 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?w=400&h=250&fit=crop',
+        'веб-дизайн': 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=400&h=250&fit=crop',
+        'видеомонтаж': 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&h=250&fit=crop',
+        'монтаж': 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&h=250&fit=crop',
+        'маркетинг': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop',
+        'цифровой маркетинг': 'https://images.unsplash.com/photo-1432888622747-4eb9a8efeb07?w=400&h=250&fit=crop',
+        'мобильная разработка': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=250&fit=crop',
+        'мобильные приложения': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=250&fit=crop',
+        'android': 'https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?w=400&h=250&fit=crop',
+        'ios': 'https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?w=400&h=250&fit=crop',
+        'бизнес': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop',
+        'предпринимательство': 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop',
+        'финансы': 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=400&h=250&fit=crop',
         'default': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=250&fit=crop',
         'course': 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=400&h=250&fit=crop',
         'learning': 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=250&fit=crop',
-        'education': 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop',
-        'study': 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&h=250&fit=crop'
-      }
+      },
     };
   },
-
   computed: {
     ...mapGetters('user', ['userStatus']),
     ...mapState(['user']),
     ...mapGetters(['getUser']),
-
     currentUser() {
       return this.getUser || this.user || {};
     },
-
     currentUserStatus() {
-      const userStatus = this.currentUser?.subscriptionPlan || 
-                        localStorage.getItem('userStatus') || 
-                        localStorage.getItem('plan') || 
-                        'free';
+      const userStatus =
+        this.currentUser?.subscriptionPlan ||
+        localStorage.getItem('userStatus') ||
+        localStorage.getItem('plan') ||
+        'free';
       return userStatus;
     },
-
     isPremiumUser() {
       const status = this.currentUserStatus;
       return status === 'pro' || status === 'start';
-    }
+    },
   },
-
   watch: {
     user: {
       handler(newUser, oldUser) {
         const newPlan = newUser?.subscriptionPlan;
         const oldPlan = oldUser?.subscriptionPlan;
-        
         if (newPlan !== oldPlan) {
           console.log('👤 UpdatedCourses: User plan changed:', oldPlan, '→', newPlan);
           this.handleUserStatusChange(newPlan, oldPlan);
         }
       },
       deep: true,
-      immediate: true
+      immediate: true,
     },
-
     getUser: {
       handler(newUser, oldUser) {
         const newPlan = newUser?.subscriptionPlan;
         const oldPlan = oldUser?.subscriptionPlan;
-        
         if (newPlan !== oldPlan) {
           console.log('👤 UpdatedCourses: GetUser plan changed:', oldPlan, '→', newPlan);
           this.handleUserStatusChange(newPlan, oldPlan);
         }
       },
       deep: true,
-      immediate: true
+      immediate: true,
     },
-
     currentUserStatus: {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
-          console.log('📊 UpdatedCourses: Current user status computed changed:', oldStatus, '→', newStatus);
+          console.log(
+            '📊 UpdatedCourses: Current user status computed changed:',
+            oldStatus,
+            '→',
+            newStatus
+          );
           this.triggerReactivityUpdate();
         }
       },
-      immediate: true
-    }
+      immediate: true,
+    },
   },
-
   async mounted() {
     console.log('📱 UpdatedCourses: Component mounted');
-    
     try {
       this.fetchCourses();
       this.setupEventListeners();
-      
       console.log('✅ UpdatedCourses: Component mounted successfully');
-      
     } catch (error) {
       console.error('❌ UpdatedCourses: Mount error:', error);
     }
   },
-
   beforeUnmount() {
     console.log('📱 UpdatedCourses: Component unmounting');
     this.cleanup();
   },
-
   methods: {
     async fetchCourses() {
       this.loading = true;
       this.error = null;
       try {
+        console.log('📥 Fetching updated courses...');
         const filters = {
           search: this.searchTerm,
-          category: this.categoryFilter,
-          difficulty: this.levelFilter,
-          type: this.typeFilter,
+          category: this.categoryFilter !== 'all' ? this.categoryFilter : undefined,
+          difficulty: this.levelFilter !== 'all' ? this.levelFilter : undefined,
+          type: this.typeFilter !== 'all' ? this.typeFilter : undefined,
         };
-
         const response = await getUpdatedCourses(filters);
+        console.log('📦 Courses response:', response);
         if (response.success) {
-          this.courses = response.courses || [];
+          this.courses = this.processCourses(response.courses || []);
           this.availableCategories = response.categories || [];
           this.availableLevels = response.difficulties || [];
+          console.log(`✅ Loaded ${this.courses.length} courses`);
         } else {
-          this.error = response.error;
+          this.error = response.error || 'Не удалось загрузить курсы';
           this.courses = [];
         }
       } catch (e) {
+        console.error('❌ Error fetching courses:', e);
         this.error = 'Не удалось загрузить курсы. Пожалуйста, попробуйте позже.';
+        this.courses = [];
       } finally {
         this.loading = false;
       }
     },
-
+    processCourses(courses) {
+      return courses.map((course) => {
+        const processedCourse = {
+          ...course,
+          id: course._id || course.id,
+          _id: course._id || course.id,
+          difficulty: course.difficulty || course.level || 'Начинающий',
+          level: course.level || course.difficulty || 'Начинающий',
+          duration: course.duration || (course.estimatedTime?.hours ? `${course.estimatedTime.hours} часов` : '10 часов'),
+          instructor: {
+            name: course.instructor?.name || 'Aced Team',
+            avatar: course.instructor?.avatar || '/default-avatar.jpg',
+            bio: course.instructor?.bio || '',
+          },
+          curriculum: this.processCurriculum(course.curriculum || []),
+          hasImages: this.courseHasImages(course),
+          imageCount: this.getCourseImageCount(course),
+        };
+        return processedCourse;
+      });
+    },
+    processCurriculum(curriculum) {
+      if (!Array.isArray(curriculum)) return [];
+      return curriculum.map((lesson, lessonIndex) => {
+        const processedLesson = {
+          ...lesson,
+          id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
+          _id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
+          title: lesson.title || `Урок ${lessonIndex + 1}`,
+          description: lesson.description || '',
+          duration: lesson.duration || '30 мин',
+          order: lesson.order || lessonIndex,
+          steps: this.processSteps(lesson.steps || [], lessonIndex),
+          hasImages: this.lessonHasImages(lesson),
+          imageCount: this.getLessonImageCount(lesson),
+        };
+        return processedLesson;
+      });
+    },
+    processSteps(steps, lessonIndex) {
+      if (!Array.isArray(steps)) return [];
+      return steps.map((step, stepIndex) => {
+        const processedStep = {
+          ...step,
+          id: step.id || `step_${lessonIndex}_${stepIndex}`,
+          type: step.type || 'explanation',
+          title: step.title || '',
+          description: step.description || '',
+          content: step.content || '',
+          images: this.processStepImages(step.images || []),
+          data: this.processStepData(step),
+        };
+        return processedStep;
+      });
+    },
+    processStepData(step) {
+      const baseData = step.data || {};
+      switch (step.type) {
+        case 'explanation':
+        case 'example':
+        case 'reading':
+          return {
+            ...baseData,
+            content: baseData.content || step.content || '',
+            images: this.processStepImages(baseData.images || step.images || []),
+          };
+        case 'image':
+          return {
+            ...baseData,
+            images: this.processStepImages(baseData.images || step.images || []),
+            description: baseData.description || step.description || '',
+            caption: baseData.caption || step.caption || '',
+          };
+        case 'practice':
+          return {
+            ...baseData,
+            instructions: baseData.instructions || step.instructions || step.content || '',
+            type: baseData.type || 'guided',
+            images: this.processStepImages(baseData.images || step.images || []),
+          };
+        case 'quiz':
+          return Array.isArray(baseData) ? baseData : step.quizzes || [];
+        default:
+          return {
+            ...baseData,
+            content: baseData.content || step.content || '',
+            images: this.processStepImages(baseData.images || step.images || []),
+          };
+      }
+    },
+    processStepImages(images) {
+      if (!Array.isArray(images)) return [];
+      return images
+        .filter((img) => img && (img.url || img.base64))
+        .map((img, index) => ({
+          id: img.id || `img_${index}`,
+          url: img.url || img.base64 || '',
+          caption: img.caption || '',
+          alt: img.alt || img.caption || `Изображение ${index + 1}`,
+          filename: img.filename || `image_${index}`,
+          size: img.size || 0,
+          order: img.order || index,
+          displayOptions: {
+            width: img.displayOptions?.width || 'auto',
+            height: img.displayOptions?.height || 'auto',
+            alignment: img.displayOptions?.alignment || 'center',
+            zoom: img.displayOptions?.zoom || false,
+          },
+        }))
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+    },
     getCourseImage(course) {
       if (!course) return this.courseImages.default;
-
+      if (course.thumbnail && course.thumbnail !== '/default-course-thumbnail.jpg') {
+        return course.thumbnail;
+      }
+      const curriculumImages = this.extractCurriculumImages(course);
+      if (curriculumImages.length > 0) {
+        return curriculumImages[0].url;
+      }
       const safeString = (value) => {
         if (value === null || value === undefined) return '';
         return String(value).toLowerCase().trim();
       };
-
       const title = safeString(course.title);
       const category = safeString(course.category);
-      const description = safeString(course.description);
-
-      const titleKeywords = [
-        'javascript', 'python', 'react', 'vue', 'node', 'ai', 'machine learning',
-        'design', 'marketing', 'blockchain', 'crypto', 'english', 'business'
-      ];
-
+      const categoryMap = {
+        'ии и автоматизация': 'иИ и автоматизация',
+        'искусственный интеллект': 'иИ и автоматизация',
+        'машинное обучение': 'машинное обучение',
+        'видеомонтаж': 'видеомонтаж',
+        'графический дизайн': 'графический дизайн',
+        'web-разработка': 'web-разработка',
+        'веб-разработка': 'web-разработка',
+        'мобильная разработка': 'мобильная разработка',
+        'дизайн': 'дизайн',
+        'программирование': 'программирование',
+        'маркетинг': 'маркетинг',
+      };
+      if (category && categoryMap[category] && this.courseImages[categoryMap[category]]) {
+        return this.courseImages[categoryMap[category]];
+      }
+      if (category && this.courseImages[category]) {
+        return this.courseImages[category];
+      }
+      const titleKeywords = Object.keys(this.courseImages);
       for (const keyword of titleKeywords) {
         if (title.includes(keyword) && this.courseImages[keyword]) {
           return this.courseImages[keyword];
         }
       }
-
-      if (category && this.courseImages[category]) {
-        return this.courseImages[category];
-      }
-
-      const categoryKeywords = Object.keys(this.courseImages);
-      for (const keyword of categoryKeywords) {
-        if (category.includes(keyword) && this.courseImages[keyword]) {
-          return this.courseImages[keyword];
+      for (const keyword of Object.keys(categoryMap)) {
+        if (category.includes(keyword) && this.courseImages[categoryMap[keyword]]) {
+          return this.courseImages[categoryMap[keyword]];
         }
       }
-
-      const contentKeywords = [
-        'programming', 'coding', 'development', 'design', 'marketing', 
-        'business', 'ai', 'blockchain', 'language'
-      ];
-
-      for (const keyword of contentKeywords) {
-        if ((title.includes(keyword) || description.includes(keyword)) && this.courseImages[keyword]) {
-          return this.courseImages[keyword];
-        }
-      }
-
       if (course.isPremium) {
         return this.courseImages.course;
       }
-
       return this.courseImages.default;
     },
-
+    extractCurriculumImages(course) {
+      const images = [];
+      if (course.curriculum && Array.isArray(course.curriculum)) {
+        course.curriculum.forEach((lesson) => {
+          if (lesson.steps && Array.isArray(lesson.steps)) {
+            lesson.steps.forEach((step) => {
+              if (step.images && Array.isArray(step.images)) {
+                step.images.forEach((img) => {
+                  if (img.url && !img.url.startsWith('data:')) {
+                    images.push(img);
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+      return images;
+    },
+    courseHasImages(course) {
+      if (!course.curriculum) return false;
+      return course.curriculum.some((lesson) =>
+        lesson.steps && lesson.steps.some((step) => step.images && step.images.length > 0)
+      );
+    },
+    getCourseImageCount(course) {
+      if (!course.curriculum) return 0;
+      let count = 0;
+      course.curriculum.forEach((lesson) => {
+        if (lesson.steps) {
+          lesson.steps.forEach((step) => {
+            if (step.images) {
+              count += step.images.length;
+            }
+          });
+        }
+      });
+      return count;
+    },
+    lessonHasImages(lesson) {
+      return lesson.steps && lesson.steps.some((step) => step.images && step.images.length > 0);
+    },
+    getLessonImageCount(lesson) {
+      if (!lesson.steps) return 0;
+      return lesson.steps.reduce((count, step) => {
+        return count + (step.images ? step.images.length : 0);
+      }, 0);
+    },
+    getCourseOutcomes(course) {
+      if (course.learningOutcomes && course.learningOutcomes.length > 0) {
+        return course.learningOutcomes;
+      }
+      const outcomes = [];
+      if (course.curriculum && course.curriculum.length > 0) {
+        outcomes.push(`Изучите ${course.curriculum.length} практических уроков`);
+        const hasImages = this.courseHasImages(course);
+        if (hasImages) {
+          outcomes.push('Работайте с визуальными материалами и примерами');
+        }
+        const hasQuizzes = course.curriculum.some((lesson) =>
+          lesson.steps && lesson.steps.some((step) => step.type === 'quiz')
+        );
+        if (hasQuizzes) {
+          outcomes.push('Проверьте знания с помощью интерактивных тестов');
+        }
+        const hasPractice = course.curriculum.some((lesson) =>
+          lesson.steps && lesson.steps.some((step) => step.type === 'practice')
+        );
+        if (hasPractice) {
+          outcomes.push('Применяйте знания на практических заданиях');
+        }
+      }
+      const categoryOutcomes = {
+        'ИИ и автоматизация': ['Основы искусственного интеллекта', 'Методы машинного обучения', 'Практические применения ИИ'],
+        'Видеомонтаж': ['Основы видеомонтажа', 'Работа с профессиональными инструментами', 'Создание качественного видеоконтента'],
+        'Графический дизайн': ['Принципы графического дизайна', 'Работа с цветом и композицией', 'Создание профессиональных макетов'],
+      };
+      const categorySpecific = categoryOutcomes[course.category];
+      if (categorySpecific) {
+        outcomes.push(...categorySpecific);
+      }
+      return outcomes.length > 0 ? outcomes : ['Получите практические навыки', 'Изучите современные методы', 'Применяйте знания на практике'];
+    },
+    getCourseModules(course) {
+      if (!course.curriculum || course.curriculum.length === 0) {
+        return [
+          { title: 'Введение в курс', duration: '30 мин', hasImages: false },
+          { title: 'Основные концепции', duration: '45 мин', hasImages: false },
+          { title: 'Практические примеры', duration: '60 мин', hasImages: false },
+        ];
+      }
+      return course.curriculum.map((lesson) => ({
+        title: lesson.title,
+        duration: lesson.duration,
+        hasImages: this.lessonHasImages(lesson),
+        imageCount: this.getLessonImageCount(lesson),
+      }));
+    },
+    formatNumber(num) {
+      if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+      }
+      if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+      }
+      return num.toString();
+    },
     handleImageError(event, course) {
       console.warn('Image failed to load for course:', course?.title || 'Unknown');
       event.target.src = this.courseImages.default;
       event.target.onerror = null;
     },
-
     debounceSearch() {
       clearTimeout(this.debounceTimeout);
       this.debounceTimeout = setTimeout(this.fetchCourses, 500);
     },
-
     applyFilters() {
       this.fetchCourses();
     },
-
     setTypeFilter(type) {
       this.typeFilter = type;
       this.fetchCourses();
     },
-
     clearFilters() {
       this.searchTerm = '';
       this.categoryFilter = 'all';
@@ -600,148 +1059,122 @@ export default {
       this.typeFilter = 'all';
       this.fetchCourses();
     },
-
     async openModal(course) {
       this.selectedCourse = null;
       this.isModalOpen = true;
       this.modalLoading = true;
       try {
-        const response = await getCourseById(course._id);
+        console.log('📖 Opening course modal:', course.title);
+        const response = await getCourseById(course._id || course.id);
         if (response.success) {
-          this.selectedCourse = response.data;
+          this.selectedCourse = this.processCourses([response.data])[0];
+          console.log('✅ Course details loaded:', this.selectedCourse);
         } else {
           console.error('Failed to fetch detailed course info:', response.error);
-          this.selectedCourse = course;
+          this.selectedCourse = this.processCourses([course])[0];
         }
       } catch (e) {
         console.error('API error while fetching course details:', e);
-        this.selectedCourse = course;
+        this.selectedCourse = this.processCourses([course])[0];
       } finally {
         this.modalLoading = false;
       }
     },
-
     startCourse(course) {
       console.log('🚀 Starting course:', course.title);
       console.log('Course isPremium:', course.isPremium);
       console.log('User status:', this.currentUserStatus);
       console.log('User isPremium:', this.isPremiumUser);
-      
       if (course.isPremium && !this.isPremiumUser) {
         console.log('❌ Course is premium and user lacks access');
-        
         if (this.$toast) {
-          this.$toast.error(`Этот курс доступен только по подписке. Ваш статус: ${this.currentUserStatus}`, { 
-            duration: 4000 
+          this.$toast.error(`Этот курс доступен только по подписке. Ваш статус: ${this.currentUserStatus}`, {
+            duration: 4000,
           });
         } else {
           alert(`Этот курс доступен только по подписке Start/Pro. Ваш текущий статус: ${this.currentUserStatus}`);
         }
         return;
       }
-      
       console.log('✅ Access granted - starting course');
       this.selectedCourse = course;
       this.isModalOpen = false;
       this.showStudyInterface = true;
     },
-
     goBackToCourses() {
       this.showStudyInterface = false;
       this.selectedCourse = null;
     },
-
     closeModal() {
       this.isModalOpen = false;
       this.selectedCourse = null;
     },
-
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
-
       console.log(`👤 UpdatedCourses: Handling status change ${oldStatus} → ${newStatus}`);
-
       localStorage.setItem('userStatus', newStatus);
       localStorage.setItem('plan', newStatus);
-
       this.triggerReactivityUpdate();
-
       if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
         const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
         if (this.$toast) {
           this.$toast.success(`🎉 ${planLabel} подписка активирована!`, { duration: 5000 });
         }
       }
-
       console.log(`✅ UpdatedCourses: Status change handled: ${oldStatus} → ${newStatus}`);
     },
-
     triggerReactivityUpdate() {
       this.componentKey++;
       this.forceUpdateCounter++;
       this.lastUpdateTime = Date.now();
-
       this.$forceUpdate();
-
       this.$nextTick(() => {
         this.$forceUpdate();
       });
-
       console.log('🔄 UpdatedCourses: Reactivity update triggered:', {
         componentKey: this.componentKey,
         userStatus: this.currentUserStatus,
-        timestamp: this.lastUpdateTime
+        timestamp: this.lastUpdateTime,
       });
     },
-
     setupEventListeners() {
       console.log('🔧 UpdatedCourses: Setting up event listeners');
-
       if (typeof window !== 'undefined') {
         this.handleSubscriptionChange = (event) => {
           console.log('📡 UpdatedCourses: Subscription change received:', event.detail);
           const { plan, oldPlan } = event.detail;
           this.handleUserStatusChange(plan, oldPlan);
         };
-        
         window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
-
         this.handleStorageChange = (event) => {
           if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
             console.log('📡 UpdatedCourses: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
             this.handleUserStatusChange(event.newValue, event.oldValue);
           }
         };
-        
         window.addEventListener('storage', this.handleStorageChange);
       }
-
       if (typeof window !== 'undefined' && window.eventBus) {
         this.handleUserStatusEvent = (data) => {
           console.log('📡 UpdatedCourses: User status event received:', data);
           this.handleUserStatusChange(data.newStatus, data.oldStatus);
         };
-
         this.handlePromocodeEvent = (data) => {
           console.log('📡 UpdatedCourses: Promocode applied event:', data);
           this.handleUserStatusChange(data.newStatus, data.oldStatus);
         };
-
         this.handleForceUpdateEvent = () => {
           console.log('📡 UpdatedCourses: Force update event received');
           this.triggerReactivityUpdate();
         };
-
         window.eventBus.on('userStatusChanged', this.handleUserStatusEvent);
         window.eventBus.on('promocodeApplied', this.handlePromocodeEvent);
         window.eventBus.on('forceUpdate', this.handleForceUpdateEvent);
         window.eventBus.on('globalForceUpdate', this.handleForceUpdateEvent);
         window.eventBus.on('subscriptionUpdated', this.handleUserStatusEvent);
         window.eventBus.on('paymentCompleted', this.handleUserStatusEvent);
-
         console.log('✅ UpdatedCourses: Event bus listeners registered');
       }
-
       if (this.$store) {
         this.storeUnsubscribe = this.$store.subscribe((mutation) => {
           if (this.isUserRelatedMutation(mutation)) {
@@ -750,10 +1183,8 @@ export default {
           }
         });
       }
-
       console.log('✅ UpdatedCourses: Event listeners setup complete');
     },
-
     isUserRelatedMutation(mutation) {
       const userMutations = [
         'setUser',
@@ -762,18 +1193,17 @@ export default {
         'UPDATE_USER',
         'user/SET_USER_STATUS',
         'user/UPDATE_SUBSCRIPTION',
-        'user/FORCE_UPDATE'
+        'user/FORCE_UPDATE',
       ];
-      
-      return userMutations.some(type => mutation.type.includes(type)) ||
-             mutation.type.includes('user/') ||
-             mutation.type.toLowerCase().includes('status') ||
-             mutation.type.toLowerCase().includes('subscription');
+      return (
+        userMutations.some((type) => mutation.type.includes(type)) ||
+        mutation.type.includes('user/') ||
+        mutation.type.toLowerCase().includes('status') ||
+        mutation.type.toLowerCase().includes('subscription')
+      );
     },
-
     cleanup() {
       console.log('🧹 UpdatedCourses: Performing cleanup...');
-
       if (typeof window !== 'undefined') {
         if (this.handleSubscriptionChange) {
           window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
@@ -782,7 +1212,6 @@ export default {
           window.removeEventListener('storage', this.handleStorageChange);
         }
       }
-
       if (typeof window !== 'undefined' && window.eventBus) {
         if (this.handleUserStatusEvent) {
           window.eventBus.off('userStatusChanged', this.handleUserStatusEvent);
@@ -797,37 +1226,12 @@ export default {
           window.eventBus.off('globalForceUpdate', this.handleForceUpdateEvent);
         }
       }
-
       if (this.storeUnsubscribe) {
         this.storeUnsubscribe();
         this.storeUnsubscribe = null;
       }
-
       console.log('✅ UpdatedCourses: Cleanup completed');
     },
-
-    addCourseImage(keyword, imageUrl) {
-      this.courseImages[keyword.toLowerCase()] = imageUrl;
-      console.log(`Added new course image for keyword: ${keyword}`);
-    },
-
-    getAvailableImageKeywords() {
-      return Object.keys(this.courseImages).sort();
-    },
-
-    findBestImageMatch(course) {
-      const image = this.getCourseImage(course);
-      const keyword = Object.keys(this.courseImages).find(key => 
-        this.courseImages[key] === image
-      );
-      
-      return {
-        imageUrl: image,
-        matchedKeyword: keyword,
-        courseTitle: course.title,
-        courseCategory: course.category
-      };
-    }
   },
 };
 </script>
@@ -1363,11 +1767,15 @@ export default {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
-/* MODAL STYLES */
+/* ✅ ENHANCED MODAL STYLES WITH IMAGE SUPPORT */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1385,8 +1793,12 @@ export default {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-container {
@@ -1691,9 +2103,77 @@ export default {
   min-width: 20px;
 }
 
-.module-text {
-  color: var(--color-muted-foreground);
+.module-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.module-text {
+  color: var(--color-foreground);
+  font-weight: 500;
+}
+
+.module-duration {
+  color: var(--color-muted-foreground);
+  font-size: 12px;
+}
+
+/* ✅ NEW: Module badge for lessons with images */
+.module-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: rgba(139, 127, 191, 0.1);
+  color: var(--color-brand);
+  font-size: 10px;
+  font-weight: 500;
+  width: fit-content;
+}
+
+/* ✅ NEW: Course statistics section */
+.modal-stats {
+  padding: 20px;
+  background: var(--color-muted);
+  border-radius: 12px;
+  margin-top: -16px;
+}
+
+.modal-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+}
+
+.modal-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--color-background);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+.modal-stat-item svg {
+  color: var(--color-brand);
+  flex-shrink: 0;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-foreground);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+  line-height: 1;
 }
 
 .modal-actions {
@@ -1770,6 +2250,11 @@ export default {
     grid-template-columns: 1fr;
     gap: 20px;
   }
+
+  .modal-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1793,6 +2278,23 @@ export default {
   .courses-grid {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+
+  .modal-stats {
+    padding: 16px;
+  }
+
+  .modal-stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .modal-stat-item {
+    padding: 8px;
+  }
+
+  .stat-value {
+    font-size: 16px;
   }
 }
 </style>
