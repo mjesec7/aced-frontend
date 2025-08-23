@@ -113,6 +113,7 @@
         <div v-else-if="courses.length > 0" class="courses-grid">
           <div v-for="course in courses" :key="course.id" class="course-card" @click="openModal(course)">
             <div class="course-card-image-wrapper">
+              <!-- ✅ FIX: Dynamically render image from backend. -->
               <img 
                 :src="getCourseImage(course)" 
                 :alt="course.title" 
@@ -143,7 +144,7 @@
                   </svg>
                   <span>{{ course.duration }}</span>
                 </div>
-                <div class="course-card-level">{{ course.level }}</div>
+                <div class="course-card-level">{{ course.difficulty }}</div>
               </div>
               <div class="course-card-provider">
                 <p>от</p>
@@ -189,6 +190,7 @@
         <div v-else class="modal-content">
           <div class="modal-header-section">
             <div class="modal-image-container">
+              <!-- ✅ FIX: Dynamically render image from backend -->
               <img 
                 :src="getCourseImage(selectedCourse)" 
                 :alt="selectedCourse.title" 
@@ -234,7 +236,7 @@
             <div class="modal-course-info">
               <div class="modal-tags">
                 <span class="modal-tag modal-tag-category">{{ selectedCourse.category }}</span>
-                <span class="modal-tag modal-tag-level">{{ selectedCourse.level }}</span>
+                <span class="modal-tag modal-tag-level">{{ selectedCourse.difficulty }}</span>
               </div>
 
               <h2 class="modal-title">{{ selectedCourse.title }}</h2>
@@ -253,7 +255,7 @@
                     Что вы изучите:
                   </h3>
                   <ul class="modal-skills-list">
-                    <li v-for="(skill, index) in selectedCourse.skills" :key="index" class="modal-skill-item">
+                    <li v-for="(skill, index) in selectedCourse.learningOutcomes" :key="index" class="modal-skill-item">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="skill-check-icon">
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"></path>
                         <path d="M22 4L12 14.01l-3-3"></path>
@@ -272,9 +274,10 @@
                     Программа курса:
                   </h3>
                   <ul class="modal-modules-list">
-                    <li v-for="(module, index) in selectedCourse.modules" :key="index" class="modal-module-item">
+                    <!-- ✅ FIX: Use `selectedCourse.curriculum` to display modules -->
+                    <li v-for="(lesson, index) in selectedCourse.curriculum" :key="index" class="modal-module-item">
                       <span class="module-number">{{ index + 1 }}.</span>
-                      <span class="module-text">{{ module }}</span>
+                      <span class="module-text">{{ lesson.title }}</span>
                     </li>
                   </ul>
                 </div>
@@ -346,9 +349,8 @@ export default {
       lastUpdateTime: Date.now(),
       forceUpdateCounter: 0,
 
-      // ✅ HARDCODED IMAGES MAP
+      // ✅ HARDCODED IMAGES MAP for fallback
       courseImages: {
-        // Programming & Development
         'javascript': 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=400&h=250&fit=crop',
         'python': 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400&h=250&fit=crop',
         'react': 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=250&fit=crop',
@@ -358,40 +360,28 @@ export default {
         'programming': 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=250&fit=crop',
         'coding': 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=250&fit=crop',
         'software development': 'https://images.unsplash.com/photo-1518773553398-650c184e0bb3?w=400&h=250&fit=crop',
-        
-        // AI & Machine Learning
         'artificial intelligence': 'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=400&h=250&fit=crop',
         'machine learning': 'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=400&h=250&fit=crop',
         'ai': 'https://images.unsplash.com/photo-1507146426996-ef05306b995a?w=400&h=250&fit=crop',
         'data science': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop',
         'neural networks': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=250&fit=crop',
-        
-        // Design
         'design': 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop',
         'ui design': 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=400&h=250&fit=crop',
         'ux design': 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?w=400&h=250&fit=crop',
         'graphic design': 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=400&h=250&fit=crop',
         'web design': 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=400&h=250&fit=crop',
-        
-        // Business & Marketing
         'marketing': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop',
         'digital marketing': 'https://images.unsplash.com/photo-1432888622747-4eb9a8efeb07?w=400&h=250&fit=crop',
         'business': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop',
         'entrepreneurship': 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop',
         'finance': 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=400&h=250&fit=crop',
-        
-        // Languages
         'english': 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=250&fit=crop',
         'language learning': 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=250&fit=crop',
         'languages': 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=250&fit=crop',
-        
-        // Blockchain & Crypto
         'blockchain': 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=250&fit=crop',
         'cryptocurrency': 'https://images.unsplash.com/photo-1605792657660-596af9009e82?w=400&h=250&fit=crop',
         'bitcoin': 'https://images.unsplash.com/photo-1605792657660-596af9009e82?w=400&h=250&fit=crop',
         'crypto': 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=400&h=250&fit=crop',
-        
-        // Default fallback images by category
         'технологии': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=250&fit=crop',
         'образование': 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop',
         'наука': 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=250&fit=crop',
@@ -400,8 +390,6 @@ export default {
         'спорт': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=250&fit=crop',
         'здоровье': 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=250&fit=crop',
         'кулинария': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=250&fit=crop',
-        
-        // Generic fallbacks
         'default': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=250&fit=crop',
         'course': 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=400&h=250&fit=crop',
         'learning': 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=250&fit=crop',
@@ -521,9 +509,32 @@ export default {
       }
     },
 
+    /**
+     * ✅ FIX: Use dynamic image data from the backend first,
+     * then fall back to hardcoded images if no thumbnail is available.
+     * This ensures images are correctly displayed.
+     */
     getCourseImage(course) {
-      if (!course) return this.courseImages.default;
+      // Priority 1: Use the main thumbnail field from the backend
+      if (course && course.thumbnail) {
+        return course.thumbnail;
+      }
+      
+      // Priority 2: Use the first image from the course's curriculum, if available
+      if (course && course.curriculum && course.curriculum.length > 0) {
+        for (const lesson of course.curriculum) {
+          if (lesson.steps && lesson.steps.length > 0) {
+            for (const step of lesson.steps) {
+              if (step.images && step.images.length > 0) {
+                // Return the URL of the first image found
+                return step.images[0].url;
+              }
+            }
+          }
+        }
+      }
 
+      // Priority 3: Fallback to the hardcoded image map
       const safeString = (value) => {
         if (value === null || value === undefined) return '';
         return String(value).toLowerCase().trim();
@@ -531,13 +542,11 @@ export default {
 
       const title = safeString(course.title);
       const category = safeString(course.category);
-      const description = safeString(course.description);
 
       const titleKeywords = [
         'javascript', 'python', 'react', 'vue', 'node', 'ai', 'machine learning',
         'design', 'marketing', 'blockchain', 'crypto', 'english', 'business'
       ];
-
       for (const keyword of titleKeywords) {
         if (title.includes(keyword) && this.courseImages[keyword]) {
           return this.courseImages[keyword];
@@ -551,17 +560,6 @@ export default {
       const categoryKeywords = Object.keys(this.courseImages);
       for (const keyword of categoryKeywords) {
         if (category.includes(keyword) && this.courseImages[keyword]) {
-          return this.courseImages[keyword];
-        }
-      }
-
-      const contentKeywords = [
-        'programming', 'coding', 'development', 'design', 'marketing', 
-        'business', 'ai', 'blockchain', 'language'
-      ];
-
-      for (const keyword of contentKeywords) {
-        if ((title.includes(keyword) || description.includes(keyword)) && this.courseImages[keyword]) {
           return this.courseImages[keyword];
         }
       }
