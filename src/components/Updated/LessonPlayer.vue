@@ -1,8 +1,7 @@
 <template>
   <div class="lesson-player">
-    <!-- Header -->
     <div class="lesson-header">
-      <button @click="$emit('back-to-courses')" class="back-button">
+      <button @click="backToCourses" class="back-button">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M19 12H6m6-7l-7 7 7 7"/>
         </svg>
@@ -27,9 +26,7 @@
       </div>
     </div>
 
-    <!-- Main Content -->
     <div class="lesson-content">
-      <!-- Sidebar with lesson list -->
       <div class="lesson-sidebar">
         <div class="sidebar-header">
           <h3>Содержание курса</h3>
@@ -71,7 +68,6 @@
         </div>
       </div>
 
-      <!-- Main lesson content -->
       <div class="lesson-main">
         <div v-if="loading" class="loading-state">
           <div class="spinner"></div>
@@ -79,7 +75,6 @@
         </div>
 
         <div v-else-if="currentLesson" class="lesson-viewer">
-          <!-- Lesson Header -->
           <div class="lesson-viewer-header">
             <h2 class="lesson-title">{{ currentLesson.title }}</h2>
             <p v-if="currentLesson.description" class="lesson-description">
@@ -87,7 +82,6 @@
             </p>
           </div>
 
-          <!-- Step Navigation -->
           <div v-if="currentLesson.steps && currentLesson.steps.length > 0" class="step-navigation">
             <div class="step-indicators">
               <div 
@@ -109,9 +103,7 @@
             </div>
           </div>
 
-          <!-- Current Step Content -->
           <div v-if="currentStep" class="step-content">
-            <!-- Step Header -->
             <div class="step-header">
               <div class="step-type-badge" :class="`type-${currentStep.type}`">
                 <component :is="getStepIcon(currentStep.type)" class="step-icon" />
@@ -120,15 +112,12 @@
               <h3 v-if="currentStep.title" class="step-title">{{ currentStep.title }}</h3>
             </div>
 
-            <!-- Step Content based on type -->
             <div class="step-body">
-              <!-- Text Content Steps (explanation, example, reading) -->
               <div v-if="isTextStep(currentStep)" class="text-step">
                 <div v-if="currentStep.content || currentStep.data?.content" class="step-text">
                   {{ currentStep.content || currentStep.data?.content }}
                 </div>
                 
-                <!-- Images for text steps -->
                 <div v-if="hasStepImages(currentStep)" class="step-images">
                   <div 
                     v-for="(image, index) in getStepImages(currentStep)" 
@@ -150,7 +139,6 @@
                 </div>
               </div>
 
-              <!-- Image-specific step -->
               <div v-else-if="currentStep.type === 'image'" class="image-step">
                 <div v-if="currentStep.data?.description" class="image-description">
                   {{ currentStep.data.description }}
@@ -177,13 +165,11 @@
                 </div>
               </div>
 
-              <!-- Practice step -->
               <div v-else-if="currentStep.type === 'practice'" class="practice-step">
                 <div class="practice-instructions">
                   {{ currentStep.data?.instructions || currentStep.instructions || currentStep.content }}
                 </div>
                 
-                <!-- Images for practice steps -->
                 <div v-if="hasStepImages(currentStep)" class="practice-images">
                   <div 
                     v-for="(image, index) in getStepImages(currentStep)" 
@@ -215,13 +201,11 @@
                 </div>
               </div>
 
-              <!-- Quiz step -->
               <div v-else-if="currentStep.type === 'quiz'" class="quiz-step">
                 <div v-if="Array.isArray(currentStep.data) && currentStep.data.length > 0">
                   <div v-for="(quiz, quizIndex) in currentStep.data" :key="quizIndex" class="quiz-item">
                     <h4 class="quiz-question">{{ quiz.question }}</h4>
                     
-                    <!-- Quiz images -->
                     <div v-if="quiz.images && quiz.images.length > 0" class="quiz-images">
                       <div 
                         v-for="(image, index) in quiz.images" 
@@ -266,7 +250,6 @@
                 </div>
               </div>
 
-              <!-- Default/unknown step type -->
               <div v-else class="default-step">
                 <div v-if="currentStep.content" class="step-content-text">
                   {{ currentStep.content }}
@@ -277,7 +260,6 @@
               </div>
             </div>
 
-            <!-- Step Navigation Controls -->
             <div class="step-controls">
               <button 
                 @click="previousStep" 
@@ -303,7 +285,6 @@
             </div>
           </div>
 
-          <!-- No steps available -->
           <div v-else class="no-steps">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
@@ -314,7 +295,6 @@
       </div>
     </div>
 
-    <!-- Image Modal -->
     <div v-if="imageModalOpen" class="image-modal-overlay" @click="closeImageModal">
       <div class="image-modal" @click.stop>
         <button @click="closeImageModal" class="modal-close">
@@ -342,17 +322,10 @@
 </template>
 
 <script>
-import { getCourseContent } from '@/api.js';
+import { getCourseById } from '@/api.js';
 
 export default {
   name: 'LessonPlayer',
-  props: {
-    course: {
-      type: Object,
-      required: true
-    }
-  },
-  emits: ['back-to-courses'],
   data() {
     return {
       lessons: [],
@@ -363,6 +336,7 @@ export default {
       selectedAnswers: {},
       imageModalOpen: false,
       selectedImage: null,
+      course: null,
       
       // Step type labels
       stepTypeLabels: {
@@ -383,7 +357,8 @@ export default {
     },
     
     currentStep() {
-      return this.currentLesson?.steps?.[this.currentStepIndex] || null;
+      // Corrected to handle deeply nested curriculum data
+      return this.currentLesson?.steps?.[this.currentStepIndex] || this.currentLesson?.curriculum?.[0]?.steps?.[this.currentStepIndex] || null;
     },
     
     overallProgress() {
@@ -392,107 +367,45 @@ export default {
       const currentLessonProgress = this.currentLesson?.steps ? 
         (this.currentStepIndex / this.currentLesson.steps.length) : 0;
       return Math.round(((completedLessons + currentLessonProgress) / this.lessons.length) * 100);
+    },
+  },
+  created() {
+    // Get courseId from route params
+    const courseId = this.$route.params.courseId;
+    if (courseId) {
+      this.loadCourse(courseId);
+    } else {
+      this.error = 'Course ID is missing.';
+      this.loading = false;
     }
   },
-  async mounted() {
-    await this.loadCourseContent();
-  },
   methods: {
-    async loadCourseContent() {
+    async loadCourse(courseId) {
       try {
         this.loading = true;
-        console.log('🎓 Loading course content:', this.course.title);
-        
-        const response = await getCourseContent(this.course.id || this.course._id);
-        
+        console.log('🎓 Loading course content for ID:', courseId);
+
+        const response = await getCourseById(courseId);
+
         if (response.success && response.data) {
-          this.lessons = response.data;
-          console.log(`✅ Loaded ${this.lessons.length} lessons`);
-          
-          // Debug course images (inline function since we removed the import)
-          this.debugCourseImages(this.course);
-          
-          // Debug lesson images
-          this.lessons.forEach((lesson, index) => {
-            if (lesson.imageMetadata?.hasImages) {
-              console.log(`📚 Lesson ${index + 1} has ${lesson.imageMetadata.totalImages} images`);
-            }
-          });
-          
+          this.course = response.data;
+          // The API now returns a `lessons` array, so we can use that directly
+          this.lessons = response.data.lessons;
+          console.log(`✅ Loaded course: ${this.course.title} with ${this.lessons.length} lessons`);
+
         } else {
           this.error = response.error || 'Не удалось загрузить содержимое курса';
         }
       } catch (error) {
-        console.error('❌ Error loading course content:', error);
+        console.error('❌ Error loading course:', error);
         this.error = 'Произошла ошибка при загрузке курса';
       } finally {
         this.loading = false;
       }
     },
 
-    // ✅ INLINE DEBUG FUNCTION (replaces the missing import)
-    debugCourseImages(course) {
-      if (!course) {
-        console.warn('🖼️ debugCourseImages: No course provided');
-        return;
-      }
-
-      console.log(`🖼️ Debugging images for course: ${course.title || 'Unnamed Course'}`);
-      
-      // Check course thumbnail
-      if (course.thumbnail) {
-        console.log(`📸 Course thumbnail: ${course.thumbnail}`);
-      } else {
-        console.log('📸 No course thumbnail found');
-      }
-
-      // Check instructor avatar
-      if (course.instructor?.avatar) {
-        console.log(`👤 Instructor avatar: ${course.instructor.avatar}`);
-      }
-
-      // Check curriculum images
-      let totalImages = 0;
-      let lessonsWithImages = 0;
-
-      if (course.curriculum && Array.isArray(course.curriculum)) {
-        course.curriculum.forEach((lesson, lessonIndex) => {
-          let lessonImageCount = 0;
-          
-          if (lesson.steps && Array.isArray(lesson.steps)) {
-            lesson.steps.forEach((step, stepIndex) => {
-              if (step.images && Array.isArray(step.images) && step.images.length > 0) {
-                lessonImageCount += step.images.length;
-                totalImages += step.images.length;
-                
-                console.log(`📚 Lesson ${lessonIndex + 1}, Step ${stepIndex + 1} (${step.type}): ${step.images.length} images`);
-              }
-
-              // Check data.images as well
-              if (step.data?.images && Array.isArray(step.data.images) && step.data.images.length > 0) {
-                lessonImageCount += step.data.images.length;
-                totalImages += step.data.images.length;
-                
-                console.log(`📚 Lesson ${lessonIndex + 1}, Step ${stepIndex + 1} data images: ${step.data.images.length} images`);
-              }
-            });
-          }
-
-          if (lessonImageCount > 0) {
-            lessonsWithImages++;
-            console.log(`📖 Lesson ${lessonIndex + 1} total images: ${lessonImageCount}`);
-          }
-        });
-      }
-
-      console.log(`🎯 Course summary: ${totalImages} total images across ${lessonsWithImages} lessons`);
-      
-      return {
-        totalImages,
-        lessonsWithImages,
-        hasThumbnail: !!course.thumbnail,
-        hasInstructorAvatar: !!course.instructor?.avatar
-      };
+    backToCourses() {
+      this.$router.push({ name: 'CoursesPage' });
     },
     
     selectLesson(index) {
@@ -506,9 +419,9 @@ export default {
     },
     
     nextStep() {
-      if (this.currentStepIndex < this.currentLesson.steps.length - 1) {
+      if (this.currentLesson && this.currentLesson.steps && this.currentStepIndex < this.currentLesson.steps.length - 1) {
         this.currentStepIndex++;
-      } else if (this.currentLessonIndex < this.lessons.length - 1) {
+      } else if (this.lessons && this.currentLessonIndex < this.lessons.length - 1) {
         // Mark current lesson as completed and move to next lesson
         if (this.currentLesson) {
           this.currentLesson.completed = true;
@@ -519,9 +432,9 @@ export default {
     },
     
     previousStep() {
-      if (this.currentStepIndex > 0) {
+      if (this.currentStepIndex > 0 && this.currentLesson && this.currentLesson.steps) {
         this.currentStepIndex--;
-      } else if (this.currentLessonIndex > 0) {
+      } else if (this.currentLessonIndex > 0 && this.lessons) {
         this.currentLessonIndex--;
         const prevLesson = this.lessons[this.currentLessonIndex];
         this.currentStepIndex = prevLesson.steps ? prevLesson.steps.length - 1 : 0;
@@ -532,7 +445,7 @@ export default {
       this.$set(this.selectedAnswers, quizIndex, optionIndex);
     },
     
-    // ✅ ENHANCED: Image handling methods
+    // ENHANCED: Image handling methods
     hasStepImages(step) {
       if (!step) return false;
       
@@ -578,10 +491,11 @@ export default {
     
     handleImageError(event, image) {
       console.warn('Image failed to load:', image?.url || 'unknown');
-      event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3QgeD0iMyIgeT0iMyIgd2lkdGg9IjE4IiBoZWlnaHQ9IjE4IiByeD0iMiIgcnk9IjIiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjIiLz4KPGNPCMFSQ2xlIGN4PSI5IiBjeT0iOSIgcj0iMiIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIvPgo8cGF0aCBkPSJtMjEgMTUtMy4wODYtMy4wODZhMiAyIDAgMCAwLTIuODI4IDBMNSAYMS8+Cjwvc3ZnPgo=';
+      // Fallback to a placeholder image
+      event.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-image"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5.8-5.8a2 2 0 0 0-2.82 0L7 21"></path></svg>';
     },
     
-    // ✅ Step type helpers
+    // Step type helpers
     isTextStep(step) {
       return ['explanation', 'example', 'reading'].includes(step?.type);
     },
@@ -592,14 +506,16 @@ export default {
     
     getStepIcon(type) {
       const icons = {
-        explanation: 'svg',
-        example: 'svg', 
-        reading: 'svg',
-        image: 'svg',
-        practice: 'svg',
-        quiz: 'svg'
+        // The actual SVG component needs to be imported and defined
+        // For now, returning a string is fine
+        explanation: 'file-text-icon', 
+        example: 'code-icon', 
+        reading: 'book-open-icon',
+        image: 'image-icon',
+        practice: 'activity-icon',
+        quiz: 'help-circle-icon'
       };
-      return icons[type] || 'svg';
+      return icons[type] || 'circle';
     }
   }
 };
