@@ -342,7 +342,7 @@
 </template>
 
 <script>
-import { getCourseContent, debugCourseImages } from '@/api.js';
+import { getCourseContent } from '@/api.js';
 
 export default {
   name: 'LessonPlayer',
@@ -409,10 +409,8 @@ export default {
           this.lessons = response.data;
           console.log(`✅ Loaded ${this.lessons.length} lessons`);
           
-          // Debug course images
-          if (this.course) {
-            debugCourseImages(this.course);
-          }
+          // Debug course images (inline function since we removed the import)
+          this.debugCourseImages(this.course);
           
           // Debug lesson images
           this.lessons.forEach((lesson, index) => {
@@ -430,6 +428,71 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+
+    // ✅ INLINE DEBUG FUNCTION (replaces the missing import)
+    debugCourseImages(course) {
+      if (!course) {
+        console.warn('🖼️ debugCourseImages: No course provided');
+        return;
+      }
+
+      console.log(`🖼️ Debugging images for course: ${course.title || 'Unnamed Course'}`);
+      
+      // Check course thumbnail
+      if (course.thumbnail) {
+        console.log(`📸 Course thumbnail: ${course.thumbnail}`);
+      } else {
+        console.log('📸 No course thumbnail found');
+      }
+
+      // Check instructor avatar
+      if (course.instructor?.avatar) {
+        console.log(`👤 Instructor avatar: ${course.instructor.avatar}`);
+      }
+
+      // Check curriculum images
+      let totalImages = 0;
+      let lessonsWithImages = 0;
+
+      if (course.curriculum && Array.isArray(course.curriculum)) {
+        course.curriculum.forEach((lesson, lessonIndex) => {
+          let lessonImageCount = 0;
+          
+          if (lesson.steps && Array.isArray(lesson.steps)) {
+            lesson.steps.forEach((step, stepIndex) => {
+              if (step.images && Array.isArray(step.images) && step.images.length > 0) {
+                lessonImageCount += step.images.length;
+                totalImages += step.images.length;
+                
+                console.log(`📚 Lesson ${lessonIndex + 1}, Step ${stepIndex + 1} (${step.type}): ${step.images.length} images`);
+              }
+
+              // Check data.images as well
+              if (step.data?.images && Array.isArray(step.data.images) && step.data.images.length > 0) {
+                lessonImageCount += step.data.images.length;
+                totalImages += step.data.images.length;
+                
+                console.log(`📚 Lesson ${lessonIndex + 1}, Step ${stepIndex + 1} data images: ${step.data.images.length} images`);
+              }
+            });
+          }
+
+          if (lessonImageCount > 0) {
+            lessonsWithImages++;
+            console.log(`📖 Lesson ${lessonIndex + 1} total images: ${lessonImageCount}`);
+          }
+        });
+      }
+
+      console.log(`🎯 Course summary: ${totalImages} total images across ${lessonsWithImages} lessons`);
+      
+      return {
+        totalImages,
+        lessonsWithImages,
+        hasThumbnail: !!course.thumbnail,
+        hasInstructorAvatar: !!course.instructor?.avatar
+      };
     },
     
     selectLesson(index) {
@@ -515,7 +578,7 @@ export default {
     
     handleImageError(event, image) {
       console.warn('Image failed to load:', image?.url || 'unknown');
-      event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3QgeD0iMyIgeT0iMyIgd2lkdGg9IjE4IiBoZWlnaHQ9IjE4IiByeD0iMiIgcnk9IjIiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjIiLz4KPGNPCMZSQ2xlIGN4PSI5IiBjeT0iOSIgcj0iMiIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIvPgo8cGF0aCBkPSJtMjEgMTUtMy4wODYtMy4wODZhMiAyIDAgMCAwLTIuODI4IDBMNSAYMS8+Cjwvc3ZnPgo=';
+      event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3QgeD0iMyIgeT0iMyIgd2lkdGg9IjE4IiBoZWlnaHQ9IjE4IiByeD0iMiIgcnk9IjIiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjIiLz4KPGNPCMFSQ2xlIGN4PSI5IiBjeT0iOSIgcj0iMiIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIvPgo8cGF0aCBkPSJtMjEgMTUtMy4wODYtMy4wODZhMiAyIDAgMCAwLTIuODI4IDBMNSAYMS8+Cjwvc3ZnPgo=';
     },
     
     // ✅ Step type helpers
