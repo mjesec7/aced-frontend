@@ -291,9 +291,15 @@
 </template>
 
 <script>
-import axios from 'axios';
 import { mapGetters, mapState } from 'vuex';
 import { auth } from '@/firebase';
+import { 
+  getUpdatedCourses, 
+  getCourseById, 
+  getUserProgress,
+  getUserStudyList,
+  addToStudyList 
+} from '@/api';
 import PaymentModal from '@/components/Modals/PaymentModal.vue';
 
 export default {
@@ -309,8 +315,9 @@ export default {
       selectedSubject: null,
       selectedLevel: null,
 
-      // Data
-      lessons: [],
+      // ✅ UPDATED: Modern course data + legacy compatibility
+      courses: [], // Modern course data from API
+      lessons: [], // Converted lesson data for backward compatibility
       subjects: [],
       levels: [],
       topics: [],
@@ -343,7 +350,11 @@ export default {
       // ✅ ENHANCED: Add comprehensive reactivity tracking
       componentKey: 0,
       lastUpdateTime: Date.now(),
-      forceUpdateCounter: 0
+      forceUpdateCounter: 0,
+      dataSource: 'none', // Track data source for debugging
+      
+      // Event cleanup functions
+      eventCleanupFunctions: []
     };
   },
 
@@ -370,7 +381,7 @@ export default {
     subscriptionClass() {
       const status = this.currentUserStatus;
       if (status === 'pro') return 'badge-pro';
-      if (status === 'start') return 'badge-start';
+      if (status === 'start' || status === 'premium') return 'badge-start';
       return 'badge-free';
     },
 
@@ -379,7 +390,8 @@ export default {
       const status = this.currentUserStatus;
       switch (status) {
         case 'pro': return 'Pro подписка';
-        case 'start': return 'Start подписка';
+        case 'start':
+        case 'premium': return 'Start подписка';
         default: return 'Бесплатный доступ';
       }
     },
@@ -387,7 +399,7 @@ export default {
     // ✅ FIXED: Check if user has premium access
     isPremiumUser() {
       const status = this.currentUserStatus;
-      return status === 'pro' || status === 'start';
+      return status === 'pro' || status === 'start' || status === 'premium';
     },
 
     currentItems() {
@@ -478,8 +490,9 @@ export default {
 
         let matchesAccess = true;
         if (this.showFree || this.showPremium) {
-          matchesAccess = (this.showFree && topic.type === 'free') ||
-                         (this.showPremium && topic.type === 'premium');
+          const topicType = this.getTopicType(topic);
+          matchesAccess = (this.showFree && topicType === 'free') ||
+                         (this.showPremium && (topicType === 'premium' || topicType === 'pro'));
         }
 
         let matchesProgress = true;
@@ -585,7 +598,7 @@ export default {
         this.userId = storedId;
 
         await Promise.all([
-          this.loadLessons(),
+          this.loadCourses(),
           this.loadUserProgress(),
           this.loadStudyPlan()
         ]);
@@ -599,15 +612,150 @@ export default {
       }
     },
 
-    // ===== DATA LOADING =====
-    async loadLessons() {
+    // ===== UPDATED DATA LOADING =====
+    async loadCourses() {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/lessons`);
-        this.lessons = Array.isArray(response.data) ? response.data : [];
-        console.log('✅ Loaded lessons:', this.lessons.length);
+        console.log('📚 Loading courses from updated API...');
+        
+        // Use the same API as MainPage
+        const result = await getUpdatedCourses();
+        
+        if (result?.success && Array.isArray(result.courses)) {
+          this.courses = result.courses;
+          this.dataSource = 'courses';
+          console.log('✅ Loaded', this.courses.length, 'courses');
+          
+          // Convert courses to lessons format for compatibility
+          this.lessons = this.convertCoursesToLessons(this.courses);
+          console.log('✅ Converted to', this.lessons.length, 'lessons');
+          
+          return this.courses;
+        } else {
+          console.warn('⚠️ No courses found in API response');
+          this.courses = [];
+          this.lessons = [];
+          this.dataSource = 'none';
+          return [];
+        }
       } catch (error) {
-        console.error('❌ Error loading lessons:', error);
+        console.error('❌ Error loading courses:', error);
+        this.courses = [];
+        this.dataSource = 'error';
+        
+        // Fallback to legacy lesson loading
+        return this.loadLessonsLegacy();
+      }
+    },
+
+    // Convert courses to lesson-like objects for backward compatibility
+    convertCoursesToLessons(courses) {
+      const lessons = [];
+      
+      courses.forEach(course => {
+        if (!course?.curriculum) {
+          // If no curriculum, create a single lesson from the course
+          const lessonObj = {
+            _id: `${course.id}_main`,
+            lessonName: course.title || course.name || 'Основной урок',
+            title: course.title || course.name || 'Основной урок',
+            subject: course.category || course.subject || 'General',
+            level: this.extractLevel(course),
+            type: this.extractType(course),
+            topicId: course.id || course._id,
+            topic: course.title || course.name,
+            description: course.description || '',
+            duration: course.estimatedDuration || '30 мин',
+            steps: [],
+            // Course metadata
+            courseTitle: course.title || course.name,
+            courseId: course.id || course._id,
+            courseInstructor: course.instructor?.name,
+            courseThumbnail: course.thumbnail,
+            isMainLesson: true
+          };
+          lessons.push(lessonObj);
+          return;
+        }
+        
+        course.curriculum.forEach((lesson, index) => {
+          const lessonObj = {
+            _id: lesson.id || lesson._id || `${course.id}_lesson_${index}`,
+            lessonName: lesson.title || `Урок ${index + 1}`,
+            title: lesson.title || `Урок ${index + 1}`,
+            subject: course.category || course.subject || 'General',
+            level: this.extractLevel(course),
+            type: this.extractType(course),
+            topicId: course.id || course._id,
+            topic: course.title || course.name,
+            description: lesson.description || course.description,
+            duration: lesson.duration || '30 мин',
+            steps: lesson.steps || [],
+            // Course metadata
+            courseTitle: course.title || course.name,
+            courseId: course.id || course._id,
+            courseInstructor: course.instructor?.name,
+            courseThumbnail: course.thumbnail,
+            lessonIndex: index
+          };
+          
+          lessons.push(lessonObj);
+        });
+      });
+      
+      return lessons;
+    },
+
+    // Extract level from course with fallbacks
+    extractLevel(course) {
+      if (course.difficulty) return course.difficulty;
+      if (course.level) return course.level;
+      
+      // Try to extract from title or description
+      const text = `${course.title || ''} ${course.description || ''}`.toLowerCase();
+      
+      if (text.includes('beginner') || text.includes('начинающ') || text.includes('базов')) return 1;
+      if (text.includes('intermediate') || text.includes('средн')) return 2;
+      if (text.includes('advanced') || text.includes('продвинут')) return 3;
+      
+      return 1; // Default to beginner
+    },
+
+    // Extract type from course with fallbacks
+    extractType(course) {
+      if (course.tier) {
+        const tier = course.tier.toLowerCase();
+        if (tier === 'free') return 'free';
+        if (tier === 'premium' || tier === 'start') return 'premium';
+        if (tier === 'pro') return 'pro';
+      }
+      
+      if (course.type) {
+        const type = course.type.toLowerCase();
+        if (type === 'free') return 'free';
+        if (type === 'premium' || type === 'paid') return 'premium';
+        if (type === 'pro') return 'pro';
+      }
+      
+      // Default to free if not specified
+      return 'free';
+    },
+
+    // Fallback to legacy lesson loading if courses fail
+    async loadLessonsLegacy() {
+      try {
+        console.log('🔄 Falling back to legacy lesson loading...');
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/lessons`);
+        const data = await response.json();
+        
+        this.lessons = Array.isArray(data) ? data : [];
+        this.dataSource = 'lessons';
+        console.log('✅ Loaded legacy lessons:', this.lessons.length);
+        return this.lessons;
+      } catch (error) {
+        console.error('❌ Error loading legacy lessons:', error);
         this.lessons = [];
+        this.dataSource = 'error';
+        return [];
       }
     },
 
@@ -633,35 +781,41 @@ export default {
         }
 
         try {
-          const response = await axios.get(
-            `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/topics-progress`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-
-          if (response.data && typeof response.data === 'object') {
-            this.userProgress = response.data;
-            console.log('✅ Loaded topics progress:', Object.keys(this.userProgress).length);
+          // Try the enhanced progress endpoint first
+          const progressResult = await getUserProgress(this.userId);
+          
+          if (progressResult?.success && Array.isArray(progressResult.data)) {
+            await this.calculateTopicProgressFromLessons(progressResult.data);
+            console.log('✅ Loaded user progress:', Object.keys(this.userProgress).length, 'topics');
             return;
           }
-        } catch (topicProgressError) {
-          console.warn('⚠️ Topics-progress endpoint failed, falling back:', topicProgressError.response?.status);
+        } catch (progressError) {
+          console.warn('⚠️ Enhanced progress loading failed:', progressError);
         }
 
+        // Fallback: try direct API call
         try {
-          const response = await axios.get(
-            `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/progress`,
+          const response = await fetch(
+            `${import.meta.env.VITE_API_BASE_URL}/api/users/${this.userId}/progress`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
-          const progressData = response.data?.data || response.data || [];
-          if (Array.isArray(progressData)) {
-            await this.calculateTopicProgressFromLessons(progressData);
+          if (response.ok) {
+            const data = await response.json();
+            const progressData = data.data || data || [];
+            
+            if (Array.isArray(progressData)) {
+              await this.calculateTopicProgressFromLessons(progressData);
+            } else {
+              console.warn('⚠️ Progress data is not an array:', typeof progressData);
+              this.userProgress = {};
+            }
           } else {
-            console.warn('⚠️ Progress data is not an array:', typeof progressData);
+            console.warn('⚠️ Progress API returned:', response.status);
             this.userProgress = {};
           }
-        } catch (userProgressError) {
-          console.warn('⚠️ User progress endpoint failed:', userProgressError.response?.status);
+        } catch (directError) {
+          console.warn('⚠️ Direct progress API failed:', directError);
           this.userProgress = {};
         }
       } catch (error) {
@@ -680,6 +834,7 @@ export default {
       const topicProgressMap = {};
       const topicLessonsCount = {};
 
+      // Build topic lesson counts from lessons data
       if (Array.isArray(this.lessons)) {
         this.lessons.forEach(lesson => {
           if (!lesson || !lesson.topicId) return;
@@ -692,6 +847,25 @@ export default {
         });
       }
 
+      // Also count from courses if available
+      if (Array.isArray(this.courses)) {
+        this.courses.forEach(course => {
+          if (!course?.id && !course?._id) return;
+
+          const topicId = String(course.id || course._id);
+          const lessonCount = course.curriculum?.length || 1;
+          
+          if (!topicLessonsCount[topicId]) {
+            topicLessonsCount[topicId] = { total: 0, completed: 0 };
+          }
+          topicLessonsCount[topicId].total = Math.max(
+            topicLessonsCount[topicId].total, 
+            lessonCount
+          );
+        });
+      }
+
+      // Calculate completed lessons per topic
       progressData.forEach(progress => {
         if (!progress || !progress.completed || !progress.lessonId) return;
 
@@ -710,6 +884,7 @@ export default {
         }
       });
 
+      // Calculate percentages
       Object.keys(topicLessonsCount).forEach(topicId => {
         const topic = topicLessonsCount[topicId];
         if (topic.total > 0) {
@@ -730,28 +905,10 @@ export default {
       }
 
       try {
-        const currentUser = auth.currentUser;
-        if (!currentUser) {
-          console.warn('⚠️ No current user authenticated for study plan');
-          this.studyPlanTopics = [];
-          return;
-        }
-
-        const token = await currentUser.getIdToken();
-        if (!token) {
-          console.warn('⚠️ No auth token available for study plan');
-          this.studyPlanTopics = [];
-          return;
-        }
-
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        const data = response.data;
-        if (Array.isArray(data)) {
-          this.studyPlanTopics = data.map(item => {
+        const result = await getUserStudyList(this.userId);
+        
+        if (result?.success && Array.isArray(result.data)) {
+          this.studyPlanTopics = result.data.map(item => {
             if (!item) return '';
             const topicId = item.topicId || item._id || item.id;
             return topicId ? String(topicId) : '';
@@ -759,7 +916,7 @@ export default {
 
           console.log('✅ Loaded study plan with', this.studyPlanTopics.length, 'topics');
         } else {
-          console.warn('⚠️ Study plan data is not an array:', typeof data);
+          console.warn('⚠️ Study plan data not available');
           this.studyPlanTopics = [];
         }
       } catch (error) {
@@ -768,12 +925,12 @@ export default {
       }
     },
 
-    // ===== DATA PROCESSING =====
+    // ===== ENHANCED DATA PROCESSING =====
     processSubjects() {
-      console.log('🔄 Processing subjects from', this.lessons.length, 'lessons');
+      console.log('🔄 Processing subjects from', this.lessons.length, 'lessons and', (this.courses || []).length, 'courses');
 
-      if (!Array.isArray(this.lessons)) {
-        console.warn('⚠️ Lessons is not an array');
+      if (!Array.isArray(this.lessons) && !Array.isArray(this.courses)) {
+        console.warn('⚠️ No data to process');
         this.subjects = [];
         this.loading = false;
         return;
@@ -781,41 +938,89 @@ export default {
 
       const subjectsMap = new Map();
 
-      this.lessons.forEach(lesson => {
-        if (!lesson || !lesson.subject) return;
+      // Process lessons (converted from courses or legacy)
+      if (Array.isArray(this.lessons)) {
+        this.lessons.forEach(lesson => {
+          if (!lesson || !lesson.subject) return;
 
-        const subjectName = String(lesson.subject);
-        if (!subjectsMap.has(subjectName)) {
-          subjectsMap.set(subjectName, {
-            name: subjectName,
-            icon: this.getSubjectIcon(subjectName),
-            levels: new Set(),
-            topicCount: 0,
-            lessonCount: 0,
-            hasFreeLessons: false,
-            hasPremiumLessons: false,
-            topics: new Set()
-          });
-        }
-
-        const subject = subjectsMap.get(subjectName);
-
-        if (lesson.level !== null && lesson.level !== undefined) {
-          subject.levels.add(String(lesson.level));
-        }
-
-        if (lesson.topicId || lesson.topic) {
-          const topicKey = lesson.topicId || this.getTopicName(lesson);
-          if (topicKey) {
-            subject.topics.add(String(topicKey));
+          const subjectName = String(lesson.subject);
+          if (!subjectsMap.has(subjectName)) {
+            subjectsMap.set(subjectName, {
+              name: subjectName,
+              icon: this.getSubjectIcon(subjectName),
+              levels: new Set(),
+              topicCount: 0,
+              lessonCount: 0,
+              hasFreeLessons: false,
+              hasPremiumLessons: false,
+              topics: new Set(),
+              courses: new Set()
+            });
           }
-        }
 
-        subject.lessonCount++;
+          const subject = subjectsMap.get(subjectName);
 
-        if (lesson.type === 'free') subject.hasFreeLessons = true;
-        if (lesson.type === 'premium') subject.hasPremiumLessons = true;
-      });
+          if (lesson.level !== null && lesson.level !== undefined) {
+            subject.levels.add(String(lesson.level));
+          }
+
+          if (lesson.topicId || lesson.topic) {
+            const topicKey = lesson.topicId || lesson.topic;
+            if (topicKey) {
+              subject.topics.add(String(topicKey));
+            }
+          }
+
+          // Track courses
+          if (lesson.courseId) {
+            subject.courses.add(lesson.courseId);
+          }
+
+          subject.lessonCount++;
+
+          if (lesson.type === 'free') subject.hasFreeLessons = true;
+          if (lesson.type === 'premium' || lesson.type === 'start' || lesson.type === 'pro') {
+            subject.hasPremiumLessons = true;
+          }
+        });
+      }
+
+      // Also process courses directly for additional metadata
+      if (Array.isArray(this.courses)) {
+        this.courses.forEach(course => {
+          const subjectName = course.category || course.subject || 'General';
+          
+          if (!subjectsMap.has(subjectName)) {
+            subjectsMap.set(subjectName, {
+              name: subjectName,
+              icon: this.getSubjectIcon(subjectName),
+              levels: new Set(),
+              topicCount: 0,
+              lessonCount: 0,
+              hasFreeLessons: false,
+              hasPremiumLessons: false,
+              topics: new Set(),
+              courses: new Set()
+            });
+          }
+
+          const subject = subjectsMap.get(subjectName);
+          
+          // Add course data
+          subject.courses.add(course.id || course._id);
+          subject.topics.add(course.title || course.name);
+          
+          if (course.difficulty || course.level) {
+            subject.levels.add(String(course.difficulty || course.level));
+          }
+          
+          const courseType = this.extractType(course);
+          if (courseType === 'free') subject.hasFreeLessons = true;
+          if (courseType === 'premium' || courseType === 'pro') {
+            subject.hasPremiumLessons = true;
+          }
+        });
+      }
 
       this.subjects = Array.from(subjectsMap.values()).map(subject => ({
         ...subject,
@@ -827,7 +1032,8 @@ export default {
           }
           return String(a).localeCompare(String(b));
         }),
-        topicCount: subject.topics.size
+        topicCount: Math.max(subject.topics.size, subject.courses.size),
+        courseCount: subject.courses.size
       }));
 
       console.log('✅ Processed', this.subjects.length, 'subjects');
@@ -877,10 +1083,10 @@ export default {
         }
 
         level.lessonCount++;
-        level.totalTime += 10;
+        level.totalTime += this.estimateLessonTime(lesson);
 
         if (lesson.type === 'free') level.hasFreeLessons = true;
-        if (lesson.type === 'premium') level.hasPremiumLessons = true;
+        if (lesson.type === 'premium' || lesson.type === 'pro') level.hasPremiumLessons = true;
       });
 
       this.levels = Array.from(levelsMap.values()).map(level => ({
@@ -902,57 +1108,92 @@ export default {
     processTopics() {
       console.log('🔄 Processing topics for:', this.selectedSubject, this.selectedLevel);
 
-      if (!Array.isArray(this.lessons) || !this.selectedSubject || !this.selectedLevel) {
+      if (!this.selectedSubject || !this.selectedLevel) {
         this.topics = [];
         return;
       }
 
       const topicsMap = new Map();
 
-      const levelLessons = this.lessons.filter(lesson =>
-        lesson &&
-        lesson.subject === this.selectedSubject &&
-        String(lesson.level) === String(this.selectedLevel)
-      );
+      // Process from courses first (preferred)
+      if (Array.isArray(this.courses)) {
+        this.courses
+          .filter(course => 
+            course &&
+            (course.category === this.selectedSubject || course.subject === this.selectedSubject) &&
+            String(course.difficulty || course.level || 1) === String(this.selectedLevel)
+          )
+          .forEach(course => {
+            const topicId = course.id || course._id;
+            if (!topicId) return;
 
-      console.log('📚 Found', levelLessons.length, 'lessons for level');
-
-      levelLessons.forEach(lesson => {
-        if (!lesson) return;
-
-        let topicId = lesson.topicId;
-        if (typeof topicId === 'object' && topicId !== null) {
-          topicId = topicId._id || topicId.id || String(topicId);
-        } else if (topicId) {
-          topicId = String(topicId);
-        }
-
-        const name = this.getTopicName(lesson);
-        if (!topicId || !name) return;
-
-        if (!topicsMap.has(topicId)) {
-          topicsMap.set(topicId, {
-            topicId,
-            name,
-            subject: String(lesson.subject || ''),
-            level: String(lesson.level || ''),
-            type: lesson.type || 'free',
-            lessonCount: 1,
-            totalTime: 10,
-            lessons: [lesson]
+            topicsMap.set(topicId, {
+              topicId: topicId,
+              name: course.title || course.name,
+              subject: course.category || course.subject || this.selectedSubject,
+              level: String(course.difficulty || course.level || this.selectedLevel),
+              type: this.extractType(course),
+              lessonCount: course.curriculum?.length || course.lessonCount || 1,
+              totalTime: course.estimatedDuration || 
+                        (course.curriculum?.length || 1) * 30, // 30 min per lesson estimate
+              lessons: course.curriculum || [],
+              description: course.description,
+              instructor: course.instructor?.name,
+              thumbnail: course.thumbnail,
+              dataSource: 'course'
+            });
           });
-        } else {
-          const entry = topicsMap.get(topicId);
-          entry.lessonCount += 1;
-          entry.totalTime += 10;
-          entry.lessons.push(lesson);
-        }
-      });
+      }
+
+      // Fallback: Process from lessons if no courses found
+      if (topicsMap.size === 0 && Array.isArray(this.lessons)) {
+        const levelLessons = this.lessons.filter(lesson =>
+          lesson &&
+          lesson.subject === this.selectedSubject &&
+          String(lesson.level) === String(this.selectedLevel)
+        );
+
+        console.log('📚 Found', levelLessons.length, 'lessons for level (fallback)');
+
+        levelLessons.forEach(lesson => {
+          if (!lesson) return;
+
+          let topicId = lesson.topicId;
+          if (typeof topicId === 'object' && topicId !== null) {
+            topicId = topicId._id || topicId.id || String(topicId);
+          } else if (topicId) {
+            topicId = String(topicId);
+          }
+
+          const name = this.getTopicName(lesson);
+          if (!topicId || !name) return;
+
+          if (!topicsMap.has(topicId)) {
+            topicsMap.set(topicId, {
+              topicId,
+              name,
+              subject: String(lesson.subject || ''),
+              level: String(lesson.level || ''),
+              type: lesson.type || 'free',
+              lessonCount: 1,
+              totalTime: this.estimateLessonTime(lesson),
+              lessons: [lesson],
+              dataSource: 'lesson'
+            });
+          } else {
+            const entry = topicsMap.get(topicId);
+            entry.lessonCount += 1;
+            entry.totalTime += this.estimateLessonTime(lesson);
+            entry.lessons.push(lesson);
+          }
+        });
+      }
 
       this.topics = Array.from(topicsMap.values()).map(topic => ({
         ...topic,
         progress: Number(this.userProgress[topic.topicId]) || 0,
-        inStudyPlan: Array.isArray(this.studyPlanTopics) && this.studyPlanTopics.includes(topic.topicId)
+        inStudyPlan: Array.isArray(this.studyPlanTopics) && 
+                     this.studyPlanTopics.includes(topic.topicId)
       }));
 
       console.log('✅ Processed', this.topics.length, 'topics');
@@ -1037,57 +1278,62 @@ export default {
 
     // ===== UTILITY METHODS =====
     getSubjectIcon(subject) {
-      const subjectStr = String(subject || '');
+      const subjectStr = String(subject || '').toLowerCase();
       const icons = {
-        'Mathematics': '🔢', 'Math': '🔢', 'Математика': '🔢',
-        'English': '🇬🇧', 'Английский': '🇬🇧',
-        'Science': '🔬', 'Наука': '🔬',
-        'History': '📚', 'История': '📚',
-        'Geography': '🌍', 'География': '🌍',
-        'Programming': '💻', 'Программирование': '💻',
-        'Art': '🎨', 'Искусство': '🎨',
-        'Music': '🎵', 'Музыка': '🎵',
-        'Physics': '⚛️', 'Физика': '⚛️',
-        'Chemistry': '🧪', 'Химия': '🧪',
-        'Biology': '🧬', 'Биология': '🧬',
-        'Literature': '📖', 'Литература': '📖',
-        'Economics': '💰', 'Экономика': '💰',
-        'Philosophy': '🤔', 'Философия': '🤔'
+        'mathematics': '🔢', 'math': '🔢', 'математика': '🔢',
+        'english': '🇬🇧', 'английский': '🇬🇧',
+        'science': '🔬', 'наука': '🔬',
+        'history': '📚', 'история': '📚',
+        'geography': '🌍', 'география': '🌍',
+        'programming': '💻', 'программирование': '💻',
+        'art': '🎨', 'искусство': '🎨',
+        'music': '🎵', 'музыка': '🎵',
+        'physics': '⚛️', 'физика': '⚛️',
+        'chemistry': '🧪', 'химия': '🧪',
+        'biology': '🧬', 'биология': '🧬',
+        'literature': '📖', 'литература': '📖',
+        'economics': '💰', 'экономика': '💰',
+        'philosophy': '🤔', 'философия': '🤔',
+        'technology': '💻', 'технология': '💻',
+        'general': '📚', 'общий': '📚'
       };
       return icons[subjectStr] || '📖';
     },
 
-    getTopicName(lesson) {
-      if (!lesson) return 'Без темы';
+    getTopicName(lessonOrCourse) {
+      if (!lessonOrCourse) return 'Без темы';
 
       try {
-        if (typeof lesson.topic === 'string' && lesson.topic.trim()) {
-          return lesson.topic.trim();
+        // For course objects
+        if (lessonOrCourse.title || lessonOrCourse.name) {
+          return lessonOrCourse.title || lessonOrCourse.name;
         }
 
-        if (lesson.topic && typeof lesson.topic === 'object' && lesson.topic !== null) {
-          if (lesson.topic[this.lang] && typeof lesson.topic[this.lang] === 'string') {
-            return String(lesson.topic[this.lang]).trim();
+        // For lesson objects (existing logic)
+        if (typeof lessonOrCourse.topic === 'string' && lessonOrCourse.topic.trim()) {
+          return lessonOrCourse.topic.trim();
+        }
+
+        if (lessonOrCourse.topic && typeof lessonOrCourse.topic === 'object' && lessonOrCourse.topic !== null) {
+          if (lessonOrCourse.topic[this.lang] && typeof lessonOrCourse.topic[this.lang] === 'string') {
+            return String(lessonOrCourse.topic[this.lang]).trim();
           }
-          if (lesson.topic.en && typeof lesson.topic.en === 'string') {
-            return String(lesson.topic.en).trim();
+          if (lessonOrCourse.topic.en && typeof lessonOrCourse.topic.en === 'string') {
+            return String(lessonOrCourse.topic.en).trim();
           }
-          const anyLangTopic = Object.values(lesson.topic).find(val => typeof val === 'string' && val.trim());
+          const anyLangTopic = Object.values(lessonOrCourse.topic).find(val => typeof val === 'string' && val.trim());
           if (anyLangTopic) return anyLangTopic.trim();
         }
 
-        if (lesson.translations &&
-            lesson.translations[this.lang] &&
-            lesson.translations[this.lang].topic &&
-            typeof lesson.translations[this.lang].topic === 'string') {
-          return String(lesson.translations[this.lang].topic).trim();
+        if (lessonOrCourse.translations &&
+            lessonOrCourse.translations[this.lang] &&
+            lessonOrCourse.translations[this.lang].topic &&
+            typeof lessonOrCourse.translations[this.lang].topic === 'string') {
+          return String(lessonOrCourse.translations[this.lang].topic).trim();
         }
 
-        if (lesson.lessonName && typeof lesson.lessonName === 'string' && lesson.lessonName.trim()) {
-            return `Тема: ${lesson.lessonName.trim()}`;
-        }
-        if (lesson.title && typeof lesson.title === 'string' && lesson.title.trim()) {
-            return `Тема: ${lesson.title.trim()}`;
+        if (lessonOrCourse.lessonName && typeof lessonOrCourse.lessonName === 'string' && lessonOrCourse.lessonName.trim()) {
+            return `Тема: ${lessonOrCourse.lessonName.trim()}`;
         }
 
         return 'Без темы';
@@ -1095,6 +1341,28 @@ export default {
         console.error('❌ Error getting topic name:', error);
         return 'Ошибка названия темы';
       }
+    },
+
+    getTopicType(topic) {
+      if (!topic) return 'free';
+      
+      const type = topic.type || topic.tier || topic.accessType || 'free';
+      const normalizedType = String(type).toLowerCase();
+      
+      if (normalizedType === 'pro') return 'pro';
+      if (normalizedType === 'premium' || normalizedType === 'start') return 'premium';
+      return 'free';
+    },
+
+    estimateLessonTime(lesson) {
+      if (lesson.duration) {
+        const duration = String(lesson.duration);
+        const minutes = parseInt(duration.match(/\d+/)?.[0] || '30');
+        return minutes;
+      }
+      if (lesson.estimatedTime) return parseInt(lesson.estimatedTime);
+      if (lesson.totalTime) return parseInt(lesson.totalTime);
+      return 30; // Default 30 minutes
     },
 
     getLevelClass(level) {
@@ -1213,10 +1481,14 @@ export default {
       }
 
       // ✅ FIXED: Use consistent premium check
-      if ((type === 'premium' || type === 'pro') && !this.isPremiumUser) {
+      const needsPremium = (type === 'premium' || type === 'pro') && !this.isPremiumUser;
+      
+      if (needsPremium) {
+        console.log('🔒 Premium access required for topic:', topicId, 'type:', type);
         this.requestedTopicId = topicId;
         this.showPaywall = true;
       } else {
+        console.log('🚀 Opening topic:', topicId);
         this.$router.push({ name: 'TopicOverview', params: { id: topicId } });
       }
     },
@@ -1241,9 +1513,6 @@ export default {
       }
 
       try {
-        const token = await currentUser.getIdToken();
-        const url = `${import.meta.env.VITE_API_BASE_URL}/users/${this.userId}/study-list`;
-
         let topicId = this.selectedTopic.topicId;
         if (typeof topicId === 'object' && topicId !== null) {
           topicId = topicId._id || topicId.id || String(topicId);
@@ -1254,37 +1523,38 @@ export default {
           throw new Error('No valid topicId provided');
         }
 
-        const body = {
+        const topicData = {
           subject: String(this.selectedTopic.subject || ''),
           level: String(this.selectedTopic.level || ''),
           topic: String(this.selectedTopic.name || ''),
+          topicName: String(this.selectedTopic.name || ''),
+          name: String(this.selectedTopic.name || ''),
           topicId: topicId,
           lessonCount: Number(this.selectedTopic.lessonCount) || 0,
           totalTime: Number(this.selectedTopic.totalTime) || 0,
           type: this.selectedTopic.type || 'free'
         };
 
-        await axios.post(url, body, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+        const result = await addToStudyList(this.userId, topicData);
+
+        if (result?.success !== false) {
+          this.selectedTopic.inStudyPlan = true;
+          if (Array.isArray(this.studyPlanTopics) && !this.studyPlanTopics.includes(topicId)) {
+            this.studyPlanTopics.push(topicId);
           }
-        });
 
-        this.selectedTopic.inStudyPlan = true;
-        if (Array.isArray(this.studyPlanTopics) && !this.studyPlanTopics.includes(topicId)) {
-          this.studyPlanTopics.push(topicId);
-        }
-
-        if (Array.isArray(this.topics)) {
-          const topicIndex = this.topics.findIndex(t => t && t.topicId === topicId);
-          if (topicIndex !== -1) {
-            this.topics[topicIndex].inStudyPlan = true;
+          if (Array.isArray(this.topics)) {
+            const topicIndex = this.topics.findIndex(t => t && t.topicId === topicId);
+            if (topicIndex !== -1) {
+              this.topics[topicIndex].inStudyPlan = true;
+            }
           }
-        }
 
-        this.showAddModal = false;
-        this.showSuccessModal = true;
+          this.showAddModal = false;
+          this.showSuccessModal = true;
+        } else {
+          throw new Error(result?.error || 'Failed to add to study plan');
+        }
 
       } catch (error) {
         console.error('❌ Error adding to study plan:', error);
@@ -1324,6 +1594,10 @@ export default {
       
       // Trigger reactivity update
       this.triggerReactivityUpdate();
+      
+      // Close paywall
+      this.showPaywall = false;
+      this.requestedTopicId = null;
     },
 
     // ✅ FIXED: Handle user status changes consistently
@@ -1364,16 +1638,22 @@ export default {
         };
         
         window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
+        this.eventCleanupFunctions.push(() => {
+          window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
+        });
 
         // Listen for localStorage changes (cross-tab sync)
         this.handleStorageChange = (event) => {
-          if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
+          if ((event.key === 'userStatus' || event.key === 'plan') && event.newValue !== event.oldValue) {
             console.log('📡 Catalogue: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
             this.handleUserStatusChange(event.newValue, event.oldValue);
           }
         };
         
         window.addEventListener('storage', this.handleStorageChange);
+        this.eventCleanupFunctions.push(() => {
+          window.removeEventListener('storage', this.handleStorageChange);
+        });
       }
 
       // ===== EVENT BUS LISTENERS =====
@@ -1381,13 +1661,7 @@ export default {
         // User status change events
         this.handleUserStatusEvent = (data) => {
           console.log('📡 Catalogue: User status event received:', data);
-          this.handleUserStatusChange(data.newStatus, data.oldStatus);
-        };
-
-        // Promocode applied events
-        this.handlePromocodeEvent = (data) => {
-          console.log('📡 Catalogue: Promocode applied event:', data);
-          this.handleUserStatusChange(data.newStatus, data.oldStatus);
+          this.handleUserStatusChange(data.newStatus || data.plan, data.oldStatus || data.oldPlan);
         };
 
         // Force update events
@@ -1397,12 +1671,31 @@ export default {
         };
 
         // Register event bus listeners
-        window.eventBus.on('userStatusChanged', this.handleUserStatusEvent);
-        window.eventBus.on('promocodeApplied', this.handlePromocodeEvent);
-        window.eventBus.on('forceUpdate', this.handleForceUpdateEvent);
-        window.eventBus.on('globalForceUpdate', this.handleForceUpdateEvent);
-        window.eventBus.on('subscriptionUpdated', this.handleUserStatusEvent);
-        window.eventBus.on('paymentCompleted', this.handleUserStatusEvent);
+        const eventTypes = [
+          'userStatusChanged',
+          'promocodeApplied',
+          'subscriptionUpdated',
+          'paymentCompleted'
+        ];
+
+        eventTypes.forEach(eventType => {
+          window.eventBus.on(eventType, this.handleUserStatusEvent);
+          this.eventCleanupFunctions.push(() => {
+            window.eventBus.off(eventType, this.handleUserStatusEvent);
+          });
+        });
+
+        const forceUpdateTypes = [
+          'forceUpdate',
+          'globalForceUpdate'
+        ];
+
+        forceUpdateTypes.forEach(eventType => {
+          window.eventBus.on(eventType, this.handleForceUpdateEvent);
+          this.eventCleanupFunctions.push(() => {
+            window.eventBus.off(eventType, this.handleForceUpdateEvent);
+          });
+        });
 
         console.log('✅ Catalogue: Event bus listeners registered');
       }
@@ -1413,6 +1706,22 @@ export default {
           if (this.isUserRelatedMutation(mutation)) {
             console.log('📊 Catalogue: Store mutation detected:', mutation.type);
             this.triggerReactivityUpdate();
+            
+            // Handle subscription plan changes
+            if (mutation.payload?.subscriptionPlan) {
+              const newPlan = mutation.payload.subscriptionPlan;
+              const oldPlan = this.currentUserStatus;
+              if (newPlan !== oldPlan) {
+                this.handleUserStatusChange(newPlan, oldPlan);
+              }
+            }
+          }
+        });
+        
+        this.eventCleanupFunctions.push(() => {
+          if (this.storeUnsubscribe) {
+            this.storeUnsubscribe();
+            this.storeUnsubscribe = null;
           }
         });
       }
@@ -1456,44 +1765,23 @@ export default {
       return userMutations.some(type => mutation.type.includes(type)) ||
              mutation.type.includes('user/') ||
              mutation.type.toLowerCase().includes('status') ||
-             mutation.type.toLowerCase().includes('subscription');
+             mutation.type.toLowerCase().includes('subscription') ||
+             mutation.type.toLowerCase().includes('plan');
     },
 
     // ✅ FIXED: Enhanced cleanup method
     cleanup() {
       console.log('🧹 Catalogue: Performing cleanup...');
 
-      // Clean up DOM event listeners
-      if (typeof window !== 'undefined') {
-        if (this.handleSubscriptionChange) {
-          window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
+      // Clean up all event listeners
+      this.eventCleanupFunctions.forEach(cleanup => {
+        try {
+          cleanup();
+        } catch (error) {
+          console.warn('⚠️ Cleanup function failed:', error);
         }
-        if (this.handleStorageChange) {
-          window.removeEventListener('storage', this.handleStorageChange);
-        }
-      }
-
-      // Clean up event bus listeners
-      if (typeof window !== 'undefined' && window.eventBus) {
-        if (this.handleUserStatusEvent) {
-          window.eventBus.off('userStatusChanged', this.handleUserStatusEvent);
-          window.eventBus.off('subscriptionUpdated', this.handleUserStatusEvent);
-          window.eventBus.off('paymentCompleted', this.handleUserStatusEvent);
-        }
-        if (this.handlePromocodeEvent) {
-          window.eventBus.off('promocodeApplied', this.handlePromocodeEvent);
-        }
-        if (this.handleForceUpdateEvent) {
-          window.eventBus.off('forceUpdate', this.handleForceUpdateEvent);
-          window.eventBus.off('globalForceUpdate', this.handleForceUpdateEvent);
-        }
-      }
-
-      // Clean up store subscription
-      if (this.storeUnsubscribe) {
-        this.storeUnsubscribe();
-        this.storeUnsubscribe = null;
-      }
+      });
+      this.eventCleanupFunctions = [];
 
       console.log('✅ Catalogue: Cleanup completed');
     }
