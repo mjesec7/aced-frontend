@@ -357,8 +357,24 @@ export default {
     },
     
     currentStep() {
-      // Corrected to handle deeply nested curriculum data
-      return this.currentLesson?.steps?.[this.currentStepIndex] || this.currentLesson?.curriculum?.[0]?.steps?.[this.currentStepIndex] || null;
+      // ✅ FIXED: Handle potential undefined curriculum and steps
+      if (!this.currentLesson) return null;
+      
+      // Check if lesson has steps directly
+      if (this.currentLesson.steps && Array.isArray(this.currentLesson.steps)) {
+        return this.currentLesson.steps[this.currentStepIndex] || null;
+      }
+      
+      // Fallback: Check if lesson has curriculum with steps (nested structure)
+      if (this.currentLesson.curriculum && 
+          Array.isArray(this.currentLesson.curriculum) && 
+          this.currentLesson.curriculum[0] && 
+          this.currentLesson.curriculum[0].steps &&
+          Array.isArray(this.currentLesson.curriculum[0].steps)) {
+        return this.currentLesson.curriculum[0].steps[this.currentStepIndex] || null;
+      }
+      
+      return null;
     },
     
     overallProgress() {
@@ -389,8 +405,26 @@ export default {
 
         if (response.success && response.data) {
           this.course = response.data;
-          // The API now returns a `lessons` array, so we can use that directly
-          this.lessons = response.data.lessons;
+          
+          // ✅ FIXED: Handle different response structures
+          if (response.data.lessons && Array.isArray(response.data.lessons)) {
+            // Direct lessons array
+            this.lessons = response.data.lessons;
+          } else if (response.data.curriculum && Array.isArray(response.data.curriculum)) {
+            // Curriculum array (convert to lessons format)
+            this.lessons = response.data.curriculum.map((lesson, index) => ({
+              ...lesson,
+              id: lesson._id || lesson.id || `lesson_${index}`,
+              title: lesson.title || lesson.lessonName || `Урок ${index + 1}`,
+              completed: false,
+              steps: lesson.steps || []
+            }));
+          } else {
+            // Fallback: empty lessons array
+            this.lessons = [];
+            console.warn('⚠️ No lessons or curriculum found in course data');
+          }
+          
           console.log(`✅ Loaded course: ${this.course.title} with ${this.lessons.length} lessons`);
 
         } else {
@@ -445,18 +479,18 @@ export default {
       this.$set(this.selectedAnswers, quizIndex, optionIndex);
     },
     
-    // ENHANCED: Image handling methods
+    // ✅ FIXED: Enhanced image handling methods with null checks
     hasStepImages(step) {
       if (!step) return false;
       
       // Check direct images array
       if (step.images && Array.isArray(step.images) && step.images.length > 0) {
-        return true;
+        return step.images.some(img => img && (img.url || img.base64));
       }
       
       // Check data.images
-      if (step.data?.images && Array.isArray(step.data.images) && step.data.images.length > 0) {
-        return true;
+      if (step.data && step.data.images && Array.isArray(step.data.images) && step.data.images.length > 0) {
+        return step.data.images.some(img => img && (img.url || img.base64));
       }
       
       return false;
@@ -466,20 +500,27 @@ export default {
       if (!step) return [];
       
       // Priority: step.images, then step.data.images
-      const images = step.images || step.data?.images || [];
+      const images = step.images || (step.data && step.data.images) || [];
       
-      // Filter valid images
-      return Array.isArray(images) ? images.filter(img => img && (img.url || img.base64)) : [];
+      // Filter valid images and ensure they're in array format
+      if (!Array.isArray(images)) return [];
+      
+      return images.filter(img => img && (img.url || img.base64));
     },
     
     getImageLayoutClass(image) {
-      const alignment = image.displayOptions?.alignment || image.alignment || 'center';
-      const size = image.displayOptions?.size || image.size || 'medium';
+      if (!image) return 'align-center size-medium';
+      
+      const alignment = (image.displayOptions && image.displayOptions.alignment) || 
+                       image.alignment || 'center';
+      const size = (image.displayOptions && image.displayOptions.size) || 
+                   image.size || 'medium';
       
       return `align-${alignment} size-${size}`;
     },
     
     openImageModal(image) {
+      if (!image) return;
       this.selectedImage = image;
       this.imageModalOpen = true;
     },
@@ -492,22 +533,25 @@ export default {
     handleImageError(event, image) {
       console.warn('Image failed to load:', image?.url || 'unknown');
       // Fallback to a placeholder image
-      event.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-image"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5.8-5.8a2 2 0 0 0-2.82 0L7 21"></path></svg>';
+      if (event && event.target) {
+        event.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-image"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5.8-5.8a2 2 0 0 0-2.82 0L7 21"></path></svg>';
+        event.target.onerror = null; // Prevent infinite loop
+      }
     },
     
-    // Step type helpers
+    // ✅ FIXED: Step type helpers with null checks
     isTextStep(step) {
-      return ['explanation', 'example', 'reading'].includes(step?.type);
+      if (!step || !step.type) return false;
+      return ['explanation', 'example', 'reading'].includes(step.type);
     },
     
     getStepTypeLabel(type) {
+      if (!type) return 'Шаг';
       return this.stepTypeLabels[type] || 'Шаг';
     },
     
     getStepIcon(type) {
       const icons = {
-        // The actual SVG component needs to be imported and defined
-        // For now, returning a string is fine
         explanation: 'file-text-icon', 
         example: 'code-icon', 
         reading: 'book-open-icon',

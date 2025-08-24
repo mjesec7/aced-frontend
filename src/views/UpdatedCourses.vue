@@ -724,6 +724,47 @@ export default {
       }
       return imagePath; // Return as is if it's already an absolute URL.
     },
+
+    // ✅ FIXED: Add missing lessonHasImages method
+    lessonHasImages(lesson) {
+      if (!lesson || !lesson.steps) return false;
+      
+      return lesson.steps.some(step => {
+        // Check if step has images directly
+        if (step.images && Array.isArray(step.images) && step.images.length > 0) {
+          return step.images.some(img => img && (img.url || img.base64));
+        }
+        
+        // Check if step.data has images
+        if (step.data && step.data.images && Array.isArray(step.data.images) && step.data.images.length > 0) {
+          return step.data.images.some(img => img && (img.url || img.base64));
+        }
+        
+        return false;
+      });
+    },
+
+    // ✅ FIXED: Add missing getLessonImageCount method
+    getLessonImageCount(lesson) {
+      if (!lesson || !lesson.steps) return 0;
+      
+      let count = 0;
+      
+      lesson.steps.forEach(step => {
+        // Count images in step.images
+        if (step.images && Array.isArray(step.images)) {
+          count += step.images.filter(img => img && (img.url || img.base64)).length;
+        }
+        
+        // Count images in step.data.images
+        if (step.data && step.data.images && Array.isArray(step.data.images)) {
+          count += step.data.images.filter(img => img && (img.url || img.base64)).length;
+        }
+      });
+      
+      return count;
+    },
+
     async fetchCourses() {
       this.loading = true;
       this.error = null;
@@ -754,45 +795,113 @@ export default {
         this.loading = false;
       }
     },
+
+    // ✅ FIXED: Enhanced processCourses with proper error handling
     processCourses(courses) {
-      return courses.map((course) => {
-        const processedCourse = {
-          ...course,
-          id: course._id || course.id,
-          _id: course._id || course.id,
-          difficulty: course.difficulty || course.level || 'Начинающий',
-          level: course.level || course.difficulty || 'Начинающий',
-          duration: course.duration || (course.estimatedTime?.hours ? `${course.estimatedTime.hours} часов` : '10 часов'),
-          instructor: {
-            name: course.instructor?.name || 'Aced Team' ,
-            avatar: this.getProcessedImage(course.instructor?.avatar) || this.getProcessedImage('/default-avatar.jpg'),
-            bio: course.instructor?.bio || '',
-          },
-          curriculum: this.processCurriculum(course.curriculum || []),
-          hasImages: this.courseHasImages(course),
-          imageCount: this.getCourseImageCount(course),
-        };
-        return processedCourse;
-      });
+      if (!Array.isArray(courses)) {
+        console.warn('⚠️ processCourses: courses is not an array:', courses);
+        return [];
+      }
+
+      return courses.map((course, index) => {
+        try {
+          const processedCourse = {
+            ...course,
+            id: course._id || course.id || `course_${index}`,
+            _id: course._id || course.id || `course_${index}`,
+            difficulty: course.difficulty || course.level || 'Начинающий',
+            level: course.level || course.difficulty || 'Начинающий',
+            duration: course.duration || (course.estimatedTime?.hours ? `${course.estimatedTime.hours} часов` : '10 часов'),
+            instructor: {
+              name: course.instructor?.name || 'Aced Team' ,
+              avatar: this.getProcessedImage(course.instructor?.avatar) || this.getProcessedImage('/default-avatar.jpg'),
+              bio: course.instructor?.bio || '',
+            },
+            curriculum: this.processCurriculum(course.curriculum || []),
+          };
+
+          // ✅ FIXED: Safely add image metadata
+          try {
+            processedCourse.hasImages = this.courseHasImages(processedCourse);
+            processedCourse.imageCount = this.getCourseImageCount(processedCourse);
+          } catch (imageError) {
+            console.warn('⚠️ Error processing course images:', imageError);
+            processedCourse.hasImages = false;
+            processedCourse.imageCount = 0;
+          }
+
+          return processedCourse;
+        } catch (courseError) {
+          console.error('❌ Error processing course:', courseError, course);
+          // Return a minimal valid course object
+          return {
+            id: course._id || course.id || `course_${index}`,
+            _id: course._id || course.id || `course_${index}`,
+            title: course.title || 'Untitled Course',
+            description: course.description || '',
+            category: course.category || 'General',
+            difficulty: 'Начинающий',
+            level: 'Начинающий',
+            duration: '10 часов',
+            instructor: { name: 'Aced Team', avatar: this.courseImages.default },
+            curriculum: [],
+            hasImages: false,
+            imageCount: 0,
+            isPremium: course.isPremium || false
+          };
+        }
+      }).filter(course => course !== null);
     },
+
+    // ✅ FIXED: Enhanced processCurriculum with proper error handling
     processCurriculum(curriculum) {
-      if (!Array.isArray(curriculum)) return [];
+      if (!Array.isArray(curriculum)) {
+        console.warn('⚠️ processCurriculum: curriculum is not an array:', curriculum);
+        return [];
+      }
+
       return curriculum.map((lesson, lessonIndex) => {
-        const processedLesson = {
-          ...lesson,
-          id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
-          _id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
-          title: lesson.title || `Урок ${lessonIndex + 1}`,
-          description: lesson.description || '',
-          duration: lesson.duration || '30 мин',
-          order: lesson.order || lessonIndex,
-          steps: this.processSteps(lesson.steps || [], lessonIndex, lesson),
-          hasImages: this.lessonHasImages(lesson),
-          imageCount: this.getLessonImageCount(lesson),
-        };
-        return processedLesson;
-      });
+        try {
+          const processedLesson = {
+            ...lesson,
+            id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
+            _id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
+            title: lesson.title || `Урок ${lessonIndex + 1}`,
+            description: lesson.description || '',
+            duration: lesson.duration || '30 мин',
+            order: lesson.order || lessonIndex,
+            steps: this.processSteps(lesson.steps || [], lessonIndex, lesson),
+          };
+
+          // ✅ FIXED: Safely add image metadata
+          try {
+            processedLesson.hasImages = this.lessonHasImages(processedLesson);
+            processedLesson.imageCount = this.getLessonImageCount(processedLesson);
+          } catch (imageError) {
+            console.warn('⚠️ Error processing lesson images:', imageError);
+            processedLesson.hasImages = false;
+            processedLesson.imageCount = 0;
+          }
+
+          return processedLesson;
+        } catch (lessonError) {
+          console.error('❌ Error processing lesson:', lessonError, lesson);
+          // Return a minimal valid lesson object
+          return {
+            id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
+            _id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
+            title: lesson.title || `Урок ${lessonIndex + 1}`,
+            description: lesson.description || '',
+            duration: '30 мин',
+            order: lessonIndex,
+            steps: [],
+            hasImages: false,
+            imageCount: 0
+          };
+        }
+      }).filter(lesson => lesson !== null);
     },
+
     processSteps(steps, lessonIndex, lesson) {
       if (!Array.isArray(steps)) return [];
       return steps.map((step, stepIndex) => {
@@ -810,6 +919,7 @@ export default {
         return processedStep;
       });
     },
+
     processStepData(step, lessonIndex, stepIndex) {
       const baseData = step.data || {};
       switch (step.type) {
@@ -845,6 +955,7 @@ export default {
           };
       }
     },
+
     processStepImages(images, lessonIndex, stepIndex) {
       if (!Array.isArray(images)) return [];
       return images
@@ -866,6 +977,7 @@ export default {
         }))
         .sort((a, b) => (a.order || 0) - (b.order || 0));
     },
+
     getCourseImage(course) {
       if (!course) return this.courseImages.default;
       if (course.thumbnail && course.thumbnail !== '/default-course-thumbnail.jpg') {
@@ -890,6 +1002,7 @@ export default {
       }
       return this.courseImages.default;
     },
+
     extractCurriculumImages(course) {
       const images = [];
       if (course.curriculum && Array.isArray(course.curriculum)) {
@@ -912,12 +1025,14 @@ export default {
       }
       return images;
     },
+
     courseHasImages(course) {
       if (!course.curriculum) return false;
       return course.curriculum.some((lesson) =>
         lesson.steps && lesson.steps.some((step) => step.images && step.images.length > 0)
       );
     },
+
     getCourseImageCount(course) {
       if (!course.curriculum) return 0;
       let count = 0;
@@ -932,6 +1047,7 @@ export default {
       });
       return count;
     },
+
     getCourseOutcomes(course) {
       if (course.learningOutcomes && course.learningOutcomes.length > 0) {
         return course.learningOutcomes;
@@ -967,6 +1083,7 @@ export default {
       }
       return outcomes.length > 0 ? outcomes : ['Получите практические навыки', 'Изучите современные методы', 'Применяйте знания на практике'];
     },
+
     getCourseModules(course) {
       if (!course.curriculum || course.curriculum.length === 0) {
         return [
@@ -982,6 +1099,7 @@ export default {
         imageCount: this.getLessonImageCount(lesson),
       }));
     },
+
     formatNumber(num) {
       if (num >= 1000000) {
         return (num / 1000000).toFixed(1) + 'M';
@@ -991,22 +1109,27 @@ export default {
       }
       return num.toString();
     },
+
     handleImageError(event, course) {
       console.warn('Image failed to load for course:', course?.title || 'Unknown');
       event.target.src = this.getProcessedImage(this.courseImages.default);
       event.target.onerror = null;
     },
+
     debounceSearch() {
       clearTimeout(this.debounceTimeout);
       this.debounceTimeout = setTimeout(this.fetchCourses, 500);
     },
+
     applyFilters() {
       this.fetchCourses();
     },
+
     setTypeFilter(type) {
       this.typeFilter = type;
       this.fetchCourses();
     },
+
     clearFilters() {
       this.searchTerm = '';
       this.categoryFilter = 'all';
@@ -1014,6 +1137,7 @@ export default {
       this.typeFilter = 'all';
       this.fetchCourses();
     },
+
     async openModal(course) {
       this.selectedCourse = null;
       this.isModalOpen = true;
@@ -1022,7 +1146,7 @@ export default {
         console.log('📖 Opening course modal:', course.title);
         const response = await getCourseById(course._id || course.id);
         if (response.success) {
-          this.selectedCourse = this.processCourses([response.data.course])[0];
+          this.selectedCourse = this.processCourses([response.data])[0];
           console.log('✅ Course details loaded:', this.selectedCourse);
         } else {
           console.error('Failed to fetch detailed course info:', response.error);
@@ -1035,6 +1159,7 @@ export default {
         this.modalLoading = false;
       }
     },
+
     startCourse(course) {
       // This method now navigates to the new route
       console.log('🚀 Starting course:', course.title);
@@ -1056,10 +1181,12 @@ export default {
       // Use Vue Router to navigate to the new page
       this.$router.push({ name: 'LessonPlayer', params: { courseId: course.id } });
     },
+
     closeModal() {
       this.isModalOpen = false;
       this.selectedCourse = null;
     },
+
     handleUserStatusChange(newStatus, oldStatus) {
       if (!newStatus || newStatus === oldStatus) return;
       console.log(`👤 UpdatedCourses: Handling status change ${oldStatus} → ${newStatus}`);
@@ -1074,6 +1201,7 @@ export default {
       }
       console.log(`✅ UpdatedCourses: Status change handled: ${oldStatus} → ${newStatus}`);
     },
+
     triggerReactivityUpdate() {
       this.componentKey++;
       this.forceUpdateCounter++;
@@ -1088,6 +1216,7 @@ export default {
         timestamp: this.lastUpdateTime,
       });
     },
+
     setupEventListeners() {
       console.log('🔧 UpdatedCourses: Setting up event listeners');
       if (typeof window !== 'undefined') {
@@ -1136,6 +1265,7 @@ export default {
       }
       console.log('✅ UpdatedCourses: Event listeners setup complete');
     },
+
     isUserRelatedMutation(mutation) {
       const userMutations = [
         'setUser',
@@ -1153,6 +1283,7 @@ export default {
         mutation.type.toLowerCase().includes('subscription')
       );
     },
+
     cleanup() {
       console.log('🧹 UpdatedCourses: Performing cleanup...');
       if (typeof window !== 'undefined') {
@@ -1186,7 +1317,6 @@ export default {
   },
 };
 </script>
-
 <style scoped>
 /* CSS Variables */
 :root {
