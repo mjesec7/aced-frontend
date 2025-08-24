@@ -1,21 +1,19 @@
 <template>
-  <div class="courses-page" :key="`courses-${componentKey}`">
-    <header class="header">
+  <!-- Lesson Interface -->
+  <LessonLoader 
+    v-if="showStudyInterface" 
+    :course="selectedCourse"
+    @back-to-courses="goBackToCourses"
+    :key="`lesson-${componentKey}`"
+  />
+
+  <!-- Courses List Interface -->
+  <div v-else class="courses-page" :key="`courses-${componentKey}`">
+    <div class="header">
       <div class="container">
         <div class="header-content">
           <div class="header-badge">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="header-badge-icon"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-badge-icon">
               <path d="M5.5 8.5L2 12l3.5 3.5" />
               <path d="M18.5 8.5L22 12l-3.5 3.5" />
               <path d="M12 2l-2 10l2 10l2-10z" />
@@ -32,33 +30,17 @@
           </p>
         </div>
       </div>
-    </header>
+    </div>
 
     <div class="content-wrapper">
       <div class="container">
-        <section class="filter-bar">
+        <div class="filter-bar">
           <div class="filter-group-search">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="search-icon"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon">
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.3-4.3"></path>
             </svg>
-            <input
-              v-model="searchTerm"
-              @input="debounceSearch"
-              placeholder="Поиск курсов..."
-              class="input-search"
-            />
+            <input v-model="searchTerm" @input="debounceSearch" placeholder="Поиск курсов..." class="input-search" />
           </div>
 
           <div class="filter-group-select">
@@ -68,18 +50,7 @@
                 {{ category }}
               </option>
             </select>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="select-arrow"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="select-arrow">
               <path d="m6 9 6 6 6-6" />
             </svg>
           </div>
@@ -91,58 +62,27 @@
                 {{ level }}
               </option>
             </select>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="select-arrow"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="select-arrow">
               <path d="m6 9 6 6 6-6" />
             </svg>
           </div>
 
           <div class="filter-group-buttons">
-            <button
-              :class="['button-filter', { active: typeFilter === 'all' }]"
-              @click="setTypeFilter('all')"
-            >
+            <button :class="['button-filter', { active: typeFilter === 'all' }]" @click="setTypeFilter('all')">
               Все
             </button>
-            <button
-              :class="['button-filter', { active: typeFilter === 'free' }]"
-              @click="setTypeFilter('free')"
-            >
+            <button :class="['button-filter', { active: typeFilter === 'free' }]" @click="setTypeFilter('free')">
               Бесплатные
             </button>
-            <button
-              :class="['button-filter', { active: typeFilter === 'premium' }]"
-              @click="setTypeFilter('premium')"
-            >
+            <button :class="['button-filter', { active: typeFilter === 'premium' }]" @click="setTypeFilter('premium')">
               Премиум
             </button>
           </div>
-        </section>
+        </div>
 
         <div class="results-info">
           <div class="results-count">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="results-icon"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="results-icon">
               <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
             </svg>
             <span>Найдено курсов: {{ courses.length }}</span>
@@ -157,21 +97,8 @@
 
         <div v-else-if="error" class="empty-state">
           <div class="empty-state-icon-wrapper">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="empty-state-icon"
-            >
-              <path
-                d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-icon">
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
               <line x1="12" y1="9" x2="12" y2="13" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
@@ -184,32 +111,16 @@
         </div>
 
         <div v-else-if="courses.length > 0" class="courses-grid">
-          <div
-            v-for="course in courses"
-            :key="course.id"
-            class="course-card"
-            @click="openModal(course)"
-          >
+          <div v-for="course in courses" :key="course.id" class="course-card" @click="openModal(course)">
             <div class="course-card-image-wrapper">
-              <img
-                :src="getCourseImage(course)"
-                :alt="course.title"
+              <img 
+                :src="getCourseImage(course)" 
+                :alt="course.title" 
                 class="course-card-image"
                 @error="handleImageError($event, course)"
               />
               <div v-if="course.isPremium" class="badge badge-premium">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="badge-icon"
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="badge-icon">
                   <path d="m14 6 4 10L2 10"></path>
                   <path d="M5 14 2 12l10-2L9.5 2l.5 6"></path>
                 </svg>
@@ -226,24 +137,13 @@
               <p class="course-card-description">{{ course.description }}</p>
               <div class="course-card-stats">
                 <div class="course-card-stat">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="course-card-stat-icon"
-                  >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="course-card-stat-icon">
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="12 6 12 12 16 14"></polyline>
                   </svg>
                   <span>{{ course.duration }}</span>
                 </div>
-                <div class="course-card-level">{{ course.difficulty || course.level }}</div>
+                <div class="course-card-level">{{ course.level }}</div>
               </div>
               <div class="course-card-provider">
                 <p>от</p>
@@ -255,18 +155,7 @@
 
         <div v-else class="empty-state">
           <div class="empty-state-icon-wrapper">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="empty-state-icon"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-state-icon">
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.3-4.3"></path>
             </svg>
@@ -282,323 +171,159 @@
       </div>
     </div>
 
-    <Teleport to="body">
-      <div v-if="isModalOpen && selectedCourse" class="modal-overlay" @click="closeModal">
-        <div class="modal-container" @click.stop>
-          <button class="modal-close" @click="closeModal">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M18 6 6 18"></path>
-              <path d="m6 6 12 12"></path>
-            </svg>
-          </button>
+    <!-- Course Modal -->
+    <div v-if="isModalOpen && selectedCourse" class="modal-overlay" @click="closeModal">
+      <div class="modal-container" @click.stop>
+        <button class="modal-close" @click="closeModal">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18"></path>
+            <path d="m6 6 12 12"></path>
+          </svg>
+        </button>
 
-          <div v-if="modalLoading" class="modal-loading-state">
-            <div class="spinner"></div>
-            <p>Загрузка информации о курсе...</p>
+        <div v-if="modalLoading" class="modal-loading-state">
+          <div class="spinner"></div>
+          <p>Загрузка информации о курсе...</p>
+        </div>
+
+        <div v-else class="modal-content">
+          <div class="modal-header-section">
+            <div class="modal-image-container">
+              <img 
+                :src="getCourseImage(selectedCourse)" 
+                :alt="selectedCourse.title" 
+                class="modal-image"
+                @error="handleImageError($event, selectedCourse)"
+              />
+              <div class="modal-image-overlay"></div>
+
+              <div class="modal-badge-container">
+                <div v-if="selectedCourse.isPremium" class="modal-badge modal-badge-premium">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m14 6 4 10L2 10"></path>
+                    <path d="M5 14 2 12l10-2L9.5 2l.5 6"></path>
+                  </svg>
+                  Премиум
+                </div>
+                <div v-else class="modal-badge modal-badge-free">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  Бесплатно
+                </div>
+              </div>
+
+              <div class="modal-meta-overlay">
+                <div class="modal-duration">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  {{ selectedCourse.duration }}
+                </div>
+                <div class="modal-provider">
+                  <span>от</span>
+                  <span>Aced</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div v-else class="modal-content">
-            <div class="modal-header-section">
-              <div class="modal-image-container">
-                <img
-                  :src="getCourseImage(selectedCourse)"
-                  :alt="selectedCourse.title"
-                  class="modal-image"
-                  @error="handleImageError($event, selectedCourse)"
-                />
-                <div class="modal-image-overlay"></div>
+          <div class="modal-body">
+            <div class="modal-course-info">
+              <div class="modal-tags">
+                <span class="modal-tag modal-tag-category">{{ selectedCourse.category }}</span>
+                <span class="modal-tag modal-tag-level">{{ selectedCourse.level }}</span>
+              </div>
 
-                <div class="modal-badge-container">
-                  <div v-if="selectedCourse.isPremium" class="modal-badge modal-badge-premium">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <path d="m14 6 4 10L2 10"></path>
-                      <path d="M5 14 2 12l10-2L9.5 2l.5 6"></path>
+              <h2 class="modal-title">{{ selectedCourse.title }}</h2>
+              <p class="modal-description">{{ selectedCourse.fullDescription }}</p>
+            </div>
+
+            <div class="modal-divider"></div>
+
+            <div class="modal-details">
+              <div class="modal-details-grid">
+                <div class="modal-section">
+                  <h3 class="modal-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
                     </svg>
-                    Премиум
-                  </div>
-                  <div v-else class="modal-badge modal-badge-free">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    Бесплатно
-                  </div>
+                    Что вы изучите:
+                  </h3>
+                  <ul class="modal-skills-list">
+                    <li v-for="(skill, index) in selectedCourse.skills" :key="index" class="modal-skill-item">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="skill-check-icon">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"></path>
+                        <path d="M22 4L12 14.01l-3-3"></path>
+                      </svg>
+                      {{ skill }}
+                    </li>
+                  </ul>
                 </div>
 
-                <div class="modal-meta-overlay">
-                  <div class="modal-duration">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polyline points="12 6 12 12 16 14"></polyline>
+                <div class="modal-section">
+                  <h3 class="modal-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
                     </svg>
-                    {{ selectedCourse.duration }}
-                  </div>
-                  <div class="modal-provider">
-                    <span>от</span>
-                    <span>Aced</span>
-                  </div>
+                    Программа курса:
+                  </h3>
+                  <ul class="modal-modules-list">
+                    <li v-for="(module, index) in selectedCourse.modules" :key="index" class="modal-module-item">
+                      <span class="module-number">{{ index + 1 }}.</span>
+                      <span class="module-text">{{ module }}</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>
 
-            <div class="modal-body">
-              <section class="modal-course-info">
-                <div class="modal-tags">
-                  <span class="modal-tag modal-tag-category">{{ selectedCourse.category }}</span>
-                  <span class="modal-tag modal-tag-level">{{
-                    selectedCourse.difficulty || selectedCourse.level
-                  }}</span>
-                </div>
-
-                <h2 class="modal-title">{{ selectedCourse.title }}</h2>
-                <p class="modal-description">
-                  {{ selectedCourse.fullDescription || selectedCourse.description }}
-                </p>
-              </section>
-
-              <div class="modal-divider"></div>
-
-              <section class="modal-details">
-                <div class="modal-details-grid">
-                  <div class="modal-section">
-                    <h3 class="modal-section-title">
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <path
-                          d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"
-                        ></path>
-                      </svg>
-                      Что вы изучите:
-                    </h3>
-                    <ul class="modal-skills-list">
-                      <li
-                        v-for="(outcome, index) in getCourseOutcomes(selectedCourse)"
-                        :key="index"
-                        class="modal-skill-item"
-                      >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          class="skill-check-icon"
-                        >
-                          <path d="M22 11.08V12a10 10 0 1 1-5.93-8.08"></path>
-                          <path d="M22 4L12 14.01l-3-3"></path>
-                        </svg>
-                        {{ outcome }}
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div class="modal-section">
-                    <h3 class="modal-section-title">
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                      </svg>
-                      Программа курса:
-                    </h3>
-                    <ul class="modal-modules-list">
-                      <li
-                        v-for="(lesson, index) in getCourseModules(selectedCourse)"
-                        :key="index"
-                        class="modal-module-item"
-                      >
-                        <span class="module-number">{{ index + 1 }}.</span>
-                        <div class="module-content">
-                          <span class="module-text">{{ lesson.title }}</span>
-                          <span v-if="lesson.duration" class="module-duration">{{
-                            lesson.duration
-                          }}</span>
-                          <div v-if="lesson.hasImages" class="module-badge">
-                            <svg
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                            >
-                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                              <circle cx="9" cy="9" r="2"></circle>
-                              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
-                            </svg>
-                            Изображения
-                          </div>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </section>
-
-              <section v-if="selectedCourse.studentsCount || selectedCourse.rating" class="modal-stats">
-                <div class="modal-stats-grid">
-                  <div v-if="selectedCourse.studentsCount" class="modal-stat-item">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                      <circle cx="9" cy="7" r="4"></circle>
-                      <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                    <div>
-                      <div class="stat-value">{{ formatNumber(selectedCourse.studentsCount) }}</div>
-                      <div class="stat-label">студентов</div>
-                    </div>
-                  </div>
-
-                  <div v-if="selectedCourse.rating" class="modal-stat-item">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <polygon
-                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-                      ></polygon>
-                    </svg>
-                    <div>
-                      <div class="stat-value">{{ selectedCourse.rating.toFixed(1) }}</div>
-                      <div class="stat-label">рейтинг</div>
-                    </div>
-                  </div>
-
-                  <div v-if="getCourseImageCount(selectedCourse) > 0" class="modal-stat-item">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                      <circle cx="9" cy="9" r="2"></circle>
-                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
-                    </svg>
-                    <div>
-                      <div class="stat-value">{{ getCourseImageCount(selectedCourse) }}</div>
-                      <div class="stat-label">изображений</div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <footer class="modal-actions">
-                <button
-                  :class="[
-                    'modal-action-button',
-                    {
-                      premium: selectedCourse.isPremium && !isPremiumUser,
-                      accessible: !selectedCourse.isPremium || isPremiumUser,
-                    },
-                  ]"
-                  @click="startCourse(selectedCourse)"
-                >
-                  <svg
-                    v-if="selectedCourse.isPremium && !isPremiumUser"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                  </svg>
-                  <svg
-                    v-else
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                  </svg>
-                  <span v-if="selectedCourse.isPremium && !isPremiumUser">
-                    Требуется подписка {{ currentUserStatus === 'free' ? 'Start/Pro' : 'Pro' }}
-                  </span>
-                  <span v-else>Начать изучение</span>
-                </button>
-                <p class="modal-action-description">
-                  Начните изучение прямо сейчас и развивайте свои навыки
-                </p>
-              </footer>
+            <div class="modal-actions">
+              <button 
+                :class="['modal-action-button', { 
+                  'premium': selectedCourse.isPremium && !isPremiumUser,
+                  'accessible': !selectedCourse.isPremium || isPremiumUser
+                }]" 
+                @click="startCourse(selectedCourse)"
+              >
+                <svg v-if="selectedCourse.isPremium && !isPremiumUser" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                
+                <span v-if="selectedCourse.isPremium && !isPremiumUser">
+                  Требуется подписка {{ currentUserStatus === 'free' ? 'Start/Pro' : 'Pro' }}
+                </span>
+                <span v-else>Начать изучение</span>
+              </button>
+              <p class="modal-action-description">
+                Начните изучение прямо сейчас и развивайте свои навыки
+              </p>
             </div>
           </div>
         </div>
       </div>
-    </Teleport>
+    </div>
   </div>
 </template>
 
 <script>
 import { getUpdatedCourses, getCourseById } from '@/api.js';
+import { checkSubscriptionAccess } from '@/router/index.js';
 import { mapGetters, mapState } from 'vuex';
+import LessonLoader from '../components/Updated/LessonPlayer.vue';
 
 export default {
   name: 'CoursesPage',
-  components: {},
+  components: {
+    LessonLoader
+  },
   data() {
     return {
       courses: [],
@@ -614,734 +339,251 @@ export default {
       loading: false,
       modalLoading: false,
       error: null,
-      componentKey: 0,
+      showStudyInterface: false,
       
-      // Hardcoded course images based on category
+      // ✅ ENHANCED: Add comprehensive reactivity tracking
+      componentKey: 0,
+      lastUpdateTime: Date.now(),
+      forceUpdateCounter: 0,
+
+      // ✅ HARDCODED IMAGES MAP
       courseImages: {
-        'javascript': '/images/course/javascript.jpg',
-        'python': '/images/course/python.jpg',
-        'react': '/images/course/react.jpg',
-        'vue': '/images/course/vue.jpg',
-        'node': '/images/course/node.jpg',
-        'angular': '/images/course/angular.jpg',
-        'typescript': '/images/course/typescript.jpg',
-        'web-разработка': '/images/course/web-dev.jpg',
-        'веб-разработка': '/images/course/web-dev.jpg',
-        'программирование': '/images/course/programming.jpg',
-        'ии и автоматизация': '/images/course/ai.jpg',
-        'машинное обучение': '/images/course/machine-learning.jpg',
-        'искусственный интеллект': '/images/course/ai.jpg',
-        'data science': '/images/course/data-science.jpg',
-        'дизайн': '/images/course/design.jpg',
-        'графический дизайн': '/images/course/graphic-design.jpg',
-        'ui/ux дизайн': '/images/course/ui-ux.jpg',
-        'видеомонтаж': '/images/course/video-editing.jpg',
-        'маркетинг': '/images/course/marketing.jpg',
-        'цифровой маркетинг': '/images/course/marketing.jpg',
-        'smm': '/images/course/social-media.jpg',
-        'мобильная разработка': '/images/course/mobile-dev.jpg',
-        'ios разработка': '/images/course/ios.jpg',
-        'android разработка': '/images/course/android.jpg',
-        'backend разработка': '/images/course/backend.jpg',
-        'frontend разработка': '/images/course/frontend.jpg',
-        'fullstack разработка': '/images/course/fullstack.jpg',
-        'devops': '/images/course/devops.jpg',
-        'тестирование': '/images/course/testing.jpg',
-        'кибербезопасность': '/images/course/security.jpg',
-        'блокчейн': '/images/course/blockchain.jpg',
-        'геймдев': '/images/course/gamedev.jpg',
-        'фотография': '/images/course/photography.jpg',
-        'музыка': '/images/course/music.jpg',
-        'бизнес': '/images/course/business.jpg',
-        'финансы': '/images/course/finance.jpg',
-        'языки': '/images/course/languages.jpg',
-        'здоровье': '/images/course/health.jpg',
-        'кулинария': '/images/course/cooking.jpg',
-        'спорт': '/images/course/sports.jpg',
-        'default': '/images/course/default.jpg',
-        'premium': '/images/course/premium.jpg'
-      },
+        // Programming & Development
+        'javascript': 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=400&h=250&fit=crop',
+        'python': 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400&h=250&fit=crop',
+        'react': 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=250&fit=crop',
+        'vue': 'https://images.unsplash.com/photo-1661956602116-aa6865609028?w=400&h=250&fit=crop',
+        'node': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=250&fit=crop',
+        'web development': 'https://images.unsplash.com/photo-1547658719-da2b51169166?w=400&h=250&fit=crop',
+        'programming': 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=250&fit=crop',
+        'coding': 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=250&fit=crop',
+        'software development': 'https://images.unsplash.com/photo-1518773553398-650c184e0bb3?w=400&h=250&fit=crop',
+        
+        // AI & Machine Learning
+        'artificial intelligence': 'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=400&h=250&fit=crop',
+        'machine learning': 'https://images.unsplash.com/photo-1555255707-c07966088b7b?w=400&h=250&fit=crop',
+        'ai': 'https://images.unsplash.com/photo-1507146426996-ef05306b995a?w=400&h=250&fit=crop',
+        'data science': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop',
+        'neural networks': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=250&fit=crop',
+        
+        // Design
+        'design': 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop',
+        'ui design': 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=400&h=250&fit=crop',
+        'ux design': 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?w=400&h=250&fit=crop',
+        'graphic design': 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=400&h=250&fit=crop',
+        'web design': 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=400&h=250&fit=crop',
+        
+        // Business & Marketing
+        'marketing': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=250&fit=crop',
+        'digital marketing': 'https://images.unsplash.com/photo-1432888622747-4eb9a8efeb07?w=400&h=250&fit=crop',
+        'business': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=250&fit=crop',
+        'entrepreneurship': 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=400&h=250&fit=crop',
+        'finance': 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=400&h=250&fit=crop',
+        
+        // Languages
+        'english': 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=250&fit=crop',
+        'language learning': 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=250&fit=crop',
+        'languages': 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=250&fit=crop',
+        
+        // Blockchain & Crypto
+        'blockchain': 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=250&fit=crop',
+        'cryptocurrency': 'https://images.unsplash.com/photo-1605792657660-596af9009e82?w=400&h=250&fit=crop',
+        'bitcoin': 'https://images.unsplash.com/photo-1605792657660-596af9009e82?w=400&h=250&fit=crop',
+        'crypto': 'https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=400&h=250&fit=crop',
+        
+        // Default fallback images by category
+        'технологии': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=250&fit=crop',
+        'образование': 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop',
+        'наука': 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=250&fit=crop',
+        'искусство': 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=250&fit=crop',
+        'музыка': 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=250&fit=crop',
+        'спорт': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=250&fit=crop',
+        'здоровье': 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=250&fit=crop',
+        'кулинария': 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=250&fit=crop',
+        
+        // Generic fallbacks
+        'default': 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=250&fit=crop',
+        'course': 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=400&h=250&fit=crop',
+        'learning': 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=250&fit=crop',
+        'education': 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=250&fit=crop',
+        'study': 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&h=250&fit=crop'
+      }
     };
   },
-  
+
   computed: {
     ...mapGetters('user', ['userStatus']),
     ...mapState(['user']),
     ...mapGetters(['getUser']),
-    
+
     currentUser() {
       return this.getUser || this.user || {};
     },
-    
+
     currentUserStatus() {
-      const userStatus = this.currentUser?.subscriptionPlan ||
-        this.currentUser?.userStatus ||
-        this.currentUser?.plan ||
-        localStorage.getItem('userStatus') ||
-        localStorage.getItem('plan') ||
-        localStorage.getItem('subscriptionPlan') ||
-        'free';
+      const userStatus = this.currentUser?.subscriptionPlan || 
+                        localStorage.getItem('userStatus') || 
+                        localStorage.getItem('plan') || 
+                        'free';
       return userStatus;
     },
-    
+
     isPremiumUser() {
       const status = this.currentUserStatus;
-      return status === 'pro' || status === 'start' || status === 'premium';
-    },
+      return status === 'pro' || status === 'start';
+    }
   },
-  
+
   watch: {
     user: {
       handler(newUser, oldUser) {
-        const newPlan = newUser?.subscriptionPlan || newUser?.userStatus || newUser?.plan;
-        const oldPlan = oldUser?.subscriptionPlan || oldUser?.userStatus || oldUser?.plan;
+        const newPlan = newUser?.subscriptionPlan;
+        const oldPlan = oldUser?.subscriptionPlan;
+        
         if (newPlan !== oldPlan) {
+          console.log('👤 UpdatedCourses: User plan changed:', oldPlan, '→', newPlan);
           this.handleUserStatusChange(newPlan, oldPlan);
         }
       },
       deep: true,
-      immediate: true,
+      immediate: true
     },
-    
+
     getUser: {
       handler(newUser, oldUser) {
-        const newPlan = newUser?.subscriptionPlan || newUser?.userStatus || newUser?.plan;
-        const oldPlan = oldUser?.subscriptionPlan || oldUser?.userStatus || oldUser?.plan;
+        const newPlan = newUser?.subscriptionPlan;
+        const oldPlan = oldUser?.subscriptionPlan;
+        
         if (newPlan !== oldPlan) {
+          console.log('👤 UpdatedCourses: GetUser plan changed:', oldPlan, '→', newPlan);
           this.handleUserStatusChange(newPlan, oldPlan);
         }
       },
       deep: true,
-      immediate: true,
+      immediate: true
     },
+
+    currentUserStatus: {
+      handler(newStatus, oldStatus) {
+        if (newStatus !== oldStatus) {
+          console.log('📊 UpdatedCourses: Current user status computed changed:', oldStatus, '→', newStatus);
+          this.triggerReactivityUpdate();
+        }
+      },
+      immediate: true
+    }
   },
-  
+
   async mounted() {
+    console.log('📱 UpdatedCourses: Component mounted');
+    
     try {
-      await this.fetchCourses();
+      this.fetchCourses();
       this.setupEventListeners();
+      
+      console.log('✅ UpdatedCourses: Component mounted successfully');
+      
     } catch (error) {
       console.error('❌ UpdatedCourses: Mount error:', error);
     }
   },
-  
+
   beforeUnmount() {
+    console.log('📱 UpdatedCourses: Component unmounting');
     this.cleanup();
   },
-  
+
   methods: {
-    // ✅ IMAGE PROCESSING: Handle all image types
-    getProcessedImage(imagePath) {
-      if (!imagePath) return this.courseImages.default;
-
-      if (imagePath.startsWith('/images/course/')) {
-        return imagePath;
-      }
-      if (imagePath.startsWith('data:image/')) {
-        return imagePath;
-      }
-      if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        return imagePath;
-      }
-
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
-      if (imagePath.startsWith('/uploads/') || imagePath.startsWith('/api/')) {
-        return `${baseUrl}${imagePath}`;
-      }
-
-      return this.courseImages.default;
-    },
-
-    // ✅ LESSON IMAGES: Check if lesson has images
-    lessonHasImages(lesson) {
-      if (!lesson) return false;
-      
-      try {
-        if (!lesson.steps || !Array.isArray(lesson.steps)) return false;
-        
-        return lesson.steps.some(step => {
-          if (!step) return false;
-          
-          if (step.images && Array.isArray(step.images) && step.images.length > 0) {
-            return step.images.some(img => img && (img.url || img.base64));
-          }
-          
-          if (step.data && step.data.images && Array.isArray(step.data.images) && step.data.images.length > 0) {
-            return step.data.images.some(img => img && (img.url || img.base64));
-          }
-          
-          return false;
-        });
-      } catch (error) {
-        console.warn('⚠️ Error checking lesson images:', error);
-        return false;
-      }
-    },
-
-    // ✅ LESSON IMAGES: Count images in lesson
-    getLessonImageCount(lesson) {
-      if (!lesson) return 0;
-      
-      try {
-        if (!lesson.steps || !Array.isArray(lesson.steps)) return 0;
-        
-        let count = 0;
-        
-        lesson.steps.forEach(step => {
-          if (!step) return;
-          
-          if (step.images && Array.isArray(step.images)) {
-            count += step.images.filter(img => img && (img.url || img.base64)).length;
-          }
-          
-          if (step.data && step.data.images && Array.isArray(step.data.images)) {
-            count += step.data.images.filter(img => img && (img.url || img.base64)).length;
-          }
-        });
-        
-        return count;
-      } catch (error) {
-        console.warn('⚠️ Error counting lesson images:', error);
-        return 0;
-      }
-    },
-
-    // ✅ FETCH COURSES: Main data loading function
     async fetchCourses() {
       this.loading = true;
       this.error = null;
-      
       try {
         const filters = {
-          search: this.searchTerm || undefined,
-          category: this.categoryFilter !== 'all' ? this.categoryFilter : undefined,
-          difficulty: this.levelFilter !== 'all' ? this.levelFilter : undefined,
-          type: this.typeFilter !== 'all' ? this.typeFilter : undefined,
+          search: this.searchTerm,
+          category: this.categoryFilter,
+          difficulty: this.levelFilter,
+          type: this.typeFilter,
         };
 
-        Object.keys(filters).forEach(key => {
-          if (filters[key] === undefined) {
-            delete filters[key];
-          }
-        });
-
         const response = await getUpdatedCourses(filters);
-
-        if (response && response.success) {
-          const coursesArray = response.courses || response.data || [];
-          
-          if (Array.isArray(coursesArray)) {
-            this.courses = this.processCourses(coursesArray);
-            this.availableCategories = (response.categories || []).map(c => 
-              typeof c === 'string' ? c : c.name || c.category || 'Unknown'
-            );
-            this.availableLevels = ['Начинающий', 'Средний', 'Продвинутый'];
-          } else {
-            this.error = 'Неверный формат данных курсов';
-            this.courses = [];
-          }
+        if (response.success) {
+          this.courses = response.courses || [];
+          this.availableCategories = response.categories || [];
+          this.availableLevels = response.difficulties || [];
         } else {
-          this.error = response?.error || response?.message || 'Не удалось загрузить курсы';
+          this.error = response.error;
           this.courses = [];
         }
-        
       } catch (e) {
-        if (e.message && e.message.includes('CORS')) {
-          this.error = 'Ошибка подключения к серверу. Попробуйте позже.';
-        } else if (e.message && e.message.includes('Network Error')) {
-          this.error = 'Ошибка сети. Проверьте интернет-соединение.';
-        } else if (e.message && e.message.includes('timeout')) {
-          this.error = 'Превышено время ожидания. Попробуйте позже.';
-        } else {
-          this.error = 'Не удалось загрузить курсы. Пожалуйста, попробуйте позже.';
-        }
-        
-        this.courses = [];
+        this.error = 'Не удалось загрузить курсы. Пожалуйста, попробуйте позже.';
       } finally {
         this.loading = false;
       }
     },
 
-    // ✅ PROCESS COURSES: Main data processing function
-    processCourses(courses) {
-      if (!Array.isArray(courses)) {
-        return [];
-      }
-
-      return courses.map((course, index) => {
-        try {
-          if (!course) {
-            return null;
-          }
-
-          const processedCourse = {
-            ...course,
-            id: course._id || course.id || `course_${index}`,
-            _id: course._id || course.id || `course_${index}`,
-            title: course.title || course.name || 'Untitled Course',
-            description: course.description || course.shortDescription || 'Описание недоступно',
-            category: course.category || course.subject || 'General',
-            difficulty: course.difficulty || course.level || 'Начинающий',
-            level: course.level || course.difficulty || 'Начинающий',
-            duration: this.formatDuration(course.duration || course.estimatedTime),
-            isPremium: course.isPremium || course.premium || course.type === 'premium' || false,
-            
-            instructor: {
-              name: course.instructor?.name || course.author?.name || 'Aced Team',
-              avatar: this.getProcessedImage(course.instructor?.avatar || course.author?.avatar) || this.courseImages.default,
-              bio: course.instructor?.bio || course.author?.bio || '',
-            },
-
-            rating: course.rating || course.averageRating || 4.5,
-            studentsCount: course.studentsCount || course.enrolledCount || Math.floor(Math.random() * 1000) + 100,
-            curriculum: this.processCurriculum(course.curriculum || []),
-          };
-
-          try {
-            processedCourse.hasImages = this.courseHasImages(processedCourse);
-            processedCourse.imageCount = this.getCourseImageCount(processedCourse);
-          } catch (imageError) {
-            processedCourse.hasImages = false;
-            processedCourse.imageCount = 0;
-          }
-
-          return processedCourse;
-
-        } catch (courseError) {
-          return {
-            id: course?._id || course?.id || `course_${index}`,
-            _id: course?._id || course?.id || `course_${index}`,
-            title: course?.title || course?.name || 'Untitled Course',
-            description: course?.description || 'Описание недоступно',
-            category: course?.category || 'General',
-            difficulty: 'Начинающий',
-            level: 'Начинающий',
-            duration: '10 часов',
-            isPremium: course?.isPremium || false,
-            instructor: { name: 'Aced Team', avatar: this.courseImages.default },
-            rating: 4.5,
-            studentsCount: 100,
-            curriculum: [],
-            hasImages: false,
-            imageCount: 0
-          };
-        }
-      }).filter(course => course !== null);
-    },
-
-    // ✅ FORMAT DURATION: Consistent duration formatting
-    formatDuration(duration) {
-      if (!duration) return '10 часов';
-      if (typeof duration === 'string') return duration;
-      if (typeof duration === 'object' && duration.hours) return `${duration.hours} часов`;
-      if (typeof duration === 'number') return `${duration} часов`;
-      return '10 часов';
-    },
-
-    // ✅ PROCESS CURRICULUM: Handle lesson data
-    processCurriculum(curriculum) {
-      if (!Array.isArray(curriculum)) return [];
-
-      return curriculum.map((lesson, lessonIndex) => {
-        try {
-          if (!lesson) return null;
-
-          const processedLesson = {
-            ...lesson,
-            id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
-            _id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
-            title: lesson.title || lesson.lessonName || lesson.name || `Урок ${lessonIndex + 1}`,
-            description: lesson.description || lesson.summary || '',
-            duration: lesson.duration || lesson.estimatedTime || '30 мин',
-            order: lesson.order !== undefined ? lesson.order : lessonIndex,
-            steps: this.processSteps(lesson.steps || [], lessonIndex, lesson),
-          };
-
-          try {
-            processedLesson.hasImages = this.lessonHasImages(processedLesson);
-            processedLesson.imageCount = this.getLessonImageCount(processedLesson);
-          } catch (imageError) {
-            processedLesson.hasImages = false;
-            processedLesson.imageCount = 0;
-          }
-
-          return processedLesson;
-
-        } catch (lessonError) {
-          return {
-            id: lesson?._id || lesson?.id || `lesson_${lessonIndex}`,
-            _id: lesson?._id || lesson?.id || `lesson_${lessonIndex}`,
-            title: lesson?.title || lesson?.name || `Урок ${lessonIndex + 1}`,
-            description: lesson?.description || '',
-            duration: '30 мин',
-            order: lessonIndex,
-            steps: [],
-            hasImages: false,
-            imageCount: 0
-          };
-        }
-      }).filter(lesson => lesson !== null);
-    },
-
-    // ✅ PROCESS STEPS: Handle step data
-    processSteps(steps, lessonIndex, lesson) {
-      if (!Array.isArray(steps)) return [];
-      
-      return steps.map((step, stepIndex) => {
-        try {
-          if (!step) return null;
-
-          return {
-            ...step,
-            id: step.id || `step_${lessonIndex}_${stepIndex}`,
-            type: step.type || 'explanation',
-            title: step.title || '',
-            description: step.description || '',
-            content: step.content || '',
-            images: this.processStepImages(step.images || [], lessonIndex, stepIndex),
-            data: this.processStepData(step, lessonIndex, stepIndex),
-            lesson: lesson
-          };
-        } catch (error) {
-          return null;
-        }
-      }).filter(step => step !== null);
-    },
-
-    // ✅ PROCESS STEP DATA: Handle different step types
-    processStepData(step, lessonIndex, stepIndex) {
-      try {
-        const baseData = step.data || {};
-        
-        switch (step.type) {
-          case 'explanation':
-          case 'example':
-          case 'reading':
-            return {
-              ...baseData,
-              content: baseData.content || step.content || '',
-              images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
-            };
-          
-          case 'image':
-            return {
-              ...baseData,
-              images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
-              description: baseData.description || step.description || '',
-              caption: baseData.caption || step.caption || '',
-            };
-          
-          case 'practice':
-            return {
-              ...baseData,
-              instructions: baseData.instructions || step.instructions || step.content || '',
-              type: baseData.type || 'guided',
-              images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
-            };
-          
-          case 'quiz':
-            if (Array.isArray(baseData) && baseData.length > 0) {
-              return baseData;
-            }
-            return step.quizzes || step.questions || [];
-          
-          default:
-            return {
-              ...baseData,
-              content: baseData.content || step.content || '',
-              images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
-            };
-        }
-      } catch (error) {
-        return { content: step.content || '' };
-      }
-    },
-
-    // ✅ PROCESS STEP IMAGES: Handle image arrays
-    processStepImages(images, lessonIndex, stepIndex) {
-      if (!Array.isArray(images)) return [];
-      
-      try {
-        return images
-          .filter((img) => img && (img.url || img.base64))
-          .map((img, index) => {
-            try {
-              return {
-                id: img.id || `img_${lessonIndex}_${stepIndex}_${index}`,
-                url: this.getProcessedImage(img.url || img.base64) || this.courseImages.default,
-                caption: img.caption || '',
-                alt: img.alt || img.caption || `Изображение ${index + 1}`,
-                filename: img.filename || `image_${index}`,
-                size: img.size || 0,
-                order: img.order !== undefined ? img.order : index,
-                displayOptions: {
-                  width: img.displayOptions?.width || img.width || 'auto',
-                  height: img.displayOptions?.height || img.height || 'auto',
-                  alignment: img.displayOptions?.alignment || img.alignment || 'center',
-                  zoom: img.displayOptions?.zoom || false,
-                },
-              };
-            } catch (imgError) {
-              return null;
-            }
-          })
-          .filter(img => img !== null)
-          .sort((a, b) => (a.order || 0) - (b.order || 0));
-      } catch (error) {
-        return [];
-      }
-    },
-
-    // ✅ GET COURSE IMAGE: Select best image for course
     getCourseImage(course) {
       if (!course) return this.courseImages.default;
-      
-      try {
-        if (course.thumbnail && 
-            course.thumbnail !== '/default-course-thumbnail.jpg' && 
-            !course.thumbnail.includes('placeholder') &&
-            !course.thumbnail.includes('default')) {
-          const processedThumbnail = this.getProcessedImage(course.thumbnail);
-          if (processedThumbnail !== this.courseImages.default) {
-            return processedThumbnail;
-          }
+
+      const safeString = (value) => {
+        if (value === null || value === undefined) return '';
+        return String(value).toLowerCase().trim();
+      };
+
+      const title = safeString(course.title);
+      const category = safeString(course.category);
+      const description = safeString(course.description);
+
+      const titleKeywords = [
+        'javascript', 'python', 'react', 'vue', 'node', 'ai', 'machine learning',
+        'design', 'marketing', 'blockchain', 'crypto', 'english', 'business'
+      ];
+
+      for (const keyword of titleKeywords) {
+        if (title.includes(keyword) && this.courseImages[keyword]) {
+          return this.courseImages[keyword];
         }
-
-        const curriculumImages = this.extractCurriculumImages(course);
-        if (curriculumImages.length > 0) {
-          return curriculumImages[0].url;
-        }
-
-        const category = this.safeString(course.category);
-        if (category && this.courseImages[category]) {
-          return this.courseImages[category];
-        }
-
-        const categoryMappings = {
-          'веб-разработка': 'web-разработка',
-          'веб разработка': 'web-разработка',
-          'web development': 'web-разработка',
-          'frontend': 'frontend разработка',
-          'backend': 'backend разработка',
-          'fullstack': 'fullstack разработка',
-          'ai': 'ии и автоматизация',
-          'ml': 'машинное обучение',
-          'design': 'дизайн',
-          'marketing': 'маркетинг',
-          'mobile': 'мобильная разработка'
-        };
-
-        const mappedCategory = categoryMappings[category];
-        if (mappedCategory && this.courseImages[mappedCategory]) {
-          return this.courseImages[mappedCategory];
-        }
-
-        if (course.isPremium) {
-          return this.courseImages.premium;
-        }
-
-        return this.courseImages.default;
-        
-      } catch (error) {
-        return this.courseImages.default;
       }
-    },
 
-    // ✅ SAFE STRING: Convert to safe string
-    safeString(value) {
-      if (value === null || value === undefined) return '';
-      return String(value).toLowerCase().trim();
-    },
-
-    // ✅ EXTRACT CURRICULUM IMAGES: Get images from course content
-    extractCurriculumImages(course) {
-      const images = [];
-      
-      try {
-        if (course.curriculum && Array.isArray(course.curriculum)) {
-          course.curriculum.forEach((lesson) => {
-            if (lesson.steps && Array.isArray(lesson.steps)) {
-              lesson.steps.forEach((step) => {
-                if (step.images && Array.isArray(step.images)) {
-                  step.images.forEach((img) => {
-                    if (img && img.url && !img.url.startsWith('data:')) {
-                      images.push({
-                        url: this.getProcessedImage(img.url),
-                        caption: img.caption || ''
-                      });
-                    }
-                  });
-                }
-              });
-            }
-          });
-        }
-      } catch (error) {
-        console.warn('⚠️ Error extracting curriculum images:', error);
+      if (category && this.courseImages[category]) {
+        return this.courseImages[category];
       }
-      
-      return images;
-    },
 
-    // ✅ COURSE HAS IMAGES: Check if course contains images
-    courseHasImages(course) {
-      try {
-        if (!course.curriculum || !Array.isArray(course.curriculum)) return false;
-        
-        return course.curriculum.some((lesson) => {
-          if (!lesson.steps || !Array.isArray(lesson.steps)) return false;
-          
-          return lesson.steps.some((step) => {
-            if (!step) return false;
-            return (step.images && Array.isArray(step.images) && step.images.length > 0);
-          });
-        });
-      } catch (error) {
-        return false;
+      const categoryKeywords = Object.keys(this.courseImages);
+      for (const keyword of categoryKeywords) {
+        if (category.includes(keyword) && this.courseImages[keyword]) {
+          return this.courseImages[keyword];
+        }
       }
-    },
 
-    // ✅ GET COURSE IMAGE COUNT: Count total images in course
-    getCourseImageCount(course) {
-      try {
-        if (!course.curriculum || !Array.isArray(course.curriculum)) return 0;
-        
-        let count = 0;
-        course.curriculum.forEach((lesson) => {
-          if (lesson.steps && Array.isArray(lesson.steps)) {
-            lesson.steps.forEach((step) => {
-              if (step.images && Array.isArray(step.images)) {
-                count += step.images.length;
-              }
-            });
-          }
-        });
-        return count;
-      } catch (error) {
-        return 0;
+      const contentKeywords = [
+        'programming', 'coding', 'development', 'design', 'marketing', 
+        'business', 'ai', 'blockchain', 'language'
+      ];
+
+      for (const keyword of contentKeywords) {
+        if ((title.includes(keyword) || description.includes(keyword)) && this.courseImages[keyword]) {
+          return this.courseImages[keyword];
+        }
       }
-    },
 
-    // ✅ GET COURSE OUTCOMES: Generate learning outcomes
-    getCourseOutcomes(course) {
-      try {
-        if (course.learningOutcomes && Array.isArray(course.learningOutcomes) && course.learningOutcomes.length > 0) {
-          return course.learningOutcomes;
-        }
-
-        const outcomes = [];
-        
-        if (course.curriculum && Array.isArray(course.curriculum) && course.curriculum.length > 0) {
-          outcomes.push(`Изучите ${course.curriculum.length} практических уроков`);
-          
-          const hasImages = this.courseHasImages(course);
-          if (hasImages) {
-            outcomes.push('Работайте с визуальными материалами и примерами');
-          }
-          
-          const hasQuizzes = course.curriculum.some((lesson) =>
-            lesson.steps && lesson.steps.some((step) => step.type === 'quiz')
-          );
-          if (hasQuizzes) {
-            outcomes.push('Проверьте знания с помощью интерактивных тестов');
-          }
-          
-          const hasPractice = course.curriculum.some((lesson) =>
-            lesson.steps && lesson.steps.some((step) => step.type === 'practice')
-          );
-          if (hasPractice) {
-            outcomes.push('Применяйте знания на практических заданиях');
-          }
-        }
-
-        const categoryOutcomes = {
-          'ии и автоматизация': ['Основы искусственного интеллекта', 'Методы машинного обучения', 'Практические применения ИИ'],
-          'видеомонтаж': ['Основы видеомонтажа', 'Работа с профессиональными инструментами', 'Создание качественного видеоконтента'],
-          'графический дизайн': ['Принципы графического дизайна', 'Работа с цветом и композицией', 'Создание профессиональных макетов'],
-          'программирование': ['Основы программирования', 'Алгоритмы и структуры данных', 'Практическое решение задач'],
-          'маркетинг': ['Основы маркетинга', 'Цифровые инструменты продвижения', 'Аналитика и метрики'],
-        };
-
-        const categorySpecific = categoryOutcomes[this.safeString(course.category)];
-        if (categorySpecific) {
-          outcomes.push(...categorySpecific);
-        }
-
-        return outcomes.length > 0 ? outcomes : [
-          'Получите практические навыки',
-          'Изучите современные методы',
-          'Применяйте знания на практике'
-        ];
-      } catch (error) {
-        return ['Получите практические навыки', 'Изучите современные методы', 'Применяйте знания на практике'];
+      if (course.isPremium) {
+        return this.courseImages.course;
       }
+
+      return this.courseImages.default;
     },
 
-    // ✅ GET COURSE MODULES: Generate module list
-    getCourseModules(course) {
-      try {
-        if (!course.curriculum || !Array.isArray(course.curriculum) || course.curriculum.length === 0) {
-          return [
-            { title: 'Введение в курс', duration: '30 мин', hasImages: false },
-            { title: 'Основные концепции', duration: '45 мин', hasImages: false },
-            { title: 'Практические примеры', duration: '60 мин', hasImages: false },
-          ];
-        }
-
-        return course.curriculum.map((lesson) => ({
-          title: lesson.title || lesson.name || 'Урок',
-          duration: lesson.duration || '30 мин',
-          hasImages: this.lessonHasImages(lesson),
-          imageCount: this.getLessonImageCount(lesson),
-        }));
-      } catch (error) {
-        return [
-          { title: 'Введение в курс', duration: '30 мин', hasImages: false },
-          { title: 'Основные концепции', duration: '45 мин', hasImages: false },
-          { title: 'Практические примеры', duration: '60 мин', hasImages: false },
-        ];
-      }
-    },
-
-    // ✅ FORMAT NUMBER: Display numbers nicely
-    formatNumber(num) {
-      try {
-        if (!num || isNaN(num)) return '0';
-        
-        const number = parseInt(num);
-        if (number >= 1000000) {
-          return (number / 1000000).toFixed(1) + 'M';
-        }
-        if (number >= 1000) {
-          return (number / 1000).toFixed(1) + 'K';
-        }
-        return number.toString();
-      } catch (error) {
-        return '0';
-      }
-    },
-
-    // ✅ HANDLE IMAGE ERROR: Fallback for broken images
     handleImageError(event, course) {
-      try {
-        if (event && event.target) {
-          event.target.src = this.courseImages.default;
-          event.target.onerror = null;
-        }
-      } catch (error) {}
+      console.warn('Image failed to load for course:', course?.title || 'Unknown');
+      event.target.src = this.courseImages.default;
+      event.target.onerror = null;
     },
 
-    // ✅ DEBOUNCE SEARCH: Optimize search performance
     debounceSearch() {
-      if (this.debounceTimeout) {
-        clearTimeout(this.debounceTimeout);
-      }
-      this.debounceTimeout = setTimeout(() => {
-        this.fetchCourses();
-      }, 300);
+      clearTimeout(this.debounceTimeout);
+      this.debounceTimeout = setTimeout(this.fetchCourses, 500);
     },
 
-    // ✅ APPLY FILTERS: Trigger course filtering
     applyFilters() {
       this.fetchCourses();
     },
@@ -1359,225 +601,237 @@ export default {
       this.fetchCourses();
     },
 
-    // ✅ OPEN MODAL: Show course details modal
     async openModal(course) {
-      if (!course) return;
-
-      this.selectedCourse = course;
+      this.selectedCourse = null;
       this.isModalOpen = true;
       this.modalLoading = true;
-
       try {
-        const response = await getCourseById(course._id || course.id);
-        
-        if (response.success && response.data) {
-          const detailedCourse = response.data.course || response.data;
-          
-          this.selectedCourse = {
-            ...course,
-            ...detailedCourse,
-            id: detailedCourse._id || detailedCourse.id || course.id,
-            _id: detailedCourse._id || detailedCourse.id || course._id,
-            curriculum: this.processCurriculum(detailedCourse.curriculum || course.curriculum || [])
-          };
+        const response = await getCourseById(course._id);
+        if (response.success) {
+          this.selectedCourse = response.data;
+        } else {
+          console.error('Failed to fetch detailed course info:', response.error);
+          this.selectedCourse = course;
         }
       } catch (e) {
-        console.error('❌ Error while opening course modal:', e);
+        console.error('API error while fetching course details:', e);
+        this.selectedCourse = course;
       } finally {
         this.modalLoading = false;
       }
     },
 
-    // ✅ CLOSE MODAL: Hide course details modal
+    startCourse(course) {
+      console.log('🚀 Starting course:', course.title);
+      console.log('Course isPremium:', course.isPremium);
+      console.log('User status:', this.currentUserStatus);
+      console.log('User isPremium:', this.isPremiumUser);
+      
+      if (course.isPremium && !this.isPremiumUser) {
+        console.log('❌ Course is premium and user lacks access');
+        
+        if (this.$toast) {
+          this.$toast.error(`Этот курс доступен только по подписке. Ваш статус: ${this.currentUserStatus}`, { 
+            duration: 4000 
+          });
+        } else {
+          alert(`Этот курс доступен только по подписке Start/Pro. Ваш текущий статус: ${this.currentUserStatus}`);
+        }
+        return;
+      }
+      
+      console.log('✅ Access granted - starting course');
+      this.selectedCourse = course;
+      this.isModalOpen = false;
+      this.showStudyInterface = true;
+    },
+
+    goBackToCourses() {
+      this.showStudyInterface = false;
+      this.selectedCourse = null;
+    },
+
     closeModal() {
       this.isModalOpen = false;
       this.selectedCourse = null;
     },
 
-    // ✅ START COURSE: Navigate to course player
-    startCourse(course) {
-      if (!course) return;
-
-      if (course.isPremium && !this.isPremiumUser) {
-        const message = `Этот курс доступен только по подписке Start/Pro. Ваш текущий статус: ${this.currentUserStatus}`;
-        if (this.$toast) {
-          this.$toast.error(message, { duration: 4000 });
-        } else if (this.$message) {
-          this.$message.error(message);
-        } else {
-          alert(message);
-        }
-        return;
-      }
-
-      this.closeModal();
-
-      const courseId = course.id || course._id;
-      if (courseId) {
-        this.$router.push({ 
-          name: 'LessonPlayer', 
-          params: { courseId: courseId } 
-        });
-      } else {
-        const errorMessage = 'Не удалось открыть курс. Попробуйте позже.';
-        if (this.$toast) {
-          this.$toast.error(errorMessage);
-        } else {
-          alert(errorMessage);
-        }
-      }
-    },
-
-    // ✅ USER STATUS: Handle subscription changes
     handleUserStatusChange(newStatus, oldStatus) {
-      try {
-        if (!newStatus || newStatus === oldStatus) return;
-        
-        localStorage.setItem('userStatus', newStatus);
-        localStorage.setItem('plan', newStatus);
-        localStorage.setItem('subscriptionPlan', newStatus);
-        
-        this.triggerReactivityUpdate();
-        
-        if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
-          const planLabel = newStatus === 'pro' ? 'Pro' : newStatus === 'start' ? 'Start' : 'Premium';
-          const message = `🎉 ${planLabel} подписка активирована!`;
-          
-          if (this.$toast) {
-            this.$toast.success(message, { duration: 5000 });
-          } else if (this.$message) {
-            this.$message.success(message);
-          }
+      if (!newStatus || newStatus === oldStatus) return;
+
+      console.log(`👤 UpdatedCourses: Handling status change ${oldStatus} → ${newStatus}`);
+
+      localStorage.setItem('userStatus', newStatus);
+      localStorage.setItem('plan', newStatus);
+
+      this.triggerReactivityUpdate();
+
+      if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
+        const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
+        if (this.$toast) {
+          this.$toast.success(`🎉 ${planLabel} подписка активирована!`, { duration: 5000 });
         }
-      } catch (error) {
-        console.error('❌ Error handling user status change:', error);
       }
+
+      console.log(`✅ UpdatedCourses: Status change handled: ${oldStatus} → ${newStatus}`);
     },
 
-    // ✅ REACTIVITY: Force component updates
     triggerReactivityUpdate() {
-      try {
-        this.componentKey++;
+      this.componentKey++;
+      this.forceUpdateCounter++;
+      this.lastUpdateTime = Date.now();
+
+      this.$forceUpdate();
+
+      this.$nextTick(() => {
         this.$forceUpdate();
-      } catch (error) {
-        console.error('❌ Error triggering reactivity update:', error);
-      }
+      });
+
+      console.log('🔄 UpdatedCourses: Reactivity update triggered:', {
+        componentKey: this.componentKey,
+        userStatus: this.currentUserStatus,
+        timestamp: this.lastUpdateTime
+      });
     },
 
-    // ✅ EVENT LISTENERS: Setup global event handling
     setupEventListeners() {
-      try {
-        if (typeof window !== 'undefined') {
-          this.handleSubscriptionChange = (event) => {
-            const { plan, oldPlan } = event.detail;
-            this.handleUserStatusChange(plan, oldPlan);
-          };
-          
-          this.handleStorageChange = (event) => {
-            if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
-              this.handleUserStatusChange(event.newValue, event.oldValue);
-            }
-          };
-          
-          window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
-          window.addEventListener('storage', this.handleStorageChange);
-        }
+      console.log('🔧 UpdatedCourses: Setting up event listeners');
+
+      if (typeof window !== 'undefined') {
+        this.handleSubscriptionChange = (event) => {
+          console.log('📡 UpdatedCourses: Subscription change received:', event.detail);
+          const { plan, oldPlan } = event.detail;
+          this.handleUserStatusChange(plan, oldPlan);
+        };
         
-        if (typeof window !== 'undefined' && window.eventBus) {
-          this.handleUserStatusEvent = (data) => {
-            this.handleUserStatusChange(data.newStatus, data.oldStatus);
-          };
-          
-          this.handlePromocodeEvent = (data) => {
-            this.handleUserStatusChange(data.newStatus, data.oldStatus);
-          };
-          
-          this.handleForceUpdateEvent = () => {
+        window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
+
+        this.handleStorageChange = (event) => {
+          if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
+            console.log('📡 UpdatedCourses: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
+            this.handleUserStatusChange(event.newValue, event.oldValue);
+          }
+        };
+        
+        window.addEventListener('storage', this.handleStorageChange);
+      }
+
+      if (typeof window !== 'undefined' && window.eventBus) {
+        this.handleUserStatusEvent = (data) => {
+          console.log('📡 UpdatedCourses: User status event received:', data);
+          this.handleUserStatusChange(data.newStatus, data.oldStatus);
+        };
+
+        this.handlePromocodeEvent = (data) => {
+          console.log('📡 UpdatedCourses: Promocode applied event:', data);
+          this.handleUserStatusChange(data.newStatus, data.oldStatus);
+        };
+
+        this.handleForceUpdateEvent = () => {
+          console.log('📡 UpdatedCourses: Force update event received');
+          this.triggerReactivityUpdate();
+        };
+
+        window.eventBus.on('userStatusChanged', this.handleUserStatusEvent);
+        window.eventBus.on('promocodeApplied', this.handlePromocodeEvent);
+        window.eventBus.on('forceUpdate', this.handleForceUpdateEvent);
+        window.eventBus.on('globalForceUpdate', this.handleForceUpdateEvent);
+        window.eventBus.on('subscriptionUpdated', this.handleUserStatusEvent);
+        window.eventBus.on('paymentCompleted', this.handleUserStatusEvent);
+
+        console.log('✅ UpdatedCourses: Event bus listeners registered');
+      }
+
+      if (this.$store) {
+        this.storeUnsubscribe = this.$store.subscribe((mutation) => {
+          if (this.isUserRelatedMutation(mutation)) {
+            console.log('📊 UpdatedCourses: Store mutation detected:', mutation.type);
             this.triggerReactivityUpdate();
-          };
-          
-          window.eventBus.on('userStatusChanged', this.handleUserStatusEvent);
-          window.eventBus.on('promocodeApplied', this.handlePromocodeEvent);
-          window.eventBus.on('forceUpdate', this.handleForceUpdateEvent);
-          window.eventBus.on('globalForceUpdate', this.handleForceUpdateEvent);
-          window.eventBus.on('subscriptionUpdated', this.handleUserStatusEvent);
-          window.eventBus.on('paymentCompleted', this.handleUserStatusEvent);
-        }
-        
-        if (this.$store) {
-          this.storeUnsubscribe = this.$store.subscribe((mutation) => {
-            if (this.isUserRelatedMutation(mutation)) {
-              this.triggerReactivityUpdate();
-            }
-          });
-        }
-      } catch (error) {
-        console.error('❌ Error setting up event listeners:', error);
+          }
+        });
       }
+
+      console.log('✅ UpdatedCourses: Event listeners setup complete');
     },
 
-    // ✅ MUTATION CHECK: Identify user-related mutations
     isUserRelatedMutation(mutation) {
-      try {
-        const userMutations = [
-          'setUser', 'SET_USER', 'updateUser', 'UPDATE_USER',
-          'user/SET_USER_STATUS', 'user/UPDATE_SUBSCRIPTION', 'user/FORCE_UPDATE',
-        ];
-        
-        return (
-          userMutations.some((type) => mutation.type.includes(type)) ||
-          mutation.type.includes('user/') ||
-          mutation.type.toLowerCase().includes('status') ||
-          mutation.type.toLowerCase().includes('subscription')
-        );
-      } catch (error) {
-        return false;
-      }
+      const userMutations = [
+        'setUser',
+        'SET_USER',
+        'updateUser',
+        'UPDATE_USER',
+        'user/SET_USER_STATUS',
+        'user/UPDATE_SUBSCRIPTION',
+        'user/FORCE_UPDATE'
+      ];
+      
+      return userMutations.some(type => mutation.type.includes(type)) ||
+             mutation.type.includes('user/') ||
+             mutation.type.toLowerCase().includes('status') ||
+             mutation.type.toLowerCase().includes('subscription');
     },
 
-    // ✅ CLEANUP: Remove all event listeners
     cleanup() {
-      try {
-        if (this.debounceTimeout) {
-          clearTimeout(this.debounceTimeout);
-          this.debounceTimeout = null;
+      console.log('🧹 UpdatedCourses: Performing cleanup...');
+
+      if (typeof window !== 'undefined') {
+        if (this.handleSubscriptionChange) {
+          window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
         }
-        
-        if (typeof window !== 'undefined') {
-          if (this.handleSubscriptionChange) {
-            window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
-          }
-          if (this.handleStorageChange) {
-            window.removeEventListener('storage', this.handleStorageChange);
-          }
+        if (this.handleStorageChange) {
+          window.removeEventListener('storage', this.handleStorageChange);
         }
-        
-        if (typeof window !== 'undefined' && window.eventBus) {
-          if (this.handleUserStatusEvent) {
-            window.eventBus.off('userStatusChanged', this.handleUserStatusEvent);
-            window.eventBus.off('subscriptionUpdated', this.handleUserStatusEvent);
-            window.eventBus.off('paymentCompleted', this.handleUserStatusEvent);
-          }
-          if (this.handlePromocodeEvent) {
-            window.eventBus.off('promocodeApplied', this.handlePromocodeEvent);
-          }
-          if (this.handleForceUpdateEvent) {
-            window.eventBus.off('forceUpdate', this.handleForceUpdateEvent);
-            window.eventBus.off('globalForceUpdate', this.handleForceUpdateEvent);
-          }
-        }
-        
-        if (this.storeUnsubscribe) {
-          this.storeUnsubscribe();
-          this.storeUnsubscribe = null;
-        }
-      } catch (error) {
-        console.error('❌ Error during cleanup:', error);
       }
+
+      if (typeof window !== 'undefined' && window.eventBus) {
+        if (this.handleUserStatusEvent) {
+          window.eventBus.off('userStatusChanged', this.handleUserStatusEvent);
+          window.eventBus.off('subscriptionUpdated', this.handleUserStatusEvent);
+          window.eventBus.off('paymentCompleted', this.handleUserStatusEvent);
+        }
+        if (this.handlePromocodeEvent) {
+          window.eventBus.off('promocodeApplied', this.handlePromocodeEvent);
+        }
+        if (this.handleForceUpdateEvent) {
+          window.eventBus.off('forceUpdate', this.handleForceUpdateEvent);
+          window.eventBus.off('globalForceUpdate', this.handleForceUpdateEvent);
+        }
+      }
+
+      if (this.storeUnsubscribe) {
+        this.storeUnsubscribe();
+        this.storeUnsubscribe = null;
+      }
+
+      console.log('✅ UpdatedCourses: Cleanup completed');
     },
+
+    addCourseImage(keyword, imageUrl) {
+      this.courseImages[keyword.toLowerCase()] = imageUrl;
+      console.log(`Added new course image for keyword: ${keyword}`);
+    },
+
+    getAvailableImageKeywords() {
+      return Object.keys(this.courseImages).sort();
+    },
+
+    findBestImageMatch(course) {
+      const image = this.getCourseImage(course);
+      const keyword = Object.keys(this.courseImages).find(key => 
+        this.courseImages[key] === image
+      );
+      
+      return {
+        imageUrl: image,
+        matchedKeyword: keyword,
+        courseTitle: course.title,
+        courseCategory: course.category
+      };
+    }
   },
 };
 </script>
+
 <style scoped>
 /* CSS Variables */
 :root {
@@ -1721,7 +975,7 @@ export default {
   background-color: var(--color-card);
   border-radius: 1rem;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   padding: 1.5rem;
   margin-bottom: 2rem;
   display: flex;
@@ -1760,9 +1014,8 @@ export default {
   height: 2.5rem;
   padding: 0.5rem 0.75rem 0.5rem 2.5rem;
   border-radius: 0.375rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   background-color: var(--color-input-background);
-  color: var(--color-foreground);
   font-size: 0.875rem;
   outline: none;
   transition: border-color 0.2s;
@@ -1782,9 +1035,8 @@ export default {
   height: 2.5rem;
   padding: 0.5rem 2rem 0.5rem 0.75rem;
   border-radius: 0.375rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   background-color: var(--color-input-background);
-  color: var(--color-foreground);
   font-size: 0.875rem;
   outline: none;
   -webkit-appearance: none;
@@ -1816,7 +1068,7 @@ export default {
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   background-color: var(--color-background);
   color: var(--color-foreground);
   transition: all 0.2s ease-in-out;
@@ -1827,7 +1079,7 @@ export default {
 }
 .button-filter.active {
   background-color: var(--color-brand);
-  color: var(--color-brand-foreground);
+  color: #fff;
   border-color: var(--color-brand);
 }
 
@@ -1890,7 +1142,7 @@ export default {
   background-color: var(--color-card);
   border-radius: 12px;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   overflow: hidden;
   display: flex;
@@ -2111,15 +1363,11 @@ export default {
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* Modal */
+/* MODAL STYLES */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -2137,12 +1385,8 @@ export default {
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal-container {
@@ -2447,77 +1691,9 @@ export default {
   min-width: 20px;
 }
 
-.module-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 .module-text {
-  color: var(--color-foreground);
-  font-weight: 500;
-}
-
-.module-duration {
   color: var(--color-muted-foreground);
-  font-size: 12px;
-}
-
-/* Module badge for lessons with images */
-.module-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 6px;
-  border-radius: 8px;
-  background: rgba(139, 127, 191, 0.1);
-  color: var(--color-brand);
-  font-size: 10px;
-  font-weight: 500;
-  width: fit-content;
-}
-
-/* Course statistics section */
-.modal-stats {
-  padding: 20px;
-  background: var(--color-muted);
-  border-radius: 12px;
-  margin-top: -16px;
-}
-
-.modal-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 16px;
-}
-
-.modal-stat-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px;
-  background: var(--color-background);
-  border-radius: 8px;
-  border: 1px solid var(--color-border);
-}
-
-.modal-stat-item svg {
-  color: var(--color-brand);
-  flex-shrink: 0;
-}
-
-.stat-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-foreground);
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: var(--color-muted-foreground);
-  line-height: 1;
+  flex: 1;
 }
 
 .modal-actions {
@@ -2592,12 +1768,7 @@ export default {
 
   .modal-details-grid {
     grid-template-columns: 1fr;
-    gap: 24px;
-  }
-
-  .modal-stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 12px;
+    gap: 20px;
   }
 }
 
@@ -2622,353 +1793,6 @@ export default {
   .courses-grid {
     grid-template-columns: 1fr;
     gap: 16px;
-  }
-
-  .modal-stats {
-    padding: 16px;
-  }
-
-  .modal-stats-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  .modal-stat-item {
-    padding: 8px;
-  }
-
-  .stat-value {
-    font-size: 16px;
-  }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .courses-page {
-    background-color: #111827;
-    color: #f9fafb;
-  }
-
-  .header {
-    background-image: linear-gradient(to right, #111827, #1f2937, #111827);
-  }
-
-  .header-badge {
-    color: var(--color-brand-light);
-  }
-
-  .header-title {
-    background-image: linear-gradient(to right, #f9fafb, #e5e7eb, #9ca3af);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  
-  .header-subtitle {
-    color: #d1d5db;
-  }
-
-  .header-description {
-    color: #9ca3af;
-  }
-
-  .filter-bar {
-    background-color: #1f2937;
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: none;
-  }
-
-  .input-search {
-    background-color: #1f2937;
-    border-color: rgba(255, 255, 255, 0.1);
-    color: #f9fafb;
-  }
-
-  .input-search:focus {
-    border-color: rgba(167, 139, 250, 0.5);
-    box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
-  }
-
-  .select-field {
-    background-color: #1f2937;
-    border-color: rgba(255, 255, 255, 0.1);
-    color: #f9fafb;
-  }
-
-  .button-filter {
-    background-color: #1f2937;
-    border-color: rgba(255, 255, 255, 0.1);
-    color: #f9fafb;
-  }
-  
-  .button-filter:hover {
-    background-color: #374151;
-    color: #f9fafb;
-  }
-  
-  .button-filter.active {
-    background-color: var(--brand-purple);
-    color: var(--color-brand-foreground);
-    border-color: var(--brand-purple);
-  }
-
-  .results-count {
-    color: #9ca3af;
-  }
-
-  .results-updated {
-    border-color: rgba(167, 139, 250, 0.3);
-    color: var(--brand-purple);
-  }
-  
-  .course-card {
-    background-color: #1f2937;
-    border-color: rgba(255, 255, 255, 0.1);
-    box-shadow: none;
-  }
-  
-  .course-card:hover {
-    box-shadow: 0 8px 25px -3px rgba(255, 255, 255, 0.05),
-      0 4px 6px -4px rgba(255, 255, 255, 0.05);
-    border-color: rgba(167, 139, 250, 0.3);
-  }
-
-  .badge-premium {
-    background: linear-gradient(135deg, var(--brand-purple), var(--brand-purple-light));
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  }
-
-  .badge-free {
-    background-color: var(--color-green-800);
-    color: var(--color-green-100);
-  }
-
-  .course-card-content {
-    color: #f9fafb;
-  }
-
-  .course-card-category {
-    border-color: rgba(167, 139, 250, 0.3);
-    color: var(--brand-purple);
-  }
-
-  .course-card-title {
-    color: #f9fafb;
-  }
-
-  .course-card:hover .course-card-title {
-    color: var(--brand-purple-light);
-  }
-
-  .course-card-description {
-    color: #9ca3af;
-  }
-
-  .course-card-stats {
-    color: #9ca3af;
-  }
-  
-  .course-card-level {
-    border-color: rgba(167, 139, 250, 0.2);
-    color: var(--brand-purple);
-  }
-  
-  .course-card-provider {
-    border-top-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .course-card-provider p:first-child {
-    color: #9ca3af;
-  }
-
-  .course-card-provider p:last-child {
-    color: var(--brand-purple);
-  }
-
-  .empty-state-icon-wrapper {
-    background-color: #374151;
-  }
-
-  .empty-state-icon {
-    color: #9ca3af;
-  }
-
-  .empty-state-title {
-    color: #f9fafb;
-  }
-  
-  .empty-state-description {
-    color: #9ca3af;
-  }
-
-  .button-reset-filters {
-    background-color: #1f2937;
-    color: var(--brand-purple);
-    border-color: rgba(167, 139, 250, 0.3);
-  }
-  
-  .button-reset-filters:hover {
-    background-color: rgba(167, 139, 250, 0.1);
-  }
-
-  .spinner {
-    border-color: #374151;
-    border-top-color: var(--brand-purple);
-  }
-  
-  .modal-container {
-    background-color: #1f2937;
-  }
-  
-  .modal-close {
-    background-color: rgba(55, 65, 81, 0.9);
-    color: #e5e7eb;
-  }
-
-  .modal-close:hover {
-    background-color: #374151;
-  }
-
-  .modal-loading-state p {
-    color: #9ca3af;
-  }
-  
-  .modal-badge-premium {
-    background: linear-gradient(135deg, var(--brand-purple), var(--brand-purple-light));
-    box-shadow: 0 3px 12px rgba(167, 139, 250, 0.3);
-  }
-
-  .modal-badge-free {
-    background: linear-gradient(135deg, var(--color-green-800), #16a34a);
-    box-shadow: 0 3px 12px rgba(34, 197, 94, 0.3);
-  }
-
-  .modal-duration {
-    background: rgba(0, 0, 0, 0.6);
-  }
-  
-  .modal-provider span:last-child {
-    color: var(--brand-purple);
-  }
-  
-  .modal-body {
-    color: #f9fafb;
-  }
-
-  .modal-tags {
-    color: #f9fafb;
-  }
-  
-  .modal-tag-category {
-    background: rgba(167, 139, 250, 0.1);
-    color: var(--brand-purple);
-    border-color: rgba(167, 139, 250, 0.3);
-  }
-  
-  .modal-tag-level {
-    background: rgba(167, 139, 250, 0.05);
-    color: var(--brand-purple);
-    border-color: rgba(167, 139, 250, 0.2);
-  }
-  
-  .modal-title {
-    color: #f9fafb;
-  }
-  
-  .modal-description {
-    color: #9ca3af;
-  }
-  
-  .modal-divider {
-    background: rgba(255, 255, 255, 0.1);
-  }
-  
-  .modal-section-title {
-    color: #f9fafb;
-  }
-  
-  .modal-skill-item {
-    color: #e5e7eb;
-  }
-  
-  .skill-check-icon {
-    color: var(--color-success);
-  }
-  
-  .modal-modules-list {
-    color: #f9fafb;
-  }
-  
-  .modal-module-item {
-    color: #e5e7eb;
-  }
-  
-  .module-number {
-    color: var(--brand-purple);
-  }
-  
-  .module-content {
-    color: #f9fafb;
-  }
-  
-  .module-text {
-    color: #e5e7eb;
-  }
-  
-  .module-duration {
-    color: #9ca3af;
-  }
-  
-  .module-badge {
-    background: rgba(167, 139, 250, 0.1);
-    color: var(--brand-purple);
-  }
-  
-  .modal-stats {
-    background: #374151;
-  }
-  
-  .modal-stat-item {
-    background: #1f2937;
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .modal-stat-item svg {
-    color: var(--brand-purple);
-  }
-  
-  .stat-value {
-    color: #f9fafb;
-  }
-  
-  .stat-label {
-    color: #9ca3af;
-  }
-  
-  .modal-actions {
-    border-top-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .modal-action-button {
-    background: linear-gradient(135deg, var(--brand-purple), var(--brand-purple-light));
-    box-shadow: 0 3px 12px rgba(167, 139, 250, 0.3);
-  }
-  
-  .modal-action-button:hover {
-    box-shadow: 0 6px 20px rgba(167, 139, 250, 0.4);
-  }
-  
-  .modal-action-button.premium {
-    background: linear-gradient(135deg, #f97316, #f59e0b);
-    box-shadow: 0 3px 12px rgba(245, 158, 11, 0.3);
-  }
-  
-  .modal-action-button.premium:hover {
-    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
-  }
-  
-  .modal-action-description {
-    color: #9ca3af;
   }
 }
 </style>
