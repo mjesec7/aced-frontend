@@ -154,7 +154,7 @@
 </template>
 
 <script>
-// ✅ REAL API IMPORTS - Import actual functions from your API file
+// ✅ MAIN FRONTEND API IMPORTS - Uses your backend endpoints
 import { getCourseById, getCourseContent } from '@/api.js';
 
 export default {
@@ -1131,7 +1131,6 @@ export default {
   }
 }
 </script>
-
 <style scoped>
 /* Modern CSS Variables */
 :root {

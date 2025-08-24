@@ -482,7 +482,7 @@ export const getUpdatedCourses = async (filters = {}) => {
           avatar: processImageUrl(course.instructor?.avatar)
         },
         // Process curriculum with images
-        curriculum: processCurriculum(course.curriculum || [])
+        curriculum: course.curriculum || []
       }));
 
       return {
