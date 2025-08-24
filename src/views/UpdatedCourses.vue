@@ -2592,7 +2592,7 @@ export default {
 
   .modal-details-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 24px;
   }
 
   .modal-stats-grid {
@@ -2639,6 +2639,336 @@ export default {
 
   .stat-value {
     font-size: 16px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .courses-page {
+    background-color: #111827;
+    color: #f9fafb;
+  }
+
+  .header {
+    background-image: linear-gradient(to right, #111827, #1f2937, #111827);
+  }
+
+  .header-badge {
+    color: var(--color-brand-light);
+  }
+
+  .header-title {
+    background-image: linear-gradient(to right, #f9fafb, #e5e7eb, #9ca3af);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  
+  .header-subtitle {
+    color: #d1d5db;
+  }
+
+  .header-description {
+    color: #9ca3af;
+  }
+
+  .filter-bar {
+    background-color: #1f2937;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+  }
+
+  .input-search {
+    background-color: #1f2937;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f9fafb;
+  }
+
+  .input-search:focus {
+    border-color: rgba(167, 139, 250, 0.5);
+    box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
+  }
+
+  .select-field {
+    background-color: #1f2937;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f9fafb;
+  }
+
+  .button-filter {
+    background-color: #1f2937;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f9fafb;
+  }
+  
+  .button-filter:hover {
+    background-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .button-filter.active {
+    background-color: var(--brand-purple);
+    color: var(--color-brand-foreground);
+    border-color: var(--brand-purple);
+  }
+
+  .results-count {
+    color: #9ca3af;
+  }
+
+  .results-updated {
+    border-color: rgba(167, 139, 250, 0.3);
+    color: var(--brand-purple);
+  }
+  
+  .course-card {
+    background-color: #1f2937;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+  }
+  
+  .course-card:hover {
+    box-shadow: 0 8px 25px -3px rgba(255, 255, 255, 0.05),
+      0 4px 6px -4px rgba(255, 255, 255, 0.05);
+    border-color: rgba(167, 139, 250, 0.3);
+  }
+
+  .badge-premium {
+    background: linear-gradient(135deg, var(--brand-purple), var(--brand-purple-light));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .badge-free {
+    background-color: var(--color-green-800);
+    color: var(--color-green-100);
+  }
+
+  .course-card-content {
+    color: #f9fafb;
+  }
+
+  .course-card-category {
+    border-color: rgba(167, 139, 250, 0.3);
+    color: var(--brand-purple);
+  }
+
+  .course-card-title {
+    color: #f9fafb;
+  }
+
+  .course-card:hover .course-card-title {
+    color: var(--brand-purple-light);
+  }
+
+  .course-card-description {
+    color: #9ca3af;
+  }
+
+  .course-card-stats {
+    color: #9ca3af;
+  }
+  
+  .course-card-level {
+    border-color: rgba(167, 139, 250, 0.2);
+    color: var(--brand-purple);
+  }
+  
+  .course-card-provider {
+    border-top-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .course-card-provider p:first-child {
+    color: #9ca3af;
+  }
+
+  .course-card-provider p:last-child {
+    color: var(--brand-purple);
+  }
+
+  .empty-state-icon-wrapper {
+    background-color: #374151;
+  }
+
+  .empty-state-icon {
+    color: #9ca3af;
+  }
+
+  .empty-state-title {
+    color: #f9fafb;
+  }
+  
+  .empty-state-description {
+    color: #9ca3af;
+  }
+
+  .button-reset-filters {
+    background-color: #1f2937;
+    color: var(--brand-purple);
+    border-color: rgba(167, 139, 250, 0.3);
+  }
+  
+  .button-reset-filters:hover {
+    background-color: rgba(167, 139, 250, 0.1);
+  }
+
+  .spinner {
+    border-color: #374151;
+    border-top-color: var(--brand-purple);
+  }
+  
+  .modal-container {
+    background-color: #1f2937;
+  }
+  
+  .modal-close {
+    background-color: rgba(55, 65, 81, 0.9);
+    color: #e5e7eb;
+  }
+
+  .modal-close:hover {
+    background-color: #374151;
+  }
+
+  .modal-loading-state p {
+    color: #9ca3af;
+  }
+  
+  .modal-badge-premium {
+    background: linear-gradient(135deg, var(--brand-purple), var(--brand-purple-light));
+    box-shadow: 0 3px 12px rgba(167, 139, 250, 0.3);
+  }
+
+  .modal-badge-free {
+    background: linear-gradient(135deg, var(--color-green-800), #16a34a);
+    box-shadow: 0 3px 12px rgba(34, 197, 94, 0.3);
+  }
+
+  .modal-duration {
+    background: rgba(0, 0, 0, 0.6);
+  }
+  
+  .modal-provider span:last-child {
+    color: var(--brand-purple);
+  }
+  
+  .modal-body {
+    color: #f9fafb;
+  }
+
+  .modal-tags {
+    color: #f9fafb;
+  }
+  
+  .modal-tag-category {
+    background: rgba(167, 139, 250, 0.1);
+    color: var(--brand-purple);
+    border-color: rgba(167, 139, 250, 0.3);
+  }
+  
+  .modal-tag-level {
+    background: rgba(167, 139, 250, 0.05);
+    color: var(--brand-purple);
+    border-color: rgba(167, 139, 250, 0.2);
+  }
+  
+  .modal-title {
+    color: #f9fafb;
+  }
+  
+  .modal-description {
+    color: #9ca3af;
+  }
+  
+  .modal-divider {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .modal-section-title {
+    color: #f9fafb;
+  }
+  
+  .modal-skill-item {
+    color: #e5e7eb;
+  }
+  
+  .skill-check-icon {
+    color: var(--color-success);
+  }
+  
+  .modal-modules-list {
+    color: #f9fafb;
+  }
+  
+  .modal-module-item {
+    color: #e5e7eb;
+  }
+  
+  .module-number {
+    color: var(--brand-purple);
+  }
+  
+  .module-content {
+    color: #f9fafb;
+  }
+  
+  .module-text {
+    color: #e5e7eb;
+  }
+  
+  .module-duration {
+    color: #9ca3af;
+  }
+  
+  .module-badge {
+    background: rgba(167, 139, 250, 0.1);
+    color: var(--brand-purple);
+  }
+  
+  .modal-stats {
+    background: #374151;
+  }
+  
+  .modal-stat-item {
+    background: #1f2937;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .modal-stat-item svg {
+    color: var(--brand-purple);
+  }
+  
+  .stat-value {
+    color: #f9fafb;
+  }
+  
+  .stat-label {
+    color: #9ca3af;
+  }
+  
+  .modal-actions {
+    border-top-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .modal-action-button {
+    background: linear-gradient(135deg, var(--brand-purple), var(--brand-purple-light));
+    box-shadow: 0 3px 12px rgba(167, 139, 250, 0.3);
+  }
+  
+  .modal-action-button:hover {
+    box-shadow: 0 6px 20px rgba(167, 139, 250, 0.4);
+  }
+  
+  .modal-action-button.premium {
+    background: linear-gradient(135deg, #f97316, #f59e0b);
+    box-shadow: 0 3px 12px rgba(245, 158, 11, 0.3);
+  }
+  
+  .modal-action-button.premium:hover {
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+  }
+  
+  .modal-action-description {
+    color: #9ca3af;
   }
 }
 </style>
