@@ -1,7 +1,6 @@
 <template>
   <div class="lesson-player-overlay" @click="handleOverlayClick">
     <div class="lesson-player" @click.stop>
-      <!-- Header -->
       <header class="player-header">
         <button 
           class="close-btn" 
@@ -17,8 +16,8 @@
 
         <div class="header-content">
           <div class="course-info">
-            <span class="course-name">{{ course.title }}</span>
-            <h1 class="lesson-title">{{ lessonTitle }}</h1>
+            <span class="course-name">{{ courseTitle }}</span>
+            <h1 class="lesson-title">{{ currentLessonTitle }}</h1>
           </div>
 
           <div class="progress-section">
@@ -29,18 +28,32 @@
               ></div>
             </div>
             <span class="progress-text">
-              Урок {{ lessonIndex + 1 }} из {{ totalLessons }}
+              Урок {{ currentLessonIndex + 1 }} из {{ totalLessons }}
             </span>
           </div>
         </div>
       </header>
 
-      <!-- Main Content -->
       <main class="player-content">
-        <div v-if="hasSteps" class="lesson-content">
+        <div v-if="loading" class="loading-state">
+          <div class="spinner"></div>
+          <h3>Загрузка курса...</h3>
+          <p>Подготавливаем материалы для изучения</p>
+        </div>
+
+        <div v-else-if="error" class="error-state">
+          <div class="error-icon">⚠️</div>
+          <h3>Не удалось загрузить курс</h3>
+          <p>{{ error }}</p>
+          <button @click="loadCourseContent" class="retry-btn">
+            Попробовать снова
+          </button>
+        </div>
+
+        <div v-else-if="currentLesson && hasSteps" class="lesson-content">
           <div 
-            v-for="(step, index) in lesson.steps" 
-            :key="index"
+            v-for="(step, index) in currentLesson.steps" 
+            :key="`step-${index}`"
             class="step-container"
           >
             <div class="step-header">
@@ -60,19 +73,27 @@
           </div>
         </div>
 
-        <div v-else class="empty-lesson">
+        <div v-else-if="currentLesson && !hasSteps" class="empty-lesson">
           <div class="empty-icon">📝</div>
           <h3>Урок пуст</h3>
           <p>Содержание урока еще не добавлено</p>
         </div>
+
+        <div v-else class="no-content">
+          <div class="empty-icon">📚</div>
+          <h3>Курс недоступен</h3>
+          <p>Материалы курса временно недоступны или не загружены</p>
+          <button @click="$emit('back-to-courses')" class="back-btn">
+            Вернуться к курсам
+          </button>
+        </div>
       </main>
 
-      <!-- Navigation Footer -->
-      <footer class="player-footer">
+      <footer class="player-footer" v-if="!loading && !error && lessons.length > 0">
         <button 
           class="nav-btn nav-btn--secondary"
           :disabled="isFirstLesson"
-          @click="$emit('previous')"
+          @click="goToPreviousLesson"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="15,18 9,12 15,6"></polyline>
@@ -81,7 +102,7 @@
         </button>
 
         <div class="lesson-counter">
-          <span class="current-lesson">{{ lessonIndex + 1 }}</span>
+          <span class="current-lesson">{{ currentLessonIndex + 1 }}</span>
           <span class="divider">/</span>
           <span class="total-lessons">{{ totalLessons }}</span>
         </div>
@@ -89,7 +110,7 @@
         <button 
           v-if="!isLastLesson"
           class="nav-btn nav-btn--primary"
-          @click="$emit('next')"
+          @click="goToNextLesson"
         >
           Следующий
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -100,7 +121,7 @@
         <button 
           v-else
           class="nav-btn nav-btn--success"
-          @click="$emit('complete')"
+          @click="completeCourse"
         >
           Завершить курс
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -110,7 +131,6 @@
       </footer>
     </div>
 
-    <!-- PDF Fullscreen Modal -->
     <div v-if="fullscreenPdf" class="pdf-modal" @click="closePdfFullscreen">
       <div class="pdf-container" @click.stop>
         <button 
@@ -134,6 +154,17 @@
 </template>
 
 <script>
+// Mock API calls since the real ones are not provided
+// In a real application, you would import these from an actual API file.
+const getCourseContent = (courseId) => {
+  console.log(`Mock: Fetching course content for ${courseId}`);
+  return Promise.resolve({ success: true, data: [] });
+};
+const getCourseById = (courseId) => {
+  console.log(`Mock: Fetching course details for ${courseId}`);
+  return Promise.resolve({ success: true, data: {} });
+};
+
 export default {
   name: 'LessonPlayer',
   
@@ -141,83 +172,236 @@ export default {
     course: {
       type: Object,
       required: true,
-      validator: (course) => course && course.title
-    },
-    lesson: {
-      type: Object,
-      required: true,
-      validator: (lesson) => lesson && (lesson.title || lesson.lessonName)
-    },
-    lessonIndex: {
-      type: Number,
-      required: true,
-      validator: (index) => index >= 0
-    },
-    totalLessons: {
-      type: Number,
-      required: true,
-      validator: (total) => total > 0
+      validator: (course) => course && (course.title || course._id)
     }
   },
 
-  emits: ['close', 'next', 'previous', 'complete'],
+  emits: ['close', 'back-to-courses'],
 
   data() {
     return {
+      lessons: [],
+      currentLessonIndex: 0,
       quizAnswers: new Map(),
-      fullscreenPdf: null
+      fullscreenPdf: null,
+      loading: true,
+      error: null,
+      courseData: null
     }
   },
 
   computed: {
-    lessonTitle() {
-      return this.lesson.title || this.lesson.lessonName || 'Урок без названия'
+    courseTitle() {
+      return this.courseData?.title || this.course?.title || 'Курс';
+    },
+
+    currentLesson() {
+      return this.lessons[this.currentLessonIndex] || null;
+    },
+
+    currentLessonTitle() {
+      const lesson = this.currentLesson;
+      if (!lesson) return 'Загрузка урока...';
+      return lesson.title || lesson.lessonName || `Урок ${this.currentLessonIndex + 1}`;
     },
 
     hasSteps() {
-      return this.lesson.steps && this.lesson.steps.length > 0
+      return this.currentLesson && this.currentLesson.steps && this.currentLesson.steps.length > 0;
+    },
+
+    totalLessons() {
+      return this.lessons.length;
     },
 
     progressPercentage() {
-      return `${Math.round(((this.lessonIndex + 1) / this.totalLessons) * 100)}%`
+      if (this.totalLessons === 0) return '0%';
+      return `${Math.round(((this.currentLessonIndex + 1) / this.totalLessons) * 100)}%`;
     },
 
     isFirstLesson() {
-      return this.lessonIndex === 0
+      return this.currentLessonIndex === 0;
     },
 
     isLastLesson() {
-      return this.lessonIndex === this.totalLessons - 1
+      return this.currentLessonIndex === this.totalLessons - 1;
+    }
+  },
+
+  watch: {
+    // Watch course prop changes to reload content
+    course: {
+      handler() {
+        this.loadCourseContent();
+      },
+      deep: true,
+      immediate: true
     }
   },
 
   methods: {
+    // === Data Loading & Processing Methods ===
+    async loadCourseContent() {
+      if (!this.course || (!this.course._id && !this.course.id)) {
+        console.error('❌ LessonPlayer: Invalid course data:', this.course);
+        this.error = 'Неверные данные курса';
+        this.loading = false;
+        return;
+      }
+
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const courseId = this.course._id || this.course.id;
+        console.log('📚 LessonPlayer: Loading course content for ID:', courseId);
+
+        let courseDetails = null;
+        try {
+          const courseResponse = await getCourseById(courseId);
+          if (courseResponse.success && courseResponse.data) {
+            courseDetails = courseResponse.data;
+          }
+        } catch (detailError) {
+          console.warn('⚠️ LessonPlayer: Failed to load course details:', detailError);
+        }
+        this.courseData = courseDetails || this.course;
+
+        let lessons = [];
+        if (courseDetails && courseDetails.curriculum && courseDetails.curriculum.length > 0) {
+          lessons = this.processLessons(courseDetails.curriculum);
+        }
+
+        if (lessons.length === 0) {
+          try {
+            const contentResponse = await getCourseContent(courseId);
+            if (contentResponse.success && contentResponse.data && contentResponse.data.length > 0) {
+              lessons = this.processLessons(contentResponse.data);
+            }
+          } catch (contentError) {
+            console.warn('⚠️ LessonPlayer: getCourseContent failed:', contentError);
+          }
+        }
+
+        if (lessons.length === 0 && this.course.curriculum) {
+          lessons = this.processLessons(this.course.curriculum);
+        }
+
+        if (lessons.length === 0) {
+          lessons = this.createDemoLessons();
+        }
+
+        this.lessons = lessons;
+        console.log(`✅ LessonPlayer: Loaded ${lessons.length} lessons`);
+      } catch (error) {
+        console.error('❌ LessonPlayer: Error loading course content:', error);
+        this.error = 'Не удалось загрузить содержание курса';
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    processLessons(lessonsArray) {
+      if (!Array.isArray(lessonsArray)) return [];
+      return lessonsArray.map((lesson, index) => ({
+        ...lesson,
+        id: lesson._id || lesson.id || `lesson_${index}`,
+        title: lesson.title || lesson.lessonName || `Урок ${index + 1}`,
+        steps: this.processSteps(lesson.steps || [])
+      }));
+    },
+
+    processSteps(steps) {
+      if (!Array.isArray(steps)) return [];
+      return steps.map((step, index) => ({
+        ...step,
+        id: step.id || `step_${index}`,
+        type: step.type || 'explanation',
+        title: step.title || this.getStepTitle(step),
+        data: this.processStepData(step)
+      }));
+    },
+
+    processStepData(step) {
+      if (!step.data && !step.content) return {};
+      const baseData = step.data || {};
+      
+      switch (step.type) {
+        case 'explanation':
+        case 'example':
+        case 'reading':
+          return {
+            ...baseData,
+            content: baseData.content || step.content || '',
+            images: baseData.images || step.images || []
+          };
+        case 'video':
+          return {
+            ...baseData,
+            url: baseData.url || step.videoUrl || step.url || '',
+            description: baseData.description || step.description || ''
+          };
+        case 'pdf':
+          return {
+            ...baseData,
+            url: baseData.url || step.pdfUrl || step.url || '',
+            description: baseData.description || step.description || ''
+          };
+        case 'practice':
+          return {
+            ...baseData,
+            instructions: baseData.instructions || step.instructions || step.content || '',
+            files: baseData.files || step.files || []
+          };
+        case 'quiz':
+          if (Array.isArray(baseData) && baseData.length > 0) {
+            return baseData;
+          } else if (step.question || step.content) {
+            return [{
+              question: step.question || step.content || '',
+              type: step.quizType || 'multiple-choice',
+              options: (step.options || []).map(opt => 
+                typeof opt === 'string' ? { text: opt } : opt
+              ),
+              correctAnswer: parseInt(step.correctAnswer) || 0,
+              explanation: step.explanation || ''
+            }];
+          } else if (step.quizzes && Array.isArray(step.quizzes)) {
+            return step.quizzes;
+          }
+          return [];
+        default:
+          return {
+            ...baseData,
+            content: baseData.content || step.content || ''
+          };
+      }
+    },
+    
+    // === Navigation Methods ===
+    goToPreviousLesson() {
+      if (!this.isFirstLesson) {
+        this.currentLessonIndex--;
+        console.log(`🔙 Previous lesson: ${this.currentLessonIndex + 1}`);
+      }
+    },
+
+    goToNextLesson() {
+      if (!this.isLastLesson) {
+        this.currentLessonIndex++;
+        console.log(`➡️ Next lesson: ${this.currentLessonIndex + 1}`);
+      }
+    },
+
+    completeCourse() {
+      console.log('🎉 Course completed!');
+      if (confirm('Поздравляем с завершением курса! Вернуться к списку курсов?')) {
+        this.$emit('back-to-courses');
+      }
+    },
+
+    // === Event Handlers ===
     handleOverlayClick() {
-      this.$emit('close')
-    },
-
-    getStepTitle(step) {
-      const titles = {
-        explanation: '📝 Объяснение',
-        example: '💡 Пример', 
-        video: '🎥 Видео',
-        pdf: '📄 Материалы',
-        practice: '🎯 Практика',
-        quiz: '❓ Тест'
-      }
-      return titles[step.type] || '📌 Шаг'
-    },
-
-    getStepComponent(type) {
-      const components = {
-        explanation: 'step-text',
-        example: 'step-text',
-        video: 'step-video', 
-        pdf: 'step-pdf',
-        practice: 'step-practice',
-        quiz: 'step-quiz'
-      }
-      return components[type] || 'step-text'
+      this.$emit('close');
     },
 
     handleQuizAnswer(stepIndex, answerIndex, isCorrect) {
@@ -225,19 +409,67 @@ export default {
         answerIndex,
         isCorrect,
         answered: true
-      })
+      });
+      console.log('📝 Quiz answer recorded:', { stepIndex, answerIndex, isCorrect });
     },
 
     openPdfFullscreen(pdfUrl) {
-      this.fullscreenPdf = pdfUrl
+      this.fullscreenPdf = pdfUrl;
     },
 
     closePdfFullscreen() {
-      this.fullscreenPdf = null
+      this.fullscreenPdf = null;
+    },
+
+    // === Utility & Demo Methods ===
+    getStepTitle(step) {
+      if (step.title) return step.title;
+      const titles = {
+        explanation: '📝 Объяснение', example: '💡 Пример', video: '🎥 Видео',
+        pdf: '📄 Материалы', practice: '🎯 Практика', quiz: '❓ Тест', reading: '📚 Чтение'
+      };
+      return titles[step.type] || '📌 Шаг';
+    },
+
+    getStepComponent(type) {
+      const components = {
+        explanation: 'step-text', example: 'step-text', reading: 'step-text',
+        video: 'step-video', pdf: 'step-pdf', practice: 'step-practice', quiz: 'step-quiz'
+      };
+      return components[type] || 'step-text';
+    },
+
+    createDemoLessons() {
+      const courseTitle = this.courseData?.title || this.course?.title || 'Курс';
+      return [
+        {
+          id: 'lesson_1',
+          title: 'Введение в курс',
+          steps: [
+            { id: 'step_1_1', type: 'explanation', title: 'Добро пожаловать!', data: { content: `Добро пожаловать на курс "${courseTitle}"!<br><br>В этом курсе вы изучите основные концепции и получите практические навыки.<br><br>Курс состоит из нескольких уроков, каждый из которых включает теоретический материал и практические задания.` } },
+            { id: 'step_1_2', type: 'explanation', title: 'Как проходить курс', data: { content: `Рекомендации по изучению курса:<br><br>• Изучайте материал последовательно<br>• Выполняйте все практические задания<br>• Не спешите, важно понимание материала<br>• При необходимости возвращайтесь к предыдущим урокам` } }
+          ]
+        },
+        {
+          id: 'lesson_2',
+          title: 'Основы',
+          steps: [
+            { id: 'step_2_1', type: 'explanation', title: 'Теоретические основы', data: { content: `В этом разделе мы рассмотрим основные теоретические концепции курса.<br><br>Эти знания станут фундаментом для дальнейшего изучения более сложных тем.` } },
+            { id: 'step_2_2', type: 'quiz', title: 'Проверка знаний', data: [{ question: 'Что является основой успешного изучения курса?', options: [{ text: 'Быстрое прохождение всех уроков', correct: false }, { text: 'Понимание материала и выполнение заданий', correct: true }, { text: 'Запоминание всех терминов наизусть', correct: false }], explanation: 'Качество изучения важнее скорости. Понимание и практика - ключ к успеху.' }] }
+          ]
+        },
+        {
+          id: 'lesson_3',
+          title: 'Практическое применение',
+          steps: [
+            { id: 'step_3_1', type: 'practice', title: 'Практическое задание', data: { instructions: 'В этом разделе вы сможете применить полученные знания на практике. Следуйте инструкциям и выполняйте задания поэтапно.', files: [] } }
+          ]
+        }
+      ];
     }
   },
 
-  // Step Components
+  // === Step Components ===
   components: {
     'step-text': {
       props: ['step'],
@@ -248,8 +480,8 @@ export default {
       `,
       computed: {
         formattedContent() {
-          const content = this.step.data?.content || this.step.content || ''
-          return content.replace(/\n/g, '<br>')
+          const content = this.step.data?.content || this.step.content || 'Содержание не найдено';
+          return content.replace(/\n/g, '<br>');
         }
       }
     },
@@ -281,6 +513,7 @@ export default {
             <div v-else class="video-placeholder">
               <div class="placeholder-icon">🎥</div>
               <p>Видео недоступно</p>
+              <small v-if="videoUrl">URL: {{ videoUrl }}</small>
             </div>
           </div>
           <p v-if="description" class="video-description">{{ description }}</p>
@@ -288,27 +521,27 @@ export default {
       `,
       computed: {
         videoUrl() {
-          return this.step.data?.url || this.step.videoUrl || ''
+          return this.step.data?.url || this.step.videoUrl || '';
         },
         description() {
-          return this.step.data?.description || this.step.description
+          return this.step.data?.description || this.step.description;
         },
         isYouTube() {
-          return this.videoUrl.includes('youtube.com') || this.videoUrl.includes('youtu.be')
+          return this.videoUrl.includes('youtube.com') || this.videoUrl.includes('youtu.be');
         },
         isDirectVideo() {
-          return /\.(mp4|webm|ogg)$/i.test(this.videoUrl) || this.videoUrl.includes('blob:')
+          return /\.(mp4|webm|ogg)$/i.test(this.videoUrl) || this.videoUrl.includes('blob:');
         },
         embedUrl() {
           if (this.videoUrl.includes('youtube.com/watch')) {
-            const videoId = this.videoUrl.split('v=')[1]?.split('&')[0]
-            return `https://www.youtube.com/embed/${videoId}`
+            const videoId = this.videoUrl.split('v=')[1]?.split('&')[0];
+            return videoId ? `https://www.youtube.com/embed/${videoId}` : '';
           }
           if (this.videoUrl.includes('youtu.be/')) {
-            const videoId = this.videoUrl.split('youtu.be/')[1]?.split('?')[0]
-            return `https://www.youtube.com/embed/${videoId}`
+            const videoId = this.videoUrl.split('youtu.be/')[1]?.split('?')[0];
+            return videoId ? `https://www.youtube.com/embed/${videoId}` : '';
           }
-          return this.videoUrl
+          return this.videoUrl;
         }
       }
     },
@@ -336,9 +569,8 @@ export default {
             </div>
           </div>
 
-          <div class="pdf-actions">
+          <div class="pdf-actions" v-if="pdfUrl">
             <a 
-              v-if="pdfUrl"
               :href="pdfUrl" 
               target="_blank"
               download
@@ -352,7 +584,6 @@ export default {
               Скачать
             </a>
             <button 
-              v-if="pdfUrl"
               @click="$emit('pdf-fullscreen', pdfUrl)"
               class="action-btn action-btn--secondary"
             >
@@ -369,10 +600,10 @@ export default {
       `,
       computed: {
         pdfUrl() {
-          return this.step.data?.url || this.step.pdfUrl
+          return this.step.data?.url || this.step.pdfUrl;
         },
         description() {
-          return this.step.data?.description || this.step.description
+          return this.step.data?.description || this.step.description;
         }
       }
     },
@@ -411,19 +642,19 @@ export default {
           </div>
 
           <div v-else class="no-files">
-            <p>Дополнительные файлы не предоставлены</p>
+            <p>Выполните задание согласно инструкциям выше</p>
           </div>
         </div>
       `,
       computed: {
         instructions() {
-          return this.step.data?.instructions || this.step.instructions
+          return this.step.data?.instructions || this.step.instructions;
         },
         files() {
-          return this.step.data?.files || this.step.files || []
+          return this.step.data?.files || this.step.files || [];
         },
         hasFiles() {
-          return this.files.length > 0
+          return this.files.length > 0;
         }
       },
       methods: {
@@ -434,8 +665,8 @@ export default {
             jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️',
             mp4: '🎥', mov: '🎥', avi: '🎥', wmv: '🎥',
             mp3: '🎵', wav: '🎵', flac: '🎵'
-          }
-          return icons[type?.toLowerCase()] || '📎'
+          };
+          return icons[type?.toLowerCase()] || '📎';
         }
       }
     },
@@ -451,92 +682,78 @@ export default {
       },
       template: `
         <div class="step-quiz">
-          <div class="quiz-header">
-            <h3>❓ {{ question }}</h3>
-          </div>
-
-          <div v-if="hasOptions" class="quiz-options">
-            <button
-              v-for="(option, index) in options"
-              :key="index"
-              @click="selectAnswer(index)"
-              :disabled="showResult"
-              :class="getOptionClass(index)"
-              class="quiz-option"
-            >
-              <span class="option-text">{{ getOptionText(option) }}</span>
-              <div v-if="showResult" class="option-indicator">
-                <svg v-if="isCorrectOption(option)" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="20,6 9,17 4,12"></polyline>
-                </svg>
-                <svg v-else-if="selectedAnswer === index" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
+          <div v-if="quizData && quizData.length > 0">
+            <div v-for="(quiz, quizIndex) in quizData" :key="quizIndex" class="quiz-item">
+              <div class="quiz-header">
+                <h3>❓ {{ quiz.question }}</h3>
               </div>
-            </button>
-          </div>
-
-          <div v-if="showResult && explanation" class="quiz-explanation">
-            <div class="explanation-header">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M9,9h6v6H9z"></path>
-              </svg>
-              Объяснение
+              <div v-if="quiz.options && quiz.options.length > 0" class="quiz-options">
+                <button
+                  v-for="(option, index) in quiz.options"
+                  :key="index"
+                  @click="selectAnswer(quizIndex, index, option)"
+                  :disabled="showResult"
+                  :class="getOptionClass(quizIndex, index, option)"
+                  class="quiz-option"
+                >
+                  <span class="option-text">{{ getOptionText(option) }}</span>
+                  <div v-if="showResult" class="option-indicator">
+                    <svg v-if="isCorrectOption(option)" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
+                    <svg v-else-if="selectedAnswer === \`\${quizIndex}-\${index}\`" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </div>
+                </button>
+              </div>
+              <div v-if="showResult && quiz.explanation" class="quiz-explanation">
+                <div class="explanation-header">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9,9h6v6H9z"></path>
+                  </svg>
+                  Объяснение
+                </div>
+                <p>{{ quiz.explanation }}</p>
+              </div>
             </div>
-            <p>{{ explanation }}</p>
+          </div>
+          <div v-else class="no-quiz">
+            <p>Тест недоступен</p>
           </div>
         </div>
       `,
       computed: {
-        question() {
-          return this.step.data?.question || this.step.question || 'Вопрос не указан'
-        },
-        options() {
-          return this.step.data?.options || this.step.options || []
-        },
-        explanation() {
-          return this.step.data?.explanation || this.step.explanation
-        },
-        hasOptions() {
-          return this.options.length > 0
+        quizData() {
+          if (Array.isArray(this.step.data)) return this.step.data;
+          if (this.step.data && this.step.data.question) return [this.step.data];
+          if (this.step.question) return [{ question: this.step.question, options: this.step.options || [], explanation: this.step.explanation }];
+          return [];
         }
       },
       methods: {
-        selectAnswer(index) {
-          if (this.showResult) return
-          
-          this.selectedAnswer = index
-          this.showResult = true
-          
-          const option = this.options[index]
-          const isCorrect = this.isCorrectOption(option)
-          
-          this.$emit('quiz-answer', this.stepIndex, index, isCorrect)
+        selectAnswer(quizIndex, optionIndex, option) {
+          if (this.showResult) return;
+          const answerId = `${quizIndex}-${optionIndex}`;
+          this.selectedAnswer = answerId;
+          this.showResult = true;
+          const isCorrect = this.isCorrectOption(option);
+          this.$emit('quiz-answer', this.stepIndex, optionIndex, isCorrect);
         },
-        
         getOptionText(option) {
-          return typeof option === 'string' ? option : option.text || option.label || 'Опция'
+          return typeof option === 'string' ? option : option.text || option.label || 'Опция';
         },
-        
         isCorrectOption(option) {
-          return typeof option === 'object' ? option.correct : false
+          return typeof option === 'object' ? option.correct : false;
         },
-        
-        getOptionClass(index) {
-          if (!this.showResult) {
-            return this.selectedAnswer === index ? 'selected' : ''
-          }
-          
-          const option = this.options[index]
-          if (this.isCorrectOption(option)) {
-            return 'correct'
-          }
-          if (this.selectedAnswer === index && !this.isCorrectOption(option)) {
-            return 'incorrect'
-          }
-          return 'disabled'
+        getOptionClass(quizIndex, optionIndex, option) {
+          const answerId = `${quizIndex}-${optionIndex}`;
+          if (!this.showResult) return this.selectedAnswer === answerId ? 'selected' : '';
+          if (this.isCorrectOption(option)) return 'correct';
+          if (this.selectedAnswer === answerId && !this.isCorrectOption(option)) return 'incorrect';
+          return 'disabled';
         }
       }
     }
@@ -582,7 +799,7 @@ export default {
   --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Layout */
+/* === Layout === */
 .lesson-player-overlay {
   position: fixed;
   inset: 0;
@@ -607,7 +824,7 @@ export default {
   overflow: hidden;
 }
 
-/* Header */
+/* === Header === */
 .player-header {
   background: var(--white);
   border-bottom: 1px solid var(--gray-200);
@@ -700,11 +917,72 @@ export default {
   white-space: nowrap;
 }
 
-/* Main Content */
+/* === Main Content === */
 .player-content {
   flex: 1;
   overflow-y: auto;
   padding: 2rem;
+}
+
+.loading-state, .error-state, .no-content, .empty-lesson {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 100%;
+  padding: 3rem;
+  color: var(--gray-500);
+}
+
+.loading-state h3, .error-state h3, .no-content h3, .empty-lesson h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--gray-700);
+}
+
+.loading-state p, .error-state p, .no-content p, .empty-lesson p {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+}
+
+.error-icon, .empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.retry-btn, .back-btn {
+  padding: 0.75rem 1.5rem;
+  background: var(--primary);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.retry-btn:hover, .back-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+/* Spinner */
+.spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 3px solid var(--gray-200);
+  border-top: 3px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .lesson-content {
@@ -754,36 +1032,7 @@ export default {
   padding: 2rem;
 }
 
-/* Empty State */
-.empty-lesson {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 3rem;
-  color: var(--gray-500);
-}
-
-.empty-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  opacity: 0.7;
-}
-
-.empty-lesson h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0 0 0.5rem 0;
-  color: var(--gray-700);
-}
-
-.empty-lesson p {
-  margin: 0;
-  font-size: 1rem;
-}
-
-/* Footer Navigation */
+/* === Footer Navigation === */
 .player-footer {
   background: var(--gray-50);
   border-top: 1px solid var(--gray-200);
@@ -867,8 +1116,7 @@ export default {
   color: var(--gray-400);
 }
 
-/* Step Components Styles */
-
+/* === Step Components Styles === */
 /* Text Step */
 .step-text {
   line-height: 1.7;
@@ -1125,11 +1373,15 @@ export default {
   gap: 1.5rem;
 }
 
+.quiz-item {
+  margin-bottom: 2rem;
+}
+
 .quiz-header h3 {
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--gray-900);
-  margin: 0;
+  margin: 0 0 1rem 0;
   line-height: 1.4;
 }
 
@@ -1223,6 +1475,13 @@ export default {
   font-style: italic;
 }
 
+.no-quiz {
+  text-align: center;
+  color: var(--gray-500);
+  font-style: italic;
+  padding: 2rem;
+}
+
 /* PDF Fullscreen Modal */
 .pdf-modal {
   position: fixed;
@@ -1278,7 +1537,7 @@ export default {
   border: none;
 }
 
-/* Responsive Design */
+/* === Responsive Design === */
 @media (max-width: 1024px) {
   .lesson-player {
     max-width: 95vw;
@@ -1430,7 +1689,9 @@ export default {
 .nav-btn:focus-visible,
 .quiz-option:focus-visible,
 .file-card:focus-visible,
-.action-btn:focus-visible {
+.action-btn:focus-visible,
+.retry-btn:focus-visible,
+.back-btn:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
