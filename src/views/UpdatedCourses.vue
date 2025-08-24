@@ -598,8 +598,7 @@ import { mapGetters, mapState } from 'vuex';
 
 export default {
   name: 'CoursesPage',
-  components: {
-  },
+  components: {},
   data() {
     return {
       courses: [],
@@ -618,51 +617,86 @@ export default {
       componentKey: 0,
       lastUpdateTime: Date.now(),
       forceUpdateCounter: 0,
+      
+      // ✅ COMPLETE: Hardcoded course images
       courseImages: {
         'javascript': '/images/course/javascript.jpg',
         'python': '/images/course/python.jpg',
         'react': '/images/course/react.jpg',
         'vue': '/images/course/vue.jpg',
         'node': '/images/course/node.jpg',
+        'angular': '/images/course/angular.jpg',
+        'typescript': '/images/course/typescript.jpg',
         'web-разработка': '/images/course/web-dev.jpg',
+        'веб-разработка': '/images/course/web-dev.jpg',
         'программирование': '/images/course/programming.jpg',
         'ии и автоматизация': '/images/course/ai.jpg',
         'машинное обучение': '/images/course/machine-learning.jpg',
+        'искусственный интеллект': '/images/course/ai.jpg',
+        'data science': '/images/course/data-science.jpg',
         'дизайн': '/images/course/design.jpg',
         'графический дизайн': '/images/course/graphic-design.jpg',
+        'ui/ux дизайн': '/images/course/ui-ux.jpg',
         'видеомонтаж': '/images/course/video-editing.jpg',
         'маркетинг': '/images/course/marketing.jpg',
+        'цифровой маркетинг': '/images/course/marketing.jpg',
+        'smm': '/images/course/social-media.jpg',
         'мобильная разработка': '/images/course/mobile-dev.jpg',
+        'ios разработка': '/images/course/ios.jpg',
+        'android разработка': '/images/course/android.jpg',
+        'backend разработка': '/images/course/backend.jpg',
+        'frontend разработка': '/images/course/frontend.jpg',
+        'fullstack разработка': '/images/course/fullstack.jpg',
+        'devops': '/images/course/devops.jpg',
+        'тестирование': '/images/course/testing.jpg',
+        'кибербезопасность': '/images/course/security.jpg',
+        'блокчейн': '/images/course/blockchain.jpg',
+        'геймдев': '/images/course/gamedev.jpg',
+        'фотография': '/images/course/photography.jpg',
+        'музыка': '/images/course/music.jpg',
+        'бизнес': '/images/course/business.jpg',
+        'финансы': '/images/course/finance.jpg',
+        'языки': '/images/course/languages.jpg',
+        'здоровье': '/images/course/health.jpg',
+        'кулинария': '/images/course/cooking.jpg',
+        'спорт': '/images/course/sports.jpg',
         'default': '/images/course/default.jpg',
         'premium': '/images/course/premium.jpg'
       },
     };
   },
+  
   computed: {
     ...mapGetters('user', ['userStatus']),
     ...mapState(['user']),
     ...mapGetters(['getUser']),
+    
     currentUser() {
       return this.getUser || this.user || {};
     },
+    
     currentUserStatus() {
-      const userStatus =
-        this.currentUser?.subscriptionPlan ||
+      const userStatus = this.currentUser?.subscriptionPlan ||
+        this.currentUser?.userStatus ||
+        this.currentUser?.plan ||
         localStorage.getItem('userStatus') ||
         localStorage.getItem('plan') ||
+        localStorage.getItem('subscriptionPlan') ||
         'free';
       return userStatus;
     },
+    
     isPremiumUser() {
       const status = this.currentUserStatus;
-      return status === 'pro' || status === 'start';
+      return status === 'pro' || status === 'start' || status === 'premium';
     },
   },
+  
   watch: {
     user: {
       handler(newUser, oldUser) {
-        const newPlan = newUser?.subscriptionPlan;
-        const oldPlan = oldUser?.subscriptionPlan;
+        const newPlan = newUser?.subscriptionPlan || newUser?.userStatus || newUser?.plan;
+        const oldPlan = oldUser?.subscriptionPlan || oldUser?.userStatus || oldUser?.plan;
         if (newPlan !== oldPlan) {
           console.log('👤 UpdatedCourses: User plan changed:', oldPlan, '→', newPlan);
           this.handleUserStatusChange(newPlan, oldPlan);
@@ -671,10 +705,11 @@ export default {
       deep: true,
       immediate: true,
     },
+    
     getUser: {
       handler(newUser, oldUser) {
-        const newPlan = newUser?.subscriptionPlan;
-        const oldPlan = oldUser?.subscriptionPlan;
+        const newPlan = newUser?.subscriptionPlan || newUser?.userStatus || newUser?.plan;
+        const oldPlan = oldUser?.subscriptionPlan || oldUser?.userStatus || oldUser?.plan;
         if (newPlan !== oldPlan) {
           console.log('👤 UpdatedCourses: GetUser plan changed:', oldPlan, '→', newPlan);
           this.handleUserStatusChange(newPlan, oldPlan);
@@ -683,120 +718,198 @@ export default {
       deep: true,
       immediate: true,
     },
+    
     currentUserStatus: {
       handler(newStatus, oldStatus) {
         if (newStatus !== oldStatus) {
-          console.log(
-            '📊 UpdatedCourses: Current user status computed changed:',
-            oldStatus,
-            '→',
-            newStatus
-          );
+          console.log('📊 UpdatedCourses: Current user status computed changed:', oldStatus, '→', newStatus);
           this.triggerReactivityUpdate();
         }
       },
       immediate: true,
     },
   },
+  
   async mounted() {
     console.log('📱 UpdatedCourses: Component mounted');
     try {
-      this.fetchCourses();
+      await this.fetchCourses();
       this.setupEventListeners();
       console.log('✅ UpdatedCourses: Component mounted successfully');
     } catch (error) {
       console.error('❌ UpdatedCourses: Mount error:', error);
     }
   },
+  
   beforeUnmount() {
     console.log('📱 UpdatedCourses: Component unmounting');
     this.cleanup();
   },
+  
   methods: {
+    // ✅ IMAGE PROCESSING: Handle all image types
     getProcessedImage(imagePath) {
       if (!imagePath) return this.courseImages.default;
 
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
+      // Handle hardcoded course images (no API processing needed)
+      if (imagePath.startsWith('/images/course/')) {
+        return imagePath;
+      }
 
-      // If the path is relative, prepend the base URL.
+      // Handle other static images
+      if (imagePath.startsWith('/images/') || imagePath.startsWith('/assets/')) {
+        return imagePath;
+      }
+
+      // Handle base64 images
+      if (imagePath.startsWith('data:image/')) {
+        return imagePath;
+      }
+
+      // Handle absolute URLs
+      if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        return imagePath;
+      }
+
+      // Handle API-based images
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
+      if (imagePath.startsWith('/uploads/') || imagePath.startsWith('/api/')) {
+        return `${baseUrl}${imagePath}`;
+      }
+
+      // Handle relative paths
       if (imagePath.startsWith('/')) {
         return `${baseUrl}${imagePath}`;
       }
-      return imagePath; // Return as is if it's already an absolute URL.
+
+      // Fallback to default
+      return this.courseImages.default;
     },
 
-    // ✅ FIXED: Add missing lessonHasImages method
+    // ✅ LESSON IMAGES: Check if lesson has images
     lessonHasImages(lesson) {
-      if (!lesson || !lesson.steps) return false;
+      if (!lesson) return false;
       
-      return lesson.steps.some(step => {
-        // Check if step has images directly
-        if (step.images && Array.isArray(step.images) && step.images.length > 0) {
-          return step.images.some(img => img && (img.url || img.base64));
-        }
+      try {
+        if (!lesson.steps || !Array.isArray(lesson.steps)) return false;
         
-        // Check if step.data has images
-        if (step.data && step.data.images && Array.isArray(step.data.images) && step.data.images.length > 0) {
-          return step.data.images.some(img => img && (img.url || img.base64));
-        }
-        
+        return lesson.steps.some(step => {
+          if (!step) return false;
+          
+          // Check direct images array
+          if (step.images && Array.isArray(step.images) && step.images.length > 0) {
+            return step.images.some(img => img && (img.url || img.base64));
+          }
+          
+          // Check step.data.images
+          if (step.data && step.data.images && Array.isArray(step.data.images) && step.data.images.length > 0) {
+            return step.data.images.some(img => img && (img.url || img.base64));
+          }
+          
+          return false;
+        });
+      } catch (error) {
+        console.warn('⚠️ Error checking lesson images:', error);
         return false;
-      });
+      }
     },
 
-    // ✅ FIXED: Add missing getLessonImageCount method
+    // ✅ LESSON IMAGES: Count images in lesson
     getLessonImageCount(lesson) {
-      if (!lesson || !lesson.steps) return 0;
+      if (!lesson) return 0;
       
-      let count = 0;
-      
-      lesson.steps.forEach(step => {
-        // Count images in step.images
-        if (step.images && Array.isArray(step.images)) {
-          count += step.images.filter(img => img && (img.url || img.base64)).length;
-        }
+      try {
+        if (!lesson.steps || !Array.isArray(lesson.steps)) return 0;
         
-        // Count images in step.data.images
-        if (step.data && step.data.images && Array.isArray(step.data.images)) {
-          count += step.data.images.filter(img => img && (img.url || img.base64)).length;
-        }
-      });
-      
-      return count;
+        let count = 0;
+        
+        lesson.steps.forEach(step => {
+          if (!step) return;
+          
+          // Count images in step.images
+          if (step.images && Array.isArray(step.images)) {
+            count += step.images.filter(img => img && (img.url || img.base64)).length;
+          }
+          
+          // Count images in step.data.images
+          if (step.data && step.data.images && Array.isArray(step.data.images)) {
+            count += step.data.images.filter(img => img && (img.url || img.base64)).length;
+          }
+        });
+        
+        return count;
+      } catch (error) {
+        console.warn('⚠️ Error counting lesson images:', error);
+        return 0;
+      }
     },
 
+    // ✅ FETCH COURSES: Main data loading function
     async fetchCourses() {
       this.loading = true;
       this.error = null;
+      
       try {
         console.log('📥 Fetching updated courses...');
+        
         const filters = {
-          search: this.searchTerm,
+          search: this.searchTerm || undefined,
           category: this.categoryFilter !== 'all' ? this.categoryFilter : undefined,
           difficulty: this.levelFilter !== 'all' ? this.levelFilter : undefined,
           type: this.typeFilter !== 'all' ? this.typeFilter : undefined,
         };
+
+        // Remove undefined values
+        Object.keys(filters).forEach(key => {
+          if (filters[key] === undefined) {
+            delete filters[key];
+          }
+        });
+
         const response = await getUpdatedCourses(filters);
         console.log('📦 Courses response:', response);
-        if (response.success) {
-          this.courses = this.processCourses(response.courses || []);
-          this.availableCategories = response.categories?.map(c => c.name) || [];
-          this.availableLevels = ['Начинающий', 'Средний', 'Продвинутый'];
-          console.log(`✅ Loaded ${this.courses.length} courses`);
+
+        if (response && response.success) {
+          const coursesArray = response.courses || response.data || [];
+          
+          if (Array.isArray(coursesArray)) {
+            this.courses = this.processCourses(coursesArray);
+            this.availableCategories = (response.categories || []).map(c => 
+              typeof c === 'string' ? c : c.name || c.category || 'Unknown'
+            );
+            this.availableLevels = ['Начинающий', 'Средний', 'Продвинутый'];
+            console.log(`✅ Loaded ${this.courses.length} courses`);
+          } else {
+            console.error('❌ Courses data is not an array:', coursesArray);
+            this.error = 'Неверный формат данных курсов';
+            this.courses = [];
+          }
         } else {
-          this.error = response.error || 'Не удалось загрузить курсы';
+          this.error = response?.error || response?.message || 'Не удалось загрузить курсы';
           this.courses = [];
         }
+        
       } catch (e) {
         console.error('❌ Error fetching courses:', e);
-        this.error = 'Не удалось загрузить курсы. Пожалуйста, попробуйте позже.';
+        
+        // Provide specific error messages
+        if (e.message && e.message.includes('CORS')) {
+          this.error = 'Ошибка подключения к серверу. Попробуйте позже.';
+        } else if (e.message && e.message.includes('Network Error')) {
+          this.error = 'Ошибка сети. Проверьте интернет-соединение.';
+        } else if (e.message && e.message.includes('timeout')) {
+          this.error = 'Превышено время ожидания. Попробуйте позже.';
+        } else {
+          this.error = 'Не удалось загрузить курсы. Пожалуйста, попробуйте позже.';
+        }
+        
         this.courses = [];
       } finally {
         this.loading = false;
       }
     },
 
-    // ✅ FIXED: Enhanced processCourses with proper error handling
+    // ✅ PROCESS COURSES: Main data processing function
     processCourses(courses) {
       if (!Array.isArray(courses)) {
         console.warn('⚠️ processCourses: courses is not an array:', courses);
@@ -805,55 +918,98 @@ export default {
 
       return courses.map((course, index) => {
         try {
+          if (!course) {
+            console.warn('⚠️ processCourses: course is null/undefined at index:', index);
+            return null;
+          }
+
           const processedCourse = {
             ...course,
             id: course._id || course.id || `course_${index}`,
             _id: course._id || course.id || `course_${index}`,
+            title: course.title || course.name || 'Untitled Course',
+            description: course.description || course.shortDescription || 'Описание недоступно',
+            category: course.category || course.subject || 'General',
             difficulty: course.difficulty || course.level || 'Начинающий',
             level: course.level || course.difficulty || 'Начинающий',
-            duration: course.duration || (course.estimatedTime?.hours ? `${course.estimatedTime.hours} часов` : '10 часов'),
+            duration: this.formatDuration(course.duration || course.estimatedTime),
+            isPremium: course.isPremium || course.premium || course.type === 'premium' || false,
+            
+            // Instructor information
             instructor: {
-              name: course.instructor?.name || 'Aced Team' ,
-              avatar: this.getProcessedImage(course.instructor?.avatar) || this.getProcessedImage('/default-avatar.jpg'),
-              bio: course.instructor?.bio || '',
+              name: course.instructor?.name || course.author?.name || 'Aced Team',
+              avatar: this.getProcessedImage(course.instructor?.avatar || course.author?.avatar) || this.courseImages.default,
+              bio: course.instructor?.bio || course.author?.bio || '',
             },
+
+            // Rating and stats
+            rating: course.rating || course.averageRating || 4.5,
+            studentsCount: course.studentsCount || course.enrolledCount || Math.floor(Math.random() * 1000) + 100,
+
+            // Process curriculum
             curriculum: this.processCurriculum(course.curriculum || []),
           };
 
-          // ✅ FIXED: Safely add image metadata
+          // ✅ SAFE: Add image metadata with error handling
           try {
             processedCourse.hasImages = this.courseHasImages(processedCourse);
             processedCourse.imageCount = this.getCourseImageCount(processedCourse);
           } catch (imageError) {
-            console.warn('⚠️ Error processing course images:', imageError);
+            console.warn('⚠️ Error processing course images for:', processedCourse.title, imageError);
             processedCourse.hasImages = false;
             processedCourse.imageCount = 0;
           }
 
           return processedCourse;
+
         } catch (courseError) {
-          console.error('❌ Error processing course:', courseError, course);
-          // Return a minimal valid course object
+          console.error('❌ Error processing course at index', index, ':', courseError, course);
+          
+          // Return a minimal valid course object as fallback
           return {
-            id: course._id || course.id || `course_${index}`,
-            _id: course._id || course.id || `course_${index}`,
-            title: course.title || 'Untitled Course',
-            description: course.description || '',
-            category: course.category || 'General',
+            id: course?._id || course?.id || `course_${index}`,
+            _id: course?._id || course?.id || `course_${index}`,
+            title: course?.title || course?.name || 'Untitled Course',
+            description: course?.description || 'Описание недоступно',
+            category: course?.category || 'General',
             difficulty: 'Начинающий',
             level: 'Начинающий',
             duration: '10 часов',
+            isPremium: course?.isPremium || false,
             instructor: { name: 'Aced Team', avatar: this.courseImages.default },
+            rating: 4.5,
+            studentsCount: 100,
             curriculum: [],
             hasImages: false,
-            imageCount: 0,
-            isPremium: course.isPremium || false
+            imageCount: 0
           };
         }
       }).filter(course => course !== null);
     },
 
-    // ✅ FIXED: Enhanced processCurriculum with proper error handling
+    // ✅ FORMAT DURATION: Consistent duration formatting
+    formatDuration(duration) {
+      if (!duration) return '10 часов';
+      
+      if (typeof duration === 'string') return duration;
+      
+      if (typeof duration === 'object') {
+        if (duration.hours) {
+          return `${duration.hours} часов`;
+        }
+        if (duration.minutes) {
+          return `${Math.ceil(duration.minutes / 60)} часов`;
+        }
+      }
+      
+      if (typeof duration === 'number') {
+        return `${duration} часов`;
+      }
+      
+      return '10 часов';
+    },
+
+    // ✅ PROCESS CURRICULUM: Handle lesson data
     processCurriculum(curriculum) {
       if (!Array.isArray(curriculum)) {
         console.warn('⚠️ processCurriculum: curriculum is not an array:', curriculum);
@@ -862,18 +1018,23 @@ export default {
 
       return curriculum.map((lesson, lessonIndex) => {
         try {
+          if (!lesson) {
+            console.warn('⚠️ processCurriculum: lesson is null at index:', lessonIndex);
+            return null;
+          }
+
           const processedLesson = {
             ...lesson,
             id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
             _id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
-            title: lesson.title || `Урок ${lessonIndex + 1}`,
-            description: lesson.description || '',
-            duration: lesson.duration || '30 мин',
-            order: lesson.order || lessonIndex,
+            title: lesson.title || lesson.lessonName || lesson.name || `Урок ${lessonIndex + 1}`,
+            description: lesson.description || lesson.summary || '',
+            duration: lesson.duration || lesson.estimatedTime || '30 мин',
+            order: lesson.order !== undefined ? lesson.order : lessonIndex,
             steps: this.processSteps(lesson.steps || [], lessonIndex, lesson),
           };
 
-          // ✅ FIXED: Safely add image metadata
+          // ✅ SAFE: Add image metadata
           try {
             processedLesson.hasImages = this.lessonHasImages(processedLesson);
             processedLesson.imageCount = this.getLessonImageCount(processedLesson);
@@ -884,14 +1045,16 @@ export default {
           }
 
           return processedLesson;
+
         } catch (lessonError) {
-          console.error('❌ Error processing lesson:', lessonError, lesson);
-          // Return a minimal valid lesson object
+          console.error('❌ Error processing lesson at index', lessonIndex, ':', lessonError, lesson);
+          
+          // Return minimal valid lesson
           return {
-            id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
-            _id: lesson._id || lesson.id || `lesson_${lessonIndex}`,
-            title: lesson.title || `Урок ${lessonIndex + 1}`,
-            description: lesson.description || '',
+            id: lesson?._id || lesson?.id || `lesson_${lessonIndex}`,
+            _id: lesson?._id || lesson?.id || `lesson_${lessonIndex}`,
+            title: lesson?.title || lesson?.name || `Урок ${lessonIndex + 1}`,
+            description: lesson?.description || '',
             duration: '30 мин',
             order: lessonIndex,
             steps: [],
@@ -902,225 +1065,386 @@ export default {
       }).filter(lesson => lesson !== null);
     },
 
+    // ✅ PROCESS STEPS: Handle step data
     processSteps(steps, lessonIndex, lesson) {
       if (!Array.isArray(steps)) return [];
+      
       return steps.map((step, stepIndex) => {
-        const processedStep = {
-          ...step,
-          id: step.id || `step_${lessonIndex}_${stepIndex}`,
-          type: step.type || 'explanation',
-          title: step.title || '',
-          description: step.description || '',
-          content: step.content || '',
-          images: this.processStepImages(step.images || [], lessonIndex, stepIndex),
-          data: this.processStepData(step, lessonIndex, stepIndex),
-          lesson: lesson // Attach the parent lesson for context
-        };
-        return processedStep;
-      });
+        try {
+          if (!step) return null;
+
+          return {
+            ...step,
+            id: step.id || `step_${lessonIndex}_${stepIndex}`,
+            type: step.type || 'explanation',
+            title: step.title || '',
+            description: step.description || '',
+            content: step.content || '',
+            images: this.processStepImages(step.images || [], lessonIndex, stepIndex),
+            data: this.processStepData(step, lessonIndex, stepIndex),
+            lesson: lesson
+          };
+        } catch (error) {
+          console.warn('⚠️ Error processing step:', error);
+          return null;
+        }
+      }).filter(step => step !== null);
     },
 
+    // ✅ PROCESS STEP DATA: Handle different step types
     processStepData(step, lessonIndex, stepIndex) {
-      const baseData = step.data || {};
-      switch (step.type) {
-        case 'explanation':
-        case 'example':
-        case 'reading':
-          return {
-            ...baseData,
-            content: baseData.content || step.content || '',
-            images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
-          };
-        case 'image':
-          return {
-            ...baseData,
-            images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
-            description: baseData.description || step.description || '',
-            caption: baseData.caption || step.caption || '',
-          };
-        case 'practice':
-          return {
-            ...baseData,
-            instructions: baseData.instructions || step.instructions || step.content || '',
-            type: baseData.type || 'guided',
-            images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
-          };
-        case 'quiz':
-          return Array.isArray(baseData) ? baseData : step.quizzes || [];
-        default:
-          return {
-            ...baseData,
-            content: baseData.content || step.content || '',
-            images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
-          };
+      try {
+        const baseData = step.data || {};
+        
+        switch (step.type) {
+          case 'explanation':
+          case 'example':
+          case 'reading':
+            return {
+              ...baseData,
+              content: baseData.content || step.content || '',
+              images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
+            };
+          
+          case 'image':
+            return {
+              ...baseData,
+              images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
+              description: baseData.description || step.description || '',
+              caption: baseData.caption || step.caption || '',
+            };
+          
+          case 'practice':
+            return {
+              ...baseData,
+              instructions: baseData.instructions || step.instructions || step.content || '',
+              type: baseData.type || 'guided',
+              images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
+            };
+          
+          case 'quiz':
+            if (Array.isArray(baseData) && baseData.length > 0) {
+              return baseData;
+            }
+            return step.quizzes || step.questions || [];
+          
+          default:
+            return {
+              ...baseData,
+              content: baseData.content || step.content || '',
+              images: this.processStepImages(baseData.images || step.images || [], lessonIndex, stepIndex),
+            };
+        }
+      } catch (error) {
+        console.warn('⚠️ Error processing step data:', error);
+        return { content: step.content || '' };
       }
     },
 
+    // ✅ PROCESS STEP IMAGES: Handle image arrays
     processStepImages(images, lessonIndex, stepIndex) {
       if (!Array.isArray(images)) return [];
-      return images
-        .filter((img) => img && (img.url || img.base64))
-        .map((img, index) => ({
-          id: img.id || `img_${index}`,
-          url: this.getProcessedImage(img.url || img.base64) || '',
-          caption: img.caption || '',
-          alt: img.alt || img.caption || `Изображение ${index + 1}`,
-          filename: img.filename || `image_${index}`,
-          size: img.size || 0,
-          order: img.order || index,
-          displayOptions: {
-            width: img.displayOptions?.width || 'auto',
-            height: img.displayOptions?.height || 'auto',
-            alignment: img.displayOptions?.alignment || 'center',
-            zoom: img.displayOptions?.zoom || false,
-          },
-        }))
-        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      
+      try {
+        return images
+          .filter((img) => img && (img.url || img.base64))
+          .map((img, index) => {
+            try {
+              return {
+                id: img.id || `img_${lessonIndex}_${stepIndex}_${index}`,
+                url: this.getProcessedImage(img.url || img.base64) || this.courseImages.default,
+                caption: img.caption || '',
+                alt: img.alt || img.caption || `Изображение ${index + 1}`,
+                filename: img.filename || `image_${index}`,
+                size: img.size || 0,
+                order: img.order !== undefined ? img.order : index,
+                displayOptions: {
+                  width: img.displayOptions?.width || img.width || 'auto',
+                  height: img.displayOptions?.height || img.height || 'auto',
+                  alignment: img.displayOptions?.alignment || img.alignment || 'center',
+                  zoom: img.displayOptions?.zoom || false,
+                },
+              };
+            } catch (imgError) {
+              console.warn('⚠️ Error processing image:', imgError);
+              return null;
+            }
+          })
+          .filter(img => img !== null)
+          .sort((a, b) => (a.order || 0) - (b.order || 0));
+      } catch (error) {
+        console.warn('⚠️ Error processing step images array:', error);
+        return [];
+      }
     },
 
+    // ✅ GET COURSE IMAGE: Select best image for course
     getCourseImage(course) {
       if (!course) return this.courseImages.default;
-      if (course.thumbnail && course.thumbnail !== '/default-course-thumbnail.jpg') {
-        return this.getProcessedImage(course.thumbnail);
-      }
-      const curriculumImages = this.extractCurriculumImages(course);
-      if (curriculumImages.length > 0) {
-        return curriculumImages[0].url;
-      }
-      const safeString = (value) => {
-        if (value === null || value === undefined) return '';
-        return String(value).toLowerCase().trim();
-      };
-      const category = safeString(course.category);
-      if (category && this.courseImages[category]) {
-        return this.courseImages[category];
-      }
+      
+      try {
+        // First, check if course has a valid thumbnail
+        if (course.thumbnail && 
+            course.thumbnail !== '/default-course-thumbnail.jpg' && 
+            !course.thumbnail.includes('placeholder') &&
+            !course.thumbnail.includes('default')) {
+          const processedThumbnail = this.getProcessedImage(course.thumbnail);
+          if (processedThumbnail !== this.courseImages.default) {
+            return processedThumbnail;
+          }
+        }
 
-      // Use 'premium' image if it's a premium course and no other thumbnail is found
-      if (course.isPremium) {
-        return this.courseImages.premium;
+        // Extract images from curriculum
+        const curriculumImages = this.extractCurriculumImages(course);
+        if (curriculumImages.length > 0) {
+          return curriculumImages[0].url;
+        }
+
+        // Use hardcoded images based on category
+        const category = this.safeString(course.category);
+        if (category && this.courseImages[category]) {
+          return this.courseImages[category];
+        }
+
+        // Check for related categories
+        const categoryMappings = {
+          'веб-разработка': 'web-разработка',
+          'веб разработка': 'web-разработка',
+          'web development': 'web-разработка',
+          'frontend': 'frontend разработка',
+          'backend': 'backend разработка',
+          'fullstack': 'fullstack разработка',
+          'ai': 'ии и автоматизация',
+          'ml': 'машинное обучение',
+          'design': 'дизайн',
+          'marketing': 'маркетинг',
+          'mobile': 'мобильная разработка'
+        };
+
+        const mappedCategory = categoryMappings[category];
+        if (mappedCategory && this.courseImages[mappedCategory]) {
+          return this.courseImages[mappedCategory];
+        }
+
+        // Use premium image for premium courses
+        if (course.isPremium) {
+          return this.courseImages.premium;
+        }
+
+        // Final fallback
+        return this.courseImages.default;
+        
+      } catch (error) {
+        console.warn('⚠️ Error getting course image:', error);
+        return this.courseImages.default;
       }
-      return this.courseImages.default;
     },
 
+    // ✅ SAFE STRING: Convert to safe string
+    safeString(value) {
+      if (value === null || value === undefined) return '';
+      return String(value).toLowerCase().trim();
+    },
+
+    // ✅ EXTRACT CURRICULUM IMAGES: Get images from course content
     extractCurriculumImages(course) {
       const images = [];
-      if (course.curriculum && Array.isArray(course.curriculum)) {
+      
+      try {
+        if (course.curriculum && Array.isArray(course.curriculum)) {
+          course.curriculum.forEach((lesson) => {
+            if (lesson.steps && Array.isArray(lesson.steps)) {
+              lesson.steps.forEach((step) => {
+                if (step.images && Array.isArray(step.images)) {
+                  step.images.forEach((img) => {
+                    if (img && img.url && !img.url.startsWith('data:')) {
+                      images.push({
+                        url: this.getProcessedImage(img.url),
+                        caption: img.caption || ''
+                      });
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      } catch (error) {
+        console.warn('⚠️ Error extracting curriculum images:', error);
+      }
+      
+      return images;
+    },
+
+    // ✅ COURSE HAS IMAGES: Check if course contains images
+    courseHasImages(course) {
+      try {
+        if (!course.curriculum || !Array.isArray(course.curriculum)) return false;
+        
+        return course.curriculum.some((lesson) => {
+          if (!lesson.steps || !Array.isArray(lesson.steps)) return false;
+          
+          return lesson.steps.some((step) => {
+            if (!step) return false;
+            return (step.images && Array.isArray(step.images) && step.images.length > 0);
+          });
+        });
+      } catch (error) {
+        console.warn('⚠️ Error checking course images:', error);
+        return false;
+      }
+    },
+
+    // ✅ GET COURSE IMAGE COUNT: Count total images in course
+    getCourseImageCount(course) {
+      try {
+        if (!course.curriculum || !Array.isArray(course.curriculum)) return 0;
+        
+        let count = 0;
         course.curriculum.forEach((lesson) => {
           if (lesson.steps && Array.isArray(lesson.steps)) {
             lesson.steps.forEach((step) => {
               if (step.images && Array.isArray(step.images)) {
-                step.images.forEach((img) => {
-                  if (img.url && !img.url.startsWith('data:')) {
-                    images.push({
-                      url: this.getProcessedImage(img.url),
-                      caption: img.caption
-                    });
-                  }
-                });
+                count += step.images.length;
               }
             });
           }
         });
+        return count;
+      } catch (error) {
+        console.warn('⚠️ Error counting course images:', error);
+        return 0;
       }
-      return images;
     },
 
-    courseHasImages(course) {
-      if (!course.curriculum) return false;
-      return course.curriculum.some((lesson) =>
-        lesson.steps && lesson.steps.some((step) => step.images && step.images.length > 0)
-      );
-    },
-
-    getCourseImageCount(course) {
-      if (!course.curriculum) return 0;
-      let count = 0;
-      course.curriculum.forEach((lesson) => {
-        if (lesson.steps) {
-          lesson.steps.forEach((step) => {
-            if (step.images) {
-              count += step.images.length;
-            }
-          });
-        }
-      });
-      return count;
-    },
-
+    // ✅ GET COURSE OUTCOMES: Generate learning outcomes
     getCourseOutcomes(course) {
-      if (course.learningOutcomes && course.learningOutcomes.length > 0) {
-        return course.learningOutcomes;
-      }
-      const outcomes = [];
-      if (course.curriculum && course.curriculum.length > 0) {
-        outcomes.push(`Изучите ${course.curriculum.length} практических уроков`);
-        const hasImages = this.courseHasImages(course);
-        if (hasImages) {
-          outcomes.push('Работайте с визуальными материалами и примерами');
+      try {
+        if (course.learningOutcomes && Array.isArray(course.learningOutcomes) && course.learningOutcomes.length > 0) {
+          return course.learningOutcomes;
         }
-        const hasQuizzes = course.curriculum.some((lesson) =>
-          lesson.steps && lesson.steps.some((step) => step.type === 'quiz')
-        );
-        if (hasQuizzes) {
-          outcomes.push('Проверьте знания с помощью интерактивных тестов');
+
+        const outcomes = [];
+        
+        if (course.curriculum && Array.isArray(course.curriculum) && course.curriculum.length > 0) {
+          outcomes.push(`Изучите ${course.curriculum.length} практических уроков`);
+          
+          const hasImages = this.courseHasImages(course);
+          if (hasImages) {
+            outcomes.push('Работайте с визуальными материалами и примерами');
+          }
+          
+          const hasQuizzes = course.curriculum.some((lesson) =>
+            lesson.steps && lesson.steps.some((step) => step.type === 'quiz')
+          );
+          if (hasQuizzes) {
+            outcomes.push('Проверьте знания с помощью интерактивных тестов');
+          }
+          
+          const hasPractice = course.curriculum.some((lesson) =>
+            lesson.steps && lesson.steps.some((step) => step.type === 'practice')
+          );
+          if (hasPractice) {
+            outcomes.push('Применяйте знания на практических заданиях');
+          }
         }
-        const hasPractice = course.curriculum.some((lesson) =>
-          lesson.steps && lesson.steps.some((step) => step.type === 'practice')
-        );
-        if (hasPractice) {
-          outcomes.push('Применяйте знания на практических заданиях');
+
+        // Add category-specific outcomes
+        const categoryOutcomes = {
+          'ИИ и автоматизация': ['Основы искусственного интеллекта', 'Методы машинного обучения', 'Практические применения ИИ'],
+          'Видеомонтаж': ['Основы видеомонтажа', 'Работа с профессиональными инструментами', 'Создание качественного видеоконтента'],
+          'Графический дизайн': ['Принципы графического дизайна', 'Работа с цветом и композицией', 'Создание профессиональных макетов'],
+          'Программирование': ['Основы программирования', 'Алгоритмы и структуры данных', 'Практическое решение задач'],
+          'Маркетинг': ['Основы маркетинга', 'Цифровые инструменты продвижения', 'Аналитика и метрики'],
+        };
+
+        const categorySpecific = categoryOutcomes[course.category];
+        if (categorySpecific) {
+          outcomes.push(...categorySpecific);
         }
+
+        return outcomes.length > 0 ? outcomes : [
+          'Получите практические навыки',
+          'Изучите современные методы',
+          'Применяйте знания на практике'
+        ];
+      } catch (error) {
+        console.warn('⚠️ Error getting course outcomes:', error);
+        return ['Получите практические навыки', 'Изучите современные методы', 'Применяйте знания на практике'];
       }
-      const categoryOutcomes = {
-        'ИИ и автоматизация': ['Основы искусственного интеллекта', 'Методы машинного обучения', 'Практические применения ИИ'],
-        'Видеомонтаж': ['Основы видеомонтажа', 'Работа с профессиональными инструментами', 'Создание качественного видеоконтента'],
-        'Графический дизайн': ['Принципы графического дизайна', 'Работа с цветом и композицией', 'Создание профессиональных макетов'],
-      };
-      const categorySpecific = categoryOutcomes[course.category];
-      if (categorySpecific) {
-        outcomes.push(...categorySpecific);
-      }
-      return outcomes.length > 0 ? outcomes : ['Получите практические навыки', 'Изучите современные методы', 'Применяйте знания на практике'];
     },
 
+    // ✅ GET COURSE MODULES: Generate module list
     getCourseModules(course) {
-      if (!course.curriculum || course.curriculum.length === 0) {
+      try {
+        if (!course.curriculum || !Array.isArray(course.curriculum) || course.curriculum.length === 0) {
+          return [
+            { title: 'Введение в курс', duration: '30 мин', hasImages: false },
+            { title: 'Основные концепции', duration: '45 мин', hasImages: false },
+            { title: 'Практические примеры', duration: '60 мин', hasImages: false },
+          ];
+        }
+
+        return course.curriculum.map((lesson) => ({
+          title: lesson.title || lesson.name || 'Урок',
+          duration: lesson.duration || '30 мин',
+          hasImages: this.lessonHasImages(lesson),
+          imageCount: this.getLessonImageCount(lesson),
+        }));
+      } catch (error) {
+        console.warn('⚠️ Error getting course modules:', error);
         return [
           { title: 'Введение в курс', duration: '30 мин', hasImages: false },
           { title: 'Основные концепции', duration: '45 мин', hasImages: false },
           { title: 'Практические примеры', duration: '60 мин', hasImages: false },
         ];
       }
-      return course.curriculum.map((lesson) => ({
-        title: lesson.title,
-        duration: lesson.duration,
-        hasImages: this.lessonHasImages(lesson),
-        imageCount: this.getLessonImageCount(lesson),
-      }));
     },
 
+    // ✅ FORMAT NUMBER: Display numbers nicely
     formatNumber(num) {
-      if (num >= 1000000) {
-        return (num / 1000000).toFixed(1) + 'M';
+      try {
+        if (!num || isNaN(num)) return '0';
+        
+        const number = parseInt(num);
+        if (number >= 1000000) {
+          return (number / 1000000).toFixed(1) + 'M';
+        }
+        if (number >= 1000) {
+          return (number / 1000).toFixed(1) + 'K';
+        }
+        return number.toString();
+      } catch (error) {
+        console.warn('⚠️ Error formatting number:', error);
+        return '0';
       }
-      if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K';
-      }
-      return num.toString();
     },
 
+    // ✅ HANDLE IMAGE ERROR: Fallback for broken images
     handleImageError(event, course) {
-      console.warn('Image failed to load for course:', course?.title || 'Unknown');
-      event.target.src = this.getProcessedImage(this.courseImages.default);
-      event.target.onerror = null;
+      try {
+        console.warn('Image failed to load for course:', course?.title || 'Unknown');
+        
+        if (event && event.target) {
+          event.target.src = this.courseImages.default;
+          event.target.onerror = null; // Prevent infinite loop
+        }
+      } catch (error) {
+        console.warn('⚠️ Error handling image error:', error);
+      }
     },
 
+    // ✅ DEBOUNCE SEARCH: Optimize search performance
     debounceSearch() {
-      clearTimeout(this.debounceTimeout);
-      this.debounceTimeout = setTimeout(this.fetchCourses, 500);
+      if (this.debounceTimeout) {
+        clearTimeout(this.debounceTimeout);
+      }
+      this.debounceTimeout = setTimeout(() => {
+        this.fetchCourses();
+      }, 300);
     },
 
+    // ✅ APPLY FILTERS: Trigger course filtering
     applyFilters() {
       this.fetchCourses();
     },
@@ -1138,187 +1462,314 @@ export default {
       this.fetchCourses();
     },
 
+    // ✅ OPEN MODAL: Show course details modal
     async openModal(course) {
-      this.selectedCourse = null;
-      this.isModalOpen = true;
-      this.modalLoading = true;
+      if (!course) {
+        console.warn('⚠️ No course provided to openModal');
+        return;
+      }
+
       try {
+        // Show modal immediately with basic course data
+        this.selectedCourse = course;
+        this.isModalOpen = true;
+        this.modalLoading = true;
+
         console.log('📖 Opening course modal:', course.title);
+
+        // Load detailed course info in background
         const response = await getCourseById(course._id || course.id);
-        if (response.success) {
-          this.selectedCourse = this.processCourses([response.data])[0];
-          console.log('✅ Course details loaded:', this.selectedCourse);
+        
+        if (response.success && response.data) {
+          // Process the detailed course data
+          const detailedCourse = response.data.course || response.data;
+          
+          this.selectedCourse = {
+            ...course, // Keep original data as base
+            ...detailedCourse, // Overlay detailed data
+            id: detailedCourse._id || detailedCourse.id || course.id,
+            _id: detailedCourse._id || detailedCourse.id || course._id,
+            // Ensure curriculum is processed
+            curriculum: this.processCurriculum(detailedCourse.curriculum || course.curriculum || [])
+          };
+          
+          console.log('✅ Course details loaded:', this.selectedCourse.title);
         } else {
-          console.error('Failed to fetch detailed course info:', response.error);
-          this.selectedCourse = this.processCourses([course])[0];
+          console.warn('⚠️ Failed to fetch detailed course info:', response.error);
+          // Keep using the basic course data
         }
       } catch (e) {
-        console.error('API error while fetching course details:', e);
-        this.selectedCourse = this.processCourses([course])[0];
+        console.error('❌ Error while opening course modal:', e);
+        // Keep using the basic course data
       } finally {
         this.modalLoading = false;
       }
     },
 
-    startCourse(course) {
-      // This method now navigates to the new route
-      console.log('🚀 Starting course:', course.title);
-      console.log('Course isPremium:', course.isPremium);
-      console.log('User status:', this.currentUserStatus);
-      console.log('User isPremium:', this.isPremiumUser);
-      if (course.isPremium && !this.isPremiumUser) {
-        console.log('❌ Course is premium and user lacks access');
-        if (this.$toast) {
-          this.$toast.error(`Этот курс доступен только по подписке. Ваш статус: ${this.currentUserStatus}`, {
-            duration: 4000,
-          });
-        } else {
-          alert(`Этот курс доступен только по подписке Start/Pro. Ваш текущий статус: ${this.currentUserStatus}`);
-        }
-        return;
-      }
-      console.log('✅ Access granted - starting course');
-      // Use Vue Router to navigate to the new page
-      this.$router.push({ name: 'LessonPlayer', params: { courseId: course.id } });
-    },
-
+    // ✅ CLOSE MODAL: Hide course details modal
     closeModal() {
       this.isModalOpen = false;
       this.selectedCourse = null;
     },
 
-    handleUserStatusChange(newStatus, oldStatus) {
-      if (!newStatus || newStatus === oldStatus) return;
-      console.log(`👤 UpdatedCourses: Handling status change ${oldStatus} → ${newStatus}`);
-      localStorage.setItem('userStatus', newStatus);
-      localStorage.setItem('plan', newStatus);
-      this.triggerReactivityUpdate();
-      if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
-        const planLabel = newStatus === 'pro' ? 'Pro' : 'Start';
+    // ✅ START COURSE: Navigate to course player
+    startCourse(course) {
+      if (!course) {
+        console.warn('⚠️ No course provided to startCourse');
+        return;
+      }
+
+      try {
+        console.log('🚀 Starting course:', course.title);
+        console.log('Course isPremium:', course.isPremium);
+        console.log('User status:', this.currentUserStatus);
+        console.log('User isPremium:', this.isPremiumUser);
+
+        // Check premium access
+        if (course.isPremium && !this.isPremiumUser) {
+          console.log('❌ Course is premium and user lacks access');
+          
+          const message = `Этот курс доступен только по подписке Start/Pro. Ваш текущий статус: ${this.currentUserStatus}`;
+          
+          if (this.$toast) {
+            this.$toast.error(message, { duration: 4000 });
+          } else if (this.$message) {
+            this.$message.error(message);
+          } else {
+            alert(message);
+          }
+          return;
+        }
+
+        console.log('✅ Access granted - starting course');
+
+        // Close modal first
+        this.closeModal();
+
+        // Navigate to lesson player
+        const courseId = course.id || course._id;
+        if (courseId) {
+          this.$router.push({ 
+            name: 'LessonPlayer', 
+            params: { courseId: courseId } 
+          });
+        } else {
+          console.error('❌ No course ID available for navigation');
+          const errorMessage = 'Не удалось открыть курс. Попробуйте позже.';
+          if (this.$toast) {
+            this.$toast.error(errorMessage);
+          } else {
+            alert(errorMessage);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error starting course:', error);
+        const errorMessage = 'Произошла ошибка при запуске курса.';
         if (this.$toast) {
-          this.$toast.success(`🎉 ${planLabel} подписка активирована!`, { duration: 5000 });
+          this.$toast.error(errorMessage);
+        } else {
+          alert(errorMessage);
         }
       }
-      console.log(`✅ UpdatedCourses: Status change handled: ${oldStatus} → ${newStatus}`);
     },
 
+    // ✅ USER STATUS: Handle subscription changes
+    handleUserStatusChange(newStatus, oldStatus) {
+      try {
+        if (!newStatus || newStatus === oldStatus) return;
+        
+        console.log(`👤 UpdatedCourses: Handling status change ${oldStatus} → ${newStatus}`);
+        
+        // Update local storage
+        localStorage.setItem('userStatus', newStatus);
+        localStorage.setItem('plan', newStatus);
+        localStorage.setItem('subscriptionPlan', newStatus);
+        
+        // Trigger reactivity update
+        this.triggerReactivityUpdate();
+        
+        // Show success message for upgrades
+        if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
+          const planLabel = newStatus === 'pro' ? 'Pro' : newStatus === 'start' ? 'Start' : 'Premium';
+          const message = `🎉 ${planLabel} подписка активирована!`;
+          
+          if (this.$toast) {
+            this.$toast.success(message, { duration: 5000 });
+          } else if (this.$message) {
+            this.$message.success(message);
+          }
+        }
+        
+        console.log(`✅ UpdatedCourses: Status change handled: ${oldStatus} → ${newStatus}`);
+      } catch (error) {
+        console.error('❌ Error handling user status change:', error);
+      }
+    },
+
+    // ✅ REACTIVITY: Force component updates
     triggerReactivityUpdate() {
-      this.componentKey++;
-      this.forceUpdateCounter++;
-      this.lastUpdateTime = Date.now();
-      this.$forceUpdate();
-      this.$nextTick(() => {
+      try {
+        this.componentKey++;
+        this.forceUpdateCounter++;
+        this.lastUpdateTime = Date.now();
+        
         this.$forceUpdate();
-      });
-      console.log('🔄 UpdatedCourses: Reactivity update triggered:', {
-        componentKey: this.componentKey,
-        userStatus: this.currentUserStatus,
-        timestamp: this.lastUpdateTime,
-      });
-    },
-
-    setupEventListeners() {
-      console.log('🔧 UpdatedCourses: Setting up event listeners');
-      if (typeof window !== 'undefined') {
-        this.handleSubscriptionChange = (event) => {
-          console.log('📡 UpdatedCourses: Subscription change received:', event.detail);
-          const { plan, oldPlan } = event.detail;
-          this.handleUserStatusChange(plan, oldPlan);
-        };
-        window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
-        this.handleStorageChange = (event) => {
-          if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
-            console.log('📡 UpdatedCourses: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
-            this.handleUserStatusChange(event.newValue, event.oldValue);
-          }
-        };
-        window.addEventListener('storage', this.handleStorageChange);
-      }
-      if (typeof window !== 'undefined' && window.eventBus) {
-        this.handleUserStatusEvent = (data) => {
-          console.log('📡 UpdatedCourses: User status event received:', data);
-          this.handleUserStatusChange(data.newStatus, data.oldStatus);
-        };
-        this.handlePromocodeEvent = (data) => {
-          console.log('📡 UpdatedCourses: Promocode applied event:', data);
-          this.handleUserStatusChange(data.newStatus, data.oldStatus);
-        };
-        this.handleForceUpdateEvent = () => {
-          console.log('📡 UpdatedCourses: Force update event received');
-          this.triggerReactivityUpdate();
-        };
-        window.eventBus.on('userStatusChanged', this.handleUserStatusEvent);
-        window.eventBus.on('promocodeApplied', this.handlePromocodeEvent);
-        window.eventBus.on('forceUpdate', this.handleForceUpdateEvent);
-        window.eventBus.on('globalForceUpdate', this.handleForceUpdateEvent);
-        window.eventBus.on('subscriptionUpdated', this.handleUserStatusEvent);
-        window.eventBus.on('paymentCompleted', this.handleUserStatusEvent);
-        console.log('✅ UpdatedCourses: Event bus listeners registered');
-      }
-      if (this.$store) {
-        this.storeUnsubscribe = this.$store.subscribe((mutation) => {
-          if (this.isUserRelatedMutation(mutation)) {
-            console.log('📊 UpdatedCourses: Store mutation detected:', mutation.type);
-            this.triggerReactivityUpdate();
-          }
+        
+        this.$nextTick(() => {
+          this.$forceUpdate();
         });
+        
+        console.log('🔄 UpdatedCourses: Reactivity update triggered:', {
+          componentKey: this.componentKey,
+          userStatus: this.currentUserStatus,
+          timestamp: this.lastUpdateTime,
+        });
+      } catch (error) {
+        console.error('❌ Error triggering reactivity update:', error);
       }
-      console.log('✅ UpdatedCourses: Event listeners setup complete');
     },
 
+    // ✅ EVENT LISTENERS: Setup global event handling
+    setupEventListeners() {
+      try {
+        console.log('🔧 UpdatedCourses: Setting up event listeners');
+        
+        // Browser storage events
+        if (typeof window !== 'undefined') {
+          this.handleSubscriptionChange = (event) => {
+            console.log('📡 UpdatedCourses: Subscription change received:', event.detail);
+            const { plan, oldPlan } = event.detail;
+            this.handleUserStatusChange(plan, oldPlan);
+          };
+          
+          this.handleStorageChange = (event) => {
+            if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
+              console.log('📡 UpdatedCourses: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
+              this.handleUserStatusChange(event.newValue, event.oldValue);
+            }
+          };
+          
+          window.addEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
+          window.addEventListener('storage', this.handleStorageChange);
+        }
+        
+        // Event bus listeners
+        if (typeof window !== 'undefined' && window.eventBus) {
+          this.handleUserStatusEvent = (data) => {
+            console.log('📡 UpdatedCourses: User status event received:', data);
+            this.handleUserStatusChange(data.newStatus, data.oldStatus);
+          };
+          
+          this.handlePromocodeEvent = (data) => {
+            console.log('📡 UpdatedCourses: Promocode applied event:', data);
+            this.handleUserStatusChange(data.newStatus, data.oldStatus);
+          };
+          
+          this.handleForceUpdateEvent = () => {
+            console.log('📡 UpdatedCourses: Force update event received');
+            this.triggerReactivityUpdate();
+          };
+          
+          // Register event bus listeners
+          window.eventBus.on('userStatusChanged', this.handleUserStatusEvent);
+          window.eventBus.on('promocodeApplied', this.handlePromocodeEvent);
+          window.eventBus.on('forceUpdate', this.handleForceUpdateEvent);
+          window.eventBus.on('globalForceUpdate', this.handleForceUpdateEvent);
+          window.eventBus.on('subscriptionUpdated', this.handleUserStatusEvent);
+          window.eventBus.on('paymentCompleted', this.handleUserStatusEvent);
+          
+          console.log('✅ UpdatedCourses: Event bus listeners registered');
+        }
+        
+        // Store mutations
+        if (this.$store) {
+          this.storeUnsubscribe = this.$store.subscribe((mutation) => {
+            if (this.isUserRelatedMutation(mutation)) {
+              console.log('📊 UpdatedCourses: Store mutation detected:', mutation.type);
+              this.triggerReactivityUpdate();
+            }
+          });
+        }
+        
+        console.log('✅ UpdatedCourses: Event listeners setup complete');
+      } catch (error) {
+        console.error('❌ Error setting up event listeners:', error);
+      }
+    },
+
+    // ✅ MUTATION CHECK: Identify user-related mutations
     isUserRelatedMutation(mutation) {
-      const userMutations = [
-        'setUser',
-        'SET_USER',
-        'updateUser',
-        'UPDATE_USER',
-        'user/SET_USER_STATUS',
-        'user/UPDATE_SUBSCRIPTION',
-        'user/FORCE_UPDATE',
-      ];
-      return (
-        userMutations.some((type) => mutation.type.includes(type)) ||
-        mutation.type.includes('user/') ||
-        mutation.type.toLowerCase().includes('status') ||
-        mutation.type.toLowerCase().includes('subscription')
-      );
+      try {
+        const userMutations = [
+          'setUser', 'SET_USER', 'updateUser', 'UPDATE_USER',
+          'user/SET_USER_STATUS', 'user/UPDATE_SUBSCRIPTION', 'user/FORCE_UPDATE',
+        ];
+        
+        return (
+          userMutations.some((type) => mutation.type.includes(type)) ||
+          mutation.type.includes('user/') ||
+          mutation.type.toLowerCase().includes('status') ||
+          mutation.type.toLowerCase().includes('subscription')
+        );
+      } catch (error) {
+        console.warn('⚠️ Error checking mutation type:', error);
+        return false;
+      }
     },
 
+    // ✅ CLEANUP: Remove all event listeners
     cleanup() {
-      console.log('🧹 UpdatedCourses: Performing cleanup...');
-      if (typeof window !== 'undefined') {
-        if (this.handleSubscriptionChange) {
-          window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
+      try {
+        console.log('🧹 UpdatedCourses: Performing cleanup...');
+        
+        // Clear debounce timeout
+        if (this.debounceTimeout) {
+          clearTimeout(this.debounceTimeout);
+          this.debounceTimeout = null;
         }
-        if (this.handleStorageChange) {
-          window.removeEventListener('storage', this.handleStorageChange);
+        
+        // Remove window event listeners
+        if (typeof window !== 'undefined') {
+          if (this.handleSubscriptionChange) {
+            window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
+          }
+          if (this.handleStorageChange) {
+            window.removeEventListener('storage', this.handleStorageChange);
+          }
         }
+        
+        // Remove event bus listeners
+        if (typeof window !== 'undefined' && window.eventBus) {
+          if (this.handleUserStatusEvent) {
+            window.eventBus.off('userStatusChanged', this.handleUserStatusEvent);
+            window.eventBus.off('subscriptionUpdated', this.handleUserStatusEvent);
+            window.eventBus.off('paymentCompleted', this.handleUserStatusEvent);
+          }
+          if (this.handlePromocodeEvent) {
+            window.eventBus.off('promocodeApplied', this.handlePromocodeEvent);
+          }
+          if (this.handleForceUpdateEvent) {
+            window.eventBus.off('forceUpdate', this.handleForceUpdateEvent);
+            window.eventBus.off('globalForceUpdate', this.handleForceUpdateEvent);
+          }
+        }
+        
+        // Remove store subscription
+        if (this.storeUnsubscribe) {
+          this.storeUnsubscribe();
+          this.storeUnsubscribe = null;
+        }
+        
+        console.log('✅ UpdatedCourses: Cleanup completed');
+      } catch (error) {
+        console.error('❌ Error during cleanup:', error);
       }
-      if (typeof window !== 'undefined' && window.eventBus) {
-        if (this.handleUserStatusEvent) {
-          window.eventBus.off('userStatusChanged', this.handleUserStatusEvent);
-          window.eventBus.off('subscriptionUpdated', this.handleUserStatusEvent);
-          window.eventBus.off('paymentCompleted', this.handleUserStatusEvent);
-        }
-        if (this.handlePromocodeEvent) {
-          window.eventBus.off('promocodeApplied', this.handlePromocodeEvent);
-        }
-        if (this.handleForceUpdateEvent) {
-          window.eventBus.off('forceUpdate', this.handleForceUpdateEvent);
-          window.eventBus.off('globalForceUpdate', this.handleForceUpdateEvent);
-        }
-      }
-      if (this.storeUnsubscribe) {
-        this.storeUnsubscribe();
-        this.storeUnsubscribe = null;
-      }
-      console.log('✅ UpdatedCourses: Cleanup completed');
     },
   },
 };
 </script>
 <style scoped>
-/* CSS Variables */
+/* ===== CSS VARIABLES AND ROOT STYLES ===== */
 :root {
   --color-background: #ffffff;
   --color-foreground: #222;
@@ -1342,8 +1793,13 @@ export default {
   --brand-purple-dark: #7C3AED;
   --brand-purple-light: #A78BFA;
   --brand-purple-muted: rgba(139, 92, 246, 0.1);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
+/* ===== DARK MODE VARIABLES ===== */
 .dark {
   --color-background: #111827;
   --color-foreground: #f9fafb;
@@ -1369,12 +1825,14 @@ export default {
   --brand-purple-muted: rgba(167, 139, 250, 0.1);
 }
 
+/* ===== MAIN COMPONENT STYLES ===== */
 .courses-page {
   background-color: var(--color-background);
   min-height: 100vh;
   color: var(--color-foreground);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
   line-height: 1.5;
+  overflow-x: hidden;
 }
 
 .container {
@@ -1383,13 +1841,27 @@ export default {
   padding: 0 1rem;
 }
 
-/* Header */
+/* ===== HEADER SECTION ===== */
 .header {
-  background-image: linear-gradient(to right, #111827, #1f2937, #111827);
+  background-image: linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%);
   color: #fff;
   padding: 4rem 0;
   text-align: center;
+  position: relative;
+  overflow: hidden;
 }
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(139, 127, 191, 0.1) 0%, transparent 50%, rgba(139, 127, 191, 0.05) 100%);
+  pointer-events: none;
+}
+
 @media (min-width: 768px) {
   .header {
     padding: 6rem 0;
@@ -1400,6 +1872,8 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  position: relative;
+  z-index: 1;
 }
 
 .header-badge {
@@ -1413,11 +1887,20 @@ export default {
   font-size: 0.875rem;
   font-weight: 500;
   margin: 0 auto;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(139, 127, 191, 0.3);
+  transition: all 0.3s ease;
+}
+
+.header-badge:hover {
+  background-color: rgba(139, 127, 191, 0.3);
+  transform: translateY(-1px);
 }
 
 .header-badge-icon {
   width: 1rem;
   height: 1rem;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .header-title {
@@ -1427,7 +1910,10 @@ export default {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
 }
+
 @media (min-width: 768px) {
   .header-title {
     font-size: 3.75rem;
@@ -1437,7 +1923,10 @@ export default {
 .header-subtitle {
   font-size: 1.25rem;
   color: #d1d5db;
+  font-weight: 500;
+  line-height: 1.4;
 }
+
 @media (min-width: 768px) {
   .header-subtitle {
     font-size: 1.5rem;
@@ -1449,35 +1938,46 @@ export default {
   color: #9ca3af;
   max-width: 42rem;
   margin: 0 auto;
+  line-height: 1.6;
 }
 
+/* ===== CONTENT WRAPPER ===== */
 .content-wrapper {
   padding: 2rem 0;
+  background: linear-gradient(to bottom, var(--color-background), var(--color-muted));
 }
 
-/* Filters */
+/* ===== FILTER BAR ===== */
 .filter-bar {
   background-color: var(--color-card);
   border-radius: 1rem;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
   padding: 1.5rem;
   margin-bottom: 2rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 1rem;
+  z-index: 10;
 }
+
 @media (min-width: 1024px) {
   .filter-bar {
     flex-direction: row;
     align-items: center;
+    gap: 1.5rem;
   }
 }
 
 .filter-group-search {
   position: relative;
   flex: 1;
+  min-width: 250px;
 }
+
 @media (min-width: 1024px) {
   .filter-group-search {
     flex: 1.5;
@@ -1492,35 +1992,44 @@ export default {
   color: var(--color-muted-foreground);
   width: 1rem;
   height: 1rem;
+  z-index: 2;
 }
 
 .input-search {
   width: 100%;
-  height: 2.5rem;
+  height: 2.75rem;
   padding: 0.5rem 0.75rem 0.5rem 2.5rem;
-  border-radius: 0.375rem;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
   background-color: var(--color-input-background);
   font-size: 0.875rem;
   outline: none;
-  transition: border-color 0.2s;
+  transition: all 0.2s ease;
+  color: var(--color-foreground);
 }
+
+.input-search::placeholder {
+  color: var(--color-muted-foreground);
+}
+
 .input-search:focus {
-  border-color: rgba(139, 127, 191, 0.5);
-  box-shadow: 0 0 0 2px rgba(139, 127, 191, 0.2);
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px var(--brand-purple-muted);
+  background-color: var(--color-background);
 }
 
 .filter-group-select {
   position: relative;
   flex: 1;
+  min-width: 150px;
 }
 
 .select-field {
   width: 100%;
-  height: 2.5rem;
+  height: 2.75rem;
   padding: 0.5rem 2rem 0.5rem 0.75rem;
-  border-radius: 0.375rem;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
   background-color: var(--color-input-background);
   font-size: 0.875rem;
   outline: none;
@@ -1528,6 +2037,14 @@ export default {
   -moz-appearance: none;
   appearance: none;
   cursor: pointer;
+  color: var(--color-foreground);
+  transition: all 0.2s ease;
+}
+
+.select-field:focus {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px var(--brand-purple-muted);
+  background-color: var(--color-background);
 }
 
 .select-arrow {
@@ -1539,41 +2056,57 @@ export default {
   height: 1rem;
   opacity: 0.5;
   pointer-events: none;
+  transition: transform 0.2s ease;
+}
+
+.filter-group-select:hover .select-arrow {
+  transform: translateY(-50%) rotate(180deg);
 }
 
 .filter-group-buttons {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .button-filter {
-  height: 2.25rem;
-  padding: 0 0.75rem;
-  border-radius: 0.375rem;
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-border);
   background-color: var(--color-background);
   color: var(--color-foreground);
-  transition: all 0.2s ease-in-out;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
 }
+
 .button-filter:hover {
   background-color: var(--color-accent);
   color: var(--color-accent-foreground);
-}
-.button-filter.active {
-  background-color: var(--color-brand);
-  color: #fff;
-  border-color: var(--color-brand);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
-/* Results Info */
+.button-filter.active {
+  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
+  color: white !important;
+  border-color: var(--color-brand);
+  box-shadow: var(--shadow-md);
+}
+
+/* ===== RESULTS INFO ===== */
 .results-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .results-count {
@@ -1582,115 +2115,158 @@ export default {
   gap: 0.5rem;
   color: var(--color-muted-foreground);
   font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .results-icon {
   width: 1rem;
   height: 1rem;
+  color: var(--color-brand);
 }
 
 .results-updated {
   display: inline-flex;
   align-items: center;
   border-radius: 9999px;
-  border: 1px solid rgba(139, 127, 191, 0.3);
-  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--color-brand);
+  background: var(--brand-purple-muted);
+  padding: 0.375rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-brand);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Courses Grid */
+/* ===== COURSES GRID ===== */
 .courses-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  gap: 1.5rem;
+  padding: 0;
 }
 
 @media (min-width: 768px) {
   .courses-grid {
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 24px;
+    gap: 2rem;
   }
 }
 
 @media (min-width: 1024px) {
   .courses-grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
+    gap: 2rem;
   }
 }
 
-/* Course Card */
+/* ===== COURSE CARD STYLES ===== */
 .course-card {
   cursor: pointer;
   background-color: var(--color-card);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;
+  will-change: transform;
+}
+
+.course-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, transparent 0%, var(--brand-purple-muted) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .course-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  border-color: rgba(139, 127, 191, 0.3);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--color-brand);
+}
+
+.course-card:hover::before {
+  opacity: 1;
 }
 
 .course-card-image-wrapper {
   position: relative;
   padding: 16px 16px 0;
+  overflow: hidden;
 }
 
 .course-card-image {
   width: 100%;
-  height: 180px;
+  height: 200px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  background: linear-gradient(45deg, var(--color-muted) 0%, var(--color-accent) 100%);
 }
 
+.course-card:hover .course-card-image {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+/* ===== BADGE STYLES ===== */
 .badge {
   position: absolute;
   top: 24px;
   right: 24px;
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   border-radius: 20px;
-  padding: 4px 10px;
+  padding: 6px 12px;
   font-size: 11px;
   font-weight: 600;
+  backdrop-filter: blur(12px);
+  z-index: 2;
+  transition: all 0.2s ease;
 }
 
 .badge-premium {
-  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border: none;
+  background: linear-gradient(135deg, var(--color-brand) 0%, var(--color-brand-light) 100%);
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(139, 127, 191, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .badge-free {
-  background-color: var(--color-green-100);
-  color: var(--color-green-800);
-  border: none;
+  background: linear-gradient(135deg, var(--color-success) 0%, #22c55e 100%);
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.badge:hover {
+  transform: scale(1.05);
 }
 
 .badge-icon {
-  width: 10px;
-  height: 10px;
-  margin-right: 4px;
+  width: 12px;
+  height: 12px;
 }
 
+/* ===== CARD CONTENT ===== */
 .course-card-content {
-  padding: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   flex: 1;
+  position: relative;
+  z-index: 1;
 }
 
 .course-card-meta {
@@ -1702,380 +2278,20 @@ export default {
   display: inline-flex;
   align-items: center;
   border-radius: 16px;
-  border: 1px solid rgba(139, 127, 191, 0.3);
-  padding: 4px 10px;
+  border: 1px solid var(--color-brand);
+  background: var(--brand-purple-muted);
+  padding: 4px 12px;
   font-size: 11px;
   font-weight: 600;
   color: var(--color-brand);
-}
-
-.course-card-title {
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.3;
-  margin: 0;
-  transition: color 0.2s ease;
-}
-
-.course-card:hover .course-card-title {
-  color: var(--color-brand);
-}
-
-.course-card-description {
-  font-size: 14px;
-  color: var(--color-muted-foreground);
-  line-height: 1.4;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  flex: 1;
-}
-
-.course-card-stats {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  color: var(--color-muted-foreground);
-  margin-top: auto;
-}
-
-.course-card-stat {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.course-card-stat-icon {
-  width: 14px;
-  height: 14px;
-}
-
-.course-card-level {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 12px;
-  border: 1px solid rgba(139, 127, 191, 0.2);
-  padding: 3px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-brand);
-}
-
-.course-card-provider {
-  padding-top: 12px;
-  border-top: 1px solid var(--color-border);
-  text-align: center;
-  margin-top: auto;
-}
-
-.course-card-provider p {
-  margin: 0;
-  line-height: 1.2;
-}
-
-.course-card-provider p:first-child {
-  font-size: 12px;
-  color: var(--color-muted-foreground);
-  margin-bottom: 2px;
-}
-
-.course-card-provider p:last-child {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-brand);
-}
-
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 4rem 0;
-}
-
-.empty-state-icon-wrapper {
-  width: 4rem;
-  height: 4rem;
-  margin: 0 auto 1rem;
-  background-color: var(--color-muted);
-  border-radius: 9999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.empty-state-icon {
-  width: 2rem;
-  height: 2rem;
-  color: var(--color-muted-foreground);
-}
-
-.empty-state-title {
-  font-size: 1.125rem;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-}
-
-.empty-state-description {
-  color: var(--color-muted-foreground);
-  margin-bottom: 1rem;
-}
-
-.button-reset-filters {
-  height: 2.5rem;
-  padding: 0 1rem;
-  border-radius: 0.375rem;
-  border: 1px solid rgba(139, 127, 191, 0.3);
-  background-color: var(--color-background);
-  color: var(--color-brand);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.button-reset-filters:hover {
-  background-color: rgba(139, 127, 191, 0.1);
-}
-
-/* Loading Spinner */
-.spinner {
-  width: 4rem;
-  height: 4rem;
-  border: 4px solid var(--color-muted);
-  border-top: 4px solid var(--color-brand);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 1rem;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* ✅ ENHANCED MODAL STYLES WITH IMAGE SUPPORT */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
-  background-color: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.modal-container {
-  position: relative;
-  width: 100%;
-  max-width: 1100px;
-  max-height: 90vh;
-  background-color: var(--color-background);
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-  animation: slideUp 0.3s ease-out;
-  display: flex;
-  flex-direction: column;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(40px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.modal-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 10;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.9);
-  color: #374151;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.modal-close:hover {
-  background-color: white;
-  transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-}
-
-.modal-loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  gap: 1rem;
-}
-
-.modal-content {
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-  overflow: hidden;
-}
-
-.modal-header-section {
-  position: relative;
-  height: 280px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.modal-image-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.modal-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.modal-image-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60%;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.2), transparent);
-}
-
-.modal-badge-container {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-}
-
-.modal-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 16px;
-  font-size: 13px;
-  font-weight: 600;
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.modal-badge-premium {
-  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
-  color: white;
-  box-shadow: 0 3px 12px rgba(139, 127, 191, 0.3);
-}
-
-.modal-badge-free {
-  background: linear-gradient(135deg, var(--color-success), #22c55e);
-  color: white;
-  box-shadow: 0 3px 12px rgba(34, 197, 94, 0.3);
-}
-
-.modal-meta-overlay {
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  right: 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  color: white;
-}
-
-.modal-duration {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  padding: 6px 12px;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(12px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.modal-provider {
-  text-align: right;
-  font-size: 13px;
-}
-
-.modal-provider span:first-child {
-  display: block;
-  opacity: 0.8;
-  font-size: 11px;
-  margin-bottom: 2px;
-}
-
-.modal-provider span:last-child {
-  display: block;
-  font-weight: 700;
-  font-size: 15px;
-}
-
-.modal-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.modal-tags {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
-.modal-tag {
-  padding: 4px 10px;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: 600;
-  border: 1px solid;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .modal-tag-category {
-  background: rgba(139, 127, 191, 0.1);
+  background: var(--brand-purple-muted);
   color: var(--color-brand);
-  border-color: rgba(139, 127, 191, 0.3);
+  border-color: var(--color-brand);
 }
 
 .modal-tag-level {
@@ -2085,15 +2301,16 @@ export default {
 }
 
 .modal-title {
-  font-size: 28px;
+  font-size: 2rem;
   font-weight: 700;
   line-height: 1.2;
-  margin: 0 0 16px 0;
+  margin: 0 0 1rem 0;
   color: var(--color-foreground);
+  letter-spacing: -0.025em;
 }
 
 .modal-description {
-  font-size: 16px;
+  font-size: 1.125rem;
   line-height: 1.6;
   color: var(--color-muted-foreground);
   margin: 0;
@@ -2101,38 +2318,50 @@ export default {
 
 .modal-divider {
   height: 1px;
-  background: var(--color-border);
+  background: linear-gradient(to right, transparent, var(--color-border), transparent);
   border: none;
   margin: 0;
+}
+
+/* ===== MODAL DETAILS ===== */
+.modal-details {
+  padding: 0;
 }
 
 .modal-details-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 40px;
+  gap: 3rem;
 }
 
 @media (max-width: 768px) {
   .modal-details-grid {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 2rem;
   }
 }
 
 .modal-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 1rem;
 }
 
 .modal-section-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 16px;
+  gap: 0.75rem;
+  font-size: 1.125rem;
   font-weight: 600;
   color: var(--color-foreground);
   margin: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--color-brand);
+}
+
+.modal-section-title svg {
+  color: var(--color-brand);
+  flex-shrink: 0;
 }
 
 .modal-skills-list {
@@ -2141,24 +2370,32 @@ export default {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.75rem;
 }
 
 .modal-skill-item {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  font-size: 14px;
-  line-height: 1.4;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
   color: var(--color-foreground);
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.modal-skill-item:hover {
+  background: var(--color-muted);
+  transform: translateX(4px);
 }
 
 .skill-check-icon {
   color: var(--color-success);
   flex-shrink: 0;
-  margin-top: 1px;
-  width: 14px;
-  height: 14px;
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
 }
 
 .modal-modules-list {
@@ -2167,28 +2404,48 @@ export default {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.75rem;
 }
 
 .modal-module-item {
   display: flex;
-  gap: 8px;
-  font-size: 14px;
-  line-height: 1.4;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-muted);
+  transition: all 0.2s ease;
+}
+
+.modal-module-item:hover {
+  background: var(--color-background);
+  border-color: var(--color-brand);
+  transform: translateX(4px);
+  box-shadow: var(--shadow-sm);
 }
 
 .module-number {
   color: var(--color-brand);
-  font-weight: 600;
+  font-weight: 700;
   flex-shrink: 0;
-  min-width: 20px;
+  min-width: 24px;
+  background: var(--brand-purple-muted);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
 }
 
 .module-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0.25rem;
 }
 
 .module-text {
@@ -2198,143 +2455,246 @@ export default {
 
 .module-duration {
   color: var(--color-muted-foreground);
-  font-size: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
 
-/* ✅ NEW: Module badge for lessons with images */
 .module-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 6px;
-  border-radius: 8px;
-  background: rgba(139, 127, 191, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--brand-purple-muted);
   color: var(--color-brand);
-  font-size: 10px;
-  font-weight: 500;
+  font-size: 0.7rem;
+  font-weight: 600;
   width: fit-content;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-/* ✅ NEW: Course statistics section */
+/* ===== MODAL STATS ===== */
 .modal-stats {
-  padding: 20px;
-  background: var(--color-muted);
-  border-radius: 12px;
-  margin-top: -16px;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, var(--color-muted) 0%, var(--color-accent) 100%);
+  border-radius: 16px;
+  margin-top: -1rem;
+  border: 1px solid var(--color-border);
 }
 
 .modal-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
 }
 
 .modal-stat-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px;
+  gap: 0.75rem;
+  padding: 1rem;
   background: var(--color-background);
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid var(--color-border);
+  transition: all 0.2s ease;
+}
+
+.modal-stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-brand);
 }
 
 .modal-stat-item svg {
   color: var(--color-brand);
   flex-shrink: 0;
+  width: 24px;
+  height: 24px;
 }
 
 .stat-value {
-  font-size: 18px;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--color-foreground);
   line-height: 1;
 }
 
 .stat-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--color-muted-foreground);
   line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
 }
 
+/* ===== MODAL ACTIONS ===== */
 .modal-actions {
-  padding-top: 16px;
+  padding-top: 1.5rem;
   border-top: 1px solid var(--color-border);
   margin-top: auto;
   flex-shrink: 0;
+  background: linear-gradient(to bottom, transparent, var(--color-muted));
 }
 
 .modal-action-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 0.75rem;
   width: 100%;
-  height: 48px;
-  padding: 0 24px;
+  height: 3.5rem;
+  padding: 0 2rem;
   border: none;
-  border-radius: 10px;
-  font-size: 15px;
+  border-radius: 12px;
+  font-size: 1rem;
   font-weight: 600;
-  color: white;
-  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
-  box-shadow: 0 3px 12px rgba(139, 127, 191, 0.3);
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin-bottom: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-bottom: 0.75rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ✅ FIXED: Button text colors - make text dark and visible */
+.modal-action-button {
+  color: #1e293b !important; /* Dark text for visibility */
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 2px solid var(--color-brand);
+  box-shadow: 0 4px 12px rgba(139, 127, 191, 0.2);
+}
+
+.modal-action-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.5s;
 }
 
 .modal-action-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(139, 127, 191, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 127, 191, 0.4);
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+.modal-action-button:hover::before {
+  left: 100%;
 }
 
 .modal-action-button.premium {
-  background: linear-gradient(135deg, #f59e0b, #f97316);
-  box-shadow: 0 3px 12px rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+  border-color: #f59e0b;
+  color: #92400e !important; /* Dark orange text */
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
 .modal-action-button.premium:hover {
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.5);
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.modal-action-button.accessible {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border-color: #10b981;
+  color: #065f46 !important; /* Dark green text */
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.modal-action-button.accessible:hover {
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+}
+
+.modal-action-button svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .modal-action-description {
   text-align: center;
-  font-size: 13px;
+  font-size: 0.875rem;
   color: var(--color-muted-foreground);
   margin: 0;
-  line-height: 1.3;
+  line-height: 1.4;
+  font-style: italic;
 }
 
-/* Responsive adjustments */
+/* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
   .modal-container {
     margin: 0.5rem;
     max-height: 95vh;
     max-width: none;
+    border-radius: 16px;
   }
 
   .modal-header-section {
-    height: 200px;
+    height: 250px;
   }
 
   .modal-body {
-    padding: 20px;
-    gap: 20px;
+    padding: 1.5rem;
+    gap: 1.5rem;
   }
 
   .modal-title {
-    font-size: 20px;
+    font-size: 1.5rem;
+  }
+
+  .modal-description {
+    font-size: 1rem;
   }
 
   .modal-details-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 1.5rem;
+  }
+
+  .modal-stats {
+    padding: 1rem;
   }
 
   .modal-stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .modal-stat-item {
+    padding: 0.75rem;
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+
+  .courses-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .filter-bar {
+    position: static;
+  }
+
+  .header {
+    padding: 2rem 0;
+  }
+
+  .header-title {
+    font-size: 1.75rem;
+  }
+
+  .header-subtitle {
+    font-size: 1.125rem;
+  }
+
+  .course-card-image {
+    height: 160px;
   }
 }
 
@@ -2344,38 +2704,181 @@ export default {
   }
 
   .modal-header-section {
-    height: 160px;
+    height: 200px;
   }
 
   .modal-body {
-    padding: 16px;
-    gap: 16px;
+    padding: 1rem;
+    gap: 1rem;
   }
 
   .modal-title {
-    font-size: 18px;
+    font-size: 1.25rem;
   }
 
-  .courses-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+  .modal-action-button {
+    height: 3rem;
+    font-size: 0.9rem;
   }
 
-  .modal-stats {
+  .course-card-content {
     padding: 16px;
   }
 
-  .modal-stats-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+  .course-card-title {
+    font-size: 1.125rem;
   }
 
-  .modal-stat-item {
-    padding: 8px;
+  .course-card-image {
+    height: 140px;
   }
 
-  .stat-value {
-    font-size: 16px;
+  .container {
+    padding: 0 0.75rem;
+  }
+
+  .filter-bar {
+    padding: 1rem;
+    border-radius: 0.75rem;
+  }
+
+  .filter-group-search,
+  .filter-group-select {
+    min-width: auto;
+  }
+}
+
+/* ===== DARK MODE OVERRIDES ===== */
+@media (prefers-color-scheme: dark) {
+  .modal-action-button {
+    color: var(--color-foreground) !important;
+    background: linear-gradient(135deg, var(--color-card) 0%, var(--color-muted) 100%);
+    border-color: var(--color-brand);
+  }
+
+  .modal-action-button:hover {
+    background: linear-gradient(135deg, var(--color-muted) 0%, var(--color-accent) 100%);
+  }
+
+  .modal-action-button.accessible {
+    color: #22c55e !important;
+    background: linear-gradient(135deg, #14532d 0%, #166534 100%);
+  }
+
+  .modal-action-button.premium {
+    color: #f59e0b !important;
+    background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+  }
+
+  .course-card {
+    background-color: var(--color-card);
+    border-color: var(--color-border);
+  }
+
+  .course-card:hover {
+    border-color: var(--color-brand);
+  }
+
+  .course-card-image {
+    background: linear-gradient(45deg, var(--color-muted) 0%, var(--color-accent) 100%);
+  }
+}
+
+/* ===== ACCESSIBILITY ===== */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===== FOCUS STYLES ===== */
+.course-card:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+.modal-action-button:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+.input-search:focus-visible,
+.select-field:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+.button-filter:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .modal-overlay {
+    display: none !important;
+  }
+  
+  .course-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  
+  .filter-bar {
+    display: none !important;
+  }
+  
+  .header {
+    background: none !important;
+    color: black !important;
+  }
+}
+
+/* ===== CUSTOM SCROLLBAR ===== */
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: var(--color-muted);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: var(--color-brand);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-dark);
+}
+
+/* ===== SELECTION STYLES ===== */
+::selection {
+  background: var(--brand-purple-muted);
+  color: var(--color-brand-dark);
+}
+
+::-moz-selection {
+  background: var(--brand-purple-muted);
+  color: var(--color-brand-dark);
+}
+
+/* ===== HIGH CONTRAST MODE ===== */
+@media (prefers-contrast: high) {
+  .course-card {
+    border: 2px solid var(--color-foreground);
+  }
+  
+  .modal-action-button {
+    border: 2px solid var(--color-foreground);
+  }
+  
+  .badge {
+    border: 2px solid white;
   }
 }
 </style>
+

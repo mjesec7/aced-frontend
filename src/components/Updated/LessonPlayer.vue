@@ -321,6 +321,8 @@
   </div>
 </template>
 
+// ===== LESSON PLAYER.VUE SCRIPT FIXES =====
+
 <script>
 import { getCourseById } from '@/api.js';
 
@@ -338,7 +340,6 @@ export default {
       selectedImage: null,
       course: null,
       
-      // Step type labels
       stepTypeLabels: {
         explanation: 'Объяснение',
         example: 'Пример',
@@ -357,21 +358,22 @@ export default {
     },
     
     currentStep() {
-      // ✅ FIXED: Handle potential undefined curriculum and steps
       if (!this.currentLesson) return null;
       
-      // Check if lesson has steps directly
-      if (this.currentLesson.steps && Array.isArray(this.currentLesson.steps)) {
-        return this.currentLesson.steps[this.currentStepIndex] || null;
+      // ✅ FIXED: Handle different data structures properly
+      const lesson = this.currentLesson;
+      
+      // Check direct steps array
+      if (lesson.steps && Array.isArray(lesson.steps) && lesson.steps.length > 0) {
+        return lesson.steps[this.currentStepIndex] || null;
       }
       
-      // Fallback: Check if lesson has curriculum with steps (nested structure)
-      if (this.currentLesson.curriculum && 
-          Array.isArray(this.currentLesson.curriculum) && 
-          this.currentLesson.curriculum[0] && 
-          this.currentLesson.curriculum[0].steps &&
-          Array.isArray(this.currentLesson.curriculum[0].steps)) {
-        return this.currentLesson.curriculum[0].steps[this.currentStepIndex] || null;
+      // Check curriculum structure
+      if (lesson.curriculum && Array.isArray(lesson.curriculum)) {
+        const firstModule = lesson.curriculum[0];
+        if (firstModule && firstModule.steps && Array.isArray(firstModule.steps)) {
+          return firstModule.steps[this.currentStepIndex] || null;
+        }
       }
       
       return null;
@@ -380,13 +382,11 @@ export default {
     overallProgress() {
       if (this.lessons.length === 0) return 0;
       const completedLessons = this.lessons.filter(lesson => lesson.completed).length;
-      const currentLessonProgress = this.currentLesson?.steps ? 
-        (this.currentStepIndex / this.currentLesson.steps.length) : 0;
+      const currentLessonProgress = this.getCurrentLessonProgress();
       return Math.round(((completedLessons + currentLessonProgress) / this.lessons.length) * 100);
     },
   },
   created() {
-    // Get courseId from route params
     const courseId = this.$route.params.courseId;
     if (courseId) {
       this.loadCourse(courseId);
@@ -396,9 +396,11 @@ export default {
     }
   },
   methods: {
+    // ✅ FIXED: Improved course loading with better error handling
     async loadCourse(courseId) {
       try {
         this.loading = true;
+        this.error = null;
         console.log('🎓 Loading course content for ID:', courseId);
 
         const response = await getCourseById(courseId);
@@ -406,36 +408,78 @@ export default {
         if (response.success && response.data) {
           this.course = response.data;
           
-          // ✅ FIXED: Handle different response structures
+          // ✅ FIXED: Handle multiple response formats
+          let lessonsData = null;
+          
+          // Try different data structures
           if (response.data.lessons && Array.isArray(response.data.lessons)) {
-            // Direct lessons array
-            this.lessons = response.data.lessons;
+            lessonsData = response.data.lessons;
           } else if (response.data.curriculum && Array.isArray(response.data.curriculum)) {
-            // Curriculum array (convert to lessons format)
-            this.lessons = response.data.curriculum.map((lesson, index) => ({
+            lessonsData = response.data.curriculum;
+          } else if (response.data.course && response.data.course.curriculum) {
+            lessonsData = response.data.course.curriculum;
+          }
+          
+          if (lessonsData && lessonsData.length > 0) {
+            this.lessons = lessonsData.map((lesson, index) => ({
               ...lesson,
               id: lesson._id || lesson.id || `lesson_${index}`,
               title: lesson.title || lesson.lessonName || `Урок ${index + 1}`,
               completed: false,
-              steps: lesson.steps || []
+              steps: lesson.steps || [],
+              duration: lesson.duration || '30 мин'
             }));
+            
+            console.log(`✅ Loaded course: ${this.course.title} with ${this.lessons.length} lessons`);
           } else {
-            // Fallback: empty lessons array
-            this.lessons = [];
-            console.warn('⚠️ No lessons or curriculum found in course data');
+            // Create default lesson structure if no lessons found
+            this.lessons = [{
+              id: 'default_lesson',
+              title: this.course.title || 'Урок',
+              completed: false,
+              steps: [],
+              duration: '30 мин'
+            }];
+            console.warn('⚠️ No lessons found, created default lesson');
           }
-          
-          console.log(`✅ Loaded course: ${this.course.title} with ${this.lessons.length} lessons`);
 
         } else {
-          this.error = response.error || 'Не удалось загрузить содержимое курса';
+          throw new Error(response.error || 'Не удалось загрузить содержимое курса');
         }
       } catch (error) {
         console.error('❌ Error loading course:', error);
-        this.error = 'Произошла ошибка при загрузке курса';
+        this.error = error.message || 'Произошла ошибка при загрузке курса';
       } finally {
         this.loading = false;
       }
+    },
+
+    // ✅ PERFORMANCE: Helper method for progress calculation
+    getCurrentLessonProgress() {
+      if (!this.currentLesson) return 0;
+      
+      const totalSteps = this.getTotalStepsInLesson(this.currentLesson);
+      if (totalSteps === 0) return 0;
+      
+      return this.currentStepIndex / totalSteps;
+    },
+
+    // ✅ HELPER: Get total steps in a lesson
+    getTotalStepsInLesson(lesson) {
+      if (!lesson) return 0;
+      
+      if (lesson.steps && Array.isArray(lesson.steps)) {
+        return lesson.steps.length;
+      }
+      
+      if (lesson.curriculum && Array.isArray(lesson.curriculum)) {
+        const firstModule = lesson.curriculum[0];
+        if (firstModule && firstModule.steps && Array.isArray(firstModule.steps)) {
+          return firstModule.steps.length;
+        }
+      }
+      
+      return 0;
     },
 
     backToCourses() {
@@ -452,10 +496,13 @@ export default {
       this.currentStepIndex = index;
     },
     
+    // ✅ FIXED: Better navigation logic
     nextStep() {
-      if (this.currentLesson && this.currentLesson.steps && this.currentStepIndex < this.currentLesson.steps.length - 1) {
+      const totalSteps = this.getTotalStepsInLesson(this.currentLesson);
+      
+      if (this.currentStepIndex < totalSteps - 1) {
         this.currentStepIndex++;
-      } else if (this.lessons && this.currentLessonIndex < this.lessons.length - 1) {
+      } else if (this.currentLessonIndex < this.lessons.length - 1) {
         // Mark current lesson as completed and move to next lesson
         if (this.currentLesson) {
           this.currentLesson.completed = true;
@@ -466,12 +513,13 @@ export default {
     },
     
     previousStep() {
-      if (this.currentStepIndex > 0 && this.currentLesson && this.currentLesson.steps) {
+      if (this.currentStepIndex > 0) {
         this.currentStepIndex--;
-      } else if (this.currentLessonIndex > 0 && this.lessons) {
+      } else if (this.currentLessonIndex > 0) {
         this.currentLessonIndex--;
         const prevLesson = this.lessons[this.currentLessonIndex];
-        this.currentStepIndex = prevLesson.steps ? prevLesson.steps.length - 1 : 0;
+        const prevLessonSteps = this.getTotalStepsInLesson(prevLesson);
+        this.currentStepIndex = Math.max(0, prevLessonSteps - 1);
       }
     },
     
@@ -479,11 +527,11 @@ export default {
       this.$set(this.selectedAnswers, quizIndex, optionIndex);
     },
     
-    // ✅ FIXED: Enhanced image handling methods with null checks
+    // ✅ FIXED: Enhanced image handling with safety checks
     hasStepImages(step) {
       if (!step) return false;
       
-      // Check direct images array
+      // Check direct images
       if (step.images && Array.isArray(step.images) && step.images.length > 0) {
         return step.images.some(img => img && (img.url || img.base64));
       }
@@ -499,12 +547,16 @@ export default {
     getStepImages(step) {
       if (!step) return [];
       
-      // Priority: step.images, then step.data.images
-      const images = step.images || (step.data && step.data.images) || [];
+      // Get images from step or step.data
+      let images = [];
       
-      // Filter valid images and ensure they're in array format
-      if (!Array.isArray(images)) return [];
+      if (step.images && Array.isArray(step.images)) {
+        images = step.images;
+      } else if (step.data && step.data.images && Array.isArray(step.data.images)) {
+        images = step.data.images;
+      }
       
+      // Filter and validate images
       return images.filter(img => img && (img.url || img.base64));
     },
     
@@ -532,14 +584,13 @@ export default {
     
     handleImageError(event, image) {
       console.warn('Image failed to load:', image?.url || 'unknown');
-      // Fallback to a placeholder image
       if (event && event.target) {
-        event.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-image"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5.8-5.8a2 2 0 0 0-2.82 0L7 21"></path></svg>';
+        event.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5.8-5.8a2 2 0 0 0-2.82 0L7 21"></path></svg>';
         event.target.onerror = null; // Prevent infinite loop
       }
     },
     
-    // ✅ FIXED: Step type helpers with null checks
+    // ✅ FIXED: Step type helpers
     isTextStep(step) {
       if (!step || !step.type) return false;
       return ['explanation', 'example', 'reading'].includes(step.type);
