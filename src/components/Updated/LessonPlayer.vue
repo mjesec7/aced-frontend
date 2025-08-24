@@ -154,16 +154,8 @@
 </template>
 
 <script>
-// Mock API calls since the real ones are not provided
-// In a real application, you would import these from an actual API file.
-const getCourseContent = (courseId) => {
-  console.log(`Mock: Fetching course content for ${courseId}`);
-  return Promise.resolve({ success: true, data: [] });
-};
-const getCourseById = (courseId) => {
-  console.log(`Mock: Fetching course details for ${courseId}`);
-  return Promise.resolve({ success: true, data: {} });
-};
+// ✅ REAL API IMPORTS - Import actual functions from your API file
+import { getCourseById, getCourseContent } from '@/api.js';
 
 export default {
   name: 'LessonPlayer',
@@ -239,7 +231,7 @@ export default {
   },
 
   methods: {
-    // === Data Loading & Processing Methods ===
+    // ✅ REAL API CALLS: Load course content from backend
     async loadCourseContent() {
       if (!this.course || (!this.course._id && !this.course.id)) {
         console.error('❌ LessonPlayer: Invalid course data:', this.course);
@@ -256,125 +248,460 @@ export default {
         console.log('📚 LessonPlayer: Loading course content for ID:', courseId);
 
         let courseDetails = null;
+        let lessons = [];
+
+        // Step 1: Try to get complete course details from backend
         try {
+          console.log('🔍 Step 1: Fetching course details from API...');
           const courseResponse = await getCourseById(courseId);
-          if (courseResponse.success && courseResponse.data) {
+          
+          if (courseResponse && courseResponse.success && courseResponse.data) {
             courseDetails = courseResponse.data;
+            console.log('✅ Course details loaded from API:', courseDetails.title);
+            
+            // Check if course has curriculum in the response
+            if (courseDetails.curriculum && Array.isArray(courseDetails.curriculum)) {
+              lessons = this.processLessons(courseDetails.curriculum);
+              console.log('✅ Lessons extracted from API course curriculum:', lessons.length);
+            }
+          } else {
+            console.warn('⚠️ Course details API returned invalid response:', courseResponse);
           }
         } catch (detailError) {
-          console.warn('⚠️ LessonPlayer: Failed to load course details:', detailError);
-        }
-        this.courseData = courseDetails || this.course;
-
-        let lessons = [];
-        if (courseDetails && courseDetails.curriculum && courseDetails.curriculum.length > 0) {
-          lessons = this.processLessons(courseDetails.curriculum);
-        }
-
-        if (lessons.length === 0) {
-          try {
-            const contentResponse = await getCourseContent(courseId);
-            if (contentResponse.success && contentResponse.data && contentResponse.data.length > 0) {
-              lessons = this.processLessons(contentResponse.data);
-            }
-          } catch (contentError) {
-            console.warn('⚠️ LessonPlayer: getCourseContent failed:', contentError);
+          console.warn('⚠️ LessonPlayer: Failed to load course details from API:', detailError.message);
+          
+          // Log the full error for debugging
+          if (detailError.response) {
+            console.warn('   API Response Status:', detailError.response.status);
+            console.warn('   API Response Data:', detailError.response.data);
           }
         }
 
-        if (lessons.length === 0 && this.course.curriculum) {
-          lessons = this.processLessons(this.course.curriculum);
-        }
-
+        // Step 2: If no lessons from course details, try course content endpoint
         if (lessons.length === 0) {
-          lessons = this.createDemoLessons();
+          try {
+            console.log('🔍 Step 2: Fetching course content from API...');
+            const contentResponse = await getCourseContent(courseId);
+            
+            if (contentResponse && contentResponse.success && contentResponse.data) {
+              lessons = this.processLessons(contentResponse.data);
+              console.log('✅ Lessons loaded from API content endpoint:', lessons.length);
+            } else {
+              console.warn('⚠️ Course content API returned invalid response:', contentResponse);
+            }
+          } catch (contentError) {
+            console.warn('⚠️ LessonPlayer: getCourseContent API failed:', contentError.message);
+            
+            // Log the full error for debugging
+            if (contentError.response) {
+              console.warn('   Content API Response Status:', contentError.response.status);
+              console.warn('   Content API Response Data:', contentError.response.data);
+            }
+          }
         }
 
+        // Step 3: If still no lessons, try from the original course prop
+        if (lessons.length === 0 && this.course.curriculum) {
+          console.log('🔍 Step 3: Using course prop curriculum (fallback)...');
+          lessons = this.processLessons(this.course.curriculum);
+          console.log('✅ Lessons extracted from course prop:', lessons.length);
+        }
+
+        // Step 4: Final fallback - create demo content ONLY if no real content available
+        if (lessons.length === 0) {
+          console.log('🔍 Step 4: No real content found, creating demo lessons as last resort...');
+          console.warn('⚠️ This indicates a problem with the API or course data structure');
+          lessons = this.createDemoLessons();
+          console.log('✅ Demo lessons created as fallback:', lessons.length);
+          
+          // Set error message to inform user this is demo content
+          this.error = 'Демонстрационное содержание - реальные материалы курса недоступны';
+        }
+
+        // Set course data and lessons
+        this.courseData = courseDetails || this.course;
         this.lessons = lessons;
-        console.log(`✅ LessonPlayer: Loaded ${lessons.length} lessons`);
+
+        console.log(`✅ LessonPlayer: Successfully loaded ${lessons.length} lessons for course: ${this.courseData?.title}`);
+        
+        // Clear error if we successfully loaded content
+        if (lessons.length > 0 && !this.error) {
+          this.error = null;
+        }
+        
       } catch (error) {
-        console.error('❌ LessonPlayer: Error loading course content:', error);
-        this.error = 'Не удалось загрузить содержание курса';
+        console.error('❌ LessonPlayer: Critical error loading course content:', error);
+        
+        // Provide specific error messages based on error type
+        if (error.message && error.message.includes('Network Error')) {
+          this.error = 'Ошибка сети - проверьте подключение к интернету';
+        } else if (error.response?.status === 404) {
+          this.error = 'Курс не найден на сервере';
+        } else if (error.response?.status === 403) {
+          this.error = 'Нет доступа к курсу';
+        } else if (error.response?.status >= 500) {
+          this.error = 'Ошибка сервера - попробуйте позже';
+        } else {
+          this.error = 'Не удалось загрузить содержание курса';
+        }
+        
+        // Emergency fallback with error message
+        try {
+          this.lessons = this.createDemoLessons();
+          this.error += ' (показано демонстрационное содержание)';
+          console.log('🆘 Emergency demo content loaded with error message');
+        } catch (demoError) {
+          console.error('❌ Even demo content failed:', demoError);
+          this.error = 'Критическая ошибка загрузки содержания курса';
+        }
       } finally {
         this.loading = false;
       }
     },
 
+    // ✅ COMPLETELY FIXED: Process lessons with proper validation and error handling
     processLessons(lessonsArray) {
-      if (!Array.isArray(lessonsArray)) return [];
-      return lessonsArray.map((lesson, index) => ({
-        ...lesson,
-        id: lesson._id || lesson.id || `lesson_${index}`,
-        title: lesson.title || lesson.lessonName || `Урок ${index + 1}`,
-        steps: this.processSteps(lesson.steps || [])
-      }));
-    },
-
-    processSteps(steps) {
-      if (!Array.isArray(steps)) return [];
-      return steps.map((step, index) => ({
-        ...step,
-        id: step.id || `step_${index}`,
-        type: step.type || 'explanation',
-        title: step.title || this.getStepTitle(step),
-        data: this.processStepData(step)
-      }));
-    },
-
-    processStepData(step) {
-      if (!step.data && !step.content) return {};
-      const baseData = step.data || {};
-      
-      switch (step.type) {
-        case 'explanation':
-        case 'example':
-        case 'reading':
-          return {
-            ...baseData,
-            content: baseData.content || step.content || '',
-            images: baseData.images || step.images || []
-          };
-        case 'video':
-          return {
-            ...baseData,
-            url: baseData.url || step.videoUrl || step.url || '',
-            description: baseData.description || step.description || ''
-          };
-        case 'pdf':
-          return {
-            ...baseData,
-            url: baseData.url || step.pdfUrl || step.url || '',
-            description: baseData.description || step.description || ''
-          };
-        case 'practice':
-          return {
-            ...baseData,
-            instructions: baseData.instructions || step.instructions || step.content || '',
-            files: baseData.files || step.files || []
-          };
-        case 'quiz':
-          if (Array.isArray(baseData) && baseData.length > 0) {
-            return baseData;
-          } else if (step.question || step.content) {
-            return [{
-              question: step.question || step.content || '',
-              type: step.quizType || 'multiple-choice',
-              options: (step.options || []).map(opt => 
-                typeof opt === 'string' ? { text: opt } : opt
-              ),
-              correctAnswer: parseInt(step.correctAnswer) || 0,
-              explanation: step.explanation || ''
-            }];
-          } else if (step.quizzes && Array.isArray(step.quizzes)) {
-            return step.quizzes;
-          }
-          return [];
-        default:
-          return {
-            ...baseData,
-            content: baseData.content || step.content || ''
-          };
+      if (!Array.isArray(lessonsArray)) {
+        console.warn('⚠️ processLessons: Input is not an array:', typeof lessonsArray);
+        return [];
       }
+
+      const processedLessons = [];
+
+      lessonsArray.forEach((lesson, index) => {
+        try {
+          if (!lesson || typeof lesson !== 'object') {
+            console.warn(`⚠️ Invalid lesson at index ${index}:`, lesson);
+            return;
+          }
+
+          const processedLesson = {
+            ...lesson,
+            id: lesson._id || lesson.id || `lesson_${index}`,
+            _id: lesson._id || lesson.id || `lesson_${index}`,
+            title: lesson.title || lesson.lessonName || `Урок ${index + 1}`,
+            lessonName: lesson.title || lesson.lessonName || `Урок ${index + 1}`,
+            description: lesson.description || '',
+            duration: lesson.duration || '30 мин',
+            order: lesson.order !== undefined ? lesson.order : index,
+            // ✅ KEY FIX: Process steps properly
+            steps: this.processSteps(lesson.steps || [])
+          };
+
+          processedLessons.push(processedLesson);
+          console.log(`✅ Processed lesson ${index + 1}: "${processedLesson.title}" with ${processedLesson.steps.length} steps`);
+
+        } catch (lessonError) {
+          console.error(`❌ Error processing lesson ${index}:`, lessonError);
+          
+          // Add a fallback lesson even if processing failed
+          processedLessons.push({
+            id: `fallback_lesson_${index}`,
+            _id: `fallback_lesson_${index}`,
+            title: `Урок ${index + 1} (ошибка загрузки)`,
+            lessonName: `Урок ${index + 1} (ошибка загрузки)`,
+            description: 'Произошла ошибка при загрузке урока',
+            steps: []
+          });
+        }
+      });
+
+      return processedLessons;
+    },
+
+    // ✅ COMPLETELY FIXED: Process steps with comprehensive type handling
+    processSteps(steps) {
+      if (!Array.isArray(steps)) {
+        console.warn('⚠️ processSteps: Input is not an array:', typeof steps);
+        return [];
+      }
+
+      const processedSteps = [];
+
+      steps.forEach((step, index) => {
+        try {
+          if (!step || typeof step !== 'object') {
+            console.warn(`⚠️ Invalid step at index ${index}:`, step);
+            return;
+          }
+
+          const processedStep = {
+            ...step,
+            id: step.id || `step_${index}`,
+            type: step.type || 'explanation',
+            title: step.title || this.getStepTitle(step),
+            description: step.description || '',
+            content: step.content || '',
+            // ✅ CRITICAL FIX: Process step data based on type
+            data: this.processStepData(step),
+            order: step.order !== undefined ? step.order : index
+          };
+
+          processedSteps.push(processedStep);
+          
+        } catch (stepError) {
+          console.error(`❌ Error processing step ${index}:`, stepError);
+          
+          // Add fallback step
+          processedSteps.push({
+            id: `fallback_step_${index}`,
+            type: 'explanation',
+            title: '❌ Ошибка загрузки',
+            description: 'Произошла ошибка при загрузке шага',
+            content: 'Содержание шага недоступно',
+            data: { content: 'Содержание шага недоступно' }
+          });
+        }
+      });
+
+      return processedSteps;
+    },
+
+    // ✅ COMPLETELY FIXED: Process step data with proper type-specific handling
+    processStepData(step) {
+      if (!step || typeof step !== 'object') {
+        return { content: '', error: 'Invalid step data' };
+      }
+
+      const baseData = step.data || {};
+      const stepType = step.type || 'explanation';
+
+      try {
+        switch (stepType) {
+          case 'explanation':
+          case 'example':  
+          case 'reading':
+            const content = baseData.content || step.content || '';
+            return {
+              ...baseData,
+              content: content,
+              images: this.processImages(baseData.images || step.images || [])
+            };
+
+          case 'image':
+            return {
+              ...baseData,
+              images: this.processImages(baseData.images || step.images || []),
+              description: baseData.description || step.description || step.content || '',
+              caption: baseData.caption || step.caption || ''
+            };
+
+          case 'video':
+            return {
+              ...baseData,
+              url: baseData.url || step.videoUrl || step.url || '',
+              description: baseData.description || step.description || '',
+              thumbnail: baseData.thumbnail || step.thumbnail
+            };
+
+          case 'pdf':
+            return {
+              ...baseData,
+              url: baseData.url || step.pdfUrl || step.url || '',
+              description: baseData.description || step.description || ''
+            };
+
+          case 'practice':
+            return {
+              ...baseData,
+              instructions: baseData.instructions || step.instructions || step.content || '',
+              type: baseData.type || step.practiceType || 'guided',
+              files: baseData.files || step.files || [],
+              images: this.processImages(baseData.images || step.images || [])
+            };
+
+          case 'quiz':
+            // Handle multiple quiz data formats
+            if (Array.isArray(baseData)) {
+              return baseData.map(quiz => ({
+                ...quiz,
+                images: this.processImages(quiz.images || [])
+              }));
+            } else if (Array.isArray(baseData.questions)) {
+              return baseData.questions.map(quiz => ({
+                ...quiz,
+                images: this.processImages(quiz.images || [])
+              }));
+            } else if (step.question || step.content) {
+              return [{
+                question: step.question || step.content || '',
+                type: step.quizType || 'multiple-choice',
+                options: (step.options || []).map(opt => 
+                  typeof opt === 'string' ? { text: opt, correct: false } : opt
+                ),
+                correctAnswer: parseInt(step.correctAnswer) || 0,
+                explanation: step.explanation || '',
+                images: this.processImages(step.questionImages || [])
+              }];
+            } else if (step.quizzes && Array.isArray(step.quizzes)) {
+              return step.quizzes.map(quiz => ({
+                ...quiz,
+                images: this.processImages(quiz.images || [])
+              }));
+            } else {
+              return [];
+            }
+
+          default:
+            console.warn(`⚠️ Unknown step type: ${stepType}`);
+            return {
+              ...baseData,
+              content: baseData.content || step.content || '',
+              images: this.processImages(baseData.images || step.images || [])
+            };
+        }
+      } catch (dataError) {
+        console.error(`❌ Error processing step data for type ${stepType}:`, dataError);
+        return {
+          content: step.content || 'Ошибка обработки данных шага',
+          error: dataError.message
+        };
+      }
+    },
+
+    // ✅ FIXED: Process images with better URL handling
+    processImages(images) {
+      if (!Array.isArray(images)) return [];
+
+      return images
+        .filter(img => img && (img.url || img.base64 || img.src))
+        .map((img, index) => {
+          try {
+            let imageUrl = img.url || img.src || img.base64;
+            
+            // Process different URL types
+            if (imageUrl) {
+              // Handle base64 images
+              if (imageUrl.startsWith('data:')) {
+                // Base64 is ready to use
+              } 
+              // Handle relative URLs
+              else if (imageUrl.startsWith('/uploads/')) {
+                const baseUrl = process.env.NODE_ENV === 'production' 
+                  ? 'https://api.aced.live'
+                  : 'http://localhost:5000';
+                imageUrl = `${baseUrl}${imageUrl}`;
+              }
+              // Handle other relative URLs
+              else if (imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
+                const baseUrl = process.env.NODE_ENV === 'production' 
+                  ? 'https://api.aced.live'
+                  : 'http://localhost:5000';
+                imageUrl = `${baseUrl}${imageUrl}`;
+              }
+              // Absolute URLs are used as-is
+            }
+
+            return {
+              id: img.id || `img_${index}_${Date.now()}`,
+              url: imageUrl,
+              caption: img.caption || img.description || '',
+              alt: img.alt || img.caption || img.description || `Изображение ${index + 1}`,
+              filename: img.filename || `image_${index}`,
+              size: img.size || 0,
+              order: img.order !== undefined ? img.order : index
+            };
+          } catch (imgError) {
+            console.error(`❌ Error processing image ${index}:`, imgError);
+            return null;
+          }
+        })
+        .filter(img => img !== null)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+    },
+
+    // ✅ IMPROVED: Create demo lessons with clear indication they are fallback content
+    createDemoLessons() {
+      const courseTitle = this.courseData?.title || this.course?.title || 'Курс';
+      
+      return [
+        {
+          id: 'demo_lesson_1',
+          _id: 'demo_lesson_1',
+          title: 'Введение в курс',
+          lessonName: 'Введение в курс',
+          description: 'Демонстрационное содержание - реальные материалы недоступны',
+          duration: '15 мин',
+          steps: [
+            {
+              id: 'demo_step_1_1',
+              type: 'explanation',
+              title: '⚠️ Демонстрационное содержание',
+              data: {
+                content: `<div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #ffc107;">
+                  <strong>⚠️ Внимание:</strong> Это демонстрационное содержание.<br>
+                  Реальные материалы курса "${courseTitle}" временно недоступны.
+                </div>
+                
+                <p>Возможные причины:</p>
+                <ul>
+                  <li>Материалы курса еще не загружены</li>
+                  <li>Проблемы с сетевым подключением</li>
+                  <li>Технические неполадки на сервере</li>
+                </ul>
+                
+                <p>Попробуйте:</p>
+                <ul>
+                  <li>Обновить страницу</li>
+                  <li>Проверить подключение к интернету</li>
+                  <li>Обратиться к администратору</li>
+                </ul>`
+              }
+            },
+            {
+              id: 'demo_step_1_2',
+              type: 'explanation',
+              title: 'Как должен работать курс',
+              data: {
+                content: `После загрузки реальных материалов курс будет содержать:<br><br>
+                • Структурированные уроки с теорией и практикой<br>
+                • Интерактивные упражнения и тесты<br>
+                • Видеоматериалы и дополнительные ресурсы<br>
+                • Систему отслеживания прогресса`
+              }
+            }
+          ]
+        },
+        {
+          id: 'demo_lesson_2',
+          _id: 'demo_lesson_2',
+          title: 'Тестирование интерфейса',
+          lessonName: 'Тестирование интерфейса',
+          description: 'Демонстрация функций плеера',
+          duration: '10 мин',
+          steps: [
+            {
+              id: 'demo_step_2_1',
+              type: 'explanation',
+              title: 'Функции плеера',
+              data: {
+                content: `Этот плеер поддерживает различные типы контента:<br><br>
+                • Текстовые объяснения (как этот)<br>
+                • Интерактивные тесты<br>
+                • Видеоматериалы<br>
+                • PDF документы<br>
+                • Практические задания`
+              }
+            },
+            {
+              id: 'demo_step_2_2',
+              type: 'quiz',
+              title: 'Пример теста',
+              data: [{
+                question: 'Это демонстрационное содержание?',
+                type: 'multiple-choice',
+                options: [
+                  { text: 'Да, это временная заглушка', correct: true },
+                  { text: 'Нет, это реальный курс', correct: false },
+                  { text: 'Не знаю', correct: false }
+                ],
+                correctAnswer: 0,
+                explanation: 'Верно! Это демонстрационное содержание, которое показывается когда реальные материалы курса недоступны.'
+              }]
+            }
+          ]
+        }
+      ];
     },
     
     // === Navigation Methods ===
@@ -421,12 +748,13 @@ export default {
       this.fullscreenPdf = null;
     },
 
-    // === Utility & Demo Methods ===
+    // === Utility Methods ===
     getStepTitle(step) {
       if (step.title) return step.title;
       const titles = {
         explanation: '📝 Объяснение', example: '💡 Пример', video: '🎥 Видео',
-        pdf: '📄 Материалы', practice: '🎯 Практика', quiz: '❓ Тест', reading: '📚 Чтение'
+        pdf: '📄 Материалы', practice: '🎯 Практика', quiz: '❓ Тест', reading: '📚 Чтение',
+        image: '🖼️ Изображение'
       };
       return titles[step.type] || '📌 Шаг';
     },
@@ -434,38 +762,10 @@ export default {
     getStepComponent(type) {
       const components = {
         explanation: 'step-text', example: 'step-text', reading: 'step-text',
-        video: 'step-video', pdf: 'step-pdf', practice: 'step-practice', quiz: 'step-quiz'
+        video: 'step-video', pdf: 'step-pdf', practice: 'step-practice', quiz: 'step-quiz',
+        image: 'step-text'
       };
       return components[type] || 'step-text';
-    },
-
-    createDemoLessons() {
-      const courseTitle = this.courseData?.title || this.course?.title || 'Курс';
-      return [
-        {
-          id: 'lesson_1',
-          title: 'Введение в курс',
-          steps: [
-            { id: 'step_1_1', type: 'explanation', title: 'Добро пожаловать!', data: { content: `Добро пожаловать на курс "${courseTitle}"!<br><br>В этом курсе вы изучите основные концепции и получите практические навыки.<br><br>Курс состоит из нескольких уроков, каждый из которых включает теоретический материал и практические задания.` } },
-            { id: 'step_1_2', type: 'explanation', title: 'Как проходить курс', data: { content: `Рекомендации по изучению курса:<br><br>• Изучайте материал последовательно<br>• Выполняйте все практические задания<br>• Не спешите, важно понимание материала<br>• При необходимости возвращайтесь к предыдущим урокам` } }
-          ]
-        },
-        {
-          id: 'lesson_2',
-          title: 'Основы',
-          steps: [
-            { id: 'step_2_1', type: 'explanation', title: 'Теоретические основы', data: { content: `В этом разделе мы рассмотрим основные теоретические концепции курса.<br><br>Эти знания станут фундаментом для дальнейшего изучения более сложных тем.` } },
-            { id: 'step_2_2', type: 'quiz', title: 'Проверка знаний', data: [{ question: 'Что является основой успешного изучения курса?', options: [{ text: 'Быстрое прохождение всех уроков', correct: false }, { text: 'Понимание материала и выполнение заданий', correct: true }, { text: 'Запоминание всех терминов наизусть', correct: false }], explanation: 'Качество изучения важнее скорости. Понимание и практика - ключ к успеху.' }] }
-          ]
-        },
-        {
-          id: 'lesson_3',
-          title: 'Практическое применение',
-          steps: [
-            { id: 'step_3_1', type: 'practice', title: 'Практическое задание', data: { instructions: 'В этом разделе вы сможете применить полученные знания на практике. Следуйте инструкциям и выполняйте задания поэтапно.', files: [] } }
-          ]
-        }
-      ];
     }
   },
 
@@ -476,12 +776,22 @@ export default {
       template: `
         <div class="step-text">
           <div class="text-content" v-html="formattedContent"></div>
+          <div v-if="hasImages" class="step-images">
+            <div v-for="image in step.data.images || step.images || []" :key="image.id" class="step-image">
+              <img :src="image.url" :alt="image.alt" :title="image.caption" />
+              <p v-if="image.caption" class="image-caption">{{ image.caption }}</p>
+            </div>
+          </div>
         </div>
       `,
       computed: {
         formattedContent() {
           const content = this.step.data?.content || this.step.content || 'Содержание не найдено';
           return content.replace(/\n/g, '<br>');
+        },
+        hasImages() {
+          const images = this.step.data?.images || this.step.images || [];
+          return Array.isArray(images) && images.length > 0;
         }
       }
     },
@@ -677,7 +987,8 @@ export default {
       data() {
         return {
           selectedAnswer: null,
-          showResult: false
+          showResult: false,
+          selectedQuestions: new Map() // For multiple questions
         }
       },
       template: `
@@ -687,28 +998,30 @@ export default {
               <div class="quiz-header">
                 <h3>❓ {{ quiz.question }}</h3>
               </div>
+              
               <div v-if="quiz.options && quiz.options.length > 0" class="quiz-options">
                 <button
                   v-for="(option, index) in quiz.options"
                   :key="index"
                   @click="selectAnswer(quizIndex, index, option)"
-                  :disabled="showResult"
+                  :disabled="isQuizAnswered(quizIndex)"
                   :class="getOptionClass(quizIndex, index, option)"
                   class="quiz-option"
                 >
                   <span class="option-text">{{ getOptionText(option) }}</span>
-                  <div v-if="showResult" class="option-indicator">
+                  <div v-if="isQuizAnswered(quizIndex)" class="option-indicator">
                     <svg v-if="isCorrectOption(option)" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <polyline points="20,6 9,17 4,12"></polyline>
                     </svg>
-                    <svg v-else-if="selectedAnswer === \`\${quizIndex}-\${index}\`" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg v-else-if="getSelectedAnswer(quizIndex) === index" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <line x1="18" y1="6" x2="6" y2="18"></line>
                       <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
                   </div>
                 </button>
               </div>
-              <div v-if="showResult && quiz.explanation" class="quiz-explanation">
+              
+              <div v-if="isQuizAnswered(quizIndex) && quiz.explanation" class="quiz-explanation">
                 <div class="explanation-header">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"></circle>
@@ -720,39 +1033,97 @@ export default {
               </div>
             </div>
           </div>
+          
           <div v-else class="no-quiz">
+            <div class="placeholder-icon">❓</div>
             <p>Тест недоступен</p>
+            <small>Данные теста не загружены или повреждены</small>
           </div>
         </div>
       `,
       computed: {
         quizData() {
-          if (Array.isArray(this.step.data)) return this.step.data;
-          if (this.step.data && this.step.data.question) return [this.step.data];
-          if (this.step.question) return [{ question: this.step.question, options: this.step.options || [], explanation: this.step.explanation }];
+          // Handle different quiz data formats more robustly
+          const stepData = this.step.data;
+          
+          if (Array.isArray(stepData) && stepData.length > 0) {
+            return stepData.filter(quiz => quiz && quiz.question);
+          }
+          
+          if (stepData && Array.isArray(stepData.questions)) {
+            return stepData.questions.filter(quiz => quiz && quiz.question);
+          }
+          
+          if (stepData && stepData.question) {
+            return [stepData];
+          }
+          
+          if (this.step.question) {
+            return [{
+              question: this.step.question,
+              options: this.step.options || [],
+              explanation: this.step.explanation || '',
+              correctAnswer: this.step.correctAnswer
+            }];
+          }
+          
+          if (Array.isArray(this.step.quizzes)) {
+            return this.step.quizzes.filter(quiz => quiz && quiz.question);
+          }
+          
           return [];
         }
       },
       methods: {
         selectAnswer(quizIndex, optionIndex, option) {
-          if (this.showResult) return;
+          if (this.isQuizAnswered(quizIndex)) return;
+          
           const answerId = `${quizIndex}-${optionIndex}`;
-          this.selectedAnswer = answerId;
-          this.showResult = true;
+          this.selectedQuestions.set(quizIndex, optionIndex);
+          
           const isCorrect = this.isCorrectOption(option);
           this.$emit('quiz-answer', this.stepIndex, optionIndex, isCorrect);
+          
+          // Force reactivity update
+          this.$forceUpdate();
         },
+        
         getOptionText(option) {
-          return typeof option === 'string' ? option : option.text || option.label || 'Опция';
+          if (typeof option === 'string') return option;
+          return option.text || option.label || 'Опция';
         },
+        
         isCorrectOption(option) {
-          return typeof option === 'object' ? option.correct : false;
+          if (typeof option === 'object') {
+            return Boolean(option.correct);
+          }
+          return false;
         },
+        
+        isQuizAnswered(quizIndex) {
+          return this.selectedQuestions.has(quizIndex);
+        },
+        
+        getSelectedAnswer(quizIndex) {
+          return this.selectedQuestions.get(quizIndex);
+        },
+        
         getOptionClass(quizIndex, optionIndex, option) {
-          const answerId = `${quizIndex}-${optionIndex}`;
-          if (!this.showResult) return this.selectedAnswer === answerId ? 'selected' : '';
-          if (this.isCorrectOption(option)) return 'correct';
-          if (this.selectedAnswer === answerId && !this.isCorrectOption(option)) return 'incorrect';
+          const selectedAnswer = this.getSelectedAnswer(quizIndex);
+          const isAnswered = this.isQuizAnswered(quizIndex);
+          
+          if (!isAnswered) {
+            return selectedAnswer === optionIndex ? 'selected' : '';
+          }
+          
+          if (this.isCorrectOption(option)) {
+            return 'correct';
+          }
+          
+          if (selectedAnswer === optionIndex && !this.isCorrectOption(option)) {
+            return 'incorrect';
+          }
+          
           return 'disabled';
         }
       }
