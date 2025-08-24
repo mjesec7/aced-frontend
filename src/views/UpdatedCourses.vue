@@ -615,10 +615,8 @@ export default {
       modalLoading: false,
       error: null,
       componentKey: 0,
-      lastUpdateTime: Date.now(),
-      forceUpdateCounter: 0,
       
-      // ✅ COMPLETE: Hardcoded course images
+      // Hardcoded course images based on category
       courseImages: {
         'javascript': '/images/course/javascript.jpg',
         'python': '/images/course/python.jpg',
@@ -698,7 +696,6 @@ export default {
         const newPlan = newUser?.subscriptionPlan || newUser?.userStatus || newUser?.plan;
         const oldPlan = oldUser?.subscriptionPlan || oldUser?.userStatus || oldUser?.plan;
         if (newPlan !== oldPlan) {
-          console.log('👤 UpdatedCourses: User plan changed:', oldPlan, '→', newPlan);
           this.handleUserStatusChange(newPlan, oldPlan);
         }
       },
@@ -711,38 +708,24 @@ export default {
         const newPlan = newUser?.subscriptionPlan || newUser?.userStatus || newUser?.plan;
         const oldPlan = oldUser?.subscriptionPlan || oldUser?.userStatus || oldUser?.plan;
         if (newPlan !== oldPlan) {
-          console.log('👤 UpdatedCourses: GetUser plan changed:', oldPlan, '→', newPlan);
           this.handleUserStatusChange(newPlan, oldPlan);
         }
       },
       deep: true,
       immediate: true,
     },
-    
-    currentUserStatus: {
-      handler(newStatus, oldStatus) {
-        if (newStatus !== oldStatus) {
-          console.log('📊 UpdatedCourses: Current user status computed changed:', oldStatus, '→', newStatus);
-          this.triggerReactivityUpdate();
-        }
-      },
-      immediate: true,
-    },
   },
   
   async mounted() {
-    console.log('📱 UpdatedCourses: Component mounted');
     try {
       await this.fetchCourses();
       this.setupEventListeners();
-      console.log('✅ UpdatedCourses: Component mounted successfully');
     } catch (error) {
       console.error('❌ UpdatedCourses: Mount error:', error);
     }
   },
   
   beforeUnmount() {
-    console.log('📱 UpdatedCourses: Component unmounting');
     this.cleanup();
   },
   
@@ -751,38 +734,21 @@ export default {
     getProcessedImage(imagePath) {
       if (!imagePath) return this.courseImages.default;
 
-      // Handle hardcoded course images (no API processing needed)
       if (imagePath.startsWith('/images/course/')) {
         return imagePath;
       }
-
-      // Handle other static images
-      if (imagePath.startsWith('/images/') || imagePath.startsWith('/assets/')) {
-        return imagePath;
-      }
-
-      // Handle base64 images
       if (imagePath.startsWith('data:image/')) {
         return imagePath;
       }
-
-      // Handle absolute URLs
       if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
         return imagePath;
       }
 
-      // Handle API-based images
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'https://api.aced.live';
       if (imagePath.startsWith('/uploads/') || imagePath.startsWith('/api/')) {
         return `${baseUrl}${imagePath}`;
       }
 
-      // Handle relative paths
-      if (imagePath.startsWith('/')) {
-        return `${baseUrl}${imagePath}`;
-      }
-
-      // Fallback to default
       return this.courseImages.default;
     },
 
@@ -796,12 +762,10 @@ export default {
         return lesson.steps.some(step => {
           if (!step) return false;
           
-          // Check direct images array
           if (step.images && Array.isArray(step.images) && step.images.length > 0) {
             return step.images.some(img => img && (img.url || img.base64));
           }
           
-          // Check step.data.images
           if (step.data && step.data.images && Array.isArray(step.data.images) && step.data.images.length > 0) {
             return step.data.images.some(img => img && (img.url || img.base64));
           }
@@ -826,12 +790,10 @@ export default {
         lesson.steps.forEach(step => {
           if (!step) return;
           
-          // Count images in step.images
           if (step.images && Array.isArray(step.images)) {
             count += step.images.filter(img => img && (img.url || img.base64)).length;
           }
           
-          // Count images in step.data.images
           if (step.data && step.data.images && Array.isArray(step.data.images)) {
             count += step.data.images.filter(img => img && (img.url || img.base64)).length;
           }
@@ -850,8 +812,6 @@ export default {
       this.error = null;
       
       try {
-        console.log('📥 Fetching updated courses...');
-        
         const filters = {
           search: this.searchTerm || undefined,
           category: this.categoryFilter !== 'all' ? this.categoryFilter : undefined,
@@ -859,7 +819,6 @@ export default {
           type: this.typeFilter !== 'all' ? this.typeFilter : undefined,
         };
 
-        // Remove undefined values
         Object.keys(filters).forEach(key => {
           if (filters[key] === undefined) {
             delete filters[key];
@@ -867,7 +826,6 @@ export default {
         });
 
         const response = await getUpdatedCourses(filters);
-        console.log('📦 Courses response:', response);
 
         if (response && response.success) {
           const coursesArray = response.courses || response.data || [];
@@ -878,9 +836,7 @@ export default {
               typeof c === 'string' ? c : c.name || c.category || 'Unknown'
             );
             this.availableLevels = ['Начинающий', 'Средний', 'Продвинутый'];
-            console.log(`✅ Loaded ${this.courses.length} courses`);
           } else {
-            console.error('❌ Courses data is not an array:', coursesArray);
             this.error = 'Неверный формат данных курсов';
             this.courses = [];
           }
@@ -890,9 +846,6 @@ export default {
         }
         
       } catch (e) {
-        console.error('❌ Error fetching courses:', e);
-        
-        // Provide specific error messages
         if (e.message && e.message.includes('CORS')) {
           this.error = 'Ошибка подключения к серверу. Попробуйте позже.';
         } else if (e.message && e.message.includes('Network Error')) {
@@ -912,14 +865,12 @@ export default {
     // ✅ PROCESS COURSES: Main data processing function
     processCourses(courses) {
       if (!Array.isArray(courses)) {
-        console.warn('⚠️ processCourses: courses is not an array:', courses);
         return [];
       }
 
       return courses.map((course, index) => {
         try {
           if (!course) {
-            console.warn('⚠️ processCourses: course is null/undefined at index:', index);
             return null;
           }
 
@@ -935,27 +886,21 @@ export default {
             duration: this.formatDuration(course.duration || course.estimatedTime),
             isPremium: course.isPremium || course.premium || course.type === 'premium' || false,
             
-            // Instructor information
             instructor: {
               name: course.instructor?.name || course.author?.name || 'Aced Team',
               avatar: this.getProcessedImage(course.instructor?.avatar || course.author?.avatar) || this.courseImages.default,
               bio: course.instructor?.bio || course.author?.bio || '',
             },
 
-            // Rating and stats
             rating: course.rating || course.averageRating || 4.5,
             studentsCount: course.studentsCount || course.enrolledCount || Math.floor(Math.random() * 1000) + 100,
-
-            // Process curriculum
             curriculum: this.processCurriculum(course.curriculum || []),
           };
 
-          // ✅ SAFE: Add image metadata with error handling
           try {
             processedCourse.hasImages = this.courseHasImages(processedCourse);
             processedCourse.imageCount = this.getCourseImageCount(processedCourse);
           } catch (imageError) {
-            console.warn('⚠️ Error processing course images for:', processedCourse.title, imageError);
             processedCourse.hasImages = false;
             processedCourse.imageCount = 0;
           }
@@ -963,9 +908,6 @@ export default {
           return processedCourse;
 
         } catch (courseError) {
-          console.error('❌ Error processing course at index', index, ':', courseError, course);
-          
-          // Return a minimal valid course object as fallback
           return {
             id: course?._id || course?.id || `course_${index}`,
             _id: course?._id || course?.id || `course_${index}`,
@@ -990,38 +932,19 @@ export default {
     // ✅ FORMAT DURATION: Consistent duration formatting
     formatDuration(duration) {
       if (!duration) return '10 часов';
-      
       if (typeof duration === 'string') return duration;
-      
-      if (typeof duration === 'object') {
-        if (duration.hours) {
-          return `${duration.hours} часов`;
-        }
-        if (duration.minutes) {
-          return `${Math.ceil(duration.minutes / 60)} часов`;
-        }
-      }
-      
-      if (typeof duration === 'number') {
-        return `${duration} часов`;
-      }
-      
+      if (typeof duration === 'object' && duration.hours) return `${duration.hours} часов`;
+      if (typeof duration === 'number') return `${duration} часов`;
       return '10 часов';
     },
 
     // ✅ PROCESS CURRICULUM: Handle lesson data
     processCurriculum(curriculum) {
-      if (!Array.isArray(curriculum)) {
-        console.warn('⚠️ processCurriculum: curriculum is not an array:', curriculum);
-        return [];
-      }
+      if (!Array.isArray(curriculum)) return [];
 
       return curriculum.map((lesson, lessonIndex) => {
         try {
-          if (!lesson) {
-            console.warn('⚠️ processCurriculum: lesson is null at index:', lessonIndex);
-            return null;
-          }
+          if (!lesson) return null;
 
           const processedLesson = {
             ...lesson,
@@ -1034,12 +957,10 @@ export default {
             steps: this.processSteps(lesson.steps || [], lessonIndex, lesson),
           };
 
-          // ✅ SAFE: Add image metadata
           try {
             processedLesson.hasImages = this.lessonHasImages(processedLesson);
             processedLesson.imageCount = this.getLessonImageCount(processedLesson);
           } catch (imageError) {
-            console.warn('⚠️ Error processing lesson images:', imageError);
             processedLesson.hasImages = false;
             processedLesson.imageCount = 0;
           }
@@ -1047,9 +968,6 @@ export default {
           return processedLesson;
 
         } catch (lessonError) {
-          console.error('❌ Error processing lesson at index', lessonIndex, ':', lessonError, lesson);
-          
-          // Return minimal valid lesson
           return {
             id: lesson?._id || lesson?.id || `lesson_${lessonIndex}`,
             _id: lesson?._id || lesson?.id || `lesson_${lessonIndex}`,
@@ -1085,7 +1003,6 @@ export default {
             lesson: lesson
           };
         } catch (error) {
-          console.warn('⚠️ Error processing step:', error);
           return null;
         }
       }).filter(step => step !== null);
@@ -1136,7 +1053,6 @@ export default {
             };
         }
       } catch (error) {
-        console.warn('⚠️ Error processing step data:', error);
         return { content: step.content || '' };
       }
     },
@@ -1166,14 +1082,12 @@ export default {
                 },
               };
             } catch (imgError) {
-              console.warn('⚠️ Error processing image:', imgError);
               return null;
             }
           })
           .filter(img => img !== null)
           .sort((a, b) => (a.order || 0) - (b.order || 0));
       } catch (error) {
-        console.warn('⚠️ Error processing step images array:', error);
         return [];
       }
     },
@@ -1183,7 +1097,6 @@ export default {
       if (!course) return this.courseImages.default;
       
       try {
-        // First, check if course has a valid thumbnail
         if (course.thumbnail && 
             course.thumbnail !== '/default-course-thumbnail.jpg' && 
             !course.thumbnail.includes('placeholder') &&
@@ -1194,19 +1107,16 @@ export default {
           }
         }
 
-        // Extract images from curriculum
         const curriculumImages = this.extractCurriculumImages(course);
         if (curriculumImages.length > 0) {
           return curriculumImages[0].url;
         }
 
-        // Use hardcoded images based on category
         const category = this.safeString(course.category);
         if (category && this.courseImages[category]) {
           return this.courseImages[category];
         }
 
-        // Check for related categories
         const categoryMappings = {
           'веб-разработка': 'web-разработка',
           'веб разработка': 'web-разработка',
@@ -1226,16 +1136,13 @@ export default {
           return this.courseImages[mappedCategory];
         }
 
-        // Use premium image for premium courses
         if (course.isPremium) {
           return this.courseImages.premium;
         }
 
-        // Final fallback
         return this.courseImages.default;
         
       } catch (error) {
-        console.warn('⚠️ Error getting course image:', error);
         return this.courseImages.default;
       }
     },
@@ -1290,7 +1197,6 @@ export default {
           });
         });
       } catch (error) {
-        console.warn('⚠️ Error checking course images:', error);
         return false;
       }
     },
@@ -1312,7 +1218,6 @@ export default {
         });
         return count;
       } catch (error) {
-        console.warn('⚠️ Error counting course images:', error);
         return 0;
       }
     },
@@ -1349,16 +1254,15 @@ export default {
           }
         }
 
-        // Add category-specific outcomes
         const categoryOutcomes = {
-          'ИИ и автоматизация': ['Основы искусственного интеллекта', 'Методы машинного обучения', 'Практические применения ИИ'],
-          'Видеомонтаж': ['Основы видеомонтажа', 'Работа с профессиональными инструментами', 'Создание качественного видеоконтента'],
-          'Графический дизайн': ['Принципы графического дизайна', 'Работа с цветом и композицией', 'Создание профессиональных макетов'],
-          'Программирование': ['Основы программирования', 'Алгоритмы и структуры данных', 'Практическое решение задач'],
-          'Маркетинг': ['Основы маркетинга', 'Цифровые инструменты продвижения', 'Аналитика и метрики'],
+          'ии и автоматизация': ['Основы искусственного интеллекта', 'Методы машинного обучения', 'Практические применения ИИ'],
+          'видеомонтаж': ['Основы видеомонтажа', 'Работа с профессиональными инструментами', 'Создание качественного видеоконтента'],
+          'графический дизайн': ['Принципы графического дизайна', 'Работа с цветом и композицией', 'Создание профессиональных макетов'],
+          'программирование': ['Основы программирования', 'Алгоритмы и структуры данных', 'Практическое решение задач'],
+          'маркетинг': ['Основы маркетинга', 'Цифровые инструменты продвижения', 'Аналитика и метрики'],
         };
 
-        const categorySpecific = categoryOutcomes[course.category];
+        const categorySpecific = categoryOutcomes[this.safeString(course.category)];
         if (categorySpecific) {
           outcomes.push(...categorySpecific);
         }
@@ -1369,7 +1273,6 @@ export default {
           'Применяйте знания на практике'
         ];
       } catch (error) {
-        console.warn('⚠️ Error getting course outcomes:', error);
         return ['Получите практические навыки', 'Изучите современные методы', 'Применяйте знания на практике'];
       }
     },
@@ -1392,7 +1295,6 @@ export default {
           imageCount: this.getLessonImageCount(lesson),
         }));
       } catch (error) {
-        console.warn('⚠️ Error getting course modules:', error);
         return [
           { title: 'Введение в курс', duration: '30 мин', hasImages: false },
           { title: 'Основные концепции', duration: '45 мин', hasImages: false },
@@ -1415,7 +1317,6 @@ export default {
         }
         return number.toString();
       } catch (error) {
-        console.warn('⚠️ Error formatting number:', error);
         return '0';
       }
     },
@@ -1423,15 +1324,11 @@ export default {
     // ✅ HANDLE IMAGE ERROR: Fallback for broken images
     handleImageError(event, course) {
       try {
-        console.warn('Image failed to load for course:', course?.title || 'Unknown');
-        
         if (event && event.target) {
           event.target.src = this.courseImages.default;
-          event.target.onerror = null; // Prevent infinite loop
+          event.target.onerror = null;
         }
-      } catch (error) {
-        console.warn('⚠️ Error handling image error:', error);
-      }
+      } catch (error) {}
     },
 
     // ✅ DEBOUNCE SEARCH: Optimize search performance
@@ -1464,43 +1361,28 @@ export default {
 
     // ✅ OPEN MODAL: Show course details modal
     async openModal(course) {
-      if (!course) {
-        console.warn('⚠️ No course provided to openModal');
-        return;
-      }
+      if (!course) return;
+
+      this.selectedCourse = course;
+      this.isModalOpen = true;
+      this.modalLoading = true;
 
       try {
-        // Show modal immediately with basic course data
-        this.selectedCourse = course;
-        this.isModalOpen = true;
-        this.modalLoading = true;
-
-        console.log('📖 Opening course modal:', course.title);
-
-        // Load detailed course info in background
         const response = await getCourseById(course._id || course.id);
         
         if (response.success && response.data) {
-          // Process the detailed course data
           const detailedCourse = response.data.course || response.data;
           
           this.selectedCourse = {
-            ...course, // Keep original data as base
-            ...detailedCourse, // Overlay detailed data
+            ...course,
+            ...detailedCourse,
             id: detailedCourse._id || detailedCourse.id || course.id,
             _id: detailedCourse._id || detailedCourse.id || course._id,
-            // Ensure curriculum is processed
             curriculum: this.processCurriculum(detailedCourse.curriculum || course.curriculum || [])
           };
-          
-          console.log('✅ Course details loaded:', this.selectedCourse.title);
-        } else {
-          console.warn('⚠️ Failed to fetch detailed course info:', response.error);
-          // Keep using the basic course data
         }
       } catch (e) {
         console.error('❌ Error while opening course modal:', e);
-        // Keep using the basic course data
       } finally {
         this.modalLoading = false;
       }
@@ -1514,57 +1396,30 @@ export default {
 
     // ✅ START COURSE: Navigate to course player
     startCourse(course) {
-      if (!course) {
-        console.warn('⚠️ No course provided to startCourse');
+      if (!course) return;
+
+      if (course.isPremium && !this.isPremiumUser) {
+        const message = `Этот курс доступен только по подписке Start/Pro. Ваш текущий статус: ${this.currentUserStatus}`;
+        if (this.$toast) {
+          this.$toast.error(message, { duration: 4000 });
+        } else if (this.$message) {
+          this.$message.error(message);
+        } else {
+          alert(message);
+        }
         return;
       }
 
-      try {
-        console.log('🚀 Starting course:', course.title);
-        console.log('Course isPremium:', course.isPremium);
-        console.log('User status:', this.currentUserStatus);
-        console.log('User isPremium:', this.isPremiumUser);
+      this.closeModal();
 
-        // Check premium access
-        if (course.isPremium && !this.isPremiumUser) {
-          console.log('❌ Course is premium and user lacks access');
-          
-          const message = `Этот курс доступен только по подписке Start/Pro. Ваш текущий статус: ${this.currentUserStatus}`;
-          
-          if (this.$toast) {
-            this.$toast.error(message, { duration: 4000 });
-          } else if (this.$message) {
-            this.$message.error(message);
-          } else {
-            alert(message);
-          }
-          return;
-        }
-
-        console.log('✅ Access granted - starting course');
-
-        // Close modal first
-        this.closeModal();
-
-        // Navigate to lesson player
-        const courseId = course.id || course._id;
-        if (courseId) {
-          this.$router.push({ 
-            name: 'LessonPlayer', 
-            params: { courseId: courseId } 
-          });
-        } else {
-          console.error('❌ No course ID available for navigation');
-          const errorMessage = 'Не удалось открыть курс. Попробуйте позже.';
-          if (this.$toast) {
-            this.$toast.error(errorMessage);
-          } else {
-            alert(errorMessage);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error starting course:', error);
-        const errorMessage = 'Произошла ошибка при запуске курса.';
+      const courseId = course.id || course._id;
+      if (courseId) {
+        this.$router.push({ 
+          name: 'LessonPlayer', 
+          params: { courseId: courseId } 
+        });
+      } else {
+        const errorMessage = 'Не удалось открыть курс. Попробуйте позже.';
         if (this.$toast) {
           this.$toast.error(errorMessage);
         } else {
@@ -1578,17 +1433,12 @@ export default {
       try {
         if (!newStatus || newStatus === oldStatus) return;
         
-        console.log(`👤 UpdatedCourses: Handling status change ${oldStatus} → ${newStatus}`);
-        
-        // Update local storage
         localStorage.setItem('userStatus', newStatus);
         localStorage.setItem('plan', newStatus);
         localStorage.setItem('subscriptionPlan', newStatus);
         
-        // Trigger reactivity update
         this.triggerReactivityUpdate();
         
-        // Show success message for upgrades
         if (newStatus && newStatus !== 'free' && oldStatus === 'free') {
           const planLabel = newStatus === 'pro' ? 'Pro' : newStatus === 'start' ? 'Start' : 'Premium';
           const message = `🎉 ${planLabel} подписка активирована!`;
@@ -1599,8 +1449,6 @@ export default {
             this.$message.success(message);
           }
         }
-        
-        console.log(`✅ UpdatedCourses: Status change handled: ${oldStatus} → ${newStatus}`);
       } catch (error) {
         console.error('❌ Error handling user status change:', error);
       }
@@ -1610,20 +1458,7 @@ export default {
     triggerReactivityUpdate() {
       try {
         this.componentKey++;
-        this.forceUpdateCounter++;
-        this.lastUpdateTime = Date.now();
-        
         this.$forceUpdate();
-        
-        this.$nextTick(() => {
-          this.$forceUpdate();
-        });
-        
-        console.log('🔄 UpdatedCourses: Reactivity update triggered:', {
-          componentKey: this.componentKey,
-          userStatus: this.currentUserStatus,
-          timestamp: this.lastUpdateTime,
-        });
       } catch (error) {
         console.error('❌ Error triggering reactivity update:', error);
       }
@@ -1632,19 +1467,14 @@ export default {
     // ✅ EVENT LISTENERS: Setup global event handling
     setupEventListeners() {
       try {
-        console.log('🔧 UpdatedCourses: Setting up event listeners');
-        
-        // Browser storage events
         if (typeof window !== 'undefined') {
           this.handleSubscriptionChange = (event) => {
-            console.log('📡 UpdatedCourses: Subscription change received:', event.detail);
             const { plan, oldPlan } = event.detail;
             this.handleUserStatusChange(plan, oldPlan);
           };
           
           this.handleStorageChange = (event) => {
             if (event.key === 'userStatus' && event.newValue !== event.oldValue) {
-              console.log('📡 UpdatedCourses: localStorage userStatus changed:', event.oldValue, '→', event.newValue);
               this.handleUserStatusChange(event.newValue, event.oldValue);
             }
           };
@@ -1653,45 +1483,34 @@ export default {
           window.addEventListener('storage', this.handleStorageChange);
         }
         
-        // Event bus listeners
         if (typeof window !== 'undefined' && window.eventBus) {
           this.handleUserStatusEvent = (data) => {
-            console.log('📡 UpdatedCourses: User status event received:', data);
             this.handleUserStatusChange(data.newStatus, data.oldStatus);
           };
           
           this.handlePromocodeEvent = (data) => {
-            console.log('📡 UpdatedCourses: Promocode applied event:', data);
             this.handleUserStatusChange(data.newStatus, data.oldStatus);
           };
           
           this.handleForceUpdateEvent = () => {
-            console.log('📡 UpdatedCourses: Force update event received');
             this.triggerReactivityUpdate();
           };
           
-          // Register event bus listeners
           window.eventBus.on('userStatusChanged', this.handleUserStatusEvent);
           window.eventBus.on('promocodeApplied', this.handlePromocodeEvent);
           window.eventBus.on('forceUpdate', this.handleForceUpdateEvent);
           window.eventBus.on('globalForceUpdate', this.handleForceUpdateEvent);
           window.eventBus.on('subscriptionUpdated', this.handleUserStatusEvent);
           window.eventBus.on('paymentCompleted', this.handleUserStatusEvent);
-          
-          console.log('✅ UpdatedCourses: Event bus listeners registered');
         }
         
-        // Store mutations
         if (this.$store) {
           this.storeUnsubscribe = this.$store.subscribe((mutation) => {
             if (this.isUserRelatedMutation(mutation)) {
-              console.log('📊 UpdatedCourses: Store mutation detected:', mutation.type);
               this.triggerReactivityUpdate();
             }
           });
         }
-        
-        console.log('✅ UpdatedCourses: Event listeners setup complete');
       } catch (error) {
         console.error('❌ Error setting up event listeners:', error);
       }
@@ -1712,7 +1531,6 @@ export default {
           mutation.type.toLowerCase().includes('subscription')
         );
       } catch (error) {
-        console.warn('⚠️ Error checking mutation type:', error);
         return false;
       }
     },
@@ -1720,15 +1538,11 @@ export default {
     // ✅ CLEANUP: Remove all event listeners
     cleanup() {
       try {
-        console.log('🧹 UpdatedCourses: Performing cleanup...');
-        
-        // Clear debounce timeout
         if (this.debounceTimeout) {
           clearTimeout(this.debounceTimeout);
           this.debounceTimeout = null;
         }
         
-        // Remove window event listeners
         if (typeof window !== 'undefined') {
           if (this.handleSubscriptionChange) {
             window.removeEventListener('userSubscriptionChanged', this.handleSubscriptionChange);
@@ -1738,7 +1552,6 @@ export default {
           }
         }
         
-        // Remove event bus listeners
         if (typeof window !== 'undefined' && window.eventBus) {
           if (this.handleUserStatusEvent) {
             window.eventBus.off('userStatusChanged', this.handleUserStatusEvent);
@@ -1754,13 +1567,10 @@ export default {
           }
         }
         
-        // Remove store subscription
         if (this.storeUnsubscribe) {
           this.storeUnsubscribe();
           this.storeUnsubscribe = null;
         }
-        
-        console.log('✅ UpdatedCourses: Cleanup completed');
       } catch (error) {
         console.error('❌ Error during cleanup:', error);
       }
@@ -1911,7 +1721,7 @@ export default {
   background-color: var(--color-card);
   border-radius: 1rem;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-border);
   padding: 1.5rem;
   margin-bottom: 2rem;
   display: flex;
@@ -1950,8 +1760,9 @@ export default {
   height: 2.5rem;
   padding: 0.5rem 0.75rem 0.5rem 2.5rem;
   border-radius: 0.375rem;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-border);
   background-color: var(--color-input-background);
+  color: var(--color-foreground);
   font-size: 0.875rem;
   outline: none;
   transition: border-color 0.2s;
@@ -1971,8 +1782,9 @@ export default {
   height: 2.5rem;
   padding: 0.5rem 2rem 0.5rem 0.75rem;
   border-radius: 0.375rem;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-border);
   background-color: var(--color-input-background);
+  color: var(--color-foreground);
   font-size: 0.875rem;
   outline: none;
   -webkit-appearance: none;
@@ -2004,7 +1816,7 @@ export default {
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-border);
   background-color: var(--color-background);
   color: var(--color-foreground);
   transition: all 0.2s ease-in-out;
@@ -2015,7 +1827,7 @@ export default {
 }
 .button-filter.active {
   background-color: var(--color-brand);
-  color: #fff;
+  color: var(--color-brand-foreground);
   border-color: var(--color-brand);
 }
 
@@ -2078,7 +1890,7 @@ export default {
   background-color: var(--color-card);
   border-radius: 12px;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-border);
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   overflow: hidden;
   display: flex;
@@ -2307,7 +2119,7 @@ export default {
   }
 }
 
-/* ✅ ENHANCED MODAL STYLES WITH IMAGE SUPPORT */
+/* Modal */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -2652,7 +2464,7 @@ export default {
   font-size: 12px;
 }
 
-/* ✅ NEW: Module badge for lessons with images */
+/* Module badge for lessons with images */
 .module-badge {
   display: inline-flex;
   align-items: center;
@@ -2666,7 +2478,7 @@ export default {
   width: fit-content;
 }
 
-/* ✅ NEW: Course statistics section */
+/* Course statistics section */
 .modal-stats {
   padding: 20px;
   background: var(--color-muted);
