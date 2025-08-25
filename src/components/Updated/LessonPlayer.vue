@@ -220,6 +220,7 @@ export default {
   },
 
   watch: {
+    // Watch course prop changes to reload content
     course: {
       handler() {
         this.loadCourseContent();
@@ -268,6 +269,12 @@ export default {
           }
         } catch (detailError) {
           console.warn('⚠️ LessonPlayer: Failed to load course details from API:', detailError.message);
+          
+          // Log the full error for debugging
+          if (detailError.response) {
+            console.warn('   API Response Status:', detailError.response.status);
+            console.warn('   API Response Data:', detailError.response.data);
+          }
         }
 
         // Step 2: If no lessons from course details, try course content endpoint
@@ -284,6 +291,12 @@ export default {
             }
           } catch (contentError) {
             console.warn('⚠️ LessonPlayer: getCourseContent API failed:', contentError.message);
+            
+            // Log the full error for debugging
+            if (contentError.response) {
+              console.warn('   Content API Response Status:', contentError.response.status);
+              console.warn('   Content API Response Data:', contentError.response.data);
+            }
           }
         }
 
@@ -296,8 +309,12 @@ export default {
 
         // Step 4: Final fallback - create demo content ONLY if no real content available
         if (lessons.length === 0) {
-          console.log('🔍 Step 4: No real content found, creating demo lessons...');
+          console.log('🔍 Step 4: No real content found, creating demo lessons as last resort...');
+          console.warn('⚠️ This indicates a problem with the API or course data structure');
           lessons = this.createDemoLessons();
+          console.log('✅ Demo lessons created as fallback:', lessons.length);
+          
+          // Set error message to inform user this is demo content
           this.error = 'Демонстрационное содержание - реальные материалы курса недоступны';
         }
 
@@ -307,6 +324,7 @@ export default {
 
         console.log(`✅ LessonPlayer: Successfully loaded ${lessons.length} lessons for course: ${this.courseData?.title}`);
         
+        // Clear error if we successfully loaded content
         if (lessons.length > 0 && !this.error) {
           this.error = null;
         }
@@ -314,6 +332,7 @@ export default {
       } catch (error) {
         console.error('❌ LessonPlayer: Critical error loading course content:', error);
         
+        // Provide specific error messages based on error type
         if (error.message && error.message.includes('Network Error')) {
           this.error = 'Ошибка сети - проверьте подключение к интернету';
         } else if (error.response?.status === 404) {
@@ -326,9 +345,11 @@ export default {
           this.error = 'Не удалось загрузить содержание курса';
         }
         
+        // Emergency fallback with error message
         try {
           this.lessons = this.createDemoLessons();
           this.error += ' (показано демонстрационное содержание)';
+          console.log('🆘 Emergency demo content loaded with error message');
         } catch (demoError) {
           console.error('❌ Even demo content failed:', demoError);
           this.error = 'Критическая ошибка загрузки содержания курса';
@@ -338,7 +359,7 @@ export default {
       }
     },
 
-    // ✅ FIXED: Process lessons with better content extraction
+    // ✅ COMPLETELY FIXED: Process lessons with proper validation and error handling
     processLessons(lessonsArray) {
       if (!Array.isArray(lessonsArray)) {
         console.warn('⚠️ processLessons: Input is not an array:', typeof lessonsArray);
@@ -358,12 +379,13 @@ export default {
             ...lesson,
             id: lesson._id || lesson.id || `lesson_${index}`,
             _id: lesson._id || lesson.id || `lesson_${index}`,
-            title: lesson.title || lesson.lessonName || lesson.name || `Урок ${index + 1}`,
-            lessonName: lesson.title || lesson.lessonName || lesson.name || `Урок ${index + 1}`,
-            description: lesson.description || lesson.desc || '',
-            duration: lesson.duration || lesson.estimatedTime || '30 мин',
+            title: lesson.title || lesson.lessonName || `Урок ${index + 1}`,
+            lessonName: lesson.title || lesson.lessonName || `Урок ${index + 1}`,
+            description: lesson.description || '',
+            duration: lesson.duration || '30 мин',
             order: lesson.order !== undefined ? lesson.order : index,
-            steps: this.processSteps(lesson.steps || lesson.content || [])
+            // ✅ KEY FIX: Process steps properly
+            steps: this.processSteps(lesson.steps || [])
           };
 
           processedLessons.push(processedLesson);
@@ -372,6 +394,7 @@ export default {
         } catch (lessonError) {
           console.error(`❌ Error processing lesson ${index}:`, lessonError);
           
+          // Add a fallback lesson even if processing failed
           processedLessons.push({
             id: `fallback_lesson_${index}`,
             _id: `fallback_lesson_${index}`,
@@ -386,7 +409,7 @@ export default {
       return processedLessons;
     },
 
-    // ✅ COMPLETELY FIXED: Process steps with comprehensive content handling
+    // ✅ COMPLETELY FIXED: Process steps with comprehensive type handling
     processSteps(steps) {
       if (!Array.isArray(steps)) {
         console.warn('⚠️ processSteps: Input is not an array:', typeof steps);
@@ -402,26 +425,24 @@ export default {
             return;
           }
 
-          // ✅ CRITICAL FIX: Better step type detection
-          const stepType = this.detectStepType(step);
-          
           const processedStep = {
             ...step,
-            id: step.id || step._id || `step_${index}`,
-            type: stepType,
-            title: step.title || step.name || this.getStepTitle({ ...step, type: stepType }),
-            description: step.description || step.desc || '',
-            content: this.extractContent(step), // ✅ NEW: Extract content properly
-            data: this.processStepData(step, stepType), // ✅ FIXED: Pass stepType
+            id: step.id || `step_${index}`,
+            type: step.type || 'explanation',
+            title: step.title || this.getStepTitle(step),
+            description: step.description || '',
+            content: step.content || '',
+            // ✅ CRITICAL FIX: Process step data based on type
+            data: this.processStepData(step),
             order: step.order !== undefined ? step.order : index
           };
 
           processedSteps.push(processedStep);
-          console.log(`✅ Processed step ${index + 1}: "${processedStep.title}" (${stepType}) - Content length: ${processedStep.content?.length || 0}`);
           
         } catch (stepError) {
           console.error(`❌ Error processing step ${index}:`, stepError);
           
+          // Add fallback step
           processedSteps.push({
             id: `fallback_step_${index}`,
             type: 'explanation',
@@ -436,128 +457,24 @@ export default {
       return processedSteps;
     },
 
-    // ✅ NEW: Detect step type more accurately
-    detectStepType(step) {
-      if (!step) return 'explanation';
-
-      // Direct type property
-      if (step.type) {
-        return step.type.toLowerCase();
-      }
-
-      // Check for specific properties that indicate type
-      if (step.question || step.quiz || step.quizzes || (step.data && Array.isArray(step.data))) {
-        return 'quiz';
-      }
-
-      if (step.videoUrl || step.video || (step.data && step.data.url && step.data.url.includes('youtube'))) {
-        return 'video';
-      }
-
-      if (step.pdfUrl || step.pdf || (step.data && step.data.url && step.data.url.includes('.pdf'))) {
-        return 'pdf';
-      }
-
-      if (step.practice || step.practiceType || step.instructions || step.files) {
-        return 'practice';
-      }
-
-      if (step.images && Array.isArray(step.images) && step.images.length > 0 && !step.content && !step.text) {
-        return 'image';
-      }
-
-      // Check content for indicators
-      const content = step.content || step.text || step.description || '';
-      if (typeof content === 'string') {
-        if (content.includes('example:') || content.includes('пример:')) {
-          return 'example';
-        }
-        if (content.includes('read:') || content.includes('читать:')) {
-          return 'reading';
-        }
-      }
-
-      // Default to explanation
-      return 'explanation';
-    },
-
-    // ✅ NEW: Extract content from various possible locations
-    extractContent(step) {
-      if (!step) return '';
-
-      // Priority order for content extraction
-      const contentSources = [
-        step.content,
-        step.text,
-        step.description,
-        step.body,
-        step.html,
-        step.markdown,
-        step.data?.content,
-        step.data?.text,
-        step.data?.description,
-        step.data?.body
-      ];
-
-      for (const source of contentSources) {
-        if (source && typeof source === 'string' && source.trim().length > 0) {
-          console.log('📝 Found content:', source.substring(0, 100) + '...');
-          return source.trim();
-        }
-      }
-
-      // If no text content found, create descriptive content based on type
-      return this.generateFallbackContent(step);
-    },
-
-    // ✅ NEW: Generate fallback content when no text is found
-    generateFallbackContent(step) {
-      const stepType = this.detectStepType(step);
-      
-      switch (stepType) {
-        case 'video':
-          const videoUrl = step.videoUrl || step.video || step.data?.url || '';
-          return videoUrl ? `Видеоматериал: ${videoUrl}` : 'Видеоматериал';
-          
-        case 'pdf':
-          const pdfUrl = step.pdfUrl || step.pdf || step.data?.url || '';
-          return pdfUrl ? `PDF документ: ${pdfUrl}` : 'PDF документ';
-          
-        case 'practice':
-          const instructions = step.instructions || step.data?.instructions || '';
-          return instructions || 'Практическое задание';
-          
-        case 'quiz':
-          const question = step.question || step.data?.question || step.data?.[0]?.question || '';
-          return question || 'Интерактивный тест';
-          
-        case 'image':
-          const images = step.images || step.data?.images || [];
-          return images.length > 0 ? `Изображения (${images.length})` : 'Изображение';
-          
-        default:
-          return step.title || step.name || 'Содержание шага';
-      }
-    },
-
     // ✅ COMPLETELY FIXED: Process step data with proper type-specific handling
-    processStepData(step, stepType) {
+    processStepData(step) {
       if (!step || typeof step !== 'object') {
         return { content: '', error: 'Invalid step data' };
       }
 
       const baseData = step.data || {};
-      const type = stepType || step.type || 'explanation';
+      const stepType = step.type || 'explanation';
 
       try {
-        switch (type) {
+        switch (stepType) {
           case 'explanation':
           case 'example':  
           case 'reading':
-          case 'text':
+            const content = baseData.content || step.content || '';
             return {
               ...baseData,
-              content: this.extractContent(step),
+              content: content,
               images: this.processImages(baseData.images || step.images || [])
             };
 
@@ -565,122 +482,84 @@ export default {
             return {
               ...baseData,
               images: this.processImages(baseData.images || step.images || []),
-              description: baseData.description || step.description || this.extractContent(step),
+              description: baseData.description || step.description || step.content || '',
               caption: baseData.caption || step.caption || ''
             };
 
           case 'video':
             return {
               ...baseData,
-              url: baseData.url || step.videoUrl || step.video || step.url || '',
-              description: baseData.description || step.description || this.extractContent(step),
+              url: baseData.url || step.videoUrl || step.url || '',
+              description: baseData.description || step.description || '',
               thumbnail: baseData.thumbnail || step.thumbnail
             };
 
           case 'pdf':
             return {
               ...baseData,
-              url: baseData.url || step.pdfUrl || step.pdf || step.url || '',
-              description: baseData.description || step.description || this.extractContent(step)
+              url: baseData.url || step.pdfUrl || step.url || '',
+              description: baseData.description || step.description || ''
             };
 
           case 'practice':
             return {
               ...baseData,
-              instructions: baseData.instructions || step.instructions || this.extractContent(step),
+              instructions: baseData.instructions || step.instructions || step.content || '',
               type: baseData.type || step.practiceType || 'guided',
               files: baseData.files || step.files || [],
               images: this.processImages(baseData.images || step.images || [])
             };
 
           case 'quiz':
-            return this.processQuizData(step, baseData);
+            // Handle multiple quiz data formats
+            if (Array.isArray(baseData)) {
+              return baseData.map(quiz => ({
+                ...quiz,
+                images: this.processImages(quiz.images || [])
+              }));
+            } else if (Array.isArray(baseData.questions)) {
+              return baseData.questions.map(quiz => ({
+                ...quiz,
+                images: this.processImages(quiz.images || [])
+              }));
+            } else if (step.question || step.content) {
+              return [{
+                question: step.question || step.content || '',
+                type: step.quizType || 'multiple-choice',
+                options: (step.options || []).map(opt => 
+                  typeof opt === 'string' ? { text: opt, correct: false } : opt
+                ),
+                correctAnswer: parseInt(step.correctAnswer) || 0,
+                explanation: step.explanation || '',
+                images: this.processImages(step.questionImages || [])
+              }];
+            } else if (step.quizzes && Array.isArray(step.quizzes)) {
+              return step.quizzes.map(quiz => ({
+                ...quiz,
+                images: this.processImages(quiz.images || [])
+              }));
+            } else {
+              return [];
+            }
 
           default:
-            console.warn(`⚠️ Unknown step type: ${type}`);
+            console.warn(`⚠️ Unknown step type: ${stepType}`);
             return {
               ...baseData,
-              content: this.extractContent(step),
+              content: baseData.content || step.content || '',
               images: this.processImages(baseData.images || step.images || [])
             };
         }
       } catch (dataError) {
-        console.error(`❌ Error processing step data for type ${type}:`, dataError);
+        console.error(`❌ Error processing step data for type ${stepType}:`, dataError);
         return {
-          content: this.extractContent(step) || 'Ошибка обработки данных шага',
+          content: step.content || 'Ошибка обработки данных шага',
           error: dataError.message
         };
       }
     },
 
-    // ✅ NEW: Better quiz data processing
-    processQuizData(step, baseData) {
-      // Handle multiple quiz data formats
-      if (Array.isArray(baseData) && baseData.length > 0) {
-        return baseData.map(quiz => ({
-          ...quiz,
-          question: quiz.question || quiz.text || '',
-          images: this.processImages(quiz.images || [])
-        }));
-      } 
-      
-      if (Array.isArray(baseData.questions)) {
-        return baseData.questions.map(quiz => ({
-          ...quiz,
-          question: quiz.question || quiz.text || '',
-          images: this.processImages(quiz.images || [])
-        }));
-      } 
-      
-      if (step.question || baseData.question) {
-        return [{
-          question: step.question || baseData.question || this.extractContent(step),
-          type: step.quizType || baseData.type || 'multiple-choice',
-          options: this.processQuizOptions(step.options || baseData.options || []),
-          correctAnswer: parseInt(step.correctAnswer || baseData.correctAnswer) || 0,
-          explanation: step.explanation || baseData.explanation || '',
-          images: this.processImages(step.questionImages || step.images || [])
-        }];
-      } 
-      
-      if (step.quizzes && Array.isArray(step.quizzes)) {
-        return step.quizzes.map(quiz => ({
-          ...quiz,
-          question: quiz.question || quiz.text || '',
-          images: this.processImages(quiz.images || [])
-        }));
-      }
-      
-      if (Array.isArray(step.data)) {
-        return step.data.map(quiz => ({
-          ...quiz,
-          question: quiz.question || quiz.text || '',
-          images: this.processImages(quiz.images || [])
-        }));
-      }
-
-      return [];
-    },
-
-    // ✅ NEW: Process quiz options properly
-    processQuizOptions(options) {
-      if (!Array.isArray(options)) return [];
-      
-      return options.map(opt => {
-        if (typeof opt === 'string') {
-          return { text: opt, correct: false };
-        }
-        if (typeof opt === 'object' && opt !== null) {
-          return {
-            text: opt.text || opt.label || opt.value || String(opt),
-            correct: Boolean(opt.correct || opt.isCorrect)
-          };
-        }
-        return { text: String(opt), correct: false };
-      });
-    },
-
-    // ✅ ENHANCED: Process images with better URL handling
+    // ✅ FIXED: Process images with better URL handling
     processImages(images) {
       if (!Array.isArray(images)) return [];
 
@@ -690,6 +569,7 @@ export default {
           try {
             let imageUrl = img.url || img.src || img.base64;
             
+            // Process different URL types
             if (imageUrl) {
               // Handle base64 images
               if (imageUrl.startsWith('data:')) {
@@ -715,9 +595,9 @@ export default {
             return {
               id: img.id || `img_${index}_${Date.now()}`,
               url: imageUrl,
-              caption: img.caption || img.description || img.alt || '',
+              caption: img.caption || img.description || '',
               alt: img.alt || img.caption || img.description || `Изображение ${index + 1}`,
-              filename: img.filename || img.name || `image_${index}`,
+              filename: img.filename || `image_${index}`,
               size: img.size || 0,
               order: img.order !== undefined ? img.order : index
             };
@@ -730,7 +610,7 @@ export default {
         .sort((a, b) => (a.order || 0) - (b.order || 0));
     },
 
-    // ✅ ENHANCED: Create demo lessons with rich content
+    // ✅ IMPROVED: Create demo lessons with clear indication they are fallback content
     createDemoLessons() {
       const courseTitle = this.courseData?.title || this.course?.title || 'Курс';
       
@@ -747,40 +627,24 @@ export default {
               id: 'demo_step_1_1',
               type: 'explanation',
               title: '⚠️ Демонстрационное содержание',
-              content: `Это демонстрационное содержание курса "${courseTitle}".
-              
-              Возможные причины недоступности материалов:
-              • Материалы курса еще не загружены на сервер
-              • Проблемы с сетевым подключением к API
-              • Технические неполадки на сервере
-              • Курс находится в процессе разработки
-              
-              Что можно сделать:
-              • Обновить страницу и попробовать еще раз
-              • Проверить подключение к интернету
-              • Обратиться к администратору системы
-              • Попробовать позже`,
               data: {
-                content: `Это демонстрационное содержание курса "${courseTitle}".
-                
-                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ffc107;">
-                  <strong>⚠️ Внимание:</strong> Реальные материалы курса временно недоступны.
+                content: `<div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #ffc107;">
+                  <strong>⚠️ Внимание:</strong> Это демонстрационное содержание.<br>
+                  Реальные материалы курса "${courseTitle}" временно недоступны.
                 </div>
                 
-                <h3>Возможные причины:</h3>
+                <p>Возможные причины:</p>
                 <ul>
-                  <li>Материалы курса еще не загружены на сервер</li>
-                  <li>Проблемы с сетевым подключением к API</li>
+                  <li>Материалы курса еще не загружены</li>
+                  <li>Проблемы с сетевым подключением</li>
                   <li>Технические неполадки на сервере</li>
-                  <li>Курс находится в процессе разработки</li>
                 </ul>
                 
-                <h3>Что можно сделать:</h3>
+                <p>Попробуйте:</p>
                 <ul>
-                  <li>Обновить страницу и попробовать еще раз</li>
+                  <li>Обновить страницу</li>
                   <li>Проверить подключение к интернету</li>
-                  <li>Обратиться к администратору системы</li>
-                  <li>Попробовать позже</li>
+                  <li>Обратиться к администратору</li>
                 </ul>`
               }
             },
@@ -788,27 +652,12 @@ export default {
               id: 'demo_step_1_2',
               type: 'explanation',
               title: 'Как должен работать курс',
-              content: `После загрузки реальных материалов курс будет содержать:
-              
-              • Структурированные уроки с теорией и практикой
-              • Интерактивные упражнения и тесты  
-              • Видеоматериалы и дополнительные ресурсы
-              • Систему отслеживания прогресса
-              • Практические задания с файлами
-              • Итоговые проверочные работы`,
               data: {
-                content: `<h3>После загрузки реальных материалов курс будет содержать:</h3>
-                
-                <ul>
-                  <li><strong>Структурированные уроки</strong> с теорией и практикой</li>
-                  <li><strong>Интерактивные упражнения</strong> и тесты</li>
-                  <li><strong>Видеоматериалы</strong> и дополнительные ресурсы</li>
-                  <li><strong>Систему отслеживания прогресса</strong></li>
-                  <li><strong>Практические задания</strong> с файлами</li>
-                  <li><strong>Итоговые проверочные работы</strong></li>
-                </ul>
-                
-                <p>Все функции плеера уже готовы для отображения реального контента!</p>`
+                content: `После загрузки реальных материалов курс будет содержать:<br><br>
+                • Структурированные уроки с теорией и практикой<br>
+                • Интерактивные упражнения и тесты<br>
+                • Видеоматериалы и дополнительные ресурсы<br>
+                • Систему отслеживания прогресса`
               }
             }
           ]
@@ -816,58 +665,38 @@ export default {
         {
           id: 'demo_lesson_2',
           _id: 'demo_lesson_2',
-          title: 'Тестирование функций плеера',
-          lessonName: 'Тестирование функций плеера',
-          description: 'Демонстрация всех возможностей системы',
+          title: 'Тестирование интерфейса',
+          lessonName: 'Тестирование интерфейса',
+          description: 'Демонстрация функций плеера',
           duration: '10 мин',
           steps: [
             {
               id: 'demo_step_2_1',
               type: 'explanation',
-              title: 'Поддерживаемые типы контента',
-              content: `Этот плеер поддерживает различные типы образовательного контента:
-              
-              • Текстовые объяснения и материалы (как этот)
-              • Интерактивные тесты с множественным выбором
-              • Видеоматериалы (YouTube, прямые ссылки)
-              • PDF документы с возможностью полноэкранного просмотра
-              • Практические задания с загружаемыми файлами
-              • Изображения с подписями и описаниями
-              
-              Все типы контента поддерживают адаптивный дизайн и работают на мобильных устройствах.`,
+              title: 'Функции плеера',
               data: {
-                content: `<h3>Этот плеер поддерживает различные типы образовательного контента:</h3>
-                
-                <ul>
-                  <li>📝 <strong>Текстовые объяснения</strong> и материалы (как этот)</li>
-                  <li>❓ <strong>Интерактивные тесты</strong> с множественным выбором</li>
-                  <li>🎥 <strong>Видеоматериалы</strong> (YouTube, прямые ссылки)</li>
-                  <li>📄 <strong>PDF документы</strong> с возможностью полноэкранного просмотра</li>
-                  <li>🎯 <strong>Практические задания</strong> с загружаемыми файлами</li>
-                  <li>🖼️ <strong>Изображения</strong> с подписями и описаниями</li>
-                </ul>
-                
-                <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #0277bd;">
-                  <strong>💡 Важно:</strong> Все типы контента поддерживают адаптивный дизайн и работают на мобильных устройствах.
-                </div>`
+                content: `Этот плеер поддерживает различные типы контента:<br><br>
+                • Текстовые объяснения (как этот)<br>
+                • Интерактивные тесты<br>
+                • Видеоматериалы<br>
+                • PDF документы<br>
+                • Практические задания`
               }
             },
             {
               id: 'demo_step_2_2',
               type: 'quiz',
-              title: 'Пример интерактивного теста',
-              content: 'Демонстрация работы системы тестирования',
+              title: 'Пример теста',
               data: [{
-                question: 'Это демонстрационное содержание курса?',
+                question: 'Это демонстрационное содержание?',
                 type: 'multiple-choice',
                 options: [
-                  { text: 'Да, это временная заглушка для демонстрации возможностей', correct: true },
-                  { text: 'Нет, это реальный образовательный курс', correct: false },
-                  { text: 'Не знаю, не могу определить', correct: false },
-                  { text: 'Это зависит от настроек системы', correct: false }
+                  { text: 'Да, это временная заглушка', correct: true },
+                  { text: 'Нет, это реальный курс', correct: false },
+                  { text: 'Не знаю', correct: false }
                 ],
                 correctAnswer: 0,
-                explanation: 'Верно! Это демонстрационное содержание, которое показывается когда реальные материалы курса недоступны. Оно помогает понять, как будет выглядеть и работать настоящий курс.'
+                explanation: 'Верно! Это демонстрационное содержание, которое показывается когда реальные материалы курса недоступны.'
               }]
             }
           ]
@@ -923,14 +752,8 @@ export default {
     getStepTitle(step) {
       if (step.title) return step.title;
       const titles = {
-        explanation: '📝 Объяснение', 
-        example: '💡 Пример', 
-        text: '📝 Текст',
-        reading: '📚 Чтение',
-        video: '🎥 Видео',
-        pdf: '📄 Материалы', 
-        practice: '🎯 Практика', 
-        quiz: '❓ Тест',
+        explanation: '📝 Объяснение', example: '💡 Пример', video: '🎥 Видео',
+        pdf: '📄 Материалы', practice: '🎯 Практика', quiz: '❓ Тест', reading: '📚 Чтение',
         image: '🖼️ Изображение'
       };
       return titles[step.type] || '📌 Шаг';
@@ -938,14 +761,8 @@ export default {
 
     getStepComponent(type) {
       const components = {
-        explanation: 'step-text', 
-        example: 'step-text', 
-        reading: 'step-text',
-        text: 'step-text',
-        video: 'step-video', 
-        pdf: 'step-pdf', 
-        practice: 'step-practice', 
-        quiz: 'step-quiz',
+        explanation: 'step-text', example: 'step-text', reading: 'step-text',
+        video: 'step-video', pdf: 'step-pdf', practice: 'step-practice', quiz: 'step-quiz',
         image: 'step-text'
       };
       return components[type] || 'step-text';
@@ -969,45 +786,8 @@ export default {
       `,
       computed: {
         formattedContent() {
-          // ✅ FIXED: Better content extraction and formatting
-          let content = '';
-          
-          // Try multiple sources for content
-          if (this.step.data?.content) {
-            content = this.step.data.content;
-          } else if (this.step.content) {
-            content = this.step.content;
-          } else if (this.step.text) {
-            content = this.step.text;
-          } else if (this.step.description) {
-            content = this.step.description;
-          } else if (this.step.data?.text) {
-            content = this.step.data.text;
-          } else if (this.step.data?.description) {
-            content = this.step.data.description;
-          } else {
-            content = 'Содержание не найдено';
-          }
-          
-          // Convert string content to HTML
-          if (typeof content === 'string') {
-            // Handle different line break formats
-            content = content
-              .replace(/\r\n/g, '\n')
-              .replace(/\r/g, '\n')
-              .replace(/\n\n/g, '</p><p>')
-              .replace(/\n/g, '<br>')
-              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-              .replace(/\*(.*?)\*/g, '<em>$1</em>');
-              
-            // Wrap in paragraphs if not already HTML
-            if (!content.includes('<p>') && !content.includes('<div>') && content.length > 0) {
-              content = '<p>' + content + '</p>';
-            }
-          }
-          
-          console.log('📝 Formatted content length:', content.length);
-          return content || '<p>Содержание не найдено</p>';
+          const content = this.step.data?.content || this.step.content || 'Содержание не найдено';
+          return content.replace(/\n/g, '<br>');
         },
         hasImages() {
           const images = this.step.data?.images || this.step.images || [];
@@ -1046,20 +826,15 @@ export default {
               <small v-if="videoUrl">URL: {{ videoUrl }}</small>
             </div>
           </div>
-          <div v-if="description" class="video-description">
-            <div v-html="formattedDescription"></div>
-          </div>
+          <p v-if="description" class="video-description">{{ description }}</p>
         </div>
       `,
       computed: {
         videoUrl() {
-          return this.step.data?.url || this.step.videoUrl || this.step.video || this.step.url || '';
+          return this.step.data?.url || this.step.videoUrl || '';
         },
         description() {
-          return this.step.data?.description || this.step.description || this.step.content || '';
-        },
-        formattedDescription() {
-          return this.description.replace(/\n/g, '<br>');
+          return this.step.data?.description || this.step.description;
         },
         isYouTube() {
           return this.videoUrl.includes('youtube.com') || this.videoUrl.includes('youtu.be');
@@ -1088,7 +863,7 @@ export default {
         <div class="step-pdf">
           <div class="pdf-header">
             <h3>📄 PDF Материал</h3>
-            <div v-if="description" v-html="formattedDescription"></div>
+            <p v-if="description">{{ description }}</p>
           </div>
           
           <div class="pdf-viewer">
@@ -1135,13 +910,10 @@ export default {
       `,
       computed: {
         pdfUrl() {
-          return this.step.data?.url || this.step.pdfUrl || this.step.pdf || this.step.url;
+          return this.step.data?.url || this.step.pdfUrl;
         },
         description() {
-          return this.step.data?.description || this.step.description || this.step.content;
-        },
-        formattedDescription() {
-          return this.description ? this.description.replace(/\n/g, '<br>') : '';
+          return this.step.data?.description || this.step.description;
         }
       }
     },
@@ -1152,7 +924,7 @@ export default {
         <div class="step-practice">
           <div class="practice-header">
             <h3>🎯 Практическое задание</h3>
-            <div v-if="instructions" v-html="formattedInstructions"></div>
+            <p v-if="instructions">{{ instructions }}</p>
           </div>
 
           <div v-if="hasFiles" class="practice-files">
@@ -1186,10 +958,7 @@ export default {
       `,
       computed: {
         instructions() {
-          return this.step.data?.instructions || this.step.instructions || this.step.content || this.step.description;
-        },
-        formattedInstructions() {
-          return this.instructions ? this.instructions.replace(/\n/g, '<br>') : '';
+          return this.step.data?.instructions || this.step.instructions;
         },
         files() {
           return this.step.data?.files || this.step.files || [];
@@ -1219,7 +988,7 @@ export default {
         return {
           selectedAnswer: null,
           showResult: false,
-          selectedQuestions: new Map()
+          selectedQuestions: new Map() // For multiple questions
         }
       },
       template: `
@@ -1227,7 +996,7 @@ export default {
           <div v-if="quizData && quizData.length > 0">
             <div v-for="(quiz, quizIndex) in quizData" :key="quizIndex" class="quiz-item">
               <div class="quiz-header">
-                <h3>❓ {{ quiz.question || 'Вопрос не указан' }}</h3>
+                <h3>❓ {{ quiz.question }}</h3>
               </div>
               
               <div v-if="quiz.options && quiz.options.length > 0" class="quiz-options">
@@ -1260,7 +1029,7 @@ export default {
                   </svg>
                   Объяснение
                 </div>
-                <div v-html="formattedExplanation(quiz.explanation)"></div>
+                <p>{{ quiz.explanation }}</p>
               </div>
             </div>
           </div>
@@ -1274,51 +1043,34 @@ export default {
       `,
       computed: {
         quizData() {
-          console.log('🔍 Processing quiz data for step:', this.step);
-          
+          // Handle different quiz data formats more robustly
           const stepData = this.step.data;
           
-          // Handle array of quizzes in data
           if (Array.isArray(stepData) && stepData.length > 0) {
-            console.log('✅ Found quiz data as array:', stepData.length);
-            return stepData.filter(quiz => quiz && (quiz.question || quiz.text));
+            return stepData.filter(quiz => quiz && quiz.question);
           }
           
-          // Handle questions array in data
           if (stepData && Array.isArray(stepData.questions)) {
-            console.log('✅ Found quiz data in questions array:', stepData.questions.length);
-            return stepData.questions.filter(quiz => quiz && (quiz.question || quiz.text));
+            return stepData.questions.filter(quiz => quiz && quiz.question);
           }
           
-          // Handle single quiz in data
-          if (stepData && (stepData.question || stepData.text)) {
-            console.log('✅ Found single quiz in data');
-            return [{
-              question: stepData.question || stepData.text,
-              options: stepData.options || [],
-              explanation: stepData.explanation || '',
-              correctAnswer: stepData.correctAnswer
-            }];
+          if (stepData && stepData.question) {
+            return [stepData];
           }
           
-          // Handle quiz directly in step
-          if (this.step.question || this.step.text) {
-            console.log('✅ Found quiz directly in step');
+          if (this.step.question) {
             return [{
-              question: this.step.question || this.step.text,
+              question: this.step.question,
               options: this.step.options || [],
               explanation: this.step.explanation || '',
               correctAnswer: this.step.correctAnswer
             }];
           }
           
-          // Handle quizzes array in step
           if (Array.isArray(this.step.quizzes)) {
-            console.log('✅ Found quiz data in step.quizzes:', this.step.quizzes.length);
-            return this.step.quizzes.filter(quiz => quiz && (quiz.question || quiz.text));
+            return this.step.quizzes.filter(quiz => quiz && quiz.question);
           }
           
-          console.warn('⚠️ No quiz data found in step');
           return [];
         }
       },
@@ -1326,22 +1078,24 @@ export default {
         selectAnswer(quizIndex, optionIndex, option) {
           if (this.isQuizAnswered(quizIndex)) return;
           
+          const answerId = `${quizIndex}-${optionIndex}`;
           this.selectedQuestions.set(quizIndex, optionIndex);
           
           const isCorrect = this.isCorrectOption(option);
           this.$emit('quiz-answer', this.stepIndex, optionIndex, isCorrect);
           
+          // Force reactivity update
           this.$forceUpdate();
         },
         
         getOptionText(option) {
           if (typeof option === 'string') return option;
-          return option.text || option.label || option.value || 'Опция';
+          return option.text || option.label || 'Опция';
         },
         
         isCorrectOption(option) {
           if (typeof option === 'object') {
-            return Boolean(option.correct || option.isCorrect);
+            return Boolean(option.correct);
           }
           return false;
         },
@@ -1371,10 +1125,6 @@ export default {
           }
           
           return 'disabled';
-        },
-        
-        formattedExplanation(explanation) {
-          return explanation ? explanation.replace(/\n/g, '<br>') : '';
         }
       }
     }
@@ -1382,275 +1132,242 @@ export default {
 }
 </script>
 <style scoped>
-/* ===== CLEAN MODERN VARIABLES ===== */
+/* ===== DESIGN SYSTEM VARIABLES (FROM IMAGE ANALYSIS) ===== */
 :root {
-  --primary-blue: #4f46e5;
-  --primary-blue-hover: #4338ca;
-  --primary-blue-light: #eef2ff;
-  
-  --success-green: #10b981;
-  --success-green-hover: #059669;
-  --success-green-light: #ecfdf5;
-  
-  --danger-red: #ef4444;
-  --warning-orange: #f59e0b;
-  
-  /* Clean grays */
-  --gray-50: #f9fafb;
-  --gray-100: #f3f4f6;
-  --gray-200: #e5e7eb;
-  --gray-300: #d1d5db;
-  --gray-400: #9ca3af;
-  --gray-500: #6b7280;
-  --gray-600: #4b5563;
-  --gray-700: #374151;
-  --gray-800: #1f2937;
-  --gray-900: #111827;
-  
-  --white: #ffffff;
-  --black: #000000;
-  
-  /* Consistent spacing */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --space-12: 3rem;
-  
-  /* Border radius */
-  --radius-sm: 0.375rem;
-  --radius: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
-  
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  
-  /* Typography */
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
-  --font-size-base: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.25rem;
-  --font-size-2xl: 1.5rem;
-  --font-size-3xl: 1.875rem;
-  
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-  
-  /* Transitions */
-  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --color-sidebar-bg: #FFFFFF;
+  --color-main-bg: #F8F8F8;
+  --color-border: #E5E7EB;
+  --color-text-dark: #1F2937;
+  --color-text-medium: #6B7280;
+  --color-text-light: #9CA3AF;
+  --color-brand-primary: #8B5CF6;
+  --color-brand-light: #C4B5FD;
+  --color-accent-green: #10B981;
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-/* ===== MAIN OVERLAY - SOLID DARK BACKGROUND ===== */
-.lesson-player-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(17, 24, 39, 0.95); /* Solid dark background */
+/* ===== MAIN LAYOUT ===== */
+.lesson-player-container {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: var(--space-4);
+  height: 100vh;
+  width: 100vw;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+  background-color: var(--color-main-bg);
+  color: var(--color-text-dark);
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 
-/* ===== MAIN PLAYER CONTAINER ===== */
-.lesson-player {
-  background: var(--white); /* Solid white background */
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl);
-  width: 100%;
-  max-width: 1200px;
-  max-height: 90vh;
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 320px;
+  background-color: var(--color-sidebar-bg);
+  border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  position: relative;
+  flex-shrink: 0;
+  overflow-y: auto;
 }
 
-/* ===== HEADER SECTION ===== */
-.player-header {
-  background: var(--white); /* Solid white */
-  border-bottom: 1px solid var(--gray-200);
-  padding: var(--space-6) var(--space-8);
+.sidebar-header {
+  padding: 1.5rem 1.5rem 0.5rem;
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-6);
-  position: relative;
-  min-height: 120px;
+  flex-direction: column;
 }
 
-.close-btn {
-  position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
-  background: var(--gray-100);
+.back-btn {
+  background: none;
   border: none;
-  border-radius: var(--radius-md);
-  width: 40px;
-  height: 40px;
+  padding: 0;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: var(--gray-600);
-  cursor: pointer;
-  transition: var(--transition);
-  z-index: 10;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-medium);
 }
 
-.close-btn:hover {
-  background: var(--gray-200);
-  color: var(--gray-900);
-  transform: scale(1.05);
-}
-
-.header-content {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  width: 100%;
-  padding-right: var(--space-12);
-  gap: var(--space-8);
+.back-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .course-info {
-  flex: 1;
-  min-width: 0;
+  margin-top: 1rem;
 }
 
-.course-name {
-  display: block;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--primary-blue);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--space-2);
-  opacity: 0.9;
-}
-
-.lesson-title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--gray-900);
+.course-title {
+  font-size: 1.25rem;
+  font-weight: 600;
   margin: 0;
-  line-height: 1.2;
-  word-wrap: break-word;
+  color: var(--color-text-dark);
 }
 
-.progress-section {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--space-3);
-  min-width: 200px;
-  flex-shrink: 0;
+.course-completed {
+  font-size: 0.875rem;
+  color: var(--color-text-medium);
+  margin: 0;
 }
 
-.progress-bar {
-  width: 200px;
-  height: 8px;
-  background: var(--gray-200);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--primary-blue), var(--success-green));
-  border-radius: var(--radius);
-  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+.sidebar-progress {
+  padding: 0.5rem 1.5rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .progress-text {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--gray-600);
-  white-space: nowrap;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-medium);
+  margin-bottom: 0.5rem;
+}
+
+.progress-bar-wrapper {
+  background-color: var(--color-brand-light);
+  height: 8px;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  background-color: var(--color-brand-primary);
+  height: 100%;
+  transition: width 0.3s ease-in-out;
+  border-radius: inherit;
+}
+
+.progress-completion {
+  font-size: 0.875rem;
+  color: var(--color-text-dark);
+  margin-top: 0.5rem;
+  text-align: right;
+  font-weight: 500;
+}
+
+.sidebar-nav {
+  flex-grow: 1;
+  padding: 0.5rem;
+}
+
+.lesson-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lesson-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  margin-bottom: 0.25rem;
+}
+
+.lesson-item:hover {
+  background-color: var(--color-main-bg);
+}
+
+.lesson-item.is-current {
+  background-color: var(--color-brand-light);
+  color: var(--color-text-dark);
+  font-weight: 600;
+}
+
+.lesson-item.is-current .lesson-duration {
+  color: var(--color-text-medium);
+}
+
+.lesson-status-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--color-main-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-medium);
+  flex-shrink: 0;
+}
+
+.lesson-item.is-current .lesson-status-icon {
+  background-color: var(--color-brand-primary);
+  color: var(--color-white);
+}
+
+.lesson-item.is-completed .lesson-status-icon {
+  background-color: var(--color-brand-primary);
+  color: var(--color-white);
+}
+
+.lesson-status-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
+
+.lesson-details {
+  flex-grow: 1;
+}
+
+.lesson-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.lesson-duration {
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  margin: 0.25rem 0 0;
+}
+
+.lesson-nav-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-light);
+  flex-shrink: 0;
+}
+
+.lesson-item.is-current .lesson-nav-icon {
+  color: var(--color-text-dark);
 }
 
 /* ===== MAIN CONTENT AREA ===== */
-.player-content {
-  flex: 1;
+.main-content {
+  flex-grow: 1;
   overflow-y: auto;
-  padding: var(--space-8);
-  background: var(--gray-50); /* Light gray background for content area */
+  padding: 2.5rem;
 }
 
-/* ===== LOADING & ERROR STATES ===== */
-.loading-state, .error-state, .no-content, .empty-lesson {
+.content-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  min-height: 400px;
-  padding: var(--space-12);
-  background: var(--white);
-  border-radius: var(--radius-lg);
-  margin: var(--space-4) 0;
+  height: 100%;
 }
 
-.loading-state h3, .error-state h3, .no-content h3, .empty-lesson h3 {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-  margin: 0 0 var(--space-3) 0;
-  color: var(--gray-800);
-}
-
-.loading-state p, .error-state p, .no-content p, .empty-lesson p {
-  margin: 0 0 var(--space-6) 0;
-  font-size: var(--font-size-base);
-  color: var(--gray-600);
-  max-width: 400px;
-  line-height: 1.6;
-}
-
-.error-icon, .empty-icon {
-  font-size: 4rem;
-  margin-bottom: var(--space-6);
-  opacity: 0.7;
-}
-
-.retry-btn, .back-btn {
-  padding: var(--space-3) var(--space-6);
-  background: var(--primary-blue);
-  color: var(--white);
-  border: none;
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: var(--transition);
-  min-width: 120px;
-}
-
-.retry-btn:hover, .back-btn:hover {
-  background: var(--primary-blue-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-/* Spinner */
 .spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid var(--gray-200);
-  border-top: 4px solid var(--primary-blue);
+  border: 4px solid var(--color-border);
+  border-top: 4px solid var(--color-brand-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: var(--space-6);
+  margin-bottom: 1rem;
 }
 
 @keyframes spin {
@@ -1658,1013 +1375,373 @@ export default {
   100% { transform: rotate(360deg); }
 }
 
-/* ===== LESSON CONTENT ===== */
-.lesson-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
+.state-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
 }
 
-.step-container {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  transition: var(--transition);
+.state-description {
+  font-size: 1rem;
+  color: var(--color-text-medium);
+  margin: 0 0 1.5rem;
 }
 
-.step-container:hover {
-  box-shadow: var(--shadow-md);
-  border-color: var(--gray-300);
+.btn-primary {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--color-brand-primary);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.step-header {
-  background: var(--gray-50);
-  padding: var(--space-5) var(--space-6);
-  border-bottom: 1px solid var(--gray-200);
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
+/* ===== LESSON VIEW ===== */
+.lesson-view {
+  max-width: 900px;
+  margin: 0 auto;
 }
 
-.step-number {
-  width: 32px;
-  height: 32px;
-  background: var(--primary-blue);
-  color: var(--white);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-sm);
-  flex-shrink: 0;
-  box-shadow: var(--shadow-sm);
-}
-
-.step-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray-900);
-  margin: 0;
-  line-height: 1.3;
-}
-
-.step-body {
-  padding: var(--space-8);
-  background: var(--white);
-}
-
-/* ===== FOOTER NAVIGATION ===== */
-.player-footer {
-  background: var(--white);
-  border-top: 1px solid var(--gray-200);
-  padding: var(--space-6) var(--space-8);
+.lesson-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
-  box-shadow: 0 -1px 3px 0 rgb(0 0 0 / 0.05);
+  margin-bottom: 2rem;
+}
+
+.lesson-meta-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: var(--color-brand-light);
+  border-radius: var(--border-radius-md);
+}
+
+.header-icon {
+  stroke: var(--color-brand-primary);
+}
+
+.lesson-meta-text {
+  flex-grow: 1;
+}
+
+.current-lesson-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.lesson-read-time {
+  font-size: 0.875rem;
+  color: var(--color-text-medium);
+}
+
+.lesson-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.step-container {
+  padding: 1.5rem;
+  background-color: var(--color-white);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.lesson-navigation {
+  margin-top: 3rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .nav-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-5);
-  border: none;
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-sm);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius-sm);
+  font-weight: 600;
   cursor: pointer;
-  transition: var(--transition);
-  min-width: 140px;
+  transition: background-color 0.2s ease;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   justify-content: center;
-  height: 44px;
+}
+
+.nav-btn-prev {
+  background-color: var(--color-white);
+  color: var(--color-text-dark);
+  border: 1px solid var(--color-border);
+}
+
+.nav-btn-prev:hover:not(:disabled) {
+  background-color: var(--color-main-bg);
+}
+
+.nav-btn-next {
+  background-color: var(--color-brand-primary);
+  color: var(--color-white);
+}
+
+.nav-btn-next:hover:not(:disabled) {
+  background-color: var(--color-brand-dark);
+}
+
+.nav-btn-complete {
+  background-color: var(--color-accent-green);
+  color: var(--color-white);
 }
 
 .nav-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
-  transform: none !important;
-}
-
-.nav-btn--primary {
-  background: var(--primary-blue);
-  color: var(--white);
-  box-shadow: var(--shadow-sm);
-}
-
-.nav-btn--primary:hover:not(:disabled) {
-  background: var(--primary-blue-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.nav-btn--secondary {
-  background: var(--white);
-  color: var(--gray-700);
-  border: 1px solid var(--gray-300);
-  box-shadow: var(--shadow-sm);
-}
-
-.nav-btn--secondary:hover:not(:disabled) {
-  background: var(--gray-50);
-  border-color: var(--gray-400);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.nav-btn--success {
-  background: var(--success-green);
-  color: var(--white);
-  box-shadow: var(--shadow-sm);
-}
-
-.nav-btn--success:hover:not(:disabled) {
-  background: var(--success-green-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.lesson-counter {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-5);
-  background: var(--gray-100);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray-700);
-  font-size: var(--font-size-sm);
-}
-
-.current-lesson {
-  color: var(--primary-blue);
-  font-weight: var(--font-weight-bold);
-}
-
-.divider {
-  color: var(--gray-400);
-  margin: 0 var(--space-1);
 }
 
 /* ===== STEP COMPONENT STYLES ===== */
 
-/* Text Step */
-.step-text {
-  line-height: 1.7;
+.step-text h1, .step-text h2, .step-text h3, .step-text h4 {
+  font-weight: 600;
+  margin: 1.5rem 0 1rem;
+  color: var(--color-text-dark);
 }
 
-.text-content {
-  font-size: var(--font-size-base);
-  color: var(--gray-700);
-  line-height: 1.7;
-}
+.step-text h1 { font-size: 2.25rem; }
+.step-text h2 { font-size: 1.75rem; }
+.step-text h3 { font-size: 1.5rem; }
+.step-text h4 { font-size: 1.25rem; }
 
-.text-content p {
-  margin: 0 0 var(--space-4) 0;
-}
-
-.text-content p:last-child {
-  margin-bottom: 0;
-}
-
-.text-content ul, .text-content ol {
-  margin: var(--space-4) 0;
-  padding-left: var(--space-6);
-}
-
-.text-content li {
-  margin-bottom: var(--space-2);
+.step-text p {
   line-height: 1.6;
+  color: var(--color-text-medium);
+  margin: 1rem 0;
 }
 
+.step-text strong {
+  color: var(--color-text-dark);
+  font-weight: 600;
+}
+
+.step-text ul, .step-text ol {
+  padding-left: 1.5rem;
+  margin: 1rem 0;
+  color: var(--color-text-medium);
+}
+
+.step-text li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.step-text pre {
+  background-color: var(--color-background-medium);
+  color: var(--color-text-dark);
+  padding: 1rem;
+  border-radius: var(--border-radius-sm);
+  overflow-x: auto;
+  font-family: monospace;
+}
+
+/* Additional styling for images within text content */
 .step-images {
-  margin-top: var(--space-6);
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--space-4);
+  margin-top: 1.5rem;
 }
 
-.step-image {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-}
-
-.step-image img {
-  width: 100%;
+.step-images img {
+  max-width: 100%;
   height: auto;
-  display: block;
+  border-radius: var(--border-radius-md);
+  margin-bottom: 0.5rem;
 }
 
 .image-caption {
-  padding: var(--space-3);
-  font-size: var(--font-size-sm);
-  color: var(--gray-600);
-  font-style: italic;
-  margin: 0;
-  background: var(--gray-50);
-  border-top: 1px solid var(--gray-200);
-}
-
-/* Video Step */
-.step-video {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-}
-
-.video-wrapper {
-  position: relative;
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-}
-
-.video-embed {
-  position: relative;
-  width: 100%;
-  height: 0;
-  padding-bottom: 56.25%; /* 16:9 */
-  background: var(--gray-900);
-}
-
-.video-iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-.video-element {
-  width: 100%;
-  height: auto;
-  max-height: 500px;
-  display: block;
-}
-
-.video-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 300px;
-  background: var(--gray-100);
-  color: var(--gray-500);
-  border-radius: var(--radius-md);
-}
-
-.placeholder-icon {
-  font-size: 4rem;
-  margin-bottom: var(--space-4);
-  opacity: 0.6;
-}
-
-.video-description {
+  font-size: 0.8rem;
+  color: var(--color-text-light);
   text-align: center;
-  font-style: italic;
-  color: var(--gray-600);
-  font-size: var(--font-size-sm);
-  margin: 0;
-  padding: 0 var(--space-4);
 }
 
-/* PDF Step */
-.step-pdf {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-}
-
-.pdf-header h3 {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray-900);
-  margin: 0 0 var(--space-2) 0;
-}
-
-.pdf-header p {
-  color: var(--gray-600);
-  margin: 0;
-  line-height: 1.6;
-}
-
-.pdf-viewer {
-  position: relative;
-  width: 100%;
-  height: 600px;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-  background: var(--white);
-  border: 1px solid var(--gray-200);
-}
-
-.pdf-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-.pdf-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--gray-500);
-  background: var(--gray-50);
-}
-
-.pdf-actions {
-  display: flex;
-  gap: var(--space-4);
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border: none;
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-sm);
-  text-decoration: none;
-  cursor: pointer;
-  transition: var(--transition);
-  min-width: 120px;
-  justify-content: center;
-  height: 40px;
-}
-
-.action-btn--secondary {
-  background: var(--gray-100);
-  color: var(--gray-700);
-  border: 1px solid var(--gray-300);
-}
-
-.action-btn--secondary:hover {
-  background: var(--gray-200);
-  border-color: var(--gray-400);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-/* Practice Step */
-.step-practice {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-}
-
-.practice-header {
-  padding: var(--space-6);
-  background: var(--primary-blue-light);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(79, 70, 229, 0.2);
-}
-
-.practice-header h3 {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray-900);
-  margin: 0 0 var(--space-3) 0;
-}
-
-.practice-header p {
-  color: var(--gray-700);
-  margin: 0;
-  line-height: 1.6;
-}
-
-.practice-files h4 {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray-900);
-  margin: 0 0 var(--space-4) 0;
-}
-
-.file-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--space-4);
-}
-
-.file-card {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-4);
-  background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  text-decoration: none;
-  color: var(--gray-700);
-  transition: var(--transition);
-  box-shadow: var(--shadow-sm);
-}
-
-.file-card:hover {
-  background: var(--gray-50);
-  border-color: var(--primary-blue);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.file-icon {
-  font-size: var(--font-size-2xl);
-  flex-shrink: 0;
-}
-
-.file-name {
-  flex: 1;
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-sm);
-  line-height: 1.4;
-}
-
-.download-icon {
-  color: var(--gray-400);
-  flex-shrink: 0;
-  transition: var(--transition);
-}
-
-.file-card:hover .download-icon {
-  color: var(--primary-blue);
-  transform: translateY(-1px);
-}
-
-.no-files {
-  text-align: center;
-  color: var(--gray-500);
-  font-style: italic;
-  padding: var(--space-8);
-  background: var(--gray-50);
-  border-radius: var(--radius-md);
-  border: 1px dashed var(--gray-300);
-}
-
-.no-files p {
-  margin: 0;
-  font-size: var(--font-size-base);
-}
-
-/* Quiz Step */
+/* ===== QUIZ COMPONENT STYLES ===== */
 .step-quiz {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
+  margin-top: 2rem;
 }
 
 .quiz-item {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-lg);
-  padding: var(--space-6);
-  box-shadow: var(--shadow-sm);
-}
-
-.quiz-item + .quiz-item {
-  margin-top: var(--space-6);
+  margin-bottom: 2rem;
 }
 
 .quiz-header h3 {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray-900);
-  margin: 0 0 var(--space-5) 0;
-  line-height: 1.4;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  margin: 0 0 1rem;
 }
 
 .quiz-options {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 0.5rem;
 }
 
 .quiz-option {
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-4);
-  background: var(--white);
-  border: 2px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: var(--transition);
-  text-align: left;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
-  color: var(--gray-700);
-  width: 100%;
-  box-shadow: var(--shadow-sm);
 }
 
 .quiz-option:hover:not(:disabled) {
-  background: var(--gray-50);
-  border-color: var(--primary-blue);
-  transform: translateX(4px);
-  box-shadow: var(--shadow-md);
+  background-color: var(--color-main-bg);
+  border-color: var(--color-brand-primary);
 }
 
 .quiz-option:disabled {
   cursor: not-allowed;
-}
-
-.quiz-option.selected {
-  border-color: var(--primary-blue);
-  background: var(--primary-blue-light);
-  box-shadow: var(--shadow-md);
+  opacity: 0.8;
 }
 
 .quiz-option.correct {
-  border-color: var(--success-green);
-  background: var(--success-green-light);
-  color: var(--success-green-hover);
-  box-shadow: var(--shadow-md);
+  background-color: var(--color-accent-green);
+  color: var(--color-white);
+  border-color: var(--color-accent-green);
 }
 
 .quiz-option.incorrect {
-  border-color: var(--danger-red);
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--danger-red);
-  box-shadow: var(--shadow-md);
-}
-
-.quiz-option.disabled {
-  opacity: 0.7;
-}
-
-.option-text {
-  flex: 1;
-  line-height: 1.5;
-}
-
-.option-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  margin-left: var(--space-3);
-}
-
-.quiz-option.correct .option-indicator {
-  background: var(--success-green);
-  color: var(--white);
+  background-color: #FEE2E2;
+  border-color: #F87171;
+  color: var(--color-black);
 }
 
 .quiz-option.incorrect .option-indicator {
-  background: var(--danger-red);
-  color: var(--white);
+  background-color: #EF4444;
+  color: var(--color-white);
+}
+
+.option-indicator {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.quiz-option.correct .option-indicator {
+  background-color: var(--color-white);
+  color: var(--color-accent-green);
+}
+
+.quiz-option.incorrect .option-indicator svg {
+  color: var(--color-white);
 }
 
 .quiz-explanation {
-  padding: var(--space-5);
-  background: var(--gray-50);
-  border-radius: var(--radius-md);
-  border-left: 4px solid var(--primary-blue);
-  margin-top: var(--space-5);
-  box-shadow: var(--shadow-sm);
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--color-brand-light);
+  border-radius: var(--border-radius-sm);
 }
 
-.explanation-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray-900);
-  margin-bottom: var(--space-3);
-  font-size: var(--font-size-sm);
-}
-
-.quiz-explanation p {
-  margin: 0;
-  color: var(--gray-700);
-  line-height: 1.6;
-  font-size: var(--font-size-base);
-}
-
-.no-quiz {
-  text-align: center;
-  color: var(--gray-500);
-  padding: var(--space-8);
-  background: var(--gray-50);
-  border-radius: var(--radius-md);
-  border: 1px dashed var(--gray-300);
-}
-
-.no-quiz .placeholder-icon {
-  font-size: 3rem;
-  margin-bottom: var(--space-4);
-  opacity: 0.6;
-}
-
-.no-quiz p {
-  margin: 0 0 var(--space-2) 0;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
-}
-
-.no-quiz small {
-  font-size: var(--font-size-sm);
-  color: var(--gray-400);
-}
-
-/* PDF Fullscreen Modal */
-.pdf-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(17, 24, 39, 0.95);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  padding: var(--space-4);
-}
-
-.pdf-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  max-width: 1400px;
-  max-height: 95vh;
-  background: var(--white);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-xl);
-}
-
-.pdf-close-btn {
-  position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
-  z-index: 10;
-  background: var(--white);
-  border: none;
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--gray-600);
-  cursor: pointer;
-  transition: var(--transition);
-  box-shadow: var(--shadow-md);
-}
-
-.pdf-close-btn:hover {
-  background: var(--gray-100);
-  color: var(--gray-900);
-  transform: scale(1.05);
-}
-
-.pdf-frame {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-/* ===== RESPONSIVE DESIGN ===== */
-@media (max-width: 1200px) {
-  .lesson-player {
-    max-width: 95vw;
-  }
-  
-  .header-content {
-    gap: var(--space-6);
-  }
-  
-  .progress-section {
-    min-width: 180px;
-  }
-  
-  .progress-bar {
-    width: 180px;
-  }
-}
-
+/* ===== RESPONSIVE DESIGN FOR DIFFERENT DEVICES ===== */
 @media (max-width: 768px) {
-  .lesson-player-overlay {
-    padding: 0;
+  .lesson-player-container {
+    flex-direction: column;
+    position: static;
+    height: auto;
+    min-height: 100vh;
   }
-  
-  .lesson-player {
+
+  .sidebar {
     width: 100%;
-    height: 100vh;
     max-height: 100vh;
-    border-radius: 0;
+    overflow-y: hidden;
+    position: static;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
   }
-  
-  .player-header {
-    padding: var(--space-4);
+
+  .main-content {
+    padding: 1rem;
+    overflow-y: auto;
+  }
+
+  .lesson-view {
+    padding: 1rem;
+  }
+
+  .lesson-header {
     flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-4);
-    min-height: auto;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
   }
   
-  .close-btn {
-    position: absolute;
-    top: var(--space-3);
-    right: var(--space-3);
-    width: 36px;
-    height: 36px;
-  }
-  
-  .header-content {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-4);
-    padding-right: 0;
-    padding-top: var(--space-4);
-  }
-  
-  .course-info {
-    text-align: center;
-  }
-  
-  .lesson-title {
-    font-size: var(--font-size-xl);
-  }
-  
-  .progress-section {
-    align-items: stretch;
-    min-width: auto;
-  }
-  
-  .progress-bar {
+  .lesson-meta-info {
     width: 100%;
   }
-  
-  .progress-text {
-    text-align: center;
+
+  .current-lesson-title {
+    font-size: 1.125rem;
   }
   
-  .player-content {
-    padding: var(--space-4);
+  .lesson-read-time {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
   }
-  
-  .step-body {
-    padding: var(--space-4);
-  }
-  
-  .step-header {
-    padding: var(--space-4);
-  }
-  
-  .player-footer {
-    padding: var(--space-4);
+
+  .lesson-navigation {
     flex-direction: column;
-    gap: var(--space-4);
+    gap: 0.75rem;
   }
-  
+
   .nav-btn {
     width: 100%;
-    min-width: auto;
-  }
-  
-  .lesson-counter {
-    order: -1;
-    justify-content: center;
-  }
-  
-  .pdf-viewer {
-    height: 400px;
-  }
-  
-  .video-embed {
-    padding-bottom: 75%; /* 4:3 on mobile */
-  }
-  
-  .file-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .step-images {
-    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 480px) {
-  .player-header {
-    padding: var(--space-3);
+  .sidebar-header {
+    padding: 1rem;
   }
-  
-  .step-header {
-    padding: var(--space-3);
-    gap: var(--space-3);
-  }
-  
-  .step-number {
-    width: 28px;
-    height: 28px;
-    font-size: var(--font-size-xs);
-  }
-  
-  .step-title {
-    font-size: var(--font-size-base);
-  }
-  
-  .step-body {
-    padding: var(--space-3);
-  }
-  
-  .pdf-viewer {
-    height: 300px;
-  }
-  
-  .quiz-option {
-    padding: var(--space-3);
-    font-size: var(--font-size-sm);
-  }
-  
-  .file-card {
-    padding: var(--space-3);
-    gap: var(--space-3);
-  }
-  
-  .practice-header {
-    padding: var(--space-4);
-  }
-  
-  .quiz-item {
-    padding: var(--space-4);
-  }
-  
-  .loading-state, .error-state, .no-content, .empty-lesson {
-    padding: var(--space-6);
-    min-height: 300px;
-  }
-  
-  .lesson-title {
-    font-size: var(--font-size-lg);
-  }
-  
-  .course-name {
-    font-size: var(--font-size-xs);
-  }
-  
-  .pdf-modal {
-    padding: var(--space-2);
-  }
-  
-  .pdf-close-btn {
-    width: 40px;
-    height: 40px;
-    top: var(--space-2);
-    right: var(--space-2);
-  }
-}
 
-/* ===== ACCESSIBILITY & FOCUS STYLES ===== */
-.close-btn:focus-visible,
-.nav-btn:focus-visible,
-.quiz-option:focus-visible,
-.file-card:focus-visible,
-.action-btn:focus-visible,
-.retry-btn:focus-visible,
-.back-btn:focus-visible,
-.pdf-close-btn:focus-visible {
-  outline: 2px solid var(--primary-blue);
-  outline-offset: 2px;
-}
-
-/* ===== ANIMATIONS ===== */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+  .sidebar-progress {
+    padding: 0.5rem 1rem 1rem;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.step-container {
-  animation: fadeIn 0.3s ease-out;
-}
-
-.lesson-content .step-container:nth-child(1) { animation-delay: 0.1s; }
-.lesson-content .step-container:nth-child(2) { animation-delay: 0.2s; }
-.lesson-content .step-container:nth-child(3) { animation-delay: 0.3s; }
-.lesson-content .step-container:nth-child(4) { animation-delay: 0.4s; }
-.lesson-content .step-container:nth-child(5) { animation-delay: 0.5s; }
-
-.quiz-option {
-  animation: slideIn 0.2s ease-out;
-}
-
-.quiz-options .quiz-option:nth-child(1) { animation-delay: 0.1s; }
-.quiz-options .quiz-option:nth-child(2) { animation-delay: 0.2s; }
-.quiz-options .quiz-option:nth-child(3) { animation-delay: 0.3s; }
-.quiz-options .quiz-option:nth-child(4) { animation-delay: 0.4s; }
-
-/* ===== HIGH CONTRAST MODE SUPPORT ===== */
-@media (prefers-contrast: high) {
-  :root {
-    --gray-200: #d1d5db;
-    --gray-300: #9ca3af;
-    --gray-400: #6b7280;
+  .sidebar-nav {
+    padding: 0.5rem;
   }
   
-  .step-container,
-  .quiz-item,
-  .file-card,
-  .practice-header {
-    border-width: 2px;
+  .lesson-item {
+    padding: 0.5rem;
+    gap: 0.75rem;
   }
-}
 
-/* ===== REDUCED MOTION SUPPORT ===== */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  .lesson-name {
+    font-size: 0.9rem;
   }
   
-  .step-container,
-  .quiz-option {
-    animation: none;
+  .main-content {
+    padding: 0.5rem;
   }
-}
 
-/* ===== PRINT STYLES ===== */
-@media print {
-  .lesson-player-overlay {
-    position: static;
-    background: none;
-    padding: 0;
-  }
-  
-  .lesson-player {
-    box-shadow: none;
-    border: 1px solid var(--gray-300);
-    max-height: none;
-  }
-  
-  .close-btn,
-  .player-footer {
-    display: none;
-  }
-  
-  .player-content {
-    overflow: visible;
+  .lesson-view {
+    padding: 0.5rem;
   }
   
   .step-container {
-    break-inside: avoid;
-    margin-bottom: var(--space-6);
-  }
-  
-  .video-wrapper,
-  .pdf-viewer {
-    display: none;
-  }
-  
-  .video-description {
-    display: block;
-    text-align: left;
-    font-style: normal;
-    padding: var(--space-4);
-    border: 1px solid var(--gray-300);
-    border-radius: var(--radius);
-    background: var(--gray-50);
-  }
-  
-  .video-description::before {
-    content: "Видео: ";
-    font-weight: bold;
+    padding: 1rem;
   }
 }
 </style>
