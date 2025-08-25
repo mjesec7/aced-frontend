@@ -1,67 +1,108 @@
 <template>
   <div class="lesson-player-overlay" @click="handleOverlayClick">
     <div class="lesson-player" @click.stop>
+      <!-- Header with progress and course info -->
       <header class="player-header">
         <button 
           class="close-btn" 
           @click="$emit('close')" 
-          aria-label="Закрыть урок"
-          title="Закрыть урок"
+          aria-label="Close lesson"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
 
         <div class="header-content">
-          <div class="course-info">
-            <span class="course-name">{{ courseTitle }}</span>
-            <h1 class="lesson-title">{{ currentLessonTitle }}</h1>
+          <div class="course-badge">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+            </svg>
+            {{ courseTitle }}
           </div>
 
-          <div class="progress-section">
+          <h1 class="lesson-title">{{ currentLessonTitle }}</h1>
+
+          <div class="progress-container">
+            <div class="progress-info">
+              <span class="progress-text">Lesson {{ currentLessonIndex + 1 }} of {{ totalLessons }}</span>
+              <span class="progress-percentage">{{ Math.round(progressPercentage) }}%</span>
+            </div>
             <div class="progress-bar">
               <div 
                 class="progress-fill" 
-                :style="{ width: progressPercentage }"
+                :style="{ width: `${progressPercentage}%` }"
               ></div>
             </div>
-            <span class="progress-text">
-              Урок {{ currentLessonIndex + 1 }} из {{ totalLessons }}
-            </span>
           </div>
         </div>
       </header>
 
+      <!-- Main content area -->
       <main class="player-content">
+        <!-- Loading State -->
         <div v-if="loading" class="loading-state">
-          <div class="spinner"></div>
-          <h3>Загрузка курса...</h3>
-          <p>Подготавливаем материалы для изучения</p>
+          <div class="loading-spinner">
+            <div class="spinner-ring"></div>
+          </div>
+          <h3>Loading Course...</h3>
+          <p>Preparing your learning materials</p>
         </div>
 
+        <!-- Error State -->
         <div v-else-if="error" class="error-state">
-          <div class="error-icon">⚠️</div>
-          <h3>Не удалось загрузить курс</h3>
+          <div class="error-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <h3>Failed to Load Course</h3>
           <p>{{ error }}</p>
           <button @click="loadCourseContent" class="retry-btn">
-            Попробовать снова
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            Try Again
           </button>
         </div>
 
+        <!-- Lesson Content -->
         <div v-else-if="currentLesson && hasSteps" class="lesson-content">
+          <!-- Learning Objectives -->
+          <div class="objectives-card" v-if="learningObjectives && learningObjectives.length > 0">
+            <div class="card-header">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3L22 4"></path>
+                <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.95 0 3.73.62 5.19 1.68"></path>
+              </svg>
+              Learning Objectives
+            </div>
+            <ul class="objectives-list">
+              <li v-for="(objective, index) in learningObjectives" :key="index">
+                {{ objective }}
+              </li>
+            </ul>
+          </div>
+
+          <!-- Lesson Steps -->
           <div 
             v-for="(step, index) in currentLesson.steps" 
             :key="`step-${index}`"
-            class="step-container"
+            class="step-card"
           >
             <div class="step-header">
               <div class="step-number">{{ index + 1 }}</div>
               <h2 class="step-title">{{ getStepTitle(step) }}</h2>
+              <div class="step-type-badge" :class="step.type">
+                {{ getStepTypeLabel(step.type) }}
+              </div>
             </div>
 
-            <div class="step-body">
+            <div class="step-content">
               <component 
                 :is="getStepComponent(step.type)"
                 :step="step"
@@ -73,38 +114,59 @@
           </div>
         </div>
 
-        <div v-else-if="currentLesson && !hasSteps" class="empty-lesson">
-          <div class="empty-icon">📝</div>
-          <h3>Урок пуст</h3>
-          <p>Содержание урока еще не добавлено</p>
+        <!-- Empty States -->
+        <div v-else-if="currentLesson && !hasSteps" class="empty-state">
+          <div class="empty-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14,2 14,8 20,8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10,9 9,9 8,9"></polyline>
+            </svg>
+          </div>
+          <h3>Lesson Content Coming Soon</h3>
+          <p>This lesson is being prepared and will be available shortly.</p>
         </div>
 
-        <div v-else class="no-content">
-          <div class="empty-icon">📚</div>
-          <h3>Курс недоступен</h3>
-          <p>Материалы курса временно недоступны или не загружены</p>
+        <div v-else class="empty-state">
+          <div class="empty-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+            </svg>
+          </div>
+          <h3>Course Unavailable</h3>
+          <p>Unable to load course content at this time.</p>
           <button @click="$emit('back-to-courses')" class="back-btn">
-            Вернуться к курсам
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="15,18 9,12 15,6"></polyline>
+            </svg>
+            Back to Courses
           </button>
         </div>
       </main>
 
+      <!-- Navigation Footer -->
       <footer class="player-footer" v-if="!loading && !error && lessons.length > 0">
         <button 
           class="nav-btn nav-btn--secondary"
           :disabled="isFirstLesson"
           @click="goToPreviousLesson"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="15,18 9,12 15,6"></polyline>
           </svg>
-          Предыдущий
+          Previous
         </button>
 
-        <div class="lesson-counter">
-          <span class="current-lesson">{{ currentLessonIndex + 1 }}</span>
-          <span class="divider">/</span>
-          <span class="total-lessons">{{ totalLessons }}</span>
+        <div class="lesson-indicators">
+          <div 
+            v-for="(lesson, index) in lessons.slice(0, 5)" 
+            :key="index"
+            class="lesson-dot"
+            :class="{ active: index === currentLessonIndex, completed: index < currentLessonIndex }"
+          ></div>
+          <span v-if="lessons.length > 5" class="more-lessons">+{{ lessons.length - 5 }}</span>
         </div>
 
         <button 
@@ -112,8 +174,8 @@
           class="nav-btn nav-btn--primary"
           @click="goToNextLesson"
         >
-          Следующий
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          Next
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="9,18 15,12 9,6"></polyline>
           </svg>
         </button>
@@ -123,39 +185,42 @@
           class="nav-btn nav-btn--success"
           @click="completeCourse"
         >
-          Завершить курс
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          Complete Course
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20,6 9,17 4,12"></polyline>
           </svg>
         </button>
       </footer>
     </div>
 
-    <div v-if="fullscreenPdf" class="pdf-modal" @click="closePdfFullscreen">
-      <div class="pdf-container" @click.stop>
-        <button 
-          class="pdf-close-btn"
-          @click="closePdfFullscreen"
-          aria-label="Закрыть PDF"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-        <iframe 
-          :src="fullscreenPdf" 
-          class="pdf-frame"
-          title="PDF Viewer"
-        ></iframe>
+    <!-- PDF Fullscreen Modal -->
+    <Transition name="modal-fade">
+      <div v-if="fullscreenPdf" class="pdf-modal" @click="closePdfFullscreen">
+        <div class="pdf-container" @click.stop>
+          <button 
+            class="pdf-close-btn"
+            @click="closePdfFullscreen"
+            aria-label="Close PDF"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+          <iframe 
+            :src="fullscreenPdf" 
+            class="pdf-frame"
+            title="PDF Viewer"
+          ></iframe>
+        </div>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>
 
 <script>
-// ✅ MAIN FRONTEND API IMPORTS - Uses your backend endpoints
-import { getCourseById, getCourseContent } from '@/api.js';
+// ✅ MAIN FRONTEND API IMPORTS - Enhanced with better error handling
+import { getCourseById, getCourseContent, getUpdatedCourses } from '@/api.js';
 
 export default {
   name: 'LessonPlayer',
@@ -178,13 +243,15 @@ export default {
       fullscreenPdf: null,
       loading: true,
       error: null,
-      courseData: null
+      courseData: null,
+      retryCount: 0,
+      maxRetries: 3
     }
   },
 
   computed: {
     courseTitle() {
-      return this.courseData?.title || this.course?.title || 'Курс';
+      return this.courseData?.title || this.course?.title || 'Course';
     },
 
     currentLesson() {
@@ -193,8 +260,8 @@ export default {
 
     currentLessonTitle() {
       const lesson = this.currentLesson;
-      if (!lesson) return 'Загрузка урока...';
-      return lesson.title || lesson.lessonName || `Урок ${this.currentLessonIndex + 1}`;
+      if (!lesson) return 'Loading lesson...';
+      return lesson.title || lesson.lessonName || `Lesson ${this.currentLessonIndex + 1}`;
     },
 
     hasSteps() {
@@ -206,8 +273,8 @@ export default {
     },
 
     progressPercentage() {
-      if (this.totalLessons === 0) return '0%';
-      return `${Math.round(((this.currentLessonIndex + 1) / this.totalLessons) * 100)}%`;
+      if (this.totalLessons === 0) return 0;
+      return ((this.currentLessonIndex + 1) / this.totalLessons) * 100;
     },
 
     isFirstLesson() {
@@ -216,12 +283,24 @@ export default {
 
     isLastLesson() {
       return this.currentLessonIndex === this.totalLessons - 1;
+    },
+
+    learningObjectives() {
+      // Extract learning objectives from course data
+      if (this.courseData?.learningOutcomes && Array.isArray(this.courseData.learningOutcomes)) {
+        return this.courseData.learningOutcomes;
+      }
+      if (this.currentLesson?.learningObjectives && Array.isArray(this.currentLesson.learningObjectives)) {
+        return this.currentLesson.learningObjectives;
+      }
+      return this.getDefaultObjectives();
     }
   },
 
   watch: {
     course: {
       handler() {
+        this.retryCount = 0;
         this.loadCourseContent();
       },
       deep: true,
@@ -230,11 +309,11 @@ export default {
   },
 
   methods: {
-    // ✅ REAL API CALLS: Load course content from backend
+    // ✅ COMPLETELY REWRITTEN: Enhanced course loading with multiple fallback strategies
     async loadCourseContent() {
       if (!this.course || (!this.course._id && !this.course.id)) {
         console.error('❌ LessonPlayer: Invalid course data:', this.course);
-        this.error = 'Неверные данные курса';
+        this.error = 'Invalid course data provided';
         this.loading = false;
         return;
       }
@@ -249,160 +328,184 @@ export default {
         let courseDetails = null;
         let lessons = [];
 
-        // Step 1: Try to get complete course details from backend
+        // ✅ STRATEGY 1: Try Updated Courses API first (main frontend API)
         try {
-          console.log('🔍 Step 1: Fetching course details from API...');
-          const courseResponse = await getCourseById(courseId);
+          console.log('🔍 Strategy 1: Trying Updated Courses API...');
           
-          if (courseResponse && courseResponse.success && courseResponse.data) {
-            courseDetails = courseResponse.data;
-            console.log('✅ Course details loaded from API:', courseDetails.title);
+          // First get all updated courses to find our course
+          const coursesResponse = await getUpdatedCourses();
+          if (coursesResponse && coursesResponse.success && coursesResponse.courses) {
+            const foundCourse = coursesResponse.courses.find(c => 
+              (c._id || c.id) === courseId
+            );
             
-            // Check if course has curriculum in the response
-            if (courseDetails.curriculum && Array.isArray(courseDetails.curriculum)) {
-              lessons = this.processLessons(courseDetails.curriculum);
-              console.log('✅ Lessons extracted from API course curriculum:', lessons.length);
+            if (foundCourse) {
+              console.log('✅ Course found in Updated Courses API');
+              courseDetails = foundCourse;
+              
+              // Extract lessons from curriculum
+              if (foundCourse.curriculum && Array.isArray(foundCourse.curriculum)) {
+                lessons = this.processLessonsFromCurriculum(foundCourse.curriculum);
+                console.log('✅ Lessons extracted from updated course curriculum:', lessons.length);
+              }
             }
-          } else {
-            console.warn('⚠️ Course details API returned invalid response:', courseResponse);
           }
-        } catch (detailError) {
-          console.warn('⚠️ LessonPlayer: Failed to load course details from API:', detailError.message);
+        } catch (updatedCoursesError) {
+          console.warn('⚠️ Updated Courses API failed:', updatedCoursesError.message);
         }
 
-        // Step 2: If no lessons from course details, try course content endpoint
+        // ✅ STRATEGY 2: Try specific course by ID
+        if (!courseDetails || lessons.length === 0) {
+          try {
+            console.log('🔍 Strategy 2: Trying specific course by ID...');
+            const courseResponse = await getCourseById(courseId);
+            
+            if (courseResponse && courseResponse.success && courseResponse.data) {
+              courseDetails = courseResponse.data;
+              console.log('✅ Course details loaded from getCourseById');
+              
+              // Check for curriculum
+              if (courseDetails.curriculum && Array.isArray(courseDetails.curriculum)) {
+                lessons = this.processLessonsFromCurriculum(courseDetails.curriculum);
+                console.log('✅ Lessons from course curriculum:', lessons.length);
+              }
+            }
+          } catch (courseByIdError) {
+            console.warn('⚠️ getCourseById failed:', courseByIdError.message);
+          }
+        }
+
+        // ✅ STRATEGY 3: Try course content endpoint
         if (lessons.length === 0) {
           try {
-            console.log('🔍 Step 2: Fetching course content from API...');
+            console.log('🔍 Strategy 3: Trying course content endpoint...');
             const contentResponse = await getCourseContent(courseId);
             
             if (contentResponse && contentResponse.success && contentResponse.data) {
               lessons = this.processLessons(contentResponse.data);
-              console.log('✅ Lessons loaded from API content endpoint:', lessons.length);
-            } else {
-              console.warn('⚠️ Course content API returned invalid response:', contentResponse);
+              console.log('✅ Lessons from content endpoint:', lessons.length);
             }
           } catch (contentError) {
-            console.warn('⚠️ LessonPlayer: getCourseContent API failed:', contentError.message);
+            console.warn('⚠️ getCourseContent failed:', contentError.message);
           }
         }
 
-        // Step 3: If still no lessons, try from the original course prop
+        // ✅ STRATEGY 4: Use course prop data as fallback
         if (lessons.length === 0 && this.course.curriculum) {
-          console.log('🔍 Step 3: Using course prop curriculum (fallback)...');
-          lessons = this.processLessons(this.course.curriculum);
-          console.log('✅ Lessons extracted from course prop:', lessons.length);
+          console.log('🔍 Strategy 4: Using course prop curriculum...');
+          lessons = this.processLessonsFromCurriculum(this.course.curriculum);
+          console.log('✅ Lessons from course prop:', lessons.length);
         }
 
-        // Step 4: Final fallback - create demo content ONLY if no real content available
+        // ✅ STRATEGY 5: Create demo content if still no lessons
         if (lessons.length === 0) {
-          console.log('🔍 Step 4: No real content found, creating demo lessons...');
-          lessons = this.createDemoLessons();
-          this.error = 'Демонстрационное содержание - реальные материалы курса недоступны';
+          console.log('🔍 Strategy 5: Creating demo lessons...');
+          lessons = this.createEnhancedDemoLessons();
+          this.error = 'Demo content - Real course materials are temporarily unavailable';
         }
 
-        // Set course data and lessons
+        // Set final data
         this.courseData = courseDetails || this.course;
         this.lessons = lessons;
 
-        console.log(`✅ LessonPlayer: Successfully loaded ${lessons.length} lessons for course: ${this.courseData?.title}`);
+        console.log(`✅ LessonPlayer: Successfully loaded ${lessons.length} lessons for: ${this.courseData?.title}`);
         
-        if (lessons.length > 0 && !this.error) {
+        // Clear error if we have content
+        if (lessons.length > 0 && this.error?.includes('Demo content')) {
+          // Keep demo warning but don't treat as error
+        } else if (lessons.length > 0) {
           this.error = null;
         }
         
       } catch (error) {
-        console.error('❌ LessonPlayer: Critical error loading course content:', error);
-        
-        if (error.message && error.message.includes('Network Error')) {
-          this.error = 'Ошибка сети - проверьте подключение к интернету';
-        } else if (error.response?.status === 404) {
-          this.error = 'Курс не найден на сервере';
-        } else if (error.response?.status === 403) {
-          this.error = 'Нет доступа к курсу';
-        } else if (error.response?.status >= 500) {
-          this.error = 'Ошибка сервера - попробуйте позже';
-        } else {
-          this.error = 'Не удалось загрузить содержание курса';
-        }
-        
-        try {
-          this.lessons = this.createDemoLessons();
-          this.error += ' (показано демонстрационное содержание)';
-        } catch (demoError) {
-          console.error('❌ Even demo content failed:', demoError);
-          this.error = 'Критическая ошибка загрузки содержания курса';
-        }
+        console.error('❌ LessonPlayer: Critical error loading course:', error);
+        this.handleLoadingError(error);
       } finally {
         this.loading = false;
       }
     },
 
-    // ✅ FIXED: Process lessons with better content extraction
+    // ✅ NEW: Process lessons from curriculum array (Updated Courses format)
+    processLessonsFromCurriculum(curriculum) {
+      if (!Array.isArray(curriculum)) {
+        console.warn('⚠️ Curriculum is not an array:', typeof curriculum);
+        return [];
+      }
+
+      return curriculum.map((lesson, index) => {
+        try {
+          const processedLesson = {
+            ...lesson,
+            id: lesson._id || lesson.id || `curriculum_lesson_${index}`,
+            _id: lesson._id || lesson.id || `curriculum_lesson_${index}`,
+            title: lesson.title || `Lesson ${index + 1}`,
+            lessonName: lesson.title || `Lesson ${index + 1}`,
+            description: lesson.description || '',
+            duration: lesson.duration || '30 min',
+            order: lesson.order !== undefined ? lesson.order : index,
+            steps: this.processSteps(lesson.steps || [])
+          };
+
+          console.log(`✅ Processed curriculum lesson ${index + 1}: "${processedLesson.title}" with ${processedLesson.steps.length} steps`);
+          return processedLesson;
+
+        } catch (lessonError) {
+          console.error(`❌ Error processing curriculum lesson ${index}:`, lessonError);
+          return this.createFallbackLesson(index, lesson);
+        }
+      });
+    },
+
+    // ✅ ENHANCED: Better lesson processing
     processLessons(lessonsArray) {
       if (!Array.isArray(lessonsArray)) {
         console.warn('⚠️ processLessons: Input is not an array:', typeof lessonsArray);
         return [];
       }
 
-      const processedLessons = [];
-
-      lessonsArray.forEach((lesson, index) => {
+      return lessonsArray.map((lesson, index) => {
         try {
           if (!lesson || typeof lesson !== 'object') {
             console.warn(`⚠️ Invalid lesson at index ${index}:`, lesson);
-            return;
+            return this.createFallbackLesson(index);
           }
 
           const processedLesson = {
             ...lesson,
             id: lesson._id || lesson.id || `lesson_${index}`,
             _id: lesson._id || lesson.id || `lesson_${index}`,
-            title: lesson.title || lesson.lessonName || lesson.name || `Урок ${index + 1}`,
-            lessonName: lesson.title || lesson.lessonName || lesson.name || `Урок ${index + 1}`,
+            title: lesson.title || lesson.lessonName || lesson.name || `Lesson ${index + 1}`,
+            lessonName: lesson.title || lesson.lessonName || lesson.name || `Lesson ${index + 1}`,
             description: lesson.description || lesson.desc || '',
-            duration: lesson.duration || lesson.estimatedTime || '30 мин',
+            duration: lesson.duration || lesson.estimatedTime || '30 min',
             order: lesson.order !== undefined ? lesson.order : index,
             steps: this.processSteps(lesson.steps || lesson.content || [])
           };
 
-          processedLessons.push(processedLesson);
           console.log(`✅ Processed lesson ${index + 1}: "${processedLesson.title}" with ${processedLesson.steps.length} steps`);
+          return processedLesson;
 
         } catch (lessonError) {
           console.error(`❌ Error processing lesson ${index}:`, lessonError);
-          
-          processedLessons.push({
-            id: `fallback_lesson_${index}`,
-            _id: `fallback_lesson_${index}`,
-            title: `Урок ${index + 1} (ошибка загрузки)`,
-            lessonName: `Урок ${index + 1} (ошибка загрузки)`,
-            description: 'Произошла ошибка при загрузке урока',
-            steps: []
-          });
+          return this.createFallbackLesson(index, lesson);
         }
       });
-
-      return processedLessons;
     },
 
-    // ✅ COMPLETELY FIXED: Process steps with comprehensive content handling
+    // ✅ COMPLETELY REWRITTEN: Enhanced step processing
     processSteps(steps) {
       if (!Array.isArray(steps)) {
         console.warn('⚠️ processSteps: Input is not an array:', typeof steps);
         return [];
       }
 
-      const processedSteps = [];
-
-      steps.forEach((step, index) => {
+      return steps.map((step, index) => {
         try {
           if (!step || typeof step !== 'object') {
             console.warn(`⚠️ Invalid step at index ${index}:`, step);
-            return;
+            return this.createFallbackStep(index);
           }
 
-          // ✅ CRITICAL FIX: Better step type detection
           const stepType = this.detectStepType(step);
           
           const processedStep = {
@@ -411,50 +514,41 @@ export default {
             type: stepType,
             title: step.title || step.name || this.getStepTitle({ ...step, type: stepType }),
             description: step.description || step.desc || '',
-            content: this.extractContent(step), // ✅ NEW: Extract content properly
-            data: this.processStepData(step, stepType), // ✅ FIXED: Pass stepType
-            order: step.order !== undefined ? step.order : index
+            content: this.extractContent(step),
+            data: this.processStepData(step, stepType),
+            order: step.order !== undefined ? step.order : index,
+            images: this.processImages(step.images || step.data?.images || [])
           };
 
-          processedSteps.push(processedStep);
-          console.log(`✅ Processed step ${index + 1}: "${processedStep.title}" (${stepType}) - Content length: ${processedStep.content?.length || 0}`);
+          console.log(`✅ Processed step ${index + 1}: "${processedStep.title}" (${stepType})`);
+          return processedStep;
           
         } catch (stepError) {
           console.error(`❌ Error processing step ${index}:`, stepError);
-          
-          processedSteps.push({
-            id: `fallback_step_${index}`,
-            type: 'explanation',
-            title: '❌ Ошибка загрузки',
-            description: 'Произошла ошибка при загрузке шага',
-            content: 'Содержание шага недоступно',
-            data: { content: 'Содержание шага недоступно' }
-          });
+          return this.createFallbackStep(index, step);
         }
       });
-
-      return processedSteps;
     },
 
-    // ✅ NEW: Detect step type more accurately
+    // ✅ ENHANCED: Better step type detection
     detectStepType(step) {
       if (!step) return 'explanation';
 
       // Direct type property
-      if (step.type) {
+      if (step.type && typeof step.type === 'string') {
         return step.type.toLowerCase();
       }
 
-      // Check for specific properties that indicate type
-      if (step.question || step.quiz || step.quizzes || (step.data && Array.isArray(step.data))) {
+      // Check for specific indicators
+      if (step.question || step.quiz || step.quizzes || (step.data && Array.isArray(step.data) && step.data.some(d => d.question))) {
         return 'quiz';
       }
 
-      if (step.videoUrl || step.video || (step.data && step.data.url && step.data.url.includes('youtube'))) {
+      if (step.videoUrl || step.video || (step.data?.url && step.data.url.includes('youtube'))) {
         return 'video';
       }
 
-      if (step.pdfUrl || step.pdf || (step.data && step.data.url && step.data.url.includes('.pdf'))) {
+      if (step.pdfUrl || step.pdf || (step.data?.url && step.data.url.includes('.pdf'))) {
         return 'pdf';
       }
 
@@ -462,30 +556,26 @@ export default {
         return 'practice';
       }
 
-      if (step.images && Array.isArray(step.images) && step.images.length > 0 && !step.content && !step.text) {
+      if (step.images && Array.isArray(step.images) && step.images.length > 0 && !step.content) {
         return 'image';
       }
 
-      // Check content for indicators
+      // Content analysis
       const content = step.content || step.text || step.description || '';
       if (typeof content === 'string') {
-        if (content.includes('example:') || content.includes('пример:')) {
-          return 'example';
-        }
-        if (content.includes('read:') || content.includes('читать:')) {
-          return 'reading';
-        }
+        const lowerContent = content.toLowerCase();
+        if (lowerContent.includes('example') || lowerContent.includes('пример')) return 'example';
+        if (lowerContent.includes('practice') || lowerContent.includes('упражнение')) return 'practice';
+        if (lowerContent.includes('read') || lowerContent.includes('reading') || lowerContent.includes('читать')) return 'reading';
       }
 
-      // Default to explanation
       return 'explanation';
     },
 
-    // ✅ NEW: Extract content from various possible locations
+    // ✅ ENHANCED: Better content extraction
     extractContent(step) {
       if (!step) return '';
 
-      // Priority order for content extraction
       const contentSources = [
         step.content,
         step.text,
@@ -495,64 +585,52 @@ export default {
         step.markdown,
         step.data?.content,
         step.data?.text,
-        step.data?.description,
-        step.data?.body
+        step.data?.description
       ];
 
       for (const source of contentSources) {
         if (source && typeof source === 'string' && source.trim().length > 0) {
-          console.log('📝 Found content:', source.substring(0, 100) + '...');
           return source.trim();
         }
       }
 
-      // If no text content found, create descriptive content based on type
       return this.generateFallbackContent(step);
     },
 
-    // ✅ NEW: Generate fallback content when no text is found
+    // ✅ ENHANCED: Generate better fallback content
     generateFallbackContent(step) {
       const stepType = this.detectStepType(step);
+      const title = step.title || step.name || '';
       
       switch (stepType) {
         case 'video':
-          const videoUrl = step.videoUrl || step.video || step.data?.url || '';
-          return videoUrl ? `Видеоматериал: ${videoUrl}` : 'Видеоматериал';
-          
+          return title ? `Video lesson: ${title}` : 'Video content';
         case 'pdf':
-          const pdfUrl = step.pdfUrl || step.pdf || step.data?.url || '';
-          return pdfUrl ? `PDF документ: ${pdfUrl}` : 'PDF документ';
-          
+          return title ? `PDF material: ${title}` : 'PDF document';
         case 'practice':
-          const instructions = step.instructions || step.data?.instructions || '';
-          return instructions || 'Практическое задание';
-          
+          return title ? `Practice exercise: ${title}` : 'Hands-on practice activity';
         case 'quiz':
-          const question = step.question || step.data?.question || step.data?.[0]?.question || '';
-          return question || 'Интерактивный тест';
-          
+          return title ? `Interactive quiz: ${title}` : 'Knowledge assessment';
         case 'image':
-          const images = step.images || step.data?.images || [];
-          return images.length > 0 ? `Изображения (${images.length})` : 'Изображение';
-          
+          return title ? `Visual content: ${title}` : 'Images and diagrams';
+        case 'example':
+          return title ? `Example: ${title}` : 'Practical example';
+        case 'reading':
+          return title ? `Reading material: ${title}` : 'Reading assignment';
         default:
-          return step.title || step.name || 'Содержание шага';
+          return title || 'Learning content';
       }
     },
 
-    // ✅ COMPLETELY FIXED: Process step data with proper type-specific handling
+    // ✅ ENHANCED: Better step data processing
     processStepData(step, stepType) {
-      if (!step || typeof step !== 'object') {
-        return { content: '', error: 'Invalid step data' };
-      }
-
       const baseData = step.data || {};
       const type = stepType || step.type || 'explanation';
 
       try {
         switch (type) {
           case 'explanation':
-          case 'example':  
+          case 'example':
           case 'reading':
           case 'text':
             return {
@@ -561,20 +639,14 @@ export default {
               images: this.processImages(baseData.images || step.images || [])
             };
 
-          case 'image':
-            return {
-              ...baseData,
-              images: this.processImages(baseData.images || step.images || []),
-              description: baseData.description || step.description || this.extractContent(step),
-              caption: baseData.caption || step.caption || ''
-            };
+          case 'quiz':
+            return this.processQuizData(step, baseData);
 
           case 'video':
             return {
               ...baseData,
               url: baseData.url || step.videoUrl || step.video || step.url || '',
-              description: baseData.description || step.description || this.extractContent(step),
-              thumbnail: baseData.thumbnail || step.thumbnail
+              description: baseData.description || step.description || this.extractContent(step)
             };
 
           case 'pdf':
@@ -589,98 +661,69 @@ export default {
               ...baseData,
               instructions: baseData.instructions || step.instructions || this.extractContent(step),
               type: baseData.type || step.practiceType || 'guided',
-              files: baseData.files || step.files || [],
-              images: this.processImages(baseData.images || step.images || [])
+              files: baseData.files || step.files || []
             };
 
-          case 'quiz':
-            return this.processQuizData(step, baseData);
-
           default:
-            console.warn(`⚠️ Unknown step type: ${type}`);
             return {
               ...baseData,
               content: this.extractContent(step),
               images: this.processImages(baseData.images || step.images || [])
             };
         }
-      } catch (dataError) {
-        console.error(`❌ Error processing step data for type ${type}:`, dataError);
+      } catch (error) {
+        console.error(`❌ Error processing step data for type ${type}:`, error);
         return {
-          content: this.extractContent(step) || 'Ошибка обработки данных шага',
-          error: dataError.message
+          content: this.extractContent(step) || 'Error processing step content',
+          error: error.message
         };
       }
     },
 
-    // ✅ NEW: Better quiz data processing
+    // ✅ ENHANCED: Better quiz data processing
     processQuizData(step, baseData) {
-      // Handle multiple quiz data formats
+      // Multiple quiz formats
       if (Array.isArray(baseData) && baseData.length > 0) {
-        return baseData.map(quiz => ({
-          ...quiz,
-          question: quiz.question || quiz.text || '',
-          images: this.processImages(quiz.images || [])
-        }));
-      } 
-      
-      if (Array.isArray(baseData.questions)) {
-        return baseData.questions.map(quiz => ({
-          ...quiz,
-          question: quiz.question || quiz.text || '',
-          images: this.processImages(quiz.images || [])
-        }));
-      } 
-      
+        return baseData.map(quiz => this.normalizeQuizItem(quiz));
+      }
+
+      if (Array.isArray(step.data) && step.data.length > 0) {
+        return step.data.map(quiz => this.normalizeQuizItem(quiz));
+      }
+
       if (step.question || baseData.question) {
-        return [{
+        return [this.normalizeQuizItem({
           question: step.question || baseData.question || this.extractContent(step),
           type: step.quizType || baseData.type || 'multiple-choice',
-          options: this.processQuizOptions(step.options || baseData.options || []),
-          correctAnswer: parseInt(step.correctAnswer || baseData.correctAnswer) || 0,
-          explanation: step.explanation || baseData.explanation || '',
-          images: this.processImages(step.questionImages || step.images || [])
-        }];
-      } 
-      
-      if (step.quizzes && Array.isArray(step.quizzes)) {
-        return step.quizzes.map(quiz => ({
-          ...quiz,
-          question: quiz.question || quiz.text || '',
-          images: this.processImages(quiz.images || [])
-        }));
+          options: step.options || baseData.options || [],
+          correctAnswer: step.correctAnswer || baseData.correctAnswer || 0,
+          explanation: step.explanation || baseData.explanation || ''
+        })];
       }
-      
-      if (Array.isArray(step.data)) {
-        return step.data.map(quiz => ({
-          ...quiz,
-          question: quiz.question || quiz.text || '',
-          images: this.processImages(quiz.images || [])
-        }));
+
+      if (step.quizzes && Array.isArray(step.quizzes)) {
+        return step.quizzes.map(quiz => this.normalizeQuizItem(quiz));
       }
 
       return [];
     },
 
-    // ✅ NEW: Process quiz options properly
-    processQuizOptions(options) {
-      if (!Array.isArray(options)) return [];
-      
-      return options.map(opt => {
-        if (typeof opt === 'string') {
-          return { text: opt, correct: false };
-        }
-        if (typeof opt === 'object' && opt !== null) {
-          return {
-            text: opt.text || opt.label || opt.value || String(opt),
-            correct: Boolean(opt.correct || opt.isCorrect)
-          };
-        }
-        return { text: String(opt), correct: false };
-      });
+    // ✅ NEW: Normalize quiz item format
+    normalizeQuizItem(quiz) {
+      return {
+        question: quiz.question || quiz.text || '',
+        type: quiz.type || 'multiple-choice',
+        options: (quiz.options || []).map(opt => {
+          if (typeof opt === 'string') return { text: opt, correct: false };
+          return { text: opt.text || String(opt), correct: Boolean(opt.correct) };
+        }),
+        correctAnswer: parseInt(quiz.correctAnswer) || 0,
+        explanation: quiz.explanation || '',
+        images: this.processImages(quiz.images || [])
+      };
     },
 
-    // ✅ ENHANCED: Process images with better URL handling
+    // ✅ ENHANCED: Better image processing
     processImages(images) {
       if (!Array.isArray(images)) return [];
 
@@ -690,33 +733,19 @@ export default {
           try {
             let imageUrl = img.url || img.src || img.base64;
             
-            if (imageUrl) {
-              // Handle base64 images
-              if (imageUrl.startsWith('data:')) {
-                // Base64 is ready to use
-              } 
+            if (imageUrl && !imageUrl.startsWith('data:') && !imageUrl.startsWith('http')) {
               // Handle relative URLs
-              else if (imageUrl.startsWith('/uploads/')) {
-                const baseUrl = process.env.NODE_ENV === 'production' 
-                  ? 'https://api.aced.live'
-                  : 'http://localhost:5000';
-                imageUrl = `${baseUrl}${imageUrl}`;
-              }
-              // Handle other relative URLs
-              else if (imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
-                const baseUrl = process.env.NODE_ENV === 'production' 
-                  ? 'https://api.aced.live'
-                  : 'http://localhost:5000';
-                imageUrl = `${baseUrl}${imageUrl}`;
-              }
-              // Absolute URLs are used as-is
+              const baseUrl = process.env.NODE_ENV === 'production' 
+                ? 'https://api.aced.live'
+                : 'http://localhost:5000';
+              imageUrl = `${baseUrl}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
             }
 
             return {
               id: img.id || `img_${index}_${Date.now()}`,
               url: imageUrl,
-              caption: img.caption || img.description || img.alt || '',
-              alt: img.alt || img.caption || img.description || `Изображение ${index + 1}`,
+              caption: img.caption || img.description || '',
+              alt: img.alt || img.caption || `Image ${index + 1}`,
               filename: img.filename || img.name || `image_${index}`,
               size: img.size || 0,
               order: img.order !== undefined ? img.order : index
@@ -730,152 +759,174 @@ export default {
         .sort((a, b) => (a.order || 0) - (b.order || 0));
     },
 
-    // ✅ ENHANCED: Create demo lessons with rich content
-    createDemoLessons() {
-      const courseTitle = this.courseData?.title || this.course?.title || 'Курс';
+    // ✅ NEW: Create fallback lesson
+    createFallbackLesson(index, lesson = null) {
+      return {
+        id: `fallback_lesson_${index}`,
+        _id: `fallback_lesson_${index}`,
+        title: lesson?.title || `Lesson ${index + 1} (Loading Error)`,
+        lessonName: lesson?.title || `Lesson ${index + 1} (Loading Error)`,
+        description: 'There was an error loading this lesson content',
+        duration: '30 min',
+        order: index,
+        steps: [this.createFallbackStep(0)]
+      };
+    },
+
+    // ✅ NEW: Create fallback step
+    createFallbackStep(index, step = null) {
+      return {
+        id: `fallback_step_${index}`,
+        type: 'explanation',
+        title: step?.title || '❌ Loading Error',
+        description: 'Step content could not be loaded',
+        content: 'This step content is temporarily unavailable. Please try refreshing the lesson.',
+        data: { content: 'Content loading error' },
+        order: index,
+        images: []
+      };
+    },
+
+    // ✅ ENHANCED: Create better demo lessons
+    createEnhancedDemoLessons() {
+      const courseTitle = this.courseData?.title || this.course?.title || 'Course';
       
       return [
         {
-          id: 'demo_lesson_1',
-          _id: 'demo_lesson_1',
-          title: 'Введение в курс',
-          lessonName: 'Введение в курс',
-          description: 'Демонстрационное содержание - реальные материалы недоступны',
-          duration: '15 мин',
+          id: 'demo_intro',
+          title: 'Getting Started',
+          lessonName: 'Getting Started',
+          description: 'Introduction to your learning journey',
+          duration: '15 min',
           steps: [
             {
-              id: 'demo_step_1_1',
+              id: 'demo_welcome',
               type: 'explanation',
-              title: '⚠️ Демонстрационное содержание',
-              content: `Это демонстрационное содержание курса "${courseTitle}".
-              
-              Возможные причины недоступности материалов:
-              • Материалы курса еще не загружены на сервер
-              • Проблемы с сетевым подключением к API
-              • Технические неполадки на сервере
-              • Курс находится в процессе разработки
-              
-              Что можно сделать:
-              • Обновить страницу и попробовать еще раз
-              • Проверить подключение к интернету
-              • Обратиться к администратору системы
-              • Попробовать позже`,
+              title: `Welcome to ${courseTitle}`,
+              content: `Welcome to your learning journey with ${courseTitle}! This is demonstration content while we load your actual course materials.`,
               data: {
-                content: `Это демонстрационное содержание курса "${courseTitle}".
-                
-                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ffc107;">
-                  <strong>⚠️ Внимание:</strong> Реальные материалы курса временно недоступны.
-                </div>
-                
-                <h3>Возможные причины:</h3>
-                <ul>
-                  <li>Материалы курса еще не загружены на сервер</li>
-                  <li>Проблемы с сетевым подключением к API</li>
-                  <li>Технические неполадки на сервере</li>
-                  <li>Курс находится в процессе разработки</li>
-                </ul>
-                
-                <h3>Что можно сделать:</h3>
-                <ul>
-                  <li>Обновить страницу и попробовать еще раз</li>
-                  <li>Проверить подключение к интернету</li>
-                  <li>Обратиться к администратору системы</li>
-                  <li>Попробовать позже</li>
-                </ul>`
+                content: `<div class="demo-content">
+                  <h2>🎉 Welcome to ${courseTitle}</h2>
+                  <p>This is demonstration content while we load your actual course materials.</p>
+                  <div class="demo-features">
+                    <h3>What you'll experience:</h3>
+                    <ul>
+                      <li>📝 Interactive lessons with rich content</li>
+                      <li>🎯 Hands-on practice exercises</li>
+                      <li>📊 Progress tracking and assessments</li>
+                      <li>🎥 Video content and multimedia</li>
+                    </ul>
+                  </div>
+                </div>`
               }
             },
             {
-              id: 'demo_step_1_2',
+              id: 'demo_objectives',
               type: 'explanation',
-              title: 'Как должен работать курс',
-              content: `После загрузки реальных материалов курс будет содержать:
-              
-              • Структурированные уроки с теорией и практикой
-              • Интерактивные упражнения и тесты  
-              • Видеоматериалы и дополнительные ресурсы
-              • Систему отслеживания прогресса
-              • Практические задания с файлами
-              • Итоговые проверочные работы`,
+              title: 'Learning Objectives',
+              content: 'Here are the key things you\'ll master in this course',
               data: {
-                content: `<h3>После загрузки реальных материалов курс будет содержать:</h3>
-                
-                <ul>
-                  <li><strong>Структурированные уроки</strong> с теорией и практикой</li>
-                  <li><strong>Интерактивные упражнения</strong> и тесты</li>
-                  <li><strong>Видеоматериалы</strong> и дополнительные ресурсы</li>
-                  <li><strong>Систему отслеживания прогресса</strong></li>
-                  <li><strong>Практические задания</strong> с файлами</li>
-                  <li><strong>Итоговые проверочные работы</strong></li>
-                </ul>
-                
-                <p>Все функции плеера уже готовы для отображения реального контента!</p>`
+                content: `<div class="objectives-content">
+                  <h3>🎯 By the end of this course, you will:</h3>
+                  <ul>
+                    <li>Understand the fundamental concepts</li>
+                    <li>Apply practical skills to real-world scenarios</li>
+                    <li>Build confidence in your abilities</li>
+                    <li>Create your own projects</li>
+                  </ul>
+                </div>`
               }
             }
           ]
         },
         {
-          id: 'demo_lesson_2',
-          _id: 'demo_lesson_2',
-          title: 'Тестирование функций плеера',
-          lessonName: 'Тестирование функций плеера',
-          description: 'Демонстрация всех возможностей системы',
-          duration: '10 мин',
+          id: 'demo_interactive',
+          title: 'Interactive Learning',
+          lessonName: 'Interactive Learning',
+          description: 'Experience different types of learning content',
+          duration: '20 min',
           steps: [
             {
-              id: 'demo_step_2_1',
+              id: 'demo_content_types',
               type: 'explanation',
-              title: 'Поддерживаемые типы контента',
-              content: `Этот плеер поддерживает различные типы образовательного контента:
-              
-              • Текстовые объяснения и материалы (как этот)
-              • Интерактивные тесты с множественным выбором
-              • Видеоматериалы (YouTube, прямые ссылки)
-              • PDF документы с возможностью полноэкранного просмотра
-              • Практические задания с загружаемыми файлами
-              • Изображения с подписями и описаниями
-              
-              Все типы контента поддерживают адаптивный дизайн и работают на мобильных устройствах.`,
+              title: 'Types of Learning Content',
+              content: 'This course includes various interactive elements designed to enhance your learning experience.',
               data: {
-                content: `<h3>Этот плеер поддерживает различные типы образовательного контента:</h3>
-                
-                <ul>
-                  <li>📝 <strong>Текстовые объяснения</strong> и материалы (как этот)</li>
-                  <li>❓ <strong>Интерактивные тесты</strong> с множественным выбором</li>
-                  <li>🎥 <strong>Видеоматериалы</strong> (YouTube, прямые ссылки)</li>
-                  <li>📄 <strong>PDF документы</strong> с возможностью полноэкранного просмотра</li>
-                  <li>🎯 <strong>Практические задания</strong> с загружаемыми файлами</li>
-                  <li>🖼️ <strong>Изображения</strong> с подписями и описаниями</li>
-                </ul>
-                
-                <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #0277bd;">
-                  <strong>💡 Важно:</strong> Все типы контента поддерживают адаптивный дизайн и работают на мобильных устройствах.
+                content: `<div class="content-types">
+                  <h3>📚 Learning Experience</h3>
+                  <div class="content-grid">
+                    <div class="content-type">
+                      <h4>📝 Text & Explanations</h4>
+                      <p>Clear, structured lessons with rich formatting</p>
+                    </div>
+                    <div class="content-type">
+                      <h4>❓ Interactive Quizzes</h4>
+                      <p>Test your understanding with immediate feedback</p>
+                    </div>
+                    <div class="content-type">
+                      <h4>🎯 Practice Exercises</h4>
+                      <p>Hands-on activities to reinforce learning</p>
+                    </div>
+                    <div class="content-type">
+                      <h4>🎥 Multimedia Content</h4>
+                      <p>Videos, images, and interactive media</p>
+                    </div>
+                  </div>
                 </div>`
               }
             },
             {
-              id: 'demo_step_2_2',
+              id: 'demo_quiz',
               type: 'quiz',
-              title: 'Пример интерактивного теста',
-              content: 'Демонстрация работы системы тестирования',
+              title: 'Quick Knowledge Check',
+              content: 'Test your understanding',
               data: [{
-                question: 'Это демонстрационное содержание курса?',
+                question: 'What makes this learning platform effective?',
                 type: 'multiple-choice',
                 options: [
-                  { text: 'Да, это временная заглушка для демонстрации возможностей', correct: true },
-                  { text: 'Нет, это реальный образовательный курс', correct: false },
-                  { text: 'Не знаю, не могу определить', correct: false },
-                  { text: 'Это зависит от настроек системы', correct: false }
+                  { text: 'Interactive content and immediate feedback', correct: true },
+                  { text: 'Only text-based lessons', correct: false },
+                  { text: 'Passive video watching', correct: false },
+                  { text: 'No progress tracking', correct: false }
                 ],
                 correctAnswer: 0,
-                explanation: 'Верно! Это демонстрационное содержание, которое показывается когда реальные материалы курса недоступны. Оно помогает понять, как будет выглядеть и работать настоящий курс.'
+                explanation: 'Correct! Interactive content with immediate feedback creates an engaging learning environment that helps retain information better.'
               }]
             }
           ]
         }
       ];
     },
-    
-    // === Navigation Methods ===
+
+    // ✅ ENHANCED: Better error handling
+    handleLoadingError(error) {
+      this.retryCount++;
+      
+      if (error.message?.includes('Network')) {
+        this.error = 'Network connection issue - please check your internet connection';
+      } else if (error.response?.status === 404) {
+        this.error = 'Course not found on the server';
+      } else if (error.response?.status === 403) {
+        this.error = 'Access denied - you may not have permission to view this course';
+      } else if (error.response?.status >= 500) {
+        this.error = 'Server error - please try again later';
+      } else {
+        this.error = 'Failed to load course content';
+      }
+
+      // Provide fallback content on error
+      if (this.retryCount <= this.maxRetries) {
+        try {
+          this.lessons = this.createEnhancedDemoLessons();
+          this.error += ' (showing demo content)';
+        } catch (demoError) {
+          console.error('❌ Even demo content failed:', demoError);
+          this.error = 'Critical error loading any content';
+        }
+      }
+    },
+
+    // ✅ Navigation methods
     goToPreviousLesson() {
       if (!this.isFirstLesson) {
         this.currentLessonIndex--;
@@ -892,12 +943,12 @@ export default {
 
     completeCourse() {
       console.log('🎉 Course completed!');
-      if (confirm('Поздравляем с завершением курса! Вернуться к списку курсов?')) {
+      if (confirm('Congratulations on completing the course! Return to courses list?')) {
         this.$emit('back-to-courses');
       }
     },
 
-    // === Event Handlers ===
+    // ✅ Event handlers
     handleOverlayClick() {
       this.$emit('close');
     },
@@ -919,40 +970,66 @@ export default {
       this.fullscreenPdf = null;
     },
 
-    // === Utility Methods ===
+    // ✅ Utility methods
     getStepTitle(step) {
       if (step.title) return step.title;
+      
       const titles = {
-        explanation: '📝 Объяснение', 
-        example: '💡 Пример', 
-        text: '📝 Текст',
-        reading: '📚 Чтение',
-        video: '🎥 Видео',
-        pdf: '📄 Материалы', 
-        practice: '🎯 Практика', 
-        quiz: '❓ Тест',
-        image: '🖼️ Изображение'
+        explanation: '📝 Explanation',
+        example: '💡 Example',
+        text: '📝 Text',
+        reading: '📚 Reading',
+        video: '🎥 Video',
+        pdf: '📄 Document',
+        practice: '🎯 Practice',
+        quiz: '❓ Quiz',
+        image: '🖼️ Visual Content'
       };
-      return titles[step.type] || '📌 Шаг';
+      
+      return titles[step.type] || '📌 Step';
+    },
+
+    getStepTypeLabel(type) {
+      const labels = {
+        explanation: 'Learn',
+        example: 'Example',
+        text: 'Read',
+        reading: 'Study',
+        video: 'Watch',
+        pdf: 'Document',
+        practice: 'Practice',
+        quiz: 'Quiz',
+        image: 'Visual'
+      };
+      return labels[type] || 'Content';
     },
 
     getStepComponent(type) {
       const components = {
-        explanation: 'step-text', 
-        example: 'step-text', 
+        explanation: 'step-text',
+        example: 'step-text',
         reading: 'step-text',
         text: 'step-text',
-        video: 'step-video', 
-        pdf: 'step-pdf', 
-        practice: 'step-practice', 
+        video: 'step-video',
+        pdf: 'step-pdf',
+        practice: 'step-practice',
         quiz: 'step-quiz',
         image: 'step-text'
       };
       return components[type] || 'step-text';
+    },
+
+    getDefaultObjectives() {
+      return [
+        'Understand the core concepts covered in this course',
+        'Apply practical skills to real-world scenarios',
+        'Build confidence through hands-on practice',
+        'Complete projects that demonstrate your learning'
+      ];
     }
   },
 
-  // === Step Components ===
+  // ✅ ENHANCED STEP COMPONENTS with Runway ML styling
   components: {
     'step-text': {
       props: ['step'],
@@ -961,7 +1038,7 @@ export default {
           <div class="text-content" v-html="formattedContent"></div>
           <div v-if="hasImages" class="step-images">
             <div v-for="image in step.data.images || step.images || []" :key="image.id" class="step-image">
-              <img :src="image.url" :alt="image.alt" :title="image.caption" />
+              <img :src="image.url" :alt="image.alt" :title="image.caption" loading="lazy" />
               <p v-if="image.caption" class="image-caption">{{ image.caption }}</p>
             </div>
           </div>
@@ -969,45 +1046,22 @@ export default {
       `,
       computed: {
         formattedContent() {
-          // ✅ FIXED: Better content extraction and formatting
-          let content = '';
+          let content = this.step.data?.content || this.step.content || this.step.text || this.step.description || '';
           
-          // Try multiple sources for content
-          if (this.step.data?.content) {
-            content = this.step.data.content;
-          } else if (this.step.content) {
-            content = this.step.content;
-          } else if (this.step.text) {
-            content = this.step.text;
-          } else if (this.step.description) {
-            content = this.step.description;
-          } else if (this.step.data?.text) {
-            content = this.step.data.text;
-          } else if (this.step.data?.description) {
-            content = this.step.data.description;
-          } else {
-            content = 'Содержание не найдено';
-          }
-          
-          // Convert string content to HTML
           if (typeof content === 'string') {
-            // Handle different line break formats
+            // Convert markdown-like formatting to HTML
             content = content
-              .replace(/\r\n/g, '\n')
-              .replace(/\r/g, '\n')
-              .replace(/\n\n/g, '</p><p>')
-              .replace(/\n/g, '<br>')
               .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-              .replace(/\*(.*?)\*/g, '<em>$1</em>');
-              
-            // Wrap in paragraphs if not already HTML
+              .replace(/\*(.*?)\*/g, '<em>$1</em>')
+              .replace(/\n\n/g, '</p><p>')
+              .replace(/\n/g, '<br>');
+            
             if (!content.includes('<p>') && !content.includes('<div>') && content.length > 0) {
               content = '<p>' + content + '</p>';
             }
           }
           
-          console.log('📝 Formatted content length:', content.length);
-          return content || '<p>Содержание не найдено</p>';
+          return content || '<p>Content not available</p>';
         },
         hasImages() {
           const images = this.step.data?.images || this.step.images || [];
@@ -1038,17 +1092,19 @@ export default {
             >
               <source :src="videoUrl" type="video/mp4">
               <source :src="videoUrl" type="video/webm">
-              <p>Ваш браузер не поддерживает видео.</p>
+              <p>Your browser doesn't support video playback.</p>
             </video>
             <div v-else class="video-placeholder">
-              <div class="placeholder-icon">🎥</div>
-              <p>Видео недоступно</p>
+              <div class="placeholder-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="5,3 19,12 5,21 5,3"></polygon>
+                </svg>
+              </div>
+              <p>Video content unavailable</p>
               <small v-if="videoUrl">URL: {{ videoUrl }}</small>
             </div>
           </div>
-          <div v-if="description" class="video-description">
-            <div v-html="formattedDescription"></div>
-          </div>
+          <div v-if="description" class="video-description" v-html="formattedDescription"></div>
         </div>
       `,
       computed: {
@@ -1087,7 +1143,7 @@ export default {
       template: `
         <div class="step-pdf">
           <div class="pdf-header">
-            <h3>📄 PDF Материал</h3>
+            <h3>📄 PDF Material</h3>
             <div v-if="description" v-html="formattedDescription"></div>
           </div>
           
@@ -1099,8 +1155,13 @@ export default {
               title="PDF Document"
             ></iframe>
             <div v-else class="pdf-placeholder">
-              <div class="placeholder-icon">📄</div>
-              <p>PDF файл недоступен</p>
+              <div class="placeholder-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14,2 14,8 20,8"></polyline>
+                </svg>
+              </div>
+              <p>PDF file unavailable</p>
             </div>
           </div>
 
@@ -1116,11 +1177,11 @@ export default {
                 <polyline points="7,10 12,15 17,10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
-              Скачать
+              Download
             </a>
             <button 
               @click="$emit('pdf-fullscreen', pdfUrl)"
-              class="action-btn action-btn--secondary"
+              class="action-btn action-btn--primary"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="15,3 21,3 21,9"></polyline>
@@ -1128,7 +1189,7 @@ export default {
                 <line x1="21" y1="3" x2="14" y2="10"></line>
                 <line x1="3" y1="21" x2="10" y2="14"></line>
               </svg>
-              Полный экран
+              Fullscreen
             </button>
           </div>
         </div>
@@ -1151,12 +1212,12 @@ export default {
       template: `
         <div class="step-practice">
           <div class="practice-header">
-            <h3>🎯 Практическое задание</h3>
+            <h3>🎯 Practice Exercise</h3>
             <div v-if="instructions" v-html="formattedInstructions"></div>
           </div>
 
           <div v-if="hasFiles" class="practice-files">
-            <h4>Файлы для скачивания:</h4>
+            <h4>Download Files:</h4>
             <div class="file-grid">
               <a 
                 v-for="(file, index) in files"
@@ -1180,7 +1241,7 @@ export default {
           </div>
 
           <div v-else class="no-files">
-            <p>Выполните задание согласно инструкциям выше</p>
+            <p>Complete the exercise following the instructions above</p>
           </div>
         </div>
       `,
@@ -1204,8 +1265,8 @@ export default {
             pdf: '📄', doc: '📝', docx: '📝', txt: '📝',
             zip: '📦', rar: '📦', '7z': '📦',
             jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️',
-            mp4: '🎥', mov: '🎥', avi: '🎥', wmv: '🎥',
-            mp3: '🎵', wav: '🎵', flac: '🎵'
+            mp4: '🎥', mov: '🎥', avi: '🎥',
+            mp3: '🎵', wav: '🎵'
           };
           return icons[type?.toLowerCase()] || '📎';
         }
@@ -1217,7 +1278,8 @@ export default {
       emits: ['quiz-answer'],
       data() {
         return {
-          selectedQuestions: new Map()
+          selectedQuestions: new Map(),
+          showFeedback: new Map()
         }
       },
       template: `
@@ -1225,7 +1287,7 @@ export default {
           <div v-if="quizData && quizData.length > 0">
             <div v-for="(quiz, quizIndex) in quizData" :key="quizIndex" class="quiz-item">
               <div class="quiz-header">
-                <h3>❓ {{ quiz.question || 'Вопрос не указан' }}</h3>
+                <h3>❓ {{ quiz.question || 'Question not provided' }}</h3>
               </div>
               
               <div v-if="quiz.options && quiz.options.length > 0" class="quiz-options">
@@ -1239,10 +1301,10 @@ export default {
                 >
                   <span class="option-text">{{ getOptionText(option) }}</span>
                   <div v-if="isQuizAnswered(quizIndex)" class="option-indicator">
-                    <svg v-if="isCorrectOption(option)" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg v-if="isCorrectOption(option)" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <polyline points="20,6 9,17 4,12"></polyline>
                     </svg>
-                    <svg v-else-if="getSelectedAnswer(quizIndex) === index" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg v-else-if="getSelectedAnswer(quizIndex) === index" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <line x1="18" y1="6" x2="6" y2="18"></line>
                       <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
@@ -1250,23 +1312,30 @@ export default {
                 </button>
               </div>
               
-              <div v-if="isQuizAnswered(quizIndex) && quiz.explanation" class="quiz-explanation">
-                <div class="explanation-header">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M9,9h6v6H9z"></path>
-                  </svg>
-                  Объяснение
+              <Transition name="slide-down">
+                <div v-if="isQuizAnswered(quizIndex) && quiz.explanation" class="quiz-explanation">
+                  <div class="explanation-header">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <path d="M9,9h6v6H9z"></path>
+                    </svg>
+                    Explanation
+                  </div>
+                  <div v-html="formattedExplanation(quiz.explanation)"></div>
                 </div>
-                <div v-html="formattedExplanation(quiz.explanation)"></div>
-              </div>
+              </Transition>
             </div>
           </div>
           
           <div v-else class="no-quiz">
-            <div class="placeholder-icon">❓</div>
-            <p>Тест недоступен</p>
-            <small>Данные теста не загружены или повреждены</small>
+            <div class="placeholder-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <p>Quiz content unavailable</p>
           </div>
         </div>
       `,
@@ -1287,30 +1356,26 @@ export default {
               correctAnswer: stepData.correctAnswer
             }];
           }
-          if (Array.isArray(this.step.quizzes)) {
-            return this.step.quizzes.filter(quiz => quiz && (quiz.question || quiz.text));
-          }
-          if (Array.isArray(this.step.data)) {
-            return this.step.data.map(quiz => ({
-              ...quiz,
-              question: quiz.question || quiz.text || '',
-              images: this.processImages(quiz.images || [])
-            }));
-          }
           return [];
         }
       },
       methods: {
         selectAnswer(quizIndex, optionIndex, option) {
           if (this.isQuizAnswered(quizIndex)) return;
+          
           this.selectedQuestions.set(quizIndex, optionIndex);
           const isCorrect = this.isCorrectOption(option);
           this.$emit('quiz-answer', this.stepIndex, optionIndex, isCorrect);
-          this.$forceUpdate();
+          
+          // Show feedback after a short delay
+          setTimeout(() => {
+            this.showFeedback.set(quizIndex, true);
+            this.$forceUpdate();
+          }, 300);
         },
         getOptionText(option) {
           if (typeof option === 'string') return option;
-          return option.text || option.label || option.value || 'Опция';
+          return option.text || option.label || option.value || 'Option';
         },
         isCorrectOption(option) {
           if (typeof option === 'object') {
@@ -1327,9 +1392,11 @@ export default {
         getOptionClass(quizIndex, optionIndex, option) {
           const selectedAnswer = this.getSelectedAnswer(quizIndex);
           const isAnswered = this.isQuizAnswered(quizIndex);
+          
           if (!isAnswered) {
             return selectedAnswer === optionIndex ? 'selected' : '';
           }
+          
           if (this.isCorrectOption(option)) {
             return 'correct';
           }
@@ -1346,36 +1413,40 @@ export default {
   }
 }
 </script>
+
 <style scoped>
-/* ===== CLEAN MODERN VARIABLES ===== */
+/* ===== RUNWAY ML INSPIRED DESIGN SYSTEM ===== */
 :root {
-  --primary-blue: #4f46e5;
-  --primary-blue-hover: #4338ca;
-  --primary-blue-light: #eef2ff;
+  /* Dark theme colors */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #1a1a1a;
+  --bg-card: #222222;
+  --bg-elevated: #2a2a2a;
   
-  --success-green: #10b981;
-  --success-green-hover: #059669;
-  --success-green-light: #ecfdf5;
+  /* Text colors */
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666666;
   
-  --danger-red: #ef4444;
-  --warning-orange: #f59e0b;
+  /* Brand colors */
+  --accent-purple: #8b5cf6;
+  --accent-purple-hover: #7c3aed;
+  --accent-blue: #3b82f6;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  --accent-orange: #f59e0b;
   
-  /* Clean grays */
-  --gray-50: #f9fafb;
-  --gray-100: #f3f4f6;
-  --gray-200: #e5e7eb;
-  --gray-300: #d1d5db;
-  --gray-400: #9ca3af;
-  --gray-500: #6b7280;
-  --gray-600: #4b5563;
-  --gray-700: #374151;
-  --gray-800: #1f2937;
-  --gray-900: #111827;
+  /* Border colors */
+  --border-primary: #333333;
+  --border-secondary: #444444;
   
-  --white: #ffffff;
-  --black: #000000;
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
   
-  /* Consistent spacing */
+  /* Spacing */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -1386,43 +1457,30 @@ export default {
   --space-12: 3rem;
   
   /* Border radius */
-  --radius-sm: 0.375rem;
-  --radius: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
-  
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
   
   /* Typography */
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
-  --font-size-base: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.25rem;
-  --font-size-2xl: 1.5rem;
-  --font-size-3xl: 1.875rem;
-  
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
+  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
   
   /* Transitions */
   --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ===== MAIN OVERLAY - SOLID DARK BACKGROUND ===== */
+/* ===== BASE STYLES ===== */
+* {
+  box-sizing: border-box;
+}
+
 .lesson-player-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(17, 24, 39, 0.95); /* Solid dark background */
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1430,119 +1488,129 @@ export default {
   padding: var(--space-4);
 }
 
-/* ===== MAIN PLAYER CONTAINER ===== */
 .lesson-player {
-  background: var(--white); /* Solid white background */
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
   width: 100%;
   max-width: 1200px;
-  max-height: 90vh;
+  max-height: 95vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* ===== HEADER SECTION ===== */
+/* ===== HEADER STYLES ===== */
 .player-header {
-  background: var(--white); /* Solid white */
-  border-bottom: 1px solid var(--gray-200);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
   padding: var(--space-6) var(--space-8);
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-6);
   position: relative;
-  min-height: 120px;
+  flex-shrink: 0;
 }
 
 .close-btn {
   position: absolute;
   top: var(--space-4);
   right: var(--space-4);
-  background: var(--gray-100);
-  border: none;
-  border-radius: var(--radius-md);
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--gray-600);
-  cursor: pointer;
   transition: var(--transition);
   z-index: 10;
 }
 
 .close-btn:hover {
-  background: var(--gray-200);
-  color: var(--gray-900);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-secondary);
   transform: scale(1.05);
 }
 
 .header-content {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  width: 100%;
-  padding-right: var(--space-12);
-  gap: var(--space-8);
+  max-width: calc(100% - 48px);
 }
 
-.course-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.course-name {
-  display: block;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--primary-blue);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--space-2);
-  opacity: 0.9;
+.course-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--bg-elevated);
+  color: var(--accent-purple);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: var(--space-4);
+  border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
 .lesson-title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--gray-900);
-  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-6) 0;
   line-height: 1.2;
-  word-wrap: break-word;
+  background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
-.progress-section {
+.progress-container {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
   gap: var(--space-3);
-  min-width: 200px;
-  flex-shrink: 0;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.progress-percentage {
+  color: var(--accent-purple);
+  font-weight: 600;
 }
 
 .progress-bar {
-  width: 200px;
-  height: 8px;
-  background: var(--gray-200);
-  border-radius: var(--radius);
+  width: 100%;
+  height: 6px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
   overflow: hidden;
+  border: 1px solid var(--border-primary);
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--primary-blue), var(--success-green));
-  border-radius: var(--radius);
+  background: linear-gradient(90deg, var(--accent-purple), var(--accent-blue));
+  border-radius: var(--radius-sm);
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
-.progress-text {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--gray-600);
-  white-space: nowrap;
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3));
+  border-radius: var(--radius-sm);
 }
 
 /* ===== MAIN CONTENT AREA ===== */
@@ -1550,11 +1618,30 @@ export default {
   flex: 1;
   overflow-y: auto;
   padding: var(--space-8);
-  background: var(--gray-50); /* Light gray background for content area */
+  background: var(--bg-primary);
 }
 
-/* ===== LOADING & ERROR STATES ===== */
-.loading-state, .error-state, .no-content, .empty-lesson {
+/* Custom scrollbar */
+.player-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.player-content::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+}
+
+.player-content::-webkit-scrollbar-thumb {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+}
+
+.player-content::-webkit-scrollbar-thumb:hover {
+  background: var(--border-secondary);
+}
+
+/* ===== LOADING STATES ===== */
+.loading-state, .error-state, .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1562,60 +1649,21 @@ export default {
   text-align: center;
   min-height: 400px;
   padding: var(--space-12);
-  background: var(--white);
-  border-radius: var(--radius-lg);
-  margin: var(--space-4) 0;
+  color: var(--text-secondary);
 }
 
-.loading-state h3, .error-state h3, .no-content h3, .empty-lesson h3 {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-  margin: 0 0 var(--space-3) 0;
-  color: var(--gray-800);
-}
-
-.loading-state p, .error-state p, .no-content p, .empty-lesson p {
-  margin: 0 0 var(--space-6) 0;
-  font-size: var(--font-size-base);
-  color: var(--gray-600);
-  max-width: 400px;
-  line-height: 1.6;
-}
-
-.error-icon, .empty-icon {
-  font-size: 4rem;
+.loading-spinner {
+  position: relative;
   margin-bottom: var(--space-6);
-  opacity: 0.7;
 }
 
-.retry-btn, .back-btn {
-  padding: var(--space-3) var(--space-6);
-  background: var(--primary-blue);
-  color: var(--white);
-  border: none;
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: var(--transition);
-  min-width: 120px;
-}
-
-.retry-btn:hover, .back-btn:hover {
-  background: var(--primary-blue-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-/* Spinner */
-.spinner {
+.spinner-ring {
   width: 48px;
   height: 48px;
-  border: 4px solid var(--gray-200);
-  border-top: 4px solid var(--primary-blue);
+  border: 3px solid var(--bg-elevated);
+  border-top: 3px solid var(--accent-purple);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: var(--space-6);
 }
 
 @keyframes spin {
@@ -1623,31 +1671,112 @@ export default {
   100% { transform: rotate(360deg); }
 }
 
+.error-icon, .empty-icon {
+  color: var(--text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.loading-state h3, .error-state h3, .empty-state h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-3) 0;
+}
+
+.loading-state p, .error-state p, .empty-state p {
+  margin: 0 0 var(--space-6) 0;
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+.retry-btn, .back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  background: var(--accent-purple);
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.retry-btn:hover, .back-btn:hover {
+  background: var(--accent-purple-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
 /* ===== LESSON CONTENT ===== */
 .lesson-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-8);
 }
 
-.step-container {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+.objectives-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin-bottom: var(--space-4);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--accent-green);
+  font-weight: 600;
+  font-size: 1.125rem;
+  margin-bottom: var(--space-4);
+}
+
+.objectives-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.objectives-list li {
+  position: relative;
+  padding-left: var(--space-6);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.objectives-list li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--accent-green);
+  font-weight: bold;
+}
+
+/* ===== STEP CARDS ===== */
+.step-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
   transition: var(--transition);
 }
 
-.step-container:hover {
+.step-card:hover {
+  border-color: var(--border-secondary);
   box-shadow: var(--shadow-md);
-  border-color: var(--gray-300);
 }
 
 .step-header {
-  background: var(--gray-50);
+  background: var(--bg-secondary);
   padding: var(--space-5) var(--space-6);
-  border-bottom: 1px solid var(--gray-200);
+  border-bottom: 1px solid var(--border-primary);
   display: flex;
   align-items: center;
   gap: var(--space-4);
@@ -1656,167 +1785,99 @@ export default {
 .step-number {
   width: 32px;
   height: 32px;
-  background: var(--primary-blue);
-  color: var(--white);
+  background: var(--accent-purple);
+  color: var(--text-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-sm);
+  font-weight: 700;
+  font-size: 0.875rem;
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
 }
 
 .step-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray-900);
+  flex: 1;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
   margin: 0;
   line-height: 1.3;
 }
 
-.step-body {
+.step-type-badge {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.step-type-badge.explanation { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
+.step-type-badge.example { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+.step-type-badge.practice { background: rgba(245, 158, 11, 0.2); color: var(--accent-orange); }
+.step-type-badge.quiz { background: rgba(139, 92, 246, 0.2); color: var(--accent-purple); }
+.step-type-badge.video { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+
+.step-content {
   padding: var(--space-8);
-  background: var(--white);
-}
-
-/* ===== FOOTER NAVIGATION ===== */
-.player-footer {
-  background: var(--white);
-  border-top: 1px solid var(--gray-200);
-  padding: var(--space-6) var(--space-8);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  box-shadow: 0 -1px 3px 0 rgb(0 0 0 / 0.05);
-}
-
-.nav-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-5);
-  border: none;
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: var(--transition);
-  min-width: 140px;
-  justify-content: center;
-  height: 44px;
-}
-
-.nav-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
-.nav-btn--primary {
-  background: var(--primary-blue);
-  color: var(--white);
-  box-shadow: var(--shadow-sm);
-}
-
-.nav-btn--primary:hover:not(:disabled) {
-  background: var(--primary-blue-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.nav-btn--secondary {
-  background: var(--white);
-  color: var(--gray-700);
-  border: 1px solid var(--gray-300);
-  box-shadow: var(--shadow-sm);
-}
-
-.nav-btn--secondary:hover:not(:disabled) {
-  background: var(--gray-50);
-  border-color: var(--gray-400);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.nav-btn--success {
-  background: var(--success-green);
-  color: var(--white);
-  box-shadow: var(--shadow-sm);
-}
-
-.nav-btn--success:hover:not(:disabled) {
-  background: var(--success-green-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.lesson-counter {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-5);
-  background: var(--gray-100);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray-700);
-  font-size: var(--font-size-sm);
-}
-
-.current-lesson {
-  color: var(--primary-blue);
-  font-weight: var(--font-weight-bold);
-}
-
-.divider {
-  color: var(--gray-400);
-  margin: 0 var(--space-1);
+  background: var(--bg-card);
 }
 
 /* ===== STEP COMPONENT STYLES ===== */
 
-/* Text Step */
+/* Text Content */
 .step-text {
   line-height: 1.7;
+  color: var(--text-secondary);
 }
 
 .text-content {
-  font-size: var(--font-size-base);
-  color: var(--gray-700);
+  font-size: 1rem;
   line-height: 1.7;
 }
 
 .text-content p {
-  margin: 0 0 var(--space-4) 0;
+  margin: 0 0 var(--space-5) 0;
+  color: var(--text-secondary);
 }
 
-.text-content p:last-child {
-  margin-bottom: 0;
+.text-content h1, .text-content h2, .text-content h3 {
+  color: var(--text-primary);
+  margin: var(--space-6) 0 var(--space-4) 0;
+}
+
+.text-content h1 { font-size: 1.5rem; }
+.text-content h2 { font-size: 1.25rem; }
+.text-content h3 { font-size: 1.125rem; }
+
+.text-content strong {
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .text-content ul, .text-content ol {
-  margin: var(--space-4) 0;
+  margin: var(--space-5) 0;
   padding-left: var(--space-6);
 }
 
 .text-content li {
   margin-bottom: var(--space-2);
-  line-height: 1.6;
+  color: var(--text-secondary);
 }
 
 .step-images {
-  margin-top: var(--space-6);
+  margin-top: var(--space-8);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--space-4);
+  gap: var(--space-6);
 }
 
 .step-image {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
@@ -1829,16 +1890,16 @@ export default {
 }
 
 .image-caption {
-  padding: var(--space-3);
-  font-size: var(--font-size-sm);
-  color: var(--gray-600);
+  padding: var(--space-4);
+  font-size: 0.875rem;
+  color: var(--text-muted);
   font-style: italic;
   margin: 0;
-  background: var(--gray-50);
-  border-top: 1px solid var(--gray-200);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
 }
 
-/* Video Step */
+/* Video Styles */
 .step-video {
   display: flex;
   flex-direction: column;
@@ -1848,19 +1909,18 @@ export default {
 .video-wrapper {
   position: relative;
   width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-lg);
+  background: var(--bg-elevated);
 }
 
 .video-embed {
   position: relative;
   width: 100%;
   height: 0;
-  padding-bottom: 56.25%; /* 16:9 */
-  background: var(--gray-900);
+  padding-bottom: 56.25%;
+  background: var(--bg-elevated);
 }
 
 .video-iframe {
@@ -1885,27 +1945,23 @@ export default {
   align-items: center;
   justify-content: center;
   height: 300px;
-  background: var(--gray-100);
-  color: var(--gray-500);
-  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  background: var(--bg-secondary);
 }
 
 .placeholder-icon {
-  font-size: 4rem;
   margin-bottom: var(--space-4);
   opacity: 0.6;
 }
 
 .video-description {
   text-align: center;
-  font-style: italic;
-  color: var(--gray-600);
-  font-size: var(--font-size-sm);
-  margin: 0;
-  padding: 0 var(--space-4);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
 }
 
-/* PDF Step */
+/* PDF Styles */
 .step-pdf {
   display: flex;
   flex-direction: column;
@@ -1913,27 +1969,21 @@ export default {
 }
 
 .pdf-header h3 {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray-900);
-  margin: 0 0 var(--space-2) 0;
-}
-
-.pdf-header p {
-  color: var(--gray-600);
-  margin: 0;
-  line-height: 1.6;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-3) 0;
 }
 
 .pdf-viewer {
   position: relative;
   width: 100%;
   height: 600px;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-lg);
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
 }
 
 .pdf-iframe {
@@ -1948,8 +1998,8 @@ export default {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: var(--gray-500);
-  background: var(--gray-50);
+  color: var(--text-muted);
+  background: var(--bg-secondary);
 }
 
 .pdf-actions {
@@ -1963,33 +2013,43 @@ export default {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border: none;
-  border-radius: var(--radius-md);
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-sm);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius);
+  font-weight: 500;
+  font-size: 0.875rem;
   text-decoration: none;
   cursor: pointer;
   transition: var(--transition);
   min-width: 120px;
   justify-content: center;
-  height: 40px;
 }
 
-.action-btn--secondary {
-  background: var(--gray-100);
-  color: var(--gray-700);
-  border: 1px solid var(--gray-300);
+.action-btn--primary {
+  background: var(--accent-purple);
+  color: var(--text-primary);
+  border: none;
 }
 
-.action-btn--secondary:hover {
-  background: var(--gray-200);
-  border-color: var(--gray-400);
+.action-btn--primary:hover {
+  background: var(--accent-purple-hover);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
-/* Practice Step */
+.action-btn--secondary {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-secondary);
+}
+
+.action-btn--secondary:hover {
+  background: var(--bg-card);
+  border-color: var(--border-secondary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Practice Styles */
 .step-practice {
   display: flex;
   flex-direction: column;
@@ -1998,28 +2058,15 @@ export default {
 
 .practice-header {
   padding: var(--space-6);
-  background: var(--primary-blue-light);
+  background: var(--bg-elevated);
   border-radius: var(--radius-md);
-  border: 1px solid rgba(79, 70, 229, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
 .practice-header h3 {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray-900);
-  margin: 0 0 var(--space-3) 0;
-}
-
-.practice-header p {
-  color: var(--gray-700);
-  margin: 0;
-  line-height: 1.6;
-}
-
-.practice-files h4 {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray-900);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
   margin: 0 0 var(--space-4) 0;
 }
 
@@ -2034,61 +2081,54 @@ export default {
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-4);
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
   text-decoration: none;
-  color: var(--gray-700);
+  color: var(--text-secondary);
   transition: var(--transition);
-  box-shadow: var(--shadow-sm);
 }
 
 .file-card:hover {
-  background: var(--gray-50);
-  border-color: var(--primary-blue);
+  background: var(--bg-card);
+  border-color: var(--accent-purple);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
 .file-icon {
-  font-size: var(--font-size-2xl);
+  font-size: 1.5rem;
   flex-shrink: 0;
 }
 
 .file-name {
   flex: 1;
-  font-weight: var(--font-weight-medium);
-  font-size: var(--font-size-sm);
+  font-weight: 500;
+  font-size: 0.875rem;
   line-height: 1.4;
 }
 
 .download-icon {
-  color: var(--gray-400);
+  color: var(--text-muted);
   flex-shrink: 0;
   transition: var(--transition);
 }
 
 .file-card:hover .download-icon {
-  color: var(--primary-blue);
-  transform: translateY(-1px);
+  color: var(--accent-purple);
 }
 
 .no-files {
   text-align: center;
-  color: var(--gray-500);
+  color: var(--text-muted);
   font-style: italic;
   padding: var(--space-8);
-  background: var(--gray-50);
+  background: var(--bg-secondary);
   border-radius: var(--radius-md);
-  border: 1px dashed var(--gray-300);
+  border: 1px dashed var(--border-secondary);
 }
 
-.no-files p {
-  margin: 0;
-  font-size: var(--font-size-base);
-}
-
-/* Quiz Step */
+/* Quiz Styles */
 .step-quiz {
   display: flex;
   flex-direction: column;
@@ -2096,8 +2136,8 @@ export default {
 }
 
 .quiz-item {
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
   padding: var(--space-6);
   box-shadow: var(--shadow-sm);
@@ -2108,9 +2148,9 @@ export default {
 }
 
 .quiz-header h3 {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray-900);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
   margin: 0 0 var(--space-5) 0;
   line-height: 1.4;
 }
@@ -2126,24 +2166,22 @@ export default {
   align-items: center;
   justify-content: space-between;
   padding: var(--space-4);
-  background: var(--white);
-  border: 2px solid var(--gray-200);
+  background: var(--bg-card);
+  border: 2px solid var(--border-primary);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: var(--transition);
   text-align: left;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
-  color: var(--gray-700);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-secondary);
   width: 100%;
-  box-shadow: var(--shadow-sm);
 }
 
 .quiz-option:hover:not(:disabled) {
-  background: var(--gray-50);
-  border-color: var(--primary-blue);
+  background: var(--bg-elevated);
+  border-color: var(--accent-purple);
   transform: translateX(4px);
-  box-shadow: var(--shadow-md);
 }
 
 .quiz-option:disabled {
@@ -2151,23 +2189,20 @@ export default {
 }
 
 .quiz-option.selected {
-  border-color: var(--primary-blue);
-  background: var(--primary-blue-light);
-  box-shadow: var(--shadow-md);
+  border-color: var(--accent-purple);
+  background: rgba(139, 92, 246, 0.1);
 }
 
 .quiz-option.correct {
-  border-color: var(--success-green);
-  background: var(--success-green-light);
-  color: var(--success-green-hover);
-  box-shadow: var(--shadow-md);
+  border-color: var(--accent-green);
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--accent-green);
 }
 
 .quiz-option.incorrect {
-  border-color: var(--danger-red);
+  border-color: var(--accent-red);
   background: rgba(239, 68, 68, 0.1);
-  color: var(--danger-red);
-  box-shadow: var(--shadow-md);
+  color: var(--accent-red);
 }
 
 .quiz-option.disabled {
@@ -2191,72 +2226,164 @@ export default {
 }
 
 .quiz-option.correct .option-indicator {
-  background: var(--success-green);
-  color: var(--white);
+  background: var(--accent-green);
+  color: var(--text-primary);
 }
 
 .quiz-option.incorrect .option-indicator {
-  background: var(--danger-red);
-  color: var(--white);
+  background: var(--accent-red);
+  color: var(--text-primary);
 }
 
 .quiz-explanation {
   padding: var(--space-5);
-  background: var(--gray-50);
+  background: var(--bg-secondary);
   border-radius: var(--radius-md);
-  border-left: 4px solid var(--primary-blue);
+  border-left: 4px solid var(--accent-purple);
   margin-top: var(--space-5);
-  box-shadow: var(--shadow-sm);
 }
 
 .explanation-header {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-weight: var(--font-weight-semibold);
-  color: var(--gray-900);
+  font-weight: 600;
+  color: var(--text-primary);
   margin-bottom: var(--space-3);
-  font-size: var(--font-size-sm);
+  font-size: 0.875rem;
 }
 
 .quiz-explanation p {
   margin: 0;
-  color: var(--gray-700);
+  color: var(--text-secondary);
   line-height: 1.6;
-  font-size: var(--font-size-base);
 }
 
 .no-quiz {
   text-align: center;
-  color: var(--gray-500);
+  color: var(--text-muted);
   padding: var(--space-8);
-  background: var(--gray-50);
+  background: var(--bg-secondary);
   border-radius: var(--radius-md);
-  border: 1px dashed var(--gray-300);
-}
-
-.no-quiz .placeholder-icon {
-  font-size: 3rem;
-  margin-bottom: var(--space-4);
-  opacity: 0.6;
+  border: 1px dashed var(--border-secondary);
 }
 
 .no-quiz p {
-  margin: 0 0 var(--space-2) 0;
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-medium);
+  margin: var(--space-4) 0;
+  font-weight: 500;
 }
 
-.no-quiz small {
-  font-size: var(--font-size-sm);
-  color: var(--gray-400);
+/* ===== FOOTER NAVIGATION ===== */
+.player-footer {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-primary);
+  padding: var(--space-6) var(--space-8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-shrink: 0;
 }
 
-/* PDF Fullscreen Modal */
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius);
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: var(--transition);
+  min-width: 120px;
+  justify-content: center;
+  height: 44px;
+  border: none;
+}
+
+.nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.nav-btn--primary {
+  background: var(--accent-purple);
+  color: var(--text-primary);
+}
+
+.nav-btn--primary:hover:not(:disabled) {
+  background: var(--accent-purple-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.nav-btn--secondary {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-secondary);
+}
+
+.nav-btn--secondary:hover:not(:disabled) {
+  background: var(--bg-card);
+  border-color: var(--border-secondary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.nav-btn--success {
+  background: var(--accent-green);
+  color: var(--text-primary);
+}
+
+.nav-btn--success:hover:not(:disabled) {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.lesson-indicators {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius);
+}
+
+.lesson-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-secondary);
+  transition: var(--transition);
+}
+
+.lesson-dot.active {
+  background: var(--accent-purple);
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+}
+
+.lesson-dot.completed {
+  background: var(--accent-green);
+  border-color: var(--accent-green);
+}
+
+.more-lessons {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-left: var(--space-2);
+}
+
+/* ===== PDF FULLSCREEN MODAL ===== */
 .pdf-modal {
   position: fixed;
   inset: 0;
-  background: rgba(17, 24, 39, 0.95);
+  background: rgba(0, 0, 0, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2270,10 +2397,11 @@ export default {
   height: 100%;
   max-width: 1400px;
   max-height: 95vh;
-  background: var(--white);
+  background: var(--bg-primary);
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-primary);
 }
 
 .pdf-close-btn {
@@ -2281,23 +2409,22 @@ export default {
   top: var(--space-4);
   right: var(--space-4);
   z-index: 10;
-  background: var(--white);
-  border: none;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-secondary);
   border-radius: 50%;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--gray-600);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: var(--transition);
-  box-shadow: var(--shadow-md);
 }
 
 .pdf-close-btn:hover {
-  background: var(--gray-100);
-  color: var(--gray-900);
+  background: var(--bg-card);
+  color: var(--text-primary);
   transform: scale(1.05);
 }
 
@@ -2307,22 +2434,47 @@ export default {
   border: none;
 }
 
+/* ===== TRANSITIONS ===== */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+.slide-down-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-down-leave-active {
+  transition: all 0.2s ease-in;
+}
+
+.slide-down-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+
 /* ===== RESPONSIVE DESIGN ===== */
-@media (max-width: 1200px) {
+@media (max-width: 1024px) {
   .lesson-player {
     max-width: 95vw;
   }
   
-  .header-content {
-    gap: var(--space-6);
+  .step-images {
+    grid-template-columns: 1fr;
   }
   
-  .progress-section {
-    min-width: 180px;
-  }
-  
-  .progress-bar {
-    width: 180px;
+  .file-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }
 }
 
@@ -2340,54 +2492,17 @@ export default {
   
   .player-header {
     padding: var(--space-4);
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-4);
-    min-height: auto;
-  }
-  
-  .close-btn {
-    position: absolute;
-    top: var(--space-3);
-    right: var(--space-3);
-    width: 36px;
-    height: 36px;
-  }
-  
-  .header-content {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-4);
-    padding-right: 0;
-    padding-top: var(--space-4);
-  }
-  
-  .course-info {
-    text-align: center;
   }
   
   .lesson-title {
-    font-size: var(--font-size-xl);
-  }
-  
-  .progress-section {
-    align-items: stretch;
-    min-width: auto;
-  }
-  
-  .progress-bar {
-    width: 100%;
-  }
-  
-  .progress-text {
-    text-align: center;
+    font-size: 1.5rem;
   }
   
   .player-content {
     padding: var(--space-4);
   }
   
-  .step-body {
+  .step-content {
     padding: var(--space-4);
   }
   
@@ -2406,8 +2521,9 @@ export default {
     min-width: auto;
   }
   
-  .lesson-counter {
+  .lesson-indicators {
     order: -1;
+    width: 100%;
     justify-content: center;
   }
   
@@ -2422,15 +2538,27 @@ export default {
   .file-grid {
     grid-template-columns: 1fr;
   }
-  
-  .step-images {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 480px) {
   .player-header {
     padding: var(--space-3);
+  }
+  
+  .close-btn {
+    width: 32px;
+    height: 32px;
+    top: var(--space-3);
+    right: var(--space-3);
+  }
+  
+  .lesson-title {
+    font-size: 1.25rem;
+  }
+  
+  .course-badge {
+    font-size: 0.75rem;
+    padding: var(--space-1) var(--space-2);
   }
   
   .step-header {
@@ -2441,24 +2569,20 @@ export default {
   .step-number {
     width: 28px;
     height: 28px;
-    font-size: var(--font-size-xs);
+    font-size: 0.75rem;
   }
   
   .step-title {
-    font-size: var(--font-size-base);
+    font-size: 1rem;
   }
   
-  .step-body {
+  .step-content {
     padding: var(--space-3);
-  }
-  
-  .pdf-viewer {
-    height: 300px;
   }
   
   .quiz-option {
     padding: var(--space-3);
-    font-size: var(--font-size-sm);
+    font-size: 0.875rem;
   }
   
   .file-card {
@@ -2474,17 +2598,9 @@ export default {
     padding: var(--space-4);
   }
   
-  .loading-state, .error-state, .no-content, .empty-lesson {
+  .loading-state, .error-state, .empty-state {
     padding: var(--space-6);
     min-height: 300px;
-  }
-  
-  .lesson-title {
-    font-size: var(--font-size-lg);
-  }
-  
-  .course-name {
-    font-size: var(--font-size-xs);
   }
   
   .pdf-modal {
@@ -2492,14 +2608,14 @@ export default {
   }
   
   .pdf-close-btn {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     top: var(--space-2);
     right: var(--space-2);
   }
 }
 
-/* ===== ACCESSIBILITY & FOCUS STYLES ===== */
+/* ===== ACCESSIBILITY ===== */
 .close-btn:focus-visible,
 .nav-btn:focus-visible,
 .quiz-option:focus-visible,
@@ -2508,15 +2624,15 @@ export default {
 .retry-btn:focus-visible,
 .back-btn:focus-visible,
 .pdf-close-btn:focus-visible {
-  outline: 2px solid var(--primary-blue);
+  outline: 2px solid var(--accent-purple);
   outline-offset: 2px;
 }
 
 /* ===== ANIMATIONS ===== */
-@keyframes fadeIn {
+@keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -2524,10 +2640,10 @@ export default {
   }
 }
 
-@keyframes slideIn {
+@keyframes slideInLeft {
   from {
     opacity: 0;
-    transform: translateX(-20px);
+    transform: translateX(-30px);
   }
   to {
     opacity: 1;
@@ -2535,18 +2651,18 @@ export default {
   }
 }
 
-.step-container {
-  animation: fadeIn 0.3s ease-out;
+.step-card {
+  animation: fadeInUp 0.4s ease-out;
 }
 
-.lesson-content .step-container:nth-child(1) { animation-delay: 0.1s; }
-.lesson-content .step-container:nth-child(2) { animation-delay: 0.2s; }
-.lesson-content .step-container:nth-child(3) { animation-delay: 0.3s; }
-.lesson-content .step-container:nth-child(4) { animation-delay: 0.4s; }
-.lesson-content .step-container:nth-child(5) { animation-delay: 0.5s; }
+.lesson-content .step-card:nth-child(1) { animation-delay: 0.1s; }
+.lesson-content .step-card:nth-child(2) { animation-delay: 0.2s; }
+.lesson-content .step-card:nth-child(3) { animation-delay: 0.3s; }
+.lesson-content .step-card:nth-child(4) { animation-delay: 0.4s; }
+.lesson-content .step-card:nth-child(5) { animation-delay: 0.5s; }
 
 .quiz-option {
-  animation: slideIn 0.2s ease-out;
+  animation: slideInLeft 0.3s ease-out;
 }
 
 .quiz-options .quiz-option:nth-child(1) { animation-delay: 0.1s; }
@@ -2554,18 +2670,99 @@ export default {
 .quiz-options .quiz-option:nth-child(3) { animation-delay: 0.3s; }
 .quiz-options .quiz-option:nth-child(4) { animation-delay: 0.4s; }
 
+.objectives-card {
+  animation: fadeInUp 0.4s ease-out;
+  animation-delay: 0.2s;
+  animation-fill-mode: both;
+}
+
+/* ===== DEMO CONTENT STYLES ===== */
+.demo-content {
+  padding: var(--space-4);
+}
+
+.demo-content h2 {
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+  font-size: 1.5rem;
+}
+
+.demo-features {
+  margin-top: var(--space-6);
+  padding: var(--space-4);
+  background: var(--bg-elevated);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-primary);
+}
+
+.demo-features h3 {
+  color: var(--accent-purple);
+  margin-bottom: var(--space-3);
+}
+
+.demo-features ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.demo-features li {
+  padding: var(--space-2) 0;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.demo-features li:last-child {
+  border-bottom: none;
+}
+
+.content-types {
+  padding: var(--space-4);
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.content-type {
+  padding: var(--space-4);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius);
+}
+
+.content-type h4 {
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2) 0;
+  font-size: 1rem;
+}
+
+.content-type p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
 /* ===== HIGH CONTRAST MODE SUPPORT ===== */
 @media (prefers-contrast: high) {
   :root {
-    --gray-200: #d1d5db;
-    --gray-300: #9ca3af;
-    --gray-400: #6b7280;
+    --bg-primary: #000000;
+    --bg-secondary: #1a1a1a;
+    --bg-card: #2a2a2a;
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --border-primary: #555555;
+    --border-secondary: #777777;
   }
   
-  .step-container,
+  .step-card,
   .quiz-item,
   .file-card,
-  .practice-header {
+  .objectives-card {
     border-width: 2px;
   }
 }
@@ -2578,9 +2775,14 @@ export default {
     transition-duration: 0.01ms !important;
   }
   
-  .step-container,
-  .quiz-option {
+  .step-card,
+  .quiz-option,
+  .objectives-card {
     animation: none;
+  }
+  
+  .progress-fill {
+    transition: none;
   }
 }
 
@@ -2594,22 +2796,28 @@ export default {
   
   .lesson-player {
     box-shadow: none;
-    border: 1px solid var(--gray-300);
+    border: 1px solid #333;
     max-height: none;
+    background: white;
+    color: black;
   }
   
   .close-btn,
-  .player-footer {
+  .player-footer,
+  .nav-btn {
     display: none;
   }
   
   .player-content {
     overflow: visible;
+    background: white;
   }
   
-  .step-container {
+  .step-card {
     break-inside: avoid;
     margin-bottom: var(--space-6);
+    background: white;
+    border: 1px solid #ccc;
   }
   
   .video-wrapper,
@@ -2622,14 +2830,37 @@ export default {
     text-align: left;
     font-style: normal;
     padding: var(--space-4);
-    border: 1px solid var(--gray-300);
+    border: 1px solid #ccc;
     border-radius: var(--radius);
-    background: var(--gray-50);
+    background: #f5f5f5;
+    color: black;
   }
   
   .video-description::before {
-    content: "Видео: ";
+    content: "Video: ";
     font-weight: bold;
+  }
+  
+  /* Convert dark theme colors for print */
+  .player-header,
+  .step-header,
+  .quiz-item,
+  .objectives-card {
+    background: #f9f9f9 !important;
+    color: black !important;
+  }
+  
+  .lesson-title,
+  .step-title,
+  .text-content h1,
+  .text-content h2,
+  .text-content h3 {
+    color: black !important;
+  }
+  
+  .text-content p,
+  .text-content li {
+    color: #333 !important;
   }
 }
 </style>
