@@ -764,7 +764,7 @@ export default {
 .player-header {
   background: white;
   border-bottom: 1px solid #e5e5e5;
-  padding: 1.5rem 2rem;
+  padding: 1rem 2rem;
   position: relative;
   flex-shrink: 0;
 }
@@ -801,18 +801,18 @@ export default {
   display: inline-block;
   background: #6366f1;
   color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.875rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.8125rem;
   font-weight: 500;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .lesson-title {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: #1a1a1a;
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.75rem 0;
   line-height: 1.2;
   word-wrap: break-word;
 }
@@ -862,7 +862,7 @@ export default {
 
 /* Learning Objectives */
 .objectives-container {
-  padding: 0 2rem 1rem 2rem;
+  padding: 0 2rem 0.75rem 2rem;
   margin-bottom: 0;
   flex-shrink: 0;
 }
@@ -870,30 +870,30 @@ export default {
 .objectives-card {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 10px;
+  padding: 1rem;
 }
 
 .objectives-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .objectives-icon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   background: #6366f1;
   color: white;
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .objectives-header h2 {
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #1a1a1a;
   margin: 0;
@@ -911,9 +911,9 @@ export default {
 .objectives-list li {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
   color: #4b5563;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .objectives-list li svg {
@@ -1307,7 +1307,7 @@ export default {
 .player-footer {
   background: white;
   border-top: 1px solid #e5e5e5;
-  padding: 1rem 2rem;
+  padding: 0.75rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1318,15 +1318,15 @@ export default {
 .nav-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  gap: 0.375rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
   font-weight: 500;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   cursor: pointer;
   transition: all 0.2s;
   border: none;
-  min-width: 120px;
+  min-width: 100px;
   justify-content: center;
 }
 
@@ -1366,7 +1366,7 @@ export default {
 .lesson-nav-info {
   font-weight: 500;
   color: #6b7280;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 /* PDF Modal */
@@ -1468,9 +1468,9 @@ export default {
   }
   
   .player-footer {
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
   }
   
   .nav-btn {
