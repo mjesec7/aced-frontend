@@ -753,6 +753,7 @@ export default {
   width: 100%;
   max-width: 1200px;
   max-height: 90vh;
+  min-height: 80vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -763,8 +764,9 @@ export default {
 .player-header {
   background: white;
   border-bottom: 1px solid #e5e5e5;
-  padding: 2rem;
+  padding: 1.5rem 2rem;
   position: relative;
+  flex-shrink: 0;
 }
 
 .close-btn {
@@ -818,7 +820,7 @@ export default {
 .progress-section {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .progress-info {
@@ -826,7 +828,8 @@ export default {
   justify-content: space-between;
   align-items: center;
   font-size: 0.875rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  gap: 1rem;
 }
 
 .lesson-counter {
@@ -859,8 +862,9 @@ export default {
 
 /* Learning Objectives */
 .objectives-container {
-  padding: 0 2rem;
-  margin-bottom: 1rem;
+  padding: 0 2rem 1rem 2rem;
+  margin-bottom: 0;
+  flex-shrink: 0;
 }
 
 .objectives-card {
@@ -921,8 +925,9 @@ export default {
 .player-content {
   flex: 1;
   overflow-y: auto;
-  padding: 2rem;
+  padding: 1rem 2rem 2rem 2rem;
   background: #fafafa;
+  min-height: 0; /* Allow flex item to shrink */
 }
 
 /* Loading/Error States */
@@ -1302,11 +1307,12 @@ export default {
 .player-footer {
   background: white;
   border-top: 1px solid #e5e5e5;
-  padding: 1.5rem 2rem;
+  padding: 1rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  flex-shrink: 0;
 }
 
 .nav-btn {
@@ -1429,6 +1435,7 @@ export default {
   
   .player-header {
     padding: 1rem;
+    flex-shrink: 0;
   }
   
   .header-content {
@@ -1443,6 +1450,7 @@ export default {
   
   .progress-info {
     font-size: 0.8125rem;
+    gap: 0.75rem;
   }
   
   .close-btn {
@@ -1452,6 +1460,7 @@ export default {
   
   .player-content {
     padding: 1rem;
+    min-height: 0;
   }
   
   .step-content {
