@@ -740,10 +740,11 @@ export default {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 1000;
-  padding: 1rem;
+  padding: 2rem 1rem;
+  overflow-y: auto;
 }
 
 .lesson-player {
@@ -752,12 +753,11 @@ export default {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 1200px;
-  max-height: 90vh;
-  min-height: 80vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   border: 1px solid #e5e5e5;
+  margin: 0 auto;
 }
 
 /* Header */
@@ -924,10 +924,8 @@ export default {
 /* Main Content */
 .player-content {
   flex: 1;
-  overflow-y: auto;
   padding: 1rem 2rem 2rem 2rem;
   background: #fafafa;
-  min-height: 0; /* Allow flex item to shrink */
 }
 
 /* Loading/Error States */
@@ -1313,6 +1311,7 @@ export default {
   justify-content: space-between;
   gap: 1rem;
   flex-shrink: 0;
+  margin-top: auto;
 }
 
 .nav-btn {
@@ -1423,14 +1422,14 @@ export default {
 /* Responsive */
 @media (max-width: 768px) {
   .lesson-player-overlay {
-    padding: 0;
+    padding: 1rem 0.5rem;
+    align-items: flex-start;
   }
   
   .lesson-player {
     width: 100%;
-    height: 100vh;
-    max-height: 100vh;
-    border-radius: 0;
+    min-height: 100vh;
+    border-radius: 12px;
   }
   
   .player-header {
@@ -1444,12 +1443,12 @@ export default {
   }
   
   .lesson-title {
-    font-size: 1.5rem;
-    margin-bottom: 0.75rem;
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
   }
   
   .progress-info {
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     gap: 0.75rem;
   }
   
