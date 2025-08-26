@@ -44,7 +44,6 @@ export default {
     // ✅ Watch for user status changes to update layout
     userStatus: {
       handler(newStatus, oldStatus) {
-        console.log('📊 ProfilePage: User status changed:', oldStatus, '→', newStatus);
         this.triggerComponentUpdate();
       },
       immediate: true
@@ -52,7 +51,6 @@ export default {
   },
   
   mounted() {
-    console.log('🔧 ProfilePage: Component mounted with status:', this.userStatus);
     this.setupProfileEventListeners();
   },
   
@@ -64,13 +62,11 @@ export default {
     // ✅ Enhanced close sidebar method
     closeSidebar() {
       this.sidebarOpen = false;
-      console.log('📱 ProfilePage: Sidebar closed');
     },
     
     // ✅ Enhanced toggle sidebar method
     toggleSidebar() {
       this.sidebarOpen = !this.sidebarOpen;
-      console.log('📱 ProfilePage: Sidebar toggled:', this.sidebarOpen);
     },
     
     // ✅ Trigger component update
@@ -79,20 +75,15 @@ export default {
       this.lastUpdate = Date.now();
       this.$forceUpdate();
       
-      console.log('🔄 ProfilePage: Component update triggered:', {
-        key: this.componentKey,
-        userStatus: this.userStatus
-      });
+       
     },
     
     // ✅ Setup profile-specific event listeners
     setupProfileEventListeners() {
-      console.log('🔧 ProfilePage: Setting up profile event listeners');
       
       // Additional profile-specific listeners can go here
       if (typeof window !== 'undefined' && window.eventBus) {
         this.profileStatusHandler = (data) => {
-          console.log('📡 ProfilePage: Profile status event:', data);
           this.triggerComponentUpdate();
           
           // Update page title based on status
@@ -109,7 +100,6 @@ export default {
     
     // ✅ Cleanup profile-specific event listeners
     cleanupProfileEventListeners() {
-      console.log('🧹 ProfilePage: Cleaning up profile event listeners');
       
       if (typeof window !== 'undefined' && window.eventBus && this.profileStatusHandler) {
         window.eventBus.off('userStatusChanged', this.profileStatusHandler);

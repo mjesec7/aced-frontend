@@ -224,7 +224,6 @@ const filteredWords = computed(() => {
 // ========================================
 const getUserVocabulary = async (userId, languageCode = null) => {
   try {
-    console.log('📚 [VocabularyPage] Extracting vocabulary from completed lessons for user:', userId)
     
     if (!userId) {
       console.warn('⚠️ No user ID provided, using demo data')
@@ -255,14 +254,11 @@ const getUserVocabulary = async (userId, languageCode = null) => {
     
     const userProgress = Array.isArray(progressData) ? progressData : progressData.data || []
     
-    console.log(`📊 Found ${userProgress.length} progress records`)
     
     // Get completed lessons
     const completedLessons = userProgress.filter(p => p && p.completed && p.lessonId)
-    console.log(`✅ Found ${completedLessons.length} completed lessons`)
     
     if (completedLessons.length === 0) {
-      console.log('ℹ️ No completed lessons found, using demo data')
       return getDemoVocabulary(languageCode)
     }
     

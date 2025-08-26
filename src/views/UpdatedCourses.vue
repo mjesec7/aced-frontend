@@ -1264,7 +1264,7 @@ export default {
   padding: 2rem 0;
 }
 
-/* Filters */
+/* Filter Bar - Fixed Gaps */
 .filter-bar {
   background-color: var(--color-card);
   border-radius: 1rem;
@@ -1277,16 +1277,36 @@ export default {
   gap: 1rem;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
   .filter-bar {
     flex-direction: row;
     align-items: center;
+    gap: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .filter-bar {
+    gap: 2rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .filter-bar {
+    gap: 2.5rem;
   }
 }
 
 .filter-group-search {
   position: relative;
-  flex: 1;
+  flex: 2;
+  min-width: 280px;
+}
+
+@media (max-width: 767px) {
+  .filter-group-search {
+    min-width: auto;
+  }
 }
 
 .search-icon {
@@ -1319,6 +1339,13 @@ export default {
 .filter-group-select {
   position: relative;
   flex: 1;
+  min-width: 160px;
+}
+
+@media (max-width: 767px) {
+  .filter-group-select {
+    min-width: auto;
+  }
 }
 
 .select-field {
@@ -1349,13 +1376,21 @@ export default {
 
 .filter-group-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .filter-group-buttons {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
 }
 
 .button-filter {
   height: 2.25rem;
-  padding: 0 0.75rem;
+  padding: 0 1rem;
   border-radius: 0.375rem;
   font-size: 0.875rem;
   font-weight: 500;
@@ -1364,6 +1399,14 @@ export default {
   background-color: var(--color-background);
   color: var(--color-foreground);
   transition: all 0.2s ease-in-out;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .button-filter {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 .button-filter:hover {
@@ -1385,6 +1428,13 @@ export default {
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+@media (max-width: 767px) {
+  .results-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .results-count {
@@ -1429,6 +1479,13 @@ export default {
   .courses-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 24px;
+  }
+}
+
+@media (max-width: 767px) {
+  .courses-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 
@@ -1674,7 +1731,7 @@ export default {
   opacity: 0;
 }
 
-/* Modal Styles */
+/* Modal - Fixed Width and Layout */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1693,7 +1750,7 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 1100px;
+  max-width: 800px;
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
@@ -1746,7 +1803,7 @@ export default {
 
 .modal-header-section {
   position: relative;
-  height: 280px;
+  height: 240px;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -1847,10 +1904,10 @@ export default {
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 32px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
 }
 
 .modal-course-info {
@@ -1886,7 +1943,7 @@ export default {
 }
 
 .modal-title {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1.2;
   margin: 0;
@@ -1894,7 +1951,7 @@ export default {
 }
 
 .modal-description {
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.6;
   color: var(--color-muted-foreground);
   margin: 0;
@@ -1910,18 +1967,18 @@ export default {
 .modal-details {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .modal-details-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
+  grid-template-columns: 1fr;
+  gap: 20px;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) {
   .modal-details-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 24px;
   }
 }
@@ -1995,6 +2052,7 @@ export default {
   flex-shrink: 0;
 }
 
+/* Fixed Button Text Colors */
 .modal-action-button {
   display: flex;
   align-items: center;
@@ -2007,32 +2065,50 @@ export default {
   border-radius: 10px;
   font-size: 15px;
   font-weight: 600;
-  color: white;
-  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
-  box-shadow: 0 3px 12px rgba(139, 127, 191, 0.3);
   cursor: pointer;
   transition: all 0.3s ease;
   margin-bottom: 8px;
 }
 
-.modal-action-button:hover:not(:disabled) {
+.modal-action-button.accessible {
+  background: linear-gradient(135deg, var(--color-brand), var(--color-brand-light));
+  color: white;
+  box-shadow: 0 3px 12px rgba(139, 127, 191, 0.3);
+}
+
+.modal-action-button.accessible:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(139, 127, 191, 0.4);
+}
+
+.modal-action-button.premium {
+  background: linear-gradient(135deg, #fef3c7, #fed7aa);
+  color: #92400e;
+  box-shadow: 0 3px 12px rgba(245, 158, 11, 0.2);
+}
+
+.modal-action-button.premium:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #fed7aa, #fdba74);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+}
+
+.modal-action-button:not(.accessible):not(.premium) {
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  color: #222;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal-action-button:not(.accessible):not(.premium):hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .modal-action-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none !important;
-}
-
-.modal-action-button.premium {
-  background: linear-gradient(135deg, #f59e0b, #f97316);
-  box-shadow: 0 3px 12px rgba(245, 158, 11, 0.3);
-}
-
-.modal-action-button.premium:hover:not(:disabled) {
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
 }
 
 .modal-action-description {
@@ -2043,8 +2119,8 @@ export default {
   line-height: 1.3;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
+/* Mobile Responsive */
+@media (max-width: 767px) {
   .modal-container {
     margin: 0.5rem;
     max-height: 95vh;
@@ -2052,30 +2128,26 @@ export default {
   }
 
   .modal-header-section {
-    height: 200px;
+    height: 180px;
   }
 
   .modal-body {
-    padding: 20px;
-    gap: 20px;
+    padding: 16px;
+    gap: 16px;
   }
 
   .modal-title {
     font-size: 20px;
   }
 
-  .courses-grid {
+  .modal-details-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
 
   .filter-bar {
     padding: 1rem;
-  }
-
-  .results-info {
-    flex-direction: column;
-    align-items: flex-start;
+    gap: 1rem;
   }
 }
 
@@ -2084,13 +2156,17 @@ export default {
     padding: 0.5rem;
   }
 
+  .modal-container {
+    max-width: calc(100vw - 1rem);
+  }
+
   .modal-header-section {
-    height: 160px;
+    height: 140px;
   }
 
   .modal-body {
-    padding: 16px;
-    gap: 16px;
+    padding: 12px;
+    gap: 12px;
   }
 
   .modal-title {
@@ -2107,6 +2183,19 @@ export default {
 
   .header-subtitle {
     font-size: 1.125rem;
+  }
+
+  .filter-bar {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .filter-group-buttons {
+    justify-content: center;
+  }
+
+  .button-filter {
+    min-width: 80px;
   }
 }
 
