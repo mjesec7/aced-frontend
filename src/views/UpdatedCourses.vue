@@ -1274,26 +1274,26 @@ export default {
   margin-bottom: 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 @media (min-width: 768px) {
   .filter-bar {
     flex-direction: row;
     align-items: center;
-    gap: 1.5rem;
+    gap: 2rem;
   }
 }
 
 @media (min-width: 1024px) {
   .filter-bar {
-    gap: 2rem;
+    gap: 2.5rem;
   }
 }
 
 @media (min-width: 1200px) {
   .filter-bar {
-    gap: 2.5rem;
+    gap: 3rem;
   }
 }
 
@@ -1376,7 +1376,7 @@ export default {
 
 .filter-group-buttons {
   display: flex;
-  gap: 0.75rem;
+  gap: 1.25rem;
   flex-wrap: wrap;
 }
 
@@ -1384,7 +1384,7 @@ export default {
   .filter-group-buttons {
     width: 100%;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: 1rem;
   }
 }
 
@@ -1750,7 +1750,7 @@ export default {
 .modal-container {
   position: relative;
   width: 100%;
-  max-width: 800px;
+  max-width: 650px;
   max-height: 90vh;
   background-color: var(--color-background);
   border-radius: 16px;
@@ -2068,6 +2068,16 @@ export default {
   cursor: pointer;
   transition: all 0.3s ease;
   margin-bottom: 8px;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  color: #212529;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal-action-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #e9ecef, #dee2e6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  color: #000;
 }
 
 .modal-action-button.accessible {
@@ -2082,27 +2092,16 @@ export default {
 }
 
 .modal-action-button.premium {
-  background: linear-gradient(135deg, #fef3c7, #fed7aa);
-  color: #92400e;
-  box-shadow: 0 3px 12px rgba(245, 158, 11, 0.2);
+  background: linear-gradient(135deg, #fff3cd, #ffeeba);
+  color: #856404;
+  box-shadow: 0 3px 12px rgba(255, 193, 7, 0.2);
 }
 
 .modal-action-button.premium:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: linear-gradient(135deg, #fed7aa, #fdba74);
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
-}
-
-.modal-action-button:not(.accessible):not(.premium) {
-  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-  color: #222;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.modal-action-button:not(.accessible):not(.premium):hover:not(:disabled) {
-  transform: translateY(-1px);
-  background: linear-gradient(135deg, #e5e7eb, #d1d5db);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, #ffeeba, #ffdf7e);
+  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.3);
+  color: #533f03;
 }
 
 .modal-action-button:disabled {
