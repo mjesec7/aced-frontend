@@ -6,7 +6,7 @@
         <button 
           class="close-btn" 
           @click="$emit('close')" 
-          aria-label="Close lesson"
+          aria-label="Закрыть урок"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -22,8 +22,8 @@
 
           <div class="progress-section">
             <div class="progress-info">
-              <span class="lesson-counter">Lesson {{ currentLessonIndex + 1 }} of {{ totalLessons }}</span>
-              <span class="progress-text">{{ Math.round(progressPercentage) }}% complete</span>
+              <span class="lesson-counter">Урок {{ currentLessonIndex + 1 }} из {{ totalLessons }}</span>
+              <span class="progress-text">{{ Math.round(progressPercentage) }}% завершено</span>
             </div>
             <div class="progress-bar">
               <div 
@@ -45,7 +45,7 @@
                 <polyline points="16,12 12,8 8,12"></polyline>
               </svg>
             </div>
-            <h2>Learning Objectives</h2>
+            <h2>Цели обучения</h2>
           </div>
           <ul class="objectives-list">
             <li v-for="(objective, index) in learningObjectives" :key="index">
@@ -65,17 +65,17 @@
           <div class="loading-spinner">
             <div class="spinner"></div>
           </div>
-          <h3>Loading Course...</h3>
-          <p>Preparing your learning materials</p>
+          <h3>Загрузка курса...</h3>
+          <p>Подготовка учебных материалов</p>
         </div>
 
         <!-- Error State -->
         <div v-else-if="error" class="error-state">
           <div class="error-icon">⚠️</div>
-          <h3>Failed to Load Course</h3>
+          <h3>Не удалось загрузить курс</h3>
           <p>{{ error }}</p>
           <button @click="loadCourseContent" class="retry-btn">
-            Try Again
+            Попробовать снова
           </button>
         </div>
 
@@ -109,8 +109,8 @@
         <!-- Empty States -->
         <div v-else class="empty-state">
           <div class="empty-icon">📚</div>
-          <h3>No content available</h3>
-          <p>This lesson content is not available yet.</p>
+          <h3>Контент недоступен</h3>
+          <p>Содержание этого урока пока недоступно.</p>
         </div>
       </main>
 
@@ -124,7 +124,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="15,18 9,12 15,6"></polyline>
           </svg>
-          Previous
+          Назад
         </button>
 
         <div class="lesson-nav-info">
@@ -136,7 +136,7 @@
           class="nav-btn nav-btn--primary"
           @click="goToNextLesson"
         >
-          Next
+          Далее
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="9,18 15,12 9,6"></polyline>
           </svg>
@@ -147,7 +147,7 @@
           class="nav-btn nav-btn--success"
           @click="completeCourse"
         >
-          Complete Course
+          Завершить курс
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="20,6 9,17 4,12"></polyline>
           </svg>
@@ -161,6 +161,7 @@
         <button 
           class="pdf-close-btn"
           @click="closePdfFullscreen"
+          aria-label="Закрыть PDF"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -170,7 +171,7 @@
         <iframe 
           :src="fullscreenPdf" 
           class="pdf-frame"
-          title="PDF Viewer"
+          title="PDF Просмотрщик"
         ></iframe>
       </div>
     </div>
@@ -208,7 +209,7 @@ export default {
 
   computed: {
     courseTitle() {
-      return this.courseData?.title || this.course?.title || 'Course';
+      return this.courseData?.title || this.course?.title || 'Курс';
     },
 
     currentLesson() {
@@ -217,8 +218,8 @@ export default {
 
     currentLessonTitle() {
       const lesson = this.currentLesson;
-      if (!lesson) return 'Loading lesson...';
-      return lesson.title || lesson.lessonName || `Lesson ${this.currentLessonIndex + 1}`;
+      if (!lesson) return 'Загрузка урока...';
+      return lesson.title || lesson.lessonName || `Урок ${this.currentLessonIndex + 1}`;
     },
 
     hasSteps() {
@@ -248,9 +249,9 @@ export default {
         return this.courseData.learningOutcomes;
       }
       return [
-        'Understand the core concepts covered in this lesson',
-        'Apply practical skills through hands-on exercises',
-        'Complete assessments to test your knowledge'
+        'Понимание основных концепций, рассматриваемых в этом уроке',
+        'Применение практических навыков через практические упражнения',
+        'Выполнение оценочных заданий для проверки знаний'
       ];
     }
   },
@@ -270,7 +271,7 @@ export default {
     async loadCourseContent() {
       if (!this.course || (!this.course._id && !this.course.id)) {
         console.error('❌ LessonPlayer: Invalid course data:', this.course);
-        this.error = 'Invalid course data provided';
+        this.error = 'Неверные данные курса';
         this.loading = false;
         return;
       }
@@ -354,7 +355,7 @@ export default {
         this.lessons = lessons;
 
         if (lessons.length === 0) {
-          this.error = 'No lesson content found for this course';
+          this.error = 'Содержание уроков для этого курса не найдено';
           console.warn('⚠️ No lessons found for course:', courseId);
         } else {
           console.log(`✅ Successfully loaded ${lessons.length} lessons`);
@@ -362,7 +363,7 @@ export default {
         
       } catch (error) {
         console.error('❌ Critical error loading Updated Course:', error);
-        this.error = 'Failed to load course content. Please try again.';
+        this.error = 'Не удалось загрузить содержание курса. Пожалуйста, попробуйте еще раз.';
       } finally {
         this.loading = false;
       }
@@ -380,10 +381,10 @@ export default {
           const processedLesson = {
             id: lesson._id || lesson.id || `lesson_${index}`,
             _id: lesson._id || lesson.id || `lesson_${index}`,
-            title: lesson.title || `Lesson ${index + 1}`,
-            lessonName: lesson.title || `Lesson ${index + 1}`,
+            title: lesson.title || `Урок ${index + 1}`,
+            lessonName: lesson.title || `Урок ${index + 1}`,
             description: lesson.description || '',
-            duration: lesson.duration || '30 min',
+            duration: lesson.duration || '30 мин',
             order: lesson.order !== undefined ? lesson.order : index,
             steps: this.processSteps(lesson.steps || [])
           };
@@ -395,9 +396,9 @@ export default {
           console.error(`❌ Error processing lesson ${index}:`, lessonError);
           return {
             id: `error_lesson_${index}`,
-            title: `Lesson ${index + 1} (Error)`,
-            lessonName: `Lesson ${index + 1} (Error)`,
-            description: 'Error loading lesson content',
+            title: `Урок ${index + 1} (Ошибка)`,
+            lessonName: `Урок ${index + 1} (Ошибка)`,
+            description: 'Ошибка загрузки содержания урока',
             steps: []
           };
         }
@@ -437,9 +438,9 @@ export default {
           return {
             id: `error_step_${index}`,
             type: 'explanation',
-            title: 'Error loading step',
-            content: 'This step could not be loaded',
-            data: { content: 'Error loading step content' }
+            title: 'Ошибка загрузки шага',
+            content: 'Этот шаг не может быть загружен',
+            data: { content: 'Ошибка загрузки содержания шага' }
           };
         }
       });
@@ -459,7 +460,7 @@ export default {
     },
 
     completeCourse() {
-      if (confirm('Congratulations! You\'ve completed the course. Return to courses?')) {
+      if (confirm('Поздравляем! Вы завершили курс. Вернуться к курсам?')) {
         this.$emit('back-to-courses');
       }
     },
@@ -490,29 +491,29 @@ export default {
       if (step.title) return step.title;
       
       const titles = {
-        explanation: 'Explanation',
-        example: 'Example',
-        practice: 'Practice',
-        quiz: 'Quiz',
-        video: 'Video',
-        pdf: 'Reading',
-        image: 'Visual Content'
+        explanation: 'Объяснение',
+        example: 'Пример',
+        practice: 'Практика',
+        quiz: 'Тест',
+        video: 'Видео',
+        pdf: 'Чтение',
+        image: 'Изображения'
       };
       
-      return titles[step.type] || 'Content';
+      return titles[step.type] || 'Содержание';
     },
 
     getStepTypeLabel(type) {
       const labels = {
-        explanation: 'Learn',
-        example: 'Example',
-        practice: 'Practice',
-        quiz: 'Quiz',
-        video: 'Watch',
-        pdf: 'Read',
-        image: 'View'
+        explanation: 'Изучение',
+        example: 'Пример',
+        practice: 'Практика',
+        quiz: 'Тест',
+        video: 'Просмотр',
+        pdf: 'Чтение',
+        image: 'Просмотр'
       };
-      return labels[type] || 'Step';
+      return labels[type] || 'Шаг';
     },
 
     getStepComponent(type) {
@@ -540,7 +541,7 @@ export default {
           <div class="text-content" v-html="formattedContent"></div>
           <div v-if="hasImages" class="step-images">
             <div v-for="image in step.images || []" :key="image.id || image.url" class="step-image">
-              <img :src="image.url" :alt="image.alt || 'Step image'" />
+              <img :src="image.url" :alt="image.alt || 'Изображение урока'" />
               <p v-if="image.caption" class="image-caption">{{ image.caption }}</p>
             </div>
           </div>
@@ -551,7 +552,7 @@ export default {
           let content = this.step.data?.content || this.step.content || '';
           
           if (!content) {
-            content = '<p>Content not available for this step.</p>';
+            content = '<p>Содержание недоступно для этого шага.</p>';
           }
           
           if (typeof content === 'string') {
@@ -581,11 +582,11 @@ export default {
               <iframe v-if="isYouTube" :src="embedUrl" frameborder="0" allowfullscreen></iframe>
               <video v-else controls>
                 <source :src="videoUrl" type="video/mp4">
-                Your browser doesn't support video playback.
+                Ваш браузер не поддерживает воспроизведение видео.
               </video>
             </div>
             <div v-else class="video-placeholder">
-              <p>Video content not available</p>
+              <p>Видео-контент недоступен</p>
             </div>
           </div>
         </div>
@@ -616,12 +617,12 @@ export default {
             <iframe :src="pdfUrl" class="pdf-iframe"></iframe>
             <div class="pdf-actions">
               <button @click="$emit('pdf-fullscreen', pdfUrl)" class="pdf-fullscreen-btn">
-                View Fullscreen
+                Открыть в полноэкранном режиме
               </button>
             </div>
           </div>
           <div v-else class="pdf-placeholder">
-            <p>PDF content not available</p>
+            <p>PDF-контент недоступен</p>
           </div>
         </div>
       `,
@@ -639,7 +640,7 @@ export default {
           <div class="practice-content">
             <div v-if="instructions" v-html="formattedInstructions"></div>
             <div v-else>
-              <p>Practice exercise instructions not available.</p>
+              <p>Инструкции к практическому упражнению недоступны.</p>
             </div>
           </div>
         </div>
@@ -681,13 +682,13 @@ export default {
               </div>
               
               <div v-if="isAnswered(quizIndex) && quiz.explanation" class="quiz-explanation">
-                <strong>Explanation:</strong> {{ quiz.explanation }}
+                <strong>Объяснение:</strong> {{ quiz.explanation }}
               </div>
             </div>
           </div>
           
           <div v-else class="no-quiz">
-            <p>Quiz content not available</p>
+            <p>Тест недоступен</p>
           </div>
         </div>
       `,
@@ -734,710 +735,749 @@ export default {
 <style scoped>
 /* Clean, light theme inspired by Runway ML interface */
 .lesson-player-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
+ position: fixed;
+ inset: 0;
+ background: rgba(255, 255, 255, 0.95);
+ backdrop-filter: blur(10px);
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ z-index: 1000;
+ padding: 1rem;
 }
 
 .lesson-player {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 1200px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid #e5e5e5;
+ background: white;
+ border-radius: 16px;
+ box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+ width: 100%;
+ max-width: 1200px;
+ max-height: 90vh;
+ display: flex;
+ flex-direction: column;
+ overflow: hidden;
+ border: 1px solid #e5e5e5;
 }
 
 /* Header */
 .player-header {
-  background: white;
-  border-bottom: 1px solid #e5e5e5;
-  padding: 2rem;
-  position: relative;
+ background: white;
+ border-bottom: 1px solid #e5e5e5;
+ padding: 2rem;
+ position: relative;
 }
 
 .close-btn {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 32px;
-  height: 32px;
-  background: #f5f5f5;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #666;
-  transition: all 0.2s;
+ position: absolute;
+ top: 1rem;
+ right: 1rem;
+ width: 32px;
+ height: 32px;
+ background: #f5f5f5;
+ border: none;
+ border-radius: 8px;
+ cursor: pointer;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ color: #666;
+ transition: all 0.2s;
 }
 
 .close-btn:hover {
-  background: #e5e5e5;
-  color: #333;
+ background: #e5e5e5;
+ color: #333;
 }
 
 .header-content {
-  max-width: calc(100% - 60px);
+ max-width: calc(100% - 60px);
 }
 
 .course-badge {
-  display: inline-block;
-  background: #6366f1;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin-bottom: 1rem;
+ display: inline-block;
+ background: #6366f1;
+ color: white;
+ padding: 0.5rem 1rem;
+ border-radius: 20px;
+ font-size: 0.875rem;
+ font-weight: 500;
+ margin-bottom: 1rem;
 }
 
 .lesson-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 1.5rem 0;
-  line-height: 1.2;
+ font-size: 2rem;
+ font-weight: 700;
+ color: #1a1a1a;
+ margin: 0 0 1.5rem 0;
+ line-height: 1.2;
 }
 
 .progress-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+ display: flex;
+ flex-direction: column;
+ gap: 0.75rem;
 }
 
 .progress-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.875rem;
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ font-size: 0.875rem;
 }
 
 .lesson-counter {
-  font-weight: 500;
-  color: #666;
+ font-weight: 500;
+ color: #666;
 }
 
 .progress-text {
-  color: #6366f1;
-  font-weight: 600;
+ color: #6366f1;
+ font-weight: 600;
 }
 
 .progress-bar {
-  width: 100%;
-  height: 8px;
-  background: #f0f0f0;
-  border-radius: 4px;
-  overflow: hidden;
+ width: 100%;
+ height: 8px;
+ background: #f0f0f0;
+ border-radius: 4px;
+ overflow: hidden;
 }
 
 .progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
-  border-radius: 4px;
-  transition: width 0.5s ease;
+ height: 100%;
+ background: linear-gradient(90deg, #6366f1, #8b5cf6);
+ border-radius: 4px;
+ transition: width 0.5s ease;
 }
 
 /* Learning Objectives */
 .objectives-container {
-  padding: 0 2rem;
-  margin-bottom: 1rem;
+ padding: 0 2rem;
+ margin-bottom: 1rem;
 }
 
 .objectives-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
+ background: #f8fafc;
+ border: 1px solid #e2e8f0;
+ border-radius: 12px;
+ padding: 1.5rem;
 }
 
 .objectives-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+ display: flex;
+ align-items: center;
+ gap: 0.75rem;
+ margin-bottom: 1rem;
 }
 
 .objectives-icon {
-  width: 32px;
-  height: 32px;
-  background: #6366f1;
-  color: white;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+ width: 32px;
+ height: 32px;
+ background: #6366f1;
+ color: white;
+ border-radius: 8px;
+ display: flex;
+ align-items: center;
+ justify-content: center;
 }
 
 .objectives-header h2 {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0;
+ font-size: 1.125rem;
+ font-weight: 600;
+ color: #1a1a1a;
+ margin: 0;
 }
 
 .objectives-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+ list-style: none;
+ padding: 0;
+ margin: 0;
+ display: flex;
+ flex-direction: column;
+ gap: 0.5rem;
 }
 
 .objectives-list li {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #4b5563;
-  font-size: 0.875rem;
+ display: flex;
+ align-items: center;
+ gap: 0.5rem;
+ color: #4b5563;
+ font-size: 0.875rem;
 }
 
 .objectives-list li svg {
-  color: #10b981;
-  flex-shrink: 0;
+ color: #10b981;
+ flex-shrink: 0;
 }
 
 /* Main Content */
 .player-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 2rem;
-  background: #fafafa;
+ flex: 1;
+ overflow-y: auto;
+ padding: 2rem;
+ background: #fafafa;
 }
 
 /* Loading/Error States */
 .loading-state, .error-state, .empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  min-height: 300px;
-  padding: 2rem;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: center;
+ text-align: center;
+ min-height: 300px;
+ padding: 2rem;
 }
 
 .loading-spinner {
-  margin-bottom: 1rem;
+ margin-bottom: 1rem;
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #6366f1;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+ width: 40px;
+ height: 40px;
+ border: 3px solid #f3f3f3;
+ border-top: 3px solid #6366f1;
+ border-radius: 50%;
+ animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+ 0% { transform: rotate(0deg); }
+ 100% { transform: rotate(360deg); }
 }
 
 .error-icon, .empty-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
+ font-size: 3rem;
+ margin-bottom: 1rem;
 }
 
 .loading-state h3, .error-state h3, .empty-state h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 0.5rem 0;
+ font-size: 1.25rem;
+ font-weight: 600;
+ color: #1a1a1a;
+ margin: 0 0 0.5rem 0;
 }
 
 .loading-state p, .error-state p, .empty-state p {
-  color: #666;
-  margin: 0 0 1.5rem 0;
+ color: #666;
+ margin: 0 0 1.5rem 0;
 }
 
 .retry-btn {
-  background: #6366f1;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
+ background: #6366f1;
+ color: white;
+ border: none;
+ padding: 0.75rem 1.5rem;
+ border-radius: 8px;
+ font-weight: 500;
+ cursor: pointer;
+ transition: background 0.2s;
 }
 
 .retry-btn:hover {
-  background: #5855eb;
+ background: #5855eb;
 }
 
 /* Lesson Content */
 .lesson-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+ display: flex;
+ flex-direction: column;
+ gap: 1.5rem;
 }
 
 .step-container {
-  background: white;
-  border: 1px solid #e5e5e5;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+ background: white;
+ border: 1px solid #e5e5e5;
+ border-radius: 12px;
+ overflow: hidden;
+ box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .step-header {
-  background: #f8fafc;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e5e5e5;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+ background: #f8fafc;
+ padding: 1.5rem;
+ border-bottom: 1px solid #e5e5e5;
+ display: flex;
+ align-items: center;
+ gap: 1rem;
 }
 
 .step-number {
-  width: 32px;
-  height: 32px;
-  background: #6366f1;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 0.875rem;
-  flex-shrink: 0;
+ width: 32px;
+ height: 32px;
+ background: #6366f1;
+ color: white;
+ border-radius: 50%;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-weight: 600;
+ font-size: 0.875rem;
+ flex-shrink: 0;
 }
 
 .step-info {
-  flex: 1;
+ flex: 1;
 }
 
 .step-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 0.25rem 0;
+ font-size: 1.125rem;
+ font-weight: 600;
+ color: #1a1a1a;
+ margin: 0 0 0.25rem 0;
 }
 
 .step-type {
-  font-size: 0.75rem;
-  color: #6366f1;
-  text-transform: uppercase;
-  font-weight: 500;
-  letter-spacing: 0.5px;
+ font-size: 0.75rem;
+ color: #6366f1;
+ text-transform: uppercase;
+ font-weight: 500;
+ letter-spacing: 0.5px;
 }
 
 .step-content {
-  padding: 1.5rem;
+ padding: 1.5rem;
 }
 
 /* Step Components */
 .step-text {
-  line-height: 1.6;
+ line-height: 1.6;
 }
 
 .text-content {
-  color: #374151;
-  font-size: 1rem;
-  line-height: 1.7;
+ color: #374151;
+ font-size: 1rem;
+ line-height: 1.7;
+ margin-bottom: 1.5rem;
 }
 
 .text-content p {
-  margin: 0 0 1rem 0;
+ margin: 0 0 1rem 0;
 }
 
 .text-content p:last-child {
-  margin-bottom: 0;
+ margin-bottom: 0;
 }
 
 .text-content h1, .text-content h2, .text-content h3 {
-  color: #1a1a1a;
-  margin: 1.5rem 0 1rem 0;
+ color: #1a1a1a;
+ margin: 1.5rem 0 1rem 0;
 }
 
 .text-content ul, .text-content ol {
-  margin: 1rem 0;
-  padding-left: 1.5rem;
+ margin: 1rem 0;
+ padding-left: 1.5rem;
 }
 
 .text-content li {
-  margin-bottom: 0.5rem;
+ margin-bottom: 0.5rem;
 }
 
+/* FIXED: Images in horizontal row layout */
 .step-images {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1rem;
-  margin-top: 1.5rem;
+ display: flex;
+ flex-wrap: wrap;
+ gap: 1rem;
+ margin-top: 0;
 }
 
 .step-image {
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  overflow: hidden;
+ flex: 1;
+ min-width: 200px;
+ max-width: 300px;
+ border: 1px solid #e5e5e5;
+ border-radius: 8px;
+ overflow: hidden;
+ background: white;
 }
 
 .step-image img {
-  width: 100%;
-  height: auto;
-  display: block;
+ width: 100%;
+ height: 200px;
+ object-fit: cover;
+ display: block;
 }
 
 .image-caption {
-  padding: 0.75rem;
-  font-size: 0.875rem;
-  color: #666;
-  background: #f8fafc;
-  margin: 0;
+ padding: 0.75rem;
+ font-size: 0.875rem;
+ color: #666;
+ background: #f8fafc;
+ margin: 0;
+ border-top: 1px solid #e5e5e5;
 }
 
 /* Video Component */
 .step-video {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+ display: flex;
+ flex-direction: column;
+ gap: 1rem;
 }
 
 .video-wrapper {
-  position: relative;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #f0f0f0;
+ position: relative;
+ border-radius: 8px;
+ overflow: hidden;
+ background: #f0f0f0;
 }
 
 .video-container {
-  position: relative;
-  width: 100%;
-  height: 0;
-  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+ position: relative;
+ width: 100%;
+ height: 0;
+ padding-bottom: 56.25%; /* 16:9 aspect ratio */
 }
 
 .video-container iframe,
 .video-container video {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+ position: absolute;
+ top: 0;
+ left: 0;
+ width: 100%;
+ height: 100%;
 }
 
 .video-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  color: #666;
-  background: #f8fafc;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ height: 200px;
+ color: #666;
+ background: #f8fafc;
 }
 
 /* PDF Component */
 .step-pdf {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+ display: flex;
+ flex-direction: column;
+ gap: 1rem;
 }
 
 .pdf-container {
-  position: relative;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  overflow: hidden;
+ position: relative;
+ border: 1px solid #e5e5e5;
+ border-radius: 8px;
+ overflow: hidden;
 }
 
 .pdf-iframe {
-  width: 100%;
-  height: 500px;
-  border: none;
+ width: 100%;
+ height: 500px;
+ border: none;
 }
 
 .pdf-actions {
-  padding: 1rem;
-  background: #f8fafc;
-  text-align: center;
+ padding: 1rem;
+ background: #f8fafc;
+ text-align: center;
 }
 
 .pdf-fullscreen-btn {
-  background: #6366f1;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: background 0.2s;
+ background: #6366f1;
+ color: white;
+ border: none;
+ padding: 0.5rem 1rem;
+ border-radius: 6px;
+ font-size: 0.875rem;
+ cursor: pointer;
+ transition: background 0.2s;
 }
 
 .pdf-fullscreen-btn:hover {
-  background: #5855eb;
+ background: #5855eb;
 }
 
 .pdf-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  color: #666;
-  background: #f8fafc;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ height: 200px;
+ color: #666;
+ background: #f8fafc;
+ border: 1px solid #e5e5e5;
+ border-radius: 8px;
 }
 
 /* Practice Component */
 .step-practice {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 1.5rem;
+ background: #f8fafc;
+ border: 1px solid #e2e8f0;
+ border-radius: 8px;
+ padding: 1.5rem;
 }
 
 .practice-content {
-  color: #374151;
-  line-height: 1.6;
+ color: #374151;
+ line-height: 1.6;
 }
 
 /* Quiz Component */
 .step-quiz {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+ display: flex;
+ flex-direction: column;
+ gap: 1.5rem;
 }
 
 .quiz-item {
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  padding: 1.5rem;
-  background: white;
+ border: 1px solid #e5e5e5;
+ border-radius: 8px;
+ padding: 1.5rem;
+ background: white;
 }
 
 .quiz-question {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 1rem 0;
+ font-size: 1.125rem;
+ font-weight: 600;
+ color: #1a1a1a;
+ margin: 0 0 1rem 0;
 }
 
 .quiz-options {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+ display: flex;
+ flex-direction: column;
+ gap: 0.5rem;
 }
 
 .quiz-option {
-  padding: 0.75rem 1rem;
-  border: 2px solid #e5e5e5;
-  border-radius: 8px;
-  background: white;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.9375rem;
+ padding: 0.75rem 1rem;
+ border: 2px solid #e5e5e5;
+ border-radius: 8px;
+ background: white;
+ text-align: left;
+ cursor: pointer;
+ transition: all 0.2s;
+ font-size: 0.9375rem;
 }
 
 .quiz-option:hover {
-  border-color: #6366f1;
-  background: #f8fafc;
+ border-color: #6366f1;
+ background: #f8fafc;
 }
 
 .quiz-option.correct {
-  border-color: #10b981;
-  background: #ecfdf5;
-  color: #065f46;
+ border-color: #10b981;
+ background: #ecfdf5;
+ color: #065f46;
 }
 
 .quiz-option.incorrect {
-  border-color: #ef4444;
-  background: #fef2f2;
-  color: #991b1b;
+ border-color: #ef4444;
+ background: #fef2f2;
+ color: #991b1b;
 }
 
 .quiz-option.disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
+ cursor: not-allowed;
+ opacity: 0.6;
 }
 
 .quiz-explanation {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  color: #0c4a6e;
+ margin-top: 1rem;
+ padding: 1rem;
+ background: #f0f9ff;
+ border: 1px solid #bae6fd;
+ border-radius: 6px;
+ font-size: 0.875rem;
+ color: #0c4a6e;
 }
 
 .no-quiz {
-  text-align: center;
-  color: #666;
-  padding: 2rem;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 8px;
+ text-align: center;
+ color: #666;
+ padding: 2rem;
+ background: #f8fafc;
+ border: 1px dashed #cbd5e1;
+ border-radius: 8px;
 }
 
 /* Footer */
 .player-footer {
-  background: white;
-  border-top: 1px solid #e5e5e5;
-  padding: 1.5rem 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+ background: white;
+ border-top: 1px solid #e5e5e5;
+ padding: 1.5rem 2rem;
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ gap: 1rem;
 }
 
 .nav-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  min-width: 120px;
-  justify-content: center;
+ display: flex;
+ align-items: center;
+ gap: 0.5rem;
+ padding: 0.75rem 1.5rem;
+ border-radius: 8px;
+ font-weight: 500;
+ font-size: 0.875rem;
+ cursor: pointer;
+ transition: all 0.2s;
+ border: none;
+ min-width: 120px;
+ justify-content: center;
 }
 
 .nav-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+ opacity: 0.5;
+ cursor: not-allowed;
 }
 
 .nav-btn--primary {
-  background: #6366f1;
-  color: white;
+ background: #6366f1;
+ color: white;
 }
 
 .nav-btn--primary:hover:not(:disabled) {
-  background: #5855eb;
+ background: #5855eb;
 }
 
 .nav-btn--secondary {
-  background: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
+ background: #f3f4f6;
+ color: #374151;
+ border: 1px solid #d1d5db;
 }
 
 .nav-btn--secondary:hover:not(:disabled) {
-  background: #e5e7eb;
+ background: #e5e7eb;
 }
 
 .nav-btn--success {
-  background: #10b981;
-  color: white;
+ background: #10b981;
+ color: white;
 }
 
 .nav-btn--success:hover:not(:disabled) {
-  background: #059669;
+ background: #059669;
 }
 
 .lesson-nav-info {
-  font-weight: 500;
-  color: #6b7280;
-  font-size: 0.875rem;
+ font-weight: 500;
+ color: #6b7280;
+ font-size: 0.875rem;
 }
 
 /* PDF Modal */
 .pdf-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  padding: 1rem;
+ position: fixed;
+ inset: 0;
+ background: rgba(0, 0, 0, 0.8);
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ z-index: 2000;
+ padding: 1rem;
 }
 
 .pdf-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  max-width: 1200px;
-  max-height: 90vh;
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
+ position: relative;
+ width: 100%;
+ height: 100%;
+ max-width: 1200px;
+ max-height: 90vh;
+ background: white;
+ border-radius: 12px;
+ overflow: hidden;
 }
 
 .pdf-close-btn {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 40px;
-  height: 40px;
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
+ position: absolute;
+ top: 1rem;
+ right: 1rem;
+ width: 40px;
+ height: 40px;
+ background: rgba(0, 0, 0, 0.7);
+ color: white;
+ border: none;
+ border-radius: 50%;
+ cursor: pointer;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ z-index: 10;
+ transition: background 0.2s;
+}
+
+.pdf-close-btn:hover {
+ background: rgba(0, 0, 0, 0.9);
 }
 
 .pdf-frame {
-  width: 100%;
-  height: 100%;
-  border: none;
+ width: 100%;
+ height: 100%;
+ border: none;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .lesson-player-overlay {
-    padding: 0;
-  }
-  
-  .lesson-player {
-    width: 100%;
-    height: 100vh;
-    max-height: 100vh;
-    border-radius: 0;
-  }
-  
-  .player-header {
-    padding: 1rem;
-  }
-  
-  .lesson-title {
-    font-size: 1.5rem;
-  }
-  
-  .player-content {
-    padding: 1rem;
-  }
-  
-  .step-content {
-    padding: 1rem;
-  }
-  
-  .player-footer {
-    padding: 1rem;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .nav-btn {
-    width: 100%;
-  }
-  
-  .objectives-container {
-    padding: 0 1rem;
-  }
-  
-  .step-images {
-    grid-template-columns: 1fr;
-  }
+ .lesson-player-overlay {
+   padding: 0;
+ }
+ 
+ .lesson-player {
+   width: 100%;
+   height: 100vh;
+   max-height: 100vh;
+   border-radius: 0;
+ }
+ 
+ .player-header {
+   padding: 1rem;
+ }
+ 
+ .lesson-title {
+   font-size: 1.5rem;
+ }
+ 
+ .player-content {
+   padding: 1rem;
+ }
+ 
+ .step-content {
+   padding: 1rem;
+ }
+ 
+ .player-footer {
+   padding: 1rem;
+   flex-direction: column;
+   gap: 1rem;
+ }
+ 
+ .nav-btn {
+   width: 100%;
+ }
+ 
+ .objectives-container {
+   padding: 0 1rem;
+ }
+ 
+ .step-images {
+   flex-direction: column;
+ }
+ 
+ .step-image {
+   max-width: 100%;
+ }
+}
+
+@media (max-width: 480px) {
+ .step-images {
+   gap: 0.75rem;
+ }
+ 
+ .step-image img {
+   height: 150px;
+ }
+ 
+ .text-content {
+   font-size: 0.9375rem;
+ }
+ 
+ .step-header {
+   padding: 1rem;
+ }
+ 
+ .step-title {
+   font-size: 1rem;
+ }
 }
 </style>
